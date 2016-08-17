@@ -9,8 +9,8 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def foo():
-    print "Hello world!"
+    return "Hello world!"
 
 
 if __name__ == '__main__':
-    foo()   # This is a test
+    print foo()   # This is a test
