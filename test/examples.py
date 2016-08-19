@@ -23,7 +23,7 @@ def tau_calc(c, r):
     """
     return r*c
 
-def RC_ct_relax(tau, t):
+def RC_circuit(tau, t):
     """
     Giving ocv voltage from the charge-transfer process.
     :param tau: time constant of the contributing RC-circuit [s]
@@ -62,8 +62,13 @@ if __name__ == "__main__":
     v_0 that will add to the final ocv voltage.
     """
 
-    c_d = 20        # guessing 20F as diffusion capacity in this example
-    c_ct = 3        # guessing 3F as charge-transfer capacity
-    r_d = 35        # guessing 35 ohms as diffusion resistance
-    r_ct = 10       # guessing 10 ohms as charge-transfer resistance
-    v_co = -0.008   # guessing 0.7 V as initial voltage. Based on constant "A_ct"
+    c_d = 20       # guessing 20F as diffusion capacity in this example
+    c_ct = 3       # guessing 3F as charge-transfer capacity
+    r_d = 35       # guessing 35 ohms as diffusion resistance
+    r_ct = 10      # guessing 10 ohms as charge-transfer resistance
+    v_co = -0.008  # guessing 0.7 V as initial voltage. Based on constant "A_ct"
+    time = 100     # duration of simulation [s]
+    tau_ct = tau_calc(c_ct, r_ct)
+    tau_d = tau_calc(c_d, r_d)
+    for t in range(1, time):
+        rc_circuits = [RC_circuit(tau_d, t)
