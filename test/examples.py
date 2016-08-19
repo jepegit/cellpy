@@ -71,4 +71,5 @@ if __name__ == "__main__":
     tau_ct = tau_calc(c_ct, r_ct)
     tau_d = tau_calc(c_d, r_d)
     for t in range(1, time):
-        rc_circuits = [RC_circuit(tau_d, t)
+        rc_circuits = [RC_circuit(tau_d, t), RC_circuit(tau_ct, t)]
+        
