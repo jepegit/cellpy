@@ -7,8 +7,9 @@ equation look in a plot, so that it's easier to evaluate.
 
 import numpy as np
 import matplotlib.pyplot as plt
-import math
+from math import *
 import pandas as pd
+import pandas.io.data as web  # importing and exporting any kind of data formats
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
@@ -30,7 +31,7 @@ def RC_circuit(tau, t):
     :param t: time of measurement [s]
     :return: voltage contributed from the RC-circuit [V]
     """
-    return math.exp(-t/tau)
+    return exp(-t/tau)
 
 
 def RC_relax(v_co, rc_circuits):
@@ -44,6 +45,25 @@ def RC_relax(v_co, rc_circuits):
     """
     sum_rc_circuits = sum(rc_circuits)
     return v_co*sum_rc_circuits
+
+
+def ocv_data(dur, tau_ct, tau_d):
+        """
+        Creating a dataset of ocv points
+        :param dur: time of simulation
+        :return ocv_t: dataset with ocv points
+        :type: numpy array
+        """
+        ocv_t = np.zeros(dur)
+        for t_ct in range(0, dur/10):
+            rc_circuits = [RC_circuit(tau_d, t_ct), RC_circuit(tau_ct, t_ct)]
+            ocv_t[t_ct] = RC_relax(v_co, rc_circuits)
+
+        ocv_t[dur/10:] = ocv_t[dur/10-1]
+        for t in range(dur/10, dur):
+            rc_circuits = [RC_circuit(tau_d, t)]
+            ocv_t[t] += RC_relax(v_co, rc_circuits)
+        return ocv_t
 
 
 if __name__ == "__main__":
@@ -66,10 +86,17 @@ if __name__ == "__main__":
     c_ct = 3       # guessing 3F as charge-transfer capacity
     r_d = 35       # guessing 35 ohms as diffusion resistance
     r_ct = 10      # guessing 10 ohms as charge-transfer resistance
-    v_co = -0.008  # guessing 0.7 V as initial voltage. Based on constant "A_ct"
+    v_co = 0.7   # guessing 0.7 V as initial voltage. Based on constant "A_ct"
     time = 100     # duration of simulation [s]
-    tau_ct = tau_calc(c_ct, r_ct)
-    tau_d = tau_calc(c_d, r_d)
-    for t in range(1, time):
-        rc_circuits = [RC_circuit(tau_d, t), RC_circuit(tau_ct, t)]
-        
+    tau_ct = tau_calc(c_ct, r_ct)   # calculating the time
+    # constant for
+    # charge-transfer RC-circuit
+    tau_d = tau_calc()   # calculating the time constant
+    #  for
+    # diffusion RC-circuit
+    ocv = ocv_data(time, tau_ct, tau_d)
+    print ocv
+    plt.plot(ocv)
+    plt.ylabel('Open circuit voltage')
+    # plt.show()
+
