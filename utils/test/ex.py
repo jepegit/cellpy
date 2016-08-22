@@ -25,24 +25,15 @@ for time, volt in zip(time_data, voltage_data):
     xy_data['voltage'].append(volt)
 
 xy_df = pd.DataFrame(xy_data)
-print xy_df
-xy_df['voltage'].plot()
-
-# print df['time (s) cycle_no 1']
-# print df[['time (s) cycle_no 1','time (s) cycle_no 2']]
-# print np.array(df[['time (s) cycle_no 1','time (s) cycle_no 2']])
-
-# df2 = pd.DataFrame(np.array(df[['time (s) cycle_no 1','time (s) cycle_no 2']]))
-# print df2
-# print df.head()
-# print df.tail()
-# print df.tail(2)
+# plt.plot(xy_data['time'], xy_data['voltage'])  # Show's all graphs, but in
+# a poor matter.
+plt.plot(xy_df['time'][0], xy_df['voltage'][0])   # First cycle
+plt.show()
 
 
 # ===============Data analysis with Pandas from youtube video, sentdex=========
 # IO - input output
 #If I want to export, then write: df.to_csv('new_name.csv')
-# Renaming the coloumns
 
 # df3 = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
 #                    r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils'
