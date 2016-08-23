@@ -15,7 +15,7 @@ data = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
                    r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils'
                    r'\data\20160805_sic006_45_cc_01_ocvrlx_down.csv',
                    sep=';', header=None)
-df = pd.DataFrame(data[1:])
+df = pd.DataFrame(data[1:], dtype=float)
 time_data = np.transpose(np.array(df.loc[:, :: 2]))
 voltage_data = np.transpose(np.array(df.loc[:, 1::2]))
 
@@ -23,13 +23,14 @@ xy_data = {'time': [], 'voltage': []}
 for time, volt in zip(time_data, voltage_data):
     xy_data['time'].append(time)
     xy_data['voltage'].append(volt)
-
 xy_df = pd.DataFrame(xy_data)
 xy_df.to_csv('time_voltage_down')
 time_volt = pd.read_csv('time_voltage_down')
-for i in range(len(time_volt)):
-    plt.plot(time_volt['time'][i], time_volt['voltage'][i])
-# plt.plot(xy_data['time'], xy_data['voltage'])  # Show's all graphs, but in
+
+# for i in range(len(time_volt)):
+#     plt.plot(time_volt['time'][i], time_volt['voltage'][i])
+# plt.plot(time_volt['time'][0], time_volt['voltage'][0])  # Show's all graphs,
+# but in
 # a poor matter.
 
 # plt.plot(xy_df['time'][0], xy_df['voltage'][0])   # First cycle
