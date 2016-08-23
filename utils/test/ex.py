@@ -16,20 +16,22 @@ data = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
                    r'\data\20160805_sic006_45_cc_01_ocvrlx_down.csv',
                    sep=';', header=None)
 df = pd.DataFrame(data[1:], dtype=float)
-print df.head()
-print df.info()
-df.plot()
+time = df.loc[:, ::2]
+voltage = df.loc[:, 1::2]
+# print time.tail()
+# print voltage.tail()
 
 time_data = np.transpose(np.array(df.loc[:, :: 2]))
 voltage_data = np.transpose(np.array(df.loc[:, 1::2]))
 
-xy_data = {'time': [], 'voltage': []}
-for time, volt in zip(time_data, voltage_data):
-    xy_data['time'].append(time)
-    xy_data['voltage'].append(volt)
-xy_df = pd.DataFrame(xy_data)
-xy_df.to_csv('time_voltage_down')
-time_volt = pd.read_csv('time_voltage_down')
+#
+# xy_data = {'time': [], 'voltage': []}
+# for time, volt in zip(time_data, voltage_data):
+#     xy_data['time'].append(time)
+#     xy_data['voltage'].append(volt)
+# xy_df = pd.DataFrame(xy_data)
+# xy_df.to_csv('time_voltage_down')
+# time_volt = pd.read_csv('time_voltage_down')
 
 # for i in range(len(time_volt)):
 #     plt.plot(time_volt['time'][0][i], time_volt['voltage'][0][i])
