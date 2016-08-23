@@ -16,8 +16,20 @@ data = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
                    r'\data\20160805_sic006_45_cc_01_ocvrlx_down.csv',
                    sep=';')
 data.to_csv('new_data')
-data = pd.read_csv('new_data', index_col=range(1, 35, 2))
-print data.iloc[0]
+data = pd.read_csv('new_data', index_col=0)
+t = []
+v = []
+for i in range(len(data.iloc[0, :])):
+    for column in data.iloc[:, i]:
+        if i % 2:
+            v.append(column)
+        else:
+            t.append(column)
+plt.plot(t, v)
+
+
+
+# print data.iloc[0]
 # time = df.loc[:, ::2]
 # voltage = df.loc[:, 1::2]
 # print time
