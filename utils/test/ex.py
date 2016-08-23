@@ -14,15 +14,17 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 data = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
                    r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils'
                    r'\data\20160805_sic006_45_cc_01_ocvrlx_down.csv',
-                   sep=';', header=None)
-df = pd.DataFrame(data[1:], dtype=float)
-time = df.loc[:, ::2]
-voltage = df.loc[:, 1::2]
-# print time.tail()
+                   sep=';')
+data.to_csv('new_data')
+data = pd.read_csv('new_data', index_col=range(1, 35, 2))
+print data.iloc[0]
+# time = df.loc[:, ::2]
+# voltage = df.loc[:, 1::2]
+# print time
 # print voltage.tail()
 
-time_data = np.transpose(np.array(df.loc[:, :: 2]))
-voltage_data = np.transpose(np.array(df.loc[:, 1::2]))
+# time_data = np.transpose(np.array(df.loc[:, :: 2]))
+# voltage_data = np.transpose(np.array(df.loc[:, 1::2]))
 
 #
 # xy_data = {'time': [], 'voltage': []}
