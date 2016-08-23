@@ -25,11 +25,15 @@ for time, volt in zip(time_data, voltage_data):
     xy_data['voltage'].append(volt)
 
 xy_df = pd.DataFrame(xy_data)
+xy_df.to_csv('time_voltage_down')
+time_volt = pd.read_csv('time_voltage_down')
+for i in range(len(time_volt)):
+    plt.plot(time_volt['time'][i], time_volt['voltage'][i])
 # plt.plot(xy_data['time'], xy_data['voltage'])  # Show's all graphs, but in
 # a poor matter.
-plt.plot(xy_df['time'][0], xy_df['voltage'][0])   # First cycle
-plt.show()
 
+# plt.plot(xy_df['time'][0], xy_df['voltage'][0])   # First cycle
+plt.show()
 
 # ===============Data analysis with Pandas from youtube video, sentdex=========
 # IO - input output
