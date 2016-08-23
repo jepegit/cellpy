@@ -27,10 +27,11 @@ ocv_dic = {'time': [time_data[w: w + len(data)] for w in
                     xrange(0, len(time_data), len(data))],
            'voltage': [voltage_data[j: j + len(data)] for j in
                        xrange(0, len(voltage_data), len(data))]}
-# df.plot()
 for _ in range(len(ocv_dic['time'])):
     plt.plot(ocv_dic['time'][_], ocv_dic['voltage'][_])
-# plt.plot(ocv_dic['time'][0], ocv_dic['voltage'][0])
+
+# ===================================end=======================================
+#  df.plot()
 
 # t = []
 # v = []
