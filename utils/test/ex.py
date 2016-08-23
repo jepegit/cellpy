@@ -25,8 +25,8 @@ for i in range(len(data.iloc[0, :])):
             v.append(column)
         else:
             t.append(column)
-plt.plot(t, v)
 
+plt.plot(t, v)
 
 
 # print data.iloc[0]
