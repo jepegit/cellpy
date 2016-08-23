@@ -17,16 +17,26 @@ data = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
                    sep=';')
 data.to_csv('new_data')
 data = pd.read_csv('new_data', index_col=0)
-t = []
-v = []
-for i in range(len(data.iloc[0, :])):
-    for column in data.iloc[:, i]:
-        if i % 2:
-            v.append(column)
-        else:
-            t.append(column)
+time_data = [t for i in range(len(data.iloc[0, :])) for t in data.iloc[:, i]
+             if not i % 2]
+voltage_data = [v for k in range(len(data.iloc[0, :])) for v in data.iloc[:, k]
+                if k % 2]
+ocv_dic = {'time': [time_data[w: w + len(data)] for w in
+                    xrange(0, len(time_data), len(data))],
+           'voltage': [voltage_data[j: j + len(data)] for j in
+                       xrange(0, len(voltage_data), len(data))]}
+print len(ocv_dic['time'])
+# plt.plot(ocv_dic)
 
-plt.plot(t, v)
+# t = []
+# v = []
+# for i in range(len(data.iloc[0, :])):
+#     for column in data.iloc[:, i]:
+#         if i % 2:
+#             v.append(column)
+#         else:
+#             t.append(column)
+
 
 
 # print data.iloc[0]
