@@ -25,7 +25,8 @@ class Cell(object):
         """
         self._data = data
 
-        # need to separate time and voltage so that they can be plotted together as x-y
+        # need to separate time and voltage so
+        # they can be plotted together as y(x)
         time_data = [t for i in range(len(self._data.iloc[0, :])) for t in
                      self._data.iloc[:, i]
                      if i == 0 or i % 2]

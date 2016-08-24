@@ -8,8 +8,8 @@ equation look in a plot, so that it's easier to evaluate.
 import numpy as np
 import matplotlib.pyplot as plt
 from math import *
-import pandas as pd
-import pandas.io.data as web  # importing and exporting any kind of data formats
+# import pandas as pd
+# import pandas.io.data as web  # importing and exporting any kind of data formats
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
