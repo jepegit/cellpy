@@ -41,26 +41,67 @@ class Cell(object):
                                     xrange(0, len(voltage_data),
                                            len(self._data))]}
 
-    def tau(self):
+    def tau(self, r, c):
         """
-        Calculate the time constant(both
-        :return: "slope" * time + self.resistance * self.capacitance
+        Calculate the time constant based on which resistance and capacitance
+        it receives.
+        :param r: resistance [Ohm]
+        :param c: capacity [F]
+        :return: self._slope * self._time + r * c
         """
         pass
 
-    def relax_fcn(self):
+    def initial_conditions(self, v_ir, i_ir, r_ir):
         """
-        Calculate the relaxation function with a given time.
+        Calculate the initial conditions with given internal resistance
+        parameters. Saves the initial conditions in instances.
+        instances that will be calculated:
+        self._c_ct, self._r_ct, self._c_d, self._r_d, self._v_ct, self._v_d,
+        self._ocv
+        :param v_ir: voltage drop over internal resistance at start of OC [V]
+        :param i_ir: current drop through internal resistance at start of OC [A]
+        :param r_ir: internal resistance at start of OC [ohm]
+        :return: None
+        """
+
+    def relaxation_rc(self):
+        """
+        Calculate the relaxation function with a given point in time, self.time
+        initiate self.initial_conditions(self._start_volt, self._start_cur,
+        self._start_res)   # Not sure about the parameters here...
         Make a local constant, modify (for modifying a rc-circuit so that
         guessing is easier).
-        modify = -self.start_voltage * exp(-1. / self.slope)
-        if "slope" of self.tau() is 0 (say "slope is an instance:
-        self.slope), then -exp(-1./self.slope) = 0
-        :return: self.start_voltage(modify + exp(-1. / self.tau()))
+        modify = -self._start_volt * exp(-1. / self._slope)
+        if self._slope of self.tau() is 0, then -exp(-1./self._slope) = 0
+        :return: self._start_volt(modify + exp(-self._time / self.tau()))
         """
         pass
 
+    def ocv_relax_cell(self):
+        """
+        To use self.relaxation_rc() for calculating complete ocv relaxation
+        over the cell.
+        :return: voltage_d + voltage_ct + voltage_ocv (initial?) (+ v_ir?)
+        """
+        pass
 
+    def guess(self):
+        """
+        Using self.relaxation_rc() and given parameters (coming later) to
+        guess how the ocv relaxation is over the cell.
+        :return: dictionary with parameters from the guessed ocv relaxation
+        """
+        pass
+
+    def fitting(self):
+        """
+        Using measured data and scipy's "curve_fit" (non-linear least square,
+        check it up with "curve_fit?" in console) to find the best fitted ocv
+        relaxation curve.
+        :return: dictionary of best fitted parameters and error between
+        measured data and the fitting.
+        """
+        pass
 
 if __name__ == '__main__':
     # had to use r'system path to file' to read the csv. Don't know why,
