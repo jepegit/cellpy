@@ -41,7 +41,6 @@ class Ocv(object):
                                     xrange(0, len(voltage_data),
                                            len(self._data))]}
 
-
 if __name__ == '__main__':
     # had to use r'system path to file' to read the csv. Don't know why,
     # but that's how it is right now...
@@ -52,7 +51,6 @@ if __name__ == '__main__':
     data_up = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University '
                           r'of Life Sciences\Documents\NMBU\master\ife\python\cellpy\utils\data\20160805_sic006_45_cc_01_ocvrlx_up.csv',
                           sep=';', index_col=0)
-
 
     def define_legends():
         """
@@ -84,11 +82,10 @@ if __name__ == '__main__':
     for _ in range(len(ocv_down['time'])):
         plt.plot(ocv_down['time'][_], ocv_down['voltage'][_])
     plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0)
+               borderaxespad=0, prop={'size': 13})
     plt.subplot(223)
     for _ in range(len(ocv_down['time'])):
         plt.plot(ocv_up['time'][_], ocv_up['voltage'][_])
     plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0)
-    plt.tight_layout()
-    plt.show()
+               borderaxespad=0, prop={'size': 13})
+    # plt.show()
