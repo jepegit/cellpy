@@ -59,19 +59,19 @@ if __name__ == '__main__':
         creating a list with legends from both up and down ocv_data
         :return: list of legends for ocv_data
         """
-        legend_down = []
-        legend_up = []
+        leg_down = []
+        leg_up = []
         count = 0
         for lbl_down in data_down:
             if not count % 2:
-                legend_down.append(str(lbl_down))
+                leg_down.append(str(lbl_down))
             count += 1
         count = 0
         for lbl_up in data_up:
             if not count % 2:
-                legend_up.append((str(lbl_up)))
+                leg_up.append((str(lbl_up)))
             count += 1
-        return legend_down, legend_up
+        return leg_down, leg_up
 
     legend_down, legend_up = define_legends()
     ocv_down = Ocv(data_down).ocv_dic
@@ -79,8 +79,8 @@ if __name__ == '__main__':
 
     # plotting all curves in same plot. Inspiration from matplotlib,
     # section "legend guide"
-    plt.figure()
-    plt.subplot(211)
+    plt.figure(figsize=(15, 13))
+    plt.subplot(221)
     for _ in range(len(ocv_down['time'])):
         plt.plot(ocv_down['time'][_], ocv_down['voltage'][_])
     plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
@@ -90,4 +90,5 @@ if __name__ == '__main__':
         plt.plot(ocv_up['time'][_], ocv_up['voltage'][_])
     plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
                borderaxespad=0)
+    plt.tight_layout()
     plt.show()
