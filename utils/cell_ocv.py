@@ -12,7 +12,7 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-class Ocv(object):
+class Cell(object):
     """
     This class will read observed data and plot fitted observed data.
     It will also calculate theoretical ocv relaxation behavior based on given
@@ -40,6 +40,27 @@ class Ocv(object):
                         'voltage': [voltage_data[j: j + len(self._data)] for j in
                                     xrange(0, len(voltage_data),
                                            len(self._data))]}
+
+    def tau(self):
+        """
+        Calculate the time constant(both
+        :return: "slope" * time + self.resistance * self.capacitance
+        """
+        pass
+
+    def relax_fcn(self):
+        """
+        Calculate the relaxation function with a given time.
+        Make a local constant, modify (for modifying a rc-circuit so that
+        guessing is easier).
+        modify = -self.start_voltage * exp(-1. / self.slope)
+        if "slope" of self.tau() is 0 (say "slope is an instance:
+        self.slope), then -exp(-1./self.slope) = 0
+        :return: self.start_voltage(modify + exp(-1. / self.tau()))
+        """
+        pass
+
+
 
 if __name__ == '__main__':
     # had to use r'system path to file' to read the csv. Don't know why,
@@ -72,8 +93,8 @@ if __name__ == '__main__':
         return leg_down, leg_up
 
     legend_down, legend_up = define_legends()
-    ocv_down = Ocv(data_down).ocv_dic
-    ocv_up = Ocv(data_up).ocv_dic
+    ocv_down = Cell(data_down).ocv_dic
+    ocv_up = Cell(data_up).ocv_dic
 
     # plotting all curves in same plot. Inspiration from matplotlib,
     # section "legend guide"

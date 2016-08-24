@@ -5,7 +5,7 @@ Running nosetests on ocv_relaxation curves
 """
 
 import nose.tools as nt
-from ..ocv_relax import foo
+from ..cell_ocv import foo
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
