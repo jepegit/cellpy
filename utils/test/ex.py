@@ -4,7 +4,7 @@
 This file is for random examples.
 """
 import pandas as pd
-import numpy as np
+# import numpy as np
 import matplotlib.pyplot as plt
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
@@ -46,8 +46,6 @@ for _ in range(len(ocv_dic['time'])):
 #         else:
 #             t.append(column)
 
-
-
 # print data.iloc[0]
 # time = df.loc[:, ::2]
 # voltage = df.loc[:, 1::2]
@@ -77,7 +75,7 @@ plt.show()
 
 # ===============Data analysis with Pandas from youtube video, sentdex=========
 # IO - input output
-#If I want to export, then write: df.to_csv('new_name.csv')
+# If I want to export, then write: df.to_csv('new_name.csv')
 
 # df3 = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
 #                    r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils'
