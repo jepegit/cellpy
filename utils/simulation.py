@@ -27,15 +27,34 @@ if __name__ == '__main__':
     # need to separate time and voltage so
     # they can be plotted together as y(x)
     def make_data(data):
+        """
+        This function will split xy-xy-xy-xy... pandas data pd.read_csv to
+        numpy array with only x and one with only y.
+        :param data: pandas DataFrame that has multi xy data as column info
+        :return: a numpy array with number of cycles as length and cycle has
+        it's pandas DataFrame with time-voltage for that cycle.
+        """
         time_data = [t for i in range(len(data.iloc[0, :])) for t in
                      data.iloc[:, i] if not i % 2]
 
         voltage_data = [v for k in range(0, len(data.iloc[0, :]))
                         for v in data.iloc[:, k] if k % 2]
-        return pd.DataFrame(zip(time_data, voltage_data),
-                            columns=['time', 'voltage'])
+        num_cycles = len(time_data)/len(data)
+        sorted_data = []
+        key = 0
+        for _ in range(0, num_cycles):
+            time = time_data[key:key + len(data)]
+            volt = voltage_data[key:key + len(data)]
+            key += len(data)
+            sorted_data.append(pd.DataFrame(zip(time, volt), columns=['time',
+                                                                      'voltage'
+                                                                      ]))
+        return sorted_data
 
-    print make_data(data_down).head()
+    print make_data(data_down)
+        # return pd.DataFrame(zip(time_data, voltage_data),
+        #                     columns=['time', 'voltage'])
+
 
     # Splitting the data so that they are in intervals of amount of cycles and
     # putting them into a dictionary for easier tracking. First cycle is the
