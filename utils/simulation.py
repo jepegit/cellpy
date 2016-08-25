@@ -19,26 +19,21 @@ if __name__ == '__main__':
     data_down = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University '
                             r'of Life '
                             r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils\data\20160805_sic006_45_cc_01_ocvrlx_down.csv',
-                            sep=';', index_col=0)
+                            sep=';')
     data_up = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University '
                           r'of Life Sciences\Documents\NMBU\master\ife\python\cellpy\utils\data\20160805_sic006_45_cc_01_ocvrlx_up.csv',
-                          sep=';', index_col=0)
+                          sep=';')
 
     # need to separate time and voltage so
     # they can be plotted together as y(x)
     def make_data(data):
         time_data = [t for i in range(len(data.iloc[0, :])) for t in
-                     data.iloc[:, i] if i == 0 or i % 2]
+                     data.iloc[:, i] if not i % 2]
 
         voltage_data = [v for k in range(0, len(data.iloc[0, :]))
-                        for v in data.iloc[:, k] if not k % 2]
-        print len(time_data), len(voltage_data)
-        print zip(time_data, voltage_data)
-
-        data_df = pd.DataFrame(zip(time_data, voltage_data),
-                               columns=['time', 'voltage'])
-        data_df.set_index('time', inplace=True)
-        return data_df
+                        for v in data.iloc[:, k] if k % 2]
+        return pd.DataFrame(zip(time_data, voltage_data),
+                            columns=['time', 'voltage'])
 
     print make_data(data_down).head()
 
