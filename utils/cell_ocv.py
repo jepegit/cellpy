@@ -21,26 +21,10 @@ class Cell(object):
 
     def __init__(self, data):
         """
-        :param data: observed open circuit voltage (ocv) data
+        :param data: observed open circuit voltage (ocv) data in pandas
+        :type data: dict
         """
         self._data = data
-
-        # need to separate time and voltage so
-        # they can be plotted together as y(x)
-        time_data = [t for i in range(len(self._data.iloc[0, :])) for t in
-                     self._data.iloc[:, i]
-                     if i == 0 or i % 2]
-        voltage_data = [v for k in range(0, len(self._data.iloc[0, :]))
-                        for v in self._data.iloc[:, k] if not k % 2]
-
-        # Splitting the data so that they are in intervals of amount of cycles and
-        # putting them into a dictionary for easier tracking. First cycle is the
-        # first list. To call: ocv_dic['time/voltage'][0] etc.
-        self.ocv_dic = {'time': [time_data[w: w + len(self._data)] for w in
-                                 xrange(0, len(time_data), len(self._data))],
-                        'voltage': [voltage_data[j: j + len(self._data)] for j in
-                                    xrange(0, len(voltage_data),
-                                           len(self._data))]}
 
     def tau(self, r, c):
         """
@@ -151,4 +135,4 @@ if __name__ == '__main__':
         plt.plot(ocv_up['time'][_], ocv_up['voltage'][_])
     plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
                borderaxespad=0, prop={'size': 13})
-    # plt.show()
+    plt.show()
