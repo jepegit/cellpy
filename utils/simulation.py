@@ -26,20 +26,31 @@ if __name__ == '__main__':
 
     # need to separate time and voltage so
     # they can be plotted together as y(x)
-    time_data = [t for i in range(len(data.iloc[0, :])) for t in
-                 data.iloc[:, i]
-                 if i == 0 or i % 2]
-    voltage_data = [v for k in range(0, len(data.iloc[0, :]))
-                    for v in data.iloc[:, k] if not k % 2]
-    
+    def make_data(data):
+        time_data = [t for i in range(len(data.iloc[0, :])) for t in
+                     data.iloc[:, i] if i == 0 or i % 2]
+
+        voltage_data = [v for k in range(0, len(data.iloc[0, :]))
+                        for v in data.iloc[:, k] if not k % 2]
+        print len(time_data), len(voltage_data)
+        print zip(time_data, voltage_data)
+
+        data_df = pd.DataFrame(zip(time_data, voltage_data),
+                               columns=['time', 'voltage'])
+        data_df.set_index('time', inplace=True)
+        return data_df
+
+    print make_data(data_down).head()
+
     # Splitting the data so that they are in intervals of amount of cycles and
     # putting them into a dictionary for easier tracking. First cycle is the
     # first list. To call: ocv_dic['time/voltage'][0] etc.
-    ocv_dic = {'time': [time_data[w: w + len(data)] for w in
-                             xrange(0, len(time_data), len(data))],
-                    'voltage': [voltage_data[j: j + len(data)] for j in
-                                xrange(0, len(voltage_data),
-                                       len(data))]}
+
+    # ocv_dic = {'time': [time_data[w: w + len(data)] for w in
+    #                          xrange(0, len(time_data), len(data))],
+    #                 'voltage': [voltage_data[j: j + len(data)] for j in
+    #                             xrange(0, len(voltage_data),
+    #                                    len(data))]}
 
     def define_legends():
         """
@@ -61,21 +72,21 @@ if __name__ == '__main__':
         return leg_down, leg_up
 
     legend_down, legend_up = define_legends()
-    ocv_down = Cell(data_down).ocv_dic
-    ocv_up = Cell(data_up).ocv_dic
-
-    # plotting all curves in same plot. Inspiration from matplotlib,
-    # section "legend guide"
-    plt.figure(figsize=(15, 13))
-    plt.subplot(221)
-    for _ in range(len(ocv_down['time'])):
-        plt.plot(ocv_down['time'][_], ocv_down['voltage'][_])
-    plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0, prop={'size': 13})
-    plt.subplot(223)
-    for _ in range(len(ocv_down['time'])):
-        plt.plot(ocv_up['time'][_], ocv_up['voltage'][_])
-    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0, prop={'size': 13})
+    # ocv_down = Cell(data_down).ocv_dic
+    # ocv_up = Cell(data_up).ocv_dic
+    #
+    # # plotting all curves in same plot. Inspiration from matplotlib,
+    # # section "legend guide"
+    # plt.figure(figsize=(15, 13))
+    # plt.subplot(221)
+    # for _ in range(len(ocv_down['time'])):
+    #     plt.plot(ocv_down['time'][_], ocv_down['voltage'][_])
+    # plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
+    #            borderaxespad=0, prop={'size': 13})
+    # plt.subplot(223)
+    # for _ in range(len(ocv_down['time'])):
+    #     plt.plot(ocv_up['time'][_], ocv_up['voltage'][_])
+    # plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
+    #            borderaxespad=0, prop={'size': 13})
     # plt.show()
 
