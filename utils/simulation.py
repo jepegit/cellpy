@@ -68,12 +68,12 @@ if __name__ == '__main__':
         leg_up = []
         count = 0
         for lbl_down in data_down:
-            if not count % 2:
+            if count % 2:
                 leg_down.append(str(lbl_down))
             count += 1
         count = 0
         for lbl_up in data_up:
-            if not count % 2:
+            if count % 2:
                 leg_up.append((str(lbl_up)))
             count += 1
         return leg_down, leg_up
@@ -86,14 +86,18 @@ if __name__ == '__main__':
     # section "legend guide"
     # plt.figure(figsize=(15, 13))
     # plt.subplot(221)
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Voltage (V)')
     # for row_down in ocv_down:
     #     plt.plot(row_down['time'], row_down['voltage'], '-o')
     # plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
     #            borderaxespad=0, prop={'size': 13})
+    #
     # plt.subplot(223)
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Voltage (V)')
     # for row_up in ocv_up:
-    #     if max(row_up['time']) > 950:
-    #         plt.plot(row_up['time'], row_up['voltage'], '-o')
+    #     plt.plot(row_up['time'], row_up['voltage'], '-o')
     # plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
     #            borderaxespad=0, prop={'size': 13})
 
@@ -102,4 +106,6 @@ if __name__ == '__main__':
         if max(row_up['time']) > 950:
             plt.plot(row_up['time'], row_up['voltage'], '-o')
     plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=4)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Voltage (V)')
     plt.show()
