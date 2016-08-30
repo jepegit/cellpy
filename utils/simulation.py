@@ -17,6 +17,7 @@ if __name__ == '__main__':
     datafolder = r'.\data'   # make sure you're in folder \utils. If not,
     # activate os.getcwd() to find current folder and extend datafolder until
     #  [.]\utils\data
+    # print os.getcwd()
     filename_down = r'20160805_sic006_45_cc_01_ocvrlx_down.csv'
     filename_up = r'20160805_sic006_45_cc_01_ocvrlx_up.csv'
     down = os.path.join(datafolder, filename_down)
@@ -83,15 +84,22 @@ if __name__ == '__main__':
 
     # plotting all curves in same plot. Inspiration from matplotlib,
     # section "legend guide"
+    # plt.figure(figsize=(15, 13))
+    # plt.subplot(221)
+    # for row_down in ocv_down:
+    #     plt.plot(row_down['time'], row_down['voltage'], '-o')
+    # plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
+    #            borderaxespad=0, prop={'size': 13})
+    # plt.subplot(223)
+    # for row_up in ocv_up:
+    #     if max(row_up['time']) > 950:
+    #         plt.plot(row_up['time'], row_up['voltage'], '-o')
+    # plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
+    #            borderaxespad=0, prop={'size': 13})
+
     plt.figure(figsize=(15, 13))
-    plt.subplot(221)
-    for row_down in ocv_down:
-        plt.plot(row_down['time'], row_down['voltage'])
-    plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0, prop={'size': 13})
-    plt.subplot(223)
     for row_up in ocv_up:
-        plt.plot(row_up['time'], row_up['voltage'])
-    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0, prop={'size': 13})
+        if max(row_up['time']) > 950:
+            plt.plot(row_up['time'], row_up['voltage'], '-o')
+    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=4)
     plt.show()
