@@ -31,12 +31,13 @@ if __name__ == '__main__':
         This function will split xy-xy-xy-xy... pandas data pd.read_csv to
         numpy array with only x and one with only y.
         :param data: pandas DataFrame that has multi xy data as column info
-        :return: a numpy array with number of cycles as length and cycle has
-        it's pandas DataFrame with time-voltage for that cycle.
+        :return: a list with number of cycles as length. Each cycle
+        has its pandas DataFrame with time-voltage for that cycle.
         """
+        # extracting time data
         time_data = [t for i in range(len(data.iloc[0, :])) for t in
                      data.iloc[:, i] if not i % 2]
-
+        # extracting voltage data
         voltage_data = [v for k in range(0, len(data.iloc[0, :]))
                         for v in data.iloc[:, k] if k % 2]
         num_cycles = len(time_data)/len(data)
@@ -50,15 +51,6 @@ if __name__ == '__main__':
                                                                       'voltage'
                                                                       ]))
         return sorted_data
-
-    print make_data(data_down)
-        # return pd.DataFrame(zip(time_data, voltage_data),
-        #                     columns=['time', 'voltage'])
-
-
-    # Splitting the data so that they are in intervals of amount of cycles and
-    # putting them into a dictionary for easier tracking. First cycle is the
-    # first list. To call: ocv_dic['time/voltage'][0] etc.
 
     # ocv_dic = {'time': [time_data[w: w + len(data)] for w in
     #                          xrange(0, len(time_data), len(data))],
@@ -86,21 +78,21 @@ if __name__ == '__main__':
         return leg_down, leg_up
 
     legend_down, legend_up = define_legends()
-    # ocv_down = Cell(data_down).ocv_dic
-    # ocv_up = Cell(data_up).ocv_dic
-    #
-    # # plotting all curves in same plot. Inspiration from matplotlib,
-    # # section "legend guide"
-    # plt.figure(figsize=(15, 13))
-    # plt.subplot(221)
-    # for _ in range(len(ocv_down['time'])):
-    #     plt.plot(ocv_down['time'][_], ocv_down['voltage'][_])
-    # plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
-    #            borderaxespad=0, prop={'size': 13})
-    # plt.subplot(223)
-    # for _ in range(len(ocv_down['time'])):
-    #     plt.plot(ocv_up['time'][_], ocv_up['voltage'][_])
-    # plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
-    #            borderaxespad=0, prop={'size': 13})
-    # plt.show()
+    ocv_down = make_data(data_down)
+    ocv_up = make_data(data_up)
+
+    # plotting all curves in same plot. Inspiration from matplotlib,
+    # section "legend guide"
+    plt.figure(figsize=(15, 13))
+    plt.subplot(221)
+    for row_down in ocv_down:
+        plt.plot(row_down['time'], row_down['voltage'])
+    plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
+               borderaxespad=0, prop={'size': 13})
+    plt.subplot(223)
+    for row_up in ocv_up:
+        plt.plot(row_up['time'], row_up['voltage'])
+    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
+               borderaxespad=0, prop={'size': 13})
+    plt.show()
 

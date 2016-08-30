@@ -48,6 +48,7 @@ class Cell(object):
         :param r_ir: internal resistance at start of OC [ohm]
         :return: None
         """
+        pass
 
     def relaxation_rc(self):
         """
