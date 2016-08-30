@@ -5,8 +5,9 @@ Adaption of OCV-relaxation data.
 """
 
 import matplotlib.pyplot as plt
-# import numpy as np
+import numpy as np
 import pandas as pd
+import math
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
@@ -19,24 +20,36 @@ class Cell(object):
     information about the cell.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, time, v0, v_ir, i_ir, r_ir):
         """
         :param data: observed open circuit voltage (ocv) data in pandas
         :type data: dict
         """
         self._data = data
+        self._time = time
+        self._v0 = v0
+        self._c_ct = 0
+        self._r_ct = 0
+        self._c_d = 0
+        self._r_d = 0
+        self._v_ct = 0
+        self._v_d = 0
+        self._v_ir = v_ir
+        self._i_ir = i_ir
+        self._r_ir = r_ir
 
-    def tau(self, r, c):
+    def tau(self, slope, r, c):
         """
         Calculate the time constant based on which resistance and capacitance
         it receives.
+        :param slope: slope of the time constant [s]
         :param r: resistance [Ohm]
         :param c: capacity [F]
         :return: self._slope * self._time + r * c
         """
-        pass
+        return slope * self._time + r * c
 
-    def initial_conditions(self, v_ir, i_ir, r_ir):
+    def initial_conditions(self):
         """
         Calculate the initial conditions with given internal resistance
         parameters. Saves the initial conditions in instances.
@@ -50,7 +63,7 @@ class Cell(object):
         """
         pass
 
-    def relaxation_rc(self):
+    def relaxation_rc(self, slope, r, c):
         """
         Calculate the relaxation function with a given point in time, self.time
         initiate self.initial_conditions(self._start_volt, self._start_cur,
@@ -61,15 +74,23 @@ class Cell(object):
         if self._slope of self.tau() is 0, then -exp(-1./self._slope) = 0
         :return: self._start_volt(modify + exp(-self._time / self.tau()))
         """
-        pass
+        if slope:
+            modify = -self._v0 * math.exp(-1. / slope)
+        else:
+            modify = 0
+        return self._v0 * (modify + math.exp(-self._time
+                                             / self.tau(slope, r, c)))
 
     def ocv_relax_cell(self):
         """
         To use self.relaxation_rc() for calculating complete ocv relaxation
-        over the cell.
+        over the cell. Initiate intial conditions
         :return: voltage_d + voltage_ct + voltage_ocv (initial?) (+ v_ir?)
         """
-        pass
+        slope_d, slope_ct = self.initial_conditions()
+        voltage_d = self.relaxation_rc(slope_d, self._r_d, self._c_d)
+        voltage_ct = self.relaxation_rc(slope_ct, self._r_ct, self._c_ct)
+        return voltage_d + voltage_ct + self._v_ir
 
     def guess(self):
         """
@@ -88,52 +109,3 @@ class Cell(object):
         measured data and the fitting.
         """
         pass
-
-if __name__ == '__main__':
-    # had to use r'system path to file' to read the csv. Don't know why,
-    # but that's how it is right now...
-    data_down = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University '
-                            r'of Life '
-                            r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils\data\20160805_sic006_45_cc_01_ocvrlx_down.csv',
-                            sep=';', index_col=0)
-    data_up = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University '
-                          r'of Life Sciences\Documents\NMBU\master\ife\python\cellpy\utils\data\20160805_sic006_45_cc_01_ocvrlx_up.csv',
-                          sep=';', index_col=0)
-
-    def define_legends():
-        """
-        creating a list with legends from both up and down ocv_data
-        :return: list of legends for ocv_data
-        """
-        leg_down = []
-        leg_up = []
-        count = 0
-        for lbl_down in data_down:
-            if not count % 2:
-                leg_down.append(str(lbl_down))
-            count += 1
-        count = 0
-        for lbl_up in data_up:
-            if not count % 2:
-                leg_up.append((str(lbl_up)))
-            count += 1
-        return leg_down, leg_up
-
-    legend_down, legend_up = define_legends()
-    ocv_down = Cell(data_down).ocv_dic
-    ocv_up = Cell(data_up).ocv_dic
-
-    # plotting all curves in same plot. Inspiration from matplotlib,
-    # section "legend guide"
-    plt.figure(figsize=(15, 13))
-    plt.subplot(221)
-    for _ in range(len(ocv_down['time'])):
-        plt.plot(ocv_down['time'][_], ocv_down['voltage'][_])
-    plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0, prop={'size': 13})
-    plt.subplot(223)
-    for _ in range(len(ocv_down['time'])):
-        plt.plot(ocv_up['time'][_], ocv_up['voltage'][_])
-    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
-               borderaxespad=0, prop={'size': 13})
-    plt.show()

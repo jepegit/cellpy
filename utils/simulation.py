@@ -95,4 +95,3 @@ if __name__ == '__main__':
     plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
                borderaxespad=0, prop={'size': 13})
     plt.show()
-
