@@ -38,7 +38,7 @@ class Cell(object):
         self._i_ir = i_ir
         self._r_ir = r_ir
 
-    def tau(self, slope, r, c):
+    def tau(self, r, c, slope):
         """
         Calculate the time constant based on which resistance and capacitance
         it receives.
@@ -47,7 +47,10 @@ class Cell(object):
         :param c: capacity [F]
         :return: self._slope * self._time + r * c
         """
-        return slope * self._time + r * c
+        if slope:
+            return slope * self._time + r * c
+        else:
+            return r * c
 
     def initial_conditions(self):
         """
@@ -63,7 +66,7 @@ class Cell(object):
         """
         pass
 
-    def relaxation_rc(self, slope, r, c):
+    def relaxation_rc(self, r, c, slope):
         """
         Calculate the relaxation function with a given point in time, self.time
         initiate self.initial_conditions(self._start_volt, self._start_cur,
@@ -88,8 +91,8 @@ class Cell(object):
         :return: voltage_d + voltage_ct + voltage_ocv (initial?) (+ v_ir?)
         """
         slope_d, slope_ct = self.initial_conditions()
-        voltage_d = self.relaxation_rc(slope_d, self._r_d, self._c_d)
-        voltage_ct = self.relaxation_rc(slope_ct, self._r_ct, self._c_ct)
+        voltage_d = self.relaxation_rc(self._r_d, self._c_d, slope_d)
+        voltage_ct = self.relaxation_rc(self._r_ct, self._c_ct, slope_ct)
         return voltage_d + voltage_ct + self._v_ir
 
     def guess(self):
