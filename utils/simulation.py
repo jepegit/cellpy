@@ -15,8 +15,8 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 if __name__ == '__main__':
     datafolder = r'.\data'   # make sure you're in folder \utils. If not,
-    # activate os.getcwd() to find current folder and extend datafolder until
-    #  [.]\utils\data
+    # activate os.getcwd() to find current folder and extend datafolder
+    # with [.]\utils\data
     # print os.getcwd()
     filename_down = r'20160805_sic006_45_cc_01_ocvrlx_down.csv'
     filename_up = r'20160805_sic006_45_cc_01_ocvrlx_up.csv'
@@ -53,12 +53,6 @@ if __name__ == '__main__':
                                                                       ]))
         return sorted_data
 
-    # ocv_dic = {'time': [time_data[w: w + len(data)] for w in
-    #                          xrange(0, len(time_data), len(data))],
-    #                 'voltage': [voltage_data[j: j + len(data)] for j in
-    #                             xrange(0, len(voltage_data),
-    #                                    len(data))]}
-
     def define_legends():
         """
         creating a list with legends from both up and down ocv_data
@@ -82,6 +76,14 @@ if __name__ == '__main__':
     ocv_down = make_data(data_down)
     ocv_up = make_data(data_up)
 
+    plt.figure(figsize=(15, 13))
+    for row_up in ocv_up:
+        if max(row_up['time']) > 950:
+            plt.plot(row_up['time'], row_up['voltage'], '-o')
+    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=4)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Voltage (V)')
+
     # plotting all curves in same plot. Inspiration from matplotlib,
     # section "legend guide"
     # plt.figure(figsize=(15, 13))
@@ -100,12 +102,4 @@ if __name__ == '__main__':
     #     plt.plot(row_up['time'], row_up['voltage'], '-o')
     # plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
     #            borderaxespad=0, prop={'size': 13})
-
-    plt.figure(figsize=(15, 13))
-    for row_up in ocv_up:
-        if max(row_up['time']) > 950:
-            plt.plot(row_up['time'], row_up['voltage'], '-o')
-    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=4)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Voltage (V)')
     plt.show()
