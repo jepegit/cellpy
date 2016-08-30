@@ -3,7 +3,7 @@
 """
 Simulation of utils
 """
-
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,15 +14,15 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 if __name__ == '__main__':
-    # had to use r'system path to file' to read the csv. Don't know why,
-    # but that's how it is right now...
-    data_down = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University '
-                            r'of Life '
-                            r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils\data\20160805_sic006_45_cc_01_ocvrlx_down.csv',
-                            sep=';')
-    data_up = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University '
-                          r'of Life Sciences\Documents\NMBU\master\ife\python\cellpy\utils\data\20160805_sic006_45_cc_01_ocvrlx_up.csv',
-                          sep=';')
+    datafolder = r'.\data'   # make sure you're in folder \utils. If not,
+    # activate os.getcwd() to find current folder and extend datafolder until
+    #  [.]\utils\data
+    filename_down = r'20160805_sic006_45_cc_01_ocvrlx_down.csv'
+    filename_up = r'20160805_sic006_45_cc_01_ocvrlx_up.csv'
+    down = os.path.join(datafolder, filename_down)
+    up = os.path.join(datafolder, filename_up)
+    data_down = pd.read_csv(down, sep=';')
+    data_up = pd.read_csv(up, sep=';')
 
     # need to separate time and voltage so
     # they can be plotted together as y(x)
