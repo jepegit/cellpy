@@ -20,14 +20,15 @@ class Cell(object):
     information about the cell.
     """
 
-    def __init__(self, data, time, v0, v_ir, i_ir, r_ir):
+    def __init__(self, time, voltage, v_ir, i_ir, v_start, i_start):
         """
         :param data: observed open circuit voltage (ocv) data in pandas
         :type data: dict
         """
-        self._data = data
         self._time = time
-        self._v0 = v0
+        self._voltage = voltage
+        self._v_s = self._voltage[0]   # Before IR-drop
+
         self._c_ct = 0
         self._r_ct = 0
         self._c_d = 0
@@ -36,7 +37,7 @@ class Cell(object):
         self._v_d = 0
         self._v_ir = v_ir
         self._i_ir = i_ir
-        self._r_ir = r_ir
+        self._r_ir = self._v_ir/self._i_ir
 
     def tau(self, r, c, slope):
         """
