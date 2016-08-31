@@ -69,12 +69,13 @@ class Cell(object):
         self._v_ct_0, self._v_d_0
         :return: None
         """
+        self._v_ct_0 = self._v_0 * (self._r_ct / (self._r_ct + self._r_d))
+        self._v_d_0 = self._v_0 * (self._r_d / (self._r_ct + self._r_d))
+
         tau_ct = self.tau(self._v_ct_0, self._v_ct, None, None, None)
         tau_d = self.tau(self._v_d_0, self._v_d, None, None, None)
         self._c_ct = tau_ct / self._r_ct
         self._c_d = tau_d / self._r_d
-        self._v_ct_0 = self._v_0 * (self._r_ct / (self._r_ct + self._r_d))
-        self._v_d_0 = self._v_0 * (self._r_d / (self._r_ct + self._r_d))
 
 
     def relaxation_rc(self, v0, r, c, slope=None):
@@ -93,7 +94,7 @@ class Cell(object):
         else:
             modify = 0
         return v0 * (modify + math.exp(-self._time
-                                       / self.tau(slope, r, c)))
+                                       / self.tau(None, None,  r, c, slope)))
 
     def ocv_relax_cell(self, slope_d=None, slope_ct=None):
         """
@@ -103,9 +104,9 @@ class Cell(object):
         """
         self.initial_conditions()
         voltage_d = self.relaxation_rc(self._v_d_0, self._r_d, self._c_d,
-                                       slope_d)
+                                       slope_d)   # This is self._v_d
         voltage_ct = self.relaxation_rc(self._v_ct_0, self._r_ct, self._c_ct,
-                                        slope_ct)
+                                        slope_ct)   # This is self._v_ct
         self._v_0 = voltage_d + voltage_ct + self.ocv
 
     def guess(self):
