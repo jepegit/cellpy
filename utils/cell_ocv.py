@@ -20,26 +20,30 @@ class Cell(object):
     information about the cell.
     """
 
-    def __init__(self, time, voltage, v_ir, i_ir, v_start, i_start):
+    def __init__(self, time, voltage, v_start, i_start):
         """
         :param data: observed open circuit voltage (ocv) data in pandas
         :type data: dict
         """
         self._time = time
         self._voltage = voltage
-        self._v_s = self._voltage[0]   # Before IR-drop
+        self.ocv = self._voltage[-1]
+        self._v_cut = v_start   # Before IR-drop, cut-off voltage
+        self._i_cut = i_start   # current before cut-off. Will make IR-drop
+        self._v_0 = self._voltage[0]  # self._v_start - self._v_ir   # After
+        # IR-drop (over v_ct + v_d + ocv)
+        self._v_rlx = self._v_0 - self.ocv   # This is the relaxation curve
+        # over v_ct + v_d
+        self._v_ir = abs(self._v_cut - self._v_0)   # cut-off voltage - v_0
+        self._r_ir = self._v_ir / self._i_cut
+        self._r_ct = self._v_ct / self._i_cut   # v_ct = f(v_rlx)(= v_rlx * x)
+        self._r_d = self._v_d / self._i_cut   # v_d = f(v_rlx)
+        self._c_ct = None
+        self._c_d = None
+        self._v_ct_0 = None
+        self._v_d_0 = None
 
-        self._c_ct = 0
-        self._r_ct = 0
-        self._c_d = 0
-        self._r_d = 0
-        self._v_ct = 0
-        self._v_d = 0
-        self._v_ir = v_ir
-        self._i_ir = i_ir
-        self._r_ir = self._v_ir/self._i_ir
-
-    def tau(self, r, c, slope):
+    def tau(self, v_rc_0, v_rc, r, c, slope):
         """
         Calculate the time constant based on which resistance and capacitance
         it receives.
@@ -49,52 +53,60 @@ class Cell(object):
         :return: self._slope * self._time + r * c
         """
         if slope:
+            # return tau_measured = slope * self._time + abs(self._time[-1] /
+            # math.log(v_rc_0/v_rc[-1]))
             return slope * self._time + r * c
         else:
+            # return tau_measured = abs(self._time[-1] / math.log(
+            # v_rc_0/v_rc[-1]))
             return r * c
 
     def initial_conditions(self):
         """
-        Calculate the initial conditions with given internal resistance
-        parameters. Saves the initial conditions in instances.
-        instances that will be calculated:
-        self._c_ct, self._r_ct, self._c_d, self._r_d, self._v_ct, self._v_d,
-        self._ocv
-        :param v_ir: voltage drop over internal resistance at start of OC [V]
-        :param i_ir: current drop through internal resistance at start of OC [A]
-        :param r_ir: internal resistance at start of OC [ohm]
+        Calculate the parameters and initial conditions. Saves the
+        calculations in instances. instances that will be calculated:
+        self._r_ir, self._c_ct, self._r_ct, self._c_d, self._r_d,
+        self._v_ct_0, self._v_d_0
         :return: None
         """
-        pass
+        tau_ct = self.tau(self._v_ct_0, self._v_ct, None, None, None)
+        tau_d = self.tau(self._v_d_0, self._v_d, None, None, None)
+        self._c_ct = tau_ct / self._r_ct
+        self._c_d = tau_d / self._r_d
+        self._v_ct_0 = self._v_0 * (self._r_ct / (self._r_ct + self._r_d))
+        self._v_d_0 = self._v_0 * (self._r_d / (self._r_ct + self._r_d))
 
-    def relaxation_rc(self, r, c, slope):
+
+    def relaxation_rc(self, v0, r, c, slope=None):
         """
-        Calculate the relaxation function with a given point in time, self.time
-        initiate self.initial_conditions(self._start_volt, self._start_cur,
-        self._start_res)   # Not sure about the parameters here...
+        Calculate the relaxation function with a np.array of time, self.time
         Make a local constant, modify (for modifying a rc-circuit so that
         guessing is easier).
         modify = -self._start_volt * exp(-1. / self._slope)
         if self._slope of self.tau() is 0, then -exp(-1./self._slope) = 0
+        :param v0: the initial voltage across the rc-circuit at t = 0,
+        i.e. v_ct_0
         :return: self._start_volt(modify + exp(-self._time / self.tau()))
         """
         if slope:
-            modify = -self._v0 * math.exp(-1. / slope)
+            modify = -self._v_0 * math.exp(-1. / slope)
         else:
             modify = 0
-        return self._v0 * (modify + math.exp(-self._time
-                                             / self.tau(slope, r, c)))
+        return v0 * (modify + math.exp(-self._time
+                                       / self.tau(slope, r, c)))
 
-    def ocv_relax_cell(self):
+    def ocv_relax_cell(self, slope_d=None, slope_ct=None):
         """
         To use self.relaxation_rc() for calculating complete ocv relaxation
         over the cell. Initiate intial conditions
-        :return: voltage_d + voltage_ct + voltage_ocv (initial?) (+ v_ir?)
+        :return: self._v_0 =  voltage_d + voltage_ct + voltage_ocv
         """
-        slope_d, slope_ct = self.initial_conditions()
-        voltage_d = self.relaxation_rc(self._r_d, self._c_d, slope_d)
-        voltage_ct = self.relaxation_rc(self._r_ct, self._c_ct, slope_ct)
-        return voltage_d + voltage_ct + self._v_ir
+        self.initial_conditions()
+        voltage_d = self.relaxation_rc(self._v_d_0, self._r_d, self._c_d,
+                                       slope_d)
+        voltage_ct = self.relaxation_rc(self._v_ct_0, self._r_ct, self._c_ct,
+                                        slope_ct)
+        self._v_0 = voltage_d + voltage_ct + self.ocv
 
     def guess(self):
         """
