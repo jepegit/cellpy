@@ -78,7 +78,12 @@ if __name__ == '__main__':
                                                                       ]))
         return sorted_data
     sort_down = make_data(data_down)
-    sort_up = make_data(data_up[])
+    sort_up = make_data(data_up)
+    # make sort into a pandas dataframe with number of cycles as columns
+    # Then it should be easier to extract data from sort
+    sort_up[:1].loc['time'][-1:-3] = sort_up[:1].loc['time'][-4]
+    sort_up[:1].loc['voltage'][-1:-3] = sort_up[:1].loc['voltage'][-4]
+    print sort_up
     v_start_down = 1   # all start are taken from fitting_ocv_003.py
     v_start_up = 0.05
     i_start = 0.000751
@@ -88,7 +93,7 @@ if __name__ == '__main__':
     pcov_down = np.zeros(len(sort_down))
     popt_up = np.zeros(len(sort_up))
     pcov_up = np.zeros(len(sort_up))
-    print sort_up[0]['voltage']
+    # print sort_up[0]['voltage']
 
     # down does not have good enough values yet... When own measurements are
     # done, activate this again.
