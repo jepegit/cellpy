@@ -20,24 +20,32 @@ class Cell(object):
     information about the cell.
     """
 
-    def __init__(self, time, voltage, v_start, i_start):
+    def __init__(self, time, voltage, v_start, i_start, c_cap, c_rate,
+                 contribute):
         """
         :param data: observed open circuit voltage (ocv) data in pandas
         :type data: dict
         """
         self._time = time
         self._voltage = voltage
-        self.ocv = self._voltage[-1]
         self._v_cut = v_start   # Before IR-drop, cut-off voltage
         self._i_cut = i_start   # current before cut-off. Will make IR-drop
+        self._c_cap = c_cap
+        self._c_rate = c_rate
+        self._contribute = contribute
+        self.ocv = self._voltage[-1]
         self._v_0 = self._voltage[0]  # self._v_start - self._v_ir   # After
         # IR-drop (over v_ct + v_d + ocv)
         self._v_rlx = self._v_0 - self.ocv   # This is the relaxation curve
         # over v_ct + v_d
         self._v_ir = abs(self._v_cut - self._v_0)   # cut-off voltage - v_0
         self._r_ir = self._v_ir / self._i_cut
-        self._r_ct = self._v_ct / self._i_cut   # v_ct = f(v_rlx)(= v_rlx * x)
-        self._r_d = self._v_d / self._i_cut   # v_d = f(v_rlx)
+        # self._r_ct = self._v_ct / self._i_cut   # v_ct = f(v_rlx)(= v_rlx * x)
+        # self._r_d = self._v_d / self._i_cut   # v_d = f(v_rlx)
+        self._v_ct = None
+        self._v_d = None
+        self._r_ct = None
+        self._r_d = None
         self._c_ct = None
         self._c_d = None
         self._v_ct_0 = None
@@ -60,6 +68,27 @@ class Cell(object):
             # return tau_measured = abs(self._time[-1] / math.log(
             # v_rc_0/v_rc[-1]))
             return r * c
+
+    def guessing_parameters(self):
+        """
+        Guessing likely parameters that will fit best to the measured data.
+        These guessed parameters are to be used when fitting a curve to
+        measured data.
+        :return: None
+        """
+        # Say we know v_0 (after IR-drop). We also know C_cap and C_rate (
+        # whatever they are). I have to assume that the charge-transfer rate
+        # is 0.2 times the voltage across the relaxation circuits (0.2 is an
+        # example of what self._contribute is guessed to be). So 0.2 *
+        # self._v_rlx (which is self._v_0 - self.ocv. This means that 1-0.2 =
+        #  0.8 times v_rlx is from the diffusion part.
+        self._v_ct = self._v_rlx * self._contribute
+        self._v_d = self._v_rlx * (1 - self._contribute)
+        
+
+
+
+
 
     def initial_conditions(self):
         """
