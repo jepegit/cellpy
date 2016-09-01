@@ -20,7 +20,7 @@ class Cell(object):
     information about the cell.
     """
 
-    def __init__(self, time, voltage, v_start, i_start, contribute, slope=None):
+    def __init__(self, time, voltage, v_start, i_start, contribute, slope):
         """
         :param time: array with measured time values
         :param voltage: array with measured voltage values
@@ -47,18 +47,18 @@ class Cell(object):
         # =self._i_cut
         # self._c_rate = c_rate
         self._contribute = contribute
-        if not self._slope:
+        if not slope:
             self._slope = {'d': None, 'ct': None}
         else:
             self._slope = slope
 
         self.ocv = self._voltage[-1]
-        self._v_0 = self._voltage[0]  # self._v_start - self._v_ir   # After
+        self.v_0 = self._voltage[0]  # self._v_start - self._v_ir   # After
         # IR-drop (over v_ct + v_d + ocv)
-        self._v_rlx = self._v_0 - self.ocv   # This is the relaxation curve
+        self._v_rlx = self.v_0 - self.ocv   # This is the relaxation curve
         # over v_ct + v_d
-        self._v_ir = abs(self._v_cut - self._v_0)   # cut-off voltage - v_0
-        self._r_ir = self._v_ir / self._i_cut
+        self.v_ir = abs(self._v_cut - self.v_0)   # cut-off voltage - v_0
+        self.r_ir = self.v_ir / self._i_cut
         # self._r_ct = self._v_ct / self._i_cut   # v_ct = f(v_rlx)(= v_rlx * x)
         # self._r_d = self._v_d / self._i_cut   # v_d = f(v_rlx)
 
@@ -101,17 +101,17 @@ class Cell(object):
         # whatever they are). I have to assume that the charge-transfer rate
         # is 0.2 times the voltage across the relaxation circuits (0.2 is an
         # example of what self._contribute is guessed to be). So 0.2 *
-        # self._v_rlx (which is self._v_0 - self.ocv. This means that 1-0.2 =
+        # self._v_rlx (which is self.v_0 - self.ocv. This means that 1-0.2 =
         #  0.8 times v_rlx is from the diffusion part.
         self.v_ct = self._v_rlx * self._contribute
         self.v_d = self._v_rlx * (1 - self._contribute)
         self.r_ct = self.v_ct / self._i_cut
         self.r_d = self.v_d / self._i_cut
         # alt.
-        # self._r_d = self._v_cut / self._i_cut - self._r_ct - self._r_ir
+        # self.r_d = self.v_cut / self.i_cut - self.r_ct - self.r_ir
 
-        self.v_ct_0 = self._v_0 * (self.r_ct / (self.r_ct + self.r_d))
-        self.v_d_0 = self._v_0 * (self.r_d / (self.r_ct + self.r_d))
+        self.v_ct_0 = self.v_0 * (self.r_ct / (self.r_ct + self.r_d))
+        self.v_d_0 = self.v_0 * (self.r_d / (self.r_ct + self.r_d))
 
         tau_ct = self.tau(self.v_ct_0, self.v_ct, None, None, self._slope['ct'])
         tau_d = self.tau(self.v_d_0, self.v_d, None, None, self._slope['d'])
@@ -134,7 +134,7 @@ class Cell(object):
         :type: Numpy array with relax data with same length as self._time
         """
         if slope:
-            modify = -self._v_0 * math.exp(-1. / slope)
+            modify = -self.v_0 * math.exp(-1. / slope)
         else:
             modify = 0
         return v0 * (modify + math.exp(-self._time
@@ -144,25 +144,13 @@ class Cell(object):
         """
         To use self.relaxation_rc() for calculating complete ocv relaxation
         over the cell. Guessing parameters
-        :return: self._v_0 =  voltage_d + voltage_ct + voltage_ocv
+        :return: self.v_0 =  voltage_d + voltage_ct + voltage_ocv
         """
-        self.guessing_parameters()
-
-        # This is self._v_d
+        # This is self.v_d
         voltage_d = self.relaxation_rc(self.v_d_0, self.r_d, self.c_d,
                                        self._slope['d'])
-        # This is self._v_ct
+        # This is self.v_ct
         voltage_ct = self.relaxation_rc(self.v_ct_0, self.r_ct, self.c_ct,
                                         self._slope['ct'])
-        # basically return the same as self._v_0 is suppose to be...
+        # basically return the same as self.v_0 is suppose to be...
         return voltage_d + voltage_ct + self.ocv
-
-    def fitting(self):
-        """
-        Using measured data and scipy's "curve_fit" (non-linear least square,
-        check it up with "curve_fit?" in console) to find the best fitted ocv
-        relaxation curve.
-        :return: dictionary of best fitted parameters and error between
-        measured data and the fitting.
-        """
-        pass
