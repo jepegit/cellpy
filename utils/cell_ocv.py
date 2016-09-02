@@ -7,7 +7,6 @@ Adaption of OCV-relaxation data.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import math
 import os
 from scipy.optimize import curve_fit
 
@@ -56,12 +55,13 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
 
     r_ct = v_ct / i_start
     r_d = v_d / i_start
-    r_ir = (v_start - v_0) / i_start - r_ct - r_d
+    # r_ir = (v_start - v_0) / i_start - r_ct - r_d
 
     c_ct = tau_ct / r_ct
     c_d = tau_d / r_d
-    return {'r_ct': r_ct, 'r_d': r_d, 'r_ir': r_ir, 'c_ct': c_ct, 'c_d': c_d,
-            'v_0': v_0, 'ocv': ocv}
+
+    return {'r_ct': r_ct, 'r_d': r_d, 'c_ct': c_ct, 'c_d': c_d, 'v_0': v_0,
+            'ocv': ocv}
 
 
 def relaxation_rc(time, v0, r, c, slope):
@@ -81,11 +81,11 @@ def relaxation_rc(time, v0, r, c, slope):
     :type: Numpy array with relax data with same length as self._time
     """
     if slope:
-        modify = np.array([(-v0 * math.exp(-1. / slope)) for _ in range(len(
+        modify = np.array([(-v0 * np.exp(-1. / slope)) for _ in range(len(
             time))])
     else:
         modify = np.zeros(len(time))
-    return v0 * (modify + math.exp(-time / tau(time, r, c, slope)))
+    return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
 
 
 def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
@@ -99,7 +99,6 @@ def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
         m = {'d': None, 'ct': None}
     else:
         m = slope
-
     v_d_0 = v_0 * r_d / (r_ct + r_d)   # start voltage across diffusion circuit
     v_ct_0 = v_0 * r_ct / (r_ct + r_d)   # start voltage across charge-transfer
 
@@ -111,13 +110,11 @@ def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
     voltage_ct = relaxation_rc(time, v_ct_0, r_ct, c_ct, m['ct'])
     return voltage_d + voltage_ct + ocv
 
-    # basically return the same as self.v_0 as t > 0
-
 
 def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
             err=None, slope=None):
     """
-    Using measured data and scipy's "curve_fit" (non-linear least square,
+    Using measured data and SciPy's "curve_fit" (non-linear least square,
     check it up with "curve_fit?" in console) to find the best fitted ocv
     relaxation curve.
     :return: dictionary of best fitted parameters and error between
@@ -131,8 +128,8 @@ def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
     # where perr is of course "parameters error"
     guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
                                        tau_ct, tau_d)
-    guess = [value for _, value in guessed_prms.items()]
-    ocv_relax_func(time, *guess)
+    guess = [value for key, value in guessed_prms.items()]
+    print guess
     return curve_fit(ocv_relax_func, time, voltage, p0=guess,
                      sigma=err)
 
@@ -227,7 +224,6 @@ if __name__ == '__main__':
                     np.array(sort_up[cycle_up][:]['voltage']),
                     v_start_up, i_cut_off, contri, tau_ct_guess, tau_d_guess)
     print popt_up[0]
-
 
 
     def define_legends():
