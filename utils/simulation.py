@@ -79,11 +79,29 @@ if __name__ == '__main__':
         return sorted_data
     sort_down = make_data(data_down)
     sort_up = make_data(data_up)
-    # make sort into a pandas dataframe with number of cycles as columns
-    # Then it should be easier to extract data from sort
-    sort_up[:1].loc['time'][-1:-3] = sort_up[:1].loc['time'][-4]
-    sort_up[:1].loc['voltage'][-1:-3] = sort_up[:1].loc['voltage'][-4]
-    print sort_up
+    sort_up_df = pd.Series(sort_up)
+
+    sort_up_df.iloc[0]['time'].iloc[-1] = sort_up_df.iloc[:2]['time'].iloc[-3]
+    sort_up_df.iloc[1]['time'].iloc[-1] = sort_up_df.iloc[:2]['time'].iloc[-3]
+    sort_up_df.iloc[0]['time'].iloc[-2] = sort_up_df.iloc[:2]['time'].iloc[-3]
+    sort_up_df.iloc[1]['time'].iloc[-2] = sort_up_df.iloc[:2]['time'].iloc[-3]
+
+    sort_up_df.iloc[0]['voltage'].iloc[-1] = sort_up_df.iloc[:2][
+        'voltage'].iloc[-3]
+    sort_up_df.iloc[1]['voltage'].iloc[-1] = sort_up_df.iloc[:2][
+        'voltage'].iloc[-3]
+    sort_up_df.iloc[0]['voltage'].iloc[-2] = sort_up_df.iloc[:2][
+        'voltage'].iloc[-3]
+    sort_up_df.iloc[1]['voltage'].iloc[-2] = sort_up_df.iloc[:2][
+        'voltage'].iloc[-3]
+
+
+    sort_up_df.iloc[:2]['time'].iloc[-2] = sort_up_df.iloc[:2]['time'].iloc[-3]
+    sort_up_df.iloc[:2]['voltage'].iloc[-1] = sort_up_df.iloc[:2][
+        'voltage'].iloc[-3]
+    sort_up_df.iloc[:2]['voltage'].iloc[-2] = sort_up_df.iloc[:2][
+        'voltage'].iloc[-3]
+    print sort_up_df.iloc[0]
     v_start_down = 1   # all start are taken from fitting_ocv_003.py
     v_start_up = 0.05
     i_start = 0.000751
