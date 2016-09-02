@@ -34,8 +34,7 @@ def tau(time, r, c, slope):
         return r * c
 
 
-def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct,
-                        tau_d):
+def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
     """
     Guessing likely parameters that will fit best to the measured data.
     These guessed parameters are to be used when fitting a curve to
@@ -62,7 +61,7 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct,
     c_ct = tau_ct / r_ct
     c_d = tau_d / r_d
     return {'r_ct': r_ct, 'r_d': r_d, 'r_ir': r_ir, 'c_ct': c_ct, 'c_d': c_d,
-            'ocv': ocv, 'v_0': v_0}
+            'v_0': v_0, 'ocv': ocv}
 
 
 def relaxation_rc(time, v0, r, c, slope):
@@ -89,7 +88,7 @@ def relaxation_rc(time, v0, r, c, slope):
     return v0 * (modify + math.exp(-time / tau(time, r, c, slope)))
 
 
-def ocv_relax_func(self, time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
+def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
     """
     To use self.relaxation_rc() for calculating complete ocv relaxation
     over the cell. Guessing parameters
@@ -108,8 +107,8 @@ def ocv_relax_func(self, time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
 
-    voltage_d = self.relaxation_rc(time, v_d_0, r_d, c_d, m['d'])
-    voltage_ct = self.relaxation_rc(time, v_ct_0, r_ct, c_ct, m['ct'])
+    voltage_d = relaxation_rc(time, v_d_0, r_d, c_d, m['d'])
+    voltage_ct = relaxation_rc(time, v_ct_0, r_ct, c_ct, m['ct'])
     return voltage_d + voltage_ct + ocv
 
     # basically return the same as self.v_0 as t > 0
@@ -130,8 +129,11 @@ def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
     #  the variance of popt on the diagonal. To get the standard
     # derivation errors, compute: perr = np.sqrt(diag(pcov)),
     # where perr is of course "parameters error"
-    guessed_prms = guessing_parameters(tau_ct, tau_d)
-    return curve_fit(ocv_relax_func(), time, voltage, p0=,
+    guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
+                                       tau_ct, tau_d)
+    guess = [value for _, value in guessed_prms.items()]
+    ocv_relax_func(time, *guess)
+    return curve_fit(ocv_relax_func, time, voltage, p0=guess,
                      sigma=err)
 
 
