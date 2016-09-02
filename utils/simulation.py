@@ -14,7 +14,8 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-def fitting(time, voltage, vstart, istart, contribute, err=None, slope=None):
+def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
+            err=None, slope=None):
     """
     Using measured data and scipy's "curve_fit" (non-linear least square,
     check it up with "curve_fit?" in console) to find the best fitted ocv
@@ -29,7 +30,7 @@ def fitting(time, voltage, vstart, istart, contribute, err=None, slope=None):
     # derivation errors, compute: perr = np.sqrt(diag(pcov)),
     # where perr is of course "parameters error"
     cell = Cell(time, voltage, vstart, istart, contribute, slope)
-    cell.guessing_parameters()
+    cell.guessing_parameters(tau_ct, tau_d)
     params = [cell.v_0, cell.ocv, cell.r_ct, cell.r_d, cell.r_ir, cell.c_ct,
               cell.c_d]
     return curve_fit(cell.ocv_relax_func(), time, voltage, p0=params,
@@ -100,6 +101,9 @@ if __name__ == '__main__':
     v_start_up = 0.05
     i_start = 0.000751
     contri = 0.2   # taken from "x" in fitting_ocv_003.py, func. GuessRC2
+    # print np.array(sort_up[0][:]['voltage'])[-1]
+    tau_ct_guess = 10
+    tau_d_guess = 600
 
     popt_down = np.zeros(len(sort_down))
     pcov_down = np.zeros(len(sort_down))
@@ -121,7 +125,7 @@ if __name__ == '__main__':
         popt_down[cycle_up], pcov_down[cycle_up] =\
             fitting(np.array(sort_up[cycle_up][:]['time']),
                     np.array(sort_up[cycle_up][:]['voltage']),
-                    v_start_up, i_start, contri)
+                    v_start_up, i_start, contri, tau_ct_guess, tau_d_guess)
     print popt_up[0]
 
 

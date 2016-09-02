@@ -72,7 +72,7 @@ class Cell(object):
         self.v_ct_0 = None
         self.v_d_0 = None
 
-    def tau(self, v_rc_0, v_rc, r, c, slope):
+    def tau(self, r, c, slope):
         """
         Calculate the time constant based on which resistance and capacitance
         it receives.
@@ -82,14 +82,14 @@ class Cell(object):
         :return: self._slope * self._time + r * c
         """
         if slope:
-            return slope * self._time + abs(self._time[-1] /
-            math.log(v_rc_0/v_rc[-1]))
-            # return slope * self._time + r * c
+            # return slope * self._time + abs(self._time[-1] /
+            # math.log(v_rc_0/v_rc[-1]))
+            return slope * self._time + r * c
         else:
-            return abs(self._time[-1] / math.log(v_rc_0/v_rc[-1]))
-            # return r * c
+            # return abs(self._time[-1] / math.log(v_rc_0/v_rc[-1]))
+            return r * c
 
-    def guessing_parameters(self):
+    def guessing_parameters(self, tau_ct, tau_d):
         """
         Guessing likely parameters that will fit best to the measured data.
         These guessed parameters are to be used when fitting a curve to
@@ -106,18 +106,20 @@ class Cell(object):
         self.v_d = self._v_rlx * (1 - self._contribute)
         self.r_ct = self.v_ct / self._i_cut
         self.r_d = self.v_d / self._i_cut
+
         # alt.
         # self.r_d = self.v_cut / self.i_cut - self.r_ct - self.r_ir
 
         self.v_ct_0 = self.v_0 * (self.r_ct / (self.r_ct + self.r_d))
         self.v_d_0 = self.v_0 * (self.r_d / (self.r_ct + self.r_d))
 
-        tau_ct = self.tau(self.v_ct_0, self.v_ct, None, None, self._slope['ct'])
-        tau_d = self.tau(self.v_d_0, self.v_d, None, None, self._slope['d'])
+        # tau_ct = self.tau(self.v_ct_0, self.v_ct, None, None, self._slope['ct'])
+        # tau_d = self.tau(self.v_d_0, self.v_d, None, None, self._slope['d'])
+
         self.c_ct = tau_ct / self.r_ct
         self.c_d = tau_d / self.r_d
 
-    def relaxation_rc(self, v0, r, c, slope):
+    def relaxation_rc(self, time, v0, r, c, slope):
         """
         Calculate the relaxation function with a np.array of time, self._time
         Make a local constant, modify (for modifying a rc-circuit so that
@@ -136,8 +138,8 @@ class Cell(object):
             modify = -self.v_0 * math.exp(-1. / slope)
         else:
             modify = 0
-        return v0 * (modify + math.exp(-self._time
-                                       / self.tau(None, None,  r, c, slope)))
+        return v0 * (modify + math.exp(-time
+                                       / self.tau(r, c, slope)))
 
     def ocv_relax_func(self):
         """
@@ -145,11 +147,12 @@ class Cell(object):
         over the cell. Guessing parameters
         :return: self.v_0 =  voltage_d + voltage_ct + voltage_ocv
         """
-        # This is self.v_d
-        voltage_d = self.relaxation_rc(self.v_d_0, self.r_d, self.c_d,
+        v_0 = np.zeros(len(self._time))
+        for index, time in np.ndenumerate(self._time):
+            voltage_d = self.relaxation_rc(time, self.v_d_0, self.r_d, self.c_d,
                                        self._slope['d'])
-        # This is self.v_ct
-        voltage_ct = self.relaxation_rc(self.v_ct_0, self.r_ct, self.c_ct,
-                                        self._slope['ct'])
-        # basically return the same as self.v_0 is suppose to be...
-        return voltage_d + voltage_ct + self.ocv
+            voltage_ct = self.relaxation_rc(time, self.v_ct_0, self.r_ct,
+                                            self.c_ct, self._slope['ct'])
+            v_0[index] = voltage_d + voltage_ct + self.ocv
+        return v_0
+        # basically return the same as self.v_0 as t > 0
