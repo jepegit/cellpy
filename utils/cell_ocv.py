@@ -48,7 +48,13 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
     #  0.8 times v_rlx is from the diffusion part.
     ocv = voltage[-1]
     v_0 = voltage[0]
-    v_rlx = v_0 - ocv
+    if v_0 > ocv:
+        # relaxing downwards
+        v_rlx = v_0 - ocv
+
+    else:
+        # relaxing upwards
+        v_rlx = ocv - v_0
 
     v_ct = v_rlx * contribute
     v_d = v_rlx * (1 - contribute)
@@ -130,9 +136,8 @@ def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
                                        tau_ct, tau_d)
     guess = [value for key, value in guessed_prms.items()]
     print guess
-    return curve_fit(ocv_relax_func, time, voltage, p0=guess,
-                     sigma=err)
-
+    popt, pcov = curve_fit(ocv_relax_func, time, voltage, p0=guess, sigma=err)
+    return popt, pcov
 
 if __name__ == '__main__':
     datafolder = r'.\data'   # make sure you're in folder \utils. If not,
@@ -194,18 +199,19 @@ if __name__ == '__main__':
     sort_up.loc[:1][1]['voltage'].iloc[-1] = sort_up.loc[:1][1][
         'voltage'].iloc[-3]
 
-    v_start_down = 1   # all start are taken from fitting_ocv_003.py
-    v_start_up = 0.05
-    i_cut_off = 0.000751
+    v_start_down = 1.   # all start are taken from fitting_ocv_003.py
+    v_start_up = 0.009
+    i_cut_off = 0.00076
+    # i_cut_off = 0.000751
     contri = 0.2   # taken from "x" in fitting_ocv_003.py, func. GuessRC2
     # print np.array(sort_up[0][:]['voltage'])[-1]
     tau_ct_guess = 10
-    tau_d_guess = 600
+    tau_d_guess = 300
 
-    popt_down = np.zeros(len(sort_down))
-    pcov_down = np.zeros(len(sort_down))
-    popt_up = np.zeros(len(sort_up))
-    pcov_up = np.zeros(len(sort_up))
+    popt_down = []
+    pcov_down = []
+    popt_up = []
+    pcov_up = []
 
     # down does not have good enough values yet... When own measurements are
     # done, activate this again.
@@ -218,12 +224,16 @@ if __name__ == '__main__':
     #                                                            ['voltage'],
     #                                                            v_start_down,
     #                                                            i_start, contri)
-    for cycle_up in range(3):
-        popt_down[cycle_up], pcov_down[cycle_up] =\
+    for cycle_up in range(2):
+        optimal, covariance =\
             fitting(np.array(sort_up[cycle_up][:]['time']),
                     np.array(sort_up[cycle_up][:]['voltage']),
                     v_start_up, i_cut_off, contri, tau_ct_guess, tau_d_guess)
-    print popt_up[0]
+        popt_up.append(optimal)
+        pcov_up.append(covariance)
+        print popt_up[cycle_up]
+        print np.diag(np.sqrt(pcov_up[cycle_up]))
+        print '======================='
 
 
     def define_legends():
