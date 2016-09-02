@@ -82,13 +82,12 @@ class Cell(object):
         :return: self._slope * self._time + r * c
         """
         if slope:
-            # return tau_measured = slope * self._time + abs(self._time[-1] /
-            # math.log(v_rc_0/v_rc[-1]))
-            return slope * self._time + r * c
+            return slope * self._time + abs(self._time[-1] /
+            math.log(v_rc_0/v_rc[-1]))
+            # return slope * self._time + r * c
         else:
-            # return tau_measured = abs(self._time[-1] / math.log(
-            # v_rc_0/v_rc[-1]))
-            return r * c
+            return abs(self._time[-1] / math.log(v_rc_0/v_rc[-1]))
+            # return r * c
 
     def guessing_parameters(self):
         """

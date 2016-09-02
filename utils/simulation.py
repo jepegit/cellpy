@@ -76,32 +76,26 @@ if __name__ == '__main__':
             sorted_data.append(pd.DataFrame(zip(time, volt), columns=['time',
                                                                       'voltage'
                                                                       ]))
-        return sorted_data
+        return pd.Series(sorted_data)
+
     sort_down = make_data(data_down)
     sort_up = make_data(data_up)
-    sort_up_df = pd.Series(sort_up)
 
-    sort_up_df.iloc[0]['time'].iloc[-1] = sort_up_df.iloc[:2]['time'].iloc[-3]
-    sort_up_df.iloc[1]['time'].iloc[-1] = sort_up_df.iloc[:2]['time'].iloc[-3]
-    sort_up_df.iloc[0]['time'].iloc[-2] = sort_up_df.iloc[:2]['time'].iloc[-3]
-    sort_up_df.iloc[1]['time'].iloc[-2] = sort_up_df.iloc[:2]['time'].iloc[-3]
+    # setting NaN (very manually) to be the last real number
+    sort_up.loc[:1][0]['time'].iloc[-2] = sort_up.loc[:1][0]['time'].iloc[-3]
+    sort_up.loc[:1][0]['time'].iloc[-1] = sort_up.loc[:1][0]['time'].iloc[-3]
+    sort_up.loc[:1][1]['time'].iloc[-2] = sort_up.loc[:1][1]['time'].iloc[-3]
+    sort_up.loc[:1][1]['time'].iloc[-1] = sort_up.loc[:1][1]['time'].iloc[-3]
 
-    sort_up_df.iloc[0]['voltage'].iloc[-1] = sort_up_df.iloc[:2][
+    sort_up.loc[:1][0]['voltage'].iloc[-2] = sort_up.loc[:1][0][
         'voltage'].iloc[-3]
-    sort_up_df.iloc[1]['voltage'].iloc[-1] = sort_up_df.iloc[:2][
+    sort_up.loc[:1][0]['voltage'].iloc[-1] = sort_up.loc[:1][0][
         'voltage'].iloc[-3]
-    sort_up_df.iloc[0]['voltage'].iloc[-2] = sort_up_df.iloc[:2][
+    sort_up.loc[:1][1]['voltage'].iloc[-2] = sort_up.loc[:1][1][
         'voltage'].iloc[-3]
-    sort_up_df.iloc[1]['voltage'].iloc[-2] = sort_up_df.iloc[:2][
+    sort_up.loc[:1][1]['voltage'].iloc[-1] = sort_up.loc[:1][1][
         'voltage'].iloc[-3]
 
-
-    sort_up_df.iloc[:2]['time'].iloc[-2] = sort_up_df.iloc[:2]['time'].iloc[-3]
-    sort_up_df.iloc[:2]['voltage'].iloc[-1] = sort_up_df.iloc[:2][
-        'voltage'].iloc[-3]
-    sort_up_df.iloc[:2]['voltage'].iloc[-2] = sort_up_df.iloc[:2][
-        'voltage'].iloc[-3]
-    print sort_up_df.iloc[0]
     v_start_down = 1   # all start are taken from fitting_ocv_003.py
     v_start_up = 0.05
     i_start = 0.000751
@@ -111,7 +105,6 @@ if __name__ == '__main__':
     pcov_down = np.zeros(len(sort_down))
     popt_up = np.zeros(len(sort_up))
     pcov_up = np.zeros(len(sort_up))
-    # print sort_up[0]['voltage']
 
     # down does not have good enough values yet... When own measurements are
     # done, activate this again.
@@ -124,14 +117,12 @@ if __name__ == '__main__':
     #                                                            ['voltage'],
     #                                                            v_start_down,
     #                                                            i_start, contri)
-    for cycle_up in range(0, len(sort_up)):
-        popt_down[cycle_up], pcov_down[cycle_up] = fitting(sort_up[cycle_up]
-                                                           ['time'],
-                                                           sort_up[cycle_up]
-                                                           ['voltage'],
-                                                           v_start_up,
-                                                           i_start, contri)
-    # print popt_up[0]
+    for cycle_up in range(3):
+        popt_down[cycle_up], pcov_down[cycle_up] =\
+            fitting(np.array(sort_up[cycle_up][:]['time']),
+                    np.array(sort_up[cycle_up][:]['voltage']),
+                    v_start_up, i_start, contri)
+    print popt_up[0]
 
 
 
