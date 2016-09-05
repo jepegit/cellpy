@@ -253,6 +253,9 @@ if __name__ == '__main__':
     ocv_up = make_data(data_up)
 
     fig = plt.figure(figsize=(20, 13))
+    plt.suptitle('OCV-relaxation data from cell "sic006_cc_45" with best '
+                 'fitted and guessed parameters',
+                 size=20)
     subs = [fig.add_subplot(3, 1, 1), fig.add_subplot(3, 1, 2),
             fig.add_subplot(3, 1, 3)]
     #Gridspec!!
