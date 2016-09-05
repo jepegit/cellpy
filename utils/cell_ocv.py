@@ -252,8 +252,12 @@ if __name__ == '__main__':
     ocv_down = make_data(data_down)
     ocv_up = make_data(data_up)
 
-    plt.figure(figsize=(15, 13))
-    subs = [plt.subplot(311), plt.subplot(312), plt.subplot(313)]
+    fig = plt.figure(figsize=(15, 13))
+    subs = [fig.add_subplot(3, 1, 1), fig.add_subplot(3, 1, 2),
+            fig.add_subplot(3, 1, 3)]
+    res = [fig.add_axes(3, 1, 1),
+           fig.add_axes(3, 1, 2),
+           fig.add_axes(3, 1, 3)]
     for cycle_plot_up in range(3):
         t_up = np.array(sort_up[cycle_plot_up][:]['time'])
         v_up = np.array(sort_up[cycle_plot_up][:]['voltage'])
@@ -266,25 +270,13 @@ if __name__ == '__main__':
         subs[cycle_plot_up].plot(t_up, v_up, 'ob', t_up, guessed_fit, '--r',
                                  t_up, best_fit, '-y',
                                  t_up, ocv_relax, '--c')
-        subs[cycle_plot_up].legend(['Measured', 'Guessed', 'Best fit'])
+        subs[cycle_plot_up].set_xlabel('Time (s)')
+        subs[cycle_plot_up].set_ylabel('Voltage (V)')
+        subs[cycle_plot_up].legend(['Measured', 'Guessed', 'Best fit',
+                                    'ocv - relaxed'])
+        # residuals. Don't know how to yet..
+        diff = v_up - best_fit
+        res[cycle_plot_up].plot(t_up, diff, 'or')
+        res[cycle_plot_up].legend(['Residuals'])
 
-
-    # plotting all curves in same plot. Inspiration from matplotlib,
-    # section "legend guide"
-    # plt.figure(figsize=(15, 13))
-    # plt.subplot(221)
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('Voltage (V)')
-    # for row_down in ocv_down:
-    #     plt.plot(row_down['time'], row_down['voltage'], '-o')
-    # plt.legend(legend_down, bbox_to_anchor=(1.05, 1), loc=2,
-    #            borderaxespad=0, prop={'size': 13})
-    #
-    # plt.subplot(223)
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('Voltage (V)')
-    # for row_up in ocv_up:
-    #     plt.plot(row_up['time'], row_up['voltage'], '-o')
-    # plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
-    #            borderaxespad=0, prop={'size': 13})
     plt.show()
