@@ -58,7 +58,6 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
 
     v_ct = v_rlx * contribute
     v_d = v_rlx * (1 - contribute)
-
     r_ct = v_ct / i_start
     r_d = v_d / i_start
     # r_ir = (v_start - v_0) / i_start - r_ct - r_d
@@ -66,8 +65,7 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
     c_ct = tau_ct / r_ct
     c_d = tau_d / r_d
 
-    return {'r_ct': r_ct, 'r_d': r_d, 'c_ct': c_ct, 'c_d': c_d, 'v_0': v_0,
-            'ocv': ocv}
+    return [r_ct, r_d, c_ct, c_d, v_0, ocv]
 
 
 def relaxation_rc(time, v0, r, c, slope):
@@ -107,14 +105,16 @@ def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
         m = slope
     v_d_0 = v_0 * r_d / (r_ct + r_d)   # start voltage across diffusion circuit
     v_ct_0 = v_0 * r_ct / (r_ct + r_d)   # start voltage across charge-transfer
-
     # need ocv to be a numpy array with the length of time
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
 
     voltage_d = relaxation_rc(time, v_d_0, r_d, c_d, m['d'])
     voltage_ct = relaxation_rc(time, v_ct_0, r_ct, c_ct, m['ct'])
-    return voltage_d + voltage_ct + ocv
+    if ocv[0] > v_0:
+        return ocv - voltage_ct - voltage_d
+    else:
+        return voltage_d + voltage_ct + ocv
 
 
 def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
@@ -134,9 +134,10 @@ def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
     # where perr is of course "parameters error"
     guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
                                        tau_ct, tau_d)
-    guess = [value for key, value in guessed_prms.items()]
-    print guess
-    popt, pcov = curve_fit(ocv_relax_func, time, voltage, p0=guess, sigma=err)
+    guessing = [_ for _ in guessed_prms]
+    print guessing
+    popt, pcov = curve_fit(ocv_relax_func, time, voltage, p0=guessing,
+                           sigma=err)
     return popt, pcov
 
 if __name__ == '__main__':
@@ -198,7 +199,6 @@ if __name__ == '__main__':
         'voltage'].iloc[-3]
     sort_up.loc[:1][1]['voltage'].iloc[-1] = sort_up.loc[:1][1][
         'voltage'].iloc[-3]
-
     v_start_down = 1.   # all start are taken from fitting_ocv_003.py
     v_start_up = 0.009
     i_cut_off = 0.00076
@@ -224,7 +224,7 @@ if __name__ == '__main__':
     #                                                            ['voltage'],
     #                                                            v_start_down,
     #                                                            i_start, contri)
-    for cycle_up in range(2):
+    for cycle_up in range(3):
         optimal, covariance =\
             fitting(np.array(sort_up[cycle_up][:]['time']),
                     np.array(sort_up[cycle_up][:]['voltage']),
@@ -232,7 +232,7 @@ if __name__ == '__main__':
         popt_up.append(optimal)
         pcov_up.append(covariance)
         print popt_up[cycle_up]
-        print np.diag(np.sqrt(pcov_up[cycle_up]))
+        # print np.diag(np.sqrt(pcov_up[cycle_up]))
         print '======================='
 
 
@@ -260,12 +260,18 @@ if __name__ == '__main__':
     ocv_up = make_data(data_up)
 
     plt.figure(figsize=(15, 13))
-    for row_up in ocv_up:
-        if max(row_up['time']) > 950:
-            plt.plot(row_up['time'], row_up['voltage'], '-o')
-    plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=4)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Voltage (V)')
+    for cycle_plot_up in range(3):
+        t_up = np.array(sort_up[cycle_plot_up][:]['time'])
+        v_up = np.array(sort_up[cycle_plot_up][:]['voltage'])
+        guess = guessing_parameters(v_start_up, i_cut_off, v_up, contri,
+                                    tau_ct_guess, tau_d_guess)
+        guess_params = [_ for _ in guess]
+        guessed_fit = ocv_relax_func(t_up, *guess_params)
+        best_fit = ocv_relax_func(t_up, *popt_up[cycle_plot_up])
+        plt.plot(t_up, v_up, 'o', t_up, guessed_fit, '--r', t_up, best_fit,
+                 '-b')
+
+
 
     # plotting all curves in same plot. Inspiration from matplotlib,
     # section "legend guide"
@@ -285,4 +291,4 @@ if __name__ == '__main__':
     #     plt.plot(row_up['time'], row_up['voltage'], '-o')
     # plt.legend(legend_up, bbox_to_anchor=(1.05, 1), loc=2,
     #            borderaxespad=0, prop={'size': 13})
-    # plt.show()
+    plt.show()
