@@ -224,8 +224,8 @@ if __name__ == '__main__':
                     v_start_up, i_cut_off, contri, tau_ct_guess, tau_d_guess)
         popt_up.append(optimal)
         pcov_up.append(covariance)
-        # print popt_up[cycle_up]
-        # print np.diag(np.sqrt(pcov_up[cycle_up]))
+        print popt_up[cycle_up]
+        print np.diag(np.sqrt(pcov_up[cycle_up]))
         print '======================='
 
 
@@ -266,7 +266,6 @@ if __name__ == '__main__':
         guess = guessing_parameters(v_start_up, i_cut_off, v_up, contri,
                                     tau_ct_guess, tau_d_guess)
         guessed_fit = ocv_relax_func(t_up, *guess)
-        print guessed_fit
         best_fit = ocv_relax_func(t_up, *popt_up[cycle_plot_up])
         ocv_relax = np.array([guess[-1] + ocv_add for _ in range((len(t_up)))])
         subs[cycle_plot_up].plot(t_up, v_up, 'ob', t_up, guessed_fit, '--r',
