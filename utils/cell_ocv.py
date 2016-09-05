@@ -48,13 +48,7 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
     #  0.8 times v_rlx is from the diffusion part.
     ocv = voltage[-1]
     v_0 = voltage[0]
-    if v_0 > ocv:
-        # relaxing downwards
-        v_rlx = v_0 - ocv
-
-    else:
-        # relaxing upwards
-        v_rlx = ocv - v_0
+    v_rlx = v_0 - ocv
 
     v_ct = v_rlx * contribute
     v_d = v_rlx * (1 - contribute)
@@ -65,7 +59,7 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
     c_ct = tau_ct / r_ct
     c_d = tau_d / r_d
 
-    return [r_ct, r_d, c_ct, c_d, v_0, ocv]
+    return [r_ct, r_d, c_ct, c_d, v_rlx, ocv]
 
 
 def relaxation_rc(time, v0, r, c, slope):
@@ -92,7 +86,7 @@ def relaxation_rc(time, v0, r, c, slope):
     return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
 
 
-def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
+def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_rlx, ocv, slope=None):
     """
     To use self.relaxation_rc() for calculating complete ocv relaxation
     over the cell. Guessing parameters
@@ -103,18 +97,17 @@ def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_0, ocv, slope=None):
         m = {'d': None, 'ct': None}
     else:
         m = slope
-    v_d_0 = v_0 * r_d / (r_ct + r_d)   # start voltage across diffusion circuit
-    v_ct_0 = v_0 * r_ct / (r_ct + r_d)   # start voltage across charge-transfer
+    v_d_0 = v_rlx * r_d / (r_ct + r_d)   # start voltage across diffusion
+    # circuit
+    v_ct_0 = v_rlx * r_ct / (r_ct + r_d)   # start voltage across
+    # charge-transfer
     # need ocv to be a numpy array with the length of time
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
 
     voltage_d = relaxation_rc(time, v_d_0, r_d, c_d, m['d'])
     voltage_ct = relaxation_rc(time, v_ct_0, r_ct, c_ct, m['ct'])
-    if ocv[0] > v_0:
-        return ocv - voltage_ct - voltage_d
-    else:
-        return voltage_d + voltage_ct + ocv
+    return voltage_d + voltage_ct + ocv
 
 
 def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
@@ -134,9 +127,8 @@ def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
     # where perr is of course "parameters error"
     guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
                                        tau_ct, tau_d)
-    guessing = [_ for _ in guessed_prms]
-    print guessing
-    popt, pcov = curve_fit(ocv_relax_func, time, voltage, p0=guessing,
+    print guessed_prms
+    popt, pcov = curve_fit(ocv_relax_func, time, voltage, p0=guessed_prms,
                            sigma=err)
     return popt, pcov
 
@@ -199,14 +191,15 @@ if __name__ == '__main__':
         'voltage'].iloc[-3]
     sort_up.loc[:1][1]['voltage'].iloc[-1] = sort_up.loc[:1][1][
         'voltage'].iloc[-3]
+
+    ocv_add = 0.002
     v_start_down = 1.   # all start are taken from fitting_ocv_003.py
-    v_start_up = 0.009
-    i_cut_off = 0.00076
-    # i_cut_off = 0.000751
+    v_start_up = 0.01
+    i_cut_off = 0.000751
     contri = 0.2   # taken from "x" in fitting_ocv_003.py, func. GuessRC2
     # print np.array(sort_up[0][:]['voltage'])[-1]
-    tau_ct_guess = 10
-    tau_d_guess = 300
+    tau_ct_guess = 50
+    tau_d_guess = 400
 
     popt_down = []
     pcov_down = []
@@ -225,13 +218,13 @@ if __name__ == '__main__':
     #                                                            v_start_down,
     #                                                            i_start, contri)
     for cycle_up in range(3):
-        optimal, covariance =\
+        optimal, covariance = \
             fitting(np.array(sort_up[cycle_up][:]['time']),
                     np.array(sort_up[cycle_up][:]['voltage']),
                     v_start_up, i_cut_off, contri, tau_ct_guess, tau_d_guess)
         popt_up.append(optimal)
         pcov_up.append(covariance)
-        print popt_up[cycle_up]
+        # print popt_up[cycle_up]
         # print np.diag(np.sqrt(pcov_up[cycle_up]))
         print '======================='
 
@@ -260,17 +253,20 @@ if __name__ == '__main__':
     ocv_up = make_data(data_up)
 
     plt.figure(figsize=(15, 13))
+    subs = [plt.subplot(311), plt.subplot(312), plt.subplot(313)]
     for cycle_plot_up in range(3):
         t_up = np.array(sort_up[cycle_plot_up][:]['time'])
         v_up = np.array(sort_up[cycle_plot_up][:]['voltage'])
         guess = guessing_parameters(v_start_up, i_cut_off, v_up, contri,
                                     tau_ct_guess, tau_d_guess)
-        guess_params = [_ for _ in guess]
-        guessed_fit = ocv_relax_func(t_up, *guess_params)
+        guessed_fit = ocv_relax_func(t_up, *guess)
+        print guessed_fit
         best_fit = ocv_relax_func(t_up, *popt_up[cycle_plot_up])
-        plt.plot(t_up, v_up, 'o', t_up, guessed_fit, '--r', t_up, best_fit,
-                 '-b')
-
+        ocv_relax = np.array([guess[-1] + ocv_add for _ in range((len(t_up)))])
+        subs[cycle_plot_up].plot(t_up, v_up, 'ob', t_up, guessed_fit, '--r',
+                                 t_up, best_fit, '-y',
+                                 t_up, ocv_relax, '--c')
+        subs[cycle_plot_up].legend(['Measured', 'Guessed', 'Best fit'])
 
 
     # plotting all curves in same plot. Inspiration from matplotlib,
