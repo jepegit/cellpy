@@ -252,12 +252,14 @@ if __name__ == '__main__':
     ocv_down = make_data(data_down)
     ocv_up = make_data(data_up)
 
-    fig = plt.figure(figsize=(15, 13))
+    fig = plt.figure(figsize=(20, 13))
     subs = [fig.add_subplot(3, 1, 1), fig.add_subplot(3, 1, 2),
             fig.add_subplot(3, 1, 3)]
-    res = [fig.add_axes(3, 1, 1),
-           fig.add_axes(3, 1, 2),
-           fig.add_axes(3, 1, 3)]
+    #Gridspec!!
+    # subs = [fig.add_subplot(6, 1, 1), fig.add_subplot(6, 1, 3),
+    #         fig.add_subplot(6, 1, 5)]
+    # res = [fig.add_subplot(6, 1, 2), fig.add_subplot(6, 1, 4),
+    #        fig.add_subplot(6, 1, 6)]
     for cycle_plot_up in range(3):
         t_up = np.array(sort_up[cycle_plot_up][:]['time'])
         v_up = np.array(sort_up[cycle_plot_up][:]['voltage'])
@@ -274,9 +276,9 @@ if __name__ == '__main__':
         subs[cycle_plot_up].set_ylabel('Voltage (V)')
         subs[cycle_plot_up].legend(['Measured', 'Guessed', 'Best fit',
                                     'ocv - relaxed'])
-        # residuals. Don't know how to yet..
-        diff = v_up - best_fit
-        res[cycle_plot_up].plot(t_up, diff, 'or')
-        res[cycle_plot_up].legend(['Residuals'])
+        # residuals. Don't know how to yet.. Check out gridspec
+        # diff = v_up - best_fit
+        # res[cycle_plot_up].plot(t_up, diff, 'or')
+        # res[cycle_plot_up].legend(['Residuals'])
 
     plt.show()
