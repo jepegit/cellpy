@@ -39,8 +39,8 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     Guessed parameters are to be used when fitting a curve to measured data.
     :param v_start: voltage before IR-drop [V]
     :type v_start: float
-    :param i_start: start current, calculated from current rate, mass of
-    batteries and c_cap ?
+    :param i_start: start current. Calculated from current rate during
+    charge/discharge, mass of cell and c_cap ?
     :type i_start: float
     :param voltage: measured voltage data
     :type voltage: 1d numpy array
@@ -84,10 +84,9 @@ def relaxation_rc(time, v0, r, c, slope):
     modify = -self._start_volt * exp(-1. / self._slope)
     if self._slope of self.tau() is 0, then -exp(-1./self._slope) = 0
     :param time: an array of points in time [s]
-    :param v0: the initial voltage across the rc-circuit at t = 0,
-    i.e. v_ct_0
-    :param r: the resistance over the rc-circuit
-    :param c: the capacitance over the rc-circuit
+    :param v0: the initial voltage across the rc-circuit at t = 0 [V]
+    :param r: the resistance over the rc-circuit [ohm]
+    :param c: the capacitance over the rc-circuit [F]
     :param slope: the slope of the time constant in the rc-circuit
     :return: start_volt(modify + exp(-self._time / self.tau()))
     :type: Numpy array with relax data with same length as self._time
@@ -100,48 +99,71 @@ def relaxation_rc(time, v0, r, c, slope):
     return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
 
 
-def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_rlx, ocv, slope=None):
+def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
     """
-    To use self.relaxation_rc() for calculating complete ocv relaxation
-    over the cell. Guessing parameters
-    :return: self.v_0 =  voltage_d + voltage_ct + voltage_ocv
+    Using self.relaxation_rc() for calculating complete ocv relaxation over
+    the cell.
+    :param time: measured points in time [s]
+    :type time: numpy array
+    :param r_rc: resistance in rc-circuit [ohm]
+    :type r_rc: dict
+    :param c_rc: capacitance in rc-circuit [F]
+    :type c_rc: dict
+    :param v_rlx: relaxation voltage after open circuit level [V]
+    :type v_rlx: float
+    :param ocv: estimated open circuit voltage [V]
+    :type ocv: float or numpy array
+    :return: the relaxation curve of the model
     """
     if not slope:
         # m is slope of time constant as a dictionary
-        m = {'d': None, 'ct': None}
+        m = [None for _ in range(len(r_rc))]
     else:
         m = slope
-    v_initial = []
-    v_d_0 = v_rlx * r_d / (r_ct + r_d)   # start voltage across diffusion
-    # circuit
-    v_ct_0 = v_rlx * r_ct / (r_ct + r_d)   # start voltage across
-    # charge-transfer
+    v_initial = [v_rlx * r / (sum(r_rc)) for r in r_rc]   # initial voltage
+    # across rc-circuits.
     # need ocv to be a numpy array with the length of time
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
+    volt_rc = [relaxation_rc(time, v_initial[i], r_rc[i], c_rc[i], m[i]) for
+               i in range(len(r_rc))]
+    return sum(volt_rc) + ocv
 
-    voltage_d = relaxation_rc(time, v_d_0, r_d, c_d, m['d'])
-    voltage_ct = relaxation_rc(time, v_ct_0, r_ct, c_ct, m['ct'])
-    return voltage_d + voltage_ct + ocv
 
-
-def fitting(time, voltage, vstart, istart, contribute, tau_ct, tau_d,
-            err=None, slope=None):
+def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
+            slope=None):
     """
     Using measured data and SciPy's "curve_fit" (non-linear least square,
     check it up with "curve_fit?" in console) to find the best fitted ocv
     relaxation curve.
-    :return: dictionary of best fitted parameters and error between
-    measured data and the fitting.
+    popt are the "parameters, optimal" based on initial guess and theoretical
+    function.
+    pcov is "parameters, covariance", which is a matrix with the variance of
+    popt on the diagonal. To get the standard derivation error, compute:
+    perr = np.sqrt(diag(pcov)), where perr is of course "parameters error"
+
+    :param time: measured point in time [s]
+    :type time: numpy array
+    :param voltage: measured voltage data [V]
+    :type voltage: numpy array
+    :param vstart: start voltage before IR-drop after charge/discharge [V]
+    :type vstart: float
+    :param istart: start current. Calculated from current rate during [A]
+    charge/discharge, mass of cell and c_cap ?
+    :type istart: float
+    :param contribute: contributed partial voltage from each rc-circuit (over
+    the relaxation voltage after IR-drop and ocv-level)
+    :type contribute: dict
+    :param tau_rc: guessed time constants for each rc-circuit [s]
+    :type tau_rc: dict
+    :param err: measurement error
+    :param slope: slope of the rc time constants
+    :return: list of best fitted parameters and covariance between measured
+    data and the fitting.
     """
-    # popt are the "parameters, optimal" based on initial guess and
-    # theoretical
-    #  function. pcov is "parameters, covariance", which is a matrix with
-    #  the variance of popt on the diagonal. To get the standard
-    # derivation errors, compute: perr = np.sqrt(diag(pcov)),
-    # where perr is of course "parameters error"
+
     guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
-                                       tau_ct, tau_d)
+                                       tau_rc)
     print guessed_prms
     popt, pcov = curve_fit(ocv_relax_func, time, voltage, p0=guessed_prms,
                            sigma=err)
@@ -207,14 +229,15 @@ if __name__ == '__main__':
     sort_up.loc[:1][1]['voltage'].iloc[-1] = sort_up.loc[:1][1][
         'voltage'].iloc[-3]
 
-    ocv_add = 0.002
+    ocv_add = 0.002   # this is just to set the ocv level a bit higher,
+    # arbitrary addition
     v_start_down = 1.   # all start are taken from fitting_ocv_003.py
     v_start_up = 0.01
     i_cut_off = 0.000751
-    contri = 0.2   # taken from "x" in fitting_ocv_003.py, func. GuessRC2
+    contri = {'ct': 0.2, 'd': 0.8}   # taken from "x" in fitting_ocv_003.py,
+    # func. GuessRC2
     # print np.array(sort_up[0][:]['voltage'])[-1]
-    tau_ct_guess = 50
-    tau_d_guess = 400
+    tau_guessed = {'ct': 50, 'd': 400}
 
     popt_down = []
     pcov_down = []
@@ -236,7 +259,7 @@ if __name__ == '__main__':
         optimal, covariance = \
             fitting(np.array(sort_up[cycle_up][:]['time']),
                     np.array(sort_up[cycle_up][:]['voltage']),
-                    v_start_up, i_cut_off, contri, tau_ct_guess, tau_d_guess)
+                    v_start_up, i_cut_off, contri, tau_guessed)
         popt_up.append(optimal)
         pcov_up.append(covariance)
         print popt_up[cycle_up]
