@@ -57,7 +57,7 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     # example of what self._contribute is guessed to be). So 0.2 *
     # self._v_rlx (which is self.v_0 - self.ocv. This means that 1-0.2 =
     #  0.8 times v_rlx is from the diffusion part.
-    if sum(contribute.values()) is not 1:
+    if sum(contribute.values()) != 1.0:
         raise ValueError('The sum of contribute does not add up to 1.')
     ocv = voltage[-1]
     # if (ocv - voltage[-2]) / ocv < 0.01:
@@ -70,9 +70,9 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
         v_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
 
     r_rc = {key: v / i_start for key, v in v_rc.items()}
-    r_ir = v_start / i_start - sum(r_rc)
+    r_ir = v_start / i_start - sum(r_rc.values())
     # r_ir = (v_start - v_0) / i_start
-    c_rc = {k: t / r for k, r, t in r_rc.items(), tau_rc.values()}
+    c_rc = {k: t / r for k, r in r_rc.items() for t in tau_rc.values()}
     return\
         {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v_rlx': v_rlx, 'ocv': ocv}
 
@@ -123,7 +123,9 @@ def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
         m = {key: None for key in r_rc.keys()}
     else:
         m = slope
-    v_initial = {k: v_rlx * r / (sum(r_rc)) for k, r in r_rc.items()}   # initial
+    print r_rc
+    v_initial = {k: v_rlx * r / (sum(r_rc.values())) for k, r in r_rc.items()}
+    # initial
     # voltage
     # across rc-circuits.
     # need ocv to be a numpy array with the length of time
@@ -170,9 +172,9 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
                                        tau_rc)
     print guessed_prms
     popt, pcov = curve_fit(ocv_relax_func, time, voltage,
-                           p0=guessed_prms.values(), sigma=err)
-    popt_dict = {key: value for key, value in guessed_prms.keys(), popt}
-    pcov_dict = {key: value for key, value in guessed_prms.keys(), pcov}
+                           p0=guessed_prms, sigma=err)
+    popt_dict = {key: value for key in guessed_prms.keys() for value in popt}
+    pcov_dict = {k: val for k in guessed_prms.keys() for val in pcov}
     return popt_dict, pcov_dict
 
 if __name__ == '__main__':
@@ -315,8 +317,12 @@ if __name__ == '__main__':
                                     tau_guessed)
         guessed_fit = ocv_relax_func(t_up, r_rc=guess['r_rc'], c_rc=guess[
             'c_rc'], v_rlx=guess['v_rlx'], ocv=guess['ocv'])
-        best_fit = ocv_relax_func(t_up, *popt_up[cycle_plot_up])
-        ocv_relax = np.array([guess[-1] + ocv_add for _ in range((len(t_up)))])
+        p_u = popt_up[cycle_plot_up]
+        best_fit = ocv_relax_func(t_up, r_rc=p_u['r_rc'],
+                                  c_rc=p_u['c_rc'], v_rlx=p_u['v_rlx'],
+                                  ocv=p_u['ocv'])
+        ocv_relax = np.array([guess['ocv'] + ocv_add for _ in range((len(
+            t_up)))])
         subs[cycle_plot_up].plot(t_up, v_up, 'ob', t_up, guessed_fit, '--r',
                                  t_up, best_fit, '-y',
                                  t_up, ocv_relax, '--c')
