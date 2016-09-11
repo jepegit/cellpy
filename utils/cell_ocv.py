@@ -33,7 +33,7 @@ def tau(time, r, c, slope):
         return r * c
 
 
-def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
+def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     """
     Guessing likely parameters that will fit best to the measured data.
     These guessed parameters are to be used when fitting a curve to
@@ -46,20 +46,23 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_ct, tau_d):
     # example of what self._contribute is guessed to be). So 0.2 *
     # self._v_rlx (which is self.v_0 - self.ocv. This means that 1-0.2 =
     #  0.8 times v_rlx is from the diffusion part.
+    if sum(contribute) is not 1:
+        raise ValueError('The sum of contribute does not add up to 1.')
     ocv = voltage[-1]
+    # if (ocv - voltage[-2]) / ocv < 0.01:
+    #     print 'WARNING: Possibly too few data points measured for optimal fit.'
     v_0 = voltage[0]
     v_rlx = v_0 - ocv
+    if not isinstance(contribute, list):
+        v_rc = [v_rlx]
+    else:
+        v_rc = [v_rlx * rc_contri for rc_contri in contribute]
 
-    v_ct = v_rlx * contribute
-    v_d = v_rlx * (1 - contribute)
-    r_ct = v_ct / i_start
-    r_d = v_d / i_start
-    # r_ir = (v_start - v_0) / i_start - r_ct - r_d
-
-    c_ct = tau_ct / r_ct
-    c_d = tau_d / r_d
-
-    return [r_ct, r_d, c_ct, c_d, v_rlx, ocv]
+    r_rc = [v / i_start for v in v_rc]
+    r_ir = v_start / i_start - sum(r_rc)
+    # r_ir = (v_start - v_0) / i_start
+    c_rc = [tau / r for tau, r in tau_rc, r_rc]
+    return [r_rc, r_ir, c_rc, v_rlx, ocv]
 
 
 def relaxation_rc(time, v0, r, c, slope):
