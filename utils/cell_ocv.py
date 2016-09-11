@@ -46,9 +46,9 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     :type voltage: 1d numpy array
     :param contribute: contributed partial voltage from each rc-circuit (over
     the relaxation voltage after IR-drop and ocv-level)
-    :type contribute: list
+    :type contribute: dict
     :param tau_rc: guessed time constants across each rc-circuit
-    :type tau_rc: list
+    :type tau_rc: dict
     :return: list of calculated parameters from guessed input parameters
     """
     # Say we know v_0 (after IR-drop). We also know C_cap and C_rate (
@@ -57,23 +57,24 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     # example of what self._contribute is guessed to be). So 0.2 *
     # self._v_rlx (which is self.v_0 - self.ocv. This means that 1-0.2 =
     #  0.8 times v_rlx is from the diffusion part.
-    if sum(contribute) is not 1:
+    if sum(contribute.values()) is not 1:
         raise ValueError('The sum of contribute does not add up to 1.')
     ocv = voltage[-1]
     # if (ocv - voltage[-2]) / ocv < 0.01:
     #     print 'WARNING: Possibly too few data points measured for optimal fit.'
     v_0 = voltage[0]
     v_rlx = v_0 - ocv
-    if not isinstance(contribute, list):
-        v_rc = [v_rlx]
+    if not isinstance(contribute, dict):
+        v_rc = {v_rlx}
     else:
-        v_rc = [v_rlx * rc_contri for rc_contri in contribute]
+        v_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
 
-    r_rc = [v / i_start for v in v_rc]
+    r_rc = {key: v / i_start for key, v in v_rc.items()}
     r_ir = v_start / i_start - sum(r_rc)
     # r_ir = (v_start - v_0) / i_start
-    c_rc = [t / r for t, r in tau_rc, r_rc]
-    return [r_rc, r_ir, c_rc, v_rlx, ocv]
+    c_rc = {k: t / r for k, r, t in r_rc.items(), tau_rc.values()}
+    return\
+        {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v_rlx': v_rlx, 'ocv': ocv}
 
 
 def relaxation_rc(time, v0, r, c, slope):
@@ -113,14 +114,17 @@ def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
     :type v_rlx: float
     :param ocv: estimated open circuit voltage [V]
     :type ocv: float or numpy array
+    :param slope: slope of the rc time constants
+    :type slope: dict
     :return: the relaxation curve of the model
     """
     if not slope:
         # m is slope of time constant as a dictionary
-        m = [None for _ in range(len(r_rc))]
+        m = {key: None for key in r_rc.keys()}
     else:
         m = slope
-    v_initial = [v_rlx * r / (sum(r_rc)) for r in r_rc]   # initial voltage
+    v_initial = {k: v_rlx * r / (sum(r_rc)) for k, r in r_rc.items()}   # initial
+    # voltage
     # across rc-circuits.
     # need ocv to be a numpy array with the length of time
     if not isinstance(ocv, type(time)):
@@ -161,13 +165,15 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
     :return: list of best fitted parameters and covariance between measured
     data and the fitting.
     """
-
+# [r_rc, r_ir, c_rc, v_rlx, ocv]
     guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
                                        tau_rc)
     print guessed_prms
-    popt, pcov = curve_fit(ocv_relax_func, time, voltage, p0=guessed_prms,
-                           sigma=err)
-    return popt, pcov
+    popt, pcov = curve_fit(ocv_relax_func, time, voltage,
+                           p0=guessed_prms.values(), sigma=err)
+    popt_dict = {key: value for key, value in guessed_prms.keys(), popt}
+    pcov_dict = {key: value for key, value in guessed_prms.keys(), pcov}
+    return popt_dict, pcov_dict
 
 if __name__ == '__main__':
     datafolder = r'.\data'   # make sure you're in folder \utils. If not,
@@ -301,12 +307,14 @@ if __name__ == '__main__':
     #         fig.add_subplot(6, 1, 5)]
     # res = [fig.add_subplot(6, 1, 2), fig.add_subplot(6, 1, 4),
     #        fig.add_subplot(6, 1, 6)]
+
     for cycle_plot_up in range(3):
         t_up = np.array(sort_up[cycle_plot_up][:]['time'])
         v_up = np.array(sort_up[cycle_plot_up][:]['voltage'])
         guess = guessing_parameters(v_start_up, i_cut_off, v_up, contri,
-                                    tau_ct_guess, tau_d_guess)
-        guessed_fit = ocv_relax_func(t_up, *guess)
+                                    tau_guessed)
+        guessed_fit = ocv_relax_func(t_up, r_rc=guess['r_rc'], c_rc=guess[
+            'c_rc'], v_rlx=guess['v_rlx'], ocv=guess['ocv'])
         best_fit = ocv_relax_func(t_up, *popt_up[cycle_plot_up])
         ocv_relax = np.array([guess[-1] + ocv_add for _ in range((len(t_up)))])
         subs[cycle_plot_up].plot(t_up, v_up, 'ob', t_up, guessed_fit, '--r',
