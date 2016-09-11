@@ -36,9 +36,20 @@ def tau(time, r, c, slope):
 def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     """
     Guessing likely parameters that will fit best to the measured data.
-    These guessed parameters are to be used when fitting a curve to
-    measured data.
-    :return: None
+    Guessed parameters are to be used when fitting a curve to measured data.
+    :param v_start: voltage before IR-drop [V]
+    :type v_start: float
+    :param i_start: start current, calculated from current rate, mass of
+    batteries and c_cap ?
+    :type i_start: float
+    :param voltage: measured voltage data
+    :type voltage: 1d numpy array
+    :param contribute: contributed partial voltage from each rc-circuit (over
+    the relaxation voltage after IR-drop and ocv-level)
+    :type contribute: list
+    :param tau_rc: guessed time constants across each rc-circuit
+    :type tau_rc: list
+    :return: list of calculated parameters from guessed input parameters
     """
     # Say we know v_0 (after IR-drop). We also know C_cap and C_rate (
     # whatever they are). I have to assume that the charge-transfer rate
@@ -61,7 +72,7 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     r_rc = [v / i_start for v in v_rc]
     r_ir = v_start / i_start - sum(r_rc)
     # r_ir = (v_start - v_0) / i_start
-    c_rc = [tau / r for tau, r in tau_rc, r_rc]
+    c_rc = [t / r for t, r in tau_rc, r_rc]
     return [r_rc, r_ir, c_rc, v_rlx, ocv]
 
 
@@ -100,6 +111,7 @@ def ocv_relax_func(time, r_ct, r_d, c_ct, c_d, v_rlx, ocv, slope=None):
         m = {'d': None, 'ct': None}
     else:
         m = slope
+    v_initial = []
     v_d_0 = v_rlx * r_d / (r_ct + r_d)   # start voltage across diffusion
     # circuit
     v_ct_0 = v_rlx * r_ct / (r_ct + r_d)   # start voltage across
