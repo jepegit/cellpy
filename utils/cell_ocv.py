@@ -205,16 +205,17 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
                                                        guessed_prms['v_rlx']),
                            time, voltage, p0=guessed_sorted, sigma=err)
 
-    popt_dict = {'r_%s' % key: value
+    popt_dict = {'r_rc': {key: value}
                  for key, value in zip(guessed_prms['r_rc'], popt)}
-
-    popt_c = {'c_%s' % k: val
+    popt_c = {'c_rc': {k: val}
               for k, val in zip(guessed_prms['c_rc'], popt[N_rc:])}
-    pcov_dict = {'r_%s' % c_key: c_value for c_key, c_value
-                 in zip(guessed_prms['r_rc'], pcov)}
-    pcov_c = {'c_%s' % c_k: c_val
+    pcov_dict = {'r_rc': {c_key: c_value}
+                 for c_key, c_value in zip(guessed_prms['r_rc'], pcov)}
+    pcov_c = {'c_rc': {c_k: c_val}
               for c_k, c_val in zip(guessed_prms['c_rc'], pcov[N_rc:])}
     popt_dict.update(popt_c)
+    popt_dict.update({'ocv': guessed_prms['ocv'], 'v_rlx': guessed_prms[
+        'v_rlx']})
     pcov_dict.update(pcov_c)
     return popt_dict, pcov_dict
 
@@ -362,7 +363,6 @@ if __name__ == '__main__':
                                      c_rc=guess['c_rc'],
                                      v_rlx=guess['v_rlx'], ocv=guess['ocv'])
         p_u = popt_up[cycle_plot_up]
-        print p_u
         best_fit = ocv_relax_func(t_up, r_rc=p_u['r_rc'],
                                   c_rc=p_u['c_rc'], v_rlx=p_u['v_rlx'],
                                   ocv=p_u['ocv'])
@@ -380,4 +380,4 @@ if __name__ == '__main__':
         # res[cycle_plot_up].plot(t_up, diff, 'or')
         # res[cycle_plot_up].legend(['Residuals'])
 
-    # plt.show()
+    plt.show()
