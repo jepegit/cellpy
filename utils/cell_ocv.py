@@ -103,40 +103,39 @@ def relaxation_rc(time, v0, r, c, slope):
     return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
 
 
-def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
+def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
     """
     Using self.relaxation_rc() for calculating complete ocv relaxation over
     the cell.
+
     :param time: measured points in time [s]
     :type time: numpy array
-    :param r_rc: resistance in rc-circuit [ohm]
-    :type r_rc: dict
-    :param c_rc: capacitance in rc-circuit [F]
-    :type c_rc: dict
-    :param v_rlx: relaxation voltage after open circuit level [V]
-    :type v_rlx: float
     :param ocv: estimated open circuit voltage [V]
     :type ocv: float or numpy array
+    :param v_rlx: relaxation voltage after open circuit level [V]
+    :type v_rlx: float
+    :param r_rc: resistance in rc-circuit [ohm]
+    :type r_rc: list
+    :param c_rc: capacitance in rc-circuit [F]
+    :type c_rc: list
     :param slope: slope of the rc time constants
-    :type slope: dict
+    :type slope: list
     :return: the relaxation curve of the model
     """
     if not slope:
         # m is slope of time constant as a dictionary
-        m = {key: None for key in r_rc}
+        m = [None for _ in range(len(r_rc))]
     else:
         m = slope
-    v_initial = {k: v_rlx * r / (sum(r_rc.values()))
-                 for k, r in r_rc.items()}
+    v_initial = [v_rlx * r / sum(r_rc) for r in r_rc]
     # initial
     # voltage
     # across rc-circuits.
     # need ocv to be a numpy array with the length of time
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
-    volt_rc = [relaxation_rc(time, v_initial[key], r_rc[key],
-                             c_rc[key], m[key]) for key in r_rc]
-    # print volt_rc.dtype
+    volt_rc = [relaxation_rc(time, v_initial[i], r_rc[i],
+                             c_rc[i], m[i]) for i in range(len(r_rc))]
     return sum(volt_rc) + ocv
 
 
@@ -174,18 +173,49 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
     # (time, r_rc, c_rc, v_rlx, ocv, slope=None):
     guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
                                        tau_rc)
-    print guessed_prms   # Note that guessed_prms are not in right order,
+    # print guessed_prms   # Note that guessed_prms are not in right order,
     # that's why guessed_sorted is done manually...
-    guessed_sorted = [guessed_prms['r_rc'], guessed_prms['c_rc'],
-                      guessed_prms['v_rlx'], guessed_prms['ocv']]
-    print guessed_sorted
-    popt, pcov = curve_fit(ocv_relax_func, time, voltage,
-                           p0=guessed_sorted, sigma=err)
-    popt_dict = {key: value for key in guessed_prms.keys() if not key == 'r_ir'
-                 for value in popt}
-    pcov_dict = {k: val for k in guessed_prms.keys() if not k == 'r_ir'
-                 for val in pcov}
+    guessed_sorted = guessed_prms['r_rc'].values() + guessed_prms[
+        'c_rc'].values()
+    N_rc = len(guessed_prms['r_rc'].values())
+
+    def adjusted_ocv_relax_function(t, n_rc, *args):
+        """
+        To make SciPy's function curve_fit understand input.
+
+        Heavily inspired by:
+        http://stackoverflow.com/questions/34136737/
+        using-scipy-curve-fit-for-a-variable-number-of-parameters
+        :param t: measure points in time [s]
+        :type t: numpy array
+        :param n_rc: total number of rc-circuits in model
+        :type n_rc: int
+        :param args: any wanted parameters
+        :return: function call ocv_relax_func
+        """
+        r_rc, c_rc = list(args[0][0: n_rc]), list(args[0][n_rc:])
+        return ocv_relax_func(t, args[1], args[2], r_rc, c_rc)
+
+    popt, pcov = curve_fit(lambda t, *p:
+                           adjusted_ocv_relax_function(t, N_rc, guessed_sorted,
+                                                       guessed_prms['ocv'],
+                                                       guessed_prms['v_rlx']),
+                           time, voltage, p0=guessed_sorted, sigma=err)
+
+    popt_dict = {'r_%s' % key: value
+                 for key, value in zip(guessed_prms['r_rc'], popt)}
+
+    popt_c = {'c_%s' % k: val
+              for k, val in zip(guessed_prms['c_rc'], popt[N_rc:])}
+    pcov_dict = {'r_%s' % c_key: c_value for c_key, c_value
+                 in zip(guessed_prms['r_rc'], pcov)}
+    pcov_c = {'c_%s' % c_k: c_val
+              for c_k, c_val in zip(guessed_prms['c_rc'], pcov[N_rc:])}
+    popt_dict.update(popt_c)
+    pcov_dict.update(pcov_c)
+    print popt
     return popt_dict, pcov_dict
+
 
 if __name__ == '__main__':
     datafolder = r'.\data'   # make sure you're in folder \utils. If not,
@@ -281,13 +311,14 @@ if __name__ == '__main__':
         popt_up.append(optimal)
         pcov_up.append(covariance)
         print popt_up[cycle_up]
-        print np.diag(np.sqrt(pcov_up[cycle_up]))
+        # print np.diag(np.sqrt(pcov_up[cycle_up]))
         print '======================='
 
 
     def define_legends():
         """
         creating a list with legends from both up and down ocv_data
+
         :return: list of legends for ocv_data
         """
         leg_down = []
@@ -305,8 +336,8 @@ if __name__ == '__main__':
         return leg_down, leg_up
 
     legend_down, legend_up = define_legends()
-    ocv_down = make_data(data_down)
-    ocv_up = make_data(data_up)
+    # ocv_down = make_data(data_down)
+    # ocv_up = make_data(data_up)
 
     fig = plt.figure(figsize=(20, 13))
     plt.suptitle('OCV-relaxation data from cell "sic006_cc_45" with best '
@@ -325,8 +356,9 @@ if __name__ == '__main__':
         v_up = np.array(sort_up[cycle_plot_up][:]['voltage'])
         guess = guessing_parameters(v_start_up, i_cut_off, v_up, contri,
                                     tau_guessed)
-        guessed_fit = ocv_relax_func(t_up, r_rc=guess['r_rc'], c_rc=guess[
-            'c_rc'], v_rlx=guess['v_rlx'], ocv=guess['ocv'])
+        guessed_fit = ocv_relax_func(t_up, r_rc=guess['r_rc'],
+                                     c_rc=guess['c_rc'],
+                                     v_rlx=guess['v_rlx'], ocv=guess['ocv'])
         p_u = popt_up[cycle_plot_up]
         best_fit = ocv_relax_func(t_up, r_rc=p_u['r_rc'],
                                   c_rc=p_u['c_rc'], v_rlx=p_u['v_rlx'],
@@ -345,4 +377,4 @@ if __name__ == '__main__':
         # res[cycle_plot_up].plot(t_up, diff, 'or')
         # res[cycle_plot_up].legend(['Residuals'])
 
-    plt.show()
+    # plt.show()
