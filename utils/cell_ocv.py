@@ -115,19 +115,20 @@ def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
     :param v_rlx: relaxation voltage after open circuit level [V]
     :type v_rlx: float
     :param r_rc: resistance in rc-circuit [ohm]
-    :type r_rc: list
+    :type r_rc: dict
     :param c_rc: capacitance in rc-circuit [F]
-    :type c_rc: list
+    :type c_rc: dict
     :param slope: slope of the rc time constants
     :type slope: list
     :return: the relaxation curve of the model
     """
     if not slope:
         # m is slope of time constant as a dictionary
-        m = [None for _ in range(len(r_rc))]
+        m = {key: None for key in r_rc}
     else:
         m = slope
-    v_initial = [v_rlx * r / sum(r_rc) for r in r_rc]
+    v_initial = {k: v_rlx * r / sum(r_rc.values())
+                 for k, r in zip(r_rc, r_rc.values())}
     # initial
     # voltage
     # across rc-circuits.
@@ -135,7 +136,7 @@ def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
     volt_rc = [relaxation_rc(time, v_initial[i], r_rc[i],
-                             c_rc[i], m[i]) for i in range(len(r_rc))]
+                             c_rc[i], m[i]) for i in r_rc]
     return sum(volt_rc) + ocv
 
 
@@ -194,6 +195,8 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
         :return: function call ocv_relax_func
         """
         r_rc, c_rc = list(args[0][0: n_rc]), list(args[0][n_rc:])
+        r_rc = {key: r for key, r in zip(guessed_prms['r_rc'], r_rc)}
+        c_rc = {k: c for k, c in zip(guessed_prms['c_rc'], c_rc)}
         return ocv_relax_func(t, args[1], args[2], r_rc, c_rc)
 
     popt, pcov = curve_fit(lambda t, *p:
@@ -213,7 +216,6 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
               for c_k, c_val in zip(guessed_prms['c_rc'], pcov[N_rc:])}
     popt_dict.update(popt_c)
     pcov_dict.update(pcov_c)
-    print popt
     return popt_dict, pcov_dict
 
 
@@ -310,9 +312,9 @@ if __name__ == '__main__':
                     v_start_up, i_cut_off, contri, tau_guessed)
         popt_up.append(optimal)
         pcov_up.append(covariance)
-        print popt_up[cycle_up]
+        # print popt_up[cycle_up]
         # print np.diag(np.sqrt(pcov_up[cycle_up]))
-        print '======================='
+        # print '======================='
 
 
     def define_legends():
@@ -360,6 +362,7 @@ if __name__ == '__main__':
                                      c_rc=guess['c_rc'],
                                      v_rlx=guess['v_rlx'], ocv=guess['ocv'])
         p_u = popt_up[cycle_plot_up]
+        print p_u
         best_fit = ocv_relax_func(t_up, r_rc=p_u['r_rc'],
                                   c_rc=p_u['c_rc'], v_rlx=p_u['v_rlx'],
                                   ocv=p_u['ocv'])
