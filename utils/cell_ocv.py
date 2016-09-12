@@ -7,7 +7,6 @@ Adaption of OCV-relaxation data.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from collections import OrderedDict
 import os
 from scipy.optimize import curve_fit
 
@@ -82,7 +81,8 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
 
 def relaxation_rc(time, v0, r, c, slope):
     """
-    Calculate the relaxation function with a np.array of time, self._time
+    Calculate the relaxation function with a np.array of time
+
     Make a local constant, modify (for modifying a rc-circuit so that
     guessing is easier).
     modify = -self._start_volt * exp(-1. / self._slope)
@@ -123,20 +123,19 @@ def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
     """
     if not slope:
         # m is slope of time constant as a dictionary
-        m = {key: None for key in r_rc['r_rc']}
+        m = {key: None for key in r_rc}
     else:
         m = slope
-    v_initial = {k: v_rlx * r / (sum(r_rc['r_rc'].values()))
-                 for k, r in r_rc['r_rc'].items()}
+    v_initial = {k: v_rlx * r / (sum(r_rc.values()))
+                 for k, r in r_rc.items()}
     # initial
     # voltage
     # across rc-circuits.
     # need ocv to be a numpy array with the length of time
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
-    volt_rc = [relaxation_rc(time, v_initial[key], r_rc['r_rc'][key],
-                             c_rc['c_rc'][key], m[key])
-               for key in r_rc['r_rc']]
+    volt_rc = [relaxation_rc(time, v_initial[key], r_rc[key],
+                             c_rc[key], m[key]) for key in r_rc]
     # print volt_rc.dtype
     return sum(volt_rc) + ocv
 
@@ -177,14 +176,15 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
                                        tau_rc)
     print guessed_prms   # Note that guessed_prms are not in right order,
     # that's why guessed_sorted is done manually...
-    guessed_sorted = [{'r_rc': guessed_prms.pop('r_rc')},
-                      {'c_rc': guessed_prms.pop('c_rc')},
-                      guessed_prms.pop('v_rlx'), guessed_prms.pop('ocv')]
+    guessed_sorted = [guessed_prms['r_rc'], guessed_prms['c_rc'],
+                      guessed_prms['v_rlx'], guessed_prms['ocv']]
     print guessed_sorted
     popt, pcov = curve_fit(ocv_relax_func, time, voltage,
                            p0=guessed_sorted, sigma=err)
-    popt_dict = {key: value for key in guessed_prms.keys() for value in popt}
-    pcov_dict = {k: val for k in guessed_prms.keys() for val in pcov}
+    popt_dict = {key: value for key in guessed_prms.keys() if not key == 'r_ir'
+                 for value in popt}
+    pcov_dict = {k: val for k in guessed_prms.keys() if not k == 'r_ir'
+                 for val in pcov}
     return popt_dict, pcov_dict
 
 if __name__ == '__main__':
