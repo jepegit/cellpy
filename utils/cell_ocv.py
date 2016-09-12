@@ -123,10 +123,9 @@ def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
     """
     if not slope:
         # m is slope of time constant as a dictionary
-        m = {key: None for key in r_rc.keys()}
+        m = {key: None for key in r_rc['r_rc']}
     else:
         m = slope
-    print r_rc['r_rc']
     v_initial = {k: v_rlx * r / (sum(r_rc['r_rc'].values()))
                  for k, r in r_rc['r_rc'].items()}
     # initial
@@ -135,8 +134,10 @@ def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
     # need ocv to be a numpy array with the length of time
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
-    volt_rc = [relaxation_rc(time, v_initial[i], r_rc[i], c_rc[i], m[i]) for
-               i in range(len(r_rc))]
+    volt_rc = [relaxation_rc(time, v_initial[key], r_rc['r_rc'][key],
+                             c_rc['c_rc'][key], m[key])
+               for key in r_rc['r_rc']]
+    # print volt_rc.dtype
     return sum(volt_rc) + ocv
 
 
