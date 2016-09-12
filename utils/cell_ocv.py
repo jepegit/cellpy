@@ -7,6 +7,7 @@ Adaption of OCV-relaxation data.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from collections import OrderedDict
 import os
 from scipy.optimize import curve_fit
 
@@ -36,6 +37,7 @@ def tau(time, r, c, slope):
 def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     """
     Guessing likely parameters that will fit best to the measured data.
+
     Guessed parameters are to be used when fitting a curve to measured data.
     :param v_start: voltage before IR-drop [V]
     :type v_start: float
@@ -73,9 +75,9 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     r_ir = v_start / i_start - sum(r_rc.values())
     # r_ir = (v_start - v_0) / i_start
     c_rc = {k: t / r for k, r in r_rc.items() for t in tau_rc.values()}
-    return\
-        {'r_rc': r_rc.values(), 'r_ir': r_ir, 'c_rc': c_rc.values(),
-         'v_rlx': v_rlx, 'ocv': ocv}
+    params = {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v_rlx': v_rlx,
+              'ocv': ocv}
+    return params
 
 
 def relaxation_rc(time, v0, r, c, slope):
@@ -124,8 +126,9 @@ def ocv_relax_func(time, r_rc, c_rc, v_rlx, ocv, slope=None):
         m = {key: None for key in r_rc.keys()}
     else:
         m = slope
-    print r_rc.values()
-    v_initial = {k: v_rlx * r / (sum(r_rc.values())) for k, r in r_rc.items()}
+    print r_rc['r_rc']
+    v_initial = {k: v_rlx * r / (sum(r_rc['r_rc'].values()))
+                 for k, r in r_rc['r_rc'].items()}
     # initial
     # voltage
     # across rc-circuits.
@@ -171,13 +174,14 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
     # (time, r_rc, c_rc, v_rlx, ocv, slope=None):
     guessed_prms = guessing_parameters(vstart, istart, voltage, contribute,
                                        tau_rc)
-    print guessed_prms  ## NOTE: The output from guessing parameters are not
-    # in right order!!!!!!!!!!!!!!!!
+    print guessed_prms   # Note that guessed_prms are not in right order,
+    # that's why guessed_sorted is done manually...
+    guessed_sorted = [{'r_rc': guessed_prms.pop('r_rc')},
+                      {'c_rc': guessed_prms.pop('c_rc')},
+                      guessed_prms.pop('v_rlx'), guessed_prms.pop('ocv')]
+    print guessed_sorted
     popt, pcov = curve_fit(ocv_relax_func, time, voltage,
-                           p0=[{key: value} for key, value in
-                               guessed_prms.items() if guessed_prms.keys()
-                               != 'r_ir'],
-                           sigma=err)
+                           p0=guessed_sorted, sigma=err)
     popt_dict = {key: value for key in guessed_prms.keys() for value in popt}
     pcov_dict = {k: val for k in guessed_prms.keys() for val in pcov}
     return popt_dict, pcov_dict
