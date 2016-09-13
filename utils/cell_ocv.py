@@ -357,8 +357,13 @@ if __name__ == '__main__':
         best_fit = ocv_relax_func(t_up, r_rc=p_u['r_rc'],
                                   c_rc=p_u['c_rc'], v_rlx=p_u['v_rlx'],
                                   ocv=p_u['ocv'])
-        # print guess, popt_up[cycle_plot_up]
-        # print '------------------------------------------------------------'
+        print 'Guessed parameters: ', guess
+        print 'Best fitted parameters: ', popt_up[cycle_plot_up]
+        print '\t'
+        print 'Note that v_rlx and ocv are the same ' \
+              'for both because ocv and v_rlx are not calculated in this ' \
+              'program yet'
+        print '------------------------------------------------------------'
         # print guessed_fit, best_fit
         # print '============================================================'
         ocv_relax = np.array([guess['ocv'] + ocv_add for _ in range((len(
