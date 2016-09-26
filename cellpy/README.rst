@@ -1,0 +1,40 @@
+===============================
+cellpy
+===============================
+
+
+.. image:: https://img.shields.io/pypi/v/cellpy.svg
+        :target: https://pypi.python.org/pypi/cellpy
+
+.. image:: https://img.shields.io/travis/jepegit/cellpy.svg
+        :target: https://travis-ci.org/jepegit/cellpy
+
+.. image:: https://readthedocs.org/projects/cellpy/badge/?version=latest
+        :target: https://cellpy.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
+
+.. image:: https://pyup.io/repos/github/jepegit/cellpy/shield.svg
+     :target: https://pyup.io/repos/github/jepegit/cellpy/
+     :alt: Updates
+
+
+Python Boilerplate contains all the boilerplate you need to create a Python package.
+
+
+* Free software: MIT license
+* Documentation: https://cellpy.readthedocs.io.
+
+
+Features
+--------
+
+* TODO
+
+Credits
+---------
+
+This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+
+.. _Cookiecutter: https://github.com/audreyr/cookiecutter
+.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+
