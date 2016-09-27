@@ -1,45 +1,51 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb 02 11:17:28 2013
-Last modification: 27.06.2016
 
-@author: Jan Petter Maehlen
-@affilation: IFE, Kjeller, Norway
-
-
-TODO next:
-1) new step_table structure [under dev]
-2) new summary structure
-3) new overall prms structure (i.e. run summary)
-4) change name and allow non-arbin type of files
-
-
-
-PROBLEMS:
-1. 27.06.2016 new PC with 64bit conda python package:
-             Error opening connection to "Provider=Microsoft.ACE.OLEDB.12.0
-
-FIX:
-1. 27.06.2016 installed 2007 Office System Driver: Data Connectivity Components
-            (https://www.microsoft.com/en-us/download/confirmation.aspx?id=23734)
-            DID NOT WORK
-   27.06.2016 tried Microsoft Access Database Engine 2010 Redistributable   64x
-            DID NOT INSTALL - my computer has 32bit office, can only be install
-            with 64-bit office
-   27.06.2016 installed Microsoft Access Database Engine 2010 Redistributable   86x
-           DID NOT WORK
-   27.06.2016 uninstalled anaconda 64bit - installed 32 bit
-           WORKED!
-           LESSON LEARNED: dont use 64bit python with 32bit office installed
 """
+
+# Created on Sat Feb 02 11:17:28 2013
+# Last modification: 27.06.2016
+#
+# @author: Jan Petter Maehlen
+# @affilation: IFE, Kjeller, Norway
+#
+#
+# TODO next:
+# 1) new step_table structure [under dev]
+# 2) new summary structure
+# 3) new overall prms structure (i.e. run summary)
+# 4) change name and allow non-arbin type of files
+#
+#
+#
+# PROBLEMS:
+# 1. 27.06.2016 new PC with 64bit conda python package:
+#              Error opening connection to "Provider=Microsoft.ACE.OLEDB.12.0
+#
+# FIX:
+# 1. 27.06.2016 installed 2007 Office System Driver: Data Connectivity Components
+#             (https://www.microsoft.com/en-us/download/confirmation.aspx?id=23734)
+#             DID NOT WORK
+#    27.06.2016 tried Microsoft Access Database Engine 2010 Redistributable   64x
+#             DID NOT INSTALL - my computer has 32bit office, can only be install
+#             with 64-bit office
+#    27.06.2016 installed Microsoft Access Database Engine 2010 Redistributable   86x
+#            DID NOT WORK
+#    27.06.2016 uninstalled anaconda 64bit - installed 32 bit
+#            WORKED!
+#            LESSON LEARNED: dont use 64bit python with 32bit office installed
+
 
 __version__ = '0.1.0'
 
 USE_ADO = True
 
 if USE_ADO:
-    import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
-
+    try:
+        import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
+    except:
+        USE_ADO = False
+        import pyodbc as dbloader
 else:
     import pyodbc as dbloader
 
