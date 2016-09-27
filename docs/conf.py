@@ -29,11 +29,11 @@ project_utils = os.path.join(project_root, r"cellpy\utils")
 project_scripts = os.path.join(project_root, r"cellpy\scripts")
 project_readers = os.path.join(project_root, r"cellpy\readers")
 
-print project_root
-print project_prmsdir
-print project_utils
-print project_scripts
-print project_readers
+# print project_root
+# print project_prmsdir
+# print project_utils
+# print project_scripts
+# print project_readers
 
 
 # Insert the project root dir as the first element in the PYTHONPATH.
