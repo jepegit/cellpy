@@ -222,7 +222,7 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
 
 
 if __name__ == '__main__':
-    datafolder = r'.\data'   # make sure you're in folder \utils. If not,
+    datafolder = r'..\testdata'   # make sure you're in folder \utils. If not,
     # activate "print os.getcwd()" to find current folder and extend datafolder
     # with [.]\utils\data
     # print os.getcwd()
