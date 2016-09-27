@@ -24,10 +24,17 @@ import os
 # Get the project root dir, which is the parent dir of this
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
-project_prmsdir = os.path.join(project_root, "cellpy/parametres")
-project_utils = os.path.join(project_root, "cellpy/utils")
-project_scripts = os.path.join(project_root, "cellpy/scripts")
-project_readers = os.path.join(project_root, "cellpy/readers")
+project_prmsdir = os.path.join(project_root, r"cellpy\parametres")
+project_utils = os.path.join(project_root, r"cellpy\utils")
+project_scripts = os.path.join(project_root, r"cellpy\scripts")
+project_readers = os.path.join(project_root, r"cellpy\readers")
+
+print project_root
+print project_prmsdir
+print project_utils
+print project_scripts
+print project_readers
+
 
 # Insert the project root dir as the first element in the PYTHONPATH.
 # This lets us ensure that the source package is imported, and that its
