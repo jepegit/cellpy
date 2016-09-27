@@ -12,7 +12,6 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
 import sys
 import os
 
@@ -25,11 +24,20 @@ import os
 # Get the project root dir, which is the parent dir of this
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
+project_prmsdir = os.path.join(project_root, "cellpy/parametres")
+project_utils = os.path.join(project_root, "cellpy/utils")
+project_scripts = os.path.join(project_root, "cellpy/scripts")
+project_readers = os.path.join(project_root, "cellpy/readers")
 
 # Insert the project root dir as the first element in the PYTHONPATH.
 # This lets us ensure that the source package is imported, and that its
 # version is used.
+
 sys.path.insert(0, project_root)
+sys.path.insert(0, project_prmsdir)
+sys.path.insert(0, project_utils)
+sys.path.insert(0, project_scripts)
+sys.path.insert(0, project_readers)
 
 import cellpy
 
