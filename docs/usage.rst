@@ -10,7 +10,7 @@ To use cellpy in a project::
     FileName  = r"C:\Scripting\MyFiles\dev_arbindata\abdel\20141030_LBCM5_6_cc_01.res"
     Mass      = 0.982
     OutFolder = r"C:\Scripting\MyFiles\dev_arbindata\abdel\processed"
-    
+
     try:
         os.chdir(OutFolder)
         print "Output will be sent to folder:"

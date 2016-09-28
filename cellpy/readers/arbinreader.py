@@ -110,11 +110,15 @@ def humanize_bytes(bytes, precision=1):
     return '%.*f %s' % (precision, bytes / factor, suffix)
 
 
-def xldate_as_datetime(xldate, datemode=0,
-                       option="to_datetime"):
-    # datemode: 0 for 1900-based, 1 for 1904-based
+def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
+    """Converts a xls date stamp to a more sensible format
+
+    :param xldate: date stamp in Excel format  (string)
+    :param datemode: 0 for 1900-based, 1 for 1904-based
+    :param r: option in ("to_datetime", "to_float", "to_string"
+    """
+
     # This does not work for numpy-arrays
-    # should convert
     try:
         test = datetime.time(0, 0)
     except:
@@ -132,7 +136,12 @@ def xldate_as_datetime(xldate, datemode=0,
 
 
 def Convert2mAhg(c, mass=1.0):
-    # c in Ah, mass in mg
+    """Converts capacity in Ah to capacity in mAh/g
+
+    :param c: capacity in mA  (float or numpy array)
+    :param mass: mass in mg
+    :return: 1000000 * c / mass
+    """
     return 1000000 * c / mass
 
 
@@ -169,6 +178,11 @@ class fileID:
         return txt
 
     def populate(self, Filename):
+        """Finds the file-stats and populates the class with stat values
+
+        :param Filename: name of the file  (string)
+        """
+
         if os.path.isfile(Filename):
             fid_st = os.stat(Filename)
             self.name = os.path.abspath(Filename)
@@ -183,12 +197,15 @@ class fileID:
         return [self.name, self.size, self.last_modified, self.location]
 
     def get_name(self):
+        """get the filename"""
         return self.name
 
     def get_size(self):
+        """get the size of the file"""
         return self.size
 
     def get_last(self):
+        """get last modification time of the file"""
         return self.last_modified
 
 
@@ -288,6 +305,8 @@ class dataset:
         return txt
 
     def makeDataFrame(self):
+        """Creates a Pandas DataFrame of the data (dfdata and dfsummary)"""
+
         self.dfdata = pd.DataFrame(self.data).sort([self.datapoint_txt])  # FutureWarning
         self.dfsummary = pd.DataFrame(self.summary).sort([self.datapoint_txt])
 
@@ -575,6 +594,7 @@ class arbindata:
         """Print to std.out if self.verbose is selected. Selecting Level = 1
         and verbose = 2 prints all statements. All other options prints only
         Level = 1 statements"""
+
         if self.verbose:
             if self.verbose != 2:
                 if Level == 1:
@@ -721,7 +741,8 @@ class arbindata:
                 return True
 
     def _check_res(self, filenames, abort_on_missing=False):
-        # get the file-ids for the res_files
+        """get the file-ids for the res_files"""
+
         strip_filenames = True
         check_on = self.filestatuschecker
         if not self._is_listtype(filenames):
@@ -752,7 +773,8 @@ class arbindata:
         return ids
 
     def _check_hdf5(self, filename):
-        # get the file-ids for the hdf5_file
+        """get the file-ids for the hdf5_file"""
+
         strip_filenames = True
         check_on = self.filestatuschecker
         if not os.path.isfile(filename):
@@ -799,9 +821,9 @@ class arbindata:
         return ids
 
     def _compare_ids(self, ids_res, ids_hdf5):
-        # check if the ids are "the same", i.e. if the ids indicates wether new
-        # data is likely to be found in the res-files
-        # checking length
+        """Check if the ids are "the same", i.e. if the ids indicates wether new
+        data is likely to be found in the res-files checking length
+        """
 
         similar = True
         l_res = len(ids_res)
@@ -816,9 +838,11 @@ class arbindata:
         return similar
 
     def _find_resfiles(self, hdf5file, counter_min=1, counter_max=10):
-        # function to find res files by locating all files of the form
-        # (date-label)_(slurry-label)_(el-label)_(cell-type)_*
-        # UNDER DEVELOPMENT
+        """function to find res files by locating all files of the form
+        (date-label)_(slurry-label)_(el-label)_(cell-type)_*
+        UNDER DEVELOPMENT
+        """
+
         counter_sep = "_"
         counter_digits = 2
         res_extension = ".res"
@@ -837,40 +861,56 @@ class arbindata:
 
         return resfiles
 
-    def loadcell(self, names=None, res=False,
-                 hdf5=False,
-                 resnames=[],
-                 masses=[],
-                 counter_sep="_",
-                 counter_pos='last',
-                 counter_digits=2,
-                 counter_max=99,
-                 counter_min=1,
-                 summary_on_res=True,
-                 summary_ir=True,
-                 summary_ocv=False,
-                 summary_end_v=True,
-                 only_symmary=False,
-                 only_first=False):
+    def loadcell(self, names=None, res=False, hdf5=False, resnames=[],
+                 masses=[], counter_sep="_", counter_pos='last',
+                 counter_digits=2, counter_max=99, counter_min=1,
+                 summary_on_res=True, summary_ir=True, summary_ocv=False,
+                 summary_end_v=True, only_summary=False, only_first=False):
 
-        """loadfile(names),
-        names = [name1, name2, ...]
-        name = 'date_slurry_no_celltype'
-        (name typically obtained from dbreader.get_cell_name(srno))
-        optional:
-            res = False, # force res-file loading
-            hdf5 = False, # force hdf5-file loading (not implemented)
-            resnames =[], # list of res-file names, do not search (not implemented)
-            masses = [], # masses for cell (used if running summary)
-            counter_sep = "_",
-            counter_pos = 'last',
-            counter_digits = 2,
-            counter_max = 99,
-            counter_min = 1,
-            summary_on_res = True # create summary for "new" files (res)
-            only_summary = False # fast-mode, use simplified loading of only summary (not implemented)
-            only_first = False # sometimes it is necessery to skip others
         """
+        loads data for given cells
+
+        :param names: identification names
+        :type names: list
+        :param res: name of res-file given
+        :type res: bool [False]
+        :param hdf5: name of hdf5-file given
+        :type hdf5: bool [False]
+        :param resnames: names of res-files
+        :type resnames: list
+        :param masses: masses of electrodes or active material
+        :type masses: list of floats
+        :param counter_sep: seperator between sub-names
+        :type counter_sep: char
+        :param counter_pos: position for index for counting
+        :type counter_pos: string ["last"]
+        :param counter_digits: number of digits in index
+        :type counter_digits: int
+        :param counter_max: max number for index (will not search after files with higher index)
+        :type counter_max: int
+        :param counter_min: min number for index (will not search for files with lower index)
+        :type counter_min: int
+        :param summary_on_res: use res-file for summary
+        :type summary_on_res: bool [True]
+        :param summary_ir: summarize ir
+        :type summary_ir: bool [True]
+        :param summary_ocv: summarize ocv steps
+        :type summary_ocv: bool [False]
+        :param summary_end_v: summarize end voltage
+        :type summary_end_v: bool [True]
+        :param only_summary: get only the summary of the runs
+        :type only_summary: bool [False]
+        :param only_first: only use the first file fitting search criteria
+        :type only_first: bool [False]
+        :return: the relaxation voltage of the model as a function of time
+
+        >>> srno = 132
+        >>> names = dbreader.get_cell_name(srno) #format date_slurry_no_celltype
+        >>> loadfile(names)
+        """
+
+
+
         # should include option to skip selected res-files (bad_files)
         self.Print("entering loadcel")
         hdf5_extension = ".h5"  # should make this "class-var"
