@@ -114,6 +114,9 @@ def humanize_bytes(bytes, precision=1):
     return '%.*f %s' % (precision, bytes / factor, suffix)
 
 
+
+
+
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     """Converts a xls date stamp to a more sensible format
 
