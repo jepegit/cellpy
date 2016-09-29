@@ -137,6 +137,7 @@ def ocv_relax_func(time, r_rc, c_rc, ocv, v_rlx, slope=None):
         ocv = np.array([ocv for _ in range((len(time)))])
     volt_rc = [relaxation_rc(time, v_initial[i], r_rc[i],
                              c_rc[i], m[i]) for i in r_rc]
+    # ocv might be negative...
     return sum(volt_rc) + ocv
 
 
@@ -172,6 +173,8 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
     # that's why guessed_sorted is done manually...
     guessed_sorted = guessed_prms['r_rc'].values() + guessed_prms[
         'c_rc'].values()
+    guessed_sorted.append(guessed_prms['ocv'])
+
     N_rc = len(guessed_prms['r_rc'].values())
 
     def adjusted_ocv_relax_function(t, n_rc, *args):
@@ -189,10 +192,11 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
         :param args: any wanted parameters
         :return: function call ocv_relax_func
         """
-        r_rc, c_rc = list(args[0][0: n_rc]), list(args[0][n_rc:])
+        r_rc, c_rc = list(args[0][0: n_rc]), list(args[0][n_rc:-1])
         r_rc = {key: r for key, r in zip(guessed_prms['r_rc'], r_rc)}
         c_rc = {k: c for k, c in zip(guessed_prms['c_rc'], c_rc)}
-        return ocv_relax_func(t, r_rc, c_rc, *args[1:])
+        ocv = args[0][-1]
+        return ocv_relax_func(t, r_rc, c_rc, ocv, *args[1:])
 
     # popt are the "optimal parameters" based on initial guess and
     # theoretical
@@ -202,21 +206,20 @@ def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
     # perr = np.sqrt(diag(pcov)), where perr is "parameter error".
     popt, pcov = curve_fit(lambda t, *p:
                            adjusted_ocv_relax_function(t, N_rc, p,
-                                                       guessed_prms['ocv'],
                                                        guessed_prms['v_rlx']),
                            time, voltage, p0=guessed_sorted, sigma=err)
 
     popt_dict = {'r_rc': {key: value for key, value in
                           zip(guessed_prms['r_rc'], popt[:N_rc])}}
     popt_c = {'c_rc': {k: val for k, val in
-                       zip(guessed_prms['c_rc'], popt[N_rc:])}}
+                       zip(guessed_prms['c_rc'], popt[N_rc:-1])}}
     pcov_dict = {'r_rc': {c_key: c_value for c_key, c_value in
-                          zip(guessed_prms['r_rc'], pcov)}}
+                          zip(guessed_prms['r_rc'], pcov[:N_rc])}}
     pcov_c = {'c_rc': {c_k: c_val for c_k, c_val in
-                       zip(guessed_prms['c_rc'], pcov[N_rc:])}}
+                       zip(guessed_prms['c_rc'], pcov[N_rc:-1])}}
     popt_dict.update(popt_c)
-    popt_dict.update({'ocv': guessed_prms['ocv'],
-                      'v_rlx': guessed_prms['v_rlx']})
+    popt_dict.update({'ocv': popt[-1]})
+    popt_dict.update({'v_rlx': guessed_prms['v_rlx']})
     pcov_dict.update(pcov_c)
     return popt_dict, pcov_dict
 
@@ -358,16 +361,12 @@ if __name__ == '__main__':
                                   c_rc=p_u['c_rc'], v_rlx=p_u['v_rlx'],
                                   ocv=p_u['ocv'])
         print 'Guessed parameters: ', guess
-        print 'Best fitted parameters: ', popt_up[cycle_plot_up]
+        print 'Best fitted parameters: ', p_u
         print '\t'
-        print 'Note that v_rlx and ocv are the same ' \
-              'for both because ocv and v_rlx are not calculated in this ' \
-              'program yet'
         print '------------------------------------------------------------'
         # print guessed_fit, best_fit
         # print '============================================================'
-        ocv_relax = np.array([guess['ocv'] + ocv_add for _ in range((len(
-            t_up)))])
+        ocv_relax = np.array([p_u['ocv'] for _ in range((len(t_up)))])
         subs[cycle_plot_up].plot(t_up, v_up, 'ob', t_up, guessed_fit, '--r',
                                  t_up, best_fit, '-y',
                                  t_up, ocv_relax, '--c')
