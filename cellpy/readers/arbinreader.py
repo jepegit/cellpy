@@ -1215,14 +1215,10 @@ class arbindata:
     # @print_function
     def _check64bit(self, System="python"):
         if System == "python":
-            if sys.platform == "cli":  # IronPython
-                import System
-                return System.IntPtr.Size == 8
-            else:
-                try:
-                    return sys.maxsize > 2147483647
-                except:
-                    return sys.maxint > 2147483647
+            try:
+                return sys.maxsize > 2147483647
+            except:
+                return sys.maxint > 2147483647
         elif System == "os":
             import platform
             pm = platform.machine()
