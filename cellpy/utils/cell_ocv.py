@@ -3,14 +3,15 @@
 """
 Adaption of OCV-relaxation data.
 """
+from scipy.optimize import curve_fit
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
-from scipy.optimize import curve_fit
 
-__author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
+
+__author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
@@ -136,8 +137,7 @@ def ocv_relax_func(time, r_rc, c_rc, ocv, v_rlx, slope=None):
     if not isinstance(ocv, type(time)):
         ocv = np.array([ocv for _ in range((len(time)))])
     volt_rc = [relaxation_rc(time, v_initial[i], r_rc[i],
-                             c_rc[i], m[i]) for i in r_rc]
-    # ocv might be negative...
+                             c_rc[i], m[i]) for i in r_rc].
     return sum(volt_rc) + ocv
 
 
