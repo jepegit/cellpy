@@ -105,7 +105,7 @@ def relaxation_rc(time, v0, r, c, slope):
     return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
 
 
-def ocv_relax_func(time, slope=None, *args):
+def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
     """
     Using relaxation_rc() for calculating ocv relaxation over the cell.
 
@@ -123,26 +123,24 @@ def ocv_relax_func(time, slope=None, *args):
     :type slope: dict
     :return: the relaxation voltage of the model as a function of time
     """
-    par_list = [arg for arg in args]
-    par_dict = {'n_rc': par_list[0], 'v_rlx': par_list[6], 'ocv': par_list[5]}
-    ocv = np.array([par_dict['ocv'] in range((len(time)))])
-    r_rc = []
-    c_rc = []
-    # Assuming par[r_#] and par[c_#] is from the same rc-circuit
-    for i in range(n_rc):
-        r_temp = 'r_%i' % (i + 1)
-        c_temp = 'c_%i' % (i + 1)
-        r_rc.append(r_temp)
-        c_rc.append(c_temp)
+    ocv_arr = np.array([ocv in range((len(time)))])
+    # r_rc = []
+    # c_rc = []
+    # # Assuming par[r_#] and par[c_#] is from the same rc-circuit
+    # for i in range(n_rc):
+    #     r_temp = 'r_%i' % (i + 1)
+    #     c_temp = 'c_%i' % (i + 1)
+    #     r_rc.append(r_temp)
+    #     c_rc.append(c_temp)
     if not slope:
-        m = [slope in range(n_rc)]
+        m = {key: None for key in r_rc.keys()}
     else:
         m = slope
 
     # Initial voltage across rc_circuits
-    v_initial = [v_rlx * r / sum(r_rc) for r in r_rc]
+    v_initial = {key: v_rlx * r / sum(r_rc.values()) for key, r in r_rc.items()}
     volt_rc = [relaxation_rc(time, v_initial[rc], r_rc[rc],
-                             c_rc[rc], m[rc]) for rc in range(n_rc)]
+                             c_rc[rc], m[rc]) for rc in r_rc.keys()]
     return sum(volt_rc) + ocv_arr
 
 

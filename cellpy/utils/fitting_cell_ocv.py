@@ -85,24 +85,46 @@ guess_up = guessing_parameters(v_start_up, i_cut_off,
                                contri, tau_guessed)
 
 
-# Trying to make parameters with lmfit Model.make_params()
-ocv_model = Model(ocv_relax_func)
+def ocv_user_adjust(par, time, meas_volt):
+    p = par.valuesdict()
+    r_rc = {key[2:]: val for key, val in p.items() if key.startswith('r')}
+    c_rc = {key[2:]: val for key, val in p.items() if key.startswith('c')}
+    return ocv_relax_func(time, r_rc=r_rc, c_rc=c_rc, ocv=p['ocv'],
+                          v_rlx=p['v_rlx']) - meas_volt
+
+
+
 # Tell the script how many rc-circuits there are in the model. This is
 # automatically done with the guessing of tau.
-ocv_model.set_param_hint('n_rc', value=len(tau_guessed))
+# ocv_model.set_param_hint('n_rc', value=len(tau_guessed))
 
+para = Parameters()
+para.add('r_ct', value=guess_up['r_rc']['ct'], min=0)
+para.add('r_d', value=guess_up['r_rc']['d'], min=0)
+para.add('c_ct', value=guess_up['c_rc']['ct'], min=0)
+para.add('c_d', value=guess_up['c_rc']['d'], min=0)
+para.add('ocv', value=guess_up['ocv'])
+para.add('v_rlx', value=guess_up['v_rlx'])
+
+t0 = np.array(sort_up[0][:]['time'])
+v0 = np.array(sort_up[0][:]['voltage'])
+fit_min = Minimizer(ocv_user_adjust, params=para, fcn_args=(t0, v0))
+result = fit_min.minimize()
+print result.residual + v0
+
+# Trying to make parameters with lmfit Model.make_params()
 # Note that it's important to set value of r_# and c_# from the same rc-circuit
 # Example: r_1 with the resistance from ct rc-circuit. Then c_1 need to have
 # the capacitance from ct too
-ocv_model.set_param_hint('r_1', value=guess_up['r_rc']['ct'], min=0)
-ocv_model.set_param_hint('r_2', value=guess_up['r_rc']['d'], min=0)
-ocv_model.set_param_hint('c_1', value=guess_up['c_rc']['ct'], min=0)
-ocv_model.set_param_hint('c_2', value=guess_up['c_rc']['d'], min=0)
-ocv_model.set_param_hint('ocv', value=guess_up['ocv'], min=0)
-ocv_model.set_param_hint('v_rlx', value=guess_up['v_rlx'], vary=False)
-ocv_model.make_params()
+# ocv_model.set_param_hint('r_ct', value=guess_up['r_rc']['ct'], min=0)
+# ocv_model.set_param_hint('r_d', value=guess_up['r_rc']['d'], min=0)
+# ocv_model.set_param_hint('c_ct', value=guess_up['c_rc']['ct'], min=0)
+# ocv_model.set_param_hint('c_d', value=guess_up['c_rc']['d'], min=0)
+# ocv_model.set_param_hint('ocv', value=guess_up['ocv'], min=0)
+# ocv_model.set_param_hint('v_rlx', value=guess_up['v_rlx'], vary=False)
+# ocv_model.make_params()
 
-print ocv_model.eval(time=np.array(sort_up[0][:]['time']))
+# print ocv_model.eval(time=np.array(sort_up[0][:]['time']))
 # print ocv_model.fit(np.array(sort_up[0][:]['voltage']))
 
 
