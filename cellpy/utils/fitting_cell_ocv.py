@@ -87,10 +87,10 @@ guess_up = guessing_parameters(v_start_up, i_cut_off,
 
 # Trying to make parameters with lmfit Model.make_params()
 ocv_model = Model(ocv_relax_func)
-
 # Tell the script how many rc-circuits there are in the model. This is
 # automatically done with the guessing of tau.
 ocv_model.set_param_hint('n_rc', value=len(tau_guessed))
+
 # Note that it's important to set value of r_# and c_# from the same rc-circuit
 # Example: r_1 with the resistance from ct rc-circuit. Then c_1 need to have
 # the capacitance from ct too
@@ -101,6 +101,8 @@ ocv_model.set_param_hint('c_2', value=guess_up['c_rc']['d'], min=0)
 ocv_model.set_param_hint('ocv', value=guess_up['ocv'], min=0)
 ocv_model.set_param_hint('v_rlx', value=guess_up['v_rlx'], vary=False)
 ocv_model.make_params()
-print ocv_model.eval()
+
+print ocv_model.eval(time=np.array(sort_up[0][:]['time']))
+# print ocv_model.fit(np.array(sort_up[0][:]['voltage']))
 
 
