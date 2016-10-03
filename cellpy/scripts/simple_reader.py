@@ -14,8 +14,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 try:
     import pyodbc as dbloader
-except:
-    print "could not import pyodbc"
+except ImportError:
+    print "could not import dbloader (pyodbc)"
+    print "this script will not work without"
     sys.exit(0)
 
 
