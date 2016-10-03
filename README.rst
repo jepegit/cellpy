@@ -18,7 +18,9 @@ cellpy
      :alt: Updates
 
 
-Python Boilerplate contains all the boilerplate you need to create a Python package.
+This Python Package was developed to help the researchers at IFE, Norway, in their cumbersome task of interpreting and handling data from cycling tests of batteries and cells.
+
+
 
 
 * Free software: MIT license
