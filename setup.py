@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Setup script for PyPI packaging
 
+This script is used for creating the PyPI package.
+python setup.py sdist - create gzip distr (source dist)
+python setup.py bdist_wheel - create build
+twine upload dist/* - upload to PyPI
+"""
 from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
@@ -9,30 +15,27 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-included_packages=find_packages(exclude=['build', 'docs', 'templates']),
+included_packages=find_packages(exclude=['build', 'docs', 'templates'])
 
+print included_packages
 
 requirements = [
-    'Click>=6.0', 'adodbapi', 'pyodbc', 'scipy', 'numpy', 'pandas', 'matplotlib',
-    # TODO: put package requirements here
+    'pyodbc', 'scipy', 'numpy', 'pandas', 'matplotlib',
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'pyodbc', 'scipy', 'numpy', 'pandas',
 ]
 
-setup(
-    name='cellpy',
-    version='0.1.0',
-    description='Extract data from battery cell testers.',
+print test_requirements
+setup(name='cellpy', version='0.1.0', description='Extract data from battery cell testers.',
     long_description=readme + '\n\n' + history,
     author="Jan Petter Maehlen",
     author_email='jepe@ife.no',
     url='https://github.com/jepegit/cellpy',
     packages=included_packages,
-    package_dir={'cellpy':
-                 'cellpy'},
-    papackage_data={
+    package_dir={'cellpy':'cellpy'},
+    package_data={
         'cellpy':[],
             # 'README.rst'],
         'databases':
@@ -52,8 +55,6 @@ setup(
              # 'scripts/batchplot.py',
              ],
              },
-
-
     entry_points={
         'console_scripts': [
             'cellpy=cellpy.cli:main'
@@ -78,5 +79,5 @@ setup(
         # 'Programming Language :: Python :: 3.5',
     ],
     test_suite='tests',
-    tests_require=test_requirements
+    tests_require=test_requirements,
 )
