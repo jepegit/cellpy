@@ -1,15 +1,29 @@
-import pyodbc as dbloader
-import matplotlib.pyplot as plt
-import shutil, os, sys, tempfile, types, time
-import numpy as np
-import pandas as pd
+# -*- coding: utf-8 -*-
+"""simple script for reading .res-files from arbin
 
+This script does not rely on any of the modules in cellpy.
+"""
+
+import shutil
+import os
+import sys
+import tempfile
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+try:
+    import pyodbc as dbloader
+except ImportError:
+    print "could not import dbloader (pyodbc)"
+    print "this script will not work without"
+    sys.exit(0)
 
 
 def convert2mAhg(d,m=0.02):
     d = np.array(d)
     return d*1000000/mass
-    
+
 def main():
 
 	tablename_normal="Channel_Normal_Table"
@@ -41,8 +55,8 @@ def main():
 	conn = dbloader.connect(constr, autocommit=True)
 	cur = conn.cursor()
 	sql = "select * from %s" % tablename_normal
-	cur.execute(sql) 
-	col_names= [i[0] for i in cur.description] 
+	cur.execute(sql)
+	col_names= [i[0] for i in cur.description]
 
 	#all_data=cur.fetchall()
 	print "COLS:"
@@ -81,12 +95,12 @@ def main():
 	for row in cur:
 	    if not row:
 		break
-	    
+
 	    limit_counter += 1
 	    if limit_counter >= limit:
 		print "x",
 		break
-	    
+
 	    state_counter += 1
 	    # getting the cycle and step index
 	    _step  = row.Step_Index
@@ -97,7 +111,7 @@ def main():
 	    _c     = row.Charge_Capacity
 	    otxt   = "%f;%i;%i;%f;%f;%f\n" % (_t,_cycle,_step,_v,_d,_c)
 	    ofile.write(otxt)
-	    
+
 	    # is this a new cycle?
 	    if _cycle > cycle and cycle >= 1:
 		#text = "(%i -> %i)" % (cycle,_cycle)
@@ -126,10 +140,10 @@ def main():
 		    if update:
 			T[i] = t2
 			V[i] = v2
-			
-			
+
+
 		    #print
-		
+
 	    # updating variables
 	    step  = _step
 	    cycle = _cycle
@@ -137,14 +151,14 @@ def main():
 	    c     = _c
 	    d     = _d
 	    t     = _t
-	    
+
 	ofile.close()
 
 	print "finnished reading"
 	print
 	print "Number of lines:",
 	print state_counter
-	print "Excecution time:", 
+	print "Excecution time:",
 	print time.time()-t
 	print "Length of data:",
 	print len(V)
@@ -159,7 +173,7 @@ def main():
 		print "...could not remove tmp-file"
 		print temp_filename
 		print e
-		
+
 	print "DATA:"
 	print "(I,D)"
 	for j,i in zip(I,D):
@@ -174,10 +188,10 @@ def main():
 	df = pd.DataFrame({'Cycle' : I,
 			   'Discharge_Capacity': D,
 			   'Charge_Capacity': C})
-			   
+
 	selection = (df.Charge_Capacity > lim_low) & (df.Charge_Capacity < lim_high)
 	df_filtered = df[selection]
-	df_filtered.to_csv(outfile2, sep=";", index = False, columns = ["Cycle", "Discharge_Capacity","Charge_Capacity"])                   
+	df_filtered.to_csv(outfile2, sep=";", index = False, columns = ["Cycle", "Discharge_Capacity","Charge_Capacity"])
 
 	plt.plot(I,C,'-', label = "charge")
 	plt.plot(df_filtered.Cycle, df_filtered.Charge_Capacity,'o', label = "filtered-charge")
@@ -185,6 +199,6 @@ def main():
 	plt.ylabel("mAh/g")
 	plt.legend()
 	plt.show()
-	
+
 if __name__ == "__main__":
 	main()

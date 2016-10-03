@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Feb 14 12:57:02 2014
-@author: Jan Petter Maehlen
-@affilation: IFE, Kjeller, Norway
-Edit the _cellpy_prms_default.ins file in the parametres folder
-or create your own file _cellpy_prms_xxx.ins
+"""Reads parameters for cellpy
+
+This module reads parametres...
 """
 
 default_prms = """
@@ -54,7 +51,7 @@ class read:
             else:
                 no_file = False
             self._readprms(no_file=no_file)
-            
+
     def __get(self,parser, opt, name, too):
         try:
             too = parser.get(opt,name)
@@ -62,8 +59,8 @@ class read:
         except ConfigParser.NoOptionError as e:
             print "error",
             print e
-            
-            
+
+
     def _readprms(self,no_file=False):
         parser = ConfigParser.SafeConfigParser()
         if no_file:
@@ -112,11 +109,11 @@ class read:
             print "prmreader.py:",
             print e
 
-    
+
     def _writeprms(self):
         print "prmreader.py: _writeprms is not implemented yet"
-        
-        
+
+
     def __str__(self):
         txt = ""
         txt += "prm-file:    \t%s\n" % self.prm_default
@@ -127,24 +124,24 @@ class read:
         txt += "hdf5datadir: \t%s\n" % self.hdf5datadir
         txt += "db_path:     \t%s\n" % self.db_path
         txt += "filelogdir:  \t%s\n" % self.filelogdir
-        
+
         txt += "db_filename: \t%s\n" % self.db_filename
         txt += "dbc_filename:\t%s\n" % self.dbc_filename
-        
+
         return txt
-        
-        
-        
-        
+
+
+
+
 if __name__=="__main__":
     r = read()
-    
+
     print "\n----------------------Read file-----------------------------"
     print "Prms:"
     print "------------------------------------------------------------"
     print r
     print "------------------------------------------------------------"
-    
+
     errors = False
     if not os.path.isdir(r.db_path):
         print "Error! db_path not found"
@@ -161,13 +158,13 @@ if __name__=="__main__":
     if not os.path.isdir(r.filelogdir):
         print "Error! filelogdir not found"
         errors = True
-        
+
     if not os.path.isfile(os.path.join(r.db_path,r.db_filename)):
         print "Error! db_filename not found"
         errors = True
     if not os.path.isfile(os.path.join(r.db_path,r.dbc_filename)):
         print "Error! dbc_filename not found"
         errors = True
-        
+
     if errors == False:
         print "All ok"
