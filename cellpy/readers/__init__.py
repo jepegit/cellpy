@@ -1,12 +1,3 @@
-# Jan Petter Maehlen, IFE, Kjeller, Norway
-# All rights reserved.
+# -*- coding: utf-8 -*-
 
 __version__ = '0.1.0'
-
-__requires__ = [
-    'pandas',
-    'adodbapi',
-    'tempfile',
-    'csv',
-    'itertools',
-]
