@@ -32,9 +32,6 @@ setup(
     packages=included_packages,
     package_dir={'cellpy':
                  'cellpy'},
-
-
-
     papackage_data={
         'cellpy':[],
             # 'README.rst'],
