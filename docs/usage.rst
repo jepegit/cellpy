@@ -3,6 +3,7 @@ Usage
 =====
 
 To use cellpy in a project::
+.. highlight:: python
 
     import sys,os,csv,itertools
     from cellpy import arbinreader
