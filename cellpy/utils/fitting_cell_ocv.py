@@ -110,7 +110,7 @@ t0 = np.array(sort_up[0][:]['time'])
 v0 = np.array(sort_up[0][:]['voltage'])
 fit_min = Minimizer(ocv_user_adjust, params=para, fcn_args=(t0, v0))
 result = fit_min.minimize()
-print result.residual + v0
+
 
 # Trying to make parameters with lmfit Model.make_params()
 # Note that it's important to set value of r_# and c_# from the same rc-circuit

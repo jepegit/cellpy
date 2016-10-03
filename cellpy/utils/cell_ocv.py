@@ -123,7 +123,7 @@ def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
     :type slope: dict
     :return: the relaxation voltage of the model as a function of time
     """
-    ocv_arr = np.array([ocv in range((len(time)))])
+    ocv_arr = np.array([ocv for _ in range((len(time)))])
     # r_rc = []
     # c_rc = []
     # # Assuming par[r_#] and par[c_#] is from the same rc-circuit
