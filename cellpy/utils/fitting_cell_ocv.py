@@ -28,23 +28,23 @@ def manipulate_data(read_data):
         has its pandas DataFrame with time-voltage for that cycle.
         """
         # extracting time data
-        time_data = [t for i in range(len(data.iloc[0, :])) for t in
-                     data.iloc[:, i] if not i % 2]
+        time_data = [t for t_col in range(len(data.iloc[0, :])) for t in
+                     data.iloc[:, t_col] if not t_col % 2]
         # extracting voltage data. The "if .. and t, v <950 will only
         # extract three first columns. This is temper as the first data only
         # had 3 ok set.
-        voltage_data = [v for k in range(0, len(data.iloc[0, :]))
-                        for v in data.iloc[:, k] if k % 2]
+        voltage_data = [v for v_col in range(0, len(data.iloc[0, :]))
+                        for v in data.iloc[:, v_col] if v_col % 2]
         num_cycles = len(time_data)/len(data)
         sorted_data = []
         key = 0
         for _ in range(0, num_cycles):
-            time = time_data[key:key + len(data)]
-            volt = voltage_data[key:key + len(data)]
+            _time = time_data[key:key + len(data)]
+            _volt = voltage_data[key:key + len(data)]
             key += len(data)
-            sorted_data.append(pd.DataFrame(zip(time, volt), columns=['time',
-                                                                      'voltage'
-                                                                      ]))
+            sorted_data.append(pd.DataFrame(zip(_time, _volt), columns=['time',
+                                                                        'voltage'
+                                                                        ]))
         return pd.Series(sorted_data)
 
     manipulate = make_data(read_data)
@@ -66,16 +66,16 @@ def manipulate_data(read_data):
     return manipulate
 
 
-def ocv_user_adjust(par, time, meas_volt):
+def ocv_user_adjust(par, t, meas_volt):
 
     p = par.valuesdict()
     r_rc = {key[2:]: val for key, val in p.items() if key.startswith('r')}
     c_rc = {key[2:]: val for key, val in p.items() if key.startswith('c')}
-    return ocv_relax_func(time, r_rc=r_rc, c_rc=c_rc, ocv=p['ocv'],
+    return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=p['ocv'],
                           v_rlx=p['v_rlx']) - meas_volt
 
 
-def plotting(t, v, guessed_volt, guessed_params, result, sub):
+def plotting(t, v, guessed_volt, guessed_params, best, sub):
 
     # Defining legends, but no need
     # def define_legends():
@@ -100,12 +100,12 @@ def plotting(t, v, guessed_volt, guessed_params, result, sub):
     #
     # legend_down, legend_up = define_legends()
 
-    res_dict = result.params.valuesdict()
+    res_dict = best.params.valuesdict()
     print 'Guessed parameters: ', guessed_params
     print 'Best fitted parameters: ', res_dict
     print '\t'
     print '------------------------------------------------------------'
-    best_fit = result.residual + v
+    best_fit = best.residual + v
     ocv = np.array([res_dict['ocv'] for _ in range(len(t))])
     sub.plot(t, v, 'ob', t, guessed_volt, '--r', t, best_fit, '-y',
              t, ocv, '--c')
