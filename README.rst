@@ -33,7 +33,10 @@ batteries and cells.
 Features
 --------
 
-* TODO
+* Load test-data and store in hdf5 format.
+* Filter out the steps of interest.
+* Process and plot the data.
+* And more...
 
 Credits
 ---------
