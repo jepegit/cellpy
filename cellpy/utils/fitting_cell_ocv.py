@@ -50,19 +50,19 @@ def manipulate_data(read_data):
     manipulate = make_data(read_data)
 
     # setting NaN (very manually) to be the last real number
-    manipulate.loc[:1][0]['time'].iloc[-2] = manipulate.loc[:1][0]['time'].iloc[-3]
-    manipulate.loc[:1][0]['time'].iloc[-1] = manipulate.loc[:1][0]['time'].iloc[-3]
-    manipulate.loc[:1][1]['time'].iloc[-2] = manipulate.loc[:1][1]['time'].iloc[-3]
-    manipulate.loc[:1][1]['time'].iloc[-1] = manipulate.loc[:1][1]['time'].iloc[-3]
-
-    manipulate.loc[:1][0]['voltage'].iloc[-2] = manipulate.loc[:1][0][
-        'voltage'].iloc[-3]
-    manipulate.loc[:1][0]['voltage'].iloc[-1] = manipulate.loc[:1][0][
-        'voltage'].iloc[-3]
-    manipulate.loc[:1][1]['voltage'].iloc[-2] = manipulate.loc[:1][1][
-        'voltage'].iloc[-3]
-    manipulate.loc[:1][1]['voltage'].iloc[-1] = manipulate.loc[:1][1][
-        'voltage'].iloc[-3]
+    # manipulate.loc[:1][0]['time'].iloc[-2] = manipulate.loc[:1][0]['time'].iloc[-3]
+    # manipulate.loc[:1][0]['time'].iloc[-1] = manipulate.loc[:1][0]['time'].iloc[-3]
+    # manipulate.loc[:1][1]['time'].iloc[-2] = manipulate.loc[:1][1]['time'].iloc[-3]
+    # manipulate.loc[:1][1]['time'].iloc[-1] = manipulate.loc[:1][1]['time'].iloc[-3]
+    #
+    # manipulate.loc[:1][0]['voltage'].iloc[-2] = manipulate.loc[:1][0][
+    #     'voltage'].iloc[-3]
+    # manipulate.loc[:1][0]['voltage'].iloc[-1] = manipulate.loc[:1][0][
+    #     'voltage'].iloc[-3]
+    # manipulate.loc[:1][1]['voltage'].iloc[-2] = manipulate.loc[:1][1][
+    #     'voltage'].iloc[-3]
+    # manipulate.loc[:1][1]['voltage'].iloc[-1] = manipulate.loc[:1][1][
+    #     'voltage'].iloc[-3]
     return manipulate
 
 
@@ -75,7 +75,7 @@ def ocv_user_adjust(par, t, meas_volt):
                           v_rlx=p['v_rlx']) - meas_volt
 
 
-def plotting(t, v, guessed_volt, guessed_params, best, sub):
+def plotting(t, v, guessed_volt, best, sub):
 
     # Defining legends, but no need
     # def define_legends():
@@ -101,7 +101,7 @@ def plotting(t, v, guessed_volt, guessed_params, best, sub):
     # legend_down, legend_up = define_legends()
 
     res_dict = best.params.valuesdict()
-    print 'Guessed parameters: ', guessed_params
+    print 'Guessed parameters: ', best.init_values
     print 'Best fitted parameters: ', res_dict
     print '\t'
     print '------------------------------------------------------------'
@@ -138,41 +138,38 @@ if __name__ == '__main__':
     # function "GuessRC2"
     tau_guessed = {'ct': 50, 'd': 400}
 
-    guess = {}
-    para = {}
-    time = {}
-    voltage = {}
-    guessed_voltage = {}
-
     # Preparations for fitting
+    time = []
+    voltage = []
     for i, sort_up in data_up.iteritems():
-        guess['cycle_%i' % (i + 1)] =\
-            guessing_parameters(v_start_up,
-                                i_cut_off,
-                                np.array(sort_up[:]['voltage']),
-                                contri, tau_guessed)
-        para['cycle_%i' % (i+1)] = Parameters()
-        add_para = para['cycle_%i' % (i + 1)]
-        temp_cycle = guess['cycle_%i' % (i + 1)]
-        add_para.add('r_ct', value=temp_cycle['r_rc']['ct'], min=0)
-        add_para.add('r_d', value=temp_cycle['r_rc']['d'], min=0)
-        add_para.add('c_ct', value=temp_cycle['c_rc']['ct'], min=0)
-        add_para.add('c_d', value=temp_cycle['c_rc']['d'], min=0)
-        add_para.add('ocv', value=temp_cycle['ocv'])
-        add_para.add('v_rlx', value=temp_cycle['v_rlx'])
-        time['cycle_%i' % (i+1)] = np.array(sort_up[:]['time'])
-        voltage['cycle_%i' % (i+1)] = np.array(sort_up[:]['voltage'])
-        guessed_voltage['cycle_%i' % (i + 1)] =\
-            ocv_relax_func(time['cycle_%i' % (i+1)], temp_cycle['ocv'],
-                           temp_cycle['v_rlx'], temp_cycle['r_rc'],
-                           temp_cycle['c_rc'])
+        time.append(np.array(sort_up[:]['time']))
+        voltage.append(np.array(sort_up[:]['voltage']))
+        time[i] = time[i][~np.isnan(time[i])]
+        voltage[i] = voltage[i][~np.isnan(voltage[i])]
+    init_guess = [guessing_parameters(v_start_up, i_cut_off,
+                                      voltage[0], contri, tau_guessed)]
+    para = [Parameters()]
+    para[0].add('r_ct', value=init_guess[0]['r_rc']['ct'], min=0)
+    para[0].add('r_d', value=init_guess[0]['r_rc']['d'], min=0)
+    para[0].add('c_ct', value=init_guess[0]['c_rc']['ct'], min=0)
+    para[0].add('c_d', value=init_guess[0]['c_rc']['d'], min=0)
+    para[0].add('ocv', value=init_guess[0]['ocv'])
+    para[0].add('v_rlx', value=init_guess[0]['v_rlx'])
+    guessed_voltage = [ocv_relax_func(time[0], init_guess[0]['ocv'],
+                                      init_guess[0]['v_rlx'],
+                                      init_guess[0]['r_rc'],
+                                      init_guess[0]['c_rc'])]
+
+
 
     # Fitting data
-    result = {}
-    for cycle, parameters in para.items():
-        fit_min = Minimizer(ocv_user_adjust, params=parameters,
-                            fcn_args=(time[cycle], voltage[cycle]))
-        result[cycle] = fit_min
+    result = [Minimizer(ocv_user_adjust, params=para[0],
+                        fcn_args=(time[0], voltage[0])).minimize()]
+
+    for cycle_i in range(1, len(time)):
+        result.append(Minimizer(
+            ocv_user_adjust, params=result[cycle_i - 1].params,
+            fcn_args=(time[cycle_i], voltage[cycle_i])).minimize())
 
     # Plotting
     fig_up = plt.figure(figsize=(20, 13))
@@ -186,11 +183,8 @@ if __name__ == '__main__':
     # for sic006_45 with the 3 first cycles only
     subs_up = [fig_up.add_subplot(3, 1, j+1) for j in range(3)]
 
-    for _, sub_up in enumerate(subs_up):
-        plotting(time['cycle_%i' % (_+1)],
-                 voltage['cycle_%i' % (_+1)],
-                 guessed_voltage['cycle_%i' % (_ + 1)],
-                 guess['cycle_%i' % (_ + 1)],
-                 result['cycle_%i' % (_ + 1)].minimize(), sub_up)
+    for cycle_nr, sub_up in enumerate(subs_up):
+        plotting(time[cycle_nr], voltage[cycle_nr], guessed_voltage[cycle_nr],
+                 result[cycle_nr], sub_up)
 
     plt.show()
