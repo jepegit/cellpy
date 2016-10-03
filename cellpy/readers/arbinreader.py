@@ -55,25 +55,16 @@ else:
 
 import shutil, os, sys, tempfile, types
 import collections, time
+import warnings
+import csv
+import itertools
+import cProfile, pstats, StringIO
 from scipy import amax, amin, unique, average, ceil, interpolate, flipud, subtract
 from numpy import arange
-import warnings
-
-# from pylab import *
-# import matplotlib.pyplot as plt
 import pandas as pd
 
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
-# import datetime
-import csv
-import itertools
-# import cProfile
-import cProfile, pstats, StringIO
-
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
-
-
-# pd.set_option('mode.chained_assignment',None) # "raise" "warn"
 
 
 def humanize_bytes(bytes, precision=1):
@@ -115,14 +106,17 @@ def humanize_bytes(bytes, precision=1):
 
 
 
-
-
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     """Converts a xls date stamp to a more sensible format
 
-    :param xldate: date stamp in Excel format  (string)
-    :param datemode: 0 for 1900-based, 1 for 1904-based
-    :param r: option in ("to_datetime", "to_float", "to_string"
+    Args:
+        xldate (str): date stamp in Excel format.
+        datemode (int): 0 for 1900-based, 1 for 1904-based.
+        option (str): option in ("to_datetime", "to_float", "to_string")
+
+    Returns:
+        r: Depends on option.
+
     """
 
     # This does not work for numpy-arrays
@@ -145,9 +139,12 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
 def Convert2mAhg(c, mass=1.0):
     """Converts capacity in Ah to capacity in mAh/g
 
-    :param c: capacity in mA  (float or numpy array)
-    :param mass: mass in mg
-    :return: 1000000 * c / mass
+    Args:
+        c (float or numpy array): capacity in mA.
+        mass (float): cmass in mg.
+
+    Returns:
+        float: 1000000 * c / mass
     """
     return 1000000 * c / mass
 
@@ -187,7 +184,8 @@ class fileID:
     def populate(self, Filename):
         """Finds the file-stats and populates the class with stat values
 
-        :param Filename: name of the file  (string)
+        Args:
+            Filename (str): name of the file
         """
 
         if os.path.isfile(Filename):
@@ -201,6 +199,11 @@ class fileID:
             self.location = os.path.dirname(Filename)
 
     def get_raw(self):
+        """get a list with information about the file
+
+
+        The returned list contains name, size, last_modified and location.
+        """
         return [self.name, self.size, self.last_modified, self.location]
 
     def get_name(self):
@@ -260,7 +263,9 @@ class dataset:
 
     def set_material(self, material="silicon"):
         """ convinience function for setting parameters based on type of test/ material.
-        Not functional yet."""
+
+        This option is not functional yet.
+        """
 
         if not material.lower() in ["silicon", "cathode", "nimh"]:
             material = "silicon"
@@ -469,27 +474,6 @@ class arbindata:
             self.voltage_txt = 'Voltage'
             self.dv_dt_txt = 'dV/dt'
 
-
-
-            #
-
-            # aux
-            # ------------decorators-and-printers-------------------------------------------
-            #    def do_cprofile(func):
-            #        def profiled_func(*args, **kwargs):
-            #            profile = cProfile.Profile()
-            #            try:
-            #                if args[0].verbose and args[0].profile:
-            #                    profile.enable()
-            #                result = func(*args, **kwargs)
-            #                if args[0].verbose and args[0].profile:
-            #                    profile.disable()
-            #                return result
-            #            finally:
-            #                if args[0].verbose and args[0].profile:
-            #                    profile.print_stats()
-            #        return profiled_func
-
     def do_cprofile(func):
         def profiled_func(*args, **kwargs):
             profile = cProfile.Profile()
@@ -502,13 +486,7 @@ class arbindata:
                 return result
             finally:
                 if args[0].profile:
-                    #                    s = StringIO.StringIO()
-                    #                    sortby = 'cumulative'
-                    #                    ps = pstats.Stats(profile, stream=s).sort_stats(sortby)
-                    #                    ps.print_stats()
-                    #                    print s.getvalue()
                     profile.print_stats()
-
         return profiled_func
 
     def timeit(method):
@@ -598,9 +576,12 @@ class arbindata:
         return printfunc
 
     def Print(self, txt=None, Level=0):
-        """Print to std.out if self.verbose is selected. Selecting Level = 1
-        and verbose = 2 prints all statements. All other options prints only
-        Level = 1 statements"""
+        """Print to std.out if self.verbose is selected.
+
+        Args:
+            txt (str): text to print.
+            Level (int): 1 print all statements for verbose = 2, else prints only Level=1 statements
+        """
 
         if self.verbose:
             if self.verbose != 2:
@@ -619,10 +600,21 @@ class arbindata:
                     # ----loading-and-merging-data--------------------------------------------------
 
     def set_res_datadir(self, directory=None):
-        _usage_ = """
-        set_res_datadir(directory)
-        used for setting directory for looking for res-files
-        valid directory name is required"""
+        """set the directory containing .res-files
+
+        Used for setting directory for looking for res-files. A valid directory name is required.
+
+        Example::
+            d = arbindata()
+            directory = r"C:\MyData\Arbindata"
+            d.set_res_datadir(directory)
+
+
+        Args:
+            directory (str): path to res-directory
+        """
+
+
         if directory is None:
             print _usage_
             print "no directory name given"
@@ -635,10 +627,20 @@ class arbindata:
         self.res_datadir = directory
 
     def set_hdf5_datadir(self, directory=None):
-        _usage_ = """
-        set_hdf5_datadir(directory)
-        used for setting directory for looking for hdf5-files
-        valid directory name is required"""
+        """set the directory containing .hdf5-files
+
+        Used for setting directory for looking for hdf5-files. A valid directory name is required.
+
+        Example::
+            d = arbindata()
+            directory = r"C:\MyData\HDF5"
+            d.set_res_datadir(directory)
+
+
+        Args:
+            directory (str): path to hdf5-directory
+        """
+
         if directory is None:
             print _usage_
             print "no directory name given"
