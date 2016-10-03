@@ -18,7 +18,10 @@ cellpy
      :alt: Updates
 
 
-This Python Package was developed to help the researchers at IFE, Norway, in their cumbersome task of interpreting and handling data from cycling tests of batteries and cells.
+This Python Package was developed to help the
+researchers at IFE, Norway, in their cumbersome task of
+interpreting and handling data from cycling tests of
+batteries and cells.
 
 
 
