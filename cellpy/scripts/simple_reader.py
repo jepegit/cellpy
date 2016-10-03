@@ -4,12 +4,19 @@
 This script does not rely on any of the modules in cellpy.
 """
 
-import matplotlib.pyplot as plt
-import shutil, os, sys, tempfile, types, time
+import shutil
+import os
+import sys
+import tempfile
+import time
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
-
-import pyodbc as dbloader
+try:
+    import pyodbc as dbloader
+except:
+    print "could not import pyodbc"
+    sys.exit(0)
 
 
 def convert2mAhg(d,m=0.02):
