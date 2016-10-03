@@ -75,7 +75,7 @@ def ocv_user_adjust(par, t, meas_volt):
                           v_rlx=p['v_rlx']) - meas_volt
 
 
-def plotting(t, v, guessed_volt, best, sub):
+def plotting(t, v, best, sub):
 
     # Defining legends, but no need
     # def define_legends():
@@ -107,11 +107,10 @@ def plotting(t, v, guessed_volt, best, sub):
     print '------------------------------------------------------------'
     best_fit = best.residual + v
     ocv = np.array([res_dict['ocv'] for _ in range(len(t))])
-    sub.plot(t, v, 'ob', t, guessed_volt, '--r', t, best_fit, '-y',
-             t, ocv, '--c')
+    sub.plot(t, v, 'ob', t, best_fit, '-y', t, ocv, '--c')
     sub.set_xlabel('Time (s)')
     sub.set_ylabel('Voltage (V)')
-    sub.legend(['Measured', 'Guessed', 'Best fit', 'ocv - relaxed'])
+    sub.legend(['Measured', 'Best fit', 'ocv - relaxed'])
     # residuals. Don't know how to yet.. Check out gridspec
     # diff = v_up - best_fit
     # res[cycle_plot_up].plot(t_up, diff, 'or')
@@ -144,32 +143,34 @@ if __name__ == '__main__':
     for i, sort_up in data_up.iteritems():
         time.append(np.array(sort_up[:]['time']))
         voltage.append(np.array(sort_up[:]['voltage']))
+        # removing nan is inspired by:
+# http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
         time[i] = time[i][~np.isnan(time[i])]
         voltage[i] = voltage[i][~np.isnan(voltage[i])]
     init_guess = [guessing_parameters(v_start_up, i_cut_off,
                                       voltage[0], contri, tau_guessed)]
-    para = [Parameters()]
-    para[0].add('r_ct', value=init_guess[0]['r_rc']['ct'], min=0)
-    para[0].add('r_d', value=init_guess[0]['r_rc']['d'], min=0)
-    para[0].add('c_ct', value=init_guess[0]['c_rc']['ct'], min=0)
-    para[0].add('c_d', value=init_guess[0]['c_rc']['d'], min=0)
-    para[0].add('ocv', value=init_guess[0]['ocv'])
-    para[0].add('v_rlx', value=init_guess[0]['v_rlx'])
-    guessed_voltage = [ocv_relax_func(time[0], init_guess[0]['ocv'],
-                                      init_guess[0]['v_rlx'],
-                                      init_guess[0]['r_rc'],
-                                      init_guess[0]['c_rc'])]
+    para = Parameters()
+    para.add('r_ct', value=init_guess[0]['r_rc']['ct'], min=0)
+    para.add('r_d', value=init_guess[0]['r_rc']['d'], min=0)
+    para.add('c_ct', value=init_guess[0]['c_rc']['ct'], min=0)
+    para.add('c_d', value=init_guess[0]['c_rc']['d'], min=0)
+    para.add('ocv', value=init_guess[0]['ocv'])
+    para.add('v_rlx', value=init_guess[0]['v_rlx'])
+    guessed_voltage = ocv_relax_func(time[0], init_guess[0]['ocv'],
+                                     init_guess[0]['v_rlx'],
+                                     init_guess[0]['r_rc'],
+                                     init_guess[0]['c_rc'])
 
 
 
     # Fitting data
-    result = [Minimizer(ocv_user_adjust, params=para[0],
+    result = [Minimizer(ocv_user_adjust, params=para,
                         fcn_args=(time[0], voltage[0])).minimize()]
-
     for cycle_i in range(1, len(time)):
-        result.append(Minimizer(
-            ocv_user_adjust, params=result[cycle_i - 1].params,
-            fcn_args=(time[cycle_i], voltage[cycle_i])).minimize())
+        para = result[cycle_i - 1].params
+        result.append(Minimizer(ocv_user_adjust, params=para,
+                                fcn_args=(time[cycle_i],
+                                          voltage[cycle_i])).minimize())
 
     # Plotting
     fig_up = plt.figure(figsize=(20, 13))
@@ -184,7 +185,10 @@ if __name__ == '__main__':
     subs_up = [fig_up.add_subplot(3, 1, j+1) for j in range(3)]
 
     for cycle_nr, sub_up in enumerate(subs_up):
-        plotting(time[cycle_nr], voltage[cycle_nr], guessed_voltage[cycle_nr],
-                 result[cycle_nr], sub_up)
-
+        plotting(time[cycle_nr], voltage[cycle_nr], result[cycle_nr], sub_up)
+    fig_up2 = plt.figure(figsize=(20, 13))
+    subs_up2 = [fig_up2.add_subplot(3, 1, w+1) for w in range(3)]
+    for cycle_nr2, sub_up2 in enumerate(subs_up2):
+        plotting(time[cycle_nr + cycle_nr2], voltage[cycle_nr + cycle_nr2],
+        result[cycle_nr + cycle_nr2], sub_up2)
     plt.show()
