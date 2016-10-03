@@ -17,8 +17,6 @@ with open('HISTORY.rst') as history_file:
 
 included_packages=find_packages(exclude=['build', 'docs', 'templates'])
 
-print included_packages
-
 requirements = [
     'pyodbc', 'scipy', 'numpy', 'pandas', 'matplotlib',
 ]
@@ -27,7 +25,6 @@ test_requirements = [
     'pyodbc', 'scipy', 'numpy', 'pandas',
 ]
 
-print test_requirements
 setup(name='cellpy', version='0.1.0', description='Extract data from battery cell testers.',
     long_description=readme + '\n\n' + history,
     author="Jan Petter Maehlen",
