@@ -33,12 +33,9 @@ Todo:
 """
 
 __version__ = '0.1.0'
-"""string: Module level variable documented inline.
 
-The docstring may span multiple lines. The type may optionally be specified
-on the first line, separated by a colon.
-"""
 USE_ADO = False
+"""string: set True if using adodbapi"""
 
 if USE_ADO:
     try:
@@ -53,12 +50,19 @@ else:
         print "could not import dbloader (pyodbc)"
         print "many of the functions will not work"
 
-import shutil, os, sys, tempfile, types
-import collections, time
+import shutil
+import os
+import sys
+import tempfile
+import types
+import collections
+import time
 import warnings
 import csv
 import itertools
-import cProfile, pstats, StringIO
+import cProfile
+import pstats
+import StringIO
 from scipy import amax, amin, unique, average, ceil, interpolate, flipud, subtract
 from numpy import arange
 import pandas as pd
@@ -149,7 +153,7 @@ def Convert2mAhg(c, mass=1.0):
     return 1000000 * c / mass
 
 
-class fileID:
+class fileID(object):
     def __init__(self, Filename=None):
         make_defaults = True
         if Filename:
@@ -219,7 +223,7 @@ class fileID:
         return self.last_modified
 
 
-class dataset:
+class dataset(object):
     def __init__(self):
         self.test_no = None
         self.mass = 1.0  # mass of (active) material (in mg)
@@ -324,7 +328,7 @@ class dataset:
 
 
 # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
-class arbindata:
+class arbindata(object):
     def __init__(self, filenames=None,
                  selected_scans=None,
                  verbose=False,
