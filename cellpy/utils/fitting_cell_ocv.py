@@ -7,10 +7,10 @@ Using lmfit to fit "cell_ocv" model
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
-from lmfit import minimize, Minimizer, Parameters, Parameter, Model
+from lmfit import Minimizer, Parameters
 from cell_ocv import *
 
-import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
 import os
