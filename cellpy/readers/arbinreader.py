@@ -154,6 +154,22 @@ def Convert2mAhg(c, mass=1.0):
 
 
 class fileID(object):
+    """class for storing information about the raw-data files.
+
+        This class is used for storing and handling raw-data file information. It is important
+        to keep track of when the data was extracted from the raw-data files so that it is
+        easy to know if the hdf5-files used for storing "treated" data is up-to-date.
+
+        Attributes:
+            name (str): Filename of the raw-data file.
+            full_name (str): Filename including path of the raw-data file.
+            size (float): Size of the raw-data file.
+            last_modified (datetime): last time of modification of the raw-data file.
+            last_accessed (datetime): last time of access of the raw-data file.
+            last_info_changed (datetime): st_ctime of the raw-data file.
+            location (str): Location of the raw-data file.
+
+        """
     def __init__(self, Filename=None):
         make_defaults = True
         if Filename:
@@ -224,6 +240,10 @@ class fileID(object):
 
 
 class dataset(object):
+    """Object to store all the data
+
+    The most important part is the dataset.dfdata and dataset.dfsummary attributes. These contains
+    the measurement data and a summary of these datas."""
     def __init__(self):
         self.test_no = None
         self.mass = 1.0  # mass of (active) material (in mg)
@@ -4896,6 +4916,21 @@ class arbindata(object):
 
 
 def setup_cellpy_instance():
+    """Prepares for a cellpy session
+
+    This convinience function creates a cellpy class and sets the parameters
+    from your parameters file (using prmreader.read()
+
+    Returns:
+        an arbindata object
+
+    Example:
+
+        >>> celldata = setup_cellpy_instance()
+        read prms
+        making class and setting prms
+
+        """
     from cellpy import prmreader
     prms = prmreader.read()
     print "read prms"
@@ -4908,6 +4943,23 @@ def setup_cellpy_instance():
 
 
 def just_load_srno(srno=None):
+    """Simply load an dataset based on srno
+
+    This convenience function reads a dataset based on a serial number. This serial
+    number (srno) must then be defined in your database. It is mainly used to check
+    that things are set up correctly
+
+    Args:
+        srno (int): serial number
+
+    Example:
+        >>> srno = 918
+        >>> just_load_srno(srno)
+        srno: 918
+        read prms
+        ....
+
+        """
     from cellpy import dbreader, prmreader
     if srno is None:
         srno = 918
@@ -4954,6 +5006,9 @@ def just_load_srno(srno=None):
 
 
 def extract_ocvrlx():
+    """get the ocvrlx data from dataset.
+
+    Convenience function for extracting ocv relaxation data from runs."""
     import itertools
     import csv
     import matplotlib.pyplot as plt
