@@ -8,6 +8,7 @@ from lmfit import Minimizer, Parameters
 from cell_ocv import ocv_relax_func, guessing_parameters
 
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 import pandas as pd
 import os
@@ -75,46 +76,30 @@ def ocv_user_adjust(par, t, meas_volt):
                           v_rlx=p['v_rlx']) - meas_volt
 
 
-def plotting(t, v, best, sub):
-
-    # Defining legends, but no need
-    # def define_legends():
-    #     """
-    #     creating a list with legends from both up and down ocv_data
-    #
-    #     :return: list of legends for ocv_data
-    #     """
-    #     leg_down = []
-    #     leg_up = []
-    #     count = 0
-    #     for lbl_down in data_down:
-    #         if count % 2:
-    #             leg_down.append(str(lbl_down))
-    #         count += 1
-    #     count = 0
-    #     for lbl_up in data_up:
-    #         if count % 2:
-    #             leg_up.append((str(lbl_up)))
-    #         count += 1
-    #     return leg_down, leg_up
-    #
-    # legend_down, legend_up = define_legends()
+def plot_voltage(t, v, best, sub_fig):
 
     res_dict = best.params.valuesdict()
-    print 'Guessed parameters: ', best.init_values
-    print 'Best fitted parameters: ', res_dict
-    print '\t'
-    print '------------------------------------------------------------'
+    # print 'Guessed parameters: ', best.init_values
+    # print 'Best fitted parameters: ', res_dict
+    # print '\t'
+    # print '------------------------------------------------------------'
     best_fit = best.residual + v
     ocv = np.array([res_dict['ocv'] for _ in range(len(t))])
-    sub.plot(t, v, 'ob', t, best_fit, '-y', t, ocv, '--c')
-    sub.set_xlabel('Time (s)')
-    sub.set_ylabel('Voltage (V)')
-    sub.legend(['Measured', 'Best fit', 'ocv - relaxed'])
-    # residuals. Don't know how to yet.. Check out gridspec
-    # diff = v_up - best_fit
-    # res[cycle_plot_up].plot(t_up, diff, 'or')
-    # res[cycle_plot_up].legend(['Residuals'])
+    sub_fig.plot(t, v, 'ob', t, best_fit, '-y', t, ocv, '--c')
+    sub_fig.set_xlabel('Time (s)')
+    sub_fig.set_ylabel('Voltage (V)')
+    sub_fig.legend(['Measured', 'Best fit', 'ocv - relaxed'], loc='center left',
+                   bbox_to_anchor=(1, 0.5), prop={'size': 10})
+    # sub.set_yticks(np.arange(v[0] - v[0] * 0.05, ocv[0] + ocv[0] * 0.05,
+    #                          ocv[0] * 0.2))
+
+
+def print_params(ini, fit):
+
+    for key, value in fit.items():
+        print 'Guessed: %-9 Fitted Parameters:'
+        print '\t'
+        print '%s: %-9f %f' % (key, ini[key], value)
 
 
 if __name__ == '__main__':
@@ -149,46 +134,84 @@ if __name__ == '__main__':
         voltage[i] = voltage[i][~np.isnan(voltage[i])]
     init_guess = [guessing_parameters(v_start_up, i_cut_off,
                                       voltage[0], contri, tau_guessed)]
-    para = Parameters()
-    para.add('r_ct', value=init_guess[0]['r_rc']['ct'], min=0)
-    para.add('r_d', value=init_guess[0]['r_rc']['d'], min=0)
-    para.add('c_ct', value=init_guess[0]['c_rc']['ct'], min=0)
-    para.add('c_d', value=init_guess[0]['c_rc']['d'], min=0)
-    para.add('ocv', value=init_guess[0]['ocv'])
-    para.add('v_rlx', value=init_guess[0]['v_rlx'])
+    initial_param = Parameters()
+    initial_param.add('r_ct', value=init_guess[0]['r_rc']['ct'], min=0)
+    initial_param.add('r_d', value=init_guess[0]['r_rc']['d'], min=0)
+    initial_param.add('c_ct', value=init_guess[0]['c_rc']['ct'], min=0)
+    initial_param.add('c_d', value=init_guess[0]['c_rc']['d'], min=0)
+    initial_param.add('ocv', value=init_guess[0]['ocv'])
+    initial_param.add('v_rlx', value=init_guess[0]['v_rlx'])
     guessed_voltage = ocv_relax_func(time[0], init_guess[0]['ocv'],
                                      init_guess[0]['v_rlx'],
                                      init_guess[0]['r_rc'],
                                      init_guess[0]['c_rc'])
-
-
-
     # Fitting data
-    result = [Minimizer(ocv_user_adjust, params=para,
+    result = [Minimizer(ocv_user_adjust, params=initial_param,
                         fcn_args=(time[0], voltage[0])).minimize()]
+    best_para = [result[0].params]
+    fitted_voltage = [result[0].residual + voltage[0]]
+
     for cycle_i in range(1, len(time)):
-        para = result[cycle_i - 1].params
-        result.append(Minimizer(ocv_user_adjust, params=para,
+        result.append(Minimizer(ocv_user_adjust, params=best_para[cycle_i - 1],
                                 fcn_args=(time[cycle_i],
                                           voltage[cycle_i])).minimize())
+        best_para.append(result[cycle_i].params)
+        fitted_voltage.append(result[cycle_i].residual + voltage[cycle_i])
 
-    # Plotting
+
+    # Printing parameters
+    for cyc in range(1, len(result)):
+        print 'cycle number %i' % cyc
+        print_params(ini=best_para[cyc - 1], fit=best_para[cyc])
+        print '--------------------------------------------------------'
+
+    # Plotting voltage
     fig_up = plt.figure(figsize=(20, 13))
     plt.suptitle('OCV-relaxation data from cell "sic006_cc_45_01" with best '
                  'fitted and guessed parameters',
                  size=20)
-    # ####################################################################
-    # general for all cycles.
-    # subs_up = [fig_up.add_subplot(3, 1, i) for i in range(len(data_up))]
-    # ####################################################################
-    # for sic006_45 with the 3 first cycles only
-    subs_up = [fig_up.add_subplot(3, 1, j+1) for j in range(3)]
+    if len(result) % 2 == 0:   # Even number of cycles
+        gs = gridspec.GridSpec(len(result) / 2, 3)
+        gs.update(left=0.1, right=0.6, wspace=0.1)
+        subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
+    else:
+        gs = gridspec.GridSpec((len(result) + 1) / 2, 3)
+        gs.update(left=0.05, right=0.8, wspace=0.8)
+        subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
 
+    lines = []
     for cycle_nr, sub_up in enumerate(subs_up):
-        plotting(time[cycle_nr], voltage[cycle_nr], result[cycle_nr], sub_up)
-    fig_up2 = plt.figure(figsize=(20, 13))
-    subs_up2 = [fig_up2.add_subplot(3, 1, w+1) for w in range(3)]
-    for cycle_nr2, sub_up2 in enumerate(subs_up2):
-        plotting(time[cycle_nr + cycle_nr2], voltage[cycle_nr + cycle_nr2],
-        result[cycle_nr + cycle_nr2], sub_up2)
+        if not lines:
+            lines = [voltage[cycle_nr], fitted_voltage[cycle_nr],
+                     np.array([best_para[cycle_nr]['ocv']
+                              for _ in range(len(time[cycle_nr]))])]
+
+        plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
+                     sub_up)
+
+    # Plot parameters
+    fig_params = plt.figure(figsize=(20, 13))
+    plt.suptitle('Initial and fitted parameters in every cycle', size=20)
+    if len(best_para[0]) % 2 == 0:   # Even number of cycles
+        gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
+        gs.update(left=0.05, right=0.9, wspace=1)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+    else:
+        gs = gridspec.GridSpec((len(best_para[0]) + 1) / 2, 3)
+        gs.update(left=0.05, right=0.9, wspace=1)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+
+    cycle_array = np.array([c for c in range(len(result))])
+
+    for _, name in enumerate(result[0].var_names):
+        para_array = np.array([best_para[step][name]
+                               for step in range(len(result))])
+        subs_params[_].plot(cycle_array, para_array, 'or')
+        subs_params[_].legend([name], loc='center left',
+                              bbox_to_anchor=(1, 0.5))
+
+    # fig_up.legend(lines, ['Measured', 'Best fit', 'ocv - relaxed'],
+                  # loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
