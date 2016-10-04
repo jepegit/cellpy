@@ -203,7 +203,7 @@ if __name__ == '__main__':
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
 
-    cycle_array = np.array([c for c in range(len(result))])
+    cycle_array = np.arange(1, len(result) + 1, 1)
 
     for _, name in enumerate(result[0].var_names):
         para_array = np.array([best_para[step][name]
