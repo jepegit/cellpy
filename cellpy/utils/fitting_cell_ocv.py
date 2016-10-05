@@ -131,8 +131,9 @@ if __name__ == '__main__':
     init_guess_up = guessing_parameters(v_start_up, i_cut_off,
                                         voltage_up[0], contri, tau_guessed)
     initial_param_up = Parameters()
-    initial_param_up.add('r_ct', value=init_guess_up['r_rc']['ct'], min=0)
-    initial_param_up.add('r_d', value=init_guess_up['r_rc']['d'], min=0)
+    # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
+    initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
+    initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
     initial_param_up.add('c_ct', value=1., vary=False)
     initial_param_up.add('c_d', value=1., vary=False)
     initial_param_up.add('ocv', value=init_guess_up['ocv'])
@@ -173,9 +174,10 @@ if __name__ == '__main__':
 
     for cycle_nr in user_cycles_up_list:
         plt.figure(figsize=(20, 13))
-        plt.suptitle('Measured and fitted voltage of cycle %i' % cycle_nr)
+        plt.suptitle('Measured and fitted voltage of cycle %i' % cycle_nr + 1)
         plot_voltage(time_up[cycle_nr], voltage_up[cycle_nr],
                      result_up[cycle_nr])
+        report_fit(result_up[cycle_nr])
 
 
     # sub plotting voltage
