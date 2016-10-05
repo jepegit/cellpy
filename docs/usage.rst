@@ -2,119 +2,49 @@
 Usage
 =====
 
-To use cellpy in a project::
-.. highlight:: python
+To use cellpy, start with importing the needed modules::
 
-    import sys,os,csv,itertools
-    from cellpy import arbinreader
+    >>> from cellpy import arbinreader # obs! this name will be changed
+    
+Lets define some variables::
 
-    FileName  = r"C:\Scripting\MyFiles\dev_arbindata\abdel\20141030_LBCM5_6_cc_01.res"
-    Mass      = 0.982
-    OutFolder = r"C:\Scripting\MyFiles\dev_arbindata\abdel\processed"
+    >>> FileName  = r"C:\data\20141030_CELL_6_cc_01.res"
+    >>> Mass      = 0.982 # mass of active material in mg
+    >>> OutFolder = r"C:\processed_data"
 
-    try:
-        os.chdir(OutFolder)
-        print "Output will be sent to folder:"
-        print OutFolder
-    except:
-        print "OutFolder does not exits"
-        sys.exit(-1)
+Then load the data into the data-class (this is data obtained
+using an Arbin battery tester)::
 
-    # Loading arbin-data
-    d = arbinreader.arbindata(FileName)
-    d.loadres()
-    d.set_mass(Mass)
-    d.make_summary()
-    d.create_step_table()
-    print "\nexporting raw-data and summary"
-    d.exportcsv(OutFolder)
+    >>> d = arbinreader.arbindata(FileName)
+    >>> d.loadres() # this tells arbindata to read the file
+    >>> d.set_mass(Mass)
 
-    # Extracting cycles
-    list_of_cycles = d.get_cycle_numbers()
-    number_of_cycles = len(list_of_cycles)
-    print "you have %i cycles" % (number_of_cycles)
+Create a summary (for each cycle) and generate a step table (parsing the
+data and finding out what each step in each cycle is)::
 
-    FileName0 = os.path.basename(FileName)
-    outfile = "%s_cycles.csv" % (FileName0)
-    out_data = []
+    >>> d.make_summary()
+    >>> d.create_step_table()
 
-    for cycle in list_of_cycles:
-        try:
-            c,v = d.get_cap(cycle)
-            c = c.tolist()
-            v = v.tolist()
-            header_x = "cap cycle_no %i" % cycle
-            header_y = "voltage cycle_no %i" % cycle
-            c.insert(0,header_x)
-            v.insert(0,header_y)
-            out_data.append(c)
-            out_data.append(v)
-        except:
-            print "could not extract cycle %i" % (cycle)
+You can save your data in csv-format easily by::
 
+    >>> d.exportcsv(OutFolder)
 
-    # Saving cycles in one .csv file (x,y,x,y,x,y...)
-    delimiter = ";"
-    print "saving the file with delimiter '%s' " % (delimiter)
-    with open(outfile, "wb") as f:
-        writer=csv.writer(f,delimiter=delimiter)
-        writer.writerows(itertools.izip_longest(*out_data))
-        # star (or asterix) means transpose (writing cols instead of rows)
+Or maybe you want to take a closer look at the capacities for
+the different cycles? No problem. Now you are set to extract data
+for spesific cycles and steps::
 
-    print "saved the file",
-    print outfile
-    print "bye!"
-    import cellpy
-        def extract_ocvrlx():
-        import itertools
-        import csv
-        import matplotlib.pyplot as plt
+    >>> list_of_cycles = d.get_cycle_numbers()
+    >>> number_of_cycles = len(list_of_cycles)
+    >>> print "you have %i cycles" % (number_of_cycles)
+    you have 658 cycles
+    >>> current,voltage = d.get_cap(5) # current and voltage for cycle 5
 
-        filename = r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20160805_sic006_45_cc_01.res"
-        mass = 0.853
-        type_of_data = "ocvrlx_up"
-        fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata\20160805_sic006_45_cc_01_"+type_of_data
-        d_res = setup_cellpy_instance()
-        d_res.loadres(filename)
-        d_res.set_mass(mass)
-        d_res.create_step_table()
-        d_res.print_step_table()
-        out_data = []
-        for cycle in d_res.get_cycle_numbers():
-            try:
-                if type_of_data == 'ocvrlx_up':
-                    print "getting ocvrlx up data for cycle %i" % (cycle)
-                    t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
-                else:
-                    print "getting ocvrlx down data for cycle %i" % (cycle)
-                    t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
-                plt.plot(t,v)
-                t = t.tolist()
-                v = v.tolist()
+You can also look for open circut voltage steps::
 
-                header_x = "time (s) cycle_no %i" % cycle
-                header_y = "voltage (V) cycle_no %i" % cycle
-                t.insert(0,header_x)
-                v.insert(0,header_y)
-                out_data.append(t)
-                out_data.append(v)
+    >>> cycle = 44        
+    >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
+    >>> time2, voltage2 = d.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
-            except:
-                print "could not extract cycle %i" % (cycle)
-
-
-        # Saving cycles in one .csv file (x,y,x,y,x,y...)
-        endstring = ".csv"
-        outfile = fileout+endstring
-
-        delimiter = ";"
-        print "saving the file with delimiter '%s' " % (delimiter)
-        with open(outfile, "wb") as f:
-            writer=csv.writer(f,delimiter=delimiter)
-            writer.writerows(itertools.izip_longest(*out_data))
-            # star (or asterix) means transpose (writing cols instead of rows)
-
-        print "saved the file",
-        print outfile
-        plt.show()
-        print "bye!"
+If you would like to use more sofisticated methods (e.g. database readers),
+take a look at the tutorial (if it exists), check the source code, or simply
+send an e-mail to one of the aurhors.
