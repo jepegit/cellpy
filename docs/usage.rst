@@ -39,7 +39,7 @@ for spesific cycles and steps::
     you have 658 cycles
     >>> current,voltage = d.get_cap(5) # current and voltage for cycle 5
 
-You can also look for open circut voltage steps::
+You can also look for open circuit voltage steps::
 
     >>> cycle = 44        
     >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
