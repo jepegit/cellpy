@@ -64,8 +64,9 @@ def manipulate_data(read_data):
 
 def ocv_user_adjust(par, t, meas_volt):
 
-    r_rc = {key[2:]: val for key, val in par.items() if key.startswith('r')}
-    c_rc = {key[2:]: val for key, val in par.items() if key.startswith('c')}
+    p_dict = par.valuesdict()
+    r_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('r')}
+    c_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('c')}
     return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=par['ocv'],
                           v_rlx=par['v_rlx']) - meas_volt
 
@@ -84,7 +85,6 @@ def plot_voltage(t, v, best):
     plt.ylabel('Voltage (V)')
     plt.legend(['Measured', 'Best fit', 'ocv - relaxed'], loc='center left',
                bbox_to_anchor=(1, 0.5), prop={'size': 10})
-
 
 
 # def print_params(ini, fit):
@@ -138,15 +138,14 @@ if __name__ == '__main__':
     initial_param_up.add('c_d', value=1., vary=False)
     initial_param_up.add('ocv', value=init_guess_up['ocv'])
     initial_param_up.add('v_rlx', value=init_guess_up['v_rlx'])
-    # guessed_voltage = ocv_relax_func(time[0], init_guess[0]['ocv'],
-    #                                  init_guess[0]['v_rlx'],
-    #                                  init_guess[0]['r_rc'],
-    #                                  init_guess[0]['c_rc'])
+
     #  fitting data
     ############################################################################
+    # making a class Minimizer that contain fitting methods and attributes
     Mini_up = Minimizer(ocv_user_adjust, params=initial_param_up,
-                        fcn_args=(time_up[0], voltage_up[0])).minimize()
-    result_up = [Mini_up]
+                        fcn_args=(time_up[0], voltage_up[0]))
+    # minimize() perform the minimization on Minimizer's attributes
+    result_up = [Mini_up.minimize()]
     best_para_up = [result_up[0].params]
     best_fit_voltage_up = [result_up[0].residual + voltage_up[0]]
     report_fit(result_up[0])
@@ -154,27 +153,39 @@ if __name__ == '__main__':
     for cycle_i in range(1, len(time_up)):
         Temp_mini = Minimizer(ocv_user_adjust, params=best_para_up[cycle_i - 1],
                               fcn_args=(time_up[cycle_i],
-                                        voltage_up[cycle_i])).minimize()
-        result_up.append(Temp_mini)
+                                        voltage_up[cycle_i]))
+        result_up.append(Temp_mini.minimize())
         best_para_up.append(result_up[cycle_i].params)
-        best_fit_voltage_up.append(result_up[cycle_i].residual + voltage_up[cycle_i])
-
-    cycle_array = np.arange(1, len(result_up) + 1, 1)
+        best_fit_voltage_up.append(result_up[cycle_i].residual
+                                   + voltage_up[cycle_i])
 
     # plotting cycle's voltage at user's wish
     ############################################################################
     # making odd or even amount of figures
-    question = "Cycles after discharge to plot, separated with space: --> "
+    question = 'Cycles after discharge you want to plot, separated with ' \
+               'space. If you don'"'"'t want to plot any press ' \
+               'enter. Write "a" for all plots: -->'
     user_cycles_up = raw_input(question)
     if not user_cycles_up:
         # no cycles
         user_cycles_up_list = []
+
+    elif user_cycles_up == 'a':
+        # all cycles
+        user_cycles_up_list = range(len(result_up))
     else:
+        # specified cycles
         user_cycles_up_list = [int(usr) - 1 for usr in user_cycles_up.split()]
+        # if any(user_cycles_up_list) not in range(len(result_up)) or len(
+        #         user_cycles_up_list) > len(result_up):
+        #     raise AttributeError(
+        #         'You have asked for more plots than number of cycles or for a '
+        #         'cycle that does not exist. Specify less than %i plots'
+        #         % len(result_up))
 
     for cycle_nr in user_cycles_up_list:
         plt.figure(figsize=(20, 13))
-        plt.suptitle('Measured and fitted voltage of cycle %i' % cycle_nr + 1)
+        plt.suptitle('Measured and fitted voltage of cycle %i' % (cycle_nr + 1))
         plot_voltage(time_up[cycle_nr], voltage_up[cycle_nr],
                      result_up[cycle_nr])
         report_fit(result_up[cycle_nr])
@@ -201,7 +212,6 @@ if __name__ == '__main__':
     #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
     #                  sub_up)
 
-
     # plot parameters
     ############################################################################
     # printing parameters
@@ -211,6 +221,8 @@ if __name__ == '__main__':
     #     print '--------------------------------------------------------'
     fig_params = plt.figure(figsize=(20, 13))
     plt.suptitle('Initial and fitted parameters in every cycle', size=20)
+    cycle_array = np.arange(1, len(result_up) + 1, 1)
+
     if len(best_para_up[0]) % 2 == 0:   # Even number of cycles
         gs = gridspec.GridSpec(len(best_para_up[0]) / 2, 3)
         gs.update(left=0.05, right=0.9, wspace=1)
@@ -232,7 +244,7 @@ if __name__ == '__main__':
         if 'r' == name[0]:
             subs_params[_].set_ylabel('Resistance [ohm]')
         elif 'c' == name[0]:
-            subs_params[_].set_ylabel('Capasitance [F]')
+            subs_params[_].set_ylabel('Capacitance [F]')
         else:
             subs_params[_].set_ylabel('Voltage [V]')
 
