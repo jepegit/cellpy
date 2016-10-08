@@ -124,14 +124,6 @@ def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
     :return: the relaxation voltage of the model as a function of time
     """
     ocv_arr = np.array([ocv for _ in range((len(time)))])
-    # r_rc = []
-    # c_rc = []
-    # # Assuming par[r_#] and par[c_#] is from the same rc-circuit
-    # for i in range(n_rc):
-    #     r_temp = 'r_%i' % (i + 1)
-    #     c_temp = 'c_%i' % (i + 1)
-    #     r_rc.append(r_temp)
-    #     c_rc.append(c_temp)
     if not slope:
         m = {key: None for key in r_rc.keys()}
     else:

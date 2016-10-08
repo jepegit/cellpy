@@ -156,8 +156,8 @@ if __name__ == '__main__':
         start_voltage_up = voltage_up[cycle_up_i][0]
         end_voltage_up = voltage_up[cycle_up_i][-1]
         best_para_up[cycle_up_i - 1]['ocv'].set(min=end_voltage_up)
-        best_para_up[cycle_up_i - 1]['v_rlx'].set(
-            min=start_voltage_up-end_voltage_up)
+        # best_para_up[cycle_up_i - 1]['v_rlx'].set(
+        #     min=start_voltage_up-end_voltage_up)
         Temp_mini = Minimizer(ocv_user_adjust,
                               params=best_para_up[cycle_up_i - 1],
                               fcn_args=(time_up[cycle_up_i],
