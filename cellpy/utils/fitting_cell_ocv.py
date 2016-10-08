@@ -136,28 +136,36 @@ if __name__ == '__main__':
     initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
     initial_param_up.add('c_ct', value=1., vary=False)
     initial_param_up.add('c_d', value=1., vary=False)
-    initial_param_up.add('ocv', value=init_guess_up['ocv'])
-    initial_param_up.add('v_rlx', value=init_guess_up['v_rlx'])
+    initial_param_up.add('ocv', value=init_guess_up['ocv'],
+                         min=voltage_up[0][-1])
+    initial_param_up.add('v_rlx', value=init_guess_up['v_rlx'],
+                         max=init_guess_up['ocv'])
 
     #  fitting data
     ############################################################################
     # making a class Minimizer that contain fitting methods and attributes
-    Mini_up = Minimizer(ocv_user_adjust, params=initial_param_up,
-                        fcn_args=(time_up[0], voltage_up[0]))
+    Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
+                                fcn_args=(time_up[0], voltage_up[0]))
     # minimize() perform the minimization on Minimizer's attributes
-    result_up = [Mini_up.minimize()]
+    result_up = [Mini_initial_up.minimize()]
     best_para_up = [result_up[0].params]
     best_fit_voltage_up = [result_up[0].residual + voltage_up[0]]
     report_fit(result_up[0])
 
-    for cycle_i in range(1, len(time_up)):
-        Temp_mini = Minimizer(ocv_user_adjust, params=best_para_up[cycle_i - 1],
-                              fcn_args=(time_up[cycle_i],
-                                        voltage_up[cycle_i]))
+    for cycle_up_i in range(1, len(time_up)):
+        start_voltage_up = voltage_up[cycle_up_i][0]
+        end_voltage_up = voltage_up[cycle_up_i][-1]
+        best_para_up[cycle_up_i - 1]['ocv'].set(min=end_voltage_up)
+        best_para_up[cycle_up_i - 1]['v_rlx'].set(
+            min=start_voltage_up-end_voltage_up)
+        Temp_mini = Minimizer(ocv_user_adjust,
+                              params=best_para_up[cycle_up_i - 1],
+                              fcn_args=(time_up[cycle_up_i],
+                                        voltage_up[cycle_up_i]))
         result_up.append(Temp_mini.minimize())
-        best_para_up.append(result_up[cycle_i].params)
-        best_fit_voltage_up.append(result_up[cycle_i].residual
-                                   + voltage_up[cycle_i])
+        best_para_up.append(result_up[cycle_up_i].params)
+        best_fit_voltage_up.append(result_up[cycle_up_i].residual
+                                   + voltage_up[cycle_up_i])
 
     # plotting cycle's voltage at user's wish
     ############################################################################
