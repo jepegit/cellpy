@@ -34,7 +34,7 @@ def tau(time, r, c, slope):
         return r * c
 
 
-def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
+def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
     """
     Guessing likely parameters that will fit best to the measured data.
 
@@ -45,26 +45,23 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     :type i_start: float
     :param voltage: measured voltage data
     :type voltage: 1d numpy array
-    :param contribute: contributed partial voltage from each rc-circuit (over
-    the relaxation voltage after IR-drop and ocv-level)
+    :param contribute: contributed partial voltage from each rc-circuit
     :type contribute: dict
     :param tau_rc: guessed time constants across each rc-circuit
     :type tau_rc: dict
     :return: list of calculated parameters from guessed input parameters
     """
-    # Say we know v_0 (after IR-drop). We also know C_cap and C_rate (
-    # whatever they are). I have to assume that the charge-transfer rate
+    # Say we know v_0 (after IR-drop). We also know C_cap and C_rate.
+    # I have to assume that the charge-transfer rate
     # is 0.2 times the voltage across the relaxation circuits (0.2 is an
     # example of what contribute is guessed to be). So 0.2 *v_rlx
     # (which is v_0 - ocv. This means that 1-0.2 = 0.8 times v_rlx is from
     # the diffusion part.
     if sum(contribute.values()) != 1.0:
         raise ValueError('The sum of contribute does not add up to 1.')
-    ocv = voltage[-1]   # ocv voltage if measurements are well done
     # if (ocv - voltage[-2]) / ocv < 0.01:
     #     print 'WARNING: Possibly too few data points measured for optimal fit.'
-    v_0 = voltage[0]   # voltage over the model (after IR - drop)
-    v_rlx = v_0 - ocv   # voltage over the rc-circuits
+    v_rlx = v_0 - v_ocv   # voltage over the rc-circuits
     if not isinstance(contribute, dict):
         v_rc = {'rc': v_rlx}
     else:
@@ -76,7 +73,7 @@ def guessing_parameters(v_start, i_start, voltage, contribute, tau_rc):
     c_rc = {k: t / r for k, r in r_rc.items() for i, t in tau_rc.items()
             if i == k}
     return\
-        {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v_rlx': v_rlx, 'ocv': ocv}
+        {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v_rc': v_rc}
 
 
 def relaxation_rc(time, v0, r, c, slope):
@@ -105,7 +102,7 @@ def relaxation_rc(time, v0, r, c, slope):
     return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
 
 
-def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
+def ocv_relax_func(time, ocv, v0_rc, r_rc, c_rc, slope=None):
     """
     Using relaxation_rc() for calculating ocv relaxation over the cell.
 
@@ -129,9 +126,9 @@ def ocv_relax_func(time, ocv, v_rlx, r_rc, c_rc, slope=None):
     else:
         m = slope
 
-    # Initial voltage across rc_circuits
-    v_initial = {key: v_rlx * r / sum(r_rc.values()) for key, r in r_rc.items()}
-    volt_rc = [relaxation_rc(time, v_initial[rc], r_rc[rc],
+    # # Initial voltage across rc_circuits
+    # v_initial = {key: v_rlx * r / sum(r_rc.values()) for key, r in r_rc.items()}
+    volt_rc = [relaxation_rc(time, v0_rc[rc], r_rc[rc],
                              c_rc[rc], m[rc]) for rc in r_rc.keys()]
     return sum(volt_rc) + ocv_arr
 

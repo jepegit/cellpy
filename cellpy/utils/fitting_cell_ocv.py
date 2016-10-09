@@ -67,8 +67,10 @@ def ocv_user_adjust(par, t, meas_volt):
     p_dict = par.valuesdict()
     r_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('r')}
     c_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('c')}
+    v0_rc = {key[3:]: val for key, val in p_dict.items()
+             if key.startswith('v0')}
     return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=par['ocv'],
-                          v_rlx=par['v_rlx']) - meas_volt
+                          v0_rc=v0_rc) - meas_volt
 
 
 def plot_voltage(t, v, best):
@@ -114,7 +116,11 @@ if __name__ == '__main__':
     ############################################################################
     v_start_down = 1.   # all start variables are taken from fitting_ocv_003.py
     v_start_up = 0.01
-    i_cut_off = 0.000751
+    cell_mass = 0.8   # [g]
+    c_rate = 0.1   # [1 / h]
+    cell_capacity = 3.579   # [mAh / g]
+    # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+    i_start = 0.000751
     # taken from "x" in fitting_ocv_003.py, function "GuessRC2"
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 400}
@@ -128,18 +134,22 @@ if __name__ == '__main__':
 # http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
         time_up[i] = time_up[i][~np.isnan(time_up[i])]
         voltage_up[i] = voltage_up[i][~np.isnan(voltage_up[i])]
-    init_guess_up = guessing_parameters(v_start_up, i_cut_off,
-                                        voltage_up[0], contri, tau_guessed)
+    v_ocv_up = voltage_up[0][-1]
+    v_0_up = voltage_up[0][0]
+
+    init_guess_up = guessing_parameters(v_start_up, i_start, v_0_up,
+                                        v_ocv_up, contri, tau_guessed)
     initial_param_up = Parameters()
     # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
     initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
     initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
     initial_param_up.add('c_ct', value=1., vary=False)
     initial_param_up.add('c_d', value=1., vary=False)
-    initial_param_up.add('ocv', value=init_guess_up['ocv'],
-                         min=voltage_up[0][-1])
-    initial_param_up.add('v_rlx', value=init_guess_up['v_rlx'],
-                         max=init_guess_up['ocv'])
+    initial_param_up.add('ocv', value=v_ocv_up, min=v_ocv_up)
+    initial_param_up.add('v0_ct', value=init_guess_up['v_rc']['ct'],
+                         min=0, max=v_0_up - v_ocv_up)
+    initial_param_up.add('v0_d', value=init_guess_up['v_rc']['d'],
+                         min=0, max=v_0_up - v_ocv_up)
 
     #  fitting data
     ############################################################################
@@ -150,12 +160,22 @@ if __name__ == '__main__':
     result_up = [Mini_initial_up.minimize()]
     best_para_up = [result_up[0].params]
     best_fit_voltage_up = [result_up[0].residual + voltage_up[0]]
+
+    best_r = [{'r_%s' % key[3:]: v_rc / i_start
+               for key, v_rc in best_para_up[0].valuesdict().items()
+               if key.startswith('v0')}]
+    # r_ct and r_d in parameters will be replaced with tau_ct and tau_d later
+    best_c = [{'c_%s' % key[2:]: tau_rc / best_r[0]['r_%s' % key[2:]]
+               for key, tau_rc in best_para_up[0].valuesdict().items()
+               if key.startswith('r')}]
+
     report_fit(result_up[0])
 
     for cycle_up_i in range(1, len(time_up)):
         start_voltage_up = voltage_up[cycle_up_i][0]
         end_voltage_up = voltage_up[cycle_up_i][-1]
-        best_para_up[cycle_up_i - 1]['ocv'].set(min=end_voltage_up)
+        best_para_up[cycle_up_i - 1]['ocv'].set(value=end_voltage_up,
+                                                min=end_voltage_up)
         # best_para_up[cycle_up_i - 1]['v_rlx'].set(
         #     min=start_voltage_up-end_voltage_up)
         Temp_mini = Minimizer(ocv_user_adjust,
@@ -166,6 +186,17 @@ if __name__ == '__main__':
         best_para_up.append(result_up[cycle_up_i].params)
         best_fit_voltage_up.append(result_up[cycle_up_i].residual
                                    + voltage_up[cycle_up_i])
+        best_r_cycle = {'r_%s' % key[3:]: v_rc / i_start
+                        for key, v_rc in
+                        best_para_up[cycle_up_i].valuesdict().items()
+                        if key.startswith('v0')}
+        best_c_cycle = {'c_%s' % key[2:]:
+                        tau_rc / best_r_cycle['r_%s' % key[2:]]
+                        for key, tau_rc in
+                        best_para_up[cycle_up_i].valuesdict().items()
+                        if key.startswith('r')}
+        best_r.append(best_r_cycle)
+        best_c.append(best_c_cycle)
 
     # plotting cycle's voltage at user's wish
     ############################################################################
@@ -180,7 +211,7 @@ if __name__ == '__main__':
 
     elif user_cycles_up == 'a':
         # all cycles
-        user_cycles_up_list = range(len(result_up))
+        user_cycles_up_list = range(0, len(result_up))
     else:
         # specified cycles
         user_cycles_up_list = [int(usr) - 1 for usr in user_cycles_up.split()]
@@ -196,7 +227,9 @@ if __name__ == '__main__':
         plt.suptitle('Measured and fitted voltage of cycle %i' % (cycle_nr + 1))
         plot_voltage(time_up[cycle_nr], voltage_up[cycle_nr],
                      result_up[cycle_nr])
+        print 'Report for cycle %i' % (cycle_nr + 1)
         report_fit(result_up[cycle_nr])
+        print '----------------------------------------------------------------'
 
 
     # sub plotting voltage
