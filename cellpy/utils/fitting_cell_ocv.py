@@ -73,7 +73,7 @@ def ocv_user_adjust(par, t, meas_volt):
                           v0_rc=v0_rc) - meas_volt
 
 
-def plot_voltage(t, v, best):
+def plot_voltage(t, v, best, best_para):
 
     # print 'Guessed parameters: ', best.init_values
     # print 'Best fitted parameters: ', res_dict
@@ -82,12 +82,22 @@ def plot_voltage(t, v, best):
     res_dict = best.params.valuesdict()
     best_fit = best.residual + v
     ocv = np.array([res_dict['ocv'] for _ in range(len(t))])
+    r = {key: val for key, val in best_para.items() if key.startswith('r')}
+    c = {key: val for key, val in best_para.items() if key.startswith('c')}
     plt.plot(t, v, 'ob', t, best_fit, '-y', t, ocv, '--c')
     plt.xlabel('Time (s)')
     plt.ylabel('Voltage (V)')
     plt.legend(['Measured', 'Best fit', 'ocv - relaxed'], loc='center left',
                bbox_to_anchor=(1, 0.5), prop={'size': 10})
-
+    mover = 0.1
+    for s_r, res in r.items():
+        txt = '%s: %i' % (s_r, res)
+        plt.text(mover, 0.5, txt, bbox=dict(facecolor='red', alpha=0.5))
+        mover += 0.1
+    for s_c, cap in c.items():
+        txt = '%s: %i' % (s_c, cap)
+        plt.text(mover, 0.5, txt, bbox=dict(facecolor='red', alpha=0.5))
+        mover += 0.1
 
 # def print_params(ini, fit):
 #
@@ -161,21 +171,22 @@ if __name__ == '__main__':
     best_para_up = [result_up[0].params]
     best_fit_voltage_up = [result_up[0].residual + voltage_up[0]]
 
-    best_r = [{'r_%s' % key[3:]: v_rc / i_start
-               for key, v_rc in best_para_up[0].valuesdict().items()
-               if key.startswith('v0')}]
+    best_r = {'r_%s' % key[3:]: abs(v_rc / i_start)
+              for key, v_rc in best_para_up[0].valuesdict().items()
+              if key.startswith('v0')}
     # r_ct and r_d in parameters will be replaced with tau_ct and tau_d later
-    best_c = [{'c_%s' % key[2:]: tau_rc / best_r[0]['r_%s' % key[2:]]
-               for key, tau_rc in best_para_up[0].valuesdict().items()
-               if key.startswith('r')}]
+    best_c = {'c_%s' % key[2:]: tau_rc / best_r['r_%s' % key[2:]]
+              for key, tau_rc in best_para_up[0].valuesdict().items()
+              if key.startswith('r')}
+    best_r.update(best_c)
+    best_rc_para_up = [best_r]
 
     report_fit(result_up[0])
 
     for cycle_up_i in range(1, len(time_up)):
         start_voltage_up = voltage_up[cycle_up_i][0]
         end_voltage_up = voltage_up[cycle_up_i][-1]
-        best_para_up[cycle_up_i - 1]['ocv'].set(value=end_voltage_up,
-                                                min=end_voltage_up)
+        best_para_up[cycle_up_i - 1]['ocv'].set(min=end_voltage_up)
         # best_para_up[cycle_up_i - 1]['v_rlx'].set(
         #     min=start_voltage_up-end_voltage_up)
         Temp_mini = Minimizer(ocv_user_adjust,
@@ -195,8 +206,8 @@ if __name__ == '__main__':
                         for key, tau_rc in
                         best_para_up[cycle_up_i].valuesdict().items()
                         if key.startswith('r')}
-        best_r.append(best_r_cycle)
-        best_c.append(best_c_cycle)
+        best_r_cycle.update(best_c_cycle)
+        best_rc_para_up.append(best_r_cycle)
 
     # plotting cycle's voltage at user's wish
     ############################################################################
@@ -226,7 +237,7 @@ if __name__ == '__main__':
         plt.figure(figsize=(20, 13))
         plt.suptitle('Measured and fitted voltage of cycle %i' % (cycle_nr + 1))
         plot_voltage(time_up[cycle_nr], voltage_up[cycle_nr],
-                     result_up[cycle_nr])
+                     result_up[cycle_nr], best_rc_para_up[cycle_nr])
         print 'Report for cycle %i' % (cycle_nr + 1)
         report_fit(result_up[cycle_nr])
         print '----------------------------------------------------------------'
