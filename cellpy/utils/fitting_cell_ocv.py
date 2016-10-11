@@ -5,7 +5,7 @@ Fitting ocv parameters with lmfit and plotting.
 """
 
 from lmfit import Minimizer, Parameters, report_fit
-from cell_ocv import ocv_relax_func, guessing_parameters
+from cell_ocv import *
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -76,28 +76,39 @@ def ocv_user_adjust(par, t, meas_volt):
 def plot_voltage(t, v, best, best_para):
 
     # print 'Guessed parameters: ', best.init_values
-    # print 'Best fitted parameters: ', res_dict
+    # print 'Best fitted parameters: ', res_par_dict
     # print '\t'
     # print '------------------------------------------------------------'
-    res_dict = best.params.valuesdict()
+    res_par_dict = best.params.valuesdict()
     best_fit = best.residual + v
-    ocv = np.array([res_dict['ocv'] for _ in range(len(t))])
-    r = {key: val for key, val in best_para.items() if key.startswith('r')}
-    c = {key: val for key, val in best_para.items() if key.startswith('c')}
-    plt.plot(t, v, 'ob', t, best_fit, '-y', t, ocv, '--c')
+    ocv = np.array([res_par_dict['ocv'] for _ in range(len(t))])
+    r = {r_key: r_val for r_key, r_val in best_para.items()
+         if r_key.startswith('r')}
+    c = {c_key: c_val for c_key, c_val in best_para.items()
+         if c_key.startswith('c')}
+    v_rc = {v0_key: v0_val for v0_key, v0_val in res_par_dict.items()
+            if v0_key.startswith('v0')}
+
+    rc_circuits = {rc[2:]: ocv + relaxation_rc(t, v_rc['v0_%s' % rc[2:]],
+                                               r[rc], c['c_%s' % rc[2:]], None)
+                   for rc in r.keys()}
+
+    plt.plot(t, v, 'ob', t, best_fit, '-y', t, ocv, '--c',
+             t, rc_circuits['ct'], '-g', t, rc_circuits['d'], '-r')
     plt.xlabel('Time (s)')
     plt.ylabel('Voltage (V)')
-    plt.legend(['Measured', 'Best fit', 'ocv - relaxed'], loc='center left',
-               bbox_to_anchor=(1, 0.5), prop={'size': 10})
-    mover = 0.1
-    for s_r, res in r.items():
-        txt = '%s: %i' % (s_r, res)
-        plt.text(mover, 0.5, txt, bbox=dict(facecolor='red', alpha=0.5))
-        mover += 0.1
-    for s_c, cap in c.items():
-        txt = '%s: %i' % (s_c, cap)
-        plt.text(mover, 0.5, txt, bbox=dict(facecolor='red', alpha=0.5))
-        mover += 0.1
+    plt.legend(['Measured', 'Best fit', 'ocv - relaxed',
+                'Charge-transfer rc-circuit', 'Diffusion rc-circuit'],
+               loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 10})
+    # mover = 0.1
+    # for s_r, res in r.items():
+    #     txt = '%s: %i' % (s_r, res)
+    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
+    #     mover += 0.1
+    # for s_c, cap in c.items():
+    #     txt = '%s: %i' % (s_c, cap)
+    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
+    #     mover += 0.1
 
 # def print_params(ini, fit):
 #
@@ -129,8 +140,8 @@ if __name__ == '__main__':
     cell_mass = 0.8   # [g]
     c_rate = 0.1   # [1 / h]
     cell_capacity = 3.579   # [mAh / g]
-    # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
-    i_start = 0.000751
+    i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+    # i_start = 0.000751
     # taken from "x" in fitting_ocv_003.py, function "GuessRC2"
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 400}
@@ -184,11 +195,11 @@ if __name__ == '__main__':
     report_fit(result_up[0])
 
     for cycle_up_i in range(1, len(time_up)):
-        start_voltage_up = voltage_up[cycle_up_i][0]
-        end_voltage_up = voltage_up[cycle_up_i][-1]
-        best_para_up[cycle_up_i - 1]['ocv'].set(min=end_voltage_up)
+        # start_voltage_up = voltage_up[cycle_up_i][0]
         # best_para_up[cycle_up_i - 1]['v_rlx'].set(
         #     min=start_voltage_up-end_voltage_up)
+        end_voltage_up = voltage_up[cycle_up_i][-1]
+        best_para_up[cycle_up_i - 1]['ocv'].set(min=end_voltage_up)
         Temp_mini = Minimizer(ocv_user_adjust,
                               params=best_para_up[cycle_up_i - 1],
                               fcn_args=(time_up[cycle_up_i],
