@@ -197,7 +197,7 @@ if __name__ == '__main__':
         best_para_up.append(result_up[cycle_up_i].params)
         best_fit_voltage_up.append(result_up[cycle_up_i].residual
                                    + voltage_up[cycle_up_i])
-        best_r_cycle = {'r_%s' % key[3:]: v_rc / i_start
+        best_r_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start)
                         for key, v_rc in
                         best_para_up[cycle_up_i].valuesdict().items()
                         if key.startswith('v0')}
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     # for cycle_nr, sub_up in enumerate(subs_up):
     #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
     #                  sub_up)
-
+    pass
     # plot parameters
     ############################################################################
     # printing parameters
@@ -293,11 +293,30 @@ if __name__ == '__main__':
         subs_params[_].plot(cycle_array, para_array, 'or')
         subs_params[_].legend([name], loc='center left',
                               bbox_to_anchor=(1, 0.5))
+        subs_params[_].set_xlabel('Cycles')
         if 'r' == name[0]:
             subs_params[_].set_ylabel('Resistance [ohm]')
         elif 'c' == name[0]:
             subs_params[_].set_ylabel('Capacitance [F]')
         else:
             subs_params[_].set_ylabel('Voltage [V]')
+
+    fig_rc = plt.figure(figsize=(20, 13))
+    fig_rc.suptitle('R and C for each rc-circuit in all cycles')
+    gs_rc = gridspec.GridSpec(2, 2)
+    gs_rc.update(left=0.05, right=0.9, wspace=1)
+    subs_rc = [fig_rc.add_subplot(gs_rc[pr])
+               for pr in range(len(best_rc_para_up[0].keys()))]
+    for idx, key_value in enumerate(best_rc_para_up[0].keys()):
+        temp_array = np.array([best_rc_para_up[cyc][key_value]
+                               for cyc in range(len(best_rc_para_up))])
+        subs_rc[idx].plot(cycle_array, temp_array, 'og')
+        subs_rc[idx].legend([key_value], loc='center left',
+                            bbox_to_anchor=(1, 0.5))
+        subs_rc[idx].set_xlabel('Cycles')
+        if key_value.startswith('r'):
+            subs_rc[idx].set_ylabel('Resistance [ohm]')
+        else:
+            subs_rc[idx].set_ylabel('Capacitance [F]')
 
     plt.show()
