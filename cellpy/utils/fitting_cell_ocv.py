@@ -195,13 +195,14 @@ if __name__ == '__main__':
     report_fit(result_up[0])
 
     for cycle_up_i in range(1, len(time_up)):
-        # start_voltage_up = voltage_up[cycle_up_i][0]
         # best_para_up[cycle_up_i - 1]['v_rlx'].set(
         #     min=start_voltage_up-end_voltage_up)
+        # start_voltage_up = voltage_up[cycle_up_i][0]
         end_voltage_up = voltage_up[cycle_up_i][-1]
-        best_para_up[cycle_up_i - 1]['ocv'].set(min=end_voltage_up)
+        temp_para_up = best_para_up[cycle_up_i - 1].copy()
+        temp_para_up['ocv'].set(value=end_voltage_up, min=end_voltage_up)
         Temp_mini = Minimizer(ocv_user_adjust,
-                              params=best_para_up[cycle_up_i - 1],
+                              params=temp_para_up,
                               fcn_args=(time_up[cycle_up_i],
                                         voltage_up[cycle_up_i]))
         result_up.append(Temp_mini.minimize())
