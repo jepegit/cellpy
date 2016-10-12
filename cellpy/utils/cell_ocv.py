@@ -63,17 +63,17 @@ def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
     #     print 'WARNING: Possibly too few data points measured for optimal fit.'
     v_rlx = v_0 - v_ocv   # voltage over the rc-circuits
     if not isinstance(contribute, dict):
-        v_rc = {'rc': v_rlx}
+        v0_rc = {'rc': v_rlx}
     else:
-        v_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
+        v0_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
 
-    r_rc = {key: abs(v / i_start) for key, v in v_rc.items()}
+    r_rc = {key: abs(v / i_start) for key, v in v0_rc.items()}
     r_ir = abs(v_start / i_start - sum(r_rc.values()))
     # r_ir_2 = (v_start - v_0) / i_start   # This one is different than r_ir...?
     c_rc = {k: t / r for k, r in r_rc.items() for i, t in tau_rc.items()
             if i == k}
     return\
-        {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v_rc': v_rc}
+        {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v0_rc': v0_rc}
 
 
 def relaxation_rc(time, v0, r, c, slope):

@@ -86,10 +86,10 @@ def plot_voltage(t, v, best, best_para):
          if r_key.startswith('r')}
     c = {c_key: c_val for c_key, c_val in best_para.items()
          if c_key.startswith('c')}
-    v_rc = {v0_key: v0_val for v0_key, v0_val in res_par_dict.items()
+    v0_rc = {v0_key: v0_val for v0_key, v0_val in res_par_dict.items()
             if v0_key.startswith('v0')}
 
-    rc_circuits = {rc[2:]: ocv + relaxation_rc(t, v_rc['v0_%s' % rc[2:]],
+    rc_circuits = {rc[2:]: ocv + relaxation_rc(t, v0_rc['v0_%s' % rc[2:]],
                                                r[rc], c['c_%s' % rc[2:]], None)
                    for rc in r.keys()}
 
@@ -167,9 +167,9 @@ if __name__ == '__main__':
     initial_param_up.add('c_ct', value=1., vary=False)
     initial_param_up.add('c_d', value=1., vary=False)
     initial_param_up.add('ocv', value=v_ocv_up, min=v_ocv_up)
-    initial_param_up.add('v0_ct', value=init_guess_up['v_rc']['ct'],
+    initial_param_up.add('v0_ct', value=init_guess_up['v0_rc']['ct'],
                          min=0, max=v_0_up - v_ocv_up)
-    initial_param_up.add('v0_d', value=init_guess_up['v_rc']['d'],
+    initial_param_up.add('v0_d', value=init_guess_up['v0_rc']['d'],
                          min=0, max=v_0_up - v_ocv_up)
 
     #  fitting data
@@ -182,8 +182,8 @@ if __name__ == '__main__':
     best_para_up = [result_up[0].params]
     best_fit_voltage_up = [result_up[0].residual + voltage_up[0]]
 
-    best_r = {'r_%s' % key[3:]: abs(v_rc / i_start)
-              for key, v_rc in best_para_up[0].valuesdict().items()
+    best_r = {'r_%s' % key[3:]: abs(v0_rc / i_start)
+              for key, v0_rc in best_para_up[0].valuesdict().items()
               if key.startswith('v0')}
     # r_ct and r_d in parameters will be replaced with tau_ct and tau_d later
     best_c = {'c_%s' % key[2:]: tau_rc / best_r['r_%s' % key[2:]]
