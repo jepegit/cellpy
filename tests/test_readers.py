@@ -1,17 +1,18 @@
 from unittest import TestCase
 import os
 from cellpy import arbinreader
+
 import pytest
 
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))
 relative_test_data_dir = "../cellpy/testdata"
-test_data_dir = os.path.abspath(os.path.join(current_file_path,relative_test_data_dir))
+test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
 test_res_file = "20160805_test001_45_cc_01.res"
-test_data_dir_out = os.path.join(test_data_dir,"out")
+test_data_dir_out = os.path.join(test_data_dir, "out")
 
 
-class TestReaders(TestCase):
+class TestDataReaders(TestCase):
     @classmethod
     def setup_class(cls):
         pass
@@ -338,4 +339,113 @@ class TestReaders(TestCase):
 
     @pytest.mark.unfinished
     def test__make_summary(self):
+        assert True
+
+
+class TestDBReader(TestCase):
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def test_filter_selected(self):
+        from cellpy import dbreader
+        assert True
+
+    @pytest.mark.unfinished
+    def test__pick_info(self):
+        from cellpy import dbreader
+        assert True
+
+    def test__open_sheet(self):
+        assert True
+
+    def test_select_serial_number_row(self):
+        assert True
+
+    def test_print_serial_number_info(self):
+        assert True
+
+    def test_filter_by_slurry(self):
+        assert True
+
+    def test_filter_by_col(self):
+        assert True
+
+    def test_filter_by_col_value(self):
+        assert True
+
+    def test_select_batch(self):
+        assert True
+
+    def test_help_pandas(self):
+        assert True
+
+    def test_select_col(self):
+        assert True
+
+    def test_get_resfilenames(self):
+        assert True
+
+    def test_get_hdf5filename(self):
+        assert True
+
+    def test_get_filenames(self):
+        assert True
+
+    def test_filter_selected(self):
+        assert True
+
+    def test_inspect_finished(self):
+        assert True
+
+    def test_inspect_hd5f_fixed(self):
+        assert True
+
+    def test_inspect_hd5f_exists(self):
+        assert True
+
+    def test_inspect_exists(self):
+        assert True
+
+    def test_get_label(self):
+        assert True
+
+    def test_get_cell_name(self):
+        assert True
+
+    def test_get_comment(self):
+        assert True
+
+    def test_get_group(self):
+        assert True
+
+    def test_get_loading(self):
+        assert True
+
+    def test_get_mass(self):
+        assert True
+
+    def test_get_total_mass(self):
+        assert True
+
+    def test_get_all(self):
+        assert True
+
+    def test_get_fileid(self):
+        assert True
+
+    def test_intersect(self):
+        assert True
+
+    def test_union(self):
+        assert True
+
+    def test_substract(self):
+        assert True
+
+    def test_substract_many(self):
         assert True

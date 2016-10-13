@@ -57,10 +57,8 @@ from scipy import amax, amin, unique, average, ceil, interpolate, flipud, subtra
 from numpy import arange
 import pandas as pd
 
-
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
-
 
 
 def humanize_bytes(bytes, precision=1):
@@ -161,6 +159,7 @@ class fileID(object):
             location (str): Location of the raw-data file.
 
         """
+
     def __init__(self, Filename=None):
         make_defaults = True
         if Filename:
@@ -174,7 +173,6 @@ class fileID(object):
                 self.last_info_changed = fid_st.st_ctime
                 self.location = os.path.dirname(Filename)
                 make_defaults = False
-
 
         if make_defaults:
             self.name = None
@@ -245,6 +243,7 @@ class dataset(object):
                                        defining type of step (charge, discharge, etc.)
 
     """
+
     def __init__(self):
         self.test_no = None
         self.mass = 1.0  # mass of (active) material (in mg)
@@ -286,7 +285,6 @@ class dataset(object):
         self.hdf5_file_version = 3
         self.datapoint_txt = "Data_Point"
 
-
     def __str__(self):
         txt = "_arbin_data_dataset_class_\n"
         txt += "loaded from file\n"
@@ -320,9 +318,8 @@ class dataset(object):
     def makeDataFrame(self):
         """Creates a Pandas DataFrame of the data (dfdata and dfsummary)"""
 
-        self.dfdata = pd.DataFrame(self.data).sort([self.datapoint_txt])  # FutureWarning
-        self.dfsummary = pd.DataFrame(self.summary).sort([self.datapoint_txt])
-
+        self.dfdata = pd.DataFrame(self.data).sort_values(by=self.datapoint_txt)
+        self.dfsummary = pd.DataFrame(self.summary).sort_values(by=self.datapoint_txt)
 
 
 class arbindata(object):
@@ -336,6 +333,7 @@ class arbindata(object):
     Attributes:
         tests (list): list of dataset objects.
     """
+
     def __init__(self, filenames=None,
                  selected_scans=None,
                  verbose=False,
@@ -492,7 +490,6 @@ class arbindata(object):
         else:
             print "this option is not implemented yet"
 
-
     def Print(self, txt=None, Level=0):
         """Print to std.out if self.verbose is selected.
 
@@ -514,7 +511,6 @@ class arbindata(object):
                 else:
                     print txt
 
-
     def set_res_datadir(self, directory=None):
         """set the directory containing .res-files
 
@@ -529,7 +525,6 @@ class arbindata(object):
             >>> d.set_res_datadir(directory)
 
         """
-
 
         if directory is None:
             print "no directory name given"
@@ -1145,7 +1140,6 @@ class arbindata(object):
                 except:
                     return False  # is an older version of Python, assume also an older os (best we can guess)
 
-
     def _loadh5(self, filename):
         # loads from hdf5 formatted arbin-file
         self.Print("loading", 1)
@@ -1203,7 +1197,6 @@ class arbindata(object):
         store.close()
         # self.tests.append(data)
         return newtests
-
 
     def _convert2fid_list(self, tbl):
         self.Print("_convert2fid_list")
@@ -1659,7 +1652,6 @@ class arbindata(object):
         else:
             return v
 
-
     def _validata_step_table(self, test_number=None, simple=False):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -1710,7 +1702,6 @@ class arbindata(object):
             return
         st = self.tests[test_number].step_table
         print st
-
 
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False, cycle_number=None, test_number=None):
         """Get the step numbers of selected type.
@@ -2125,7 +2116,6 @@ class arbindata(object):
         self.tests[test_number].step_table = df_steps
         self.tests[test_number].step_table_made = True
 
-
     def _percentage_change(self, x0, x1, default_zero=True):
         # calcultates the change from x0 to x1 in percentage
         # i.e. returns (x1-x0)*100 / x0
@@ -2138,7 +2128,6 @@ class arbindata(object):
             difference = (x1 - x0) * 100 / x0
 
         return difference
-
 
     def select_steps(self, step_dict, append_df=False, test_number=None):
         """select steps (not documented yet)"""
@@ -2178,7 +2167,6 @@ class arbindata(object):
                         selected = selected.append(c, ignore_index=True)
 
         return selected
-
 
     def _select_step(self, cycle, step, test_number=None):
         test_number = self._validate_test_number(test_number)
@@ -2227,9 +2215,8 @@ class arbindata(object):
             step_dict[cycle] = [step]
         return step_dict
 
-
-    def find_C_rates(self, steps,mass=None, nom_cap=3579, silent=True,test_number=None):
-        self.find_C_rates_old(steps, mass,nom_cap, silent, test_number)
+    def find_C_rates(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
+        self.find_C_rates_old(steps, mass, nom_cap, silent, test_number)
 
     def find_C_rates_old(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
         """uses old type of step_dict, returns crate_dict
@@ -2351,7 +2338,6 @@ class arbindata(object):
             txt += " Could not save it!"
         self.Print(txt, 1)
 
-
     def exportcsv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True):
         """saves the data as .csv file(s)"""
 
@@ -2403,7 +2389,6 @@ class arbindata(object):
                     outname_cycles = firstname + "_cycles.csv"
                     self._export_cycles(outname=outname_cycles, test_number=test_number,
                                         sep=sep)
-
 
     def save_test(self, filename, test_number=None, force=False, overwrite=True, extension="h5"):
         """saves the data structure using pickle/hdf5"""
@@ -2467,7 +2452,6 @@ class arbindata(object):
             else:
                 print "save_test (hdf5): file exist - did not save",
                 print outfile_all
-
 
     def _create_infotable(self, test_number=None):
         # needed for saving class/dataset to hdf5
@@ -2617,7 +2601,6 @@ class arbindata(object):
             print "no mass"
         return self.tests[test_number].mass
 
-
     def get_test(self, n=0):
         return self.tests[n]
 
@@ -2638,7 +2621,6 @@ class arbindata(object):
             return v
         else:
             return None
-
 
     def get_voltage(self, cycle=None, test_number=None, full=True):
         """returns voltage (in V)"""
@@ -2721,7 +2703,6 @@ class arbindata(object):
         else:
             return None
 
-
     def sget_timestamp(self, cycle, step, test_number=None):
         """Returns timestamp for cycle, step"""
 
@@ -2775,7 +2756,6 @@ class arbindata(object):
             v = v / 60.0
         return v
 
-
     def get_dcap(self, cycle=None, test_number=None):
         """Returns discharge_capacity (in mAh/g), voltage"""
 
@@ -2785,7 +2765,6 @@ class arbindata(object):
             return
         dc, v = self._get_cap(cycle, test_number, "discharge")
         return dc, v
-
 
     def get_ccap(self, cycle=None, test_number=None):
         """Returns charge_capacity (in mAh/g), voltage"""
@@ -2928,9 +2907,7 @@ class arbindata(object):
             c = d[column_txt] * 1000000 / mass
         return c, v
 
-
-
-    def get_ocv(self, cycle_number=None,ocv_type='ocv',test_number=None):
+    def get_ocv(self, cycle_number=None, ocv_type='ocv', test_number=None):
         """Find ocv data in dataset (voltage vs time)
 
         Args:
@@ -2979,7 +2956,6 @@ class arbindata(object):
                                      cycle_number=cycle_number,
                                      )
             return ocv_up, ocv_down
-
 
     def _get_ocv(self, ocv_steps=None, test_number=None, ocv_type='ocvrlx_up', select_last=True,
                  select_columns=True, cycle_number=None):
@@ -3048,7 +3024,7 @@ class arbindata(object):
                         ocv.append(c)
             return ocv
 
-    def get_number_of_cycles(self,test_number=None):
+    def get_number_of_cycles(self, test_number=None):
         """get the number of cycles in the test"""
 
         test_number = self._validate_test_number(test_number)
@@ -3074,7 +3050,7 @@ class arbindata(object):
         cycles = unique(d[cycle_index_header])
         return cycles
 
-    def get_ir(self,test_number=None):
+    def get_ir(self, test_number=None):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3094,8 +3070,7 @@ class arbindata(object):
             ir_dict[cycle].append(d2.ix[i]["Internal_Resistance"])  # jepe fix
         return ir_dict
 
-
-    def get_diagnostics_plots(self,test_number=None,scaled=False,):
+    def get_diagnostics_plots(self, test_number=None, scaled=False, ):
 
         """Gets diagnostics plots.
         Returns a dict containing diagnostics plots (cycles, shifted_discharge_cap, shifted_charge_cap,
@@ -3188,7 +3163,7 @@ class arbindata(object):
         out["RIC_sei_cum"] = RIC_sei_cum
         return out
 
-    def get_cycle(self, cycle=1,step_type=None,step=None,v=False,test_number=None):
+    def get_cycle(self, cycle=1, step_type=None, step=None, v=False, test_number=None):
         """Get cycle data.
 
         Get the cycle data for cycle = cycle (default 1) for step_type or step. The function
@@ -3356,7 +3331,6 @@ class arbindata(object):
 
             # -----------internal-helpers---------------------------------------------------
 
-
     def is_empty(self, v):
         try:
             if not v:
@@ -3381,7 +3355,6 @@ class arbindata(object):
         else:
             return False
 
-
     def _check_file_type(self, filename):
         extension = os.path.splitext(filename)[-1]
         filetype = "res"
@@ -3391,10 +3364,8 @@ class arbindata(object):
             filetype = "h5"
         return filetype
 
-
     def _bounds(self, x):
         return amin(x), amax(x)
-
 
     def _roundup(self, x):
         n = 1000.0
@@ -3402,18 +3373,15 @@ class arbindata(object):
         x = x / n
         return x
 
-
     def _rounddown(self, x):
         x = self._roundup(-x)
         x = -x
         return x
 
-
     def _reverse(self, x):
         x = x[::-1]
         # x = x.sort_index(ascending=True)
         return x
-
 
     def _select_y(self, x, y, points):
         # uses interpolation to select y = f(x)
@@ -3425,7 +3393,6 @@ class arbindata(object):
         f = interpolate.interp1d(y, x)
         y_new = f(points)
         return y_new
-
 
     def _select_last(self, dfdata):
         # this function gives a set of indexes pointing to the last
@@ -3447,7 +3414,6 @@ class arbindata(object):
             # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         last_items = dfdata[d_txt].isin(steps)
         return last_items
-
 
     def _extract_from_dict(self, t, x, default_value=None):
         try:
@@ -3538,7 +3504,6 @@ class arbindata(object):
                                use_arbin_stat_file=use_arbin_stat_file,
                                ensure_step_table=ensure_step_table,
                                )
-
 
     def _make_summary(self,
                       test_number=None,
@@ -3995,7 +3960,7 @@ def just_load_srno(srno=None):
     return True
 
 
-def load_and_save_resfile(filename, outfile = None, outdir = None, mass = 1.00):
+def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     """
 
     Args:
@@ -4017,7 +3982,7 @@ def load_and_save_resfile(filename, outfile = None, outdir = None, mass = 1.00):
     d.set_hdf5_datadir(outdir)
     if not outfile:
         outfile = os.path.basename(filename).split(".")[0] + ".h5"
-        outfile = os.path.join(outdir,outfile)
+        outfile = os.path.join(outdir, outfile)
 
     d.loadres(filename)
     d.set_mass(mass)
@@ -4027,7 +3992,7 @@ def load_and_save_resfile(filename, outfile = None, outdir = None, mass = 1.00):
     return outfile
 
 
-def extract_ocvrlx(filename, fileout, mass = 1.00):
+def extract_ocvrlx(filename, fileout, mass=1.00):
     """get the ocvrlx data from dataset.
 
     Convenience function for extracting ocv relaxation data from runs."""
@@ -4092,7 +4057,7 @@ def extract_ocvrlx(filename, fileout, mass = 1.00):
 # 3) new overall prms structure (i.e. run summary)
 # 4) change name and allow non-arbin type of files
 # NOTE
-                                       #
+#
 #
 # PROBLEMS:
 # 1. 27.06.2016 new PC with 64bit conda python package:
@@ -4123,6 +4088,5 @@ if __name__ == "__main__":
 
 
 
-    #just_load_srno()
+    # just_load_srno()
     # extract_ocvrlx()
-
