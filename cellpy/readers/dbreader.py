@@ -133,6 +133,15 @@ class reader:
         return sheet
 
     def select_srno_row(self,srno):
+        """Select row for identification number srno
+
+        Args:
+            srno: serial number
+
+        Returns:
+            pandas.DataFrame
+        """
+
         sheet = self.table
         colno_serialno=self.db_sheet_cols.serialno
         col_serialno = sheet.iloc[:,colno_serialno]
@@ -140,7 +149,14 @@ class reader:
         return sheet[col_serialno == srno]
 
     def print_serialno(self,serialno):
-        """print_serialno(serialno) gives all information about run serialno"""
+        """print information about the run
+
+        Args:
+            serialno: serial number
+        """
+        """print_serialno(serialno) gives all information about run serialno
+
+        """
         r = self.select_srno_row(serialno)
         for label, value in zip(r.columns,r.values[0]):
             txt = ""
@@ -181,8 +197,16 @@ class reader:
 
     def filter_by_col(self,column_numbers):
         """filters sheet/tabel by columns (input is column numbers)
+
         The routine returns the serialnos with values>1 in the selected
-        coulumns"""
+        coulumns.
+
+        Args:
+            column_numbers (int): the column numbers.
+
+        Returns:
+            pandas.DataFrame
+        """
 
         if not isinstance(column_numbers, (list,tuple)):
             column_numbers = [column_numbers,]
@@ -198,10 +222,19 @@ class reader:
 
     def filter_by_col_value(self,column_number,
                             min_val = None, max_val = None):
-        """filters sheet/tabel by column (input is column number, min_val and/or max_val)
+        """filters sheet/table by column.
+
         The routine returns the serialnos with min_val <= values >= max_val in the selected
-        coulumn"""
-        # then we access our table/sheet
+        column.
+
+        Args:
+            column_number (int): column number (min 0).
+            min_val (int): minimum value of serial number.
+            max_val (int): maximum value of serial number.
+
+        Returns:
+            pandas.DataFrame
+        """
         sheet = self.table
         colno_serialno = self.db_sheet_cols.serialno
         exists_col_number = self.db_sheet_cols.exists
@@ -292,11 +325,31 @@ class reader:
         return df.iloc[:,no]
 
     def get_resfilenames(self,serialno,full_path=True,non_sensitive = False):
+        """returns a list of the data file-names for experiment with serial number serialno.
+
+        Args:
+            serialno (int): serial number
+            full_path (bool): return filename(s) with full path if True
+            non_sensitive (bool): dont stop even if file names are missing if True
+
+        Returns:
+            list of filenames
+        """
         files = self.get_filenames(serialno,full_path=full_path, use_hdf5=False,
                                    non_sensitive = non_sensitive)
         return files
 
     def get_hdf5filename(self,serialno,full_path=True, non_sensitive = False):
+        """returns a list of the hdf5 file-name for experiment with serial number serialno.
+
+        Args:
+            serialno (int): serial number
+            full_path (bool): return filename(s) with full path if True
+            non_sensitive (bool): dont stop even if file names are missing if True
+
+        Returns:
+            [filename]
+        """
         files = self.get_filenames(serialno,full_path=full_path,
                                    use_hdf5=True,non_sensitive = non_sensitive,
                                    only_hdf5=True)
@@ -304,15 +357,18 @@ class reader:
 
     def get_filenames(self,serialno,full_path=True, use_hdf5=True,
                       non_sensitive = False, only_hdf5=False):
-        """get_filenames(serialno,selected=False,full_path=True, use_hdf5=True,
-                         non_sensitive = False, only_hdf5=False)
-        returns a list of the data file-names for experiment with serial number serialno
-        options
-        full_path:  True - return filename(s) with full path
-        use_hdf5:   True - return hdf5 filename if it exists (existsence is checked
-                    only in the db)
-        non_sensitive:   True - dont stop even if filenames are missing
-        only_hdf5:   True - return hdf5 filename
+        """returns a list of the data file-names for experiment with serial number serialno.
+
+        Args:
+            serialno (int): serial number.
+            full_path (bool): return filename(s) with full path if True.
+            use_hdf5 (bool): if True, return hdf5 filename if it exists (existence is checked
+                             only in the db).
+            non_sensitive (bool): dont stop even if file names are missing if True.
+            only_hdf5 (bool): return hdf5 filename if True.
+
+        Returns:
+            list of file names (str)
         """
         sheet = self.table
         fsheet = self.ftable

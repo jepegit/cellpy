@@ -175,6 +175,7 @@ class fileID(object):
                 self.location = os.path.dirname(Filename)
                 make_defaults = False
 
+
         if make_defaults:
             self.name = None
             self.full_name = None
@@ -343,6 +344,11 @@ class arbindata(object):
                  fetch_onliners=False,
                  tester="arbin",
                  ):
+        """
+
+        Returns:
+            None:
+        """
         self.tester = tester
         self.verbose = verbose
         self.profile = profile
@@ -811,7 +817,7 @@ class arbindata(object):
             summary_ocv (bool): summarize ocv steps
             summary_end_v (bool): summarize end voltage
             only_summary (bool): get only the summary of the runs
-            nly_first (bool): only use the first file fitting search criteria
+            only_first (bool): only use the first file fitting search criteria
 
         Example:
             >>> srno = 132
@@ -1716,6 +1722,7 @@ class arbindata(object):
             allctypes (bool): get all types of charge (or discharge).
             pdtype (bool): return results as pandas.DataFrame
             cycle_number (int): selected cycle, selects all if not set.
+            test_number (int): test number (default first) (usually not used).
 
         Returns:
             List of step numbers corresponding to the selected steptype. Returns a pandas.DataFrame
@@ -2808,6 +2815,7 @@ class arbindata(object):
             polarization (bool): get polarization.
             stepsize (float): used for calculating polarization.
             points (int): used for calculating polarization.
+            test_number (int): test number (default first) (usually not used).
 
         Returns:
             if polarization = False: capacity (mAh/g), voltage
@@ -2931,6 +2939,7 @@ class arbindata(object):
                      ocv - get up and down (default)
                      ocvrlx_up - get up
                      ocvrlx_down - get down
+            test_number (int): test number (default first) (usually not used).
         Returns:
                 if cycle_number is not None
                     ocv or [ocv_up, ocv_down]
@@ -3985,7 +3994,19 @@ def just_load_srno(srno=None):
     print "OK"
     return True
 
+
 def load_and_save_resfile(filename, outfile = None, outdir = None, mass = 1.00):
+    """
+
+    Args:
+        mass (float): active material mass [mg].
+        outdir (path): optional, path to directory for saving the hdf5-file.
+        outfile (str): optional, name of hdf5-file.
+        filename (str): name of the resfile.
+
+    Returns:
+        out_file_name (str): name of saved file.
+    """
     d = arbindata(verbose=True)
 
     if not outdir:
@@ -4097,6 +4118,11 @@ if __name__ == "__main__":
 
     print "running",
     print sys.argv[0]
+    d = arbindata()
+    print d
+
+
+
     #just_load_srno()
     # extract_ocvrlx()
 
