@@ -1,82 +1,91 @@
 # -*- coding: utf-8 -*-
 
-"""
-Open Circuit Voltage resistance-capacitance (RC) - model and relaxation.
-"""
-# from scipy.optimize import curve_fit
+"""Simulation of Open Circuit Voltage (ocv) - relaxation with a rc - model.
 
-# import matplotlib.pyplot as plt
-# import pandas as pd
-# import os
+This script calculate ocv-relaxation voltage with a resistance-capacitance (rc)-
+model. The rc-model is based on a simplified 'Randles circuit'_.
+
+Use "fitting_cell_ocv.py" to start fitting your parameters with this model.
+
+Example:
+    Call guessing_parameters(). Use these parameters to give lmfit an
+    initial parameter value. Call ocv_relax_func() and subtract from
+    measured data to get residual.
+    For relaxation of a single rc-circuit, call relaxation_rc().
+
+Todo:
+    * Make tests
+
+.. _Randles circuit:
+    http://www.gamry.com/application-notes/EIS/basics-of-electrochemical-impedance-spectroscopy/
+
+"""
+
 import numpy as np
-
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def tau(time, r, c, slope):
-    """
-    Calculate the time constant based on resistance and capacitance.
+    """Calculates the time constant based on resistance and capacitance.
 
-    :param time: an array of points in time [s]
-    :param slope: slope of the time constant [s]
-    :param r: resistance [Ohm]
-    :param c: capacity [F]
-    :return: self._slope * self._time + r * c
+    The time constant can vary linearly with the time.
+    Args:
+        time (nd.array): Points in time [s].
+        r (float): Resistance [Ohms].
+        c (float): Capacitance [F].
+        slope (float): Slope of the time constant [s].
+
+    Returns:
+        float: The rc-circuit's time constant.
+
     """
     if slope:
-        # return slope * self._time + abs(self._time[-1] /
-        # math.log(v_rc_0/v_rc[-1]))
         return slope * time + np.array([r * c for _ in range(len(time))])
     else:
-        # return abs(self._time[-1] / math.log(v_rc_0/v_rc[-1]))
         return r * c
 
 
 def relaxation_rc(time, v0, r, c, slope):
     """
-    Calculate the relaxation function of the rc-circuit
+    Calculates the relaxation function of an rc-circuit.
 
-    :param time: measured point in time [s]
-    :type time: numpy array
-    :param v0: the initial voltage across the rc-circuit at t = 0 [V]
-    :type v0: float
-    :param r: the resistance over the rc-circuit [ohm]
-    :type r: float
-    :param c: the capacitance over the rc-circuit [F]
-    :type c: float
-    :param slope: the slope of the time constant in the rc-circuit
-    :type slope: float
-    :return: the relaxation voltage as a function of time over the rc-circuit
-    :type: Numpy array
+    Args:
+        time (nd.array): Points in time [s].
+        v0 (float): The initial voltage across the rc-circuit at t = 0 [V].
+        r (float): The rc-circuit's resistance [Ohms].
+        c (float): The rc-circuit's capacitance [F].
+        slope (float): Slope of the time constant [s].
+
+    Returns:
+        nd.array: The rc-circuit's relaxation voltage.
+
     """
+    # Don't know what modify is suppose to be for ...
     # if the time constant isn't constant, but linear, modify will be made.
-    if slope:
-        modify = np.array([(-v0 * np.exp(-1. / slope)) for _ in range(len(
-            time))])
-    else:
-        modify = np.zeros(len(time))
-    return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
+    # if slope:
+    #     modify = np.array([(-v0 * np.exp(-1. / slope)) for _ in range(len(
+    #         time))])
+    # else:
+    #     modify = np.zeros(len(time))
+    # return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
+    return v0 * np.exp(-time / tau(time, r, c, slope))
 
 
 def ocv_relax_func(time, ocv, v0_rc, r_rc, c_rc, slope=None):
-    """
-    Using relaxation_rc() for calculating ocv relaxation over the cell.
+    """Calculates the cell's relaxation voltage.
 
-    :param time: measured points in time [s]
-    :type time: numpy array
-    :param ocv: open circuit voltage [V]
-    :type ocv: float or numpy array
-    :param v_rlx: relaxation voltage after open circuit level [V]
-    :type v_rlx: float
-    :param r_rc: resistance in rc-circuit [ohm]
-    :type r_rc: dict
-    :param c_rc: capacitance in rc-circuit [F]
-    :type c_rc: dict
-    :param slope: slope of the rc time constants
-    :type slope: dict
-    :return: the relaxation voltage of the model as a function of time
+    Args:
+        time (nd.array): Points in time [s].
+        ocv (float): Open circuit voltage [V].
+        v0_rc (dict): Initial relaxation voltage for each rc-circuits [V].
+        r_rc (dict): The rc-circuit's resistance [Ohms].
+        c_rc (dict): The rc-circuit's capacitance [F].
+        slope (dict): Slope of the rc's time constants [s].
+
+    Returns:
+        nd.array: The relaxation voltage of the model
     """
     ocv_arr = np.array([ocv for _ in range((len(time)))])
     if not slope:
@@ -93,32 +102,23 @@ def ocv_relax_func(time, ocv, v0_rc, r_rc, c_rc, slope=None):
 
 def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
     """
-    Guessing likely parameters that will fit best to the measured data.
+    Initial parameter guess.
 
-    :param v_start: voltage before IR-drop [V]
-    :type v_start: float
-    :param i_start: start current. Calculated from current rate during
-    charge/discharge, mass of cell and c_cap ?
-    :type i_start: float
-    :param voltage: measured voltage data
-    :type voltage: 1d numpy array
-    :param contribute: contributed partial voltage from each rc-circuit
-    :type contribute: dict
-    :param tau_rc: guessed time constants across each rc-circuit
-    :type tau_rc: dict
-    :return: list of calculated parameters from guessed input parameters
+    Args:
+        v_start (float): Voltage before IR-drop [V].
+        i_start (float): Current right before open circuit [A].
+        v_0 (float): Voltage after IR-drop [V].
+        v_ocv (float): Guessed voltage at full relaxation [V].
+        contribute (dict): The rc-circuits contributed part of v_0.
+        tau_rc (dict): Guessed time constants across each rc-circuit
+
+    Returns:
+        dict: Guessed parameters.
     """
-    # Say we know v_0 (after IR-drop). We also know C_cap and C_rate.
-    # I have to assume that the charge-transfer rate
-    # is 0.2 times the voltage across the relaxation circuits (0.2 is an
-    # example of what contribute is guessed to be). So 0.2 *v_rlx
-    # (which is v_0 - ocv. This means that 1-0.2 = 0.8 times v_rlx is from
-    # the diffusion part.
+
     if sum(contribute.values()) != 1.0:
         raise ValueError('The sum of contribute does not add up to 1.')
-    # if (ocv - voltage[-2]) / ocv < 0.01:
-    #     print 'WARNING: Possibly too few data points measured for optimal fit.'
-    v_rlx = v_0 - v_ocv   # voltage over the rc-circuits
+    v_rlx = v_0 - v_ocv   # voltage over the rc-circuits without a reference
     if len(contribute) == 1:
         v0_rc = {contribute.keys()[0]: v_rlx}
     else:
