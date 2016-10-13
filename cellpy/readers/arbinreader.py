@@ -57,8 +57,10 @@ from scipy import amax, amin, unique, average, ceil, interpolate, flipud, subtra
 from numpy import arange
 import pandas as pd
 
+
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
+
 
 
 def humanize_bytes(bytes, precision=1):
@@ -97,7 +99,6 @@ def humanize_bytes(bytes, precision=1):
         if bytes >= factor:
             break
     return '%.*f %s' % (precision, bytes / factor, suffix)
-
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
@@ -3480,7 +3481,7 @@ class arbindata(object):
     def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
                      verbose=False, use_arbin_stat_file=True, all_tests=True,
                      test_number=0, ensure_step_table=None):
-        """convinience function that makes a summary of the cycling data."""
+        """convenience function that makes a summary of the cycling data."""
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
@@ -3982,21 +3983,39 @@ def just_load_srno(srno=None):
 
     print
     print "OK"
+    return True
+
+def load_and_save_resfile(filename, outfile = None, outdir = None, mass = 1.00):
+    d = arbindata(verbose=True)
+
+    if not outdir:
+        from cellpy import prmreader
+        prms = prmreader.read()
+        outdir = prms.hdf5datadir
+
+    d.set_hdf5_datadir(outdir)
+    if not outfile:
+        outfile = os.path.basename(filename).split(".")[0] + ".h5"
+        outfile = os.path.join(outdir,outfile)
+
+    d.loadres(filename)
+    d.set_mass(mass)
+    d.create_step_table()
+    d.make_summary()
+    d.save_test(filename=outfile)
+    return outfile
 
 
-def extract_ocvrlx():
+def extract_ocvrlx(filename, fileout, mass = 1.00):
     """get the ocvrlx data from dataset.
 
     Convenience function for extracting ocv relaxation data from runs."""
     import itertools
     import csv
     import matplotlib.pyplot as plt
-
-    filename = r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20160805_sic006_45_cc_01.res"
-    mass = 0.853
     type_of_data = "ocvrlx_up"
-    fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata\20160805_sic006_45_cc_01_" + type_of_data
     d_res = setup_cellpy_instance()
+    print filename
     d_res.loadres(filename)
     d_res.set_mass(mass)
     d_res.create_step_table()
@@ -4042,6 +4061,7 @@ def extract_ocvrlx():
         print outfile
     plt.show()
     print "bye!"
+    return True
 
 
 # TODO: make option to create step_table when loading file (loadres)
@@ -4077,5 +4097,6 @@ if __name__ == "__main__":
 
     print "running",
     print sys.argv[0]
-    # just_load_srno()
-    extract_ocvrlx()
+    #just_load_srno()
+    # extract_ocvrlx()
+

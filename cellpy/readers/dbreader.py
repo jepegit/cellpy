@@ -471,14 +471,14 @@ class reader:
         return snros
 
 
-def test0():
+def _investigate_excel_dbreader_0():
     print sys.argv[0]
     t0=time.time()
     print "t0: %f" % t0
     Reader = reader()
     Reader.print_serialno(12)
 
-def test1():
+def _investigate_excel_dbreader_1():
     print sys.argv[0]
     t0=time.time()
     print "t0: %f" % t0
@@ -496,7 +496,7 @@ def test1():
     print "dt: %f" % (time.time()-t0)
     print "finished"
 
-def test2():
+def _investigate_excel_dbreader_2():
     print sys.argv[0]
     Reader = reader()
     print "testing filtering"
@@ -519,7 +519,7 @@ def test2():
     print "finished"
 
 
-def test3():
+def _investigate_excel_dbreader_3():
     print "STARTING"
     print sys.argv[0]
     t0 = time.time()
@@ -562,7 +562,7 @@ def test3():
     print "\nfinished"
 
 
-def test4():
+def _investigate_excel_dbreader_4():
     print "STARTING"
     print sys.argv[0]
     t0 = time.time()
@@ -613,7 +613,7 @@ def test4():
 
 
 
-def test5():
+def _investigate_excel_dbreader_5():
     print "STARTING (test filter_by_slurry)"
     print sys.argv[0]
     Reader = reader()
@@ -626,7 +626,7 @@ def test5():
         print Reader.get_cell_name(srno),
         print Reader.get_loading(srno)
 
-def test6():
+def _investigate_excel_dbreader_6():
     print "STARTING  (test filter_by_col_value)"
     print sys.argv[0]
     Reader = reader()
@@ -643,7 +643,7 @@ def test6():
         print Reader.get_cell_name(srno),
         print Reader.get_loading(srno)
 
-def test7():
+def _investigate_excel_dbreader_7():
     print "STARTING  (test mixed filtering)"
     print sys.argv[0]
     Reader = reader()
@@ -680,7 +680,7 @@ def test7():
         print Reader.get_cell_name(srno),
         print Reader.get_loading(srno)
 
-def test8():
+def _investigate_excel_dbreader_8():
     print "STARTING  (test print srno info)"
 
 
@@ -701,4 +701,4 @@ def test8():
 if __name__== "__main__":
     import time
     from pylab import *
-    test8()
+    _investigate_excel_dbreader_8()
