@@ -1,7 +1,51 @@
 # -*- coding: utf-8 -*-
 
 """
-Fitting ocv parameters with lmfit and plotting.
+Fitting parameters with 'lmfit'_ using non-linear least square.
+
+By using 'lmfit'_, you are more freely to freeze parameters and set
+boundaries than with 'scipy's curve_fit'_. This script import the model from::
+    $ python cell_ocv.py'
+
+Example:
+    Call guessing_parameters(). Use these parameters to give 'lmfit'_'s
+    Parameter an initial parameter value. Call ocv_relax_func() and subtract
+    from measured data to get residual.
+    For relaxation of a single rc-circuit, call relaxation_rc().
+    >>> ex_time = np.array(range(5))
+    >>> ex_voltage = np.array([0.05 * np.exp(-float(t)/100) for t in ex_time])
+    >>> ex_v_s = 1.
+    >>> ex_i_s = 0.005
+    >>> ex_v0 = ex_voltage[0]
+    >>> ex_v_oc = ex_voltage[-1]
+    >>> ex_contribute = {'d': 1}
+    >>> ex_tau = {'d': 100}
+    >>> ex_guess = guessing_parameters(v_start=ex_v_s, i_start=ex_i_s,
+    >>> v_0=ex_v0, v_ocv=ex_v_oc, contribute=ex_contribute, tau_rc=ex_tau)
+    >>> Ex_para = Parameters()
+    >>> Ex_para.add('tau_d', value=ex_tau['d'], min=0)
+    >>> Ex_para.add('ocv', value=ex_guess['ocv'], min=0)
+    >>> Ex_para.add('v0_d', value=ex_guess['v0_rc']['d'])
+    >>> ex_Minimizer = Minimizer(ocv_user_adjust, params=Ex_para,
+    >>> fcn_args=(ex_time, ex_voltage))
+    >>> ex_mini = ex_Minimizer.minimize()
+    >>> print ex_mini.residual
+    >>> print '\t'
+    >>> print ex_mini.params.valuesdict()
+    [0, 0, 0, 0, 0]
+    OrderedDict([('tau_d', 100), ('ocv', 0.04803947), ('v0_d', 0.04803947])
+
+Todo:
+    * Not plot in fitting_cell_ocv, but create an other script for that.
+    * Check if example above works and give expected values.
+    * Make tests.
+    * Implement r_ir
+    * Implement relaxation downwards (after charge)
+
+.._lmfit:
+https://github.com/lmfit/lmfit-py
+.._scipy's curve_fit:
+http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 """
 
 from lmfit import Minimizer, Parameters, report_fit
@@ -18,21 +62,18 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def manipulate_data(read_data):
+    """Making data in a format, y(x), and saving it in a pandas DataFrame.
 
-    # need to separate time and voltage so they can be combined as y(x)
+    Args:
+        read_data (nd.array): pandas.Dataframe with xy data.
+
+    Returns:
+        nd.array: A pandas.Series with time-voltage to the cycles.
+
     """
-    This function will split xy-xy-xy-xy... pandas data pd.read_csv to
-    numpy array with only x and one with only y.
-    :param read_data: pandas DataFrame that has multi xy data as column info
-    :return: a list with number of cycles as length. Each cycle
-    has its pandas DataFrame with time-voltage for that cycle.
-    """
-    # extracting time data
+
     time_data = [t for t_col in range(len(read_data.iloc[0, :])) for t in
                  read_data.iloc[:, t_col] if not t_col % 2]
-    # extracting voltage data. The "if .. and t, v <950 will only
-    # extract three first columns. This is temper as the first data only
-    # had 3 ok set.
     voltage_data = [v for v_col in range(0, len(read_data.iloc[0, :]))
                     for v in read_data.iloc[:, v_col] if v_col % 2]
     num_cycles = len(time_data)/len(read_data)
@@ -63,7 +104,18 @@ def manipulate_data(read_data):
 
 
 def plot_voltage(t, v, best, best_para):
+    """Making a plot with given voltage data.
 
+    Args:
+        t (nd.array): Points in time [s].
+        v (nd.array): Measured voltage [V].
+        best (Minimizer): All fitted data in lmfit object Minimizer.minimize()
+        best_para (dict): calculated parameters, based on fitted ones.
+
+    Returns:
+        None: Making a plot with matplotlib.pyplot
+
+    """
     # print 'Guessed parameters: ', best.init_values
     # print 'Best fitted parameters: ', res_par_dict
     # print '\t'
@@ -76,7 +128,7 @@ def plot_voltage(t, v, best, best_para):
     c = {c_key: c_val for c_key, c_val in best_para.items()
          if c_key.startswith('c')}
     v0_rc = {v0_key: v0_val for v0_key, v0_val in res_par_dict.items()
-            if v0_key.startswith('v0')}
+             if v0_key.startswith('v0')}
 
     rc_circuits = {rc[2:]: ocv + relaxation_rc(t, v0_rc['v0_%s' % rc[2:]],
                                                r[rc], c['c_%s' % rc[2:]], None)
@@ -89,6 +141,9 @@ def plot_voltage(t, v, best, best_para):
     plt.legend(['Measured', 'Best fit', 'ocv - relaxed',
                 'Charge-transfer rc-circuit', 'Diffusion rc-circuit'],
                loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 10})
+
+    # Suppose to add a text with the value of the parameters for the fit.
+
     # mover = 0.1
     # for s_r, res in r.items():
     #     txt = '%s: %i' % (s_r, res)
@@ -109,23 +164,43 @@ def plot_voltage(t, v, best, best_para):
 
 
 def ocv_user_adjust(par, t, meas_volt):
+    """Fitting of parameters with lmfit.
+
+    User must know what the Parameters object, par, looks like and re-arrange
+    the parameters into the right format for ocv_relax_func.
+
+    Args:
+        par (Parameters): Parameters that user want to fit.
+        t (nd.array): Points in time [s]
+        meas_volt (nd.array): Measured voltage [s]
+
+    Returns:
+        nd.array: The residual between the expected voltage and measured.
+
+    """
 
     p_dict = par.valuesdict()
     r_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('r')}
     c_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('c')}
     v0_rc = {key[3:]: val for key, val in p_dict.items()
              if key.startswith('v0')}
-    return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=par['ocv'],
+    return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=p_dict['ocv'],
                           v0_rc=v0_rc) - meas_volt
 
 
 if __name__ == '__main__':
-    # importing data
-    ############################################################################
-    datafolder = r'..\testdata'   # make sure you're in folder \utils. If not,
-    # activate "print os.getcwd()" to find current folder and extend datafolder
-    # with [.]\utils\data
-    # print os.getcwd()
+    """Reading data.
+
+    Reading the .csv file with all the cycling data.
+
+    Make sure you're in folder \utils. If not::
+        >>>print os.getcwd()
+
+    to find current folder and extend datafolder with [.]\utils\data
+
+    """
+    datafolder = r'..\testdata'
+
     filename_down = r'20160805_sic006_45_cc_01_ocvrlx_down.csv'
     filename_up = r'20160805_sic006_45_cc_01_ocvrlx_up.csv'
     down = os.path.join(datafolder, filename_down)
@@ -134,16 +209,22 @@ if __name__ == '__main__':
     data_up = pd.read_csv(up, sep=';')
     data_up = manipulate_data(data_up)
 
-    # preparations for fitting
-    ############################################################################
-    v_start_down = 1.   # all start variables are taken from fitting_ocv_003.py
+    """Preparations for fitting parameters.
+
+        Write boundary conditions and initial guesses.
+        Removing "nan" is inspired by 'stackoverflow'_
+
+        .._stackoverflow:
+            http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
+
+    """
+    v_start_down = 1.
     v_start_up = 0.01
     cell_mass = 0.8   # [g]
     c_rate = 0.1   # [1 / h]
     cell_capacity = 3.579   # [mAh / g]
     i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
     # i_start = 0.000751
-    # taken from "x" in fitting_ocv_003.py, function "GuessRC2"
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 400}
 
@@ -152,8 +233,6 @@ if __name__ == '__main__':
     for i, sort_up in data_up.iteritems():
         time_up.append(np.array(sort_up[:]['time']))
         voltage_up.append(np.array(sort_up[:]['voltage']))
-        # removing nan is inspired by:
-# http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
         time_up[i] = time_up[i][~np.isnan(time_up[i])]
         voltage_up[i] = voltage_up[i][~np.isnan(voltage_up[i])]
     v_ocv_up = voltage_up[0][-1]
@@ -192,7 +271,6 @@ if __name__ == '__main__':
               if key.startswith('r')}
     best_rc.update(best_c)
     best_rc_para_up = [best_rc]
-
     report_fit(result_up[0])
 
     for cycle_up_i in range(1, len(time_up)):

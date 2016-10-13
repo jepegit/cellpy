@@ -7,12 +7,6 @@ model. The rc-model is based on a simplified 'Randles circuit'_.
 
 Use "fitting_cell_ocv.py" to start fitting your parameters with this model.
 
-Example:
-    Call guessing_parameters(). Use these parameters to give lmfit an
-    initial parameter value. Call ocv_relax_func() and subtract from
-    measured data to get residual.
-    For relaxation of a single rc-circuit, call relaxation_rc().
-
 Todo:
     * Make tests
 
