@@ -130,7 +130,7 @@ def plot_voltage(t, v, best, best_para):
     v0_rc = {v0_key: v0_val for v0_key, v0_val in res_par_dict.items()
              if v0_key.startswith('v0')}
 
-    rc_circuits = {rc[2:]: ocv + relaxation_rc(t, v0_rc['v0_%s' % rc[2:]],
+    rc_circuits = {rc[2:]: relaxation_rc(t, v0_rc['v0_%s' % rc[2:]],
                                                r[rc], c['c_%s' % rc[2:]], None)
                    for rc in r.keys()}
 
@@ -141,6 +141,7 @@ def plot_voltage(t, v, best, best_para):
     plt.legend(['Measured', 'Best fit', 'ocv - relaxed',
                 'Charge-transfer rc-circuit', 'Diffusion rc-circuit'],
                loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 10})
+    plt.grid()
 
     # Suppose to add a text with the value of the parameters for the fit.
 
@@ -197,7 +198,7 @@ if __name__ == '__main__':
         >>>print os.getcwd()
 
     to find current folder and extend datafolder with [.]\utils\data
-
+    ----------------------------------------------------------------------------
     """
     datafolder = r'..\testdata'
 
@@ -216,6 +217,7 @@ if __name__ == '__main__':
 
         .._stackoverflow:
             http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
+    ----------------------------------------------------------------------------
 
     """
     v_start_down = 1.
@@ -252,8 +254,10 @@ if __name__ == '__main__':
     initial_param_up.add('v0_d', value=init_guess_up['v0_rc']['d'],
                          min=0, max=v_0_up - v_ocv_up)
 
-    #  fitting data
-    ############################################################################
+    """Fitting parameters.
+    ----------------------------------------------------------------------------
+
+    """
     # making a class Minimizer that contain fitting methods and attributes
     Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
                                 fcn_args=(time_up[0], voltage_up[0]))
@@ -300,9 +304,9 @@ if __name__ == '__main__':
         best_rc_cycle.update(best_c_cycle)
         best_rc_para_up.append(best_rc_cycle)
 
-    # plotting cycle's voltage at user's wish
-    ############################################################################
-    # making odd or even amount of figures
+    """User decides which cycles to plot.
+    ----------------------------------------------------------------------------
+    """
     question = 'Cycles after discharge you want to plot, separated with ' \
                'space. If you don'"'"'t want to plot any press ' \
                'enter. Write "a" for all plots: -->'
@@ -354,10 +358,9 @@ if __name__ == '__main__':
     # for cycle_nr, sub_up in enumerate(subs_up):
     #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
     #                  sub_up)
-    pass
-    # plot parameters
-    ############################################################################
-    pass
+    """Plotting parameters
+    ----------------------------------------------------------------------------
+    """
     # printing parameters
     # for cyc in range(1, len(result)):
     #     print 'cycle number %i' % cyc
@@ -387,7 +390,7 @@ if __name__ == '__main__':
                               bbox_to_anchor=(1, 0.5))
         subs_params[_].set_xlabel('Cycles')
         if 'r' == name[0]:
-            subs_params[_].set_ylabel('Resistance [ohm]')
+            subs_params[_].set_ylabel('Resistance [Ohm]')
         elif 'c' == name[0]:
             subs_params[_].set_ylabel('Capacitance [F]')
         else:
@@ -407,7 +410,7 @@ if __name__ == '__main__':
                             bbox_to_anchor=(1, 0.5))
         subs_rc[idx].set_xlabel('Cycles')
         if key_value.startswith('r'):
-            subs_rc[idx].set_ylabel('Resistance [ohm]')
+            subs_rc[idx].set_ylabel('Resistance [Ohm]')
         else:
             subs_rc[idx].set_ylabel('Capacitance [F]')
 

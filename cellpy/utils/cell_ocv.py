@@ -27,7 +27,7 @@ def tau(time, r, c, slope):
     The time constant can vary linearly with the time.
     Args:
         time (nd.array): Points in time [s].
-        r (float): Resistance [Ohms].
+        r (float): Resistance [Ohm].
         c (float): Capacitance [F].
         slope (float): Slope of the time constant [s].
 
@@ -48,7 +48,7 @@ def relaxation_rc(time, v0, r, c, slope):
     Args:
         time (nd.array): Points in time [s].
         v0 (float): The initial voltage across the rc-circuit at t = 0 [V].
-        r (float): The rc-circuit's resistance [Ohms].
+        r (float): The rc-circuit's resistance [Ohm].
         c (float): The rc-circuit's capacitance [F].
         slope (float): Slope of the time constant [s].
 
@@ -74,7 +74,7 @@ def ocv_relax_func(time, ocv, v0_rc, r_rc, c_rc, slope=None):
         time (nd.array): Points in time [s].
         ocv (float): Open circuit voltage [V].
         v0_rc (dict): Initial relaxation voltage for each rc-circuits [V].
-        r_rc (dict): The rc-circuit's resistance [Ohms].
+        r_rc (dict): The rc-circuit's resistance [Ohm].
         c_rc (dict): The rc-circuit's capacitance [F].
         slope (dict): Slope of the rc's time constants [s].
 
