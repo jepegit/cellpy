@@ -15,48 +15,6 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
-    """
-    Guessing likely parameters that will fit best to the measured data.
-
-    :param v_start: voltage before IR-drop [V]
-    :type v_start: float
-    :param i_start: start current. Calculated from current rate during
-    charge/discharge, mass of cell and c_cap ?
-    :type i_start: float
-    :param voltage: measured voltage data
-    :type voltage: 1d numpy array
-    :param contribute: contributed partial voltage from each rc-circuit
-    :type contribute: dict
-    :param tau_rc: guessed time constants across each rc-circuit
-    :type tau_rc: dict
-    :return: list of calculated parameters from guessed input parameters
-    """
-    # Say we know v_0 (after IR-drop). We also know C_cap and C_rate.
-    # I have to assume that the charge-transfer rate
-    # is 0.2 times the voltage across the relaxation circuits (0.2 is an
-    # example of what contribute is guessed to be). So 0.2 *v_rlx
-    # (which is v_0 - ocv. This means that 1-0.2 = 0.8 times v_rlx is from
-    # the diffusion part.
-    if sum(contribute.values()) != 1.0:
-        raise ValueError('The sum of contribute does not add up to 1.')
-    # if (ocv - voltage[-2]) / ocv < 0.01:
-    #     print 'WARNING: Possibly too few data points measured for optimal fit.'
-    v_rlx = v_0 - v_ocv   # voltage over the rc-circuits
-    if len(contribute) == 1:
-        v0_rc = {contribute.keys()[0]: v_rlx}
-    else:
-        v0_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
-
-    r_rc = {key: abs(v0 / i_start) for key, v0 in v0_rc.items()}
-    r_ir = abs(v_start / i_start - sum(r_rc.values()))
-    # r_ir_2 = (v_start - v_0) / i_start   # This one is different than r_ir...?
-    c_rc = {k: t / r for k, r in r_rc.items() for i, t in tau_rc.items()
-            if i == k}
-    return\
-        {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v0_rc': v0_rc}
-
-
 def tau(time, r, c, slope):
     """
     Calculate the time constant based on resistance and capacitance.
@@ -131,6 +89,48 @@ def ocv_relax_func(time, ocv, v0_rc, r_rc, c_rc, slope=None):
     volt_rc = [relaxation_rc(time, v0_rc[rc], r_rc[rc],
                              c_rc[rc], m[rc]) for rc in r_rc.keys()]
     return sum(volt_rc) + ocv_arr
+
+
+def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
+    """
+    Guessing likely parameters that will fit best to the measured data.
+
+    :param v_start: voltage before IR-drop [V]
+    :type v_start: float
+    :param i_start: start current. Calculated from current rate during
+    charge/discharge, mass of cell and c_cap ?
+    :type i_start: float
+    :param voltage: measured voltage data
+    :type voltage: 1d numpy array
+    :param contribute: contributed partial voltage from each rc-circuit
+    :type contribute: dict
+    :param tau_rc: guessed time constants across each rc-circuit
+    :type tau_rc: dict
+    :return: list of calculated parameters from guessed input parameters
+    """
+    # Say we know v_0 (after IR-drop). We also know C_cap and C_rate.
+    # I have to assume that the charge-transfer rate
+    # is 0.2 times the voltage across the relaxation circuits (0.2 is an
+    # example of what contribute is guessed to be). So 0.2 *v_rlx
+    # (which is v_0 - ocv. This means that 1-0.2 = 0.8 times v_rlx is from
+    # the diffusion part.
+    if sum(contribute.values()) != 1.0:
+        raise ValueError('The sum of contribute does not add up to 1.')
+    # if (ocv - voltage[-2]) / ocv < 0.01:
+    #     print 'WARNING: Possibly too few data points measured for optimal fit.'
+    v_rlx = v_0 - v_ocv   # voltage over the rc-circuits
+    if len(contribute) == 1:
+        v0_rc = {contribute.keys()[0]: v_rlx}
+    else:
+        v0_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
+
+    r_rc = {key: abs(v0 / i_start) for key, v0 in v0_rc.items()}
+    r_ir = abs(v_start / i_start - sum(r_rc.values()))
+    # r_ir_2 = (v_start - v_0) / i_start   # This one is different than r_ir...?
+    c_rc = {k: t / r for k, r in r_rc.items() for i, t in tau_rc.items()
+            if i == k}
+    return\
+        {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v0_rc': v0_rc}
 
 
 # def fitting(time, voltage, vstart, istart, contribute, tau_rc, err=None,
