@@ -15,25 +15,6 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-def tau(time, r, c, slope):
-    """
-    Calculate the time constant based on resistance and capacitance.
-
-    :param time: an array of points in time [s]
-    :param slope: slope of the time constant [s]
-    :param r: resistance [Ohm]
-    :param c: capacity [F]
-    :return: self._slope * self._time + r * c
-    """
-    if slope:
-        # return slope * self._time + abs(self._time[-1] /
-        # math.log(v_rc_0/v_rc[-1]))
-        return slope * time + np.array([r * c for _ in range(len(time))])
-    else:
-        # return abs(self._time[-1] / math.log(v_rc_0/v_rc[-1]))
-        return r * c
-
-
 def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
     """
     Guessing likely parameters that will fit best to the measured data.
@@ -62,18 +43,37 @@ def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
     # if (ocv - voltage[-2]) / ocv < 0.01:
     #     print 'WARNING: Possibly too few data points measured for optimal fit.'
     v_rlx = v_0 - v_ocv   # voltage over the rc-circuits
-    if not isinstance(contribute, dict):
-        v0_rc = {'rc': v_rlx}
+    if len(contribute) == 1:
+        v0_rc = {contribute.keys()[0]: v_rlx}
     else:
         v0_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
 
-    r_rc = {key: abs(v / i_start) for key, v in v0_rc.items()}
+    r_rc = {key: abs(v0 / i_start) for key, v0 in v0_rc.items()}
     r_ir = abs(v_start / i_start - sum(r_rc.values()))
     # r_ir_2 = (v_start - v_0) / i_start   # This one is different than r_ir...?
     c_rc = {k: t / r for k, r in r_rc.items() for i, t in tau_rc.items()
             if i == k}
     return\
         {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v0_rc': v0_rc}
+
+
+def tau(time, r, c, slope):
+    """
+    Calculate the time constant based on resistance and capacitance.
+
+    :param time: an array of points in time [s]
+    :param slope: slope of the time constant [s]
+    :param r: resistance [Ohm]
+    :param c: capacity [F]
+    :return: self._slope * self._time + r * c
+    """
+    if slope:
+        # return slope * self._time + abs(self._time[-1] /
+        # math.log(v_rc_0/v_rc[-1]))
+        return slope * time + np.array([r * c for _ in range(len(time))])
+    else:
+        # return abs(self._time[-1] / math.log(v_rc_0/v_rc[-1]))
+        return r * c
 
 
 def relaxation_rc(time, v0, r, c, slope):

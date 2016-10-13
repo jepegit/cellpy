@@ -62,17 +62,6 @@ def manipulate_data(read_data):
     return pd.Series(sorted_data)
 
 
-def ocv_user_adjust(par, t, meas_volt):
-
-    p_dict = par.valuesdict()
-    r_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('r')}
-    c_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('c')}
-    v0_rc = {key[3:]: val for key, val in p_dict.items()
-             if key.startswith('v0')}
-    return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=par['ocv'],
-                          v0_rc=v0_rc) - meas_volt
-
-
 def plot_voltage(t, v, best, best_para):
 
     # print 'Guessed parameters: ', best.init_values
@@ -110,12 +99,24 @@ def plot_voltage(t, v, best, best_para):
     #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
     #     mover += 0.1
 
+
 # def print_params(ini, fit):
 #
 #     for key, value in fit.items():
 #         print 'Guessed: %-9 Fitted Parameters:'
 #         print '\t'
 #         print '%s: %-9f %f' % (key, ini[key], value)
+
+
+def ocv_user_adjust(par, t, meas_volt):
+
+    p_dict = par.valuesdict()
+    r_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('r')}
+    c_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('c')}
+    v0_rc = {key[3:]: val for key, val in p_dict.items()
+             if key.startswith('v0')}
+    return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=par['ocv'],
+                          v0_rc=v0_rc) - meas_volt
 
 
 if __name__ == '__main__':
@@ -182,15 +183,15 @@ if __name__ == '__main__':
     best_para_up = [result_up[0].params]
     best_fit_voltage_up = [result_up[0].residual + voltage_up[0]]
 
-    best_r = {'r_%s' % key[3:]: abs(v0_rc / i_start)
-              for key, v0_rc in best_para_up[0].valuesdict().items()
-              if key.startswith('v0')}
-    # r_ct and r_d in parameters will be replaced with tau_ct and tau_d later
-    best_c = {'c_%s' % key[2:]: tau_rc / best_r['r_%s' % key[2:]]
+    best_rc = {'r_%s' % key[3:]: abs(v0_rc / i_start)
+               for key, v0_rc in best_para_up[0].valuesdict().items()
+               if key.startswith('v0')}
+
+    best_c = {'c_%s' % key[2:]: tau_rc / best_rc['r_%s' % key[2:]]
               for key, tau_rc in best_para_up[0].valuesdict().items()
               if key.startswith('r')}
-    best_r.update(best_c)
-    best_rc_para_up = [best_r]
+    best_rc.update(best_c)
+    best_rc_para_up = [best_rc]
 
     report_fit(result_up[0])
 
@@ -209,17 +210,17 @@ if __name__ == '__main__':
         best_para_up.append(result_up[cycle_up_i].params)
         best_fit_voltage_up.append(result_up[cycle_up_i].residual
                                    + voltage_up[cycle_up_i])
-        best_r_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start)
-                        for key, v_rc in
-                        best_para_up[cycle_up_i].valuesdict().items()
-                        if key.startswith('v0')}
+        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start)
+                         for key, v_rc in
+                         best_para_up[cycle_up_i].valuesdict().items()
+                         if key.startswith('v0')}
         best_c_cycle = {'c_%s' % key[2:]:
-                        tau_rc / best_r_cycle['r_%s' % key[2:]]
+                            tau_rc / best_rc_cycle['r_%s' % key[2:]]
                         for key, tau_rc in
                         best_para_up[cycle_up_i].valuesdict().items()
                         if key.startswith('r')}
-        best_r_cycle.update(best_c_cycle)
-        best_rc_para_up.append(best_r_cycle)
+        best_rc_cycle.update(best_c_cycle)
+        best_rc_para_up.append(best_rc_cycle)
 
     # plotting cycle's voltage at user's wish
     ############################################################################
@@ -278,6 +279,7 @@ if __name__ == '__main__':
     pass
     # plot parameters
     ############################################################################
+    pass
     # printing parameters
     # for cyc in range(1, len(result)):
     #     print 'cycle number %i' % cyc
@@ -332,3 +334,4 @@ if __name__ == '__main__':
             subs_rc[idx].set_ylabel('Capacitance [F]')
 
     plt.show()
+
