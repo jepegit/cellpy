@@ -7,38 +7,25 @@ raw data files, but we intend to implement more types soon. It also creates
 processed files in the hdf5-format.
 
 Example:
-    Not included yet
+    >>> d = arbindata()
+    >>> d.loadcell(names = [file1.res, file2.res]) # loads and merges the runs
+    >>> internal_resistance = d.get_ir()
+    >>> d.save_test("mytest.hdf")
 
-
-Remark that this module is under constant development. The rest of this docstring
-is copy-pasted from the `Google Python Style Guide`_ for reference and if you read
-this, it means I have forgotten to delete it.
-
-Attributes:
-    module_level_variable1 (int): Module level variables may be documented in
-        either the ``Attributes`` section of the module docstring, or in an
-        inline docstring immediately following the variable.
-
-        Either form is acceptable, but the two should not be mixed. Choose
-        one convention to document module level variables and be consistent
-        with it.
 
 Todo:
-    * For module TODOs
-    * You have to also use ``sphinx.ext.todo`` extension
-
-.. _Google Python Style Guide:
-   http://google.github.io/styleguide/pyguide.html
+    * Documentation needed
+    * Include functions gradually from old version
+    * Rename datastructure
+    * Remove mass dependency in summary data
+    * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
 
 """
 
 __version__ = '0.1.0'
-"""string: Module level variable documented inline.
 
-The docstring may span multiple lines. The type may optionally be specified
-on the first line, separated by a colon.
-"""
 USE_ADO = False
+"""string: set True if using adodbapi"""
 
 if USE_ADO:
     try:
@@ -52,28 +39,27 @@ else:
     except ImportError:
         print "could not import dbloader (pyodbc)"
         print "many of the functions will not work"
+        dbloader = None
 
-import shutil, os, sys, tempfile, types
-import collections, time
-from scipy import amax, amin, unique, average, ceil, interpolate, flipud, subtract
-from numpy import arange
+import shutil
+import os
+import sys
+import tempfile
+import types
+import collections
+import time
 import warnings
-
-# from pylab import *
-# import matplotlib.pyplot as plt
+import csv
+import itertools
+import cProfile
+import pstats
+import StringIO
+from scipy import interpolate
+import numpy as np
 import pandas as pd
 
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
-# import datetime
-import csv
-import itertools
-# import cProfile
-import cProfile, pstats, StringIO
-
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
-
-
-# pd.set_option('mode.chained_assignment',None) # "raise" "warn"
 
 
 def humanize_bytes(bytes, precision=1):
@@ -114,15 +100,17 @@ def humanize_bytes(bytes, precision=1):
     return '%.*f %s' % (precision, bytes / factor, suffix)
 
 
-
-
-
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     """Converts a xls date stamp to a more sensible format
 
-    :param xldate: date stamp in Excel format  (string)
-    :param datemode: 0 for 1900-based, 1 for 1904-based
-    :param r: option in ("to_datetime", "to_float", "to_string"
+    Args:
+        xldate (str): date stamp in Excel format.
+        datemode (int): 0 for 1900-based, 1 for 1904-based.
+        option (str): option in ("to_datetime", "to_float", "to_string"), return value
+
+    Returns:
+        datetime (datetime object, float, or string).
+
     """
 
     # This does not work for numpy-arrays
@@ -145,14 +133,34 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
 def Convert2mAhg(c, mass=1.0):
     """Converts capacity in Ah to capacity in mAh/g
 
-    :param c: capacity in mA  (float or numpy array)
-    :param mass: mass in mg
-    :return: 1000000 * c / mass
+    Args:
+        c (float or numpy array): capacity in mA.
+        mass (float): cmass in mg.
+
+    Returns:
+        float: 1000000 * c / mass
     """
     return 1000000 * c / mass
 
 
-class fileID:
+class fileID(object):
+    """class for storing information about the raw-data files.
+
+        This class is used for storing and handling raw-data file information. It is important
+        to keep track of when the data was extracted from the raw-data files so that it is
+        easy to know if the hdf5-files used for storing "treated" data is up-to-date.
+
+        Attributes:
+            name (str): Filename of the raw-data file.
+            full_name (str): Filename including path of the raw-data file.
+            size (float): Size of the raw-data file.
+            last_modified (datetime): Last time of modification of the raw-data file.
+            last_accessed (datetime): last time of access of the raw-data file.
+            last_info_changed (datetime): st_ctime of the raw-data file.
+            location (str): Location of the raw-data file.
+
+        """
+
     def __init__(self, Filename=None):
         make_defaults = True
         if Filename:
@@ -185,9 +193,10 @@ class fileID:
         return txt
 
     def populate(self, Filename):
-        """Finds the file-stats and populates the class with stat values
+        """Finds the file-stats and populates the class with stat values.
 
-        :param Filename: name of the file  (string)
+        Args:
+            Filename (str): name of the file.
         """
 
         if os.path.isfile(Filename):
@@ -201,6 +210,10 @@ class fileID:
             self.location = os.path.dirname(Filename)
 
     def get_raw(self):
+        """get a list with information about the file.
+
+        The returned list contains name, size, last_modified and location.
+        """
         return [self.name, self.size, self.last_modified, self.location]
 
     def get_name(self):
@@ -216,7 +229,22 @@ class fileID:
         return self.last_modified
 
 
-class dataset:
+class dataset(object):
+    """Object to store data for a test.
+
+    This class is used for storing all the relevant data for a 'run', i.e. all the
+    data collected by the tester as stored in the raw-files.
+
+    Attributes:
+        test_no (int): test number.
+        mass (float): mass of electrode [mg].
+        dfdata (pandas.DataFrame): contains the experimental data points.
+        dfsummary (pandas.DataFrame): contains summary of the data pr. cycle.
+        step_table (pandas.DataFrame): information for each step, used for
+                                       defining type of step (charge, discharge, etc.)
+
+    """
+
     def __init__(self):
         self.test_no = None
         self.mass = 1.0  # mass of (active) material (in mg)
@@ -258,29 +286,6 @@ class dataset:
         self.hdf5_file_version = 3
         self.datapoint_txt = "Data_Point"
 
-    def set_material(self, material="silicon"):
-        """ convinience function for setting parameters based on type of test/ material.
-        Not functional yet."""
-
-        if not material.lower() in ["silicon", "cathode", "nimh"]:
-            material = "silicon"
-            print "set_material(material)\nNot viable option - setting to 'silicon'"
-        if material.lower() == "silicon":
-            self.nom_cap = 3579
-            self.material = "silicon"
-            self.c_mode = True
-            self.stars_with = "discharge"
-        elif material.lower() == "nimh":
-            self.nom_cap = 400
-            self.material = "nimh"
-            self.c_mode = False
-            self.stars_with = "charge"
-        elif material.lower() == "cathode":
-            self.nom_cap = 140
-            self.material = "cathode"
-            self.c_mode = True
-            self.stars_with = "charge"
-
     def __str__(self):
         txt = "_arbin_data_dataset_class_\n"
         txt += "loaded from file\n"
@@ -314,12 +319,27 @@ class dataset:
     def makeDataFrame(self):
         """Creates a Pandas DataFrame of the data (dfdata and dfsummary)"""
 
-        self.dfdata = pd.DataFrame(self.data).sort([self.datapoint_txt])  # FutureWarning
-        self.dfsummary = pd.DataFrame(self.summary).sort([self.datapoint_txt])
+
+        self.dfdata = pd.DataFrame(self.data)
+        try:
+            self.dfdata.sort_values(by=self.datapoint_txt)
+        except:
+            print "could not sort dfdata"
+        self.dfsummary = pd.DataFrame(self.summary).sort_values(by=self.datapoint_txt)
 
 
-# TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
-class arbindata:
+class arbindata(object):
+    """Main class for working and storing data
+
+    This class is the main work-horse for cellpy where all the functions for reading, selecting, and
+    tweaking your data is located. It also contains the header definitions, both for the cellpy hdf5
+    format, and for the various cell-tester file-formats that can be read. The class can contain
+    several tests and each test is stored in a list.
+
+    Attributes:
+        tests (list): list of dataset objects.
+    """
+
     def __init__(self, filenames=None,
                  selected_scans=None,
                  verbose=False,
@@ -328,11 +348,17 @@ class arbindata:
                  fetch_onliners=False,
                  tester="arbin",
                  ):
+        """
+
+        Returns:
+            None:
+        """
         self.tester = tester
         self.verbose = verbose
         self.profile = profile
-        self.fetch_oneliners = fetch_onliners
-        self.max_oneliners = 1000000
+        self.loadres_limit = None  # if not None: only load up to loadres_limit
+        if fetch_onliners:
+            self.loadres_limit = 100000
         self.max_res_filesize = 400000000
         self.intendation = 0
         self.filestatuschecker = filestatuschecker
@@ -468,139 +494,16 @@ class arbindata:
             self.test_time_txt = 'Test_Time'
             self.voltage_txt = 'Voltage'
             self.dv_dt_txt = 'dV/dt'
-
-
-
-            #
-
-            # aux
-            # ------------decorators-and-printers-------------------------------------------
-            #    def do_cprofile(func):
-            #        def profiled_func(*args, **kwargs):
-            #            profile = cProfile.Profile()
-            #            try:
-            #                if args[0].verbose and args[0].profile:
-            #                    profile.enable()
-            #                result = func(*args, **kwargs)
-            #                if args[0].verbose and args[0].profile:
-            #                    profile.disable()
-            #                return result
-            #            finally:
-            #                if args[0].verbose and args[0].profile:
-            #                    profile.print_stats()
-            #        return profiled_func
-
-    def do_cprofile(func):
-        def profiled_func(*args, **kwargs):
-            profile = cProfile.Profile()
-            try:
-                if args[0].profile:
-                    profile.enable()
-                result = func(*args, **kwargs)
-                if args[0].profile:
-                    profile.disable()
-                return result
-            finally:
-                if args[0].profile:
-                    #                    s = StringIO.StringIO()
-                    #                    sortby = 'cumulative'
-                    #                    ps = pstats.Stats(profile, stream=s).sort_stats(sortby)
-                    #                    ps.print_stats()
-                    #                    print s.getvalue()
-                    profile.print_stats()
-
-        return profiled_func
-
-    def timeit(method):
-        def timed(*args, **kw):
-            ts = time.time()
-            try:
-                if args[0].verbose:
-                    print "\n --timing function %s" % (method.__name__)
-            finally:
-                result = method(*args, **kw)
-            te = time.time()
-            try:
-                if args[0].verbose:
-                    print '\n--> %r took %2.2f sec' % (method.__name__, te - ts)
-            finally:
-                return result
-
-        return timed
-
-    def print_function(method):
-        def printfunc(*args, **kw):
-            # TODO: fix so that intendations are correct
-            try:
-                if args[0].verbose:
-                    args[0].intendation += 1
-                    method_name = method.__name__
-                    if args[0].intendation == 1:
-                        s_line = str(50 * "*")
-                        t_line = str(25 * " -")
-                    elif 1 < args[0].intendation < 12:
-                        s_line = str((50 - 3 * args[0].intendation) * "-")
-                        t_line = str((25 - 3 * 2 * args[0].intendation) * " -")
-                    else:
-                        s_line = "..sub.."
-                        t_line = ".._sub_.."
-
-                    if method_name[0] != "_":
-                        output = "\n" + 3 * args[0].intendation * " "
-                        output += s_line
-                        print output
-                        output = 3 * args[0].intendation * " "
-                        output += "*** running function %s" % (method_name)
-                        print output
-                    else:
-                        output = 3 * args[0].intendation * " "
-                        output += t_line
-                        print output
-                        output = 3 * args[0].intendation * " "
-                        output += " ** running function %s" % (method_name)
-                        print output
-            finally:
-                result = method(*args, **kw)
-            try:
-                if args[0].verbose:
-                    method_name = method.__name__
-                    if args[0].intendation == 1:
-                        s_line = str(50 * "*")
-                        t_line = str(25 * " -")
-                    elif 1 < args[0].intendation < 12:
-                        s_line = str((50 - 3 * args[0].intendation) * "-")
-                        t_line = str((25 - 3 * 2 * args[0].intendation) * " -")
-                    else:
-                        s_line = "..sub.."
-                        t_line = ".._sub_.."
-
-                    if method_name[0] != "_":
-                        print "\n"
-                        output = 3 * args[0].intendation * " "
-                        output += "    exited %s" % (method_name)
-                        print output
-                        output = 3 * args[0].intendation * " "
-                        output += s_line
-                        print output
-                    else:
-                        print "\n"
-                        output = 3 * args[0].intendation * " "
-                        output += "    exited %s" % (method_name)
-                        print output
-                        output = 3 * args[0].intendation * " "
-                        output += t_line
-                        print output
-
-            finally:
-                args[0].intendation -= 1
-                return result
-
-        return printfunc
+        else:
+            print "this option is not implemented yet"
 
     def Print(self, txt=None, Level=0):
-        """Print to std.out if self.verbose is selected. Selecting Level = 1
-        and verbose = 2 prints all statements. All other options prints only
-        Level = 1 statements"""
+        """Print to std.out if self.verbose is selected.
+
+        Args:
+            txt (str): text to print.
+            Level (int): 1 print all statements for verbose = 2, else prints only Level=1 statements
+        """
 
         if self.verbose:
             if self.verbose != 2:
@@ -615,46 +518,72 @@ class arbindata:
                 else:
                     print txt
 
-
-                    # ----loading-and-merging-data--------------------------------------------------
-
     def set_res_datadir(self, directory=None):
-        _usage_ = """
-        set_res_datadir(directory)
-        used for setting directory for looking for res-files
-        valid directory name is required"""
+        """set the directory containing .res-files
+
+        Used for setting directory for looking for res-files. A valid directory name is required.
+
+        Args:
+            directory (str): path to res-directory
+
+        Example:
+            >>> d = arbindata()
+            >>> directory = r"C:\MyData\Arbindata"
+            >>> d.set_res_datadir(directory)
+
+        """
+
         if directory is None:
-            print _usage_
             print "no directory name given"
             return
         if not os.path.isdir(directory):
-            print _usage_
             print directory
             print "directory does not exist"
             return
         self.res_datadir = directory
 
     def set_hdf5_datadir(self, directory=None):
-        _usage_ = """
-        set_hdf5_datadir(directory)
-        used for setting directory for looking for hdf5-files
-        valid directory name is required"""
+        """set the directory containing .hdf5-files
+
+        Used for setting directory for looking for hdf5-files. A valid directory name is required.
+
+        Args:
+            directory (str): path to hdf5-directory
+
+        Example:
+            >>> d = arbindata()
+            >>> directory = r"C:\MyData\HDF5"
+            >>> d.set_res_datadir(directory)
+
+        """
+
         if directory is None:
-            print _usage_
             print "no directory name given"
             return
         if not os.path.isdir(directory):
-            print _usage_
             print "directory does not exist"
             return
         self.hdf5_datadir = directory
 
     def check_file_ids(self, hdf5file, resfiles=None, force=True, usedir=False,
                        no_extension=False, return_res=True):
-        """ this function checks if the hdf5 file and the res-files have the same
-         timestamps etc to find out if we need to bother to load .res -files
-         TODO: make (refract) own function for finding res files that
-           can be used by loadcell (only make_hdf5.py uses return_res = True now)"""
+        """check the stats for the files (raw-data and cellpy hdf5).
+
+        This function checks if the hdf5 file and the res-files have the same
+        timestamps etc to find out if we need to bother to load .res -files.
+
+        Args:
+            hdf5file (str): filename of the cellpy hdf5-file.
+            resfiles (str, optional): name(s) of raw-data file(s).
+            force (bool):
+            usedir (bool): Set to True if you will use dir-names defined in prm-file.
+            no_extension (bool): Set to True if you give hdf5-file without extension.
+            return_res (bool): returns list of raw-filenames if set to True.
+
+        Returns:
+            False if the raw files are newer than the cellpy hdf5-file (update needed).
+            If return_res is True it also returns list of raw-filenames as second argument.
+            """
 
         txt = "check_file_ids\n  checking file ids - using '%s'" % (self.filestatuschecker)
         self.Print(txt)
@@ -828,9 +757,8 @@ class arbindata:
         return ids
 
     def _compare_ids(self, ids_res, ids_hdf5):
-        """Check if the ids are "the same", i.e. if the ids indicates wether new
-        data is likely to be found in the res-files checking length
-        """
+        # Check if the ids are "the same", i.e. if the ids indicates wether new
+        # data is likely to be found in the res-files checking length
 
         similar = True
         l_res = len(ids_res)
@@ -845,10 +773,9 @@ class arbindata:
         return similar
 
     def _find_resfiles(self, hdf5file, counter_min=1, counter_max=10):
-        """function to find res files by locating all files of the form
-        (date-label)_(slurry-label)_(el-label)_(cell-type)_*
-        UNDER DEVELOPMENT
-        """
+        # function to find res files by locating all files of the form
+        # (date-label)_(slurry-label)_(el-label)_(cell-type)_*
+        # UNDER DEVELOPMENT
 
         counter_sep = "_"
         counter_digits = 2
@@ -874,50 +801,31 @@ class arbindata:
                  summary_on_res=True, summary_ir=True, summary_ocv=False,
                  summary_end_v=True, only_summary=False, only_first=False):
 
+        """loads data for given cells
+
+        Args:
+            names (list): identification names
+            res (bool): name of res-file given
+            hdf5 (bool): name of hdf5-file given
+            resnames (list, optional): names of res-files
+            masses (list of floats): masses of electrodes or active material
+            counter_sep (char): seperator between sub-names
+            counter_pos (string in ["last", "first"]): position for index for counting
+            counter_digits (int): number of digits in index
+            counter_max (int): max number for index (will not search after files with higher index)
+            counter_min (int): min number for index (will not search for files with lower index)
+            summary_on_res (bool): use res-file for summary
+            summary_ir (bool): summarize ir
+            summary_ocv (bool): summarize ocv steps
+            summary_end_v (bool): summarize end voltage
+            only_summary (bool): get only the summary of the runs
+            only_first (bool): only use the first file fitting search criteria
+
+        Example:
+            >>> srno = 132
+            >>> names = dbreader.get_cell_name(srno) #format date_slurry_no_celltype
+            >>> loadfile(names)
         """
-        loads data for given cells
-
-        :param names: identification names
-        :type names: list
-        :param res: name of res-file given
-        :type res: bool [False]
-        :param hdf5: name of hdf5-file given
-        :type hdf5: bool [False]
-        :param resnames: names of res-files
-        :type resnames: list
-        :param masses: masses of electrodes or active material
-        :type masses: list of floats
-        :param counter_sep: seperator between sub-names
-        :type counter_sep: char
-        :param counter_pos: position for index for counting
-        :type counter_pos: string ["last"]
-        :param counter_digits: number of digits in index
-        :type counter_digits: int
-        :param counter_max: max number for index (will not search after files with higher index)
-        :type counter_max: int
-        :param counter_min: min number for index (will not search for files with lower index)
-        :type counter_min: int
-        :param summary_on_res: use res-file for summary
-        :type summary_on_res: bool [True]
-        :param summary_ir: summarize ir
-        :type summary_ir: bool [True]
-        :param summary_ocv: summarize ocv steps
-        :type summary_ocv: bool [False]
-        :param summary_end_v: summarize end voltage
-        :type summary_end_v: bool [True]
-        :param only_summary: get only the summary of the runs
-        :type only_summary: bool [False]
-        :param only_first: only use the first file fitting search criteria
-        :type only_first: bool [False]
-        :return: the relaxation voltage of the model as a function of time
-
-        >>> srno = 132
-        >>> names = dbreader.get_cell_name(srno) #format date_slurry_no_celltype
-        >>> loadfile(names)
-        """
-
-
-
         # should include option to skip selected res-files (bad_files)
         self.Print("entering loadcel")
         hdf5_extension = ".h5"  # should make this "class-var"
@@ -1082,11 +990,8 @@ class arbindata:
 
     # @print_function
     def loadres(self, filenames=None, check_file_type=True):
-        # this function loads the data into the datastructure
-        # new - also loads .h5 files
-        # future: should also load other dataformats (e.g. files created by this script or by LabView)
-        # future: could include try/except on loading res-files
-
+        """loads the data into the datastructure"""
+        # TODO: use type-checking
         txt = "number of tests: %i" % len(self.filenames)
         self.Print(txt, 1)
         test_number = 0
@@ -1219,7 +1124,6 @@ class arbindata:
     def _empty_test(self):
         return None
 
-    # @print_function
     def _check64bit(self, System="python"):
         if System == "python":
             try:
@@ -1243,9 +1147,8 @@ class arbindata:
                 except:
                     return False  # is an older version of Python, assume also an older os (best we can guess)
 
-    # @timeit
     def _loadh5(self, filename):
-        """loads from hdf5 formatted arbin-file"""
+        # loads from hdf5 formatted arbin-file
         self.Print("loading", 1)
         self.Print(filename, 1)
         if not os.path.isfile(filename):
@@ -1292,6 +1195,12 @@ class arbindata:
             data.hdf5_file_version = self._extract_from_dict(infotable, "hdf5_file_version")
         except:
             data.hdf5_file_version = None
+
+        try:
+            data.step_table_made = self._extract_from_dict(infotable, "step_table_made")
+        except:
+            data.step_table_made = None
+
         if fidtable_selected:
             data.raw_data_files, data.raw_data_files_length = self._convert2fid_list(fidtable)
         else:
@@ -1302,7 +1211,6 @@ class arbindata:
         # self.tests.append(data)
         return newtests
 
-    # @print_function
     def _convert2fid_list(self, tbl):
         self.Print("_convert2fid_list")
         fids = []
@@ -1334,17 +1242,24 @@ class arbindata:
                 print filename
                 print e
 
-    # @timeit
     def _loadres(self, Filename=None):
-        """loadres(Filename)
-        loads data from .res file into the arbindata.tests list
-        e.g. arbindata.test[0] = dataset
-        where
-         dataset.dfdata is the normal data
-         dataset.dfsummary is the summary.
-         arbindata.tests[i].test_ID is the test id"""
-        BadFiles = [r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20140715_is031_01_cc_01.res",
-                    r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20140715_is031_01_cc_02.res", ]
+        """loads data from arbin .res files
+
+        Args:
+            Filename (str): path to .res file.
+
+        Returns:
+            newtests (list of data objects), FileError
+
+        """
+        # loadres(Filename)
+        # loads data from .res file into the arbindata.tests list
+        # e.g. arbindata.test[0] = dataset
+        # where
+        # dataset.dfdata is the normal data
+        # dataset.dfsummary is the summary.
+        # arbindata.tests[i].test_ID is the test id.
+
         BadFiles = []
         print "  .",
         FileError = None
@@ -1354,7 +1269,7 @@ class arbindata:
         self.Print("loading", 1)
         self.Print(Filename, 1)
 
-        # -------checking existance of file-------
+        # -------checking existence of file-------
         if not os.path.isfile(Filename):
             print "\nERROR (_loadres):\nfile does not exist"
             print Filename
@@ -1364,11 +1279,11 @@ class arbindata:
             return newtests, FileError
             # sys.exit(FileError)
 
-        # -------checking filesize etc------------
+        # -------checking file size etc------------
         filesize = os.path.getsize(Filename)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.Print(txt)
+        self.Print(txt,1)
 
         if filesize > self.max_res_filesize:
             FileError = -3  # File too large
@@ -1399,61 +1314,27 @@ class arbindata:
         shutil.copy2(Filename, temp_dir)
         self.Print("Finished to tmp-file", 1)
         t1 = "this operation took %f sec" % (time.time() - t1)
-        self.Print(t1)
+        self.Print(t1,1)
         print ".",
 
-        # -------checking bit and os----------------
-        is64bit_python = self._check64bit(System="python")
-        # is64bit_os = self._check64bit(System = "os")
+        constr = self.__get_res_connector(Filename, temp_filename)
 
-        #        print "File:"
-        #        print Filename
-        #        if os.path.isfile(Filename):
-        #            print "is a file"
-        #        else:
-        #            print "is not a file"
-        if USE_ADO:
-            if is64bit_python:
-                self.Print("using 64 bit python")
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % Filename
-            else:
-                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
-
-        else:
-            constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-
-        # print 20*"*"
-        #        print constr
-        #        print 20*"*"
         # ------connecting to the .res database----
-        self.Print("connection to the database")
+        self.Print("connection to the database",1)
 
         if USE_ADO:
             conn = dbloader.connect(constr)  # adodbapi
         else:
             conn = dbloader.connect(constr, autocommit=True)
-        #
-        self.Print("creating cursor")
-        # conn.CursorLocation = adodbapi.adUseServer
+
+        self.Print("creating cursor", 1)
         cur = conn.cursor()
 
-        # ------------------------------------------
-        # Reading the global table to find experiment sets
-        sql = "select * from %s" % self.tablename_global
-        cur.execute(sql)  # adodbapi
-        col_names = [i[0] for i in cur.description]  # adodbapi
-        global_data = collections.OrderedDict()
-        for cn in col_names:
-            global_data[cn] = []
-        self.Print("Starting to load global table from .res file (cur.fetchall())")
-        all_data = cur.fetchall()
-        self.Print("Finished to load global table from .res file (cur.fetchall())")
-
+        # ------get the global table-----------------
+        all_data, col_names, global_data = self.__get_res_global_table(cur)
         for item in all_data:
             for h, d in zip(col_names, item):
                 global_data[h].append(d)
-
         tests = global_data[self.test_id_txt]
         number_of_sets = len(tests)
         if number_of_sets < 1:
@@ -1464,9 +1345,7 @@ class arbindata:
             self._clean_up_loadres(cur, conn, temp_filename)
             return newtests, FileError
             # sys.exit(FileError)
-
         print ".",
-        del cur
 
         for test_no in range(number_of_sets):
             data = dataset()
@@ -1490,7 +1369,6 @@ class arbindata:
             # ---loading-normal-data
             sql = "select * from %s" % self.tablename_normal
             try:
-                cur = conn.cursor()
                 cur.execute(sql)
             except:
                 FileError = -5  # No datasets
@@ -1507,40 +1385,37 @@ class arbindata:
             for cn in col_names:
                 data.data[cn] = []
                 col[cn] = []
-            try:
-                self.Print("Starting to load normal table from .res file (cur.fetchall())")
-                all_data = cur.fetchall()
-                self.Print("Finished to load normal table from .res file (cur.fetchall())")
-            except:
-                FileError = -6  # Cannot read normal table with fetchall
-                etxt = "\nWarning (_loadres)(normal tbl):\n"
-                etxt += "Could not retrieve raw-data by fetchall\n\n"
-                etxt += "This problem is caused by the limitation in the remote"
-                etxt += " procedure call (RPC) layer where only 256 unique interfaces"
-                etxt += " can be called from one process to another. This problem"
-                etxt += " typically occurs when you use COM+ or Microsoft Transaction"
-                etxt += " Server with many objects in the program or package"
-                etxt += "\n"
-                self.Print(etxt, 1)
 
-                if self.fetch_oneliners:
-                    print "\nWarning:"
-                    print "Loading .res file using fetchmany(%i)" % (self.max_oneliners)
-                    self.Print("fetching oneliners", 1)
-                    self.Print("Starting to load normal table from .res file (cur.fetchmany())", 1)
-                    txt = "self.max_oneliners = %i" % (int(self.max_oneliners))
-                    self.Print(txt, 1)
-                    all_data = cur.fetchmany(self.max_oneliners)
-                    self.Print("Finished to load normal table from .res file (cur.fetchmany())", 1)
-                else:
-                    # learn how to get the error-msg
-                    etxt = "\nERROR (_loadres)(normal tbl):\n"
-                    etxt += "remedy: try self.fetch_onliners = True"
+            if not self.loadres_limit:
+                try:
+                    self.Print("Starting to load normal table from .res file (cur.fetchall())",1)
+                    all_data = cur.fetchall()
+                    self.Print("Finished to load normal table from .res file (cur.fetchall())",1)
+                except:
+                    FileError = -6  # Cannot read normal table with fetchall
+                    etxt = ("\nWarning (_loadres)(normal tbl):\n",
+                        "Could not retrieve raw-data by fetchall\n\n",
+                        "This problem is caused by the limitation in the remote",
+                        "procedure call (RPC) layer where only 256 unique interfaces",
+                        "can be called from one process to another. This problem",
+                        "typically occurs when you use COM+ or Microsoft Transaction",
+                        "Server with many objects in the program or package",
+                        "\n",)
+                    self.Print(etxt, 1)
+                    etxt = "\nERROR (_loadres)(normal tbl):\nremedy: try fetch_onliners = True"
                     self.Print(etxt, 1)
                     self._clean_up_loadres(cur, conn, temp_filename)
                     return newtests, FileError
-                    # sys.exit(FileError)
-            del cur
+
+            else:
+                print "\nWarning:"
+                print "Loading .res file using fetchmany(%i)" % (self.loadres_limit)
+                self.Print("fetching oneliners", 1)
+                self.Print("Starting to load normal table from .res file (cur.fetchmany())", 1)
+                txt = "self.loadres_limit = %i" % (int(self.loadres_limit))
+                self.Print(txt, 1)
+                all_data = cur.fetchmany(self.loadres_limit)
+                self.Print("Finished to load normal table from .res file (cur.fetchmany())", 1)
 
             for item in all_data:
                 # check if this is the correct set
@@ -1555,13 +1430,10 @@ class arbindata:
             # ---loading-statistic-data
             sql = "select * from %s" % self.tablename_statistic
             try:
-                cur = conn.cursor()
                 cur.execute(sql)  # adodbapi
             except:
                 FileError = -7  # No datasets
-                etxt = "\nERROR (_loadres)(stats tbl):\n"
-                etxt += "Could not execute cursor command\n  "
-                etxt += sql
+                etxt = "\nERROR (_loadres)(stats tbl):\nCould not execute cursor command\n  " + sql
                 self.Print(etxt, 1)
                 self._clean_up_loadres(cur, conn, temp_filename)
                 # sys.exit(FileError)
@@ -1578,14 +1450,14 @@ class arbindata:
                 self.Print("Finished to load stats table from .res file (cur.fetchall())")
             except:
                 FileError = -8  # Cannot read normal table with fetchall
-                etxt = "\nWarning (_loadres)(statsl tbl):\n"
-                etxt += "Could not retrieve raw-data by fetchall\n\n"
-                etxt += """This problem is caused by the limitation in the remote
-                procedure call (RPC) layer where only 256 unique interfaces
-                can be called from one process to another. This problem
-                typically occurs when you use COM+ or Microsoft Transaction
-                Server with many objects in the program or package"""
-                etxt += "\n"
+                etxt = ("\nWarning (_loadres)(statsl tbl):\n",
+                        "Could not retrieve raw-data by fetchall\n\n",
+                        "This problem is caused by the limitation in the remote",
+                        "procedure call (RPC) layer where only 256 unique interfaces",
+                        "can be called from one process to another. This problem",
+                        "typically occurs when you use COM+ or Microsoft Transaction",
+                        "Server with many objects in the program or package",
+                        "\n")
                 self.Print(etxt, 1)
                 self._clean_up_loadres(cur, conn, temp_filename)
                 # sys.exit(FileError)
@@ -1598,26 +1470,45 @@ class arbindata:
                 if int(col[self.test_id_txt][0]) == data.test_ID:
                     for d, h in zip(item, col_names):
                         data.summary[h].append(d)
-                        # print "saved stats data for test %i" % data.test_ID
-
-                        #            if FileError:
-                        #                print "x"
-                        #                return newtests, FileError
 
             data.makeDataFrame()
-
             length_of_test = data.dfdata.shape[0]
             data.raw_data_files_length.append(length_of_test)
             print ".",
             newtests.append(data)
-            # self.tests.append(data)
-            # [end]
-
             self._clean_up_loadres(cur, conn, temp_filename)
             print ".",
         return newtests, FileError
 
-    # @timeit
+    def __get_res_global_table(self, cur):
+        sql = "select * from %s" % self.tablename_global
+        cur.execute(sql)  # adodbapi
+        col_names = [i[0] for i in cur.description]  # adodbapi
+        global_data = collections.OrderedDict()
+        for cn in col_names:
+            global_data[cn] = []
+        self.Print("Starting to load global table from .res file (cur.fetchall())", 1)
+        all_data = cur.fetchall()
+        self.Print("Finished to load global table from .res file (cur.fetchall())", 1)
+        return all_data, col_names, global_data
+
+    def __get_res_connector(self, Filename, temp_filename):
+        # -------checking bit and os----------------
+        is64bit_python = self._check64bit(System="python")
+        # is64bit_os = self._check64bit(System = "os")
+        if USE_ADO:
+            if is64bit_python:
+                self.Print("using 64 bit python")
+                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
+                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % Filename
+            else:
+                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
+
+        else:
+            constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+
+        return constr
+
     def merge(self, tests=None, separate_datasets=False):
         """this function merges datasets into one set"""
         # note: several of the final-test runs contains a first cycle with only delith
@@ -1644,9 +1535,6 @@ class arbindata:
 
     # @timeit
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
-        #        print
-        #        print "running _append"
-        #        print
         test = t1
         # finding diff of time
         start_time_1 = t1.start_datetime
@@ -1655,7 +1543,6 @@ class arbindata:
         diff_time = diff_time.total_seconds()
         sort_key = self.datetime_txt  # DateTime
         # mod data points for set 2
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         data_point_header = self.data_point_txt
         last_data_point = max(t1.dfdata[data_point_header])
         t2.dfdata[data_point_header] = t2.dfdata[data_point_header] + last_data_point
@@ -1708,7 +1595,6 @@ class arbindata:
             test.dfsummary = dfsummary2
 
         if merge_step_table:
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             if step_table_made:
                 cycle_index_header = self.cycle_index_txt
                 t2.step_table[self.step_table_txt_cycle] = t2.dfdata[self.step_table_txt_cycle] + last_cycle
@@ -1741,10 +1627,10 @@ class arbindata:
         return test
 
     # --------------iterate-and-find-in-data----------------------------------------
-    # @print_function
+
     def _validate_test_number(self, n, check_for_empty=True):
-        """Returns test_number (or None if empty)
-        Remark! _is_not_empty_test returns True or False"""
+        # Returns test_number (or None if empty)
+        # Remark! _is_not_empty_test returns True or False
 
         if n != None:
             v = n
@@ -1763,7 +1649,6 @@ class arbindata:
         else:
             return v
 
-    # @print_function
     def _validata_step_table(self, test_number=None, simple=False):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -1778,8 +1663,8 @@ class arbindata:
         if not self.tests[test_number].step_table_made:
             return False
 
-        no_cycles_dfdata = amax(d[self.cycle_index_txt])
-        no_cycles_step_table = amax(s[self.step_table_txt_cycle])
+        no_cycles_dfdata = np.amax(d[self.cycle_index_txt])
+        no_cycles_step_table = np.amax(s[self.step_table_txt_cycle])
 
         if simple:
             self.Print("  (simple)")
@@ -1796,7 +1681,7 @@ class arbindata:
             else:
                 for j in range(1, no_cycles_dfdata + 1):
                     cycle_number = j
-                    no_steps_dfdata = len(unique(d[d[self.cycle_index_txt] == cycle_number][self.step_index_txt]))
+                    no_steps_dfdata = len(np.unique(d[d[self.cycle_index_txt] == cycle_number][self.step_index_txt]))
                     no_steps_step_table = len(s[s[self.step_table_txt_cycle] == cycle_number][self.step_table_txt_step])
                     if no_steps_dfdata != no_steps_step_table:
                         validated = False
@@ -1815,13 +1700,27 @@ class arbindata:
         st = self.tests[test_number].step_table
         print st
 
-    # @do_cprofile
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False, cycle_number=None, test_number=None):
-        """ get_step_numbers returns the selected step_numbers for the
-        selected type of step(s)
-        get_step_numbers(steptype='charge', allctypes=True,pdtype = False,
-                          cycle_number = None, test_number=None):
-            if cycle_number == None: selecte all cycles in the test
+        """Get the step numbers of selected type.
+
+        Returns the selected step_numbers for the  elected type of step(s).
+
+        Args:
+            steptype (string): string identifying type of step.
+            allctypes (bool): get all types of charge (or discharge).
+            pdtype (bool): return results as pandas.DataFrame
+            cycle_number (int): selected cycle, selects all if not set.
+            test_number (int): test number (default first) (usually not used).
+
+        Returns:
+            List of step numbers corresponding to the selected steptype. Returns a pandas.DataFrame
+            instead of a list if pdtype is set to True.
+
+        Example:
+            >>> my_charge_steps = arbindata.get_step_numbers("charge", cycle_number = 3)
+            >>> print my_charge_steps
+            [5,8]
+
         """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -1945,7 +1844,7 @@ class arbindata:
 
         # I_delta = I_end-I_start
         I_delta = self._percentage_change(I_start, I_end, default_zero=True)
-        I_rate = I_delta / t_delta
+        I_rate = self._fractional_change(I_delta, t_delta)
 
         # ---voltage--
         V_avr = f[voltage_hdtxt].mean()
@@ -1957,7 +1856,7 @@ class arbindata:
 
         # V_delta = V_end-V_start
         V_delta = self._percentage_change(V_start, V_end, default_zero=True)
-        V_rate = V_delta / t_delta
+        V_rate = self._fractional_change(V_delta, t_delta)
 
         # ---charge---
         C_avr = f[charge_hdtxt].mean()
@@ -1968,7 +1867,7 @@ class arbindata:
         C_end = f.iloc[-1][charge_hdtxt]
 
         C_delta = self._percentage_change(C_start, C_end, default_zero=True)
-        C_rate = C_delta / t_delta
+        C_rate = self._fractional_change(C_delta, t_delta)
 
         # ---discharge---
         D_avr = f[discharge_hdtxt].mean()
@@ -1979,7 +1878,8 @@ class arbindata:
         D_end = f.iloc[-1][discharge_hdtxt]
 
         D_delta = self._percentage_change(D_start, D_end, default_zero=True)
-        D_rate = D_delta / t_delta
+        D_rate = self._fractional_change(D_delta, t_delta)
+
 
         # ---internal resistance ----
         IR = f.iloc[0][ir_hdtxt]
@@ -1993,28 +1893,33 @@ class arbindata:
                IR, IR_pct_change, ]
         return out
 
+
+
     def create_step_table(self, test_number=None):
-        """ create a table (v.0.2) that contains summary information about the
+        """ create a table (v.0.2) that contains summary information got each step
+
+        This function creates a table containing information about the different steps
+        for each cycle and deciding what type of step this is (e.g. charge).
         type of step for each cycle.
 
+        The format of the step_table is:
         index - cycleno - stepno - \
-            Current info (average, stdev, max, min, start, end, delta, rate) - \
-            Voltage info (average,  stdev, max, min, start, end, delta, rate) - \
-            Type (from pre-defined list) - \
-            Info
+        Current info (average, stdev, max, min, start, end, delta, rate) - \
+        Voltage info (average,  stdev, max, min, start, end, delta, rate) - \
+        Type (from pre-defined list) - \
+        Info
 
         Header names (pr. 03.03.2016):
         ------------
-        ['cycle', 'step',
-         'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
-         'V_avr'...,
-         'C_avr'...,
-         'D_avr'...,
-         'IR','IR_pct_change',
-         'type', 'info']
+        'cycle', 'step',
+        'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
+        'V_avr'...,
+        'C_avr'...,
+        'D_avr'...,
+        'IR','IR_pct_change',
+        'type', 'info'
 
         Remark! x_delta is given in percentage
-        Ready for production!
         """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2073,7 +1978,7 @@ class arbindata:
         # print number_of_rows
 
         # --- creating it ----
-        index = arange(0, number_of_rows)
+        index = np.arange(0, number_of_rows)
         df_steps = pd.DataFrame(index=index, columns=columns)
 
         # ------------------- finding cycle numbers ---------------------------
@@ -2211,112 +2116,10 @@ class arbindata:
         self.tests[test_number].step_table = df_steps
         self.tests[test_number].step_table_made = True
 
-    # @timeit
-    def create_step_table_old(self, test_number=None):
-        """ create a table (v.0.1)
-        """
-        self.Print("**- create_step_table")
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        cycle_index_header = self.cycle_index_txt
-        step_index_header = self.step_index_txt
-        step_table_txt_cycle = self.step_table_txt_cycle
-        step_table_txt_step = self.step_table_txt_step
-        step_table_txt_type = self.step_table_txt_type
-        step_table_txt_info = self.step_table_txt_info
-
-        step_table = collections.OrderedDict()
-        col_names = [step_table_txt_cycle,
-                     step_table_txt_step,
-                     step_table_txt_type,
-                     step_table_txt_info]
-
-        for cn in col_names:
-            step_table[cn] = []
-
-        d = self.tests[test_number].dfdata
-        no_cycles = amax(d[cycle_index_header])
-        for j in range(1, no_cycles + 1):
-            cycle_number = j
-            # print "Cycle  %i:  " % cycle_number
-            v = d[(d[cycle_index_header] == j)]
-            v = unique(v[step_index_header]).tolist()
-            for vv in v:
-                step_number = int(vv)
-                step_type, info = self._examine_step(test_number=test_number,
-                                                     cycle_number=cycle_number,
-                                                     step_number=step_number)
-                # step_table[step_table_txt_test].append(test_number)
-                step_table[step_table_txt_cycle].append(cycle_number)
-                step_table[step_table_txt_step].append(step_number)
-                step_table[step_table_txt_type].append(step_type)
-                step_table[step_table_txt_info].append(info)
-
-        step_table = pd.DataFrame(step_table).sort([step_table_txt_cycle,
-                                                    step_table_txt_step])
-        self.tests[test_number].step_table = step_table
-        self.tests[test_number].step_table_made = True
-        self.Print(step_table.head(50))
-
-    # @timeit
-    def create_step_table_top_level(self):
-        # this is not used - not sure if I should delete it
-        cycle_index_header = self.cycle_index_txt
-        step_index_header = self.step_index_txt
-        step_table_txt_test = self.step_table_txt_test
-        step_table_txt_cycle = self.step_table_txt_cycle
-        step_table_txt_step = self.step_table_txt_step
-        step_table_txt_type = self.step_table_txt_type
-        step_table_txt_info = self.step_table_txt_info
-        # print "running create_step_table"
-        # first - take a look at the data
-        tests = self.tests
-        number_of_tests = len(tests)
-        # print "you have %i test(s) in your arbindata" % (number_of_tests)
-        step_table = collections.OrderedDict()
-        col_names = [step_table_txt_test, step_table_txt_cycle,
-                     step_table_txt_step,
-                     step_table_txt_type, step_table_txt_info]
-        # create the dataframe (empty)
-
-        for cn in col_names:
-            step_table[cn] = []
-
-        test_number = -1
-        # print "populating table"
-        for test in tests:
-            test_number += 1
-            d = self.tests[test_number].dfdata
-            no_cycles = amax(d[cycle_index_header])
-            for j in range(1, no_cycles + 1):
-                cycle_number = j
-                # print "Cycle  %i:  " % cycle_number
-                v = d[(d[cycle_index_header] == j)]
-                v = unique(v[step_index_header]).tolist()
-                for vv in v:
-                    step_number = int(vv)
-                    step_type, info = self._examine_step(test_number=test_number,
-                                                         cycle_number=cycle_number,
-                                                         step_number=step_number)
-                    step_table[step_table_txt_test].append(test_number)
-                    step_table[step_table_txt_cycle].append(cycle_number)
-                    step_table[step_table_txt_step].append(step_number)
-                    step_table[step_table_txt_type].append(step_type)
-                    step_table[step_table_txt_info].append(info)
-
-        step_table = pd.DataFrame(step_table).sort([step_table_txt_test,
-                                                    step_table_txt_cycle,
-                                                    step_table_txt_step])
-        self.step_table = step_table
-
     def _percentage_change(self, x0, x1, default_zero=True):
-        """
-        calcultates the change from x0 to x1 in percentage
-        i.e. returns (x1-x0)*100 / x0
-        """
-        if x1 == 0.0:
+        # calculates the change from x0 to x1 in percentage
+        # i.e. returns (x1-x0)*100 / x0
+        if x0 == 0.0:
             self.Print("division by zero escaped", 2)  # this will not print anything, set level to 1 to print
             difference = x1 - x0
             if difference != 0.0 and default_zero:
@@ -2326,435 +2129,22 @@ class arbindata:
 
         return difference
 
-    # @timeit
-    def _examine_step(self, test_number=None, cycle_number=None,
-                      step_number=None,
-                      allow_constantvoltagestep=True,
-                      cyclic_voltametry=False):
-
-        """ this function evaluates what kind of testing (i.e. type) was done
-        for the particular (test,cycle,step) given as input.
-        Returns type,info
-        type:
-           'discharge'
-           'charge'
-               (+'_cv' if allow_constantvoltagestep for const. voltage)
-           'ocvrlx_up'
-           'ocvrlx_down'
-           'rest'
-           'ir' (but arbin most likely did not log all steps)
-           'not_known'
-        info:
-            string containing custom info (default '')
-        Remark! this function will probably not work perfect for cyclic
-        voltametry, but it should be farily simple to modify it
-            - search for voltage change
-               - rate constant?
-               - increasing or decreasing?
-        """
-        info = ''
-
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        txt = "t,c,s: %i,%i,%i" % (test_number, cycle_number, step_number)
-        self.Print(txt)
-
-        cycle_index_header = self.cycle_index_txt
-        step_index_header = self.step_index_txt
-        discharge_index_header = self.discharge_capacity_txt
-        charge_index_header = self.charge_capacity_txt
-        ir_index_header = self.internal_resistance_txt
-        current_index_header = self.current_txt
-        voltage_index_header = self.voltage_txt
-
-        minimum_change_limit = 2.0  # percent
-        minimum_change_limit_voltage_cv = 5.0  # percent
-        minimum_change_limit_current_cv = 10.0  # percent
-        minimum_stable_limit = 0.001  # percent
-        typicall_current_max = 0.001  # A
-        minimum_ierror_limit = 0.0001  # A
-
-        d = self.tests[test_number].dfdata
-
-        cycle = d[(d[cycle_index_header] == cycle_number)]
-        step = cycle[(cycle[step_index_header] == step_number)]
-
-        charge_or_discharge = False
-
-        # is discharge capacity changing?
-        discharge_changing = False
-        step_min = amin(step[discharge_index_header])  # jepe fix: use abs() ?
-        step_max = amax(step[discharge_index_header])
-
-        defaultZero = False
-        difference = self._percentage_change(step_max, step_min, default_zero=defaultZero)
-        #        try:
-        #            difference = (step_max-step_min)* 100 / step_max
-        #        except ZeroDivisionError as e:
-        #            difference = 0.0
-        #            self.Print(e,1)
-
-        if difference >= minimum_change_limit:
-            discharge_changing = True
-            charge_or_discharge = True
-
-        # is charge capacity changing?
-        charge_changing = False
-        step_min = amin(step[charge_index_header])
-        step_max = amax(step[charge_index_header])
-
-        difference = self._percentage_change(step_max, step_min, default_zero=defaultZero)
-        #        difference = (step_max-step_min)* 100 / step_max
-        if difference >= minimum_change_limit:
-            charge_changing = True
-            charge_or_discharge = True
-
-        # find out if there is a significant change in voltage
-        voltage_changing_significantly = False
-        voltage_changing_moderately = False
-        voltage_changing_slightly = False
-        step_min = amin(step[voltage_index_header])
-        step_max = amax(step[voltage_index_header])
-
-        difference = self._percentage_change(step_max, step_min, default_zero=defaultZero)
-        #        try:
-        #            difference = (step_max-step_min)* 100 / step_max
-        #        except ZeroDivisionError as e:
-        #            difference = 0.0
-        #            self.Print(e,1)
-
-
-        if difference >= minimum_change_limit:
-            self.Print("voltage is changing significantly")
-            voltage_changing_significantly = True
-
-        elif difference >= minimum_change_limit_voltage_cv:
-            self.Print("voltage is changing moderately")
-            voltage_changing_moderately = True
-
-        elif difference >= minimum_stable_limit:
-            self.Print("voltage is changing slightly")
-            voltage_changing_slightly = True
-
-        else:
-            self.Print("voltage is not changing")
-
-        # if charge or discharge - return value and end
-
-
-        if charge_or_discharge:
-            self.Print("(dis)charge changing")
-
-            if charge_changing:
-                step_type = "charge"
+    def _fractional_change(self, x0, x1, default_zero=False):
+        # calculates the fraction of x0 and x1
+        # i.e. returns x1 / x0
+        if x1 == 0.0:
+            self.Print("division by zero escaped", 2)  # this will not print anything, set level to 1 to print
+            if default_zero:
+                difference = 0.0
             else:
-                step_type = "discharge"
-
-            if allow_constantvoltagestep or cyclic_voltametry:
-                self.Print("checking for cv-steps")
-                # find out if current is changing
-                current_changing = False
-                step_min = amin(abs(step[current_index_header]))
-                step_max = amax(abs(step[current_index_header]))
-
-                difference = self._percentage_change(step_max, step_min, default_zero=defaultZero)
-
-                #                try:
-                #                    difference = (step_max-step_min)* 100 / step_max
-                #                except ZeroDivisionError as e:
-                #                    difference = 0.0
-                #                    self.Print(e,1)
-
-                if difference >= minimum_change_limit_current_cv:
-                    self.Print("current changing")
-                    current_changing = True
-                    if allow_constantvoltagestep:
-                        if not voltage_changing_moderately and not voltage_changing_significantly:
-                            step_type += "_cv"
-                    else:
-                        step_type = "cv_" + step_type
-
-            self.Print(step_type)
-            return step_type, info
-
-        self.Print("(dis)charge not changing")
-        # find out if current is on
-        current_on = True
-        total_current = abs(step[current_index_header].sum())
-        if total_current < 0.0 + minimum_ierror_limit:
-            current_on = False
-            self.Print("current is off")
+                difference = np.nan
         else:
-            self.Print("current is on")
+            difference = x0 / x1
 
-        if not current_on:
-            if voltage_changing_significantly:
-                step_type = 'ocvrlx'
-                v_1 = step[voltage_index_header].iloc[0]
-                v_2 = step[voltage_index_header].iloc[-1]
-                if v_2 > v_1:
-                    step_type += "_up"
-                else:
-                    step_type += "_down"
-                self.Print(step_type)
-                return step_type, info
+        return difference
 
-            elif voltage_changing_slightly:
-                step_type = 'rest'
-                self.Print(step_type)
-                return step_type, info
-
-        # find out if this could be a ir step
-        only_one_item = False
-        small_current = False
-
-        total_current = abs(step[current_index_header].sum())
-
-        if len(step) == 1:
-            only_one_item = True
-
-        if typicall_current_max > total_current > 0.0:
-            small_current = True
-
-        if small_current and only_one_item:
-            step_type = 'ir'
-            return step_type, info
-
-            # find out if current is changing
-        #        current_changing = False
-        #        step_min = amin(abs(step[current_index_header]))
-        #        step_max = amax(abs(step[current_index_header]))
-        #        difference = (step_max-step_min)* 100 / step_max
-        #        self.Print(difference)
-        #        if difference >= minimum_change_limit:
-        #            current_changing = True
-
-        step_type = "not_known"
-        self.Print("Encountered unknown step-type", 1)
-        txt = "test: %i, cycle: %i, step: %i" % (test_number, cycle_number, step_number)
-        self.Print(txt, 1)
-
-        return step_type, info
-
-    # ------------------old-iteration-find-functions--------------------------------
-    # @timeit
-    def find_step_numbers(self,
-                          step_type=None,
-                          test_number=None,
-                          only_one=False,  # does not apply for charge/discharge
-                          ):
-        if self.use_decrp_functions:
-            decr_txt = """
-            Warning:  the routine find_step_numbers should be replaced with
-
-            get_step_numbers(steptype)
-               [returns a dict{cycle} = data ]
-
-            """
-            print decr_txt
-            out = self.find_step_numbers_old(step_type, test_number, only_one)
-            return out
-
-        else:
-            out = self.get_step_numbers(steptype=step_type, allctypes=False,
-                                        pdtype=False, cycle_number=None, test_number=test_number)
-
-    # @timeit
-    def find_step_numbers_old(self,
-                              step_type=None,
-                              test_number=None,
-                              only_one=False,  # does not apply for charge/discharge
-                              ):
-        # discharge_capacity, charge_capacity, ir, ocv, ocv2
-        if not step_type:
-            step_type = self.discharge_capacity_txt
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        minimum_change_limit = 5  # percent
-        d = self.tests[test_number].dfdata
-        c_txt = self.cycle_index_txt
-        s_txt = self.step_index_txt
-
-        # translating to make new scripts function properly
-        if step_type.lower() == 'discharge':
-            step_type == "discharge_capacity"
-        if step_type.lower() == 'discharge_cv':
-            step_type == "discharge_capacity"
-        if step_type.lower() == 'cv_discharge':
-            step_type == "discharge_capacity"
-
-        if step_type.lower() == 'charge':
-            step_type == "charge_capacity"
-        if step_type.lower() == 'charge_cv':
-            step_type == "charge_capacity"
-        if step_type.lower() == 'cv_charge':
-            step_type == "charge_capacity"
-
-        if step_type.lower() == 'ocvrlx_up':
-            step_type == "ocv"
-        if step_type.lower() == 'ocvrlx_down':
-            step_type == "ocv2"
-
-        if step_type.lower() == "discharge_capacity":
-            x_txt = self.discharge_capacity_txt
-            find_galvanic = True
-        elif step_type.lower() == "charge_capacity":
-            x_txt = self.charge_capacity_txt
-            find_galvanic = True
-        else:
-            find_galvanic = False
-        # elif step_type.lower() == "ir":
-        #            x_txt = "Internal_Resistance"
-        #        elif step_type.lower() == "ocv":
-        #            x_txt = "Voltage"
-
-        try:
-            no_cycles = amax(d[c_txt])
-        except:
-            no_cycles = 0
-        if find_galvanic:
-            discharge_steps = {}
-            for j in range(1, no_cycles + 1):
-                # print "\ntesting cycle no %i" % j
-                v = d[(d[c_txt] == j)]
-                steps = unique(v[s_txt])
-                discharge_steps[j] = []
-                for s in steps:
-                    vv = v[(v[s_txt] == s)]
-                    vv_min = amin(vv[x_txt])
-                    vv_max = amax(vv[x_txt])
-                    difference = (vv_max - vv_min) * 100 / vv_max
-                    if difference >= minimum_change_limit:
-                        # print "assuming this is the step"
-                        # print "step: %i" % s
-                        # print "difference: %f" % difference
-                        discharge_steps[j].append(s)
-                        break
-                if not discharge_steps[j]:
-                    p_txt = "remark - could not find step (%s) for cycle %i" % (x_txt, j)
-                    self.Print(p_txt)
-                    discharge_steps[j].append(0)
-
-            return discharge_steps
-        else:
-            minimum_stable_limit = 0.001
-
-            if step_type.lower() == "ir":
-                # arbin does not save all the ir-steps!
-                x_txt = self.internal_resistance_txt
-                x_txt_2 = self.current_txt
-                ir_steps = {}
-                typicall_current_max = 0.001
-                for j in range(1, no_cycles + 1):
-                    v = d[(d[c_txt] == j)]  # selecting cycle
-                    steps = unique(v[s_txt])  # these are the different steps for this cycle
-                    ir_steps[j] = []
-                    for s in steps:
-                        only_one_item = False
-                        small_current = False
-
-                        vv = v[(v[s_txt] == s)]  # selecting current step (s)
-                        total_current = abs(vv[x_txt_2].sum())
-
-                        if len(vv) == 1:
-                            only_one_item = True
-
-                        if typicall_current_max > total_current > 0:
-                            small_current = True
-
-                        if small_current and only_one_item:
-                            ir_steps[j].append(s)
-                            if only_one:
-                                break
-                    if not ir_steps[j]:
-                        p_txt = "remark - could not find step (%s) for cycle %i" % (x_txt, j)
-                        self.Print(p_txt)
-                        ir_steps[j].append(0)
-                return ir_steps
-            elif step_type.lower() == "ocv":
-                x_txt_1 = self.voltage_txt
-                x_txt_2 = self.current_txt
-                ocv_steps = {}
-                for j in range(1, no_cycles + 1):
-                    v = d[(d[c_txt] == j)]  # selecting current cycle
-                    steps = unique(v[s_txt])  # these are the different steps for this cycle
-                    ocv_steps[j] = []
-                    for s in steps:
-                        significant_change_voltage = False
-                        current_off = False
-                        vv = v[(v[s_txt] == s)]  # selecting current step (s)
-                        total_current = abs(vv[x_txt_2].sum())
-
-                        if total_current < 0 + 0.0001:
-                            current_off = True
-                        # see if voltage changes
-                        vv_min = amin(vv[x_txt_1])
-                        vv_max = amax(vv[x_txt_1])
-                        difference = (vv_max - vv_min) * 100 / vv_max
-                        if difference >= minimum_change_limit:
-                            significant_change_voltage = True
-                        if significant_change_voltage and current_off:
-                            ocv_steps[j].append(s)
-                            if only_one:
-                                break
-                    if not ocv_steps[j]:
-                        p_txt = "remark - could not find step (%s) for cycle %i" % (x_txt_1, j)
-                        self.Print(p_txt)
-                        ocv_steps[j].append(0)
-                return ocv_steps
-
-            elif step_type.lower() == "ocv2":
-                # diff in discharge is 0
-                # diff in charge is 0
-                # diff in voltage is noticable
-                stable_discharge = False
-                stable_charge = False
-                significant_change_voltage = False
-                x_txt_1 = self.voltage_txt
-                x_txt_2 = self.discharge_capacity_txt
-                x_txt_3 = self.charge_capacity_txt
-                ocv_steps = {}
-                for j in range(1, no_cycles + 1):
-                    v = d[(d[c_txt] == j)]  # selecting current cycle
-                    steps = unique(v[s_txt])  # these are the different steps for this cycle
-                    ocv_steps[j] = []
-                    for s in steps:
-                        vv = v[(v[s_txt] == s)]  # selecting current step (s)
-                        # see if discharge current is stable
-                        vv_min = amin(vv[x_txt_2])
-                        vv_max = amax(vv[x_txt_2])
-                        difference = (vv_max - vv_min) * 100 / vv_max
-                        if difference >= minimum_stable_limit:
-                            stable_discharge = True
-                        # see if charge current is stable
-                        vv_min = amin(vv[x_txt_3])
-                        vv_max = amax(vv[x_txt_3])
-                        difference = (vv_max - vv_min) * 100 / vv_max
-                        if difference >= minimum_stable_limit:
-                            stable_charge = True
-                        # see if voltage changes
-                        vv_min = amin(vv[x_txt_1])
-                        vv_max = amax(vv[x_txt_1])
-                        difference = (vv_max - vv_min) * 100 / vv_max
-                        if difference >= minimum_stable_limit:
-                            significant_change_voltage = True
-                        if significant_change_voltage and stable_discharge and stable_charge:
-                            ocv_steps[j].append(s)
-                            break
-                    if not ocv_steps[j]:
-                        p_txt = "remark - could not find step (%s) for cycle %i" % (x_txt_1, j)
-                        self.Print(p_txt)
-                        ocv_steps[j].append(0)
-                return ocv_steps
-
-    # @print_function
-    def select_steps(self, step_dict,
-                     append_df=False,
-                     test_number=None):
+    def select_steps(self, step_dict, append_df=False, test_number=None):
+        """select steps (not documented yet)"""
         # step_dict={1:[1],2:[1],3:[1,2,3]}
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2792,8 +2182,6 @@ class arbindata:
 
         return selected
 
-    # @print_function
-    # @do_cprofile
     def _select_step(self, cycle, step, test_number=None):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2808,7 +2196,7 @@ class arbindata:
         y_txt = self.voltage_txt
         x_txt = self.discharge_capacity_txt  # jepe fix
 
-        # no_cycles=amax(test.dfdata[c_txt])
+        # no_cycles=np.amax(test.dfdata[c_txt])
         # print d.columns
 
         if not any(test.dfdata.columns == c_txt):
@@ -2817,7 +2205,6 @@ class arbindata:
         if not any(test.dfdata.columns == s_txt):
             print "error - cannot find %s" % s_txt
             sys.exit(-1)
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
 
         v = test.dfdata[(test.dfdata[c_txt] == cycle) & (test.dfdata[s_txt] == step)]
         if self.is_empty(v):
@@ -2826,11 +2213,7 @@ class arbindata:
             return v
 
     # @print_function
-    def populate_step_dict(self,
-                           step,
-                           test_number=None,
-                           ):
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
+    def populate_step_dict(self, step, test_number=None):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2839,34 +2222,18 @@ class arbindata:
         cycles = self.tests[test_number].dfdata[self.cycle_index_txt]
         unique_cycles = cycles.unique()
         # number_of_cycles = len(unique_cycles)
-        number_of_cycles = amax(cycles)
+        number_of_cycles = np.amax(cycles)
         for cycle in unique_cycles:
             step_dict[cycle] = [step]
         return step_dict
 
-    # @print_function
-    def find_C_rates(self,
-                     steps,
-                     mass=None,  # mg
-                     nom_cap=3579,  # mAh/g (could also find in tests[i].nom_cap)
-                     silent=True,
-                     test_number=None,
-                     ):
-        self.find_C_rates_old(steps,
-                              mass,
-                              nom_cap,
-                              silent,
-                              test_number)
+    def find_C_rates(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
+        self.find_C_rates_old(steps, mass, nom_cap, silent, test_number)
 
-    def find_C_rates_old(self,
-                         steps,
-                         mass=None,  # mg
-                         nom_cap=3579,  # mAh/g (could also find in tests[i].nom_cap)
-                         silent=True,
-                         test_number=None,
-                         ):
+    def find_C_rates_old(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
         """uses old type of step_dict, returns crate_dict
-                crate_dict[cycle] = [step, c-rate]
+
+        crate_dict[cycle] = [step, c-rate]
         """
         self.Print("this is using the old-type step-dict. Could very well be that it does not work")
         c_txt = self.cycle_index_txt
@@ -2884,7 +2251,7 @@ class arbindata:
         c_rates_dict = {}
         for c, s in steps.iteritems():
             v = d[(d[c_txt] == c) & (d[s_txt] == s[0])]
-            current = average(v[x_txt])  # TODO this might give problems - check if it is empty first
+            current = np.average(v[x_txt])  # TODO this might give problems - check if it is empty first
             c_rate = abs(1000000 * current / (nom_cap * mass))
             c_rates_dict[c] = [s[0], c_rate]
             if not silent:
@@ -2983,9 +2350,7 @@ class arbindata:
             txt += " Could not save it!"
         self.Print(txt, 1)
 
-    # @timeit
-    def exportcsv(self, datadir=None, sep=None, cycles=False, raw=True,
-                  summary=True):
+    def exportcsv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True):
         """saves the data as .csv file(s)"""
 
         if sep is None:
@@ -3037,9 +2402,7 @@ class arbindata:
                     self._export_cycles(outname=outname_cycles, test_number=test_number,
                                         sep=sep)
 
-    # @print_function
-    def save_test(self, filename, test_number=None, force=False, overwrite=True,
-                  extension="h5"):
+    def save_test(self, filename, test_number=None, force=False, overwrite=True, extension="h5"):
         """saves the data structure using pickle/hdf5"""
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3102,7 +2465,6 @@ class arbindata:
                 print "save_test (hdf5): file exist - did not save",
                 print outfile_all
 
-    # @print_function
     def _create_infotable(self, test_number=None):
         # needed for saving class/dataset to hdf5
         test_number = self._validate_test_number(test_number)
@@ -3112,27 +2474,27 @@ class arbindata:
         test = self.get_test(test_number)
 
         infotable = collections.OrderedDict()
-        infotable["test_no"] = test.test_no
-        infotable["mass"] = test.mass
-        infotable["charge_steps"] = test.charge_steps
-        infotable["discharge_steps"] = test.discharge_steps
-        infotable["ir_steps"] = test.ir_steps
-        infotable["ocv_steps"] = test.ocv_steps
-        infotable["nom_cap"] = test.nom_cap
-        infotable["loaded_from"] = test.loaded_from
-        infotable["channel_index"] = test.channel_index
-        infotable["channel_number"] = test.channel_number
-        infotable["creator"] = test.creator
-        infotable["schedule_file_name"] = test.schedule_file_name
-        infotable["item_ID"] = test.item_ID
-        infotable["test_ID"] = test.test_ID
-        infotable["test_name"] = test.test_name
-        infotable["start_datetime"] = test.start_datetime
-        infotable["dfsummary_made"] = test.dfsummary_made
-        infotable["step_table_made"] = test.dfsummary_made  # TODO: include this in _loadh5
-        infotable["hdf5_file_version"] = test.hdf5_file_version
+        infotable["test_no"] = [test.test_no,]
+        infotable["mass"] = [test.mass,]
+        infotable["charge_steps"] = [test.charge_steps,]
+        infotable["discharge_steps"] =[ test.discharge_steps,]
+        infotable["ir_steps"] = [test.ir_steps,]
+        infotable["ocv_steps"] = [test.ocv_steps,]
+        infotable["nom_cap"] = [test.nom_cap,]
+        infotable["loaded_from"] = [test.loaded_from,]
+        infotable["channel_index"] = [test.channel_index,]
+        infotable["channel_number"] = [test.channel_number,]
+        infotable["creator"] = [test.creator,]
+        infotable["schedule_file_name"] = [test.schedule_file_name,]
+        infotable["item_ID"] = [test.item_ID,]
+        infotable["test_ID"] = [test.test_ID,]
+        infotable["test_name"] = [test.test_name,]
+        infotable["start_datetime"] = [test.start_datetime,]
+        infotable["dfsummary_made"] = [test.dfsummary_made,]
+        infotable["step_table_made"] = [test.step_table_made,]
+        infotable["hdf5_file_version"] = [test.hdf5_file_version,]
 
-        infotable = pd.DataFrame(infotable, index=range(1))
+        infotable = pd.DataFrame(infotable)
 
         self.Print("_create_infotable: fid")
         fidtable = collections.OrderedDict()
@@ -3162,7 +2524,7 @@ class arbindata:
 
 
     def _cap_mod_summary(self, dfsummary, capacity_modifier):
-        """ modifies the summary table """
+        # modifies the summary table
         discharge_title = self.discharge_capacity_txt
         charge_title = self.charge_capacity_txt
         chargecap = 0.0
@@ -3183,7 +2545,7 @@ class arbindata:
     def _cap_mod_normal(self, test_number=None,
                         capacity_modifier="reset",
                         allctypes=True):
-        """ modifies the normal table """
+        # modifies the normal table
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3202,7 +2564,7 @@ class arbindata:
 
         if capacity_modifier == "reset":
             # discharge cycles
-            no_cycles = amax(dfdata[cycle_index_header])
+            no_cycles = np.amax(dfdata[cycle_index_header])
             for j in range(1, no_cycles + 1):
                 cap_type = "discharge"
                 e_header = discharge_energy_index_header
@@ -3239,123 +2601,9 @@ class arbindata:
 
                 # discharge cycles
 
-    # @print_function
-    def print_steps(self,
-                    test_number=None,
-                    ):
-        """
-        print_step(test_number = None)
-           for test_number = None, default test_number is used (usually first test)
-        prints the steps (numbers) for the different cycles
-        """
-        cycle_index_header = self.cycle_index_txt
-        step_index_header = self.step_index_txt
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        d = self.tests[test_number].dfdata
-        no_cycles = amax(d[cycle_index_header])
-        for j in range(1, no_cycles + 1):
-            print "Cycle  %i:  " % j
-            v = d[(d[cycle_index_header] == j)]
-            print unique(v[step_index_header])
-
-    def select_col(self):
-        """ not implemented """
-        pass
-
-    def filter_col(self):
-        """ not implemented """
-        pass
-
-    # @print_function
-    def report(self):
-        """
-        report()
-          prints a report of the data
-        """
-        print "\n\n"
-        print "---------------------------------------------------------------"
-        print "Report on loaded data"
-        print "---------------------------------------------------------------"
-        print
-        counter = 1
-        for data in self.tests:
-            print "DATASET %i:" % (counter)
-            print data
-            counter += 1
-        print ""
-
-    # @print_function
-    def quick_view(self, test_number=None):
-        """
-        quick_view(test_number=None)
-          default test_number = 0 (i.e. first)
-
-        helper function to view content of test
-
-        returns
-            timestamp, voltage, current, discharge capacity, charge capacity,
-            test_name
-        """
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        InMinutes = True
-        try:
-            datas = self.tests[test_number]
-        except:
-            print "test number %i not found" % test_number
-            sys.exit(-1)
-
-        if not datas.mass_given:
-            print "mass for test %i is not given" % test_number
-            print "setting it to %f mg" % datas.mass
-
-        print "\n\n"
-        print "---------------------------------------------------------------"
-        print "Report on loaded data - quickview"
-        print "---------------------------------------------------------------"
-        print
-        print "DATASET %i:" % (test_number)
-        print datas
-        print
-        dfdata = datas.dfdata
-        # get point number
-        data_point_txt = self.data_point_txt
-        data_point = dfdata[data_point_txt]
-        # get timestamp
-        time_txt = self.test_time_txt
-        test_name = datas.test_name
-        timestamp = dfdata[time_txt]
-        if InMinutes: timestamp = timestamp / 60.0
-        # get voltage
-        voltage_txt = self.voltage_txt
-        voltage = dfdata[voltage_txt]
-        # get current
-        current_txt = self.current_txt
-        current = dfdata[current_txt]
-        # get charge capacity
-        discharge_txt = self.discharge_capacity_txt
-        discharge_capacity = dfdata[discharge_txt] * 1000000 / datas.mass
-
-        charge_txt = self.charge_capacity_txt
-        charge_capacity = dfdata[charge_txt] * 1000000 / datas.mass
-
-        return timestamp, voltage, current, discharge_capacity, charge_capacity, test_name
-
-    # @print_function
     def get_number_of_tests(self):
-        """
-        get_number_of_tests()
-
-        returns number of tests n (as stored in the variable arbindata.number_of_tests)
-        """
         return self.number_of_tests
 
-    # @print_function
     def get_mass(self, test_number=None):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3365,23 +2613,12 @@ class arbindata:
             print "no mass"
         return self.tests[test_number].mass
 
-    # @print_function
     def get_test(self, n=0):
-        """
-        get_test(n)
-
-        returns test number n
-        """
         return self.tests[n]
 
-    # @print_function
     def sget_voltage(self, cycle, step,
                      test_number=None):
-        """
-        sget_voltage(cycle, step)
-
-        returns voltage for cycle, step
-        """
+        """Returns voltage for cycle, step"""
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3397,15 +2634,9 @@ class arbindata:
         else:
             return None
 
-    # @print_function
-    def get_voltage(self, cycle=None,
-                    test_number=None,
-                    full=True):
-        """
-        get_voltage(cycle=None,test_number=None)
+    def get_voltage(self, cycle=None, test_number=None, full=True):
+        """returns voltage (in V)"""
 
-        returns voltage (in V)
-        """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3424,7 +2655,7 @@ class arbindata:
             if not full:
                 self.Print("getting voltage-curves for all cycles")
                 v = []
-                no_cycles = amax(test[cycle_index_header])
+                no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     self.Print(txt)
@@ -3434,15 +2665,9 @@ class arbindata:
                 v = test[voltage_header]
             return v
 
-    # @print_function
-    def get_current(self, cycle=None,
-                    test_number=None,
-                    full=True):
-        """
-        get_current(cycle=None,test_number=None)
+    def get_current(self, cycle=None, test_number=None, full=True):
+        """Returns current (in mA)"""
 
-        returns current (in mA)
-        """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3461,7 +2686,7 @@ class arbindata:
             if not full:
                 self.Print("getting voltage-curves for all cycles")
                 v = []
-                no_cycles = amax(test[cycle_index_header])
+                no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     self.Print(txt)
@@ -3472,13 +2697,9 @@ class arbindata:
             return v
 
     # @print_function
-    def sget_steptime(self, cycle, step,
-                      test_number=None):
-        """
-        sget_timestamp(cycle, step)
+    def sget_steptime(self, cycle, step, test_number=None):
+        """returns timestamp for cycle, step"""
 
-        returns timestamp for cycle, step
-        """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3494,14 +2715,9 @@ class arbindata:
         else:
             return None
 
-    # @print_function
-    def sget_timestamp(self, cycle, step,
-                       test_number=None):
-        """
-        sget_timestamp(cycle, step)
+    def sget_timestamp(self, cycle, step, test_number=None):
+        """Returns timestamp for cycle, step"""
 
-        returns timestamp for cycle, step
-        """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3517,16 +2733,9 @@ class arbindata:
         else:
             return None
 
-    # @print_function
-    def get_timestamp(self, cycle=None,
-                      test_number=None,
-                      in_minutes=False,
-                      full=True):
-        """
-        get_timestamp(cycle=None,test_number=None,in_minutes=False)
+    def get_timestamp(self, cycle=None, test_number=None, in_minutes=False, full=True):
+        """Returns timestamp (in sec or minutes (if in_minutes==True))"""
 
-        returns timestamp (in sec or minutes (if in_minutes==True))
-        """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3544,7 +2753,7 @@ class arbindata:
             if not full:
                 self.Print("getting voltage-curves for all cycles")
                 v = []
-                no_cycles = amax(test[cycle_index_header])
+                no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     self.Print(txt)
@@ -3559,32 +2768,19 @@ class arbindata:
             v = v / 60.0
         return v
 
-    # @print_function
-    def get_dcap(self,
-                 cycle=None,
-                 test_number=None):
-        """
-        get_dcap(cycle=None,test_number=None)
+    def get_dcap(self, cycle=None, test_number=None):
+        """Returns discharge_capacity (in mAh/g), voltage"""
 
-        returns discharge_capacity (in mAh/g), voltage
-        """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
             return
         dc, v = self._get_cap(cycle, test_number, "discharge")
-
         return dc, v
 
-    # @print_function
-    def get_ccap(self,
-                 cycle=None,
-                 test_number=None):
-        """
-        get_ccap(cycle=None,test_number=None)
+    def get_ccap(self, cycle=None, test_number=None):
+        """Returns charge_capacity (in mAh/g), voltage"""
 
-        returns charge_capacity (in mAh/g), voltage
-        """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3592,7 +2788,6 @@ class arbindata:
         cc, v = self._get_cap(cycle, test_number, "charge")
         return cc, v
 
-    # @print_function
     def get_cap(self, cycle=None, test_number=None,
                 polarization=False,
                 stepsize=0.2,
@@ -3604,15 +2799,20 @@ class arbindata:
                 points = None)
 
         for polarization = True: calculates hysteresis
-        for cycle=None: not implemented yet, cycle set to 2
+        for cycle=None: not implemented yet, cycle set to 2.
 
-        returns
-         if polarization = False
-          capacity (mAh/g), voltage
-         if polarization = True
-          capacity (mAh/g), voltage,
-          capacity points (mAh/g) [points if given, aranged with stepsize if not],
-          polarization (hysteresis)
+        Args:
+            cycle (int): cycle number.
+            polarization (bool): get polarization.
+            stepsize (float): used for calculating polarization.
+            points (int): used for calculating polarization.
+            test_number (int): test number (default first) (usually not used).
+
+        Returns:
+            if polarization = False: capacity (mAh/g), voltage
+            if polarization = True: capacity (mAh/g), voltage,
+            capacity points (mAh/g) [points if given, arranged with stepsize if not],
+            polarization (hysteresis)
         """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3623,7 +2823,7 @@ class arbindata:
             cycle = 2
         cc, cv = self.get_ccap(cycle, test_number)
         dc, dv = self.get_dcap(cycle, test_number)
-        last_dc = amax(dc)
+        last_dc = np.amax(dc)
         cc = last_dc - cc
         c = pd.concat([dc, cc], axis=0)
         v = pd.concat([dv, cv], axis=0)
@@ -3658,7 +2858,7 @@ class arbindata:
         #        print self._rounddown(end_cap)
         # TODO check if points are within bounds (implement it later if needed)
         if not points:
-            points = arange(self._roundup(start_cap), self._rounddown(end_cap), stepsize)
+            points = np.arange(self._roundup(start_cap), self._rounddown(end_cap), stepsize)
         else:
             if min(points) < start_cap:
                 print "ERROR, point %f less than bound (%f)" % (min(points), start_cap)
@@ -3671,10 +2871,7 @@ class arbindata:
         p = cv_new - dv_new
         return points, p
 
-    def _get_cap(self,
-                 cycle=None,
-                 test_number=None,
-                 cap_type="charge"):
+    def _get_cap(self, cycle=None, test_number=None, cap_type="charge"):
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: does not allow for constant voltage yet
         test_number = self._validate_test_number(test_number)
@@ -3722,66 +2919,26 @@ class arbindata:
             c = d[column_txt] * 1000000 / mass
         return c, v
 
-    # @timeit
-    def _get_cap_old(self,
-                     cycle=None,
-                     test_number=None,
-                     cap_type="discharge_capacity"):
-        # used when extracting capacities (get_ccap, get_dcap)
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        test = self.tests[test_number]
-        mass = self.get_mass(test_number)
-        cycles = self.find_step_numbers(step_type=cap_type, test_number=test_number)
-        if cap_type == "charge_capacity":
-            column_txt = self.charge_capacity_txt
-        else:
-            column_txt = self.discharge_capacity_txt
-        if cycle:
-            step = cycles[cycle][0]
-            selected_step = self._select_step(cycle, step, test_number)
-            v = selected_step[self.voltage_txt]
-            c = selected_step[column_txt] * 1000000 / mass
-        else:
-            # get all the discharge cycles
-            # this is a dataframe filtered on step and cycle
-            d = self.select_steps(cycles, append_df=True)
-            v = d[self.voltage_txt]
-            c = d[column_txt] * 1000000 / mass
-        return c, v
+    def get_ocv(self, cycle_number=None, ocv_type='ocv', test_number=None):
+        """Find ocv data in dataset (voltage vs time)
 
-    # @print_function
-    def get_ocv_full_curve(self,
-                           test_number=None):
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        self.Print("not implemented")
-
-    # @print_function
-    def get_ocv(self, cycle_number=None,
-                ocv_type='ocv',
-                test_number=None):
-        """
-        find ocv data in dataset (voltage vs time)
-        cycle_number:
-                  None         all cycles (default) (returns )
-                  n (int)      for cycle number n
-        ocv_type: ocv          get up and down (default)
-                  ocvrlx_up    get up
-                  ocvrlx_down  get down
-        returns
+        Args:
+            cycle_number (int): find for all cycles if None.
+            ocv_type ("ocv", "ocvrlx_up", "ocvrlx_down"):
+                     ocv - get up and down (default)
+                     ocvrlx_up - get up
+                     ocvrlx_down - get down
+            test_number (int): test number (default first) (usually not used).
+        Returns:
                 if cycle_number is not None
                     ocv or [ocv_up, ocv_down]
                     ocv (and ocv_up and ocv_down) are list
                     containg [time,voltage] (that are Series)
+
                 if cycle_number is None
                     [ocv1,ocv2,...ocvN,...] N = cycle
                     ocvN = pandas DataFrame containing the columns
-                      cycle inded, step time, step index, data point, datetime, voltage
+                    cycle inded, step time, step index, data point, datetime, voltage
                     (TODO: check if copy or reference of dfdata is returned)
         """
         # function for getting ocv curves
@@ -3812,69 +2969,10 @@ class arbindata:
                                      )
             return ocv_up, ocv_down
 
-    # @print_function
-    def get_ocv_old(self, cycle=None,
-                    select_first=True, test_number=None,
-                    select_all=False):
-        # function for getting ocv curves
-        print "cycle",
-        print cycle
-
-        if select_all:
-            select_first = True
-            select_last = True
-
-        if not select_first:
-            print "selecting last"
-            select_last = True
-        else:
-            print "selecting first"
-            select_last = False
-
-        ocv = self._get_ocv_old(test_number=None,
-                                select_first=select_first,
-                                select_last=select_last,
-                                cycle=cycle,
-                                )
-        return ocv
-
-    # @staticmethod
-    # @do_cprofile
-    def _get_ocv_sub(self, ocv_steps, select_columns):
-        ocv = []
-        for cycle, steps in ocv_steps.items():
-            for step in steps:
-                c = self._select_step(cycle, step)
-                # select columns:
-
-                if select_columns and not self.is_empty(c):
-                    column_names = c.columns
-                    columns_to_keep = [self.cycle_index_txt,
-                                       self.step_time_txt, self.step_index_txt,
-                                       self.data_point_txt, self.datetime_txt,
-                                       self.voltage_txt,
-                                       ]
-                    for column_name in column_names:
-                        if not columns_to_keep.count(column_name):
-                            c.pop(column_name)
-
-                if not self.is_empty(c):
-                    ocv.append(c)
-        return ocv
-
-    # @print_function
-    # @do_cprofile
-    def _get_ocv(self, ocv_steps=None,
-                 test_number=None,
-                 ocv_type='ocvrlx_up',
-                 select_last=True,
-                 select_columns=True,
-                 cycle_number=None,
-                 ):
-        """
-        find ocv data in dataset
-        (voltage vs time, no current)
-        """
+    def _get_ocv(self, ocv_steps=None, test_number=None, ocv_type='ocvrlx_up', select_last=True,
+                 select_columns=True, cycle_number=None):
+        # find ocv data in dataset
+        # (voltage vs time, no current)
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3917,8 +3015,6 @@ class arbindata:
                 return [None, None]
 
         else:
-            # ocv = self._get_ocv_sub(ocv_steps,select_columns)
-
             ocv = []
             for cycle, steps in ocv_steps.items():
                 for step in steps:
@@ -3940,120 +3036,44 @@ class arbindata:
                         ocv.append(c)
             return ocv
 
-    # @print_function
-    def _get_ocv_old(self, ocv_steps=None,
-                     test_number=None,
-                     select_columns=True,
-                     select_first=False,
-                     select_last=False,
-                     select_all=False,
-                     cycle=None,
-                     ):
-        if select_first and select_last:
-            select_all = True
+    def get_number_of_cycles(self, test_number=None):
+        """get the number of cycles in the test"""
 
-        if not select_first and not select_last and not select_all:
-            select_first = True
-        ocv = []
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        if not ocv_steps:
-            ocv_steps = self.find_step_numbers(step_type="ocv", test_number=test_number, only_one=False)
-        # print ocv_steps
-        if cycle:
-            # check ocv_steps
-            ocv_step_exists = True
-
-            if not ocv_steps.has_key(cycle):
-                ocv_step_exists = False
-            elif ocv_steps[cycle][0] == 0:
-                ocv_step_exists = False
-
-            if ocv_step_exists:
-                steps = ocv_steps[cycle]
-                if select_first:
-                    step = steps[0]
-                else:
-                    step = steps[-1]
-                c = self._select_step(cycle, step)
-                t = c["Step_Time"]
-                o = c["Voltage"]
-                return [t, o]
-            else:
-                print "ERROR! cycle %i not found" % (cycle)  # jepe fix
-                return [None, None]
-
-        else:
-            for cycle, steps in ocv_steps.items():
-                if not select_all:
-                    if select_first:
-                        steps = [steps[0]]
-                    if select_last:
-                        steps = [steps[-1]]
-                for step in steps:
-                    c = self._select_step(cycle, step)
-                    # select columns:
-
-                    if select_columns and not self.is_empty(c):
-                        column_names = c.columns
-                        columns_to_keep = ["Cycle_Index", "Step_Time", "Step_Index",  # jepe fix
-                                           "Data_Point", "DateTime",
-                                           "Voltage",
-                                           ]
-                        for column_name in column_names:
-                            if not columns_to_keep.count(column_name):
-                                c.pop(column_name)
-
-                    if not self.is_empty(c):
-                        ocv.append(c)
-            return ocv
-
-    # @print_function
-    def get_number_of_cycles(self,
-                             test_number=None,
-                             ):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
             return
         d = self.tests[test_number].dfdata
         cycle_index_header = self.cycle_index_txt
-        no_cycles = amax(d[cycle_index_header])
+        no_cycles = np.amax(d[cycle_index_header])
         return no_cycles
 
-    # @print_function
-    def get_cycle_numbers(self,
-                          test_number=None,
-                          ):
-        """ get a list containing all the cycle numbers in the test """
+    def get_cycle_numbers(self, test_number=None):
+        """get a list containing all the cycle numbers in the test """
+
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
             return
         d = self.tests[test_number].dfdata
         cycle_index_header = self.cycle_index_txt
-        no_cycles = amax(d[cycle_index_header])
-        # cycles = unique(d[cycle_index_header]).values
-        cycles = unique(d[cycle_index_header])
+        no_cycles = np.amax(d[cycle_index_header])
+        # cycles = np.unique(d[cycle_index_header]).values
+        cycles = np.unique(d[cycle_index_header])
         return cycles
 
-    # @print_function
-    def get_ir(self,
-               test_number=None,
-               ):
+    def get_ir(self, test_number=None):
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
             return
         d = self.tests[test_number].dfdata
         ir_txt = self.internal_resistance_txt
-        ir_data = unique(d[ir_txt])
+        ir_data = np.unique(d[ir_txt])
         d2 = d.ix[ir_data.index]
         d2 = d2[["Cycle_Index", "DateTime", "Data_Point", "Internal_Resistance"]].sort(
             [self.data_point_txt])  # jepe fix
-        cycles = unique(d["Cycle_Index"])  # jepe fix
+        cycles = np.unique(d["Cycle_Index"])  # jepe fix
         ir_dict = {}
         for i in d2.index:
             cycle = d2.ix[i]["Cycle_Index"]  # jepe fix
@@ -4062,13 +3082,13 @@ class arbindata:
             ir_dict[cycle].append(d2.ix[i]["Internal_Resistance"])  # jepe fix
         return ir_dict
 
-    # @print_function
-    def get_diagnostics_plots(self,
-                              test_number=None,
-                              scaled=False,
-                              ):
-        """ get a dict containing diagnostics plots (cycles, shifted_discharge_cap, shifted_charge_cap,
-        RIC_cum, RIC_disconnect_cum, RIC_sei_cum) """
+    def get_diagnostics_plots(self, test_number=None, scaled=False, ):
+
+        """Gets diagnostics plots.
+        Returns a dict containing diagnostics plots (cycles, shifted_discharge_cap, shifted_charge_cap,
+        RIC_cum, RIC_disconnect_cum, RIC_sei_cum)
+        """
+
         # assuming each cycle consists of one discharge step followed by charge step
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -4136,14 +3156,14 @@ class arbindata:
                 self.Print("end of summary")
                 break
         if scaled is True:
-            sdc_min = amin(shifted_discharge_cap)
+            sdc_min = np.amin(shifted_discharge_cap)
             shifted_discharge_cap = shifted_discharge_cap - sdc_min
-            sdc_max = amax(shifted_discharge_cap)
+            sdc_max = np.amax(shifted_discharge_cap)
             shifted_discharge_cap = shifted_discharge_cap / sdc_max
 
-            scc_min = amin(shifted_charge_cap)
+            scc_min = np.amin(shifted_charge_cap)
             shifted_charge_cap = shifted_charge_cap - scc_min
-            scc_max = amax(shifted_charge_cap)
+            scc_max = np.amax(shifted_charge_cap)
             shifted_charge_cap = shifted_charge_cap / scc_max
 
         out = {}
@@ -4155,16 +3175,12 @@ class arbindata:
         out["RIC_sei_cum"] = RIC_sei_cum
         return out
 
-    # @print_function
-    def get_cycle(self, cycle=1,
-                  step_type=None,
-                  step=None,
-                  v=False,
-                  test_number=None):
-        """
-        get the cycle data for cycle = cycle (default 1) for step_type or step
-            returns DataFrame filtered on cycle (and optionally step_type or step)
-        if neither step_type or step (number) is given, all data for the cycle will be returned
+    def get_cycle(self, cycle=1, step_type=None, step=None, v=False, test_number=None):
+        """Get cycle data.
+
+        Get the cycle data for cycle = cycle (default 1) for step_type or step. The function
+        returns a DataFrame filtered on cycle (and optionally step_type or step).
+        If neither step_type or step (number) is given, all data for the cycle will be returned
         Warning: TODO - find out if copy or reference is returned
         """
         test_number = self._validate_test_number(test_number)
@@ -4196,7 +3212,6 @@ class arbindata:
                 print "selecting correct step",
                 print mystep
             step_txt = self.step_index_txt
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             dfdata_cycle = dfdata[(dfdata[cycle_txt] == cycle) & (dfdata[step_txt] == mystep)]
         else:
             if not step and not step_type:
@@ -4246,13 +3261,13 @@ class arbindata:
                 else:
                     self.Print("set_mass: this set is empty", 1)
 
-    # @print_function
     def set_col_first(self, df, col_names):
-        """
-        set cols with names given in  col_names (a list) first in the DataFrame df.
-        the last col in col_name will come first (processed last)
+        """set selected columns first in a pandas.DataFrame.
 
+        This function sets cols with names given in  col_names (a list) first in the DataFrame.
+        The last col in col_name will come first (processed last)
         """
+
         column_headings = df.columns
         column_headings = column_headings.tolist()
         try:
@@ -4265,22 +3280,22 @@ class arbindata:
             df = df.reindex(columns=column_headings)
             return df
 
-    # @print_function
     def set_testnumber_force(self, test_number=0):
-        """
-        set_testnumber_force(test_number)
-          sets the testnumber default (all functions with prm test_number will
-          then be run assuming the default set test_number)
+        """force to set testnumber
+
+        Sets the testnumber default (all functions with prm test_number will
+        then be run assuming the default set test_number)
         """
         self.selected_test_number = test_number
 
-    # @print_function
     def set_testnumber(self, test_number):
-        """
-        set the test_number that will be used (arbindata.selected_test_number).
+        """set the testnumber.
+
+        Set the test_number that will be used (arbindata.selected_test_number).
         The class can save several datasets (but its not a frequently used feature),
         the datasets are stored in a list and test_number is the selected index in the list.
-          Several options are available:
+
+        Several options are available:
               n - int in range 0..(len-1) (python uses offset as index, i.e. starts with 0)
               last, end, newest - last (index set to -1)
               first, zero, beinning, default - first (index set to 0)
@@ -4304,11 +3319,9 @@ class arbindata:
             test_number = 0
         self.selected_test_number = test_number
 
-    def get_summary(self, test_number=None, use_dfsummary_made=False,
-                    ):
-        """retrieve summary
-        returned as a pandas DataFrame"""
-        # TODO: there is something strange with the
+    def get_summary(self, test_number=None, use_dfsummary_made=False):
+        """retrieve summary returned as a pandas DataFrame"""
+        # TODO: there is something strange with this
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -4329,7 +3342,6 @@ class arbindata:
 
             # -----------internal-helpers---------------------------------------------------
 
-    # @print_function
     def is_empty(self, v):
         try:
             if not v:
@@ -4348,14 +3360,12 @@ class arbindata:
                 else:
                     return True
 
-    # @print_function
     def _is_listtype(self, x):
         if type(x) == types.ListType:
             return True
         else:
             return False
 
-    # @print_function
     def _check_file_type(self, filename):
         extension = os.path.splitext(filename)[-1]
         filetype = "res"
@@ -4365,30 +3375,25 @@ class arbindata:
             filetype = "h5"
         return filetype
 
-    # @print_function
     def _bounds(self, x):
-        return amin(x), amax(x)
+        return np.amin(x), np.amax(x)
 
-    # @print_function
     def _roundup(self, x):
         n = 1000.0
-        x = ceil(x * n)
+        x = np.ceil(x * n)
         x = x / n
         return x
 
-    # @print_function
     def _rounddown(self, x):
         x = self._roundup(-x)
         x = -x
         return x
 
-    # @print_function
     def _reverse(self, x):
         x = x[::-1]
         # x = x.sort_index(ascending=True)
         return x
 
-    # @print_function
     def _select_y(self, x, y, points):
         # uses interpolation to select y = f(x)
         min_x, max_x = self._bounds(x)
@@ -4400,10 +3405,9 @@ class arbindata:
         y_new = f(points)
         return y_new
 
-    # @print_function
     def _select_last(self, dfdata):
-        """this function gives a set of indexes pointing to the last
-           datapoints for each cycle in the dataset"""
+        # this function gives a set of indexes pointing to the last
+        # datapoints for each cycle in the dataset
 
         # first - select the appropriate column heading to do "find last" on
         c_txt = self.cycle_index_txt  # gives the cycle number
@@ -4412,17 +3416,12 @@ class arbindata:
         steps = []
         max_step = max(dfdata[c_txt])
         for j in range(max_step):
-            # print j+1,
             # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             last_item = max(dfdata[dfdata[c_txt] == j + 1][d_txt])
-            # print last_item
             steps.append(last_item)
-            # print max_step
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         last_items = dfdata[d_txt].isin(steps)
         return last_items
 
-    # @print_function
     def _extract_from_dict(self, t, x, default_value=None):
         try:
             value = t[x].values
@@ -4433,10 +3432,10 @@ class arbindata:
         return value
 
     def _modify_cycle_number_using_cycle_step(self, from_tuple=[1, 4], to_cycle=44, test_number=None):
-        """ modify step-cycle tuple to new step-cycle tuple
-        from_tuple = [old cycle_number, old step_number]
-        to_cycle    = new cycle_number
-        """
+        # modify step-cycle tuple to new step-cycle tuple
+        # from_tuple = [old cycle_number, old step_number]
+        # to_cycle    = new cycle_number
+
         self.Print("**- _modify_cycle_step")
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -4461,21 +3460,11 @@ class arbindata:
         # not implemented yet
 
     # ----------making-summary------------------------------------------------------
-    # @timeit
-    def make_summary(self,
-                     find_ocv=False,
-                     find_ir=False,
-                     find_end_voltage=False,
-                     verbose=False,
-                     use_arbin_stat_file=True,
-                     all_tests=True,
-                     test_number=0,
-                     ensure_step_table=None,
-                     ):
-        """
-        make_summary() is a convinience function that makes a summary of the
-        cycling data.
-        """
+    def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
+                     verbose=False, use_arbin_stat_file=True, all_tests=True,
+                     test_number=0, ensure_step_table=None):
+        """convenience function that makes a summary of the cycling data."""
+
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
         # Cycle_Index	Test_Time(s)	Test_Time(h)	Date_Time	Current(A)
@@ -4523,8 +3512,6 @@ class arbindata:
                                ensure_step_table=ensure_step_table,
                                )
 
-    # @timeit
-    # @do_cprofile
     def _make_summary(self,
                       test_number=None,
                       mass=None,
@@ -4540,7 +3527,6 @@ class arbindata:
                       # capacity_modifier = None,
                       # test=None
                       ):
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -4569,7 +3555,6 @@ class arbindata:
         charge_txt = self.charge_capacity_txt
         discharge_txt = self.discharge_capacity_txt
         if use_arbin_stat_file:
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
         else:
             summary_requirment = self._select_last(dfdata)
@@ -4794,7 +3779,7 @@ class arbindata:
                 if step2[-1]:
                     end_voltage_c = dfdata[(dfdata[c_txt] == cycle) & (test.dfdata[s_txt] == step2[-1])][voltage_header]
                     end_voltage_c = end_voltage_c.values[-1]
-                    # end_voltage_c = amax(end_voltage_c)
+                    # end_voltage_c = np.amax(end_voltage_c)
                 else:
                     end_voltage_c = 0
                 endv_indexes.append(i)
@@ -4890,6 +3875,21 @@ class arbindata:
 
 
 def setup_cellpy_instance():
+    """Prepares for a cellpy session
+
+    This convinience function creates a cellpy class and sets the parameters
+    from your parameters file (using prmreader.read()
+
+    Returns:
+        an arbindata object
+
+    Example:
+
+        >>> celldata = setup_cellpy_instance()
+        read prms
+        making class and setting prms
+
+        """
     from cellpy import prmreader
     prms = prmreader.read()
     print "read prms"
@@ -4902,6 +3902,23 @@ def setup_cellpy_instance():
 
 
 def just_load_srno(srno=None):
+    """Simply load an dataset based on srno
+
+    This convenience function reads a dataset based on a serial number. This serial
+    number (srno) must then be defined in your database. It is mainly used to check
+    that things are set up correctly
+
+    Args:
+        srno (int): serial number
+
+    Example:
+        >>> srno = 918
+        >>> just_load_srno(srno)
+        srno: 918
+        read prms
+        ....
+
+        """
     from cellpy import dbreader, prmreader
     if srno is None:
         srno = 918
@@ -4945,18 +3962,57 @@ def just_load_srno(srno=None):
 
     print
     print "OK"
+    return True
 
 
-def extract_ocvrlx():
+def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
+    """
+
+    Args:
+        mass (float): active material mass [mg].
+        outdir (path): optional, path to directory for saving the hdf5-file.
+        outfile (str): optional, name of hdf5-file.
+        filename (str): name of the resfile.
+
+    Returns:
+        out_file_name (str): name of saved file.
+    """
+    d = arbindata(verbose=True)
+
+    if not outdir:
+        from cellpy import prmreader
+        prms = prmreader.read()
+        outdir = prms.hdf5datadir
+
+    #d.set_hdf5_datadir(outdir)
+    if not outfile:
+        outfile = os.path.basename(filename).split(".")[0] + ".h5"
+        outfile = os.path.join(outdir, outfile)
+
+    print "filename:", filename
+    print "outfile:", outfile
+    print "outdir:", outdir
+    print "mass:", mass, "mg"
+
+    d.loadres(filename)
+    d.set_mass(mass)
+    d.create_step_table()
+    d.make_summary()
+    d.save_test(filename=outfile)
+    d.exportcsv(datadir=outdir, cycles=True, raw=True, summary=True)
+    return outfile
+
+
+def extract_ocvrlx(filename, fileout, mass=1.00):
+    """get the ocvrlx data from dataset.
+
+    Convenience function for extracting ocv relaxation data from runs."""
     import itertools
     import csv
     import matplotlib.pyplot as plt
-
-    filename = r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20160805_sic006_45_cc_01.res"
-    mass = 0.853
     type_of_data = "ocvrlx_up"
-    fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata\20160805_sic006_45_cc_01_" + type_of_data
     d_res = setup_cellpy_instance()
+    print filename
     d_res.loadres(filename)
     d_res.set_mass(mass)
     d_res.create_step_table()
@@ -5002,6 +4058,7 @@ def extract_ocvrlx():
         print outfile
     plt.show()
     print "bye!"
+    return True
 
 
 # TODO: make option to create step_table when loading file (loadres)
@@ -5011,7 +4068,7 @@ def extract_ocvrlx():
 # 3) new overall prms structure (i.e. run summary)
 # 4) change name and allow non-arbin type of files
 # NOTE
-                                       #
+#
 #
 # PROBLEMS:
 # 1. 27.06.2016 new PC with 64bit conda python package:
@@ -5031,15 +4088,10 @@ def extract_ocvrlx():
 #            LESSON LEARNED: dont use 64bit python with 32bit office installed
 
 
-
-
-
-
 if __name__ == "__main__":
     from scipy import *
     from pylab import *
 
     print "running",
     print sys.argv[0]
-    # just_load_srno()
-    extract_ocvrlx()
+    d = arbindata()
