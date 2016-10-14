@@ -39,6 +39,7 @@ else:
     except ImportError:
         print "could not import dbloader (pyodbc)"
         print "many of the functions will not work"
+        dbloader = None
 
 import shutil
 import os
@@ -2482,7 +2483,15 @@ class arbindata(object):
         infotable["step_table_made"] = test.dfsummary_made  # TODO: include this in _loadh5
         infotable["hdf5_file_version"] = test.hdf5_file_version
 
-        infotable = pd.DataFrame(infotable, index=range(1))
+
+        print "INFOTABLE:"
+        for key in infotable:
+            print key, infotable[key]
+        print
+        print infotable
+        print "----"
+
+        infotable = pd.DataFrame.from_dict(infotable)#, index=range(1))
 
         self.Print("_create_infotable: fid")
         fidtable = collections.OrderedDict()
