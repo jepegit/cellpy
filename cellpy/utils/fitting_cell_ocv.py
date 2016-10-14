@@ -86,20 +86,6 @@ def manipulate_data(read_data):
         sorted_data.append(pd.DataFrame(zip(_time, _volt), columns=['time',
                                                                     'voltage'
                                                                     ]))
-    # setting NaN (very manually) to be the last real number
-    # manipulate.loc[:1][0]['time'].iloc[-2] = manipulate.loc[:1][0]['time'].iloc[-3]
-    # manipulate.loc[:1][0]['time'].iloc[-1] = manipulate.loc[:1][0]['time'].iloc[-3]
-    # manipulate.loc[:1][1]['time'].iloc[-2] = manipulate.loc[:1][1]['time'].iloc[-3]
-    # manipulate.loc[:1][1]['time'].iloc[-1] = manipulate.loc[:1][1]['time'].iloc[-3]
-    #
-    # manipulate.loc[:1][0]['voltage'].iloc[-2] = manipulate.loc[:1][0][
-    #     'voltage'].iloc[-3]
-    # manipulate.loc[:1][0]['voltage'].iloc[-1] = manipulate.loc[:1][0][
-    #     'voltage'].iloc[-3]
-    # manipulate.loc[:1][1]['voltage'].iloc[-2] = manipulate.loc[:1][1][
-    #     'voltage'].iloc[-3]
-    # manipulate.loc[:1][1]['voltage'].iloc[-1] = manipulate.loc[:1][1][
-    #     'voltage'].iloc[-3]
     return pd.Series(sorted_data)
 
 
