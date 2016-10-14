@@ -56,6 +56,7 @@ import pstats
 import StringIO
 from scipy import amax, amin, unique, average, ceil, interpolate, flipud, subtract
 from numpy import arange
+import numpy as np
 import pandas as pd
 
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
@@ -319,7 +320,12 @@ class dataset(object):
     def makeDataFrame(self):
         """Creates a Pandas DataFrame of the data (dfdata and dfsummary)"""
 
-        self.dfdata = pd.DataFrame(self.data).sort_values(by=self.datapoint_txt)
+
+        self.dfdata = pd.DataFrame(self.data)
+        try:
+            self.dfdata.sort_values(by=self.datapoint_txt)
+        except:
+            print "could not sort dfdata"
         self.dfsummary = pd.DataFrame(self.summary).sort_values(by=self.datapoint_txt)
 
 
@@ -1248,7 +1254,7 @@ class arbindata(object):
         self.Print("loading", 1)
         self.Print(Filename, 1)
 
-        # -------checking existance of file-------
+        # -------checking existence of file-------
         if not os.path.isfile(Filename):
             print "\nERROR (_loadres):\nfile does not exist"
             print Filename
@@ -1262,7 +1268,7 @@ class arbindata(object):
         filesize = os.path.getsize(Filename)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.Print(txt)
+        self.Print(txt,1)
 
         if filesize > self.max_res_filesize:
             FileError = -3  # File too large
@@ -1340,9 +1346,9 @@ class arbindata(object):
         global_data = collections.OrderedDict()
         for cn in col_names:
             global_data[cn] = []
-        self.Print("Starting to load global table from .res file (cur.fetchall())")
+        self.Print("Starting to load global table from .res file (cur.fetchall())",1)
         all_data = cur.fetchall()
-        self.Print("Finished to load global table from .res file (cur.fetchall())")
+        self.Print("Finished to load global table from .res file (cur.fetchall())",1)
 
         for item in all_data:
             for h, d in zip(col_names, item):
@@ -1402,9 +1408,9 @@ class arbindata(object):
                 data.data[cn] = []
                 col[cn] = []
             try:
-                self.Print("Starting to load normal table from .res file (cur.fetchall())")
+                self.Print("Starting to load normal table from .res file (cur.fetchall())",1)
                 all_data = cur.fetchall()
-                self.Print("Finished to load normal table from .res file (cur.fetchall())")
+                self.Print("Finished to load normal table from .res file (cur.fetchall())",1)
             except:
                 FileError = -6  # Cannot read normal table with fetchall
                 etxt = "\nWarning (_loadres)(normal tbl):\n"
@@ -1848,7 +1854,7 @@ class arbindata(object):
 
         # I_delta = I_end-I_start
         I_delta = self._percentage_change(I_start, I_end, default_zero=True)
-        I_rate = I_delta / t_delta
+        I_rate = self._fractional_change(I_delta, t_delta)
 
         # ---voltage--
         V_avr = f[voltage_hdtxt].mean()
@@ -1860,7 +1866,7 @@ class arbindata(object):
 
         # V_delta = V_end-V_start
         V_delta = self._percentage_change(V_start, V_end, default_zero=True)
-        V_rate = V_delta / t_delta
+        V_rate = self._fractional_change(V_delta, t_delta)
 
         # ---charge---
         C_avr = f[charge_hdtxt].mean()
@@ -1871,7 +1877,7 @@ class arbindata(object):
         C_end = f.iloc[-1][charge_hdtxt]
 
         C_delta = self._percentage_change(C_start, C_end, default_zero=True)
-        C_rate = C_delta / t_delta
+        C_rate = self._fractional_change(C_delta, t_delta)
 
         # ---discharge---
         D_avr = f[discharge_hdtxt].mean()
@@ -1882,7 +1888,8 @@ class arbindata(object):
         D_end = f.iloc[-1][discharge_hdtxt]
 
         D_delta = self._percentage_change(D_start, D_end, default_zero=True)
-        D_rate = D_delta / t_delta
+        D_rate = self._fractional_change(D_delta, t_delta)
+
 
         # ---internal resistance ----
         IR = f.iloc[0][ir_hdtxt]
@@ -1895,6 +1902,8 @@ class arbindata(object):
                D_avr, D_std, D_max, D_min, D_start, D_end, D_delta, D_rate,
                IR, IR_pct_change, ]
         return out
+
+
 
     def create_step_table(self, test_number=None):
         """ create a table (v.0.2) that contains summary information got each step
@@ -2118,7 +2127,7 @@ class arbindata(object):
         self.tests[test_number].step_table_made = True
 
     def _percentage_change(self, x0, x1, default_zero=True):
-        # calcultates the change from x0 to x1 in percentage
+        # calculates the change from x0 to x1 in percentage
         # i.e. returns (x1-x0)*100 / x0
         if x1 == 0.0:
             self.Print("division by zero escaped", 2)  # this will not print anything, set level to 1 to print
@@ -2127,6 +2136,20 @@ class arbindata(object):
                 difference = 0.0
         else:
             difference = (x1 - x0) * 100 / x0
+
+        return difference
+
+    def _fractional_change(self, x0, x1, default_zero=False):
+        # calculates the fraction of x0 and x1
+        # i.e. returns x1 / x0
+        if x1 == 0.0:
+            self.Print("division by zero escaped", 2)  # this will not print anything, set level to 1 to print
+            if default_zero:
+                difference = 0.0
+            else:
+                difference = np.nan
+        else:
+            difference = x0 / x1
 
         return difference
 
@@ -2463,35 +2486,27 @@ class arbindata(object):
         test = self.get_test(test_number)
 
         infotable = collections.OrderedDict()
-        infotable["test_no"] = test.test_no
-        infotable["mass"] = test.mass
-        infotable["charge_steps"] = test.charge_steps
-        infotable["discharge_steps"] = test.discharge_steps
-        infotable["ir_steps"] = test.ir_steps
-        infotable["ocv_steps"] = test.ocv_steps
-        infotable["nom_cap"] = test.nom_cap
-        infotable["loaded_from"] = test.loaded_from
-        infotable["channel_index"] = test.channel_index
-        infotable["channel_number"] = test.channel_number
-        infotable["creator"] = test.creator
-        infotable["schedule_file_name"] = test.schedule_file_name
-        infotable["item_ID"] = test.item_ID
-        infotable["test_ID"] = test.test_ID
-        infotable["test_name"] = test.test_name
-        infotable["start_datetime"] = test.start_datetime
-        infotable["dfsummary_made"] = test.dfsummary_made
-        infotable["step_table_made"] = test.dfsummary_made  # TODO: include this in _loadh5
-        infotable["hdf5_file_version"] = test.hdf5_file_version
+        infotable["test_no"] = [test.test_no,]
+        infotable["mass"] = [test.mass,]
+        infotable["charge_steps"] = [test.charge_steps,]
+        infotable["discharge_steps"] =[ test.discharge_steps,]
+        infotable["ir_steps"] = [test.ir_steps,]
+        infotable["ocv_steps"] = [test.ocv_steps,]
+        infotable["nom_cap"] = [test.nom_cap,]
+        infotable["loaded_from"] = [test.loaded_from,]
+        infotable["channel_index"] = [test.channel_index,]
+        infotable["channel_number"] = [test.channel_number,]
+        infotable["creator"] = [test.creator,]
+        infotable["schedule_file_name"] = [test.schedule_file_name,]
+        infotable["item_ID"] = [test.item_ID,]
+        infotable["test_ID"] = [test.test_ID,]
+        infotable["test_name"] = [test.test_name,]
+        infotable["start_datetime"] = [test.start_datetime,]
+        infotable["dfsummary_made"] = [test.dfsummary_made,]
+        infotable["step_table_made"] = [test.step_table_made,]  # TODO: include this in _loadh5
+        infotable["hdf5_file_version"] = [test.hdf5_file_version,]
 
-
-        print "INFOTABLE:"
-        for key in infotable:
-            print key, infotable[key]
-        print
-        print infotable
-        print "----"
-
-        infotable = pd.DataFrame.from_dict(infotable)#, index=range(1))
+        infotable = pd.DataFrame(infotable)
 
         self.Print("_create_infotable: fid")
         fidtable = collections.OrderedDict()
@@ -3988,10 +4003,15 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
         prms = prmreader.read()
         outdir = prms.hdf5datadir
 
-    d.set_hdf5_datadir(outdir)
+    #d.set_hdf5_datadir(outdir)
     if not outfile:
         outfile = os.path.basename(filename).split(".")[0] + ".h5"
         outfile = os.path.join(outdir, outfile)
+
+    print "filename:", filename
+    print "outfile:", outfile
+    print "outdir:", outdir
+    print "mass:", mass, "mg"
 
     d.loadres(filename)
     d.set_mass(mass)
@@ -4092,8 +4112,10 @@ if __name__ == "__main__":
 
     print "running",
     print sys.argv[0]
-    d = arbindata()
-    print d
+    # FileName = r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20160710_Mg2Si+Si_MgH2_CL_02_cc_01.res"
+    # Mass = 0.078609164  # mg active material
+    # OutFolder = r"C:\Temp"
+    # load_and_save_resfile(FileName, outdir = OutFolder, mass = Mass)
 
 
 
