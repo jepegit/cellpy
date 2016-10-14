@@ -54,8 +54,7 @@ import itertools
 import cProfile
 import pstats
 import StringIO
-from scipy import amax, amin, unique, average, ceil, interpolate, flipud, subtract
-from numpy import arange
+from scipy import interpolate
 import numpy as np
 import pandas as pd
 
@@ -357,8 +356,9 @@ class arbindata(object):
         self.tester = tester
         self.verbose = verbose
         self.profile = profile
-        self.fetch_oneliners = fetch_onliners
-        self.max_oneliners = 1000000
+        self.loadres_limit = None  # if not None: only load up to loadres_limit
+        if fetch_onliners:
+            self.loadres_limit = 100000
         self.max_res_filesize = 400000000
         self.intendation = 0
         self.filestatuschecker = filestatuschecker
@@ -1195,6 +1195,12 @@ class arbindata(object):
             data.hdf5_file_version = self._extract_from_dict(infotable, "hdf5_file_version")
         except:
             data.hdf5_file_version = None
+
+        try:
+            data.step_table_made = self._extract_from_dict(infotable, "step_table_made")
+        except:
+            data.step_table_made = None
+
         if fidtable_selected:
             data.raw_data_files, data.raw_data_files_length = self._convert2fid_list(fidtable)
         else:
@@ -1237,6 +1243,15 @@ class arbindata(object):
                 print e
 
     def _loadres(self, Filename=None):
+        """loads data from arbin .res files
+
+        Args:
+            Filename (str): path to .res file.
+
+        Returns:
+            newtests (list of data objects), FileError
+
+        """
         # loadres(Filename)
         # loads data from .res file into the arbindata.tests list
         # e.g. arbindata.test[0] = dataset
@@ -1264,7 +1279,7 @@ class arbindata(object):
             return newtests, FileError
             # sys.exit(FileError)
 
-        # -------checking filesize etc------------
+        # -------checking file size etc------------
         filesize = os.path.getsize(Filename)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
@@ -1299,61 +1314,27 @@ class arbindata(object):
         shutil.copy2(Filename, temp_dir)
         self.Print("Finished to tmp-file", 1)
         t1 = "this operation took %f sec" % (time.time() - t1)
-        self.Print(t1)
+        self.Print(t1,1)
         print ".",
 
-        # -------checking bit and os----------------
-        is64bit_python = self._check64bit(System="python")
-        # is64bit_os = self._check64bit(System = "os")
+        constr = self.__get_res_connector(Filename, temp_filename)
 
-        #        print "File:"
-        #        print Filename
-        #        if os.path.isfile(Filename):
-        #            print "is a file"
-        #        else:
-        #            print "is not a file"
-        if USE_ADO:
-            if is64bit_python:
-                self.Print("using 64 bit python")
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % Filename
-            else:
-                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
-
-        else:
-            constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-
-        # print 20*"*"
-        #        print constr
-        #        print 20*"*"
         # ------connecting to the .res database----
-        self.Print("connection to the database")
+        self.Print("connection to the database",1)
 
         if USE_ADO:
             conn = dbloader.connect(constr)  # adodbapi
         else:
             conn = dbloader.connect(constr, autocommit=True)
-        #
-        self.Print("creating cursor")
-        # conn.CursorLocation = adodbapi.adUseServer
+
+        self.Print("creating cursor", 1)
         cur = conn.cursor()
 
-        # ------------------------------------------
-        # Reading the global table to find experiment sets
-        sql = "select * from %s" % self.tablename_global
-        cur.execute(sql)  # adodbapi
-        col_names = [i[0] for i in cur.description]  # adodbapi
-        global_data = collections.OrderedDict()
-        for cn in col_names:
-            global_data[cn] = []
-        self.Print("Starting to load global table from .res file (cur.fetchall())",1)
-        all_data = cur.fetchall()
-        self.Print("Finished to load global table from .res file (cur.fetchall())",1)
-
+        # ------get the global table-----------------
+        all_data, col_names, global_data = self.__get_res_global_table(cur)
         for item in all_data:
             for h, d in zip(col_names, item):
                 global_data[h].append(d)
-
         tests = global_data[self.test_id_txt]
         number_of_sets = len(tests)
         if number_of_sets < 1:
@@ -1364,9 +1345,7 @@ class arbindata(object):
             self._clean_up_loadres(cur, conn, temp_filename)
             return newtests, FileError
             # sys.exit(FileError)
-
         print ".",
-        del cur
 
         for test_no in range(number_of_sets):
             data = dataset()
@@ -1390,7 +1369,6 @@ class arbindata(object):
             # ---loading-normal-data
             sql = "select * from %s" % self.tablename_normal
             try:
-                cur = conn.cursor()
                 cur.execute(sql)
             except:
                 FileError = -5  # No datasets
@@ -1407,40 +1385,37 @@ class arbindata(object):
             for cn in col_names:
                 data.data[cn] = []
                 col[cn] = []
-            try:
-                self.Print("Starting to load normal table from .res file (cur.fetchall())",1)
-                all_data = cur.fetchall()
-                self.Print("Finished to load normal table from .res file (cur.fetchall())",1)
-            except:
-                FileError = -6  # Cannot read normal table with fetchall
-                etxt = "\nWarning (_loadres)(normal tbl):\n"
-                etxt += "Could not retrieve raw-data by fetchall\n\n"
-                etxt += "This problem is caused by the limitation in the remote"
-                etxt += " procedure call (RPC) layer where only 256 unique interfaces"
-                etxt += " can be called from one process to another. This problem"
-                etxt += " typically occurs when you use COM+ or Microsoft Transaction"
-                etxt += " Server with many objects in the program or package"
-                etxt += "\n"
-                self.Print(etxt, 1)
 
-                if self.fetch_oneliners:
-                    print "\nWarning:"
-                    print "Loading .res file using fetchmany(%i)" % (self.max_oneliners)
-                    self.Print("fetching oneliners", 1)
-                    self.Print("Starting to load normal table from .res file (cur.fetchmany())", 1)
-                    txt = "self.max_oneliners = %i" % (int(self.max_oneliners))
-                    self.Print(txt, 1)
-                    all_data = cur.fetchmany(self.max_oneliners)
-                    self.Print("Finished to load normal table from .res file (cur.fetchmany())", 1)
-                else:
-                    # learn how to get the error-msg
-                    etxt = "\nERROR (_loadres)(normal tbl):\n"
-                    etxt += "remedy: try self.fetch_onliners = True"
+            if not self.loadres_limit:
+                try:
+                    self.Print("Starting to load normal table from .res file (cur.fetchall())",1)
+                    all_data = cur.fetchall()
+                    self.Print("Finished to load normal table from .res file (cur.fetchall())",1)
+                except:
+                    FileError = -6  # Cannot read normal table with fetchall
+                    etxt = ("\nWarning (_loadres)(normal tbl):\n",
+                        "Could not retrieve raw-data by fetchall\n\n",
+                        "This problem is caused by the limitation in the remote",
+                        "procedure call (RPC) layer where only 256 unique interfaces",
+                        "can be called from one process to another. This problem",
+                        "typically occurs when you use COM+ or Microsoft Transaction",
+                        "Server with many objects in the program or package",
+                        "\n",)
+                    self.Print(etxt, 1)
+                    etxt = "\nERROR (_loadres)(normal tbl):\nremedy: try fetch_onliners = True"
                     self.Print(etxt, 1)
                     self._clean_up_loadres(cur, conn, temp_filename)
                     return newtests, FileError
-                    # sys.exit(FileError)
-            del cur
+
+            else:
+                print "\nWarning:"
+                print "Loading .res file using fetchmany(%i)" % (self.loadres_limit)
+                self.Print("fetching oneliners", 1)
+                self.Print("Starting to load normal table from .res file (cur.fetchmany())", 1)
+                txt = "self.loadres_limit = %i" % (int(self.loadres_limit))
+                self.Print(txt, 1)
+                all_data = cur.fetchmany(self.loadres_limit)
+                self.Print("Finished to load normal table from .res file (cur.fetchmany())", 1)
 
             for item in all_data:
                 # check if this is the correct set
@@ -1455,13 +1430,10 @@ class arbindata(object):
             # ---loading-statistic-data
             sql = "select * from %s" % self.tablename_statistic
             try:
-                cur = conn.cursor()
                 cur.execute(sql)  # adodbapi
             except:
                 FileError = -7  # No datasets
-                etxt = "\nERROR (_loadres)(stats tbl):\n"
-                etxt += "Could not execute cursor command\n  "
-                etxt += sql
+                etxt = "\nERROR (_loadres)(stats tbl):\nCould not execute cursor command\n  " + sql
                 self.Print(etxt, 1)
                 self._clean_up_loadres(cur, conn, temp_filename)
                 # sys.exit(FileError)
@@ -1478,14 +1450,14 @@ class arbindata(object):
                 self.Print("Finished to load stats table from .res file (cur.fetchall())")
             except:
                 FileError = -8  # Cannot read normal table with fetchall
-                etxt = "\nWarning (_loadres)(statsl tbl):\n"
-                etxt += "Could not retrieve raw-data by fetchall\n\n"
-                etxt += """This problem is caused by the limitation in the remote
-                procedure call (RPC) layer where only 256 unique interfaces
-                can be called from one process to another. This problem
-                typically occurs when you use COM+ or Microsoft Transaction
-                Server with many objects in the program or package"""
-                etxt += "\n"
+                etxt = ("\nWarning (_loadres)(statsl tbl):\n",
+                        "Could not retrieve raw-data by fetchall\n\n",
+                        "This problem is caused by the limitation in the remote",
+                        "procedure call (RPC) layer where only 256 unique interfaces",
+                        "can be called from one process to another. This problem",
+                        "typically occurs when you use COM+ or Microsoft Transaction",
+                        "Server with many objects in the program or package",
+                        "\n")
                 self.Print(etxt, 1)
                 self._clean_up_loadres(cur, conn, temp_filename)
                 # sys.exit(FileError)
@@ -1498,24 +1470,44 @@ class arbindata(object):
                 if int(col[self.test_id_txt][0]) == data.test_ID:
                     for d, h in zip(item, col_names):
                         data.summary[h].append(d)
-                        # print "saved stats data for test %i" % data.test_ID
-
-                        #            if FileError:
-                        #                print "x"
-                        #                return newtests, FileError
 
             data.makeDataFrame()
-
             length_of_test = data.dfdata.shape[0]
             data.raw_data_files_length.append(length_of_test)
             print ".",
             newtests.append(data)
-            # self.tests.append(data)
-            # [end]
-
             self._clean_up_loadres(cur, conn, temp_filename)
             print ".",
         return newtests, FileError
+
+    def __get_res_global_table(self, cur):
+        sql = "select * from %s" % self.tablename_global
+        cur.execute(sql)  # adodbapi
+        col_names = [i[0] for i in cur.description]  # adodbapi
+        global_data = collections.OrderedDict()
+        for cn in col_names:
+            global_data[cn] = []
+        self.Print("Starting to load global table from .res file (cur.fetchall())", 1)
+        all_data = cur.fetchall()
+        self.Print("Finished to load global table from .res file (cur.fetchall())", 1)
+        return all_data, col_names, global_data
+
+    def __get_res_connector(self, Filename, temp_filename):
+        # -------checking bit and os----------------
+        is64bit_python = self._check64bit(System="python")
+        # is64bit_os = self._check64bit(System = "os")
+        if USE_ADO:
+            if is64bit_python:
+                self.Print("using 64 bit python")
+                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
+                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % Filename
+            else:
+                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
+
+        else:
+            constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+
+        return constr
 
     def merge(self, tests=None, separate_datasets=False):
         """this function merges datasets into one set"""
@@ -1551,7 +1543,6 @@ class arbindata(object):
         diff_time = diff_time.total_seconds()
         sort_key = self.datetime_txt  # DateTime
         # mod data points for set 2
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         data_point_header = self.data_point_txt
         last_data_point = max(t1.dfdata[data_point_header])
         t2.dfdata[data_point_header] = t2.dfdata[data_point_header] + last_data_point
@@ -1604,7 +1595,6 @@ class arbindata(object):
             test.dfsummary = dfsummary2
 
         if merge_step_table:
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             if step_table_made:
                 cycle_index_header = self.cycle_index_txt
                 t2.step_table[self.step_table_txt_cycle] = t2.dfdata[self.step_table_txt_cycle] + last_cycle
@@ -1673,8 +1663,8 @@ class arbindata(object):
         if not self.tests[test_number].step_table_made:
             return False
 
-        no_cycles_dfdata = amax(d[self.cycle_index_txt])
-        no_cycles_step_table = amax(s[self.step_table_txt_cycle])
+        no_cycles_dfdata = np.amax(d[self.cycle_index_txt])
+        no_cycles_step_table = np.amax(s[self.step_table_txt_cycle])
 
         if simple:
             self.Print("  (simple)")
@@ -1691,7 +1681,7 @@ class arbindata(object):
             else:
                 for j in range(1, no_cycles_dfdata + 1):
                     cycle_number = j
-                    no_steps_dfdata = len(unique(d[d[self.cycle_index_txt] == cycle_number][self.step_index_txt]))
+                    no_steps_dfdata = len(np.unique(d[d[self.cycle_index_txt] == cycle_number][self.step_index_txt]))
                     no_steps_step_table = len(s[s[self.step_table_txt_cycle] == cycle_number][self.step_table_txt_step])
                     if no_steps_dfdata != no_steps_step_table:
                         validated = False
@@ -1988,7 +1978,7 @@ class arbindata(object):
         # print number_of_rows
 
         # --- creating it ----
-        index = arange(0, number_of_rows)
+        index = np.arange(0, number_of_rows)
         df_steps = pd.DataFrame(index=index, columns=columns)
 
         # ------------------- finding cycle numbers ---------------------------
@@ -2129,7 +2119,7 @@ class arbindata(object):
     def _percentage_change(self, x0, x1, default_zero=True):
         # calculates the change from x0 to x1 in percentage
         # i.e. returns (x1-x0)*100 / x0
-        if x1 == 0.0:
+        if x0 == 0.0:
             self.Print("division by zero escaped", 2)  # this will not print anything, set level to 1 to print
             difference = x1 - x0
             if difference != 0.0 and default_zero:
@@ -2206,7 +2196,7 @@ class arbindata(object):
         y_txt = self.voltage_txt
         x_txt = self.discharge_capacity_txt  # jepe fix
 
-        # no_cycles=amax(test.dfdata[c_txt])
+        # no_cycles=np.amax(test.dfdata[c_txt])
         # print d.columns
 
         if not any(test.dfdata.columns == c_txt):
@@ -2215,7 +2205,6 @@ class arbindata(object):
         if not any(test.dfdata.columns == s_txt):
             print "error - cannot find %s" % s_txt
             sys.exit(-1)
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
 
         v = test.dfdata[(test.dfdata[c_txt] == cycle) & (test.dfdata[s_txt] == step)]
         if self.is_empty(v):
@@ -2225,7 +2214,6 @@ class arbindata(object):
 
     # @print_function
     def populate_step_dict(self, step, test_number=None):
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2234,7 +2222,7 @@ class arbindata(object):
         cycles = self.tests[test_number].dfdata[self.cycle_index_txt]
         unique_cycles = cycles.unique()
         # number_of_cycles = len(unique_cycles)
-        number_of_cycles = amax(cycles)
+        number_of_cycles = np.amax(cycles)
         for cycle in unique_cycles:
             step_dict[cycle] = [step]
         return step_dict
@@ -2263,7 +2251,7 @@ class arbindata(object):
         c_rates_dict = {}
         for c, s in steps.iteritems():
             v = d[(d[c_txt] == c) & (d[s_txt] == s[0])]
-            current = average(v[x_txt])  # TODO this might give problems - check if it is empty first
+            current = np.average(v[x_txt])  # TODO this might give problems - check if it is empty first
             c_rate = abs(1000000 * current / (nom_cap * mass))
             c_rates_dict[c] = [s[0], c_rate]
             if not silent:
@@ -2503,7 +2491,7 @@ class arbindata(object):
         infotable["test_name"] = [test.test_name,]
         infotable["start_datetime"] = [test.start_datetime,]
         infotable["dfsummary_made"] = [test.dfsummary_made,]
-        infotable["step_table_made"] = [test.step_table_made,]  # TODO: include this in _loadh5
+        infotable["step_table_made"] = [test.step_table_made,]
         infotable["hdf5_file_version"] = [test.hdf5_file_version,]
 
         infotable = pd.DataFrame(infotable)
@@ -2576,7 +2564,7 @@ class arbindata(object):
 
         if capacity_modifier == "reset":
             # discharge cycles
-            no_cycles = amax(dfdata[cycle_index_header])
+            no_cycles = np.amax(dfdata[cycle_index_header])
             for j in range(1, no_cycles + 1):
                 cap_type = "discharge"
                 e_header = discharge_energy_index_header
@@ -2667,7 +2655,7 @@ class arbindata(object):
             if not full:
                 self.Print("getting voltage-curves for all cycles")
                 v = []
-                no_cycles = amax(test[cycle_index_header])
+                no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     self.Print(txt)
@@ -2698,7 +2686,7 @@ class arbindata(object):
             if not full:
                 self.Print("getting voltage-curves for all cycles")
                 v = []
-                no_cycles = amax(test[cycle_index_header])
+                no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     self.Print(txt)
@@ -2765,7 +2753,7 @@ class arbindata(object):
             if not full:
                 self.Print("getting voltage-curves for all cycles")
                 v = []
-                no_cycles = amax(test[cycle_index_header])
+                no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     self.Print(txt)
@@ -2835,7 +2823,7 @@ class arbindata(object):
             cycle = 2
         cc, cv = self.get_ccap(cycle, test_number)
         dc, dv = self.get_dcap(cycle, test_number)
-        last_dc = amax(dc)
+        last_dc = np.amax(dc)
         cc = last_dc - cc
         c = pd.concat([dc, cc], axis=0)
         v = pd.concat([dv, cv], axis=0)
@@ -2870,7 +2858,7 @@ class arbindata(object):
         #        print self._rounddown(end_cap)
         # TODO check if points are within bounds (implement it later if needed)
         if not points:
-            points = arange(self._roundup(start_cap), self._rounddown(end_cap), stepsize)
+            points = np.arange(self._roundup(start_cap), self._rounddown(end_cap), stepsize)
         else:
             if min(points) < start_cap:
                 print "ERROR, point %f less than bound (%f)" % (min(points), start_cap)
@@ -3057,7 +3045,7 @@ class arbindata(object):
             return
         d = self.tests[test_number].dfdata
         cycle_index_header = self.cycle_index_txt
-        no_cycles = amax(d[cycle_index_header])
+        no_cycles = np.amax(d[cycle_index_header])
         return no_cycles
 
     def get_cycle_numbers(self, test_number=None):
@@ -3069,9 +3057,9 @@ class arbindata(object):
             return
         d = self.tests[test_number].dfdata
         cycle_index_header = self.cycle_index_txt
-        no_cycles = amax(d[cycle_index_header])
-        # cycles = unique(d[cycle_index_header]).values
-        cycles = unique(d[cycle_index_header])
+        no_cycles = np.amax(d[cycle_index_header])
+        # cycles = np.unique(d[cycle_index_header]).values
+        cycles = np.unique(d[cycle_index_header])
         return cycles
 
     def get_ir(self, test_number=None):
@@ -3081,11 +3069,11 @@ class arbindata(object):
             return
         d = self.tests[test_number].dfdata
         ir_txt = self.internal_resistance_txt
-        ir_data = unique(d[ir_txt])
+        ir_data = np.unique(d[ir_txt])
         d2 = d.ix[ir_data.index]
         d2 = d2[["Cycle_Index", "DateTime", "Data_Point", "Internal_Resistance"]].sort(
             [self.data_point_txt])  # jepe fix
-        cycles = unique(d["Cycle_Index"])  # jepe fix
+        cycles = np.unique(d["Cycle_Index"])  # jepe fix
         ir_dict = {}
         for i in d2.index:
             cycle = d2.ix[i]["Cycle_Index"]  # jepe fix
@@ -3168,14 +3156,14 @@ class arbindata(object):
                 self.Print("end of summary")
                 break
         if scaled is True:
-            sdc_min = amin(shifted_discharge_cap)
+            sdc_min = np.amin(shifted_discharge_cap)
             shifted_discharge_cap = shifted_discharge_cap - sdc_min
-            sdc_max = amax(shifted_discharge_cap)
+            sdc_max = np.amax(shifted_discharge_cap)
             shifted_discharge_cap = shifted_discharge_cap / sdc_max
 
-            scc_min = amin(shifted_charge_cap)
+            scc_min = np.amin(shifted_charge_cap)
             shifted_charge_cap = shifted_charge_cap - scc_min
-            scc_max = amax(shifted_charge_cap)
+            scc_max = np.amax(shifted_charge_cap)
             shifted_charge_cap = shifted_charge_cap / scc_max
 
         out = {}
@@ -3224,7 +3212,6 @@ class arbindata(object):
                 print "selecting correct step",
                 print mystep
             step_txt = self.step_index_txt
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             dfdata_cycle = dfdata[(dfdata[cycle_txt] == cycle) & (dfdata[step_txt] == mystep)]
         else:
             if not step and not step_type:
@@ -3389,11 +3376,11 @@ class arbindata(object):
         return filetype
 
     def _bounds(self, x):
-        return amin(x), amax(x)
+        return np.amin(x), np.amax(x)
 
     def _roundup(self, x):
         n = 1000.0
-        x = ceil(x * n)
+        x = np.ceil(x * n)
         x = x / n
         return x
 
@@ -3429,13 +3416,9 @@ class arbindata(object):
         steps = []
         max_step = max(dfdata[c_txt])
         for j in range(max_step):
-            # print j+1,
             # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             last_item = max(dfdata[dfdata[c_txt] == j + 1][d_txt])
-            # print last_item
             steps.append(last_item)
-            # print max_step
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         last_items = dfdata[d_txt].isin(steps)
         return last_items
 
@@ -3544,7 +3527,6 @@ class arbindata(object):
                       # capacity_modifier = None,
                       # test=None
                       ):
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3573,7 +3555,6 @@ class arbindata(object):
         charge_txt = self.charge_capacity_txt
         discharge_txt = self.discharge_capacity_txt
         if use_arbin_stat_file:
-            # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
             summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
         else:
             summary_requirment = self._select_last(dfdata)
@@ -3798,7 +3779,7 @@ class arbindata(object):
                 if step2[-1]:
                     end_voltage_c = dfdata[(dfdata[c_txt] == cycle) & (test.dfdata[s_txt] == step2[-1])][voltage_header]
                     end_voltage_c = end_voltage_c.values[-1]
-                    # end_voltage_c = amax(end_voltage_c)
+                    # end_voltage_c = np.amax(end_voltage_c)
                 else:
                     end_voltage_c = 0
                 endv_indexes.append(i)
@@ -4018,6 +3999,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     d.create_step_table()
     d.make_summary()
     d.save_test(filename=outfile)
+    d.exportcsv(datadir=outdir, cycles=True, raw=True, summary=True)
     return outfile
 
 
@@ -4112,12 +4094,4 @@ if __name__ == "__main__":
 
     print "running",
     print sys.argv[0]
-    # FileName = r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20160710_Mg2Si+Si_MgH2_CL_02_cc_01.res"
-    # Mass = 0.078609164  # mg active material
-    # OutFolder = r"C:\Temp"
-    # load_and_save_resfile(FileName, outdir = OutFolder, mass = Mass)
-
-
-
-    # just_load_srno()
-    # extract_ocvrlx()
+    d = arbindata()
