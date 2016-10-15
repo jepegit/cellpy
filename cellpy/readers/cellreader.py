@@ -7,7 +7,7 @@ raw data files, but we intend to implement more types soon. It also creates
 processed files in the hdf5-format.
 
 Example:
-    >>> d = arbindata()
+    >>> d = cellpydata()
     >>> d.loadcell(names = [file1.res, file2.res]) # loads and merges the runs
     >>> internal_resistance = d.get_ir()
     >>> d.save_test("mytest.hdf")
@@ -287,7 +287,7 @@ class dataset(object):
         self.datapoint_txt = "Data_Point"
 
     def __str__(self):
-        txt = "_arbin_data_dataset_class_\n"
+        txt = "_cellpy_data_dataset_class_\n"
         txt += "loaded from file\n"
         if type(self.loaded_from) == types.ListType:
             for f in self.loaded_from:
@@ -328,7 +328,7 @@ class dataset(object):
         self.dfsummary = pd.DataFrame(self.summary).sort_values(by=self.datapoint_txt)
 
 
-class arbindata(object):
+class cellpydata(object):
     """Main class for working and storing data
 
     This class is the main work-horse for cellpy where all the functions for reading, selecting, and
@@ -527,7 +527,7 @@ class arbindata(object):
             directory (str): path to res-directory
 
         Example:
-            >>> d = arbindata()
+            >>> d = cellpydata()
             >>> directory = r"C:\MyData\Arbindata"
             >>> d.set_res_datadir(directory)
 
@@ -551,7 +551,7 @@ class arbindata(object):
             directory (str): path to hdf5-directory
 
         Example:
-            >>> d = arbindata()
+            >>> d = cellpydata()
             >>> directory = r"C:\MyData\HDF5"
             >>> d.set_res_datadir(directory)
 
@@ -722,7 +722,7 @@ class arbindata(object):
         self.Print(filename)
         store = pd.HDFStore(filename)
         try:
-            fidtable = store.select("arbindata/fidtable")
+            fidtable = store.select("cellpydata/fidtable")
         except:
             print "no fidtable - you should update your hdf5-file"
             fidtable = None
@@ -1148,7 +1148,7 @@ class arbindata(object):
                     return False  # is an older version of Python, assume also an older os (best we can guess)
 
     def _loadh5(self, filename):
-        # loads from hdf5 formatted arbin-file
+        # loads from hdf5 formatted cellpy-file
         self.Print("loading", 1)
         self.Print(filename, 1)
         if not os.path.isfile(filename):
@@ -1159,18 +1159,18 @@ class arbindata(object):
         print "x",
         store = pd.HDFStore(filename)
         data = dataset()
-        data.dfsummary = store.select("arbindata/dfsummary")
-        data.dfdata = store.select("arbindata/dfdata")
+        data.dfsummary = store.select("cellpydata/dfsummary")
+        data.dfdata = store.select("cellpydata/dfdata")
         try:
-            data.step_table = store.select("arbindata/step_table")
+            data.step_table = store.select("cellpydata/step_table")
             data.step_table_made = True
         except:
             data.step_table = None
             data.step_table_made = False
-        infotable = store.select("arbindata/info")
+        infotable = store.select("cellpydata/info")
 
         try:
-            fidtable = store.select("arbindata/fidtable")
+            fidtable = store.select("cellpydata/fidtable")
             fidtable_selected = True
         except:
             fidtable = []
@@ -1253,12 +1253,12 @@ class arbindata(object):
 
         """
         # loadres(Filename)
-        # loads data from .res file into the arbindata.tests list
-        # e.g. arbindata.test[0] = dataset
+        # loads data from .res file into the cellpydata.tests list
+        # e.g. cellpydata.test[0] = dataset
         # where
         # dataset.dfdata is the normal data
         # dataset.dfsummary is the summary.
-        # arbindata.tests[i].test_ID is the test id.
+        # cellpydata.tests[i].test_ID is the test id.
 
         BadFiles = []
         print "  .",
@@ -1717,7 +1717,7 @@ class arbindata(object):
             instead of a list if pdtype is set to True.
 
         Example:
-            >>> my_charge_steps = arbindata.get_step_numbers("charge", cycle_number = 3)
+            >>> my_charge_steps = cellpydata.get_step_numbers("charge", cycle_number = 3)
             >>> print my_charge_steps
             [5,8]
 
@@ -2445,20 +2445,20 @@ class arbindata(object):
                 self.Print(txt, 1)
                 store = pd.HDFStore(outfile_all)
                 self.Print("trying to put dfdata", 1)
-                store.put("arbindata/dfdata", test.dfdata)  # jepe: fix (get name from class)
+                store.put("cellpydata/dfdata", test.dfdata)  # jepe: fix (get name from class)
                 self.Print("trying to put dfsummary", 1)
-                store.put("arbindata/dfsummary", test.dfsummary)
+                store.put("cellpydata/dfsummary", test.dfsummary)
 
                 self.Print("trying to put step_table", 1)
                 if not test.step_table_made:
                     self.Print(" no step_table made", 1)
                 else:
-                    store.put("arbindata/step_table", test.step_table)
+                    store.put("cellpydata/step_table", test.step_table)
 
                 self.Print("trying to put infotbl", 1)
-                store.put("arbindata/info", infotbl)
+                store.put("cellpydata/info", infotbl)
                 self.Print("trying to put fidtable", 1)
-                store.put("arbindata/fidtable", fidtbl)
+                store.put("cellpydata/fidtable", fidtbl)
                 store.close()
                 # del store
             else:
@@ -3291,7 +3291,7 @@ class arbindata(object):
     def set_testnumber(self, test_number):
         """set the testnumber.
 
-        Set the test_number that will be used (arbindata.selected_test_number).
+        Set the test_number that will be used (cellpydata.selected_test_number).
         The class can save several datasets (but its not a frequently used feature),
         the datasets are stored in a list and test_number is the selected index in the list.
 
@@ -3461,7 +3461,7 @@ class arbindata(object):
 
     # ----------making-summary------------------------------------------------------
     def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
-                     verbose=False, use_arbin_stat_file=True, all_tests=True,
+                     verbose=False, use_cellpy_stat_file=True, all_tests=True,
                      test_number=0, ensure_step_table=None):
         """convenience function that makes a summary of the cycling data."""
 
@@ -3495,7 +3495,7 @@ class arbindata(object):
                                    find_ocv=find_ocv,
                                    find_ir=find_ir,
                                    find_end_voltage=find_end_voltage,
-                                   use_arbin_stat_file=use_arbin_stat_file,
+                                   use_cellpy_stat_file=use_cellpy_stat_file,
                                    ensure_step_table=ensure_step_table,
                                    )
         else:
@@ -3508,7 +3508,7 @@ class arbindata(object):
                                find_ocv=find_ocv,
                                find_ir=find_ir,
                                find_end_voltage=find_end_voltage,
-                               use_arbin_stat_file=use_arbin_stat_file,
+                               use_cellpy_stat_file=use_cellpy_stat_file,
                                ensure_step_table=ensure_step_table,
                                )
 
@@ -3522,7 +3522,7 @@ class arbindata(object):
                       find_end_voltage=False,
                       convert_date=True,
                       sort_my_columns=True,
-                      use_arbin_stat_file=True,
+                      use_cellpy_stat_file=True,
                       ensure_step_table=False,
                       # capacity_modifier = None,
                       # test=None
@@ -3533,7 +3533,7 @@ class arbindata(object):
             return
         test = self.tests[test_number]
         #        if test.merged == True:
-        #            use_arbin_stat_file=False
+        #            use_cellpy_stat_file=False
 
         if not mass:
             mass = test.mass
@@ -3554,7 +3554,7 @@ class arbindata(object):
         voltage_header = self.voltage_txt
         charge_txt = self.charge_capacity_txt
         discharge_txt = self.discharge_capacity_txt
-        if use_arbin_stat_file:
+        if use_cellpy_stat_file:
             summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
         else:
             summary_requirment = self._select_last(dfdata)
@@ -3574,7 +3574,7 @@ class arbindata(object):
             for column_name in column_names:
                 if not columns_to_keep.count(column_name):
                     dfsummary.pop(column_name)
-        if not use_arbin_stat_file:
+        if not use_cellpy_stat_file:
             print "values obtained from dfdata:"
             print dfsummary
             print
@@ -3881,7 +3881,7 @@ def setup_cellpy_instance():
     from your parameters file (using prmreader.read()
 
     Returns:
-        an arbindata object
+        an cellpydata object
 
     Example:
 
@@ -3895,7 +3895,7 @@ def setup_cellpy_instance():
     print "read prms"
     print prms
     print "making class and setting prms"
-    d = arbindata(verbose=True)
+    d = cellpydata(verbose=True)
     d.set_hdf5_datadir(prms.hdf5datadir)
     d.set_res_datadir(prms.resdatadir)
     return d
@@ -3929,7 +3929,7 @@ def just_load_srno(srno=None):
     print "read prms"
     print prms
     print "making class and setting prms"
-    d = arbindata(verbose=True)
+    d = cellpydata(verbose=True)
     d.set_hdf5_datadir(prms.hdf5datadir)
     d.set_res_datadir(prms.resdatadir)
     # ------------reading db----------------------------------------------------
@@ -3977,7 +3977,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     Returns:
         out_file_name (str): name of saved file.
     """
-    d = arbindata(verbose=True)
+    d = cellpydata(verbose=True)
 
     if not outdir:
         from cellpy import prmreader
@@ -4094,4 +4094,4 @@ if __name__ == "__main__":
 
     print "running",
     print sys.argv[0]
-    d = arbindata()
+    d = cellpydata()

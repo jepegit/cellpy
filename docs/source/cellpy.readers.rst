@@ -4,10 +4,10 @@ cellpy.readers package
 Submodules
 ----------
 
-cellpy.readers.arbinreader module
+cellpy.readers.cellreader module
 ---------------------------------
 
-.. automodule:: cellpy.readers.arbinreader
+.. automodule:: cellpy.readers.cellreader
     :members:
     :undoc-members:
     :show-inheritance:
