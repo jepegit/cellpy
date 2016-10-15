@@ -67,6 +67,7 @@ setup(name=name,
              # 'scripts/batchplot.py',
              ],
              },
+    #TODO insert: prm file to user-folder?
     entry_points={
         'console_scripts': [
             'cellpy=cellpy.cli:main'
