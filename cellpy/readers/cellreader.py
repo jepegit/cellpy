@@ -22,7 +22,6 @@ Todo:
 
 """
 
-__version__ = '0.1.0'
 
 USE_ADO = False
 """string: set True if using adodbapi"""

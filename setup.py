@@ -19,17 +19,21 @@ with open('HISTORY.rst') as history_file:
 included_packages=find_packages(exclude=['build', 'docs', 'templates'])
 
 requirements = [
-    'scipy', 'numpy', 'pandas', 'pydata', 'matplotlib',
+    'scipy', 'numpy', 'pandas',
 ]
 
 test_requirements = [
-    'scipy', 'numpy', 'pandas', 'pydata'
+    'scipy', 'numpy', 'pandas',
 ]
 
 
 name = 'cellpy'
 
 here = os.path.abspath(os.path.dirname(__file__))
+
+userdir = os.path.expanduser("~")
+# os.mkdir(os.path.join(userdir, ".cellpy"))
+
 version_ns = {}
 with open(os.path.join(here, name, '_version.py')) as f:
     exec(f.read(), {}, version_ns)
@@ -62,17 +66,18 @@ setup(name=name,
              ],
         'scripts':
             ['scripts/simple_reader.py',
+             # 'scripts/cellpy_setup.py',
              # 'scripts/make_hdf5.py',
              # 'scripts/FetchArbinData.py',
-             # 'scripts/batchplot.py',
+             # 'scripts/batchplot.py
              ],
              },
-    #TODO insert: prm file to user-folder?
     entry_points={
         'console_scripts': [
-            'cellpy=cellpy.cli:main'
-        ]
+            'cellpy_setup=scripts.cellpy_setup:main',
+        ],
     },
+    #data_files=[userdir, ['cellpy/parametres/_cellpy_prms_default.ini']],
     include_package_data=True,
     install_requires=requirements,
     license="MIT license",
