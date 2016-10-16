@@ -66,7 +66,6 @@ setup(name=name,
              ],
         'scripts':
             ['scripts/simple_reader.py',
-             # 'scripts/cellpy_setup.py',
              # 'scripts/make_hdf5.py',
              # 'scripts/FetchArbinData.py',
              # 'scripts/batchplot.py
@@ -74,7 +73,7 @@ setup(name=name,
              },
     entry_points={
         'console_scripts': [
-            'cellpy_setup=cellpy.scripts.cellpy_setup:main',
+            'cellpy_setup=cellpy.cellpy_setup:main',
         ],
     },
     #data_files=[userdir, ['cellpy/parametres/_cellpy_prms_default.ini']],
