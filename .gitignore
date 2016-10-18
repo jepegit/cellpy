@@ -63,3 +63,4 @@ docs/_build/
 # PyBuilder
 target/
 cellpy/utils/testscripts_ocv_rlx/lmfit_example.py
+cellpy/testdata/20160830_sic006_69_cc_01.res
