@@ -8,6 +8,7 @@ __pycache__/
 
 .idea/
 ./utils/cell_ocv.pyc
+./testdata/*.csv
 
 
 # Distribution / packaging
