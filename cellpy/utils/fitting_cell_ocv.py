@@ -209,15 +209,18 @@ if __name__ == '__main__':
     """
     v_start_down = 1.
     v_start_up = 0.01
-    i_start = 0.0001526552
-    # start_4+ = 0,0003045602
+    i_start_ini = 0.0001526552   # from cycle 1-3
+    i_start_after = 0.0003045602   # from cycle 4-end
+    i_start = [i_start_ini for _i in range(3)]
+    for _i_4 in range(len(data_up) - 3):
+        i_start.append(i_start_after)
 
     # cell_mass = 0.8   # [g]
     # c_rate = 0.1   # [1 / h]
     # cell_capacity = 3.579   # [mAh / g]
     # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
-    contri = {'ct': 0.2, 'd': 0.8}
-    tau_guessed = {'ct': 50, 'd': 400}
+    contri = {'ct': 0.15, 'd': 0.85}
+    tau_guessed = {'ct': 10, 'd': 600}
 
     time_up = []
     voltage_up = []
@@ -229,7 +232,7 @@ if __name__ == '__main__':
     v_ocv_up = voltage_up[0][-1]
     v_0_up = voltage_up[0][0]
 
-    init_guess_up = guessing_parameters(v_start_up, i_start, v_0_up,
+    init_guess_up = guessing_parameters(v_start_up, i_start_ini, v_0_up,
                                         v_ocv_up, contri, tau_guessed)
     initial_param_up = Parameters()
     # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
@@ -238,10 +241,8 @@ if __name__ == '__main__':
     initial_param_up.add('c_ct', value=1., vary=False)
     initial_param_up.add('c_d', value=1., vary=False)
     initial_param_up.add('ocv', value=v_ocv_up, min=v_ocv_up)
-    initial_param_up.add('v0_ct', value=init_guess_up['v0_rc']['ct'],
-                         min=0, max=v_0_up - v_ocv_up)
-    initial_param_up.add('v0_d', value=init_guess_up['v0_rc']['d'],
-                         min=0, max=v_0_up - v_ocv_up)
+    initial_param_up.add('v0_ct', value=init_guess_up['v0_rc']['ct'])
+    initial_param_up.add('v0_d', value=init_guess_up['v0_rc']['d'])
 
     """Fitting parameters.
     ----------------------------------------------------------------------------
@@ -255,15 +256,15 @@ if __name__ == '__main__':
     best_para_up = [result_up[0].params]
     best_fit_voltage_up = [result_up[0].residual + voltage_up[0]]
 
-    best_rc = {'r_%s' % key[3:]: abs(v0_rc / i_start)
-               for key, v0_rc in best_para_up[0].valuesdict().items()
-               if key.startswith('v0')}
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start_ini)
+                   for key, v0_rc in best_para_up[0].valuesdict().items()
+                   if key.startswith('v0')}
 
-    best_c = {'c_%s' % key[2:]: tau_rc / best_rc['r_%s' % key[2:]]
-              for key, tau_rc in best_para_up[0].valuesdict().items()
-              if key.startswith('r')}
-    best_rc.update(best_c)
-    best_rc_para_up = [best_rc]
+    best_c_ini = {'c_%s' % key[2:]: tau_rc / best_rc_ini['r_%s' % key[2:]]
+                  for key, tau_rc in best_para_up[0].valuesdict().items()
+                  if key.startswith('r')}
+    best_rc_ini.update(best_c_ini)
+    best_rc_para_up = [best_rc_ini]
     report_fit(result_up[0])
 
     for cycle_up_i in range(1, len(time_up)):
@@ -281,7 +282,7 @@ if __name__ == '__main__':
         best_para_up.append(result_up[cycle_up_i].params)
         best_fit_voltage_up.append(result_up[cycle_up_i].residual
                                    + voltage_up[cycle_up_i])
-        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start)
+        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_up_i])
                          for key, v_rc in
                          best_para_up[cycle_up_i].valuesdict().items()
                          if key.startswith('v0')}
