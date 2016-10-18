@@ -48,7 +48,7 @@ https://github.com/lmfit/lmfit-py
 http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 """
 
-from lmfit import Minimizer, Parameters, report_fit
+from lmfit import Minimizer, Parameters, report_fit, Model
 from cell_ocv import *
 
 import matplotlib.pyplot as plt
@@ -148,6 +148,29 @@ def plot_voltage(t, v, best, best_para):
 #         print 'Guessed: %-9 Fitted Parameters:'
 #         print '\t'
 #         print '%s: %-9f %f' % (key, ini[key], value)
+pass
+
+# def relax_model(t, **params):
+#     """Fitting of parameters with lmfit.
+#
+#     User must know what the Parameters object, par, looks like and re-arrange
+#     the parameters into the right format for ocv_relax_func.
+#
+#     Args:
+#         par (Parameters): Parameters that user want to fit.
+#         t (nd.array): Points in time [s]
+#         meas_volt (nd.array): Measured voltage [s]
+#
+#     Returns:
+#         nd.array: The residual between the expected voltage and measured.
+#
+#     """
+#     r_rc = {key[2:]: val for key, val in params.items() if key.startswith('r')}
+#     c_rc = {key[2:]: val for key, val in params.items() if key.startswith('c')}
+#     v0_rc = {key[3:]: val for key, val in params.items()
+#              if key.startswith('v0')}
+#     return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=params['ocv'],
+#                           v0_rc=v0_rc)
 
 
 def ocv_user_adjust(par, t, meas_volt):
@@ -176,7 +199,6 @@ def ocv_user_adjust(par, t, meas_volt):
 
 
 if __name__ == '__main__':
-    import Tkinter as tk
     """Reading data.
 
     Reading the .csv file with all the cycling data.
@@ -234,6 +256,17 @@ if __name__ == '__main__':
 
     init_guess_up = guessing_parameters(v_start_up, i_start_ini, v_0_up,
                                         v_ocv_up, contri, tau_guessed)
+    # rmod = Model(relax_model)
+    # rmod.set_param_hint('r_ct', value=tau_guessed['ct'], min=0)
+    # rmod.set_param_hint('r_d', value=tau_guessed['d'], min=0)
+    # rmod.set_param_hint('c_ct', value=1., vary=False)
+    # rmod.set_param_hint('c_d', value=1., vary=False)
+    # rmod.set_param_hint('ocv', value=v_ocv_up, min=v_ocv_up)
+    # rmod.set_param_hint('v0_ct', value=init_guess_up['v0_rc']['ct'])
+    # rmod.set_param_hint('v0_d', value=init_guess_up['v0_rc']['d'])
+    # rmod.make_params()
+    # out = rmod.fit(voltage_up[0], t=time_up[0])
+    # print out.fit_report()
     initial_param_up = Parameters()
     # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
     initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
