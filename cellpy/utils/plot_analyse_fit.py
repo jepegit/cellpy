@@ -1,56 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
-Fitting parameters with 'lmfit'_ using non-linear least square.
-
-By using 'lmfit'_, you are more freely to freeze parameters and set
-boundaries than with 'scipy's curve_fit'_. This script import the model from::
-    $ python cell_ocv.py'
-
-Example:
-    Call guessing_parameters(). Use these parameters to give 'lmfit'_'s
-    Parameter an initial parameter value. Call ocv_relax_func() and subtract
-    from measured data to get residual.
-    For relaxation of a single rc-circuit, call relaxation_rc().
-    >>> ex_time = np.array(range(5))
-    >>> ex_voltage = np.array([0.05 * np.exp(-float(t)/100) for t in ex_time])
-    >>> ex_v_s = 1.
-    >>> ex_i_s = 0.005
-    >>> ex_v0 = ex_voltage[0]
-    >>> ex_v_oc = ex_voltage[-1]
-    >>> ex_contribute = {'d': 1}
-    >>> ex_tau = {'d': 100}
-    >>> ex_guess = guessing_parameters(v_start=ex_v_s, i_start=ex_i_s,
-    >>> v_0=ex_v0, v_ocv=ex_v_oc, contribute=ex_contribute, tau_rc=ex_tau)
-    >>> Ex_para = Parameters()
-    >>> Ex_para.add('tau_d', value=ex_tau['d'], min=0)
-    >>> Ex_para.add('ocv', value=ex_guess['ocv'], min=0)
-    >>> Ex_para.add('v0_d', value=ex_guess['v0_rc']['d'])
-    >>> ex_Minimizer = Minimizer(ocv_user_adjust, params=Ex_para,
-    >>> fcn_args=(ex_time, ex_voltage))
-    >>> ex_mini = ex_Minimizer.minimize()
-    >>> print ex_mini.residual
-    >>> print '\t'
-    >>> print ex_mini.params.valuesdict()
-    [0, 0, 0, 0, 0]
-    OrderedDict([('tau_d', 100), ('ocv', 0.04803947), ('v0_d', 0.04803947])
-
-Todo:
-    * Not plot in fitting_cell_ocv, but create an other script for that.
-    * Check if example above works and give expected values.
-    * Make tests.
-    * Implement r_ir
-    * Implement relaxation downwards (after charge)
-
-.._lmfit:
-https://github.com/lmfit/lmfit-py
-.._scipy's curve_fit:
-http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
+Reading raw data and reporting and analysing fitted data from fitting_cell_ocv.
 """
-
 from lmfit import Minimizer, Parameters, report_fit
 from cell_ocv import *
+from fitting_cell_ocv import *
 
+import Tkinter as tk
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -60,123 +17,7 @@ import os
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
-
-def manipulate_data(read_data):
-    """Making data in a format, y(x), and saving it in a pandas DataFrame.
-
-    Args:
-        read_data (nd.array): pandas.Dataframe with xy data.
-
-    Returns:
-        nd.array: A pandas.Series with time-voltage to the cycles.
-
-    """
-
-    time_data = [t for t_col in range(len(read_data.iloc[0, :])) for t in
-                 read_data.iloc[:, t_col] if not t_col % 2]
-    voltage_data = [v for v_col in range(0, len(read_data.iloc[0, :]))
-                    for v in read_data.iloc[:, v_col] if v_col % 2]
-    num_cycles = len(time_data)/len(read_data)
-    sorted_data = []
-    key = 0
-    for _ in range(0, num_cycles):
-        _time = time_data[key:key + len(read_data)]
-        _volt = voltage_data[key:key + len(read_data)]
-        key += len(read_data)
-        sorted_data.append(pd.DataFrame(zip(_time, _volt), columns=['time',
-                                                                    'voltage'
-                                                                    ]))
-    return pd.Series(sorted_data)
-
-
-def plot_voltage(t, v, best, best_para):
-    """Making a plot with given voltage data.
-
-    Args:
-        t (nd.array): Points in time [s].
-        v (nd.array): Measured voltage [V].
-        best (Minimizer): All fitted data in lmfit object Minimizer.minimize()
-        best_para (dict): calculated parameters, based on fitted ones.
-
-    Returns:
-        None: Making a plot with matplotlib.pyplot
-
-    """
-    # print 'Guessed parameters: ', best.init_values
-    # print 'Best fitted parameters: ', res_par_dict
-    # print '\t'
-    # print '------------------------------------------------------------'
-    res_par_dict = best.params.valuesdict()
-    best_fit = best.residual + v
-    ocv = np.array([res_par_dict['ocv'] for _ in range(len(t))])
-    r = {r_key: r_val for r_key, r_val in best_para.items()
-         if r_key.startswith('r')}
-    c = {c_key: c_val for c_key, c_val in best_para.items()
-         if c_key.startswith('c')}
-    v0_rc = {v0_key: v0_val for v0_key, v0_val in res_par_dict.items()
-             if v0_key.startswith('v0')}
-
-    rc_circuits = {rc[2:]: relaxation_rc(t, v0_rc['v0_%s' % rc[2:]],
-                                               r[rc], c['c_%s' % rc[2:]], None)
-                   for rc in r.keys()}
-
-    plt.plot(t, v, 'ob', t, best_fit, '-y', t, ocv, '--c',
-             t, rc_circuits['ct'], '-g', t, rc_circuits['d'], '-r')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Voltage (V)')
-    plt.legend(['Measured', 'Best fit', 'ocv - relaxed',
-                'Charge-transfer rc-circuit', 'Diffusion rc-circuit'],
-               loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 10})
-    plt.grid()
-
-    # Suppose to add a text with the value of the parameters for the fit.
-
-    # mover = 0.1
-    # for s_r, res in r.items():
-    #     txt = '%s: %i' % (s_r, res)
-    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
-    #     mover += 0.1
-    # for s_c, cap in c.items():
-    #     txt = '%s: %i' % (s_c, cap)
-    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
-    #     mover += 0.1
-
-
-# def print_params(ini, fit):
-#
-#     for key, value in fit.items():
-#         print 'Guessed: %-9 Fitted Parameters:'
-#         print '\t'
-#         print '%s: %-9f %f' % (key, ini[key], value)
-
-
-def ocv_user_adjust(par, t, meas_volt):
-    """Fitting of parameters with lmfit.
-
-    User must know what the Parameters object, par, looks like and re-arrange
-    the parameters into the right format for ocv_relax_func.
-
-    Args:
-        par (Parameters): Parameters that user want to fit.
-        t (nd.array): Points in time [s]
-        meas_volt (nd.array): Measured voltage [s]
-
-    Returns:
-        nd.array: The residual between the expected voltage and measured.
-
-    """
-
-    p_dict = par.valuesdict()
-    r_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('r')}
-    c_rc = {key[2:]: val for key, val in p_dict.items() if key.startswith('c')}
-    v0_rc = {key[3:]: val for key, val in p_dict.items()
-             if key.startswith('v0')}
-    return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=p_dict['ocv'],
-                          v0_rc=v0_rc) - meas_volt
-
-
-if __name__ == '__main__':
-    import Tkinter as tk
+class
     """Reading data.
 
     Reading the .csv file with all the cycling data.
@@ -209,13 +50,11 @@ if __name__ == '__main__':
     """
     v_start_down = 1.
     v_start_up = 0.01
-    i_start = 0.0001526552
-    # start_4+ = 0,0003045602
-
-    # cell_mass = 0.8   # [g]
-    # c_rate = 0.1   # [1 / h]
-    # cell_capacity = 3.579   # [mAh / g]
-    # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+    cell_mass = 0.8   # [g]
+    c_rate = 0.1   # [1 / h]
+    cell_capacity = 3.579   # [mAh / g]
+    i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+    # i_start = 0.000751
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 400}
 
