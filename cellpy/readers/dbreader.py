@@ -2,7 +2,6 @@
 """simple 'db-reader' for excel
 """
 
-__version__ = "1.0.2"
 
 import os
 import sys

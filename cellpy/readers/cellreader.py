@@ -808,7 +808,7 @@ class cellpydata(object):
             hdf5 (bool): name of hdf5-file given
             resnames (list, optional): names of res-files
             masses (list of floats): masses of electrodes or active material
-            counter_sep (char): seperator between sub-names
+            counter_sep (char): separator between sub-names
             counter_pos (string in ["last", "first"]): position for index for counting
             counter_digits (int): number of digits in index
             counter_max (int): max number for index (will not search after files with higher index)
@@ -826,7 +826,7 @@ class cellpydata(object):
             >>> loadfile(names)
         """
         # should include option to skip selected res-files (bad_files)
-        self.Print("entering loadcel")
+        self.Print("entering loadcell")
         hdf5_extension = ".h5"  # should make this "class-var"
         res_extension = ".res"  # should make this "class-var"
         if only_first:

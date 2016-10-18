@@ -111,4 +111,5 @@ Tips
 To run a subset of tests::
 
 $ py.test tests.test_cellpy
+$ py.test tests.test_readers
 
