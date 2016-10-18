@@ -195,7 +195,7 @@ def ocv_user_adjust(par, t, meas_volt):
     v0_rc = {key[3:]: val for key, val in p_dict.items()
              if key.startswith('v0')}
     return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=p_dict['ocv'],
-                          v0_rc=v0_rc) - meas_volt
+                              v0_rc=v0_rc) - meas_volt
 
 
 if __name__ == '__main__':
@@ -283,7 +283,7 @@ if __name__ == '__main__':
     """
     # making a class Minimizer that contain fitting methods and attributes
     Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
-                                fcn_args=(time_up[0], voltage_up[0]))
+                                fcn_args=(time_up[0], voltage_up[0]),)
     # minimize() perform the minimization on Minimizer's attributes
     result_up = [Mini_initial_up.minimize()]
     best_para_up = [result_up[0].params]
@@ -299,6 +299,38 @@ if __name__ == '__main__':
     best_rc_ini.update(best_c_ini)
     best_rc_para_up = [best_rc_ini]
     report_fit(result_up[0])
+    #
+    # """Plotting initial fit to see if it is the same as what minimize() give.
+    # """
+    # best_para_dict = best_para_up[0].valuesdict()
+    # v0_rc = {key[3:]: val for key, val in best_para_dict.items() if
+    #          key.startswith('v0')}
+    # r_rc_up = {key[2:]: val for key, val in best_rc_ini.items() if
+    #            key.startswith('r')}
+    # c_rc_up = {key[2:]: val for key, val in best_c_ini.items()}
+    # # tau_rc_up has keys r_ct and r_d, but since c was fixed at 1. Therefore tau
+    # tau_rc_up = {key[2:]: val for key, val in best_para_dict.items()
+    #              if key.startswith('r')}
+    # c_fixed = {key[2:]: 1. for key in best_c_ini.keys()}
+    # relax_with_best_rc_calc = ocv_relax_func(time=time_up[0],
+    #                                          ocv=best_para_dict['ocv'],
+    #                                          v0_rc=v0_rc, r_rc=tau_rc_up,
+    #                                          c_rc=c_fixed)
+    # relax_with_best_tau = ocv_relax_func(time=time_up[0],
+    #                                      ocv=best_para_dict['ocv'],
+    #                                      v0_rc=v0_rc,
+    #                                      r_rc=r_rc_up,
+    #                                      c_rc=c_rc_up)
+    # plt.figure(figsize=(20, 13))
+    # ocv_up_ini = np.array([best_para_dict['ocv'] for nothing in range(len(
+    #     time_up[0]))])
+    # plt.plot(time_up[0], voltage_up[0], 'ob', time_up[0],
+    #          best_fit_voltage_up[0], '-g', time_up[0],
+    #          relax_with_best_rc_calc, '-r', time_up[0], relax_with_best_tau,
+    #          '-y', time_up[0], ocv_up_ini, '--c')
+    # plt.legend(['Measured', 'lmfit plot', 'Best with calculated rc',
+    #             'Best with fitted tau'])
+    # plt.show()
 
     for cycle_up_i in range(1, len(time_up)):
         # best_para_up[cycle_up_i - 1]['v_rlx'].set(
