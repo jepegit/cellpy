@@ -17,7 +17,8 @@ import os
 
 # importing mock for modules that cant be installed by RTD
 
-from unittest.mock import MagicMock
+# from unittest.mock import MagicMock # python3
+from mock import Mock as MagicMock
 
 class Mock(MagicMock):
     @classmethod
