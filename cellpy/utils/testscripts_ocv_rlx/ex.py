@@ -80,7 +80,7 @@ def main():
 
     # df3 = pd.read_csv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
     #                    r'Sciences\Documents\NMBU\master\ife\python\cellpy\utils'
-    #                    r'\data\20160805_sic006_45_cc_01_ocvrlx_down.csv', sep=';')
+    #                    r'\data\20160805_test001_45_cc_01_ocvrlx_down.csv', sep=';')
     # df3.to_csv('new_csv.csv')
     # df3 = pd.read_csv('new_csv.csv')
     # # print df.head()

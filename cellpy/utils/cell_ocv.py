@@ -215,8 +215,8 @@ def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
 #     # activate "print os.getcwd()" to find current folder and extend datafolder
 #     # with [.]\utils\data
 #     # print os.getcwd()
-#     filename_down = r'20160805_sic006_45_cc_01_ocvrlx_down.csv'
-#     filename_up = r'20160805_sic006_45_cc_01_ocvrlx_up.csv'
+#     filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
+#     filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
 #     down = os.path.join(datafolder, filename_down)
 #     up = os.path.join(datafolder, filename_up)
 #     data_down = pd.read_csv(down, sep=';')

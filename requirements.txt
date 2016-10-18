@@ -8,3 +8,4 @@ scipy>=0.18.1
 setuptools>=27.0.0
 PyYAML>=3.12
 pytables>=3.0.0
+lmfit>=0.9.5
