@@ -188,8 +188,8 @@ if __name__ == '__main__':
     """
     datafolder = r'..\testdata'
 
-    filename_down = r'20160805_sic006_45_cc_01_ocvrlx_down.csv'
-    filename_up = r'20160805_sic006_45_cc_01_ocvrlx_up.csv'
+    filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
+    filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
     down = os.path.join(datafolder, filename_down)
     up = os.path.join(datafolder, filename_up)
     data_down = pd.read_csv(down, sep=';')
