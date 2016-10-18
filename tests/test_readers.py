@@ -1,6 +1,6 @@
 from unittest import TestCase
 import os
-from cellpy import arbinreader
+from cellpy import cellreader
 
 import pytest
 

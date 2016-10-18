@@ -6,7 +6,7 @@ Created on Mon Feb 17 10:18:59 2014
 
 
 import sys
-#from arbinpy import arbinreader, dbreader, prmreader
+#from cellpy import cellreader, dbreader, prmreader
 #import itertools
 #import matplotlib.pyplot as plt
 #import csv
@@ -167,7 +167,7 @@ def interpolate_line(x,y,number_of_points=None,
     x_step = (x_interpolated[-1]-x_interpolated[0])/(number_of_points-1)
 
     if reverse:
-        x = (-1)*x      
+        x = (-1)*x
         x_interpolated = (-1)*x_interpolated
     f=interp1d(x,y,kind=Method)
 
@@ -202,19 +202,19 @@ def interpolate_line(x,y,number_of_points=None,
         print "ok"
         print
     return x_interpolated, y_interpolated, x_step
-       
 
-    
+
+
 def get_vdq(cycle,
             points_multiplyer = 1.1,
             intp_method = "slinear",
             ):
-    from arbinpy import arbinreader                
-    voltage = arbinreader.get_voltage(cycle)
+    from cellpy import cellreader
+    voltage = cellreader.get_voltage(cycle)
     capacity = arbinreader.get_discharge_capacity(cycle)
     v,dQ = dQdV(voltage,capacity,points_multiplyer,Method=intp_method)
-    return v,dQ    
-    
+    return v,dQ
+
 
 
 def is_something(x):
@@ -225,15 +225,15 @@ def is_something(x):
         if not x:
             something_else = False
     return something_else
-    
-# Specialized functions    
+
+# Specialized functions
 
 def xalt():
     dqdv_numbermultiplyer = 0.5
     dqdv_method = 'slinear'
     dqdv_finalinterpolation = True
     dqdv_resolution = 0.001 # V
-    
+
     import csv, os
     import numpy as np
     import matplotlib.pyplot as plt
@@ -281,29 +281,29 @@ def xalt():
                 writer.writerow((x,y))
     plt.show()
 
-        
-        
-    
+
+
+
 #    Filename = "Cell_ID_SM1035071302412017_Test_5553_Cycles_2_Steps_25.csv"
 #    with open(os.path.join(Dir,Filename),'r') as infile:
 #        lines = infile.readlines()
 #        print lines
-    
+
 
 def test():
-    from cellpy import arbinreader
+    from cellpy import cellreader
     cathode_file = r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20141030_HP_1_cc_01.res"
     cathode_mass = 13.8610
-    
+
     dqdv_numbermultiplyer = 0.4
     dqdv_method = 'slinear'
     dqdv_finalinterpolation = True
     dqdv_resolution = 0.001 # V
-    
+
 #    dqdv_method: Specifies the kind of interpolation as a string (‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic, ‘cubic’ where ‘slinear’, ‘quadratic’ and ‘cubic’ refer to a spline interpolation of first, second or third order)
 #    or as an integer specifying the order of the spline interpolator to use. Default is ‘linear’.
-    
-    d = arbinreader.arbindata()
+
+    d = cellreader.cellpydata()
     d.loadres(cathode_file)
     d.set_mass(cathode_mass)
     list_of_cycles = d.get_cycle_numbers()
@@ -321,7 +321,7 @@ def test():
                 Norm2Cap = True,
                 resolution = None,
                 verbose =True)
-                
+
     dv2,dQ2 = dQdV(v1,c1,
                 NumberMultiplyer=dqdv_numbermultiplyer,
                 Method=dqdv_method,
@@ -348,7 +348,7 @@ def test():
     plt.plot(dv3,dQ3, label = "normalized to cap - with res. %f V" % (dqdv_resolution))
     plt.legend()
     plt.show()
-    
+
 if __name__=="__main__":
     #test()
     xalt()

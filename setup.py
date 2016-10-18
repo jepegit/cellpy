@@ -8,6 +8,7 @@ python setup.py bdist_wheel - create build
 twine upload dist/* - upload to PyPI
 """
 from setuptools import setup, find_packages
+import os
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -18,21 +19,39 @@ with open('HISTORY.rst') as history_file:
 included_packages=find_packages(exclude=['build', 'docs', 'templates'])
 
 requirements = [
-    'scipy', 'numpy', 'pandas', 'matplotlib',
+    'scipy', 'numpy', 'pandas',
 ]
 
 test_requirements = [
     'scipy', 'numpy', 'pandas',
 ]
 
-setup(name='cellpy', version='0.1.0', description='Extract data from battery cell testers.',
-    long_description=readme + '\n\n' + history,
-    author="Jan Petter Maehlen",
-    author_email='jepe@ife.no',
-    url='https://github.com/jepegit/cellpy',
-    packages=included_packages,
-    package_dir={'cellpy':'cellpy'},
-    package_data={
+
+name = 'cellpy'
+
+here = os.path.abspath(os.path.dirname(__file__))
+
+userdir = os.path.expanduser("~")
+# os.mkdir(os.path.join(userdir, ".cellpy"))
+
+version_ns = {}
+with open(os.path.join(here, name, '_version.py')) as f:
+    exec(f.read(), {}, version_ns)
+
+
+version = 1
+description = 'Extract data from battery cell testers.'
+
+setup(name=name,
+      version=version_ns['__version__'],
+      description=description,
+      long_description=readme + '\n\n' + history,
+      author="Jan Petter Maehlen",
+      author_email='jepe@ife.no',
+      url='https://github.com/jepegit/cellpy',
+      packages=included_packages,
+      package_dir={'cellpy':'cellpy'},
+      package_data={
         'cellpy':[],
             # 'README.rst'],
         'databases':
@@ -49,14 +68,15 @@ setup(name='cellpy', version='0.1.0', description='Extract data from battery cel
             ['scripts/simple_reader.py',
              # 'scripts/make_hdf5.py',
              # 'scripts/FetchArbinData.py',
-             # 'scripts/batchplot.py',
+             # 'scripts/batchplot.py
              ],
              },
     entry_points={
         'console_scripts': [
-            'cellpy=cellpy.cli:main'
-        ]
+            'cellpy_setup=cellpy.cellpy_setup:main',
+        ],
     },
+    #data_files=[userdir, ['cellpy/parametres/_cellpy_prms_default.ini']],
     include_package_data=True,
     install_requires=requirements,
     license="MIT license",

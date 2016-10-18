@@ -4,8 +4,8 @@ Usage
 
 To use cellpy, start with importing the needed modules::
 
-    >>> from cellpy import arbinreader # obs! this name will be changed
-    
+    >>> from cellpy import cellreader # obs! this name will be changed
+
 Lets define some variables::
 
     >>> FileName  = r"C:\data\20141030_CELL_6_cc_01.res"
@@ -15,8 +15,8 @@ Lets define some variables::
 Then load the data into the data-class (this is data obtained
 using an Arbin battery tester)::
 
-    >>> d = arbinreader.arbindata(FileName)
-    >>> d.loadres() # this tells arbindata to read the file
+    >>> d = cellreader.cellpydata(FileName)
+    >>> d.loadres() # this tells cellpy to read the file
     >>> d.set_mass(Mass)
 
 Create a summary (for each cycle) and generate a step table (parsing the
@@ -41,7 +41,7 @@ for spesific cycles and steps::
 
 You can also look for open circuit voltage steps::
 
-    >>> cycle = 44        
+    >>> cycle = 44
     >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
     >>> time2, voltage2 = d.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
