@@ -39,8 +39,10 @@ class read:
         dbc_filename: cellpy_dbc.xlsx
 
     The prmreader looks for files with file names starting with _cellpy_prms
-    and ending with .ini in the following directories:
+    and ending with .ini in the following directories::
+
         curdir, filedir, userdir
+
     in ascending priority. If it finds several files, the file
     _cellpy_prms_default.ini will have lowest priority.
 
@@ -49,7 +51,7 @@ class read:
     Args:
         prm_filename (str)(optional) : parameter file name
         search_order (list)(optional): list with paths to search in ascending priority
-                             (available options: ["curdir","filedir","userdir"]).
+                                       (available options: ["curdir","filedir","userdir"]).
     """
 
     def __init__(self, prm_filename=None, search_order=None):

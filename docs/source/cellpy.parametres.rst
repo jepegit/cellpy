@@ -1,10 +1,10 @@
-parametres package
+cellpy.parametres package
 =========================
 
 Submodules
 ----------
 
-parametres.prmreader module
+cellpy.parametres.prmreader module
 ----------------------------------
 
 .. automodule:: cellpy.parametres.prmreader

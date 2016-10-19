@@ -8,11 +8,20 @@ Subpackages
 
     cellpy.parametres
     cellpy.readers
+    cellpy.scripts
     cellpy.testdata
     cellpy.utils
 
 Submodules
 ----------
+
+cellpy.cellpy_setup module
+--------------------------
+
+.. automodule:: cellpy.cellpy_setup
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 
 Module contents
