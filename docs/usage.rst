@@ -4,7 +4,7 @@ Usage
 
 To use cellpy, start with importing the needed modules::
 
-    >>> from cellpy import cellreader # obs! this name will be changed
+    >>> from cellpy import cellreader
 
 Lets define some variables::
 
@@ -15,9 +15,11 @@ Lets define some variables::
 Then load the data into the data-class (this is data obtained
 using an Arbin battery tester)::
 
-    >>> d = cellreader.cellpydata(FileName)
-    >>> d.loadres() # this tells cellpy to read the file
+    >>> d = cellreader.cellpydata()
+    >>> d.loadres(FileName) # this tells cellpy to read the arbin data file (.res format)
     >>> d.set_mass(Mass)
+
+
 
 Create a summary (for each cycle) and generate a step table (parsing the
 data and finding out what each step in each cycle is)::
@@ -45,6 +47,6 @@ You can also look for open circuit voltage steps::
     >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
     >>> time2, voltage2 = d.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
-If you would like to use more sofisticated methods (e.g. database readers),
+If you would like to use more sophisticated methods (e.g. database readers),
 take a look at the tutorial (if it exists), check the source code, or simply
-send an e-mail to one of the aurhors.
+send an e-mail to one of the authors.
