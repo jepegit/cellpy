@@ -157,12 +157,11 @@ pass
 #     the parameters into the right format for ocv_relax_func.
 #
 #     Args:
-#         par (Parameters): Parameters that user want to fit.
+#         params (Parameters): Parameters that user want to fit.
 #         t (nd.array): Points in time [s]
-#         meas_volt (nd.array): Measured voltage [s]
 #
 #     Returns:
-#         nd.array: The residual between the expected voltage and measured.
+#         nd.array: The expected voltage from model.
 #
 #     """
 #     r_rc = {key[2:]: val for key, val in params.items() if key.startswith('r')}
@@ -241,8 +240,8 @@ if __name__ == '__main__':
     # c_rate = 0.1   # [1 / h]
     # cell_capacity = 3.579   # [mAh / g]
     # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
-    contri = {'ct': 0.15, 'd': 0.85}
-    tau_guessed = {'ct': 10, 'd': 600}
+    contri = {'ct': 0.2, 'd': 0.8}
+    tau_guessed = {'ct': 60, 'd': 500}
 
     time_up = []
     voltage_up = []
@@ -271,11 +270,14 @@ if __name__ == '__main__':
     # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
     initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
     initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
+    # initial_param_up.add('r_sei', value=tau_guessed['sei'], min=0)
     initial_param_up.add('c_ct', value=1., vary=False)
     initial_param_up.add('c_d', value=1., vary=False)
+    # initial_param_up.add('c_sei', value=1, vary=False)
     initial_param_up.add('ocv', value=v_ocv_up, min=v_ocv_up)
     initial_param_up.add('v0_ct', value=init_guess_up['v0_rc']['ct'])
     initial_param_up.add('v0_d', value=init_guess_up['v0_rc']['d'])
+    # initial_param_up.add('v0_sei', value=init_guess_up['v0_rc']['sei'])
 
     """Fitting parameters.
     ----------------------------------------------------------------------------
@@ -453,7 +455,11 @@ if __name__ == '__main__':
 
     fig_rc = plt.figure(figsize=(20, 13))
     fig_rc.suptitle('R and C for each rc-circuit in all cycles')
-    gs_rc = gridspec.GridSpec(2, 2)
+    n_para = len(best_rc_para_up[0])
+    if n_para % 2 == 1:
+        gs_rc = gridspec.GridSpec(n_para / 2 + 1, n_para / 2)
+    else:
+        gs_rc = gridspec.GridSpec(n_para / 2, n_para / 2)
     gs_rc.update(left=0.05, right=0.9, wspace=1)
     subs_rc = [fig_rc.add_subplot(gs_rc[pr])
                for pr in range(len(best_rc_para_up[0].keys()))]
