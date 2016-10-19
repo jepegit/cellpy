@@ -42,7 +42,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         prms = prmreader.read(prm_filename)
 
     if raw_file_dir is None:
-        raw_file_dir = prms.resdatadir
+        raw_file_dir = prms.rawdatadir
 
     if cellpy_file_dir is None:
         cellpy_file_dir = prms.cellpydatadir
@@ -64,7 +64,10 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     else:
         glob_text_raw = file_name_format
 
-    run_files = glob.glob1(raw_file_dir,glob_text_raw)
+    glob_text_raw = os.path.join(raw_file_dir,glob_text_raw)
+    run_files = glob.glob(glob_text_raw)
+
+    #  run_files = glob.glob1(raw_file_dir,glob_text_raw)
     run_files.sort()
     cellpy_file = run_name + "." + cellpy_file_extension
     cellpy_file = os.path.join(cellpy_file_dir,cellpy_file)

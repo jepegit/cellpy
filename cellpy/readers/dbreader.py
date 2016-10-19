@@ -88,7 +88,7 @@ class reader:
             self.db_filename = os.path.basename(db_file)
             self.db_file = db_file
         if not db_datadir:
-            self.db_datadir = prms.resdatadir
+            self.db_datadir = prms.rawdatadir
         else:
             self.db_datadir = db_datadir
         if not db_datadir_processed:
@@ -760,7 +760,7 @@ def _investigate_excel_dbreader_8():
     print Reader.db_filename
     print Reader.db_file
 
-    serial_number = 695
+    serial_number = 620
     print "printing"
     Reader.print_serial_number_info(serial_number)
 
