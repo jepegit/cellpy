@@ -4,9 +4,7 @@ utils package
 Subpackages
 -----------
 
-.. toctree::
 
-    cellpy.utils.testscripts_ocv_rlx
 
 Submodules
 ----------

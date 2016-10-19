@@ -42,7 +42,8 @@ is usually named a run. And each run is a `cellpy.cellreader.dataset` instance.
 
 Here is a list of other important class attributes in `cellpydata`:
 
-**column headings - summary data**
+column headings - summary data
+..............................
 
 .. code-block:: python
 
@@ -67,7 +68,8 @@ Here is a list of other important class attributes in `cellpydata`:
     summary_txt_endv_charge = "end_voltage_charge"
 
 
-**column headings - step table**
+column headings - step table
+............................
 
 .. code-block:: python
 
@@ -91,7 +93,9 @@ Here is a list of other important class attributes in `cellpydata`:
     step_table_txt_ir = "IR"
     step_table_txt_ir_change = "IR_pct_change"
 
-**step types**
+step types
+..........
+
 Identifiers for the different steps have pre-defined names given in the class attribute list
 `list_of_step_types` and is written to the "step" column.
 
@@ -110,7 +114,20 @@ inside the cellpydata class, but will be moved out later.
 
 Supported testers are:
 
-**arbin**
+* arbin
+
+Testers that is planned supported:
+
+* biologic
+* pec
+* maccor
+
+
+Tester dependent attributes
+...........................
+
+arbin
+'''''
 
 Three tables are read from the .res file:
 
@@ -118,7 +135,10 @@ Three tables are read from the .res file:
 * global table: contains overall parametres for the test.
 * stats table: contains statistics (for each cycle).
 
-*table names*
+
+
+table names
+'''''''''''
 
 .. code-block:: python
 
@@ -126,7 +146,8 @@ Three tables are read from the .res file:
     tablename_global = "Global_Table"
     tablename_statistic = "Channel_Statistic_Table"
 
-*column headings - global table*
+column headings - global table
+''''''''''''''''''''''''''''''
 
 .. code-block:: python
 
@@ -155,7 +176,8 @@ Three tables are read from the .res file:
     test_id_txt = 'Test_ID'
     test_name_txt = 'Test_Name'
 
-*column headings - normal table*
+column headings - normal table
+''''''''''''''''''''''''''''''
 
 .. code-block:: python
 
@@ -180,7 +202,7 @@ Three tables are read from the .res file:
 
 
 cellpydata - methods
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 
 Todo
