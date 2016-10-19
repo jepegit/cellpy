@@ -31,19 +31,24 @@ class TestCellpy(object):
             print "could not make directory"
 
     @pytest.mark.smoketest
-    def test_extract_ocvrlx(cls):
+    def test_extract_ocvrlx(self):
         import os
         from cellpy import cellreader
         f_in = os.path.join(test_data_dir, test_res_file)
         f_out = os.path.join(test_data_dir_out, "out_")
         assert cellreader.extract_ocvrlx(f_in, f_out) == True
 
-    def test_load_and_save_resfile(cls):
+    def test_load_and_save_resfile(self):
         import os
         from cellpy import cellreader
         f_in = os.path.join(test_data_dir, test_res_file)
-        newfile = cellreader.load_and_save_resfile(f_in, None, test_data_dir_out)
-        assert os.path.isfile(newfile)
+        new_file = cellreader.load_and_save_resfile(f_in, None, test_data_dir_out)
+        assert os.path.isfile(new_file)
+
+    def test_su_cellpy_instance(self):
+        # somehow pytest fails to find the test if it is called test_setup_xxx
+        from cellpy import cellreader
+        cellreader.setup_cellpy_instance()
 
     @pytest.mark.slowtest
     @pytest.mark.smoketest

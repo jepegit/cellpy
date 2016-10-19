@@ -4,10 +4,6 @@ cellpy.utils package
 Subpackages
 -----------
 
-.. toctree::
-
-    cellpy.utils.testscripts_ocv_rlx
-
 Submodules
 ----------
 
@@ -34,6 +30,7 @@ cellpy.utils.ocv_rlx_read_ex module
     :members:
     :undoc-members:
     :show-inheritance:
+
 
 
 Module contents

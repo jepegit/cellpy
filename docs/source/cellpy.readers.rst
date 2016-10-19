@@ -5,7 +5,7 @@ Submodules
 ----------
 
 cellpy.readers.cellreader module
----------------------------------
+--------------------------------
 
 .. automodule:: cellpy.readers.cellreader
     :members:
@@ -16,6 +16,14 @@ cellpy.readers.dbreader module
 ------------------------------
 
 .. automodule:: cellpy.readers.dbreader
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+cellpy.readers.filefinder module
+--------------------------------
+
+.. automodule:: cellpy.readers.filefinder
     :members:
     :undoc-members:
     :show-inheritance:

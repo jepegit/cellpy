@@ -39,7 +39,7 @@ with open(os.path.join(here, name, '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
 
-version = 1
+
 description = 'Extract data from battery cell testers.'
 
 setup(name=name,

@@ -3,8 +3,8 @@
 default_prms = """
 [Paths]
 outdatadir: ..\outdata
-resdatadir: ..\indata
-hdf5datadir: ..\indata
+rawdatadir: ..\indata
+cellpydatadir: ..\indata
 db_path: ..\databases
 filelogdir: ..\databases
 
@@ -29,8 +29,8 @@ class read:
 
         [Paths]
         outdatadir: ..\outdata
-        resdatadir: ..\indata
-        hdf5datadir: ..\indata
+        rawdatadir: ..\indata
+        cellpydatadir: ..\indata
         db_path: ..\databases
         filelogdir: ..\databases
 
@@ -39,8 +39,10 @@ class read:
         dbc_filename: cellpy_dbc.xlsx
 
     The prmreader looks for files with file names starting with _cellpy_prms
-    and ending with .ini in the following directories:
+    and ending with .ini in the following directories::
+
         curdir, filedir, userdir
+
     in ascending priority. If it finds several files, the file
     _cellpy_prms_default.ini will have lowest priority.
 
@@ -49,7 +51,7 @@ class read:
     Args:
         prm_filename (str)(optional) : parameter file name
         search_order (list)(optional): list with paths to search in ascending priority
-                             (available options: ["curdir","filedir","userdir"]).
+                                       (available options: ["curdir","filedir","userdir"]).
     """
 
     def __init__(self, prm_filename=None, search_order=None):
@@ -62,8 +64,8 @@ class read:
             self.search_order = ["curdir", "filedir", "userdir"]
         self.prm_default = os.path.join(self.script_dir, "_cellpy_prms_default.ini")
         self.outdatadir = "..\outdata"
-        self.resdatadir = "..\indata"
-        self.hdf5datadir = "..\indata"
+        self.rawdatadir = "..\indata"
+        self.cellpydatadir = "..\indata"
         self.db_path = "..\databases"
         self.filelogdir = "..\databases"
         self.db_filename = "cellpy_db.xlsx"
@@ -115,12 +117,12 @@ class read:
             print "prmreader.py:",
             print e
         try:
-            self.resdatadir = parser.get(opt, "resdatadir")
+            self.rawdatadir = parser.get(opt, "rawdatadir")
         except ConfigParser.NoOptionError as e:
             print "prmreader.py:",
             print e
         try:
-            self.hdf5datadir = parser.get(opt, "hdf5datadir")
+            self.cellpydatadir = parser.get(opt, "cellpydatadir")
         except ConfigParser.NoOptionError as e:
             print "prmreader.py:",
             print e
@@ -156,8 +158,8 @@ class read:
         txt += "------------------------------------------------------------\n"
         txt += "NAME          \tVALUE\n"
         txt += "outdatadir:  \t%s\n" % self.outdatadir
-        txt += "resdatadir:  \t%s\n" % self.resdatadir
-        txt += "hdf5datadir: \t%s\n" % self.hdf5datadir
+        txt += "rawdatadir:  \t%s\n" % self.rawdatadir
+        txt += "cellpydatadir: \t%s\n" % self.cellpydatadir
         txt += "db_path:     \t%s\n" % self.db_path
         txt += "filelogdir:  \t%s\n" % self.filelogdir
 
@@ -187,11 +189,11 @@ if __name__ == "__main__":
     if not os.path.isdir(r.outdatadir):
         print "Error! outdatadir not found"
         errors = True
-    if not os.path.isdir(r.resdatadir):
-        print "Error! resdatadir not found"
+    if not os.path.isdir(r.rawdatadir):
+        print "Error! rawdatadir not found"
         errors = True
-    if not os.path.isdir(r.hdf5datadir):
-        print "Error! hdf5datadir not found"
+    if not os.path.isdir(r.cellpydatadir):
+        print "Error! cellpydatadir not found"
         errors = True
     if not os.path.isdir(r.filelogdir):
         print "Error! filelogdir not found"

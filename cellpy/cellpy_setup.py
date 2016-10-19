@@ -3,8 +3,8 @@ def main():
     default_prms = """
     [Paths]
     outdatadir: ..\outdata
-    resdatadir: ..\indata
-    hdf5datadir: ..\indata
+    rawdatadir: ..\indata
+    cellpydatadir: ..\indata
     db_path: ..\databases
     filelogdir: ..\databases
 
