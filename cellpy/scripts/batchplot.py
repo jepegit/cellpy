@@ -1,20 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Apr 15 12:20:49 2015
 
-@author: jepe
-class version of summary_plot
-"""
-
-#-------------needed imports --------------------------------------------------
-import sys,os
+import sys
+import os
 
 
-from cellpy import arbinreader, dbreader, prmreader
-from cellpy.utils import plotutils
-#------------------------------------------------------------------------------
-
-
+from cellpy import cellreader, dbreader, prmreader, filefinder
+#from cellpy.utils import plotutils
 
 from numpy import amin, amax, array, argsort
 import pandas as pd
@@ -30,8 +21,6 @@ import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 import pickle as pl
 
-
-
 class plotType:
     def __init__(self,
                  label="",
@@ -43,28 +32,28 @@ class plotType:
                  x_label = "",
                  y_label = "",
                  label_font = None):
-                     
+
         self.label = label
         self.columntxt = columntxt
         self.x_label = x_label
         self.y_label = y_label
         self.label_font = label_font
-        
+
         if x_range is None:
             self.x_range = []
         else:
             self.x_range = x_range
-            
+
         if y_range is None:
             self.y_range = []
         else:
             self.y_range = y_range
-        
+
         if x_axis_lims is None:
             self.x_axis_lims = []
         else:
             self.x_axis_lims = x_axis_lims
-            
+
         if y_axis_lims is None:
             self.y_axis_lims = []
         else:
@@ -135,7 +124,7 @@ class summaryplot:
         self.ylabel_coord_right_1 = 1.11  # right for canvas 4
         self.ylabel_coord_right_2 = 1.5  # right for canvas 3
         self.xlabel_coord_down = -0.2 # not implemented yet
-        
+
         self.delta_ax = 0.05
         self.xlims1 = []
         self.implemented_canvases = [1,2,3,4]
@@ -182,7 +171,7 @@ class summaryplot:
 #                    ]
 
         self.plotdata={}
-        
+
         self.set_mpl_rcparams()
         self.generate_plottypes() # info on the types of plots available
         self.generate_plotlist() # generates list of plots to be plotted
@@ -195,20 +184,22 @@ class summaryplot:
                 self.showfig()
                 self.save_figs()
                 print "\n*** bye!"
-                
+
     def set_mpl_rcparams(self,):
         matplotlib.rcParams['font.size'] = 14
         #matplotlib.rcParams['axes.titlesize'] = "large"
-        matplotlib.rcParams['axes.labelsize'] = "small" #"large" # "small" "medium"  "large"    
+        matplotlib.rcParams['axes.labelsize'] = "small" #"large" # "small" "medium"  "large"
         matplotlib.rcParams['xtick.labelsize'] = 'medium'
         matplotlib.rcParams['ytick.labelsize'] = 'medium'
         #matplotlib.rcParams['axes.ymargin'] = 0.9
         matplotlib.rcParams['ytick.labelsize'] = 'medium'
         matplotlib.rcParams['ytick.labelsize'] = 'medium'
         matplotlib.rcParams['ytick.labelsize'] = 'medium'
-            
+
     def read_prms(self,):
         self.prms = prmreader.read()
+        print "-------------read_prms--------------"
+        print self.prms
 
     def set_outdir_top(self,dirname):
         self.prms.outdatadir = dirname
@@ -231,7 +222,7 @@ class summaryplot:
             self.reader = dbreader.reader(db_file = db_file)
         else:
             self.reader = dbreader.reader()
-        
+
     def create_outdir(self,):
         if self.prms is None:
             self.read_prms()
@@ -246,7 +237,7 @@ class summaryplot:
             os.mkdir(NewDir)
             print "created outdate directory"
         self.savedir = NewDir
-        
+
         if self.export_raw or self.export_cycles or self.export_dqdv:
             savedir_raw = os.path.join(self.savedir, "raw_data")
             if not os.path.isdir(savedir_raw):
@@ -256,8 +247,8 @@ class summaryplot:
         self.prename = os.path.join(self.savedir, self.prename2)
         # as for now: savedir will be the running directory of the script if
         # this function is not run
-        
-        
+
+
 
     def generate_plottypes(self,cap_unit = None):
         if cap_unit is None:
@@ -269,9 +260,9 @@ class summaryplot:
                     cap_unit = "(mAh/g(%s))" % self.axis_txt_sub
                     cum_cap_unit = "(Ah/g(%s))" % self.axis_txt_sub
                 else:
-                    cap_unit = "(mAh/g)" 
-                    cum_cap_unit = "(Ah/g)" 
-                    
+                    cap_unit = "(mAh/g)"
+                    cum_cap_unit = "(Ah/g)"
+
         if not self.cumcharge_AhUnits:
             cum_cap_unit = cap_unit
 
@@ -376,7 +367,7 @@ class summaryplot:
         for ex in self.plotlist:
             self.make_datasets(ex)
             self.save_datasets(ex)
-            
+
         self.save_raw()
         self.save_cycles()
         self.save_dqdv()
@@ -387,7 +378,7 @@ class summaryplot:
             canvases = []
             if self.plot_type == 0:
                 canvases = self.implemented_canvases
-    
+
             else:
                 if isinstance(self.plot_type, list):
                     canvases = self.plot_type
@@ -408,10 +399,10 @@ class summaryplot:
     def end(self,):
         self.closefigs()
         print "***END"
-        
-        
 
-        
+
+
+
 # ---------- Canvases ---------------------------------------------------------
 
     def scc(self, canvas = 1):
@@ -429,7 +420,7 @@ class summaryplot:
         self.plot_ax("_dischargecap",self.test_axes1)
         self.plot_ax("_irdischrg",self.test_axes2)
 
-            
+
 
     def make_plot_canvas(self, canvas = 1):
         # TODO: currently defining self.someaxes in all instances of make_plot_canvas,
@@ -666,7 +657,7 @@ class summaryplot:
             xcoordL1 = self.ylabel_coord_left_2
             xcoordL2 = 0.5 + spacer1/2 - xcoordL1
             xcoordL2 = xcoordL1
-            xcoordR = self.ylabel_coord_right_2 
+            xcoordR = self.ylabel_coord_right_2
 
             self.set_y_label(ax = self.ce_axes, plot_type = "_couleff", xcoord = xcoordL1)
             self.set_y_label(ax = self.discharge_axes, plot_type = "_dischargecap", xcoord = xcoordL1)
@@ -722,9 +713,9 @@ class summaryplot:
             self.discharge_axes =  self.fig[canvas].add_subplot(gs1[1:3,:], sharex=self.ce_axes)
             print "created axes: self.discharge_axes (N=1)"
             self.endvc_axes     =  self.fig[canvas].add_subplot(gs1[3,:], sharex=self.ce_axes)
-            print "created axes: self.endvc_axes (N=2)"            
+            print "created axes: self.endvc_axes (N=2)"
             self.irdc_axes       =  self.fig[canvas].add_subplot(gs1[4,:], sharex=self.ce_axes)
-            print "created axes: self.irdc_axes (N=3)"   
+            print "created axes: self.irdc_axes (N=3)"
             self.shifteddcap_axes     =  self.fig[canvas].add_subplot(gs1[5,:], sharex=self.ce_axes)
             print "created axes: self.shifteddcap_axes (N=4)"
             self.shiftedcap_axes     =  self.fig[canvas].add_subplot(gs1[6,:], sharex=self.ce_axes)
@@ -733,7 +724,7 @@ class summaryplot:
             print "created axes: self.ric_disconn_axes (N=6)"
             self.ric_sei_axes     =  self.fig[canvas].add_subplot(gs1[8,:], sharex=self.ce_axes)
             print "created axes: self.ric_sei_axes (N=7)"
-            
+
             self.axes_lib[canvas] = {}
             self.axes_lib[canvas]["_couleff"] = 0
             self.axes_lib[canvas]["_dischargecap"] = 1
@@ -753,7 +744,7 @@ class summaryplot:
             self.plot_ax(plot_type="d_ric_disconnect",ax=self.ric_disconn_axes)
             self.plot_ax(plot_type="d_ric_sei",ax=self.ric_sei_axes)
 
-            
+
             self.scale_ax_y(plot_type="_couleff",ax=self.ce_axes)
             self.scale_ax(plot_type="_dischargecap",ax=self.discharge_axes)
             self.scale_ax_y(plot_type="_endvcharge",ax=self.endvc_axes)
@@ -775,7 +766,7 @@ class summaryplot:
 
 
             xcoordR = self.ylabel_coord_right_1
-            
+
             self.set_y_label(plot_type="_couleff",ax=self.ce_axes)
             self.set_y_label(plot_type="_dischargecap",ax=self.discharge_axes, position = "right", xcoord = xcoordR)
             self.set_y_label(plot_type="_endvcharge",ax=self.endvc_axes)
@@ -783,8 +774,8 @@ class summaryplot:
             self.set_y_label(plot_type="d_shifted_dischargecap",ax=self.shifteddcap_axes)
             self.set_y_label(plot_type="d_shifted_chargecap",ax=self.shiftedcap_axes, position = "right", xcoord = xcoordR)
             self.set_y_label(plot_type="d_ric_disconnect",ax=self.ric_disconn_axes)
-            self.set_y_label(plot_type="d_ric_sei",ax=self.ric_sei_axes, position = "right", xcoord = xcoordR)            
-            
+            self.set_y_label(plot_type="d_ric_sei",ax=self.ric_sei_axes, position = "right", xcoord = xcoordR)
+
             self.set_nlocator(self.ce_axes, ny=4)
             self.set_nlocator(self.discharge_axes, ny=8)
             self.set_nlocator(self.endvc_axes, ny=4)
@@ -796,7 +787,7 @@ class summaryplot:
 
 
 # ---------- Load and generate data -------------------------------------------
-    
+
     def make_diagnostics_plots(self, _exts = None):
         #TODO: fix this
         column_names = []
@@ -856,8 +847,8 @@ class summaryplot:
                     print "is missing",
                     print _sel
         self.plotdata[_ext]=[column_names,datasets]
-    
-    
+
+
     def load_cells(self, sort = True):
         self.d = arbinreader.arbindata(verbose = self.verbose,fetch_onliners=self.fetch_onliners)
         self.d.set_hdf5_datadir(self.prms.hdf5datadir)
@@ -870,12 +861,12 @@ class summaryplot:
         else:
             self.d.loadcell(names = self.allfiles, masses = self.allmasses, res = force_res)
         self.number_of_tests = self.d.get_number_of_tests()
-        
+
     def get_info(self,):
         self._get_info()
         self._get_refs_info()
-        
-    
+
+
     def sort_cells(self,set_seqv = True):
         # convinience function for sorting
         sorted_indexes = argsort(array(self.group))
@@ -1100,7 +1091,7 @@ class summaryplot:
         print "-----------------------------"
         self.plotTypes[plot_type].x_range = x_limits
         self.plotTypes[plot_type].y_range = y_limits
-        
+
 
     def __plot(self, labels, y_values, styles, ax):
         x_min = []
@@ -1186,9 +1177,9 @@ class summaryplot:
         #print dqdv_method
         dqdv_finalinterpolation = self.dqdv_finalinterpolation
         #print dqdv_finalinterpolation
-        
+
         max_cycles  = self.max_cycles
-        
+
         test_number = -1
         for data in self.d.tests:
             test_number+=1
@@ -1204,16 +1195,16 @@ class summaryplot:
                     firstname = os.path.join(savedir,os.path.basename(firstname))
                 outname_charge=firstname+"_dqdv_charge.csv"
                 outname_discharge=firstname+"_dqdv_discharge.csv"
-                
+
                 print outname_charge
                 print outname_discharge
-                
+
                 list_of_cycles = self.d.get_cycle_numbers(test_number=test_number)
                 number_of_cycles = len(list_of_cycles)
                 print "you have %i cycles" % (number_of_cycles)
-                    
+
                 # extracting charge
-                out_data = []    
+                out_data = []
                 for cycle in list_of_cycles:
                     try:
                         #if max_cycles is not None and cycle <= max_cycles:
@@ -1225,19 +1216,19 @@ class summaryplot:
                         #dc,dv = self.dget_cap(cycle,test_number=test_number )
                         v = v.tolist()
                         dQ = dQ.tolist()
-                        
-                        
+
+
                         header_x = "dQ cycle_no %i" % cycle
                         header_y = "voltage cycle_no %i" % cycle
                         dQ.insert(0,header_x)
                         v.insert(0,header_y)
-                        
-                        out_data.append(v)  
+
+                        out_data.append(v)
                         out_data.append(dQ)
                     except:
                         print "could not extract cycle %i" % (cycle)
-                        
-                
+
+
                 # Saving cycles in one .csv file (x,y,x,y,x,y...)
                 #print "saving the file with delimiter '%s' " % (sep)
                 print "Trying to save dqdv charge data to"
@@ -1246,9 +1237,9 @@ class summaryplot:
                     writer=csv.writer(f,delimiter=sep)
                     writer.writerows(itertools.izip_longest(*out_data))
                     # star (or asterix) means transpose (writing cols instead of rows)
-    
+
                 # extracting discharge
-                out_data = []    
+                out_data = []
                 for cycle in list_of_cycles:
                     try:
                         dc,v = self.d.get_dcap(cycle,test_number=test_number )
@@ -1259,20 +1250,20 @@ class summaryplot:
                         #dc,dv = self.dget_cap(cycle,test_number=test_number )
                         v = v.tolist()
                         dQ = dQ.tolist()
-                        
-                        
+
+
                         header_x = "dQ cycle_no %i" % cycle
                         header_y = "voltage cycle_no %i" % cycle
                         dQ.insert(0,header_x)
                         v.insert(0,header_y)
-                        
-                        out_data.append(v)  
+
+                        out_data.append(v)
                         out_data.append(dQ)
-                        
+
                     except:
                         print "could not extract cycle %i" % (cycle)
-                        
-                
+
+
                 # Saving cycles in one .csv file (x,y,x,y,x,y...)
                 #print "saving the file with delimiter '%s' " % (sep)
                 print "Trying to save dqdv discharge data to"
@@ -1282,8 +1273,8 @@ class summaryplot:
                     writer.writerows(itertools.izip_longest(*out_data))
                     # star (or asterix) means transpose (writing cols instead of rows)
 
-        
- 
+
+
     def save_datasets(self,_ext):
         sort_method = self.sort_method
         try:
@@ -1299,7 +1290,7 @@ class summaryplot:
             # not pandas
             print "\nNote! Probably not pandas"
             print "(%s)" % (outfile)
-            
+
             new_datasets = []
             for dataset in datasets:
                 new_datasets.append(pd.Series(dataset))
@@ -1310,7 +1301,7 @@ class summaryplot:
             except:
                 print "Error: could not concatenate:\n  ", sys.exc_info()[0]
                 return -1
-                
+
         try:
             a.columns = column_names
         except:
@@ -1333,7 +1324,7 @@ class summaryplot:
                     print "data not sorted - continuing"
             #a.reindex_axis(sorted(df.columns), axis=1)
         a.to_csv(outfile,sep=self.sep)
-   
+
 
     def save_raw(self):
         if self.export_raw:
@@ -1343,17 +1334,17 @@ class summaryplot:
                 self.d.exportcsv(savedir, sep=self.sep)
             except:
                 print "Error in exporting raw data"
-                
-    def save_cycles(self):        
+
+    def save_cycles(self):
         if self.export_cycles:
             print "---saving cycles----"
             savedir = self.savedir_raw
             try:
                 self.d.exportcsv(savedir, sep=self.sep, cycles = True , raw = False)
-                
+
             except:
                 print "Error in exporting cycles"
-                
+
     def save_dqdv(self):
         if self.export_dqdv:
             print "---saving dqdv-data--"
@@ -1362,30 +1353,30 @@ class summaryplot:
             self._export_dqdv(savedir, sep=self.sep)
 #            except:
 #                print "Error in exporting dqdv"
-                
+
     def save_hdf5(self):
         if self.export_hdf5:
-            datadir = self.prms.hdf5datadir           
+            datadir = self.prms.hdf5datadir
             for f,test_number,name in zip(self.hdf5_fixed_files,range(len(self.d.tests)),self.allfiles):
                 filename =  os.path.join(datadir,name)
                 if f:
                     print "fixed hdf5 - not saved (%s)" % (name)
-                    
+
                 else:
                     #needs_updating = xxxx
                     #if needs_updating:
                     try:
                         if self.ensure_step_table:
                             self.d.ensure_step_table = True
-                            
+
                         self.d.save_test(filename,test_number=test_number)
                     except:
                         print "Could not save",
                         print filename+".h5"
-                    
+
 #            fixed = self.hdf5_fixed_files
 #            d.save_test(hdf5file, test_number = test_number))
-                    
+
             # should do an export for each test in arbindata
             # should check if hdf5 file exists and if it needs updating
             # should check if they are marked as freezed (database)
@@ -1403,11 +1394,11 @@ class summaryplot:
             savedir = self.savedir
             prename = self.prename
             midname = "_canvas%s" % (str(canvas).zfill(3))
-            
+
             lastname_log = ".txt"
             filename_log = prename + midname + lastname_log
             filename_log = os.path.join(savedir, filename_log)
-            
+
             lastname_png = ".png"
             filename_png = prename + midname + lastname_png
             filename_png = os.path.join(savedir, filename_png)
@@ -1471,8 +1462,8 @@ class summaryplot:
     def remove_xticklabels(self, ax):
         for tl in ax.get_xticklabels():
             tl.set_visible(False)
-            
-    
+
+
     def get_axis(self, axis = None, canvas = None):
 
 #        self.axes_lib[canvas] = {}
@@ -1543,7 +1534,7 @@ class summaryplot:
         if plot_type is not None:
             label = self.plotTypes[plot_type].y_label
 
-            
+
         if label is not None:
 
             if position == "right":
@@ -1594,7 +1585,7 @@ class summaryplot:
                 axis.set_ylim(lim)
             except:
                 "axis probably not found"
-                
+
     def set_xlims(self, ax = "couleff", lim = [0.0,200.0]):
         for figno in self.fig.keys():
             print "setting ylims for canvas %i, ax = %s" % (figno, ax)
@@ -1614,7 +1605,7 @@ class summaryplot:
     def get_legend_axes(self,canvas=1):
         ax_no = self.leg[canvas][1]
         return self.fig[canvas].get_axes()[ax_no]
-        
+
     def print_legend_loc(self, canvas=1):
         leg = self.get_legend(canvas)
         ax  = self.get_legend_axes(canvas)
@@ -1698,7 +1689,7 @@ class summaryplot:
 
     def flip(self,items, ncol):
         return itertools.chain(*[items[i::ncol] for i in range(ncol)])
-        
+
 
     def create_legend(self,canvas=1, legend_type = None, legend_txt_list = None,
                       axes_no = None, loc = "upper right", shadow = False,
@@ -1803,13 +1794,13 @@ if __name__=="__main__":
 #    plot types:
 #    1 - with end-voltage
 #    2 - without end-voltage
-#    3 - old    
+#    3 - old
 #    4 - with all (including shifted cap and irc etc)
-    
+
     """
     WARNING: total mass cannot be used if loading from hdf5 (should rewrite arbinreader -> hdf5)
-    """    
-    
+    """
+
     Refs = [816]
     Refs = None
     plot_type = 2
@@ -1822,14 +1813,14 @@ if __name__=="__main__":
                     export_cycles = True,
                     export_dqdv = True,
                     fetch_onliners = False,
-                    
+
                     )
     print "plotting"
     #plt.show()
     #a.set_ylims("couleff",[30.0,120])
     #a.set_ylims("dischargecap",[400,5000])
 #    a.set_ylims("irdischrg",[])
-    
+
     #a.ce_axes.set_ylim([97.0, 102.0])
     #a.endvc_axes.set_ylim([0.0, 1.2])
     #a.set_xlims(lim=[0,170])
@@ -1844,4 +1835,4 @@ if __name__=="__main__":
 
     print "\n***ended",
     print sys.argv[0]
-    
+
