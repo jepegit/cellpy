@@ -41,7 +41,7 @@ def tau(time, r, c, slope):
         return r * c
 
 
-def relaxation_rc(time, v0, r, c, slope):
+def relaxation_rc(time, v0, r, c, slope=None):
     """
     Calculates the relaxation function of an rc-circuit.
 
