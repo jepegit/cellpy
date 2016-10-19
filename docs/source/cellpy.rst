@@ -14,14 +14,6 @@ Subpackages
 Submodules
 ----------
 
-cellpy.cli module
------------------
-
-.. automodule:: cellpy.cli
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

@@ -1,10 +1,10 @@
-cellpy.readers package
+readers package
 ======================
 
 Submodules
 ----------
 
-cellpy.readers.cellreader module
+readers.cellreader module
 ---------------------------------
 
 .. automodule:: cellpy.readers.cellreader
@@ -12,7 +12,7 @@ cellpy.readers.cellreader module
     :undoc-members:
     :show-inheritance:
 
-cellpy.readers.dbreader module
+dbreader module
 ------------------------------
 
 .. automodule:: cellpy.readers.dbreader

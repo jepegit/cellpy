@@ -14,9 +14,12 @@ Contents:
    readme
    installation
    usage
+   tutorial
    formats
+   examples
    contributing
-   authorshistory
+   authors
+   history
 
 Indices and tables
 ==================

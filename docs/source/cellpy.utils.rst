@@ -1,4 +1,4 @@
-cellpy.utils package
+utils package
 ====================
 
 Subpackages
@@ -11,7 +11,7 @@ Subpackages
 Submodules
 ----------
 
-cellpy.utils.cell_ocv module
+utils.cell_ocv module
 ----------------------------
 
 .. automodule:: cellpy.utils.cell_ocv
@@ -19,7 +19,7 @@ cellpy.utils.cell_ocv module
     :undoc-members:
     :show-inheritance:
 
-cellpy.utils.dqdv module
+utils.dqdv module
 ------------------------
 
 .. automodule:: cellpy.utils.dqdv
@@ -27,7 +27,7 @@ cellpy.utils.dqdv module
     :undoc-members:
     :show-inheritance:
 
-cellpy.utils.ocv_rlx_read_ex module
+utils.ocv_rlx_read_ex module
 -----------------------------------
 
 .. automodule:: cellpy.utils.ocv_rlx_read_ex
