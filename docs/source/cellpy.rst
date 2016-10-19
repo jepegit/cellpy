@@ -9,7 +9,6 @@ Subpackages
     cellpy.parametres
     cellpy.readers
     cellpy.scripts
-    cellpy.testdata
     cellpy.utils
 
 Submodules

@@ -2040,7 +2040,7 @@ class cellpydata(object):
         Info
 
         Header names (pr. 03.03.2016):
-        ------------
+
         'cycle', 'step',
         'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
         'V_avr'...,
