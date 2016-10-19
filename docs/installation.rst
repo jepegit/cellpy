@@ -14,13 +14,23 @@ To install cellpy, run this command in your terminal:
 
     $ pip install cellpy
 
-This is the preferred method to install cellpy, as it will always install the most recent stable release. 
+This is the preferred method to install cellpy, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
 
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
+
+If this is the first time you install cellpy, it is recommended that you run the setup script:
+
+.. code-block:: console
+
+    $ cellpy_setup
+
+This will install a `_cellpy_prms_default.ini` file in your home directory. Edit this file and
+save it as `_cellpy_prms_some_other_name.ini` to prevent it from being written over in case
+the setup script is run on a later occasion.
 
 
 From sources
