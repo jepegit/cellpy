@@ -2,7 +2,6 @@
 """simple 'db-reader' for excel
 """
 
-
 import os
 import sys
 import types
@@ -166,10 +165,17 @@ class reader:
             print txt,
 
     def filter_by_slurry(self, slurry, appender="_"):
-        """filters sheet/tabel by slurry name (input is slurry name or list of slurry names,
-        for example 'es030' or ["es012","es033","es031"])
-        OBS! the filter appends '_' in front (and after if only_first = False) of slurry names
-        The routine returns the filtered serialnos"""
+        """Filters sheet/table by slurry name.
+
+        Input is slurry name or list of slurry names, for example 'es030' or ["es012","es033","es031"].
+
+        Args:
+            slurry (str or list of strings): slurry names.
+            appender (chr): char that surrounds slurry names.
+
+        Returns:
+            List of serial_number (ints).
+        """
 
         sheet = self.table
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
@@ -277,45 +283,6 @@ class reader:
         exists = sheet.iloc[:, exists_col_number] > 0
         sheet = sheet[criterion & exists]
         return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
-
-    @staticmethod
-    def help_pandas():
-        txt = """pandas help:
-        Assuming the dataframe has row indexes a,b,c,...
-        Assuming the dataframe has column indexes A,B,C
-
-        general rules
-        .loc[[rows],[cols]] selects (first) on index names
-        .iloc[[rows],[cols]] selects on index numbers (i.e. position 0,1,2,etc)
-        df[ criterion ] where criterion is a boolean array with same dim as df
-        selects the row/cols where criterion is True
-
-        selecting columns on index-name
-        df.A        - selects col A
-        df[:,"A]"     - selects col A
-        df[:,"B":]     - selects col B and higher
-        df[:,["A","C"]] - selects col A and C
-        df.loc[:,"A"]   - selects col A (see also selecting on row)
-
-        selecting rows on index-name (.loc[row,col])
-        df.loc["a"]   - selects row a
-        df.loc["b:"]   - selects row b and higher
-        df.loc[["b","e"]   - selects row b and c
-        df.loc["a"] > 0 - returns bool df where filtered on values in row a > 0
-
-        same applies for iloc
-
-        For fast scalar value setting and getting, use
-        .at (name) or
-        .iat (position)
-
-        other methods
-        .isin
-        .map
-            criterion = df["A"].map(lambda x: x<12.2) (only series)
-            df[criterion]
-        """
-        print txt
 
     @staticmethod
     def select_col(df, no):
@@ -527,8 +494,49 @@ class reader:
         serial_numbers = set.difference(list1, *slists)
         return serial_numbers
 
+    @staticmethod
+    def _help_pandas():
+        txt = """pandas help:
+        Assuming the dataframe has row indexes a,b,c,...
+        Assuming the dataframe has column indexes A,B,C
+
+        general rules
+        .loc[[rows],[cols]] selects (first) on index names
+        .iloc[[rows],[cols]] selects on index numbers (i.e. position 0,1,2,etc)
+        df[ criterion ] where criterion is a boolean array with same dim as df
+        selects the row/cols where criterion is True
+
+        selecting columns on index-name
+        df.A        - selects col A
+        df[:,"A]"     - selects col A
+        df[:,"B":]     - selects col B and higher
+        df[:,["A","C"]] - selects col A and C
+        df.loc[:,"A"]   - selects col A (see also selecting on row)
+
+        selecting rows on index-name (.loc[row,col])
+        df.loc["a"]   - selects row a
+        df.loc["b:"]   - selects row b and higher
+        df.loc[["b","e"]   - selects row b and c
+        df.loc["a"] > 0 - returns bool df where filtered on values in row a > 0
+
+        same applies for iloc
+
+        For fast scalar value setting and getting, use
+        .at (name) or
+        .iat (position)
+
+        other methods
+        .isin
+        .map
+            criterion = df["A"].map(lambda x: x<12.2) (only series)
+            df[criterion]
+        """
+        print txt
+
+
 
 def _investigate_excel_dbreader_0():
+    """Used for testing"""
     print sys.argv[0]
     t0 = time.time()
     print "t0: %f" % t0
@@ -537,6 +545,7 @@ def _investigate_excel_dbreader_0():
 
 
 def _investigate_excel_dbreader_1():
+    """Used for testing"""
     print sys.argv[0]
     t0 = time.time()
     print "t0: %f" % t0
@@ -556,6 +565,7 @@ def _investigate_excel_dbreader_1():
 
 
 def _investigate_excel_dbreader_2():
+    """Used for testing"""
     print sys.argv[0]
     Reader = reader()
     print "testing filtering"
@@ -575,6 +585,7 @@ def _investigate_excel_dbreader_2():
 
 
 def _investigate_excel_dbreader_3():
+    """Used for testing"""
     print "STARTING"
     print sys.argv[0]
     t0 = time.time()
@@ -616,6 +627,7 @@ def _investigate_excel_dbreader_3():
 
 
 def _investigate_excel_dbreader_4():
+    """Used for testing"""
     print "STARTING"
     print sys.argv[0]
     t0 = time.time()
@@ -665,6 +677,7 @@ def _investigate_excel_dbreader_4():
 
 
 def _investigate_excel_dbreader_5():
+    """Used for testing"""
     print "STARTING (test filter_by_slurry)"
     print sys.argv[0]
     Reader = reader()
@@ -679,6 +692,7 @@ def _investigate_excel_dbreader_5():
 
 
 def _investigate_excel_dbreader_6():
+    """Used for testing"""
     print "STARTING  (test filter_by_col_value)"
     print sys.argv[0]
     Reader = reader()
@@ -697,6 +711,7 @@ def _investigate_excel_dbreader_6():
 
 
 def _investigate_excel_dbreader_7():
+    """Used for testing"""
     print "STARTING  (test mixed filtering)"
     print sys.argv[0]
     Reader = reader()
@@ -735,6 +750,7 @@ def _investigate_excel_dbreader_7():
 
 
 def _investigate_excel_dbreader_8():
+    """Used for testing"""
     print "STARTING  (test print serial_number info)"
 
     print sys.argv[0]
