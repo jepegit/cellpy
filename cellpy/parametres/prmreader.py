@@ -187,10 +187,10 @@ if __name__ == "__main__":
     if not os.path.isdir(r.outdatadir):
         print "Error! outdatadir not found"
         errors = True
-    if not os.path.isdir(r.resdatadir):
+    if not os.path.isdir(r.rawdatadir):
         print "Error! rawdatadir not found"
         errors = True
-    if not os.path.isdir(r.hdf5datadir):
+    if not os.path.isdir(r.cellpydatadir):
         print "Error! cellpydatadir not found"
         errors = True
     if not os.path.isdir(r.filelogdir):

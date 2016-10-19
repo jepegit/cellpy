@@ -92,7 +92,7 @@ class reader:
         else:
             self.db_datadir = db_datadir
         if not db_datadir_processed:
-            self.db_datadir_processed = prms.hdf5datadir
+            self.db_datadir_processed = prms.cellpydatadir
         else:
             self.db_datadir_processed = db_datadir_processed
 

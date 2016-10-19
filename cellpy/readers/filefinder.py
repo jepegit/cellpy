@@ -26,7 +26,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         run-file names (list) and cellpy-file-name (path).
     """
 
-    hdf5_extension = "h5"
+    cellpy_file_extension = "h5"
     res_extension = "res"
 
     # might include searching and removing "." in extensions
@@ -36,7 +36,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         raw_extension = res_extension
 
     if cellpy_file_extension is None:
-        cellpy_file_extension = hdf5_extension
+        cellpy_file_extension = cellpy_file_extension
 
     if not all([raw_file_dir,cellpy_file_dir,file_name_format]):
         prms = prmreader.read(prm_filename)
@@ -45,7 +45,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         raw_file_dir = prms.resdatadir
 
     if cellpy_file_dir is None:
-        cellpy_file_dir = prms.hdf5datadir
+        cellpy_file_dir = prms.cellpydatadir
 
     if file_name_format is None:
         try:
@@ -71,6 +71,29 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
 
     return run_files, cellpy_file
 
+
+def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
+    # function to find res files by locating all files of the form
+    # (date-label)_(slurry-label)_(el-label)_(cell-type)_*
+    # UNDER DEVELOPMENT
+
+    counter_sep = "_"
+    counter_digits = 2
+    res_extension = ".res"
+    res_dir = raw_datadir
+    res_files = []
+    cellpyfile = os.path.basename(cellpyfile)
+    cellpyfile = os.path.splitext(cellpyfile)[0]
+    for j in range(counter_min, counter_max + 1):
+        look_for = "%s%s%s%s" % (cellpyfile, counter_sep,
+                                str(j).zfill(counter_digits),
+                                res_extension)
+
+        look_for = os.path.join(res_dir, look_for)
+        if os.path.isfile(look_for):
+            res_files.append(look_for)
+
+    return res_files
 
 if __name__ == '__main__':
     print "searching for files"

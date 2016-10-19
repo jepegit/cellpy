@@ -37,7 +37,7 @@ class TestDataReaders(TestCase):
 
 
     @pytest.mark.unfinished
-    def test_set_hdf5_datadir(self):
+    def test_set_cellpy_datadir(self):
         assert True
 
     @pytest.mark.unfinished

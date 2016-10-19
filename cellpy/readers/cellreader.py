@@ -282,7 +282,7 @@ class dataset(object):
         self.parameter_table = collections.OrderedDict()
         self.summary_version = 2
         self.step_table_version = 2
-        self.hdf5_file_version = 3
+        self.cellpy_file_version = 3
         self.datapoint_txt = "Data_Point"
 
     def __str__(self):
@@ -362,7 +362,7 @@ class cellpydata(object):
         self.intendation = 0
         self.filestatuschecker = filestatuschecker
         self.res_datadir = None
-        self.hdf5_datadir = None
+        self.cellpy_datadir = None
         self.auto_dirs = True  # search in prm-file for res and hdf5 dirs in loadcel
         self.forced_errors = 0
         self.ensure_step_table = False
@@ -385,7 +385,7 @@ class cellpydata(object):
         self.step_table = None
         self.selected_test_number = None
         self.number_of_tests = 0
-        self.hdf5_file_version = 3
+        self.cellpy_file_version = 3
         self.use_decrp_functions = True
         self.capacity_modifiers = ['reset', ]
         self.cycle_mode = 'anode'
@@ -541,7 +541,7 @@ class cellpydata(object):
             return
         self.res_datadir = directory
 
-    def set_hdf5_datadir(self, directory=None):
+    def set_cellpy_datadir(self, directory=None):
         """set the directory containing .hdf5-files
 
         Used for setting directory for looking for hdf5-files. A valid directory name is required.
@@ -562,9 +562,9 @@ class cellpydata(object):
         if not os.path.isdir(directory):
             print "directory does not exist"
             return
-        self.hdf5_datadir = directory
+        self.cellpy_datadir = directory
 
-    def check_file_ids(self, hdf5file, resfiles=None, force=True, usedir=False,
+    def check_file_ids(self, cellpyfile, resfiles=None, force=True, usedir=False,
                        no_extension=False, return_res=True):
         """check the stats for the files (raw-data and cellpy hdf5).
 
@@ -572,7 +572,7 @@ class cellpydata(object):
         timestamps etc to find out if we need to bother to load .res -files.
 
         Args:
-            hdf5file (str): filename of the cellpy hdf5-file.
+            cellpyfile (str): filename of the cellpy hdf5-file.
             resfiles (str, optional): name(s) of raw-data file(s).
             force (bool):
             usedir (bool): Set to True if you will use dir-names defined in prm-file.
@@ -586,18 +586,18 @@ class cellpydata(object):
 
         txt = "check_file_ids\n  checking file ids - using '%s'" % (self.filestatuschecker)
         self.Print(txt)
-        if self._is_listtype(hdf5file):
-            hdf5file = hdf5file[0]
-            # only works for single hdf5file - so selecting first if list
+        if self._is_listtype(cellpyfile):
+            cellpyfile = cellpyfile[0]
+            # only works for single cellpyfile - so selecting first if list
 
-        hdf5_extension = ".h5"
+        cellpy_extension = ".h5"
         res_extension = ".res"
 
         if usedir:
             res_dir = self.res_datadir
-            hdf5_dir = self.hdf5_datadir
+            cellpy_dir = self.cellpy_datadir
 
-            if res_dir is None or hdf5_dir is None:
+            if res_dir is None or cellpy_dir is None:
                 print "res/hdf5 - dir not given"
                 return
 
@@ -605,22 +605,19 @@ class cellpydata(object):
                 print "no valid res-dir, aborting"
                 return
 
-            if not os.path.isdir(hdf5_dir):
+            if not os.path.isdir(cellpy_dir):
                 print "no hdf5-dir, aborting"
                 return
 
-            hdf5file = os.path.join(hdf5_dir, hdf5file)
+            cellpyfile = os.path.join(cellpy_dir, cellpyfile)
 
         if no_extension:
-            hdf5file += hdf5_extension
+            cellpyfile += cellpy_extension
 
-        # print "hdf5 full name:"
-        #        print hdf5file
-
-        ids_hdf5 = self._check_hdf5(hdf5file)
+        ids_cellpy_file = self._check_cellpy_file(cellpyfile)
         if resfiles is None:
             #            print "checking for resfiles"
-            resfiles = self._find_resfiles(hdf5file)
+            resfiles = self._find_resfiles(cellpyfile)
 
             if resfiles is None:
                 self.Print("could not find the res-files")
@@ -644,7 +641,7 @@ class cellpydata(object):
             else:
                 return True
 
-        if not ids_hdf5:
+        if not ids_cellpy_file:
             self.Print("hdf5 file does not exist - needs updating")
             if return_res:
                 return False, resfiles
@@ -653,12 +650,12 @@ class cellpydata(object):
 
         ids_res = self._check_res(resfiles)
 
-        similar = self._compare_ids(ids_res, ids_hdf5)
+        similar = self._compare_ids(ids_res, ids_cellpy_file)
         #        print "********************"
         #        print "*res"
         #        print ids_res
         #        print "*hdf5"
-        #        print ids_hdf5
+        #        print ids_cellpy_file
         #        print "----similar?"
         #        print similar
         #        print "--------------------"
@@ -707,7 +704,7 @@ class cellpydata(object):
                     ids[name] = int(fid.last_accessed)
         return ids
 
-    def _check_hdf5(self, filename):
+    def _check_cellpy_file(self, filename):
         """get the file-ids for the hdf5_file"""
 
         strip_filenames = True
@@ -755,23 +752,23 @@ class cellpydata(object):
             ids = dict()
         return ids
 
-    def _compare_ids(self, ids_res, ids_hdf5):
+    def _compare_ids(self, ids_res, ids_cellpy_file):
         # Check if the ids are "the same", i.e. if the ids indicates wether new
         # data is likely to be found in the res-files checking length
 
         similar = True
         l_res = len(ids_res)
-        l_hdf5 = len(ids_hdf5)
-        if l_res == l_hdf5 and l_hdf5 > 0:
+        l_cellpy = len(ids_cellpy_file)
+        if l_res == l_cellpy and l_cellpy > 0:
             for name, value in ids_res.items():
-                if ids_hdf5[name] != value:
+                if ids_cellpy_file[name] != value:
                     similar = False
         else:
             similar = False
 
         return similar
 
-    def _find_resfiles(self, hdf5file, counter_min=1, counter_max=10):
+    def _find_resfiles(self, cellpyfile, counter_min=1, counter_max=10):
         # function to find res files by locating all files of the form
         # (date-label)_(slurry-label)_(el-label)_(cell-type)_*
         # UNDER DEVELOPMENT
@@ -781,10 +778,10 @@ class cellpydata(object):
         res_extension = ".res"
         res_dir = self.res_datadir
         resfiles = []
-        hdf5file = os.path.basename(hdf5file)
-        hdf5file = os.path.splitext(hdf5file)[0]
+        cellpyfile = os.path.basename(cellpyfile)
+        cellpyfile = os.path.splitext(cellpyfile)[0]
         for j in range(counter_min, counter_max + 1):
-            lookFor = "%s%s%s%s" % (hdf5file, counter_sep,
+            lookFor = "%s%s%s%s" % (cellpyfile, counter_sep,
                                     str(j).zfill(counter_digits),
                                     res_extension)
 
@@ -794,7 +791,7 @@ class cellpydata(object):
 
         return resfiles
 
-    def loadcell(self, names=None, res=False, hdf5=False, resnames=[],
+    def loadcell(self, names=None, res=False, cellpyfile=False, resnames=[],
                  masses=[], counter_sep="_", counter_pos='last',
                  counter_digits=2, counter_max=99, counter_min=1,
                  summary_on_res=True, summary_ir=True, summary_ocv=False,
@@ -805,7 +802,7 @@ class cellpydata(object):
         Args:
             names (list): identification names
             res (bool): name of res-file given
-            hdf5 (bool): name of hdf5-file given
+            cellpyfile (bool): name of cellpy-file given (hdf5)
             resnames (list, optional): names of res-files
             masses (list of floats): masses of electrodes or active material
             counter_sep (char): separator between sub-names
@@ -846,10 +843,10 @@ class cellpydata(object):
         self.Print(txt, 1)
 
         res_dir = self.res_datadir
-        hdf5_dir = self.hdf5_datadir
+        hdf5_dir = self.cellpy_datadir
 
         if res_dir is None or hdf5_dir is None:
-            print "WARNING (loadcell): res/hdf5 - dir not given"
+            print "WARNING (loadcell): res/cellpyfile - dir not given"
             if self.auto_dirs:
                 print "loading prmreader and trying to set defaults"
                 from cellpy import prmreader
@@ -867,7 +864,7 @@ class cellpydata(object):
             print "WARNING (loadcell): no valid res-dir, aborting"
             return
         if not os.path.isdir(hdf5_dir):
-            print "WARNING (loadcell): no hdf5-dir, aborting"
+            print "WARNING (loadcell): no cellpyfile-dir, aborting"
             return
 
         # searching for res-files
@@ -915,10 +912,10 @@ class cellpydata(object):
                 print wtxt
                 missingRes = True
 
-            hdf5 = os.path.join(hdf5_dir, name + hdf5_extension)
+            cellpyfile = os.path.join(hdf5_dir, name + hdf5_extension)
 
-            if not os.path.isfile(hdf5) and not res:
-                wtxt = "WARNING (loadcell): %s - %s" % (name, "hdf5-file not found")
+            if not os.path.isfile(cellpyfile) and not res:
+                wtxt = "WARNING (loadcell): %s - %s" % (name, "cellpyfile-file not found")
                 print wtxt
 
                 missingHdf5 = True
@@ -929,14 +926,14 @@ class cellpydata(object):
                 # have to skip this cell
             else:
                 if missingRes:
-                    list_of_files.append([hdf5, ])
+                    list_of_files.append([cellpyfile, ])
                 elif missingHdf5:
                     list_of_files.append(resfiles)
                     res_loading = True
                     this_mass_needed = True
                 else:
                     if not res:
-                        similar = self.check_file_ids(hdf5, resfiles, return_res=False)
+                        similar = self.check_file_ids(cellpyfile, resfiles, return_res=False)
                     else:
                         similar = False
                     if not similar:
@@ -945,7 +942,7 @@ class cellpydata(object):
                         res_loading = True
                         this_mass_needed = True
                     else:
-                        list_of_files.append(hdf5)
+                        list_of_files.append(cellpyfile)
                 masses_needed.append(this_mass_needed)
 
                 if this_mass_needed:
@@ -1191,9 +1188,9 @@ class cellpydata(object):
         data.test_ID = self._extract_from_dict(infotable, "test_ID")
         data.test_name = self._extract_from_dict(infotable, "test_name")
         try:
-            data.hdf5_file_version = self._extract_from_dict(infotable, "hdf5_file_version")
+            data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
         except:
-            data.hdf5_file_version = None
+            data.cellpy_file_version = None
 
         try:
             data.step_table_made = self._extract_from_dict(infotable, "step_table_made")
@@ -2491,7 +2488,7 @@ class cellpydata(object):
         infotable["start_datetime"] = [test.start_datetime,]
         infotable["dfsummary_made"] = [test.dfsummary_made,]
         infotable["step_table_made"] = [test.step_table_made,]
-        infotable["hdf5_file_version"] = [test.hdf5_file_version,]
+        infotable["cellpy_file_version"] = [test.cellpy_file_version,]
 
         infotable = pd.DataFrame(infotable)
 
@@ -3895,7 +3892,7 @@ def setup_cellpy_instance():
     print prms
     print "making class and setting prms"
     d = cellpydata(verbose=True)
-    d.set_hdf5_datadir(prms.hdf5datadir)
+    d.set_cellpy_datadir(prms.cellpydatadir)
     d.set_res_datadir(prms.resdatadir)
     return d
 
@@ -3929,7 +3926,7 @@ def just_load_srno(srno=None):
     print prms
     print "making class and setting prms"
     d = cellpydata(verbose=True)
-    d.set_hdf5_datadir(prms.hdf5datadir)
+    d.set_cellpy_datadir(prms.cellpydatadir)
     d.set_res_datadir(prms.resdatadir)
     # ------------reading db----------------------------------------------------
     print
@@ -3981,9 +3978,8 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     if not outdir:
         from cellpy import prmreader
         prms = prmreader.read()
-        outdir = prms.hdf5datadir
+        outdir = prms.cellpydatadir
 
-    #d.set_hdf5_datadir(outdir)
     if not outfile:
         outfile = os.path.basename(filename).split(".")[0] + ".h5"
         outfile = os.path.join(outdir, outfile)
