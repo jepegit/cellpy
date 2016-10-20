@@ -96,7 +96,8 @@ def plot_voltage(t, v, best):
     Args:
         t (nd.array): Points in time [s].
         v (nd.array): Measured voltage [V].
-        best (ModelResult): All fitted data in lmfit object Model
+        best (ModelResult): All fitted data in lmfit object Model.
+        rc_para (dict): Calculated resistance and capacitance from fit.
 
     Returns:
         None: Making a plot with matplotlib.pyplot
@@ -108,16 +109,13 @@ def plot_voltage(t, v, best):
     # print '------------------------------------------------------------'
     result_params = best.params
     ocv = np.array([result_params['ocv'] for _ in range(len(t))])
-    r = {r_key: r_val for r_key, r_val in result_params.items()
-         if r_key.startswith('r')}
-    c = {c_key: c_val for c_key, c_val in result_params.items()
-         if c_key.startswith('c')}
+    tau_rc = {tau_key: tau_val for tau_key, tau_val in result_params.items()
+              if tau_key.startswith('tau')}
     v0_rc = {v0_key: v0_val for v0_key, v0_val in result_params.items()
              if v0_key.startswith('v0')}
 
-    rc_circuits = {rc[2:]: relaxation_rc(t, v0_rc['v0_%s' % rc[2:]],
-                                         r[rc], c['c_%s' % rc[2:]])
-                   for rc in r.keys()}
+    rc_circuits = {rc[4:]: relaxation_rc(t, v0_rc['v0_%s' % rc[4:]], tau_rc[rc])
+                   for rc in tau_rc.keys()}
     plt.plot(t, v, 'ob')
     plt.plot(t, best.init_fit, '--k')
     plt.plot(t, best.best_fit, '-r')
@@ -166,12 +164,12 @@ def relax_model(t, **params):
         nd.array: The expected voltage from model.
 
     """
-    r_rc = {key[2:]: val for key, val in params.items() if key.startswith('r')}
-    c_rc = {key[2:]: val for key, val in params.items() if key.startswith('c')}
+    ocv_arr = np.array([params['ocv'] for _ in range((len(t)))])
+    tau_rc = {key[4:]: val
+              for key, val in params.items() if key.startswith('tau')}
     v0_rc = {key[3:]: val for key, val in params.items()
              if key.startswith('v0')}
-    return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=params['ocv'],
-                          v0_rc=v0_rc)
+    return ocv_relax_func(t, tau_rc=tau_rc, ocv=ocv_arr, v0_rc=v0_rc)
 
 
 # def ocv_user_adjust(par, t, meas_volt):
@@ -280,11 +278,10 @@ if __name__ == '__main__':
 
     """
     r_model = Model(relax_model)
-    r_model.set_param_hint('r_ct', value=tau_guessed['ct'], min=0,
+    r_model.set_param_hint('tau_ct', value=tau_guessed['ct'], min=0,
                            max=tau_guessed['d'])
-    r_model.set_param_hint('r_d', value=tau_guessed['d'], min=tau_guessed['ct'])
-    r_model.set_param_hint('c_ct', value=1., vary=False)
-    r_model.set_param_hint('c_d', value=1., vary=False)
+    r_model.set_param_hint('tau_d', value=tau_guessed['d'],
+                           min=tau_guessed['ct'])
     r_model.set_param_hint('ocv', value=v_ocv_up, min=v_ocv_up)
     r_model.set_param_hint('v0_ct', value=init_guess_up['v0_rc']['ct'], max=0)
     r_model.set_param_hint('v0_d', value=init_guess_up['v0_rc']['d'], max=0)
@@ -304,9 +301,9 @@ if __name__ == '__main__':
                    for key, v0_rc in best_para_up[0].valuesdict().items()
                    if key.startswith('v0')}
 
-    best_c_ini = {'c_%s' % key[2:]: tau_rc / best_rc_ini['r_%s' % key[2:]]
+    best_c_ini = {'c_%s' % key[4:]: tau_rc / best_rc_ini['r_%s' % key[4:]]
                   for key, tau_rc in best_para_up[0].valuesdict().items()
-                  if key.startswith('r')}
+                  if key.startswith('tau')}
     best_rc_ini.update(best_c_ini)
     best_rc_para_up = [best_rc_ini]
     # report_fit(result_up[0])
@@ -361,8 +358,6 @@ if __name__ == '__main__':
                                                      start_voltage_up,
                                                      end_voltage_up,
                                                      contri, tau_guessed)
-            r_model.set_param_hint('c_ct', value=1., vary=False)
-            r_model.set_param_hint('c_d', value=1., vary=False)
             r_model.set_param_hint('ocv', value=end_voltage_up,
                                    min=end_voltage_up)
             r_model.set_param_hint('v0_ct',
@@ -387,11 +382,11 @@ if __name__ == '__main__':
                          for key, v_rc in
                          best_para_up[cycle_up_i].valuesdict().items()
                          if key.startswith('v0')}
-        best_c_cycle = {'c_%s' % key[2:]:
-                        tau_rc / best_rc_cycle['r_%s' % key[2:]]
+        best_c_cycle = {'c_%s' % key[4:]:
+                        tau_rc / best_rc_cycle['r_%s' % key[4:]]
                         for key, tau_rc in
                         best_para_up[cycle_up_i].valuesdict().items()
-                        if key.startswith('r')}
+                        if key.startswith('tau')}
         best_rc_cycle.update(best_c_cycle)
         best_rc_para_up.append(best_rc_cycle)
 
