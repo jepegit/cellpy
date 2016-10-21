@@ -2026,11 +2026,11 @@ class cellpydata(object):
 
 
     def create_step_table(self, test_number=None):
-        """ create a table (v.0.2) that contains summary information got each step
+        """ create a table (v.0.2) that contains summary information for each step
 
         This function creates a table containing information about the different steps
-        for each cycle and deciding what type of step this is (e.g. charge).
-        type of step for each cycle.
+        for each cycle and, based on that, decides what type of step it is (e.g. charge)
+        for each cycle.
 
         The format of the step_table is:
         index - cycleno - stepno - \
@@ -2039,7 +2039,9 @@ class cellpydata(object):
         Type (from pre-defined list) - \
         Info
 
-        Header names (pr. 03.03.2016):
+
+        .. csv-table:: Header names (pr. 03.03.2016)
+        :header: "name",
 
         'cycle', 'step',
         'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
