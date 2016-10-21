@@ -100,7 +100,7 @@ def humanize_bytes(bytes, precision=1):
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
-    """Converts a xls date stamp to a more sensible format
+    """Converts a xls date stamp to a more sensible format.
 
     Args:
         xldate (str): date stamp in Excel format.
@@ -130,7 +130,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
 
 
 def Convert2mAhg(c, mass=1.0):
-    """Converts capacity in Ah to capacity in mAh/g
+    """Converts capacity in Ah to capacity in mAh/g.
 
     Args:
         c (float or numpy array): capacity in mA.
@@ -209,22 +209,22 @@ class fileID(object):
             self.location = os.path.dirname(Filename)
 
     def get_raw(self):
-        """get a list with information about the file.
+        """Get a list with information about the file.
 
         The returned list contains name, size, last_modified and location.
         """
         return [self.name, self.size, self.last_modified, self.location]
 
     def get_name(self):
-        """get the filename"""
+        """Get the filename."""
         return self.name
 
     def get_size(self):
-        """get the size of the file"""
+        """Get the size of the file."""
         return self.size
 
     def get_last(self):
-        """get last modification time of the file"""
+        """Get last modification time of the file."""
         return self.last_modified
 
 
@@ -316,8 +316,7 @@ class dataset(object):
         return txt
 
     def makeDataFrame(self):
-        """Creates a Pandas DataFrame of the data (dfdata and dfsummary)"""
-
+        """Creates a Pandas DataFrame of the data (dfdata and dfsummary)."""
 
         self.dfdata = pd.DataFrame(self.data)
         try:
@@ -328,7 +327,7 @@ class dataset(object):
 
 
 class cellpydata(object):
-    """Main class for working and storing data
+    """Main class for working and storing data.
 
     This class is the main work-horse for cellpy where all the functions for reading, selecting, and
     tweaking your data is located. It also contains the header definitions, both for the cellpy hdf5
@@ -518,7 +517,7 @@ class cellpydata(object):
                     print txt
 
     def set_raw_datadir(self, directory=None):
-        """set the directory containing .res-files
+        """Set the directory containing .res-files.
 
         Used for setting directory for looking for res-files. A valid directory name is required.
 
@@ -542,7 +541,7 @@ class cellpydata(object):
         self.raw_datadir = directory
 
     def set_cellpy_datadir(self, directory=None):
-        """set the directory containing .hdf5-files
+        """Set the directory containing .hdf5-files.
 
         Used for setting directory for looking for hdf5-files. A valid directory name is required.
 
@@ -566,7 +565,7 @@ class cellpydata(object):
 
 
     def check_file_ids_new(self, rawfiles, cellpyfile):
-        """check the stats for the files (raw-data and cellpy hdf5).
+        """Check the stats for the files (raw-data and cellpy hdf5).
 
         This function checks if the hdf5 file and the res-files have the same
         timestamps etc to find out if we need to bother to load .res -files.
@@ -602,7 +601,7 @@ class cellpydata(object):
 
     def check_file_ids_old(self, cellpyfile, resfiles=None, force=True, usedir=False,
                        no_extension=False, return_res=True):
-        """check the stats for the files (raw-data and cellpy hdf5).
+        """Check the stats for the files (raw-data and cellpy hdf5).
 
         This function checks if the hdf5 file and the res-files have the same
         timestamps etc to find out if we need to bother to load .res -files.
@@ -709,7 +708,7 @@ class cellpydata(object):
                 return True
 
     def _check_raw(self, file_names, abort_on_missing=False):
-        """get the file-ids for the res_files"""
+        """Get the file-ids for the res_files."""
 
         strip_file_names = True
         check_on = self.filestatuschecker
@@ -741,7 +740,7 @@ class cellpydata(object):
         return ids
 
     def _check_res_old(self, filenames, abort_on_missing=False):
-        """get the file-ids for the res_files"""
+        """Get the file-ids for the res_files."""
         # TODO: delete this function
 
         strip_filenames = True
@@ -774,7 +773,7 @@ class cellpydata(object):
         return ids
 
     def _check_cellpy_file(self, filename):
-        """get the file-ids for the cellpy_file"""
+        """Get the file-ids for the cellpy_file."""
 
         strip_filenames = True
         check_on = self.filestatuschecker
@@ -863,7 +862,7 @@ class cellpydata(object):
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
                  summary_on_raw=True, summary_ir=True, summary_ocv=False,
                  summary_end_v=True, only_summary=False, only_first=False):
-        """loads data for given cells
+        """Loads data for given cells.
 
         Args:
             raw_files (list): name of res-files
@@ -929,7 +928,7 @@ class cellpydata(object):
                  summary_on_res=True, summary_ir=True, summary_ocv=False,
                  summary_end_v=True, only_summary=False, only_first=False):
 
-        """loads data for given cells
+        """Loads data for given cells.
 
         Args:
             names (list): identification names
@@ -1120,7 +1119,7 @@ class cellpydata(object):
 
     # @print_function
     def loadres(self, filenames=None, check_file_type=True):
-        """loads the data into the datastructure"""
+        """Loads the data into the datastructure."""
         # TODO: use type-checking
         txt = "number of tests: %i" % len(self.filenames)
         self.Print(txt, 1)
@@ -1373,7 +1372,7 @@ class cellpydata(object):
                 print e
 
     def _loadres(self, Filename=None):
-        """loads data from arbin .res files
+        """Loads data from arbin .res files.
 
         Args:
             Filename (str): path to .res file.
@@ -1640,7 +1639,7 @@ class cellpydata(object):
         return constr
 
     def merge(self, tests=None, separate_datasets=False):
-        """this function merges datasets into one set"""
+        """This function merges datasets into one set."""
         # note: several of the final-test runs contains a first cycle with only delith
         # giving zero as lithiation capacity for that cycle
         self.Print("merging")
@@ -1823,6 +1822,7 @@ class cellpydata(object):
             return validated
 
     def print_step_table(self, test_number=None):
+        """Print the step table."""
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2026,32 +2026,31 @@ class cellpydata(object):
 
 
     def create_step_table(self, test_number=None):
-        """ create a table (v.0.2) that contains summary information for each step
+        """ Create a table (v.0.2) that contains summary information for each step.
 
         This function creates a table containing information about the different steps
         for each cycle and, based on that, decides what type of step it is (e.g. charge)
         for each cycle.
 
         The format of the step_table is:
+
         index - cycleno - stepno - \
         Current info (average, stdev, max, min, start, end, delta, rate) - \
         Voltage info (average,  stdev, max, min, start, end, delta, rate) - \
         Type (from pre-defined list) - \
         Info
 
+        Header names (pr. 03.03.2016):
 
-        .. csv-table:: Header names (pr. 03.03.2016)
-        :header: "name",
+            'cycle', 'step',
+            'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
+            'V_avr'...,
+            'C_avr'...,
+            'D_avr'...,
+            'IR','IR_pct_change',
+            'type', 'info'
 
-        'cycle', 'step',
-        'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
-        'V_avr'...,
-        'C_avr'...,
-        'D_avr'...,
-        'IR','IR_pct_change',
-        'type', 'info'
-
-        Remark! x_delta is given in percentage
+        Remark! x_delta is given in percentage.
         """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2276,7 +2275,7 @@ class cellpydata(object):
         return difference
 
     def select_steps(self, step_dict, append_df=False, test_number=None):
-        """select steps (not documented yet)"""
+        """Select steps (not documented yet)."""
         # step_dict={1:[1],2:[1],3:[1,2,3]}
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2346,6 +2345,7 @@ class cellpydata(object):
 
     # @print_function
     def populate_step_dict(self, step, test_number=None):
+        """Returns a dict with cycle numbers as keys and corresponding steps (list) as values."""
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2360,10 +2360,11 @@ class cellpydata(object):
         return step_dict
 
     def find_C_rates(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
+        """Find the C-rates for the cycles (obs! under development)."""
         self.find_C_rates_old(steps, mass, nom_cap, silent, test_number)
 
     def find_C_rates_old(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
-        """uses old type of step_dict, returns crate_dict
+        """Uses old type of step_dict, returns crate_dict.
 
         crate_dict[cycle] = [step, c-rate]
         """
@@ -2397,7 +2398,6 @@ class cellpydata(object):
         return c_rates_dict
 
     # -------------save-and-export--------------------------------------------------
-
 
     def _export_cycles(self, test_number, setname=None, sep=None, outname=None):
         self.Print("exporting cycles", 1)
@@ -2483,7 +2483,7 @@ class cellpydata(object):
         self.Print(txt, 1)
 
     def exportcsv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True):
-        """saves the data as .csv file(s)"""
+        """Saves the data as .csv file(s)."""
 
         if sep is None:
             sep = self.sep
@@ -2501,7 +2501,7 @@ class cellpydata(object):
                 print "empty test [%i]" % (test_number)
                 print "not saved!"
             else:
-                if type(data.loaded_from) == types.ListType:
+                if isinstance(data.loaded_from,(list, tuple)):
                     txt = "merged file"
                     txt += "using first file as basename"
                     self.Print(txt)
@@ -2535,7 +2535,8 @@ class cellpydata(object):
                                         sep=sep)
 
     def save_test(self, filename, test_number=None, force=False, overwrite=True, extension="h5"):
-        """saves the data structure using pickle/hdf5"""
+        """Save the data structure using pickle/hdf5."""
+
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             print "Saving test failed!"
@@ -2654,7 +2655,6 @@ class cellpydata(object):
 
     # --------------helper-functions------------------------------------------------
 
-
     def _cap_mod_summary(self, dfsummary, capacity_modifier):
         # modifies the summary table
         discharge_title = self.discharge_capacity_txt
@@ -2748,9 +2748,9 @@ class cellpydata(object):
     def get_test(self, n=0):
         return self.tests[n]
 
-    def sget_voltage(self, cycle, step,
-                     test_number=None):
-        """Returns voltage for cycle, step"""
+    def sget_voltage(self, cycle, step, test_number=None):
+        """Returns voltage for cycle, step."""
+
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2767,7 +2767,7 @@ class cellpydata(object):
             return None
 
     def get_voltage(self, cycle=None, test_number=None, full=True):
-        """returns voltage (in V)"""
+        """Returns voltage (in V)."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2798,7 +2798,7 @@ class cellpydata(object):
             return v
 
     def get_current(self, cycle=None, test_number=None, full=True):
-        """Returns current (in mA)"""
+        """Returns current (in mA)."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2830,25 +2830,25 @@ class cellpydata(object):
 
     # @print_function
     def sget_steptime(self, cycle, step, test_number=None):
-        """returns timestamp for cycle, step"""
+        """Returns step time for cycle, step."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
             return
         cycle_index_header = self.cycle_index_txt
-        timestamp_header = self.step_time_txt
+        step_time_header = self.step_time_txt
         step_index_header = self.step_index_txt
         test = self.tests[test_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
-            t = c[timestamp_header]
+            t = c[step_time_header]
             return t
         else:
             return None
 
     def sget_timestamp(self, cycle, step, test_number=None):
-        """Returns timestamp for cycle, step"""
+        """Returns timestamp for cycle, step."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2866,7 +2866,7 @@ class cellpydata(object):
             return None
 
     def get_timestamp(self, cycle=None, test_number=None, in_minutes=False, full=True):
-        """Returns timestamp (in sec or minutes (if in_minutes==True))"""
+        """Returns timestamps (in sec or minutes (if in_minutes==True))."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2901,7 +2901,7 @@ class cellpydata(object):
         return v
 
     def get_dcap(self, cycle=None, test_number=None):
-        """Returns discharge_capacity (in mAh/g), voltage"""
+        """Returns discharge_capacity (in mAh/g), and voltage."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2911,7 +2911,7 @@ class cellpydata(object):
         return dc, v
 
     def get_ccap(self, cycle=None, test_number=None):
-        """Returns charge_capacity (in mAh/g), voltage"""
+        """Returns charge_capacity (in mAh/g), and voltage."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2924,14 +2924,10 @@ class cellpydata(object):
                 polarization=False,
                 stepsize=0.2,
                 points=None):
-        """
-        get_cap(cycle=None,test_number=None,
-                polarization = False,
-                stepsize = 0.2,
-                points = None)
+        """Gets the capacity for the run.
 
-        for polarization = True: calculates hysteresis
-        for cycle=None: not implemented yet, cycle set to 2.
+        For polarization = True: calculates hysteresis.
+        For cycle=None: not implemented yet, cycle set to 2.
 
         Args:
             cycle (int): cycle number.
@@ -2943,8 +2939,8 @@ class cellpydata(object):
         Returns:
             if polarization = False: capacity (mAh/g), voltage
             if polarization = True: capacity (mAh/g), voltage,
-            capacity points (mAh/g) [points if given, arranged with stepsize if not],
-            polarization (hysteresis)
+               capacity points (mAh/g) [points if given, arranged with stepsize if not],
+               polarization (hysteresis)
         """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3052,7 +3048,7 @@ class cellpydata(object):
         return c, v
 
     def get_ocv(self, cycle_number=None, ocv_type='ocv', test_number=None):
-        """Find ocv data in dataset (voltage vs time)
+        """Find ocv data in dataset (voltage vs time).
 
         Args:
             cycle_number (int): find for all cycles if None.
@@ -3169,7 +3165,7 @@ class cellpydata(object):
             return ocv
 
     def get_number_of_cycles(self, test_number=None):
-        """get the number of cycles in the test"""
+        """Fet the number of cycles in the test."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3181,7 +3177,7 @@ class cellpydata(object):
         return no_cycles
 
     def get_cycle_numbers(self, test_number=None):
-        """get a list containing all the cycle numbers in the test """
+        """Fet a list containing all the cycle numbers in the test."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3205,20 +3201,26 @@ class cellpydata(object):
         d2 = d.ix[ir_data.index]
         d2 = d2[["Cycle_Index", "DateTime", "Data_Point", "Internal_Resistance"]].sort(
             [self.data_point_txt])  # jepe fix
-        cycles = np.unique(d["Cycle_Index"])  # jepe fix
+        # cycles = np.unique(d["Cycle_Index"])  # TODO: jepe fix
         ir_dict = {}
         for i in d2.index:
-            cycle = d2.ix[i]["Cycle_Index"]  # jepe fix
+            cycle = d2.ix[i]["Cycle_Index"]  # TODO: jepe fix
             if not ir_dict.has_key(cycle):
                 ir_dict[cycle] = []
             ir_dict[cycle].append(d2.ix[i]["Internal_Resistance"])  # jepe fix
         return ir_dict
 
     def get_diagnostics_plots(self, test_number=None, scaled=False, ):
-
         """Gets diagnostics plots.
-        Returns a dict containing diagnostics plots (cycles, shifted_discharge_cap, shifted_charge_cap,
-        RIC_cum, RIC_disconnect_cum, RIC_sei_cum)
+
+        Args:
+            test_number: test number (default 0).
+            scaled (bool): if True, scale by min and max values.
+
+        Returns:
+            Returns a dict containing diagnostics plots (keys = 'cycles', 'shifted_discharge_cap',
+                'shifted_charge_cap','RIC_cum', 'RIC_disconnect_cum', 'RIC_sei_cum').
+
         """
 
         # assuming each cycle consists of one discharge step followed by charge step
@@ -3355,10 +3357,9 @@ class cellpydata(object):
 
     # @print_function
     def set_mass(self, masses, test_numbers=None, validated=None):
+        """Sets the mass (masses) for the test (tests).
         """
-        set_mass(masses, test_numbers=None, validated = not_empty)
-          sets the mass (masses) for the test (tests)
-        """
+
         number_of_tests = len(self.tests)
         if not number_of_tests:
             print "no tests have been loaded yet"
@@ -3413,7 +3414,7 @@ class cellpydata(object):
             return df
 
     def set_testnumber_force(self, test_number=0):
-        """force to set testnumber
+        """Force to set testnumber.
 
         Sets the testnumber default (all functions with prm test_number will
         then be run assuming the default set test_number)
@@ -3421,7 +3422,7 @@ class cellpydata(object):
         self.selected_test_number = test_number
 
     def set_testnumber(self, test_number):
-        """set the testnumber.
+        """Set the testnumber.
 
         Set the test_number that will be used (cellpydata.selected_test_number).
         The class can save several datasets (but its not a frequently used feature),
@@ -3452,7 +3453,7 @@ class cellpydata(object):
         self.selected_test_number = test_number
 
     def get_summary(self, test_number=None, use_dfsummary_made=False):
-        """retrieve summary returned as a pandas DataFrame"""
+        """Retrieve summary returned as a pandas DataFrame."""
         # TODO: there is something strange with this
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3595,7 +3596,7 @@ class cellpydata(object):
     def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
                      verbose=False, use_cellpy_stat_file=True, all_tests=True,
                      test_number=0, ensure_step_table=None):
-        """convenience function that makes a summary of the cycling data."""
+        """Convenience function that makes a summary of the cycling data."""
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
@@ -4007,9 +4008,9 @@ class cellpydata(object):
 
 
 def setup_cellpy_instance():
-    """Prepares for a cellpy session
+    """Prepares for a cellpy session.
 
-    This convinience function creates a cellpy class and sets the parameters
+    This convenience function creates a cellpy class and sets the parameters
     from your parameters file (using prmreader.read()
 
     Returns:
@@ -4035,7 +4036,7 @@ def setup_cellpy_instance():
 
 
 def just_load_srno(srno):
-    """Simply load an dataset based on srno
+    """Simply load an dataset based on serial number (srno).
 
     This convenience function reads a dataset based on a serial number. This serial
     number (srno) must then be defined in your database. It is mainly used to check
@@ -4103,7 +4104,7 @@ def just_load_srno(srno):
 
 
 def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
-    """
+    """Load a raw data file and save it as cellpy-file.
 
     Args:
         mass (float): active material mass [mg].
@@ -4140,7 +4141,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
 
 
 def extract_ocvrlx(filename, fileout, mass=1.00):
-    """get the ocvrlx data from dataset.
+    """Get the ocvrlx data from dataset.
 
     Convenience function for extracting ocv relaxation data from runs."""
     import itertools
