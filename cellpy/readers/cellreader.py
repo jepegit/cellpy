@@ -2034,11 +2034,15 @@ class cellpydata(object):
 
         The format of the step_table is:
 
-        index - cycleno - stepno - \
-        Current info (average, stdev, max, min, start, end, delta, rate) - \
-        Voltage info (average,  stdev, max, min, start, end, delta, rate) - \
-        Type (from pre-defined list) - \
-        Info
+            index - cycleno - stepno - \
+
+            Current info (average, stdev, max, min, start, end, delta, rate) - \
+
+            Voltage info (average,  stdev, max, min, start, end, delta, rate) - \
+
+            Type (from pre-defined list) - \
+
+            Info
 
         Header names (pr. 03.03.2016):
 
