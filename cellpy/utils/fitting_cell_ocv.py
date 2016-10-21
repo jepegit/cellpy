@@ -149,27 +149,48 @@ def plot_voltage(t, v, best):
 #         print '\t'
 #         print '%s: %-9f %f' % (key, ini[key], value)
 
-
 def relax_model(t, **params):
     """Fitting of parameters with lmfit.
 
-    User must know what the Parameters object, par, looks like and re-arrange
-    the parameters into the right format for ocv_relax_func.
+    Not using cell_ocv this time, but integrating it in the function itself.
 
     Args:
         params (Parameters): Parameters that user want to fit.
-        t (nd.array): Points in time [s]
+        t (nd.array): Points in time [s].
 
     Returns:
-        nd.array: The expected voltage from model.
-
+        nd.array: The expected voltage form model.
     """
     ocv_arr = np.array([params['ocv'] for _ in range((len(t)))])
     tau_rc = {key[4:]: val
               for key, val in params.items() if key.startswith('tau')}
     v0_rc = {key[3:]: val for key, val in params.items()
              if key.startswith('v0')}
-    return ocv_relax_func(t, tau_rc=tau_rc, ocv=ocv_arr, v0_rc=v0_rc)
+    rc_d = v0_rc['d'] * np.exp(-t / tau_rc['d'])
+    rc_ct = v0_rc['ct'] * np.exp(-t / tau_rc['ct'])
+    total = rc_d + rc_ct + ocv_arr
+    return total
+
+# def relax_model(t, **params):
+#     """Fitting of parameters with lmfit.
+#
+#     User must know what the Parameters object, par, looks like and re-arrange
+#     the parameters into the right format for ocv_relax_func.
+#
+#     Args:
+#         params (Parameters): Parameters that user want to fit.
+#         t (nd.array): Points in time [s].
+#
+#     Returns:
+#         nd.array: The expected voltage from model.
+#
+#     """
+#     ocv_arr = np.array([params['ocv'] for _ in range((len(t)))])
+#     tau_rc = {key[4:]: val
+#               for key, val in params.items() if key.startswith('tau')}
+#     v0_rc = {key[3:]: val for key, val in params.items()
+#              if key.startswith('v0')}
+#     return ocv_relax_func(t, tau_rc=tau_rc, ocv=ocv_arr, v0_rc=v0_rc)
 
 
 # def ocv_user_adjust(par, t, meas_volt):
@@ -242,8 +263,8 @@ if __name__ == '__main__':
     # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
     contri_ct = 0.2
     contri_d = 1 - contri_ct
-    tau_ct = 60
-    tau_d = 500
+    tau_ct = 80
+    tau_d = 700
     contri = {'ct': contri_ct, 'd': contri_d}
     tau_guessed = {'ct': tau_ct, 'd': tau_d}
 
@@ -256,7 +277,6 @@ if __name__ == '__main__':
         voltage_up[i] = voltage_up[i][~np.isnan(voltage_up[i])]
     v_ocv_up = voltage_up[0][-1]
     v_0_up = voltage_up[0][0]
-
     init_guess_up = guessing_parameters(v_start_up, i_start_ini, v_0_up,
                                         v_ocv_up, contri, tau_guessed)
 
@@ -277,12 +297,12 @@ if __name__ == '__main__':
     ----------------------------------------------------------------------------
 
     """
-    r_model = Model(relax_model)
+    r_model = Model(relax_model, missing='raise')
     r_model.set_param_hint('tau_ct', value=tau_guessed['ct'], min=0,
                            max=tau_guessed['d'])
     r_model.set_param_hint('tau_d', value=tau_guessed['d'],
                            min=tau_guessed['ct'])
-    r_model.set_param_hint('ocv', value=v_ocv_up, min=v_ocv_up)
+    r_model.set_param_hint('ocv', value=v_ocv_up)
     r_model.set_param_hint('v0_ct', value=init_guess_up['v0_rc']['ct'], max=0)
     r_model.set_param_hint('v0_d', value=init_guess_up['v0_rc']['d'], max=0)
     r_model.make_params()
@@ -358,8 +378,7 @@ if __name__ == '__main__':
                                                      start_voltage_up,
                                                      end_voltage_up,
                                                      contri, tau_guessed)
-            r_model.set_param_hint('ocv', value=end_voltage_up,
-                                   min=end_voltage_up)
+            r_model.set_param_hint('ocv', value=end_voltage_up)
             r_model.set_param_hint('v0_ct',
                                    value=temp_initial_guess['v0_rc']['ct'],
                                    max=0)
