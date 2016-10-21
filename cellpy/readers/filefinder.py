@@ -28,9 +28,9 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
 
     cellpy_file_extension = "h5"
     res_extension = "res"
-
+    version = 0.1
     # might include searching and removing "." in extensions
-    # should include extension definitions in prm file
+    # should include extension definitions in prm file (version 0.6)
 
     if raw_extension is None:
         raw_extension = res_extension
@@ -52,12 +52,13 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
             file_name_format = prms.file_name_format
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
-            print "Could not read file_name_format from _cellpy_prms_xxx.ini."
-            print "Using:"
-            print "file_name_format:", file_name_format
-            file_format_explanation = "YYYYMMDD is date, EEE is electrode number "
-            file_format_explanation += "CC is cell number, TT is cell_type, RR is run number."
-            print file_format_explanation
+            if version > 0.5:
+                print "Could not read file_name_format from _cellpy_prms_xxx.ini."
+                print "Using:"
+                print "file_name_format:", file_name_format
+                file_format_explanation = "YYYYMMDD is date, EEE is electrode number "
+                file_format_explanation += "CC is cell number, TT is cell_type, RR is run number."
+                print file_format_explanation
 
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
         glob_text_raw = "%s_*.%s" % (os.path.basename(run_name),raw_extension)

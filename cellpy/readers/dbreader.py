@@ -106,7 +106,7 @@ class reader:
         self.string_cols = [3, 4, 5, 6, 7, 8]
 
         self.table = self._open_sheet("table")
-        self.ftable = self._open_sheet("filenames")
+        self.ftable = self._open_sheet("file_names")
 
     def _pick_info(self, serial_number, column_number):
         row = self.select_serial_number_row(serial_number)
@@ -122,7 +122,7 @@ class reader:
             sheet = self.db_sheet_table
         elif sheet == "table":
             sheet = self.db_sheet_table
-        elif sheet == "filenames":
+        elif sheet == "file_names":
             sheet = self.db_sheet_filenames
         header = self.header
         rows_to_skip = self.skiprows
@@ -267,12 +267,15 @@ class reader:
         return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
     def select_batch(self, batch, batch_col_number=None):
-        """selects the batch batch in column batch_col_number"""
+        """selects the batch batch in column batch_col_number (default: DbSheetCols.batch)"""
+
         if not batch_col_number:
             batch_col_number = self.db_sheet_cols.batch
+
         sheet = self.table
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists
+
         if batch_col_number in self.string_cols:
             batch = str(batch)
         # possible problem: some cols have objects (that are compared as the type they look like (i.e. int then str))
@@ -298,7 +301,7 @@ class reader:
             non_sensitive (bool): dont stop even if file names are missing if True
 
         Returns:
-            list of filenames
+            list of file_names
         """
         files = self.get_filenames(serialno, full_path=full_path, use_hdf5=False,
                                    non_sensitive=non_sensitive)
@@ -371,7 +374,7 @@ class reader:
                         filenames.append(filename)
             except:
                 if not non_sensitive:
-                    print "error reading filenames-row (res)"
+                    print "error reading file_names-row (res)"
                     sys.exit(-1)
         else:
             try:
@@ -383,7 +386,7 @@ class reader:
                 filenames.append(filename)
             except:
                 if not non_sensitive:
-                    print "error reading filenames-row (hdf5)"
+                    print "error reading file_names-row (hdf5)"
                     sys.exit(-1)
         return filenames
 
@@ -607,7 +610,7 @@ def _investigate_excel_dbreader_3():
     serial_number = a[0]
     print serial_number
     print "testing picking info"
-    print "\nfirst give me the filenames for serial_number",
+    print "\nfirst give me the file_names for serial_number",
     print serial_number
     filenames = Reader.get_filenames(serial_number)
     for filename in filenames:
