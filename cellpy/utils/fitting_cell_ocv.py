@@ -24,7 +24,7 @@ Example:
     >>> v_0=ex_v0, v_ocv=ex_v_oc, contribute=ex_contribute, tau_rc=ex_tau)
     >>> Ex_para = Parameters()
     >>> Ex_para.add('tau_d', value=ex_tau['d'], min=0)
-    >>> Ex_para.add('ocv', value=ex_guess['ocv'], min=0)
+    >>> Ex_para.add('ocv', value=ex_guess['ocv'])
     >>> Ex_para.add('v0_d', value=ex_guess['v0_rc']['d'])
     >>> ex_Minimizer = Minimizer(ocv_user_adjust, params=Ex_para,
     >>> fcn_args=(ex_time, ex_voltage))
@@ -48,7 +48,7 @@ https://github.com/lmfit/lmfit-py
 http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 """
 
-from lmfit import Minimizer, Parameters, report_fit, Model
+from lmfit import Parameters, report_fit, Model
 from cell_ocv import *
 
 import matplotlib.pyplot as plt
@@ -149,6 +149,27 @@ def plot_voltage(t, v, best):
 #         print '\t'
 #         print '%s: %-9f %f' % (key, ini[key], value)
 
+# def relax_model(t, **params):
+#     """Fitting of parameters with lmfit.
+#
+#     Not using cell_ocv this time, but integrating it in the function itself.
+#
+#     Args:
+#         params (Parameters): Parameters that user want to fit.
+#         t (nd.array): Points in time [s].
+#
+#     Returns:
+#         nd.array: The expected voltage form model.
+#     """
+#     ocv_arr = np.array([params['ocv'] for _ in range((len(t)))])
+#     tau_rc = {key[4:]: val
+#               for key, val in params.items() if key.startswith('tau')}
+#     v0_rc = {key[3:]: val for key, val in params.items()
+#              if key.startswith('v0')}
+#     rc_d = v0_rc['d'] * np.exp(-t / tau_rc['d'])
+#     rc_ct = v0_rc['ct'] * np.exp(-t / tau_rc['ct'])
+#     total = rc_d + rc_ct + ocv_arr
+#     return total
 
 def relax_model(t, **params):
     """Fitting of parameters with lmfit.
@@ -158,7 +179,7 @@ def relax_model(t, **params):
 
     Args:
         params (Parameters): Parameters that user want to fit.
-        t (nd.array): Points in time [s]
+        t (nd.array): Points in time [s].
 
     Returns:
         nd.array: The expected voltage from model.
@@ -242,8 +263,8 @@ if __name__ == '__main__':
     # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
     contri_ct = 0.2
     contri_d = 1 - contri_ct
-    tau_ct = 60
-    tau_d = 500
+    tau_ct = 80
+    tau_d = 700
     contri = {'ct': contri_ct, 'd': contri_d}
     tau_guessed = {'ct': tau_ct, 'd': tau_d}
 
@@ -256,7 +277,6 @@ if __name__ == '__main__':
         voltage_up[i] = voltage_up[i][~np.isnan(voltage_up[i])]
     v_ocv_up = voltage_up[0][-1]
     v_0_up = voltage_up[0][0]
-
     init_guess_up = guessing_parameters(v_start_up, i_start_ini, v_0_up,
                                         v_ocv_up, contri, tau_guessed)
 
@@ -277,25 +297,29 @@ if __name__ == '__main__':
     ----------------------------------------------------------------------------
 
     """
-    r_model = Model(relax_model)
-    r_model.set_param_hint('tau_ct', value=tau_guessed['ct'], min=0,
-                           max=tau_guessed['d'])
-    r_model.set_param_hint('tau_d', value=tau_guessed['d'],
-                           min=tau_guessed['ct'])
-    r_model.set_param_hint('ocv', value=v_ocv_up, min=v_ocv_up)
-    r_model.set_param_hint('v0_ct', value=init_guess_up['v0_rc']['ct'], max=0)
-    r_model.set_param_hint('v0_d', value=init_guess_up['v0_rc']['d'], max=0)
-    r_model.make_params()
-    result_initial = r_model.fit(voltage_up[0], t=time_up[0])
-    result_up = [result_initial]
-    print result_initial.fit_report()
-
     # making a class Minimizer that contain fitting methods and attributes
     # Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
     #                             fcn_args=(time_up[0], voltage_up[0]),)
     # minimize() perform the minimization on Minimizer's attributes
     # result_up = [Mini_initial_up.minimize()]
+    r_model = Model(relax_model, missing='raise')
+    r_model.set_param_hint('tau_ct', value=tau_guessed['ct'], min=0,
+                           max=tau_guessed['d'])
+    r_model.set_param_hint('tau_d', value=tau_guessed['d'],
+                           min=tau_guessed['ct'])
+    r_model.set_param_hint('ocv', value=v_ocv_up)
+    r_model.set_param_hint('v0_ct', value=init_guess_up['v0_rc']['ct'], max=0)
+    r_model.set_param_hint('v0_d', value=init_guess_up['v0_rc']['d'], max=0)
+    r_model.make_params()
+    result_initial = r_model.fit(voltage_up[0], t=time_up[0])
+    # result_initial.conf_interval()
+    result_up = [result_initial]
+
     best_para_up = [result_up[0].params]
+    err_para = np.sqrt(np.diag(result_initial.covar))
+    error_para = {para_name: err_para[err]
+                  for err, para_name in enumerate(r_model.param_names)}
+    best_para_error = [error_para]
 
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start_ini)
                    for key, v0_rc in best_para_up[0].valuesdict().items()
@@ -358,8 +382,7 @@ if __name__ == '__main__':
                                                      start_voltage_up,
                                                      end_voltage_up,
                                                      contri, tau_guessed)
-            r_model.set_param_hint('ocv', value=end_voltage_up,
-                                   min=end_voltage_up)
+            r_model.set_param_hint('ocv', value=end_voltage_up)
             r_model.set_param_hint('v0_ct',
                                    value=temp_initial_guess['v0_rc']['ct'],
                                    max=0)
@@ -373,23 +396,26 @@ if __name__ == '__main__':
             result_cycle = r_model.fit(voltage_up[cycle_up_i],
                                        params=best_para_up[cycle_up_i - 1],
                                        t=time_up[cycle_up_i])
+        # result_cycle.conf_interval()
         result_up.append(result_cycle)
         copied_parameters = copy.deepcopy(result_cycle.params)
         best_para_up.append(copied_parameters)
-
+        err_para = np.sqrt(np.diag(result_cycle.covar))
+        error_para = {para_name: err_para[err]
+                      for err, para_name in enumerate(r_model.param_names)}
+        best_para_error.append(error_para)
         # calculating r and c from fit
         best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_up_i])
                          for key, v_rc in
                          best_para_up[cycle_up_i].valuesdict().items()
                          if key.startswith('v0')}
         best_c_cycle = {'c_%s' % key[4:]:
-                        tau_rc / best_rc_cycle['r_%s' % key[4:]]
+                            tau_rc / best_rc_cycle['r_%s' % key[4:]]
                         for key, tau_rc in
                         best_para_up[cycle_up_i].valuesdict().items()
                         if key.startswith('tau')}
         best_rc_cycle.update(best_c_cycle)
         best_rc_para_up.append(best_rc_cycle)
-
     """User decides which cycles to plot.
     ----------------------------------------------------------------------------
     """
@@ -472,7 +498,10 @@ if __name__ == '__main__':
     for _, name in enumerate(result_up[0].var_names):
         para_array = np.array([best_para_up[step][name]
                                for step in range(len(result_up))])
-        subs_params[_].plot(cycle_array, para_array, 'or')
+        para_error = np.array([best_para_error[cycle_step][name]
+                               for cycle_step in range(len(result_up))])
+        subs_params[_].errorbar(cycle_array, para_array, yerr=para_error,
+                                fmt='or')
         subs_params[_].legend([name], loc='center left',
                               bbox_to_anchor=(1, 0.5))
         subs_params[_].set_xlabel('Cycles')
