@@ -41,16 +41,14 @@ def tau(time, r, c, slope):
         return r * c
 
 
-def relaxation_rc(time, v0, r, c, slope):
+def relaxation_rc(time, v0, tau_rc):
     """
     Calculates the relaxation function of an rc-circuit.
 
     Args:
         time (nd.array): Points in time [s].
         v0 (float): The initial voltage across the rc-circuit at t = 0 [V].
-        r (float): The rc-circuit's resistance [Ohm].
-        c (float): The rc-circuit's capacitance [F].
-        slope (float): Slope of the time constant [s].
+        tau_rc (float): The rc-circuit's resistance [Ohm].
 
     Returns:
         nd.array: The rc-circuit's relaxation voltage.
@@ -64,34 +62,33 @@ def relaxation_rc(time, v0, r, c, slope):
     # else:
     #     modify = np.zeros(len(time))
     # return v0 * (modify + np.exp(-time / tau(time, r, c, slope)))
-    return v0 * np.exp(-time / tau(time, r, c, slope))
+
+    return v0 * np.exp(-time / tau_rc)
 
 
-def ocv_relax_func(time, ocv, v0_rc, r_rc, c_rc, slope=None):
+def ocv_relax_func(time, ocv, v0_rc, tau_rc, slope=None):
     """Calculates the cell's relaxation voltage.
 
     Args:
         time (nd.array): Points in time [s].
-        ocv (float): Open circuit voltage [V].
+        ocv (nd.array): Open circuit voltage [V].
         v0_rc (dict): Initial relaxation voltage for each rc-circuits [V].
-        r_rc (dict): The rc-circuit's resistance [Ohm].
-        c_rc (dict): The rc-circuit's capacitance [F].
+        tau_rc (dict): The rc-circuit's time constant [s].
         slope (dict): Slope of the rc's time constants [s].
 
     Returns:
         nd.array: The relaxation voltage of the model
     """
-    ocv_arr = np.array([ocv for _ in range((len(time)))])
-    if not slope:
-        m = {key: None for key in r_rc.keys()}
-    else:
-        m = slope
+    # if not slope:
+    #     m = {key: None for key in tau_rc.keys()}
+    # else:
+    #     m = slope
 
     # # Initial voltage across rc_circuits
     # v_initial = {key: v_rlx * r / sum(r_rc.values()) for key, r in r_rc.items()}
-    volt_rc = [relaxation_rc(time, v0_rc[rc], r_rc[rc],
-                             c_rc[rc], m[rc]) for rc in r_rc.keys()]
-    return sum(volt_rc) + ocv_arr
+    volt_rc = [relaxation_rc(time, v0_rc[rc], tau_rc[rc])
+               for rc in tau_rc.keys()]
+    return sum(volt_rc) + ocv
 
 
 def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
