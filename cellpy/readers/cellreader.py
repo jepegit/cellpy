@@ -259,7 +259,7 @@ class dataset(object):
         self.material = "noname"
         self.merged = False
         self.file_errors = None  # not in use at the moment
-        self.loaded_from = None  # name of the .res file it is loaded from (can be list if merded)
+        self.loaded_from = None  # name of the .res file it is loaded from (can be list if merged)
         self.raw_data_files = []
         self.raw_data_files_length = []
         # self.parent_filename = None # name of the .res file it is loaded from (basename) (can be list if merded)
@@ -288,10 +288,11 @@ class dataset(object):
     def __str__(self):
         txt = "_cellpy_data_dataset_class_\n"
         txt += "loaded from file\n"
-        if type(self.loaded_from) == types.ListType:
+        if isinstance(self.loaded_from, [list, tuple]):
             for f in self.loaded_from:
                 txt += f
                 txt += "\n"
+
         else:
             txt += self.loaded_from
             txt += "\n"
@@ -1269,7 +1270,7 @@ class cellpydata(object):
         """This function merges datasets into one set."""
         # note: several of the final-test runs contains a first cycle with only delith
         # giving zero as lithiation capacity for that cycle
-        self.Print("merging")
+        print "merging"
         if separate_datasets:
             print "not implemented yet"
         else:
@@ -1289,7 +1290,6 @@ class cellpydata(object):
             self.tests = [test]
             self.number_of_tests = 1
 
-    # @timeit
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
         test = t1
         # finding diff of time
@@ -3104,7 +3104,7 @@ class cellpydata(object):
         else:
             return test.dfsummary
 
-            # -----------internal-helpers---------------------------------------------------
+    # -----------internal-helpers---------------------------------------------------
 
     def is_empty(self, v):
         try:
@@ -3124,13 +3124,16 @@ class cellpydata(object):
                 else:
                     return True
 
-    def _is_listtype(self, x):
-        if type(x) == types.ListType:
+    @staticmethod
+    def _is_listtype(x):
+        if isinstance(x, [list, tuple]):
             return True
         else:
             return False
 
-    def _check_file_type(self, filename):
+
+    @staticmethod
+    def _check_file_type(filename):
         extension = os.path.splitext(filename)[-1]
         filetype = "res"
         if extension.lower() == ".res":
@@ -3139,7 +3142,8 @@ class cellpydata(object):
             filetype = "h5"
         return filetype
 
-    def _bounds(self, x):
+    @staticmethod
+    def _bounds(x):
         return np.amin(x), np.amax(x)
 
     def _roundup(self, x):
@@ -3225,7 +3229,7 @@ class cellpydata(object):
 
     # ----------making-summary------------------------------------------------------
     def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
-                     verbose=False, use_cellpy_stat_file=True, all_tests=True,
+                     use_cellpy_stat_file=True, all_tests=True,
                      test_number=0, ensure_step_table=None):
         """Convenience function that makes a summary of the cycling data."""
 
@@ -3243,9 +3247,10 @@ class cellpydata(object):
                 if not self._is_not_empty_test(test):
                     print "empty test %i" % (j)
                     return
-                if type(test.loaded_from) == types.ListType:
-                    for f in test.loaded_from:
+                if isinstance(self.loaded_from, [list, tuple]):
+                    for f in self.loaded_from:
                         txt += f
+                        txt += "\n"
                 else:
                     txt += test.loaded_from
 
@@ -3290,6 +3295,10 @@ class cellpydata(object):
                       # capacity_modifier = None,
                       # test=None
                       ):
+
+        # TODO: insert diagnostics plots
+        # TODO: check if cumulated capacity loss is defined correctly
+
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3341,19 +3350,6 @@ class cellpydata(object):
             print "values obtained from dfdata:"
             print dfsummary
             print
-        # if capacity_modifier is not None:
-        #            capacity_modifier = capacity_modifier.lower()
-        #            if capacity_modifier in self.capacity_modifiers:
-        #                print "OBS! Capacity modifier used:"
-        #                print capacity_modifier.upper()
-        #                dfsummary = self._cap_mod_summary(dfsummary,capacity_modifier)
-        #                print dfsummary
-        #            else:
-        #                print "Wrong capcity modifier given"
-        #                print capacity_modifier
-        #                print "valid options:"
-        #                for cm in self.capacity_modifiers:
-        #                    print cm
 
         discharge_capacity = dfsummary[discharge_txt] * 1000000 / mass
         discharge_title = self.summary_txt_discharge_cap
@@ -3771,23 +3767,23 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
 
 
 def loadcellcheck():
-    from cellpy import cellreader, dbreader, prmreader, filefinder
-    d = cellpydata(verbose=True)
+    print "running loadcellcheck"
     out_dir = r"C:\Cell_data\tmp"
-    mass = 1.8
-    rawfile =  r"C:\Cell_data\tmp\20160830_sic006_72_cc_01.res"
-    cellpyfile = r"C:\Cell_data\tmp\out\20160830_sic006_72_cc_N2.h5"
+    mass = 0.078609164
+    rawfile =  r"C:\Cell_data\tmp\large_file_01.res"
+    cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
     cell_data = cellpydata()
     cell_data.select_minimal = True
     cell_data.chunk_size = 100000
-    cell_data.last_chunk = 28
+    #cell_data.last_chunk = 28
     cell_data.load_until_error = True
     cell_data.max_res_filesize = 400000000
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:
         cell_data.make_summary()
-        cell_data.save_test(cellpyfile)
+    cell_data.save_test(cellpyfile)
+    cell_data.exportcsv(datadir=out_dir, cycles=True, raw=True, summary=True)
     print "ok"
 
 
