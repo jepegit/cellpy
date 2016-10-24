@@ -302,7 +302,7 @@ class dataset(object):
         txt += "channel index:      %i\n" % self.channel_index
         txt += "test name:          %s\n" % self.test_name
         txt += "creator:            %s\n" % self.creator
-        txt += "scheduel file name: %s\n" % self.schedule_file_name
+        txt += "schedule file name: %s\n" % self.schedule_file_name
         try:
             start_datetime_str = xldate_as_datetime(self.start_datetime)
         except:
@@ -351,11 +351,13 @@ class cellpydata(object):
         self.tester = tester
         self.verbose = verbose
         self.profile = profile
-        self.loadres_limit = None  # if not None: only load up to loadres_limit
-        if fetch_onliners:
-            self.loadres_limit = 100000
-        self.max_res_filesize = 400000000
-        self.intendation = 0
+        self.max_res_filesize = 150000000
+        self.load_only_summary = False
+        self.select_minimal = False
+        self.minimum_selection = {}
+        self.chunk_size = None # 100000
+        self.last_chunk = None
+        self.load_until_error = False
         self.filestatuschecker = filestatuschecker
         self.raw_datadir = None
         self.cellpy_datadir = None
@@ -386,6 +388,11 @@ class cellpydata(object):
         self.use_decrp_functions = True
         self.capacity_modifiers = ['reset', ]
         self.cycle_mode = 'anode'
+        self.minimum_selection["arbin"] = ["Data_Point","Test_Time","Step_Time",
+                                           "DateTime","Step_Index","Cycle_Index",
+                                           "Current","Voltage","Charge_Capacity",
+                                           "Discharge_Capacity","Internal_Resistance",
+                                           ]
         self.list_of_step_types = ['charge', 'discharge',
                                    'cv_charge', 'cv_discharge',
                                    'charge_cv', 'discharge_cv',
@@ -562,7 +569,7 @@ class cellpydata(object):
         self.cellpy_datadir = directory
 
 
-    def check_file_ids_new(self, rawfiles, cellpyfile):
+    def check_file_ids(self, rawfiles, cellpyfile):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
         This function checks if the hdf5 file and the res-files have the same
@@ -597,114 +604,6 @@ class cellpydata(object):
             self.Print("hdf5 file is updated")
             return True
 
-    def check_file_ids_old(self, cellpyfile, resfiles=None, force=True, usedir=False,
-                       no_extension=False, return_res=True):
-        """Check the stats for the files (raw-data and cellpy hdf5).
-
-        This function checks if the hdf5 file and the res-files have the same
-        timestamps etc to find out if we need to bother to load .res -files.
-
-        Args:
-            cellpyfile (str): filename of the cellpy hdf5-file.
-            resfiles (str, optional): name(s) of raw-data file(s).
-            force (bool):
-            usedir (bool): Set to True if you will use dir-names defined in prm-file.
-            no_extension (bool): Set to True if you give hdf5-file without extension.
-            return_res (bool): returns list of raw-file_names if set to True.
-
-        Returns:
-            False if the raw files are newer than the cellpy hdf5-file (update needed).
-            If return_res is True it also returns list of raw-file_names as second argument.
-            """
-
-        txt = "check_file_ids\n  checking file ids - using '%s'" % (self.filestatuschecker)
-        self.Print(txt)
-        if self._is_listtype(cellpyfile):
-            cellpyfile = cellpyfile[0]
-            # only works for single cellpyfile - so selecting first if list
-
-        cellpy_extension = ".h5"
-        res_extension = ".res"
-
-        if usedir:
-            res_dir = self.raw_datadir
-            cellpy_dir = self.cellpy_datadir
-
-            if res_dir is None or cellpy_dir is None:
-                print "res/hdf5 - dir not given"
-                return
-
-            if not os.path.isdir(res_dir):
-                print "no valid res-dir, aborting"
-                return
-
-            if not os.path.isdir(cellpy_dir):
-                print "no hdf5-dir, aborting"
-                return
-
-            cellpyfile = os.path.join(cellpy_dir, cellpyfile)
-
-        if no_extension:
-            cellpyfile += cellpy_extension
-
-        ids_cellpy_file = self._check_cellpy_file(cellpyfile)
-        if resfiles is None:
-            #            print "checking for resfiles"
-            resfiles = self._find_resfiles(cellpyfile) # TODO: use filereader or even better, delete
-
-            if resfiles is None:
-                self.Print("could not find the res-files")
-                if force:
-                    if return_res:
-                        return True, None
-                    else:
-                        return True
-                else:
-                    print "could not find the res-files; please provide the names"
-                    sys.exit(-1)
-                    #
-                    #        print
-                    #        print "resfiles:"
-                    #        print resfiles
-        if not resfiles:
-            print "could not find any resfiles"
-            print "so - skipping this"
-            if return_res:
-                return True, None
-            else:
-                return True
-
-        if not ids_cellpy_file:
-            self.Print("hdf5 file does not exist - needs updating")
-            if return_res:
-                return False, resfiles
-            else:
-                return False
-
-        ids_res = self._check_res(resfiles)
-
-        similar = self._compare_ids(ids_res, ids_cellpy_file)
-        #        print "********************"
-        #        print "*res"
-        #        print ids_res
-        #        print "*hdf5"
-        #        print ids_cellpy_file
-        #        print "----similar?"
-        #        print similar
-        #        print "--------------------"
-        if not similar:
-            self.Print("hdf5 file needs updating")
-            if return_res:
-                return False, resfiles
-            else:
-                return False
-        else:
-            self.Print("hdf5 file is updated")
-            if return_res:
-                return True, resfiles
-            else:
-                return True
-
     def _check_raw(self, file_names, abort_on_missing=False):
         """Get the file-ids for the res_files."""
 
@@ -726,39 +625,6 @@ class cellpydata(object):
                     sys.exit(-1)
             else:
                 if strip_file_names:
-                    name = os.path.basename(f)
-                else:
-                    name = f
-                if check_on == "size":
-                    ids[name] = int(fid.size)
-                elif check_on == "modified":
-                    ids[name] = int(fid.last_modified)
-                else:
-                    ids[name] = int(fid.last_accessed)
-        return ids
-
-    def _check_res_old(self, filenames, abort_on_missing=False):
-        """Get the file-ids for the res_files."""
-        # TODO: delete this function
-
-        strip_filenames = True
-        check_on = self.filestatuschecker
-        if not self._is_listtype(filenames):
-            filenames = [filenames, ]
-        # number_of_files = len(file_names)
-        ids = dict()
-        for f in filenames:
-            self.Print("checking res file")
-            self.Print(f)
-            fid = fileID(f)
-            self.Print(fid)
-            if fid.name is None:
-                print "file does not exist:"
-                print f
-                if abort_on_missing:
-                    sys.exit(-1)
-            else:
-                if strip_filenames:
                     name = os.path.basename(f)
                 else:
                     name = f
@@ -856,72 +722,8 @@ class cellpydata(object):
 
         return resfiles
 
-    def loadcell_fast(self, raw_files, cellpy_file=None, mass=None,
-                 summary_on_raw=True, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False):
-        """Loads data for given cells (single-shot - will be removed)
-
-        Args:
-            raw_files (list): name of res-files
-            cellpy_file (path): name of cellpy-file
-            mass (float): mass of electrode or active material
-            summary_on_raw (bool): use raw-file for summary
-            summary_ir (bool): summarize ir
-            summary_ocv (bool): summarize ocv steps
-            summary_end_v (bool): summarize end voltage
-            only_summary (bool): get only the summary of the runs
-            only_first (bool): only use the first file fitting search criteria
-
-        Example:
-
-            >>> srnos = my_dbreader.select_batch("testing_new_solvent")
-            >>> cell_datas = []
-            >>> for srno in srnos:
-            >>> ... my_run_name = my_dbreader.get_cell_name(srno)
-            >>> ... mass = my_dbreader.get_mass(srno)
-            >>> ... rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
-            >>> ... cell_data = cellreader.cellpydata()
-            >>> ... cell_data.loadcell(raw_files = rawfiles, cellpy_file = cellpyfiles)
-            >>> ... cell_data.set_mass(mass)
-            >>> ... if not cell_data.summary_exists:
-            >>> ...     cell_data.make_summary() # etc. etc.
-            >>> ... cell_datas.append(cell_data)
-            >>>
-        """
-
-        # This is a part of a dramatic API change. It will not be possible to
-        # load more than one set of tests (i.e. one single cellpy-file or
-        # several raw-files that will be automatically merged)
-
-        # TODO: move cellreader out of celldata
-
-        i = 0  # option for over-riding load_first to e.g. last (by setting i = -1)
-        if cellpy_file is None:
-            similar = False
-        else:
-            similar = self.check_file_ids_new(raw_files, cellpy_file)
-
-        if not similar:
-            if only_first:
-                self.loadres_old(raw_files[i])
-            else:
-                self.loadres_old(raw_files)  # should be modified for only_symmary (fast-mode)
-            not_empty = self.tests_status  # tests_status is set in loadres
-            if mass:
-                self.set_mass(mass)
-            if not_empty and summary_on_raw:
-                self.make_summary(all_tests=False, find_ocv=summary_ocv,
-                                  find_ir=summary_ir,
-                                  find_end_voltage=summary_end_v)
-            else:
-                self.Print("Cannot make summary for empty set", 1)
-
-        else:
-            self.loadres_old(cellpy_file)
-        self.Print("exiting loadcel")
-
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
-                 summary_on_raw=True, summary_ir=True, summary_ocv=False,
+                 summary_on_raw=False, summary_ir=True, summary_ocv=False,
                  summary_end_v=True, only_summary=False, only_first=False):
         """Loads data for given cells.
 
@@ -957,12 +759,15 @@ class cellpydata(object):
         # load more than one set of tests (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
 
-        # TODO: move cellreader out of celldata
-
         if cellpy_file is None:
             similar = False
         else:
-            similar = self.check_file_ids_new(raw_files, cellpy_file)
+            similar = self.check_file_ids(raw_files, cellpy_file)
+
+        if only_summary:
+            self.load_only_summary = True
+        else:
+            self.load_only_summary = False
 
         if not similar:
             self.load_raw(raw_files)
@@ -978,202 +783,6 @@ class cellpydata(object):
 
         else:
             self.load(cellpy_file)
-
-    def loadcell_old(self, names=None, res=False, cellpyfile=False, resnames=[],
-                 masses=[], counter_sep="_", counter_pos='last',
-                 counter_digits=2, counter_max=99, counter_min=1,
-                 summary_on_res=True, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False):
-
-        """Loads data for given cells (old versin - will be deleted).
-
-        Args:
-            names (list): identification names
-            res (bool): name of res-file given
-            cellpyfile (bool): name of cellpy-file given (hdf5)
-            resnames (list, optional): names of res-files
-            masses (list of floats): masses of electrodes or active material
-            counter_sep (char): separator between sub-names
-            counter_pos (string in ["last", "first"]): position for index for counting
-            counter_digits (int): number of digits in index
-            counter_max (int): max number for index (will not search after files with higher index)
-            counter_min (int): min number for index (will not search for files with lower index)
-            summary_on_res (bool): use res-file for summary
-            summary_ir (bool): summarize ir
-            summary_ocv (bool): summarize ocv steps
-            summary_end_v (bool): summarize end voltage
-            only_summary (bool): get only the summary of the runs
-            only_first (bool): only use the first file fitting search criteria
-
-        Example:
-            >>> srno = 132
-            >>> names = dbreader.get_cell_name(srno) #format date_slurry_no_celltype
-            >>> loadfile(names)
-        """
-        # should include option to skip selected res-files (bad_files)
-
-        print "WARNING: loadcell will be changed soon!!!"
-        self.Print("entering loadcell")
-        hdf5_extension = ".h5"  # should make this "class-var"
-        res_extension = ".res"  # should make this "class-var"
-        if only_first:
-            counter_max = 1
-
-        txt = "loading files:"
-        if type(names) == types.StringType:  # old test, does not work for unicode
-            txt += " (one)\n"
-            names = [names, ]
-        elif isinstance(names, basestring):
-            txt += " (one)\n"
-            names = [names, ]
-        elif type(names) == types.ListType:
-            txt += " (list of names)\n  "
-        else:
-            txt += " (not sure, assuming list)\n"
-        self.Print(txt, 1)
-
-        res_dir = self.raw_datadir
-        hdf5_dir = self.cellpy_datadir
-
-        if res_dir is None or hdf5_dir is None:
-            print "WARNING (loadcell): res/cellpyfile - dir not given"
-            if self.auto_dirs:
-                print "loading prmreader and trying to set defaults"
-                from cellpy import prmreader
-                prms = prmreader.read()
-                if res_dir is None:
-                    res_dir = prms.rawdatadir
-                if hdf5_dir is None:
-                    hdf5_dir = prms.cellpydatadir
-
-                    # TODO: insert try-except in prm loading
-            else:
-                print "aborting - res_dir and/or hdf5_dir not given"
-                return
-        if not os.path.isdir(res_dir):
-            print "WARNING (loadcell): no valid res-dir, aborting"
-            return
-        if not os.path.isdir(hdf5_dir):
-            print "WARNING (loadcell): no cellpyfile-dir, aborting"
-            return
-
-        # searching for res-files
-        # TODO: regular expression / glob , instead of looping
-        files = collections.OrderedDict()
-        for name in names:
-            files[name] = []
-            for j in range(counter_min, counter_max + 1):
-                if counter_pos.lower() == "last":
-                    lookFor = "%s%s%s%s" % (name, counter_sep,
-                                            str(j).zfill(counter_digits),
-                                            res_extension)
-                elif counter_pos.lower() == "first":
-                    lookFor = "%s%s%s%s" % (str(j).zfill(counter_digits), counter_sep,
-                                            name, res_extension)
-                else:
-                    lookFor = "%s%s%s%s" % (name, counter_sep,
-                                            str(j).zfill(counter_digits),
-                                            res_extension)
-
-                lookFor = os.path.join(res_dir, lookFor)
-                if os.path.isfile(lookFor):
-                    files[name].append(lookFor)
-
-        list_of_files = []
-        res_loading = False
-        masses_needed = []
-        test_number = 0
-        res_test_numbers = []
-        res_masses = []
-        counter = -1
-        for name, resfiles in files.items():
-            counter += 1
-            this_mass_needed = False
-            missingRes = False
-            missingHdf5 = False
-
-            #            print "checking",
-            #            print name,
-            #            print ":",
-            #            print resfiles
-
-            if len(resfiles) == 0:
-                wtxt = "WARNING (loadcell): %s - %s" % (name, "could not find any res-files")
-                print wtxt
-                missingRes = True
-
-            cellpyfile = os.path.join(hdf5_dir, name + hdf5_extension)
-
-            if not os.path.isfile(cellpyfile) and not res:
-                wtxt = "WARNING (loadcell): %s - %s" % (name, "cellpyfile-file not found")
-                print wtxt
-
-                missingHdf5 = True
-
-            if missingRes and missingHdf5:
-                print "WARNING (loadcell):",
-                print "could not load %s" % (name)
-                # have to skip this cell
-            else:
-                if missingRes:
-                    list_of_files.append([cellpyfile, ])
-                elif missingHdf5:
-                    list_of_files.append(resfiles)
-                    res_loading = True
-                    this_mass_needed = True
-                else:
-                    if not res:
-                        similar = self.check_file_ids(cellpyfile, resfiles, return_res=False)
-                    else:
-                        similar = False
-                    if not similar:
-                        # print "FILES ARE NOT SIMILAR"
-                        list_of_files.append(resfiles)
-                        res_loading = True
-                        this_mass_needed = True
-                    else:
-                        list_of_files.append(cellpyfile)
-                masses_needed.append(this_mass_needed)
-
-                if this_mass_needed:
-                    res_test_numbers.append(test_number)
-                    try:
-                        res_masses.append(masses[counter])
-                    except:
-                        if summary_on_res:
-                            print "WARNING (loadcell): ",
-                            print "mass missing for cell %s" % (name)
-                        res_masses.append(None)
-                test_number += 1
-
-                #        print "running loadres"
-                #        print list_of_files
-
-        self.loadres(list_of_files)  # should be modified for only_symmary (fast-mode)
-        not_empty = self.tests_status  # tests_status is set in loadres
-        # print not_empty
-        if res_loading and summary_on_res:
-            if len(masses) == 0:
-                print __name__
-                print "Warning: you should not choose summary_on_res = True"
-                print "without supplying masses!"
-            else:
-                self.set_mass(res_masses, test_numbers=res_test_numbers, validated=not_empty)
-                print
-                print
-                for t, v in zip(res_test_numbers, not_empty):
-                    if v:
-                        print "-",
-                        self.make_summary(all_tests=False, find_ocv=summary_ocv,
-                                          find_ir=summary_ir,
-                                          find_end_voltage=summary_end_v,
-                                          test_number=t)
-                else:
-                    self.Print("Cannot make summary for empty set", 1)
-        self.Print("exiting loadcel")
-        # 2015.12.17 removed output masses_needed
-        # return masses_needed
-
 
     def load_raw(self, file_names=None):
         """Load a raw data-file.
@@ -1206,12 +815,12 @@ class cellpydata(object):
                     test[test_number].raw_data_files_length.append(file_size)
             else:
                 test = new_tests
-
-        self.tests.append(test[test_number])
+        if test:
+            self.tests.append(test[test_number])
+        else:
+            print "no new tests added"
         self.number_of_tests = len(self.tests)
         self.tests_status = self._validate_tests()
-
-
 
     def loadres(self, filenames=None, check_file_type=True):
         """Loads the data into the datastructure."""
@@ -1377,13 +986,16 @@ class cellpydata(object):
 
         if self.cellpy_file_version <= 3:
             new_tests = self._load_hdf5(cellpy_file)
+        else:
+            new_tests = []
+            print "This cellpy-file version is not supported by current reader (try to update cellpy)."
 
         if new_tests:
             for test in new_tests:
                 self.tests.append(test)
         else:
             # raise LoadError
-            print "could not load"
+            print "Could not load"
             print cellpy_file
 
         self.number_of_tests = len(self.tests)
@@ -1404,7 +1016,7 @@ class cellpydata(object):
             print "  ",
             print filename
             sys.exit()
-        print "x",
+        print "c",
         store = pd.HDFStore(filename)
         data = dataset()
         data.dfsummary = store.select("cellpydata/dfsummary")
@@ -1457,6 +1069,7 @@ class cellpydata(object):
         newtests.append(data)
         store.close()
         # self.tests.append(data)
+        print "->"
         return newtests
 
     def _convert2fid_list(self, tbl):
@@ -1480,8 +1093,10 @@ class cellpydata(object):
         return fids, lengths
 
     def _clean_up_loadres(self, cur, conn, filename):
-        cur.close()  # adodbapi
-        conn.close()  # adodbapi
+        if cur is not None:
+            cur.close()  # adodbapi
+        if conn is not None:
+            conn.close()  # adodbapi
         if os.path.isfile(filename):
             try:
                 os.remove(filename)
@@ -1500,100 +1115,44 @@ class cellpydata(object):
             new_tests (list of data objects), FileError
 
         """
-        # loadres(file_name)
-        # loads data from .res file into the cellpydata.tests list
-        # e.g. cellpydata.test[0] = dataset
-        # where
-        # dataset.dfdata is the normal data
-        # dataset.dfsummary is the summary.
-        # cellpydata.tests[i].test_ID is the test id.
-
-        BadFiles = []
-        print "  .",
-        FileError = None
-        ForceError = False
-        ForcedErrorLimit = 1
         new_tests = []
-        self.Print("loading", 1)
-        self.Print(file_name, 1)
-
-        # -------checking existence of file-------
+        # -------checking existence of file--------
         if not os.path.isfile(file_name):
-            print "\nERROR (_loadres):\nfile does not exist"
-            print file_name
-            print "check filename and/or connection to external computer if used"
-            FileError = -2  # Missing file
-            self.Print("File is missing")
-            return new_tests, FileError
-            # sys.exit(FileError)
+            print "Missing file_\n   %s" % (file_name)
 
         # -------checking file size etc------------
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.Print(txt,1)
-
-        if filesize > self.max_res_filesize:
-            FileError = -3  # File too large
-            etxt = "\nERROR (_loadres):\n"
-            etxt += "%i > %i - File is too big!\n" % (filesize, self.max_res_filesize)
-            etxt += "(edit self.max_res_filesize)\n"
-            self.Print(etxt, 1)
-            return new_tests, FileError
+        if filesize > self.max_res_filesize and not self.load_only_summary:
+            error_message = "\nERROR (_loadres):\n"
+            error_message += "%s > %s - File is too big!\n" % (hfilesize, humanize_bytes(self.max_res_filesize))
+            error_message += "(edit self.max_res_filesize)\n"
+            print error_message
+            return None
             # sys.exit(FileError)
-
-        if ForceError is True:
-            if self.forced_errors < ForcedErrorLimit:
-                print "*******************FORCED ERROR!**************************"
-                self.forced_errors += 1
-                return new_tests, -10
-
-        if file_name in BadFiles:
-            print "Enforcing error (test)"
-            return new_tests, -11
 
         # ------making temporary file-------------
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        self.Print("Copying to tmp-file", 1)  # we enforce this to not corrupt the raw-file
-        # unfortunately, its rather time-consuming
-        self.Print(temp_filename)
-        t1 = time.time()
         shutil.copy2(file_name, temp_dir)
-        self.Print("Finished to tmp-file", 1)
-        t1 = "this operation took %f sec" % (time.time() - t1)
-        self.Print(t1,1)
         print ".",
 
-        constr = self.__get_res_connector(file_name, temp_filename)
-
         # ------connecting to the .res database----
-        self.Print("connection to the database",1)
-
+        constr = self.__get_res_connector(file_name, temp_filename)
         if USE_ADO:
             conn = dbloader.connect(constr)  # adodbapi
         else:
             conn = dbloader.connect(constr, autocommit=True)
-
-        self.Print("creating cursor", 1)
-        cur = conn.cursor()
+        print ".",
 
         # ------get the global table-----------------
-        all_data, col_names, global_data = self.__get_res_global_table(cur)
-        for item in all_data:
-            for h, d in zip(col_names, item):
-                global_data[h].append(d)
-        tests = global_data[self.test_id_txt]
+        sql = "select * from %s" % self.tablename_global
+        global_data_df = pd.read_sql_query(sql, conn)
+        # col_names = list(global_data_df.columns.values)
+        tests = global_data_df[self.test_id_txt]
         number_of_sets = len(tests)
-
-        if number_of_sets < 1:
-            FileError = -4  # No datasets
-            etxt = "\nERROR (_loadres):\n"
-            etxt += "Could not find any datasets in the file"
-            self.Print(etxt, 1)
-            self._clean_up_loadres(cur, conn, temp_filename)
-            return new_tests, FileError
-            # sys.exit(FileError)
         print ".",
 
         for test_no in range(number_of_sets):
@@ -1602,369 +1161,81 @@ class cellpydata(object):
             data.loaded_from = file_name
             # creating fileID
             fid = fileID(file_name)
-
             # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
-            data.channel_index = int(global_data[self.channel_index_txt][test_no])
-            data.channel_number = int(global_data[self.channel_number_txt][test_no])
-            data.creator = global_data[self.creator_txt][test_no]
-            data.item_ID = global_data[self.item_id_txt][test_no]
-            data.schedule_file_name = global_data[self.schedule_file_name_txt][test_no]
-            data.start_datetime = global_data[self.start_datetime_txt][test_no]
-            data.test_ID = int(global_data[self.test_id_txt][test_no])
-            data.test_name = global_data[self.test_name_txt][test_no]
+            data.channel_index = int(global_data_df[self.channel_index_txt][test_no])
+            data.channel_number = int(global_data_df[self.channel_number_txt][test_no])
+            data.creator = global_data_df[self.creator_txt][test_no]
+            data.item_ID = global_data_df[self.item_id_txt][test_no]
+            data.schedule_file_name = global_data_df[self.schedule_file_name_txt][test_no]
+            data.start_datetime = global_data_df[self.start_datetime_txt][test_no]
+            data.test_ID = int(global_data_df[self.test_id_txt][test_no])
+            data.test_name = global_data_df[self.test_name_txt][test_no]
             data.raw_data_files.append(fid)
 
             # ------------------------------------------
-            # ---loading-normal-data
-            sql = "select * from %s" % self.tablename_normal
-            # sql = "select * from %s order by %s" % (self.tablename_normal, self.test_time_txt)
-            try:
-                cur.execute(sql)
-            except:
-                FileError = -5  # No datasets
-                etxt = "\nERROR (_loadres)(normal tbl):\n"
-                etxt += "Could not execute cursor command\n  "
-                etxt += sql
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                return new_tests, FileError
-                # sys.exit(FileError)
-
-            col_names = [i[0] for i in cur.description]  # adodbapi
-            col = collections.OrderedDict()
-            for cn in col_names:
-                data.data[cn] = []
-                col[cn] = []
-
-            if not self.loadres_limit:
-                try:
-                    all_data = cur.fetchall()
-                except:
-                    FileError = -6  # Cannot read normal table with fetchall
-                    etxt = ("\nWarning (_loadres)(normal tbl):\n",
-                        "Could not retrieve raw-data by fetchall\n\n",
-                        "This problem is caused by the limitation in the remote",
-                        "procedure call (RPC) layer where only 256 unique interfaces",
-                        "can be called from one process to another. This problem",
-                        "typically occurs when you use COM+ or Microsoft Transaction",
-                        "Server with many objects in the program or package",
-                        "\n",)
-                    self.Print(etxt, 1)
-                    etxt = "\nERROR (_loadres)(normal tbl):\nremedy: try fetch_onliners = True"
-                    self.Print(etxt, 1)
-                    self._clean_up_loadres(cur, conn, temp_filename)
-                    return new_tests, FileError
-
-            else:
-                print "\nWarning:"
-                print "Loading .res file using fetchmany(%i)" % (self.loadres_limit)
-                self.Print("fetching oneliners", 1)
-                self.Print("Starting to load normal table from .res file (cur.fetchmany())", 1)
-                txt = "self.loadres_limit = %i" % (int(self.loadres_limit))
-                self.Print(txt, 1)
-                all_data = cur.fetchmany(self.loadres_limit)
-                self.Print("Finished to load normal table from .res file (cur.fetchmany())", 1)
-
-            for item in all_data:
-                # check if this is the correct set
-                for d, h in zip(item, col_names):
-                    col[h].append(d)
-                if int(col[self.test_id_txt][0]) == data.test_ID:
-                    for d, h in zip(item, col_names):
-                        data.data[h].append(d)
-            # print "saved normal data for test %i" % data.test_ID
-
-            # ------------------------------------------
-            # ---loading-statistic-data
-            sql = "select * from %s" % self.tablename_statistic
-            try:
-                cur.execute(sql)  # adodbapi
-            except:
-                FileError = -7  # No datasets
-                etxt = "\nERROR (_loadres)(stats tbl):\nCould not execute cursor command\n  " + sql
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                # sys.exit(FileError)
-                return new_tests, FileError
-
-            col_names = [i[0] for i in cur.description]  # adodbapi
-            col = collections.OrderedDict()
-            for cn in col_names:
-                data.summary[cn] = []
-                col[cn] = []
-            try:
-                self.Print("Starting to load stats table from .res file (cur.fetchall())")
-                all_data = cur.fetchall()
-                self.Print("Finished to load stats table from .res file (cur.fetchall())")
-            except:
-                FileError = -8
-                etxt = ("\nWarning (_loadres)(statsl tbl):\n",
-                        "Could not retrieve raw-data by fetchall\n\n",
-                        "This problem is caused by the limitation in the remote",
-                        "procedure call (RPC) layer where only 256 unique interfaces",
-                        "can be called from one process to another. This problem",
-                        "typically occurs when you use COM+ or Microsoft Transaction",
-                        "Server with many objects in the program or package",
-                        "\n")
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                # sys.exit(FileError)
-                return new_tests, FileError
-
-            for item in all_data:
-                # check if this is the correct set
-                for d, h in zip(item, col_names):
-                    col[h].append(d)
-                if int(col[self.test_id_txt][0]) == data.test_ID:
-                    for d, h in zip(item, col_names):
-                        data.summary[h].append(d)
-
-            data.makeDataFrame()
-            length_of_test = data.dfdata.shape[0]
+            # ---loading-normal-data--------------------
+            length_of_test, normal_df = self._load_res_normal_table(conn,data.test_ID)
+            # ---loading-statistic-data-----------------
+            sql = "select * from %s where %s=%s order by %s" % (self.tablename_statistic,
+                                                                self.test_id_txt,
+                                                                data.test_ID,
+                                                                self.data_point_txt)
+            summary_df = pd.read_sql_query(sql, conn)
+            data.dfsummary = summary_df
+            data.dfdata = normal_df
             data.raw_data_files_length.append(length_of_test)
-            print ".",
             new_tests.append(data)
-            self._clean_up_loadres(cur, conn, temp_filename)
-            print ".",
+            self._clean_up_loadres(None, conn, temp_filename)
+            print ". <-"
         return new_tests
 
-    def _loadres_old(self, file_name=None):
-        """Loads data from arbin .res files.
+    def _load_res_normal_table(self, conn, test_ID):
+        if self.load_only_summary:
+            return 0
 
-        Args:
-            file_name (str): path to .res file.
-
-        Returns:
-            new_tests (list of data objects), FileError
-
-        """
-        # loadres(file_name)
-        # loads data from .res file into the cellpydata.tests list
-        # e.g. cellpydata.test[0] = dataset
-        # where
-        # dataset.dfdata is the normal data
-        # dataset.dfsummary is the summary.
-        # cellpydata.tests[i].test_ID is the test id.
-
-        BadFiles = []
-        print "  .",
-        FileError = None
-        ForceError = False
-        ForcedErrorLimit = 1
-        new_tests = []
-        self.Print("loading", 1)
-        self.Print(file_name, 1)
-
-        # -------checking existence of file-------
-        if not os.path.isfile(file_name):
-            print "\nERROR (_loadres):\nfile does not exist"
-            print file_name
-            print "check filename and/or connection to external computer if used"
-            FileError = -2  # Missing file
-            self.Print("File is missing")
-            return new_tests, FileError
-            # sys.exit(FileError)
-
-        # -------checking file size etc------------
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.Print(txt,1)
-
-        if filesize > self.max_res_filesize:
-            FileError = -3  # File too large
-            etxt = "\nERROR (_loadres):\n"
-            etxt += "%i > %i - File is too big!\n" % (filesize, self.max_res_filesize)
-            etxt += "(edit self.max_res_filesize)\n"
-            self.Print(etxt, 1)
-            return new_tests, FileError
-            # sys.exit(FileError)
-
-        if ForceError is True:
-            if self.forced_errors < ForcedErrorLimit:
-                print "*******************FORCED ERROR!**************************"
-                self.forced_errors += 1
-                return new_tests, -10
-
-        if file_name in BadFiles:
-            print "Enforcing error (test)"
-            return new_tests, -11
-
-        # ------making temporary file-------------
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        self.Print("Copying to tmp-file", 1)  # we enforce this to not corrupt the raw-file
-        # unfortunately, its rather time-consuming
-        self.Print(temp_filename)
-        t1 = time.time()
-        shutil.copy2(file_name, temp_dir)
-        self.Print("Finished to tmp-file", 1)
-        t1 = "this operation took %f sec" % (time.time() - t1)
-        self.Print(t1,1)
-        print ".",
-
-        constr = self.__get_res_connector(file_name, temp_filename)
-
-        # ------connecting to the .res database----
-        self.Print("connection to the database",1)
-
-        if USE_ADO:
-            conn = dbloader.connect(constr)  # adodbapi
+        if self.select_minimal:
+            columns = self.minimum_selection["arbin"]
+            columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
         else:
-            conn = dbloader.connect(constr, autocommit=True)
+            columns_txt = "*"
 
-        self.Print("creating cursor", 1)
-        cur = conn.cursor()
+        sql_1 = "select %s " % (columns_txt)
+        sql_2 = "from %s " % (self.tablename_normal)
+        sql_3 = "where %s=%s " % (self.test_id_txt, test_ID)
+        sql_4 = "order by %s" % (self.data_point_txt)
+        sql = sql_1 + sql_2 + sql_3 + sql_4
 
-        # ------get the global table-----------------
-        all_data, col_names, global_data = self.__get_res_global_table(cur)
-        for item in all_data:
-            for h, d in zip(col_names, item):
-                global_data[h].append(d)
-        tests = global_data[self.test_id_txt]
-        number_of_sets = len(tests)
-
-        if number_of_sets < 1:
-            FileError = -4  # No datasets
-            etxt = "\nERROR (_loadres):\n"
-            etxt += "Could not find any datasets in the file"
-            self.Print(etxt, 1)
-            self._clean_up_loadres(cur, conn, temp_filename)
-            return new_tests, FileError
-            # sys.exit(FileError)
-        print ".",
-
-        for test_no in range(number_of_sets):
-            data = dataset()
-            data.test_no = test_no
-            data.loaded_from = file_name
-            # creating fileID
-            fid = fileID(file_name)
-
-            # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
-            data.channel_index = int(global_data[self.channel_index_txt][test_no])
-            data.channel_number = int(global_data[self.channel_number_txt][test_no])
-            data.creator = global_data[self.creator_txt][test_no]
-            data.item_ID = global_data[self.item_id_txt][test_no]
-            data.schedule_file_name = global_data[self.schedule_file_name_txt][test_no]
-            data.start_datetime = global_data[self.start_datetime_txt][test_no]
-            data.test_ID = int(global_data[self.test_id_txt][test_no])
-            data.test_name = global_data[self.test_name_txt][test_no]
-            data.raw_data_files.append(fid)
-
-            # ------------------------------------------
-            # ---loading-normal-data
-            sql = "select * from %s" % self.tablename_normal
-            # sql = "select * from %s order by %s" % (self.tablename_normal, self.test_time_txt)
-            try:
-                cur.execute(sql)
-            except:
-                FileError = -5  # No datasets
-                etxt = "\nERROR (_loadres)(normal tbl):\n"
-                etxt += "Could not execute cursor command\n  "
-                etxt += sql
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                return new_tests, FileError
-                # sys.exit(FileError)
-
-            col_names = [i[0] for i in cur.description]  # adodbapi
-            col = collections.OrderedDict()
-            for cn in col_names:
-                data.data[cn] = []
-                col[cn] = []
-
-            if not self.loadres_limit:
-                try:
-                    all_data = cur.fetchall()
-                except:
-                    FileError = -6  # Cannot read normal table with fetchall
-                    etxt = ("\nWarning (_loadres)(normal tbl):\n",
-                        "Could not retrieve raw-data by fetchall\n\n",
-                        "This problem is caused by the limitation in the remote",
-                        "procedure call (RPC) layer where only 256 unique interfaces",
-                        "can be called from one process to another. This problem",
-                        "typically occurs when you use COM+ or Microsoft Transaction",
-                        "Server with many objects in the program or package",
-                        "\n",)
-                    self.Print(etxt, 1)
-                    etxt = "\nERROR (_loadres)(normal tbl):\nremedy: try fetch_onliners = True"
-                    self.Print(etxt, 1)
-                    self._clean_up_loadres(cur, conn, temp_filename)
-                    return new_tests, FileError
-
+        if not self.chunk_size:
+            normal_df = pd.read_sql_query(sql, conn)
+            length_of_test = normal_df.shape[0]
+        else:
+            normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
+            if not self.last_chunk:
+                normal_df = normal_df_reader.next()
+                chunk_number = 1
             else:
-                print "\nWarning:"
-                print "Loading .res file using fetchmany(%i)" % (self.loadres_limit)
-                self.Print("fetching oneliners", 1)
-                self.Print("Starting to load normal table from .res file (cur.fetchmany())", 1)
-                txt = "self.loadres_limit = %i" % (int(self.loadres_limit))
-                self.Print(txt, 1)
-                all_data = cur.fetchmany(self.loadres_limit)
-                self.Print("Finished to load normal table from .res file (cur.fetchmany())", 1)
+                chunk_number = 0
+                for j in range(self.last_chunk):
+                    normal_df = normal_df_reader.next()  # TODO: This is SLOW - should use itertools.islice
+                    chunk_number += 1
 
-            for item in all_data:
-                # check if this is the correct set
-                for d, h in zip(item, col_names):
-                    col[h].append(d)
-                if int(col[self.test_id_txt][0]) == data.test_ID:
-                    for d, h in zip(item, col_names):
-                        data.data[h].append(d)
-            # print "saved normal data for test %i" % data.test_ID
+            for chunk in normal_df_reader:
 
-            # ------------------------------------------
-            # ---loading-statistic-data
-            sql = "select * from %s" % self.tablename_statistic
-            try:
-                cur.execute(sql)  # adodbapi
-            except:
-                FileError = -7  # No datasets
-                etxt = "\nERROR (_loadres)(stats tbl):\nCould not execute cursor command\n  " + sql
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                # sys.exit(FileError)
-                return new_tests, FileError
+                if self.load_until_error:
+                    try:
+                        normal_df = pd.concat([normal_df,chunk], ignore_index=True)
+                        print "*",
+                    except MemoryError:
+                        print " - Could not read complete file (MemoryError)."
+                        print "Last successfully loaded chunk number:", chunk_number
+                        print "Chunk size:", self.chunk_size
+                        break
+                else:
+                    normal_df = pd.concat([normal_df, chunk], ignore_index=True)
+                chunk_number += 1
+            length_of_test = normal_df.shape[0]
 
-            col_names = [i[0] for i in cur.description]  # adodbapi
-            col = collections.OrderedDict()
-            for cn in col_names:
-                data.summary[cn] = []
-                col[cn] = []
-            try:
-                self.Print("Starting to load stats table from .res file (cur.fetchall())")
-                all_data = cur.fetchall()
-                self.Print("Finished to load stats table from .res file (cur.fetchall())")
-            except:
-                FileError = -8
-                etxt = ("\nWarning (_loadres)(statsl tbl):\n",
-                        "Could not retrieve raw-data by fetchall\n\n",
-                        "This problem is caused by the limitation in the remote",
-                        "procedure call (RPC) layer where only 256 unique interfaces",
-                        "can be called from one process to another. This problem",
-                        "typically occurs when you use COM+ or Microsoft Transaction",
-                        "Server with many objects in the program or package",
-                        "\n")
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                # sys.exit(FileError)
-                return new_tests, FileError
-
-            for item in all_data:
-                # check if this is the correct set
-                for d, h in zip(item, col_names):
-                    col[h].append(d)
-                if int(col[self.test_id_txt][0]) == data.test_ID:
-                    for d, h in zip(item, col_names):
-                        data.summary[h].append(d)
-
-            data.makeDataFrame()
-            length_of_test = data.dfdata.shape[0]
-            data.raw_data_files_length.append(length_of_test)
-            print ".",
-            new_tests.append(data)
-            self._clean_up_loadres(cur, conn, temp_filename)
-            print ".",
-        return new_tests, FileError
+        return length_of_test, normal_df
 
     def __get_res_global_table(self, cur):
         sql = "select * from %s" % self.tablename_global
@@ -1984,9 +1255,8 @@ class cellpydata(object):
         # is64bit_os = self._check64bit(System = "os")
         if USE_ADO:
             if is64bit_python:
-                self.Print("using 64 bit python")
+                print "using 64 bit python"
                 constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % Filename
             else:
                 constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
 
@@ -4505,10 +3775,15 @@ def loadcellcheck():
     d = cellpydata(verbose=True)
     out_dir = r"C:\Cell_data\tmp"
     mass = 1.8
-    rawfile =  r"C:\Scripting\MyFiles\development_cellpy\cellpy\indata\20160805_test001_45_cc_01.res"
-    cellpyfile = r"C:\Scripting\MyFiles\development_cellpy\cellpy\outdata\20160805_test001_45_cc_nn.h5"
+    rawfile =  r"C:\Cell_data\tmp\20160830_sic006_72_cc_01.res"
+    cellpyfile = r"C:\Cell_data\tmp\out\20160830_sic006_72_cc_N2.h5"
     cell_data = cellpydata()
-    cell_data.loadcell(raw_files=rawfile, cellpy_file=cellpyfile)
+    cell_data.select_minimal = True
+    cell_data.chunk_size = 100000
+    cell_data.last_chunk = 28
+    cell_data.load_until_error = True
+    cell_data.max_res_filesize = 400000000
+    cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:
         cell_data.make_summary()
