@@ -846,7 +846,6 @@ class cellpydata(object):
 
         for f in self.file_names:  # iterating through list
             self.Print(f, 1)
-            FileError = None
             list_type = self._is_listtype(f)
             counter += 1
 
@@ -854,11 +853,7 @@ class cellpydata(object):
                 if check_file_type:
                     filetype = self._check_file_type(f)
                 if filetype == "res":
-                    newtests, FileError = self._loadres(f)
-                    if FileError is not None:
-                        print "error reading file (single_A)"
-                        print "FileError:",
-                        print FileError
+                    newtests = self._loadres(f)
                 elif filetype == "h5":
                     newtests = self._load_hdf5(f)
             else:  # item contains several file_names (sets of data) or is a single valued list
@@ -866,18 +861,13 @@ class cellpydata(object):
                     if check_file_type:
                         filetype = self._check_file_type(f[0])
                     if filetype == "res":
-                        newtests, FileError = self._loadres(f[0])
-                        if FileError is not None:
-                            print "error reading file (single_B)"
-                            print "FileError:",
-                            print FileError
+                        newtests = self._loadres(f[0])
 
                     elif filetype == "h5":
                         newtests = self._load_hdf5(f[0])
                 else:  # f = [file_01, file_02, ....] multiple files, so merge them
                     txt = "multiple files - merging"
                     self.Print(txt, 1)
-                    FileError = None
                     first_test = True
                     newtests = None
                     for f2 in f:
@@ -886,27 +876,20 @@ class cellpydata(object):
                         if check_file_type:
                             filetype = self._check_file_type(f2)
                         if filetype == "res":
-                            newtests1, FileError = self._loadres(f2)  # loading file
+                            newtests1 = self._loadres(f2)  # loading file
 
                         # print "loaded file",
                         # print f2
 
-                        if FileError is None:
-                            if first_test:
-                                # no_tests_in_dataset=len(newtests1)
-                                newtests = newtests1  # for first test; call it newtest
-                                # print "this was the first file"
-                                first_test = False
-                            else:
-                                newtests[test_number] = self._append(newtests[test_number], newtests1[test_number])
-                                for raw_data_file, file_size in zip(newtests1[test_number].raw_data_files,
-                                                                    newtests1[test_number].raw_data_files_length):
-                                    newtests[test_number].raw_data_files.append(raw_data_file)
-                                    newtests[test_number].raw_data_files_length.append(file_size)
+                        if first_test:
+                            newtests = newtests1
+                            first_test = False
                         else:
-                            print "error reading file (loadres)"
-                            print "error:",
-                            print FileError
+                            newtests[test_number] = self._append(newtests[test_number], newtests1[test_number])
+                            for raw_data_file, file_size in zip(newtests1[test_number].raw_data_files,
+                                                                newtests1[test_number].raw_data_files_length):
+                                newtests[test_number].raw_data_files.append(raw_data_file)
+                                newtests[test_number].raw_data_files_length.append(file_size)
 
             if newtests:
                 for test in newtests:
@@ -3250,8 +3233,8 @@ class cellpydata(object):
                 if not self._is_not_empty_test(test):
                     print "empty test %i" % (j)
                     return
-                if isinstance(self.loaded_from, (list, tuple)):
-                    for f in self.loaded_from:
+                if isinstance(test.loaded_from, (list, tuple)):
+                    for f in test.loaded_from:
                         txt += f
                         txt += "\n"
                 else:
