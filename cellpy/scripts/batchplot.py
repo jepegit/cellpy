@@ -5,6 +5,8 @@ import os
 
 from cellpy import cellreader, dbreader, prmreader, filefinder
 
+print "UNDER DEVELOPMENT"
+
 print "Reading parametres"
 prms = prmreader.read()
 excel_reader = dbreader.reader()
@@ -44,33 +46,3 @@ for n in serial_numbers:
 
 for x,y in cell_data_dict.iteritems():
     print x, y
-
-
-
-
-#excel_reader.print_serial_number_info(1759)
-
-
-
-# self.a = self.reader.select_batch(self.batch, self.bcol)
-#         lena = len(self.a)
-#         if lena < 1:
-#             print "no experimental runs found"
-#             return -1
-#         print "list of experimental runs:"
-#         print self.a
-#
-#         print "PROCESSING..."
-#         self.get_info()
-#         self.load_cells()
-#
-#         print "EXPORTING..."
-#         self.make_diagnostics_plots()
-#         for ex in self.plotlist:
-#             self.make_datasets(ex)
-#             self.save_datasets(ex)
-#
-#         self.save_raw()
-#         self.save_cycles()
-#         self.save_dqdv()
-#         self.save_hdf5()

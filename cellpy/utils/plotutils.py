@@ -8,6 +8,7 @@ Created on Tue Mar 05 16:15:14 2013
 import copy
 import itertools
 import collections
+import numpy as np
 
 
 class Linestyle:

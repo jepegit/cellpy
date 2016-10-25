@@ -288,7 +288,7 @@ class dataset(object):
     def __str__(self):
         txt = "_cellpy_data_dataset_class_\n"
         txt += "loaded from file\n"
-        if isinstance(self.loaded_from, [list, tuple]):
+        if isinstance(self.loaded_from, (list, tuple)):
             for f in self.loaded_from:
                 txt += f
                 txt += "\n"
@@ -725,7 +725,7 @@ class cellpydata(object):
 
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
                  summary_on_raw=False, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False):
+                 summary_end_v=True, only_summary=False, only_first=False, force_raw=False):
         """Loads data for given cells.
 
         Args:
@@ -738,6 +738,7 @@ class cellpydata(object):
             summary_end_v (bool): summarize end voltage
             only_summary (bool): get only the summary of the runs
             only_first (bool): only use the first file fitting search criteria
+            force_raw (bool): only use raw-files
 
         Example:
 
@@ -762,6 +763,8 @@ class cellpydata(object):
 
         if cellpy_file is None:
             similar = False
+        elif force_raw:
+            similar = False
         else:
             similar = self.check_file_ids(raw_files, cellpy_file)
 
@@ -775,12 +778,13 @@ class cellpydata(object):
             not_empty = self.tests_status
             if mass:
                 self.set_mass(mass)
-            if not_empty and summary_on_raw:
-                self.make_summary(all_tests=False, find_ocv=summary_ocv,
-                                  find_ir=summary_ir,
-                                  find_end_voltage=summary_end_v)
-            else:
-                self.Print("Cannot make summary for empty set", 1)
+            if summary_on_raw:
+                if not_empty:
+                    self.make_summary(all_tests=False, find_ocv=summary_ocv,
+                                      find_ir=summary_ir,
+                                      find_end_voltage=summary_end_v)
+                else:
+                    self.Print("Cannot make summary for empty set", 1)
 
         else:
             self.load(cellpy_file)
@@ -791,7 +795,6 @@ class cellpydata(object):
         Args:
             file_names (list of raw-file names:
         """
-
         if file_names:
             self.file_names = file_names
 
@@ -3126,7 +3129,7 @@ class cellpydata(object):
 
     @staticmethod
     def _is_listtype(x):
-        if isinstance(x, [list, tuple]):
+        if isinstance(x, (list, tuple)):
             return True
         else:
             return False
@@ -3247,7 +3250,7 @@ class cellpydata(object):
                 if not self._is_not_empty_test(test):
                     print "empty test %i" % (j)
                     return
-                if isinstance(self.loaded_from, [list, tuple]):
+                if isinstance(self.loaded_from, (list, tuple)):
                     for f in self.loaded_from:
                         txt += f
                         txt += "\n"

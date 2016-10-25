@@ -4,7 +4,7 @@ import sys
 import os
 
 from cellpy import cellreader, dbreader, prmreader, filefinder
-# from cellpy.utils import plotutils
+from cellpy.utils import plotutils
 
 from numpy import amin, amax, array, argsort
 import pandas as pd
@@ -77,9 +77,10 @@ class summaryplot:
                  max_cycles=None,
                  fetch_onliners=False,
                  ensure_step_table=False,
-                 force_res=False,
+                 force_raw=False,
                  ):
         self.reader = dbreader.reader()
+        self.tests = []
         self.dqdv_numbermultiplyer = dqdv_numbermultiplyer
         self.dqdv_method = dqdv_method
         self.dqdv_finalinterpolation = dqdv_finalinterpolation
@@ -98,7 +99,7 @@ class summaryplot:
         self.only_first = only_first
         self.fetch_onliners = fetch_onliners
         self.ensure_step_table = ensure_step_table
-        self.force_res = force_res
+        self.force_raw = force_raw
         # at the moment we asssume refs is a list TODO: fix it
         if refs is None:
             self.refs = []
@@ -222,16 +223,16 @@ class summaryplot:
         if self.prms is None:
             self.read_prms()
         if self.predirname is not None:
-            newdir = self.predirname + "_" + self.batch
+            _new_dir = self.predirname + "_" + self.batch
         else:
-            newdir = self.batch
+            _new_dir = self.batch
 
-        NewDir = os.path.join(self.prms.outdatadir, newdir)
+        new_dir = os.path.join(self.prms.outdatadir, _new_dir)
 
-        if not os.path.isdir(NewDir):
-            os.mkdir(NewDir)
+        if not os.path.isdir(new_dir):
+            os.mkdir(new_dir)
             print "created outdate directory"
-        self.savedir = NewDir
+        self.savedir = new_dir
 
         if self.export_raw or self.export_cycles or self.export_dqdv:
             savedir_raw = os.path.join(self.savedir, "raw_data")
@@ -787,21 +788,20 @@ class summaryplot:
         # TODO: fix this
         column_names = []
         diagnostics = []
-        tests_status = self.d.tests_status
-        for testnumber, test in enumerate(self.d.tests):
-            status = tests_status[testnumber]
+        test_number = 0
+        for cell_data_object in self.tests:
+            cell_data = cell_data_object.tests[test_number]
             try:
-                firstname, extension = os.path.splitext(test.loaded_from)
+                firstname, extension = os.path.splitext(cell_data.loaded_from)
+
             except AttributeError as e:
                 print "Empty set?"
                 print e
-                print "Status:",
-                print status
             else:
                 cn = os.path.basename(firstname)
                 cn = self.make_legend_txt(cn)
                 column_names.append(cn)
-                out = self.d.get_diagnostics_plots(test_number=testnumber)
+                out = cell_data_object.get_diagnostics_plots()
                 diagnostics.append(out)
 
         if _exts is None:
@@ -822,59 +822,39 @@ class summaryplot:
         _sel = self.plotTypes[_ext].columntxt
         column_names = []
         datasets = []
-        for status, test in zip(self.d.tests_status, self.d.tests):
-            if not status:
-                print "test missing"
-            else:
-                # check if test is empty
-                if _sel in test.dfsummary.columns:
-                    if len(test.dfsummary[_sel]) > 0:
-                        firstname, extension = os.path.splitext(test.loaded_from)
-                        cn = os.path.basename(firstname)
-                        cn = self.make_legend_txt(cn)
-                        column_names.append(cn)
-                        datasets.append(test.dfsummary[_sel])
-                    else:
-                        print test.loaded_from,
-                        print "is empty"
+
+        test_number = 0
+        for cell_data_object in self.tests:
+            cell_data = cell_data_object.tests[test_number]
+            if _sel in cell_data.dfsummary.columns:
+                if len(cell_data.dfsummary[_sel]) > 0:
+                    firstname, extension = os.path.splitext(cell_data.loaded_from)
+                    cn = os.path.basename(firstname)
+                    cn = self.make_legend_txt(cn)
+                    column_names.append(cn)
+                    datasets.append(cell_data.dfsummary[_sel])
                 else:
-                    print test.loaded_from,
-                    print "is missing",
-                    print _sel
+                    print cell_data.loaded_from,
+                    print "is empty"
+            else:
+                print cell_data.loaded_from,
+                print "is missing",
+                print _sel
         self.plotdata[_ext] = [column_names, datasets]
 
     def load_cells(self, sort=True):
-        #  TODO: This must be fixed - create a new list holding the different cellpydata instances
-        self.d = cellreader.cellpydata(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
-        self.d.set_cellpy_datadir(self.prms.cellpydatadir)
-        self.d.set_raw_datadir(self.prms.rawdatadir)
-        force_res = self.force_res
+        self.tests = []
         if sort is True:
             self.sort_cells()
-        """
-        >>> srnos = dbreader.select_batch("testing_new_solvent")
->>> cell_datas = []
->>> for srno in srnos:
->>> ... my_run_name = dbreader.get_cell_name(srno)
->>> ... mass = dbreader.get_mass(srno)
->>> ... rawfiles, cellpyfiles = filefinder.search_for_files(run_name)
->>> ... cell_data = loadfile(raw_files = rawfiles, cellpy_file = cellpyfiles)
->>> ... cell_data.set_mass(mass)
->>> ... if not cell_data.summary_exists:
->>> ... ... cell_data.create_summary() # etc. etc.
->>> ... cell_datas.append(cell_data)
->>>
-
-"""
-        # for srno in srnos etc findfiles
-        my_run_name = dbreader.get_cell_name(srno)
-        rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
-
-        if self.only_first:
-            self.d.loadcell(raw_files=rawfiles, cellpy_file=cellpyfiles)  # fix this
-        else:
-            self.d.loadcell(raw_files=rawfiles, cellpy_file=cellpyfiles)
-        self.number_of_tests = self.d.get_number_of_tests()  # fix this
+        for my_run_name, my_mass in zip(self.allfiles, self.allmasses):
+            rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
+            cell_data = cellreader.cellpydata(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
+            cell_data.set_cellpy_datadir(self.prms.cellpydatadir)
+            cell_data.set_raw_datadir(self.prms.rawdatadir)
+            cell_data.loadcell(raw_files=rawfiles, cellpy_file=cellpyfiles, mass=my_mass, summary_on_raw=True,
+                               force_raw=self.force_raw)
+            self.number_of_tests += cell_data.get_number_of_tests()
+            self.tests.append(cell_data)
 
     def get_info(self, ):
         self._get_info()
@@ -1186,14 +1166,13 @@ class summaryplot:
 
         max_cycles = self.max_cycles
 
-        test_number = -1
-        for data in self.d.tests:
-            test_number += 1
-            print test_number
-            if data is None:
+        test_number = 0
+        for cell_data_object in self.tests:
+            cell_data = cell_data_object.tests[test_number]
+            if cell_data is None:
                 print "NoneType - dataset missing"
             else:
-                filename = data.loaded_from
+                filename = cell_data.loaded_from
                 no_merged_sets = ""
                 firstname, extension = os.path.splitext(filename)
                 firstname += no_merged_sets
@@ -1205,7 +1184,7 @@ class summaryplot:
                 print outname_charge
                 print outname_discharge
 
-                list_of_cycles = self.d.get_cycle_numbers(test_number=test_number)
+                list_of_cycles = cell_data_object.get_cycle_numbers()
                 number_of_cycles = len(list_of_cycles)
                 print "you have %i cycles" % (number_of_cycles)
 
@@ -1214,12 +1193,12 @@ class summaryplot:
                 for cycle in list_of_cycles:
                     try:
                         # if max_cycles is not None and cycle <= max_cycles:
-                        c, v = self.d.get_ccap(cycle, test_number=test_number)
+                        c, v = cell_data_object.get_ccap(cycle)
                         v, dQ = dQdV(v, c,
                                      NumberMultiplyer=dqdv_numbermultiplyer,
                                      Method=dqdv_method,
                                      FinalInterpolation=dqdv_finalinterpolation)
-                        # dc,dv = self.dget_cap(cycle,test_number=test_number )
+                        # dc,dv = self.dget_cap(cycle)
                         v = v.tolist()
                         dQ = dQ.tolist()
 
@@ -1246,7 +1225,7 @@ class summaryplot:
                 out_data = []
                 for cycle in list_of_cycles:
                     try:
-                        dc, v = self.d.get_dcap(cycle, test_number=test_number)
+                        dc, v = cell_data_object.get_dcap(cycle, test_number=test_number)
                         v, dQ = dQdV(v, dc,
                                      NumberMultiplyer=dqdv_numbermultiplyer,
                                      Method=dqdv_method,
@@ -1330,7 +1309,9 @@ class summaryplot:
             print "---saving raw-data---"
             savedir = self.savedir_raw
             try:
-                self.d.exportcsv(savedir, sep=self.sep)
+                test_number = 0
+                for cell_data_object in self.tests:
+                    cell_data_object.exportcsv(savedir, sep=self.sep)
             except:
                 print "Error in exporting raw data"
 
@@ -1339,7 +1320,9 @@ class summaryplot:
             print "---saving cycles----"
             savedir = self.savedir_raw
             try:
-                self.d.exportcsv(savedir, sep=self.sep, cycles=True, raw=False)
+                test_number = 0
+                for cell_data_object in self.tests:
+                    cell_data_object.exportcsv(savedir, sep=self.sep, cycles=True, raw=False)
 
             except:
                 print "Error in exporting cycles"
@@ -1355,8 +1338,10 @@ class summaryplot:
 
     def save_hdf5(self):
         if self.export_hdf5:
-            datadir = self.prms.hdf5datadir
-            for f, test_number, name in zip(self.hdf5_fixed_files, range(len(self.d.tests)), self.allfiles):
+            datadir = self.prms.cellpydatadir
+            test_number = 0
+            for f, cell_data_object, name in zip(self.hdf5_fixed_files, self.tests, self.allfiles):
+                cell_data = cell_data_object.tests[test_number]
                 filename = os.path.join(datadir, name)
                 if f:
                     print "fixed hdf5 - not saved (%s)" % (name)
@@ -1366,9 +1351,9 @@ class summaryplot:
                     # if needs_updating:
                     try:
                         if self.ensure_step_table:
-                            self.d.ensure_step_table = True
+                            cell_data_object.ensure_step_table = True
 
-                        self.d.save_test(filename, test_number=test_number)
+                        cell_data_object.save_test(filename, test_number=test_number)
                     except:
                         print "Could not save",
                         print filename + ".h5"
@@ -1804,15 +1789,14 @@ if __name__ == "__main__":
     Refs = None
     plot_type = 2
     legend_stack = 3
-    a = summaryplot("sic_tem", bcol=5, refs=Refs, plot_type=plot_type, predirname="SiCAnode",
+    a = summaryplot("e004_new_electrolyte", bcol=5, refs=Refs, plot_type=plot_type, predirname="NatBatt",
                     legend_stack=legend_stack, use_total_mass=False, only_first=False,
-                    verbose=False, axis_txt_sub="Si",
-                    dbc=False, export_raw=True, export_hdf5=True, force_res=False,
+                    verbose=True, axis_txt_sub="Si",
+                    dbc=False, export_raw=True, export_hdf5=True, force_raw=False,
                     ensure_step_table=True,  # This ensures that files exported to hdf5 also includes step table
-                    export_cycles=True,
-                    export_dqdv=True,
+                    export_cycles=False,
+                    export_dqdv=False,
                     fetch_onliners=False,
-
                     )
     print "plotting"
     # plt.show()
