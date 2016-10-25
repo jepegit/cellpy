@@ -4,15 +4,17 @@
 
 """
 
-import sys, os, csv, itertools
 from cellpy.readers import cellreader
+import sys, os, csv, itertools
+import matplotlib.pyplot as plt
+
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 def making_csv():
     FileName  = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
                 r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-                r"\testdata\20160830_sic006_72_cc_01.res"
+                r"\testdata\20160830_sic006_74_cc_01.res"
     Mass      = 0.86
     OutFolder = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
                 r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
@@ -72,18 +74,14 @@ def making_csv():
     print "bye!"
 
 
-def extract_ocvrlx():
-    import itertools
-    import csv
-    import matplotlib.pyplot as plt
-
+def extract_ocvrlx(type_data):
     filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-               r"\testdata\20160830_sic006_72_cc_01.res"
+               r"\testdata\20160830_sic006_74_cc_01.res"
     mass = 0.86
-    type_of_data = "ocvrlx_up"
-    fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata" \
-              r"\20160805_sic006_45_cc_01_"+type_of_data
+    fileout = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
+              r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
+              r"\testdata\20160830_sic006_74_cc_01_"+type_data
     d_res = cellreader.cellpydata()
     d_res.loadres(filename)
     d_res.set_mass(mass)
@@ -91,26 +89,29 @@ def extract_ocvrlx():
     d_res.print_step_table()
     out_data = []
     for cycle in d_res.get_cycle_numbers():
-        try:
-            if type_of_data == 'ocvrlx_up':
-                print "getting ocvrlx up data for cycle %i" % (cycle)
-                t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
-            else:
-                print "getting ocvrlx down data for cycle %i" % (cycle)
-                t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
-            plt.plot(t,v)
-            t = t.tolist()
-            v = v.tolist()
+        if cycle == 48:
+            break
+        else:
+            try:
+                if type_data == 'ocvrlx_up':
+                    print "getting ocvrlx up data for cycle %i" % (cycle)
+                    t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
+                else:
+                    print "getting ocvrlx down data for cycle %i" % (cycle)
+                    t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
+                plt.plot(t,v)
+                t = t.tolist()
+                v = v.tolist()
 
-            header_x = "time (s) cycle_no %i" % cycle
-            header_y = "voltage (V) cycle_no %i" % cycle
-            t.insert(0,header_x)
-            v.insert(0,header_y)
-            out_data.append(t)
-            out_data.append(v)
+                header_x = "time (s) cycle_no %i" % cycle
+                header_y = "voltage (V) cycle_no %i" % cycle
+                t.insert(0,header_x)
+                v.insert(0,header_y)
+                out_data.append(t)
+                out_data.append(v)
 
-        except:
-            print "could not extract cycle %i" % (cycle)
+            except:
+                print "could not extract cycle %i" % (cycle)
 
 
     # Saving cycles in one .csv file (x,y,x,y,x,y...)
@@ -126,22 +127,23 @@ def extract_ocvrlx():
 
     print "saved the file",
     print outfile
-    plt.show()
     print "bye!"
 
 # making_csv()
+extract_ocvrlx("ocvrlx_up")
+extract_ocvrlx("ocvrlx_down")
+plt.show()
 
-
-filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
-               r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-               r"\testdata\20160830_sic006_72_cc_01.res"
-mass = 0.86
-type_of_data = "ocvrlx_up"
-fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata" \
-          r"\20160805_sic006_45_cc_01_"+type_of_data
-sic006_72 = cellreader.cellpydata()
-sic006_72.loadres(filename)
-sic006_72.set_mass(mass)
-list_of_cycles = sic006_72.get_cycle_numbers()
-print "you have %i cycles" % list_of_cycles
+# filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
+#                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
+#                r"\testdata\20160830_sic006_74_cc_01.res"
+# mass = 0.86
+# type_of_data = "ocvrlx_up"
+# fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata" \
+#           r"\20160805_sic006_74_cc_01_"+type_of_data
+# sic006_74 = cellreader.cellpydata()
+# sic006_74.loadres(filename)
+# sic006_74.set_mass(mass)
+# list_of_cycles = sic006_74.get_cycle_numbers()
+# print len(list_of_cycles)
 
