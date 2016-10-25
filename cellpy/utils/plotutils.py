@@ -41,8 +41,8 @@ class Linestyle:
         self.color_Six = self.make_rgb([240, 240, 60])
         self.color_Seven = self.make_rgb([60, 240, 188])
         self.color_Eight = self.make_rgb([240, 60, 188])
-        # ---sea-grean-colors--------------------
-        self.color_DarkSeaGrean = self.make_rgb([143, 188, 143])
+        # ---sea-green-colors--------------------
+        self.color_DarkSeaGreen = self.make_rgb([143, 188, 143])
         self.color_SeaGreen = self.make_rgb([46, 139, 87])
         self.color_MediumSeaGreen = self.make_rgb([60, 179, 113])
         self.color_LightSeaGreen = self.make_rgb([32, 178, 170])
@@ -70,9 +70,9 @@ class Linestyle:
         ]
 
     def __str__(self):
-        txt = 70*"=" +"\n"
+        txt = 70 * "=" + "\n"
         txt += "    cellpy.utils.plotutils.Styles\n"
-        txt += 70*"=" + "\n"
+        txt += 70 * "=" + "\n"
         if self.style_label:
             txt += "style_label: %s\n" % self.style_label
             txt += "style_description: %s\n" % self.style_description
@@ -87,9 +87,6 @@ class Linestyle:
             txt += "markevery: %s\n" % self.markevery
 
         return txt
-
-
-
 
     @staticmethod
     def make_rgb(c):
@@ -209,7 +206,7 @@ class Styles:
         # count number of plots in each set
         style_counter = collections.OrderedDict()
         for g in set_list:
-            if style_counter.has_key(g):
+            if g in style_counter:
                 style_counter[g] += 1
             else:
                 style_counter[g] = 1
@@ -370,7 +367,6 @@ class Styles:
         self.style_seven = style_seven
         self.style_eight = style_eight
 
-
         self.number_of_styles = len(self.styles)
 
 
@@ -389,11 +385,11 @@ if __name__ == "__main__":
     t4 = "black_open"
     style_list = [t2, t2, t2, t2, t2]
     a = my_styles.get_set([1, 1, 1, 1, 1, 1, 1, 1])
-    for j in range(5):
-        line_style = my_styles.get(style_list[j], j + 1)
-        line_style = a[j]
+    for xx in range(5):
+        line_style = my_styles.get(style_list[xx], xx + 1)
+        line_style = a[xx]
         print line_style
-        plt.plot(x, y + 10 * j,
+        plt.plot(x, y + 10 * xx,
                  visible=_visible,
                  label=_label,
                  linestyle=line_style.linestyle,
