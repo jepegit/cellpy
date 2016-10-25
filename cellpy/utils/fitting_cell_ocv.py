@@ -283,8 +283,10 @@ if __name__ == '__main__':
     """
     datafolder = r'..\testdata'
 
-    filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
-    filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
+    # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
+    # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
+    filename_up = r'20160830_sic006_74_cc_01_ocvrlx_up.csv'
+    filename_down = r'20160830_sic006_74_cc_01_ocvrlx_down.csv'
     down = os.path.join(datafolder, filename_down)
     up = os.path.join(datafolder, filename_up)
     data_down = pd.read_csv(down, sep=';')
@@ -362,7 +364,7 @@ if __name__ == '__main__':
         # # initial_param_up.add('v0_sei', value=init_guess['v0_rc']['sei'])
 
         """Fitting parameters.
-        ----------------------------------------------------------------------------
+        ------------------------------------------------------------------------
 
         """
         # making a class Minimizer that contain fitting methods and attributes
@@ -509,7 +511,7 @@ if __name__ == '__main__':
             best_rc_para.append(best_rc_cycle)
 
         """User decides which cycles to plot.
-        ----------------------------------------------------------------------------
+        -------------------------------------------------------------------------
         """
         if not user_cycles:
             # no cycles
@@ -537,7 +539,7 @@ if __name__ == '__main__':
                          result[cycle_nr])
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(result[cycle_nr])
-            print '----------------------------------------------------------------'
+            print '------------------------------------------------------------'
 
         # sub plotting voltage
         ############################################################################
@@ -560,7 +562,7 @@ if __name__ == '__main__':
         #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
         #                  sub_up)
         """Plotting parameters
-        ----------------------------------------------------------------------------
+        ------------------------------------------------------------------------
         """
         # printing parameters
         # for cyc in range(1, len(result)):
@@ -571,6 +573,7 @@ if __name__ == '__main__':
         plt.suptitle('Initial and fitted parameters in every cycle after %s'
                      % rlx_txt, size=20)
         cycle_array = np.arange(1, len(result) + 1, 1)
+        cycle_array_ticks = np.arange(1, len(result) + 1, 3)
 
         if len(best_para[0]) % 2 == 0:   # Even number of cycles
             gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
@@ -583,7 +586,7 @@ if __name__ == '__main__':
             subs_params = [fig_params.add_subplot(gs[p])
                            for p in range(len(best_para[0]))]
 
-        plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array)
+        plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
         for _, name in enumerate(result[0].var_names):
             para_array = np.array([best_para[step][name]
                                    for step in range(len(result))])
@@ -599,6 +602,9 @@ if __name__ == '__main__':
             else:
                 subs_params[_].set_ylabel('Voltage [V]')
 
+        """Plotting RC parameters
+        ------------------------------------------------------------------------
+        """
         fig_rc = plt.figure()
         fig_rc.suptitle('R and C for each rc-circuit in all cycles after %s'
                         % rlx_txt)
@@ -610,13 +616,14 @@ if __name__ == '__main__':
         gs_rc.update(left=0.05, right=0.9, wspace=1)
         subs_rc = [fig_rc.add_subplot(gs_rc[pr])
                    for pr in range(len(best_rc_para[0].keys()))]
+        plt.setp(subs_rc, xlabel='Cycle number', xticks=cycle_array_ticks)
+
         for idx, key_value in enumerate(best_rc_para[0].keys()):
             temp_array = np.array([best_rc_para[cyc][key_value]
                                    for cyc in range(len(best_rc_para))])
             subs_rc[idx].plot(cycle_array, temp_array, 'og')
             subs_rc[idx].legend([key_value], loc='center left',
                                 bbox_to_anchor=(1, 0.5))
-            subs_rc[idx].set_xlabel('Cycles')
             if key_value.startswith('r'):
                 subs_rc[idx].set_ylabel('Resistance [Ohm]')
             else:
@@ -624,23 +631,28 @@ if __name__ == '__main__':
 
 
     v_start_down = 1.
-    i_start_ini_down = 0.000153628   # from cycle 1-3
-    i_start_after_down = 0.000305533   # from cycle 4-end
-    i_start_down = [i_start_ini_down for _down in range(3)]
-    for down_4 in range(len(data_down) - 3):
-        i_start_down.append(i_start_after_down)
-
+    # i_start_ini_down = 0.000153628   # from cycle 1-3
+    # i_start_after_down = 0.000305533   # from cycle 4-end
+    # i_start_down = [i_start_ini_down for _down in range(3)]
+    # for down_4 in range(len(data_down) - 3):
+    #     i_start_down.append(i_start_after_down)
+    #
     v_start_up = 0.01
-    i_start_ini_up = 0.0001526552   # from cycle 1-3
-    i_start_after_up = 0.0003045602   # from cycle 4-end
-    i_start_up = [i_start_ini_up for _up in range(3)]
-    for up_4 in range(len(data_up) - 3):
-        i_start_up.append(i_start_after_up)
+    # i_start_ini_up = 0.0001526552   # from cycle 1-3
+    # i_start_after_up = 0.0003045602   # from cycle 4-end
+    # i_start_up = [i_start_ini_up for _up in range(3)]
+    # for up_4 in range(len(data_up) - 3):
+    #     i_start_up.append(i_start_after_up)
 
-    # cell_mass = 0.8   # [g]
-    # c_rate = 0.1   # [1 / h]
-    # cell_capacity = 3.579   # [mAh / g]
-    # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+    cell_mass = 0.86   # [g]
+    c_rate_3 = 0.05   # [1 / h]
+    c_rate = 0.1
+    cell_capacity = 3.579   # [mAh / g]
+    i_start_ini = (cell_mass * c_rate_3 * cell_capacity) / 1000   # [A]
+    i_start_after = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+    i_start = [i_start_ini for _down in range(3)]
+    for down_4 in range(len(data_down) - 3):
+        i_start.append(i_start_after)
     pass
     # question_ex = 'Cycles after discharge you want to plot, separated with ' \
     #               'space. If you don'"'"'t want to plot any press ' \
@@ -653,12 +665,12 @@ if __name__ == '__main__':
                   'space. If you don'"'"'t want to plot any press ' \
                   'enter. Write "a" for all plots: -->'
     user_cycles_up = raw_input(question_up)
-    ocv_cycle(data_up, user_cycles_up, v_start_up, i_start_up)
-
+    ocv_cycle(data_up, user_cycles_up, v_start_up, i_start)
+    plt.show()
     question_down = 'Cycles after charge you want to plot, separated with ' \
                     'space. If you don'"'"'t want to plot any press ' \
                     'enter. Write "a" for all plots: -->'
     user_cycles_down = raw_input(question_down)
-    ocv_cycle(data_down, user_cycles_down, v_start_down, i_start_down)
-
+    ocv_cycle(data_down, user_cycles_down, v_start_down, i_start)
     plt.show()
+
