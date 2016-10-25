@@ -9,63 +9,67 @@ from cellpy.readers import cellreader
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
+def making_csv():
+    FileName  = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
+                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
+                r"\testdata\20160830_sic006_72_cc_01.res"
+    Mass      = 0.86
+    OutFolder = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
+                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
+                r"\testdata"
 
-FileName  = r"C:\Users\torkv\OneDrive - Norwegian University of Life Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy\testdata\20160830_sic006_69_cc_01.res"
-Mass      = 0.84
-OutFolder = r"C:\Users\torkv\OneDrive - Norwegian University of Life Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy\testdata"
-
-try:
-    os.chdir(OutFolder)
-    print "Output will be sent to folder:"
-    print OutFolder
-except:
-    print "OutFolder does not exits"
-    sys.exit(-1)
-
-# Loading arbin-data
-d = cellreader.cellpydata(FileName)
-d.loadres()
-d.set_mass(Mass)
-d.make_summary()
-d.create_step_table()
-print "\nexporting raw-data and summary"
-d.exportcsv(OutFolder)
-
-# Extracting cycles
-list_of_cycles = d.get_cycle_numbers()
-number_of_cycles = len(list_of_cycles)
-print "you have %i cycles" % (number_of_cycles)
-
-FileName0 = os.path.basename(FileName)
-outfile = "%s_cycles.csv" % (FileName0)
-out_data = []
-
-for cycle in list_of_cycles:
     try:
-        c,v = d.get_cap(cycle)
-        c = c.tolist()
-        v = v.tolist()
-        header_x = "cap cycle_no %i" % cycle
-        header_y = "voltage cycle_no %i" % cycle
-        c.insert(0,header_x)
-        v.insert(0,header_y)
-        out_data.append(c)
-        out_data.append(v)
+        os.chdir(OutFolder)
+        print "Output will be sent to folder:"
+        print OutFolder
     except:
-        print "could not extract cycle %i" % (cycle)
+        print "OutFolder does not exits"
+        sys.exit(-1)
+
+    # Loading arbin-data
+    d = cellreader.cellpydata(FileName)
+    d.loadres()
+    d.set_mass(Mass)
+    d.make_summary()
+    d.create_step_table()
+    print "\nexporting raw-data and summary"
+    d.exportcsv(OutFolder)
+
+    # Extracting cycles
+    list_of_cycles = d.get_cycle_numbers()
+    number_of_cycles = len(list_of_cycles)
+    print "you have %i cycles" % (number_of_cycles)
+
+    FileName0 = os.path.basename(FileName)
+    outfile = "%s_cycles.csv" % (FileName0)
+    out_data = []
+
+    for cycle in list_of_cycles:
+        try:
+            c,v = d.get_cap(cycle)
+            c = c.tolist()
+            v = v.tolist()
+            header_x = "cap cycle_no %i" % cycle
+            header_y = "voltage cycle_no %i" % cycle
+            c.insert(0,header_x)
+            v.insert(0,header_y)
+            out_data.append(c)
+            out_data.append(v)
+        except:
+            print "could not extract cycle %i" % (cycle)
 
 
-# Saving cycles in one .csv file (x,y,x,y,x,y...)
-delimiter = ";"
-print "saving the file with delimiter '%s' " % (delimiter)
-with open(outfile, "wb") as f:
-    writer=csv.writer(f,delimiter=delimiter)
-    writer.writerows(itertools.izip_longest(*out_data))
-    # star (or asterix) means transpose (writing cols instead of rows)
+    # Saving cycles in one .csv file (x,y,x,y,x,y...)
+    delimiter = ";"
+    print "saving the file with delimiter '%s' " % (delimiter)
+    with open(outfile, "wb") as f:
+        writer=csv.writer(f,delimiter=delimiter)
+        writer.writerows(itertools.izip_longest(*out_data))
+        # star (or asterix) means transpose (writing cols instead of rows)
 
-print "saved the file",
-print outfile
-print "bye!"
+    print "saved the file",
+    print outfile
+    print "bye!"
 
 
 def extract_ocvrlx():
@@ -73,11 +77,14 @@ def extract_ocvrlx():
     import csv
     import matplotlib.pyplot as plt
 
-    filename = r"I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin\20160805_sic006_45_cc_01.res"
-    mass = 0.853
+    filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
+               r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
+               r"\testdata\20160830_sic006_72_cc_01.res"
+    mass = 0.86
     type_of_data = "ocvrlx_up"
-    fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata\20160805_sic006_45_cc_01_"+type_of_data
-    d_res = setup_cellpy_instance()
+    fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata" \
+              r"\20160805_sic006_45_cc_01_"+type_of_data
+    d_res = cellreader.cellpydata()
     d_res.loadres(filename)
     d_res.set_mass(mass)
     d_res.create_step_table()
@@ -121,3 +128,20 @@ def extract_ocvrlx():
     print outfile
     plt.show()
     print "bye!"
+
+# making_csv()
+
+
+filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
+               r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
+               r"\testdata\20160830_sic006_72_cc_01.res"
+mass = 0.86
+type_of_data = "ocvrlx_up"
+fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata" \
+          r"\20160805_sic006_45_cc_01_"+type_of_data
+sic006_72 = cellreader.cellpydata()
+sic006_72.loadres(filename)
+sic006_72.set_mass(mass)
+list_of_cycles = sic006_72.get_cycle_numbers()
+print "you have %i cycles" % list_of_cycles
+
