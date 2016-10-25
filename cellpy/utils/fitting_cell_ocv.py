@@ -51,6 +51,7 @@ http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.htm
 from lmfit import Parameters, report_fit, Model
 from cell_ocv import *
 
+import StringIO
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -60,6 +61,57 @@ import copy
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
+
+# from fitting_ocv_003.py
+# ocv_ex = """0.857999938	0.067619018
+# 11.40338493	0.072845809
+# 42.92991797	0.078072593
+# 99.15056006	0.083299384
+# 159.1619675	0.086373962
+# 219.1732833	0.089141086
+# 279.1847434	0.090985835
+# 339.1961105	0.092830583
+# 399.2077133	0.094060414
+# 459.2190174	0.095290251
+# 519.2302308	0.096520081
+# 579.2416535	0.097135
+# 639.2529781	0.09836483
+# 699.2644135	0.098979741
+# 759.2757954	0.09959466
+# 819.2871618	0.099902116
+# 879.2985487	0.100517035
+# 939.3099087	0.101439409
+# 999.3213345	0.101439409
+# 1059.333063	0.102054328
+# 1119.344104	0.102669239
+# 1179.355458	0.102976702
+# 1239.366895	0.103591613
+# 1299.378221	0.103899077
+# 1359.389606	0.104513988
+# 1419.400967	0.104513988
+# 1479.412349	0.104821451
+# 1539.42414	0.105128907
+# 1599.435153	0.105436362
+# 1659.446518	0.106051281
+# 1719.457927	0.106051281
+# 1779.469299	0.106358737
+# 1800.01385	0.106358737
+# """
+#
+# ocv_ex = StringIO.StringIO(ocv_ex)
+# t = []   # time list
+# u = []   # voltage list
+#
+# cut_off = None
+# for line in ocv_ex:
+#     t1, u1 = line.split('\t')
+#     t.append(float(t1))
+#     u.append(float(u1))
+#     if cut_off and float(t1) > cut_off:
+#         print "cut at t = %s" % t1
+#         break
+# t = np.array(t)
+# u = np.array(u)
 
 
 def manipulate_data(read_data):
@@ -240,25 +292,44 @@ if __name__ == '__main__':
     data_up = manipulate_data(data_up)
     data_down = manipulate_data(data_down)
 
-    """Preparations for fitting parameters.
+    """Defining model.
+
+    Tell the script how the model looks like. How many RC-circuits are there?
+    Make initial guesses for the time constant and voltage-contribute from each
+    RC-circuit. "contri_..." is your guessed percentage of voltage which the
+    RC-circuit contribute to over the total relaxation.
+    """
+    contri_ct = 0.2
+    contri_d = 1 - contri_ct
+    tau_ct = 50
+    tau_d = 550
+    contri = {'ct': contri_ct, 'd': contri_d}
+    tau_guessed = {'ct': tau_ct, 'd': tau_d}
+
+
+    def ocv_cycle(ocv_data, user_cycles, v_start, i_start):
+        """Fitting, plotting and reporting user defined ocv relaxation cycles.
+
+        Args:
+            ocv_data (pd.Series): Time-voltage DataFrames of ocv - relaxation.
+            user_cycles (str): Number of cycles to report and plot.
+            v_start (float): Start voltage before IR-drop.
+            i_start (list): Current before ocv for each cycle.
+
+        Returns:
+            None: Fitting data with model.
+        """
+
+        """Preparations for fitting parameters.
 
         Write boundary conditions and initial guesses.
         Removing "nan" is inspired by 'stackoverflow'_
 
         .._stackoverflow:
             http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
-    ----------------------------------------------------------------------------
+        ------------------------------------------------------------------------
 
-    """
-    contri_ct = 0.2
-    contri_d = 1 - contri_ct
-    tau_ct = 80
-    tau_d = 700
-    contri = {'ct': contri_ct, 'd': contri_d}
-    tau_guessed = {'ct': tau_ct, 'd': tau_d}
-
-
-    def ocv_cycle(ocv_data, user_cycles, v_start, i_start):
+        """
         time = []
         voltage = []
         for i, sort in ocv_data.iteritems():
@@ -271,9 +342,9 @@ if __name__ == '__main__':
 
         if v_ocv < v_0:
             # after charge
-            rlx_txt = "delithiation"
+            rlx_txt = "delithiation (downwards relaxation)"
         else:
-            rlx_txt = "lithiation"
+            rlx_txt = "lithiation (upward relaxation)"
 
         init_guess = guessing_parameters(v_start, i_start[0], v_0,
                                          v_ocv, contri, tau_guessed)
@@ -430,7 +501,7 @@ if __name__ == '__main__':
                              best_para[cycle_i].valuesdict().items()
                              if key.startswith('v0')}
             best_c_cycle = {'c_%s' % key[4:]:
-                                tau_rc / best_rc_cycle['r_%s' % key[4:]]
+                            tau_rc / best_rc_cycle['r_%s' % key[4:]]
                             for key, tau_rc in
                             best_para[cycle_i].valuesdict().items()
                             if key.startswith('tau')}
@@ -459,7 +530,7 @@ if __name__ == '__main__':
 
         for cycle_nr in user_cycles_list:
             # fig = result[cycle_nr].plot()
-            plt.figure(figsize=(20, 13))
+            plt.figure()
             plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
                          ((cycle_nr + 1), rlx_txt))
             plot_voltage(time[cycle_nr], voltage[cycle_nr],
@@ -496,7 +567,7 @@ if __name__ == '__main__':
         #     print 'cycle number %i' % cyc
         #     print_params(ini=best_para[cyc - 1], fit=best_para[cyc])
         #     print '--------------------------------------------------------'
-        fig_params = plt.figure(figsize=(20, 13))
+        fig_params = plt.figure()
         plt.suptitle('Initial and fitted parameters in every cycle after %s'
                      % rlx_txt, size=20)
         cycle_array = np.arange(1, len(result) + 1, 1)
@@ -528,7 +599,7 @@ if __name__ == '__main__':
             else:
                 subs_params[_].set_ylabel('Voltage [V]')
 
-        fig_rc = plt.figure(figsize=(20, 13))
+        fig_rc = plt.figure()
         fig_rc.suptitle('R and C for each rc-circuit in all cycles after %s'
                         % rlx_txt)
         n_para = len(best_rc_para[0])
@@ -570,6 +641,13 @@ if __name__ == '__main__':
     # c_rate = 0.1   # [1 / h]
     # cell_capacity = 3.579   # [mAh / g]
     # i_start = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+    pass
+    # question_ex = 'Cycles after discharge you want to plot, separated with ' \
+    #               'space. If you don'"'"'t want to plot any press ' \
+    #               'enter. Write "a" for all plots: -->'
+    # user_cycle_ex = raw_input(question_ex)
+    # ex_ocv = pd.Series([pd.DataFrame(zip(t, u), columns=['time', 'voltage'])])
+    # ocv_cycle(ex_ocv, user_cycle_ex, v_start_up, [0.0007508742])
 
     question_up = 'Cycles after discharge you want to plot, separated with ' \
                   'space. If you don'"'"'t want to plot any press ' \
@@ -582,5 +660,5 @@ if __name__ == '__main__':
                     'enter. Write "a" for all plots: -->'
     user_cycles_down = raw_input(question_down)
     ocv_cycle(data_down, user_cycles_down, v_start_down, i_start_down)
-    plt.show()
 
+    plt.show()
