@@ -2001,8 +2001,11 @@ class cellpydata(object):
         c_rates_dict = {}
         for c, s in steps.iteritems():
             v = d[(d[c_txt] == c) & (d[s_txt] == s[0])]
-            current = np.average(v[x_txt])  # TODO this might give problems - check if it is empty first
-            c_rate = abs(1000000 * current / (nom_cap * mass))
+            if not v[x_txt].dropna().empty:
+                current = np.average(v[x_txt])
+                c_rate = abs(1000000 * current / (nom_cap * mass))
+            else:
+                c_rate = np.NaN
             c_rates_dict[c] = [s[0], c_rate]
             if not silent:
                 print "cycle no %4i (step %3i) has a c-rate of %5.3fC" % (c, s[0], c_rate),
@@ -2011,7 +2014,7 @@ class cellpydata(object):
                     print "(=C / %5.1f)" % (1 / c_rate)
             else:
                 if not silent:
-                    print "negative C-rate"
+                    print " --non-positive C-rate!-- "
         return c_rates_dict
 
     # -------------save-and-export--------------------------------------------------
@@ -3647,7 +3650,7 @@ def setup_cellpy_instance():
     return cellpy_instance
 
 
-def just_load_srno(srno):
+def just_load_srno(srno, prm_filename=None):
     """Simply load an dataset based on serial number (srno).
 
     This convenience function reads a dataset based on a serial number. This serial
@@ -3669,14 +3672,14 @@ def just_load_srno(srno):
     print "just_load_srno: srno: %i" % srno
 
     # ------------reading parametres--------------------------------------------
-
-    prms = prmreader.read()
     print "just_load_srno: read prms"
+    prms = prmreader.read(prm_filename)
     print prms
+
     print "just_load_srno: making class and setting prms"
     d = cellpydata(verbose=True)
-    d.set_cellpy_datadir(prms.cellpydatadir)
-    d.set_raw_datadir(prms.rawdatadir)
+    # d.set_cellpy_datadir(prms.cellpydatadir)
+    # d.set_raw_datadir(prms.rawdatadir)
     # ------------reading db----------------------------------------------------
     print
     print "just_load_srno: starting to load reader"
@@ -3861,6 +3864,6 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
 if __name__ == "__main__":
     print "running",
     print sys.argv[0]
-    #d = cellpydata()
-    #just_load_srno(614)
-    loadcellcheck()
+    d = cellpydata()
+    just_load_srno(614, r"C:\Scripting\MyFiles\development_cellpy\cellpy\parametres\_cellpy_prms_devel.ini")
+    # loadcellcheck()

@@ -73,7 +73,7 @@ class read:
         self.db_filename = "cellpy_db.xlsx"
         self.dbc_filename = "cellpy_db.xlsx"
         if prm_filename:
-            self._readprms(prm_filename)
+            self._readprms(prm_filename=prm_filename)
         else:
             prm_filenames = list()
             prm_globtxt = "_cellpy_prms*.ini"
@@ -104,14 +104,15 @@ class read:
             print "error",
             print e
 
-    def _readprms(self, no_file=False):
+    def _readprms(self, prm_filename=None, no_file=False):
+        if not prm_filename:
+            prm_filename = self.prm_default
         parser = ConfigParser.SafeConfigParser()
         if no_file:
             import StringIO
             parser.readfp(StringIO.StringIO(default_prms))
         else:
-            # print self.prm_default
-            parser.read(self.prm_default)
+            parser.read(prm_filename)
 
         opt = "Paths"
         try:

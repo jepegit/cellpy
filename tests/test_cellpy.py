@@ -52,9 +52,9 @@ class TestCellpy(object):
 
     @pytest.mark.slowtest
     @pytest.mark.smoketest
-    def test_just_load_srno(cls):
+    def test_just_load_srno(self):
         from cellpy import cellreader
-        assert cellreader.just_load_srno() == True
+        assert cellreader.just_load_srno(614) is True
 
     @pytest.mark.smoketest
     def test_setup_cellpy_instance(self):
@@ -62,7 +62,7 @@ class TestCellpy(object):
         d = cellreader.setup_cellpy_instance()
 
     @pytest.mark.unimportant
-    def test_humanize_bytes(cls):
+    def test_humanize_bytes(self):
         from cellpy import cellreader
         assert cellreader.humanize_bytes(1) == '1 byte'
         assert cellreader.humanize_bytes(1024) == '1.0 kB'
