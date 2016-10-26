@@ -53,7 +53,9 @@ class read:
         search_order (list)(optional): list with paths to search in ascending priority
                                        (available options: ["curdir","filedir","userdir"]).
     """
-
+    # should include more prms
+    # file_name_format
+    #
     def __init__(self, prm_filename=None, search_order=None):
         self.script_dir = os.path.abspath(os.path.dirname(__file__))
         self.search_path = dict()
@@ -78,11 +80,12 @@ class read:
 
             for key in self.search_order:
                 prm_directory = self.search_path[key]
-                prm_globtxt = os.path.join(prm_directory, prm_globtxt)
-                prm_filenames.extend(glob.glob(prm_globtxt))
+                prm_globtxt_full = os.path.join(prm_directory, prm_globtxt)
+                prm_filenames.extend(glob.glob(prm_globtxt_full))
 
+            #  need to implement a better way to search (it is a bit confusing for users)
             for f in prm_filenames:
-                if f != self.prm_default:
+                if os.path.basename(f) != os.path.basename(self.prm_default):
                     self.prm_default = f
                     break
 
