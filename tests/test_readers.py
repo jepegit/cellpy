@@ -12,6 +12,7 @@ test_data_dir_out = os.path.join(test_data_dir, "out")
 test_cellpy_file = "20160805_test001_45_cc.h5"
 test_run_name = "20160805_test001_45_cc"
 
+# TODO: use only functions where logical (remove TestCase)
 
 
 class TestDataReaders(TestCase):
@@ -32,10 +33,24 @@ class TestDataReaders(TestCase):
         assert test_res_file_full in run_files
         assert os.path.basename(cellpy_file) == test_cellpy_file
 
+    def test_set_res_datadir_wrong(self):
+        from cellpy import cellreader
+        d = cellreader.cellpydata()
+        _ = r"X:\A_dir\That\Does\Not\Exist\random_random9103414"
+        d.set_cellpy_datadir(_)
+        assert _ != d.cellpy_datadir
 
-    @pytest.mark.unfinished
+    def test_set_res_datadir_none(self):
+        from cellpy import cellreader
+        d = cellreader.cellpydata()
+        d.set_cellpy_datadir()
+        assert d.cellpy_datadir is None
+
     def test_set_res_datadir(self):
-        assert True
+        from cellpy import cellreader
+        d = cellreader.cellpydata()
+        d.set_cellpy_datadir(test_data_dir)
+        assert test_data_dir == d.cellpy_datadir
 
 
     @pytest.mark.unfinished
