@@ -281,7 +281,7 @@ if __name__ == '__main__':
     to find current folder and extend datafolder with [.]\utils\data
     ----------------------------------------------------------------------------
     """
-    datafolder = r'..\testdata'
+    datafolder = r'..\data_ex'
 
     # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
     # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
