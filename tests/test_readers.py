@@ -12,6 +12,7 @@ test_data_dir_out = os.path.join(test_data_dir, "out")
 test_cellpy_file = "20160805_test001_45_cc.h5"
 test_run_name = "20160805_test001_45_cc"
 
+# TODO: use only functions where logical (remove TestCase)
 
 
 class TestDataReaders(TestCase):

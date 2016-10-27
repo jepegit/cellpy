@@ -20,6 +20,7 @@ test_data_dir_out = os.path.join(test_data_dir, "out_cellpytester")
 
 # print test_data_dir
 
+
 class TestCellpy(object):
 
     @classmethod

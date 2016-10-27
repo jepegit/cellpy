@@ -357,6 +357,7 @@ class cellpydata(object):
         self.select_minimal = False
         self.minimum_selection = {}
         self.chunk_size = None # 100000
+        self.max_chunks = None
         self.last_chunk = None
         self.load_until_error = False
         self.filestatuschecker = filestatuschecker
@@ -1216,6 +1217,12 @@ class cellpydata(object):
                         print " - Could not read complete file (MemoryError)."
                         print "Last successfully loaded chunk number:", chunk_number
                         print "Chunk size:", self.chunk_size
+                        break
+                elif self.max_chunks:
+                    if chunk_number < self.max_chunks:
+                        normal_df = pd.concat([normal_df,chunk], ignore_index=True)
+                        print "*",
+                    else:
                         break
                 else:
                     normal_df = pd.concat([normal_df, chunk], ignore_index=True)

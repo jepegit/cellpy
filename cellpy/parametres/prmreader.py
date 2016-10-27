@@ -16,6 +16,7 @@ dbc_filename: cellpy_dbc.xlsx
 import glob
 import os
 import sys
+from collections import OrderedDict
 import ConfigParser
 
 
@@ -62,9 +63,10 @@ class read:
         self.search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
         self.search_path["filedir"] = self.script_dir
         self.search_path["userdir"] = os.path.expanduser("~")
+        self.default_name = "_cellpy_prms_default.ini"
         if search_order is None:
             self.search_order = ["curdir", "filedir", "userdir"]
-        self.prm_default = os.path.join(self.script_dir, "_cellpy_prms_default.ini")
+        self.prm_default = os.path.join(self.script_dir, self.default_name)
         self.outdatadir = "..\outdata"
         self.rawdatadir = "..\indata"
         self.cellpydatadir = "..\indata"
@@ -72,22 +74,37 @@ class read:
         self.filelogdir = "..\databases"
         self.db_filename = "cellpy_db.xlsx"
         self.dbc_filename = "cellpy_db.xlsx"
+        prm_globtxt = "_cellpy_prms*.ini"
         if prm_filename:
             self._readprms(prm_filename=prm_filename)
         else:
-            prm_filenames = list()
-            prm_globtxt = "_cellpy_prms*.ini"
+            search_dict = OrderedDict()
 
             for key in self.search_order:
+                search_dict[key] = [None,None]
                 prm_directory = self.search_path[key]
+                default_file = os.path.join(prm_directory, self.default_name)
+                if os.path.isfile(default_file):
+                    search_dict[key][0] = default_file
                 prm_globtxt_full = os.path.join(prm_directory, prm_globtxt)
-                prm_filenames.extend(glob.glob(prm_globtxt_full))
+                user_files = glob.glob(prm_globtxt_full)
 
-            #  need to implement a better way to search (it is a bit confusing for users)
-            for f in prm_filenames:
-                if os.path.basename(f) != os.path.basename(self.prm_default):
-                    self.prm_default = f
+                for f in user_files:
+                    if os.path.basename(f) != os.path.basename(default_file):
+                        search_dict[key][1] = f
+                        break
+
+            prm_file = None
+            for key, file_list in search_dict.iteritems():
+                if file_list[-1]:
+                    prm_file = file_list[-1]
                     break
+                else:
+                    if not prm_file:
+                        prm_file = file_list[0]
+
+            if prm_file:
+                self.prm_default = prm_file
 
             if not os.path.isfile(self.prm_default):
                 print "could not find ini-file"
