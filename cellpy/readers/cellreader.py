@@ -100,7 +100,7 @@ def humanize_bytes(bytes, precision=1):
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
-    """Converts a xls date stamp to a more sensible format
+    """Converts a xls date stamp to a more sensible format.
 
     Args:
         xldate (str): date stamp in Excel format.
@@ -130,7 +130,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
 
 
 def Convert2mAhg(c, mass=1.0):
-    """Converts capacity in Ah to capacity in mAh/g
+    """Converts capacity in Ah to capacity in mAh/g.
 
     Args:
         c (float or numpy array): capacity in mA.
@@ -209,22 +209,22 @@ class fileID(object):
             self.location = os.path.dirname(Filename)
 
     def get_raw(self):
-        """get a list with information about the file.
+        """Get a list with information about the file.
 
         The returned list contains name, size, last_modified and location.
         """
         return [self.name, self.size, self.last_modified, self.location]
 
     def get_name(self):
-        """get the filename"""
+        """Get the filename."""
         return self.name
 
     def get_size(self):
-        """get the size of the file"""
+        """Get the size of the file."""
         return self.size
 
     def get_last(self):
-        """get last modification time of the file"""
+        """Get last modification time of the file."""
         return self.last_modified
 
 
@@ -259,7 +259,7 @@ class dataset(object):
         self.material = "noname"
         self.merged = False
         self.file_errors = None  # not in use at the moment
-        self.loaded_from = None  # name of the .res file it is loaded from (can be list if merded)
+        self.loaded_from = None  # name of the .res file it is loaded from (can be list if merged)
         self.raw_data_files = []
         self.raw_data_files_length = []
         # self.parent_filename = None # name of the .res file it is loaded from (basename) (can be list if merded)
@@ -288,10 +288,11 @@ class dataset(object):
     def __str__(self):
         txt = "_cellpy_data_dataset_class_\n"
         txt += "loaded from file\n"
-        if type(self.loaded_from) == types.ListType:
+        if isinstance(self.loaded_from, (list, tuple)):
             for f in self.loaded_from:
                 txt += f
                 txt += "\n"
+
         else:
             txt += self.loaded_from
             txt += "\n"
@@ -302,7 +303,7 @@ class dataset(object):
         txt += "channel index:      %i\n" % self.channel_index
         txt += "test name:          %s\n" % self.test_name
         txt += "creator:            %s\n" % self.creator
-        txt += "scheduel file name: %s\n" % self.schedule_file_name
+        txt += "schedule file name: %s\n" % self.schedule_file_name
         try:
             start_datetime_str = xldate_as_datetime(self.start_datetime)
         except:
@@ -316,19 +317,15 @@ class dataset(object):
         return txt
 
     def makeDataFrame(self):
-        """Creates a Pandas DataFrame of the data (dfdata and dfsummary)"""
-
+        """Creates a Pandas DataFrame of the data (dfdata and dfsummary)."""
 
         self.dfdata = pd.DataFrame(self.data)
-        try:
-            self.dfdata.sort_values(by=self.datapoint_txt)
-        except:
-            print "could not sort dfdata"
+        self.dfdata.sort_values(by=self.datapoint_txt)
         self.dfsummary = pd.DataFrame(self.summary).sort_values(by=self.datapoint_txt)
 
 
 class cellpydata(object):
-    """Main class for working and storing data
+    """Main class for working and storing data.
 
     This class is the main work-horse for cellpy where all the functions for reading, selecting, and
     tweaking your data is located. It also contains the header definitions, both for the cellpy hdf5
@@ -355,24 +352,28 @@ class cellpydata(object):
         self.tester = tester
         self.verbose = verbose
         self.profile = profile
-        self.loadres_limit = None  # if not None: only load up to loadres_limit
-        if fetch_onliners:
-            self.loadres_limit = 100000
-        self.max_res_filesize = 400000000
-        self.intendation = 0
+        self.max_res_filesize = 150000000
+        self.load_only_summary = False
+        self.select_minimal = False
+        self.minimum_selection = {}
+        self.chunk_size = None # 100000
+        self.max_chunks = None
+        self.last_chunk = None
+        self.load_until_error = False
         self.filestatuschecker = filestatuschecker
         self.raw_datadir = None
         self.cellpy_datadir = None
         self.auto_dirs = True  # search in prm-file for res and hdf5 dirs in loadcel
         self.forced_errors = 0
         self.ensure_step_table = False
+        self.summary_exists = False
 
         if not filenames:
-            self.filenames = []
+            self.file_names = []
         else:
-            self.filenames = filenames
-            if not self._is_listtype(self.filenames):
-                self.filenames = [self.filenames]
+            self.file_names = filenames
+            if not self._is_listtype(self.file_names):
+                self.file_names = [self.file_names]
         if not selected_scans:
             self.selected_scans = []
         else:
@@ -389,6 +390,11 @@ class cellpydata(object):
         self.use_decrp_functions = True
         self.capacity_modifiers = ['reset', ]
         self.cycle_mode = 'anode'
+        self.minimum_selection["arbin"] = ["Data_Point","Test_Time","Step_Time",
+                                           "DateTime","Step_Index","Cycle_Index",
+                                           "Current","Voltage","Charge_Capacity",
+                                           "Discharge_Capacity","Internal_Resistance",
+                                           ]
         self.list_of_step_types = ['charge', 'discharge',
                                    'cv_charge', 'cv_discharge',
                                    'charge_cv', 'discharge_cv',
@@ -518,7 +524,7 @@ class cellpydata(object):
                     print txt
 
     def set_raw_datadir(self, directory=None):
-        """set the directory containing .res-files
+        """Set the directory containing .res-files.
 
         Used for setting directory for looking for res-files. A valid directory name is required.
 
@@ -542,7 +548,7 @@ class cellpydata(object):
         self.raw_datadir = directory
 
     def set_cellpy_datadir(self, directory=None):
-        """set the directory containing .hdf5-files
+        """Set the directory containing .hdf5-files.
 
         Used for setting directory for looking for hdf5-files. A valid directory name is required.
 
@@ -565,8 +571,8 @@ class cellpydata(object):
         self.cellpy_datadir = directory
 
 
-    def check_file_ids_new(self, rawfiles, cellpyfile):
-        """check the stats for the files (raw-data and cellpy hdf5).
+    def check_file_ids(self, rawfiles, cellpyfile):
+        """Check the stats for the files (raw-data and cellpy hdf5).
 
         This function checks if the hdf5 file and the res-files have the same
         timestamps etc to find out if we need to bother to load .res -files.
@@ -578,7 +584,7 @@ class cellpydata(object):
 
         Returns:
             False if the raw files are newer than the cellpy hdf5-file (update needed).
-            If return_res is True it also returns list of raw-filenames as second argument.
+            If return_res is True it also returns list of raw-file_names as second argument.
             """
 
         txt = "check_file_ids\n  checking file ids - using '%s'" % (self.filestatuschecker)
@@ -600,116 +606,8 @@ class cellpydata(object):
             self.Print("hdf5 file is updated")
             return True
 
-    def check_file_ids_old(self, cellpyfile, resfiles=None, force=True, usedir=False,
-                       no_extension=False, return_res=True):
-        """check the stats for the files (raw-data and cellpy hdf5).
-
-        This function checks if the hdf5 file and the res-files have the same
-        timestamps etc to find out if we need to bother to load .res -files.
-
-        Args:
-            cellpyfile (str): filename of the cellpy hdf5-file.
-            resfiles (str, optional): name(s) of raw-data file(s).
-            force (bool):
-            usedir (bool): Set to True if you will use dir-names defined in prm-file.
-            no_extension (bool): Set to True if you give hdf5-file without extension.
-            return_res (bool): returns list of raw-filenames if set to True.
-
-        Returns:
-            False if the raw files are newer than the cellpy hdf5-file (update needed).
-            If return_res is True it also returns list of raw-filenames as second argument.
-            """
-
-        txt = "check_file_ids\n  checking file ids - using '%s'" % (self.filestatuschecker)
-        self.Print(txt)
-        if self._is_listtype(cellpyfile):
-            cellpyfile = cellpyfile[0]
-            # only works for single cellpyfile - so selecting first if list
-
-        cellpy_extension = ".h5"
-        res_extension = ".res"
-
-        if usedir:
-            res_dir = self.raw_datadir
-            cellpy_dir = self.cellpy_datadir
-
-            if res_dir is None or cellpy_dir is None:
-                print "res/hdf5 - dir not given"
-                return
-
-            if not os.path.isdir(res_dir):
-                print "no valid res-dir, aborting"
-                return
-
-            if not os.path.isdir(cellpy_dir):
-                print "no hdf5-dir, aborting"
-                return
-
-            cellpyfile = os.path.join(cellpy_dir, cellpyfile)
-
-        if no_extension:
-            cellpyfile += cellpy_extension
-
-        ids_cellpy_file = self._check_cellpy_file(cellpyfile)
-        if resfiles is None:
-            #            print "checking for resfiles"
-            resfiles = self._find_resfiles(cellpyfile) # TODO: use filereader or even better, delete
-
-            if resfiles is None:
-                self.Print("could not find the res-files")
-                if force:
-                    if return_res:
-                        return True, None
-                    else:
-                        return True
-                else:
-                    print "could not find the res-files; please provide the names"
-                    sys.exit(-1)
-                    #
-                    #        print
-                    #        print "resfiles:"
-                    #        print resfiles
-        if not resfiles:
-            print "could not find any resfiles"
-            print "so - skipping this"
-            if return_res:
-                return True, None
-            else:
-                return True
-
-        if not ids_cellpy_file:
-            self.Print("hdf5 file does not exist - needs updating")
-            if return_res:
-                return False, resfiles
-            else:
-                return False
-
-        ids_res = self._check_res(resfiles)
-
-        similar = self._compare_ids(ids_res, ids_cellpy_file)
-        #        print "********************"
-        #        print "*res"
-        #        print ids_res
-        #        print "*hdf5"
-        #        print ids_cellpy_file
-        #        print "----similar?"
-        #        print similar
-        #        print "--------------------"
-        if not similar:
-            self.Print("hdf5 file needs updating")
-            if return_res:
-                return False, resfiles
-            else:
-                return False
-        else:
-            self.Print("hdf5 file is updated")
-            if return_res:
-                return True, resfiles
-            else:
-                return True
-
     def _check_raw(self, file_names, abort_on_missing=False):
-        """get the file-ids for the res_files"""
+        """Get the file-ids for the res_files."""
 
         strip_file_names = True
         check_on = self.filestatuschecker
@@ -740,51 +638,17 @@ class cellpydata(object):
                     ids[name] = int(fid.last_accessed)
         return ids
 
-    def _check_res_old(self, filenames, abort_on_missing=False):
-        """get the file-ids for the res_files"""
-        # TODO: delete this function
-
-        strip_filenames = True
-        check_on = self.filestatuschecker
-        if not self._is_listtype(filenames):
-            filenames = [filenames, ]
-        # number_of_files = len(filenames)
-        ids = dict()
-        for f in filenames:
-            self.Print("checking res file")
-            self.Print(f)
-            fid = fileID(f)
-            self.Print(fid)
-            if fid.name is None:
-                print "file does not exist:"
-                print f
-                if abort_on_missing:
-                    sys.exit(-1)
-            else:
-                if strip_filenames:
-                    name = os.path.basename(f)
-                else:
-                    name = f
-                if check_on == "size":
-                    ids[name] = int(fid.size)
-                elif check_on == "modified":
-                    ids[name] = int(fid.last_modified)
-                else:
-                    ids[name] = int(fid.last_accessed)
-        return ids
-
     def _check_cellpy_file(self, filename):
-        """get the file-ids for the cellpy_file"""
+        """Get the file-ids for the cellpy_file."""
 
         strip_filenames = True
         check_on = self.filestatuschecker
-        if not os.path.isfile(filename):
-            print "hdf5-file does not exist"
-            print "  ",
-            print filename
-            return None
-        self.Print("checking hdf5 file")
+        self.Print("checking cellpy-file")
         self.Print(filename)
+        if not os.path.isfile(filename):
+            self.Print("cellpy-file does not exist")
+            return None
+
         store = pd.HDFStore(filename)
         try:
             fidtable = store.select("cellpydata/fidtable")
@@ -861,9 +725,9 @@ class cellpydata(object):
         return resfiles
 
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
-                 summary_on_raw=True, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False):
-        """loads data for given cells
+                 summary_on_raw=False, summary_ir=True, summary_ocv=False,
+                 summary_end_v=True, only_summary=False, only_first=False, force_raw=False):
+        """Loads data for given cells.
 
         Args:
             raw_files (list): name of res-files
@@ -875,19 +739,21 @@ class cellpydata(object):
             summary_end_v (bool): summarize end voltage
             only_summary (bool): get only the summary of the runs
             only_first (bool): only use the first file fitting search criteria
+            force_raw (bool): only use raw-files
 
         Example:
 
-            >>> srnos = dbreader.select_batch("testing_new_solvent")
+            >>> srnos = my_dbreader.select_batch("testing_new_solvent")
             >>> cell_datas = []
             >>> for srno in srnos:
-            >>> ... my_run_name = dbreader.get_cell_name(srno)
-            >>> ... mass = dbreader.get_mass(srno)
-            >>> ... rawfiles, cellpyfiles = filefinder.search_for_files(run_name)
-            >>> ... cell_data = loadfile(raw_files = rawfiles, cellpy_file = cellpyfiles)
+            >>> ... my_run_name = my_dbreader.get_cell_name(srno)
+            >>> ... mass = my_dbreader.get_mass(srno)
+            >>> ... rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
+            >>> ... cell_data = cellreader.cellpydata()
+            >>> ... cell_data.loadcell(raw_files = rawfiles, cellpy_file = cellpyfiles)
             >>> ... cell_data.set_mass(mass)
             >>> ... if not cell_data.summary_exists:
-            >>> ... ... cell_data.create_summary() # etc. etc.
+            >>> ...     cell_data.make_summary() # etc. etc.
             >>> ... cell_datas.append(cell_data)
             >>>
         """
@@ -896,250 +762,91 @@ class cellpydata(object):
         # load more than one set of tests (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
 
-        i = 0  # option for over-riding load_first to e.g. last (by setting i = -1)
         if cellpy_file is None:
             similar = False
+        elif force_raw:
+            similar = False
         else:
-            similar = self.check_file_ids_new(raw_files, cellpy_file)
+            similar = self.check_file_ids(raw_files, cellpy_file)
+
+        if only_summary:
+            self.load_only_summary = True
+        else:
+            self.load_only_summary = False
 
         if not similar:
-            if only_first:
-                self.loadres(raw_files[i])
-            else:
-                self.loadres(raw_files)  # should be modified for only_symmary (fast-mode)
-            not_empty = self.tests_status  # tests_status is set in loadres
+            self.load_raw(raw_files)
+            not_empty = self.tests_status
             if mass:
                 self.set_mass(mass)
-            if not_empty and summary_on_raw:
-                self.make_summary(all_tests=False, find_ocv=summary_ocv,
-                                  find_ir=summary_ir,
-                                  find_end_voltage=summary_end_v)
-            else:
-                self.Print("Cannot make summary for empty set", 1)
-
-        else:
-            self.loadres(cellpy_file)
-        self.Print("exiting loadcel")
-
-
-
-    def loadcell_old(self, names=None, res=False, cellpyfile=False, resnames=[],
-                 masses=[], counter_sep="_", counter_pos='last',
-                 counter_digits=2, counter_max=99, counter_min=1,
-                 summary_on_res=True, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False):
-
-        """loads data for given cells
-
-        Args:
-            names (list): identification names
-            res (bool): name of res-file given
-            cellpyfile (bool): name of cellpy-file given (hdf5)
-            resnames (list, optional): names of res-files
-            masses (list of floats): masses of electrodes or active material
-            counter_sep (char): separator between sub-names
-            counter_pos (string in ["last", "first"]): position for index for counting
-            counter_digits (int): number of digits in index
-            counter_max (int): max number for index (will not search after files with higher index)
-            counter_min (int): min number for index (will not search for files with lower index)
-            summary_on_res (bool): use res-file for summary
-            summary_ir (bool): summarize ir
-            summary_ocv (bool): summarize ocv steps
-            summary_end_v (bool): summarize end voltage
-            only_summary (bool): get only the summary of the runs
-            only_first (bool): only use the first file fitting search criteria
-
-        Example:
-            >>> srno = 132
-            >>> names = dbreader.get_cell_name(srno) #format date_slurry_no_celltype
-            >>> loadfile(names)
-        """
-        # should include option to skip selected res-files (bad_files)
-
-        print "WARNING: loadcell will be changed soon!!!"
-        self.Print("entering loadcell")
-        hdf5_extension = ".h5"  # should make this "class-var"
-        res_extension = ".res"  # should make this "class-var"
-        if only_first:
-            counter_max = 1
-
-        txt = "loading files:"
-        if type(names) == types.StringType:  # old test, does not work for unicode
-            txt += " (one)\n"
-            names = [names, ]
-        elif isinstance(names, basestring):
-            txt += " (one)\n"
-            names = [names, ]
-        elif type(names) == types.ListType:
-            txt += " (list of names)\n  "
-        else:
-            txt += " (not sure, assuming list)\n"
-        self.Print(txt, 1)
-
-        res_dir = self.raw_datadir
-        hdf5_dir = self.cellpy_datadir
-
-        if res_dir is None or hdf5_dir is None:
-            print "WARNING (loadcell): res/cellpyfile - dir not given"
-            if self.auto_dirs:
-                print "loading prmreader and trying to set defaults"
-                from cellpy import prmreader
-                prms = prmreader.read()
-                if res_dir is None:
-                    res_dir = prms.rawdatadir
-                if hdf5_dir is None:
-                    hdf5_dir = prms.cellpydatadir
-
-                    # TODO: insert try-except in prm loading
-            else:
-                print "aborting - res_dir and/or hdf5_dir not given"
-                return
-        if not os.path.isdir(res_dir):
-            print "WARNING (loadcell): no valid res-dir, aborting"
-            return
-        if not os.path.isdir(hdf5_dir):
-            print "WARNING (loadcell): no cellpyfile-dir, aborting"
-            return
-
-        # searching for res-files
-        # TODO: regular expression / glob , instead of looping
-        files = collections.OrderedDict()
-        for name in names:
-            files[name] = []
-            for j in range(counter_min, counter_max + 1):
-                if counter_pos.lower() == "last":
-                    lookFor = "%s%s%s%s" % (name, counter_sep,
-                                            str(j).zfill(counter_digits),
-                                            res_extension)
-                elif counter_pos.lower() == "first":
-                    lookFor = "%s%s%s%s" % (str(j).zfill(counter_digits), counter_sep,
-                                            name, res_extension)
-                else:
-                    lookFor = "%s%s%s%s" % (name, counter_sep,
-                                            str(j).zfill(counter_digits),
-                                            res_extension)
-
-                lookFor = os.path.join(res_dir, lookFor)
-                if os.path.isfile(lookFor):
-                    files[name].append(lookFor)
-
-        list_of_files = []
-        res_loading = False
-        masses_needed = []
-        test_number = 0
-        res_test_numbers = []
-        res_masses = []
-        counter = -1
-        for name, resfiles in files.items():
-            counter += 1
-            this_mass_needed = False
-            missingRes = False
-            missingHdf5 = False
-
-            #            print "checking",
-            #            print name,
-            #            print ":",
-            #            print resfiles
-
-            if len(resfiles) == 0:
-                wtxt = "WARNING (loadcell): %s - %s" % (name, "could not find any res-files")
-                print wtxt
-                missingRes = True
-
-            cellpyfile = os.path.join(hdf5_dir, name + hdf5_extension)
-
-            if not os.path.isfile(cellpyfile) and not res:
-                wtxt = "WARNING (loadcell): %s - %s" % (name, "cellpyfile-file not found")
-                print wtxt
-
-                missingHdf5 = True
-
-            if missingRes and missingHdf5:
-                print "WARNING (loadcell):",
-                print "could not load %s" % (name)
-                # have to skip this cell
-            else:
-                if missingRes:
-                    list_of_files.append([cellpyfile, ])
-                elif missingHdf5:
-                    list_of_files.append(resfiles)
-                    res_loading = True
-                    this_mass_needed = True
-                else:
-                    if not res:
-                        similar = self.check_file_ids(cellpyfile, resfiles, return_res=False)
-                    else:
-                        similar = False
-                    if not similar:
-                        # print "FILES ARE NOT SIMILAR"
-                        list_of_files.append(resfiles)
-                        res_loading = True
-                        this_mass_needed = True
-                    else:
-                        list_of_files.append(cellpyfile)
-                masses_needed.append(this_mass_needed)
-
-                if this_mass_needed:
-                    res_test_numbers.append(test_number)
-                    try:
-                        res_masses.append(masses[counter])
-                    except:
-                        if summary_on_res:
-                            print "WARNING (loadcell): ",
-                            print "mass missing for cell %s" % (name)
-                        res_masses.append(None)
-                test_number += 1
-
-                #        print "running loadres"
-                #        print list_of_files
-
-        self.loadres(list_of_files)  # should be modified for only_symmary (fast-mode)
-        not_empty = self.tests_status  # tests_status is set in loadres
-        # print not_empty
-        if res_loading and summary_on_res:
-            if len(masses) == 0:
-                print __name__
-                print "Warning: you should not choose summary_on_res = True"
-                print "without supplying masses!"
-            else:
-                self.set_mass(res_masses, test_numbers=res_test_numbers, validated=not_empty)
-                print
-                print
-                for t, v in zip(res_test_numbers, not_empty):
-                    if v:
-                        print "-",
-                        self.make_summary(all_tests=False, find_ocv=summary_ocv,
-                                          find_ir=summary_ir,
-                                          find_end_voltage=summary_end_v,
-                                          test_number=t)
+            if summary_on_raw:
+                if not_empty:
+                    self.make_summary(all_tests=False, find_ocv=summary_ocv,
+                                      find_ir=summary_ir,
+                                      find_end_voltage=summary_end_v)
                 else:
                     self.Print("Cannot make summary for empty set", 1)
-        self.Print("exiting loadcel")
-        # 2015.12.17 removed output masses_needed
-        # return masses_needed
 
-    # @print_function
+        else:
+            self.load(cellpy_file)
+
+    def load_raw(self, file_names=None):
+        """Load a raw data-file.
+
+        Args:
+            file_names (list of raw-file names:
+        """
+        if file_names:
+            self.file_names = file_names
+
+        if not isinstance(file_names, (list, tuple)):
+            self.file_names = [file_names,]
+
+        file_type = self.tester
+        if file_type == "arbin":
+            raw_file_loader = self._loadres
+        else:
+            raw_file_loader = self._loadres # only arbin available at the moment
+
+        test_number = 0
+        test = None
+        for f in self.file_names:
+            new_tests = raw_file_loader(f)
+            if test is not None:
+                new_tests[test_number] = self._append(test[test_number], new_tests[test_number])
+                for raw_data_file, file_size in zip(new_tests[test_number].raw_data_files,
+                                                    new_tests[test_number].raw_data_files_length):
+                    test[test_number].raw_data_files.append(raw_data_file)
+                    test[test_number].raw_data_files_length.append(file_size)
+            else:
+                test = new_tests
+        if test:
+            self.tests.append(test[test_number])
+        else:
+            print "no new tests added"
+        self.number_of_tests = len(self.tests)
+        self.tests_status = self._validate_tests()
+
     def loadres(self, filenames=None, check_file_type=True):
-        """loads the data into the datastructure"""
+        """Loads the data into the datastructure."""
         # TODO: use type-checking
-        txt = "number of tests: %i" % len(self.filenames)
+        txt = "number of tests: %i" % len(self.file_names)
         self.Print(txt, 1)
         test_number = 0
         counter = 0
         filetype = "res"
 
-        # checking if new filenames is provided or if we should use the stored (self.filenames)
+        # checking if new file_names is provided or if we should use the stored (self.file_names)
         # values
         if filenames:
-            self.filenames = filenames
-            if not self._is_listtype(self.filenames):
-                self.filenames = [self.filenames]
+            self.file_names = filenames
+            if not self._is_listtype(self.file_names):
+                self.file_names = [self.file_names]
 
-        # self.filenames is now a list of filenames or list of lists of filenames
+        # self.file_names is now a list of file_names or list of lists of file_names
 
-        for f in self.filenames:  # iterating through list
+        for f in self.file_names:  # iterating through list
             self.Print(f, 1)
-            FileError = None
             list_type = self._is_listtype(f)
             counter += 1
 
@@ -1147,30 +854,21 @@ class cellpydata(object):
                 if check_file_type:
                     filetype = self._check_file_type(f)
                 if filetype == "res":
-                    newtests, FileError = self._loadres(f)
-                    if FileError is not None:
-                        print "error reading file (single_A)"
-                        print "FileError:",
-                        print FileError
+                    newtests = self._loadres(f)
                 elif filetype == "h5":
-                    newtests = self._loadh5(f)
-            else:  # item contains several filenames (sets of data) or is a single valued list
+                    newtests = self._load_hdf5(f)
+            else:  # item contains several file_names (sets of data) or is a single valued list
                 if not len(f) > 1:  # f = [file_01,] single valued list, so load it
                     if check_file_type:
                         filetype = self._check_file_type(f[0])
                     if filetype == "res":
-                        newtests, FileError = self._loadres(f[0])
-                        if FileError is not None:
-                            print "error reading file (single_B)"
-                            print "FileError:",
-                            print FileError
+                        newtests = self._loadres(f[0])
 
                     elif filetype == "h5":
-                        newtests = self._loadh5(f[0])
+                        newtests = self._load_hdf5(f[0])
                 else:  # f = [file_01, file_02, ....] multiple files, so merge them
                     txt = "multiple files - merging"
                     self.Print(txt, 1)
-                    FileError = None
                     first_test = True
                     newtests = None
                     for f2 in f:
@@ -1179,27 +877,20 @@ class cellpydata(object):
                         if check_file_type:
                             filetype = self._check_file_type(f2)
                         if filetype == "res":
-                            newtests1, FileError = self._loadres(f2)  # loading file
+                            newtests1 = self._loadres(f2)  # loading file
 
                         # print "loaded file",
                         # print f2
 
-                        if FileError is None:
-                            if first_test:
-                                # no_tests_in_dataset=len(newtests1)
-                                newtests = newtests1  # for first test; call it newtest
-                                # print "this was the first file"
-                                first_test = False
-                            else:
-                                newtests[test_number] = self._append(newtests[test_number], newtests1[test_number])
-                                for raw_data_file, file_size in zip(newtests1[test_number].raw_data_files,
-                                                                    newtests1[test_number].raw_data_files_length):
-                                    newtests[test_number].raw_data_files.append(raw_data_file)
-                                    newtests[test_number].raw_data_files_length.append(file_size)
+                        if first_test:
+                            newtests = newtests1
+                            first_test = False
                         else:
-                            print "error reading file (loadres)"
-                            print "error:",
-                            print FileError
+                            newtests[test_number] = self._append(newtests[test_number], newtests1[test_number])
+                            for raw_data_file, file_size in zip(newtests1[test_number].raw_data_files,
+                                                                newtests1[test_number].raw_data_files_length):
+                                newtests[test_number].raw_data_files.append(raw_data_file)
+                                newtests[test_number].raw_data_files_length.append(file_size)
 
             if newtests:
                 for test in newtests:
@@ -1277,16 +968,43 @@ class cellpydata(object):
                 except:
                     return False  # is an older version of Python, assume also an older os (best we can guess)
 
-    def _loadh5(self, filename):
+    def load(self,cellpy_file):
+        """Loads a cellpy file.
+        """
+
+        if self.cellpy_file_version <= 3:
+            new_tests = self._load_hdf5(cellpy_file)
+        else:
+            new_tests = []
+            print "This cellpy-file version is not supported by current reader (try to update cellpy)."
+
+        if new_tests:
+            for test in new_tests:
+                self.tests.append(test)
+        else:
+            # raise LoadError
+            print "Could not load"
+            print cellpy_file
+
+        self.number_of_tests = len(self.tests)
+        self.tests_status = self._validate_tests()
+
+    def _load_hdf5(self, filename):
+        """Load a cellpy-file.
+
+        Args:
+            filename (str):
+
+        Returns:
+            loaded tests (dataset-object)
+        """
         # loads from hdf5 formatted cellpy-file
-        self.Print("loading", 1)
-        self.Print(filename, 1)
         if not os.path.isfile(filename):
             print "file does not exist"
             print "  ",
             print filename
             sys.exit()
-        print "x",
+        print "c",
         store = pd.HDFStore(filename)
         data = dataset()
         data.dfsummary = store.select("cellpydata/dfsummary")
@@ -1339,6 +1057,7 @@ class cellpydata(object):
         newtests.append(data)
         store.close()
         # self.tests.append(data)
+        print "->"
         return newtests
 
     def _convert2fid_list(self, tbl):
@@ -1362,8 +1081,10 @@ class cellpydata(object):
         return fids, lengths
 
     def _clean_up_loadres(self, cur, conn, filename):
-        cur.close()  # adodbapi
-        conn.close()  # adodbapi
+        if cur is not None:
+            cur.close()  # adodbapi
+        if conn is not None:
+            conn.close()  # adodbapi
         if os.path.isfile(filename):
             try:
                 os.remove(filename)
@@ -1372,243 +1093,143 @@ class cellpydata(object):
                 print filename
                 print e
 
-    def _loadres(self, Filename=None):
-        """loads data from arbin .res files
+    def _loadres(self, file_name=None):
+        """Loads data from arbin .res files.
 
         Args:
-            Filename (str): path to .res file.
+            file_name (str): path to .res file.
 
         Returns:
-            newtests (list of data objects), FileError
+            new_tests (list of data objects), FileError
 
         """
-        # loadres(Filename)
-        # loads data from .res file into the cellpydata.tests list
-        # e.g. cellpydata.test[0] = dataset
-        # where
-        # dataset.dfdata is the normal data
-        # dataset.dfsummary is the summary.
-        # cellpydata.tests[i].test_ID is the test id.
-
-        BadFiles = []
-        print "  .",
-        FileError = None
-        ForceError = False
-        ForcedErrorLimit = 1
-        newtests = []
-        self.Print("loading", 1)
-        self.Print(Filename, 1)
-
-        # -------checking existence of file-------
-        if not os.path.isfile(Filename):
-            print "\nERROR (_loadres):\nfile does not exist"
-            print Filename
-            print "check filename and/or connection to external computer if used"
-            FileError = -2  # Missing file
-            self.Print("File is missing")
-            return newtests, FileError
-            # sys.exit(FileError)
+        new_tests = []
+        # -------checking existence of file--------
+        if not os.path.isfile(file_name):
+            print "Missing file_\n   %s" % (file_name)
 
         # -------checking file size etc------------
-        filesize = os.path.getsize(Filename)
+        filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.Print(txt,1)
-
-        if filesize > self.max_res_filesize:
-            FileError = -3  # File too large
-            etxt = "\nERROR (_loadres):\n"
-            etxt += "%i > %i - File is too big!\n" % (filesize, self.max_res_filesize)
-            etxt += "(edit self.max_res_filesize)\n"
-            self.Print(etxt, 1)
-            return newtests, FileError
+        if filesize > self.max_res_filesize and not self.load_only_summary:
+            error_message = "\nERROR (_loadres):\n"
+            error_message += "%s > %s - File is too big!\n" % (hfilesize, humanize_bytes(self.max_res_filesize))
+            error_message += "(edit self.max_res_filesize)\n"
+            print error_message
+            return None
             # sys.exit(FileError)
-
-        if ForceError is True:
-            if self.forced_errors < ForcedErrorLimit:
-                print "*******************FORCED ERROR!**************************"
-                self.forced_errors += 1
-                return newtests, -10
-
-        if Filename in BadFiles:
-            print "Enforcing error (test)"
-            return newtests, -11
 
         # ------making temporary file-------------
         temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(Filename))
-        self.Print("Copying to tmp-file", 1)  # we enforce this to not corrupt the raw-file
-        # unfortunately, its rather time-consuming
-        self.Print(temp_filename)
-        t1 = time.time()
-        shutil.copy2(Filename, temp_dir)
-        self.Print("Finished to tmp-file", 1)
-        t1 = "this operation took %f sec" % (time.time() - t1)
-        self.Print(t1,1)
+        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
+        shutil.copy2(file_name, temp_dir)
         print ".",
 
-        constr = self.__get_res_connector(Filename, temp_filename)
-
         # ------connecting to the .res database----
-        self.Print("connection to the database",1)
-
+        constr = self.__get_res_connector(file_name, temp_filename)
         if USE_ADO:
             conn = dbloader.connect(constr)  # adodbapi
         else:
             conn = dbloader.connect(constr, autocommit=True)
-
-        self.Print("creating cursor", 1)
-        cur = conn.cursor()
+        print ".",
 
         # ------get the global table-----------------
-        all_data, col_names, global_data = self.__get_res_global_table(cur)
-        for item in all_data:
-            for h, d in zip(col_names, item):
-                global_data[h].append(d)
-        tests = global_data[self.test_id_txt]
+        sql = "select * from %s" % self.tablename_global
+        global_data_df = pd.read_sql_query(sql, conn)
+        # col_names = list(global_data_df.columns.values)
+        tests = global_data_df[self.test_id_txt]
         number_of_sets = len(tests)
-        if number_of_sets < 1:
-            FileError = -4  # No datasets
-            etxt = "\nERROR (_loadres):\n"
-            etxt += "Could not find any datasets in the file"
-            self.Print(etxt, 1)
-            self._clean_up_loadres(cur, conn, temp_filename)
-            return newtests, FileError
-            # sys.exit(FileError)
         print ".",
 
         for test_no in range(number_of_sets):
             data = dataset()
             data.test_no = test_no
-            data.loaded_from = Filename
+            data.loaded_from = file_name
             # creating fileID
-            fid = fileID(Filename)
-
-            # data.parent_filename = os.path.basename(Filename)# name of the .res file it is loaded from
-            data.channel_index = int(global_data[self.channel_index_txt][test_no])
-            data.channel_number = int(global_data[self.channel_number_txt][test_no])
-            data.creator = global_data[self.creator_txt][test_no]
-            data.item_ID = global_data[self.item_id_txt][test_no]
-            data.schedule_file_name = global_data[self.schedule_file_name_txt][test_no]
-            data.start_datetime = global_data[self.start_datetime_txt][test_no]
-            data.test_ID = int(global_data[self.test_id_txt][test_no])
-            data.test_name = global_data[self.test_name_txt][test_no]
+            fid = fileID(file_name)
+            # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
+            data.channel_index = int(global_data_df[self.channel_index_txt][test_no])
+            data.channel_number = int(global_data_df[self.channel_number_txt][test_no])
+            data.creator = global_data_df[self.creator_txt][test_no]
+            data.item_ID = global_data_df[self.item_id_txt][test_no]
+            data.schedule_file_name = global_data_df[self.schedule_file_name_txt][test_no]
+            data.start_datetime = global_data_df[self.start_datetime_txt][test_no]
+            data.test_ID = int(global_data_df[self.test_id_txt][test_no])
+            data.test_name = global_data_df[self.test_name_txt][test_no]
             data.raw_data_files.append(fid)
 
             # ------------------------------------------
-            # ---loading-normal-data
-            sql = "select * from %s" % self.tablename_normal
-            try:
-                cur.execute(sql)
-            except:
-                FileError = -5  # No datasets
-                etxt = "\nERROR (_loadres)(normal tbl):\n"
-                etxt += "Could not execute cursor command\n  "
-                etxt += sql
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                return newtests, FileError
-                # sys.exit(FileError)
-
-            col_names = [i[0] for i in cur.description]  # adodbapi
-            col = collections.OrderedDict()
-            for cn in col_names:
-                data.data[cn] = []
-                col[cn] = []
-
-            if not self.loadres_limit:
-                try:
-                    self.Print("Starting to load normal table from .res file (cur.fetchall())",1)
-                    all_data = cur.fetchall()
-                    self.Print("Finished to load normal table from .res file (cur.fetchall())",1)
-                except:
-                    FileError = -6  # Cannot read normal table with fetchall
-                    etxt = ("\nWarning (_loadres)(normal tbl):\n",
-                        "Could not retrieve raw-data by fetchall\n\n",
-                        "This problem is caused by the limitation in the remote",
-                        "procedure call (RPC) layer where only 256 unique interfaces",
-                        "can be called from one process to another. This problem",
-                        "typically occurs when you use COM+ or Microsoft Transaction",
-                        "Server with many objects in the program or package",
-                        "\n",)
-                    self.Print(etxt, 1)
-                    etxt = "\nERROR (_loadres)(normal tbl):\nremedy: try fetch_onliners = True"
-                    self.Print(etxt, 1)
-                    self._clean_up_loadres(cur, conn, temp_filename)
-                    return newtests, FileError
-
-            else:
-                print "\nWarning:"
-                print "Loading .res file using fetchmany(%i)" % (self.loadres_limit)
-                self.Print("fetching oneliners", 1)
-                self.Print("Starting to load normal table from .res file (cur.fetchmany())", 1)
-                txt = "self.loadres_limit = %i" % (int(self.loadres_limit))
-                self.Print(txt, 1)
-                all_data = cur.fetchmany(self.loadres_limit)
-                self.Print("Finished to load normal table from .res file (cur.fetchmany())", 1)
-
-            for item in all_data:
-                # check if this is the correct set
-                for d, h in zip(item, col_names):
-                    col[h].append(d)
-                if int(col[self.test_id_txt][0]) == data.test_ID:
-                    for d, h in zip(item, col_names):
-                        data.data[h].append(d)
-            # print "saved normal data for test %i" % data.test_ID
-
-            # ------------------------------------------
-            # ---loading-statistic-data
-            sql = "select * from %s" % self.tablename_statistic
-            try:
-                cur.execute(sql)  # adodbapi
-            except:
-                FileError = -7  # No datasets
-                etxt = "\nERROR (_loadres)(stats tbl):\nCould not execute cursor command\n  " + sql
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                # sys.exit(FileError)
-                return newtests, FileError
-
-            col_names = [i[0] for i in cur.description]  # adodbapi
-            col = collections.OrderedDict()
-            for cn in col_names:
-                data.summary[cn] = []
-                col[cn] = []
-            try:
-                self.Print("Starting to load stats table from .res file (cur.fetchall())")
-                all_data = cur.fetchall()
-                self.Print("Finished to load stats table from .res file (cur.fetchall())")
-            except:
-                FileError = -8  # Cannot read normal table with fetchall
-                etxt = ("\nWarning (_loadres)(statsl tbl):\n",
-                        "Could not retrieve raw-data by fetchall\n\n",
-                        "This problem is caused by the limitation in the remote",
-                        "procedure call (RPC) layer where only 256 unique interfaces",
-                        "can be called from one process to another. This problem",
-                        "typically occurs when you use COM+ or Microsoft Transaction",
-                        "Server with many objects in the program or package",
-                        "\n")
-                self.Print(etxt, 1)
-                self._clean_up_loadres(cur, conn, temp_filename)
-                # sys.exit(FileError)
-                return newtests, FileError
-
-            for item in all_data:
-                # check if this is the correct set
-                for d, h in zip(item, col_names):
-                    col[h].append(d)
-                if int(col[self.test_id_txt][0]) == data.test_ID:
-                    for d, h in zip(item, col_names):
-                        data.summary[h].append(d)
-
-            data.makeDataFrame()
-            length_of_test = data.dfdata.shape[0]
+            # ---loading-normal-data--------------------
+            length_of_test, normal_df = self._load_res_normal_table(conn,data.test_ID)
+            # ---loading-statistic-data-----------------
+            sql = "select * from %s where %s=%s order by %s" % (self.tablename_statistic,
+                                                                self.test_id_txt,
+                                                                data.test_ID,
+                                                                self.data_point_txt)
+            summary_df = pd.read_sql_query(sql, conn)
+            data.dfsummary = summary_df
+            data.dfdata = normal_df
             data.raw_data_files_length.append(length_of_test)
-            print ".",
-            newtests.append(data)
-            self._clean_up_loadres(cur, conn, temp_filename)
-            print ".",
-        return newtests, FileError
+            new_tests.append(data)
+            self._clean_up_loadres(None, conn, temp_filename)
+            print ". <-"
+        return new_tests
+
+    def _load_res_normal_table(self, conn, test_ID):
+        if self.load_only_summary:
+            return 0
+
+        if self.select_minimal:
+            columns = self.minimum_selection["arbin"]
+            columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
+        else:
+            columns_txt = "*"
+
+        sql_1 = "select %s " % (columns_txt)
+        sql_2 = "from %s " % (self.tablename_normal)
+        sql_3 = "where %s=%s " % (self.test_id_txt, test_ID)
+        sql_4 = "order by %s" % (self.data_point_txt)
+        sql = sql_1 + sql_2 + sql_3 + sql_4
+
+        if not self.chunk_size:
+            normal_df = pd.read_sql_query(sql, conn)
+            length_of_test = normal_df.shape[0]
+        else:
+            normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
+            if not self.last_chunk:
+                normal_df = normal_df_reader.next()
+                chunk_number = 1
+            else:
+                chunk_number = 0
+                for j in range(self.last_chunk):
+                    normal_df = normal_df_reader.next()  # TODO: This is SLOW - should use itertools.islice
+                    chunk_number += 1
+
+            for chunk in normal_df_reader:
+
+                if self.load_until_error:
+                    try:
+                        normal_df = pd.concat([normal_df,chunk], ignore_index=True)
+                        print "*",
+                    except MemoryError:
+                        print " - Could not read complete file (MemoryError)."
+                        print "Last successfully loaded chunk number:", chunk_number
+                        print "Chunk size:", self.chunk_size
+                        break
+                elif self.max_chunks:
+                    if chunk_number < self.max_chunks:
+                        normal_df = pd.concat([normal_df,chunk], ignore_index=True)
+                        print "*",
+                    else:
+                        break
+                else:
+                    normal_df = pd.concat([normal_df, chunk], ignore_index=True)
+                chunk_number += 1
+            length_of_test = normal_df.shape[0]
+
+        return length_of_test, normal_df
 
     def __get_res_global_table(self, cur):
         sql = "select * from %s" % self.tablename_global
@@ -1628,9 +1249,8 @@ class cellpydata(object):
         # is64bit_os = self._check64bit(System = "os")
         if USE_ADO:
             if is64bit_python:
-                self.Print("using 64 bit python")
+                print "using 64 bit python"
                 constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % Filename
             else:
                 constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
 
@@ -1640,10 +1260,10 @@ class cellpydata(object):
         return constr
 
     def merge(self, tests=None, separate_datasets=False):
-        """this function merges datasets into one set"""
+        """This function merges datasets into one set."""
         # note: several of the final-test runs contains a first cycle with only delith
         # giving zero as lithiation capacity for that cycle
-        self.Print("merging")
+        print "merging"
         if separate_datasets:
             print "not implemented yet"
         else:
@@ -1663,7 +1283,6 @@ class cellpydata(object):
             self.tests = [test]
             self.number_of_tests = 1
 
-    # @timeit
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
         test = t1
         # finding diff of time
@@ -1823,6 +1442,7 @@ class cellpydata(object):
             return validated
 
     def print_step_table(self, test_number=None):
+        """Print the step table."""
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2026,30 +1646,35 @@ class cellpydata(object):
 
 
     def create_step_table(self, test_number=None):
-        """ create a table (v.0.2) that contains summary information got each step
+        """ Create a table (v.0.2) that contains summary information for each step.
 
         This function creates a table containing information about the different steps
-        for each cycle and deciding what type of step this is (e.g. charge).
-        type of step for each cycle.
+        for each cycle and, based on that, decides what type of step it is (e.g. charge)
+        for each cycle.
 
         The format of the step_table is:
-        index - cycleno - stepno - \
-        Current info (average, stdev, max, min, start, end, delta, rate) - \
-        Voltage info (average,  stdev, max, min, start, end, delta, rate) - \
-        Type (from pre-defined list) - \
-        Info
+
+            index - cycleno - stepno - \
+
+            Current info (average, stdev, max, min, start, end, delta, rate) - \
+
+            Voltage info (average,  stdev, max, min, start, end, delta, rate) - \
+
+            Type (from pre-defined list) - \
+
+            Info
 
         Header names (pr. 03.03.2016):
 
-        'cycle', 'step',
-        'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
-        'V_avr'...,
-        'C_avr'...,
-        'D_avr'...,
-        'IR','IR_pct_change',
-        'type', 'info'
+            'cycle', 'step',
+            'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
+            'V_avr'...,
+            'C_avr'...,
+            'D_avr'...,
+            'IR','IR_pct_change',
+            'type', 'info'
 
-        Remark! x_delta is given in percentage
+        Remark! x_delta is given in percentage.
         """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2274,7 +1899,7 @@ class cellpydata(object):
         return difference
 
     def select_steps(self, step_dict, append_df=False, test_number=None):
-        """select steps (not documented yet)"""
+        """Select steps (not documented yet)."""
         # step_dict={1:[1],2:[1],3:[1,2,3]}
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2344,6 +1969,7 @@ class cellpydata(object):
 
     # @print_function
     def populate_step_dict(self, step, test_number=None):
+        """Returns a dict with cycle numbers as keys and corresponding steps (list) as values."""
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2358,10 +1984,11 @@ class cellpydata(object):
         return step_dict
 
     def find_C_rates(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
+        """Find the C-rates for the cycles (obs! under development)."""
         self.find_C_rates_old(steps, mass, nom_cap, silent, test_number)
 
     def find_C_rates_old(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
-        """uses old type of step_dict, returns crate_dict
+        """Uses old type of step_dict, returns crate_dict.
 
         crate_dict[cycle] = [step, c-rate]
         """
@@ -2381,8 +2008,11 @@ class cellpydata(object):
         c_rates_dict = {}
         for c, s in steps.iteritems():
             v = d[(d[c_txt] == c) & (d[s_txt] == s[0])]
-            current = np.average(v[x_txt])  # TODO this might give problems - check if it is empty first
-            c_rate = abs(1000000 * current / (nom_cap * mass))
+            if not v[x_txt].dropna().empty:
+                current = np.average(v[x_txt])
+                c_rate = abs(1000000 * current / (nom_cap * mass))
+            else:
+                c_rate = np.NaN
             c_rates_dict[c] = [s[0], c_rate]
             if not silent:
                 print "cycle no %4i (step %3i) has a c-rate of %5.3fC" % (c, s[0], c_rate),
@@ -2391,11 +2021,10 @@ class cellpydata(object):
                     print "(=C / %5.1f)" % (1 / c_rate)
             else:
                 if not silent:
-                    print "negative C-rate"
+                    print " --non-positive C-rate!-- "
         return c_rates_dict
 
     # -------------save-and-export--------------------------------------------------
-
 
     def _export_cycles(self, test_number, setname=None, sep=None, outname=None):
         self.Print("exporting cycles", 1)
@@ -2481,7 +2110,7 @@ class cellpydata(object):
         self.Print(txt, 1)
 
     def exportcsv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True):
-        """saves the data as .csv file(s)"""
+        """Saves the data as .csv file(s)."""
 
         if sep is None:
             sep = self.sep
@@ -2499,7 +2128,7 @@ class cellpydata(object):
                 print "empty test [%i]" % (test_number)
                 print "not saved!"
             else:
-                if type(data.loaded_from) == types.ListType:
+                if isinstance(data.loaded_from,(list, tuple)):
                     txt = "merged file"
                     txt += "using first file as basename"
                     self.Print(txt)
@@ -2533,7 +2162,8 @@ class cellpydata(object):
                                         sep=sep)
 
     def save_test(self, filename, test_number=None, force=False, overwrite=True, extension="h5"):
-        """saves the data structure using pickle/hdf5"""
+        """Save the data structure using pickle/hdf5."""
+
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             print "Saving test failed!"
@@ -2652,7 +2282,6 @@ class cellpydata(object):
 
     # --------------helper-functions------------------------------------------------
 
-
     def _cap_mod_summary(self, dfsummary, capacity_modifier):
         # modifies the summary table
         discharge_title = self.discharge_capacity_txt
@@ -2746,9 +2375,9 @@ class cellpydata(object):
     def get_test(self, n=0):
         return self.tests[n]
 
-    def sget_voltage(self, cycle, step,
-                     test_number=None):
-        """Returns voltage for cycle, step"""
+    def sget_voltage(self, cycle, step, test_number=None):
+        """Returns voltage for cycle, step."""
+
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2765,7 +2394,7 @@ class cellpydata(object):
             return None
 
     def get_voltage(self, cycle=None, test_number=None, full=True):
-        """returns voltage (in V)"""
+        """Returns voltage (in V)."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2796,7 +2425,7 @@ class cellpydata(object):
             return v
 
     def get_current(self, cycle=None, test_number=None, full=True):
-        """Returns current (in mA)"""
+        """Returns current (in mA)."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2828,25 +2457,25 @@ class cellpydata(object):
 
     # @print_function
     def sget_steptime(self, cycle, step, test_number=None):
-        """returns timestamp for cycle, step"""
+        """Returns step time for cycle, step."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
             return
         cycle_index_header = self.cycle_index_txt
-        timestamp_header = self.step_time_txt
+        step_time_header = self.step_time_txt
         step_index_header = self.step_index_txt
         test = self.tests[test_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
-            t = c[timestamp_header]
+            t = c[step_time_header]
             return t
         else:
             return None
 
     def sget_timestamp(self, cycle, step, test_number=None):
-        """Returns timestamp for cycle, step"""
+        """Returns timestamp for cycle, step."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2864,7 +2493,7 @@ class cellpydata(object):
             return None
 
     def get_timestamp(self, cycle=None, test_number=None, in_minutes=False, full=True):
-        """Returns timestamp (in sec or minutes (if in_minutes==True))"""
+        """Returns timestamps (in sec or minutes (if in_minutes==True))."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2899,7 +2528,7 @@ class cellpydata(object):
         return v
 
     def get_dcap(self, cycle=None, test_number=None):
-        """Returns discharge_capacity (in mAh/g), voltage"""
+        """Returns discharge_capacity (in mAh/g), and voltage."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2909,7 +2538,7 @@ class cellpydata(object):
         return dc, v
 
     def get_ccap(self, cycle=None, test_number=None):
-        """Returns charge_capacity (in mAh/g), voltage"""
+        """Returns charge_capacity (in mAh/g), and voltage."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2922,14 +2551,10 @@ class cellpydata(object):
                 polarization=False,
                 stepsize=0.2,
                 points=None):
-        """
-        get_cap(cycle=None,test_number=None,
-                polarization = False,
-                stepsize = 0.2,
-                points = None)
+        """Gets the capacity for the run.
 
-        for polarization = True: calculates hysteresis
-        for cycle=None: not implemented yet, cycle set to 2.
+        For polarization = True: calculates hysteresis.
+        For cycle=None: not implemented yet, cycle set to 2.
 
         Args:
             cycle (int): cycle number.
@@ -2941,8 +2566,8 @@ class cellpydata(object):
         Returns:
             if polarization = False: capacity (mAh/g), voltage
             if polarization = True: capacity (mAh/g), voltage,
-            capacity points (mAh/g) [points if given, arranged with stepsize if not],
-            polarization (hysteresis)
+               capacity points (mAh/g) [points if given, arranged with stepsize if not],
+               polarization (hysteresis)
         """
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3050,7 +2675,7 @@ class cellpydata(object):
         return c, v
 
     def get_ocv(self, cycle_number=None, ocv_type='ocv', test_number=None):
-        """Find ocv data in dataset (voltage vs time)
+        """Find ocv data in dataset (voltage vs time).
 
         Args:
             cycle_number (int): find for all cycles if None.
@@ -3167,7 +2792,7 @@ class cellpydata(object):
             return ocv
 
     def get_number_of_cycles(self, test_number=None):
-        """get the number of cycles in the test"""
+        """Fet the number of cycles in the test."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3179,7 +2804,7 @@ class cellpydata(object):
         return no_cycles
 
     def get_cycle_numbers(self, test_number=None):
-        """get a list containing all the cycle numbers in the test """
+        """Fet a list containing all the cycle numbers in the test."""
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3203,20 +2828,26 @@ class cellpydata(object):
         d2 = d.ix[ir_data.index]
         d2 = d2[["Cycle_Index", "DateTime", "Data_Point", "Internal_Resistance"]].sort(
             [self.data_point_txt])  # jepe fix
-        cycles = np.unique(d["Cycle_Index"])  # jepe fix
+        # cycles = np.unique(d["Cycle_Index"])  # TODO: jepe fix
         ir_dict = {}
         for i in d2.index:
-            cycle = d2.ix[i]["Cycle_Index"]  # jepe fix
+            cycle = d2.ix[i]["Cycle_Index"]  # TODO: jepe fix
             if not ir_dict.has_key(cycle):
                 ir_dict[cycle] = []
             ir_dict[cycle].append(d2.ix[i]["Internal_Resistance"])  # jepe fix
         return ir_dict
 
     def get_diagnostics_plots(self, test_number=None, scaled=False, ):
-
         """Gets diagnostics plots.
-        Returns a dict containing diagnostics plots (cycles, shifted_discharge_cap, shifted_charge_cap,
-        RIC_cum, RIC_disconnect_cum, RIC_sei_cum)
+
+        Args:
+            test_number: test number (default 0).
+            scaled (bool): if True, scale by min and max values.
+
+        Returns:
+            Returns a dict containing diagnostics plots (keys = 'cycles', 'shifted_discharge_cap',
+                'shifted_charge_cap','RIC_cum', 'RIC_disconnect_cum', 'RIC_sei_cum').
+
         """
 
         # assuming each cycle consists of one discharge step followed by charge step
@@ -3353,10 +2984,9 @@ class cellpydata(object):
 
     # @print_function
     def set_mass(self, masses, test_numbers=None, validated=None):
+        """Sets the mass (masses) for the test (tests).
         """
-        set_mass(masses, test_numbers=None, validated = not_empty)
-          sets the mass (masses) for the test (tests)
-        """
+
         number_of_tests = len(self.tests)
         if not number_of_tests:
             print "no tests have been loaded yet"
@@ -3411,7 +3041,7 @@ class cellpydata(object):
             return df
 
     def set_testnumber_force(self, test_number=0):
-        """force to set testnumber
+        """Force to set testnumber.
 
         Sets the testnumber default (all functions with prm test_number will
         then be run assuming the default set test_number)
@@ -3419,7 +3049,7 @@ class cellpydata(object):
         self.selected_test_number = test_number
 
     def set_testnumber(self, test_number):
-        """set the testnumber.
+        """Set the testnumber.
 
         Set the test_number that will be used (cellpydata.selected_test_number).
         The class can save several datasets (but its not a frequently used feature),
@@ -3450,7 +3080,7 @@ class cellpydata(object):
         self.selected_test_number = test_number
 
     def get_summary(self, test_number=None, use_dfsummary_made=False):
-        """retrieve summary returned as a pandas DataFrame"""
+        """Retrieve summary returned as a pandas DataFrame."""
         # TODO: there is something strange with this
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3470,7 +3100,7 @@ class cellpydata(object):
         else:
             return test.dfsummary
 
-            # -----------internal-helpers---------------------------------------------------
+    # -----------internal-helpers---------------------------------------------------
 
     def is_empty(self, v):
         try:
@@ -3490,13 +3120,16 @@ class cellpydata(object):
                 else:
                     return True
 
-    def _is_listtype(self, x):
-        if type(x) == types.ListType:
+    @staticmethod
+    def _is_listtype(x):
+        if isinstance(x, (list, tuple)):
             return True
         else:
             return False
 
-    def _check_file_type(self, filename):
+
+    @staticmethod
+    def _check_file_type(filename):
         extension = os.path.splitext(filename)[-1]
         filetype = "res"
         if extension.lower() == ".res":
@@ -3505,7 +3138,8 @@ class cellpydata(object):
             filetype = "h5"
         return filetype
 
-    def _bounds(self, x):
+    @staticmethod
+    def _bounds(x):
         return np.amin(x), np.amax(x)
 
     def _roundup(self, x):
@@ -3591,9 +3225,9 @@ class cellpydata(object):
 
     # ----------making-summary------------------------------------------------------
     def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
-                     verbose=False, use_cellpy_stat_file=True, all_tests=True,
+                     use_cellpy_stat_file=True, all_tests=True,
                      test_number=0, ensure_step_table=None):
-        """convenience function that makes a summary of the cycling data."""
+        """Convenience function that makes a summary of the cycling data."""
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
@@ -3609,10 +3243,10 @@ class cellpydata(object):
                 if not self._is_not_empty_test(test):
                     print "empty test %i" % (j)
                     return
-
-                if type(test.loaded_from) == types.ListType:
+                if isinstance(test.loaded_from, (list, tuple)):
                     for f in test.loaded_from:
                         txt += f
+                        txt += "\n"
                 else:
                     txt += test.loaded_from
 
@@ -3657,6 +3291,10 @@ class cellpydata(object):
                       # capacity_modifier = None,
                       # test=None
                       ):
+
+        # TODO: insert diagnostics plots
+        # TODO: check if cumulated capacity loss is defined correctly
+
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -3708,19 +3346,6 @@ class cellpydata(object):
             print "values obtained from dfdata:"
             print dfsummary
             print
-        # if capacity_modifier is not None:
-        #            capacity_modifier = capacity_modifier.lower()
-        #            if capacity_modifier in self.capacity_modifiers:
-        #                print "OBS! Capacity modifier used:"
-        #                print capacity_modifier.upper()
-        #                dfsummary = self._cap_mod_summary(dfsummary,capacity_modifier)
-        #                print dfsummary
-        #            else:
-        #                print "Wrong capcity modifier given"
-        #                print capacity_modifier
-        #                print "valid options:"
-        #                for cm in self.capacity_modifiers:
-        #                    print cm
 
         discharge_capacity = dfsummary[discharge_txt] * 1000000 / mass
         discharge_title = self.summary_txt_discharge_cap
@@ -4005,9 +3630,9 @@ class cellpydata(object):
 
 
 def setup_cellpy_instance():
-    """Prepares for a cellpy session
+    """Prepares for a cellpy session.
 
-    This convinience function creates a cellpy class and sets the parameters
+    This convenience function creates a cellpy class and sets the parameters
     from your parameters file (using prmreader.read()
 
     Returns:
@@ -4032,8 +3657,8 @@ def setup_cellpy_instance():
     return cellpy_instance
 
 
-def just_load_srno(srno):
-    """Simply load an dataset based on srno
+def just_load_srno(srno, prm_filename=None):
+    """Simply load an dataset based on serial number (srno).
 
     This convenience function reads a dataset based on a serial number. This serial
     number (srno) must then be defined in your database. It is mainly used to check
@@ -4054,14 +3679,14 @@ def just_load_srno(srno):
     print "just_load_srno: srno: %i" % srno
 
     # ------------reading parametres--------------------------------------------
-
-    prms = prmreader.read()
     print "just_load_srno: read prms"
+    prms = prmreader.read(prm_filename)
     print prms
+
     print "just_load_srno: making class and setting prms"
     d = cellpydata(verbose=True)
-    d.set_cellpy_datadir(prms.cellpydatadir)
-    d.set_raw_datadir(prms.rawdatadir)
+    # d.set_cellpy_datadir(prms.cellpydatadir)
+    # d.set_raw_datadir(prms.rawdatadir)
     # ------------reading db----------------------------------------------------
     print
     print "just_load_srno: starting to load reader"
@@ -4077,7 +3702,7 @@ def just_load_srno(srno):
     print
 
     # ------------loadcell------------------------------------------------------
-    print "just_load_srno: getting filenames"
+    print "just_load_srno: getting file_names"
     raw_files, cellpy_file = filefinder.search_for_files(run_name)
     print "raw_files:", raw_files
     print "cellpy_file:", cellpy_file
@@ -4101,7 +3726,7 @@ def just_load_srno(srno):
 
 
 def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
-    """
+    """Load a raw data file and save it as cellpy-file.
 
     Args:
         mass (float): active material mass [mg].
@@ -4137,8 +3762,29 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     return outfile
 
 
+def loadcellcheck():
+    print "running loadcellcheck"
+    out_dir = r"C:\Cell_data\tmp"
+    mass = 0.078609164
+    rawfile =  r"C:\Cell_data\tmp\large_file_01.res"
+    cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
+    cell_data = cellpydata()
+    cell_data.select_minimal = True
+    cell_data.chunk_size = 100000
+    #cell_data.last_chunk = 28
+    cell_data.load_until_error = True
+    cell_data.max_res_filesize = 400000000
+    cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
+    cell_data.set_mass(mass)
+    if not cell_data.summary_exists:
+        cell_data.make_summary()
+    cell_data.save_test(cellpyfile)
+    cell_data.exportcsv(datadir=out_dir, cycles=True, raw=True, summary=True)
+    print "ok"
+
+
 def extract_ocvrlx(filename, fileout, mass=1.00):
-    """get the ocvrlx data from dataset.
+    """Get the ocvrlx data from dataset.
 
     Convenience function for extracting ocv relaxation data from runs."""
     import itertools
@@ -4226,4 +3872,5 @@ if __name__ == "__main__":
     print "running",
     print sys.argv[0]
     d = cellpydata()
-    just_load_srno(614)
+    just_load_srno(614, r"C:\Scripting\MyFiles\development_cellpy\cellpy\parametres\_cellpy_prms_devel.ini")
+    # loadcellcheck()

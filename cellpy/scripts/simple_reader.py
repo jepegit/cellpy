@@ -36,11 +36,11 @@ def convert2mAhg(d, mass=0.02):
 
 
 def main():
-    filename = "my_file.res" # write file name here
-    lim_low = 970 # write minimum value for capacity (points less than that will be removed)
-    lim_high = 1150 # write maximum value for capacity (points larger than that will be removed)
-    mass = 0.02 # mass of (active material of) electrode in mg
-    outdir = r"C:\data" # write path to were you want to save the data
+    filename = r"C:\Cell_data\testdata.res" # write file name here
+    lim_low = 10 # write minimum value for capacity (points less than that will be removed)
+    lim_high = 6050 # write maximum value for capacity (points larger than that will be removed)
+    mass = 0.8369 # mass of (active material of) electrode in mg
+    outdir = r"C:\Cell_data\tmp" # write path to were you want to save the data
 
 
     tablename_normal = "Channel_Normal_Table"
@@ -66,7 +66,7 @@ def main():
     constructor = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
     conn = dbloader.connect(constructor, autocommit=True)
     cur = conn.cursor()
-    sql = "select * from %s" % tablename_normal
+    sql = "select * from %s ORDER BY Test_Time" % tablename_normal
     cur.execute(sql)
     col_names = [i[0] for i in cur.description]
 
