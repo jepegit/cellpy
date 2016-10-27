@@ -67,3 +67,9 @@ cellpy/testdata/20160830_sic006_69_cc_01.res
 cellpy/testdata/20160830_sic006_72_cc_01.res
 cellpy/testdata/
 cellpy/parametres/_cellpy_prms_devel.ini
+cellpy/data_ex/20160805_test001_45_cc.h5
+cellpy/data_ex/20160805_test001_45_cc_01.res
+cellpy/data_ex/20160805_test001_45_cc_01_ocvrlx_down.csv
+cellpy/data_ex/20160805_test001_45_cc_01_ocvrlx_up.csv
+cellpy/data_ex/20160830_sic006_74_cc_01.res
+cellpy/data_ex/out/20160805_test001_45_cc.h5

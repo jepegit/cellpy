@@ -102,6 +102,6 @@ def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
 if __name__ == '__main__':
     print "searching for files"
     my_run_name = "20160805_test001_45_cc"
-    my_raw_file_dir = os.path.abspath("../testdata")
-    my_cellpy_file_dir = os.path.abspath("../testdata")
+    my_raw_file_dir = os.path.abspath("../data_ex")
+    my_cellpy_file_dir = os.path.abspath("../data_ex")
     search_for_files(my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir)
