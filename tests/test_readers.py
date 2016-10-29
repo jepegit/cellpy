@@ -459,8 +459,16 @@ class TestDBReader(TestCase):
     def teardown_class(cls):
         pass
 
-    def test_filter_selected(self):
+    def test_filter_select(self):
         from cellpy import dbreader
+        my_reader = dbreader.reader()
+        # print my_reader.db_file
+        # print my_reader.table.head()
+        my_reader.print_serial_number_info(615)
+        column_numbers = [my_reader.db_sheet_cols.FEC, my_reader.db_sheet_cols.VC]
+        o = my_reader.filter_by_col(column_numbers)
+        print 60*"-"
+        print o
         assert True
 
     @pytest.mark.unfinished
@@ -469,6 +477,7 @@ class TestDBReader(TestCase):
         assert True
 
     def test__open_sheet(self):
+        from cellpy import dbreader
         assert True
 
     def test_select_serial_number_row(self):
