@@ -12,7 +12,7 @@ import os
 import pytest
 
 current_file_path = os.path.dirname(os.path.realpath(__file__))
-relative_test_data_dir = "../cellpy/testdata"
+relative_test_data_dir = "../cellpy/data_ex"
 test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
 test_res_file = "20160805_test001_45_cc_01.res"
 test_data_dir_out = os.path.join(test_data_dir, "out_cellpytester")

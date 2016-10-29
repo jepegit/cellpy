@@ -136,7 +136,7 @@ plt.show()
 
 # filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
 #                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-#                r"\testdata\20160830_sic006_74_cc_01.res"
+#                r"\data_ex\20160830_sic006_74_cc_01.res"
 # mass = 0.86
 # type_of_data = "ocvrlx_up"
 # fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata" \
