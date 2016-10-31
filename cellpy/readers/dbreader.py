@@ -77,8 +77,9 @@ class DbSheetCols:
 class reader:
     def __init__(self, db_file=None,
                  db_datadir=None,
-                 db_datadir_processed=None):
-        prms = prmreader.read()
+                 db_datadir_processed=None,
+                 prm_file=None):
+        prms = prmreader.read(prm_file)
         if not db_file:
             self.db_path = prms.db_path
             self.db_filename = prms.db_filename

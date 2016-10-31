@@ -6,6 +6,10 @@ print 79*"="
 print "  Tools for development"
 print 79*"="
 
+# some commands
+PIP_DEVELOPMENT_MODE = "pip install -e ."  # will install in development mode for current virtualenv
+
+
 
 current_file_path = os.path.dirname(os.path.realpath(__file__))
 relative_test_dir = "../tests"
