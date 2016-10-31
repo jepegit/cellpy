@@ -58,8 +58,9 @@ import numpy as np
 import pandas as pd
 import os
 import copy
+import sys
 
-__author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
+__author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 # from fitting_ocv_003.py
@@ -269,8 +270,8 @@ def relax_model(t, **params):
 #     return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=p_dict['ocv'],
 #                           v0_rc=v0_rc) - meas_volt
 
-def define_model(filepath, filename, guess_tau={'d': 500, 'ct': 50},
-                 contribution={'d': 0.8, 'ct': 0.2}):
+def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
+                 ideal_cap=3.579, mass=0.84, v_start=None):
     """Reading data, creating Model object from relax_model and set param_hints.
 
     Reading the .csv file with all the cycling data.
@@ -285,39 +286,92 @@ def define_model(filepath, filename, guess_tau={'d': 500, 'ct': 50},
         contribution(:obj: 'dict' of :obj: 'float'): Assumed contribution
         from each rc-circuit. Help guessing the initial start voltage value
         of the rc-circuit.
+        c_rate(float): C-rate of discharge or charge.
+        change_i(:obj: 'list' of :obj: 'int'): Inform the program when the
+        current changes. For everytime for cycle in change_i,
+        new current is calculated. len(c_rate) = len(change_i) + 1
+        ideal_cap(float): Theoretical capacity of the cell.
+        mass(float): Mass of the active material. Given in [mg].
+        v_start(float): Cut-off voltage (before IR-drop).
 
-    Make sure you're in folder \utils. If not::
-        >>>print os.getcwd()
-
-    to find current folder and extend datafolder with [.]\utils\data
-    ----------------------------------------------------------------------------
+    Returns:
+        :obj: 'Model' of :obj: 'relax_model', :obj: 'list' of :obj:
+        'nd.array', :obj: 'list' of :obj: 'nd.array': Model of relax_model
+        with it's guessed parameters as hints. One list of time, and one of
+        voltage, both with len equal to number of cycles. Each element in
+        list represent number of cycle - 1.
     """
-    datafolder = r'..\data_ex'
+    try:
+        r_filepath = r'%s' % filepath
+        r_filename = r'%s' % filename
+        data_write = os.path.join(r_filepath, r_filename)
+        data_read = pd.read_csv(data_write, sep=';')
+        data = manipulate_data(data_read)
+    except ImportError:
+        print "Folder- or filename not found."
+        raise
+    if not guess_tau:
+        guess_tau = {'d': 500, 'ct': 50}
+    if not contribution:
+        contribution = {'d': 0.8, 'ct': 0.2}
 
-    # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
-    # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
-    filename_up = r'74_data_up.csv'
-    filename_down = r'74_data_down.csv'
-    down = os.path.join(datafolder, filename_down)
-    up = os.path.join(datafolder, filename_up)
-    data_down = pd.read_csv(down, sep=';')
-    data_up = pd.read_csv(up, sep=';')
-    data_up = manipulate_data(data_up)
-    data_down = manipulate_data(data_down)
+    if not (isinstance(guess_tau, dict) or isinstance(contribution, dict)):
+        raise TypeError('guess_tau and contribution has to be dictionaries.')
 
-    """Defining model.
+    # if len(c_rate) != len(change_i) + 1:
+    #     raise AttributeError('len(c_rate) must be equal to len(change_i) + 1')
+    if sum(contribution.values()) != 1:
+        raise ValueError('The sum of contribution values has to sum up to 1.')
+    if len(guess_tau) != len(contribution):
+        raise AttributeError('len(guess_tau) has to be equal to len('
+                             'contribution).')
+    if guess_tau.keys() not in contribution.keys():
+        raise AttributeError('guess_tau and contribution need to have same '
+                             'rc-names. That is, both need to have the same '
+                             'keyword arguments.')
 
-    Tell the script how the model looks like. How many RC-circuits are there?
-    Make initial guesses for the time constant and voltage-contribute from each
-    RC-circuit. "contri_..." is your guessed percentage of voltage which the
-    RC-circuit contribute to over the total relaxation.
-    """
-    contri_ct = 0.2
-    contri_d = 1 - contri_ct
-    tau_ct = 50
-    tau_d = 550
-    contri = {'ct': contri_ct, 'd': contri_d}
-    tau_guessed = {'ct': tau_ct, 'd': tau_d}
+    # Extracting time and voltage from data.
+    time = []
+    voltage = []
+    for i, sort in data.iteritems():
+        time.append(np.array(sort[:]['time']))
+        voltage.append(np.array(sort[:]['voltage']))
+        time[i] = time[i][~np.isnan(time[i])]
+        voltage[i] = voltage[i][~np.isnan(voltage[i])]
+    v_ocv = voltage[0][-1]
+    v_0 = voltage[0][0]
+    i_start = (c_rate * ideal_cap * mass) / 1000
+
+    if v_ocv < v_0:
+        # After charge
+        if not v_start:
+            v_start = 1.
+        rlx_txt = "delithiation (downwards relaxation)"
+    else:
+        # After discharge
+        if not v_start:
+            v_start = 0.01
+        rlx_txt = "lithiation (upward relaxation)"
+
+    init_guess = guessing_parameters(v_start, i_start, v_0, v_ocv, contri,
+                                     tau_guessed)
+
+    r_model = Model(relax_model, missing='raise')
+
+    for name in guess_tau.keys():
+        r_model.set_param_hint('tau_%s' % name, value=tau_guessed[name])
+
+        if v_ocv < v_0:
+            # After charge (relax downwards)
+            r_model.set_param_hint('v0_%s' % name,
+                                   value=init_guess['v0_rc'][name], min=0)
+        else:
+            r_model.set_param_hint('v0_%s' % name,
+                                   value=init_guess['v0_rc'][name], max=0)
+    r_model.set_param_hint('ocv', value=v_ocv)
+    r_model.make_params()
+    return r_model, time, voltage
+
 
 if __name__ == '__main__':
     """Reading data.
