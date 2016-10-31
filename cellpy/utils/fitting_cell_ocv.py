@@ -320,9 +320,6 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
 
     if not (isinstance(guess_tau, dict) or isinstance(contribution, dict)):
         raise TypeError('guess_tau and contribution has to be dictionaries.')
-
-    # if len(c_rate) != len(change_i) + 1:
-    #     raise AttributeError('len(c_rate) must be equal to len(change_i) + 1')
     if sum(contribution.values()) != 1:
         raise ValueError('The sum of contribution values has to sum up to 1.')
     if len(guess_tau) != len(contribution):
@@ -349,12 +346,10 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
         # After charge
         if not v_start:
             v_start = 1.
-        rlx_txt = "delithiation (downwards relaxation)"
     else:
         # After discharge
         if not v_start:
             v_start = 0.01
-        rlx_txt = "lithiation (upward relaxation)"
 
     init_guess = guessing_parameters(v_start, i_start, v_0, v_ocv, contribution,
                                      guess_tau)
@@ -381,7 +376,8 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
 
 
 def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
-                   change_i, ideal_cap=3.579, mass=0.86, v_start=None):
+                   change_i, ideal_cap=3.579, mass=0.86, v_err=0.1,
+                   v_start=None):
     """Fitting measured data to model.
 
     Args:
@@ -395,18 +391,23 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         contribution (:obj: 'dict' of :obj: 'float'): Assumed contribution
         from each rc-circuit. Help guessing the initial start voltage value
         of the rc-circuit.
-        c_rate (:obj: 'list' of :obj: 'float'): The C-rate which the cell was
+        c_rate (:obj: 'tuple' of :obj: 'float'): The C-rate which the cell was
         discharged or charged with before cycle = change_i.
-        change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
+        change_i (:obj: 'tuple' of :obj: 'int'): The cycle number where the
         C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
         ideal_cap (float): Theoretical capacity of the cell.
         mass (float): Mass of the active material. Given in [mg].
+        v_err (float): Voltage measurement accuracy in %. Default: Arbin BT2000.
         v_start (float): Cut-off voltage (potential before IR-drop).
 
     Returns:
         :obj: 'list' of :obj: 'ModelResult', :obj: 'list' of :obj:
         'dict': Results of fitting from each cycle in a list with and
         calculated R and C parameters based on fit from result.
+
+    TODO:
+        - Find out how to add measurement error to a fit
+        - Add measurement error from Arbin BT2000 to the fit.
     """
     # initial_param_up = Parameters()
     # # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
@@ -430,10 +431,34 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     i_start = []
     step = 0
     for i in range(len(time)):
-        # Checking if the was a change in current at cycle i.
+        # Checking if cycle number i is in change_i
         if i in change_i:
             step += 1
         i_start.append((c_rate[step] * ideal_cap * mass) / 1000)
+    if not guess_tau:
+        guess_tau = {'d': 500, 'ct': 50}
+    if not contribution:
+        contribution = {'d': 0.8, 'ct': 0.2}
+
+    if not (isinstance(guess_tau, dict) or isinstance(contribution, dict)):
+        raise TypeError('guess_tau and contribution has to be dictionaries.')
+    if not(isinstance(c_rate, tuple) or isinstance(change_i, tuple)):
+        raise TypeError('c_rate and change_i has to be tuples.')
+
+    if len(c_rate) != len(change_i) + 1:
+        raise AttributeError('len(c_rate) must be equal to len(change_i) + 1')
+
+    if sum(contribution.values()) != 1:
+        raise ValueError('The sum of contribution values has to sum up to 1.')
+
+    if len(guess_tau) != len(contribution):
+        raise AttributeError('len(guess_tau) has to be equal to len('
+                             'contribution).')
+
+    if guess_tau.keys() not in contribution.keys():
+        raise AttributeError('guess_tau and contribution need to have same '
+                             'rc-names. That is, both need to have the same '
+                             'keyword arguments.')
 
     result_initial = model.fit(voltage[0], t=time[0])
     # result_initial.conf_interval()
@@ -506,18 +531,21 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     return result, best_rc_para
 
 
-def user_defined_plot(time, voltage, fit):
+def user_plot_voltage(time, voltage, fit):
     """User decides which cycles to plot and report.
 
     Args:
-        fit (:obj: 'list' of :obj: 'ModelResult')
+        time (:obj: 'list of :obj: 'nd.array'): Points in time for all cycles.
+        voltage (:obj: 'list' of :obj: 'nd.array'): Cycles' relaxation voltage.
+        fit (:obj: 'list' of :obj: 'ModelResult'): All cycles' best fit results.
 
     Returns:
         None: Plotted figures and reports of requested cycle numbers
     """
-    question = 'Cycles you want to plot, separated with space. If you only ' \
-               'want to plot the parameters, press enter. Write "a" for all ' \
-               'plots: -->'
+    question = "Write the cycles you want to plot separated with space." \
+               "If you don't want to plot anything else than the fit " \
+               "reports, press enter." \
+               "Write 'a' for all plots: -->"
     user_cycles = raw_input(question)
     if not user_cycles:
         # no cycles
@@ -546,68 +574,81 @@ def user_defined_plot(time, voltage, fit):
         # After discharge
         rlx_txt = "lithiation (upward relaxation)"
 
-    for cycle_nr in user_cycles_list:
-        # fig = fit[cycle_nr].plot()
-        plt.figure()
-        plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
-                     ((cycle_nr + 1), rlx_txt))
-        plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr])
-        print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
-        report_fit(fit[cycle_nr])
-        print '------------------------------------------------------------'
+    if not user_cycles_list:
+        for cycle_nr in range(len(fit)):
+            print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
+            report_fit(fit[cycle_nr])
+            print '------------------------------------------------------------'
+    else:
+        for cycle_nr in user_cycles_list:
+            # fig = fit[cycle_nr].plot()
+            plt.figure()
+            plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
+                         ((cycle_nr + 1), rlx_txt))
+            plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr])
+            print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
+            report_fit(fit[cycle_nr])
+            print '------------------------------------------------------------'
 
 
-if __name__ == '__main__':
-    """Reading data.
+def plot_params(time, voltage, fit, rc_params, i_err=0.1):
+    """Calculating parameter errors and plotting them.
 
-    Reading the .csv file with all the cycling data.
+    r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
+    c is found from using tau / r --> err(c) = err(r) + err(tau)
+    Here err means fractional uncertainty, which means that the uncertainty
+    of both r and c are respectively e(r) = err(r) / r and e(c) = err(c) / c.
 
-    Make sure you're in folder \utils. If not::
-        >>>print os.getcwd()
+    Args:
+        time (:obj: 'list' of :obj: 'nd.array'): Measured points in time.
+        voltage (:obj: 'list' of :obj: 'nd.array'): Measured voltage.
+        fit (:obj: 'list' of :obj: 'ModelResult'): Best fit for each cycle.
+        rc_params (:obj: 'list' of :obj: 'dict'): Calculated R and C from fit.
+        i_err (float): Current measurement error in %. Standard is Arbin BT2000.
 
-    to find current folder and extend datafolder with [.]\utils\data
-    ----------------------------------------------------------------------------
+    Returns:
+        None: Plot the parameters with their errors.
     """
-    datafolder = r'..\data_ex'
 
-    # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
-    # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
-    filename_up = r'74_data_up.csv'
-    filename_down = r'74_data_down.csv'
+    v_ocv = voltage[0][-1]
+    v_0 = voltage[0][0]
+    if v_ocv < v_0:
+        # After charge
+        rlx_txt = "delithiation (downwards relaxation)"
+    else:
+        # After discharge
+        rlx_txt = "lithiation (upward relaxation)"
 
-    # sub plotting voltage
-    ############################################################################
-    # fig_up = plt.figure(figsize=(20, 13))
-    # plt.suptitle('OCV-relaxation data from cell "sic006_cc_45_01" with best '
-    #              'fitted and guessed parameters',
-    #              size=20)
-    #
-    # # making odd or even amount of subfigures inside fig_up
-    # if len(result) % 2 == 0:   # Even number of cycles
-    #     gs = gridspec.GridSpec(len(result) / 2, 3)
-    #     gs.update(left=0.1, right=0.6, wspace=0.1)
-    #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
-    # else:
-    #     gs = gridspec.GridSpec((len(result) + 1) / 2, 3)
-    #     gs.update(left=0.05, right=0.8, wspace=0.8)
-    #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
-    #
-    # for cycle_nr, sub_up in enumerate(subs_up):
-    #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
-    #                  sub_up)
-    """Plotting parameters
-    ------------------------------------------------------------------------
-    """
-    # printing parameters
-    # for cyc in range(1, len(result)):
-    #     print 'cycle number %i' % cyc
-    #     print_params(ini=best_para[cyc - 1], fit=best_para[cyc])
-    #     print '--------------------------------------------------------'
+    best_para = []
+    best_para_error = []
+    names = fit[0].params.keys()
+    for i, cycle_fit in enumerate(fit):
+        rc_params[i].update(cycle_fit.params)
+        best_para.append(rc_params[i])
+        err_para = np.sqrt(np.diag(cycle_fit.covar))
+        error_para = {para_name: err_para[err]
+                      for err, para_name in enumerate(names)}
+        fractional_err = {par_name: error_para[par_name]
+                                    / cycle_fit.params[par_name]
+                          for par_name in names}
+        # Fractional error calculation
+        r_err = {'r_%s' % key: fractional_err['v0_%s' % key] + i_err
+                 for key in rc_params[i].keys()[2:] if key.startswith('r_')}
+        c_err = {'c_%s' % key:
+                     fractional_err['tau_%s' % key] + r_err['r_%s'% key]
+                 for key in rc_params[i].keys()[2:] if key.startswith('c_')}
+        # Standard deviation error calculated from fractional error
+        e_r = {r: frac_err / rc_params[i][r] for r, frac_err in r_err.items()}
+        e_c = {c: frac_err / rc_params[i][c] for c, frac_err in c_err.items()}
+        error_para.update(e_r)
+        error_para.update(e_c)
+        best_para_error.append(error_para)
+
     fig_params = plt.figure()
-    plt.suptitle('Initial and fitted parameters in every cycle after %s'
+    plt.suptitle('Fitted parameters in every cycle after %s'
                  % rlx_txt, size=20)
-    cycle_array = np.arange(1, len(result) + 1, 1)
-    cycle_array_ticks = np.arange(1, len(result) + 1, 3)
+    cycle_array = np.arange(1, len(fit) + 1, 1)
+    cycle_array_ticks = np.arange(1, len(fit) + 1, 3)
 
     if len(best_para[0]) % 2 == 0:   # Even number of cycles
         gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
@@ -621,40 +662,112 @@ if __name__ == '__main__':
                        for p in range(len(best_para[0]))]
 
     plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
-    for _, name in enumerate(result[0].var_names):
+    for name_i, name in enumerate(best_para[0].keys()):
         para_array = np.array([best_para[step][name]
-                               for step in range(len(result))])
+                               for step in range(len(fit))])
+        para_error = np.array([best_para_error[cycle_step][name]
+                               for cycle_step in range(len(fit))])
+        subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
+                                fmt='or')
+        subs_params[name_i].legend([name], loc='center left',
+                              bbox_to_anchor=(1, 0.5))
+        subs_params[name_i].set_xlabel('Cycles')
+        if 'tau' in name:
+            subs_params[name_i].set_ylabel('Time-constant (RC)[s]')
+        elif 'r_' in name:
+            subs_params[name_i].set_ylabel('Resistance [Ohm]')
+        elif 'c_' in name:
+            subs_params[name_i].set_ylabel('Capacitance [F]')
+        else:
+            subs_params[name_i].set_ylabel('Voltage [V]')
+
+        datafolder = r'..\data_ex'
+
+        # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
+        # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
+        filename_up = r'74_data_up.csv'
+        filename_down = r'74_data_down.csv'
+
+        # sub plotting voltage
+        ############################################################################
+        # fig_up = plt.figure(figsize=(20, 13))
+        # plt.suptitle('OCV-relaxation data from cell "sic006_cc_45_01" with best '
+        #              'fitted and guessed parameters',
+        #              size=20)
+        #
+        # # making odd or even amount of subfigures inside fig_up
+        # if len(result) % 2 == 0:   # Even number of cycles
+        #     gs = gridspec.GridSpec(len(result) / 2, 3)
+        #     gs.update(left=0.1, right=0.6, wspace=0.1)
+        #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
+        # else:
+        #     gs = gridspec.GridSpec((len(result) + 1) / 2, 3)
+        #     gs.update(left=0.05, right=0.8, wspace=0.8)
+        #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
+        #
+        # for cycle_nr, sub_up in enumerate(subs_up):
+        #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
+        #                  sub_up)
+                        """Plotting parameters
+                        ------------------------------------------------------------------------
+                        """
+        # printing parameters
+        # for cyc in range(1, len(result)):
+        #     print 'cycle number %i' % cyc
+        #     print_params(ini=best_para[cyc - 1], fit=best_para[cyc])
+        #     print '--------------------------------------------------------'
+        fig_params = plt.figure()
+        plt.suptitle('Initial and fitted parameters in every cycle after %s'
+                     % rlx_txt, size=20)
+        cycle_array = np.arange(1, len(result) + 1, 1)
+        cycle_array_ticks = np.arange(1, len(result) + 1, 3)
+
+        if len(best_para[0]) % 2 == 0:   # Even number of cycles
+            gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
+        gs.update(left=0.05, right=0.9, wspace=1)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+        else:
+        gs = gridspec.GridSpec((len(best_para[0]) + 1) / 2, 3)
+        gs.update(left=0.05, right=0.9, wspace=1)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+
+        plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
+        for name_i, name in enumerate(result[0].var_names):
+            para_array = np.array([best_para[step][name]
+                                   for step in range(len(result))])
         para_error = np.array([best_para_error[cycle_step][name]
                                for cycle_step in range(len(result))])
-        subs_params[_].errorbar(cycle_array, para_array, yerr=para_error,
+        subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
                                 fmt='or')
-        subs_params[_].legend([name], loc='center left',
+        subs_params[name_i].legend([name], loc='center left',
                               bbox_to_anchor=(1, 0.5))
-        subs_params[_].set_xlabel('Cycles')
+        subs_params[name_i].set_xlabel('Cycles')
         if 'tau' in name:
-            subs_params[_].set_ylabel('Time-constant (RC)[s]')
+            subs_params[name_i].set_ylabel('Time-constant (RC)[s]')
         else:
-            subs_params[_].set_ylabel('Voltage [V]')
+            subs_params[name_i].set_ylabel('Voltage [V]')
 
-    """Plotting RC parameters
-    ------------------------------------------------------------------------
-    """
-    fig_rc = plt.figure()
-    fig_rc.suptitle('R and C for each rc-circuit in all cycles after %s'
-                    % rlx_txt)
-    n_para = len(best_rc_para[0])
-    if n_para % 2 == 1:
-        gs_rc = gridspec.GridSpec(n_para / 2 + 1, n_para / 2)
-    else:
-        gs_rc = gridspec.GridSpec(n_para / 2, n_para / 2)
-    gs_rc.update(left=0.05, right=0.9, wspace=1)
-    subs_rc = [fig_rc.add_subplot(gs_rc[pr])
-               for pr in range(len(best_rc_para[0].keys()))]
-    plt.setp(subs_rc, xlabel='Cycle number', xticks=cycle_array_ticks)
+        """Plotting RC parameters
+        ------------------------------------------------------------------------
+        """
+        fig_rc = plt.figure()
+        fig_rc.suptitle('R and C for each rc-circuit in all cycles after %s'
+                        % rlx_txt)
+        n_para = len(best_rc_para[0])
+        if n_para % 2 == 1:
+            gs_rc = gridspec.GridSpec(n_para / 2 + 1, n_para / 2)
+        else:
+            gs_rc = gridspec.GridSpec(n_para / 2, n_para / 2)
+        gs_rc.update(left=0.05, right=0.9, wspace=1)
+        subs_rc = [fig_rc.add_subplot(gs_rc[pr])
+                   for pr in range(len(best_rc_para[0].keys()))]
+        plt.setp(subs_rc, xlabel='Cycle number', xticks=cycle_array_ticks)
 
-    for idx, key_value in enumerate(best_rc_para[0].keys()):
-        temp_array = np.array([best_rc_para[cyc][key_value]
-                               for cyc in range(len(best_rc_para))])
+        for idx, key_value in enumerate(best_rc_para[0].keys()):
+            temp_array = np.array([best_rc_para[cyc][key_value]
+                                   for cyc in range(len(best_rc_para))])
         subs_rc[idx].plot(cycle_array, temp_array, 'og')
         subs_rc[idx].legend([key_value], loc='center left',
                             bbox_to_anchor=(1, 0.5))
@@ -664,47 +777,47 @@ if __name__ == '__main__':
             subs_rc[idx].set_ylabel('Capacitance [F]')
 
 
-    v_start_down = 1.
-    # i_start_ini_down = 0.000153628   # from cycle 1-3
-    # i_start_after_down = 0.000305533   # from cycle 4-end
-    # i_start_down = [i_start_ini_down for _down in range(3)]
-    # for down_4 in range(len(data_down) - 3):
-    #     i_start_down.append(i_start_after_down)
-    #
-    v_start_up = 0.01
-    # i_start_ini_up = 0.0001526552   # from cycle 1-3
-    # i_start_after_up = 0.0003045602   # from cycle 4-end
-    # i_start_up = [i_start_ini_up for _up in range(3)]
-    # for up_4 in range(len(data_up) - 3):
-    #     i_start_up.append(i_start_after_up)
+        v_start_down = 1.
+        # i_start_ini_down = 0.000153628   # from cycle 1-3
+        # i_start_after_down = 0.000305533   # from cycle 4-end
+        # i_start_down = [i_start_ini_down for _down in range(3)]
+        # for down_4 in range(len(data_down) - 3):
+        #     i_start_down.append(i_start_after_down)
+        #
+        v_start_up = 0.01
+        # i_start_ini_up = 0.0001526552   # from cycle 1-3
+        # i_start_after_up = 0.0003045602   # from cycle 4-end
+        # i_start_up = [i_start_ini_up for _up in range(3)]
+        # for up_4 in range(len(data_up) - 3):
+        #     i_start_up.append(i_start_after_up)
 
-    cell_mass = 0.86   # [g]
-    c_rate_3 = 0.05   # [1 / h]
-    c_rate = 0.1
-    cell_capacity = 3.579   # [mAh / g]
-    i_start_ini = (cell_mass * c_rate_3 * cell_capacity) / 1000   # [A]
-    i_start_after = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
-    i_start = [i_start_ini for _down in range(3)]
-    for down_4 in range(len(data_down) - 3):
-        i_start.append(i_start_after)
-    pass
-    # question_ex = 'Cycles after discharge you want to plot, separated with ' \
-    #               'space. If you don'"'"'t want to plot any press ' \
-    #               'enter. Write "a" for all plots: -->'
-    # user_cycle_ex = raw_input(question_ex)
-    # ex_ocv = pd.Series([pd.DataFrame(zip(t, u), columns=['time', 'voltage'])])
-    # ocv_cycle(ex_ocv, user_cycle_ex, v_start_up, [0.0007508742])
+        cell_mass = 0.86   # [g]
+        c_rate_3 = 0.05   # [1 / h]
+        c_rate = 0.1
+        cell_capacity = 3.579   # [mAh / g]
+        i_start_ini = (cell_mass * c_rate_3 * cell_capacity) / 1000   # [A]
+        i_start_after = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
+        i_start = [i_start_ini for _down in range(3)]
+        for down_4 in range(len(data_down) - 3):
+            i_start.append(i_start_after)
+        pass
+        # question_ex = 'Cycles after discharge you want to plot, separated with ' \
+        #               'space. If you don'"'"'t want to plot any press ' \
+        #               'enter. Write "a" for all plots: -->'
+        # user_cycle_ex = raw_input(question_ex)
+        # ex_ocv = pd.Series([pd.DataFrame(zip(t, u), columns=['time', 'voltage'])])
+        # ocv_cycle(ex_ocv, user_cycle_ex, v_start_up, [0.0007508742])
 
-    question_up = 'Cycles after discharge you want to plot, separated with ' \
-                  'space. If you don'"'"'t want to plot any press ' \
-                  'enter. Write "a" for all plots: -->'
-    user_cycles_up = raw_input(question_up)
-    fit_with_model(data_up, user_cycles_up, v_start_up, i_start)
-    plt.show()
-    question_down = 'Cycles after charge you want to plot, separated with ' \
-                    'space. If you don'"'"'t want to plot any press ' \
-                    'enter. Write "a" for all plots: -->'
-    user_cycles_down = raw_input(question_down)
-    fit_with_model(data_down, user_cycles_down, v_start_down, i_start)
-    plt.show()
+        question_up = 'Cycles after discharge you want to plot, separated with ' \
+                      'space. If you don'"'"'t want to plot any press ' \
+                      'enter. Write "a" for all plots: -->'
+        user_cycles_up = raw_input(question_up)
+        fit_with_model(data_up, user_cycles_up, v_start_up, i_start)
+        plt.show()
+        question_down = 'Cycles after charge you want to plot, separated with ' \
+                        'space. If you don'"'"'t want to plot any press ' \
+                        'enter. Write "a" for all plots: -->'
+        user_cycles_down = raw_input(question_down)
+        fit_with_model(data_down, user_cycles_down, v_start_down, i_start)
+        plt.show()
 
