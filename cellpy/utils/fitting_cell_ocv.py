@@ -51,14 +51,13 @@ http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.htm
 from lmfit import Parameters, report_fit, Model
 from cell_ocv import *
 
-import StringIO
+# import StringIO
+import os
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
 import pandas as pd
-import os
 import copy
-import sys
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
@@ -325,10 +324,11 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
     if len(guess_tau) != len(contribution):
         raise AttributeError('len(guess_tau) has to be equal to len('
                              'contribution).')
-    if guess_tau.keys() not in contribution.keys():
-        raise AttributeError('guess_tau and contribution need to have same '
-                             'rc-names. That is, both need to have the same '
-                             'keyword arguments.')
+    for key_name in guess_tau.keys():
+        if key_name not in contribution.keys():
+            raise AttributeError('guess_tau and contribution need to have same '
+                                 'rc-names. That is, both need to have the '
+                                 'same keyword arguments.')
 
     # Extracting time and voltage from data.
     time = []
@@ -368,6 +368,7 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
                                    value=init_guess['v0_rc'][name], max=0)
     r_model.set_param_hint('ocv', value=v_ocv)
     r_model.make_params()
+    print "Initial parameter hints are based on first cycle"
     r_model.print_param_hints()
     print "To define more boundaries: >>> " \
           "example_model.set_param_hint('name_of_parameter', min=min_value, " \
@@ -376,8 +377,8 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
 
 
 def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
-                   change_i, ideal_cap=3.579, mass=0.86, v_err=0.1,
-                   v_start=None):
+                   change_i, ideal_cap=3.579, mass=0.86, v_start=None,
+                   v_err=0.1):
     """Fitting measured data to model.
 
     Args:
@@ -391,9 +392,9 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         contribution (:obj: 'dict' of :obj: 'float'): Assumed contribution
         from each rc-circuit. Help guessing the initial start voltage value
         of the rc-circuit.
-        c_rate (:obj: 'tuple' of :obj: 'float'): The C-rate which the cell was
+        c_rate (:obj: 'list' of :obj: 'float'): The C-rate which the cell was
         discharged or charged with before cycle = change_i.
-        change_i (:obj: 'tuple' of :obj: 'int'): The cycle number where the
+        change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
         C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
         ideal_cap (float): Theoretical capacity of the cell.
         mass (float): Mass of the active material. Given in [mg].
@@ -442,7 +443,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
 
     if not (isinstance(guess_tau, dict) or isinstance(contribution, dict)):
         raise TypeError('guess_tau and contribution has to be dictionaries.')
-    if not(isinstance(c_rate, tuple) or isinstance(change_i, tuple)):
+    if not(isinstance(c_rate, list) or isinstance(change_i, list)):
         raise TypeError('c_rate and change_i has to be tuples.')
 
     if len(c_rate) != len(change_i) + 1:
@@ -454,11 +455,11 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     if len(guess_tau) != len(contribution):
         raise AttributeError('len(guess_tau) has to be equal to len('
                              'contribution).')
-
-    if guess_tau.keys() not in contribution.keys():
-        raise AttributeError('guess_tau and contribution need to have same '
-                             'rc-names. That is, both need to have the same '
-                             'keyword arguments.')
+    for key_name in guess_tau.keys():
+        if key_name not in contribution.keys():
+            raise AttributeError('guess_tau and contribution need to have '
+                                 'same rc-names. That is, both need to have '
+                                 'the same keyword arguments.')
 
     result_initial = model.fit(voltage[0], t=time[0])
     # result_initial.conf_interval()
@@ -628,18 +629,18 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
         err_para = np.sqrt(np.diag(cycle_fit.covar))
         error_para = {para_name: err_para[err]
                       for err, para_name in enumerate(names)}
-        fractional_err = {par_name: error_para[par_name]
-                                    / cycle_fit.params[par_name]
+        fractional_err = {par_name: error_para[par_name] / cycle_fit.params[
+            par_name]
                           for par_name in names}
         # Fractional error calculation
-        r_err = {'r_%s' % key: fractional_err['v0_%s' % key] + i_err
-                 for key in rc_params[i].keys()[2:] if key.startswith('r_')}
-        c_err = {'c_%s' % key:
-                     fractional_err['tau_%s' % key] + r_err['r_%s'% key]
-                 for key in rc_params[i].keys()[2:] if key.startswith('c_')}
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
+                 for key in rc_params[i].keys() if key.startswith('r_')}
+        c_err = {key: fractional_err[
+                          'tau_%s' % key[2:]] + r_err['r_%s' % key[2:]]
+                 for key in rc_params[i].keys() if key.startswith('c_')}
         # Standard deviation error calculated from fractional error
-        e_r = {r: frac_err / rc_params[i][r] for r, frac_err in r_err.items()}
-        e_c = {c: frac_err / rc_params[i][c] for c, frac_err in c_err.items()}
+        e_r = {r: frac_err * rc_params[i][r] for r, frac_err in r_err.items()}
+        e_c = {c: frac_err * rc_params[i][c] for c, frac_err in c_err.items()}
         error_para.update(e_r)
         error_para.update(e_c)
         best_para_error.append(error_para)
@@ -668,9 +669,9 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
         para_error = np.array([best_para_error[cycle_step][name]
                                for cycle_step in range(len(fit))])
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
-                                fmt='or')
+                                     fmt='or')
         subs_params[name_i].legend([name], loc='center left',
-                              bbox_to_anchor=(1, 0.5))
+                                   bbox_to_anchor=(1, 0.5))
         subs_params[name_i].set_xlabel('Cycles')
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time-constant (RC)[s]')
@@ -681,143 +682,35 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
         else:
             subs_params[name_i].set_ylabel('Voltage [V]')
 
-        datafolder = r'..\data_ex'
 
-        # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
-        # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
-        filename_up = r'74_data_up.csv'
-        filename_down = r'74_data_down.csv'
-
-        # sub plotting voltage
-        ############################################################################
-        # fig_up = plt.figure(figsize=(20, 13))
-        # plt.suptitle('OCV-relaxation data from cell "sic006_cc_45_01" with best '
-        #              'fitted and guessed parameters',
-        #              size=20)
-        #
-        # # making odd or even amount of subfigures inside fig_up
-        # if len(result) % 2 == 0:   # Even number of cycles
-        #     gs = gridspec.GridSpec(len(result) / 2, 3)
-        #     gs.update(left=0.1, right=0.6, wspace=0.1)
-        #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
-        # else:
-        #     gs = gridspec.GridSpec((len(result) + 1) / 2, 3)
-        #     gs.update(left=0.05, right=0.8, wspace=0.8)
-        #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
-        #
-        # for cycle_nr, sub_up in enumerate(subs_up):
-        #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
-        #                  sub_up)
-                        """Plotting parameters
-                        ------------------------------------------------------------------------
-                        """
-        # printing parameters
-        # for cyc in range(1, len(result)):
-        #     print 'cycle number %i' % cyc
-        #     print_params(ini=best_para[cyc - 1], fit=best_para[cyc])
-        #     print '--------------------------------------------------------'
-        fig_params = plt.figure()
-        plt.suptitle('Initial and fitted parameters in every cycle after %s'
-                     % rlx_txt, size=20)
-        cycle_array = np.arange(1, len(result) + 1, 1)
-        cycle_array_ticks = np.arange(1, len(result) + 1, 3)
-
-        if len(best_para[0]) % 2 == 0:   # Even number of cycles
-            gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
-        gs.update(left=0.05, right=0.9, wspace=1)
-        subs_params = [fig_params.add_subplot(gs[p])
-                       for p in range(len(best_para[0]))]
-        else:
-        gs = gridspec.GridSpec((len(best_para[0]) + 1) / 2, 3)
-        gs.update(left=0.05, right=0.9, wspace=1)
-        subs_params = [fig_params.add_subplot(gs[p])
-                       for p in range(len(best_para[0]))]
-
-        plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
-        for name_i, name in enumerate(result[0].var_names):
-            para_array = np.array([best_para[step][name]
-                                   for step in range(len(result))])
-        para_error = np.array([best_para_error[cycle_step][name]
-                               for cycle_step in range(len(result))])
-        subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
-                                fmt='or')
-        subs_params[name_i].legend([name], loc='center left',
-                              bbox_to_anchor=(1, 0.5))
-        subs_params[name_i].set_xlabel('Cycles')
-        if 'tau' in name:
-            subs_params[name_i].set_ylabel('Time-constant (RC)[s]')
-        else:
-            subs_params[name_i].set_ylabel('Voltage [V]')
-
-        """Plotting RC parameters
-        ------------------------------------------------------------------------
-        """
-        fig_rc = plt.figure()
-        fig_rc.suptitle('R and C for each rc-circuit in all cycles after %s'
-                        % rlx_txt)
-        n_para = len(best_rc_para[0])
-        if n_para % 2 == 1:
-            gs_rc = gridspec.GridSpec(n_para / 2 + 1, n_para / 2)
-        else:
-            gs_rc = gridspec.GridSpec(n_para / 2, n_para / 2)
-        gs_rc.update(left=0.05, right=0.9, wspace=1)
-        subs_rc = [fig_rc.add_subplot(gs_rc[pr])
-                   for pr in range(len(best_rc_para[0].keys()))]
-        plt.setp(subs_rc, xlabel='Cycle number', xticks=cycle_array_ticks)
-
-        for idx, key_value in enumerate(best_rc_para[0].keys()):
-            temp_array = np.array([best_rc_para[cyc][key_value]
-                                   for cyc in range(len(best_rc_para))])
-        subs_rc[idx].plot(cycle_array, temp_array, 'og')
-        subs_rc[idx].legend([key_value], loc='center left',
-                            bbox_to_anchor=(1, 0.5))
-        if key_value.startswith('r'):
-            subs_rc[idx].set_ylabel('Resistance [Ohm]')
-        else:
-            subs_rc[idx].set_ylabel('Capacitance [F]')
-
-
-        v_start_down = 1.
-        # i_start_ini_down = 0.000153628   # from cycle 1-3
-        # i_start_after_down = 0.000305533   # from cycle 4-end
-        # i_start_down = [i_start_ini_down for _down in range(3)]
-        # for down_4 in range(len(data_down) - 3):
-        #     i_start_down.append(i_start_after_down)
-        #
-        v_start_up = 0.01
-        # i_start_ini_up = 0.0001526552   # from cycle 1-3
-        # i_start_after_up = 0.0003045602   # from cycle 4-end
-        # i_start_up = [i_start_ini_up for _up in range(3)]
-        # for up_4 in range(len(data_up) - 3):
-        #     i_start_up.append(i_start_after_up)
-
-        cell_mass = 0.86   # [g]
-        c_rate_3 = 0.05   # [1 / h]
-        c_rate = 0.1
-        cell_capacity = 3.579   # [mAh / g]
-        i_start_ini = (cell_mass * c_rate_3 * cell_capacity) / 1000   # [A]
-        i_start_after = (cell_mass * c_rate * cell_capacity) / 1000   # [A]
-        i_start = [i_start_ini for _down in range(3)]
-        for down_4 in range(len(data_down) - 3):
-            i_start.append(i_start_after)
-        pass
-        # question_ex = 'Cycles after discharge you want to plot, separated with ' \
-        #               'space. If you don'"'"'t want to plot any press ' \
-        #               'enter. Write "a" for all plots: -->'
-        # user_cycle_ex = raw_input(question_ex)
-        # ex_ocv = pd.Series([pd.DataFrame(zip(t, u), columns=['time', 'voltage'])])
-        # ocv_cycle(ex_ocv, user_cycle_ex, v_start_up, [0.0007508742])
-
-        question_up = 'Cycles after discharge you want to plot, separated with ' \
-                      'space. If you don'"'"'t want to plot any press ' \
-                      'enter. Write "a" for all plots: -->'
-        user_cycles_up = raw_input(question_up)
-        fit_with_model(data_up, user_cycles_up, v_start_up, i_start)
-        plt.show()
-        question_down = 'Cycles after charge you want to plot, separated with ' \
-                        'space. If you don'"'"'t want to plot any press ' \
-                        'enter. Write "a" for all plots: -->'
-        user_cycles_down = raw_input(question_down)
-        fit_with_model(data_down, user_cycles_down, v_start_down, i_start)
-        plt.show()
+def print_params(fit, rc_params, i_err=0.1):
+    best_para = []
+    best_para_error = []
+    names = fit[0].params.keys()
+    for i, cycle_fit in enumerate(fit):
+        rc_params[i].update(cycle_fit.params)
+        best_para.append(rc_params[i])
+        err_para = np.sqrt(np.diag(cycle_fit.covar))
+        error_para = {para_name: err_para[err]
+                      for err, para_name in enumerate(names)}
+        fractional_err = {par_name: error_para[par_name]
+                                    / cycle_fit.params[par_name]
+                          for par_name in names}
+        # Fractional error calculation
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
+                 for key in rc_params[i].keys() if key.startswith('r_')}
+        c_err = {key: fractional_err[
+                          'tau_%s' % key[2:]] + r_err['r_%s' % key[2:]]
+                 for key in rc_params[i].keys() if key.startswith('c_')}
+        # Standard deviation error calculated from fractional error
+        e_r = {r: frac_err * rc_params[i][r] for r, frac_err in r_err.items()}
+        e_c = {c: frac_err * rc_params[i][c] for c, frac_err in c_err.items()}
+        error_para.update(e_r)
+        error_para.update(e_c)
+        best_para_error.append(error_para)
+        print "============================================================"
+        print "Cycle number %i" % i
+        for key_name, par_val in rc_params[i].items():
+            print "Best parameter %s: %12.3f    +/- %3.3f %%" %\
+                  (key_name, par_val, zip(fractional_err, error_para)[key_name])
 
