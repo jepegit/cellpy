@@ -271,28 +271,27 @@ def relax_model(t, **params):
 #                           v0_rc=v0_rc) - meas_volt
 
 def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
-                 ideal_cap=3.579, mass=0.84, v_start=None):
+                 ideal_cap=3.579, mass=0.86, v_start=None):
     """Reading data, creating Model object from relax_model and set param_hints.
 
     Reading the .csv file with all the cycling data.
     The user may initialise the use of lmfit. If user does not know the
     parameters, some defaults are set. Filepath and filename has to be given.
 
+    Removing "nan" is inspired by 'stackoverflow'_
+
     Args:
-        filepath(str): The exact path to the folder where the data lies.
-        filename(str): The ocv relaxation filename for up- or downwards relax.
-        guess_tau(:obj: 'dict' of :obj: 'float'): User guessing what the time
+        filepath (str): The exact path to the folder where the data lies.
+        filename (str): The ocv relaxation filename for up- or downwards relax.
+        guess_tau (:obj: 'dict' of :obj: 'float'): User guessing what the time
         constant for each rc-circuit might be.
-        contribution(:obj: 'dict' of :obj: 'float'): Assumed contribution
+        contribution (:obj: 'dict' of :obj: 'float'): Assumed contribution
         from each rc-circuit. Help guessing the initial start voltage value
         of the rc-circuit.
-        c_rate(float): C-rate of discharge or charge.
-        change_i(:obj: 'list' of :obj: 'int'): Inform the program when the
-        current changes. For everytime for cycle in change_i,
-        new current is calculated. len(c_rate) = len(change_i) + 1
-        ideal_cap(float): Theoretical capacity of the cell.
-        mass(float): Mass of the active material. Given in [mg].
-        v_start(float): Cut-off voltage (before IR-drop).
+        c_rate (float): C-rate of discharge or charge.
+        ideal_cap (float): Theoretical capacity of the cell.
+        mass (float): Mass of the active material. Given in [mg].
+        v_start (float): Cut-off voltage (before IR-drop).
 
     Returns:
         :obj: 'Model' of :obj: 'relax_model', :obj: 'list' of :obj:
@@ -300,6 +299,10 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
         with it's guessed parameters as hints. One list of time, and one of
         voltage, both with len equal to number of cycles. Each element in
         list represent number of cycle - 1.
+
+    .._stackoverflow:
+        http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
+
     """
     try:
         r_filepath = r'%s' % filepath
@@ -353,13 +356,13 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
             v_start = 0.01
         rlx_txt = "lithiation (upward relaxation)"
 
-    init_guess = guessing_parameters(v_start, i_start, v_0, v_ocv, contri,
-                                     tau_guessed)
+    init_guess = guessing_parameters(v_start, i_start, v_0, v_ocv, contribution,
+                                     guess_tau)
 
     r_model = Model(relax_model, missing='raise')
 
     for name in guess_tau.keys():
-        r_model.set_param_hint('tau_%s' % name, value=tau_guessed[name])
+        r_model.set_param_hint('tau_%s' % name, value=guess_tau[name])
 
         if v_ocv < v_0:
             # After charge (relax downwards)
@@ -370,8 +373,131 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
                                    value=init_guess['v0_rc'][name], max=0)
     r_model.set_param_hint('ocv', value=v_ocv)
     r_model.make_params()
+    r_model.print_param_hints()
+    print "To define more boundaries: >>> " \
+          "example_model.set_param_hint('name_of_parameter', min=min_value, " \
+          "max=max_value)"
     return r_model, time, voltage
 
+
+def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
+                   change_i, ideal_cap=3.579, mass=0.86, v_start=None):
+    """Fitting measured data to model.
+
+    Args:
+        model (Model): The cell model.
+        time (:obj: 'list' of :obj: 'nd.array'): Element in list equals the time
+        of cycle number - 1.
+        voltage (:obj: 'list' of :obj: 'nd.array'): Element in list equals
+        the voltage of cycle number - 1.
+        c_rate (:obj: 'list' of :obj: 'float'): The C-rate which the cell was
+        discharged or charged with before cycle = change_i.
+        change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
+        C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
+        ideal_cap (float): Theoretical capacity of the cell.
+        mass (float): Mass of the active material. Given in [mg].
+        v_start (float): Cut-off voltage (potential before IR-drop).
+    Returns:
+        :obj: 'list' of :obj: 'ModelResult', :obj: 'list' of :obj:
+        'dict': Results of fitting from each cycle in a list with and
+        calculated R and C parameters based on fit from result.
+    """
+    # initial_param_up = Parameters()
+    # # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
+    # initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
+    # initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
+    # # initial_param_up.add('r_sei', value=tau_guessed['sei'], min=0)
+    # initial_param_up.add('c_ct', value=1., vary=False)
+    # initial_param_up.add('c_d', value=1., vary=False)
+    # # initial_param_up.add('c_sei', value=1, vary=False)
+    # initial_param_up.add('ocv', value=v_ocv, min=v_ocv)
+    # initial_param_up.add('v0_ct', value=init_guess['v0_rc']['ct'])
+    # initial_param_up.add('v0_d', value=init_guess['v0_rc']['d'])
+    # # initial_param_up.add('v0_sei', value=init_guess['v0_rc']['sei'])
+
+    # making a class Minimizer that contain fitting methods and attributes
+    # Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
+    #                             fcn_args=(time[0], voltage[0]),)
+    # minimize() perform the minimization on Minimizer's attributes
+    # result = [Mini_initial_up.minimize()]
+    # Creating an lmfit Model object out of function "relax_model".
+    i_start = []
+    step = 0
+    for i in range(len(time)):
+        # Checking if the was a change in current at cycle i.
+        if i in change_i:
+            step += 1
+        i_start.append((c_rate[step] * ideal_cap * mass) / 1000)
+
+    result_initial = model.fit(voltage[0], t=time[0])
+    # result_initial.conf_interval()
+    result = [result_initial]
+
+    best_para = [result[0].params]
+    err_para = np.sqrt(np.diag(result_initial.covar))
+    error_para = {para_name: err_para[err]
+                  for err, para_name in enumerate(model.param_names)}
+    best_para_error = [error_para]
+
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
+                   for key, v0_rc in best_para[0].valuesdict().items()
+                   if key.startswith('v0')}
+
+    best_c_ini = {'c_%s' % key[4:]: tau_rc / best_rc_ini['r_%s' % key[4:]]
+                  for key, tau_rc in best_para[0].valuesdict().items()
+                  if key.startswith('tau')}
+    best_rc_ini.update(best_c_ini)
+    best_rc_para = [best_rc_ini]
+
+    for cycle_i in range(1, len(time)):
+        temp_start_voltage = voltage[cycle_i][0]
+        temp_end_voltage = voltage[cycle_i][-1]
+        # Guessing new values when current has changed.
+        if i_start[cycle_i] is not i_start[cycle_i - 1]:
+            temp_initial_guess = guessing_parameters(v_start,
+                                                     i_start[cycle_i],
+                                                     temp_start_voltage,
+                                                     temp_end_voltage,
+                                                     contribution, guess_tau)
+            for name in guess_tau.keys():
+                model.set_param_hint('tau_%s' % name, value=guess_tau[name])
+                if temp_end_voltage < temp_start_voltage:
+                    # After charge (relax downwards)
+                    model.set_param_hint('v0_%s' % name,
+                                         value=temp_initial_guess[
+                                             'v0_rc'][name], min=0)
+                else:
+                    model.set_param_hint('v0_%s' % name,
+                                         value=temp_initial_guess[
+                                             'v0_rc'][name], max=0)
+            model.set_param_hint('ocv', value=temp_end_voltage)
+            model.make_params()
+            result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i])
+        else:
+            result_cycle = model.fit(voltage[cycle_i],
+                                     params=best_para[cycle_i - 1],
+                                     t=time[cycle_i])
+        # result_cycle.conf_interval()
+        result.append(result_cycle)
+        copied_parameters = copy.deepcopy(result_cycle.params)
+        best_para.append(copied_parameters)
+        err_para = np.sqrt(np.diag(result_cycle.covar))
+        error_para = {para_name: err_para[err]
+                      for err, para_name in enumerate(model.param_names)}
+        best_para_error.append(error_para)
+        # calculating r and c from fit
+        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_i])
+                         for key, v_rc in
+                         best_para[cycle_i].valuesdict().items()
+                         if key.startswith('v0')}
+        best_c_cycle = {'c_%s' % key[4:]:
+                        tau_rc / best_rc_cycle['r_%s' % key[4:]]
+                        for key, tau_rc in
+                        best_para[cycle_i].valuesdict().items()
+                        if key.startswith('tau')}
+        best_rc_cycle.update(best_c_cycle)
+        best_rc_para.append(best_rc_cycle)
+    return result, best_rc_para
 
 if __name__ == '__main__':
     """Reading data.
@@ -390,230 +516,8 @@ if __name__ == '__main__':
     # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
     filename_up = r'74_data_up.csv'
     filename_down = r'74_data_down.csv'
-    down = os.path.join(datafolder, filename_down)
-    up = os.path.join(datafolder, filename_up)
-    data_down = pd.read_csv(down, sep=';')
-    data_up = pd.read_csv(up, sep=';')
-    data_up = manipulate_data(data_up)
-    data_down = manipulate_data(data_down)
 
-    """Defining model.
-
-    Tell the script how the model looks like. How many RC-circuits are there?
-    Make initial guesses for the time constant and voltage-contribute from each
-    RC-circuit. "contri_..." is your guessed percentage of voltage which the
-    RC-circuit contribute to over the total relaxation.
-    """
-    contri_ct = 0.2
-    contri_d = 1 - contri_ct
-    tau_ct = 50
-    tau_d = 550
-    contri = {'ct': contri_ct, 'd': contri_d}
-    tau_guessed = {'ct': tau_ct, 'd': tau_d}
-
-
-    def ocv_cycle(ocv_data, user_cycles, v_start, i_start):
-        """Fitting, plotting and reporting user defined ocv relaxation cycles.
-
-        Args:
-            ocv_data (pd.Series): Time-voltage DataFrames of ocv - relaxation.
-            user_cycles (str): Number of cycles to report and plot.
-            v_start (float): Start voltage before IR-drop.
-            i_start (list): Current before ocv for each cycle.
-
-        Returns:
-            None: Fitting data with model.
-        """
-
-        """Preparations for fitting parameters.
-
-        Write boundary conditions and initial guesses.
-        Removing "nan" is inspired by 'stackoverflow'_
-
-        .._stackoverflow:
-            http://stackoverflow.com/questions/11620914/removing-nan-values-from-an-array
-        ------------------------------------------------------------------------
-
-        """
-        time = []
-        voltage = []
-        for i, sort in ocv_data.iteritems():
-            time.append(np.array(sort[:]['time']))
-            voltage.append(np.array(sort[:]['voltage']))
-            time[i] = time[i][~np.isnan(time[i])]
-            voltage[i] = voltage[i][~np.isnan(voltage[i])]
-        v_ocv = voltage[0][-1]
-        v_0 = voltage[0][0]
-
-        if v_ocv < v_0:
-            # after charge
-            rlx_txt = "delithiation (downwards relaxation)"
-        else:
-            rlx_txt = "lithiation (upward relaxation)"
-
-        init_guess = guessing_parameters(v_start, i_start[0], v_0,
-                                         v_ocv, contri, tau_guessed)
-        # initial_param_up = Parameters()
-        # # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
-        # initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
-        # initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
-        # # initial_param_up.add('r_sei', value=tau_guessed['sei'], min=0)
-        # initial_param_up.add('c_ct', value=1., vary=False)
-        # initial_param_up.add('c_d', value=1., vary=False)
-        # # initial_param_up.add('c_sei', value=1, vary=False)
-        # initial_param_up.add('ocv', value=v_ocv, min=v_ocv)
-        # initial_param_up.add('v0_ct', value=init_guess['v0_rc']['ct'])
-        # initial_param_up.add('v0_d', value=init_guess['v0_rc']['d'])
-        # # initial_param_up.add('v0_sei', value=init_guess['v0_rc']['sei'])
-
-        """Fitting parameters.
-        ------------------------------------------------------------------------
-
-        """
-        # making a class Minimizer that contain fitting methods and attributes
-        # Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
-        #                             fcn_args=(time[0], voltage[0]),)
-        # minimize() perform the minimization on Minimizer's attributes
-        # result = [Mini_initial_up.minimize()]
-        # Creating an lmfit Model object out of function "relax_model".
-        r_model = Model(relax_model, missing='raise')
-        r_model.set_param_hint('tau_ct', value=tau_guessed['ct'], min=0,
-                               max=tau_guessed['d'])
-        r_model.set_param_hint('tau_d', value=tau_guessed['d'],
-                               min=tau_guessed['ct'])
-        r_model.set_param_hint('ocv', value=v_ocv)
-        if v_ocv < v_0:
-            # after charge (relax downwards)
-            r_model.set_param_hint('v0_ct', value=init_guess['v0_rc']['ct'],
-                                   min=0)
-            r_model.set_param_hint('v0_d', value=init_guess['v0_rc']['d'],
-                                   min=0)
-        else:
-            r_model.set_param_hint('v0_ct', value=init_guess['v0_rc']['ct'],
-                                   max=0)
-            r_model.set_param_hint('v0_d', value=init_guess['v0_rc']['d'],
-                                   max=0)
-        r_model.make_params()
-        result_initial = r_model.fit(voltage[0], t=time[0])
-        # result_initial.conf_interval()
-        result = [result_initial]
-
-        best_para = [result[0].params]
-        err_para = np.sqrt(np.diag(result_initial.covar))
-        error_para = {para_name: err_para[err]
-                      for err, para_name in enumerate(r_model.param_names)}
-        best_para_error = [error_para]
-
-        best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
-                       for key, v0_rc in best_para[0].valuesdict().items()
-                       if key.startswith('v0')}
-
-        best_c_ini = {'c_%s' % key[4:]: tau_rc / best_rc_ini['r_%s' % key[4:]]
-                      for key, tau_rc in best_para[0].valuesdict().items()
-                      if key.startswith('tau')}
-        best_rc_ini.update(best_c_ini)
-        best_rc_para = [best_rc_ini]
-        # report_fit(result[0])
-        #
-        # """Plotting initial fit to see if it is the same as what minimize() give.
-        # """
-        # best_para_dict = best_para[0].valuesdict()
-        # v0_rc = {key[3:]: val for key, val in best_para_dict.items() if
-        #          key.startswith('v0')}
-        # r_rc_up = {key[2:]: val for key, val in best_rc_ini.items() if
-        #            key.startswith('r')}
-        # c_rc_up = {key[2:]: val for key, val in best_c_ini.items()}
-        # # tau_rc_up has keys r_ct and r_d, but since c was fixed at 1. Therefore tau
-        # tau_rc_up = {key[2:]: val for key, val in best_para_dict.items()
-        #              if key.startswith('r')}
-        # c_fixed = {key[2:]: 1. for key in best_c_ini.keys()}
-        # relax_with_best_rc_calc = ocv_relax_func(time=time[0],
-        #                                          ocv=best_para_dict['ocv'],
-        #                                          v0_rc=v0_rc, r_rc=tau_rc_up,
-        #                                          c_rc=c_fixed)
-        # relax_with_best_tau = ocv_relax_func(time=time[0],
-        #                                      ocv=best_para_dict['ocv'],
-        #                                      v0_rc=v0_rc,
-        #                                      r_rc=r_rc_up,
-        #                                      c_rc=c_rc_up)
-        # plt.figure(figsize=(20, 13))
-        # ocv_up_ini = np.array([best_para_dict['ocv'] for nothing in range(len(
-        #     time[0]))])
-        # plt.plot(time[0], voltage[0], 'ob', time[0],
-        #          best_fit_voltage_up[0], '-g', time[0],
-        #          relax_with_best_rc_calc, '-r', time[0], relax_with_best_tau,
-        #          '-y', time[0], ocv_up_ini, '--c')
-        # plt.legend(['Measured', 'lmfit plot', 'Best with calculated rc',
-        #             'Best with fitted tau'])
-        # plt.show()
-
-        for cycle_i in range(1, len(time)):
-            temp_start_voltage = voltage[cycle_i][0]
-            temp_end_voltage = voltage[cycle_i][-1]
-            # best_para[cycle_i - 1]['v_rlx'].set(
-            #     min=temp_start_voltage-temp_end_voltage)
-            # temp_para_up = best_para[cycle_i - 1].copy.deepcopy()
-            # temp_para_up['ocv'].set(value=temp_end_voltage, min=temp_end_voltage)
-            # Temp_mini = Minimizer(ocv_user_adjust,
-            #                       params=temp_para_up,
-            #                       fcn_args=(time[cycle_i],
-            #                                 voltage[cycle_i]))
-            # result.append(Temp_mini.minimize())
-            if i_start[cycle_i] is not i_start[cycle_i - 1]:
-                temp_initial_guess = guessing_parameters(v_start,
-                                                         i_start[cycle_i],
-                                                         temp_start_voltage,
-                                                         temp_end_voltage,
-                                                         contri, tau_guessed)
-                r_model.set_param_hint('ocv', value=temp_end_voltage)
-                if v_ocv < v_0:
-                    # after charge (relax downwards)
-                    r_model.set_param_hint('v0_ct',
-                                           value=temp_initial_guess[
-                                               'v0_rc']['ct'],
-                                           min=0)
-                    r_model.set_param_hint('v0_d',
-                                           value=temp_initial_guess[
-                                               'v0_rc']['d'],
-                                           min=0)
-                else:
-                    r_model.set_param_hint('v0_ct',
-                                           value=temp_initial_guess[
-                                               'v0_rc']['ct'],
-                                           max=0)
-                    r_model.set_param_hint('v0_d',
-                                           value=temp_initial_guess[
-                                               'v0_rc']['d'],
-                                           max=0)
-                r_model.make_params()
-                result_cycle = r_model.fit(voltage[cycle_i],
-                                           t=time[cycle_i])
-            else:
-                result_cycle = r_model.fit(voltage[cycle_i],
-                                           params=best_para[cycle_i - 1],
-                                           t=time[cycle_i])
-            # result_cycle.conf_interval()
-            result.append(result_cycle)
-            copied_parameters = copy.deepcopy(result_cycle.params)
-            best_para.append(copied_parameters)
-            err_para = np.sqrt(np.diag(result_cycle.covar))
-            error_para = {para_name: err_para[err]
-                          for err, para_name in enumerate(r_model.param_names)}
-            best_para_error.append(error_para)
-            # calculating r and c from fit
-            best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_i])
-                             for key, v_rc in
-                             best_para[cycle_i].valuesdict().items()
-                             if key.startswith('v0')}
-            best_c_cycle = {'c_%s' % key[4:]:
-                            tau_rc / best_rc_cycle['r_%s' % key[4:]]
-                            for key, tau_rc in
-                            best_para[cycle_i].valuesdict().items()
-                            if key.startswith('tau')}
-            best_rc_cycle.update(best_c_cycle)
-            best_rc_para.append(best_rc_cycle)
-
-        """User decides which cycles to plot.
+    """User decides which cycles to plot.
         -------------------------------------------------------------------------
         """
         if not user_cycles:
@@ -633,104 +537,104 @@ if __name__ == '__main__':
             #         'cycle that does not exist. Specify less than %i plots'
             #         % len(result))
 
-        for cycle_nr in user_cycles_list:
-            # fig = result[cycle_nr].plot()
-            plt.figure()
-            plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
-                         ((cycle_nr + 1), rlx_txt))
-            plot_voltage(time[cycle_nr], voltage[cycle_nr],
-                         result[cycle_nr])
-            print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
-            report_fit(result[cycle_nr])
-            print '------------------------------------------------------------'
+    for cycle_nr in user_cycles_list:
+        # fig = result[cycle_nr].plot()
+        plt.figure()
+        plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
+                     ((cycle_nr + 1), rlx_txt))
+        plot_voltage(time[cycle_nr], voltage[cycle_nr],
+                     result[cycle_nr])
+        print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
+        report_fit(result[cycle_nr])
+        print '------------------------------------------------------------'
 
-        # sub plotting voltage
-        ############################################################################
-        # fig_up = plt.figure(figsize=(20, 13))
-        # plt.suptitle('OCV-relaxation data from cell "sic006_cc_45_01" with best '
-        #              'fitted and guessed parameters',
-        #              size=20)
-        #
-        # # making odd or even amount of subfigures inside fig_up
-        # if len(result) % 2 == 0:   # Even number of cycles
-        #     gs = gridspec.GridSpec(len(result) / 2, 3)
-        #     gs.update(left=0.1, right=0.6, wspace=0.1)
-        #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
-        # else:
-        #     gs = gridspec.GridSpec((len(result) + 1) / 2, 3)
-        #     gs.update(left=0.05, right=0.8, wspace=0.8)
-        #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
-        #
-        # for cycle_nr, sub_up in enumerate(subs_up):
-        #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
-        #                  sub_up)
-        """Plotting parameters
-        ------------------------------------------------------------------------
-        """
-        # printing parameters
-        # for cyc in range(1, len(result)):
-        #     print 'cycle number %i' % cyc
-        #     print_params(ini=best_para[cyc - 1], fit=best_para[cyc])
-        #     print '--------------------------------------------------------'
-        fig_params = plt.figure()
-        plt.suptitle('Initial and fitted parameters in every cycle after %s'
-                     % rlx_txt, size=20)
-        cycle_array = np.arange(1, len(result) + 1, 1)
-        cycle_array_ticks = np.arange(1, len(result) + 1, 3)
+    # sub plotting voltage
+    ############################################################################
+    # fig_up = plt.figure(figsize=(20, 13))
+    # plt.suptitle('OCV-relaxation data from cell "sic006_cc_45_01" with best '
+    #              'fitted and guessed parameters',
+    #              size=20)
+    #
+    # # making odd or even amount of subfigures inside fig_up
+    # if len(result) % 2 == 0:   # Even number of cycles
+    #     gs = gridspec.GridSpec(len(result) / 2, 3)
+    #     gs.update(left=0.1, right=0.6, wspace=0.1)
+    #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
+    # else:
+    #     gs = gridspec.GridSpec((len(result) + 1) / 2, 3)
+    #     gs.update(left=0.05, right=0.8, wspace=0.8)
+    #     subs_up = [fig_up.add_subplot(gs[j]) for j in range(len(result))]
+    #
+    # for cycle_nr, sub_up in enumerate(subs_up):
+    #     plot_voltage(time[cycle_nr], voltage[cycle_nr], result[cycle_nr],
+    #                  sub_up)
+    """Plotting parameters
+    ------------------------------------------------------------------------
+    """
+    # printing parameters
+    # for cyc in range(1, len(result)):
+    #     print 'cycle number %i' % cyc
+    #     print_params(ini=best_para[cyc - 1], fit=best_para[cyc])
+    #     print '--------------------------------------------------------'
+    fig_params = plt.figure()
+    plt.suptitle('Initial and fitted parameters in every cycle after %s'
+                 % rlx_txt, size=20)
+    cycle_array = np.arange(1, len(result) + 1, 1)
+    cycle_array_ticks = np.arange(1, len(result) + 1, 3)
 
-        if len(best_para[0]) % 2 == 0:   # Even number of cycles
-            gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
-            gs.update(left=0.05, right=0.9, wspace=1)
-            subs_params = [fig_params.add_subplot(gs[p])
-                           for p in range(len(best_para[0]))]
+    if len(best_para[0]) % 2 == 0:   # Even number of cycles
+        gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
+        gs.update(left=0.05, right=0.9, wspace=1)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+    else:
+        gs = gridspec.GridSpec((len(best_para[0]) + 1) / 2, 3)
+        gs.update(left=0.05, right=0.9, wspace=1)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+
+    plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
+    for _, name in enumerate(result[0].var_names):
+        para_array = np.array([best_para[step][name]
+                               for step in range(len(result))])
+        para_error = np.array([best_para_error[cycle_step][name]
+                               for cycle_step in range(len(result))])
+        subs_params[_].errorbar(cycle_array, para_array, yerr=para_error,
+                                fmt='or')
+        subs_params[_].legend([name], loc='center left',
+                              bbox_to_anchor=(1, 0.5))
+        subs_params[_].set_xlabel('Cycles')
+        if 'tau' in name:
+            subs_params[_].set_ylabel('Time-constant (RC)[s]')
         else:
-            gs = gridspec.GridSpec((len(best_para[0]) + 1) / 2, 3)
-            gs.update(left=0.05, right=0.9, wspace=1)
-            subs_params = [fig_params.add_subplot(gs[p])
-                           for p in range(len(best_para[0]))]
+            subs_params[_].set_ylabel('Voltage [V]')
 
-        plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
-        for _, name in enumerate(result[0].var_names):
-            para_array = np.array([best_para[step][name]
-                                   for step in range(len(result))])
-            para_error = np.array([best_para_error[cycle_step][name]
-                                   for cycle_step in range(len(result))])
-            subs_params[_].errorbar(cycle_array, para_array, yerr=para_error,
-                                    fmt='or')
-            subs_params[_].legend([name], loc='center left',
-                                  bbox_to_anchor=(1, 0.5))
-            subs_params[_].set_xlabel('Cycles')
-            if 'tau' in name:
-                subs_params[_].set_ylabel('Time-constant (RC)[s]')
-            else:
-                subs_params[_].set_ylabel('Voltage [V]')
+    """Plotting RC parameters
+    ------------------------------------------------------------------------
+    """
+    fig_rc = plt.figure()
+    fig_rc.suptitle('R and C for each rc-circuit in all cycles after %s'
+                    % rlx_txt)
+    n_para = len(best_rc_para[0])
+    if n_para % 2 == 1:
+        gs_rc = gridspec.GridSpec(n_para / 2 + 1, n_para / 2)
+    else:
+        gs_rc = gridspec.GridSpec(n_para / 2, n_para / 2)
+    gs_rc.update(left=0.05, right=0.9, wspace=1)
+    subs_rc = [fig_rc.add_subplot(gs_rc[pr])
+               for pr in range(len(best_rc_para[0].keys()))]
+    plt.setp(subs_rc, xlabel='Cycle number', xticks=cycle_array_ticks)
 
-        """Plotting RC parameters
-        ------------------------------------------------------------------------
-        """
-        fig_rc = plt.figure()
-        fig_rc.suptitle('R and C for each rc-circuit in all cycles after %s'
-                        % rlx_txt)
-        n_para = len(best_rc_para[0])
-        if n_para % 2 == 1:
-            gs_rc = gridspec.GridSpec(n_para / 2 + 1, n_para / 2)
+    for idx, key_value in enumerate(best_rc_para[0].keys()):
+        temp_array = np.array([best_rc_para[cyc][key_value]
+                               for cyc in range(len(best_rc_para))])
+        subs_rc[idx].plot(cycle_array, temp_array, 'og')
+        subs_rc[idx].legend([key_value], loc='center left',
+                            bbox_to_anchor=(1, 0.5))
+        if key_value.startswith('r'):
+            subs_rc[idx].set_ylabel('Resistance [Ohm]')
         else:
-            gs_rc = gridspec.GridSpec(n_para / 2, n_para / 2)
-        gs_rc.update(left=0.05, right=0.9, wspace=1)
-        subs_rc = [fig_rc.add_subplot(gs_rc[pr])
-                   for pr in range(len(best_rc_para[0].keys()))]
-        plt.setp(subs_rc, xlabel='Cycle number', xticks=cycle_array_ticks)
-
-        for idx, key_value in enumerate(best_rc_para[0].keys()):
-            temp_array = np.array([best_rc_para[cyc][key_value]
-                                   for cyc in range(len(best_rc_para))])
-            subs_rc[idx].plot(cycle_array, temp_array, 'og')
-            subs_rc[idx].legend([key_value], loc='center left',
-                                bbox_to_anchor=(1, 0.5))
-            if key_value.startswith('r'):
-                subs_rc[idx].set_ylabel('Resistance [Ohm]')
-            else:
-                subs_rc[idx].set_ylabel('Capacitance [F]')
+            subs_rc[idx].set_ylabel('Capacitance [F]')
 
 
     v_start_down = 1.
@@ -768,12 +672,12 @@ if __name__ == '__main__':
                   'space. If you don'"'"'t want to plot any press ' \
                   'enter. Write "a" for all plots: -->'
     user_cycles_up = raw_input(question_up)
-    ocv_cycle(data_up, user_cycles_up, v_start_up, i_start)
+    fit_with_model(data_up, user_cycles_up, v_start_up, i_start)
     plt.show()
     question_down = 'Cycles after charge you want to plot, separated with ' \
                     'space. If you don'"'"'t want to plot any press ' \
                     'enter. Write "a" for all plots: -->'
     user_cycles_down = raw_input(question_down)
-    ocv_cycle(data_down, user_cycles_down, v_start_down, i_start)
+    fit_with_model(data_down, user_cycles_down, v_start_down, i_start)
     plt.show()
 
