@@ -390,6 +390,11 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         of cycle number - 1.
         voltage (:obj: 'list' of :obj: 'nd.array'): Element in list equals
         the voltage of cycle number - 1.
+        guess_tau (:obj: 'dict' of :obj: 'float'): User guessing what the time
+        constant for each rc-circuit might be.
+        contribution (:obj: 'dict' of :obj: 'float'): Assumed contribution
+        from each rc-circuit. Help guessing the initial start voltage value
+        of the rc-circuit.
         c_rate (:obj: 'list' of :obj: 'float'): The C-rate which the cell was
         discharged or charged with before cycle = change_i.
         change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
@@ -397,6 +402,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         ideal_cap (float): Theoretical capacity of the cell.
         mass (float): Mass of the active material. Given in [mg].
         v_start (float): Cut-off voltage (potential before IR-drop).
+
     Returns:
         :obj: 'list' of :obj: 'ModelResult', :obj: 'list' of :obj:
         'dict': Results of fitting from each cycle in a list with and
@@ -499,6 +505,58 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         best_rc_para.append(best_rc_cycle)
     return result, best_rc_para
 
+
+def user_defined_plot(time, voltage, fit):
+    """User decides which cycles to plot and report.
+
+    Args:
+        fit (:obj: 'list' of :obj: 'ModelResult')
+
+    Returns:
+        None: Plotted figures and reports of requested cycle numbers
+    """
+    question = 'Cycles you want to plot, separated with space. If you only ' \
+               'want to plot the parameters, press enter. Write "a" for all ' \
+               'plots: -->'
+    user_cycles = raw_input(question)
+    if not user_cycles:
+        # no cycles
+        user_cycles_list = []
+
+    elif user_cycles == 'a':
+        # all cycles
+        user_cycles_list = range(0, len(fit))
+
+    else:
+        # specified cycles
+        user_cycles_list = [int(usr) - 1 for usr in user_cycles.split()]
+        # if any(user_cycles_list) not in range(len(result)) or len(
+        #         user_cycles_list) > len(result):
+        #     raise AttributeError(
+        #         'You have asked for more plots than number of cycles or for a '
+        #         'cycle that does not exist. Specify less than %i plots'
+        #         % len(result))
+
+    v_ocv = voltage[0][-1]
+    v_0 = voltage[0][0]
+    if v_ocv < v_0:
+        # After charge
+        rlx_txt = "delithiation (downwards relaxation)"
+    else:
+        # After discharge
+        rlx_txt = "lithiation (upward relaxation)"
+
+    for cycle_nr in user_cycles_list:
+        # fig = fit[cycle_nr].plot()
+        plt.figure()
+        plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
+                     ((cycle_nr + 1), rlx_txt))
+        plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr])
+        print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
+        report_fit(fit[cycle_nr])
+        print '------------------------------------------------------------'
+
+
 if __name__ == '__main__':
     """Reading data.
 
@@ -516,37 +574,6 @@ if __name__ == '__main__':
     # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
     filename_up = r'74_data_up.csv'
     filename_down = r'74_data_down.csv'
-
-    """User decides which cycles to plot.
-        -------------------------------------------------------------------------
-        """
-        if not user_cycles:
-            # no cycles
-            user_cycles_list = []
-
-        elif user_cycles == 'a':
-            # all cycles
-            user_cycles_list = range(0, len(result))
-        else:
-            # specified cycles
-            user_cycles_list = [int(usr) - 1 for usr in user_cycles.split()]
-            # if any(user_cycles_list) not in range(len(result)) or len(
-            #         user_cycles_list) > len(result):
-            #     raise AttributeError(
-            #         'You have asked for more plots than number of cycles or for a '
-            #         'cycle that does not exist. Specify less than %i plots'
-            #         % len(result))
-
-    for cycle_nr in user_cycles_list:
-        # fig = result[cycle_nr].plot()
-        plt.figure()
-        plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
-                     ((cycle_nr + 1), rlx_txt))
-        plot_voltage(time[cycle_nr], voltage[cycle_nr],
-                     result[cycle_nr])
-        print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
-        report_fit(result[cycle_nr])
-        print '------------------------------------------------------------'
 
     # sub plotting voltage
     ############################################################################
