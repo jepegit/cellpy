@@ -269,6 +269,55 @@ def relax_model(t, **params):
 #     return ocv_relax_func(t, r_rc=r_rc, c_rc=c_rc, ocv=p_dict['ocv'],
 #                           v0_rc=v0_rc) - meas_volt
 
+def define_model(filepath, filename, guess_tau={'d': 500, 'ct': 50},
+                 contribution={'d': 0.8, 'ct': 0.2}):
+    """Reading data, creating Model object from relax_model and set param_hints.
+
+    Reading the .csv file with all the cycling data.
+    The user may initialise the use of lmfit. If user does not know the
+    parameters, some defaults are set. Filepath and filename has to be given.
+
+    Args:
+        filepath(str): The exact path to the folder where the data lies.
+        filename(str): The ocv relaxation filename for up- or downwards relax.
+        guess_tau(:obj: 'dict' of :obj: 'float'): User guessing what the time
+        constant for each rc-circuit might be.
+        contribution(:obj: 'dict' of :obj: 'float'): Assumed contribution
+        from each rc-circuit. Help guessing the initial start voltage value
+        of the rc-circuit.
+
+    Make sure you're in folder \utils. If not::
+        >>>print os.getcwd()
+
+    to find current folder and extend datafolder with [.]\utils\data
+    ----------------------------------------------------------------------------
+    """
+    datafolder = r'..\data_ex'
+
+    # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
+    # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
+    filename_up = r'74_data_up.csv'
+    filename_down = r'74_data_down.csv'
+    down = os.path.join(datafolder, filename_down)
+    up = os.path.join(datafolder, filename_up)
+    data_down = pd.read_csv(down, sep=';')
+    data_up = pd.read_csv(up, sep=';')
+    data_up = manipulate_data(data_up)
+    data_down = manipulate_data(data_down)
+
+    """Defining model.
+
+    Tell the script how the model looks like. How many RC-circuits are there?
+    Make initial guesses for the time constant and voltage-contribute from each
+    RC-circuit. "contri_..." is your guessed percentage of voltage which the
+    RC-circuit contribute to over the total relaxation.
+    """
+    contri_ct = 0.2
+    contri_d = 1 - contri_ct
+    tau_ct = 50
+    tau_d = 550
+    contri = {'ct': contri_ct, 'd': contri_d}
+    tau_guessed = {'ct': tau_ct, 'd': tau_d}
 
 if __name__ == '__main__':
     """Reading data.
