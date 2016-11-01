@@ -3681,6 +3681,7 @@ def just_load_srno(srno, prm_filename=None):
     # ------------reading parametres--------------------------------------------
     print "just_load_srno: read prms"
     prms = prmreader.read(prm_filename)
+
     print prms
 
     print "just_load_srno: making class and setting prms"
@@ -3690,7 +3691,7 @@ def just_load_srno(srno, prm_filename=None):
     # ------------reading db----------------------------------------------------
     print
     print "just_load_srno: starting to load reader"
-    reader = dbreader.reader()
+    reader = dbreader.reader(prm_filename)
     print "------ok------"
 
     run_name = reader.get_cell_name(srno)

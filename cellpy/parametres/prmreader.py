@@ -179,7 +179,7 @@ class read:
 
     def __str__(self):
         txt = ""
-        txt += "prm-file:    \t%s\n" % self.prm_default
+        txt += "prm-file:    \t%s\n" % self.prm_filename
         txt += "------------------------------------------------------------\n"
         txt += "NAME          \tVALUE\n"
         txt += "outdatadir:  \t%s\n" % self.outdatadir
