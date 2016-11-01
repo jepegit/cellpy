@@ -124,12 +124,21 @@ def test_save_cvs(cellpy_data_instance):
     # assert not os.path.isfile(tmp_file)
 
 
-def test_filter_select(db_reader):
-    # print my_reader.db_file
-    # print my_reader.table.head()
-    db_reader.print_serial_number_info(615)
-    column_numbers = [db_reader.db_sheet_cols.FEC, db_reader.db_sheet_cols.VC]
-    o = db_reader.filter_by_col(column_numbers)
-    print 60*"-"
-    print o
-    assert True
+def test_filter_select_col_numbers_true_false(db_reader):
+    # db_reader.print_serial_number_info(615)
+    column_numbers = [db_reader.db_sheet_cols.F, db_reader.db_sheet_cols.VC]
+    assert len(db_reader.filter_by_col(column_numbers)) == 0
+
+
+def test_filter_select_col_numbers_true(db_reader):
+    column_numbers = [db_reader.db_sheet_cols.F]
+    serial_numbers = db_reader.filter_by_col(column_numbers)
+    assert serial_numbers.min() == 614
+    assert len(serial_numbers) == 2
+
+
+def test_filter_select_col_numbers_true_true(db_reader):
+    column_numbers = [db_reader.db_sheet_cols.F, db_reader.db_sheet_cols.M]
+    serial_numbers = db_reader.filter_by_col(column_numbers)
+    assert len(serial_numbers) == 1
+    assert serial_numbers == [614]
