@@ -624,26 +624,33 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
-        rc_params[i].update(cycle_fit.params)
-        best_para.append(rc_params[i])
-        err_para = np.sqrt(np.diag(cycle_fit.covar))
-        error_para = {para_name: err_para[err]
-                      for err, para_name in enumerate(names)}
-        fractional_err = {par_name: error_para[par_name] / cycle_fit.params[
-            par_name]
+        error_para = {para_name: cycle_fit.params[para_name].stderr
+                      for para_name in names}
+        # err_para = np.sqrt(np.diag(cycle_fit.covar))
+        # error_para = {para_name: err_para[err]
+        #               for err, para_name in enumerate(names)}
+        # Fractional error in percent calculation
+        fractional_err = {par_name: 100 * (error_para[par_name] /
+                                           cycle_fit.params[par_name])
                           for par_name in names}
-        # Fractional error calculation
         r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
                  for key in rc_params[i].keys() if key.startswith('r_')}
         c_err = {key: fractional_err[
                           'tau_%s' % key[2:]] + r_err['r_%s' % key[2:]]
                  for key in rc_params[i].keys() if key.startswith('c_')}
+
         # Standard deviation error calculated from fractional error
-        e_r = {r: frac_err * rc_params[i][r] for r, frac_err in r_err.items()}
-        e_c = {c: frac_err * rc_params[i][c] for c, frac_err in c_err.items()}
+        e_r = {r: frac_err * rc_params[i][r] / 100
+               for r, frac_err in r_err.items()}
+        e_c = {c: frac_err * rc_params[i][c] / 100
+               for c, frac_err in c_err.items()}
         error_para.update(e_r)
         error_para.update(e_c)
         best_para_error.append(error_para)
+
+        temp_dict = cycle_fit.params.valuesdict()
+        rc_params[i].update(temp_dict)
+        best_para.append(rc_params[i])
 
     fig_params = plt.figure()
     plt.suptitle('Fitted parameters in every cycle after %s'
@@ -688,29 +695,46 @@ def print_params(fit, rc_params, i_err=0.1):
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
-        rc_params[i].update(cycle_fit.params)
         best_para.append(rc_params[i])
-        err_para = np.sqrt(np.diag(cycle_fit.covar))
-        error_para = {para_name: err_para[err]
-                      for err, para_name in enumerate(names)}
-        fractional_err = {par_name: error_para[par_name]
-                                    / cycle_fit.params[par_name]
+        error_para = {para_name: cycle_fit.params[para_name].stderr
+                      for para_name in names}
+        # err_para = np.sqrt(np.diag(cycle_fit.covar))
+        # error_para = {para_name: err_para[err]
+        #               for err, para_name in enumerate(names)}
+        # Fractional error in percent calculation
+        fractional_err = {par_name: 100 * (error_para[par_name] /
+                                           cycle_fit.params[par_name])
                           for par_name in names}
-        # Fractional error calculation
         r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
                  for key in rc_params[i].keys() if key.startswith('r_')}
         c_err = {key: fractional_err[
                           'tau_%s' % key[2:]] + r_err['r_%s' % key[2:]]
                  for key in rc_params[i].keys() if key.startswith('c_')}
+        fractional_err.update(r_err)
+        fractional_err.update(c_err)
         # Standard deviation error calculated from fractional error
-        e_r = {r: frac_err * rc_params[i][r] for r, frac_err in r_err.items()}
-        e_c = {c: frac_err * rc_params[i][c] for c, frac_err in c_err.items()}
+        e_r = {r: frac_err * rc_params[i][r] / 100
+               for r, frac_err in r_err.items()}
+        e_c = {c: frac_err * rc_params[i][c] / 100
+               for c, frac_err in c_err.items()}
         error_para.update(e_r)
         error_para.update(e_c)
         best_para_error.append(error_para)
+        temp_dict = cycle_fit.params.valuesdict()
+        rc_params[i].update(temp_dict)
         print "============================================================"
         print "Cycle number %i" % i
         for key_name, par_val in rc_params[i].items():
-            print "Best parameter %s: %12.3f    +/- %3.3f %%" %\
-                  (key_name, par_val, zip(fractional_err, error_para)[key_name])
+            if par_val > 10:
+                print "Best parameter: \t %s \t %12.0f \t +/- %6.0f \t" \
+                      "(%3.1f%%)" % (key_name, par_val, error_para[key_name],
+                                     fractional_err[key_name])
+            elif 10 > par_val > 1:
+                print "Best parameter: \t %s \t %12.1f  \t +/- %6.1e \t " \
+                      "(%3.1f%%)" % (key_name, par_val, error_para[key_name],
+                                     fractional_err[key_name])
+            else:
+                print "Best parameter: \t %s \t %12.3f  \t +/- %6.2e \t" \
+                      "(%3.1f%%)" % (key_name, par_val, error_para[key_name],
+                                     fractional_err[key_name])
 
