@@ -8,6 +8,7 @@ Importing all functions from fitting_cell_ocv and creating ocv_up and down
 from fitting_cell_ocv import define_model, fit_with_model, user_plot_voltage,\
     plot_params, print_params
 from cellpy.readers import cellreader
+from scripts.reading_cycle_data import extract_cap
 
 import sys, os, csv, itertools
 import matplotlib.pyplot as plt
@@ -45,43 +46,29 @@ change_i = [3]
 cell_capacity = 3.579   # [mAh / g]
 
 
-def extract_cap(dataloadres):
-    cap_vs_volt = []
-    cap_vs_cycle = []
-    fig_voltage = plt.figure()
-    ax_volt = fig_voltage.add_subplot(111)
-    ax_volt.set_title('Capacity vs. Voltage')
-    ax_volt.set_xlabel('Cap (mAh)')
-    ax_volt.set_ylabel('Voltage (V)')
-    for cycle in d.get_cycle_numbers():
-            if cycle == 48:
-                break
-            else:
-                try:
-                    print "getting capacity data for cycle %i" % cycle
-                    cap, voltage = dataloadres.get_cap(cycle=cycle)
-                    ax_volt.plot(cap, voltage)
-                    plt.plot(cycle, cap)
-                    cap_vs_cycle.append(cap)
-                    cap_vs_cycle.append(cycle)
-                    cap = cap.tolist()
-                    voltage = voltage.tolist()
-
-                    header_x = "Capacity (mAh) cycle_no %i" % cycle
-                    header_y = "Coltage (V) cycle_no %i" % cycle
-                    cap.insert(0, header_x)
-                    voltage.insert(0, header_y)
-                    cap_vs_volt.append(cap)
-                    cap_vs_volt.append(voltage)
-                except:
-                    print "could not extract cycle %i" % cycle
-    return np.array(cap_vs_volt), np.array(cap_vs_cycle)
-
 data = os.path.join(datafolder, filename_74)
 d = cellreader.cellpydata()
 d.loadres(data)
 d.set_mass(cell_mass)
-volt, cycle = extract_cap(d)
+cap_volt = []
+cycle_cap = []
+# for cycle in d.get_cycle_numbers():
+for cycle in range(3):
+    if cycle == 48:
+        break
+    else:
+        volt, cycle_c = extract_cap(d, cycle)
+        cap_volt.append(volt)
+        cycle_cap.append(cycle_c)
+        print 'Cycle nr. %i' % cycle
+        print cycle + 1
+        print max(cycle_cap[cycle][0])
+        # print cycle_cap[cycle][1]
+# fig_voltage = plt.figure()
+# ax_volt = fig_voltage.add_subplot(111)
+# ax_volt.set_title('Capacity vs. Voltage')
+# ax_volt.set_xlabel('Cap (mAh)')
+# ax_volt.set_ylabel('Voltage (V)')
 # plt.figure()
 # plt.plot(cycle[0], cycle[1])
 # plt.title('Capacity vs. Cycles')

@@ -7,6 +7,7 @@
 from cellpy.readers import cellreader
 import sys, os, csv, itertools
 import matplotlib.pyplot as plt
+import numpy as np
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
@@ -129,6 +130,21 @@ def extract_ocvrlx(type_data):
     print outfile
     print "bye!"
 
+
+def extract_cap(dataloadres, cycle):
+    cap_vs_volt = []
+    cap_vs_cycle = []
+    try:
+        print "getting capacity data for cycle %i" % cycle
+        cap, voltage = dataloadres.get_cap(cycle=cycle)
+        cap = cap.tolist()
+        voltage = voltage.tolist()
+        cap_vs_cycle.append(cap)
+        cap_vs_volt.append(cap)
+        cap_vs_volt.append(voltage)
+    except:
+        print "could not extract cycle %i" % cycle
+    return np.array(cap_vs_volt), np.array(cap_vs_cycle)
 
 # making_csv()
 # extract_ocvrlx("ocvrlx_up")
