@@ -57,7 +57,7 @@ from scipy import interpolate
 import numpy as np
 import pandas as pd
 import logging
-import logging.config
+# import logging.config
 
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
@@ -359,6 +359,8 @@ class cellpydata(object):
         self.tester = tester
         self.verbose = verbose
         self._create_logger(self.verbose)
+        self.logger.info("created cellpydata instance")
+        # self.logger = logging.getLogger(__name__)
         self.profile = profile
         self.max_res_filesize = 150000000
         self.load_only_summary = False
@@ -511,43 +513,49 @@ class cellpydata(object):
             print "this option is not implemented yet"
 
     def _create_logger(self, verbose = False):
-        from cellpy.parametres import prmreader
-        prm = prmreader.read()
-        logdir = prm.filelogdir
-        # logdir = r"C:\Scripting\Processing\Celldata\cellpylog"
-        logfile = "cellpylog.log"
-        logfilename = os.path.join(logdir, logfile)
-        # logging.config.fileConfig('logging.ini')
-        logger = logging.getLogger("cellreader")
-        logger.setLevel(logging.DEBUG)
-        # create console handler and set level to debug
-        ch = logging.StreamHandler()
-        if verbose:
-            ch.setLevel(logging.DEBUG)
-        else:
-            ch.setLevel(logging.INFO)
+        from cellpy import log
+        self.logger = logging.getLogger(__name__)
+        log.setup_logging(default_level=logging.DEBUG)
 
-        # create a file handler and set level
-        fh = logging.FileHandler(logfilename)
-        fh.setLevel(logging.DEBUG)
 
-        # create formatter
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-        # add formatter to ch
-        ch.setFormatter(formatter)
-
-        # add formatter to fh
-        fh.setFormatter(formatter)
-
-        # add ch to logger
-        logger.addHandler(ch)
-
-        # add fh to logger
-        logger.addHandler(fh)
-
-        # logging.basicConfig(filename=logfilename, level=logging.DEBUG)
-        self.logger = logger
+    # def _create_logger(self, verbose = False):
+    #     from cellpy.parametres import prmreader
+    #     prm = prmreader.read()
+    #     logdir = prm.filelogdir
+    #     # logdir = r"C:\Scripting\Processing\Celldata\cellpylog"
+    #     logfile = "cellpylog.log"
+    #     logfilename = os.path.join(logdir, logfile)
+    #     # logging.config.fileConfig('logging.ini')
+    #     logger = logging.getLogger("cellreader")
+    #     logger.setLevel(logging.DEBUG)
+    #     # create console handler and set level to debug
+    #     ch = logging.StreamHandler()
+    #     if verbose:
+    #         ch.setLevel(logging.DEBUG)
+    #     else:
+    #         ch.setLevel(logging.INFO)
+    #
+    #     # create a file handler and set level
+    #     fh = logging.FileHandler(logfilename)
+    #     fh.setLevel(logging.DEBUG)
+    #
+    #     # create formatter
+    #     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    #
+    #     # add formatter to ch
+    #     ch.setFormatter(formatter)
+    #
+    #     # add formatter to fh
+    #     fh.setFormatter(formatter)
+    #
+    #     # add ch to logger
+    #     logger.addHandler(ch)
+    #
+    #     # add fh to logger
+    #     logger.addHandler(fh)
+    #
+    #     # logging.basicConfig(filename=logfilename, level=logging.DEBUG)
+    #     logging = logger
 
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
@@ -615,6 +623,7 @@ class cellpydata(object):
         txt = "check_file_ids\n  checking file ids - using '%s'" % (self.filestatuschecker)
 
         self.logger.debug(txt)
+        self.logger.info(txt)
 
         ids_cellpy_file = self._check_cellpy_file(cellpyfile)
 
@@ -787,7 +796,7 @@ class cellpydata(object):
         # This is a part of a dramatic API change. It will not be possible to
         # load more than one set of tests (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
-
+        self.logger.info("started loadcell")
         if cellpy_file is None:
             similar = False
         elif force_raw:
