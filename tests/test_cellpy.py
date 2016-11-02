@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-test_cellpy
-----------------------------------
-
-Tests for `cellpy` module.
-"""
-
 import os
 import pytest
 import tempfile

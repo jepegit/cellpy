@@ -16,18 +16,11 @@ test_cellpy_file_full = os.path.join(test_data_dir,test_cellpy_file)
 test_cellpy_file_tmp_full = os.path.join(test_data_dir,test_cellpy_file_tmp)
 test_run_name = "20160805_test001_45_cc"
 
-# TODO: use only functions where logical (remove TestCase)
 
 @pytest.fixture
 def cellpy_data_instance():
     from cellpy import cellreader
     return cellreader.cellpydata()
-
-
-@pytest.fixture
-def db_reader():
-    from cellpy import dbreader
-    return dbreader.reader()
 
 
 def test_search_for_files():
@@ -124,21 +117,4 @@ def test_save_cvs(cellpy_data_instance):
     # assert not os.path.isfile(tmp_file)
 
 
-def test_filter_select_col_numbers_true_false(db_reader):
-    # db_reader.print_serial_number_info(615)
-    column_numbers = [db_reader.db_sheet_cols.F, db_reader.db_sheet_cols.VC]
-    assert len(db_reader.filter_by_col(column_numbers)) == 0
 
-
-def test_filter_select_col_numbers_true(db_reader):
-    column_numbers = [db_reader.db_sheet_cols.F]
-    serial_numbers = db_reader.filter_by_col(column_numbers)
-    assert serial_numbers.min() == 614
-    assert len(serial_numbers) == 2
-
-
-def test_filter_select_col_numbers_true_true(db_reader):
-    column_numbers = [db_reader.db_sheet_cols.F, db_reader.db_sheet_cols.M]
-    serial_numbers = db_reader.filter_by_col(column_numbers)
-    assert len(serial_numbers) == 1
-    assert serial_numbers == [614]
