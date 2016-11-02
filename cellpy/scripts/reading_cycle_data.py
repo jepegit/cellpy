@@ -129,10 +129,11 @@ def extract_ocvrlx(type_data):
     print outfile
     print "bye!"
 
+
 # making_csv()
-extract_ocvrlx("ocvrlx_up")
-extract_ocvrlx("ocvrlx_down")
-plt.show()
+# extract_ocvrlx("ocvrlx_up")
+# extract_ocvrlx("ocvrlx_down")
+# plt.show()
 
 # filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
 #                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
