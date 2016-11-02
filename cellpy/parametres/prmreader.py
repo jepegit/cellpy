@@ -59,6 +59,7 @@ class read:
     #
     def __init__(self, prm_filename=None, search_order=None):
         self.script_dir = os.path.abspath(os.path.dirname(__file__))
+
         self.search_path = dict()
         self.search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
         self.search_path["filedir"] = self.script_dir
@@ -67,6 +68,7 @@ class read:
         if search_order is None:
             self.search_order = ["curdir", "filedir", "userdir"]
         self.prm_default = os.path.join(self.script_dir, self.default_name)
+        self.prm_filename = prm_filename
         self.outdatadir = "..\outdata"
         self.rawdatadir = "..\indata"
         self.cellpydatadir = "..\indata"
@@ -76,7 +78,7 @@ class read:
         self.dbc_filename = "cellpy_db.xlsx"
         prm_globtxt = "_cellpy_prms*.ini"
         if prm_filename:
-            self._readprms(prm_filename=prm_filename)
+            self._readprms(prm_filename=self.prm_filename)
         else:
             search_dict = OrderedDict()
 
@@ -104,9 +106,11 @@ class read:
                         prm_file = file_list[0]
 
             if prm_file:
-                self.prm_default = prm_file
+                self.prm_filename = prm_file
+            else:
+                self.prm_filename = self.prm_default
 
-            if not os.path.isfile(self.prm_default):
+            if not os.path.isfile(self.prm_filename):
                 print "could not find ini-file"
                 no_file = True
             else:
@@ -123,7 +127,7 @@ class read:
 
     def _readprms(self, prm_filename=None, no_file=False):
         if not prm_filename:
-            prm_filename = self.prm_default
+            prm_filename = self.prm_filename
         parser = ConfigParser.SafeConfigParser()
         if no_file:
             import StringIO
@@ -175,7 +179,7 @@ class read:
 
     def __str__(self):
         txt = ""
-        txt += "prm-file:    \t%s\n" % self.prm_default
+        txt += "prm-file:    \t%s\n" % self.prm_filename
         txt += "------------------------------------------------------------\n"
         txt += "NAME          \tVALUE\n"
         txt += "outdatadir:  \t%s\n" % self.outdatadir

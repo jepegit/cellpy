@@ -38,8 +38,10 @@ def main():
         print
         if os.path.isfile(os.path.join(dst,default_filename)):
             print "File already exists!"
-            print "Overwriting..."
+            print " -> Overwriting..."
         shutil.copy(src, dst)
+        print "\nDirectory path:\n%s" % dst
+        print "\nFile name:\n%s" % default_filename
         print "OK! Now you can edit it and save it with another name starting with"
         print "_cellpy_prms and ending with .ins"
 
