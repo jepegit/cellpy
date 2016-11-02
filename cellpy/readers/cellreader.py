@@ -63,6 +63,8 @@ warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
 
+# module_logger = logging.getLogger(__name__)
+
 def humanize_bytes(bytes, precision=1):
     """Return a humanized string representation of a number of bytes.
 
@@ -247,6 +249,8 @@ class dataset(object):
     """
 
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("created dataset instance")
         self.test_no = None
         self.mass = 1.0  # mass of (active) material (in mg)
         self.no_cycles = 0.0
@@ -345,7 +349,7 @@ class cellpydata(object):
 
     def __init__(self, filenames=None,
                  selected_scans=None,
-                 verbose=False,
+                 verbose=False, # not in use
                  profile=False,
                  filestatuschecker="size",  # "modified"
                  fetch_onliners=False,
@@ -358,9 +362,11 @@ class cellpydata(object):
         """
         self.tester = tester
         self.verbose = verbose
-        self._create_logger(self.verbose)
+        # self._create_logger(self.verbose)
+        self.logger = logging.getLogger(__name__)
         self.logger.info("created cellpydata instance")
-        # self.logger = logging.getLogger(__name__)
+        self.logger.debug("debug 1")
+        self.logger.error("error 1")
         self.profile = profile
         self.max_res_filesize = 150000000
         self.load_only_summary = False
@@ -2243,7 +2249,7 @@ class cellpydata(object):
                 self.logger.debug("trying to put dfsummary")
                 store.put("cellpydata/dfsummary", test.dfsummary)
 
-                self.logger.debug("trying to put step_table")
+                self.logger.info("trying to put step_table")
                 if not test.step_table_made:
                     self.logger.debug(" no step_table made")
                 else:
