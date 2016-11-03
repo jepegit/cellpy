@@ -53,16 +53,16 @@ d.set_mass(cell_mass)
 cap_volt = []
 cycle_cap = []
 # for cycle in d.get_cycle_numbers():
-for cycle in range(3):
-    if cycle == 48:
-        break
-    else:
-        volt, cycle_c = extract_cap(d, cycle)
-        cap_volt.append(volt)
-        cycle_cap.append(cycle_c)
-        print 'Cycle nr. %i' % cycle
-        print cycle + 1
-        print max(cycle_cap[cycle][0])
+# for cycle in range(3):
+#     if cycle == 48:
+#         break
+#     else:
+#         volt, cycle_c = extract_cap(d, cycle)
+#         cap_volt.append(volt)
+#         cycle_cap.append(cycle_c)
+#         print 'Cycle nr. %i' % cycle
+#         print cycle + 1
+#         print max(cycle_cap[cycle][0])
         # print cycle_cap[cycle][1]
 # fig_voltage = plt.figure()
 # ax_volt = fig_voltage.add_subplot(111)
@@ -88,14 +88,14 @@ for cycle in range(3):
 #                                     contri, c_rate, change_i, cell_capacity,
 #                                     cell_mass, v_start_up)
 
-# model_down, time_down, voltage_down = define_model(filepath=datafolder,
-#                                                    filename=filename_down,
-#                                                    guess_tau=tau_guessed,
-#                                                    contribution=contri,
-#                                                    c_rate=c_rate[0],
-#                                                    ideal_cap=cell_capacity,
-#                                                    mass=cell_mass,
-#                                                    v_start=v_start_down)
+model_down, time_down, voltage_down = define_model(filepath=datafolder,
+                                                   filename=filename_down,
+                                                   guess_tau=tau_guessed,
+                                                   contribution=contri,
+                                                   c_rate=c_rate[0],
+                                                   ideal_cap=cell_capacity,
+                                                   mass=cell_mass,
+                                                   v_start=v_start_down)
 # fit_down, rc_para_down = fit_with_model(model_down, time_down, voltage_down,
 #                                         tau_guessed, contri, c_rate, change_i,
 #                                         cell_capacity, cell_mass, v_start_down)

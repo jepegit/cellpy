@@ -334,8 +334,11 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
     time = []
     voltage = []
     for i, sort in data.iteritems():
-        time.append(np.array(sort[:]['time']))
-        voltage.append(np.array(sort[:]['voltage']))
+        sort_time = sort[:]['time']
+        sort_volt = sort[:]['voltage']
+        print type(sort_time)
+        time.append(np.array(sort_time))
+        voltage.append(np.array(sort_volt))
         time[i] = time[i][~np.isnan(time[i])]
         voltage[i] = voltage[i][~np.isnan(voltage[i])]
     v_ocv = voltage[0][-1]
