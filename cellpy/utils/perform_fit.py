@@ -96,13 +96,13 @@ model_down, time_down, voltage_down = define_model(filepath=datafolder,
                                                    ideal_cap=cell_capacity,
                                                    mass=cell_mass,
                                                    v_start=v_start_down)
-# fit_down, rc_para_down = fit_with_model(model_down, time_down, voltage_down,
-#                                         tau_guessed, contri, c_rate, change_i,
-#                                         cell_capacity, cell_mass, v_start_down)
+fit_down, rc_para_down = fit_with_model(model_down, time_down, voltage_down,
+                                        tau_guessed, contri, c_rate, change_i,
+                                        cell_capacity, cell_mass, v_start_down)
 # plot_params(time_up, voltage_up, fit_up, rc_para_up)
 # plot_params(time_down, voltage_down, fit_down, rc_para_down)
 # user_plot_voltage(time_up, voltage_up, fit_up)
-# user_plot_voltage(time_down, voltage_down, fit_down)
+user_plot_voltage(time_down, voltage_down, fit_down)
 
 # print_params(fit_down, rc_para_down)
 

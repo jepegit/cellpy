@@ -333,16 +333,20 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
     # Extracting time and voltage from data.
     time = []
     voltage = []
-    for i, sort in data.iteritems():
-        sort_time = sort[:]['time']
-        sort_volt = sort[:]['voltage']
-        print type(sort_time)
-        time.append(np.array(sort_time))
-        voltage.append(np.array(sort_volt))
-        time[i] = time[i][~np.isnan(time[i])]
-        voltage[i] = voltage[i][~np.isnan(voltage[i])]
     v_ocv = voltage[0][-1]
     v_0 = voltage[0][0]
+    for i, sort in data.iteritems():
+        sort_t = np.array(sort[:]['time'])
+        sort_v = np.array(sort[:]['voltage'])
+        sort_t = sort_t[~np.isnan(sort_t)]
+        sort_v = sort_v[~np.isnan(sort_v)]
+        sort_t.sort(sort_t)
+        if v_ocv > v_0:
+            sort_volt = np.sort(sort_v)
+        else:
+            sort_v.sort(sort_v, reversed)
+        time.append(sort_t)
+        voltage.append(sort_v)
     i_start = (c_rate * ideal_cap * mass) / 1000
 
     if v_ocv < v_0:
