@@ -237,7 +237,7 @@ def relax_model(t, **params):
         nd.array: The expected voltage from model.
 
     """
-    ocv_arr = np.array([params['ocv'] for _ in range((len(t)))])
+    ocv_arr = np.ones(len(t)) * params['ocv']
     tau_rc = {key[4:]: val
               for key, val in params.items() if key.startswith('tau')}
     v0_rc = {key[3:]: val for key, val in params.items()
@@ -366,7 +366,7 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
     r_model = Model(relax_model, missing='raise')
 
     for name in guess_tau.keys():
-        r_model.set_param_hint('tau_%s' % name, value=guess_tau[name])
+        r_model.set_param_hint('tau_%s' % name, value=guess_tau[name], min=0)
 
         if v_ocv < v_0:
             # After charge (relax downwards)
@@ -522,10 +522,6 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         result.append(result_cycle)
         copied_parameters = copy.deepcopy(result_cycle.params)
         best_para.append(copied_parameters)
-        err_para = np.sqrt(np.diag(result_cycle.covar))
-        error_para = {para_name: err_para[err]
-                      for err, para_name in enumerate(model.param_names)}
-        best_para_error.append(error_para)
         # calculating r and c from fit
         best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_i])
                          for key, v_rc in
@@ -734,16 +730,27 @@ def print_params(fit, rc_params, i_err=0.1):
         print "============================================================"
         print "Cycle number %i" % i
         for key_name, par_val in rc_params[i].items():
+            if 'c_' in key_name:
+                unit_text = 'F'
+            elif 'tau_' in key_name:
+                unit_text = 's'
+            elif 'r_' in key_name:
+                unit_text = 'Ohms'
+            else:
+                unit_text = 'V'
             if par_val > 10:
-                print "Best parameter: \t %s \t %12.0f \t +/- %6.0f \t" \
-                      "(%3.1f%%)" % (key_name, par_val, error_para[key_name],
+                print "Best parameter: \t %s \t %12.0f %s \t +/- %6.0f %s \t" \
+                      "(%3.1f%%)" % (key_name, par_val, unit_text,
+                                     error_para[key_name], unit_text,
                                      fractional_err[key_name])
             elif 10 > par_val > 1:
-                print "Best parameter: \t %s \t %12.1f  \t +/- %6.1e \t " \
-                      "(%3.1f%%)" % (key_name, par_val, error_para[key_name],
+                print "Best parameter: \t %s \t %12.1f %s  \t +/- %6.1e %s \t " \
+                      "(%3.1f%%)" % (key_name, par_val, unit_text,
+                                     error_para[key_name], unit_text,
                                      fractional_err[key_name])
             else:
-                print "Best parameter: \t %s \t %12.3f  \t +/- %6.2e \t" \
-                      "(%3.1f%%)" % (key_name, par_val, error_para[key_name],
+                print "Best parameter: \t %s \t %12.3f %s \t +/- %6.2e %s \t" \
+                      "(%3.1f%%)" % (key_name, par_val, unit_text,
+                                     error_para[key_name], unit_text,
                                      fractional_err[key_name])
 
