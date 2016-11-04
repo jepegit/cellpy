@@ -36,7 +36,7 @@ def making_csv(filename, outfolder, mass):
     print "you have %i cycles" % (number_of_cycles)
 
     FileName0 = os.path.basename(filename)
-    outfile = "%s_cycles.csv" % (FileName0)
+    outfile = "%s_cap_voltage.csv" % (FileName0)
     out_data = []
 
     for cycle in list_of_cycles:
@@ -122,21 +122,6 @@ def extract_ocvrlx(type_data):
     print outfile
     print "bye!"
 
-
-def extract_cap(dataloadres, cycle):
-    cap_vs_volt = []
-    cap_vs_cycle = []
-    try:
-        print "getting capacity data for cycle %i" % cycle
-        cap, voltage = dataloadres.get_cap(cycle=cycle)
-        cap = cap.tolist()
-        voltage = voltage.tolist()
-        cap_vs_cycle.append(cap)
-        cap_vs_volt.append(cap)
-        cap_vs_volt.append(voltage)
-    except:
-        print "could not extract cycle %i" % cycle
-    return np.array(cap_vs_volt), np.array(cap_vs_cycle)
 
 # making_csv()
 # extract_ocvrlx("ocvrlx_up")

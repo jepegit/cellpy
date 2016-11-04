@@ -3,12 +3,15 @@
 """Performing a fit using cellpy's utils tool "fitting_cell_ocv.py".
 
 Importing all functions from fitting_cell_ocv and creating ocv_up and down
+
+TODO:
+    -Make nicer volt_cap plots with proper legends
 """
 
 from fitting_cell_ocv import define_model, fit_with_model, user_plot_voltage,\
     plot_params, print_params
 from cellpy.readers import cellreader
-from scripts.reading_cycle_data import extract_cap, making_csv
+from scripts.reading_cycle_data import making_csv
 
 import sys, os, csv, itertools
 import matplotlib.pyplot as plt
@@ -18,8 +21,8 @@ import pandas as pd
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
-# fig_folder = r'C:\Users\torkv\OneDrive - Norwegian University of Life '\
-#              r'Sciences\Documents\NMBU\master\ife\thesis tor\fig\results'
+fig_folder = r'C:\Users\torkv\OneDrive - Norwegian University of Life '\
+             r'Sciences\Documents\NMBU\master\ife\thesis tor\fig\results'
 datafolder = r'..\data_ex'
 # filename_up = r'20160805_test001_45_cc_01_ocvrlx_up.csv'
 # filename_down = r'20160805_test001_45_cc_01_ocvrlx_down.csv'
@@ -56,9 +59,15 @@ datafolder_out = r'..\outdata'
 normal = filename_74[:-4] + '_normal.csv'
 stats = filename_74[:-4] + '_stats.csv'
 steps = filename_74[:-4] + '_steps.csv'
+cap_volt = filename_74 + '_cap_voltage.csv'
+
 data_stats = os.path.join(datafolder_out, stats)
 data_stats = pd.read_csv(data_stats, sep=';')
 df_stats = pd.DataFrame(data_stats)
+
+data_cap_volt = os.path.join(datafolder_out, cap_volt)
+data_cap_volt = pd.read_csv(data_cap_volt, sep=';')
+df_cap_volt = pd.DataFrame(data_cap_volt)
 
 charge_cap = df_stats["Charge_Capacity(mAh/g)"]
 discharge_cap = df_stats["Discharge_Capacity(mAh/g)"]
@@ -66,8 +75,7 @@ cycle_cap = zip(charge_cap, discharge_cap)
 cycle_cap_df = pd.DataFrame(cycle_cap, columns=["Charge_Capacity(mAh/g)",
                                                 "Discharge_Capacity(mAh/g)"])
 
-
-# Plotting
+# Plotting cycle vs. cap
 plt.figure()
 plt.plot(cycle_cap_df["Charge_Capacity(mAh/g)"], '^b',
          cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or')
@@ -75,28 +83,29 @@ plt.legend(['Charge Capacity', 'Discharge capacity'], loc='best')
 plt.title('Capacity vs. Cycle')
 plt.xlabel('# Cycle')
 plt.ylabel('Capacity (mAh/g)')
-
 # plt.savefig(os.path.join(fig_folder, 'cap_cycle_sic006_74.pdf'))
 
-# cycle_charge_cap = []
-# cycle_discharge_cap = []
-# for i, ch_cap in enumerate(charge_cap):
-#     cycle_charge_cap.append(ch_c)
-#     cycle_cap.append(cycle_c)
-#     print 'Cycle nr. %i' % cycle
-#     print cycle + 1
-#     print max(cycle_cap[cycle][0])
-#     print cycle_cap[cycle][1]
-# fig_voltage = plt.figure()
-# ax_volt = fig_voltage.add_subplot(111)
-# ax_volt.set_title('Capacity vs. Voltage')
-# ax_volt.set_xlabel('Cap (mAh)')
-# ax_volt.set_ylabel('Voltage (V)')
-# plt.figure()
-# plt.plot(cycle[0], cycle[1])
-# plt.title('Capacity vs. Cycles')
-# plt.xlabel('Cycles')
-# plt.ylabel('Cap (mAh)')
+# Plotting voltage vs. cap
+capacity_sorting = []
+voltage_sorting = []
+for name in df_cap_volt:
+    if 'cap' in name:
+        capacity_sorting.append(df_cap_volt[name])
+    else:
+        voltage_sorting.append(df_cap_volt[name])
+
+plt.figure()
+number_plots = len(capacity_sorting)
+for cycle in range(number_plots):
+    plt.plot(capacity_sorting[cycle], voltage_sorting[cycle])
+plt.title('Capacity vs. Voltage')
+plt.xlabel('Capacity (mAh/g)')
+plt.ylabel('Voltage (V)')
+plt.legend(loc='center left',
+           bbox_to_anchor=(1, 0.5))
+
+plt.savefig(os.path.join(fig_folder, 'volt_cap_sic006_74.pdf'))
+
 
 
 # model_up, time_up, voltage_up = define_model(filepath=datafolder,
@@ -134,5 +143,3 @@ plt.ylabel('Capacity (mAh/g)')
 # print_params(fit_down, rc_para_down)
 # print_params(fit_up, rc_para_up)
 plt.show()
-
-
