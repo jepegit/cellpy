@@ -333,22 +333,24 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
     # Extracting time and voltage from data.
     time = []
     voltage = []
-    v_ocv = voltage[0][-1]
-    v_0 = voltage[0][0]
     for i, sort in data.iteritems():
         sort_t = np.array(sort[:]['time'])
         sort_v = np.array(sort[:]['voltage'])
         sort_t = sort_t[~np.isnan(sort_t)]
         sort_v = sort_v[~np.isnan(sort_v)]
-        sort_t.sort(sort_t)
-        if v_ocv > v_0:
+        sort_time = np.sort(sort_t)
+        # checking if relaxation down or up
+        if sort_v[-1] > sort_v[0]:
             sort_volt = np.sort(sort_v)
         else:
-            sort_v.sort(sort_v, reversed)
-        time.append(sort_t)
-        voltage.append(sort_v)
-    i_start = (c_rate * ideal_cap * mass) / 1000
+            sort_volt = np.sort(sort_v)
+            sort_volt[:] = sort_volt[::-1]
+        time.append(sort_time)
+        voltage.append(sort_volt)
+    v_ocv = voltage[0][-1]
+    v_0 = voltage[0][0]
 
+    i_start = (c_rate * ideal_cap * mass) / 1000
     if v_ocv < v_0:
         # After charge
         if not v_start:
