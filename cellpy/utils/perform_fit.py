@@ -51,7 +51,7 @@ cell_capacity = 3.579   # [Ah / g]
 # imported cycle data from arbin and saved in "outdata" folder as .csv
 data = os.path.join(datafolder, filename_74)
 datafolder_out = r'..\outdata'
-making_csv(data, datafolder_out, cell_mass)
+# making_csv(data, datafolder_out, cell_mass)
 
 normal = filename_74[:-4] + '_normal.csv'
 stats = filename_74[:-4] + '_stats.csv'
