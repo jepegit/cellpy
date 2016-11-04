@@ -12,38 +12,30 @@ import numpy as np
 __author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
-def making_csv():
-    FileName  = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
-                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-                r"\testdata\20160830_sic006_74_cc_01.res"
-    Mass      = 0.86
-    OutFolder = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
-                r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-                r"\testdata"
-
+def making_csv(filename, outfolder, mass):
     try:
-        os.chdir(OutFolder)
+        os.chdir(outfolder)
         print "Output will be sent to folder:"
-        print OutFolder
+        print outfolder
     except:
-        print "OutFolder does not exits"
+        print "outfolder does not exits"
         sys.exit(-1)
 
     # Loading arbin-data
-    d = cellreader.cellpydata(FileName)
+    d = cellreader.cellpydata(filename)
     d.loadres()
-    d.set_mass(Mass)
+    d.set_mass(mass)
     d.make_summary()
     d.create_step_table()
     print "\nexporting raw-data and summary"
-    d.exportcsv(OutFolder)
+    d.exportcsv(outfolder)
 
     # Extracting cycles
     list_of_cycles = d.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
     print "you have %i cycles" % (number_of_cycles)
 
-    FileName0 = os.path.basename(FileName)
+    FileName0 = os.path.basename(filename)
     outfile = "%s_cycles.csv" % (FileName0)
     out_data = []
 

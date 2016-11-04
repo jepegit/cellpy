@@ -8,7 +8,7 @@ Importing all functions from fitting_cell_ocv and creating ocv_up and down
 from fitting_cell_ocv import define_model, fit_with_model, user_plot_voltage,\
     plot_params, print_params
 from cellpy.readers import cellreader
-from scripts.reading_cycle_data import extract_cap
+from scripts.reading_cycle_data import extract_cap, making_csv
 
 import sys, os, csv, itertools
 import matplotlib.pyplot as plt
@@ -43,46 +43,38 @@ contri = {'ct': 0.2, 'd': 0.8}
 tau_guessed = {'ct': 50, 'd': 800}
 v_start_up = 0.01
 v_start_down = 1.
-cell_mass = 0.86   # [g]
+cell_mass = 0.86   # [mg]
 c_rate = [0.1, 0.05]   # 1/[h]
 change_i = [3]
-cell_capacity = 3.579   # [mAh / g]
+cell_capacity = 3.579   # [Ah / g]
 
 # imported cycle data from arbin and saved in "outdata" folder as .csv
-# data = os.path.join(datafolder, filename_74)
-# d = cellreader.cellpydata()
-# d.loadres(data)
-# d.set_mass(cell_mass)
-# d.make_summary()
-# d.create_step_table()
-# d.exportcsv(r'C:\Users\torkv\OneDrive - Norwegian University of Life '
-#             r'Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy\outdata')
-
-
-def find_stats():
-    df_stats = pd.DataFrame(data_stats)
-    charge_cap = df_stats["Charge_Capacity(mAh/g)"]
-    discharge_cap = df_stats["Discharge_Capacity(mAh/g)"]
-    cycle_cap = zip(charge_cap, discharge_cap)
-    cycle_cap_df = pd.DataFrame(cycle_cap,
-                                columns=["Charge_Capacity(mAh/g)",
-                                         "Discharge_Capacity(mAh/g)"])
-    cycle_cap_df.to_csv(os.path.join(datafolder_out, r'cap_cycle_sic006_74.csv'),
-                        sep=';')
-    plt.plot(cycle_cap_df["Charge_Capacity(mAh/g)"], '^b',
-             cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or')
-    plt.legend(['Charge Capacity', 'Discharge capacity'], loc='best')
-    plt.title('Capacity vs. Cycle')
-    plt.xlabel('# Cycle')
-    plt.ylabel('Capacity (mAh/g)')
-
-
+data = os.path.join(datafolder, filename_74)
 datafolder_out = r'..\outdata'
+making_csv(data, datafolder_out, cell_mass)
+
 normal = filename_74[:-4] + '_normal.csv'
 stats = filename_74[:-4] + '_stats.csv'
 steps = filename_74[:-4] + '_steps.csv'
 data_stats = os.path.join(datafolder_out, stats)
 data_stats = pd.read_csv(data_stats, sep=';')
+df_stats = pd.DataFrame(data_stats)
+
+charge_cap = df_stats["Charge_Capacity(mAh/g)"]
+discharge_cap = df_stats["Discharge_Capacity(mAh/g)"]
+cycle_cap = zip(charge_cap, discharge_cap)
+cycle_cap_df = pd.DataFrame(cycle_cap, columns=["Charge_Capacity(mAh/g)",
+                                                "Discharge_Capacity(mAh/g)"])
+
+
+# Plotting
+plt.figure()
+plt.plot(cycle_cap_df["Charge_Capacity(mAh/g)"], '^b',
+         cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or')
+plt.legend(['Charge Capacity', 'Discharge capacity'], loc='best')
+plt.title('Capacity vs. Cycle')
+plt.xlabel('# Cycle')
+plt.ylabel('Capacity (mAh/g)')
 
 # plt.savefig(os.path.join(fig_folder, 'cap_cycle_sic006_74.pdf'))
 
