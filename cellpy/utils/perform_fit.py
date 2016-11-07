@@ -10,12 +10,13 @@ TODO:
 
 from fitting_cell_ocv import define_model, fit_with_model, user_plot_voltage,\
     plot_params, print_params
-from cellpy.readers import cellreader
+# from cellpy.readers import cellreader
 from scripts.reading_cycle_data import making_csv
 
-import sys, os, csv, itertools
+# import sys, os, csv, itertools
+# import numpy as np
+import os
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
@@ -23,7 +24,7 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def fitting_cell(filename, outfolder, cell_mass, contri, tau_guessed,
-                 v_start, c_rate, change_i, cell_capacit=3.579):
+                 v_start, c_rate, change_i, cell_capacity=3.579):
     """Fitting measured data from cell with cellpy.
 
     Args:
@@ -61,7 +62,6 @@ def fitting_cell(filename, outfolder, cell_mass, contri, tau_guessed,
     plot_params(voltage, fit, rc_para)
     user_plot_voltage(time, voltage, fit)
     print_params(fit, rc_para)
-    plt.show()
 
 
 def save_and_plot_cap(filepath, filename, outfolder, mass_celll):
