@@ -530,11 +530,12 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
             model.set_param_hint('ocv', value=temp_end_voltage)
             model.make_params()
             result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i],
-                                     weights=1/v_err)
+                                     weights=1. / (v_err / 100))
         else:
             result_cycle = model.fit(voltage[cycle_i],
                                      params=best_para[cycle_i - 1],
-                                     t=time[cycle_i], weights=1/v_err)
+                                     t=time[cycle_i], weights=1. / (v_err /
+                                                                    100))
         # result_cycle.conf_interval()
         result.append(result_cycle)
         copied_parameters = copy.deepcopy(result_cycle.params)
