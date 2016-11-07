@@ -605,8 +605,8 @@ def user_plot_voltage(time, voltage, fit):
             print '------------------------------------------------------------'
     else:
         for cycle_nr in user_cycles_list:
-            fig_fit = fit[cycle_nr].plot()
-            fig = plt.figure()
+            # fig_fit = fit[cycle_nr].plot()
+            plt.figure()
             gs = gridspec.GridSpec(3, 1)
             gs.update(left=0.05, right=0.9, wspace=1)
             ax1 = plt.subplot(gs[-1, 0])
