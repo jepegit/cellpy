@@ -160,8 +160,7 @@ def plot_voltage(t, v, best, subfigure):
     # print '\t'
     # print '------------------------------------------------------------'
     result_params = best.params
-    # best.weight is accuracy in measured data in %
-    measured_err = ((1. / best.weights) / 100) * v
+    measured_err = (1. / best.weights)
     print measured_err
     result_residual = best.residual
     ocv = np.array([result_params['ocv'] for _ in range(len(t))])
@@ -177,11 +176,11 @@ def plot_voltage(t, v, best, subfigure):
 
     residual_figure.set_ylabel('Residual (V)')
     residual_figure.legend(loc='center left', bbox_to_anchor=(1, 0.5),
-                           prop={'size': 10})
+                           prop={'size': 20})
     result_figure.set_xlabel('Time (s)')
     result_figure.set_ylabel('Voltage (V)')
     result_figure.legend(loc='center left', bbox_to_anchor=(1, 0.5),
-                         prop={'size': 10}, fontsize=10)
+                         prop={'size': 20})
     result_figure.grid()
 
     # Suppose to add a text with the value of the parameters for the fit.
@@ -487,7 +486,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                                  'same rc-names. That is, both need to have '
                                  'the same keyword arguments.')
 
-    result_initial = model.fit(voltage[0], t=time[0], weights=1/v_err)
+    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err/100))
     # result_initial.conf_interval()
     result = [result_initial]
 
@@ -605,7 +604,7 @@ def user_plot_voltage(time, voltage, fit):
             print '------------------------------------------------------------'
     else:
         for cycle_nr in user_cycles_list:
-            # fig_fit = fit[cycle_nr].plot()
+            fig_fit = fit[cycle_nr].plot()
             fig = plt.figure()
             gs = gridspec.GridSpec(3, 1)
             gs.update(left=0.05, right=0.9, wspace=1)
