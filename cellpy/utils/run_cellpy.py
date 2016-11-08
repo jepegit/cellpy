@@ -35,6 +35,8 @@ filenames = [f for f in os.listdir(datafolder)
              if os.path.isfile(os.path.join(datafolder, f)) and
              str(f).endswith('.res') and 'bec' in f]
 # bec01_07-09 is without additives and bec01_01-03 with additives
-save_and_plot_cap(datafolder, filenames[0], datafolder_out,
-                  cell_mass['bec01_01'])
+# save_and_plot_cap(datafolder, filenames[0], datafolder_out,
+#                   cell_mass['bec01_01'])
+fitting_cell(r'74_data_down.csv', datafolder, cell_mass['sic006_74'], contri,
+             tau_guessed, v_start_down, c_rate, change_i)
 plt.show()

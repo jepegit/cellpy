@@ -8,8 +8,7 @@ TODO:
     -Make nicer volt_cap plots with proper legends
 """
 
-from fitting_cell_ocv import define_model, fit_with_model, user_plot_voltage,\
-    plot_params, print_params
+import fitting_cell_ocv as fco
 # from cellpy.readers import cellreader
 from scripts.reading_cycle_data import making_csv
 
@@ -23,13 +22,13 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-def fitting_cell(filename, outfolder, cell_mass, contri, tau_guessed,
+def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
                  v_start, c_rate, change_i, cell_capacity=3.579):
     """Fitting measured data from cell with cellpy.
 
     Args:
         filename (str): The ocv relaxation filename for up- or downwards relax.
-        outfolder (str): Exact path where to save .csv data
+        filefolder (str): Exact path where to save .csv data
         cell_mass(float): The mass of the active material in mg.
         contri (:obj: 'dict' of :obj: 'float'): Assumed contribution
         from each rc-circuit. Help guessing the initial start voltage value
@@ -41,44 +40,44 @@ def fitting_cell(filename, outfolder, cell_mass, contri, tau_guessed,
         discharged or charged with before cycle = change_i.
         change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
         C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
-        cell_capacit (float): Theoretical specific capacity of the cell [Ah/g].
+        cell_capacity (float): Theoretical specific capacity of the cell [Ah/g].
 
     Returns:
         Fitted data and plots
     """
 
-    model, time, voltage = define_model(filepath=outfolder,
-                                        filename=filename,
-                                        guess_tau=tau_guessed,
-                                        contribution=contri,
-                                        c_rate=c_rate[0],
-                                        ideal_cap=cell_capacity,
-                                        mass=cell_mass,
-                                        v_start=v_start)
+    model, time, voltage = fco.define_model(filepath=filefolder,
+                                            filename=filename,
+                                            guess_tau=tau_guessed,
+                                            contribution=contri,
+                                            c_rate=c_rate[0],
+                                            ideal_cap=cell_capacity,
+                                            mass=cell_mass,
+                                            v_start=v_start)
 
-    fit, rc_para = fit_with_model(model, time, voltage, tau_guessed,
-                                  contri, c_rate, change_i, cell_capacity,
-                                  cell_mass, v_start)
-    plot_params(voltage, fit, rc_para)
-    user_plot_voltage(time, voltage, fit)
-    print_params(fit, rc_para)
+    fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
+                                      contri, c_rate, change_i, cell_capacity,
+                                      cell_mass, v_start)
+    fco.plot_params(voltage, fit, rc_para)
+    fco.user_plot_voltage(time, voltage, fit)
+    fco.print_params(fit, rc_para)
 
 
-def save_and_plot_cap(filepath, filename, outfolder, mass_celll):
+def save_and_plot_cap(filepath, filename, outfolder, mass_cell):
     """Making capacity vs. voltage and capacity vs. cycle data.
 
     Args:
         filepath (str): The exact path to the folder where the data lies.
         filename (str): The ocv relaxation filename for up- or downwards relax.
         outfolder (str): Exact path where to save .csv data
-        mass_celll (float): Mass of active material in cell [mg]
+        mass_cell (float): Mass of active material in cell [mg]
 
     Returns:
         Fitted data and plots
     """
     # imported cycle data from arbin and saved in "outdata" folder as .csv
     data = os.path.join(filepath, filename)
-    making_csv(data, outfolder, mass_celll)
+    making_csv(data, outfolder, mass_cell)
 
     normal = filename[:-4] + '_normal.csv'
     stats = filename[:-4] + '_stats.csv'

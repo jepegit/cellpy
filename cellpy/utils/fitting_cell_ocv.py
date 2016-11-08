@@ -161,26 +161,25 @@ def plot_voltage(t, v, best, subfigure):
     # print '------------------------------------------------------------'
     result_params = best.params
     measured_err = (1. / best.weights)
-    print measured_err
     result_residual = best.residual
     ocv = np.array([result_params['ocv'] for _ in range(len(t))])
 
     residual_figure = subfigure[0]
     result_figure = subfigure[1]
 
-    residual_figure.plot(t, result_residual, label='Residual')
+    residual_figure.errorbar(t, result_residual, yerr=measured_err,
+                             label='Residual')
     result_figure.errorbar(t, v, yerr=measured_err, fmt='ob', label='Measured')
     result_figure.plot(t, best.init_fit, '--k', label='Initial guess')
     result_figure.plot(t, best.best_fit, '-r', label='Best fit')
     result_figure.plot(t, ocv, '--c', label='ocv')
 
-    residual_figure.set_ylabel('Residual (V)')
-    residual_figure.legend(loc='center left', bbox_to_anchor=(1, 0.5),
-                           prop={'size': 20})
-    result_figure.set_xlabel('Time (s)')
-    result_figure.set_ylabel('Voltage (V)')
-    result_figure.legend(loc='center left', bbox_to_anchor=(1, 0.5),
-                         prop={'size': 20})
+    residual_figure.set_ylabel('Residual (V)', size=15)
+    residual_figure.legend(loc='best', prop={'size': 15})
+    residual_figure.grid()
+    result_figure.set_xlabel('Time (s)', size=15)
+    result_figure.set_ylabel('Voltage (V)', size=15)
+    result_figure.legend(loc='best', prop={'size': 15})
     result_figure.grid()
 
     # Suppose to add a text with the value of the parameters for the fit.
@@ -197,7 +196,6 @@ def plot_voltage(t, v, best, subfigure):
 
 
 def plot_rc(t, best):
-    plt.figure()
     result_params = best.params
     tau_rc = {tau_key: tau_val for tau_key, tau_val in result_params.items()
               if tau_key.startswith('tau')}
@@ -208,6 +206,10 @@ def plot_rc(t, best):
                    for rc in tau_rc.keys()}
     for rc_name, rc in rc_circuits.items():
         plt.plot(t, rc, label='%s rc-circuit' % rc_name)
+    plt.legend(loc='best')
+    plt.xlabel('Time (s)', size=15)
+    plt.ylabel('Voltage(V)', size=15)
+    plt.grid()
 
 # def print_params(ini, fit):
 #
@@ -607,13 +609,18 @@ def user_plot_voltage(time, voltage, fit):
         for cycle_nr in user_cycles_list:
             # fig_fit = fit[cycle_nr].plot()
             plt.figure()
+            plt.suptitle('RC-circuits plotted with fitted parameters of cycle '
+                         '%i after %s' % ((cycle_nr + 1), rlx_txt), size=25)
+            plot_rc(time[cycle_nr], fit[cycle_nr])
+
+            plt.figure()
             gs = gridspec.GridSpec(3, 1)
             gs.update(left=0.05, right=0.9, wspace=1)
             ax1 = plt.subplot(gs[-1, 0])
             ax2 = plt.subplot(gs[0:-1, 0], sharex=ax1)
             sub_fig = [ax1, ax2]
             plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
-                         ((cycle_nr + 1), rlx_txt))
+                         ((cycle_nr + 1), rlx_txt), size=25)
             plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
                          sub_fig)
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
@@ -684,16 +691,16 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
     plt.suptitle('Fitted parameters in every cycle after %s'
                  % rlx_txt, size=20)
     cycle_array = np.arange(1, len(fit) + 1, 1)
-    cycle_array_ticks = np.arange(1, len(fit) + 1, 3)
-
-    if len(best_para[0]) % 2 == 0:   # Even number of cycles
-        gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
-        gs.update(left=0.05, right=0.9, wspace=1)
+    cycle_array_ticks = np.arange(1, len(fit) + 1, 5)
+    shape_params = len(best_para[0]) - len(fit[0].params)
+    if shape_params % 2 == 0:   # Even number of input params
+        gs = gridspec.GridSpec(shape_params / 2, shape_params + 1)
+        gs.update(left=0.05, right=0.9, wspace=0.4, hspace=0.7)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     else:
-        gs = gridspec.GridSpec((len(best_para[0]) + 1) / 2, 3)
-        gs.update(left=0.05, right=0.9, wspace=1)
+        gs = gridspec.GridSpec((shape_params + 1) / 2, shape_params)
+        gs.update(left=0.05, right=0.9, wspace=0.4, hspace=0.7)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
 
@@ -705,8 +712,7 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
                                for cycle_step in range(len(fit))])
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
                                      fmt='or')
-        subs_params[name_i].legend([name], loc='center left',
-                                   bbox_to_anchor=(1, 0.5))
+        subs_params[name_i].legend([name], loc='best')
         subs_params[name_i].set_xlabel('Cycles')
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time-constant (RC)[s]')
