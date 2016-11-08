@@ -844,6 +844,8 @@ class cellpydata(object):
         file_type = self.tester
         if file_type == "arbin":
             raw_file_loader = self._loadres
+            # HERE WE SHOULD INSTEAD IMPORT from instruments.arbin
+            #
         else:
             raw_file_loader = self._loadres # only arbin available at the moment
 
@@ -1142,6 +1144,8 @@ class cellpydata(object):
             new_tests (list of data objects), FileError
 
         """
+        # TODO: move this into instruments.arbin
+        # find all occurrences of self.something
         new_tests = []
         # -------checking existence of file--------
         if not os.path.isfile(file_name):
