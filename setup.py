@@ -19,7 +19,7 @@ with open('HISTORY.rst') as history_file:
 included_packages=find_packages(exclude=['build', 'docs', 'templates'])
 
 requirements = [
-    'scipy', 'numpy', 'pandas',
+    'scipy', 'numpy', 'pandas', 'matplotlib', 'scipy', 'lmfit', 'tables', 'pyodbc', 'xlrd', 'click',
 ]
 
 test_requirements = [
@@ -64,6 +64,9 @@ setup(name=name,
         'outdata':
             [
              ],
+        'parametres':
+            ['parametres/_cellpy_prms_default.ini',
+             ],
         'scripts':
             ['scripts/simple_reader.py',
              # 'scripts/make_hdf5.py',
@@ -73,7 +76,7 @@ setup(name=name,
              },
     entry_points={
         'console_scripts': [
-            'cellpy_setup=cellpy.cellpy_setup:main',
+            'cellpy=cellpy.cellpy_setup:cli',
         ],
     },
     #data_files=[userdir, ['cellpy/parametres/_cellpy_prms_default.ini']],

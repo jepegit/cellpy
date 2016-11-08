@@ -36,8 +36,6 @@ else:
     try:
         import pyodbc as dbloader
     except ImportError:
-        print "could not import dbloader (pyodbc)"
-        print "many of the functions will not work"
         dbloader = None
 
 import shutil
