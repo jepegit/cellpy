@@ -142,14 +142,14 @@ def manipulate_data(read_data):
     return pd.Series(sorted_data)
 
 
-def plot_voltage(t, v, best):
+def plot_voltage(t, v, best, subfigure):
     """Making a plot with given voltage data.
 
     Args:
         t (nd.array): Points in time [s].
         v (nd.array): Measured voltage [V].
         best (ModelResult): All fitted data in lmfit object Model.
-        rc_para (dict): Calculated resistance and capacitance from fit.
+        subfigure (list): Subfigures with length 2
 
     Returns:
         None: Making a plot with matplotlib.pyplot
@@ -160,26 +160,27 @@ def plot_voltage(t, v, best):
     # print '\t'
     # print '------------------------------------------------------------'
     result_params = best.params
+    measured_err = (1. / best.weights)
+    result_residual = best.residual
     ocv = np.array([result_params['ocv'] for _ in range(len(t))])
-    tau_rc = {tau_key: tau_val for tau_key, tau_val in result_params.items()
-              if tau_key.startswith('tau')}
-    v0_rc = {v0_key: v0_val for v0_key, v0_val in result_params.items()
-             if v0_key.startswith('v0')}
 
-    rc_circuits = {rc[4:]: relaxation_rc(t, v0_rc['v0_%s' % rc[4:]], tau_rc[rc])
-                   for rc in tau_rc.keys()}
-    plt.plot(t, v, 'ob')
-    plt.plot(t, best.init_fit, '--k')
-    plt.plot(t, best.best_fit, '-r')
-    plt.plot(t, ocv, '--c')
-    plt.plot(t, rc_circuits['ct'], '-g')
-    plt.plot(t, rc_circuits['d'], '-y')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Voltage (V)')
-    plt.legend(['Measured', 'Initial guess', 'Best fit', 'ocv - relaxed',
-                'Charge-transfer rc-circuit', 'Diffusion rc-circuit'],
-               loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 10})
-    plt.grid()
+    residual_figure = subfigure[0]
+    result_figure = subfigure[1]
+
+    residual_figure.errorbar(t, result_residual, yerr=measured_err,
+                             label='Residual')
+    result_figure.errorbar(t, v, yerr=measured_err, fmt='ob', label='Measured')
+    result_figure.plot(t, best.init_fit, '--k', label='Initial guess')
+    result_figure.plot(t, best.best_fit, '-r', label='Best fit')
+    result_figure.plot(t, ocv, '--c', label='ocv')
+
+    residual_figure.set_ylabel('Residual (V)', size=15)
+    residual_figure.legend(loc='best', prop={'size': 15})
+    residual_figure.grid()
+    result_figure.set_xlabel('Time (s)', size=15)
+    result_figure.set_ylabel('Voltage (V)', size=15)
+    result_figure.legend(loc='best', prop={'size': 15})
+    result_figure.grid()
 
     # Suppose to add a text with the value of the parameters for the fit.
 
@@ -193,6 +194,22 @@ def plot_voltage(t, v, best):
     #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
     #     mover += 0.1
 
+
+def plot_rc(t, best):
+    result_params = best.params
+    tau_rc = {tau_key: tau_val for tau_key, tau_val in result_params.items()
+              if tau_key.startswith('tau')}
+    v0_rc = {v0_key: v0_val for v0_key, v0_val in result_params.items()
+             if v0_key.startswith('v0')}
+
+    rc_circuits = {rc[4:]: relaxation_rc(t, v0_rc['v0_%s' % rc[4:]], tau_rc[rc])
+                   for rc in tau_rc.keys()}
+    for rc_name, rc in rc_circuits.items():
+        plt.plot(t, rc, label='%s rc-circuit' % rc_name)
+    plt.legend(loc='best')
+    plt.xlabel('Time (s)', size=15)
+    plt.ylabel('Voltage(V)', size=15)
+    plt.grid()
 
 # def print_params(ini, fit):
 #
@@ -222,6 +239,7 @@ def plot_voltage(t, v, best):
 #     rc_ct = v0_rc['ct'] * np.exp(-t / tau_rc['ct'])
 #     total = rc_d + rc_ct + ocv_arr
 #     return total
+
 
 def relax_model(t, **params):
     """Fitting of parameters with lmfit.
@@ -470,7 +488,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                                  'same rc-names. That is, both need to have '
                                  'the same keyword arguments.')
 
-    result_initial = model.fit(voltage[0], t=time[0])
+    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err/100))
     # result_initial.conf_interval()
     result = [result_initial]
 
@@ -513,11 +531,13 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                                              'v0_rc'][name], max=0)
             model.set_param_hint('ocv', value=temp_end_voltage)
             model.make_params()
-            result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i])
+            result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i],
+                                     weights=1. / (v_err / 100))
         else:
             result_cycle = model.fit(voltage[cycle_i],
                                      params=best_para[cycle_i - 1],
-                                     t=time[cycle_i])
+                                     t=time[cycle_i], weights=1. / (v_err /
+                                                                    100))
         # result_cycle.conf_interval()
         result.append(result_cycle)
         copied_parameters = copy.deepcopy(result_cycle.params)
@@ -587,17 +607,28 @@ def user_plot_voltage(time, voltage, fit):
             print '------------------------------------------------------------'
     else:
         for cycle_nr in user_cycles_list:
-            # fig = fit[cycle_nr].plot()
+            # fig_fit = fit[cycle_nr].plot()
             plt.figure()
+            plt.suptitle('RC-circuits plotted with fitted parameters of cycle '
+                         '%i after %s' % ((cycle_nr + 1), rlx_txt), size=25)
+            plot_rc(time[cycle_nr], fit[cycle_nr])
+
+            plt.figure()
+            gs = gridspec.GridSpec(3, 1)
+            gs.update(left=0.05, right=0.9, wspace=1)
+            ax1 = plt.subplot(gs[-1, 0])
+            ax2 = plt.subplot(gs[0:-1, 0], sharex=ax1)
+            sub_fig = [ax1, ax2]
             plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
-                         ((cycle_nr + 1), rlx_txt))
-            plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr])
+                         ((cycle_nr + 1), rlx_txt), size=25)
+            plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
+                         sub_fig)
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
             print '------------------------------------------------------------'
 
 
-def plot_params(time, voltage, fit, rc_params, i_err=0.1):
+def plot_params(voltage, fit, rc_params, i_err=0.1):
     """Calculating parameter errors and plotting them.
 
     r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
@@ -606,7 +637,6 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
     of both r and c are respectively e(r) = err(r) / r and e(c) = err(c) / c.
 
     Args:
-        time (:obj: 'list' of :obj: 'nd.array'): Measured points in time.
         voltage (:obj: 'list' of :obj: 'nd.array'): Measured voltage.
         fit (:obj: 'list' of :obj: 'ModelResult'): Best fit for each cycle.
         rc_params (:obj: 'list' of :obj: 'dict'): Calculated R and C from fit.
@@ -635,19 +665,19 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
         # error_para = {para_name: err_para[err]
         #               for err, para_name in enumerate(names)}
         # Fractional error in percent calculation
-        fractional_err = {par_name: 100 * (error_para[par_name] /
-                                           cycle_fit.params[par_name])
+        fractional_err = {par_name: (error_para[par_name] /
+                                     cycle_fit.params[par_name])
                           for par_name in names}
-        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err/100
                  for key in rc_params[i].keys() if key.startswith('r_')}
         c_err = {key: fractional_err[
                           'tau_%s' % key[2:]] + r_err['r_%s' % key[2:]]
                  for key in rc_params[i].keys() if key.startswith('c_')}
 
         # Standard deviation error calculated from fractional error
-        e_r = {r: frac_err * rc_params[i][r] / 100
+        e_r = {r: frac_err * rc_params[i][r]
                for r, frac_err in r_err.items()}
-        e_c = {c: frac_err * rc_params[i][c] / 100
+        e_c = {c: frac_err * rc_params[i][c]
                for c, frac_err in c_err.items()}
         error_para.update(e_r)
         error_para.update(e_c)
@@ -661,16 +691,16 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
     plt.suptitle('Fitted parameters in every cycle after %s'
                  % rlx_txt, size=20)
     cycle_array = np.arange(1, len(fit) + 1, 1)
-    cycle_array_ticks = np.arange(1, len(fit) + 1, 3)
-
-    if len(best_para[0]) % 2 == 0:   # Even number of cycles
-        gs = gridspec.GridSpec(len(best_para[0]) / 2, 3)
-        gs.update(left=0.05, right=0.9, wspace=1)
+    cycle_array_ticks = np.arange(1, len(fit) + 1, 5)
+    shape_params = len(best_para[0]) - len(fit[0].params)
+    if shape_params % 2 == 0:   # Even number of input params
+        gs = gridspec.GridSpec(shape_params / 2, shape_params + 1)
+        gs.update(left=0.05, right=0.9, wspace=0.4, hspace=0.7)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     else:
-        gs = gridspec.GridSpec((len(best_para[0]) + 1) / 2, 3)
-        gs.update(left=0.05, right=0.9, wspace=1)
+        gs = gridspec.GridSpec((shape_params + 1) / 2, shape_params)
+        gs.update(left=0.05, right=0.9, wspace=0.4, hspace=0.7)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
 
@@ -682,8 +712,7 @@ def plot_params(time, voltage, fit, rc_params, i_err=0.1):
                                for cycle_step in range(len(fit))])
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
                                      fmt='or')
-        subs_params[name_i].legend([name], loc='center left',
-                                   bbox_to_anchor=(1, 0.5))
+        subs_params[name_i].legend([name], loc='best')
         subs_params[name_i].set_xlabel('Cycles')
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time-constant (RC)[s]')
@@ -728,7 +757,7 @@ def print_params(fit, rc_params, i_err=0.1):
         temp_dict = cycle_fit.params.valuesdict()
         rc_params[i].update(temp_dict)
         print "============================================================"
-        print "Cycle number %i" % i
+        print "Cycle number %i" % (i + 1)
         for key_name, par_val in rc_params[i].items():
             if 'c_' in key_name:
                 unit_text = 'F'
