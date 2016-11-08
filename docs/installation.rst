@@ -22,7 +22,7 @@ you through the process.
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
 
- `cellpy` uses `setuptools`_, and the developers of `setuptools` recommend notifying the users
+`cellpy` uses `setuptools`_, and the developers of `setuptools` recommend notifying the users
 the following:
 
 -  if you would like to install `cellpy` to somewhere other than the main site-packages directory,
