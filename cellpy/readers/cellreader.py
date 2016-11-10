@@ -3381,10 +3381,10 @@ class cellpydata(object):
         discharge_title = self.summary_txt_discharge_cap
         charge_title = self.summary_txt_charge_cap
         cumcharge_title = self.summary_txt_cum_charge_cap
-        coloumb_title = self.summary_txt_coul_eff
-        cumcoloumb_title = self.summary_txt_cum_coul_eff
-        coloumb_diff_title = self.summary_txt_coul_diff
-        cumcoloumb_diff_title = self.summary_txt_cum_coul_diff
+        coulomb_title = self.summary_txt_coul_eff
+        cumcoulomb_title = self.summary_txt_cum_coul_eff
+        coulomb_diff_title = self.summary_txt_coul_diff
+        cumcoulomb_diff_title = self.summary_txt_cum_coul_diff
         col_discharge_loss_title = self.summary_txt_discharge_cap_loss
         col_charge_loss_title = self.summary_txt_charge_cap_loss
         dcloss_cumsum_title = self.summary_txt_cum_discharge_cap_loss
@@ -3451,11 +3451,11 @@ class cellpydata(object):
             _first_step_txt = charge_title
             _second_step_txt = discharge_title
 
-        dfsummary[coloumb_title] = 100.0 * dfsummary[_second_step_txt] / dfsummary[_first_step_txt]
-        dfsummary[coloumb_diff_title] = dfsummary[_second_step_txt] - dfsummary[_first_step_txt]
+        dfsummary[coulomb_title] = 100.0 * dfsummary[_second_step_txt] / dfsummary[_first_step_txt]
+        dfsummary[coulomb_diff_title] = dfsummary[_second_step_txt] - dfsummary[_first_step_txt]
 
-        dfsummary[cumcoloumb_title] = dfsummary[coloumb_title].cumsum()
-        dfsummary[cumcoloumb_diff_title] = dfsummary[coloumb_diff_title].cumsum()
+        dfsummary[cumcoulomb_title] = dfsummary[coulomb_title].cumsum()
+        dfsummary[cumcoulomb_diff_title] = dfsummary[coulomb_diff_title].cumsum()
 
         # ---------------- discharge loss ---------------------
         # Assume that both charge and discharge is defined as positive.
