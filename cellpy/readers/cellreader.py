@@ -423,17 +423,17 @@ class cellpydata(object):
         self.summary_txt_charge_cap_loss = "Charge_Capacity_Loss(mAh/g)"
         self.summary_txt_cum_discharge_cap_loss = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
         self.summary_txt_cum_charge_cap_loss = "Cumulated_Charge_Capacity_Loss(mAh/g)"
-        self.summary_txt_ir_discharge = "ir_discharge"
-        self.summary_txt_ir_charge = "ir_charge"
-        self.summary_txt_ocv_1_min = "ocv_first_min"
-        self.summary_txt_ocv_2_min = "ocv_second_min"
-        self.summary_txt_ocv_1_max = "ocv_first_max"
-        self.summary_txt_ocv_2_max = "ocv_second_max"
-        self.summary_txt_datetime_txt = "date_time_txt"
-        self.summary_txt_endv_discharge = "end_voltage_discharge"
-        self.summary_txt_endv_charge = "end_voltage_charge"
-        self.summary_txt_high_level = "low_level"  # Sum of irreversible capacity
-        self.summary_txt_low_level = "high_level"  # SEI loss
+        self.summary_txt_ir_discharge = "IR_Discharge(Ohms)"
+        self.summary_txt_ir_charge = "IR_Charge(Ohms)"
+        self.summary_txt_ocv_1_min = "OCV_First_Min(V)"
+        self.summary_txt_ocv_2_min = "OCV_Second_Min(V)"
+        self.summary_txt_ocv_1_max = "OCV_First_Max(V)"
+        self.summary_txt_ocv_2_max = "OCV_Second_Max(V)"
+        self.summary_txt_datetime_txt = "Date_Time_Txt"
+        self.summary_txt_endv_discharge = "End_Voltage_Discharge(V)"
+        self.summary_txt_endv_charge = "End_Voltage_Charge(V)"
+        self.summary_txt_high_level = "Low_Level(percentage)"  # Sum of irreversible capacity
+        self.summary_txt_low_level = "High_Level(percentage)"  # SEI loss
 
         # step table column headings
         self.step_table_txt_test = "test"
@@ -459,7 +459,7 @@ class cellpydata(object):
         # units used by cellpy
         self.cellpy_units = dict()
         self.cellpy_units["current"] = 0.001 # mA
-        self.cellpy_units["charge"] = 1.0  # Ah
+        self.cellpy_units["charge"] = 0.001  # Ah
         self.cellpy_units["mass"] = 0.001 # mg (used for input of mass)
         self.cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. specific capacity
 
@@ -518,7 +518,7 @@ class cellpydata(object):
             self.raw_units = dict()
             self.raw_units["current"] = 1.0  # A
             self.raw_units["charge"] = 1.0 # Ah
-            self.raw_units["mass"] = 1.0  # g
+            self.raw_units["mass"] = 0.001  # g
 
         else:
             print "this option is not implemented yet"
@@ -2874,15 +2874,17 @@ class cellpydata(object):
             mass = test.mass
 
         if not to_unit:
-            to_unit_current = self.cellpy_units["charge"]
+            to_unit_cap = self.cellpy_units["charge"]
             to_unit_mass = self.cellpy_units["specific"]
-            to_unit = to_unit_current / to_unit_mass
+            to_unit = to_unit_cap / to_unit_mass
         if not from_unit:
-            from_unit_current = self.raw_units["charge"]
+            from_unit_cap = self.raw_units["charge"]
             from_unit_mass = self.raw_units["mass"]
-            from_unit = from_unit_current / from_unit_mass
-
+            from_unit = from_unit_cap / from_unit_mass
+        #  Remove this later
+        assert  float(from_unit / to_unit) == 1000000.0
         return float(from_unit / to_unit) / mass
+
 
     def get_diagnostics_plots(self, test_number=None, scaled=False, ):
         """Gets diagnostics plots.
@@ -3325,7 +3327,7 @@ class cellpydata(object):
                       test_number=None,
                       mass=None,
                       update_it=False,
-                      select_columns=False,
+                      select_columns=True,
                       find_ocv=False,
                       find_ir=False,
                       find_end_voltage=False,
@@ -3425,8 +3427,11 @@ class cellpydata(object):
         # indexes = dfsummary.index
 
         if select_columns:
-            columns_to_keep = [charge_txt,i_txt, c_txt, d_txt, dt_txt,
-                               discharge_txt, st_txt, test_id_txt, tt_txt, voltage_header,
+            # columns_to_keep = [charge_txt,i_txt, c_txt, d_txt, dt_txt,
+            #                    discharge_txt, st_txt, test_id_txt, tt_txt, voltage_header,
+            #                    ]
+            columns_to_keep = [charge_txt, c_txt, d_txt, dt_txt,
+                               discharge_txt, tt_txt,
                                ]
             for column_name in column_names:
                 if not columns_to_keep.count(column_name):
