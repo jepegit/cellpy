@@ -362,6 +362,7 @@ class cellpydata(object):
         self.chunk_size = None # 100000
         self.max_chunks = None
         self.last_chunk = None
+        self.limit_loaded_cycles = None
         self.load_until_error = False
         self.filestatuschecker = filestatuschecker
         self.raw_datadir = None
@@ -415,6 +416,7 @@ class cellpydata(object):
         self.summary_txt_discharge_cap = "Discharge_Capacity(mAh/g)"
         self.summary_txt_charge_cap = "Charge_Capacity(mAh/g)"
         self.summary_txt_cum_charge_cap = "Cumulated_Charge_Capacity(mAh/g)"
+        self.summary_txt_cum_discharge_cap = "Cumulated_Discharge_Capacity(mAh/g)"
         self.summary_txt_coul_eff = "Coulombic_Efficiency(percentage)"
         self.summary_txt_cum_coul_eff = "Cumulated_Coulombic_Efficiency(percentage)"
         self.summary_txt_coul_diff = "Coulombic_Difference(mAh/g)"
@@ -1101,6 +1103,89 @@ class cellpydata(object):
                 print filename
                 print e
 
+    def _loadres_query(self, query=None, file_name=None, test_index = 0):
+        new_tests = []
+        if query is None:
+            query = "where %s<4" % self.cycle_index_txt
+            print " query not given."
+            print " setting it to"
+            print query
+        # -------checking existence of file--------
+        if not os.path.isfile(file_name):
+            print "Missing file_\n   %s" % (file_name)
+
+        # -------checking file size etc------------
+        filesize = os.path.getsize(file_name)
+        hfilesize = humanize_bytes(filesize)
+        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
+        self.logger.debug(txt)
+        print txt
+
+        # ------making temporary file-------------
+        temp_dir = tempfile.gettempdir()
+        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
+        shutil.copy2(file_name, temp_dir)
+
+        # ------connecting to the .res database----
+        constr = self.__get_res_connector(file_name, temp_filename)
+        if USE_ADO:
+            conn = dbloader.connect(constr)  # adodbapi
+        else:
+            conn = dbloader.connect(constr, autocommit=True)
+
+        # ------get the global table for selecting test-------------
+        sql = "select * from %s" % self.tablename_global
+        global_data_df = pd.read_sql_query(sql, conn)
+        tests = global_data_df[self.test_id_txt]
+        print "Tests in file:",
+        print tests
+
+        data = dataset()
+        test_no = tests[test_index]
+        data.test_no = test_no
+        data.loaded_from = file_name
+        print "Test number:",
+        print test_no
+
+        # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
+        data.channel_index = int(global_data_df[self.channel_index_txt][test_no])
+        data.channel_number = int(global_data_df[self.channel_number_txt][test_no])
+        data.creator = global_data_df[self.creator_txt][test_no]
+        data.item_ID = global_data_df[self.item_id_txt][test_no]
+        data.schedule_file_name = global_data_df[self.schedule_file_name_txt][test_no]
+        data.start_datetime = global_data_df[self.start_datetime_txt][test_no]
+        data.test_ID = int(global_data_df[self.test_id_txt][test_no])
+        data.test_name = global_data_df[self.test_name_txt][test_no]
+        print "Test name:",
+        print data.test_name
+        # ------------------------------------------
+        # ---loading-normal-data--------------------
+        print "Loading data."
+        print self.cycle_index_txt
+        sql_1 = "select * "
+        sql_2 = "from %s " % self.tablename_normal
+        sql_3 = "where %s=%s " % (self.test_id_txt, data.test_ID)
+        sql_4 = "AND "
+        sql_5 = " order by %s" % self.data_point_txt
+        sql = sql_1 + sql_2 + sql_3 + sql_4 + query + sql_5
+
+        normal_df = pd.read_sql_query(sql, conn)
+        length_of_test = normal_df.shape[0]
+
+        # ---loading-statistic-data-----------------
+        sql = "select * from %s where %s=%s order by %s" % (self.tablename_statistic,
+                                                            self.test_id_txt,
+                                                            data.test_ID,
+                                                            self.data_point_txt)
+        summary_df = pd.read_sql_query(sql, conn)
+        data.dfsummary = summary_df
+        data.dfdata = normal_df
+        data.raw_data_files_length.append(length_of_test)
+        new_tests.append(data)
+        self._clean_up_loadres(None, conn, temp_filename)
+        print "q <-"
+        return new_tests
+
     def _loadres(self, file_name=None):
         """Loads data from arbin .res files.
 
@@ -1197,11 +1282,20 @@ class cellpydata(object):
         else:
             columns_txt = "*"
 
-        sql_1 = "select %s " % (columns_txt)
-        sql_2 = "from %s " % (self.tablename_normal)
+        sql_1 = "select %s " % columns_txt
+        sql_2 = "from %s " % self.tablename_normal
         sql_3 = "where %s=%s " % (self.test_id_txt, test_ID)
-        sql_4 = "order by %s" % (self.data_point_txt)
-        sql = sql_1 + sql_2 + sql_3 + sql_4
+        sql_4 = ""
+
+        if self.limit_loaded_cycles:
+            if len(self.limit_loaded_cycles)>1:
+                sql_4 = "AND %s>%i " % (self.cycle_index_txt, self.limit_loaded_cycles[0])
+                sql_4 += "AND %s<%i " % (self.cycle_index_txt, self.limit_loaded_cycles[-1])
+            else:
+                sql_4 = "AND %s=%i " % (self.cycle_index_txt, self.limit_loaded_cycles[0])
+
+        sql_5 = "order by %s" % self.data_point_txt
+        sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         if not self.chunk_size:
             normal_df = pd.read_sql_query(sql, conn)
@@ -3360,8 +3454,6 @@ class cellpydata(object):
             if not test.step_table_made:
                 self.create_step_table(test_number=test_number)
 
-
-
         # Retrieve the converters etc.
         specific_converter = self.get_converter_to_specific(test=test, mass=mass)
 
@@ -3383,6 +3475,7 @@ class cellpydata(object):
         discharge_title = self.summary_txt_discharge_cap
         charge_title = self.summary_txt_charge_cap
         cumcharge_title = self.summary_txt_cum_charge_cap
+        cumdischarge_title = self.summary_txt_cum_discharge_cap
         coulomb_title = self.summary_txt_coul_eff
         cumcoulomb_title = self.summary_txt_cum_coul_eff
         coulomb_diff_title = self.summary_txt_coul_diff
@@ -3409,6 +3502,7 @@ class cellpydata(object):
             # Can't find summary from raw data if raw data is not loaded.
             dfdata = test.dfdata
             if use_cellpy_stat_file:
+                # This should work even if dfdata does not contain all data from the test
                 summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
             else:
                 summary_requirment = self._select_last(dfdata)
@@ -3427,9 +3521,6 @@ class cellpydata(object):
         # indexes = dfsummary.index
 
         if select_columns:
-            # columns_to_keep = [charge_txt,i_txt, c_txt, d_txt, dt_txt,
-            #                    discharge_txt, st_txt, test_id_txt, tt_txt, voltage_header,
-            #                    ]
             columns_to_keep = [charge_txt, c_txt, d_txt, dt_txt,
                                discharge_txt, tt_txt,
                                ]
@@ -3442,10 +3533,16 @@ class cellpydata(object):
             self.logger.debug("Values obtained from dfdata:")
             self.logger.debug(dfsummary.head(20))
 
+        self.logger.debug("Creates summary: specific discharge ('%s')" % discharge_title)
         dfsummary[discharge_title] = dfsummary[discharge_txt] * specific_converter
 
+        self.logger.debug("Creates summary: specific scharge ('%s')" % charge_title)
         dfsummary[charge_title] = dfsummary[charge_txt] * specific_converter
 
+        self.logger.debug("Creates summary: cumulated specific charge ('%s')" % cumdischarge_title)
+        dfsummary[cumdischarge_title] = dfsummary[discharge_title].cumsum()
+
+        self.logger.debug("Creates summary: cumulated specific charge ('%s')" % cumcharge_title)
         dfsummary[cumcharge_title] = dfsummary[charge_title].cumsum()
 
         if self.cycle_mode.lower() == "anode":
@@ -3456,10 +3553,17 @@ class cellpydata(object):
             _first_step_txt = charge_title
             _second_step_txt = discharge_title
 
+        self.logger.debug("Creates summary: coulombic efficiency ('%s')" % coulomb_title)
+        self.logger.debug("100 * ('%s')/('%s)" % (_second_step_txt,_first_step_txt ))
         dfsummary[coulomb_title] = 100.0 * dfsummary[_second_step_txt] / dfsummary[_first_step_txt]
+
+        self.logger.debug("Creates summary: coulombic difference ('%s')" % coulomb_diff_title)
+        self.logger.debug("'%s') - ('%s)" % (_second_step_txt, _first_step_txt))
         dfsummary[coulomb_diff_title] = dfsummary[_second_step_txt] - dfsummary[_first_step_txt]
 
+        self.logger.debug("Creates summary: cumulated coulombic efficiency ('%s')" % cumcoulomb_title)
         dfsummary[cumcoulomb_title] = dfsummary[coulomb_title].cumsum()
+        self.logger.debug("Creates summary: cumulated coulombic difference ('%s')" % cumcoulomb_diff_title)
         dfsummary[cumcoulomb_diff_title] = dfsummary[coulomb_diff_title].cumsum()
 
         # ---------------- discharge loss ---------------------
@@ -3467,6 +3571,7 @@ class cellpydata(object):
         # The gain for cycle n (compared to cycle n-1)
         # is then cap[n] - cap[n-1]. The loss is the negative of gain.
         # discharge loss = discharge_cap[n-1] - discharge_cap[n]
+        self.logger.debug("Creates summary: calculates DL")
         dfsummary[col_discharge_loss_title] = dfsummary[discharge_title].shift(1) - dfsummary[discharge_title]
         dfsummary[dcloss_cumsum_title] = dfsummary[col_discharge_loss_title].cumsum()
 

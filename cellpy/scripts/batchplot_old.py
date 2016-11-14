@@ -61,7 +61,7 @@ class plotType:
 
 
 class summaryplot:
-    def __init__(self, batch=None, bcol=5, predirname="SiNODE", plot_type=0,
+    def __init__(self, batch=None, bcol=5, predirname="TEST", plot_type=0,
                  use_total_mass=False, refs=None, use_all=True, verbose=False, auto_show=False,
                  figsize=(12, 8), legend_stack=3, only_first=False,
                  axis_txt_sub="Si",
@@ -100,12 +100,10 @@ class summaryplot:
         self.fetch_onliners = fetch_onliners
         self.ensure_step_table = ensure_step_table
         self.force_raw = force_raw
-        # at the moment we asssume refs is a list TODO: fix it
         if refs is None:
             self.refs = []
         else:
             self.refs = refs
-
         self.refno = 5000
         self.cumcharge_AhUnits = True
         self.current_canvas = 1
@@ -125,13 +123,10 @@ class summaryplot:
         self.ylabel_coord_right_1 = 1.11  # right for canvas 4
         self.ylabel_coord_right_2 = 1.5  # right for canvas 3
         self.xlabel_coord_down = -0.2  # not implemented yet
-
         self.delta_ax = 0.05
         self.xlims1 = []
         self.implemented_canvases = [1, 2, 3, 4]
-
         self.plot_type = plot_type
-
         self.a = []
         self.group = []
         self.refgroup = []
@@ -142,7 +137,6 @@ class summaryplot:
         self.hdf5_fixed_files = []
         self.number_of_tests = 0
         self.d = None
-
         self.prms = None
         self.predirname = predirname
         self.savedir = None
@@ -157,19 +151,7 @@ class summaryplot:
         self.axes_lib = {}
         self.figtxt_1 = {}
         self.figtxt_2 = {}
-
-        #        self.columnslist = [("Discharge_Capacity(mAh/g)",               "_dischargecap"),
-        #               ("Cumulated_Charge_Capacity(mAh/g)",     "_cumchargecap",),
-        #               ("Coulombic_Efficiency(percentage)",     "_couleff",),
-        #               ("ir_discharge",                         "_irdischrg",),
-        #               ("ir_charge",                            "_irchrg",),
-        #               ("Charge_Capacity(mAh/g)",               "_chargecap",),
-        #               ("end_voltage_discharge",                "_endvdischarge",),
-        #               ("end_voltage_charge",                   "_endvcharge",),
-        #                    ]
-
         self.plotdata = {}
-
         self.set_mpl_rcparams()
         self.generate_plottypes()  # info on the types of plots available
         self.generate_plotlist()  # generates list of plots to be plotted
@@ -259,7 +241,6 @@ class summaryplot:
 
         if not self.cumcharge_AhUnits:
             cum_cap_unit = cap_unit
-
         ylab_dc = "Discharge capacity\n%s" % (cap_unit)
         ylab_c = "Charge capacity\n%s" % (cap_unit)
         ylab_sdc = "Dis.End.Cap.\n%s" % (cap_unit)
@@ -282,19 +263,19 @@ class summaryplot:
                                               x_label="Cycle",
                                               y_label="Coulombic\nefficiency (%%)",
                                               )
-        self.plotTypes["_irdischrg"] = plotType("_irdischrg", "ir_discharge",
+        self.plotTypes["_irdischrg"] = plotType("_irdischrg", "IR_Discharge(Ohms)",
                                                 x_label="Cycle",
                                                 y_label="IR\ndelith. (Ohms)",
                                                 )
-        self.plotTypes["_irchrg"] = plotType("_irchrg", "ir_charge",
+        self.plotTypes["_irchrg"] = plotType("_irchrg", "IR_Charge(Ohms)",
                                              x_label="Cycle",
                                              y_label="IR\nlith. (Ohms)",
                                              )
-        self.plotTypes["_endvdischarge"] = plotType("_endvdischarge", "end_voltage_discharge",
+        self.plotTypes["_endvdischarge"] = plotType("_endvdischarge", "End_Voltage_Discharge(V)",
                                                     x_label="Cycle",
                                                     y_label="End voltage\ndischarge (V)",
                                                     )
-        self.plotTypes["_endvcharge"] = plotType("_endvcharge", "end_voltage_charge",
+        self.plotTypes["_endvcharge"] = plotType("_endvcharge", "End_Voltage_Charge(V)",
                                                  x_label="Cycle",
                                                  y_label="End voltage\ncharge (V)",
                                                  )
@@ -379,10 +360,6 @@ class summaryplot:
             for canvas in canvases:
                 self.make_plot_canvas(canvas)
                 self.create_legend(canvas=canvas, max_length=self.legend_stack, flip=False)
-                # self.move_legend(canvas=1, offset=[-0.1,0.0])
-                # self.set_legend_loc(canvas=1, loc=[0.7,0.9])
-                # self.set_ylims("couleff",[95.0,102.0])
-                # self.set_ylims("endvcharge",[0.0,1.2])
         except:
             print "Error in plotting"
             print sys.exc_info()[0]
@@ -409,8 +386,6 @@ class summaryplot:
         self.plot_ax("_irdischrg", self.test_axes2)
 
     def make_plot_canvas(self, canvas=1):
-        # TODO: currently defining self.someaxes in all instances of make_plot_canvas,
-        # should make a smarter way to do it [e.g. self.someaxes[canvas]]
         if canvas == 1:
 
             self.fig[canvas] = plt.figure(figsize=self.figsize)  # using self.fig[1] here for first time
@@ -453,9 +428,6 @@ class summaryplot:
             self.axes_lib[canvas]["_endvcharge"] = 2
             self.axes_lib[canvas]["_irdischrg"] = 3
 
-            # TODO: get function for making labels
-            # TODO: make one plot_xxx function with input _ext and axes
-            # TODO: make correct scaling (max, min as output from plot_xxx)
             self.plot_ax("_couleff", self.ce_axes)
             self.plot_ax("_dischargecap", self.discharge_axes)
             self.plot_ax("_endvcharge", self.endvc_axes)
@@ -465,11 +437,6 @@ class summaryplot:
             self.scale_ax_y("_couleff", self.ce_axes)
             self.scale_ax_y("_endvcharge", self.endvc_axes)
             self.scale_ax_y("_irdischrg", self.irdc_axes)
-
-            #        values = self.plotdata["_dischargecap"][1][0]
-            #        self.discharge_axes.plot(values)
-            #        self.discharge_axes.set_xlim([0,1000])
-
 
             self.set_x_label(ax=self.irdc_axes, plot_type="_irdischrg")
 
@@ -482,15 +449,12 @@ class summaryplot:
             self.set_y_label(ax=self.discharge_axes, plot_type="_dischargecap")
             self.set_y_label(ax=self.irdc_axes, plot_type="_irdischrg")
             self.set_y_label(ax=self.endvc_axes, plot_type="_endvcharge")
-            # plt.tight_layout()
+
             self.set_nlocator(self.ce_axes, ny=4)
             self.set_nlocator(self.discharge_axes, ny=8)
             self.set_nlocator(self.irdc_axes, ny=4)
             self.set_nlocator(self.endvc_axes, ny=4)
 
-            # list_of_axes = self.fig[1].get_axes()
-
-            # plt.savefig(r"C:\Scripting\MyFiles\tmp_out\test.png", dpi = self.dpi)
         elif canvas == 2:
             # without end-voltage
             fx, fy = self.figsize
@@ -526,9 +490,6 @@ class summaryplot:
             self.axes_lib[canvas]["_dischargecap"] = 1
             self.axes_lib[canvas]["_irdischrg"] = 2
 
-            # TODO: get function for making labels
-            # TODO: make one plot_xxx function with input _ext and axes
-            # TODO: make correct scaling (max, min as output from plot_xxx)
             self.plot_ax("_couleff", self.ce_axes)
             self.plot_ax("_dischargecap", self.discharge_axes)
             self.plot_ax("_irdischrg", self.irdc_axes)
@@ -536,11 +497,6 @@ class summaryplot:
             self.scale_ax("_dischargecap", self.discharge_axes)
             self.scale_ax_y("_couleff", self.ce_axes)
             self.scale_ax_y("_irdischrg", self.irdc_axes)
-
-            #        values = self.plotdata["_dischargecap"][1][0]
-            #        self.discharge_axes.plot(values)
-            #        self.discharge_axes.set_xlim([0,1000])
-
 
             self.set_x_label(ax=self.irdc_axes, plot_type="_irdischrg")
 
@@ -554,12 +510,6 @@ class summaryplot:
             self.set_nlocator(self.ce_axes, ny=4)
             self.set_nlocator(self.discharge_axes, ny=8)
             self.set_nlocator(self.irdc_axes, ny=4)
-
-            # list_of_axes = self.fig[1].get_axes()
-
-            # plt.savefig(r"C:\Scripting\MyFiles\tmp_out\test.png", dpi = self.dpi)
-
-
 
         elif canvas == 3:
 
@@ -581,11 +531,6 @@ class summaryplot:
 
             Hspace = 0.00
             spacer1 = 0.08
-            #
-            #            Hspace = 0.00
-            #            gs1 = gridspec.GridSpec(4,3)
-            #            gs1.update(hspace = Hspace)
-            #            self.ce_axes        =  self.fig[canvas].add_subplot(gs1[0,:])
 
             gs1 = gridspec.GridSpec(3, 1)
             # gs1.update(left=0.1, right=0.5-spacer1/2, hspace=Hspace)
@@ -673,9 +618,6 @@ class summaryplot:
             self.set_nlocator(self.endvdc_axes, ny=3, nx=4)
             self.set_nlocator(self.endvc_axes, ny=3, nx=4)
 
-            # list_of_axes = self.fig[1].get_axes()
-
-            # plt.savefig(r"C:\Scripting\MyFiles\tmp_out\test.png", dpi = self.dpi)
         elif canvas == 4:
             # multiplot with diagnostics
             fx, fy = self.figsize
@@ -812,8 +754,6 @@ class summaryplot:
             for out in diagnostics:
                 _sel = self.plotTypes[_ext].label
                 datasets.append(out[_sel])
-            # print "added: %s" % (_sel)
-            #                print out[_sel]
             self.plotdata[_ext] = [column_names, datasets]
 
     def make_datasets(self, _ext):
@@ -1000,54 +940,6 @@ class summaryplot:
     def add_ref(self, srno):
         self.refs.append(srno)
 
-    @staticmethod
-    def print_refs():
-        print "A proper reference library will be included on a later stage"
-        print "Here is a print-out of the ones used in the old script:"
-
-        print """
-        #------------------------------------------------------------------------------
-        graphite_reference = RefElectrode()
-        graphite_reference.srno = 63
-        graphite_reference.label = "ref. graphite (es018, bm 5 min)"
-
-        eSi_reference = RefElectrode()
-        eSi_reference.srno = 46
-        eSi_reference.label = "ref. eSi (es015)"
-        eSi_reference.use = False
-
-        milled_reference = RefElectrode()
-        milled_reference.srno  = 26
-        milled_reference.label = "ref. milled (es010, bm 5 min)"
-        milled_reference.use = False
-
-        mixed_milled_reference = RefElectrode()
-        mixed_milled_reference.srno  = 38
-        mixed_milled_reference.label = "ref. mix (es013, bm 5 min)"
-        mixed_milled_reference.use = False
-
-        mixed_milled_reference_cc = RefElectrode()
-        mixed_milled_reference_cc.srno  = 193
-        mixed_milled_reference_cc.label = "ref. mix (es027 cc, bm 5 min)"
-        mixed_milled_reference_cc.use = False
-
-        mixed_milled_reference_cc_vc = RefElectrode()
-        mixed_milled_reference_cc_vc.srno  = 196
-        mixed_milled_reference_cc_vc.label = "ref. mix w/VC (es027 cc, bm 5 min)"
-        mixed_milled_reference_cc_vc.use = False
-
-        buffer_reference_cc = RefElectrode()
-        buffer_reference_cc.srno  = 267 # thicker electrode (0.79)
-        buffer_reference_cc.srno  = 268 # thin electrode (0.54)
-        buffer_reference_cc.label = "ref. buffer (es030 cc, bm 5 min)"
-        buffer_reference_cc.use = False
-
-        buffer_ife_reference_cc = RefElectrode()
-        buffer_ife_reference_cc.srno  = 318
-        buffer_ife_reference_cc.label = "ref. buffer F3 (is014 cc)"
-        buffer_ife_reference_cc.use = False
-        """
-
     # --------- Plotting tools ----------------------------------------------------
 
     def cplot_ax(self, plot_type, ax):
@@ -1088,8 +980,6 @@ class summaryplot:
         refgroup = self.refgroup
         for label, values, line_style, g in zip(labels, y_values, styles, group):
             x_values = range(1, len(values) + 1)
-            # TODO: get proper x-values from real data
-            # print label
             if g in refgroup:
                 j = refgroup.index(g)
                 v = self._visible
@@ -1116,11 +1006,9 @@ class summaryplot:
 
             ax.plot(x_values, values, label=label, visible=v, linestyle=ls,
                     linewidth=lw, color=lc,
-                    # dashes = line_style.dashes, # on, off, on, off, etc
                     marker=m, markeredgecolor=me,
                     markeredgewidth=mw, markerfacecolor=mf,
                     markersize=ms, markevery=mevery,
-                    # markevery = line_style.markevery, # 1 for all, 2 for each second, etc
                     )
             if not g in refgroup:
                 x_min.append(amin(x_values))
@@ -1131,8 +1019,6 @@ class summaryplot:
         x_limits = [amin(x_min), amax(x_max)]
         y_limits = [amin(y_min), amax(y_max)]
         return x_limits, y_limits
-
-    #
 
     def drawfig(self, fignum=0):
         if fignum > 0:
@@ -1158,14 +1044,9 @@ class summaryplot:
         """internal function for running dqdv script """
         from cellpy.utils.dqdv import dQdV
         dqdv_numbermultiplyer = self.dqdv_numbermultiplyer
-        # print dqdv_numbermultiplyer
         dqdv_method = self.dqdv_method
-        # print dqdv_method
         dqdv_finalinterpolation = self.dqdv_finalinterpolation
-        # print dqdv_finalinterpolation
-
         max_cycles = self.max_cycles
-
         test_number = 0
         for cell_data_object in self.tests:
             cell_data = cell_data_object.tests[test_number]
@@ -1198,7 +1079,6 @@ class summaryplot:
                                      NumberMultiplyer=dqdv_numbermultiplyer,
                                      Method=dqdv_method,
                                      FinalInterpolation=dqdv_finalinterpolation)
-                        # dc,dv = self.dget_cap(cycle)
                         v = v.tolist()
                         dQ = dQ.tolist()
 
@@ -1230,7 +1110,6 @@ class summaryplot:
                                      NumberMultiplyer=dqdv_numbermultiplyer,
                                      Method=dqdv_method,
                                      FinalInterpolation=dqdv_finalinterpolation)
-                        # dc,dv = self.dget_cap(cycle,test_number=test_number )
                         v = v.tolist()
                         dQ = dQ.tolist()
 
@@ -1301,7 +1180,6 @@ class summaryplot:
                     sys.exit(-1)
                 else:
                     print "data not sorted - continuing"
-                    # a.reindex_axis(sorted(df.columns), axis=1)
         a.to_csv(outfile, sep=self.sep)
 
     def save_raw(self):
@@ -1331,10 +1209,7 @@ class summaryplot:
         if self.export_dqdv:
             print "---saving dqdv-data--"
             savedir = self.savedir_raw
-            #            try:
             self._export_dqdv(savedir, sep=self.sep)
-            #            except:
-            #                print "Error in exporting dqdv"
 
     def save_hdf5(self):
         if self.export_hdf5:
@@ -1345,10 +1220,7 @@ class summaryplot:
                 filename = os.path.join(datadir, name)
                 if f:
                     print "fixed hdf5 - not saved (%s)" % (name)
-
                 else:
-                    # needs_updating = xxxx
-                    # if needs_updating:
                     try:
                         if self.ensure_step_table:
                             cell_data_object.ensure_step_table = True
@@ -1357,15 +1229,6 @@ class summaryplot:
                     except:
                         print "Could not save",
                         print filename + ".h5"
-
-                        #            fixed = self.hdf5_fixed_files
-                        #            d.save_test(hdf5file, test_number = test_number))
-
-                        # should do an export for each test in arbindata
-                        # should check if hdf5 file exists and if it needs updating
-                        # should check if they are marked as freezed (database)
-                        # need to implement freeze in database
-                        # need to load freeze from database
 
     def save_figs(self, ):
         for canvas in self.fig.keys():
@@ -1448,17 +1311,6 @@ class summaryplot:
             tl.set_visible(False)
 
     def get_axis(self, axis=None, canvas=None):
-
-        #        self.axes_lib[canvas] = {}
-        #        self.axes_lib[canvas]["_couleff"] = 0
-        #        self.axes_lib[canvas]["_dischargecap"] = 1
-        #        self.axes_lib[canvas]["_cumchargecap"] = 2
-        #        self.axes_lib[canvas]["_endvcharge"] = 3
-        #        self.axes_lib[canvas]["_endvdischarge"] = 4
-        #        self.axes_lib[canvas]["_irchrg"] = 5
-        #        self.axes_lib[canvas]["_irdischrg"] = 6
-
-
         if canvas is None:
             canvas = self.current_canvas
         try:
@@ -1536,9 +1388,7 @@ class summaryplot:
                     xcoord = self.ylabel_coord_left_1
                 ax.set_ylabel(label)
                 ax.yaxis.set_label_coords(xcoord, 0.5)
-                # ax.set_ylabel(label, labelpad=0.5)
-                # x_pos = ax.yaxis.get_label_coords() #does this exist?
-                # ax.get_yaxis().set_label_coords(-0.1,0.5)
+
 
     def scale_ax(self, plot_type, ax):
         self.scale_ax_x(plot_type, ax)
@@ -1579,8 +1429,8 @@ class summaryplot:
                 axis.set_xlim(lim)
             except:
                 "axis probably not found"
-
-                # --------- legend tools ------------------------------------------------------
+                   
+    # --------- legend tools ------------------------------------------------------
 
     def get_legend(self, canvas=1):
         return self.leg[canvas][0]
@@ -1651,19 +1501,11 @@ class summaryplot:
         bb.set_points([[newX0, newY0], [newX1, newY1]])
         leg.set_bbox_to_anchor(bb)
 
-        # Update the plot
-        # plt.show()
 
     @staticmethod
     def make_legend_txt(txt):
         # trying to remove date_stamp
         do_strip = True
-        #    if txt == graphite_reference_label:
-        #        do_strip = False
-        #    if txt == eSi_reference_label:
-        #        do_strip = False
-        #    if txt == milled_reference_label:
-        #        do_strip = False
         if do_strip:
             try:
                 t = txt.split("_")
@@ -1730,11 +1572,6 @@ class summaryplot:
 
                 legend_txt_list.append(txt)
 
-        # plt.legend(flip(handles, 2), flip(labels, 2), loc=9, ncol=2)
-
-        # plt.grid('on')
-        # plt.show()
-
         if max_length is None:
             self.leg[canvas][0] = ax.legend(handles, legend_txt_list, loc=loc, shadow=shadow)
             self.leg[canvas][1] = axes_no
@@ -1770,11 +1607,11 @@ class summaryplot:
 if __name__ == "__main__":
     print "***running",
     print sys.argv[0]
-    #
-    #    buffer_reference_cc.srno  = 267 # thicker electrode (0.79)
-    #    buffer_reference_cc.srno  = 268 # thin electrode (0.54)
-    # 281 - mixed milled rate
-    # 816 - 60%Si CMC buffer
+    import logging
+    from cellpy import log
+    log_level = logging.INFO # set to logging.DEBUG for more output
+    log.setup_logging(default_level=log_level)
+    
     #    plot types:
     #    1 - with end-voltage
     #    2 - without end-voltage
@@ -1785,29 +1622,17 @@ if __name__ == "__main__":
     WARNING: total mass cannot be used if loading from hdf5 (should rewrite arbinreader -> hdf5)
     """
 
-    Refs = [816]
-    Refs = None
     plot_type = 2
     legend_stack = 3
-    a = summaryplot("e004_new_electrolyte", bcol=5, refs=Refs, plot_type=plot_type, predirname="NatBatt",
+    a = summaryplot("bec_exp01", bcol=5, refs=None, plot_type=plot_type, predirname="SiBEC",
                     legend_stack=legend_stack, use_total_mass=False, only_first=False,
                     verbose=True, axis_txt_sub="Si",
-                    dbc=False, export_raw=True, export_hdf5=True, force_raw=False,
+                    dbc=False, export_raw=True, export_hdf5=True, force_raw=True,
                     ensure_step_table=True,  # This ensures that files exported to hdf5 also includes step table
-                    export_cycles=False,
-                    export_dqdv=False,
-                    fetch_onliners=False,
-                    )
+                    export_cycles=True,
+                    export_dqdv=True,
+                    fetch_onliners=True,)
     print "plotting"
-    # plt.show()
-    # a.set_ylims("couleff",[30.0,120])
-    # a.set_ylims("dischargecap",[400,5000])
-    #    a.set_ylims("irdischrg",[])
-
-    # a.ce_axes.set_ylim([97.0, 102.0])
-    # a.endvc_axes.set_ylim([0.0, 1.2])
-    # a.set_xlims(lim=[0,170])
-
     a.showfig()  # showing individual figures (showfig(fignumber)) does not work in scripts
     print "ended figure"
     print "saving..."
