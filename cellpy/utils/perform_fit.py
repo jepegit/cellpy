@@ -45,6 +45,10 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
     Returns:
         Fitted data and plots
     """
+    conf = False
+    if len(tau_guessed) > 1:
+        # Contain more than 1 exponential decay functions. Imply use of Nelder.
+        conf = True
 
     model, time, voltage = fco.define_model(filepath=filefolder,
                                             filename=filename,
@@ -54,12 +58,16 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
                                             ideal_cap=cell_capacity,
                                             mass=cell_mass,
                                             v_start=v_start)
-
-    fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
-                                      contri, c_rate, change_i, cell_capacity,
-                                      cell_mass, v_start)
+    if conf:
+        fit, rc_para = fco.fit_with_conf(model, time, voltage, tau_guessed,
+                                         contri, c_rate, change_i,
+                                         cell_capacity, cell_mass, v_start)
+    else:
+        fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
+                                          contri, c_rate, change_i, cell_capacity,
+                                          cell_mass, v_start)
     fco.plot_params(voltage, fit, rc_para)
-    fco.user_plot_voltage(time, voltage, fit)
+    fco.user_plot_voltage(time, voltage, fit, conf)
     fco.print_params(fit, rc_para)
 
 

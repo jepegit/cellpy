@@ -432,10 +432,6 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         :obj: 'list' of :obj: 'ModelResult', :obj: 'list' of :obj:
         'dict': Results of fitting from each cycle in a list with and
         calculated R and C parameters based on fit from result.
-
-    TODO:
-        - Find out how to add measurement error to a fit
-        - Add measurement error from Arbin BT2000 to the fit.
     """
     # initial_param_up = Parameters()
     # # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
@@ -557,13 +553,182 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     return result, best_rc_para
 
 
-def user_plot_voltage(time, voltage, fit):
+def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
+                  change_i, ideal_cap=3.579, mass=0.86, v_start=None,
+                  v_err=0.1):
+    """Fitting measured data to model with more than one decay exponential func.
+
+    First using the more robust Nelder-Mead Method to calculate the
+    parameters, then use Levenberg-Marquardt using nelder solution as initial.
+    This will help generate a confidential interval that will check if the
+    unceratinty is good or not.
+
+    Args:
+        model (Model): The cell model.
+        time (:obj: 'list' of :obj: 'nd.array'): Element in list equals the time
+        of cycle number - 1.
+        voltage (:obj: 'list' of :obj: 'nd.array'): Element in list equals
+        the voltage of cycle number - 1.
+        guess_tau (:obj: 'dict' of :obj: 'float'): User guessing what the time
+        constant for each rc-circuit might be.
+        contribution (:obj: 'dict' of :obj: 'float'): Assumed contribution
+        from each rc-circuit. Help guessing the initial start voltage value
+        of the rc-circuit.
+        c_rate (:obj: 'list' of :obj: 'float'): The C-rate which the cell was
+        discharged or charged with before cycle = change_i.
+        change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
+        C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
+        ideal_cap (float): Theoretical capacity of the cell.
+        mass (float): Mass of the active material. Given in [mg].
+        v_err (float): Voltage measurement accuracy in %. Default: Arbin BT2000.
+        v_start (float): Cut-off voltage (potential before IR-drop).
+
+    Returns:
+        :obj: 'list' of :obj: 'ModelResult', :obj: 'list' of :obj:
+        'dict': Results of fitting from each cycle in a list with and
+        calculated R and C parameters based on fit from result.
+    """
+    # initial_param_up = Parameters()
+    # # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
+    # initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
+    # initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
+    # # initial_param_up.add('r_sei', value=tau_guessed['sei'], min=0)
+    # initial_param_up.add('c_ct', value=1., vary=False)
+    # initial_param_up.add('c_d', value=1., vary=False)
+    # # initial_param_up.add('c_sei', value=1, vary=False)
+    # initial_param_up.add('ocv', value=v_ocv, min=v_ocv)
+    # initial_param_up.add('v0_ct', value=init_guess['v0_rc']['ct'])
+    # initial_param_up.add('v0_d', value=init_guess['v0_rc']['d'])
+    # # initial_param_up.add('v0_sei', value=init_guess['v0_rc']['sei'])
+
+    # making a class Minimizer that contain fitting methods and attributes
+    # Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
+    #                             fcn_args=(time[0], voltage[0]),)
+    # minimize() perform the minimization on Minimizer's attributes
+    # result = [Mini_initial_up.minimize()]
+    # Creating an lmfit Model object out of function "relax_model".
+    i_start = []
+    step = 0
+    for i in range(len(time)):
+        # Checking if cycle number i is in change_i
+        if i in change_i:
+            step += 1
+        i_start.append((c_rate[step] * ideal_cap * mass) / 1000)
+    if not guess_tau:
+        guess_tau = {'d': 500, 'ct': 50}
+    if not contribution:
+        contribution = {'d': 0.8, 'ct': 0.2}
+
+    if not (isinstance(guess_tau, dict) or isinstance(contribution, dict)):
+        raise TypeError('guess_tau and contribution has to be dictionaries.')
+    if not(isinstance(c_rate, list) or isinstance(change_i, list)):
+        raise TypeError('c_rate and change_i has to be tuples.')
+
+    if len(c_rate) != len(change_i) + 1:
+        raise AttributeError('len(c_rate) must be equal to len(change_i) + 1')
+
+    if sum(contribution.values()) != 1:
+        raise ValueError('The sum of contribution values has to sum up to 1.')
+
+    if len(guess_tau) != len(contribution):
+        raise AttributeError('len(guess_tau) has to be equal to len('
+                             'contribution).')
+    for key_name in guess_tau.keys():
+        if key_name not in contribution.keys():
+            raise AttributeError('guess_tau and contribution need to have '
+                                 'same rc-names. That is, both need to have '
+                                 'the same keyword arguments.')
+
+    result_initial_nelder = model.fit(voltage[0], t=time[0],
+                                      weights=1./(v_err/100), method='Nelder')
+
+    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err/100),
+                               params=result_initial_nelder.params,
+                               method='leastsq')
+    result_initial.conf_interval()
+    result = [result_initial]
+
+    best_para = [result[0].params]
+
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
+                   for key, v0_rc in best_para[0].valuesdict().items()
+                   if key.startswith('v0')}
+
+    best_c_ini = {'c_%s' % key[4:]: tau_rc / best_rc_ini['r_%s' % key[4:]]
+                  for key, tau_rc in best_para[0].valuesdict().items()
+                  if key.startswith('tau')}
+    best_rc_ini.update(best_c_ini)
+    best_rc_para = [best_rc_ini]
+
+    for cycle_i in range(1, len(time)):
+        temp_start_voltage = voltage[cycle_i][0]
+        temp_end_voltage = voltage[cycle_i][-1]
+        # Guessing new values when current has changed.
+        if i_start[cycle_i] is not i_start[cycle_i - 1]:
+            temp_initial_guess = guessing_parameters(v_start,
+                                                     i_start[cycle_i],
+                                                     temp_start_voltage,
+                                                     temp_end_voltage,
+                                                     contribution, guess_tau)
+            for name in guess_tau.keys():
+                model.set_param_hint('tau_%s' % name, value=guess_tau[name])
+                if temp_end_voltage < temp_start_voltage:
+                    # After charge (relax downwards)
+                    model.set_param_hint('v0_%s' % name,
+                                         value=temp_initial_guess[
+                                             'v0_rc'][name], min=0)
+                else:
+                    model.set_param_hint('v0_%s' % name,
+                                         value=temp_initial_guess[
+                                             'v0_rc'][name], max=0)
+            model.set_param_hint('ocv', value=temp_end_voltage)
+            model.make_params()
+            result_cycle_nelder = model.fit(voltage[cycle_i], t=time[cycle_i],
+                                            weights=1. / (v_err / 100),
+                                            method='Nelder')
+            result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i],
+                                            weights=1. / (v_err / 100),
+                                     params=result_cycle_nelder.params,
+                                     method='leastsq')
+        else:
+            result_cycle_nelder = model.fit(voltage[cycle_i],
+                                            params=best_para[cycle_i - 1],
+                                            t=time[cycle_i],
+                                            weights=1. / (v_err / 100),
+                                            method='Nelder')
+            result_cycle = model.fit(voltage[cycle_i],
+                                     params=result_cycle_nelder.params,
+                                     t=time[cycle_i],
+                                     weights=1. / (v_err / 100),
+                                     method='leastsq')
+
+        result_cycle.conf_interval()
+        result.append(result_cycle)
+        copied_parameters = copy.deepcopy(result_cycle.params)
+        best_para.append(copied_parameters)
+        # calculating r and c from fit
+        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_i])
+                         for key, v_rc in
+                         best_para[cycle_i].valuesdict().items()
+                         if key.startswith('v0')}
+        best_c_cycle = {'c_%s' % key[4:]:
+                        tau_rc / best_rc_cycle['r_%s' % key[4:]]
+                        for key, tau_rc in
+                        best_para[cycle_i].valuesdict().items()
+                        if key.startswith('tau')}
+        best_rc_cycle.update(best_c_cycle)
+        best_rc_para.append(best_rc_cycle)
+    return result, best_rc_para
+
+
+def user_plot_voltage(time, voltage, fit, conf=False):
     """User decides which cycles to plot and report.
 
     Args:
         time (:obj: 'list of :obj: 'nd.array'): Points in time for all cycles.
         voltage (:obj: 'list' of :obj: 'nd.array'): Cycles' relaxation voltage.
         fit (:obj: 'list' of :obj: 'ModelResult'): All cycles' best fit results.
+        conf (bool): Report and plot confidential interval.
 
     Returns:
         None: Plotted figures and reports of requested cycle numbers
@@ -604,6 +769,8 @@ def user_plot_voltage(time, voltage, fit):
         for cycle_nr in range(len(fit)):
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
+            if conf:
+                print fit[cycle_nr].ci_report()
             print '------------------------------------------------------------'
     else:
         for cycle_nr in user_cycles_list:
@@ -625,6 +792,8 @@ def user_plot_voltage(time, voltage, fit):
                          sub_fig)
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
+            if conf:
+                print fit[cycle_nr].ci_report()
             print '------------------------------------------------------------'
 
 
