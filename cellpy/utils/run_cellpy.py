@@ -38,18 +38,24 @@ datafolder_out = r'..\outdata'
 filenames = [f for f in os.listdir(datafolder)
              if os.path.isfile(os.path.join(datafolder, f)) and
              str(f).endswith('.res') and 'bec' in f]
-# fitting_cell(r'20160805_test001_45_cc_01.ocv_up.csv', datafolder_out, cell_mass[
-#     'sic006_45'], contri, tau_guessed, v_start_up, c_rate, change_i)
+
 # bec01_07-09 is without additives and bec01_01-03 with additives
 # save_and_plot_cap(datafolder, filenames[0], datafolder_out,
 #                   cell_mass['bec01_01'])
+
 # save_and_plot_cap(datafolder, r'20160805_test001_45_cc_01.res',
 #                   datafolder_out, cell_mass['sic006_45'])
-time, voltage, fit, rc_para = fitting_cell(r'74_data_down.csv', datafolder,
-                                           cell_mass['sic006_45'],
-                                           contri, tau_guessed,
-                                           v_start_down, c_rate,
-                                           change_i, conf=conf)
+# fitting_cell(r'20160805_test001_45_cc_01.ocv_up.csv', datafolder_out, cell_mass[
+#     'sic006_45'], contri, tau_guessed, v_start_up, c_rate, change_i)
+
+# save_and_plot_cap(datafolder, r'20160830_sic006_74_cc_01.res',
+#                   datafolder_out, cell_mass['sic006_74'])
+
+# time, voltage, fit, rc_para = fitting_cell(r'74_data_down.csv', datafolder,
+#                                            cell_mass['sic006_45'],
+#                                            contri, tau_guessed,
+#                                            v_start_down, c_rate,
+#                                            change_i, conf=conf)
 
 # Plot trace of confidential interval... Doesn't really make much sense I think
 pass
@@ -67,9 +73,9 @@ pass
 #     plt.title('Trace from confidential interval after delithiation')
 #     fig = plt.gcf()
 #     fig.canvas.set_window_title('trace_cycle4_after_delith')
-
-fco.plot_params(voltage, fit, rc_para)
-fco.user_plot_voltage(time, voltage, fit, conf)
-fco.print_params(fit, rc_para)
+#
+# fco.plot_params(voltage, fit, rc_para)
+# fco.user_plot_voltage(time, voltage, fit, conf)
+# fco.print_params(fit, rc_para)
 
 plt.show()
