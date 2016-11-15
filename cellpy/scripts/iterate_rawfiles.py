@@ -1,12 +1,11 @@
-import sys
+"""Script for iterating through data sets (raw-files) and extracting C.E."""
 import os
 from cellpy import cellreader, dbreader, prmreader, filefinder, log
 import numpy as np
 import pandas as pd
 import collections
-import matplotlib.pyplot as plt
 import logging
-log_level = logging.DEBUG # set to logging.DEBUG for more output
+log_level = logging.DEBUG  # set to logging.DEBUG for more output
 log.setup_logging(default_level=log_level)
 
 
@@ -76,7 +75,6 @@ def load_and_create_summary(rawfiles, cellpyfile, mass):
     return cell_data.tests[0].dfsummary
 
 
-
 # ------------defining the DataFrames and dicts we need---
 number_of_rows = 50
 cycle = range(1,number_of_rows+1)
@@ -86,8 +84,6 @@ summary_columns = ["srno","date","life","lived_to_end","ccd_1","ccd_5","ccd_10",
 summary_dict = collections.OrderedDict()
 for k in summary_columns:
     summary_dict[k] = []
-
-
 
 # -----------defining folders----------------------------
 prms = prmreader.read()
@@ -103,8 +99,9 @@ db_table = excel_reader.table
 # db_table is a DataFrame where we can use ordinary pandas stuff to select
 # the wanted srnos
 
-# Another option is to use the methods for filtering etc in the dbreader
-srnos = excel_reader.get_all()
+# One option is to use the methods for filtering etc in the dbreader, or get all
+# srnos = excel_reader.get_all()
+srnos = excel_reader.select_batch("highCoul", 12)
 # filter_cols = [6,9]
 # srnos = excel_reader.filter_by_col(filter_cols)
 
@@ -130,21 +127,11 @@ for n in srnos:
             cumcouldiff = dfsummary.loc[dfsummary["Cycle_Index"] < 51, "Cumulated_Coulombic_Difference(mAh/g)"]
             cumcouldiff_df[n] = cumcouldiff
 
-# print couleff_df.head()
-# print cumcouldiff_df.head()
+# Saving data
 summary_df = pd.DataFrame(summary_dict)
 summary_df = summary_df.set_index("srno")
+cumcouldiff_df.to_csv(os.path.join(outdatadir,"cumcouldiff.csv"), sep=";")
+couleff_df.to_csv(os.path.join(outdatadir,"couldeff.csv"), sep=";")
+summary_df.to_csv(os.path.join(outdatadir,"summary.csv"), sep=";")
 
-print
-print 30*"-"
-print summary_df.head()
-print 30*"-"
-print couleff_df.head(10)
-print 30*"-"
-print cumcouldiff_df.head(10)
-
-fig, ax = plt.subplots(2, sharex=True)
-ax[0].plot(couleff_df[614])
-ax[1].plot(cumcouldiff_df[614])
-plt.show()
 
