@@ -70,7 +70,7 @@ def making_csv(filename, outfolder, mass, type_data):
 
 def extract_ocvrlx(d_res, filename, type_data):
     out_data = []
-    fileout = filename + type_data
+    fileout = filename[:-3] + type_data
     for cycle in d_res.get_cycle_numbers():
         if cycle == d_res.get_cycle_numbers()[-1]:
             break
