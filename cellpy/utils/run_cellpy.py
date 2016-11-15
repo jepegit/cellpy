@@ -8,6 +8,7 @@ This script is an example of how to run cellpy by a user.
 """
 
 from perform_fit import fitting_cell, save_and_plot_cap
+import fitting_cell_ocv as fco
 
 import sys, os, csv, itertools
 import matplotlib.pyplot as plt
@@ -28,6 +29,7 @@ cell_mass = {'sic006_45': 0.85, 'sic006_74': 0.86, 'bec01_01': 0.38,
 c_rate = [0.05, 0.1]   # 1/[h]
 change_i = [3]
 cell_capacity = 3.579   # [Ah / g]
+conf = False
 
 # fig_folder = r'C:\Users\torkv\OneDrive - Norwegian University of Life '\
 #              r'Sciences\Documents\NMBU\master\ife\thesis tor\fig\results'
@@ -43,23 +45,31 @@ filenames = [f for f in os.listdir(datafolder)
 #                   cell_mass['bec01_01'])
 # save_and_plot_cap(datafolder, r'20160805_test001_45_cc_01.res',
 #                   datafolder_out, cell_mass['sic006_45'])
-fit, rc_para = fitting_cell(r'74_data_down.csv', datafolder,
-                            cell_mass['sic006_45'],
-                            contri, tau_guessed, v_start_down, c_rate,
-                            change_i, conf=True)
+time, voltage, fit, rc_para = fitting_cell(r'74_data_down.csv', datafolder,
+                                           cell_mass['sic006_45'],
+                                           contri, tau_guessed,
+                                           v_start_down, c_rate,
+                                           change_i, conf=conf)
 
-# Plot trace of confidential interval
-for cycle_fit in fit[4:5]:
-        trace = cycle_fit.ci_out[1]
-        x1, y1, prob1 = trace['v0_ct']['v0_ct'], trace['v0_ct']['tau_ct'], \
-                        trace['v0_ct']['prob']
-        x2, y2, prob2 = trace['tau_ct']['tau_ct'], trace['tau_ct']['v0_ct'], \
-                        trace['tau_ct']['prob']
-        plt.scatter(x1, y1, prob1)
-        plt.scatter(x2, y2, prob2)
-        plt.xlabel('v0_ct')
-        plt.ylabel('tau_ct')
-        plt.colorbar()
+# Plot trace of confidential interval... Doesn't really make much sense I think
+pass
+# for cycle_fit in fit[4:5]:
+#     plt.figure()
+#     trace = cycle_fit.ci_out[1]
+#     x1, y1, prob1 = trace['v0_ct']['v0_ct'], trace['v0_ct']['tau_ct'], \
+#                     trace['v0_ct']['prob']
+#     x2, y2, prob2 = trace['tau_ct']['tau_ct'], trace['tau_ct']['v0_ct'], \
+#                     trace['tau_ct']['prob']
+#     plt.scatter(x1, y1, prob1)
+#     plt.scatter(x2, y2, prob2)
+#     plt.xlabel('v0_ct')
+#     plt.ylabel('tau_ct')
+#     plt.title('Trace from confidential interval after delithiation')
+#     fig = plt.gcf()
+#     fig.canvas.set_window_title('trace_cycle4_after_delith')
 
+fco.plot_params(voltage, fit, rc_para)
+fco.user_plot_voltage(time, voltage, fit, conf)
+# fco.print_params(fit, rc_para)
 
-# plt.show()
+plt.show()

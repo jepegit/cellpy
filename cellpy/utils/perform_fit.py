@@ -65,10 +65,8 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
         fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
                                           contri, c_rate, change_i, cell_capacity,
                                           cell_mass, v_start)
-    fco.plot_params(voltage, fit, rc_para)
-    fco.user_plot_voltage(time, voltage, fit, conf)
-    fco.print_params(fit, rc_para)
-    return fit, rc_para
+
+    return time, voltage, fit, rc_para
 
 def save_and_plot_cap(filepath, filename, outfolder, mass_cell,
                       type_data='ocv_up'):
