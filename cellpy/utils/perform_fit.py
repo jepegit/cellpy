@@ -45,10 +45,9 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
     Returns:
         Fitted data and plots
     """
-    conf = False
-    if len(tau_guessed) > 1:
-        # Contain more than 1 exponential decay functions. Imply use of Nelder.
-        conf = True
+
+    # Contain more than 1 exponential decay functions. Imply use of Nelder.
+    conf = True if len(tau_guessed) > 1 else False
 
     model, time, voltage = fco.define_model(filepath=filefolder,
                                             filename=filename,
@@ -71,7 +70,8 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
     fco.print_params(fit, rc_para)
 
 
-def save_and_plot_cap(filepath, filename, outfolder, mass_cell):
+def save_and_plot_cap(filepath, filename, outfolder, mass_cell,
+                      type_data='ocv_up'):
     """Making capacity vs. voltage and capacity vs. cycle data.
 
     Args:
@@ -85,7 +85,7 @@ def save_and_plot_cap(filepath, filename, outfolder, mass_cell):
     """
     # imported cycle data from arbin and saved in "outdata" folder as .csv
     data = os.path.join(filepath, filename)
-    making_csv(data, outfolder, mass_cell)
+    making_csv(data, outfolder, mass_cell, type_data)
 
     normal = filename[:-4] + '_normal.csv'
     stats = filename[:-4] + '_stats.csv'

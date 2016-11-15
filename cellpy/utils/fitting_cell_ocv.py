@@ -48,7 +48,7 @@ https://github.com/lmfit/lmfit-py
 http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 """
 
-from lmfit import Parameters, report_fit, Model
+from lmfit import Parameters, report_fit, Model, report_ci
 from cell_ocv import *
 
 # import StringIO
@@ -645,9 +645,8 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
     result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err/100),
                                params=result_initial_nelder.params,
                                method='leastsq')
-    result_initial.conf_interval()
+    result_initial.conf_interval(trace=True)
     result = [result_initial]
-
     best_para = [result[0].params]
 
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
@@ -702,7 +701,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                                      weights=1. / (v_err / 100),
                                      method='leastsq')
 
-        result_cycle.conf_interval()
+        result_cycle.conf_interval(trace=True)
         result.append(result_cycle)
         copied_parameters = copy.deepcopy(result_cycle.params)
         best_para.append(copied_parameters)
@@ -721,14 +720,14 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
     return result, best_rc_para
 
 
-def user_plot_voltage(time, voltage, fit, conf=False):
+def user_plot_voltage(time, voltage, fit, conf):
     """User decides which cycles to plot and report.
 
     Args:
         time (:obj: 'list of :obj: 'nd.array'): Points in time for all cycles.
         voltage (:obj: 'list' of :obj: 'nd.array'): Cycles' relaxation voltage.
         fit (:obj: 'list' of :obj: 'ModelResult'): All cycles' best fit results.
-        conf (bool): Report and plot confidential interval.
+        conf (bool): conf_int calculated if True --> amount of rc-ciruits > 1.
 
     Returns:
         None: Plotted figures and reports of requested cycle numbers
@@ -769,8 +768,8 @@ def user_plot_voltage(time, voltage, fit, conf=False):
         for cycle_nr in range(len(fit)):
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
-            if conf:
-                print fit[cycle_nr].ci_report()
+            if conf > 1:
+                report_ci(fit[cycle_nr].ci_out[0])
             print '------------------------------------------------------------'
     else:
         for cycle_nr in user_cycles_list:
@@ -790,10 +789,20 @@ def user_plot_voltage(time, voltage, fit, conf=False):
                          ((cycle_nr + 1), rlx_txt), size=25)
             plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
                          sub_fig)
+
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
             if conf:
-                print fit[cycle_nr].ci_report()
+                plt.figure()
+                trace = fit[cycle_nr].ci_out[1]
+                ocv_taud, tau_d_ocv, prob_ocv = trace['ocv']['ocv'], \
+                                                trace['ocv']['tau_d'],\
+                                                trace['ocv']['prob']
+                plt.scatter(ocv_taud, tau_d_ocv, c=prob_ocv, s=30)
+                plt.xlabel('ocv')
+                plt.ylabel('tau d')
+
+                report_ci(fit[cycle_nr].ci_out[0])
             print '------------------------------------------------------------'
 
 
