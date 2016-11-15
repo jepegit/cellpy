@@ -8,12 +8,12 @@ TODO:
     -Make nicer volt_cap plots with proper legends
 """
 
-import fitting_cell_ocv as fco
 # from cellpy.readers import cellreader
 from scripts.reading_cycle_data import making_csv
 
 # import sys, os, csv, itertools
 # import numpy as np
+import fitting_cell_ocv as fco
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -23,7 +23,7 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
-                 v_start, c_rate, change_i, cell_capacity=3.579):
+                 v_start, c_rate, change_i, cell_capacity=3.579, conf=False):
     """Fitting measured data from cell with cellpy.
 
     Args:
@@ -41,13 +41,13 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
         change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
         C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
         cell_capacity (float): Theoretical specific capacity of the cell [Ah/g].
+        conf (bool): Calculate confidential interval if True. Default, Faulse.
 
     Returns:
         Fitted data and plots
     """
 
     # Contain more than 1 exponential decay functions. Imply use of Nelder.
-    conf = True if len(tau_guessed) > 1 else False
 
     model, time, voltage = fco.define_model(filepath=filefolder,
                                             filename=filename,
@@ -68,7 +68,7 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
     fco.plot_params(voltage, fit, rc_para)
     fco.user_plot_voltage(time, voltage, fit, conf)
     fco.print_params(fit, rc_para)
-
+    return fit, rc_para
 
 def save_and_plot_cap(filepath, filename, outfolder, mass_cell,
                       type_data='ocv_up'):

@@ -36,11 +36,30 @@ datafolder_out = r'..\outdata'
 filenames = [f for f in os.listdir(datafolder)
              if os.path.isfile(os.path.join(datafolder, f)) and
              str(f).endswith('.res') and 'bec' in f]
+# fitting_cell(r'20160805_test001_45_cc_01.ocv_up.csv', datafolder_out, cell_mass[
+#     'sic006_45'], contri, tau_guessed, v_start_up, c_rate, change_i)
 # bec01_07-09 is without additives and bec01_01-03 with additives
 # save_and_plot_cap(datafolder, filenames[0], datafolder_out,
 #                   cell_mass['bec01_01'])
-save_and_plot_cap(datafolder, r'20160805_test001_45_cc_01.res',
-                  datafolder_out, cell_mass['sic006_45'])
-# fitting_cell(r'74_data_down.csv', datafolder, cell_mass['sic006_45'], contri,
-#              tau_guessed, v_start_down, c_rate, change_i)
+# save_and_plot_cap(datafolder, r'20160805_test001_45_cc_01.res',
+#                   datafolder_out, cell_mass['sic006_45'])
+fit, rc_para = fitting_cell(r'74_data_down.csv', datafolder,
+                            cell_mass['sic006_45'],
+                            contri, tau_guessed, v_start_down, c_rate,
+                            change_i, conf=True)
+
+# Plot trace of confidential interval
+for cycle_fit in fit[4:5]:
+        trace = cycle_fit.ci_out[1]
+        x1, y1, prob1 = trace['v0_ct']['v0_ct'], trace['v0_ct']['tau_ct'], \
+                        trace['v0_ct']['prob']
+        x2, y2, prob2 = trace['tau_ct']['tau_ct'], trace['tau_ct']['v0_ct'], \
+                        trace['tau_ct']['prob']
+        plt.scatter(x1, y1, prob1)
+        plt.scatter(x2, y2, prob2)
+        plt.xlabel('v0_ct')
+        plt.ylabel('tau_ct')
+        plt.colorbar()
+
+
 # plt.show()

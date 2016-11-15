@@ -12,6 +12,7 @@ import numpy as np
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
+
 def making_csv(filename, outfolder, mass, type_data):
     try:
         os.chdir(outfolder)
@@ -27,7 +28,10 @@ def making_csv(filename, outfolder, mass, type_data):
     d.set_mass(mass)
     d.make_summary()
     d.create_step_table()
+
+    # Making ocv
     extract_ocvrlx(d, filename=filename, type_data=type_data)
+
     print "\nexporting raw-data and summary"
     d.exportcsv(outfolder)
 
@@ -78,10 +82,12 @@ def extract_ocvrlx(d_res, filename, type_data):
             try:
                 if type_data == 'ocvrlx_up':
                     print "getting ocvrlx up data for cycle %i" % (cycle)
-                    t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
+                    t, v = d_res.get_ocv(ocv_type='ocvrlx_up',
+                                         cycle_number=cycle)
                 else:
                     print "getting ocvrlx down data for cycle %i" % (cycle)
-                    t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
+                    t, v = d_res.get_ocv(ocv_type='ocvrlx_down',
+                                         cycle_number=cycle)
                 plt.plot(t,v)
                 t = t.tolist()
                 v = v.tolist()

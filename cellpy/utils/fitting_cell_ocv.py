@@ -793,14 +793,13 @@ def user_plot_voltage(time, voltage, fit, conf):
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
             if conf:
-                plt.figure()
-                trace = fit[cycle_nr].ci_out[1]
-                ocv_taud, tau_d_ocv, prob_ocv = trace['ocv']['ocv'], \
-                                                trace['ocv']['tau_d'],\
-                                                trace['ocv']['prob']
-                plt.scatter(ocv_taud, tau_d_ocv, c=prob_ocv, s=30)
-                plt.xlabel('ocv')
-                plt.ylabel('tau d')
+                #     trace = fit[cycle_nr].ci_out[1]
+                # ocv_taud, tau_d_ocv, prob_ocv = trace['ocv']['ocv'], \
+                #                                 trace['ocv']['tau_d'],\
+                #                                 trace['ocv']['prob']
+                # plt.scatter(ocv_taud, tau_d_ocv, c=prob_ocv, s=30)
+                # plt.xlabel('ocv')
+                # plt.ylabel('tau d')
 
                 report_ci(fit[cycle_nr].ci_out[0])
             print '------------------------------------------------------------'
