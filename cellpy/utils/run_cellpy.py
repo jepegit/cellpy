@@ -70,6 +70,6 @@ pass
 
 fco.plot_params(voltage, fit, rc_para)
 fco.user_plot_voltage(time, voltage, fit, conf)
-# fco.print_params(fit, rc_para)
+fco.print_params(fit, rc_para)
 
 plt.show()
