@@ -9,10 +9,11 @@ import sys, os, csv, itertools
 import matplotlib.pyplot as plt
 import numpy as np
 
-__author__ = 'Tor Kristian Vara', 'Jan Petter Mæhlen'
+__author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
-def making_csv(filename, outfolder, mass):
+
+def making_csv(filename, outfolder, mass, type_data):
     try:
         os.chdir(outfolder)
         print "Output will be sent to folder:"
@@ -27,6 +28,10 @@ def making_csv(filename, outfolder, mass):
     d.set_mass(mass)
     d.make_summary()
     d.create_step_table()
+
+    # Making ocv
+    extract_ocvrlx(d, filename=filename, type_data=type_data)
+
     print "\nexporting raw-data and summary"
     d.exportcsv(outfolder)
 
@@ -67,39 +72,30 @@ def making_csv(filename, outfolder, mass):
     print "bye!"
 
 
-def extract_ocvrlx(type_data):
-    filename = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
-               r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-               r"\testdata\20160830_sic006_74_cc_01.res"
-    mass = 0.86
-    fileout = r"C:\Users\torkv\OneDrive - Norwegian University of Life " \
-              r"Sciences\Documents\NMBU\master\ife\python\cellpy\cellpy" \
-              r"\testdata\20160830_sic006_74_cc_01_"+type_data
-    d_res = cellreader.cellpydata()
-    d_res.loadres(filename)
-    d_res.set_mass(mass)
-    d_res.create_step_table()
-    d_res.print_step_table()
+def extract_ocvrlx(d_res, filename, type_data):
     out_data = []
+    fileout = filename[:-3] + type_data
     for cycle in d_res.get_cycle_numbers():
-        if cycle == 48:
+        if cycle == d_res.get_cycle_numbers()[-1]:
             break
         else:
             try:
                 if type_data == 'ocvrlx_up':
                     print "getting ocvrlx up data for cycle %i" % (cycle)
-                    t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
+                    t, v = d_res.get_ocv(ocv_type='ocvrlx_up',
+                                         cycle_number=cycle)
                 else:
                     print "getting ocvrlx down data for cycle %i" % (cycle)
-                    t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
+                    t, v = d_res.get_ocv(ocv_type='ocvrlx_down',
+                                         cycle_number=cycle)
                 plt.plot(t,v)
                 t = t.tolist()
                 v = v.tolist()
 
                 header_x = "time (s) cycle_no %i" % cycle
                 header_y = "voltage (V) cycle_no %i" % cycle
-                t.insert(0,header_x)
-                v.insert(0,header_y)
+                t.insert(0, header_x)
+                v.insert(0, header_y)
                 out_data.append(t)
                 out_data.append(v)
 
@@ -109,7 +105,7 @@ def extract_ocvrlx(type_data):
 
     # Saving cycles in one .csv file (x,y,x,y,x,y...)
     endstring = ".csv"
-    outfile = fileout+endstring
+    outfile = fileout + endstring
 
     delimiter = ";"
     print "saving the file with delimiter '%s' " % (delimiter)

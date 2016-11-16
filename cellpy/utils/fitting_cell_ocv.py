@@ -48,7 +48,7 @@ https://github.com/lmfit/lmfit-py
 http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 """
 
-from lmfit import Parameters, report_fit, Model
+from lmfit import Parameters, report_fit, Model, report_ci
 from cell_ocv import *
 
 # import StringIO
@@ -174,12 +174,24 @@ def plot_voltage(t, v, best, subfigure):
     result_figure.plot(t, best.best_fit, '-r', label='Best fit')
     result_figure.plot(t, ocv, '--c', label='ocv')
 
-    residual_figure.set_ylabel('Residual (V)', size=15)
+    residual_figure.set_ylabel('Residual (V)', size=20)
     residual_figure.legend(loc='best', prop={'size': 15})
+
+    for tick_resi in residual_figure.xaxis.get_major_ticks():
+        tick_resi.label.set_fontsize(16)
+    for tick_resi in residual_figure.yaxis.get_major_ticks():
+        tick_resi.label.set_fontsize(16)
     residual_figure.grid()
-    result_figure.set_xlabel('Time (s)', size=15)
-    result_figure.set_ylabel('Voltage (V)', size=15)
+
+    result_figure.set_xlabel('Time (s)', size=20)
+    result_figure.set_ylabel('Voltage (V)', size=20)
     result_figure.legend(loc='best', prop={'size': 15})
+
+    for tick_res in result_figure.xaxis.get_major_ticks():
+        tick_res.label.set_fontsize(16)
+    for tick_res in result_figure.yaxis.get_major_ticks():
+        tick_res.label.set_fontsize(16)
+
     result_figure.grid()
 
     # Suppose to add a text with the value of the parameters for the fit.
@@ -207,9 +219,10 @@ def plot_rc(t, best):
     for rc_name, rc in rc_circuits.items():
         plt.plot(t, rc, label='%s rc-circuit' % rc_name)
     plt.legend(loc='best')
-    plt.xlabel('Time (s)', size=15)
-    plt.ylabel('Voltage(V)', size=15)
+    plt.xlabel('Time (s)', size=20)
+    plt.ylabel('Voltage(V)', size=20)
     plt.grid()
+
 
 # def print_params(ini, fit):
 #
@@ -432,10 +445,6 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         :obj: 'list' of :obj: 'ModelResult', :obj: 'list' of :obj:
         'dict': Results of fitting from each cycle in a list with and
         calculated R and C parameters based on fit from result.
-
-    TODO:
-        - Find out how to add measurement error to a fit
-        - Add measurement error from Arbin BT2000 to the fit.
     """
     # initial_param_up = Parameters()
     # # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
@@ -557,20 +566,188 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     return result, best_rc_para
 
 
-def user_plot_voltage(time, voltage, fit):
+def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
+                  change_i, ideal_cap=3.579, mass=0.86, v_start=None,
+                  v_err=0.1):
+    """Fitting measured data to model with more than one decay exponential func.
+
+    First using the more robust Nelder-Mead Method to calculate the
+    parameters, then use Levenberg-Marquardt using nelder solution as initial.
+    This will help generate a confidential interval that will check if the
+    unceratinty is good or not.
+
+    Args:
+        model (Model): The cell model.
+        time (:obj: 'list' of :obj: 'nd.array'): Element in list equals the time
+        of cycle number - 1.
+        voltage (:obj: 'list' of :obj: 'nd.array'): Element in list equals
+        the voltage of cycle number - 1.
+        guess_tau (:obj: 'dict' of :obj: 'float'): User guessing what the time
+        constant for each rc-circuit might be.
+        contribution (:obj: 'dict' of :obj: 'float'): Assumed contribution
+        from each rc-circuit. Help guessing the initial start voltage value
+        of the rc-circuit.
+        c_rate (:obj: 'list' of :obj: 'float'): The C-rate which the cell was
+        discharged or charged with before cycle = change_i.
+        change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
+        C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
+        ideal_cap (float): Theoretical capacity of the cell.
+        mass (float): Mass of the active material. Given in [mg].
+        v_err (float): Voltage measurement accuracy in %. Default: Arbin BT2000.
+        v_start (float): Cut-off voltage (potential before IR-drop).
+
+    Returns:
+        :obj: 'list' of :obj: 'ModelResult', :obj: 'list' of :obj:
+        'dict': Results of fitting from each cycle in a list with and
+        calculated R and C parameters based on fit from result.
+    """
+    # initial_param_up = Parameters()
+    # # r_ct and r_d are actually tau_ct and tau_d when fitted because c = 1 (fix)
+    # initial_param_up.add('r_ct', value=tau_guessed['ct'], min=0)
+    # initial_param_up.add('r_d', value=tau_guessed['d'], min=0)
+    # # initial_param_up.add('r_sei', value=tau_guessed['sei'], min=0)
+    # initial_param_up.add('c_ct', value=1., vary=False)
+    # initial_param_up.add('c_d', value=1., vary=False)
+    # # initial_param_up.add('c_sei', value=1, vary=False)
+    # initial_param_up.add('ocv', value=v_ocv, min=v_ocv)
+    # initial_param_up.add('v0_ct', value=init_guess['v0_rc']['ct'])
+    # initial_param_up.add('v0_d', value=init_guess['v0_rc']['d'])
+    # # initial_param_up.add('v0_sei', value=init_guess['v0_rc']['sei'])
+
+    # making a class Minimizer that contain fitting methods and attributes
+    # Mini_initial_up = Minimizer(ocv_user_adjust, params=initial_param_up,
+    #                             fcn_args=(time[0], voltage[0]),)
+    # minimize() perform the minimization on Minimizer's attributes
+    # result = [Mini_initial_up.minimize()]
+    # Creating an lmfit Model object out of function "relax_model".
+    i_start = []
+    step = 0
+    for i in range(len(time)):
+        # Checking if cycle number i is in change_i
+        if i in change_i:
+            step += 1
+        i_start.append((c_rate[step] * ideal_cap * mass) / 1000)
+    if not guess_tau:
+        guess_tau = {'d': 500, 'ct': 50}
+    if not contribution:
+        contribution = {'d': 0.8, 'ct': 0.2}
+
+    if not (isinstance(guess_tau, dict) or isinstance(contribution, dict)):
+        raise TypeError('guess_tau and contribution has to be dictionaries.')
+    if not(isinstance(c_rate, list) or isinstance(change_i, list)):
+        raise TypeError('c_rate and change_i has to be tuples.')
+
+    if len(c_rate) != len(change_i) + 1:
+        raise AttributeError('len(c_rate) must be equal to len(change_i) + 1')
+
+    if sum(contribution.values()) != 1:
+        raise ValueError('The sum of contribution values has to sum up to 1.')
+
+    if len(guess_tau) != len(contribution):
+        raise AttributeError('len(guess_tau) has to be equal to len('
+                             'contribution).')
+    for key_name in guess_tau.keys():
+        if key_name not in contribution.keys():
+            raise AttributeError('guess_tau and contribution need to have '
+                                 'same rc-names. That is, both need to have '
+                                 'the same keyword arguments.')
+
+    result_initial_nelder = model.fit(voltage[0], t=time[0],
+                                      weights=1./(v_err/100), method='Nelder')
+
+    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err/100),
+                               params=result_initial_nelder.params,
+                               method='leastsq')
+    result_initial.conf_interval(trace=True)
+    result = [result_initial]
+    best_para = [result[0].params]
+
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
+                   for key, v0_rc in best_para[0].valuesdict().items()
+                   if key.startswith('v0')}
+
+    best_c_ini = {'c_%s' % key[4:]: tau_rc / best_rc_ini['r_%s' % key[4:]]
+                  for key, tau_rc in best_para[0].valuesdict().items()
+                  if key.startswith('tau')}
+    best_rc_ini.update(best_c_ini)
+    best_rc_para = [best_rc_ini]
+
+    for cycle_i in range(1, len(time)):
+        temp_start_voltage = voltage[cycle_i][0]
+        temp_end_voltage = voltage[cycle_i][-1]
+        # Guessing new values when current has changed.
+        if i_start[cycle_i] is not i_start[cycle_i - 1]:
+            temp_initial_guess = guessing_parameters(v_start,
+                                                     i_start[cycle_i],
+                                                     temp_start_voltage,
+                                                     temp_end_voltage,
+                                                     contribution, guess_tau)
+            for name in guess_tau.keys():
+                model.set_param_hint('tau_%s' % name, value=guess_tau[name])
+                if temp_end_voltage < temp_start_voltage:
+                    # After charge (relax downwards)
+                    model.set_param_hint('v0_%s' % name,
+                                         value=temp_initial_guess[
+                                             'v0_rc'][name], min=0)
+                else:
+                    model.set_param_hint('v0_%s' % name,
+                                         value=temp_initial_guess[
+                                             'v0_rc'][name], max=0)
+            model.set_param_hint('ocv', value=temp_end_voltage)
+            model.make_params()
+            result_cycle_nelder = model.fit(voltage[cycle_i], t=time[cycle_i],
+                                            weights=1. / (v_err / 100),
+                                            method='Nelder')
+            result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i],
+                                            weights=1. / (v_err / 100),
+                                     params=result_cycle_nelder.params,
+                                     method='leastsq')
+        else:
+            result_cycle_nelder = model.fit(voltage[cycle_i],
+                                            params=best_para[cycle_i - 1],
+                                            t=time[cycle_i],
+                                            weights=1. / (v_err / 100),
+                                            method='Nelder')
+            result_cycle = model.fit(voltage[cycle_i],
+                                     params=result_cycle_nelder.params,
+                                     t=time[cycle_i],
+                                     weights=1. / (v_err / 100),
+                                     method='leastsq')
+
+        result_cycle.conf_interval(trace=True)
+        result.append(result_cycle)
+        copied_parameters = copy.deepcopy(result_cycle.params)
+        best_para.append(copied_parameters)
+        # calculating r and c from fit
+        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_i])
+                         for key, v_rc in
+                         best_para[cycle_i].valuesdict().items()
+                         if key.startswith('v0')}
+        best_c_cycle = {'c_%s' % key[4:]:
+                        tau_rc / best_rc_cycle['r_%s' % key[4:]]
+                        for key, tau_rc in
+                        best_para[cycle_i].valuesdict().items()
+                        if key.startswith('tau')}
+        best_rc_cycle.update(best_c_cycle)
+        best_rc_para.append(best_rc_cycle)
+    return result, best_rc_para
+
+
+def user_plot_voltage(time, voltage, fit, conf):
     """User decides which cycles to plot and report.
 
     Args:
         time (:obj: 'list of :obj: 'nd.array'): Points in time for all cycles.
         voltage (:obj: 'list' of :obj: 'nd.array'): Cycles' relaxation voltage.
         fit (:obj: 'list' of :obj: 'ModelResult'): All cycles' best fit results.
+        conf (bool): conf_int calculated if True --> amount of rc-ciruits > 1.
 
     Returns:
         None: Plotted figures and reports of requested cycle numbers
     """
     question = "Write the cycles you want to plot separated with space." \
                "If you don't want to plot anything else than the fit " \
-               "reports, press enter." \
+               "reports, press enter. " \
                "Write 'a' for all plots: -->"
     user_cycles = raw_input(question)
     if not user_cycles:
@@ -604,13 +781,23 @@ def user_plot_voltage(time, voltage, fit):
         for cycle_nr in range(len(fit)):
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
+            if conf > 1:
+                report_ci(fit[cycle_nr].ci_out[0])
             print '------------------------------------------------------------'
     else:
         for cycle_nr in user_cycles_list:
             # fig_fit = fit[cycle_nr].plot()
-            plt.figure()
-            plt.suptitle('RC-circuits plotted with fitted parameters of cycle '
-                         '%i after %s' % ((cycle_nr + 1), rlx_txt), size=25)
+            rc_fig = plt.figure()
+            rc_fig.canvas.set_window_title('cycle_%i_sic006_74_delith_rc'
+                                           % (cycle_nr + 1))
+            rc_fig.suptitle('RC-circuits plotted with fitted'
+                            'parameters of cycle%i after %s'
+                            % ((cycle_nr + 1), rlx_txt), size=25)
+            for tick_rc in plt.gca().xaxis.get_major_ticks():
+                tick_rc.label.set_fontsize(16)
+            for tick_rc in plt.gca().yaxis.get_major_ticks():
+                tick_rc.label.set_fontsize(16)
+
             plot_rc(time[cycle_nr], fit[cycle_nr])
 
             plt.figure()
@@ -623,8 +810,22 @@ def user_plot_voltage(time, voltage, fit):
                          ((cycle_nr + 1), rlx_txt), size=25)
             plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
                          sub_fig)
+
+            plt.gcf().canvas.set_window_title('cycle_%i_sic006_74_delith'
+                                              % (cycle_nr + 1))
+
             print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
             report_fit(fit[cycle_nr])
+            if conf:
+                #     trace = fit[cycle_nr].ci_out[1]
+                # ocv_taud, tau_d_ocv, prob_ocv = trace['ocv']['ocv'], \
+                #                                 trace['ocv']['tau_d'],\
+                #                                 trace['ocv']['prob']
+                # plt.scatter(ocv_taud, tau_d_ocv, c=prob_ocv, s=30)
+                # plt.xlabel('ocv')
+                # plt.ylabel('tau d')
+
+                report_ci(fit[cycle_nr].ci_out[0])
             print '------------------------------------------------------------'
 
 
@@ -668,10 +869,11 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
         fractional_err = {par_name: (error_para[par_name] /
                                      cycle_fit.params[par_name])
                           for par_name in names}
-        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err/100
+        r_err = {key: np.sqrt(
+            (fractional_err['v0_%s' % key[2:]]) ** 2 + (i_err / 100) ** 2)
                  for key in rc_params[i].keys() if key.startswith('r_')}
-        c_err = {key: fractional_err[
-                          'tau_%s' % key[2:]] + r_err['r_%s' % key[2:]]
+        c_err = {key: np.sqrt((fractional_err['tau_%s' % key[2:]]) ** 2 + (
+                r_err['r_%s' % key[2:]]) ** 2)
                  for key in rc_params[i].keys() if key.startswith('c_')}
 
         # Standard deviation error calculated from fractional error
@@ -703,8 +905,10 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
         gs.update(left=0.05, right=0.9, wspace=0.4, hspace=0.7)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
-
     plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
+
+    plt.gcf().canvas.set_window_title('param_all_cycles_sic006_74_delith')
+
     for name_i, name in enumerate(best_para[0].keys()):
         para_array = np.array([best_para[step][name]
                                for step in range(len(fit))])
@@ -712,16 +916,21 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
                                for cycle_step in range(len(fit))])
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
                                      fmt='or')
-        subs_params[name_i].legend([name], loc='best')
-        subs_params[name_i].set_xlabel('Cycles')
+        subs_params[name_i].legend([name], loc='best', prop={'size': 20})
+        subs_params[name_i].set_xlabel('Cycles', size=18)
+        for tick_para in subs_params[name_i].xaxis.get_major_ticks():
+            tick_para.label.set_fontsize(16)
+        for tick_para in subs_params[name_i].yaxis.get_major_ticks():
+            tick_para.label.set_fontsize(16)
+
         if 'tau' in name:
-            subs_params[name_i].set_ylabel('Time-constant (RC)[s]')
+            subs_params[name_i].set_ylabel('Time-constant (RC)[s]', size=18)
         elif 'r_' in name:
-            subs_params[name_i].set_ylabel('Resistance [Ohm]')
+            subs_params[name_i].set_ylabel('Resistance [Ohm]', size=18)
         elif 'c_' in name:
-            subs_params[name_i].set_ylabel('Capacitance [F]')
+            subs_params[name_i].set_ylabel('Capacitance [F]', size=18)
         else:
-            subs_params[name_i].set_ylabel('Voltage [V]')
+            subs_params[name_i].set_ylabel('Voltage [V]', size=18)
 
 
 def print_params(fit, rc_params, i_err=0.1):
@@ -739,10 +948,12 @@ def print_params(fit, rc_params, i_err=0.1):
         fractional_err = {par_name: 100 * (error_para[par_name] /
                                            cycle_fit.params[par_name])
                           for par_name in names}
-        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
+
+        r_err = {key:np.sqrt(
+            (fractional_err['v0_%s' % key[2:]]) ** 2 + (i_err) ** 2)
                  for key in rc_params[i].keys() if key.startswith('r_')}
-        c_err = {key: fractional_err[
-                          'tau_%s' % key[2:]] + r_err['r_%s' % key[2:]]
+        c_err = {key: np.sqrt((fractional_err['tau_%s' % key[2:]]) ** 2 + (
+            r_err['r_%s' % key[2:]]) ** 2)
                  for key in rc_params[i].keys() if key.startswith('c_')}
         fractional_err.update(r_err)
         fractional_err.update(c_err)
@@ -768,17 +979,17 @@ def print_params(fit, rc_params, i_err=0.1):
             else:
                 unit_text = 'V'
             if par_val > 10:
-                print "Best parameter: \t %s \t %12.0f %s \t +/- %6.0f %s \t" \
+                print "Best parameter: \t %s \t %10.0f %s \t +/- %6.0f %s \t" \
                       "(%3.1f%%)" % (key_name, par_val, unit_text,
                                      error_para[key_name], unit_text,
                                      fractional_err[key_name])
             elif 10 > par_val > 1:
-                print "Best parameter: \t %s \t %12.1f %s  \t +/- %6.1e %s \t " \
+                print "Best parameter: \t %s \t %10.1f %s  \t +/- %6.1e %s \t " \
                       "(%3.1f%%)" % (key_name, par_val, unit_text,
                                      error_para[key_name], unit_text,
                                      fractional_err[key_name])
             else:
-                print "Best parameter: \t %s \t %12.3f %s \t +/- %6.2e %s \t" \
+                print "Best parameter: \t %s \t %10.3f %s \t +/- %6.2e %s \t" \
                       "(%3.1f%%)" % (key_name, par_val, unit_text,
                                      error_para[key_name], unit_text,
                                      fractional_err[key_name])

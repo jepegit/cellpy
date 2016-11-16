@@ -8,12 +8,12 @@ TODO:
     -Make nicer volt_cap plots with proper legends
 """
 
-import fitting_cell_ocv as fco
 # from cellpy.readers import cellreader
 from scripts.reading_cycle_data import making_csv
 
 # import sys, os, csv, itertools
 # import numpy as np
+import fitting_cell_ocv as fco
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -23,7 +23,7 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
-                 v_start, c_rate, change_i, cell_capacity=3.579):
+                 v_start, c_rate, change_i, cell_capacity=3.579, conf=False):
     """Fitting measured data from cell with cellpy.
 
     Args:
@@ -41,10 +41,13 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
         change_i (:obj: 'list' of :obj: 'int'): The cycle number where the
         C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
         cell_capacity (float): Theoretical specific capacity of the cell [Ah/g].
+        conf (bool): Calculate confidential interval if True. Default, Faulse.
 
     Returns:
         Fitted data and plots
     """
+
+    # Contain more than 1 exponential decay functions. Imply use of Nelder.
 
     model, time, voltage = fco.define_model(filepath=filefolder,
                                             filename=filename,
@@ -54,16 +57,19 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
                                             ideal_cap=cell_capacity,
                                             mass=cell_mass,
                                             v_start=v_start)
+    if conf:
+        fit, rc_para = fco.fit_with_conf(model, time, voltage, tau_guessed,
+                                         contri, c_rate, change_i,
+                                         cell_capacity, cell_mass, v_start)
+    else:
+        fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
+                                          contri, c_rate, change_i, cell_capacity,
+                                          cell_mass, v_start)
 
-    fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
-                                      contri, c_rate, change_i, cell_capacity,
-                                      cell_mass, v_start)
-    fco.plot_params(voltage, fit, rc_para)
-    fco.user_plot_voltage(time, voltage, fit)
-    fco.print_params(fit, rc_para)
+    return time, voltage, fit, rc_para
 
-
-def save_and_plot_cap(filepath, filename, outfolder, mass_cell):
+def save_and_plot_cap(filepath, filename, outfolder, mass_cell,
+                      type_data='ocv_up'):
     """Making capacity vs. voltage and capacity vs. cycle data.
 
     Args:
@@ -77,7 +83,7 @@ def save_and_plot_cap(filepath, filename, outfolder, mass_cell):
     """
     # imported cycle data from arbin and saved in "outdata" folder as .csv
     data = os.path.join(filepath, filename)
-    making_csv(data, outfolder, mass_cell)
+    making_csv(data, outfolder, mass_cell, type_data)
 
     normal = filename[:-4] + '_normal.csv'
     stats = filename[:-4] + '_stats.csv'
