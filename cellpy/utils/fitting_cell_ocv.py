@@ -418,7 +418,7 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
 
 def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                    change_i, ideal_cap=3.579, mass=0.86, v_start=None,
-                   v_err=0.1):
+                   v_err=0.001):
     """Fitting measured data to model.
 
     Args:
@@ -497,7 +497,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                                  'same rc-names. That is, both need to have '
                                  'the same keyword arguments.')
 
-    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err/100))
+    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err))
     # result_initial.conf_interval()
     result = [result_initial]
 
@@ -541,12 +541,11 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
             model.set_param_hint('ocv', value=temp_end_voltage)
             model.make_params()
             result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i],
-                                     weights=1. / (v_err / 100))
+                                     weights=1. / v_err)
         else:
             result_cycle = model.fit(voltage[cycle_i],
                                      params=best_para[cycle_i - 1],
-                                     t=time[cycle_i], weights=1. / (v_err /
-                                                                    100))
+                                     t=time[cycle_i], weights=1. / v_err)
         # result_cycle.conf_interval()
         result.append(result_cycle)
         copied_parameters = copy.deepcopy(result_cycle.params)
@@ -568,7 +567,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
 
 def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                   change_i, ideal_cap=3.579, mass=0.86, v_start=None,
-                  v_err=0.1):
+                  v_err=0.001):
     """Fitting measured data to model with more than one decay exponential func.
 
     First using the more robust Nelder-Mead Method to calculate the
@@ -653,9 +652,9 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                                  'the same keyword arguments.')
 
     result_initial_nelder = model.fit(voltage[0], t=time[0],
-                                      weights=1./(v_err/100), method='Nelder')
+                                      weights=1./(v_err), method='Nelder')
 
-    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err/100),
+    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err),
                                params=result_initial_nelder.params,
                                method='leastsq')
     result_initial.conf_interval(trace=True)
@@ -696,22 +695,22 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
             model.set_param_hint('ocv', value=temp_end_voltage)
             model.make_params()
             result_cycle_nelder = model.fit(voltage[cycle_i], t=time[cycle_i],
-                                            weights=1. / (v_err / 100),
+                                            weights=1. / (v_err),
                                             method='Nelder')
             result_cycle = model.fit(voltage[cycle_i], t=time[cycle_i],
-                                            weights=1. / (v_err / 100),
+                                            weights=1. / (v_err),
                                      params=result_cycle_nelder.params,
                                      method='leastsq')
         else:
             result_cycle_nelder = model.fit(voltage[cycle_i],
                                             params=best_para[cycle_i - 1],
                                             t=time[cycle_i],
-                                            weights=1. / (v_err / 100),
+                                            weights=1. / (v_err),
                                             method='Nelder')
             result_cycle = model.fit(voltage[cycle_i],
                                      params=result_cycle_nelder.params,
                                      t=time[cycle_i],
-                                     weights=1. / (v_err / 100),
+                                     weights=1. / (v_err),
                                      method='leastsq')
 
         result_cycle.conf_interval(trace=True)
@@ -829,7 +828,7 @@ def user_plot_voltage(time, voltage, fit, conf):
             print '------------------------------------------------------------'
 
 
-def plot_params(voltage, fit, rc_params, i_err=0.1):
+def plot_params(voltage, fit, rc_params, i_err=0.2):
     """Calculating parameter errors and plotting them.
 
     r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
@@ -846,7 +845,6 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
     Returns:
         None: Plot the parameters with their errors.
     """
-
     v_ocv = voltage[0][-1]
     v_0 = voltage[0][0]
     if v_ocv < v_0:
@@ -869,11 +867,10 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
         fractional_err = {par_name: (error_para[par_name] /
                                      cycle_fit.params[par_name])
                           for par_name in names}
-        r_err = {key: np.sqrt(
-            (fractional_err['v0_%s' % key[2:]]) ** 2 + (i_err / 100) ** 2)
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err / 100
                  for key in rc_params[i].keys() if key.startswith('r_')}
-        c_err = {key: np.sqrt((fractional_err['tau_%s' % key[2:]]) ** 2 + (
-                r_err['r_%s' % key[2:]]) ** 2)
+        c_err = {key: fractional_err['tau_%s' % key[2:]] + r_err['r_%s' %
+                                                                 key[2:]]
                  for key in rc_params[i].keys() if key.startswith('c_')}
 
         # Standard deviation error calculated from fractional error
@@ -933,7 +930,7 @@ def plot_params(voltage, fit, rc_params, i_err=0.1):
             subs_params[name_i].set_ylabel('Voltage [V]', size=18)
 
 
-def print_params(fit, rc_params, i_err=0.1):
+def print_params(fit, rc_params, i_err=0.2):
     best_para = []
     best_para_error = []
     names = fit[0].params.keys()
@@ -949,11 +946,10 @@ def print_params(fit, rc_params, i_err=0.1):
                                            cycle_fit.params[par_name])
                           for par_name in names}
 
-        r_err = {key:np.sqrt(
-            (fractional_err['v0_%s' % key[2:]]) ** 2 + (i_err) ** 2)
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
                  for key in rc_params[i].keys() if key.startswith('r_')}
-        c_err = {key: np.sqrt((fractional_err['tau_%s' % key[2:]]) ** 2 + (
-            r_err['r_%s' % key[2:]]) ** 2)
+        c_err = {key: fractional_err['tau_%s' % key[2:]] + r_err['r_%s' %
+                                                                 key[2:]]
                  for key in rc_params[i].keys() if key.startswith('c_')}
         fractional_err.update(r_err)
         fractional_err.update(c_err)
