@@ -228,6 +228,7 @@ if __name__ == '__main__':
     plt.title('Open Circuit Voltage Relaxation', size=30)
     plt.xlabel('Time', size=20)
     plt.ylabel('Relaxation voltage (V)', size=20)
+    plt.legend(leg, loc='best', prop={'size': 20})
 
 
     # plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
