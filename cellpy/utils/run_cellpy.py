@@ -201,6 +201,10 @@ if __name__ == '__main__':
 
     name = filenames[1]
     up = True
+    if up:
+        rlx_text = 'after lithiation'
+    else:
+        rlx_text = 'after delithiation'
     print name
     if up:
         time, voltage, fit, rc_para = \
@@ -211,12 +215,12 @@ if __name__ == '__main__':
             fitting_cell(name[:-3]+ocv_down, datafolder_out, cell_mass[name],
                          contri, tau_guessed, v_start_down, c_rate, change_i)
 
-    cycles_number = (0, 1, 2, 4, 9, len(voltage) - 1)
+    cycles_number = (3, 4, 7, 9, 10, 19, 29, len(voltage) - 1)
     leg = []
     plt.figure()
     for volt_i in cycles_number:
-        ocv = voltage[volt_i]
-        time_ocv = time[volt_i]
+        ocv = voltage[volt_i][::20]
+        time_ocv = time[volt_i][::20]
         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='o')
         leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
     for tick_volt in plt.gca().xaxis.get_major_ticks():
@@ -225,7 +229,7 @@ if __name__ == '__main__':
         tick_volt.label.set_fontsize(15)
 
     plt.gca().title.set_position([.5, 1.05])
-    plt.title('Open Circuit Voltage Relaxation', size=30)
+    plt.title('Open Circuit Voltage Relaxation ' + rlx_text, size=30)
     plt.xlabel('Time', size=20)
     plt.ylabel('Relaxation voltage (V)', size=20)
     plt.legend(leg, loc='best', prop={'size': 20})
