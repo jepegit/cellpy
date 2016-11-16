@@ -73,7 +73,7 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
 
 
 def save_and_plot_cap(filepath, filename, outfolder, mass_cell,
-                      type_data='ocv_up'):
+                      type_data='ocvrlx_up'):
     """Making capacity vs. voltage and capacity vs. cycle data.
 
     Args:
