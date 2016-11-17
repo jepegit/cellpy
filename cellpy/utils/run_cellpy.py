@@ -150,7 +150,7 @@ def plotting_stuff(filename, outfolder, cell_name, m_s=20, ti_la_s=35):
 
 if __name__ == '__main__':
     # ms = markersize
-    ms = 20
+    ms = 6
     tick_and_label_s = 35
     title_s = tick_and_label_s + 10
 
@@ -268,7 +268,8 @@ if __name__ == '__main__':
     pass
 
     fco.user_plot_voltage(time, voltage, fit, conf, ms=ms,
-                          ti_la_s=tick_and_label_s, tit_s=title_s)
+                          ti_la_s=tick_and_label_s, tit_s=title_s,
+                          name=names[name])
     # fco.plot_params(voltage, fit, rc_para, i_err=mass_frac_err)
     # fco.print_params(fit, rc_para)
 

@@ -142,7 +142,7 @@ def manipulate_data(read_data):
     return pd.Series(sorted_data)
 
 
-def plot_voltage(t, v, best, subfigure, ms=20, ti_lb_s=35):
+def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35):
     """Making a plot with given voltage data.
 
     Args:
@@ -159,22 +159,27 @@ def plot_voltage(t, v, best, subfigure, ms=20, ti_lb_s=35):
     """
     result_params = best.params
     measured_err = (1. / best.weights)
-    result_residual = best.residual
-    ocv = np.array([result_params['ocv'] for _ in range(len(t))])
+    result_residual = best.best_fit - v
+    # result_residual = best.residual
+
+    ext_t = np.arange(2 * t[-1])
+    ocv = result_params['ocv'] * np.ones(len(ext_t))
 
     residual_figure = subfigure[0]
     result_figure = subfigure[1]
 
     residual_figure.errorbar(t, result_residual, yerr=measured_err,
-                             label='Residual', ms=ms)
+                             label='Fit - Measured', ms=ms+3)
     result_figure.errorbar(t, v, yerr=measured_err, fmt='ob',
-                           label='Measured', ms=ms)
-    result_figure.plot(t, best.init_fit, '--k', label='Initial guess', ms=ms)
-    result_figure.plot(t, best.best_fit, '-r', label='Best fit', ms=ms)
-    result_figure.plot(t, ocv, '--c', label='ocv', ms=ms)
+                           label='Measured', ms=ms+3)
+    result_figure.plot(t, best.init_fit, '--k', label='Initial guess',
+                       linewidth=ms)
+    result_figure.plot(t, best.best_fit, '-r', label='Best fit', linewidth=ms)
+    result_figure.plot(ext_t, ocv, '--c', label='ocv', linewidth=ms)
 
     residual_figure.set_ylabel('Residual (V)', size=ti_lb_s)
     residual_figure.legend(loc='best', prop={'size': ti_lb_s})
+    residual_figure.set_xlabel('Time (s)', size=ti_lb_s)
 
     for tick_resi in residual_figure.xaxis.get_major_ticks():
         tick_resi.label.set_fontsize(ti_lb_s)
@@ -182,9 +187,9 @@ def plot_voltage(t, v, best, subfigure, ms=20, ti_lb_s=35):
         tick_resi.label.set_fontsize(ti_lb_s)
     residual_figure.grid()
 
-    result_figure.set_xlabel('Time (s)', size=ti_lb_s)
     result_figure.set_ylabel('Voltage (V)', size=ti_lb_s)
     result_figure.legend(loc='best', prop={'size': ti_lb_s})
+    result_figure.set_xlim(-1, t[-1] + 300)
 
     for tick_res in result_figure.xaxis.get_major_ticks():
         tick_res.label.set_fontsize(ti_lb_s)
@@ -206,7 +211,7 @@ def plot_voltage(t, v, best, subfigure, ms=20, ti_lb_s=35):
     #     mover += 0.1
 
 
-def plot_rc(t, best):
+def plot_rc(t, best, ms=10, ti_lb_s=35):
     result_params = best.params
     tau_rc = {tau_key: tau_val for tau_key, tau_val in result_params.items()
               if tau_key.startswith('tau')}
@@ -216,10 +221,10 @@ def plot_rc(t, best):
     rc_circuits = {rc[4:]: relaxation_rc(t, v0_rc['v0_%s' % rc[4:]], tau_rc[rc])
                    for rc in tau_rc.keys()}
     for rc_name, rc in rc_circuits.items():
-        plt.plot(t, rc, label='%s rc-circuit' % rc_name)
-    plt.legend(loc='best')
-    plt.xlabel('Time (s)', size=20)
-    plt.ylabel('Voltage(V)', size=20)
+        plt.plot(t, rc, label='%s rc-circuit' % rc_name, linewidth=ms)
+    plt.legend(loc='best', prop={'size': ti_lb_s})
+    plt.xlabel('Time (s)', size=ti_lb_s)
+    plt.ylabel('Voltage(V)', size=ti_lb_s)
     plt.grid()
 
 
@@ -731,7 +736,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
     return result, best_rc_para
 
 
-def user_plot_voltage(time, voltage, fit, conf, name=None, ms=20, ti_la_s=35,
+def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
                       tit_s=45):
     """User decides which cycles to plot and report.
 
@@ -796,27 +801,26 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=20, ti_la_s=35,
             rc_fig = plt.figure()
             rc_fig.canvas.set_window_title('cycle_%i_sic006_74_rc_'
                                            % (cycle_nr + 1))
-            rc_fig.suptitle('RC-circuits plotted for cell %s with fitted'
-                            'parameters of cycle%i %s'
-                            % (name, (cycle_nr + 1), rlx_txt), size=tit_s)
+            rc_fig.suptitle('Fitted RC-circuits for cell %s (%s), cycle %i'
+                            % (name, rlx_txt, (cycle_nr + 1)), size=tit_s)
             for tick_rc in plt.gca().xaxis.get_major_ticks():
                 tick_rc.label.set_fontsize(ti_la_s)
             for tick_rc in plt.gca().yaxis.get_major_ticks():
                 tick_rc.label.set_fontsize(ti_la_s)
-
-            plot_rc(time[cycle_nr], fit[cycle_nr])
+            plt.gca().title.set_position([.5, 1.05])
+            plot_rc(time[cycle_nr], fit[cycle_nr], ms=ms+3, ti_lb_s=ti_la_s)
 
             plt.figure()
+            plt.gca().title.set_position([.5, 1.05])
             gs = gridspec.GridSpec(3, 1)
-            gs.update(left=0.05, right=0.9, wspace=1)
+            gs.update(hspace=0.5)
             ax1 = plt.subplot(gs[-1, 0])
             ax2 = plt.subplot(gs[0:-1, 0], sharex=ax1)
             sub_fig = [ax1, ax2]
-            plt.suptitle('Measured and fitted voltage for cell %s: cycle %i '
-                         '%s' % (name, (cycle_nr + 1), rlx_txt), size=tit_s)
+            plt.suptitle('Voltage with fit for cell %s (%s), cycle %i'
+                         % (name, rlx_txt, (cycle_nr + 1)), size=tit_s)
             plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
                          sub_fig, ms=ms, ti_lb_s=ti_la_s)
-
             plt.gcf().canvas.set_window_title('cycle_%i_sic006_74_'
                                               % (cycle_nr + 1))
 
