@@ -19,7 +19,7 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-def plotting_stuff(filename, outfolder):
+def plotting_stuff(filename, outfolder, name):
     """Based on same plot as in perform_fit.save_and_plot_cap().
 
     Difference is that I can freely change here as run_cellpy is not suppose
@@ -36,8 +36,12 @@ def plotting_stuff(filename, outfolder):
 
     """
 
-    # getting stats and capacity voltage table
+    # ms = markersize
+    ms = 20
+    tick_and_label_s = 35
+    title_s = tick_and_label_s + 10
 
+    # getting stats and capacity voltage table
     normal = filename[:-4] + '_normal.csv'
     steps = filename[:-4] + '_steps.csv'
     stats = filename[:-4] + '_stats.csv'
@@ -78,41 +82,41 @@ def plotting_stuff(filename, outfolder):
     x_range = np.arange(1, len(col_eff) + 1)
 
     plt.figure()
-    plt.plot(x_range, col_eff, '-ok')
+    plt.plot(x_range, col_eff, '-ok', ms=ms)
     plt.plot(100*np.ones(2 * len(col_eff)), '-k')
-
+    plt.gca().invert_yaxis()
     for tick_rc in plt.gca().xaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(15)
+        tick_rc.label.set_fontsize(tick_and_label_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(15)
+        tick_rc.label.set_fontsize(tick_and_label_s)
     plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
     plt.gca().set_xlim([-0.1, len(col_eff) + 1])
     plt.gca().set_ylim([col_eff[1]-0.5, 100.5])
     plt.gca().title.set_position([.5, 1.05])
-    plt.title('Coulombic Efficiency ($\eta$)', size=30)
-    plt.legend(['$\eta = Q_{out}/Q_{in}$'], loc='best',
-               prop={'size': 20})
-    plt.xlabel('Cycle number', size=20)
-    plt.ylabel('$\eta$ (%)', size=25)
+    plt.title('Coulombic Efficiency ($\eta$) for cell %s' % name, size=title_s)
+    plt.legend(['$\eta = Q_{out}/Q_{in}$'], loc='center right',
+               prop={'size': tick_and_label_s})
+    plt.xlabel('Cycle number', size=tick_and_label_s)
+    plt.ylabel('$\eta$ (%)', size=tick_and_label_s)
 
     # Plotting cycle vs. cap
     plt.figure()
-    plt.plot(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"], '^b',
-             x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or')
+    plt.plot(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"], '^b', ms=ms)
+    plt.plot(x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or', ms=ms)
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(15)
+        tick_rc.label.set_fontsize(tick_and_label_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(15)
+        tick_rc.label.set_fontsize(tick_and_label_s)
     plt.gca().title.set_position([.5, 1.05])
     plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
     plt.legend(['Charge Capacity (Delithiation)',
                 'Discharge capacity (Lithiation)'], loc='center right',
-               prop={'size': 20})
+               prop={'size': tick_and_label_s})
 
-    plt.title('Capacity vs. Cycle', size=30)
-    plt.xlabel('Cycle number', size=15)
-    plt.ylabel('Capacity (mAh/g)', size=15)
+    plt.title('Capacity vs. Cycle for cell %s' % name, size=title_s)
+    plt.xlabel('Cycle number', size=tick_and_label_s)
+    plt.ylabel('Capacity (mAh/g)', size=tick_and_label_s)
 
     # plt.savefig(os.path.join(fig_folder, 'cap_cycle_sic006_74.pdf'))
 
@@ -127,24 +131,28 @@ def plotting_stuff(filename, outfolder):
             voltage_sorting.append(df_cap_volt[df_name])
 
     plt.figure()
-    number_plots = (0, 1, 2, 4, 9, -1)
+    number_plots = (0, 1, 2, 4, 9, -2)
     for cycle in number_plots:
         plt.plot(capacity_sorting[cycle], voltage_sorting[cycle])
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(15)
+        tick_rc.label.set_fontsize(tick_and_label_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(15)
-    plt.title('Capacity vs. Voltage', size=30)
+        tick_rc.label.set_fontsize(tick_and_label_s)
+    plt.title('Capacity vs. Voltage for cell %s' % name, size=title_s)
     plt.gca().title.set_position([.5, 1.05])
     plt.gca().set_ylim([0.03, 1])
     plt.yticks(np.arange(0, 1.1, 0.1))
-    plt.xlabel('Capacity (mAh/g)', size=15)
-    plt.ylabel('Voltage (V)', size=15)
-    plt.legend(loc='best', prop={'size': 15})
+    plt.xlabel('Capacity (mAh/g)', size=tick_and_label_s)
+    plt.ylabel('Voltage (V)', size=tick_and_label_s)
+    plt.legend(loc='best', prop={'size': tick_and_label_s})
 
 
 if __name__ == '__main__':
+    # ms = markersize
+    ms = 20
+    tick_and_label_s = 35
+    title_s = tick_and_label_s + 10
 
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 800}
@@ -181,6 +189,22 @@ if __name__ == '__main__':
                  str(f).endswith('.res')]
     filenames.sort()
 
+    names = {}
+    counter = 1
+    for fil in filenames:
+        if 'sic006_74' in fil:
+            names[fil] = 'S'
+        elif 'bec01_0%i' % counter in fil:
+            if 1 <= counter <= 3:
+                names[fil] = 'A%i' % counter
+                counter += 1
+            elif 3 < counter <= 6:
+                names[fil] = 'QA%i' % counter
+            elif 6 < counter <= 9:
+                names[fil] = '%i' % counter
+            elif 9 < counter <= 12:
+                names[fil] = 'Q%i' % counter
+
     # bec01_07-09 is without additives and bec01_01-03 with additives
     # save_and_plot_cap(datafolder, filenames[0], datafolder_out,
     #                   cell_mass['bec01_01'])
@@ -199,13 +223,16 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[1]
+    name = filenames[2]
     up = True
     if up:
         rlx_text = 'after lithiation'
     else:
         rlx_text = 'after delithiation'
     print name
+
+    # plotting_stuff(name, datafolder_out, names[name])
+
     if up:
         time, voltage, fit, rc_para = \
             fitting_cell(name[:-3]+ocv_up, datafolder_out, cell_mass[name],
@@ -215,25 +242,26 @@ if __name__ == '__main__':
             fitting_cell(name[:-3]+ocv_down, datafolder_out, cell_mass[name],
                          contri, tau_guessed, v_start_down, c_rate, change_i)
 
-    cycles_number = (3, 4, 7, 9, 10, 19, 29, len(voltage) - 1)
+    cycles_number = (0, 1, 2, 4, 7, 9, len(voltage) - 1)
     leg = []
     plt.figure()
     for volt_i in cycles_number:
-        ocv = voltage[volt_i][::20]
-        time_ocv = time[volt_i][::20]
+        ocv = voltage[volt_i]
+        time_ocv = time[volt_i]
         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='o')
         leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
     for tick_volt in plt.gca().xaxis.get_major_ticks():
-        tick_volt.label.set_fontsize(15)
+        tick_volt.label.set_fontsize(tick_and_label_s)
     for tick_volt in plt.gca().yaxis.get_major_ticks():
-        tick_volt.label.set_fontsize(15)
+        tick_volt.label.set_fontsize(tick_and_label_s)
 
     plt.gca().title.set_position([.5, 1.05])
-    plt.title('Open Circuit Voltage Relaxation ' + rlx_text, size=30)
-    plt.xlabel('Time', size=20)
-    plt.ylabel('Relaxation voltage (V)', size=20)
-    plt.legend(leg, loc='best', prop={'size': 20})
+    plt.title('Open Circuit Voltage Relaxation ' + rlx_text, size=title_s)
+    plt.xlabel('Time', size=tick_and_label_s)
+    plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
+    plt.legend(leg, loc='best', prop={'size': tick_and_label_s-10})
 
+    pass
 
     # plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
         # plt.gca().set_xlim([-0.1, len(col_eff) + 1])
@@ -242,7 +270,7 @@ if __name__ == '__main__':
     # fco.user_plot_voltage(time, voltage, fit, conf)
     # fco.print_params(fit, rc_para)
 
-    # plotting_stuff(name, datafolder_out)
+
     # Comment: bec01_01 is the best of the bec files and is closest to sic006_74
     # luckily is bec01_01 with additives --> we can start comparing
     # time_down, voltage_down, fit_down, rc_para_down = fitting_cell(
@@ -303,5 +331,4 @@ if __name__ == '__main__':
     #                     i_err=mass_frac_err)
     #     fco.user_plot_voltage(time[name_cell], voltage[name_cell], fit, conf)
     #     fco.print_params(fit, rc_para[name_cell)
-
     plt.show()
