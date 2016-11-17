@@ -349,29 +349,18 @@ class cellpydata(object):
         Returns:
             None:
         """
+        self.cellpy_file_version = 3
         self.tester = tester
-        self.verbose = verbose
+        self.loader = None # this will be set in the function set_instrument
+        self.verbose = verbose # not used anymore?
         # self._create_logger(self.verbose)
         self.logger = logging.getLogger(__name__)
         self.logger.info("created cellpydata instance")
         self.profile = profile
-        self.max_res_filesize = 150000000
-        self.load_only_summary = False
-        self.select_minimal = False
         self.minimum_selection = {}
-        self.chunk_size = None # 100000
-        self.max_chunks = None
-        self.last_chunk = None
-        self.limit_loaded_cycles = None
-        self.load_until_error = False
         self.filestatuschecker = filestatuschecker
-        self.raw_datadir = None
-        self.cellpy_datadir = None
-        self.auto_dirs = True  # search in prm-file for res and hdf5 dirs in loadcel
         self.forced_errors = 0
-        self.ensure_step_table = False
         self.summary_exists = False
-        self.daniel_number = 5
 
         if not filenames:
             self.file_names = []
@@ -391,15 +380,9 @@ class cellpydata(object):
         self.step_table = None
         self.selected_test_number = None
         self.number_of_tests = 0
-        self.cellpy_file_version = 3
-        self.use_decrp_functions = True
+
         self.capacity_modifiers = ['reset', ]
-        self.cycle_mode = 'anode'
-        self.minimum_selection["arbin"] = ["Data_Point","Test_Time","Step_Time",
-                                           "DateTime","Step_Index","Cycle_Index",
-                                           "Current","Voltage","Charge_Capacity",
-                                           "Discharge_Capacity","Internal_Resistance",
-                                           ]
+
         self.list_of_step_types = ['charge', 'discharge',
                                    'cv_charge', 'cv_discharge',
                                    'charge_cv', 'discharge_cv',
@@ -409,121 +392,195 @@ class cellpydata(object):
         self.force_step_table_creation = True
         self.force_all = False  # not used yet - should be used when saving
         self.sep = ";"
+        self.cycle_mode = 'anode'
+        self.use_decrp_functions = True # not used in the script - delete?
+        self.max_res_filesize = 150000000
+        self.load_only_summary = False
+        self.select_minimal = False
+        self.chunk_size = None  # 100000
+        self.max_chunks = None
+        self.last_chunk = None
+        self.limit_loaded_cycles = None
+        self.load_until_error = False
+        self.ensure_step_table = False
+        self.daniel_number = 5
+        self.raw_datadir = None
+        self.cellpy_datadir = None
+        self.auto_dirs = True  # search in prm-file for res and hdf5 dirs in loadcel
 
+        # - headers and instruments
+        self.headers_normal = self._set_headers_normal()
+        self.headers_summary = self._set_headers_summary()
+        self.headers_step_table = self._set_headers_step_table()
+
+        self.table_names = None  # dictionary defined in set_instruments
+        self.set_instrument()
+
+        # - units used by cellpy
+        self.cellpy_units = self._set_units()
+
+    @staticmethod
+    def _set_headers_step_table():
+        headers_step_table = dict()
+        headers_step_table["test"] = "test"
+        headers_step_table["cycle"] = "cycle"
+        headers_step_table["step"] = "step"
+        headers_step_table["type"] = "type"
+        headers_step_table["info"] = "info"
+        headers_step_table["pre_current"] = "I_"
+        headers_step_table["pre_voltage"] = "V_"
+        headers_step_table["pre_charge"] = "Charge_"
+        headers_step_table["pre_discharge"] = "Discharge_"
+        headers_step_table["post_mean"] = "avr"
+        headers_step_table["post_std"] = "std"
+        headers_step_table["post_max"] = "max"
+        headers_step_table["post_min"] = "min"
+        headers_step_table["post_start"] = "start"
+        headers_step_table["post_end"] = "end"
+        headers_step_table["post_delta"] = "delta"
+        headers_step_table["post_rate"] = "rate"
+        headers_step_table["internal_resistance"] = "IR"
+        headers_step_table["internal_resistance_change"] = "IR_pct_change"
+        return headers_step_table
+
+    @staticmethod
+    def _set_headers_summary():
         # - headers for out-files
+        headers_summary = dict()
+        headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
+        headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
+        headers_summary["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
+        headers_summary["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
+        headers_summary["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
+        headers_summary["cumulated_coulombic_efficiency"] = "Cumulated_Coulombic_Efficiency(percentage)"
+        headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
+        headers_summary["cumulated_coulombic_difference"] = "Cumulated_Coulombic_Difference(mAh/g)"
+        headers_summary["discharge_capacity_loss"] = "Discharge_Capacity_Loss(mAh/g)"
+        headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
+        headers_summary["cumulated_discharge_capacity_loss"] = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
+        headers_summary["cumulated_charge_capacity_loss"] = "Cumulated_Charge_Capacity_Loss(mAh/g)"
+        headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
+        headers_summary["ir_charge"] = "IR_Charge(Ohms)"
+        headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
+        headers_summary["ocv_second_min"] = "OCV_Second_Min(V)"
+        headers_summary["ocv_first_max"] = "OCV_First_Max(V)"
+        headers_summary["ocv_second_max"] = "OCV_Second_Max(V)"
+        headers_summary["date_time_txt"] = "Date_Time_Txt(str)"
+        headers_summary["end_voltage_discharge"] = "End_Voltage_Discharge(V)"
+        headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
+        headers_summary["low_level"] = "Low_Level(percentage)"  # Sum of irreversible capacity
+        headers_summary["high_level"] = "High_Level(percentage)"  # SEI loss
+        return headers_summary
 
-        # summary out column headings
-        self.summary_txt_discharge_cap = "Discharge_Capacity(mAh/g)"
-        self.summary_txt_charge_cap = "Charge_Capacity(mAh/g)"
-        self.summary_txt_cum_charge_cap = "Cumulated_Charge_Capacity(mAh/g)"
-        self.summary_txt_cum_discharge_cap = "Cumulated_Discharge_Capacity(mAh/g)"
-        self.summary_txt_coul_eff = "Coulombic_Efficiency(percentage)"
-        self.summary_txt_cum_coul_eff = "Cumulated_Coulombic_Efficiency(percentage)"
-        self.summary_txt_coul_diff = "Coulombic_Difference(mAh/g)"
-        self.summary_txt_cum_coul_diff = "Cumulated_Coulombic_Difference(mAh/g)"
-        self.summary_txt_discharge_cap_loss = "Discharge_Capacity_Loss(mAh/g)"
-        self.summary_txt_charge_cap_loss = "Charge_Capacity_Loss(mAh/g)"
-        self.summary_txt_cum_discharge_cap_loss = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
-        self.summary_txt_cum_charge_cap_loss = "Cumulated_Charge_Capacity_Loss(mAh/g)"
-        self.summary_txt_ir_discharge = "IR_Discharge(Ohms)"
-        self.summary_txt_ir_charge = "IR_Charge(Ohms)"
-        self.summary_txt_ocv_1_min = "OCV_First_Min(V)"
-        self.summary_txt_ocv_2_min = "OCV_Second_Min(V)"
-        self.summary_txt_ocv_1_max = "OCV_First_Max(V)"
-        self.summary_txt_ocv_2_max = "OCV_Second_Max(V)"
-        self.summary_txt_datetime_txt = "Date_Time_Txt"
-        self.summary_txt_endv_discharge = "End_Voltage_Discharge(V)"
-        self.summary_txt_endv_charge = "End_Voltage_Charge(V)"
-        self.summary_txt_high_level = "Low_Level(percentage)"  # Sum of irreversible capacity
-        self.summary_txt_low_level = "High_Level(percentage)"  # SEI loss
+    @staticmethod
+    def _set_units():
+        cellpy_units = dict()
+        cellpy_units["current"] = 0.001  # mA
+        cellpy_units["charge"] = 0.001  # Ah
+        cellpy_units["mass"] = 0.001  # mg (used for input of mass)
+        cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. specific capacity
+        return cellpy_units
 
-        # step table column headings
-        self.step_table_txt_test = "test"
-        self.step_table_txt_cycle = "cycle"
-        self.step_table_txt_step = "step"
-        self.step_table_txt_type = "type"
-        self.step_table_txt_info = "info"
-        self.step_table_txt_I_ = "I_"
-        self.step_table_txt_V_ = "V_"
-        self.step_table_txt_C_ = "Charge_"
-        self.step_table_txt_D_ = "Discharge_"
-        self.step_table_txt_post_average = "avr"
-        self.step_table_txt_post_stdev = "std"
-        self.step_table_txt_post_max = "max"
-        self.step_table_txt_post_min = "min"
-        self.step_table_txt_post_start = "start"
-        self.step_table_txt_post_end = "end"
-        self.step_table_txt_post_delta = "delta"
-        self.step_table_txt_post_rate = "rate"
-        self.step_table_txt_ir = "IR"
-        self.step_table_txt_ir_change = "IR_pct_change"
+    def set_instrument(self, instrument=None):
+        if instrument is None:
+            instrument = self.tester
 
-        # units used by cellpy
-        self.cellpy_units = dict()
-        self.cellpy_units["current"] = 0.001 # mA
-        self.cellpy_units["charge"] = 0.001  # Ah
-        self.cellpy_units["mass"] = 0.001 # mg (used for input of mass)
-        self.cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. specific capacity
+        if instrument == "arbin":
+            self._set_arbin()
 
-        if self.tester == "arbin":
-            # - table names
-            self.tablename_normal = "Channel_Normal_Table"
-            self.tablename_global = "Global_Table"
-            self.tablename_statistic = "Channel_Statistic_Table"
-            # - global column headings
-            self.applications_path_txt = 'Applications_Path'
-            self.channel_index_txt = 'Channel_Index'
-            self.channel_number_txt = 'Channel_Number'
-            self.channel_type_txt = 'Channel_Type'
-            self.comments_txt = 'Comments'
-            self.creator_txt = 'Creator'
-            self.daq_index_txt = 'DAQ_Index'
-            self.item_id_txt = 'Item_ID'
-            self.log_aux_data_flag_txt = 'Log_Aux_Data_Flag'
-            self.log_chanstat_data_flag_txt = 'Log_ChanStat_Data_Flag'
-            self.log_event_data_flag_txt = 'Log_Event_Data_Flag'
-            self.log_smart_battery_data_flag_txt = 'Log_Smart_Battery_Data_Flag'
-            self.mapped_aux_conc_cnumber_txt = 'Mapped_Aux_Conc_CNumber'
-            self.mapped_aux_di_cnumber_txt = 'Mapped_Aux_DI_CNumber'
-            self.mapped_aux_do_cnumber_txt = 'Mapped_Aux_DO_CNumber'
-            self.mapped_aux_flow_rate_cnumber_txt = 'Mapped_Aux_Flow_Rate_CNumber'
-            self.mapped_aux_ph_number_txt = 'Mapped_Aux_PH_Number'
-            self.mapped_aux_pressure_number_txt = 'Mapped_Aux_Pressure_Number'
-            self.mapped_aux_temperature_number_txt = 'Mapped_Aux_Temperature_Number'
-            self.mapped_aux_voltage_number_txt = 'Mapped_Aux_Voltage_Number'
-            self.schedule_file_name_txt = 'Schedule_File_Name' # KEEP FOR CELLPY FILE FORMAT
-            self.start_datetime_txt = 'Start_DateTime'
-            self.test_id_txt = 'Test_ID' # KEEP FOR CELLPY FILE FORMAT
-            self.test_name_txt = 'Test_Name' # KEEP FOR CELLPY FILE FORMAT
+    def _set_headers_normal(self):
+        # here we should set the normal headers (for the dfdata)
+        # at the moment, the script uses same headers as arbin
+        headers_normal = dict()
+        return headers_normal
 
-            # - normal table headings
-            self.aci_phase_angle_txt = 'ACI_Phase_Angle'
-            self.ac_impedance_txt = 'AC_Impedance'
-            self.charge_capacity_txt = 'Charge_Capacity' # KEEP FOR CELLPY FILE FORMAT
-            self.charge_energy_txt = 'Charge_Energy' # KEEP FOR CELLPY FILE FORMAT
-            self.current_txt = 'Current' # KEEP FOR CELLPY FILE FORMAT
-            self.cycle_index_txt = 'Cycle_Index' # KEEP FOR CELLPY FILE FORMAT
-            self.data_point_txt = 'Data_Point' # KEEP FOR CELLPY FILE FORMAT
-            self.datetime_txt = 'DateTime' # KEEP FOR CELLPY FILE FORMAT
-            self.discharge_capacity_txt = 'Discharge_Capacity' # KEEP FOR CELLPY FILE FORMAT
-            self.discharge_energy_txt = 'Discharge_Energy' # KEEP FOR CELLPY FILE FORMAT
-            self.internal_resistance_txt = 'Internal_Resistance' # KEEP FOR CELLPY FILE FORMAT
-            self.is_fc_data_txt = 'Is_FC_Data'
-            self.step_index_txt = 'Step_Index' # KEEP FOR CELLPY FILE FORMAT
-            self.step_time_txt = 'Step_Time' # KEEP FOR CELLPY FILE FORMAT
-            self.test_id_txt = 'Test_ID' # KEEP FOR CELLPY FILE FORMAT (already defined in global table headers list)
-            self.test_time_txt = 'Test_Time' # KEEP FOR CELLPY FILE FORMAT
-            self.voltage_txt = 'Voltage' # KEEP FOR CELLPY FILE FORMAT
-            self.dv_dt_txt = 'dV/dt'
+    def _set_arbin(self):
+        self.loader = self._loadres
 
-            # - units used
-            self.raw_units = dict()
-            self.raw_units["current"] = 1.0  # A
-            self.raw_units["charge"] = 1.0 # Ah
-            self.raw_units["mass"] = 0.001  # g
+        self.table_names = dict()
+        self.headers_raw_global = dict()
+        self.headers_raw_normal =dict()
+        self.headers_raw_stats = dict()
+        self.raw_limits = dict()
 
-        else:
-            print "this option is not implemented yet"
+        # - table names
+        # self.tablename_normal = "Channel_Normal_Table"
+        # self.tablename_global = "Global_Table"
+        # self.tablename_statistic = "Channel_Statistic_Table"
+
+        self.table_names["normal"] = "Channel_Normal_Table"
+        self.table_names["global"] = "Global_Table"
+        self.table_names["statistic"] = "Channel_Statistic_Table"
+
+        # - global column headings
+        self.applications_path_txt = 'Applications_Path'
+        self.channel_index_txt = 'Channel_Index'
+        self.channel_number_txt = 'Channel_Number'
+        self.channel_type_txt = 'Channel_Type'
+        self.comments_txt = 'Comments'
+        self.creator_txt = 'Creator'
+        self.daq_index_txt = 'DAQ_Index'
+        self.item_id_txt = 'Item_ID'
+        self.log_aux_data_flag_txt = 'Log_Aux_Data_Flag'
+        self.log_chanstat_data_flag_txt = 'Log_ChanStat_Data_Flag'
+        self.log_event_data_flag_txt = 'Log_Event_Data_Flag'
+        self.log_smart_battery_data_flag_txt = 'Log_Smart_Battery_Data_Flag'
+        self.mapped_aux_conc_cnumber_txt = 'Mapped_Aux_Conc_CNumber'
+        self.mapped_aux_di_cnumber_txt = 'Mapped_Aux_DI_CNumber'
+        self.mapped_aux_do_cnumber_txt = 'Mapped_Aux_DO_CNumber'
+        self.mapped_aux_flow_rate_cnumber_txt = 'Mapped_Aux_Flow_Rate_CNumber'
+        self.mapped_aux_ph_number_txt = 'Mapped_Aux_PH_Number'
+        self.mapped_aux_pressure_number_txt = 'Mapped_Aux_Pressure_Number'
+        self.mapped_aux_temperature_number_txt = 'Mapped_Aux_Temperature_Number'
+        self.mapped_aux_voltage_number_txt = 'Mapped_Aux_Voltage_Number'
+        self.schedule_file_name_txt = 'Schedule_File_Name'  # KEEP FOR CELLPY FILE FORMAT
+        self.start_datetime_txt = 'Start_DateTime'
+        self.test_id_txt = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT
+        self.test_name_txt = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
+
+        # - normal table headings
+        self.aci_phase_angle_txt = 'ACI_Phase_Angle'
+        self.ac_impedance_txt = 'AC_Impedance'
+        self.charge_capacity_txt = 'Charge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
+        self.charge_energy_txt = 'Charge_Energy'  # KEEP FOR CELLPY FILE FORMAT
+        self.current_txt = 'Current'  # KEEP FOR CELLPY FILE FORMAT
+        self.cycle_index_txt = 'Cycle_Index'  # KEEP FOR CELLPY FILE FORMAT
+        self.data_point_txt = 'Data_Point'  # KEEP FOR CELLPY FILE FORMAT
+        self.datetime_txt = 'DateTime'  # KEEP FOR CELLPY FILE FORMAT
+        self.discharge_capacity_txt = 'Discharge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
+        self.discharge_energy_txt = 'Discharge_Energy'  # KEEP FOR CELLPY FILE FORMAT
+        self.internal_resistance_txt = 'Internal_Resistance'  # KEEP FOR CELLPY FILE FORMAT
+        self.is_fc_data_txt = 'Is_FC_Data'
+        self.step_index_txt = 'Step_Index'  # KEEP FOR CELLPY FILE FORMAT
+        self.step_time_txt = 'Step_Time'  # KEEP FOR CELLPY FILE FORMAT
+        self.test_id_txt = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT (already defined in global table headers list)
+        self.test_time_txt = 'Test_Time'  # KEEP FOR CELLPY FILE FORMAT
+        self.voltage_txt = 'Voltage'  # KEEP FOR CELLPY FILE FORMAT
+        self.dv_dt_txt = 'dV/dt'
+
+        # - units used
+        self.raw_units = dict()
+        self.raw_units["current"] = 1.0  # A
+        self.raw_units["charge"] = 1.0  # Ah
+        self.raw_units["mass"] = 0.001  # g
+
+        # - setting minimum selection
+        self.minimum_selection["arbin"] = ["Data_Point", "Test_Time", "Step_Time",
+                                           "DateTime", "Step_Index", "Cycle_Index",
+                                           "Current", "Voltage", "Charge_Capacity",
+                                           "Discharge_Capacity", "Internal_Resistance",
+                                           ]
+
+        # - setting limits (used for deciding step-type)
+        self.raw_limits["current_hard"] = 0.0000000000001
+        self.raw_limits["current_soft"] = 0.00001
+        self.raw_limits["stable_current_hard"] = 2.0
+        self.raw_limits["stable_current_soft"] = 4.0
+        self.raw_limits["stable_voltage_hard"] = 2.0
+        self.raw_limits["stable_voltage_soft"] = 4.0
+        self.raw_limits["stable_charge_hard"] = 2.0
+        self.raw_limits["stable_charge_soft"] = 5.0
+        self.raw_limits["ir_change"] = 0.00001
 
     def _create_logger(self, verbose = False):
         from cellpy import log
@@ -811,12 +868,13 @@ class cellpydata(object):
             self.file_names = [file_names,]
 
         file_type = self.tester
-        if file_type == "arbin":
-            raw_file_loader = self._loadres
-            # HERE WE SHOULD INSTEAD IMPORT from instruments.arbin
-            #
-        else:
-            raw_file_loader = self._loadres # only arbin available at the moment
+        raw_file_loader = self.loader
+        # if file_type == "arbin":
+        #     raw_file_loader = self._loadres
+        #     # HERE WE SHOULD INSTEAD IMPORT from instruments.arbin
+        #     #
+        # else:
+        #     raw_file_loader = self._loadres # only arbin available at the moment
 
         test_number = 0
         test = None
@@ -1105,6 +1163,7 @@ class cellpydata(object):
 
     def _loadres_query(self, query=None, file_name=None, test_index = 0):
         new_tests = []
+
         if query is None:
             query = "where %s<4" % self.cycle_index_txt
             print " query not given."
@@ -1121,6 +1180,10 @@ class cellpydata(object):
         self.logger.debug(txt)
         print txt
 
+        table_name_global = self.table_names["global"]
+        table_name_stats = self.table_names["statistic"]
+        table_name_normal = self.table_names["normal"]
+
         # ------making temporary file-------------
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
@@ -1134,7 +1197,8 @@ class cellpydata(object):
             conn = dbloader.connect(constr, autocommit=True)
 
         # ------get the global table for selecting test-------------
-        sql = "select * from %s" % self.tablename_global
+
+        sql = "select * from %s" % table_name_global
         global_data_df = pd.read_sql_query(sql, conn)
         tests = global_data_df[self.test_id_txt]
         print "Tests in file:",
@@ -1160,10 +1224,11 @@ class cellpydata(object):
         print data.test_name
         # ------------------------------------------
         # ---loading-normal-data--------------------
+
         print "Loading data."
         print self.cycle_index_txt
         sql_1 = "select * "
-        sql_2 = "from %s " % self.tablename_normal
+        sql_2 = "from %s " % table_name_normal
         sql_3 = "where %s=%s " % (self.test_id_txt, data.test_ID)
         sql_4 = "AND "
         sql_5 = " order by %s" % self.data_point_txt
@@ -1173,7 +1238,7 @@ class cellpydata(object):
         length_of_test = normal_df.shape[0]
 
         # ---loading-statistic-data-----------------
-        sql = "select * from %s where %s=%s order by %s" % (self.tablename_statistic,
+        sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
                                                             self.test_id_txt,
                                                             data.test_ID,
                                                             self.data_point_txt)
@@ -1216,6 +1281,9 @@ class cellpydata(object):
             return None
             # sys.exit(FileError)
 
+        table_name_global = self.table_names["global"]
+        table_name_stats = self.table_names["statistic"]
+
         # ------making temporary file-------------
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
@@ -1223,7 +1291,7 @@ class cellpydata(object):
         print ".",
 
         # ------connecting to the .res database----
-        constr = self.__get_res_connector(file_name, temp_filename)
+        constr = self.__get_res_connector(temp_filename)
         if USE_ADO:
             conn = dbloader.connect(constr)  # adodbapi
         else:
@@ -1231,7 +1299,7 @@ class cellpydata(object):
         print ".",
 
         # ------get the global table-----------------
-        sql = "select * from %s" % self.tablename_global
+        sql = "select * from %s" % table_name_global
         global_data_df = pd.read_sql_query(sql, conn)
         # col_names = list(global_data_df.columns.values)
         tests = global_data_df[self.test_id_txt]
@@ -1259,7 +1327,7 @@ class cellpydata(object):
             # ---loading-normal-data--------------------
             length_of_test, normal_df = self._load_res_normal_table(conn,data.test_ID)
             # ---loading-statistic-data-----------------
-            sql = "select * from %s where %s=%s order by %s" % (self.tablename_statistic,
+            sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
                                                                 self.test_id_txt,
                                                                 data.test_ID,
                                                                 self.data_point_txt)
@@ -1273,6 +1341,7 @@ class cellpydata(object):
         return new_tests
 
     def _load_res_normal_table(self, conn, test_ID):
+        table_name_normal = self.table_names["normal"]
         if self.load_only_summary:
             return 0
 
@@ -1283,7 +1352,7 @@ class cellpydata(object):
             columns_txt = "*"
 
         sql_1 = "select %s " % columns_txt
-        sql_2 = "from %s " % self.tablename_normal
+        sql_2 = "from %s " % table_name_normal
         sql_3 = "where %s=%s " % (self.test_id_txt, test_ID)
         sql_4 = ""
 
@@ -1335,19 +1404,7 @@ class cellpydata(object):
 
         return length_of_test, normal_df
 
-    def __get_res_global_table(self, cur):
-        sql = "select * from %s" % self.tablename_global
-        cur.execute(sql)  # adodbapi
-        col_names = [i[0] for i in cur.description]  # adodbapi
-        global_data = collections.OrderedDict()
-        for cn in col_names:
-            global_data[cn] = []
-        self.logger.debug("Starting to load global table from .res file (cur.fetchall())")
-        all_data = cur.fetchall()
-        self.logger.debug("Finished to load global table from .res file (cur.fetchall())")
-        return all_data, col_names, global_data
-
-    def __get_res_connector(self, Filename, temp_filename):
+    def __get_res_connector(self, temp_filename):
         # -------checking bit and os----------------
         is64bit_python = self._check64bit(System="python")
         # is64bit_os = self._check64bit(System = "os")
@@ -1450,7 +1507,7 @@ class cellpydata(object):
         if merge_step_table:
             if step_table_made:
                 cycle_index_header = self.cycle_index_txt
-                t2.step_table[self.step_table_txt_cycle] = t2.dfdata[self.step_table_txt_cycle] + last_cycle
+                t2.step_table[self.headers_step_table["cycle"]] = t2.dfdata[self.headers_step_table["cycle"]] + last_cycle
                 step_table2 = pd.concat([t1.step_table, t2.step_table], ignore_index=True)
                 test.step_table = step_table2
             else:
@@ -1466,9 +1523,9 @@ class cellpydata(object):
         #        self.discharge_steps = None
         #        self.ir_steps = None # dict
         #        self.ocv_steps = None # dict
-        #        self.loaded_from = None # name of the .res file it is loaded from (can be list if merded)
-        #        #self.parent_filename = None # name of the .res file it is loaded from (basename) (can be list if merded)
-        #        #self.parent_filename = if listtype, for file in etc,,, os.path.basename(self.loaded_from)
+        #        self.loaded_from = None # name of the .res file it is loaded from (can be list if merged)
+        #        self.parent_filename = None # name of the .res file it is loaded from (basename)(can be list if merged)
+        #        self.parent_filename = if listtype, for file in etc,,, os.path.basename(self.loaded_from)
         #        self.channel_index = None
         #        self.channel_number = None
         #        self.creator = None
@@ -1507,6 +1564,11 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
+
+
+
+
+
         step_index_header = self.step_index_txt
         self.logger.debug("*** validating step table")
         d = self.tests[test_number].dfdata
@@ -1516,7 +1578,8 @@ class cellpydata(object):
             return False
 
         no_cycles_dfdata = np.amax(d[self.cycle_index_txt])
-        no_cycles_step_table = np.amax(s[self.step_table_txt_cycle])
+        headers_step_table = self.headers_step_table
+        no_cycles_step_table = np.amax(s[headers_step_table["cycle"]])
 
         if simple:
             self.logger.debug("  (simple)")
@@ -1533,8 +1596,9 @@ class cellpydata(object):
             else:
                 for j in range(1, no_cycles_dfdata + 1):
                     cycle_number = j
-                    no_steps_dfdata = len(np.unique(d[d[self.cycle_index_txt] == cycle_number][self.step_index_txt]))
-                    no_steps_step_table = len(s[s[self.step_table_txt_cycle] == cycle_number][self.step_table_txt_step])
+                    no_steps_dfdata = len(np.unique(d.loc[d[self.cycle_index_txt] == cycle_number, self.step_index_txt]))
+                    no_steps_step_table = len(s.loc[s[headers_step_table["cycle"]] == cycle_number,
+                                                    headers_step_table["step"]])
                     if no_steps_dfdata != no_steps_step_table:
                         validated = False
                         txt = "Error in step table (cycle: %i) d: %i, s:%i)" % (cycle_number,
@@ -1676,7 +1740,7 @@ class cellpydata(object):
         voltage_hdtxt = self.voltage_txt
         steptime_hdtxt = self.step_time_txt
         ir_hdtxt = self.internal_resistance_txt
-        ir_change_hdtxt = self.step_table_txt_ir_change
+        ir_change_hdtxt = self.headers_step_table["internal_resistance_change"]
         charge_hdtxt = self.charge_capacity_txt
         discharge_hdtxt = self.discharge_capacity_txt
 
@@ -1746,8 +1810,6 @@ class cellpydata(object):
                IR, IR_pct_change, ]
         return out
 
-
-
     def create_step_table(self, test_number=None):
         """ Create a table (v.0.2) that contains summary information for each step.
 
@@ -1786,33 +1848,35 @@ class cellpydata(object):
 
         cycle_index_header = self.cycle_index_txt
         step_index_header = self.step_index_txt
+        internal_resistance_txt = self.internal_resistance_txt
 
-        step_table_txt_cycle = self.step_table_txt_cycle
-        step_table_txt_step = self.step_table_txt_step
-        step_table_txt_type = self.step_table_txt_type
-        step_table_txt_info = self.step_table_txt_info
-        step_table_txt_ir = self.step_table_txt_ir
-        step_table_txt_ir_change = self.step_table_txt_ir_change
+        headers_step_table = self.headers_step_table
+
+        step_table_txt_cycle = headers_step_table["cycle"]
+        step_table_txt_step = headers_step_table["step"]
+        step_table_txt_type = headers_step_table["type"]
+        step_table_txt_info = headers_step_table["info"]
+        step_table_txt_ir = headers_step_table["internal_resistance"]
+        step_table_txt_ir_change = headers_step_table["internal_resistance_change"]
 
         # -------------create an "empty" df -----------------------------------
 
         # --- defining column names ---
         # (should probably migrate this to own function and add to self)
-
         columns = [step_table_txt_cycle, step_table_txt_step]
-        columns_end = [self.step_table_txt_post_average,
-                       self.step_table_txt_post_stdev,
-                       self.step_table_txt_post_max,
-                       self.step_table_txt_post_min,
-                       self.step_table_txt_post_start,
-                       self.step_table_txt_post_end,
-                       self.step_table_txt_post_delta,
-                       self.step_table_txt_post_rate,
+        columns_end = [headers_step_table["post_mean"],
+                       headers_step_table["post_std"],
+                       headers_step_table["post_max"],
+                       headers_step_table["post_min"],
+                       headers_step_table["post_start"],
+                       headers_step_table["post_end"],
+                       headers_step_table["post_delta"],
+                       headers_step_table["post_rate"],
                        ]
-        columns_I = [self.step_table_txt_I_ + x for x in columns_end]
-        columns_V = [self.step_table_txt_V_ + x for x in columns_end]
-        columns_charge = [self.step_table_txt_C_ + x for x in columns_end]
-        columns_discharge = [self.step_table_txt_D_ + x for x in columns_end]
+        columns_I = [headers_step_table["pre_current"] + x for x in columns_end]
+        columns_V = [headers_step_table["pre_voltage"] + x for x in columns_end]
+        columns_charge = [headers_step_table["pre_charge"] + x for x in columns_end]
+        columns_discharge = [headers_step_table["pre_discharge"] + x for x in columns_end]
         columns.extend(columns_I)
         columns.extend(columns_V)
         columns.extend(columns_charge)
@@ -1826,7 +1890,7 @@ class cellpydata(object):
 
         # --- adding pct change col(s)-----
         df = self.tests[test_number].dfdata
-        df[step_table_txt_ir_change] = df[self.internal_resistance_txt].pct_change()
+        df[step_table_txt_ir_change] = df[internal_resistance_txt].pct_change()
 
         # --- finding size ------
         df = self.tests[test_number].dfdata
@@ -1865,34 +1929,30 @@ class cellpydata(object):
 
                 counter += 1
 
-                # ----------chekcing step-type-----------------------------------------
-                #
-                #        print "checking step-type"
-        average_current_txt = self.step_table_txt_I_ + self.step_table_txt_post_average
-        min_current_txt = self.step_table_txt_I_ + self.step_table_txt_post_min
-        max_current_txt = self.step_table_txt_I_ + self.step_table_txt_post_max
-        delta_current_txt = self.step_table_txt_I_ + self.step_table_txt_post_delta
-        delta_voltage_txt = self.step_table_txt_V_ + self.step_table_txt_post_delta
-        delta_charge_txt = self.step_table_txt_C_ + self.step_table_txt_post_delta
-        delta_discharge_txt = self.step_table_txt_D_ + self.step_table_txt_post_delta
+        average_current_txt = headers_step_table["pre_current"] + headers_step_table["post_mean"]
+        min_current_txt = headers_step_table["pre_current"] + headers_step_table["post_min"]
+        max_current_txt = headers_step_table["pre_current"] + headers_step_table["post_max"]
+        delta_current_txt = headers_step_table["pre_current"] + headers_step_table["post_delta"]
+        delta_voltage_txt = headers_step_table["pre_voltage"] + headers_step_table["post_delta"]
+        delta_charge_txt = headers_step_table["pre_charge"] + headers_step_table["post_delta"]
+        delta_discharge_txt = headers_step_table["pre_discharge"] + headers_step_table["post_delta"]
 
         # max_average_current = df_steps[average_current_txt].max()
         #        print "max average current:"
         #        print max_average_current
         #
-        current_limit_value_hard = 0.0000000000001
-        current_limit_value_soft = 0.00001
 
-        stable_current_limit_hard = 2.0
-        stable_current_limit_soft = 4.0
 
-        stable_voltage_limit_hard = 2.0
-        stable_voltage_limit_soft = 4.0
-
-        stable_charge_limit_hard = 2.0
-        stable_charge_limit_soft = 5.0
-
-        ir_change_limit = 0.00001
+        # - setting limits
+        current_limit_value_hard = self.raw_limits["current_hard"]
+        current_limit_value_soft = self.raw_limits["current_soft"]
+        stable_current_limit_hard = self.raw_limits["stable_current_hard"]
+        stable_current_limit_soft = self.raw_limits["stable_current_soft"]
+        stable_voltage_limit_hard = self.raw_limits["stable_voltage_hard"]
+        stable_voltage_limit_soft = self.raw_limits["stable_voltage_soft"]
+        stable_charge_limit_hard = self.raw_limits["stable_charge_hard"]
+        stable_charge_limit_soft = self.raw_limits["stable_charge_soft"]
+        ir_change_limit = self.raw_limits["ir_change"]
 
         #
         #        minimum_change_limit = 2.0 # percent
@@ -3006,8 +3066,8 @@ class cellpydata(object):
             print "returning None"
             return None
 
-        discharge_txt = self.summary_txt_discharge_cap
-        charge_txt = self.summary_txt_charge_cap
+        discharge_txt = self.headers_summary["discharge_capacity"]
+        charge_txt = self.headers_summary["charge_capacity"]
 
         out = None
         dif = []  # difference between charge and discharge
@@ -3350,8 +3410,8 @@ class cellpydata(object):
         cycle_index_header = self.cycle_index_txt
         step_index_header = self.step_index_txt
 
-        step_table_txt_cycle = self.step_table_txt_cycle
-        step_table_txt_step = self.step_table_txt_step
+        step_table_txt_cycle = self.headers_step_table["cycle"]
+        step_table_txt_step = self.headers_step_table["step"]
 
         # modifying step_table
         st = self.tests[test_number].step_table
@@ -3472,29 +3532,31 @@ class cellpydata(object):
         i_txt = self.current_txt
 
         # Retrieving the column header names for summary-data (dfsummary)
-        discharge_title = self.summary_txt_discharge_cap
-        charge_title = self.summary_txt_charge_cap
-        cumcharge_title = self.summary_txt_cum_charge_cap
-        cumdischarge_title = self.summary_txt_cum_discharge_cap
-        coulomb_title = self.summary_txt_coul_eff
-        cumcoulomb_title = self.summary_txt_cum_coul_eff
-        coulomb_diff_title = self.summary_txt_coul_diff
-        cumcoulomb_diff_title = self.summary_txt_cum_coul_diff
-        col_discharge_loss_title = self.summary_txt_discharge_cap_loss
-        col_charge_loss_title = self.summary_txt_charge_cap_loss
-        dcloss_cumsum_title = self.summary_txt_cum_discharge_cap_loss
-        closs_cumsum_title = self.summary_txt_cum_charge_cap_loss
-        endv_charge_title = self.summary_txt_endv_charge
-        endv_discharge_title = self.summary_txt_endv_discharge
-        date_time_txt_title = self.summary_txt_datetime_txt
-        ocv_1_v_min_title = self.summary_txt_ocv_1_min
-        ocv_1_v_max_title = self.summary_txt_ocv_1_max
-        ocv_2_v_min_title = self.summary_txt_ocv_2_min
-        ocv_2_v_max_title = self.summary_txt_ocv_2_max
-        ir_discharge_title = self.summary_txt_ir_discharge
-        ir_charge_title = self.summary_txt_ir_charge
-        high_level_at_cycle_n_txt = self.summary_txt_high_level
-        low_level_at_cycle_n_txt = self.summary_txt_low_level
+        headers_summary = self.headers_summary
+
+        discharge_title = headers_summary["discharge_capacity"]
+        charge_title = headers_summary["charge_capacity"]
+        cumcharge_title = headers_summary["cumulated_charge_capacity"]
+        cumdischarge_title = headers_summary["cumulated_discharge_capacity"]
+        coulomb_title = headers_summary["coulombic_efficiency"]
+        cumcoulomb_title = headers_summary["cumulated_coulombic_efficiency"]
+        coulomb_diff_title = headers_summary["coulombic_difference"]
+        cumcoulomb_diff_title = headers_summary["cumulated_coulombic_difference"]
+        col_discharge_loss_title = headers_summary["discharge_capacity_loss"]
+        col_charge_loss_title = headers_summary["charge_capacity_loss"]
+        dcloss_cumsum_title = headers_summary["cumulated_discharge_capacity_loss"]
+        closs_cumsum_title =headers_summary["cumulated_charge_capacity_loss"]
+        endv_charge_title = headers_summary["end_voltage_charge"]
+        endv_discharge_title = headers_summary["end_voltage_discharge"]
+        date_time_txt_title = headers_summary["date_time_txt"]
+        ocv_1_v_min_title = headers_summary["ocv_first_min"]
+        ocv_1_v_max_title = headers_summary["ocv_first_max"]
+        ocv_2_v_min_title = headers_summary["ocv_second_min"]
+        ocv_2_v_max_title = headers_summary["ocv_second_max"]
+        ir_discharge_title = headers_summary["ir_discharge"]
+        ir_charge_title = headers_summary["ir_charge"]
+        high_level_at_cycle_n_txt = headers_summary["high_level"]
+        low_level_at_cycle_n_txt = headers_summary["low_level"]
 
         # Here are the two main DataFrames for the test (raw-data and summary-data)
         summary_df = test.dfsummary

@@ -167,8 +167,12 @@ def test_get_loading(db_reader):
 
 
 def test_get_areal_loading(db_reader):
-    output = db_reader.get_areal_loading(test_serial_number_one)
-    assert pytest.approx(output, 0.1) == test_areal_loading
+    try:
+        output = db_reader.get_areal_loading(test_serial_number_one)
+        assert False
+    except NotImplementedError:
+        assert True
+    # assert pytest.approx(output, 0.1) == test_areal_loading
 
 
 def test_get_mass(db_reader):
