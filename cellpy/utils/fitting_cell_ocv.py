@@ -169,7 +169,8 @@ def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35):
     result_figure = subfigure[1]
 
     residual_figure.errorbar(t, result_residual, yerr=measured_err,
-                             label='Fit - Measured', ms=ms+3)
+                             label='Fit - Measured', linewidth=6,
+                             elinewidth=0.2)
     result_figure.errorbar(t, v, yerr=measured_err, fmt='ob',
                            label='Measured', ms=ms+3)
     result_figure.plot(t, best.init_fit, '--k', label='Initial guess',
