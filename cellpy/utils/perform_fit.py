@@ -23,8 +23,8 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
-                 v_start, c_rate, change_i, cell_capacity=3.579, conf=False,
-                 v_err=0.001):
+                 v_start, c_rate, change_i, cell_capacity=3.579,
+                 conf=False, v_err=0.001):
     """Fitting measured data from cell with cellpy.
 
     Args:

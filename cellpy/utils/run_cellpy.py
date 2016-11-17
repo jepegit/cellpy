@@ -19,7 +19,7 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-def plotting_stuff(filename, outfolder, name):
+def plotting_stuff(filename, outfolder, cell_name, m_s=20, ti_la_s=35):
     """Based on same plot as in perform_fit.save_and_plot_cap().
 
     Difference is that I can freely change here as run_cellpy is not suppose
@@ -30,16 +30,16 @@ def plotting_stuff(filename, outfolder, name):
     Args:
         filename (str): Filename of cell.
         outfolder (str): Folder in which the filename lays.
+        cell_name (str): Converted cell name to thesis cell name.
+        m_s (int): Markersize for plots.
+        ti_la_s (int): Ticks and labels font size.
 
     Returns:
         plt.figure(): A desired plot
 
     """
-
-    # ms = markersize
-    ms = 20
-    tick_and_label_s = 35
-    title_s = tick_and_label_s + 10
+    # Title size
+    title_s = ti_la_s + 10
 
     # getting stats and capacity voltage table
     normal = filename[:-4] + '_normal.csv'
@@ -82,41 +82,41 @@ def plotting_stuff(filename, outfolder, name):
     x_range = np.arange(1, len(col_eff) + 1)
 
     plt.figure()
-    plt.plot(x_range, col_eff, '-ok', ms=ms)
+    plt.plot(x_range, col_eff, '-ok', ms=m_s)
     plt.plot(100*np.ones(2 * len(col_eff)), '-k')
     plt.gca().invert_yaxis()
     for tick_rc in plt.gca().xaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(tick_and_label_s)
+        tick_rc.label.set_fontsize(ti_la_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(tick_and_label_s)
+        tick_rc.label.set_fontsize(ti_la_s)
     plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
     plt.gca().set_xlim([-0.1, len(col_eff) + 1])
     plt.gca().set_ylim([col_eff[1]-0.5, 100.5])
     plt.gca().title.set_position([.5, 1.05])
-    plt.title('Coulombic Efficiency ($\eta$) for cell %s' % name, size=title_s)
+    plt.title('Coulombic Efficiency ($\eta$) for cell %s' % cell_name, size=title_s)
     plt.legend(['$\eta = Q_{out}/Q_{in}$'], loc='center right',
-               prop={'size': tick_and_label_s})
-    plt.xlabel('Cycle number', size=tick_and_label_s)
-    plt.ylabel('$\eta$ (%)', size=tick_and_label_s)
+               prop={'size': ti_la_s})
+    plt.xlabel('Cycle number', size=ti_la_s)
+    plt.ylabel('$\eta$ (%)', size=ti_la_s)
 
     # Plotting cycle vs. cap
     plt.figure()
-    plt.plot(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"], '^b', ms=ms)
-    plt.plot(x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or', ms=ms)
+    plt.plot(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"], '^b', ms=m_s)
+    plt.plot(x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or', ms=m_s)
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(tick_and_label_s)
+        tick_rc.label.set_fontsize(ti_la_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(tick_and_label_s)
+        tick_rc.label.set_fontsize(ti_la_s)
     plt.gca().title.set_position([.5, 1.05])
     plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
     plt.legend(['Charge Capacity (Delithiation)',
                 'Discharge capacity (Lithiation)'], loc='center right',
-               prop={'size': tick_and_label_s})
+               prop={'size': ti_la_s})
 
-    plt.title('Capacity vs. Cycle for cell %s' % name, size=title_s)
-    plt.xlabel('Cycle number', size=tick_and_label_s)
-    plt.ylabel('Capacity (mAh/g)', size=tick_and_label_s)
+    plt.title('Capacity vs. Cycle for cell %s' % cell_name, size=title_s)
+    plt.xlabel('Cycle number', size=ti_la_s)
+    plt.ylabel('Capacity (mAh/g)', size=ti_la_s)
 
     # plt.savefig(os.path.join(fig_folder, 'cap_cycle_sic006_74.pdf'))
 
@@ -136,16 +136,16 @@ def plotting_stuff(filename, outfolder, name):
         plt.plot(capacity_sorting[cycle], voltage_sorting[cycle])
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(tick_and_label_s)
+        tick_rc.label.set_fontsize(ti_la_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
-        tick_rc.label.set_fontsize(tick_and_label_s)
-    plt.title('Capacity vs. Voltage for cell %s' % name, size=title_s)
+        tick_rc.label.set_fontsize(ti_la_s)
+    plt.title('Capacity vs. Voltage for cell %s' % cell_name, size=title_s)
     plt.gca().title.set_position([.5, 1.05])
     plt.gca().set_ylim([0.03, 1])
     plt.yticks(np.arange(0, 1.1, 0.1))
-    plt.xlabel('Capacity (mAh/g)', size=tick_and_label_s)
-    plt.ylabel('Voltage (V)', size=tick_and_label_s)
-    plt.legend(loc='best', prop={'size': tick_and_label_s})
+    plt.xlabel('Capacity (mAh/g)', size=ti_la_s)
+    plt.ylabel('Voltage (V)', size=ti_la_s)
+    plt.legend(loc='best', prop={'size': ti_la_s})
 
 
 if __name__ == '__main__':
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[2]
+    name = filenames[1]
     up = False
     if up:
         rlx_text = 'after lithiation'
@@ -242,36 +242,34 @@ if __name__ == '__main__':
             fitting_cell(name[:-3]+ocv_down, datafolder_out, cell_mass[name],
                          contri, tau_guessed, v_start_down, c_rate, change_i)
 
-    cycles_number = (0, 1, 2, 4, 7, 9, 11, len(voltage) - 1)
-    leg = []
-    plt.figure()
-    for volt_i in cycles_number:
-        ocv = voltage[volt_i][::30]
-        time_ocv = time[volt_i][::30]
-        if volt_i == cycles_number[-1]:
-            plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=10)
-        else:
-            plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=10)
-        leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
-    for tick_volt in plt.gca().xaxis.get_major_ticks():
-        tick_volt.label.set_fontsize(tick_and_label_s)
-    for tick_volt in plt.gca().yaxis.get_major_ticks():
-        tick_volt.label.set_fontsize(tick_and_label_s)
-
-    plt.gca().title.set_position([.5, 1.05])
-    plt.title('Open Circuit Voltage Relaxation for Cell %s (%s)'
-              % (names[name], rlx_text), size=title_s)
-    plt.xlabel('Time (s)', size=tick_and_label_s)
-    plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
-    plt.legend(leg, loc='best', prop={'size': tick_and_label_s-12})
+    # cycles_number = (0, 1, 2, 4, 7, 9, 11, len(voltage) - 1)
+    # leg = []
+    # plt.figure()
+    # for volt_i in cycles_number:
+    #     ocv = voltage[volt_i][::30]
+    #     time_ocv = time[volt_i][::30]
+    #     if volt_i == cycles_number[-1]:
+    #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=10)
+    #     else:
+    #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=10)
+    #     leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
+    # for tick_volt in plt.gca().xaxis.get_major_ticks():
+    #     tick_volt.label.set_fontsize(tick_and_label_s)
+    # for tick_volt in plt.gca().yaxis.get_major_ticks():
+    #     tick_volt.label.set_fontsize(tick_and_label_s)
+    #
+    # plt.gca().title.set_position([.5, 1.05])
+    # plt.title('Open Circuit Voltage Relaxation for Cell %s (%s)'
+    #           % (names[name], rlx_text), size=title_s)
+    # plt.xlabel('Time (s)', size=tick_and_label_s)
+    # plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
+    # plt.legend(leg, loc='best', prop={'size': tick_and_label_s-12})
 
     pass
 
-    # plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
-        # plt.gca().set_xlim([-0.1, len(col_eff) + 1])
-        # plt.gca().set_ylim([col_eff[1]-0.5, 100.5])
+    fco.user_plot_voltage(time, voltage, fit, conf, ms=ms,
+                          ti_la_s=tick_and_label_s, tit_s=title_s)
     # fco.plot_params(voltage, fit, rc_para, i_err=mass_frac_err)
-    # fco.user_plot_voltage(time, voltage, fit, conf)
     # fco.print_params(fit, rc_para)
 
 

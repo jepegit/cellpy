@@ -142,7 +142,7 @@ def manipulate_data(read_data):
     return pd.Series(sorted_data)
 
 
-def plot_voltage(t, v, best, subfigure):
+def plot_voltage(t, v, best, subfigure, ms=20, ti_lb_s=35):
     """Making a plot with given voltage data.
 
     Args:
@@ -150,15 +150,13 @@ def plot_voltage(t, v, best, subfigure):
         v (nd.array): Measured voltage [V].
         best (ModelResult): All fitted data in lmfit object Model.
         subfigure (list): Subfigures with length 2
+        ms (int): Markersize of plots.
+        ti_lb_s (int): Ticks and labels size.
 
     Returns:
         None: Making a plot with matplotlib.pyplot
 
     """
-    # print 'Guessed parameters: ', best.init_values
-    # print 'Best fitted parameters: ', result_params
-    # print '\t'
-    # print '------------------------------------------------------------'
     result_params = best.params
     measured_err = (1. / best.weights)
     result_residual = best.residual
@@ -168,29 +166,30 @@ def plot_voltage(t, v, best, subfigure):
     result_figure = subfigure[1]
 
     residual_figure.errorbar(t, result_residual, yerr=measured_err,
-                             label='Residual')
-    result_figure.errorbar(t, v, yerr=measured_err, fmt='ob', label='Measured')
-    result_figure.plot(t, best.init_fit, '--k', label='Initial guess')
-    result_figure.plot(t, best.best_fit, '-r', label='Best fit')
-    result_figure.plot(t, ocv, '--c', label='ocv')
+                             label='Residual', ms=ms)
+    result_figure.errorbar(t, v, yerr=measured_err, fmt='ob',
+                           label='Measured', ms=ms)
+    result_figure.plot(t, best.init_fit, '--k', label='Initial guess', ms=ms)
+    result_figure.plot(t, best.best_fit, '-r', label='Best fit', ms=ms)
+    result_figure.plot(t, ocv, '--c', label='ocv', ms=ms)
 
-    residual_figure.set_ylabel('Residual (V)', size=20)
-    residual_figure.legend(loc='best', prop={'size': 15})
+    residual_figure.set_ylabel('Residual (V)', size=ti_lb_s)
+    residual_figure.legend(loc='best', prop={'size': ti_lb_s})
 
     for tick_resi in residual_figure.xaxis.get_major_ticks():
-        tick_resi.label.set_fontsize(16)
+        tick_resi.label.set_fontsize(ti_lb_s)
     for tick_resi in residual_figure.yaxis.get_major_ticks():
-        tick_resi.label.set_fontsize(16)
+        tick_resi.label.set_fontsize(ti_lb_s)
     residual_figure.grid()
 
-    result_figure.set_xlabel('Time (s)', size=20)
-    result_figure.set_ylabel('Voltage (V)', size=20)
-    result_figure.legend(loc='best', prop={'size': 15})
+    result_figure.set_xlabel('Time (s)', size=ti_lb_s)
+    result_figure.set_ylabel('Voltage (V)', size=ti_lb_s)
+    result_figure.legend(loc='best', prop={'size': ti_lb_s})
 
     for tick_res in result_figure.xaxis.get_major_ticks():
-        tick_res.label.set_fontsize(16)
+        tick_res.label.set_fontsize(ti_lb_s)
     for tick_res in result_figure.yaxis.get_major_ticks():
-        tick_res.label.set_fontsize(16)
+        tick_res.label.set_fontsize(ti_lb_s)
 
     result_figure.grid()
 
@@ -732,7 +731,8 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
     return result, best_rc_para
 
 
-def user_plot_voltage(time, voltage, fit, conf):
+def user_plot_voltage(time, voltage, fit, conf, name=None, ms=20, ti_la_s=35,
+                      tit_s=45):
     """User decides which cycles to plot and report.
 
     Args:
@@ -740,10 +740,16 @@ def user_plot_voltage(time, voltage, fit, conf):
         voltage (:obj: 'list' of :obj: 'nd.array'): Cycles' relaxation voltage.
         fit (:obj: 'list' of :obj: 'ModelResult'): All cycles' best fit results.
         conf (bool): conf_int calculated if True --> amount of rc-ciruits > 1.
+        name (str): Name of cell (used in title of plots).
+        ms (int): Markersize for plots.
+        ti_la_s (int): Ticks and labels font size.
+        tit_s (int): Title size of plot.
+
 
     Returns:
         None: Plotted figures and reports of requested cycle numbers
     """
+    name = 'not specified' if not name else name
     question = "Write the cycles you want to plot separated with space." \
                "If you don't want to plot anything else than the fit " \
                "reports, press enter. " \
@@ -771,14 +777,15 @@ def user_plot_voltage(time, voltage, fit, conf):
     v_0 = voltage[0][0]
     if v_ocv < v_0:
         # After charge
-        rlx_txt = "delithiation (downwards relaxation)"
+        rlx_txt = "after delithiation"
     else:
         # After discharge
-        rlx_txt = "lithiation (upward relaxation)"
+        rlx_txt = "after lithiation"
 
     if not user_cycles_list:
         for cycle_nr in range(len(fit)):
-            print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
+            print 'Report for cell %s (%s), Cycle %i'\
+                  % (name, rlx_txt, (cycle_nr + 1))
             report_fit(fit[cycle_nr])
             if conf > 1:
                 report_ci(fit[cycle_nr].ci_out[0])
@@ -787,15 +794,15 @@ def user_plot_voltage(time, voltage, fit, conf):
         for cycle_nr in user_cycles_list:
             # fig_fit = fit[cycle_nr].plot()
             rc_fig = plt.figure()
-            rc_fig.canvas.set_window_title('cycle_%i_sic006_74_delith_rc'
+            rc_fig.canvas.set_window_title('cycle_%i_sic006_74_rc_'
                                            % (cycle_nr + 1))
-            rc_fig.suptitle('RC-circuits plotted with fitted'
-                            'parameters of cycle%i after %s'
-                            % ((cycle_nr + 1), rlx_txt), size=25)
+            rc_fig.suptitle('RC-circuits plotted for cell %s with fitted'
+                            'parameters of cycle%i %s'
+                            % (name, (cycle_nr + 1), rlx_txt), size=tit_s)
             for tick_rc in plt.gca().xaxis.get_major_ticks():
-                tick_rc.label.set_fontsize(16)
+                tick_rc.label.set_fontsize(ti_la_s)
             for tick_rc in plt.gca().yaxis.get_major_ticks():
-                tick_rc.label.set_fontsize(16)
+                tick_rc.label.set_fontsize(ti_la_s)
 
             plot_rc(time[cycle_nr], fit[cycle_nr])
 
@@ -805,15 +812,16 @@ def user_plot_voltage(time, voltage, fit, conf):
             ax1 = plt.subplot(gs[-1, 0])
             ax2 = plt.subplot(gs[0:-1, 0], sharex=ax1)
             sub_fig = [ax1, ax2]
-            plt.suptitle('Measured and fitted voltage of cycle %i after %s' %
-                         ((cycle_nr + 1), rlx_txt), size=25)
+            plt.suptitle('Measured and fitted voltage for cell %s: cycle %i '
+                         '%s' % (name, (cycle_nr + 1), rlx_txt), size=tit_s)
             plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
-                         sub_fig)
+                         sub_fig, ms=ms, ti_lb_s=ti_la_s)
 
-            plt.gcf().canvas.set_window_title('cycle_%i_sic006_74_delith'
+            plt.gcf().canvas.set_window_title('cycle_%i_sic006_74_'
                                               % (cycle_nr + 1))
 
-            print 'Report for cycle %i. After %s' % (cycle_nr + 1, rlx_txt)
+            print 'Report for cell %s (%s), Cycle %i'\
+                  % (name, rlx_txt, (cycle_nr + 1))
             report_fit(fit[cycle_nr])
             if conf:
                 #     trace = fit[cycle_nr].ci_out[1]
