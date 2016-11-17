@@ -468,8 +468,13 @@ class cellpydata(object):
         headers_summary["date_time_txt"] = "Date_Time_Txt(str)"
         headers_summary["end_voltage_discharge"] = "End_Voltage_Discharge(V)"
         headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
+        headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
+        headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
+        headers_summary["cumulated_ric"] = "RIC(none)"
         headers_summary["low_level"] = "Low_Level(percentage)"  # Sum of irreversible capacity
         headers_summary["high_level"] = "High_Level(percentage)"  # SEI loss
+        headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
+        headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
         return headers_summary
 
     @staticmethod
@@ -3555,8 +3560,14 @@ class cellpydata(object):
         ocv_2_v_max_title = headers_summary["ocv_second_max"]
         ir_discharge_title = headers_summary["ir_discharge"]
         ir_charge_title = headers_summary["ir_charge"]
+
+        ric_disconnect_title = headers_summary["cumulated_ric_disconnect"]
+        ric_sei_title = headers_summary["cumulated_ric_sei"]
+        ric_title = headers_summary["cumulated_ric"]
         high_level_at_cycle_n_txt = headers_summary["high_level"]
         low_level_at_cycle_n_txt = headers_summary["low_level"]
+        shifted_charge_capacity_title = headers_summary["shifted_charge_capacity"]
+        shifted_discharge_capacity_title = headers_summary["shifted_discharge_capacity"]
 
         # Here are the two main DataFrames for the test (raw-data and summary-data)
         summary_df = test.dfsummary
@@ -3670,12 +3681,40 @@ class cellpydata(object):
             dfsummary[low_level_at_cycle_n_txt] = np.nan
             dfsummary[high_level_at_cycle_n_txt] = np.nan
 
+        # --------------relative irreversible capacities as defined by Gauthier et al.---
+        # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
+        RIC = (dfsummary[_first_step_txt].shift(1) - dfsummary[_second_step_txt])\
+              / dfsummary[_second_step_txt].shift(1)
+        dfsummary[ric_title] = RIC.cumsum()
+
+        # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
+        RIC_SEI = (dfsummary[_first_step_txt] - dfsummary[_second_step_txt].shift(1))\
+                  / dfsummary[_second_step_txt].shift(1)
+        dfsummary[ric_sei_title] = RIC_SEI.cumsum()
+
+        # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
+        RIC_disconnect = (dfsummary[_second_step_txt].shift(1) - dfsummary[_second_step_txt])\
+                         / dfsummary[_second_step_txt].shift(1)
+        dfsummary[ric_disconnect_title] = RIC_disconnect.cumsum()
+
+        # -------------- shifted capacities as defined by J. Dahn et al. -----
+        # need to double check this (including checking if it is valid in cathode mode).
+        individual_edge_movement = dfsummary[_first_step_txt] - dfsummary[_second_step_txt]
+        dfsummary[shifted_charge_capacity_title] = individual_edge_movement.cumsum()
+        dfsummary[shifted_discharge_capacity_title] = dfsummary[shifted_charge_capacity_title] + dfsummary[_first_step_txt]
+
         if convert_date:
             self.logger.debug("converting date from xls-type")
             dfsummary[date_time_txt_title] = dfsummary[dt_txt].apply(xldate_as_datetime, option="to_string")
 
         if find_ocv and not self.load_only_summary:
             # should remove this option
+            print 20*"*"
+            print "CONGRATULATIONS"
+            print "-though this would never be run!"
+            print "-find_ocv in make_summary"
+            print "  this is a stupid routine that can be implemented much better!"
+            print 20 * "*"
             do_ocv_1 = True
             do_ocv_2 = True
 
