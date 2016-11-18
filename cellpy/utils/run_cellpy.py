@@ -199,11 +199,14 @@ if __name__ == '__main__':
                 names[fil] = 'A%i' % counter
                 counter += 1
             elif 3 < counter <= 6:
-                names[fil] = 'QA%i' % counter
+                names[fil] = 'QA%i' % (counter - 3)
+                counter += 1
             elif 6 < counter <= 9:
-                names[fil] = '%i' % counter
+                names[fil] = '%i' % (counter - 6)
+                counter += 1
             elif 9 < counter <= 12:
-                names[fil] = 'Q%i' % counter
+                names['20161101_bec01_%i_cc_01.res'] = 'Q%i' % (counter - 9)
+                counter += 1
 
     # bec01_07-09 is without additives and bec01_01-03 with additives
     # save_and_plot_cap(datafolder, filenames[0], datafolder_out,
@@ -223,7 +226,7 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[1]
+    name = filenames[2]
     up = False
     if up:
         rlx_text = 'after lithiation'
@@ -236,11 +239,13 @@ if __name__ == '__main__':
     if up:
         time, voltage, fit, rc_para = \
             fitting_cell(name[:-3]+ocv_up, datafolder_out, cell_mass[name],
-                         contri, tau_guessed, v_start_up, c_rate, change_i)
+                         contri, tau_guessed, v_start_up, c_rate, change_i,
+                         v_err=v_err)
     else:
         time, voltage, fit, rc_para = \
             fitting_cell(name[:-3]+ocv_down, datafolder_out, cell_mass[name],
-                         contri, tau_guessed, v_start_down, c_rate, change_i)
+                         contri, tau_guessed, v_start_down, c_rate, change_i,
+                         v_err)
 
     # cycles_number = (0, 1, 2, 4, 7, 9, 11, len(voltage) - 1)
     # leg = []

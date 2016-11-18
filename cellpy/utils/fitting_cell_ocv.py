@@ -423,7 +423,7 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
 
 def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                    change_i, ideal_cap=3.579, mass=0.86, v_start=None,
-                   v_err=0.001):
+                   v_err=0.00095):
     """Fitting measured data to model.
 
     Args:
@@ -572,7 +572,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
 
 def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                   change_i, ideal_cap=3.579, mass=0.86, v_start=None,
-                  v_err=0.001):
+                  v_err=0.00095):
     """Fitting measured data to model with more than one decay exponential func.
 
     First using the more robust Nelder-Mead Method to calculate the
@@ -800,7 +800,7 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
         for cycle_nr in user_cycles_list:
             # fig_fit = fit[cycle_nr].plot()
             rc_fig = plt.figure()
-            rc_fig.canvas.set_window_title('cycle_%i_sic006_74_rc_'
+            rc_fig.canvas.set_window_title('cycle_%i_bec08_rc_'
                                            % (cycle_nr + 1))
             rc_fig.suptitle('Fitted RC-circuits for cell %s (%s), cycle %i'
                             % (name, rlx_txt, (cycle_nr + 1)), size=tit_s)
@@ -822,7 +822,7 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
                          % (name, rlx_txt, (cycle_nr + 1)), size=tit_s)
             plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
                          sub_fig, ms=ms, ti_lb_s=ti_la_s)
-            plt.gcf().canvas.set_window_title('cycle_%i_sic006_74_'
+            plt.gcf().canvas.set_window_title('cycle_%i_bec08_'
                                               % (cycle_nr + 1))
 
             print 'Report for cell %s (%s), Cycle %i'\
