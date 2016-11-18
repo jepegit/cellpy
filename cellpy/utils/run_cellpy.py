@@ -111,7 +111,7 @@ def plotting_stuff(filename, outfolder, cell_name, m_s=20, ti_la_s=35):
     plt.gca().title.set_position([.5, 1.05])
     plt.xticks(np.arange(1, len(col_eff) + 1, 2.0))
     plt.legend(['Charge Capacity (Delithiation)',
-                'Discharge capacity (Lithiation)'], loc='center right',
+                'Discharge capacity (Lithiation)'], loc='best',
                prop={'size': ti_la_s})
 
     plt.title('Capacity vs. Cycle for cell %s' % cell_name, size=title_s)
@@ -145,7 +145,7 @@ def plotting_stuff(filename, outfolder, cell_name, m_s=20, ti_la_s=35):
     plt.yticks(np.arange(0, 1.1, 0.1))
     plt.xlabel('Capacity (mAh/g)', size=ti_la_s)
     plt.ylabel('Voltage (V)', size=ti_la_s)
-    plt.legend(loc='best', prop={'size': ti_la_s})
+    plt.legend(loc='best', prop={'size': ti_la_s-6})
 
 
 if __name__ == '__main__':
