@@ -24,7 +24,7 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
                  v_start, c_rate, change_i, cell_capacity=3.579,
-                 conf=False, v_err=0.00095):
+                 conf=False, v_err=0.002):
     """Fitting measured data from cell with cellpy.
 
     Args:
@@ -60,16 +60,24 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
                                             mass=cell_mass,
                                             v_start=v_start)
     if conf:
-        fit, rc_para = fco.fit_with_conf(model, time, voltage, tau_guessed,
-                                         contri, c_rate, change_i,
-                                         cell_capacity, cell_mass, v_start,
-                                         v_err=v_err)
+        fit, rc_para, i_start = fco.fit_with_conf(model=model, time=time,
+                                                  voltage=voltage,
+                                                  guess_tau=tau_guessed,
+                                                  contribution=contri,
+                                                  c_rate=c_rate,
+                                                  change_i=change_i,
+                                                  ideal_cap=cell_capacity,
+                                                  mass=cell_mass,
+                                                  v_start=v_start,
+                                                  v_err=v_err)
     else:
-        fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
-                                          contri, c_rate, change_i, cell_capacity,
-                                          cell_mass, v_start, v_err=v_err)
+        fit, rc_para, i_start = fco.fit_with_model(model, time, voltage,
+                                                   tau_guessed, contri, c_rate,
+                                                   change_i, cell_capacity,
+                                                   cell_mass, v_start,
+                                                   v_err=v_err)
 
-    return time, voltage, fit, rc_para
+    return time, voltage, fit, rc_para, i_start
 
 
 def save_and_plot_cap(filepath, filename, outfolder, mass_cell,

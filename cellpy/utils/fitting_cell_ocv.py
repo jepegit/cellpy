@@ -423,7 +423,7 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
 
 def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                    change_i, ideal_cap=3.579, mass=0.86, v_start=None,
-                   v_err=0.00095):
+                   v_err=0.002):
     """Fitting measured data to model.
 
     Args:
@@ -443,7 +443,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
         ideal_cap (float): Theoretical capacity of the cell.
         mass (float): Mass of the active material. Given in [mg].
-        v_err (float): Voltage measurement accuracy in %. Default: Arbin BT2000.
+        v_err (float): Voltage measurement accuracy in V. Default: Arbin BT2000.
         v_start (float): Cut-off voltage (potential before IR-drop).
 
     Returns:
@@ -502,15 +502,11 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                                  'same rc-names. That is, both need to have '
                                  'the same keyword arguments.')
 
-    result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err))
+    result_initial = model.fit(voltage[0], t=time[0], weights=1./v_err)
     # result_initial.conf_interval()
     result = [result_initial]
 
     best_para = [result[0].params]
-    err_para = np.sqrt(np.diag(result_initial.covar))
-    error_para = {para_name: err_para[err]
-                  for err, para_name in enumerate(model.param_names)}
-    best_para_error = [error_para]
 
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
                    for key, v0_rc in best_para[0].valuesdict().items()
@@ -567,12 +563,12 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                         if key.startswith('tau')}
         best_rc_cycle.update(best_c_cycle)
         best_rc_para.append(best_rc_cycle)
-    return result, best_rc_para
+    return result, best_rc_para, i_start
 
 
 def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                   change_i, ideal_cap=3.579, mass=0.86, v_start=None,
-                  v_err=0.00095):
+                  v_err=0.002):
     """Fitting measured data to model with more than one decay exponential func.
 
     First using the more robust Nelder-Mead Method to calculate the
@@ -734,7 +730,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                         if key.startswith('tau')}
         best_rc_cycle.update(best_c_cycle)
         best_rc_para.append(best_rc_cycle)
-    return result, best_rc_para
+    return result, best_rc_para, i_start
 
 
 def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
@@ -841,7 +837,9 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
             print '------------------------------------------------------------'
 
 
-def plot_params(voltage, fit, rc_params, i_err=0.2):
+def plot_params(voltage, fit, rc_params, i_start, cell_name,
+                fig_folder, i_err=0.00065,
+                ms=10, ti_la_s=35, tit_s=45):
     """Calculating parameter errors and plotting them.
 
     r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
@@ -853,8 +851,13 @@ def plot_params(voltage, fit, rc_params, i_err=0.2):
         voltage (:obj: 'list' of :obj: 'nd.array'): Measured voltage.
         fit (:obj: 'list' of :obj: 'ModelResult'): Best fit for each cycle.
         rc_params (:obj: 'list' of :obj: 'dict'): Calculated R and C from fit.
-        i_err (float): Current measurement error in %. Standard is Arbin BT2000.
-
+        i_start (list): Discharge current. Used to calculate frac error of I.
+        cell_name (str): Name of the cell.
+        fig_folder (str): Which folder the plots should be saved in.
+        i_err (float): Current measurement error in A. Standard is Arbin BT2000.
+        ms (int): Markersize for plots.
+        ti_la_s (int): Ticks and labels font size.
+        tit_s (int): Title size of plot.
     Returns:
         None: Plot the parameters with their errors.
     """
@@ -862,15 +865,16 @@ def plot_params(voltage, fit, rc_params, i_err=0.2):
     v_0 = voltage[0][0]
     if v_ocv < v_0:
         # After charge
-        rlx_txt = "delithiation (downwards relaxation)"
+        rlx_txt = "delithiation"
     else:
         # After discharge
-        rlx_txt = "lithiation (upward relaxation)"
+        rlx_txt = "lithiation"
 
     best_para = []
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
+        i_err_frac = i_err / i_start[i]
         error_para = {para_name: cycle_fit.params[para_name].stderr
                       for para_name in names}
         # err_para = np.sqrt(np.diag(cycle_fit.covar))
@@ -880,7 +884,7 @@ def plot_params(voltage, fit, rc_params, i_err=0.2):
         fractional_err = {par_name: (error_para[par_name] /
                                      cycle_fit.params[par_name])
                           for par_name in names}
-        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err / 100
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err_frac
                  for key in rc_params[i].keys() if key.startswith('r_')}
         c_err = {key: fractional_err['tau_%s' % key[2:]] + r_err['r_%s' %
                                                                  key[2:]]
@@ -899,20 +903,20 @@ def plot_params(voltage, fit, rc_params, i_err=0.2):
         rc_params[i].update(temp_dict)
         best_para.append(rc_params[i])
 
-    fig_params = plt.figure()
-    plt.suptitle('Fitted parameters in every cycle after %s'
-                 % rlx_txt, size=20)
+    fig_params = plt.figure(figsize=(42, 42))
+    plt.suptitle('Fitted parameters vs. cycles for cell %s (after %s)'
+                 % (cell_name, rlx_txt), size=tit_s)
     cycle_array = np.arange(1, len(fit) + 1, 1)
-    cycle_array_ticks = np.arange(1, len(fit) + 1, 5)
+    cycle_array_ticks = np.arange(1, len(fit) + 1, 8)
     shape_params = len(best_para[0]) - len(fit[0].params)
     if shape_params % 2 == 0:   # Even number of input params
-        gs = gridspec.GridSpec(shape_params / 2, shape_params + 1)
-        gs.update(left=0.05, right=0.9, wspace=0.4, hspace=0.7)
+        gs = gridspec.GridSpec(shape_params / 2 + 1, shape_params-1)
+        gs.update(left=0.07, right=0.95, wspace=0.4)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     else:
         gs = gridspec.GridSpec((shape_params + 1) / 2, shape_params)
-        gs.update(left=0.05, right=0.9, wspace=0.4, hspace=0.7)
+        gs.update(left=0.05, right=0.95, wspace=0.4)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
@@ -925,29 +929,32 @@ def plot_params(voltage, fit, rc_params, i_err=0.2):
         para_error = np.array([best_para_error[cycle_step][name]
                                for cycle_step in range(len(fit))])
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
-                                     fmt='or')
-        subs_params[name_i].legend([name], loc='best', prop={'size': 20})
-        subs_params[name_i].set_xlabel('Cycles', size=18)
+                                     fmt='or', ms=ms, elinewidth=3)
+        subs_params[name_i].legend([name], loc='best', prop={'size': ti_la_s})
+        subs_params[name_i].set_xlabel('Cycles', size=ti_la_s)
         for tick_para in subs_params[name_i].xaxis.get_major_ticks():
-            tick_para.label.set_fontsize(16)
+            tick_para.label.set_fontsize(ti_la_s)
         for tick_para in subs_params[name_i].yaxis.get_major_ticks():
-            tick_para.label.set_fontsize(16)
+            tick_para.label.set_fontsize(ti_la_s)
 
         if 'tau' in name:
-            subs_params[name_i].set_ylabel('Time-constant (RC)[s]', size=18)
+            subs_params[name_i].set_ylabel('Time-constant (RC)[s]', size=ti_la_s)
         elif 'r_' in name:
-            subs_params[name_i].set_ylabel('Resistance [Ohm]', size=18)
+            subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s)
         elif 'c_' in name:
-            subs_params[name_i].set_ylabel('Capacitance [F]', size=18)
+            subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s)
         else:
-            subs_params[name_i].set_ylabel('Voltage [V]', size=18)
+            subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
+        plt.savefig(os.path.join(fig_folder, 'params_%s.pdf' % cell_name),
+                    dpi=200)
 
 
-def print_params(fit, rc_params, i_err=0.2):
+def print_params(fit, rc_params, i_start, i_err=0.00068):
     best_para = []
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
+        i_err_frac = i_err / i_start[i]
         best_para.append(rc_params[i])
         error_para = {para_name: cycle_fit.params[para_name].stderr
                       for para_name in names}
@@ -955,11 +962,11 @@ def print_params(fit, rc_params, i_err=0.2):
         # error_para = {para_name: err_para[err]
         #               for err, para_name in enumerate(names)}
         # Fractional error in percent calculation
-        fractional_err = {par_name: 100 * (error_para[par_name] /
-                                           cycle_fit.params[par_name])
+        fractional_err = {par_name: (error_para[par_name] /
+                                     cycle_fit.params[par_name])
                           for par_name in names}
 
-        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err_frac
                  for key in rc_params[i].keys() if key.startswith('r_')}
         c_err = {key: fractional_err['tau_%s' % key[2:]] + r_err['r_%s' %
                                                                  key[2:]]
