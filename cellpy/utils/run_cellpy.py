@@ -138,7 +138,7 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
     plt.figure(figsize=(20, 22))
     number_plots = (0, 1, 2, 4, 9, -2)
     for cycle in number_plots:
-        plt.plot(capacity_sorting[cycle], voltage_sorting[cycle])
+        plt.plot(capacity_sorting[cycle], voltage_sorting[cycle], linewidth=3)
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[8]
+    name = filenames[1]
     up = False
     if up:
         rlx_text = 'after lithiation'
