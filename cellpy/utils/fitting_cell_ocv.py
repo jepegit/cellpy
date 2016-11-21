@@ -837,9 +837,8 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
             print '------------------------------------------------------------'
 
 
-def plot_params(voltage, fit, rc_params, i_start, cell_name,
-                fig_folder, i_err=0.00065,
-                ms=10, ti_la_s=35, tit_s=45):
+def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
+                fig_folder, i_err=0.000000125, ms=10, ti_la_s=35, tit_s=45):
     """Calculating parameter errors and plotting them.
 
     r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
@@ -853,6 +852,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name,
         rc_params (:obj: 'list' of :obj: 'dict'): Calculated R and C from fit.
         i_start (list): Discharge current. Used to calculate frac error of I.
         cell_name (str): Name of the cell.
+        mass_frac_error (float): Fractional uncertainty of mass measurments.
         fig_folder (str): Which folder the plots should be saved in.
         i_err (float): Current measurement error in A. Standard is Arbin BT2000.
         ms (int): Markersize for plots.
@@ -874,7 +874,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name,
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
-        i_err_frac = i_err / i_start[i]
+        i_err_frac = i_err / i_start[i] + mass_frac_error
         error_para = {para_name: cycle_fit.params[para_name].stderr
                       for para_name in names}
         # err_para = np.sqrt(np.diag(cycle_fit.covar))
