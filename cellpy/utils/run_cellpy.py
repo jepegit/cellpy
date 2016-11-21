@@ -238,8 +238,8 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[1]
-    up = True
+    name = filenames[3]
+    up = False
     if up:
         rlx_text = 'after lithiation'
     else:
@@ -268,12 +268,14 @@ if __name__ == '__main__':
     leg = []
     plt.figure(figsize=(40, 42))
     for volt_i in cycles_number:
-        ocv = voltage[volt_i][::10]
-        time_ocv = time[volt_i][::10]
+        ocv = voltage[volt_i][::300]
+        time_ocv = time[volt_i][::300]
         if volt_i == cycles_number[-1]:
-            plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=ms)
+            plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=ms,
+                         elinewidth=3)
         else:
-            plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=ms)
+            plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=ms,
+                         elinewidth=3)
         leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
     for tick_volt in plt.gca().xaxis.get_major_ticks():
         tick_volt.label.set_fontsize(tick_and_label_s)
@@ -286,7 +288,6 @@ if __name__ == '__main__':
     plt.xlabel('Time (s)', size=tick_and_label_s)
     plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
     plt.legend(leg, loc='best', prop={'size': tick_and_label_s - 15})
-    plt.ylim(0.05)
     if up:
         plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
                                  % (names[name], 'lith')), dpi=200)
