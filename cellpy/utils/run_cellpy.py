@@ -156,8 +156,8 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
 
 
 if __name__ == '__main__':
-    plt.rcParams['xtick.major.pad'] = '8'
-    plt.rcParams['ytick.major.pad'] = '8'
+    plt.rcParams['xtick.major.pad'] = 8
+    plt.rcParams['ytick.major.pad'] = 8
 
     # ms = markersize
     ms = 40
@@ -241,8 +241,8 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[2]
-    up = False
+    name = filenames[9]
+    up = True
     if up:
         rlx_text = 'after lithiation'
         time, voltage, fit, rc_para, i_start = \

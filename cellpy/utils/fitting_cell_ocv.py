@@ -509,7 +509,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
 
     best_para = [result[0].params]
     r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
-    r_ir = {'ir': r_ir_0}
+    r_ir = {'IR': r_ir_0}
 
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0] - r_ir_0)
                    for key, v0_rc in best_para[0].valuesdict().items()
@@ -568,7 +568,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                         for key, tau_rc in
                         best_para[cycle_i].valuesdict().items()
                         if key.startswith('tau')}
-        best_rc_cycle.update({'ir': r_ir_temp})
+        best_rc_cycle.update({'IR': r_ir_temp})
         best_rc_cycle.update(best_c_cycle)
         best_rc_para.append(best_rc_cycle)
     return result, best_rc_para, i_start
@@ -661,7 +661,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                                  'the same keyword arguments.')
 
     result_initial_nelder = model.fit(voltage[0], t=time[0],
-                                      weights=1./(v_err), method='Nelder')
+                                      weights=1./v_err, method='Nelder')
 
     result_initial = model.fit(voltage[0], t=time[0], weights=1./(v_err),
                                params=result_initial_nelder.params,
@@ -671,7 +671,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
     best_para = [result[0].params]
 
     r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
-    r_ir = {'ir': r_ir_0}
+    r_ir = {'IR': r_ir_0}
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0] - r_ir_0)
                    for key, v0_rc in best_para[0].valuesdict().items()
                    if key.startswith('v0')}
@@ -741,7 +741,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                         for key, tau_rc in
                         best_para[cycle_i].valuesdict().items()
                         if key.startswith('tau')}
-        best_rc_cycle.update({'ir': r_ir_temp})
+        best_rc_cycle.update({'IR': r_ir_temp})
         best_rc_cycle.update(best_c_cycle)
         best_rc_para.append(best_rc_cycle)
     return result, best_rc_para, i_start
@@ -892,6 +892,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
+        v_err_cycle = 1. / cycle_fit.weights
         i_err_frac = i_err / i_start[i] + mass_frac_error
         error_para = {para_name: cycle_fit.params[para_name].stderr
                       for para_name in names}
@@ -907,21 +908,25 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         c_err = {key: fractional_err['tau_%s' % key[2:]] + r_err['r_%s' %
                                                                  key[2:]]
                  for key in rc_params[i].keys() if key.startswith('c_')}
+        # ir = (v_start - v_rlx) / i_start
+        ir_err = i_err_frac + v_err_cycle
 
         # Standard deviation error calculated from fractional error
         e_r = {r: frac_err * rc_params[i][r]
                for r, frac_err in r_err.items()}
         e_c = {c: frac_err * rc_params[i][c]
                for c, frac_err in c_err.items()}
+        e_ir = {'IR': rc_params[i]['IR'] * ir_err}
         error_para.update(e_r)
         error_para.update(e_c)
+        error_para.update(e_ir)
         best_para_error.append(error_para)
 
         temp_dict = cycle_fit.params.valuesdict()
         rc_params[i].update(temp_dict)
         best_para.append(rc_params[i])
 
-    fig_params = plt.figure(figsize=(75, 60))
+    fig_params = plt.figure(figsize=(85, 70))
     plt.suptitle('Fitted parameters vs. cycles for cell %s (after %s)'
                  % (cell_name, rlx_txt), size=tit_s)
     cycle_array = np.arange(1, len(fit) + 1, 1)
@@ -929,13 +934,13 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
 
     shape_params = len(best_para[0]) - len(fit[0].params)
     if shape_params % 2 == 0:   # Even number of input params
-        gs = gridspec.GridSpec(shape_params / 2 + 1, shape_params-1)
-        gs.update(left=0.07, right=0.95, wspace=0.4)
+        gs = gridspec.GridSpec(shape_params / 2 + 1, shape_params - 1)
+        gs.update(left=0.07, right=0.95, wspace=0.5)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     else:
-        gs = gridspec.GridSpec((shape_params + 1) / 2, shape_params)
-        gs.update(left=0.05, right=0.95, wspace=0.4)
+        gs = gridspec.GridSpec((shape_params + 1) / 2, shape_params - 1)
+        gs.update(left=0.05, right=0.95, wspace=0.5)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     plt.setp(subs_params, xlabel='Cycle number')
@@ -945,7 +950,6 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
     for name_i, name in enumerate(best_para[0].keys()):
         para_array = np.array([best_para[step][name]
                                for step in range(len(fit))])
-        DO SOMETHING WITH IR HERE!! AND OFC IN ERROR UP
         para_error = np.array([best_para_error[cycle_step][name]
                                for cycle_step in range(len(fit))])
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
@@ -980,18 +984,20 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time-constant (RC)[s]',
                                            size=ti_la_s)
-        elif 'r_' in name:
+        elif 'r_' in name or 'IR' in name:
             subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s)
         elif 'c_' in name:
             subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s)
         else:
             subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
         if v_ocv < v_0:
-            plt.savefig(os.path.join(fig_folder, 'params_%s_delith.pdf' %
-                                     cell_name), dpi=100)
+            plt.savefig(os.path.join(fig_folder, 'params_%s_delith.pdf'
+                                     % cell_name),
+                        bbox_inches='tight', pad_inches=3, dpi=100)
         else:
-            plt.savefig(os.path.join(fig_folder, 'params_%s_lith.pdf' %
-                                     cell_name), dpi=100)
+            plt.savefig(os.path.join(fig_folder, 'params_%s_lith.pdf'
+                                     % cell_name),
+                        bbox_inches='tight', pad_inches=3, dpi=100)
 
 
 def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
@@ -999,6 +1005,7 @@ def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
+        v_err_cycle = 1. / cycle_fit.weights
         i_err_frac = i_err / i_start[i] + mass_frac_error
         best_para.append(rc_params[i])
         error_para = {para_name: cycle_fit.params[para_name].stderr
@@ -1016,6 +1023,8 @@ def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
         c_err = {key: fractional_err['tau_%s' % key[2:]] + r_err['r_%s' %
                                                                  key[2:]]
                  for key in rc_params[i].keys() if key.startswith('c_')}
+        # ir = (v_start - v_rlx) / i_start
+        ir_err = i_err_frac + v_err_cycle
         fractional_err.update(r_err)
         fractional_err.update(c_err)
         # Standard deviation error calculated from fractional error
@@ -1023,6 +1032,8 @@ def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
                for r, frac_err in r_err.items()}
         e_c = {c: frac_err * rc_params[i][c] / 100
                for c, frac_err in c_err.items()}
+        e_ir = {'IR': rc_params[i]['IR'] * ir_err}
+        error_para.update(e_ir)
         error_para.update(e_r)
         error_para.update(e_c)
         best_para_error.append(error_para)
@@ -1035,7 +1046,7 @@ def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
                 unit_text = 'F'
             elif 'tau_' in key_name:
                 unit_text = 's'
-            elif 'r_' in key_name:
+            elif 'r_' in key_name or 'IR' in key_name:
                 unit_text = 'Ohms'
             else:
                 unit_text = 'V'
