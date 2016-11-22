@@ -156,10 +156,13 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
 
 
 if __name__ == '__main__':
+    plt.rcParams['xtick.major.pad'] = '8'
+    plt.rcParams['ytick.major.pad'] = '8'
+
     # ms = markersize
-    ms = 30
-    tick_and_label_s = 70
-    title_s = tick_and_label_s + 30
+    ms = 40
+    tick_and_label_s = 90
+    title_s = tick_and_label_s + 40
 
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 800}
@@ -238,7 +241,7 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[9]
+    name = filenames[2]
     up = False
     if up:
         rlx_text = 'after lithiation'

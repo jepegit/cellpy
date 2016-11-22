@@ -945,16 +945,39 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         subs_params[name_i].yaxis.set_major_locator(MaxNLocator(ty))
         subs_params[name_i].xaxis.set_major_locator(MaxNLocator(tx))
 
+        # min_para = np.min(para_array)
+        # max_para = np.max(para_array)
+        # donemin = False
+        # donemax = False
+        # for y in para_array:
+        #     if donemin and donemax:
+        #         break
+        #     if y not in (min_para, max_para):
+        #         if min_para * 10 ** -4 > y and not donemin:
+        #             min_para = y
+        #             donemin = True
+        #         elif max_para * 10 ** -3 > y and not donemax:
+        #             max_para = y
+        #             donemax = True
+        # print min_para, max_para
+        # subs_params[name_i].set_ylim(min_para - 0.1 * min_para,
+        #                              max_para + 0.1 * max_para)
+
         if 'tau' in name:
-            subs_params[name_i].set_ylabel('Time-constant (RC)[s]', size=ti_la_s)
+            subs_params[name_i].set_ylabel('Time-constant (RC)[s]',
+                                           size=ti_la_s)
         elif 'r_' in name:
             subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s)
         elif 'c_' in name:
             subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s)
         else:
             subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
-        plt.savefig(os.path.join(fig_folder, 'params_%s.pdf' % cell_name),
-                    dpi=100)
+        if v_ocv < v_0:
+            plt.savefig(os.path.join(fig_folder, 'params_%s_delith.pdf' %
+                                     cell_name), dpi=100)
+        else:
+            plt.savefig(os.path.join(fig_folder, 'params_%s_lith.pdf' %
+                                     cell_name), dpi=100)
 
 
 def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
