@@ -839,7 +839,8 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
 
 
 def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
-                fig_folder, i_err=0.000000125, ms=10, ti_la_s=35, tit_s=45):
+                fig_folder, i_err=0.000000125, ms=10, ti_la_s=35, tit_s=45,
+                tx=4, ty=3):
     """Calculating parameter errors and plotting them.
 
     r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
@@ -859,6 +860,9 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         ms (int): Markersize for plots.
         ti_la_s (int): Ticks and labels font size.
         tit_s (int): Title size of plot.
+        tx(int): Number of ticks on x axis.
+        ty(int): Number of ticks on y axis.
+
     Returns:
         None: Plot the parameters with their errors.
     """
@@ -938,8 +942,8 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
             tick_para.label.set_fontsize(ti_la_s)
         for tick_para in subs_params[name_i].yaxis.get_major_ticks():
             tick_para.label.set_fontsize(ti_la_s)
-        subs_params[name_i].yaxis.set_major_locator(MaxNLocator(4))
-        subs_params[name_i].xaxis.set_major_locator(MaxNLocator(3))
+        subs_params[name_i].yaxis.set_major_locator(MaxNLocator(ty))
+        subs_params[name_i].xaxis.set_major_locator(MaxNLocator(tx))
 
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time-constant (RC)[s]', size=ti_la_s)
