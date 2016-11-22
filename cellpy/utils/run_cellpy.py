@@ -85,7 +85,7 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
     plt.figure(figsize=(20, 22))
     plt.plot(x_range, col_eff, '-ok', ms=m_s)
     plt.plot(100*np.ones(2 * len(col_eff)), '-k')
-    plt.gca().invert_yaxis()
+    # plt.gca().invert_yaxis()
     for tick_rc in plt.gca().xaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
@@ -157,9 +157,9 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
 
 if __name__ == '__main__':
     # ms = markersize
-    ms = 25
-    tick_and_label_s = 80
-    title_s = tick_and_label_s + 10
+    ms = 30
+    tick_and_label_s = 70
+    title_s = tick_and_label_s + 30
 
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 800}
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     # save_and_plot_cap(datafolder, name, datafolder_out,
     #                   cell_mass[name], type_data=ocv_down[:-4])
 
-    name = filenames[3]
+    name = filenames[9]
     up = False
     if up:
         rlx_text = 'after lithiation'
@@ -300,9 +300,9 @@ if __name__ == '__main__':
     # fco.user_plot_voltage(time, voltage, fit, conf, ms=ms,
     #                       ti_la_s=tick_and_label_s, tit_s=title_s,
     #                       name=names[name])
-    # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
-    #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-    #                 ti_la_s=tick_and_label_s, tit_s=title_s)
+    fco.plot_params(voltage, fit, rc_para, i_start, names[name],
+                    mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+                    ti_la_s=tick_and_label_s, tit_s=title_s)
     # fco.print_params(fit, rc_para)
 
 

@@ -50,6 +50,7 @@ http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.htm
 
 from lmfit import Parameters, report_fit, Model, report_ci
 from cell_ocv import *
+from matplotlib.ticker import MaxNLocator
 
 # import StringIO
 import os
@@ -903,11 +904,12 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         rc_params[i].update(temp_dict)
         best_para.append(rc_params[i])
 
-    fig_params = plt.figure(figsize=(42, 42))
+    fig_params = plt.figure(figsize=(75, 60))
     plt.suptitle('Fitted parameters vs. cycles for cell %s (after %s)'
                  % (cell_name, rlx_txt), size=tit_s)
     cycle_array = np.arange(1, len(fit) + 1, 1)
-    cycle_array_ticks = np.arange(1, len(fit) + 1, 8)
+    # cycle_array_ticks = np.arange(1, len(fit) + 1, 4)
+
     shape_params = len(best_para[0]) - len(fit[0].params)
     if shape_params % 2 == 0:   # Even number of input params
         gs = gridspec.GridSpec(shape_params / 2 + 1, shape_params-1)
@@ -919,7 +921,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         gs.update(left=0.05, right=0.95, wspace=0.4)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
-    plt.setp(subs_params, xlabel='Cycle number', xticks=cycle_array_ticks)
+    plt.setp(subs_params, xlabel='Cycle number')
 
     plt.gcf().canvas.set_window_title('param_all_cycles_sic006_74_delith')
 
@@ -936,6 +938,8 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
             tick_para.label.set_fontsize(ti_la_s)
         for tick_para in subs_params[name_i].yaxis.get_major_ticks():
             tick_para.label.set_fontsize(ti_la_s)
+        subs_params[name_i].yaxis.set_major_locator(MaxNLocator(4))
+        subs_params[name_i].xaxis.set_major_locator(MaxNLocator(3))
 
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time-constant (RC)[s]', size=ti_la_s)
@@ -946,15 +950,15 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         else:
             subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
         plt.savefig(os.path.join(fig_folder, 'params_%s.pdf' % cell_name),
-                    dpi=200)
+                    dpi=100)
 
 
-def print_params(fit, rc_params, i_start, i_err=0.00068):
+def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
     best_para = []
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
-        i_err_frac = i_err / i_start[i]
+        i_err_frac = i_err / i_start[i] + mass_frac_error
         best_para.append(rc_params[i])
         error_para = {para_name: cycle_fit.params[para_name].stderr
                       for para_name in names}
