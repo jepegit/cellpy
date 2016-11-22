@@ -424,7 +424,7 @@ def define_model(filepath, filename, guess_tau, contribution, c_rate=0.05,
 
 def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                    change_i, ideal_cap=3.579, mass=0.86, v_start=None,
-                   v_err=0.002):
+                   v_err=0.01):
     """Fitting measured data to model.
 
     Args:
@@ -508,8 +508,10 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     result = [result_initial]
 
     best_para = [result[0].params]
+    r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
+    r_ir = {'ir': r_ir_0}
 
-    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0] - r_ir_0)
                    for key, v0_rc in best_para[0].valuesdict().items()
                    if key.startswith('v0')}
 
@@ -517,6 +519,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                   for key, tau_rc in best_para[0].valuesdict().items()
                   if key.startswith('tau')}
     best_rc_ini.update(best_c_ini)
+    best_rc_ini.update(r_ir)
     best_rc_para = [best_rc_ini]
 
     for cycle_i in range(1, len(time)):
@@ -552,8 +555,11 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         result.append(result_cycle)
         copied_parameters = copy.deepcopy(result_cycle.params)
         best_para.append(copied_parameters)
+
         # calculating r and c from fit
-        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_i])
+        r_ir_temp = abs(temp_start_voltage - v_start) / i_start[cycle_i]
+        best_rc_cycle = {'r_%s' % key[3:]:
+                         abs(v_rc / i_start[cycle_i] - r_ir_temp)
                          for key, v_rc in
                          best_para[cycle_i].valuesdict().items()
                          if key.startswith('v0')}
@@ -562,6 +568,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                         for key, tau_rc in
                         best_para[cycle_i].valuesdict().items()
                         if key.startswith('tau')}
+        best_rc_cycle.update({'ir': r_ir_temp})
         best_rc_cycle.update(best_c_cycle)
         best_rc_para.append(best_rc_cycle)
     return result, best_rc_para, i_start
@@ -663,13 +670,16 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
     result = [result_initial]
     best_para = [result[0].params]
 
-    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
+    r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
+    r_ir = {'ir': r_ir_0}
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0] - r_ir_0)
                    for key, v0_rc in best_para[0].valuesdict().items()
                    if key.startswith('v0')}
 
     best_c_ini = {'c_%s' % key[4:]: tau_rc / best_rc_ini['r_%s' % key[4:]]
                   for key, tau_rc in best_para[0].valuesdict().items()
                   if key.startswith('tau')}
+    best_rc_ini.update(r_ir)
     best_rc_ini.update(best_c_ini)
     best_rc_para = [best_rc_ini]
 
@@ -720,7 +730,9 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
         copied_parameters = copy.deepcopy(result_cycle.params)
         best_para.append(copied_parameters)
         # calculating r and c from fit
-        best_rc_cycle = {'r_%s' % key[3:]: abs(v_rc / i_start[cycle_i])
+        r_ir_temp = abs(temp_start_voltage - v_start) / i_start[cycle_i]
+        best_rc_cycle = {'r_%s' % key[3:]:
+                         abs(v_rc / i_start[cycle_i] - r_ir_temp)
                          for key, v_rc in
                          best_para[cycle_i].valuesdict().items()
                          if key.startswith('v0')}
@@ -729,6 +741,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                         for key, tau_rc in
                         best_para[cycle_i].valuesdict().items()
                         if key.startswith('tau')}
+        best_rc_cycle.update({'ir': r_ir_temp})
         best_rc_cycle.update(best_c_cycle)
         best_rc_para.append(best_rc_cycle)
     return result, best_rc_para, i_start
@@ -932,6 +945,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
     for name_i, name in enumerate(best_para[0].keys()):
         para_array = np.array([best_para[step][name]
                                for step in range(len(fit))])
+        DO SOMETHING WITH IR HERE!! AND OFC IN ERROR UP
         para_error = np.array([best_para_error[cycle_step][name]
                                for cycle_step in range(len(fit))])
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
