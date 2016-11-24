@@ -187,7 +187,7 @@ if __name__ == '__main__':
     # mass_frac_err = copp_err + mass_err_scale   # In %. cell_mass=mass_tot-mass_copp
     i_err_accuracy = 0.1   # % in full scale range
     v_err_accuracy = 0.1   # % in full scale range
-    v_range = 10   # full scale ==> 0-10 V
+    v_range = 20   # full scale ==> +/- 10 V
     i_range = 20**(-3)   # full scale ==> +/- 10mA
     i_err = i_err_accuracy / 100 * i_range
     mass_frac_err = {}
