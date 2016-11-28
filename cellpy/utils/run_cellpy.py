@@ -7,7 +7,8 @@ This script is an example of how cellpy can be used.
 
 """
 
-from perform_fit import fitting_cell, save_and_plot_cap
+from perform_fit import fitting_cell, save_cap_ocv
+from matplotlib.pyplot import MaxNLocator
 
 import fitting_cell_ocv as fco
 import sys, os, csv, itertools
@@ -19,7 +20,9 @@ __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
 __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
-def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
+def plotting_stuff(filename, folder, fig_folder, cell_name, c_rate, mass,
+                   i_change, i_err, ideal_cap=3.579, m_s=20, ti_la_s=35,
+                   zoom=False):
     """Based on same plot as in perform_fit.save_and_plot_cap().
 
     Difference is that I can freely change here as run_cellpy is not suppose
@@ -32,16 +35,26 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
         folder (str): Folder in which the filename lays.
         fig_folder(str): Which folder to save the figures.
         cell_name (str): Converted cell name to thesis cell name.
+        c_rate (list): List of c_rates under cycling.
+        mass(float): Mass of the cell
+        i_change (list): A list including cycle index for when current change.
+        i_err (float): Current error from Arbin in +/- mA.
+        ideal_cap (float): Theoretical capacity for LixSi, x = 3.75 in [mAh/mg].
         m_s (int): Markersize for plots.
         ti_la_s (int): Ticks and labels font size.
+        zoom (bool): True if want to zoom in on coulombic efficiency.
 
     Returns:
-        plt.figure(): A desired plot
+        plt.figure(): Desired plots and save coulombic differences in xlsx
+
+    Note:
+        c-rates in the list c_rate has to be ordered so that the c_rate with
+        index 0 is the first c-rate and c_rate[1] is the c-rate after
+        cycle = i_change[0].
 
     """
     # Title size
     title_s = ti_la_s + 10
-
     # getting stats and capacity voltage table
     normal = filename[:-4] + '_normal.csv'
     steps = filename[:-4] + '_steps.csv'
@@ -52,6 +65,17 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
     data_normal = pd.read_csv(data_normal, sep=';')
     df_normal = pd.DataFrame(data_normal)
 
+    n_cycles = max(df_normal['Cycle_Index'] - 1)
+    frac = []
+    step = 0
+    for i in range(n_cycles):
+        # Checking if cycle number i is in change_i
+        if i in i_change:
+            step += 1
+        i_start = (c_rate[step] * ideal_cap * mass) / 1000
+        i_frac = i_err / i_start
+        frac.append(i_frac)
+
     data_steps = os.path.join(folder, steps)
     data_steps = pd.read_csv(data_steps, sep=';')
     df_steps = pd.DataFrame(data_steps)
@@ -59,6 +83,26 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
     data_stats = os.path.join(folder, stats)
     data_stats = pd.read_csv(data_stats, sep=';')
     df_stats = pd.DataFrame(data_stats)
+
+    first_cycle_diff = df_stats['Coulombic_Difference(mAh/g)']
+    cumulated_coulombic_diff = df_stats['Cumulated_Coulombic_Difference(mAh/g)']
+    C_err_first = []
+    C_err_cum = []
+    for key_C, C in enumerate(first_cycle_diff):
+        C_err_first.append(C * frac[key_C])
+        C_err_cum.append(cumulated_coulombic_diff[key_C] * frac[key_C])
+    first_cycle_diff = pd.DataFrame(zip(first_cycle_diff, C_err_first),
+                                    columns=['Coulombic diff (mAh/g)',
+                                             'err'])
+    cumulated_coulombic_diff = pd.DataFrame(zip(cumulated_coulombic_diff,
+                                                C_err_cum),
+                                            columns=['Cum coul diff (mAh/g)',
+                                                     'err'])
+
+    cum_coulombic = pd.ExcelWriter('../outdata/coulombic_difference_%s.xlsx'
+                                   % cell_name)
+    first_cycle_diff.to_excel(cum_coulombic, 'coul_diff_first')
+    cumulated_coulombic_diff.to_excel(cum_coulombic, 'cumu_coul_diff')
 
     data_cap_volt = os.path.join(folder, cap_volt)
     data_cap_volt = pd.read_csv(data_cap_volt, sep=';')
@@ -82,38 +126,55 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
     col_eff = df_stats["Coulombic_Efficiency(percentage)"]   # Q_out / Q_inn
     x_range = np.arange(1, len(col_eff) + 1)
 
-    plt.figure(figsize=(20, 22))
-    plt.plot(x_range, col_eff, '-ok', ms=m_s)
-    plt.plot(100*np.ones(2 * len(col_eff)), '-k')
+    plt.figure(figsize=(40, 42))
+    col_eff_err = [2 * f * col_eff[f_i] for f_i, f in enumerate(frac)]
+    plt.errorbar(x_range, col_eff, yerr=col_eff_err, fmt='-ok', ms=m_s,
+                 elinewidth=5)
+    plt.plot(100*np.ones(len(col_eff)), '-k')
     # plt.gca().invert_yaxis()
     for tick_rc in plt.gca().xaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
-    plt.xticks(np.arange(1, len(col_eff) + 1, 1.0))
-    # plt.gca().set_xlim([-0.1, len(col_eff) + 1])
-    # plt.gca().set_ylim([col_eff[1]-0.5, 100.5])
+    # plt.xticks(np.arange(1, len(col_eff) + 1, 8.0))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(6))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(4))
+
     plt.gca().title.set_position([.5, 1.05])
     plt.title('Coulombic Efficiency ($\eta$) for cell %s' % cell_name,
               size=title_s)
-    plt.legend(['$\eta = Q_{out}/Q_{in}$'], loc='center right',
+    plt.legend(['$\eta = Q_{out}/Q_{in}$'], loc='best',
                prop={'size': ti_la_s})
     plt.xlabel('Cycle number', size=ti_la_s)
     plt.ylabel('$\eta$ (%)', size=ti_la_s)
-    fig = 'coulombic_eff_%s.pdf' % cell_name
-    plt.savefig(os.path.join(fig_folder, fig), dpi=100)
+    if zoom:
+        plt.gca().set_xlim([-0.1, len(col_eff) + 1])
+        plt.gca().set_ylim([col_eff[1]-0.5, 100.5])
+        fig = 'coulombic_eff_zoom_%s.pdf' % cell_name
+        plt.savefig(os.path.join(fig_folder, fig), dpi=100)
+    else:
+        fig = 'coulombic_eff_%s.pdf' % cell_name
+        plt.savefig(os.path.join(fig_folder, fig), dpi=100)
 
-    # Plotting cycle vs. cap
-    plt.figure(figsize=(20, 22))
-    plt.plot(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"], '^b', ms=m_s)
-    plt.plot(x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or', ms=m_s)
+    # Plotting cycle vs. cap #############################################
+    plt.figure(figsize=(40, 42))
+    discharge_err = [di_e * cycle_cap_df["Discharge_Capacity(mAh/g)"][di_e_i]
+                     for di_e_i, di_e in enumerate(frac)]
+    charge_err = [ch_e * cycle_cap_df["Charge_Capacity(mAh/g)"][ch_e_i] for
+                  ch_e_i, ch_e in enumerate(frac)]
+    plt.errorbar(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"],
+                 yerr=charge_err, fmt='^b', ms=m_s, elinewidth=5)
+    plt.errorbar(x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"],
+                 yerr=discharge_err, fmt='or', ms=m_s, elinewidth=5)
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
     for tick_rc in plt.gca().yaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
     plt.gca().title.set_position([.5, 1.05])
-    plt.xticks(np.arange(1, len(col_eff) + 1, 1.0))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(6))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(4))
+    # plt.xticks(np.arange(1, len(col_eff) + 1, 8.0))
     plt.legend(['Charge Capacity (Delithiation)',
                 'Discharge capacity (Lithiation)'], loc='best',
                prop={'size': ti_la_s})
@@ -135,10 +196,14 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
         else:
             voltage_sorting.append(df_cap_volt[df_name])
 
-    plt.figure(figsize=(20, 22))
-    number_plots = (0, 1, 2, 4, 9, -2)
+    plt.figure(figsize=(40, 42))
+    number_plots = (0, 1, 2, 4, 9, 24, -2)
+    max_cap = max(capacity_sorting[0])
     for cycle in number_plots:
-        plt.plot(capacity_sorting[cycle], voltage_sorting[cycle], linewidth=3)
+        plt.plot(capacity_sorting[cycle], voltage_sorting[cycle], linewidth=5)
+        max_cap_cycle = max(capacity_sorting[cycle])
+        if max_cap_cycle > max_cap:
+            max_cap = max_cap_cycle
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
@@ -147,7 +212,10 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, m_s=20, ti_la_s=35):
     plt.title('Capacity vs. Voltage for cell %s' % cell_name, size=title_s)
     plt.gca().title.set_position([.5, 1.05])
     plt.gca().set_ylim([0.03, 1])
-    plt.yticks(np.arange(0, 1.1, 0.1))
+    plt.gca().set_xlim([0, max_cap + 100])
+    # plt.yticks(np.arange(0, 1.1, 0.1))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(6))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(4))
     plt.xlabel('Capacity (mAh/g)', size=ti_la_s)
     plt.ylabel('Voltage (V)', size=ti_la_s)
     plt.legend(loc='best', prop={'size': ti_la_s-6})
@@ -160,7 +228,7 @@ if __name__ == '__main__':
     plt.rcParams['ytick.major.pad'] = 8
 
     # ms = markersize
-    ms = 40
+    ms = 45
     tick_and_label_s = 90
     title_s = tick_and_label_s + 40
 
@@ -175,7 +243,7 @@ if __name__ == '__main__':
                  '20161101_bec01_08_cc_01.res': 0.36,
                  '20161101_bec01_09_cc_01.res': 0.35}   # [mg]
     c_rate = [0.05, 0.1]   # 1/[h]
-    change_i = [3]
+    change_i = [3]   # What cycle the current is changed
     cell_capacity = 3.579   # [mAh / mg]
     v_start_up = 0.05
     v_start_down = 1.
@@ -183,17 +251,14 @@ if __name__ == '__main__':
     conf = False
     copp_err = 0.2   # in %. std/best_estimate. best_estimate = 28.7, std. = 0.0634
     mass_err_scale = 0.01   # In mg. What is the uncertainty of the scale?
-
-    # mass_frac_err = copp_err + mass_err_scale   # In %. cell_mass=mass_tot-mass_copp
-    i_err_accuracy = 0.1   # % in full scale range
-    v_err_accuracy = 0.1   # % in full scale range
+    i_err_accuracy = 0.1   # % of full scale range
+    v_err_accuracy = 0.1   # % of full scale range
     v_range = 20   # full scale ==> +/- 10 V
-    i_range = 20**(-3)   # full scale ==> +/- 10mA
+    i_range = 2* 10**(-3)   # full scale ==> +/- 10mA
     i_err = i_err_accuracy / 100 * i_range
     mass_frac_err = {}
     for n, m in cell_mass.items():
         mass_frac_err[n] = mass_err_scale/m + copp_err / 100
-
     v_err = v_err_accuracy / 100 * v_range   # [V]
 
     figure_folder = r'C:\Users\torkv\OneDrive - Norwegian University of Life '\
@@ -225,44 +290,49 @@ if __name__ == '__main__':
             elif 9 < counter <= 12:
                 names['20161101_bec01_%i_cc_01.res'] = 'Q%i' % (counter - 9)
                 counter += 1
-
     # bec01_07-09 is without additives and bec01_01-03 with additives
-    # save_and_plot_cap(datafolder, filenames[0], datafolder_out,
+    # save_cap_ocv(datafolder, filenames[0], datafolder_out,
     #                   cell_mass['bec01_01'])
     #
-    # save_and_plot_cap(datafolder, r'20160830_sic006_74_cc_01.res',
+    # save_cap_ocv(datafolder, r'20160830_sic006_74_cc_01.res',
     #                   datafolder_out, cell_mass['sic006_74'])
     #
     # making plots HERE !!!! Change cell mass name
-    #
+
     # for name in cell_mass:
-    # save_and_plot_cap(datafolder, name,
-    #                   datafolder_out, cell_mass[name])
-    # save_and_plot_cap(datafolder, name, datafolder_out,
-    #                   cell_mass[name], type_data=ocv_down[:-4])
-
-    name = filenames[9]
+    #     if not 'bec01_02' in name:
+    #         save_cap_ocv(datafolder, name, datafolder_out, cell_mass[name])
+    #         save_cap_ocv(datafolder, name, datafolder_out, cell_mass[name],
+    #                      type_data=ocv_down[:-4])
+    plots = (1, 2, 4, 8, 9, 10)
+    zoom = False
+    name = filenames[1]
     up = True
-    if up:
-        rlx_text = 'after lithiation'
-        time, voltage, fit, rc_para, i_start = \
-            fitting_cell(filename=name[:-3]+ocv_up, filefolder=datafolder_out,
-                         cell_mass=cell_mass[name], contri=contri,
-                         tau_guessed=tau_guessed, v_start=v_start_up,
-                         c_rate=c_rate, change_i=change_i,
-                         cell_capacity=cell_capacity, conf=conf, v_err=v_err)
-    else:
-        rlx_text = 'after delithiation'
-        time, voltage, fit, rc_para, i_start = \
-            fitting_cell(filename=name[:-3]+ocv_down, filefolder=datafolder_out,
-                         cell_mass=cell_mass[name], contri=contri,
-                         tau_guessed=tau_guessed, v_start=v_start_down,
-                         c_rate=c_rate, change_i=change_i,
-                         cell_capacity=cell_capacity, conf=conf, v_err=v_err)
+    # if up:
+    #     rlx_text = 'after lithiation'
+    #     time, voltage, fit, rc_para, i_start = \
+    #         fitting_cell(filename=name[:-3]+ocv_up, filefolder=datafolder_out,
+    #                      cell_mass=cell_mass[name], contri=contri,
+    #                      tau_guessed=tau_guessed, v_start=v_start_up,
+    #                      c_rate=c_rate, change_i=change_i,
+    #                      cell_capacity=cell_capacity, conf=conf, v_err=v_err)
+    # else:
+    #     rlx_text = 'after delithiation'
+    #     time, voltage, fit, rc_para, i_start = \
+    #         fitting_cell(filename=name[:-3]+ocv_down, filefolder=datafolder_out,
+    #                      cell_mass=cell_mass[name], contri=contri,
+    #                      tau_guessed=tau_guessed, v_start=v_start_down,
+    #                      c_rate=c_rate, change_i=change_i,
+    #                      cell_capacity=cell_capacity, conf=conf, v_err=v_err)
     print name
-
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
-    #                ti_la_s=tick_and_label_s)
+    #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
+    #                i_err=i_err, ti_la_s=tick_and_label_s, m_s=ms, zoom=zoom)
+    for p in plots:
+        plotting_stuff(filenames[p], datafolder_out, figure_folder,
+                       cell_name=names[filenames[p]], c_rate=c_rate,
+                       mass=cell_mass[filenames[p]], i_change=change_i,
+                       i_err=i_err, ti_la_s=tick_and_label_s, zoom=zoom, m_s=ms)
 
     # cycles_number = (0, 1, 2, 4, 7, 9, 11, len(voltage) - 1)
     # leg = []
@@ -300,9 +370,9 @@ if __name__ == '__main__':
     # fco.user_plot_voltage(time, voltage, fit, conf, ms=ms,
     #                       ti_la_s=tick_and_label_s, tit_s=title_s,
     #                       name=names[name])
-    fco.plot_params(voltage, fit, rc_para, i_start, names[name],
-                    mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-                    ti_la_s=tick_and_label_s, tit_s=title_s)
+    # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
+    #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+    #                 ti_la_s=tick_and_label_s, tit_s=title_s)
     # fco.print_params(fit, rc_para)
 
 

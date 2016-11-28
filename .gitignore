@@ -77,3 +77,4 @@ cellpy/outdata/20160830_sic006_74_cc_01.res_cycles.csv
 cellpy/outdata/20160830_sic006_74_cc_01.res_cap_voltage.csv
 *.res
 *.csv
+*.xlsx
