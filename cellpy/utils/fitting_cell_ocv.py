@@ -511,7 +511,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
     r_ir = {'IR': r_ir_0}
 
-    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0] - r_ir_0)
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
                    for key, v0_rc in best_para[0].valuesdict().items()
                    if key.startswith('v0')}
 
@@ -559,7 +559,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         # calculating r and c from fit
         r_ir_temp = abs(temp_start_voltage - v_start) / i_start[cycle_i]
         best_rc_cycle = {'r_%s' % key[3:]:
-                         abs(v_rc / i_start[cycle_i] - r_ir_temp)
+                         abs(v_rc / i_start[cycle_i])
                          for key, v_rc in
                          best_para[cycle_i].valuesdict().items()
                          if key.startswith('v0')}
@@ -672,7 +672,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
 
     r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
     r_ir = {'IR': r_ir_0}
-    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0] - r_ir_0)
+    best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
                    for key, v0_rc in best_para[0].valuesdict().items()
                    if key.startswith('v0')}
 
@@ -732,7 +732,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
         # calculating r and c from fit
         r_ir_temp = abs(temp_start_voltage - v_start) / i_start[cycle_i]
         best_rc_cycle = {'r_%s' % key[3:]:
-                         abs(v_rc / i_start[cycle_i] - r_ir_temp)
+                         abs(v_rc / i_start[cycle_i])
                          for key, v_rc in
                          best_para[cycle_i].valuesdict().items()
                          if key.startswith('v0')}
