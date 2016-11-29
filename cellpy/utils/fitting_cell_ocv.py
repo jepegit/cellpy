@@ -955,7 +955,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         para_error = np.array([best_para_error[cycle_step][name]
                                for cycle_step in range(len(fit))])
         para_df.update({name: para_array})
-        para_df.update({name + '_err': para_array})
+        para_df.update({name + '_err': para_error})
 
         subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
                                      fmt='or', ms=ms, elinewidth=3)
@@ -1010,7 +1010,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                          % (name, cell_name, rlx_txt), size=tit_s)
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
                          ms=ms, elinewidth=3)
-            plt.legend([name], loc='best', prop={'size': ti_la_s})
+            plt.legend([name], loc='best', prop={'size': ti_la_s + 20})
             plt.xlabel('Cycles', size=ti_la_s)
             for tick_para in plt.gca().xaxis.get_major_ticks():
                 tick_para.label.set_fontsize(ti_la_s)
@@ -1055,7 +1055,10 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                             bbox_inches='tight', pad_inches=3, dpi=100)
     if outfolder is not None:
         df = pd.DataFrame(para_df)
-        df.to_csv(os.path.join(outfolder, 'rc_params_cell_%s.csv' % cell_name))
+        df.to_csv(os.path.join(outfolder, 'rc_params_cell_%s.csv' %
+                               cell_name), sep=';')
+        print 'saved rc-parameters in csv file to folder %s with ";" as ' \
+              'separator' % outfolder
 
 
 def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
