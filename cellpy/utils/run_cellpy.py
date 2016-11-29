@@ -379,7 +379,7 @@ if __name__ == '__main__':
         #               name=names[name])
         fco.plot_params(voltage, fit, rc_para, i_start, names[name],
                         mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-                        ti_la_s=tick_and_label_s, tit_s=title_s,
+                        ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
                         outfolder=datafolder_out)
         # fco.print_params(fit, rc_para)
 
