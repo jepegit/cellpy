@@ -336,53 +336,54 @@ if __name__ == '__main__':
                              c_rate=c_rate, change_i=change_i,
                              cell_capacity=cell_capacity, conf=conf, v_err=v_err)
 
-        cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
-        leg = []
-        plt.figure(figsize=(60, 62))
-        for volt_i in cycles_number:
-            if 'S' in names[name] or 'A3' in names[name]:
-                ocv = voltage[volt_i][::30]
-                time_ocv = time[volt_i][::30]
-            else:
-                ocv = voltage[volt_i][::10]
-                time_ocv = time[volt_i][::10]
-            if volt_i == cycles_number[-1]:
-                plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=ms,
-                             elinewidth=2)
-            else:
-                plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=ms,
-                             elinewidth=2)
-            leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
-        for tick_volt in plt.gca().xaxis.get_major_ticks():
-            tick_volt.label.set_fontsize(tick_and_label_s)
-        for tick_volt in plt.gca().yaxis.get_major_ticks():
-            tick_volt.label.set_fontsize(tick_and_label_s)
+        # cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
+        # leg = []
+        # plt.figure(figsize=(60, 62))
+        # for volt_i in cycles_number:
+        #     if 'S' in names[name] or 'A3' in names[name]:
+        #         ocv = voltage[volt_i][::30]
+        #         time_ocv = time[volt_i][::30]
+        #     else:
+        #         ocv = voltage[volt_i][::10]
+        #         time_ocv = time[volt_i][::10]
+        #     if volt_i == cycles_number[-1]:
+        #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=ms,
+        #                      elinewidth=2)
+        #     else:
+        #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=ms,
+        #                      elinewidth=2)
+        #     leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
+        # for tick_volt in plt.gca().xaxis.get_major_ticks():
+        #     tick_volt.label.set_fontsize(tick_and_label_s)
+        # for tick_volt in plt.gca().yaxis.get_major_ticks():
+        #     tick_volt.label.set_fontsize(tick_and_label_s)
+        #
+        # plt.gca().title.set_position([.5, 1.05])
+        # plt.title(
+        #     '\n'.join(wrap('Open Circuit Voltage Relaxation for Cell %s (%s)', 30))
+        #     % (names[name], rlx_text), size=title_s)
+        # plt.xlabel('Time (s)', size=tick_and_label_s)
+        # plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
+        # plt.gca().yaxis.set_major_locator(MaxNLocator(6))
+        # plt.gca().xaxis.set_major_locator(MaxNLocator(6))
+        # plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
+        # if up:
+        #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+        #                              % (names[name], 'lith')), dpi=100)
+        # else:
+        #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+        #                              % (names[name], 'delith')), dpi=100)
 
-        plt.gca().title.set_position([.5, 1.05])
-        plt.title(
-            '\n'.join(wrap('Open Circuit Voltage Relaxation for Cell %s (%s)', 30))
-            % (names[name], rlx_text), size=title_s)
-        plt.xlabel('Time (s)', size=tick_and_label_s)
-        plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
-        plt.gca().yaxis.set_major_locator(MaxNLocator(6))
-        plt.gca().xaxis.set_major_locator(MaxNLocator(6))
-        plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
-        if up:
-            plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-                                     % (names[name], 'lith')), dpi=100)
-        else:
-            plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-                                     % (names[name], 'delith')), dpi=100)
+        # fco.user_plot_voltage(time, voltage, fit, conf, ms=ms,
+        #               ti_la_s=tick_and_label_s, tit_s=title_s,
+        #               name=names[name])
+        fco.plot_params(voltage, fit, rc_para, i_start, names[name],
+                        mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+                        ti_la_s=tick_and_label_s, tit_s=title_s,
+                        outfolder=datafolder_out)
+        # fco.print_params(fit, rc_para)
 
     pass
-
-    # fco.user_plot_voltage(time, voltage, fit, conf, ms=ms,
-    #                       ti_la_s=tick_and_label_s, tit_s=title_s,
-    #                       name=names[name])
-    # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
-    #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-    #                 ti_la_s=tick_and_label_s, tit_s=title_s)
-    # fco.print_params(fit, rc_para)
 
 
     # Comment: bec01_01 is the best of the bec files and is closest to sic006_74

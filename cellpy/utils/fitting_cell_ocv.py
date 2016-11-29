@@ -853,7 +853,7 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
 
 def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                 fig_folder, i_err=0.000000125, ms=10, ti_la_s=35, tit_s=45,
-                tx=4, ty=3):
+                tx=4, ty=3, outfolder=None):
     """Calculating parameter errors and plotting them.
 
     r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
@@ -875,6 +875,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         tit_s (int): Title size of plot.
         tx(int): Number of ticks on x axis.
         ty(int): Number of ticks on y axis.
+        outfolder (str): Folder where to save .csv
 
     Returns:
         None: Plot the parameters with their errors.
@@ -921,7 +922,6 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         error_para.update(e_c)
         error_para.update(e_ir)
         best_para_error.append(error_para)
-
         temp_dict = cycle_fit.params.valuesdict()
         rc_params[i].update(temp_dict)
         best_para.append(rc_params[i])
