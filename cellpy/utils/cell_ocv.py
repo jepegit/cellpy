@@ -118,7 +118,7 @@ def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
 
     # r_ir = abs(v_start / i_start - sum(r_rc.values()))
     r_ir = v_ir / i_start   # This one is different than r_ir...?
-    r_rc = {key: abs(v0 / i_start - r_ir) for key, v0 in v0_rc.items()}
+    r_rc = {key: v0 / i_start for key, v0 in v0_rc.items()}
     c_rc = {k: t / r for k, r in r_rc.items() for i, t in tau_rc.items()
             if i == k}
     return\
