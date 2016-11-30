@@ -10,6 +10,7 @@ This script is an example of how cellpy can be used.
 from perform_fit import fitting_cell, save_cap_ocv
 from matplotlib.pyplot import MaxNLocator
 from textwrap import wrap
+from math import pi
 
 import fitting_cell_ocv as fco
 import sys, os, csv, itertools
@@ -229,7 +230,7 @@ if __name__ == '__main__':
     plt.rcParams['ytick.major.pad'] = 8
 
     # ms = markersize
-    ms = 55
+    ms = 40
     tick_and_label_s = 90
     title_s = tick_and_label_s + 40
 
@@ -249,6 +250,9 @@ if __name__ == '__main__':
     v_start_up = 0.05
     v_start_down = 1.
 
+    disk_diameter = 5.2   # micron
+    disk_dia_frac_err = (0.1) / disk_diameter   # +/- frac error
+    disk_area = (disk_diameter / 2) ** 2 * pi   # square micron
     conf = False
     copp_err = 0.2   # in %. std/best_estimate. best_estimate = 28.7, std. = 0.0634
     mass_err_scale = 0.01   # In mg. What is the uncertainty of the scale?
@@ -308,79 +312,85 @@ if __name__ == '__main__':
     plots = (1, 2, 4, 8, 9, 10)
     zoom = False
     name_plots = [filenames[p] for p in plots]
-    up = False
-
+    up = True
+    name = filenames[2]
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
     #                i_err=i_err, ti_la_s=tick_and_label_s, m_s=ms, zoom=zoom)
-    for name in name_plots:
-        print name
-        # plotting_stuff(name, datafolder_out, figure_folder,
-        #                cell_name=names[name], c_rate=c_rate,
-        #                mass=cell_mass[name], i_change=change_i,
-        #                i_err=i_err, ti_la_s=tick_and_label_s, zoom=zoom, m_s=ms)
-        if up:
-            rlx_text = 'after lithiation'
-            time, voltage, fit, rc_para, i_start = \
-                fitting_cell(filename=name[:-3]+ocv_up, filefolder=datafolder_out,
-                             cell_mass=cell_mass[name], contri=contri,
-                             tau_guessed=tau_guessed, v_start=v_start_up,
-                             c_rate=c_rate, change_i=change_i,
-                             cell_capacity=cell_capacity, conf=conf, v_err=v_err)
-        else:
-            rlx_text = 'after delithiation'
-            time, voltage, fit, rc_para, i_start = \
-                fitting_cell(filename=name[:-3]+ocv_down, filefolder=datafolder_out,
-                             cell_mass=cell_mass[name], contri=contri,
-                             tau_guessed=tau_guessed, v_start=v_start_down,
-                             c_rate=c_rate, change_i=change_i,
-                             cell_capacity=cell_capacity, conf=conf, v_err=v_err)
+    # for name in name_plots:
+    print name
+    # plotting_stuff(name, datafolder_out, figure_folder,
+    #                cell_name=names[name], c_rate=c_rate,
+    #                mass=cell_mass[name], i_change=change_i,
+    #                i_err=i_err, ti_la_s=tick_and_label_s, zoom=zoom, m_s=ms)
+    if up:
+        rlx_text = 'after lithiation'
+        time, voltage, fit, rc_para, i_start = \
+            fitting_cell(filename=name[:-3]+ocv_up, filefolder=datafolder_out,
+                         cell_mass=cell_mass[name], contri=contri,
+                         tau_guessed=tau_guessed, v_start=v_start_up,
+                         c_rate=c_rate, change_i=change_i,
+                         cell_capacity=cell_capacity, conf=conf, v_err=v_err)
+    else:
+        rlx_text = 'after delithiation'
+        time, voltage, fit, rc_para, i_start = \
+            fitting_cell(filename=name[:-3]+ocv_down, filefolder=datafolder_out,
+                         cell_mass=cell_mass[name], contri=contri,
+                         tau_guessed=tau_guessed, v_start=v_start_down,
+                         c_rate=c_rate, change_i=change_i,
+                         cell_capacity=cell_capacity, conf=conf, v_err=v_err)
 
-        # cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
-        # leg = []
-        # plt.figure(figsize=(60, 62))
-        # for volt_i in cycles_number:
-        #     if 'S' in names[name] or 'A3' in names[name]:
-        #         ocv = voltage[volt_i][::30]
-        #         time_ocv = time[volt_i][::30]
-        #     else:
-        #         ocv = voltage[volt_i][::10]
-        #         time_ocv = time[volt_i][::10]
-        #     if volt_i == cycles_number[-1]:
-        #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=ms,
-        #                      elinewidth=2)
-        #     else:
-        #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=ms,
-        #                      elinewidth=2)
-        #     leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
-        # for tick_volt in plt.gca().xaxis.get_major_ticks():
-        #     tick_volt.label.set_fontsize(tick_and_label_s)
-        # for tick_volt in plt.gca().yaxis.get_major_ticks():
-        #     tick_volt.label.set_fontsize(tick_and_label_s)
-        #
-        # plt.gca().title.set_position([.5, 1.05])
-        # plt.title(
-        #     '\n'.join(wrap('Open Circuit Voltage Relaxation for Cell %s (%s)', 30))
-        #     % (names[name], rlx_text), size=title_s)
-        # plt.xlabel('Time (s)', size=tick_and_label_s)
-        # plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
-        # plt.gca().yaxis.set_major_locator(MaxNLocator(6))
-        # plt.gca().xaxis.set_major_locator(MaxNLocator(6))
-        # plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
-        # if up:
-        #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-        #                              % (names[name], 'lith')), dpi=100)
-        # else:
-        #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-        #                              % (names[name], 'delith')), dpi=100)
+    # cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
+    # leg = []
+    # plt.figure(figsize=(60, 62))
+    # for volt_i in cycles_number:
+    #     if 'S' in names[name] or 'A3' in names[name]:
+    #         ocv = voltage[volt_i][::30]
+    #         time_ocv = time[volt_i][::30]
+    #     else:
+    #         ocv = voltage[volt_i][::10]
+    #         time_ocv = time[volt_i][::10]
+    #     if volt_i == cycles_number[-1]:
+    #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=ms,
+    #                      elinewidth=2)
+    #     else:
+    #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=ms,
+    #                      elinewidth=2)
+    #     leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
+    # for tick_volt in plt.gca().xaxis.get_major_ticks():
+    #     tick_volt.label.set_fontsize(tick_and_label_s)
+    # for tick_volt in plt.gca().yaxis.get_major_ticks():
+    #     tick_volt.label.set_fontsize(tick_and_label_s)
+    #
+    # plt.gca().title.set_position([.5, 1.05])
+    # plt.title(
+    #     '\n'.join(wrap('Open Circuit Voltage Relaxation for Cell %s (%s)', 30))
+    #     % (names[name], rlx_text), size=title_s)
+    # plt.xlabel('Time (s)', size=tick_and_label_s)
+    # plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
+    # plt.gca().yaxis.set_major_locator(MaxNLocator(6))
+    # plt.gca().xaxis.set_major_locator(MaxNLocator(6))
+    # plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
+    # if up:
+    #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+    #                              % (names[name], 'lith')), dpi=100)
+    # else:
+    #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+    #                              % (names[name], 'delith')), dpi=100)
 
-        # fco.user_plot_voltage(time, voltage, fit, conf, ms=ms,
-        #               ti_la_s=tick_and_label_s, tit_s=title_s,
-        #               name=names[name])
-        fco.plot_params(voltage, fit, rc_para, i_start, names[name],
-                        mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-                        ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
-                        outfolder=datafolder_out)
+    fco.user_plot_voltage(time, voltage, fit, conf, name=names[name],
+                          figfolder=figure_folder)
+    # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
+    #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+    #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
+    #                 outfolder=datafolder_out, sur_area=disk_area,
+    #                 sur_area_err=disk_dia_frac_err)
+    # fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
+    #                      mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+    #                      ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
+    #                      outfolder=datafolder_out, sur_area=disk_area,
+    #                      sur_area_err=disk_dia_frac_err)
+
         # fco.print_params(fit, rc_para)
 
     pass

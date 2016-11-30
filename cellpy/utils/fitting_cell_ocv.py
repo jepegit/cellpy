@@ -51,6 +51,7 @@ http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.htm
 from lmfit import Parameters, report_fit, Model, report_ci
 from cell_ocv import *
 from matplotlib.ticker import MaxNLocator
+from textwrap import wrap
 
 # import StringIO
 import os
@@ -143,7 +144,7 @@ def manipulate_data(read_data):
     return pd.Series(sorted_data)
 
 
-def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35):
+def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35, tx=5, ty=4):
     """Making a plot with given voltage data.
 
     Args:
@@ -182,6 +183,8 @@ def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35):
     residual_figure.set_ylabel('Residual (V)', size=ti_lb_s)
     residual_figure.legend(loc='best', prop={'size': ti_lb_s})
     residual_figure.set_xlabel('Time (s)', size=ti_lb_s)
+    residual_figure.yaxis.set_major_locator(MaxNLocator(ty))
+    residual_figure.xaxis.set_major_locator(MaxNLocator(tx))
 
     for tick_resi in residual_figure.xaxis.get_major_ticks():
         tick_resi.label.set_fontsize(ti_lb_s)
@@ -192,6 +195,9 @@ def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35):
     result_figure.set_ylabel('Voltage (V)', size=ti_lb_s)
     result_figure.legend(loc='best', prop={'size': ti_lb_s})
     result_figure.set_xlim(-1, t[-1] + 300)
+    result_figure.yaxis.set_major_locator(MaxNLocator(ty))
+    result_figure.xaxis.set_major_locator(MaxNLocator(tx))
+
 
     for tick_res in result_figure.xaxis.get_major_ticks():
         tick_res.label.set_fontsize(ti_lb_s)
@@ -748,7 +754,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
 
 
 def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
-                      tit_s=45):
+                      tit_s=45, tx=5, ty=4, figfolder=None):
     """User decides which cycles to plot and report.
 
     Args:
@@ -760,6 +766,7 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
         ms (int): Markersize for plots.
         ti_la_s (int): Ticks and labels font size.
         tit_s (int): Title size of plot.
+        figfolder (str): Folder where to save figure
 
 
     Returns:
@@ -809,7 +816,7 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
     else:
         for cycle_nr in user_cycles_list:
             # fig_fit = fit[cycle_nr].plot()
-            rc_fig = plt.figure()
+            rc_fig = plt.figure(figsize=(50, 52))
             rc_fig.canvas.set_window_title('cycle_%i_bec08_rc_'
                                            % (cycle_nr + 1))
             rc_fig.suptitle('Fitted RC-circuits for cell %s (%s), cycle %i'
@@ -820,8 +827,19 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
                 tick_rc.label.set_fontsize(ti_la_s)
             plt.gca().title.set_position([.5, 1.05])
             plot_rc(time[cycle_nr], fit[cycle_nr], ms=ms+3, ti_lb_s=ti_la_s)
+            plt.gca().yaxis.set_major_locator(MaxNLocator(ty))
+            plt.gca().xaxis.set_major_locator(MaxNLocator(tx))
+            if figfolder is not None:
+                if v_ocv < v_0:
+                    plt.savefig(os.path.join(
+                        figfolder,'cell_%s_RC_fit_cycle_%i_delith.pdf'
+                                  % (name, cycle_nr + 1)))
+                else:
+                    plt.savefig(os.path.join(
+                        figfolder,'cell_%s_RC_fit_cycle_%i_lith.pdf'
+                                  % (name, cycle_nr + 1)))
 
-            plt.figure()
+            plt.figure(figsize=(50, 52))
             plt.gca().title.set_position([.5, 1.05])
             gs = gridspec.GridSpec(3, 1)
             gs.update(hspace=0.5)
@@ -831,9 +849,18 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
             plt.suptitle('Voltage with fit for cell %s (%s), cycle %i'
                          % (name, rlx_txt, (cycle_nr + 1)), size=tit_s)
             plot_voltage(time[cycle_nr], voltage[cycle_nr], fit[cycle_nr],
-                         sub_fig, ms=ms, ti_lb_s=ti_la_s)
+                         sub_fig, ms=ms, ti_lb_s=ti_la_s, tx=tx, ty=ty)
             plt.gcf().canvas.set_window_title('cycle_%i_bec08_'
                                               % (cycle_nr + 1))
+            if figfolder is not None:
+                if v_ocv < v_0:
+                    plt.savefig(os.path.join(
+                        figfolder,'cell_%s_V_fit_cycle_%i_delith.pdf'
+                                  % (name, cycle_nr + 1)))
+                else:
+                    plt.savefig(os.path.join(
+                        figfolder,'cell_%s_V_fit_cycle_%i_lith.pdf'
+                                  % (name, cycle_nr + 1)))
 
             print 'Report for cell %s (%s), Cycle %i'\
                   % (name, rlx_txt, (cycle_nr + 1))
@@ -852,8 +879,9 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
 
 
 def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
-                fig_folder, i_err=0.000000125, ms=10, ti_la_s=35, tit_s=45,
-                tx=5, ty=5, single=False, outfolder=None):
+                fig_folder, sur_area=None, sur_area_err=None, i_err=0.000000125,
+                ms=10, ti_la_s=35, tit_s=45, tx=5, ty=5, single=False,
+                outfolder=None):
     """Calculating parameter errors and plotting them.
 
     r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
@@ -870,6 +898,8 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         mass_frac_error (float): Fractional uncertainty of mass measurments.
         fig_folder (str): Which folder the plots should be saved in.
         i_err (float): Current measurement error in A. Standard is Arbin BT2000.
+        sur_area (float): Active surface area of the cell.
+        sur_area_err (float): The fractional error in measured surface area.
         ms (int): Markersize for plots.
         ti_la_s (int): Ticks and labels font size.
         tit_s (int): Title size of plot.
@@ -940,7 +970,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     else:
-        gs = gridspec.GridSpec((shape_params + 1) / 2, shape_params - 1)
+        gs = gridspec.GridSpec(shape_params - 1, (shape_params + 1) / 2)
         gs.update(left=0.05, right=0.95, wspace=0.5)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
@@ -967,6 +997,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
             tick_para.label.set_fontsize(ti_la_s)
         subs_params[name_i].yaxis.set_major_locator(MaxNLocator(ty))
         subs_params[name_i].xaxis.set_major_locator(MaxNLocator(tx))
+        subs_params[name_i].yaxis.get_offset_text().set_fontsize(ti_la_s)
 
         # min_para = np.min(para_array)
         # max_para = np.max(para_array)
@@ -1005,12 +1036,12 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                         bbox_inches='tight', pad_inches=3, dpi=100)
 
         if single:
-            plt.figure(figsize=(50, 52))
+            plt.figure(figsize=(52, 50))
             plt.suptitle('Fitted parameter %s vs. cycles for cell %s (after %s)'
                          % (name, cell_name, rlx_txt), size=tit_s)
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
                          ms=ms, elinewidth=3)
-            plt.legend([name], loc='best', prop={'size': ti_la_s + 20})
+            plt.legend([name], loc='best', prop={'size': ti_la_s + 40})
             plt.xlabel('Cycles', size=ti_la_s)
             for tick_para in plt.gca().xaxis.get_major_ticks():
                 tick_para.label.set_fontsize(ti_la_s)
@@ -1018,6 +1049,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                 tick_para.label.set_fontsize(ti_la_s)
             plt.gca().yaxis.set_major_locator(MaxNLocator(ty))
             plt.gca().xaxis.set_major_locator(MaxNLocator(tx))
+            plt.gca().yaxis.get_offset_text().set_fontsize(ti_la_s)
 
             # min_para = np.min(para_array)
             # max_para = np.max(para_array)
@@ -1055,11 +1087,245 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                             bbox_inches='tight', pad_inches=3, dpi=100)
     if outfolder is not None:
         df = pd.DataFrame(para_df)
-        df.to_csv(os.path.join(outfolder, 'rc_params_cell_%s.csv' %
-                               cell_name), sep=';')
+        if v_ocv <v_0:
+            df.to_csv(os.path.join(outfolder, 'rc_params_cell_%s_delith.csv' %
+                                   cell_name), sep=';')
+        else:
+            df.to_csv(os.path.join(outfolder, 'rc_params_cell_%s_lith.csv' %
+                       cell_name), sep=';')
         print 'saved rc-parameters in csv file to folder %s with ";" as ' \
               'separator' % outfolder
 
+    # if sur_area is not None:
+    #     plot_params_area(voltage, fit, rc_params, i_start, cell_name,
+    #                      mass_frac_error, fig_folder, sur_area, sur_area_err,
+    #                      i_err, ms, ti_la_s, tit_s, tx, ty, single, outfolder)
+
+
+def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
+                     mass_frac_error, fig_folder, sur_area=None,
+                     sur_area_err=None, i_err=0.000000125, ms=10, ti_la_s=35,
+                     tit_s=45, tx=5, ty=5, single=False, outfolder=None):
+    """Calculating parameter errors and plotting them per surface area.
+
+    r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
+    c is found from using tau / r --> err(c) = err(r) + err(tau)
+    Here err means fractional uncertainty, which means that the uncertainty
+    of both r and c are respectively e(r) = err(r) / r and e(c) = err(c) / c.
+
+    Args:
+        voltage (:obj: 'list' of :obj: 'nd.array'): Measured voltage.
+        fit (:obj: 'list' of :obj: 'ModelResult'): Best fit for each cycle.
+        rc_params (:obj: 'list' of :obj: 'dict'): Calculated R and C from fit.
+        i_start (list): Discharge current. Used to calculate frac error of I.
+        cell_name (str): Name of the cell.
+        mass_frac_error (float): Fractional uncertainty of mass measurments.
+        fig_folder (str): Which folder the plots should be saved in.
+        i_err (float): Current measurement error in A. Standard is Arbin BT2000.
+        sur_area (float): Active surface area of the cell [cm**2].
+        sur_area_err (float): The fractional error in measured surface area.
+        ms (int): Markersize for plots.
+        ti_la_s (int): Ticks and labels font size.
+        tit_s (int): Title size of plot.
+        tx(int): Number of ticks on x axis.
+        ty(int): Number of ticks on y axis.
+        single (bool): Plot single plots or not.
+        outfolder (str): Folder where to save .csv files.
+
+    Returns:
+        None: Plot the parameters with their errors.
+    """
+    v_ocv = voltage[0][-1]
+    v_0 = voltage[0][0]
+    if v_ocv < v_0:
+        # After charge
+        rlx_txt = "delithiation"
+    else:
+        # After discharge
+        rlx_txt = "lithiation"
+    rc_param_a = []
+    best_para = []
+    best_para_error = []
+    names = fit[0].params.keys()
+    for i, cycle_fit in enumerate(fit):
+        temp_rc = {}
+        for rc_key, rc in rc_params[i].items():
+            temp_rc.update({rc_key: rc_params[i][rc_key] / sur_area})
+        rc_param_a.append(temp_rc)
+        v_err_cycle = 1. / cycle_fit.weights
+        i_err_frac = i_err / i_start[i] + mass_frac_error
+        error_para = {para_name: cycle_fit.params[para_name].stderr
+                      for para_name in names}
+        # err_para = np.sqrt(np.diag(cycle_fit.covar))
+        # error_para = {para_name: err_para[err]
+        #               for err, para_name in enumerate(names)}
+        # Fractional error in percent calculation
+        fractional_err = {par_name: (error_para[par_name] /
+                                     cycle_fit.params[par_name])
+                          for par_name in names}
+        r_err = {key: fractional_err['v0_%s' % key[2:]]
+                      + i_err_frac + sur_area_err
+                 for key in rc_params[i].keys() if key.startswith('r_')}
+        c_err = {key: fractional_err['tau_%s' % key[2:]]
+                      + r_err['r_%s' % key[2:]] + sur_area_err
+                 for key in rc_params[i].keys() if key.startswith('c_')}
+        # ir = (v_start - v_rlx) / i_start
+        ir_err = i_err_frac + v_err_cycle + sur_area_err
+
+        # Standard deviation error calculated from fractional error
+        e_r = {r: frac_err * rc_param_a[i][r]
+               for r, frac_err in r_err.items()}
+        e_c = {c: frac_err * rc_param_a[i][c]
+               for c, frac_err in c_err.items()}
+        e_ir = {'IR': rc_param_a[i]['IR'] * ir_err}
+        error_para.update(e_r)
+        error_para.update(e_c)
+        error_para.update(e_ir)
+        best_para_error.append(error_para)
+        temp_dict = cycle_fit.params.valuesdict()
+        rc_param_a[i].update(temp_dict)
+        best_para.append(rc_param_a[i])
+
+    fig_params = plt.figure(figsize=(85, 70))
+    plt.suptitle('Fitted parameters vs. cycles for cell %s (after %s)'
+                 % (cell_name, rlx_txt), size=tit_s)
+    cycle_array = np.arange(1, len(fit) + 1, 1)
+    # cycle_array_ticks = np.arange(1, len(fit) + 1, 4)
+
+    shape_params = len(best_para[0]) - len(fit[0].params)
+    if shape_params % 2 == 0:   # Even number of input params
+        gs = gridspec.GridSpec(shape_params / 2 + 1, shape_params - 1)
+        gs.update(left=0.07, right=0.95, wspace=0.5, hspace=0.5)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+    else:
+        gs = gridspec.GridSpec(shape_params - 1, (shape_params + 1) / 2)
+        gs.update(left=0.05, right=0.95, wspace=0.5)
+        subs_params = [fig_params.add_subplot(gs[p])
+                       for p in range(len(best_para[0]))]
+    plt.setp(subs_params, xlabel='Cycle number')
+
+    plt.gcf().canvas.set_window_title('param_all_cycles_sic006_74_delith')
+
+    para_df = {}
+    for name_i, name in enumerate(best_para[0].keys()):
+        para_array = np.array([best_para[step][name]
+                               for step in range(len(fit))])
+        para_error = np.array([best_para_error[cycle_step][name]
+                               for cycle_step in range(len(fit))])
+        para_df.update({name: para_array})
+        para_df.update({name + '_err': para_error})
+
+        subs_params[name_i].errorbar(cycle_array, para_array, yerr=para_error,
+                                     fmt='or', ms=ms, elinewidth=3)
+        subs_params[name_i].legend([name], loc='best', prop={'size': ti_la_s})
+        subs_params[name_i].set_xlabel('Cycles', size=ti_la_s)
+        for tick_para in subs_params[name_i].xaxis.get_major_ticks():
+            tick_para.label.set_fontsize(ti_la_s)
+        for tick_para in subs_params[name_i].yaxis.get_major_ticks():
+            tick_para.label.set_fontsize(ti_la_s)
+        subs_params[name_i].yaxis.set_major_locator(MaxNLocator(ty))
+        subs_params[name_i].xaxis.set_major_locator(MaxNLocator(tx))
+        subs_params[name_i].yaxis.get_offset_text().set_fontsize(ti_la_s)
+
+        # min_para = np.min(para_array)
+        # max_para = np.max(para_array)
+        # donemin = False
+        # donemax = False
+        # for y in para_array:
+        #     if donemin and donemax:
+        #         break
+        #     if y not in (min_para, max_para):
+        #         if min_para * 10 ** -4 > y and not donemin:
+        #             min_para = y
+        #             donemin = True
+        #         elif max_para * 10 ** -3 > y and not donemax:
+        #             max_para = y
+        #             donemax = True
+        # print min_para, max_para
+        # subs_params[name_i].set_ylim(min_para - 0.1 * min_para,
+        #                              max_para + 0.1 * max_para)
+
+        if 'tau' in name:
+            subs_params[name_i].set_ylabel('Time-constant (RC)[s]',
+                                           size=ti_la_s)
+        elif 'r_' in name or 'IR' in name:
+            subs_params[name_i].set_ylabel('Resistance [Ohm / $\mu$m$^2$]',
+                                           size=ti_la_s)
+        elif 'c_' in name:
+            subs_params[name_i].set_ylabel('Capacitance [F/$\mu$m$^2$]',
+                                           size=ti_la_s)
+        else:
+            subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
+        if v_ocv < v_0:
+            plt.savefig(os.path.join(fig_folder, 'params_a_%s_delith.pdf'
+                                     % cell_name),
+                        bbox_inches='tight', pad_inches=3, dpi=100)
+        else:
+            plt.savefig(os.path.join(fig_folder, 'params_a_%s_lith.pdf'
+                                     % cell_name),
+                        bbox_inches='tight', pad_inches=3, dpi=100)
+
+        if single:
+            plt.figure(figsize=(52, 50))
+            plt.suptitle('Fitted parameter %s per area vs. cycles for cell %s'
+                         '(after %s)' % (name, cell_name, rlx_txt), size=tit_s)
+            plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
+                         ms=ms, elinewidth=3)
+            plt.legend([name], loc='best', prop={'size': ti_la_s + 40})
+            plt.xlabel('Cycles', size=ti_la_s)
+            for tick_para in plt.gca().xaxis.get_major_ticks():
+                tick_para.label.set_fontsize(ti_la_s)
+            for tick_para in plt.gca().yaxis.get_major_ticks():
+                tick_para.label.set_fontsize(ti_la_s)
+            plt.gca().yaxis.set_major_locator(MaxNLocator(ty))
+            plt.gca().xaxis.set_major_locator(MaxNLocator(tx))
+            plt.gca().yaxis.get_offset_text().set_fontsize(ti_la_s)
+
+            # min_para = np.min(para_array)
+            # max_para = np.max(para_array)
+            # donemin = False
+            # donemax = False
+            # for y in para_array:
+            #     if donemin and donemax:
+            #         break
+            #     if y not in (min_para, max_para):
+            #         if min_para * 10 ** -4 > y and not donemin:
+            #             min_para = y
+            #             donemin = True
+            #         elif max_para * 10 ** -3 > y and not donemax:
+            #             max_para = y
+            #             donemax = True
+            # print min_para, max_para
+            # subs_params[name_i].set_ylim(min_para - 0.1 * min_para,
+            #                              max_para + 0.1 * max_para)
+
+            if 'tau' in name:
+                plt.ylabel('Time-constant (RC)[s]', size=ti_la_s)
+            elif 'r_' in name or 'IR' in name:
+                plt.ylabel('Resistance [Ohm / $\mu$m$^2$]', size=ti_la_s)
+            elif 'c_' in name:
+                plt.ylabel('Capacitance [F / $\mu$m$^2$]', size=ti_la_s)
+            else:
+                plt.ylabel('Voltage [V]', size=ti_la_s)
+            if v_ocv < v_0:
+                plt.savefig(os.path.join(fig_folder, '%s_params_a_%s_delith.pdf'
+                                         % (name, cell_name)),
+                            bbox_inches='tight', pad_inches=3, dpi=100)
+            else:
+                plt.savefig(os.path.join(fig_folder, '%s_params_a_%s_lith.pdf'
+                                         % (name, cell_name)),
+                            bbox_inches='tight', pad_inches=3, dpi=100)
+    if outfolder is not None:
+        df = pd.DataFrame(para_df)
+        if v_ocv <v_0:
+            df.to_csv(os.path.join(outfolder, 'rc_params_a_cell_%s_delith.csv' %
+                                   cell_name), sep=';')
+        else:
+            df.to_csv(os.path.join(outfolder, 'rc_params_a_cell_%s_lith.csv' %
+                                   cell_name), sep=';')
+        print 'saved rc-parameters per area in csv file to folder %s with ";"' \
+              'as separator' % outfolder
 
 def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
     best_para = []
