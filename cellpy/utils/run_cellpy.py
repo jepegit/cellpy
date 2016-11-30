@@ -378,7 +378,8 @@ if __name__ == '__main__':
     #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
     #                              % (names[name], 'delith')), dpi=100)
 
-    fco.user_plot_voltage(time, voltage, fit, conf, name=names[name],
+    fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
+                          ti_la_s=tick_and_label_s, tit_s=title_s,
                           figfolder=figure_folder)
     # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
     #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
