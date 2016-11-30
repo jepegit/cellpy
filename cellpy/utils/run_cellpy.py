@@ -230,9 +230,9 @@ if __name__ == '__main__':
     plt.rcParams['ytick.major.pad'] = 8
 
     # ms = markersize
-    ms = 40
-    tick_and_label_s = 90
-    title_s = tick_and_label_s + 40
+    ms = 60
+    tick_and_label_s = 150
+    title_s = tick_and_label_s - 10
 
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 800}
@@ -250,16 +250,16 @@ if __name__ == '__main__':
     v_start_up = 0.05
     v_start_down = 1.
 
-    disk_diameter = 5.2   # micron
-    disk_dia_frac_err = (0.1) / disk_diameter   # +/- frac error
-    disk_area = (disk_diameter / 2) ** 2 * pi   # square micron
+    disk_diameter = 1.5   # cm
+    # disk_dia_frac_err = (0.1) / disk_diameter   # +/- frac error
+    disk_area = (disk_diameter / 2) ** 2 * pi   # square cm
     conf = False
     copp_err = 0.2   # in %. std/best_estimate. best_estimate = 28.7, std. = 0.0634
     mass_err_scale = 0.01   # In mg. What is the uncertainty of the scale?
     i_err_accuracy = 0.1   # % of full scale range
     v_err_accuracy = 0.1   # % of full scale range
     v_range = 20   # full scale ==> +/- 10 V
-    i_range = 2* 10**(-3)   # full scale ==> +/- 10mA
+    i_range = 2 * 10**(-3)   # full scale ==> +/- 10mA
     i_err = i_err_accuracy / 100 * i_range
     mass_frac_err = {}
     for n, m in cell_mass.items():
@@ -312,7 +312,7 @@ if __name__ == '__main__':
     plots = (1, 2, 4, 8, 9, 10)
     zoom = False
     name_plots = [filenames[p] for p in plots]
-    up = True
+    up = False
     name = filenames[2]
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
@@ -378,19 +378,17 @@ if __name__ == '__main__':
     #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
     #                              % (names[name], 'delith')), dpi=100)
 
-    fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
-                          ti_la_s=tick_and_label_s, tit_s=title_s,
-                          figfolder=figure_folder)
+    # fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
+    #                       ti_la_s=tick_and_label_s, tit_s=title_s,
+    #                       figfolder=figure_folder)
     # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
     #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
     #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
-    #                 outfolder=datafolder_out, sur_area=disk_area,
-    #                 sur_area_err=disk_dia_frac_err)
-    # fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
-    #                      mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-    #                      ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
-    #                      outfolder=datafolder_out, sur_area=disk_area,
-    #                      sur_area_err=disk_dia_frac_err)
+    #                 outfolder=datafolder_out, sur_area=disk_area, tx=4, ty=3)
+    fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
+                         mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+                         ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
+                         outfolder=datafolder_out, sur_area=disk_area)
 
         # fco.print_params(fit, rc_para)
 

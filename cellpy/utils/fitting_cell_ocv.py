@@ -817,7 +817,7 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
     else:
         for cycle_nr in user_cycles_list:
             # fig_fit = fit[cycle_nr].plot()
-            rc_fig = plt.figure(figsize=(50, 52))
+            rc_fig = plt.figure(figsize=(55, 52))
             rc_fig.canvas.set_window_title('cycle_%i_bec08_rc_'
                                            % (cycle_nr + 1))
             rc_fig.suptitle('Fitted RC-circuits for cell %s (%s), cycle %i'
@@ -840,7 +840,7 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
                         figfolder,'cell_%s_RC_fit_cycle_%i_lith.pdf'
                                   % (name, cycle_nr + 1)))
 
-            plt.figure(figsize=(50, 52))
+            plt.figure(figsize=(70, 52))
             plt.gca().title.set_position([.5, 1.05])
             gs = gridspec.GridSpec(3, 1)
             gs.update(hspace=0.5)
@@ -958,7 +958,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         rc_params[i].update(temp_dict)
         best_para.append(rc_params[i])
 
-    fig_params = plt.figure(figsize=(85, 70))
+    fig_params = plt.figure(figsize=(75, 70))
     plt.suptitle('Fitted parameters vs. cycles for cell %s (after %s)'
                  % (cell_name, rlx_txt), size=tit_s)
     cycle_array = np.arange(1, len(fit) + 1, 1)
@@ -972,7 +972,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                        for p in range(len(best_para[0]))]
     else:
         gs = gridspec.GridSpec(shape_params - 1, (shape_params + 1) / 2)
-        gs.update(left=0.05, right=0.95, wspace=0.5)
+        gs.update(left=0.05, right=0.95, wspace=0.5, hspace=0.5)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     plt.setp(subs_params, xlabel='Cycle number')
@@ -1019,22 +1019,14 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         #                              max_para + 0.1 * max_para)
 
         if 'tau' in name:
-            subs_params[name_i].set_ylabel('Time-constant (RC)[s]',
-                                           size=ti_la_s)
+            subs_params[name_i].set_ylabel('Time constant [s]',
+                                           size=ti_la_s-20)
         elif 'r_' in name or 'IR' in name:
-            subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s)
+            subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s-20)
         elif 'c_' in name:
-            subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s)
+            subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s-20)
         else:
-            subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
-        if v_ocv < v_0:
-            plt.savefig(os.path.join(fig_folder, 'params_%s_delith.pdf'
-                                     % cell_name),
-                        bbox_inches='tight', pad_inches=3, dpi=100)
-        else:
-            plt.savefig(os.path.join(fig_folder, 'params_%s_lith.pdf'
-                                     % cell_name),
-                        bbox_inches='tight', pad_inches=3, dpi=100)
+            subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s-20)
 
         if single:
             plt.figure(figsize=(52, 50))
@@ -1096,6 +1088,16 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                        cell_name), sep=';')
         print 'saved rc-parameters in csv file to folder %s with ";" as ' \
               'separator' % outfolder
+
+    if v_ocv < v_0:
+        fig_params.savefig(os.path.join(fig_folder,
+                                        'params_%s_delith.pdf' % cell_name),
+                           bbox_inches='tight', pad_inches=3, dpi=100)
+    else:
+        fig_params.savefig(os.path.join(fig_folder, 'params_%s_lith.pdf'
+                                        % cell_name),
+                           bbox_inches='tight', pad_inches=3, dpi=100)
+
 
     # if sur_area is not None:
     #     plot_params_area(voltage, fit, rc_params, i_start, cell_name,
@@ -1165,13 +1167,13 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
                                      cycle_fit.params[par_name])
                           for par_name in names}
         r_err = {key: fractional_err['v0_%s' % key[2:]]
-                      + i_err_frac + sur_area_err
+                      + i_err_frac    # + sur_area_err
                  for key in rc_params[i].keys() if key.startswith('r_')}
         c_err = {key: fractional_err['tau_%s' % key[2:]]
-                      + r_err['r_%s' % key[2:]] + sur_area_err
+                      + r_err['r_%s' % key[2:]]   # + sur_area_err
                  for key in rc_params[i].keys() if key.startswith('c_')}
         # ir = (v_start - v_rlx) / i_start
-        ir_err = i_err_frac + v_err_cycle + sur_area_err
+        ir_err = i_err_frac + v_err_cycle    # + sur_area_err
 
         # Standard deviation error calculated from fractional error
         e_r = {r: frac_err * rc_param_a[i][r]
@@ -1187,7 +1189,7 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
         rc_param_a[i].update(temp_dict)
         best_para.append(rc_param_a[i])
 
-    fig_params = plt.figure(figsize=(85, 70))
+    fig_params = plt.figure(figsize=(75, 70))
     plt.suptitle('Fitted parameters vs. cycles for cell %s (after %s)'
                  % (cell_name, rlx_txt), size=tit_s)
     cycle_array = np.arange(1, len(fit) + 1, 1)
@@ -1201,7 +1203,7 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
                        for p in range(len(best_para[0]))]
     else:
         gs = gridspec.GridSpec(shape_params - 1, (shape_params + 1) / 2)
-        gs.update(left=0.05, right=0.95, wspace=0.5)
+        gs.update(left=0.05, right=0.95, wspace=0.5, hspace=0.5)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     plt.setp(subs_params, xlabel='Cycle number')
@@ -1248,29 +1250,23 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
         #                              max_para + 0.1 * max_para)
 
         if 'tau' in name:
-            subs_params[name_i].set_ylabel('Time-constant (RC)[s]',
+            subs_params[name_i].set_ylabel('Time constant [s]',
                                            size=ti_la_s)
         elif 'r_' in name or 'IR' in name:
-            subs_params[name_i].set_ylabel('Resistance [Ohm / $\mu$m$^2$]',
+            subs_params[name_i].set_ylabel('Resistance [Ohm / cm$^2$]',
                                            size=ti_la_s)
         elif 'c_' in name:
-            subs_params[name_i].set_ylabel('Capacitance [F/$\mu$m$^2$]',
+            subs_params[name_i].set_ylabel('Capacitance [F/cm$^2$]',
                                            size=ti_la_s)
         else:
             subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
-        if v_ocv < v_0:
-            plt.savefig(os.path.join(fig_folder, 'params_a_%s_delith.pdf'
-                                     % cell_name),
-                        bbox_inches='tight', pad_inches=3, dpi=100)
-        else:
-            plt.savefig(os.path.join(fig_folder, 'params_a_%s_lith.pdf'
-                                     % cell_name),
-                        bbox_inches='tight', pad_inches=3, dpi=100)
 
         if single:
             plt.figure(figsize=(52, 50))
-            plt.suptitle('Fitted parameter %s per area vs. cycles for cell %s'
-                         '(after %s)' % (name, cell_name, rlx_txt), size=tit_s)
+            plt.suptitle('\n'.join(wrap('Fitted parameter %s per area vs. '
+                                        'cycles for cell %s (after %s)', 40))
+                         % (name, cell_name, rlx_txt), size=tit_s, ha='center')
+
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
                          ms=ms, elinewidth=3)
             plt.legend([name], loc='best', prop={'size': ti_la_s + 40})
@@ -1302,11 +1298,11 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
             #                              max_para + 0.1 * max_para)
 
             if 'tau' in name:
-                plt.ylabel('Time-constant (RC)[s]', size=ti_la_s)
+                plt.ylabel('Time constant [s]', size=ti_la_s)
             elif 'r_' in name or 'IR' in name:
-                plt.ylabel('Resistance [Ohm / $\mu$m$^2$]', size=ti_la_s)
+                plt.ylabel('Resistance [Ohm / cm$^2$]', size=ti_la_s)
             elif 'c_' in name:
-                plt.ylabel('Capacitance [F / $\mu$m$^2$]', size=ti_la_s)
+                plt.ylabel('Capacitance [F / cm$^2$]', size=ti_la_s)
             else:
                 plt.ylabel('Voltage [V]', size=ti_la_s)
             if v_ocv < v_0:
@@ -1327,6 +1323,16 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
                                    cell_name), sep=';')
         print 'saved rc-parameters per area in csv file to folder %s with ";"' \
               'as separator' % outfolder
+
+    if v_ocv < v_0:
+        fig_params.savefig(os.path.join(fig_folder, 'params_a_%s_delith.pdf'
+                                        % cell_name),
+                           bbox_inches='tight', pad_inches=3, dpi=100)
+    else:
+        fig_params.savefig(os.path.join(fig_folder, 'params_a_%s_lith.pdf'
+                                        % cell_name),
+                           bbox_inches='tight', pad_inches=3, dpi=100)
+
 
 def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
     best_para = []
