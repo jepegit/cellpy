@@ -518,6 +518,10 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
     r_ir = {'IR': r_ir_0}
 
+    # Total magnitude of overpotential is the fitted ocv and start voltage.
+    tot_overpot_ini = {'over_pot': abs(best_para[0]['ocv'] - v_start)}
+
+
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
                    for key, v0_rc in best_para[0].valuesdict().items()
                    if key.startswith('v0')}
@@ -527,6 +531,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                   if key.startswith('tau')}
     best_rc_ini.update(best_c_ini)
     best_rc_ini.update(r_ir)
+    best_rc_ini.update(tot_overpot_ini)
     best_rc_para = [best_rc_ini]
 
     for cycle_i in range(1, len(time)):
@@ -563,6 +568,9 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
         copied_parameters = copy.deepcopy(result_cycle.params)
         best_para.append(copied_parameters)
 
+        # Total magnitude of overpotential is the fitted ocv and start voltage.
+        tot_overpot = {'over_pot': abs(best_para[cycle_i]['ocv'] - v_start)}
+
         # calculating r and c from fit
         r_ir_temp = abs(temp_start_voltage - v_start) / i_start[cycle_i]
         best_rc_cycle = {'r_%s' % key[3:]:
@@ -577,6 +585,7 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
                         if key.startswith('tau')}
         best_rc_cycle.update({'IR': r_ir_temp})
         best_rc_cycle.update(best_c_cycle)
+        best_rc_cycle.update(tot_overpot)
         best_rc_para.append(best_rc_cycle)
     return result, best_rc_para, i_start
 
@@ -679,6 +688,10 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
 
     r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
     r_ir = {'IR': r_ir_0}
+
+    # Total magnitude of overpotential is the fitted ocv and start voltage.
+    tot_overpot_ini = {'over_pot': abs(best_para[0]['ocv'] - v_start)}
+
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
                    for key, v0_rc in best_para[0].valuesdict().items()
                    if key.startswith('v0')}
@@ -688,6 +701,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                   if key.startswith('tau')}
     best_rc_ini.update(r_ir)
     best_rc_ini.update(best_c_ini)
+    best_rc_ini.update(tot_overpot_ini)
     best_rc_para = [best_rc_ini]
 
     for cycle_i in range(1, len(time)):
@@ -738,6 +752,10 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
         best_para.append(copied_parameters)
         # calculating r and c from fit
         r_ir_temp = abs(temp_start_voltage - v_start) / i_start[cycle_i]
+
+        # Total magnitude of overpotential is the fitted ocv and start voltage.
+        tot_overpot = {'over_pot': abs(best_para[cycle_i]['ocv'] - v_start)}
+
         best_rc_cycle = {'r_%s' % key[3:]:
                          abs(v_rc / i_start[cycle_i])
                          for key, v_rc in
@@ -750,6 +768,7 @@ def fit_with_conf(model, time, voltage, guess_tau, contribution, c_rate,
                         if key.startswith('tau')}
         best_rc_cycle.update({'IR': r_ir_temp})
         best_rc_cycle.update(best_c_cycle)
+        best_rc_cycle.update(tot_overpot)
         best_rc_para.append(best_rc_cycle)
     return result, best_rc_para, i_start
 
@@ -943,6 +962,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                  for key in rc_params[i].keys() if key.startswith('c_')}
         # ir = (v_start - v_rlx) / i_start
         ir_err = i_err_frac + v_err_cycle
+        over_pot_err = fractional_err['ocv'] + v_err_cycle
 
         # Standard deviation error calculated from fractional error
         e_r = {r: frac_err * rc_params[i][r]
@@ -950,9 +970,11 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         e_c = {c: frac_err * rc_params[i][c]
                for c, frac_err in c_err.items()}
         e_ir = {'IR': rc_params[i]['IR'] * ir_err}
+        e_over_pot = {'over_pot': rc_params[i]['over_pot'] * over_pot_err}
         error_para.update(e_r)
         error_para.update(e_c)
         error_para.update(e_ir)
+        error_para.update(e_over_pot)
         best_para_error.append(error_para)
         temp_dict = cycle_fit.params.valuesdict()
         rc_params[i].update(temp_dict)
@@ -966,13 +988,13 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
 
     shape_params = len(best_para[0]) - len(fit[0].params)
     if shape_params % 2 == 0:   # Even number of input params
-        gs = gridspec.GridSpec(shape_params / 2 + 1, shape_params - 1)
-        gs.update(left=0.07, right=0.95, wspace=0.5)
+        gs = gridspec.GridSpec(shape_params - 1, shape_params / 2)
+        gs.update(left=0.07, right=0.95, wspace=0.4, hspace=0.2)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     else:
         gs = gridspec.GridSpec(shape_params - 1, (shape_params + 1) / 2)
-        gs.update(left=0.05, right=0.95, wspace=0.5, hspace=0.5)
+        gs.update(left=0.05, right=0.95, wspace=0.4, hspace=0.4)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     plt.setp(subs_params, xlabel='Cycle number')
@@ -1020,13 +1042,16 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
 
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time constant [s]',
-                                           size=ti_la_s-20)
+                                           size=ti_la_s)
         elif 'r_' in name or 'IR' in name:
-            subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s-20)
+            subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s)
         elif 'c_' in name:
-            subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s-20)
+            subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s)
+        elif 'v0_' in name:
+            subs_params[name_i].set_ylabel('Voltage vs. OCV [V]', size=ti_la_s)
         else:
-            subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s-20)
+            subs_params[name_i].set_ylabel('Voltage vs. Li/Li$^+$ [V]',
+                                           size=ti_la_s)
 
         if single:
             plt.figure(figsize=(52, 50))
@@ -1034,7 +1059,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                          % (name, cell_name, rlx_txt), size=tit_s)
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
                          ms=ms, elinewidth=3)
-            plt.legend([name], loc='best', prop={'size': ti_la_s + 40})
+            plt.legend([name], loc='best', prop={'size': ti_la_s + 60})
             plt.xlabel('Cycles', size=ti_la_s)
             for tick_para in plt.gca().xaxis.get_major_ticks():
                 tick_para.label.set_fontsize(ti_la_s)
@@ -1068,8 +1093,12 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                 plt.ylabel('Resistance [Ohm]', size=ti_la_s)
             elif 'c_' in name:
                 plt.ylabel('Capacitance [F]', size=ti_la_s)
+            elif 'v0_' in name:
+                subs_params[name_i].set_ylabel('Voltage vs. OCV [V]',
+                                               size=ti_la_s)
             else:
-                plt.ylabel('Voltage [V]', size=ti_la_s)
+                subs_params[name_i].set_ylabel('Voltage vs. Li/Li$^+$ [V]',
+                                               size=ti_la_s)
             if v_ocv < v_0:
                 plt.savefig(os.path.join(fig_folder, '%s_params_%s_delith.pdf'
                                          % (name, cell_name)),

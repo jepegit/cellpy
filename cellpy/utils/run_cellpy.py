@@ -230,9 +230,9 @@ if __name__ == '__main__':
     plt.rcParams['ytick.major.pad'] = 8
 
     # ms = markersize
-    ms = 60
-    tick_and_label_s = 150
-    title_s = tick_and_label_s - 10
+    ms = 40
+    tick_and_label_s = 60
+    title_s = tick_and_label_s + 60
 
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 800}
@@ -381,14 +381,14 @@ if __name__ == '__main__':
     # fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
     #                       ti_la_s=tick_and_label_s, tit_s=title_s,
     #                       figfolder=figure_folder)
-    # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
-    #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-    #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
-    #                 outfolder=datafolder_out, sur_area=disk_area, tx=4, ty=3)
-    fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
-                         mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-                         ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
-                         outfolder=datafolder_out, sur_area=disk_area)
+    fco.plot_params(voltage, fit, rc_para, i_start, names[name],
+                    mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+                    ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
+                    outfolder=datafolder_out, tx=4, ty=3)
+    # fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
+    #                      mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+    #                      ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
+    #                      outfolder=datafolder_out, sur_area=disk_area)
 
         # fco.print_params(fit, rc_para)
 
