@@ -3550,7 +3550,7 @@ class cellpydata(object):
         col_discharge_loss_title = headers_summary["discharge_capacity_loss"]
         col_charge_loss_title = headers_summary["charge_capacity_loss"]
         dcloss_cumsum_title = headers_summary["cumulated_discharge_capacity_loss"]
-        closs_cumsum_title =headers_summary["cumulated_charge_capacity_loss"]
+        closs_cumsum_title = headers_summary["cumulated_charge_capacity_loss"]
         endv_charge_title = headers_summary["end_voltage_charge"]
         endv_discharge_title = headers_summary["end_voltage_discharge"]
         date_time_txt_title = headers_summary["date_time_txt"]

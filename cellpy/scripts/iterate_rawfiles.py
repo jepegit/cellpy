@@ -108,14 +108,18 @@ srnos = excel_reader.select_batch("highCoul", 12)
 for n in srnos:
     run_name = excel_reader.get_cell_name(n)
     mass = excel_reader.get_mass(n)
+    print
+    print 30 * "="
+    print "(%i): %s" % (n, run_name)
+    print 30 * "-"
     rawfiles, cellpyfile = filefinder.search_for_files(run_name)
     if check_files(rawfiles):
         dfsummary = load_and_create_summary(rawfiles, cellpyfile, mass)
         if dfsummary is None:
-            print "no summary"
+            print "No summary made (could be errors in the raw-file)"
         else:
             summary_dict["srno"].append(n)
-            summary_dict["date"].append(dfsummary.loc[0,"Date_Time_Txt"])
+            summary_dict["date"].append(dfsummary.loc[0,"Date_Time_Txt(str)"])
             life, to_max = get_lifetime(dfsummary)
             summary_dict["life"].append(life)
             summary_dict["lived_to_end"].append(to_max)
@@ -126,6 +130,8 @@ for n in srnos:
             couleff_df[n] = couleff
             cumcouldiff = dfsummary.loc[dfsummary["Cycle_Index"] < 51, "Cumulated_Coulombic_Difference(mAh/g)"]
             cumcouldiff_df[n] = cumcouldiff
+    print 30 * "="
+    print
 
 # Saving data
 summary_df = pd.DataFrame(summary_dict)
