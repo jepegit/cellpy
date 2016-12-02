@@ -8,6 +8,10 @@ test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_da
 test_res_file = "20160805_test001_45_cc_01.res"
 test_data_dir_out = os.path.join(test_data_dir, "out_cellpytester")
 
+import logging
+from cellpy import log
+log.setup_logging(default_level=logging.DEBUG)
+
 
 @pytest.fixture(scope="module")
 def cellpy_data_instance():

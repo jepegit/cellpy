@@ -50,8 +50,8 @@ def dQdV(v,q,NumberMultiplyer=1,
 
                     LastV = take(v, [-1,])
                     FirstV = take(v, [0,])
-                    print LastV
-                    print FirstV
+                    # print LastV
+                    # print FirstV
 
                     if less(LastV, FirstV).all(): # discharge
                         NormQ = -amax(q)
@@ -132,13 +132,14 @@ def interpolate_line(x,y,number_of_points=None,
         x_start = x[0]
         x_end = x[-1]
     except: # numpy array
-        x_start = x.iget(0)
-        x_end   = x.iget(-1)
+        # depreciation warning TODO: shift to .iloc[0]
+        x_start = x.iloc[0]
+        x_end   = x.iloc[-1]
     if x_start > x_end:
         # need to reverse
         reverse = True
     if not number_of_points:
-        number_of_points=len(x)
+        number_of_points = len(x)
 
 
     ErrorInPoints=False
