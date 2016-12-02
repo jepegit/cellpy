@@ -307,9 +307,14 @@ if __name__ == '__main__':
 
     # ms = markersize
     # Para plot
-    ms = 40
-    tick_and_label_s = 60
-    title_s = tick_and_label_s + 60
+    # ms = 40
+    # tick_and_label_s = 60
+    # title_s = tick_and_label_s + 60
+
+    # Single para plot
+    ms = 70
+    tick_and_label_s = 150
+    title_s = tick_and_label_s + 30
 
     # fit plot
     # ms = 40
@@ -320,7 +325,7 @@ if __name__ == '__main__':
     zoom = False
     name_plots = [filenames[p] for p in plots]
     up = False
-    name = filenames[9]
+    name = filenames[2]
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
     #                i_err=i_err, ti_la_s=tick_and_label_s, m_s=ms, zoom=zoom)

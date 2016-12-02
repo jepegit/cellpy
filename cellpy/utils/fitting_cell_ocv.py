@@ -1054,7 +1054,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                                            size=ti_la_s)
 
         if single:
-            plt.figure(figsize=(52, 50))
+            plt.figure(figsize=(70, 75))
             plt.suptitle('Fitted parameter %s vs. cycles for cell %s (after %s)'
                          % (name, cell_name, rlx_txt), size=tit_s)
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
@@ -1281,7 +1281,7 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time constant [s]',
                                            size=ti_la_s)
-        elif 'r_' in name or 'IR' in name:
+        elif 'r_' == name[:1] or 'IR' in name:
             subs_params[name_i].set_ylabel('Resistance [Ohm / cm$^2$]',
                                            size=ti_la_s)
         elif 'c_' in name:
@@ -1291,7 +1291,7 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
             subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
 
         if single:
-            plt.figure(figsize=(52, 50))
+            plt.figure(figsize=(70, 75))
             plt.suptitle('\n'.join(wrap('Fitted parameter %s per area vs. '
                                         'cycles for cell %s (after %s)', 40))
                          % (name, cell_name, rlx_txt), size=tit_s, ha='center')
