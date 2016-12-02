@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install cellpy, run this command in your terminal:
+To install ``cellpy``, run this command in your terminal:
 
 .. code-block:: console
 
     $ pip install cellpy
 
-This is the preferred method to install cellpy, as it will always install the most recent stable release.
+This is the preferred method to install ``cellpy``, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -22,11 +22,21 @@ you through the process.
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
 
-If this is the first time you install cellpy, it is recommended that you run the setup script:
+``cellpy`` uses `setuptools`_, and the developers of `setuptools` recommend notifying the users
+the following:
+
+-  if you would like to install ``cellpy`` to somewhere other than the main site-packages directory,
+   then you should first install setuptools using the instructions for Custom Installation Locations,
+   before installing ``cellpy``.
+
+
+.. _setuptools: http://setuptools.readthedocs.io/en/latest/
+
+If this is the first time you install ``cellpy``, it is recommended that you run the setup script:
 
 .. code-block:: console
 
-    $ cellpy_setup
+    $ cellpy setup
 
 This will install a `_cellpy_prms_default.ini` file in your home directory. Edit this file and
 save it as `_cellpy_prms_some_other_name.ini` to prevent it from being written over in case
@@ -36,7 +46,7 @@ the setup script is run on a later occasion.
 From sources
 ------------
 
-The sources for cellpy can be downloaded from the `Github repo`_.
+The sources for ``cellpy`` can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 

@@ -208,7 +208,7 @@ def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
 #
 #
 # if __name__ == '__main__':
-#     datafolder = r'..\testdata'   # make sure you're in folder \utils. If not,
+#     datafolder = r'..\data_ex'   # make sure you're in folder \utils. If not,
 #     # activate "print os.getcwd()" to find current folder and extend datafolder
 #     # with [.]\utils\data
 #     # print os.getcwd()

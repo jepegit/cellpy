@@ -10,6 +10,9 @@ import pandas as pd
 
 from cellpy.parametres import prmreader
 
+# TODO: read column names and numbers from custom file.
+# TODO: remove "bool" headers (F, M, etc.) in example db-file.
+
 
 class DbSheetCols:
     def __init__(self, sheetname="db_table"):
@@ -20,7 +23,8 @@ class DbSheetCols:
             self.exists = 3
             self.exists_txt = 4
             self.fileid = 11 + n
-            self.batch = 1
+            self.batch_no = 1
+            self.batch = 2
             self.b01 = 5
             self.b02 = 6
             self.b03 = 7
@@ -39,9 +43,7 @@ class DbSheetCols:
             self.comment_slurry = 12 + n
             self.finished_run = 13 + n
             self.F = 13 + n
-            self.merged_files = 14 + n  # remove
-            self.hd5f_exists = 14 + n  # remove
-            self.hd5f_fixed = 14 + n
+            self.hd5f_fixed = 13 + n
             self.M = 14 + n
             self.VC = 15 + n
             self.FEC = 16 + n
@@ -60,9 +62,10 @@ class DbSheetCols:
             self.weight_percent_Si = 34 + n
             self.Si = 34 + n
             self.loading = 36 + n
-            self.general_comment = 37 + n
+            self.general_comment = 41 + n
 
         elif sheetname == "db_filenames":
+            self.serial_number_position = 0
             self.serialno = 0
             self.fileid = 1
             self.files = 2
@@ -77,8 +80,9 @@ class DbSheetCols:
 class reader:
     def __init__(self, db_file=None,
                  db_datadir=None,
-                 db_datadir_processed=None):
-        prms = prmreader.read()
+                 db_datadir_processed=None,
+                 prm_file=None):
+        prms = prmreader.read(prm_file)
         if not db_file:
             self.db_path = prms.db_path
             self.db_filename = prms.db_filename
@@ -110,11 +114,16 @@ class reader:
 
     def _pick_info(self, serial_number, column_number):
         row = self.select_serial_number_row(serial_number)
-        x = self.select_col(row, column_number)
+        x = self._select_col(row, column_number)
         x = x.values
         if len(x) == 1:
             x = x[0]
         return x
+
+    @staticmethod
+    def _select_col(df, no):
+        """select specific column"""
+        return df.iloc[:, no]
 
     def _open_sheet(self, sheet=None):
         """Opens sheets and returns it"""
@@ -150,19 +159,28 @@ class reader:
         # col_serial_number_position = sheet.ix[:,column_number_serial_number_position] # decrp
         return sheet[col_serial_number_position == serial_number]
 
-    def print_serial_number_info(self, serial_number):
-        """print information about the run
+    def print_serial_number_info(self, serial_number, print_to_screen=True):
+        """Print information about the run.
 
         Args:
-            serial_number: serial number
+            serial_number: serial number.
+            print_to_screen: runs the print statement if True, returns txt if not.
+
+        Returns:
+            txt if print_to_screen is False, else None.
         """
         r = self.select_serial_number_row(serial_number)
+        txt = ""
         for label, value in zip(r.columns, r.values[0]):
-            txt = ""
             if label:
                 txt += "%s" % str(label)
             txt += ":\t %s\n" % str(value)
-            print txt,
+            txt += "\n"
+        if print_to_screen:
+            print txt
+            return None
+        else:
+            return txt
 
     def filter_by_slurry(self, slurry, appender="_"):
         """Filters sheet/table by slurry name.
@@ -287,12 +305,8 @@ class reader:
         sheet = sheet[criterion & exists]
         return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
-    @staticmethod
-    def select_col(df, no):
-        """select specific column"""
-        return df.iloc[:, no]
 
-    def get_resfilenames(self, serialno, full_path=True, non_sensitive=False):
+    def get_raw_filenames(self, serialno, full_path=True, non_sensitive=False):
         """returns a list of the data file-names for experiment with serial number serialno.
 
         Args:
@@ -307,7 +321,7 @@ class reader:
                                    non_sensitive=non_sensitive)
         return files
 
-    def get_hdf5filename(self, serialno, full_path=True, non_sensitive=False):
+    def get_cellpy_filename(self, serialno, full_path=True, non_sensitive=False):
         """returns a list of the hdf5 file-name for experiment with serial number serialno.
 
         Args:
@@ -341,7 +355,7 @@ class reader:
         fsheet = self.ftable
         column_number_serial_number_position = self.db_sheet_filename_cols.serial_number_position
         column_number_start_filenames = self.db_sheet_filename_cols.files
-        column_number_hdf5 = self.db_sheet_cols.hd5f_exists
+        column_number_hdf5 = self.db_sheet_cols.M
         column_number_filename = self.db_sheet_cols.fileid
         if full_path:
             datadir = self.db_datadir
@@ -411,11 +425,6 @@ class reader:
         insp = self._pick_info(serial_number, column_number)
         return insp
 
-    def inspect_hd5f_exists(self, serial_number):
-        column_number = self.db_sheet_cols.hd5f_exists
-        insp = self._pick_info(serial_number, column_number)
-        return insp
-
     def inspect_exists(self, serial_number):
         column_number = self.db_sheet_cols.exists
         insp = self._pick_info(serial_number, column_number)
@@ -445,6 +454,9 @@ class reader:
         column_number = self.db_sheet_cols.loading
         insp = self._pick_info(serial_number, column_number)
         return insp
+
+    def get_areal_loading(self, serial_number):
+        raise NotImplementedError
 
     def get_mass(self, serial_number):
         column_number_mass = self.db_sheet_cols.active_material
