@@ -312,9 +312,9 @@ if __name__ == '__main__':
     # title_s = tick_and_label_s + 60
 
     # Single para plot
-    ms = 70
-    tick_and_label_s = 150
-    title_s = tick_and_label_s + 30
+    ms = 110
+    tick_and_label_s = 200
+    title_s = 183
 
     # fit plot
     # ms = 40
@@ -324,7 +324,7 @@ if __name__ == '__main__':
     plots = (1, 2, 4, 8, 9, 10)
     zoom = False
     name_plots = [filenames[p] for p in plots]
-    up = False
+    up = True
     name = filenames[2]
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,

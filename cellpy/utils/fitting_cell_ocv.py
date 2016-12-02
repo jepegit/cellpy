@@ -1043,7 +1043,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time constant [s]',
                                            size=ti_la_s)
-        elif 'r_' == name[:1] or 'IR' in name:
+        elif 'r_' in name[:1] or 'IR' in name:
             subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s)
         elif 'c_' in name:
             subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s)
@@ -1054,17 +1054,19 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                                            size=ti_la_s)
 
         if single:
-            plt.figure(figsize=(70, 75))
-            plt.suptitle('Fitted parameter %s vs. cycles for cell %s (after %s)'
-                         % (name, cell_name, rlx_txt), size=tit_s)
+            plt.figure(figsize=(63, 63))
+            plt.suptitle('Parameter %s vs. cycles\n for cell %s (after '
+                         '%s)'
+                         % (name, cell_name, rlx_txt), size=tit_s,
+                         weight='bold')
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
-                         ms=ms, elinewidth=3)
-            plt.legend([name], loc='best', prop={'size': ti_la_s + 60})
-            plt.xlabel('Cycles', size=ti_la_s)
+                         ms=ms, elinewidth=5)
+            plt.legend([name], loc='best', prop={'size': ti_la_s + 40})
+            plt.xlabel('Cycles', size=ti_la_s+20)
             for tick_para in plt.gca().xaxis.get_major_ticks():
-                tick_para.label.set_fontsize(ti_la_s)
+                tick_para.label.set_fontsize(ti_la_s+20)
             for tick_para in plt.gca().yaxis.get_major_ticks():
-                tick_para.label.set_fontsize(ti_la_s)
+                tick_para.label.set_fontsize(ti_la_s+20)
             plt.gca().yaxis.set_major_locator(MaxNLocator(ty))
             plt.gca().xaxis.set_major_locator(MaxNLocator(tx))
             plt.gca().yaxis.get_offset_text().set_fontsize(ti_la_s)
@@ -1088,17 +1090,17 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
             #                              max_para + 0.1 * max_para)
 
             if 'tau' in name:
-                plt.ylabel('Time-constant (RC)[s]', size=ti_la_s)
-            elif 'r_' == name[:1] or 'IR' in name:
-                plt.ylabel('Resistance [Ohm]', size=ti_la_s)
+                plt.ylabel('Time-constant (RC)[s]', size=ti_la_s+20)
+            elif 'r' in name[0] or 'IR' in name:
+                plt.ylabel('Resistance [Ohm]', size=ti_la_s+20)
             elif 'c_' in name:
-                plt.ylabel('Capacitance [F]', size=ti_la_s)
+                plt.ylabel('Capacitance [F]', size=ti_la_s+20)
             elif 'v0_' in name:
-                subs_params[name_i].set_ylabel('Voltage vs. OCV [V]',
-                                               size=ti_la_s)
+                plt.ylabel('Voltage vs. OCV [V]',
+                                               size=ti_la_s+20)
             else:
-                subs_params[name_i].set_ylabel('Voltage vs. Li/Li$^+$ [V]',
-                                               size=ti_la_s)
+                plt.ylabel('Voltage vs. Li/Li$^+$ [V]',
+                                               size=ti_la_s+20)
             if v_ocv < v_0:
                 plt.savefig(os.path.join(fig_folder, '%s_params_%s_delith.pdf'
                                          % (name, cell_name)),
