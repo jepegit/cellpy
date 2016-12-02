@@ -229,11 +229,6 @@ if __name__ == '__main__':
     plt.rcParams['xtick.major.pad'] = 8
     plt.rcParams['ytick.major.pad'] = 8
 
-    # ms = markersize
-    ms = 40
-    tick_and_label_s = 60
-    title_s = tick_and_label_s + 60
-
     contri = {'ct': 0.2, 'd': 0.8}
     tau_guessed = {'ct': 50, 'd': 800}
     cell_mass = {'20160805_test001_45_cc_01.res': 0.85,
@@ -309,11 +304,23 @@ if __name__ == '__main__':
     #         save_cap_ocv(datafolder, name, datafolder_out, cell_mass[name])
     #         save_cap_ocv(datafolder, name, datafolder_out, cell_mass[name],
     #                      type_data=ocv_down[:-4])
+
+    # ms = markersize
+    # Para plot
+    ms = 40
+    tick_and_label_s = 60
+    title_s = tick_and_label_s + 60
+
+    # fit plot
+    # ms = 40
+    # tick_and_label_s = 130
+    # title_s = tick_and_label_s + 10
+
     plots = (1, 2, 4, 8, 9, 10)
     zoom = False
     name_plots = [filenames[p] for p in plots]
     up = False
-    name = filenames[2]
+    name = filenames[9]
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
     #                i_err=i_err, ti_la_s=tick_and_label_s, m_s=ms, zoom=zoom)

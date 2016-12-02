@@ -1043,7 +1043,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time constant [s]',
                                            size=ti_la_s)
-        elif 'r_' in name or 'IR' in name:
+        elif 'r_' == name[:1] or 'IR' in name:
             subs_params[name_i].set_ylabel('Resistance [Ohm]', size=ti_la_s)
         elif 'c_' in name:
             subs_params[name_i].set_ylabel('Capacitance [F]', size=ti_la_s)
@@ -1089,7 +1089,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
 
             if 'tau' in name:
                 plt.ylabel('Time-constant (RC)[s]', size=ti_la_s)
-            elif 'r_' in name or 'IR' in name:
+            elif 'r_' == name[:1] or 'IR' in name:
                 plt.ylabel('Resistance [Ohm]', size=ti_la_s)
             elif 'c_' in name:
                 plt.ylabel('Capacitance [F]', size=ti_la_s)
