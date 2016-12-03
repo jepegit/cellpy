@@ -975,9 +975,15 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
         error_para.update(e_c)
         error_para.update(e_ir)
         error_para.update(e_over_pot)
-        best_para_error.append(error_para)
         temp_dict = cycle_fit.params.valuesdict()
         rc_params[i].update(temp_dict)
+
+        # Making single plot cell 2
+        if i in (0, 3, 4):
+            for par in rc_params[i].keys():
+                rc_params[i][par] = np.nan
+                error_para[par] = np.nan
+        best_para_error.append(error_para)
         best_para.append(rc_params[i])
 
     fig_params = plt.figure(figsize=(75, 70))
@@ -1054,10 +1060,10 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                                            size=ti_la_s)
 
         if single:
-            plt.figure(figsize=(63, 63))
+            plt.figure(figsize=(56, 56))
             plt.suptitle('Parameter %s vs. cycles\n for cell %s (after '
                          '%s)'
-                         % (name, cell_name, rlx_txt), size=tit_s,
+                         % (name, cell_name, rlx_txt), size=tit_s-30,
                          weight='bold')
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
                          ms=ms, elinewidth=5)
