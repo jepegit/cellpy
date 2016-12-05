@@ -313,8 +313,8 @@ if __name__ == '__main__':
 
     # Single para plot
     ms = 110
-    tick_and_label_s = 200
-    title_s = 183
+    tick_and_label_s = 190
+    title_s = 150
 
     # fit plot
     # ms = 40
@@ -343,6 +343,18 @@ if __name__ == '__main__':
                          tau_guessed=tau_guessed, v_start=v_start_up,
                          c_rate=c_rate, change_i=change_i,
                          cell_capacity=cell_capacity, conf=conf, v_err=v_err)
+        # fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
+        #                       ti_la_s=tick_and_label_s, tit_s=title_s,
+        #                       figfolder=figure_folder)
+        # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
+        #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+        #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
+        #                 outfolder=datafolder_out, tx=4, ty=3)
+        fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
+                             mass_frac_err[name], figure_folder, v_start_up,
+                             i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
+                             tit_s=title_s, single=True,
+                             outfolder=datafolder_out, sur_area=disk_area)
     else:
         rlx_text = 'after delithiation'
         time, voltage, fit, rc_para, i_start = \
@@ -351,6 +363,19 @@ if __name__ == '__main__':
                          tau_guessed=tau_guessed, v_start=v_start_down,
                          c_rate=c_rate, change_i=change_i,
                          cell_capacity=cell_capacity, conf=conf, v_err=v_err)
+        # fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
+        #                       ti_la_s=tick_and_label_s, tit_s=title_s,
+        #                       figfolder=figure_folder)
+        # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
+        #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
+        #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
+        #                 outfolder=datafolder_out, tx=4, ty=3)
+        fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
+                             mass_frac_err[name], figure_folder, v_start_down,
+                             i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
+                             tit_s=title_s, single=True,
+                             outfolder=datafolder_out, sur_area=disk_area)
+
 
     # cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
     # leg = []
@@ -390,17 +415,7 @@ if __name__ == '__main__':
     #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
     #                              % (names[name], 'delith')), dpi=100)
 
-    # fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
-    #                       ti_la_s=tick_and_label_s, tit_s=title_s,
-    #                       figfolder=figure_folder)
-    fco.plot_params(voltage, fit, rc_para, i_start, names[name],
-                    mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-                    ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
-                    outfolder=datafolder_out, tx=4, ty=3)
-    # fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
-    #                      mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
-    #                      ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
-    #                      outfolder=datafolder_out, sur_area=disk_area)
+
 
         # fco.print_params(fit, rc_para)
 

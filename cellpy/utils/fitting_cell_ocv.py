@@ -515,12 +515,12 @@ def fit_with_model(model, time, voltage, guess_tau, contribution, c_rate,
     result = [result_initial]
 
     best_para = [result[0].params]
-    r_ir_0 = abs(voltage[0][0] - v_start) / i_start[0]
+    v0_ir_0 = abs(voltage[0][0] - v_start)
+    r_ir_0 = v0_ir_0 / i_start[0]
     r_ir = {'IR': r_ir_0}
 
     # Total magnitude of overpotential is the fitted ocv and start voltage.
     tot_overpot_ini = {'over_pot': abs(best_para[0]['ocv'] - v_start)}
-
 
     best_rc_ini = {'r_%s' % key[3:]: abs(v0_rc / i_start[0])
                    for key, v0_rc in best_para[0].valuesdict().items()
@@ -1102,11 +1102,9 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
             elif 'c_' in name:
                 plt.ylabel('Capacitance [F]', size=ti_la_s+20)
             elif 'v0_' in name:
-                plt.ylabel('Voltage vs. OCV [V]',
-                                               size=ti_la_s+20)
+                plt.ylabel('Voltage vs. OCV [V]', size=ti_la_s+20)
             else:
-                plt.ylabel('Voltage vs. Li/Li$^+$ [V]',
-                                               size=ti_la_s+20)
+                plt.ylabel('Voltage vs. Li/Li$^+$ [V]', size=ti_la_s+20)
             if v_ocv < v_0:
                 plt.savefig(os.path.join(fig_folder, '%s_params_%s_delith.pdf'
                                          % (name, cell_name)),
@@ -1143,7 +1141,7 @@ def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
 
 
 def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
-                     mass_frac_error, fig_folder, sur_area=None,
+                     mass_frac_error, fig_folder, v_start, sur_area=None,
                      sur_area_err=None, i_err=0.000000125, ms=10, ti_la_s=35,
                      tit_s=45, tx=5, ty=5, single=False, outfolder=None):
     """Calculating parameter errors and plotting them per surface area.
@@ -1161,6 +1159,7 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
         cell_name (str): Name of the cell.
         mass_frac_error (float): Fractional uncertainty of mass measurments.
         fig_folder (str): Which folder the plots should be saved in.
+        v_start (float): Voltage before IR-drop.
         i_err (float): Current measurement error in A. Standard is Arbin BT2000.
         sur_area (float): Active surface area of the cell [cm**2].
         sur_area_err (float): The fractional error in measured surface area.
@@ -1188,11 +1187,13 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
     best_para_error = []
     names = fit[0].params.keys()
     for i, cycle_fit in enumerate(fit):
+        v_ir = {'v_ir': abs(voltage[i][0] - v_start)}
         temp_rc = {}
         for rc_key, rc in rc_params[i].items():
             temp_rc.update({rc_key: rc_params[i][rc_key] / sur_area})
         rc_param_a.append(temp_rc)
         v_err_cycle = 1. / cycle_fit.weights
+        v_ir_err = 2 * v_err_cycle
         i_err_frac = i_err / i_start[i] + mass_frac_error
         error_para = {para_name: cycle_fit.params[para_name].stderr
                       for para_name in names}
@@ -1203,28 +1204,39 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
         fractional_err = {par_name: (error_para[par_name] /
                                      cycle_fit.params[par_name])
                           for par_name in names}
-        r_err = {key: fractional_err['v0_%s' % key[2:]]
-                      + i_err_frac    # + sur_area_err
+        r_err = {key: fractional_err['v0_%s' % key[2:]] + i_err_frac    # + sur_area_err
                  for key in rc_params[i].keys() if key.startswith('r_')}
-        c_err = {key: fractional_err['tau_%s' % key[2:]]
-                      + r_err['r_%s' % key[2:]]   # + sur_area_err
+        c_err = {key: fractional_err['tau_%s' % key[2:]] + r_err['r_%s' %
+                                                                 key[2:]]   # + sur_area_err
                  for key in rc_params[i].keys() if key.startswith('c_')}
-        # ir = (v_start - v_rlx) / i_start
-        ir_err = i_err_frac + v_err_cycle    # + sur_area_err
 
+        # ir = (v_start - v_rlx) / i_start
+        e_v_ir = {'v_ir': v_ir_err * v_ir['v_ir']}
+        ir_err = i_err_frac + v_ir_err    # + sur_area_err
+        over_pot_err = fractional_err['ocv'] + v_err_cycle
         # Standard deviation error calculated from fractional error
         e_r = {r: frac_err * rc_param_a[i][r]
                for r, frac_err in r_err.items()}
         e_c = {c: frac_err * rc_param_a[i][c]
                for c, frac_err in c_err.items()}
         e_ir = {'IR': rc_param_a[i]['IR'] * ir_err}
+        e_over_pot = {'over_pot': rc_params[i]['over_pot'] * over_pot_err}
         error_para.update(e_r)
         error_para.update(e_c)
+        error_para.update(e_v_ir)
         error_para.update(e_ir)
-        best_para_error.append(error_para)
+        error_para.update(e_over_pot)
         temp_dict = cycle_fit.params.valuesdict()
         rc_param_a[i].update(temp_dict)
+        rc_param_a[i].update(v_ir)
+        # Making single plot cell 2
+        if i in (0, 3, 4):
+            for par in rc_param_a[i].keys():
+                rc_param_a[i][par] = np.nan
+                error_para[par] = np.nan
+
         best_para.append(rc_param_a[i])
+        best_para_error.append(error_para)
 
     fig_params = plt.figure(figsize=(75, 70))
     plt.suptitle('Fitted parameters vs. cycles for cell %s (after %s)'
@@ -1299,19 +1311,20 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
             subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
 
         if single:
-            plt.figure(figsize=(70, 75))
-            plt.suptitle('\n'.join(wrap('Fitted parameter %s per area vs. '
-                                        'cycles for cell %s (after %s)', 40))
-                         % (name, cell_name, rlx_txt), size=tit_s, ha='center')
+            plt.figure(figsize=(55, 55))
+            plt.suptitle('Parameter %s per area vs. '
+                         '\n cycles for cell %s (after %s)'
+                         % (name, cell_name, rlx_txt), size=tit_s,
+                         ha='center', weight='bold')
 
             plt.errorbar(cycle_array, para_array, yerr=para_error, fmt='or',
-                         ms=ms, elinewidth=3)
+                         ms=ms, elinewidth=5)
             plt.legend([name], loc='best', prop={'size': ti_la_s + 40})
-            plt.xlabel('Cycles', size=ti_la_s)
+            plt.xlabel('Cycles', size=ti_la_s + 20)
             for tick_para in plt.gca().xaxis.get_major_ticks():
-                tick_para.label.set_fontsize(ti_la_s)
+                tick_para.label.set_fontsize(ti_la_s + 20)
             for tick_para in plt.gca().yaxis.get_major_ticks():
-                tick_para.label.set_fontsize(ti_la_s)
+                tick_para.label.set_fontsize(ti_la_s + 20)
             plt.gca().yaxis.set_major_locator(MaxNLocator(ty))
             plt.gca().xaxis.set_major_locator(MaxNLocator(tx))
             plt.gca().yaxis.get_offset_text().set_fontsize(ti_la_s)
@@ -1334,14 +1347,30 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
             # subs_params[name_i].set_ylim(min_para - 0.1 * min_para,
             #                              max_para + 0.1 * max_para)
 
+            if 'v_ir' in name:
+                plt.suptitle('IR overpotential vs. cycles \n for cell %s ('
+                             'after %s)' % (cell_name, rlx_txt), size=tit_s,
+                             ha='center', weight='bold')
+
             if 'tau' in name:
-                plt.ylabel('Time constant [s]', size=ti_la_s)
-            elif 'r_' in name or 'IR' in name:
-                plt.ylabel('Resistance [Ohm / cm$^2$]', size=ti_la_s)
+                plt.suptitle('Parameter %s vs. cycles \n for cell %s (after '
+                             '%s)' % (name, cell_name, rlx_txt), size=tit_s,
+                             ha='center', weight='bold')
+                plt.ylabel('Time constant [s]', size=ti_la_s + 20)
+            elif 'r' in name[0] or 'IR' in name:
+                plt.ylabel('Resistance [Ohm / cm$^2$]', size=ti_la_s + 20)
             elif 'c_' in name:
-                plt.ylabel('Capacitance [F / cm$^2$]', size=ti_la_s)
+                plt.ylabel('Capacitance [F / cm$^2$]', size=ti_la_s + 20)
+            elif 'v0' in name:
+                plt.suptitle('Parameter %s vs. cycles \n for cell %s (after '
+                             '%s)' % (name, cell_name, rlx_txt), size=tit_s,
+                             ha='center', weight='bold')
+                plt.ylabel('Voltage vs. OCV [V]', size=ti_la_s + 20)
             else:
-                plt.ylabel('Voltage [V]', size=ti_la_s)
+                plt.suptitle('Parameter %s vs. cycles \n for cell %s (after %s)'
+                             % (name, cell_name, rlx_txt), size=tit_s,
+                             ha='center', weight='bold')
+                plt.ylabel('Voltage vs. Li/Li$^+$ [V]', size=ti_la_s)
             if v_ocv < v_0:
                 plt.savefig(os.path.join(fig_folder, '%s_params_a_%s_delith.pdf'
                                          % (name, cell_name)),
@@ -1352,7 +1381,7 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
                             bbox_inches='tight', pad_inches=3, dpi=100)
     if outfolder is not None:
         df = pd.DataFrame(para_df)
-        if v_ocv <v_0:
+        if v_ocv < v_0:
             df.to_csv(os.path.join(outfolder, 'rc_params_a_cell_%s_delith.csv' %
                                    cell_name), sep=';')
         else:
