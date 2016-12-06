@@ -5,6 +5,7 @@ include CONTRIBUTING.rst
 include HISTORY.rst
 include LICENSE
 include README.rst
+recursive-include cellpy/parametres *_default.ini
 
 recursive-include tests *
 recursive-exclude * __pycache__
