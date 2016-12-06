@@ -20,7 +20,7 @@ included_packages=find_packages(exclude=['build', 'docs', 'templates'])
 
 requirements = [
     'scipy', 'numpy', 'pandas',
-    #'matplotlib', 'scipy', 'lmfit', 'tables', 'pyodbc', 'xlrd', 'click',
+    # 'matplotlib', 'scipy', 'lmfit', 'tables', 'pyodbc', 'xlrd', 'click',
 ]
 
 test_requirements = [
@@ -38,7 +38,6 @@ userdir = os.path.expanduser("~")
 version_ns = {}
 with open(os.path.join(here, name, '_version.py')) as f:
     exec(f.read(), {}, version_ns)
-
 
 
 description = 'Extract data from battery cell testers.'
