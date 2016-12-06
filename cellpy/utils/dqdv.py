@@ -131,10 +131,10 @@ def interpolate_line(x,y,number_of_points=None,
     try:
         x_start = x[0]
         x_end = x[-1]
-    except: # numpy array
+    except:  # numpy array
         # depreciation warning TODO: shift to .iloc[0]
         x_start = x.iloc[0]
-        x_end   = x.iloc[-1]
+        x_end = x.iloc[-1]
     if x_start > x_end:
         # need to reverse
         reverse = True

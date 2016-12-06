@@ -846,17 +846,15 @@ class cellpydata(object):
 
         if not similar:
             self.load_raw(raw_files)
-            not_empty = self.tests_status
-            if mass:
-                self.set_mass(mass)
-            if summary_on_raw:
-                if not_empty:
+            if self.tests_status:  # Check if the run was loaded ([] if empty)
+                if mass:
+                    self.set_mass(mass)
+                if summary_on_raw:
                     self.make_summary(all_tests=False, find_ocv=summary_ocv,
                                       find_ir=summary_ir,
                                       find_end_voltage=summary_end_v)
-                else:
-                    self.logger.debug("Cannot make summary for empty set")
-
+            else:
+                self.logger.warning("Empty run!")
         else:
             self.load(cellpy_file)
 
@@ -896,7 +894,7 @@ class cellpydata(object):
         if test:
             self.tests.append(test[test_number])
         else:
-            print "no new tests added"
+            self.logger.warning("No new tests added!")
         self.number_of_tests = len(self.tests)
         self.tests_status = self._validate_tests()
 
