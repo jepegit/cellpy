@@ -52,21 +52,6 @@ def test_get_cycle(cellpy_data):
     assert r is None
 
 
-def test_smooth_data(cellpy_data):
-    r = ica.get_cycle()
-    assert r is None
-
-
-def test_inspect_data(cellpy_data):
-    r = ica.get_cycle()
-    assert r is None
-
-
-def test_increment_data(cellpy_data):
-    r = ica.get_cycle()
-    assert r is None
-
-
 def teardown_module():
     import shutil
     shutil.rmtree(test_data_dir_out)

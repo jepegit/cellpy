@@ -6,97 +6,184 @@ from scipy import stats
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.integrate import simps
-
-print "running ica"
-
-
-def savitzky_golay(y, window_size, order, deriv=0, rate=1):
-    r"""Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
-    The Savitzky-Golay filter removes high frequency noise from data.
-    It has the advantage of preserving the original shape and
-    features of the signal better than other types of filtering
-    approaches, such as moving averages techniques.
-    Parameters
-    ----------
-    y : array_like, shape (N,)
-        the values of the time history of the signal.
-    window_size : int
-        the length of the window. Must be an odd integer number.
-    order : int
-        the order of the polynomial used in the filtering.
-        Must be less then `window_size` - 1.
-    deriv: int
-        the order of the derivative to compute (default = 0 means only smoothing)
-    Returns
-    -------
-    ys : ndarray, shape (N)
-        the smoothed signal (or it's n-th derivative).
-    Notes
-    -----
-    The Savitzky-Golay is a type of low-pass filter, particularly
-    suited for smoothing noisy data. The main idea behind this
-    approach is to make for each point a least-square fit with a
-    polynomial of high order over a odd-sized window centered at
-    the point.
-    Examples
-    --------
-    t = np.linspace(-4, 4, 500)
-    y = np.exp( -t**2 ) + np.random.normal(0, 0.05, t.shape)
-    ysg = savitzky_golay(y, window_size=31, order=4)
-    import matplotlib.pyplot as plt
-    plt.plot(t, y, label='Noisy signal')
-    plt.plot(t, np.exp(-t**2), 'k', lw=1.5, label='Original signal')
-    plt.plot(t, ysg, 'r', label='Filtered signal')
-    plt.legend()
-    plt.show()
-    References
-    ----------
-    .. [1] A. Savitzky, M. J. E. Golay, Smoothing and Differentiation of
-       Data by Simplified Least Squares Procedures. Analytical
-       Chemistry, 1964, 36 (8), pp 1627-1639.
-    .. [2] Numerical Recipes 3rd Edition: The Art of Scientific Computing
-       W.H. Press, S.A. Teukolsky, W.T. Vetterling, B.P. Flannery
-       Cambridge University Press ISBN-13: 9780521880688
-    """
-    import numpy as np
-    from math import factorial
-
-    try:
-        window_size = np.abs(np.int(window_size))
-        order = np.abs(np.int(order))
-    except ValueError, msg:
-        raise ValueError("window_size and order have to be of type int")
-    if window_size % 2 != 1 or window_size < 1:
-        raise TypeError("window_size size must be a positive odd number")
-    if window_size < order + 2:
-        raise TypeError("window_size is too small for the polynomials order")
-    order_range = range(order + 1)
-    half_window = (window_size - 1) // 2
-    # precompute coefficients
-    b = np.mat([[k ** i for i in order_range] for k in range(-half_window, half_window + 1)])
-    m = np.linalg.pinv(b).A[deriv] * rate ** deriv * factorial(deriv)
-    # pad the signal at the extremes with
-    # values taken from the signal itself
-    firstvals = y[0] - np.abs(y[1:half_window + 1][::-1] - y[0])
-    lastvals = y[-1] + np.abs(y[-half_window - 1:-1][::-1] - y[-1])
-    y = np.concatenate((firstvals, y, lastvals))
-    return np.convolve(m[::-1], y, mode='valid')
+from scipy.ndimage.filters import gaussian_filter1d
 
 
-def get_cycle():
-    return None
+METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
+
+# TODO: documentation and tests
+# TODO: fitting of o-c curves and differentiation
+# TODO: modeling and fitting
+# TODO: full-cell
 
 
-def smooth_data():
-    return None
+class Converter:
+    def __init__(self):
+        self.capacity = None
+        self.voltage = None
 
+        self.capacity_preprocessed = None
+        self.voltage_preprocessed = None
+        self.capacity_inverted = None
+        self.voltage_inverted = None
 
-def inspect_data():
-    return None
+        self.incremental_capacity = None
+        self._incremental_capacity = None  # before smoothing
+        self.voltage_processed = None
 
+        self.voltage_inverted_step = None
 
-def increment_data():
-    return None
+        self.points_pr_split = 10
+        self.minimum_splits = 3
+        self.interpolation_method = 'linear'
+        self.pre_smoothing = True
+        self.smoothing = True
+        self.post_smoothing = True
+        self.savgol_filter_window_divisor_default = 50
+        self.savgol_filter_window_order = 3
+        self.voltage_fwhm = 0.01  # res voltage (peak-width)
+        self.gaussian_order = 0
+        self.gaussian_mode = "reflect"
+        self.gaussian_cval = 0.0
+        self.gaussian_truncate = 4.0
+        self.normalise = True
+
+        self.normalising_factor = None
+        self.d_capacity_mean = None
+        self.d_voltage_mean = None
+        self.len_capacity = None
+        self.len_voltage = None
+        self.min_capacity = None
+        self.max_capacity = None
+        self.start_capacity = None
+        self.end_capacity = None
+        self.number_of_points = None
+        self.std_err_median = None
+        self.std_err_mean = None
+
+        self.errors = []
+
+    def set_data(self, capacity, voltage):
+        self.capacity = capacity
+        self.voltage = voltage
+
+    def inspect_data(self, capacity=None, voltage=None):
+        if capacity is None:
+            capacity = self.capacity
+        if voltage is None:
+            voltage = self.voltage
+
+        d_capacity = np.diff(capacity)
+        d_voltage = np.diff(voltage)
+        self.d_capacity_mean = np.mean(d_capacity)
+        self.d_voltage_mean = np.mean(d_voltage)
+
+        self.len_capacity = len(capacity)
+        self.len_voltage = len(voltage)
+
+        self.min_capacity, self.max_capacity = value_bounds(capacity)
+        self.start_capacity, self.end_capacity = index_bounds(capacity)
+
+        self.number_of_points = len(capacity)
+
+        splits = int(self.number_of_points / self.points_pr_split)
+        rest = self.number_of_points % self.points_pr_split
+
+        if splits < self.minimum_splits:
+            print "no point in splitting, too little data"
+            self.errors.append("splitting: to few points")
+        else:
+            if rest > 0:
+                _cap = capacity[:-rest]
+                _vol = voltage[:-rest]
+            else:
+                _cap = capacity
+                _vol = voltage
+
+            c_pieces = np.split(_cap, splits)
+            v_pieces = np.split(_vol, splits)
+            # c_middle = int(np.amax(c_pieces) / 2)
+
+            std_err = []
+            c_pieces_avg = []
+            for c, v in zip(c_pieces, v_pieces):
+                _slope, _intercept, _r_value, _p_value, _std_err = stats.linregress(c, v)
+                std_err.append(_std_err)
+                c_pieces_avg.append(np.mean(c))
+
+            self.std_err_median = np.median(std_err)
+            self.std_err_mean = np.mean(std_err)
+
+        if not self.start_capacity == self.min_capacity:
+            self.errors.append("capacity: start<>min")
+        if not self.end_capacity == self.max_capacity:
+            self.errors.append("capacity: end<>max")
+        self.normalising_factor = self.end_capacity
+
+    def pre_process_data(self):
+        capacity = self.capacity
+        voltage = self.voltage
+        len_capacity = self.len_capacity
+        # len_voltage = self.len_voltage
+
+        f = interp1d(capacity, voltage, kind=self.interpolation_method)
+        c1, c2 = index_bounds(capacity)
+        self.capacity_preprocessed = np.linspace(c1, c2, len_capacity)
+        # capacity_step = (c2-c1)/(len_capacity-1)
+        self.voltage_preprocessed = f(self.capacity_preprocessed)
+
+        if self.pre_smoothing:
+            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_capacity/5))
+            savgol_filter_window_length = int(len_capacity/savgol_filter_window_divisor)
+
+            if savgol_filter_window_length % 2 == 0:
+                savgol_filter_window_length -= 1
+            self.voltage_preprocessed = savgol_filter(self.voltage_preprocessed,
+                                                      np.amax([3, savgol_filter_window_length]),
+                                                      self.savgol_filter_window_order)
+
+    def increment_data(self):
+        # ---- shifting to y-x ----------------------------------------
+        len_voltage = len(self.voltage_preprocessed)
+        v1, v2 = value_bounds(self.voltage_preprocessed)
+        f = interp1d(self.voltage_preprocessed, self.capacity_preprocessed, kind=self.interpolation_method)
+
+        self.voltage_inverted = np.linspace(v1, v2, len_voltage)
+        self.voltage_inverted_step = (v2 - v1) / (len(self.voltage_inverted, ) - 1)
+        self.capacity_inverted = f(self.voltage_inverted)
+
+        if self.smoothing:
+            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_voltage / 5))
+            savgol_filter_window_length = int(len(self.voltage_inverted) / savgol_filter_window_divisor)
+            if savgol_filter_window_length % 2 == 0:
+                savgol_filter_window_length -= 1
+
+            self.capacity_inverted = savgol_filter(self.capacity_inverted,
+                                                   np.amax([3, savgol_filter_window_length]),
+                                                   self.savgol_filter_window_order)
+
+        # ---  diff --------------------
+        self.incremental_capacity = np.ediff1d(self.capacity_inverted) / self.voltage_inverted_step
+        self._incremental_capacity = self.incremental_capacity
+        # --- need to adjust voltage ---
+        self.voltage_processed = self.voltage_inverted[1:] + 0.5 * self.voltage_inverted_step  # sentering
+
+    def post_process_data(self, voltage=None, incremental_capacity=None, voltage_step=None):
+        if voltage is None:
+            voltage = self.voltage_processed
+            incremental_capacity = self.incremental_capacity
+            voltage_step = self.voltage_inverted_step
+
+        if self.post_smoothing:
+            points_fwhm = int(self.voltage_fwhm / voltage_step)
+            sigma = np.amax([2, points_fwhm/2])
+            incremental_capacity = gaussian_filter1d(incremental_capacity,sigma=sigma,order=self.gaussian_order,
+                                                     output=None, mode=self.gaussian_mode,
+                                                     cval=self.gaussian_cval, truncate=self.gaussian_truncate)
+
+        if self.normalise:
+            area = simps(incremental_capacity, voltage)
+            self.incremental_capacity = incremental_capacity * self.normalising_factor / abs(area)
 
 
 def value_bounds(x):
@@ -107,10 +194,20 @@ def index_bounds(x):
     return x.iloc[0], x.iloc[-1]
 
 
-def check_get_and_plot_ica():
-    print 40*"="
-    print "running check_get_and_plot_ica"
-    print 40*"-"
+def dqdv(voltage, capacity):
+    converter = Converter()
+    converter.set_data(capacity, voltage)
+    converter.inspect_data()
+    converter.pre_process_data()
+    converter.increment_data()
+    converter.post_process_data()
+    return converter.voltage_processed, converter.incremental_capacity
+
+
+def check_class_ica():
+    print 40 * "="
+    print "running check_class_ica"
+    print 40 * "-"
     from cellpy import cellreader
     import matplotlib.pyplot as plt
 
@@ -128,140 +225,26 @@ def check_get_and_plot_ica():
     cell.load(test_cellpy_file_full)
 
     # --A------- checking data --------------------------
-    # TODO: define if it is increasing etc (discharge vs charge etc)
     list_of_cycles = cell.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
     print "you have %i cycles" % number_of_cycles
     print "looking at cycle 1"
-    cycle = 1
+    cycle = 5
+    fig, (ax1,ax2) = plt.subplots(2,1)
     capacity, voltage = cell.get_ccap(cycle)
-
-
-    # look at the data
-    # find "error" by fitting 1% points to a straight line and find deviations pr point
-
-    number_of_points = len(capacity)
-    points_pr_split = 10
-    splits = int(number_of_points/points_pr_split)
-
-    print number_of_points
-    c_pieces = np.split(capacity,splits)
-    v_pieces = np.split(voltage, splits)
-    c_middle = int(np.amax(c_pieces)/2)
-
-    std_err = []
-    c_pieces_avg = []
-    #
-    # fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    for c, v in zip(c_pieces, v_pieces):
-        _slope, _intercept, _r_value, _p_value, _std_err = stats.linregress(c, v)
-        std_err.append(_std_err)
-        c_pieces_avg.append(np.mean(c))
-
-        # ax1.plot(c,v, ".-")
-
-    print "std_err:"
-    # ax2.plot(c_pieces_avg, std_err)
-    print "std_err median:"
-    std_err_median = np.median(std_err)
-    std_err_mean = np.mean(std_err)
-    # ax2.plot(c_middle, std_err_median, "ro")
-    # ax2.plot(c_middle, std_err_mean, "go")
-
-    d_capacity = np.diff(capacity)
-    d_voltage = np.diff(voltage)
-    d_capacity_mean = np.mean(d_capacity)
-    d_voltage_mean = np.mean(d_voltage)
-
-    len_capacity = len(capacity)
-    len_voltage = len(voltage)
-
-    print value_bounds(capacity)
-    print index_bounds(capacity)
-    print value_bounds(voltage)
-    print index_bounds(voltage)
-
-    print std_err_median
-    print number_of_points, len_capacity, len_voltage
-
-    print d_capacity_mean
-    print d_voltage_mean
-
-    # ax1.plot(capacity[1:], d_capacity)
-    # ax1.plot(capacity[1:], d_voltage)
-    # ax1.plot(c_middle, d_capacity_mean, "go")
-    # ax1.plot(c_middle, d_voltage_mean, "ro")
-
-
-    # plt.show()
-    # --B----------------interpolation/smoothing of "raw" data--------------------
-    # - using 1d interpol
-
-    methods = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
-    fig, (ax3,ax4) = plt.subplots(1, 2)
-    ax3.plot(capacity, voltage, ".")
-    for method in methods:
-        f = interp1d(capacity, voltage, kind=method)
-        c1,c2 = index_bounds(capacity)
-        capacity_new = np.linspace(c1,c2,360/5)
-        voltage_new = f(capacity_new)
-        #ax3.plot(capacity_new, voltage_new, label=method)
-
-
-
-    # using window
-    # savgol_filter - xy
-    f = interp1d(capacity, voltage, kind='linear')
-    c1, c2 = index_bounds(capacity)
-    capacity_new = np.linspace(c1, c2, len_capacity)
-    capacity_step = (c2-c1)/(len_capacity-1)
-    voltage_new = f(capacity_new)
-    ax3.plot(capacity_new, voltage_new, label="interpolated")
-    voltage_new_sg = savitzky_golay(voltage_new, np.amax([3, len_capacity/50]), 3)
-    ax3.plot(capacity_new, voltage_new_sg, "r.-", label="savgol_1")
-
-
-    # ---C- creating dq/dv
-    # ---- shifting to y-x ----------------------------------------
-
-    f = interp1d(voltage_new_sg, capacity_new, kind='linear')
-    v1, v2 = value_bounds(voltage_new_sg)
-    voltage_new_2 = np.linspace(v1, v2, len(voltage_new_sg))
-    voltage_step = (v2 - v1) / (len(voltage_new_sg) - 1)
-    capacity_new_2 = f(voltage_new_2)
-
-    capacity_new_sg = savitzky_golay(capacity_new_2, np.amax([3, len(voltage_new_2) / 50]), 3)
-    ax4.plot(voltage, capacity, ".")
-    ax4.plot(voltage_new, capacity_new)
-    ax4.plot(voltage_new_2, capacity_new_sg, "r.-", label="savgol_2")
-
-    # ---diff
-    incremental_capacity = np.ediff1d(capacity_new_sg) / voltage_step
-    print len(voltage_new_2)
-    print len(incremental_capacity)
-    ax4.plot(voltage_new_2[1:], incremental_capacity, "g.", label="incremental capacity")
-
-    # --- need to adjust voltage
-
-    voltage_new_3 = voltage_new_2[1:] + 0.5*voltage_step  # sentering
-    ax4.plot(voltage_new_3, incremental_capacity, "b.", label="incremental capacity2")
-
-
-    # --D--- smoothing final data etc-------------
-
-    # smooth
-
-    # reverse?
-
-    # "normalize" etc.
-
-
-
-
-
-    plt.legend()
+    ax1.plot(capacity, voltage, "b-", label="raw")
+    converter = Converter()
+    converter.set_data(capacity, voltage)
+    converter.inspect_data()
+    converter.pre_process_data()
+    ax1.plot(converter.capacity_preprocessed, converter.voltage_preprocessed, "r-", label="pre")
+    converter.increment_data()
+    converter.post_process_data()
+    ax2.plot(converter.voltage_processed, converter._incremental_capacity, "b-", label="inc")
+    ax2.plot(converter.voltage_processed, converter.incremental_capacity, "r-", label="post")
+    ax1.legend()
+    ax2.legend()
     plt.show()
-    print "ok"
 
 if __name__ == '__main__':
-    check_get_and_plot_ica()
+    check_class_ica()
