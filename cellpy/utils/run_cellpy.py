@@ -290,6 +290,8 @@ if __name__ == '__main__':
             elif 9 < counter <= 12:
                 names['20161101_bec01_%i_cc_01.res'] = 'Q%i' % (counter - 9)
                 counter += 1
+    del names[filenames[3]]
+    names[filenames[4]] = 'A2'
     # bec01_07-09 is without additives and bec01_01-03 with additives
     # save_cap_ocv(datafolder, filenames[0], datafolder_out,
     #                   cell_mass['bec01_01'])
@@ -311,21 +313,26 @@ if __name__ == '__main__':
     # tick_and_label_s = 60
     # title_s = tick_and_label_s + 60
 
+    # cap plot
+    # ms = 50
+    # tick_and_label_s = 100
+    # title_s = tick_and_label_s + 60
+
     # Single para plot
-    ms = 110
-    tick_and_label_s = 190
-    title_s = 150
+    # ms = 110
+    # tick_and_label_s = 190
+    # title_s = 150
 
     # fit plot
-    # ms = 40
-    # tick_and_label_s = 130
-    # title_s = tick_and_label_s + 10
+    ms = 80
+    tick_and_label_s = 130
+    title_s = tick_and_label_s + 10
 
     plots = (1, 2, 4, 8, 9, 10)
     zoom = False
     name_plots = [filenames[p] for p in plots]
-    up = True
-    name = filenames[9]
+    up = False
+    name = filenames[10]
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
     #                i_err=i_err, ti_la_s=tick_and_label_s, m_s=ms, zoom=zoom)
@@ -353,7 +360,7 @@ if __name__ == '__main__':
         fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
                              mass_frac_err[name], figure_folder, v_start_up,
                              i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
-                             tit_s=title_s, single=True,
+                             tit_s=title_s, single=False, tx=4, ty=3,
                              outfolder=datafolder_out, sur_area=disk_area)
     else:
         rlx_text = 'after delithiation'
@@ -373,7 +380,7 @@ if __name__ == '__main__':
         fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
                              mass_frac_err[name], figure_folder, v_start_down,
                              i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
-                             tit_s=title_s, single=True,
+                             tit_s=title_s, single=False, tx=4, ty=3,
                              outfolder=datafolder_out, sur_area=disk_area)
 
 
@@ -381,7 +388,7 @@ if __name__ == '__main__':
     # leg = []
     # plt.figure(figsize=(60, 62))
     # for volt_i in cycles_number:
-    #     if 'S' in names[name] or 'A3' in names[name]:
+    #     if 'S' in names[name] or 'A2' in names[name]:
     #         ocv = voltage[volt_i][::30]
     #         time_ocv = time[volt_i][::30]
     #     else:

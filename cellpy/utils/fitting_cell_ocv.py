@@ -1230,10 +1230,10 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
         rc_param_a[i].update(temp_dict)
         rc_param_a[i].update(v_ir)
         # Making single plot cell 2
-        if i in (0, 3, 4):
-            for par in rc_param_a[i].keys():
-                rc_param_a[i][par] = np.nan
-                error_para[par] = np.nan
+        # if i in (0, 3, 4):
+        #     for par in rc_param_a[i].keys():
+        #         rc_param_a[i][par] = np.nan
+        #         error_para[par] = np.nan
 
         best_para.append(rc_param_a[i])
         best_para_error.append(error_para)
@@ -1246,12 +1246,12 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
 
     shape_params = len(best_para[0]) - len(fit[0].params)
     if shape_params % 2 == 0:   # Even number of input params
-        gs = gridspec.GridSpec(shape_params / 2 + 1, shape_params - 1)
+        gs = gridspec.GridSpec(shape_params / 2, shape_params - 1)
         gs.update(left=0.07, right=0.95, wspace=0.5, hspace=0.5)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
     else:
-        gs = gridspec.GridSpec(shape_params - 1, (shape_params + 1) / 2)
+        gs = gridspec.GridSpec((shape_params + 1) / 2, shape_params/2)
         gs.update(left=0.05, right=0.95, wspace=0.5, hspace=0.5)
         subs_params = [fig_params.add_subplot(gs[p])
                        for p in range(len(best_para[0]))]
@@ -1301,11 +1301,11 @@ def plot_params_area(voltage, fit, rc_params, i_start, cell_name,
         if 'tau' in name:
             subs_params[name_i].set_ylabel('Time constant [s]',
                                            size=ti_la_s)
-        elif 'r_' == name[:1] or 'IR' in name:
-            subs_params[name_i].set_ylabel('Resistance [Ohm / cm$^2$]',
+        elif 'r' == name[0] or 'IR' in name:
+            subs_params[name_i].set_ylabel('Resistance \n [Ohm / cm$^2$]',
                                            size=ti_la_s)
         elif 'c_' in name:
-            subs_params[name_i].set_ylabel('Capacitance [F/cm$^2$]',
+            subs_params[name_i].set_ylabel('Capacitance \n [F/cm$^2$]',
                                            size=ti_la_s)
         else:
             subs_params[name_i].set_ylabel('Voltage [V]', size=ti_la_s)
