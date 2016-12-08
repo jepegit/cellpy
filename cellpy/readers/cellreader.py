@@ -25,6 +25,11 @@ Todo:
 
 USE_ADO = False
 """string: set True if using adodbapi"""
+CELLPY_FILE_VERSION = 3
+MINIMUM_CELLPY_FILE_VERSION = 1
+STEP_TABLE_VERSION = 3
+NORMAL_TABLE_VERSION = 3
+SUMMARY_TABLE_VERSION = 3
 
 if USE_ADO:
     try:
@@ -36,6 +41,7 @@ else:
     try:
         import pyodbc as dbloader
     except ImportError:
+        print "COULD NOT LOAD DBLOADER!"
         dbloader = None
 
 import shutil
@@ -284,9 +290,10 @@ class dataset(object):
         self.step_table = collections.OrderedDict()
         self.step_table_made = False
         self.parameter_table = collections.OrderedDict()
-        self.summary_version = 2
-        self.step_table_version = 2
-        self.cellpy_file_version = 3
+        self.summary_version = SUMMARY_TABLE_VERSION
+        self.step_table_version = STEP_TABLE_VERSION
+        self.cellpy_file_version = CELLPY_FILE_VERSION
+        self.normal_table_version = NORMAL_TABLE_VERSION
         # ready for use if implementing loading units (will probably never happen).
         self.raw_units = dict()  # units used for raw_data
 
@@ -349,10 +356,9 @@ class cellpydata(object):
         Returns:
             None:
         """
-        self.cellpy_file_version = 3
         self.tester = tester
-        self.loader = None # this will be set in the function set_instrument
-        self.verbose = verbose # not used anymore?
+        self.loader = None  # this will be set in the function set_instrument
+        self.verbose = verbose  # not used anymore?
         # self._create_logger(self.verbose)
         self.logger = logging.getLogger(__name__)
         self.logger.info("created cellpydata instance")
@@ -421,16 +427,21 @@ class cellpydata(object):
 
     @staticmethod
     def _set_headers_step_table():
+        # 08.12.2016: added sub_step, sub_type, and pre_time
         headers_step_table = dict()
         headers_step_table["test"] = "test"
         headers_step_table["cycle"] = "cycle"
         headers_step_table["step"] = "step"
+        headers_step_table["sub_step"] = "sub_step"
         headers_step_table["type"] = "type"
+        headers_step_table["sub_type"] = "sub_type"
         headers_step_table["info"] = "info"
         headers_step_table["pre_current"] = "I_"
         headers_step_table["pre_voltage"] = "V_"
         headers_step_table["pre_charge"] = "Charge_"
         headers_step_table["pre_discharge"] = "Discharge_"
+        headers_step_table["pre_point"] = "datapoint_"
+        headers_step_table["pre_time"] = "time_"
         headers_step_table["post_mean"] = "avr"
         headers_step_table["post_std"] = "std"
         headers_step_table["post_max"] = "max"
@@ -446,6 +457,7 @@ class cellpydata(object):
     @staticmethod
     def _set_headers_summary():
         # - headers for out-files
+        # 08.12.2016: added temperature_last, temperature_mean, aux_
         headers_summary = dict()
         headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
         headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
@@ -475,6 +487,10 @@ class cellpydata(object):
         headers_summary["high_level"] = "High_Level(percentage)"  # SEI loss
         headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
         headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
+        headers_summary["temperature_last"] = "Last_Temperature(C)"
+        headers_summary["temperature_mean"] = "Average_Temperature(C)"
+        headers_summary["pre_aux"] = "Aux_"
+
         return headers_summary
 
     @staticmethod
@@ -1042,10 +1058,9 @@ class cellpydata(object):
     def load(self,cellpy_file):
         """Loads a cellpy file.
         """
-
-        if self.cellpy_file_version <= 3:
+        try:
             new_tests = self._load_hdf5(cellpy_file)
-        else:
+        except AttributeError:
             new_tests = []
             print "This cellpy-file version is not supported by current reader (try to update cellpy)."
 
@@ -1078,16 +1093,29 @@ class cellpydata(object):
         print "c",
         store = pd.HDFStore(filename)
         data = dataset()
+
+        infotable = store.select("cellpydata/info")
+        try:
+            data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
+        except:
+            data.cellpy_file_version = 0
+
+        # if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
+        #     raise AttributeError
+
+        if data.cellpy_file_version > CELLPY_FILE_VERSION:
+            raise AttributeError  #  TODO: make custom error
+
+
         data.dfsummary = store.select("cellpydata/dfsummary")
         data.dfdata = store.select("cellpydata/dfdata")
+
         try:
             data.step_table = store.select("cellpydata/step_table")
             data.step_table_made = True
         except:
             data.step_table = None
             data.step_table_made = False
-        infotable = store.select("cellpydata/info")
-
         try:
             fidtable = store.select("cellpydata/fidtable")
             fidtable_selected = True
@@ -1110,10 +1138,6 @@ class cellpydata(object):
         data.start_datetime = self._extract_from_dict(infotable, "start_datetime")
         data.test_ID = self._extract_from_dict(infotable, "test_ID")
         data.test_name = self._extract_from_dict(infotable, "test_name")
-        try:
-            data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
-        except:
-            data.cellpy_file_version = None
 
         try:
             data.step_table_made = self._extract_from_dict(infotable, "step_table_made")
@@ -1814,7 +1838,7 @@ class cellpydata(object):
         return out
 
     def create_step_table(self, test_number=None):
-        """ Create a table (v.0.2) that contains summary information for each step.
+        """ Create a table (v.3) that contains summary information for each step.
 
         This function creates a table containing information about the different steps
         for each cycle and, based on that, decides what type of step it is (e.g. charge)
@@ -1842,6 +1866,7 @@ class cellpydata(object):
             'IR','IR_pct_change',
             'type', 'info'
 
+        8.12.2016: added sub_step, sub_type, and pre_time, pre_point
         Remark! x_delta is given in percentage.
         """
         test_number = self._validate_test_number(test_number)
@@ -1857,16 +1882,22 @@ class cellpydata(object):
 
         step_table_txt_cycle = headers_step_table["cycle"]
         step_table_txt_step = headers_step_table["step"]
+        step_table_txt_sub_step = headers_step_table["sub_step"]
+
         step_table_txt_type = headers_step_table["type"]
+        step_table_txt_sub_type = headers_step_table["sub_type"]
+
         step_table_txt_info = headers_step_table["info"]
         step_table_txt_ir = headers_step_table["internal_resistance"]
         step_table_txt_ir_change = headers_step_table["internal_resistance_change"]
+
 
         # -------------create an "empty" df -----------------------------------
 
         # --- defining column names ---
         # (should probably migrate this to own function and add to self)
         columns = [step_table_txt_cycle, step_table_txt_step]
+
         columns_end = [headers_step_table["post_mean"],
                        headers_step_table["post_std"],
                        headers_step_table["post_max"],
@@ -1876,10 +1907,19 @@ class cellpydata(object):
                        headers_step_table["post_delta"],
                        headers_step_table["post_rate"],
                        ]
+
+        columns_end_limited = [headers_step_table["post_start"],
+                               headers_step_table["post_end"],
+                               headers_step_table["post_delta"],]
+
         columns_I = [headers_step_table["pre_current"] + x for x in columns_end]
         columns_V = [headers_step_table["pre_voltage"] + x for x in columns_end]
         columns_charge = [headers_step_table["pre_charge"] + x for x in columns_end]
         columns_discharge = [headers_step_table["pre_discharge"] + x for x in columns_end]
+
+        columns_point = [headers_step_table["pre_point"] + x for x in columns_end_limited]
+        columns_time = [headers_step_table["pre_time"] + x for x in columns_end_limited]
+
         columns.extend(columns_I)
         columns.extend(columns_V)
         columns.extend(columns_charge)
@@ -1890,6 +1930,12 @@ class cellpydata(object):
 
         columns.append(step_table_txt_type)
         columns.append(step_table_txt_info)
+
+        # CONTINUE FROM HERE:
+        # columns.extend(columns_point)
+        # columns.extend(columns_time)
+        # columns.append(step_table_txt_sub_step)
+        # columns.append(step_table_txt_sub_type)
 
         # --- adding pct change col(s)-----
         df = self.tests[test_number].dfdata
