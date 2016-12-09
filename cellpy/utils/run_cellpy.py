@@ -124,6 +124,8 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, c_rate, mass,
     cycle_cap_df = pd.DataFrame(cycle_cap,
                                 columns=["Charge_Capacity(mAh/g)",
                                          "Discharge_Capacity(mAh/g)"])
+    cycle_cap_df.to_csv(os.path.join(folder, 'cap_cyc_%s.csv' % cell_name),
+                        sep=';')
 
     col_eff = df_stats["Coulombic_Efficiency(percentage)"]   # Q_out / Q_inn
     x_range = np.arange(1, len(col_eff) + 1)
@@ -164,10 +166,8 @@ def plotting_stuff(filename, folder, fig_folder, cell_name, c_rate, mass,
                      for di_e_i, di_e in enumerate(frac)]
     charge_err = [ch_e * cycle_cap_df["Charge_Capacity(mAh/g)"][ch_e_i] for
                   ch_e_i, ch_e in enumerate(frac)]
-    plt.errorbar(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"],
-                 yerr=charge_err, fmt='^b', ms=m_s, elinewidth=5)
-    plt.errorbar(x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"],
-                 yerr=discharge_err, fmt='or', ms=m_s, elinewidth=5)
+    plt.plot(x_range, cycle_cap_df["Charge_Capacity(mAh/g)"], '^b', ms=m_s)
+    plt.plot(x_range, cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or', ms=m_s)
 
     for tick_rc in plt.gca().xaxis.get_major_ticks():
         tick_rc.label.set_fontsize(ti_la_s)
@@ -324,24 +324,24 @@ if __name__ == '__main__':
     # title_s = 150
 
     # fit plot
-    ms = 80
-    tick_and_label_s = 130
-    title_s = tick_and_label_s + 10
+    ms = 70
+    tick_and_label_s = 120
+    title_s = tick_and_label_s + 40
 
     plots = (1, 2, 4, 8, 9, 10)
     zoom = False
     name_plots = [filenames[p] for p in plots]
     up = False
-    name = filenames[10]
+    name = filenames[2]
+    print name
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
     #                i_err=i_err, ti_la_s=tick_and_label_s, m_s=ms, zoom=zoom)
     # for name in name_plots:
-    print name
-    # plotting_stuff(name, datafolder_out, figure_folder,
-    #                cell_name=names[name], c_rate=c_rate,
-    #                mass=cell_mass[name], i_change=change_i,
-    #                i_err=i_err, ti_la_s=tick_and_label_s, zoom=zoom, m_s=ms)
+    #     plotting_stuff(name, datafolder_out, figure_folder,
+    #                    cell_name=name, c_rate=c_rate,
+    #                    mass=cell_mass[name], i_change=change_i,
+    #                    i_err=i_err, ti_la_s=tick_and_label_s, zoom=zoom, m_s=ms)
     if up:
         rlx_text = 'after lithiation'
         time, voltage, fit, rc_para, i_start = \
@@ -357,11 +357,11 @@ if __name__ == '__main__':
         #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
         #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
         #                 outfolder=datafolder_out, tx=4, ty=3)
-        fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
-                             mass_frac_err[name], figure_folder, v_start_up,
-                             i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
-                             tit_s=title_s, single=False, tx=4, ty=3,
-                             outfolder=datafolder_out, sur_area=disk_area)
+        # fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
+        #                      mass_frac_err[name], figure_folder, v_start_up,
+        #                      i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
+        #                      tit_s=title_s, single=False, tx=4, ty=3,
+        #                      outfolder=datafolder_out, sur_area=disk_area)
     else:
         rlx_text = 'after delithiation'
         time, voltage, fit, rc_para, i_start = \
@@ -377,50 +377,46 @@ if __name__ == '__main__':
         #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
         #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
         #                 outfolder=datafolder_out, tx=4, ty=3)
-        fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
-                             mass_frac_err[name], figure_folder, v_start_down,
-                             i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
-                             tit_s=title_s, single=False, tx=4, ty=3,
-                             outfolder=datafolder_out, sur_area=disk_area)
+        # fco.plot_params_area(voltage, fit, rc_para, i_start, names[name],
+        #                      mass_frac_err[name], figure_folder, v_start_down,
+        #                      i_err=i_err, ms=ms, ti_la_s=tick_and_label_s,
+        #                      tit_s=title_s, single=False, tx=4, ty=3,
+        #                      outfolder=datafolder_out, sur_area=disk_area)
 
+    cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
+    leg = []
+    plt.figure(figsize=(60, 62))
+    for volt_i in cycles_number:
+        if 'S' in names[name] or 'A2' in names[name]:
+            ocv = voltage[volt_i][::30]
+            time_ocv = time[volt_i][::30]
+        else:
+            ocv = voltage[volt_i][::10]
+            time_ocv = time[volt_i][::10]
+        if volt_i == cycles_number[-1]:
+            plt.plot(time_ocv, ocv, '-^b', ms=ms)
+        else:
+            plt.plot(time_ocv, ocv, '-o', ms=ms)
+        leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
+    for tick_volt in plt.gca().xaxis.get_major_ticks():
+        tick_volt.label.set_fontsize(tick_and_label_s)
+    for tick_volt in plt.gca().yaxis.get_major_ticks():
+        tick_volt.label.set_fontsize(tick_and_label_s)
 
-    # cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
-    # leg = []
-    # plt.figure(figsize=(60, 62))
-    # for volt_i in cycles_number:
-    #     if 'S' in names[name] or 'A2' in names[name]:
-    #         ocv = voltage[volt_i][::30]
-    #         time_ocv = time[volt_i][::30]
-    #     else:
-    #         ocv = voltage[volt_i][::10]
-    #         time_ocv = time[volt_i][::10]
-    #     if volt_i == cycles_number[-1]:
-    #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-^b', ms=ms,
-    #                      elinewidth=2)
-    #     else:
-    #         plt.errorbar(time_ocv, ocv, yerr=v_err, fmt='-o', ms=ms,
-    #                      elinewidth=2)
-    #     leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
-    # for tick_volt in plt.gca().xaxis.get_major_ticks():
-    #     tick_volt.label.set_fontsize(tick_and_label_s)
-    # for tick_volt in plt.gca().yaxis.get_major_ticks():
-    #     tick_volt.label.set_fontsize(tick_and_label_s)
-    #
-    # plt.gca().title.set_position([.5, 1.05])
-    # plt.title(
-    #     '\n'.join(wrap('Open Circuit Voltage Relaxation for Cell %s (%s)', 30))
-    #     % (names[name], rlx_text), size=title_s)
-    # plt.xlabel('Time (s)', size=tick_and_label_s)
-    # plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
-    # plt.gca().yaxis.set_major_locator(MaxNLocator(6))
-    # plt.gca().xaxis.set_major_locator(MaxNLocator(6))
-    # plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
-    # if up:
-    #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-    #                              % (names[name], 'lith')), dpi=100)
-    # else:
-    #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-    #                              % (names[name], 'delith')), dpi=100)
+    plt.gca().title.set_position([.5, 1.05])
+    plt.title('OCV-Relaxation for Cell %s (%s)' % (names[name], rlx_text),
+              size=title_s)
+    plt.xlabel('Time (s)', size=tick_and_label_s)
+    plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
+    plt.gca().yaxis.set_major_locator(MaxNLocator(6))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(6))
+    plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
+    if up:
+        plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+                                 % (names[name], 'lith')), dpi=100)
+    else:
+        plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+                                 % (names[name], 'delith')), dpi=100)
 
 
 
