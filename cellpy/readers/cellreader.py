@@ -510,6 +510,7 @@ class cellpydata(object):
             self._set_arbin()
 
     def _set_headers_normal(self):
+        # TODO: create dictionary for normal headers
         # here we should set the normal headers (for the dfdata)
         # at the moment, the script uses same headers as arbin
         headers_normal = dict()
@@ -1645,6 +1646,7 @@ class cellpydata(object):
         print st
 
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False, cycle_number=None, test_number=None):
+        # TODO: include sub_steps here
         """Get the step numbers of selected type.
 
         Returns the selected step_numbers for the  elected type of step(s).
@@ -1869,6 +1871,7 @@ class cellpydata(object):
         8.12.2016: added sub_step, sub_type, and pre_time, pre_point
         Remark! x_delta is given in percentage.
         """
+        # TODO: need to implement newly added columns (strategy: work with empty cols first)
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
@@ -2150,6 +2153,7 @@ class cellpydata(object):
         return selected
 
     def _select_step(self, cycle, step, test_number=None):
+        # TODO: insert sub_step here
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
