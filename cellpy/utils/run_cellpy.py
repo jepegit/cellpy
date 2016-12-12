@@ -350,9 +350,9 @@ if __name__ == '__main__':
                          tau_guessed=tau_guessed, v_start=v_start_up,
                          c_rate=c_rate, change_i=change_i,
                          cell_capacity=cell_capacity, conf=conf, v_err=v_err)
-        # fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
-        #                       ti_la_s=tick_and_label_s, tit_s=title_s,
-        #                       figfolder=figure_folder)
+        fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
+                              ti_la_s=tick_and_label_s, tit_s=title_s,
+                              figfolder=figure_folder)
         # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
         #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
         #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
@@ -370,9 +370,9 @@ if __name__ == '__main__':
                          tau_guessed=tau_guessed, v_start=v_start_down,
                          c_rate=c_rate, change_i=change_i,
                          cell_capacity=cell_capacity, conf=conf, v_err=v_err)
-        # fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
-        #                       ti_la_s=tick_and_label_s, tit_s=title_s,
-        #                       figfolder=figure_folder)
+        fco.user_plot_voltage(time, voltage, fit, conf, name=names[name], ms=ms,
+                              ti_la_s=tick_and_label_s, tit_s=title_s,
+                              figfolder=figure_folder)
         # fco.plot_params(voltage, fit, rc_para, i_start, names[name],
         #                 mass_frac_err[name], figure_folder, i_err=i_err, ms=ms,
         #                 ti_la_s=tick_and_label_s, tit_s=title_s, single=True,
@@ -383,40 +383,40 @@ if __name__ == '__main__':
         #                      tit_s=title_s, single=False, tx=4, ty=3,
         #                      outfolder=datafolder_out, sur_area=disk_area)
 
-    cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
-    leg = []
-    plt.figure(figsize=(60, 62))
-    for volt_i in cycles_number:
-        if 'S' in names[name] or 'A2' in names[name]:
-            ocv = voltage[volt_i][::30]
-            time_ocv = time[volt_i][::30]
-        else:
-            ocv = voltage[volt_i][::10]
-            time_ocv = time[volt_i][::10]
-        if volt_i == cycles_number[-1]:
-            plt.plot(time_ocv, ocv, '-^b', ms=ms)
-        else:
-            plt.plot(time_ocv, ocv, '-o', ms=ms)
-        leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
-    for tick_volt in plt.gca().xaxis.get_major_ticks():
-        tick_volt.label.set_fontsize(tick_and_label_s)
-    for tick_volt in plt.gca().yaxis.get_major_ticks():
-        tick_volt.label.set_fontsize(tick_and_label_s)
-
-    plt.gca().title.set_position([.5, 1.05])
-    plt.title('OCV-Relaxation for Cell %s (%s)' % (names[name], rlx_text),
-              size=title_s)
-    plt.xlabel('Time (s)', size=tick_and_label_s)
-    plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
-    plt.gca().yaxis.set_major_locator(MaxNLocator(6))
-    plt.gca().xaxis.set_major_locator(MaxNLocator(6))
-    plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
-    if up:
-        plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-                                 % (names[name], 'lith')), dpi=100)
-    else:
-        plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
-                                 % (names[name], 'delith')), dpi=100)
+    # cycles_number = (0, 1, 2, 4, 9, 24, len(voltage) - 2)
+    # leg = []
+    # plt.figure(figsize=(60, 62))
+    # for volt_i in cycles_number:
+    #     if 'S' in names[name] or 'A2' in names[name]:
+    #         ocv = voltage[volt_i][::30]
+    #         time_ocv = time[volt_i][::30]
+    #     else:
+    #         ocv = voltage[volt_i][::10]
+    #         time_ocv = time[volt_i][::10]
+    #     if volt_i == cycles_number[-1]:
+    #         plt.plot(time_ocv, ocv, '-^b', ms=ms)
+    #     else:
+    #         plt.plot(time_ocv, ocv, '-o', ms=ms)
+    #     leg.append('OCV-relaxation for cycle %s' % (volt_i + 1))
+    # for tick_volt in plt.gca().xaxis.get_major_ticks():
+    #     tick_volt.label.set_fontsize(tick_and_label_s)
+    # for tick_volt in plt.gca().yaxis.get_major_ticks():
+    #     tick_volt.label.set_fontsize(tick_and_label_s)
+    #
+    # plt.gca().title.set_position([.5, 1.05])
+    # plt.title('OCV-Relaxation for Cell %s (%s)' % (names[name], rlx_text),
+    #           size=title_s)
+    # plt.xlabel('Time (s)', size=tick_and_label_s)
+    # plt.ylabel('Relaxation voltage (V)', size=tick_and_label_s)
+    # plt.gca().yaxis.set_major_locator(MaxNLocator(6))
+    # plt.gca().xaxis.set_major_locator(MaxNLocator(6))
+    # plt.legend(leg, loc='best', prop={'size': tick_and_label_s})
+    # if up:
+    #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+    #                              % (names[name], 'lith')), dpi=100)
+    # else:
+    #     plt.savefig(os.path.join(figure_folder, 'arbin_relax_%s_%s.pdf'
+    #                              % (names[name], 'delith')), dpi=100)
 
 
 
