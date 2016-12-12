@@ -324,15 +324,20 @@ if __name__ == '__main__':
     # title_s = 150
 
     # fit plot
-    ms = 70
-    tick_and_label_s = 120
-    title_s = tick_and_label_s + 40
+    # ms = 70
+    # tick_and_label_s = 120
+    # title_s = tick_and_label_s + 40
+
+    # RC plots
+    ms = 50
+    tick_and_label_s = 115
+    title_s = tick_and_label_s + 10
 
     plots = (1, 2, 4, 8, 9, 10)
     zoom = False
     name_plots = [filenames[p] for p in plots]
     up = False
-    name = filenames[2]
+    name = filenames[9]
     print name
     # plotting_stuff(name, datafolder_out, figure_folder, names[name],
     #                c_rate=c_rate, mass=cell_mass[name], i_change=change_i,
