@@ -1040,6 +1040,88 @@ class summaryplot:
 
             # --------- Reporting tools ---------------------------------------------------
 
+    def _export_dqdv2(self, savedir, sep):
+        from cellpy.utils.ica import dqdv
+        test_number = 0
+        for cell_data_object in self.tests:
+            cell_data = cell_data_object.tests[test_number]
+            if cell_data is None:
+                print "NoneType - dataset missing"
+            else:
+                filename = cell_data.loaded_from
+                no_merged_sets = ""
+                firstname, extension = os.path.splitext(filename)
+                firstname += no_merged_sets
+                if savedir:
+                    firstname = os.path.join(savedir, os.path.basename(firstname))
+                outname_charge = firstname + "_dqdv2_charge.csv"
+                outname_discharge = firstname + "_dqdv2_discharge.csv"
+
+                print outname_charge
+                print outname_discharge
+
+                list_of_cycles = cell_data_object.get_cycle_numbers()
+                number_of_cycles = len(list_of_cycles)
+                print "you have %i cycles" % (number_of_cycles)
+
+                # extracting charge
+                out_data = []
+                for cycle in list_of_cycles:
+                    try:
+                        # if max_cycles is not None and cycle <= max_cycles:
+                        c, v = cell_data_object.get_ccap(cycle)
+                        v, dQ = dqdv(v, c)
+                        v = v.tolist()
+                        dQ = dQ.tolist()
+
+                        header_x = "dQ cycle_no %i" % cycle
+                        header_y = "voltage cycle_no %i" % cycle
+                        dQ.insert(0, header_x)
+                        v.insert(0, header_y)
+
+                        out_data.append(v)
+                        out_data.append(dQ)
+                    except:
+                        print "could not extract cycle %i" % (cycle)
+
+                # Saving cycles in one .csv file (x,y,x,y,x,y...)
+                # print "saving the file with delimiter '%s' " % (sep)
+                print "Trying to save dqdv charge data to"
+                print outname_charge
+                with open(outname_charge, "wb") as f:
+                    writer = csv.writer(f, delimiter=sep)
+                    writer.writerows(itertools.izip_longest(*out_data))
+                    # star (or asterix) means transpose (writing cols instead of rows)
+
+                # extracting discharge
+                out_data = []
+                for cycle in list_of_cycles:
+                    try:
+                        dc, v = cell_data_object.get_dcap(cycle, test_number=test_number)
+                        v, dQ = dqdv(v, dc)
+                        v = v.tolist()
+                        dQ = dQ.tolist()
+
+                        header_x = "dQ cycle_no %i" % cycle
+                        header_y = "voltage cycle_no %i" % cycle
+                        dQ.insert(0, header_x)
+                        v.insert(0, header_y)
+
+                        out_data.append(v)
+                        out_data.append(dQ)
+
+                    except:
+                        print "could not extract cycle %i" % (cycle)
+
+                # Saving cycles in one .csv file (x,y,x,y,x,y...)
+                # print "saving the file with delimiter '%s' " % (sep)
+                print "Trying to save dqdv discharge data to"
+                print outname_discharge
+                with open(outname_discharge, "wb") as f:
+                    writer = csv.writer(f, delimiter=sep)
+                    writer.writerows(itertools.izip_longest(*out_data))
+                    # star (or asterix) means transpose (writing cols instead of rows)
+
     def _export_dqdv(self, savedir, sep):
         """internal function for running dqdv script """
         from cellpy.utils.dqdv import dQdV
@@ -1209,7 +1291,7 @@ class summaryplot:
         if self.export_dqdv:
             print "---saving dqdv-data--"
             savedir = self.savedir_raw
-            self._export_dqdv(savedir, sep=self.sep)
+            self._export_dqdv2(savedir, sep=self.sep)
 
     def save_hdf5(self):
         if self.export_hdf5:
@@ -1429,7 +1511,7 @@ class summaryplot:
                 axis.set_xlim(lim)
             except:
                 "axis probably not found"
-                   
+
     # --------- legend tools ------------------------------------------------------
 
     def get_legend(self, canvas=1):
@@ -1611,7 +1693,7 @@ if __name__ == "__main__":
     from cellpy import log
     log_level = logging.INFO # set to logging.DEBUG for more output
     log.setup_logging(default_level=log_level)
-    
+
     #    plot types:
     #    1 - with end-voltage
     #    2 - without end-voltage
