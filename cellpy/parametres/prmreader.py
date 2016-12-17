@@ -231,5 +231,5 @@ if __name__ == "__main__":
         print "Error! dbc_filename not found"
         errors = True
 
-    if errors == False:
+    if errors is False:
         print "All ok"

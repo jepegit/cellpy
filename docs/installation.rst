@@ -38,9 +38,12 @@ If this is the first time you install ``cellpy``, it is recommended that you run
 
     $ cellpy setup
 
-This will install a `_cellpy_prms_default.ini` file in your home directory. Edit this file and
-save it as `_cellpy_prms_some_other_name.ini` to prevent it from being written over in case
-the setup script is run on a later occasion.
+This will install a `_cellpy_prms_USER.ini` file in your home directory (USER = your user name).
+Edit this file and save it as `_cellpy_prms_some_other_name.ini` to prevent it from being written
+over in case the setup script is run on a later occasion.
+
+You can restore your prms-file by running ``cellpy setup`` if needed (i.e. get a copy of the default file
+copied to your user folder).
 
 
 From sources
