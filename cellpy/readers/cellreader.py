@@ -609,6 +609,10 @@ class cellpydata(object):
         self.logger = logging.getLogger(__name__)
         log.setup_logging(default_level=logging.DEBUG)
 
+    def set_cycle_mode(self, cycle_mode):
+        # should use proper python 'setting' (decorator etc)
+        self.cycle_mode = cycle_mode
+
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
 
@@ -2794,13 +2798,25 @@ class cellpydata(object):
             cycle = 2
         cc, cv = self.get_ccap(cycle, test_number)
         dc, dv = self.get_dcap(cycle, test_number)
-        last_dc = np.amax(dc)
-        cc = last_dc - cc
-        c = pd.concat([dc, cc], axis=0)
-        v = pd.concat([dv, cv], axis=0)
+
+        if self.cycle_mode.lower() == "anode":
+            _first_step_c = dc
+            _first_step_v = dv
+            _last_step_c = cc
+            _last_step_v = cv
+        else:
+            _first_step_c = cc
+            _first_step_v = cv
+            _last_step_c = dc
+            _last_step_v = dv
+
+        _last = np.amax(_first_step_c)
+        _last_step_c = _last - _last_step_c
+        c = pd.concat([_first_step_c, _last_step_c], axis=0)
+        v = pd.concat([_first_step_v, _last_step_v], axis=0)
         if polarization:
             # interpolate cc cv dc dv and find difference
-            pv, p = self._polarization(cc, cv, dc, dv, stepsize, points)
+            pv, p = self._polarization(_last_step_c, _last_step_v, _first_step_c, _last_step_v, stepsize, points)
 
             return c, v, pv, p
         else:
