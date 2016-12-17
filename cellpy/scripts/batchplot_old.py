@@ -1,24 +1,21 @@
 # -*- coding: utf-8 -*-
+"""Script for automatically loading cell-data and making summaries"""
 
 import sys
 import os
 
-from cellpy import cellreader, dbreader, prmreader, filefinder
-from cellpy.utils import plotutils
-
 from numpy import amin, amax, array, argsort
 import pandas as pd
-import types
-import time
-import types
 import itertools
 import csv
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 import pickle as pl
+
+from cellpy import cellreader, dbreader, prmreader, filefinder
+from cellpy.utils import plotutils
 
 
 class plotType:
@@ -78,17 +75,21 @@ class summaryplot:
                  fetch_onliners=False,
                  ensure_step_table=False,
                  force_raw=False,
+                 cycle_mode="anode",
+                 rawdatadir=None,
                  ):
         self.reader = dbreader.reader()
         self.tests = []
         self.dqdv_numbermultiplyer = dqdv_numbermultiplyer
         self.dqdv_method = dqdv_method
         self.dqdv_finalinterpolation = dqdv_finalinterpolation
+        self.cycle_mode = cycle_mode
         self.export_dqdv = export_dqdv
         self.export_cycles = export_cycles
         self.max_cycles = max_cycles
         self.dbc = dbc  # use dbc_file instead of db_file (only for reader)
         self.db_file = db_file  # custom db_file name (only for reader)
+        self.rawdatadir = rawdatadir # custom directory for raw data
         self.export_hdf5 = export_hdf5
         self.batch = batch
         self.bcol = bcol
@@ -784,15 +785,29 @@ class summaryplot:
 
     def load_cells(self, sort=True):
         self.tests = []
+        cellpydatadir = self.prms.cellpydatadir
+        if self.rawdatadir is None:
+            rawdatadir = self.prms.rawdatadir
+        else:
+            rawdatadir = self.rawdatadir
+            
+        cycle_mode = self.cycle_mode
         if sort is True:
             self.sort_cells()
         for my_run_name, my_mass in zip(self.allfiles, self.allmasses):
+            print
+            print 50*"="
+            print "processing:",
+            print my_run_name
+            print 50*"-"
             rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
             cell_data = cellreader.cellpydata(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
-            cell_data.set_cellpy_datadir(self.prms.cellpydatadir)
-            cell_data.set_raw_datadir(self.prms.rawdatadir)
+            cell_data.set_cellpy_datadir(cellpydatadir)
+            cell_data.set_raw_datadir(rawdatadir)
+            cell_data.set_cycle_mode(cycle_mode)
             cell_data.loadcell(raw_files=rawfiles, cellpy_file=cellpyfiles, mass=my_mass, summary_on_raw=True,
                                force_raw=self.force_raw)
+            
             self.number_of_tests += cell_data.get_number_of_tests()
             self.tests.append(cell_data)
 
@@ -1040,6 +1055,89 @@ class summaryplot:
 
             # --------- Reporting tools ---------------------------------------------------
 
+    def _export_dqdv2(self, savedir, sep):
+        from cellpy.utils.ica import dqdv
+        test_number = 0
+        for cell_data_object in self.tests:
+            cell_data = cell_data_object.tests[test_number]
+            if cell_data is None:
+                print "NoneType - dataset missing"
+            else:
+                filename = cell_data.loaded_from
+                no_merged_sets = ""
+                firstname, extension = os.path.splitext(filename)
+                firstname += no_merged_sets
+                if savedir:
+                    firstname = os.path.join(savedir, os.path.basename(firstname))
+                outname_charge = firstname + "_dqdv2_charge.csv"
+                outname_discharge = firstname + "_dqdv2_discharge.csv"
+
+                print outname_charge
+                print outname_discharge
+
+                list_of_cycles = cell_data_object.get_cycle_numbers()
+                number_of_cycles = len(list_of_cycles)
+                print "you have %i cycles" % (number_of_cycles)
+
+                # extracting charge
+                out_data = []
+                for cycle in list_of_cycles:
+                    try:
+                        # if max_cycles is not None and cycle <= max_cycles:
+                        c, v = cell_data_object.get_ccap(cycle)
+                        v, dQ = dqdv(v, c)
+                        v = v.tolist()
+                        dQ = dQ.tolist()
+
+                        header_x = "dQ cycle_no %i" % cycle
+                        header_y = "voltage cycle_no %i" % cycle
+                        dQ.insert(0, header_x)
+                        v.insert(0, header_y)
+
+                        out_data.append(v)
+                        out_data.append(dQ)
+                    except:
+                        print "could not extract cycle %i" % (cycle)
+
+                # Saving cycles in one .csv file (x,y,x,y,x,y...)
+                # print "saving the file with delimiter '%s' " % (sep)
+                print "Trying to save dqdv charge data to"
+                print outname_charge
+                with open(outname_charge, "wb") as f:
+                    writer = csv.writer(f, delimiter=sep)
+                    writer.writerows(itertools.izip_longest(*out_data))
+                    # star (or asterix) means transpose (writing cols instead of rows)
+
+                # extracting discharge
+                out_data = []
+                for cycle in list_of_cycles:
+                    try:
+                        dc, v = cell_data_object.get_dcap(cycle, test_number=test_number)
+                        v, dQ = dqdv(v, dc)
+                        v = v.tolist()
+                        dQ = dQ.tolist()
+
+                        header_x = "dQ cycle_no %i" % cycle
+                        header_y = "voltage cycle_no %i" % cycle
+                        dQ.insert(0, header_x)
+                        v.insert(0, header_y)
+
+                        out_data.append(v)
+                        out_data.append(dQ)
+
+                    except:
+                        print "could not extract cycle %i" % (cycle)
+
+                # Saving cycles in one .csv file (x,y,x,y,x,y...)
+                # print "saving the file with delimiter '%s' " % (sep)
+                print "Trying to save dqdv discharge data to"
+                print outname_discharge
+                with open(outname_discharge, "wb") as f:
+                    writer = csv.writer(f, delimiter=sep)
+                    writer.writerows(itertools.izip_longest(*out_data))
+                    # star (or asterix) means transpose (writing cols instead of rows)
+        
+
     def _export_dqdv(self, savedir, sep):
         """internal function for running dqdv script """
         from cellpy.utils.dqdv import dQdV
@@ -1209,7 +1307,7 @@ class summaryplot:
         if self.export_dqdv:
             print "---saving dqdv-data--"
             savedir = self.savedir_raw
-            self._export_dqdv(savedir, sep=self.sep)
+            self._export_dqdv2(savedir, sep=self.sep)
 
     def save_hdf5(self):
         if self.export_hdf5:
@@ -1621,17 +1719,19 @@ if __name__ == "__main__":
     """
     WARNING: total mass cannot be used if loading from hdf5 (should rewrite arbinreader -> hdf5)
     """
-
+    rawdatadir = None # use path given in prm-file
     plot_type = 2
     legend_stack = 3
-    a = summaryplot("bec_exp01", bcol=5, refs=None, plot_type=plot_type, predirname="SiBEC",
+    a = summaryplot("cathode_exp01", bcol=5, refs=None, plot_type=plot_type, predirname="SiCanode",
                     legend_stack=legend_stack, use_total_mass=False, only_first=False,
                     verbose=True, axis_txt_sub="Si",
                     dbc=False, export_raw=True, export_hdf5=True, force_raw=True,
                     ensure_step_table=True,  # This ensures that files exported to hdf5 also includes step table
                     export_cycles=True,
                     export_dqdv=True,
-                    fetch_onliners=True,)
+                    fetch_onliners=True,
+                    cycle_mode="cathode",
+                    rawdatadir=rawdatadir) # 
     print "plotting"
     a.showfig()  # showing individual figures (showfig(fignumber)) does not work in scripts
     print "ended figure"
