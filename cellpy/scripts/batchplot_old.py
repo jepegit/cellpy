@@ -1,24 +1,21 @@
 # -*- coding: utf-8 -*-
+"""Script for automatically loading cell-data and making summaries"""
 
 import sys
 import os
 
-from cellpy import cellreader, dbreader, prmreader, filefinder
-from cellpy.utils import plotutils
-
 from numpy import amin, amax, array, argsort
 import pandas as pd
-import types
-import time
-import types
 import itertools
 import csv
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 import pickle as pl
+
+from cellpy import cellreader, dbreader, prmreader, filefinder
+from cellpy.utils import plotutils
 
 
 class plotType:
@@ -78,17 +75,21 @@ class summaryplot:
                  fetch_onliners=False,
                  ensure_step_table=False,
                  force_raw=False,
+                 cycle_mode="anode",
+                 rawdatadir=None,
                  ):
         self.reader = dbreader.reader()
         self.tests = []
         self.dqdv_numbermultiplyer = dqdv_numbermultiplyer
         self.dqdv_method = dqdv_method
         self.dqdv_finalinterpolation = dqdv_finalinterpolation
+        self.cycle_mode = cycle_mode
         self.export_dqdv = export_dqdv
         self.export_cycles = export_cycles
         self.max_cycles = max_cycles
         self.dbc = dbc  # use dbc_file instead of db_file (only for reader)
         self.db_file = db_file  # custom db_file name (only for reader)
+        self.rawdatadir = rawdatadir # custom directory for raw data
         self.export_hdf5 = export_hdf5
         self.batch = batch
         self.bcol = bcol
@@ -784,15 +785,29 @@ class summaryplot:
 
     def load_cells(self, sort=True):
         self.tests = []
+        cellpydatadir = self.prms.cellpydatadir
+        if self.rawdatadir is None:
+            rawdatadir = self.prms.rawdatadir
+        else:
+            rawdatadir = self.rawdatadir
+            
+        cycle_mode = self.cycle_mode
         if sort is True:
             self.sort_cells()
         for my_run_name, my_mass in zip(self.allfiles, self.allmasses):
+            print
+            print 50*"="
+            print "processing:",
+            print my_run_name
+            print 50*"-"
             rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
             cell_data = cellreader.cellpydata(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
-            cell_data.set_cellpy_datadir(self.prms.cellpydatadir)
-            cell_data.set_raw_datadir(self.prms.rawdatadir)
+            cell_data.set_cellpy_datadir(cellpydatadir)
+            cell_data.set_raw_datadir(rawdatadir)
+            cell_data.set_cycle_mode(cycle_mode)
             cell_data.loadcell(raw_files=rawfiles, cellpy_file=cellpyfiles, mass=my_mass, summary_on_raw=True,
                                force_raw=self.force_raw)
+            
             self.number_of_tests += cell_data.get_number_of_tests()
             self.tests.append(cell_data)
 
@@ -1121,6 +1136,7 @@ class summaryplot:
                     writer = csv.writer(f, delimiter=sep)
                     writer.writerows(itertools.izip_longest(*out_data))
                     # star (or asterix) means transpose (writing cols instead of rows)
+        
 
     def _export_dqdv(self, savedir, sep):
         """internal function for running dqdv script """
@@ -1511,7 +1527,7 @@ class summaryplot:
                 axis.set_xlim(lim)
             except:
                 "axis probably not found"
-
+                   
     # --------- legend tools ------------------------------------------------------
 
     def get_legend(self, canvas=1):
@@ -1693,7 +1709,7 @@ if __name__ == "__main__":
     from cellpy import log
     log_level = logging.INFO # set to logging.DEBUG for more output
     log.setup_logging(default_level=log_level)
-
+    
     #    plot types:
     #    1 - with end-voltage
     #    2 - without end-voltage
@@ -1703,17 +1719,19 @@ if __name__ == "__main__":
     """
     WARNING: total mass cannot be used if loading from hdf5 (should rewrite arbinreader -> hdf5)
     """
-
+    rawdatadir = None # use path given in prm-file
     plot_type = 2
     legend_stack = 3
-    a = summaryplot("bec_exp01", bcol=5, refs=None, plot_type=plot_type, predirname="SiBEC",
+    a = summaryplot("cathode_exp01", bcol=5, refs=None, plot_type=plot_type, predirname="SiCanode",
                     legend_stack=legend_stack, use_total_mass=False, only_first=False,
                     verbose=True, axis_txt_sub="Si",
                     dbc=False, export_raw=True, export_hdf5=True, force_raw=True,
                     ensure_step_table=True,  # This ensures that files exported to hdf5 also includes step table
                     export_cycles=True,
                     export_dqdv=True,
-                    fetch_onliners=True,)
+                    fetch_onliners=True,
+                    cycle_mode="cathode",
+                    rawdatadir=rawdatadir) # 
     print "plotting"
     a.showfig()  # showing individual figures (showfig(fignumber)) does not work in scripts
     print "ended figure"
