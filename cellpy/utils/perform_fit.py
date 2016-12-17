@@ -23,7 +23,8 @@ __email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
 
 
 def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
-                 v_start, c_rate, change_i, cell_capacity=3.579, conf=False):
+                 v_start, c_rate, change_i, cell_capacity=3.579,
+                 conf=False, v_err=0.002):
     """Fitting measured data from cell with cellpy.
 
     Args:
@@ -42,6 +43,7 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
         C-rate (AKA Current) is changed. len(c_rate) = len(change_i) + 1
         cell_capacity (float): Theoretical specific capacity of the cell [Ah/g].
         conf (bool): Calculate confidential interval if True. Default, Faulse.
+        v_err (float): Voltage measurement accuracy in %. Default: Arbin BT2000.
 
     Returns:
         Fitted data and plots
@@ -58,79 +60,91 @@ def fitting_cell(filename, filefolder, cell_mass, contri, tau_guessed,
                                             mass=cell_mass,
                                             v_start=v_start)
     if conf:
-        fit, rc_para = fco.fit_with_conf(model, time, voltage, tau_guessed,
-                                         contri, c_rate, change_i,
-                                         cell_capacity, cell_mass, v_start)
+        fit, rc_para, i_start = fco.fit_with_conf(model=model, time=time,
+                                                  voltage=voltage,
+                                                  guess_tau=tau_guessed,
+                                                  contribution=contri,
+                                                  c_rate=c_rate,
+                                                  change_i=change_i,
+                                                  ideal_cap=cell_capacity,
+                                                  mass=cell_mass,
+                                                  v_start=v_start,
+                                                  v_err=v_err)
     else:
-        fit, rc_para = fco.fit_with_model(model, time, voltage, tau_guessed,
-                                          contri, c_rate, change_i, cell_capacity,
-                                          cell_mass, v_start)
+        fit, rc_para, i_start = fco.fit_with_model(model, time, voltage,
+                                                   tau_guessed, contri, c_rate,
+                                                   change_i, cell_capacity,
+                                                   cell_mass, v_start,
+                                                   v_err=v_err)
 
-    return time, voltage, fit, rc_para
+    return time, voltage, fit, rc_para, i_start
 
-def save_and_plot_cap(filepath, filename, outfolder, mass_cell,
-                      type_data='ocv_up'):
+
+def save_cap_ocv(filepath, filename, outfolder, mass_cell,
+                 type_data='ocvrlx_up'):
     """Making capacity vs. voltage and capacity vs. cycle data.
 
     Args:
         filepath (str): The exact path to the folder where the data lies.
         filename (str): The ocv relaxation filename for up- or downwards relax.
-        outfolder (str): Exact path where to save .csv data
-        mass_cell (float): Mass of active material in cell [mg]
+        outfolder (str): Exact path where to save .csv data.
+        mass_cell (float): Mass of active material in cell [mg].
+        type_data (str): ocv_up or ocv_down to get and save.
 
     Returns:
         Fitted data and plots
     """
+
     # imported cycle data from arbin and saved in "outdata" folder as .csv
     data = os.path.join(filepath, filename)
     making_csv(data, outfolder, mass_cell, type_data)
 
-    normal = filename[:-4] + '_normal.csv'
-    stats = filename[:-4] + '_stats.csv'
-    steps = filename[:-4] + '_steps.csv'
-    cap_volt = filename + '_cap_voltage.csv'
-
-    data_stats = os.path.join(outfolder, stats)
-    data_stats = pd.read_csv(data_stats, sep=';')
-    df_stats = pd.DataFrame(data_stats)
-
-    data_cap_volt = os.path.join(outfolder, cap_volt)
-    data_cap_volt = pd.read_csv(data_cap_volt, sep=';')
-    df_cap_volt = pd.DataFrame(data_cap_volt)
-
-    charge_cap = df_stats["Charge_Capacity(mAh/g)"]
-    discharge_cap = df_stats["Discharge_Capacity(mAh/g)"]
-    cycle_cap = zip(charge_cap, discharge_cap)
-    cycle_cap_df = pd.DataFrame(cycle_cap, columns=["Charge_Capacity(mAh/g)",
-                                                    "Discharge_Capacity(mAh/g)"])
-
-    # Plotting cycle vs. cap
-    plt.figure()
-    plt.plot(cycle_cap_df["Charge_Capacity(mAh/g)"], '^b',
-             cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or')
-    plt.legend(['Charge Capacity', 'Discharge capacity'], loc='best')
-    plt.title('Capacity vs. Cycle')
-    plt.xlabel('# Cycle')
-    plt.ylabel('Capacity (mAh/g)')
-    # plt.savefig(os.path.join(fig_folder, 'cap_cycle_sic006_74.pdf'))
-
-    # Plotting voltage vs. cap
-    capacity_sorting = []
-    voltage_sorting = []
-    for name in df_cap_volt:
-        if 'cap' in name:
-            capacity_sorting.append(df_cap_volt[name])
-        else:
-            voltage_sorting.append(df_cap_volt[name])
-
-    plt.figure()
-    number_plots = len(capacity_sorting)
-    for cycle in range(number_plots):
-        plt.plot(capacity_sorting[cycle], voltage_sorting[cycle])
-    plt.title('Capacity vs. Voltage')
-    plt.xlabel('Capacity (mAh/g)')
-    plt.ylabel('Voltage (V)')
-    plt.legend(loc='best')
+    # normal = filename[:-4] + '_normal.csv'
+    # stats = filename[:-4] + '_stats.csv'
+    # steps = filename[:-4] + '_steps.csv'
+    # cap_volt = filename + '_cap_voltage.csv'
+    #
+    # data_stats = os.path.join(outfolder, stats)
+    # data_stats = pd.read_csv(data_stats, sep=';')
+    # df_stats = pd.DataFrame(data_stats)
+    #
+    # data_cap_volt = os.path.join(outfolder, cap_volt)
+    # data_cap_volt = pd.read_csv(data_cap_volt, sep=';')
+    # df_cap_volt = pd.DataFrame(data_cap_volt)
+    #
+    # charge_cap = df_stats["Charge_Capacity(mAh/g)"]
+    # discharge_cap = df_stats["Discharge_Capacity(mAh/g)"]
+    # cycle_cap = zip(charge_cap, discharge_cap)
+    # cycle_cap_df = pd.DataFrame(cycle_cap, columns=["Charge_Capacity(mAh/g)",
+    #                                                 "Discharge_Capacity(mAh/g)"])
+    #
+    # # Plotting cycle vs. cap
+    # plt.figure()
+    # plt.plot(cycle_cap_df["Charge_Capacity(mAh/g)"], '^b',
+    #          cycle_cap_df["Discharge_Capacity(mAh/g)"], 'or')
+    # plt.legend(['Charge Capacity', 'Discharge capacity'], loc='best')
+    # plt.title('Capacity vs. Cycle')
+    # plt.xlabel('# Cycle')
+    # plt.ylabel('Capacity (mAh/g)')
+    # # plt.savefig(os.path.join(fig_folder, 'cap_cycle_sic006_74.pdf'))
+    #
+    # # Plotting voltage vs. cap
+    # capacity_sorting = []
+    # voltage_sorting = []
+    # for name in df_cap_volt:
+    #     if 'cap' in name:
+    #         capacity_sorting.append(df_cap_volt[name])
+    #     else:
+    #         voltage_sorting.append(df_cap_volt[name])
+    #
+    # plt.figure()
+    # number_plots = len(capacity_sorting)
+    # for cycle in range(number_plots):
+    #     plt.plot(capacity_sorting[cycle], voltage_sorting[cycle])
+    # plt.title('Capacity vs. Voltage')
+    # plt.xlabel('Capacity (mAh/g)')
+    # plt.ylabel('Voltage (V)')
+    # plt.legend(loc='best')
 
     # plt.savefig(os.path.join(fig_folder, 'volt_cap_sic006_74.pdf'))
 
