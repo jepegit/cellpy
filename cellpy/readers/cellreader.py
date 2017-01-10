@@ -1065,6 +1065,7 @@ class cellpydata(object):
         """
         try:
             new_tests = self._load_hdf5(cellpy_file)
+            print "x" # TODO: replace this with logging statement
         except AttributeError:
             new_tests = []
             print "This cellpy-file version is not supported by current reader (try to update cellpy)."
