@@ -744,7 +744,7 @@ class cellpydata(object):
         try:
             fidtable = store.select("cellpydata/fidtable")
         except:
-            print "no fidtable - you should update your hdf5-file"
+            self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable = None
         finally:
             store.close()
@@ -1032,7 +1032,7 @@ class cellpydata(object):
             return True
 
     def _report_empty_test(self):
-        print "empty set"
+        self.logger.info("empty set")
 
     def _empty_test(self):
         return None
@@ -1065,18 +1065,17 @@ class cellpydata(object):
         """
         try:
             new_tests = self._load_hdf5(cellpy_file)
-            print "x" # TODO: replace this with logging statement
         except AttributeError:
             new_tests = []
-            print "This cellpy-file version is not supported by current reader (try to update cellpy)."
+            self.logger.warning("This cellpy-file version is not supported by current reader (try to update cellpy).")
 
         if new_tests:
             for test in new_tests:
                 self.tests.append(test)
         else:
             # raise LoadError
-            print "Could not load"
-            print cellpy_file
+            self.logger.warning("Could not load")
+            self.logger.warning(str(cellpy_file))
 
         self.number_of_tests = len(self.tests)
         self.tests_status = self._validate_tests()
@@ -1092,11 +1091,10 @@ class cellpydata(object):
         """
         # loads from hdf5 formatted cellpy-file
         if not os.path.isfile(filename):
-            print "file does not exist"
-            print "  ",
-            print filename
+            self.logger.warning("file does not exist")
+            self.logger.warning(filename)
             sys.exit()
-        print "c",
+        self.logger.info("c")
         store = pd.HDFStore(filename)
         data = dataset()
 
@@ -1127,7 +1125,7 @@ class cellpydata(object):
             fidtable_selected = True
         except:
             fidtable = []
-            print "no fidtable - you should update your hdf5-file"
+            self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable_selected = False
         self.logger.debug("  h5")
         # this does not yet allow multiple sets
@@ -1158,7 +1156,6 @@ class cellpydata(object):
         newtests.append(data)
         store.close()
         # self.tests.append(data)
-        print "->"
         return newtests
 
     def _convert2fid_list(self, tbl):
@@ -1190,28 +1187,24 @@ class cellpydata(object):
             try:
                 os.remove(filename)
             except WindowsError as e:
-                print "could not remove tmp-file"
-                print filename
-                print e
+                self.logger.warning("could not remove tmp-file\n%s %s" % (filename, e))
 
     def _loadres_query(self, query=None, file_name=None, test_index = 0):
         new_tests = []
 
         if query is None:
             query = "where %s<4" % self.cycle_index_txt
-            print " query not given."
-            print " setting it to"
-            print query
+            self.logger.warning(" Query not given. Setting it to %s" % query)
+
         # -------checking existence of file--------
         if not os.path.isfile(file_name):
-            print "Missing file_\n   %s" % (file_name)
+            self.logger.warning("Missing file_\n   %s" % (file_name))
 
         # -------checking file size etc------------
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
-        print txt
 
         table_name_global = self.table_names["global"]
         table_name_stats = self.table_names["statistic"]
@@ -1234,8 +1227,7 @@ class cellpydata(object):
         sql = "select * from %s" % table_name_global
         global_data_df = pd.read_sql_query(sql, conn)
         tests = global_data_df[self.test_id_txt]
-        print "Tests in file:",
-        print tests
+        self.logger.warning("Tests in file: %s" % str(tests))
 
         data = dataset()
         test_no = tests[test_index]
