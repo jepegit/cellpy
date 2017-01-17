@@ -1351,6 +1351,9 @@ class cellpydata(object):
             # ------------------------------------------
             # ---loading-normal-data--------------------
             length_of_test, normal_df = self._load_res_normal_table(conn,data.test_ID)
+            if length_of_test == 0:
+                self.logger.warning("MemoryError")
+                return
             # ---loading-statistic-data-----------------
             sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
                                                                 self.test_id_txt,
@@ -1392,7 +1395,11 @@ class cellpydata(object):
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         if not self.chunk_size:
-            normal_df = pd.read_sql_query(sql, conn)
+            try:
+                normal_df = pd.read_sql_query(sql, conn)
+            except MemoryError:
+                self.logger.warning("MemoryError")
+                return 0, None
             length_of_test = normal_df.shape[0]
         else:
             normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
@@ -4108,7 +4115,7 @@ def loadcellcheck():
     cell_data.chunk_size = 100000
     #cell_data.last_chunk = 28
     cell_data.load_until_error = True
-    cell_data.max_res_filesize = 400000000
+    cell_data.max_res_filesize = 500000000
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:
