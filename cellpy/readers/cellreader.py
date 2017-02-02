@@ -337,7 +337,7 @@ class cellpydata(object):
     This class is the main work-horse for cellpy where all the functions for reading, selecting, and
     tweaking your data is located. It also contains the header definitions, both for the cellpy hdf5
     format, and for the various cell-tester file-formats that can be read. The class can contain
-    several tests and each test is stored in a list.
+    several tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
         tests (list): list of dataset objects.
