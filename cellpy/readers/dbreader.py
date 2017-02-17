@@ -434,6 +434,11 @@ class reader:
         insp = self._pick_info(serial_number, column_number)
         return insp
 
+    def inspect_limited_capacity_cycling(self, serial_number):
+        column_number = self.db_sheet_cols.LC
+        insp = self._pick_info(serial_number, column_number)
+        return insp
+
     def inspect_exists(self, serial_number):
         column_number = self.db_sheet_cols.exists
         insp = self._pick_info(serial_number, column_number)
