@@ -148,6 +148,11 @@ def save_cap_ocv(filepath, filename, outfolder, mass_cell,
 
     # plt.savefig(os.path.join(fig_folder, 'volt_cap_sic006_74.pdf'))
 
+if __name__ == '__main__':
+    print "This module cannot be run directly." \
+          "Use fitting_cell_ocv instead"
+
+
 # i_start_ini_down = 0.000153628   # from cycle 1-3
 # i_start_after_down = 0.000305533   # from cycle 4-end
 # i_start_down = [i_start_ini_down for _down in range(3)]

@@ -144,127 +144,6 @@ def manipulate_data(read_data):
     return pd.Series(sorted_data)
 
 
-def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35, tx=5, ty=4):
-    """Making a plot with given voltage data.
-
-    Args:
-        t (nd.array): Points in time [s].
-        v (nd.array): Measured voltage [V].
-        best (ModelResult): All fitted data in lmfit object Model.
-        subfigure (list): Subfigures with length 2
-        ms (int): Markersize of plots.
-        ti_lb_s (int): Ticks and labels size.
-
-    Returns:
-        None: Making a plot with matplotlib.pyplot
-
-    """
-    result_params = best.params
-    measured_err = (1. / best.weights)
-    result_residual = best.best_fit - v
-    # result_residual = best.residual
-
-    ext_t = np.arange(2 * t[-1])
-    ocv = result_params['ocv'] * np.ones(len(ext_t))
-
-    residual_figure = subfigure[0]
-    result_figure = subfigure[1]
-
-    residual_figure.plot(t, result_residual, label='Fit - Measured',
-                         linewidth=ms-10)
-    result_figure.plot(t, v, 'ob', label='Measured', ms=ms+10)
-    result_figure.plot(t, best.init_fit, '--k', label='Initial guess',
-                       linewidth=ms/3)
-    result_figure.plot(t, best.best_fit, '-r', label='Best fit',
-                       linewidth=ms-20)
-    result_figure.plot(ext_t, ocv, '-c', label='ocv', linewidth=ms/3)
-
-    residual_figure.set_ylabel('Residual (V)', size=ti_lb_s)
-    residual_figure.legend(loc='best', prop={'size': ti_lb_s})
-    residual_figure.set_xlabel('Time (s)', size=ti_lb_s)
-    residual_figure.yaxis.set_major_locator(MaxNLocator(ty))
-    residual_figure.xaxis.set_major_locator(MaxNLocator(tx))
-
-    for tick_resi in residual_figure.xaxis.get_major_ticks():
-        tick_resi.label.set_fontsize(ti_lb_s)
-    for tick_resi in residual_figure.yaxis.get_major_ticks():
-        tick_resi.label.set_fontsize(ti_lb_s)
-    residual_figure.grid()
-
-    result_figure.set_ylabel('Voltage (V)', size=ti_lb_s)
-    result_figure.legend(loc='best', prop={'size': ti_lb_s})
-    result_figure.set_xlim(-1, t[-1] + 300)
-    result_figure.yaxis.set_major_locator(MaxNLocator(ty))
-    result_figure.xaxis.set_major_locator(MaxNLocator(tx))
-
-
-    for tick_res in result_figure.xaxis.get_major_ticks():
-        tick_res.label.set_fontsize(ti_lb_s)
-    for tick_res in result_figure.yaxis.get_major_ticks():
-        tick_res.label.set_fontsize(ti_lb_s)
-
-    result_figure.grid()
-
-    # Suppose to add a text with the value of the parameters for the fit.
-
-    # mover = 0.1
-    # for s_r, res in r.items():
-    #     txt = '%s: %i' % (s_r, res)
-    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
-    #     mover += 0.1
-    # for s_c, cap in c.items():
-    #     txt = '%s: %i' % (s_c, cap)
-    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
-    #     mover += 0.1
-
-
-def plot_rc(t, best, ms=10, ti_lb_s=35):
-    result_params = best.params
-    tau_rc = {tau_key: tau_val for tau_key, tau_val in result_params.items()
-              if tau_key.startswith('tau')}
-    v0_rc = {v0_key: v0_val for v0_key, v0_val in result_params.items()
-             if v0_key.startswith('v0')}
-
-    rc_circuits = {rc[4:]: relaxation_rc(t, v0_rc['v0_%s' % rc[4:]], tau_rc[rc])
-                   for rc in tau_rc.keys()}
-    for rc_name, rc in rc_circuits.items():
-        plt.plot(t, rc, label='%s rc-circuit' % rc_name, linewidth=ms)
-    plt.legend(loc='best', prop={'size': ti_lb_s})
-    plt.xlabel('Time (s)', size=ti_lb_s)
-    plt.ylabel('Voltage(V)', size=ti_lb_s)
-    plt.grid()
-
-
-# def print_params(ini, fit):
-#
-#     for key, value in fit.items():
-#         print 'Guessed: %-9 Fitted Parameters:'
-#         print '\t'
-#         print '%s: %-9f %f' % (key, ini[key], value)
-
-# def relax_model(t, **params):
-#     """Fitting of parameters with lmfit.
-#
-#     Not using cell_ocv this time, but integrating it in the function itself.
-#
-#     Args:
-#         params (Parameters): Parameters that user want to fit.
-#         t (nd.array): Points in time [s].
-#
-#     Returns:
-#         nd.array: The expected voltage form model.
-#     """
-#     ocv_arr = np.array([params['ocv'] for _ in range((len(t)))])
-#     tau_rc = {key[4:]: val
-#               for key, val in params.items() if key.startswith('tau')}
-#     v0_rc = {key[3:]: val for key, val in params.items()
-#              if key.startswith('v0')}
-#     rc_d = v0_rc['d'] * np.exp(-t / tau_rc['d'])
-#     rc_ct = v0_rc['ct'] * np.exp(-t / tau_rc['ct'])
-#     total = rc_d + rc_ct + ocv_arr
-#     return total
-
-
 def relax_model(t, **params):
     """Fitting of parameters with lmfit.
 
@@ -896,6 +775,127 @@ def user_plot_voltage(time, voltage, fit, conf, name=None, ms=10, ti_la_s=35,
             print '------------------------------------------------------------'
 
 
+def plot_voltage(t, v, best, subfigure, ms=10, ti_lb_s=35, tx=5, ty=4):
+    """Making a plot with given voltage data.
+
+    Args:
+        t (nd.array): Points in time [s].
+        v (nd.array): Measured voltage [V].
+        best (ModelResult): All fitted data in lmfit object Model.
+        subfigure (list): Subfigures with length 2
+        ms (int): Markersize of plots.
+        ti_lb_s (int): Ticks and labels size.
+
+    Returns:
+        None: Making a plot with matplotlib.pyplot
+
+    """
+    result_params = best.params
+    measured_err = (1. / best.weights)
+    result_residual = best.best_fit - v
+    # result_residual = best.residual
+
+    ext_t = np.arange(2 * t[-1])
+    ocv = result_params['ocv'] * np.ones(len(ext_t))
+
+    residual_figure = subfigure[0]
+    result_figure = subfigure[1]
+
+    residual_figure.plot(t, result_residual, label='Fit - Measured',
+                         linewidth=ms-10)
+    result_figure.plot(t, v, 'ob', label='Measured', ms=ms+10)
+    result_figure.plot(t, best.init_fit, '--k', label='Initial guess',
+                       linewidth=ms/3)
+    result_figure.plot(t, best.best_fit, '-r', label='Best fit',
+                       linewidth=ms-20)
+    result_figure.plot(ext_t, ocv, '-c', label='ocv', linewidth=ms/3)
+
+    residual_figure.set_ylabel('Residual (V)', size=ti_lb_s)
+    residual_figure.legend(loc='best', prop={'size': ti_lb_s})
+    residual_figure.set_xlabel('Time (s)', size=ti_lb_s)
+    residual_figure.yaxis.set_major_locator(MaxNLocator(ty))
+    residual_figure.xaxis.set_major_locator(MaxNLocator(tx))
+
+    for tick_resi in residual_figure.xaxis.get_major_ticks():
+        tick_resi.label.set_fontsize(ti_lb_s)
+    for tick_resi in residual_figure.yaxis.get_major_ticks():
+        tick_resi.label.set_fontsize(ti_lb_s)
+    residual_figure.grid()
+
+    result_figure.set_ylabel('Voltage (V)', size=ti_lb_s)
+    result_figure.legend(loc='best', prop={'size': ti_lb_s})
+    result_figure.set_xlim(-1, t[-1] + 300)
+    result_figure.yaxis.set_major_locator(MaxNLocator(ty))
+    result_figure.xaxis.set_major_locator(MaxNLocator(tx))
+
+
+    for tick_res in result_figure.xaxis.get_major_ticks():
+        tick_res.label.set_fontsize(ti_lb_s)
+    for tick_res in result_figure.yaxis.get_major_ticks():
+        tick_res.label.set_fontsize(ti_lb_s)
+
+    result_figure.grid()
+
+    # Suppose to add a text with the value of the parameters for the fit.
+
+    # mover = 0.1
+    # for s_r, res in r.items():
+    #     txt = '%s: %i' % (s_r, res)
+    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
+    #     mover += 0.1
+    # for s_c, cap in c.items():
+    #     txt = '%s: %i' % (s_c, cap)
+    #     plt.text(mover, 0.5, txt, bbox=dict(facecolor='red'))
+    #     mover += 0.1
+
+
+def plot_rc(t, best, ms=10, ti_lb_s=35):
+    result_params = best.params
+    tau_rc = {tau_key: tau_val for tau_key, tau_val in result_params.items()
+              if tau_key.startswith('tau')}
+    v0_rc = {v0_key: v0_val for v0_key, v0_val in result_params.items()
+             if v0_key.startswith('v0')}
+
+    rc_circuits = {rc[4:]: relaxation_rc(t, v0_rc['v0_%s' % rc[4:]], tau_rc[rc])
+                   for rc in tau_rc.keys()}
+    for rc_name, rc in rc_circuits.items():
+        plt.plot(t, rc, label='%s rc-circuit' % rc_name, linewidth=ms)
+    plt.legend(loc='best', prop={'size': ti_lb_s})
+    plt.xlabel('Time (s)', size=ti_lb_s)
+    plt.ylabel('Voltage(V)', size=ti_lb_s)
+    plt.grid()
+
+
+# def print_params(ini, fit):
+#
+#     for key, value in fit.items():
+#         print 'Guessed: %-9 Fitted Parameters:'
+#         print '\t'
+#         print '%s: %-9f %f' % (key, ini[key], value)
+
+# def relax_model(t, **params):
+#     """Fitting of parameters with lmfit.
+#
+#     Not using cell_ocv this time, but integrating it in the function itself.
+#
+#     Args:
+#         params (Parameters): Parameters that user want to fit.
+#         t (nd.array): Points in time [s].
+#
+#     Returns:
+#         nd.array: The expected voltage form model.
+#     """
+#     ocv_arr = np.array([params['ocv'] for _ in range((len(t)))])
+#     tau_rc = {key[4:]: val
+#               for key, val in params.items() if key.startswith('tau')}
+#     v0_rc = {key[3:]: val for key, val in params.items()
+#              if key.startswith('v0')}
+#     rc_d = v0_rc['d'] * np.exp(-t / tau_rc['d'])
+#     rc_ct = v0_rc['ct'] * np.exp(-t / tau_rc['ct'])
+#     total = rc_d + rc_ct + ocv_arr
+#     return total
+
+
 def plot_params(voltage, fit, rc_params, i_start, cell_name, mass_frac_error,
                 fig_folder, sur_area=None, sur_area_err=None, i_err=0.000000125,
                 ms=10, ti_la_s=35, tit_s=45, tx=5, ty=5, single=False,
@@ -1463,4 +1463,128 @@ def print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125):
                       "(%3.1f%%)" % (key_name, par_val, unit_text,
                                      error_para[key_name], unit_text,
                                      fractional_err[key_name])
+if __name__ == '__main__':
+    # Call guessing_parameters(). Use these parameters to give 'lmfit'_'s
+    # Parameter an initial parameter value. Call ocv_relax_func() and subtract
+    # from measured data to get residual.
+    # For relaxation of a single rc-circuit, call relaxation_rc().
+    import os
+    import sys
+    import matplotlib.pyplot as plt
+    from cellpy import cellreader
+
+    print 50 * "="
+    print "FITTING OCV ROUTINES - TEST"
+    print 50 * "-"
+
+    # filename(s) and folders etc
+    resfilename = "20160805_test001_45_cc_01.res"
+    datafolder_in = r'..\data_ex'
+    datafolder_out = r'..\outdata'
+
+    # parameters about the run (mass (mg))
+    mass = 0.982
+
+    print 50 * "-"
+    print "Loading data"
+    print 50 * "-"
+
+    print "loading file",
+    print resfilename
+    d = cellreader.cellpydata()
+    d.loadres(os.path.join(datafolder_in,resfilename))
+    d.set_mass(mass)
+    d.create_step_table()  # go through all steps and decide what they are
+
+    list_of_cycles = d.get_cycle_numbers()
+    print "your file contains %i cycles" % (len(list_of_cycles))
+    print list_of_cycles
+
+    cycle = 10
+    print "selecting cycle %i" % cycle
+    time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle) # ocv relax after lithiation
+    # This only gives the t,v for the step. We also need the last point from the previous step to
+    # establish starting voltage before the Ohmic "drop" and the current.
+
+    _cycle = cycle-1
+    _v = d.get_voltage(_cycle)
+    _t = d.get_timestamp(_cycle)
+    _c = d.get_current(_cycle)
+
+    # Plotting previous cycle
+    # f, axarr = plt.subplots(2, sharex=True)
+    # axarr[0].plot(_t, _c)
+    # axarr[1].scatter(_t, _v)
+    # plt.show()
+
+    voltage0 = 0.05
+    current0 = -0.0003045602
+
+    # Plotting ocv-rlx-data
+    # plt.plot(time1,voltage1)
+    # plt.show()
+
+    print 50 * "-"
+    print "Guessing starting parameters"
+    print 50 * "-"
+    # Here we should have a function that guesses the starting parameters
+    # Input should be the full ocv-rlx dataset (including the first point at t=0)
+
+    # Found this function by TorK:
+    # ex_guess = guessing_parameters(v_start=ex_v_s, i_start=ex_i_s,
+    #                                v_0=ex_v0, v_ocv=ex_v_oc, contribute=ex_contribute, tau_rc=ex_tau)
+    # - but I have not tested it yet.
+
+    fraction_contributions = {'ct': 0.2, 'd': 0.8}  # ct = charge-transfer, d = diffusion
+    tau_guessed = {'ct': 50, 'd': 800}  # tau = time constant ( = R*C)
+
+    print 50 * "-"
+    print "Creating Model"
+    print 50 * "-"
+
+    # Need to create a model (lmfit). Seems that TorK has merged creating the model, guessing,
+    # and loading data into one function:
+    # model_up, time_up, voltage_up = define_model(filepath=datafolder,
+    #                                              filename=filename_up,
+    #                                              guess_tau=tau_guessed,
+    #                                              contribution=contri,
+    #                                              c_rate=c_rate[0],
+    #                                              ideal_cap=cell_capacity,
+    #                                              mass=cell_mass,
+    #                                              v_start=v_start_up)
+    # This function needs to be "split" so that loading, model creation and guessing can
+    # be done as individual steps.
+
+    print 50 * "-"
+    print "Fitting Model"
+    print 50 * "-"
+
+    # TorK has provide 2 functions for this:
+    # fit_up, rc_para_up = fit_with_model(model_up, time_up, voltage_up, tau_guessed,
+    #                                     contri, c_rate, change_i, cell_capacity,
+    #                                     cell_mass, v_start_up)
+    #
+    # and
+    #
+    # fit_up, rc_para_up = fit_with_conf(model_up, time_up, voltage_up, tau_guessed,
+    #                                     contri, c_rate, change_i, cell_capacity,
+    #                                     cell_mass, v_start_up)
+    #
+    # The current at t=0 is calculated using the c_rate (and cell_capacity). It would be
+    # better to use the measured current (last measured point at previous step).
+    #
+    # The variable 'change_i' is a bit cryptic...
+
+    print 50 * "-"
+    print "Reporting Model"
+    print 50 * "-"
+
+    # plot_params(voltage_up, fit_up, rc_para_up)
+    # user_plot_voltage(time_up, voltage_up, fit_up)
+    # print_params(fit, rc_params, i_start, mass_frac_error, i_err=0.000000125)
+
+
+
+    sys.exit()
+
 
