@@ -43,8 +43,10 @@ class DbSheetCols:
             self.comment_slurry = 12 + n
             self.finished_run = 13 + n
             self.F = 13 + n
-            self.hd5f_fixed = 13 + n
-            self.M = 14 + n
+            self.M = 13 + n
+
+            self.hd5f_fixed = 14 + n
+            self.freeze = 14 + n
             self.VC = 15 + n
             self.FEC = 16 + n
             self.LS = 17 + n
@@ -52,7 +54,14 @@ class DbSheetCols:
             self.B = 19 + n
             self.RATE = 20 + n
             self.LC = 21 + n
-            self.SINODE = 22 + n
+
+            self.A1 = 22 + n
+            self.A2 = 23 + n
+            self.A3 = 24 + n
+            self.A4 = 25 + n
+            self.A5 = 26 + n
+            self.A6 = 27 + n
+            self.channel = 28 + n
 
             self.am = 29 + n
             self.active_material = 29 + n
@@ -422,6 +431,11 @@ class reader:
 
     def inspect_hd5f_fixed(self, serial_number):
         column_number = self.db_sheet_cols.hd5f_fixed
+        insp = self._pick_info(serial_number, column_number)
+        return insp
+
+    def inspect_limited_capacity_cycling(self, serial_number):
+        column_number = self.db_sheet_cols.LC
         insp = self._pick_info(serial_number, column_number)
         return insp
 

@@ -337,7 +337,7 @@ class cellpydata(object):
     This class is the main work-horse for cellpy where all the functions for reading, selecting, and
     tweaking your data is located. It also contains the header definitions, both for the cellpy hdf5
     format, and for the various cell-tester file-formats that can be read. The class can contain
-    several tests and each test is stored in a list.
+    several tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
         tests (list): list of dataset objects.
@@ -744,7 +744,7 @@ class cellpydata(object):
         try:
             fidtable = store.select("cellpydata/fidtable")
         except:
-            print "no fidtable - you should update your hdf5-file"
+            self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable = None
         finally:
             store.close()
@@ -1032,7 +1032,7 @@ class cellpydata(object):
             return True
 
     def _report_empty_test(self):
-        print "empty set"
+        self.logger.info("empty set")
 
     def _empty_test(self):
         return None
@@ -1067,15 +1067,15 @@ class cellpydata(object):
             new_tests = self._load_hdf5(cellpy_file)
         except AttributeError:
             new_tests = []
-            print "This cellpy-file version is not supported by current reader (try to update cellpy)."
+            self.logger.warning("This cellpy-file version is not supported by current reader (try to update cellpy).")
 
         if new_tests:
             for test in new_tests:
                 self.tests.append(test)
         else:
             # raise LoadError
-            print "Could not load"
-            print cellpy_file
+            self.logger.warning("Could not load")
+            self.logger.warning(str(cellpy_file))
 
         self.number_of_tests = len(self.tests)
         self.tests_status = self._validate_tests()
@@ -1091,11 +1091,10 @@ class cellpydata(object):
         """
         # loads from hdf5 formatted cellpy-file
         if not os.path.isfile(filename):
-            print "file does not exist"
-            print "  ",
-            print filename
+            self.logger.warning("file does not exist")
+            self.logger.warning(filename)
             sys.exit()
-        print "c",
+        self.logger.info("c")
         store = pd.HDFStore(filename)
         data = dataset()
 
@@ -1126,7 +1125,7 @@ class cellpydata(object):
             fidtable_selected = True
         except:
             fidtable = []
-            print "no fidtable - you should update your hdf5-file"
+            self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable_selected = False
         self.logger.debug("  h5")
         # this does not yet allow multiple sets
@@ -1157,7 +1156,6 @@ class cellpydata(object):
         newtests.append(data)
         store.close()
         # self.tests.append(data)
-        print "->"
         return newtests
 
     def _convert2fid_list(self, tbl):
@@ -1189,28 +1187,24 @@ class cellpydata(object):
             try:
                 os.remove(filename)
             except WindowsError as e:
-                print "could not remove tmp-file"
-                print filename
-                print e
+                self.logger.warning("could not remove tmp-file\n%s %s" % (filename, e))
 
     def _loadres_query(self, query=None, file_name=None, test_index = 0):
         new_tests = []
 
         if query is None:
             query = "where %s<4" % self.cycle_index_txt
-            print " query not given."
-            print " setting it to"
-            print query
+            self.logger.warning(" Query not given. Setting it to %s" % query)
+
         # -------checking existence of file--------
         if not os.path.isfile(file_name):
-            print "Missing file_\n   %s" % (file_name)
+            self.logger.warning("Missing file_\n   %s" % (file_name))
 
         # -------checking file size etc------------
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
-        print txt
 
         table_name_global = self.table_names["global"]
         table_name_stats = self.table_names["statistic"]
@@ -1233,8 +1227,7 @@ class cellpydata(object):
         sql = "select * from %s" % table_name_global
         global_data_df = pd.read_sql_query(sql, conn)
         tests = global_data_df[self.test_id_txt]
-        print "Tests in file:",
-        print tests
+        self.logger.warning("Tests in file: %s" % str(tests))
 
         data = dataset()
         test_no = tests[test_index]
@@ -1358,6 +1351,9 @@ class cellpydata(object):
             # ------------------------------------------
             # ---loading-normal-data--------------------
             length_of_test, normal_df = self._load_res_normal_table(conn,data.test_ID)
+#            if length_of_test == 0:
+#                self.logger.warning("MemoryError")
+#                return
             # ---loading-statistic-data-----------------
             sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
                                                                 self.test_id_txt,
@@ -1399,7 +1395,16 @@ class cellpydata(object):
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         if not self.chunk_size:
+#            try:
             normal_df = pd.read_sql_query(sql, conn)
+#            except MemoryError as e:
+#                self.logger.warning("MemoryError")
+#                self.logger.warning(e)
+#                return 0, None
+#            except Exception as e:
+#                self.logger.warning("Exception")
+#                self.logger.warning(e)
+#                return 0, None
             length_of_test = normal_df.shape[0]
         else:
             normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
@@ -4115,7 +4120,7 @@ def loadcellcheck():
     cell_data.chunk_size = 100000
     #cell_data.last_chunk = 28
     cell_data.load_until_error = True
-    cell_data.max_res_filesize = 400000000
+    cell_data.max_res_filesize = 500000000
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:
