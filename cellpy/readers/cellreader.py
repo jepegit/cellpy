@@ -509,11 +509,30 @@ class cellpydata(object):
         if instrument == "arbin":
             self._set_arbin()
 
-    def _set_headers_normal(self):
+    @staticmethod
+    def _set_headers_normal():
         # TODO: create dictionary for normal headers
         # here we should set the normal headers (for the dfdata)
         # at the moment, the script uses same headers as arbin
         headers_normal = dict()
+        headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
+        headers_normal['ac_impedance_txt'] = 'AC_Impedance'
+        headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
+        headers_normal['charge_energy_txt'] = 'Charge_Energy'
+        headers_normal['current_txt'] = 'Current'
+        headers_normal['cycle_index_txt'] = 'Cycle_Index'
+        headers_normal['data_point_txt'] = 'Data_Point'
+        headers_normal['datetime_txt'] = 'DateTime'
+        headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
+        headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
+        headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
+        headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
+        headers_normal['step_index_txt'] = 'Step_Index'
+        headers_normal['step_time_txt'] = 'Step_Time'
+        headers_normal['test_id_txt'] = 'Test_ID'
+        headers_normal['test_time_txt'] = 'Test_Time'
+        headers_normal['voltage_txt'] = 'Voltage'
+        headers_normal['dv_dt_txt'] = 'dV/dt'
         return headers_normal
 
     def _set_arbin(self):
@@ -561,24 +580,25 @@ class cellpydata(object):
         self.test_name_txt = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
 
         # - normal table headings
-        self.aci_phase_angle_txt = 'ACI_Phase_Angle'
-        self.ac_impedance_txt = 'AC_Impedance'
-        self.charge_capacity_txt = 'Charge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
-        self.charge_energy_txt = 'Charge_Energy'  # KEEP FOR CELLPY FILE FORMAT
-        self.current_txt = 'Current'  # KEEP FOR CELLPY FILE FORMAT
-        self.cycle_index_txt = 'Cycle_Index'  # KEEP FOR CELLPY FILE FORMAT
-        self.data_point_txt = 'Data_Point'  # KEEP FOR CELLPY FILE FORMAT
-        self.datetime_txt = 'DateTime'  # KEEP FOR CELLPY FILE FORMAT
-        self.discharge_capacity_txt = 'Discharge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
-        self.discharge_energy_txt = 'Discharge_Energy'  # KEEP FOR CELLPY FILE FORMAT
-        self.internal_resistance_txt = 'Internal_Resistance'  # KEEP FOR CELLPY FILE FORMAT
-        self.is_fc_data_txt = 'Is_FC_Data'
-        self.step_index_txt = 'Step_Index'  # KEEP FOR CELLPY FILE FORMAT
-        self.step_time_txt = 'Step_Time'  # KEEP FOR CELLPY FILE FORMAT
-        self.test_id_txt = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT (already defined in global table headers list)
-        self.test_time_txt = 'Test_Time'  # KEEP FOR CELLPY FILE FORMAT
-        self.voltage_txt = 'Voltage'  # KEEP FOR CELLPY FILE FORMAT
-        self.dv_dt_txt = 'dV/dt'
+        # COMMENTED OUT 08.03.2017 - use self.headers_normal['aci_phase_angle_txt'] etc. instead.
+        # self.aci_phase_angle_txt = 'ACI_Phase_Angle'
+        # self.ac_impedance_txt = 'AC_Impedance'
+        # self.charge_capacity_txt = 'Charge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
+        # self.charge_energy_txt = 'Charge_Energy'  # KEEP FOR CELLPY FILE FORMAT
+        # self.current_txt = 'Current'  # KEEP FOR CELLPY FILE FORMAT
+        # self.cycle_index_txt = 'Cycle_Index'  # KEEP FOR CELLPY FILE FORMAT
+        # self.data_point_txt = 'Data_Point'  # KEEP FOR CELLPY FILE FORMAT
+        # self.datetime_txt = 'DateTime'  # KEEP FOR CELLPY FILE FORMAT
+        # self.discharge_capacity_txt = 'Discharge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
+        # self.discharge_energy_txt = 'Discharge_Energy'  # KEEP FOR CELLPY FILE FORMAT
+        # self.internal_resistance_txt = 'Internal_Resistance'  # KEEP FOR CELLPY FILE FORMAT
+        # self.is_fc_data_txt = 'Is_FC_Data'
+        # self.step_index_txt = 'Step_Index'  # KEEP FOR CELLPY FILE FORMAT
+        # self.step_time_txt = 'Step_Time'  # KEEP FOR CELLPY FILE FORMAT
+        # self.test_id_txt = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT (already defined in global table headers list)
+        # self.test_time_txt = 'Test_Time'  # KEEP FOR CELLPY FILE FORMAT
+        # self.voltage_txt = 'Voltage'  # KEEP FOR CELLPY FILE FORMAT
+        # self.dv_dt_txt = 'dV/dt'
 
         # - units used
         self.raw_units = dict()
@@ -883,8 +903,12 @@ class cellpydata(object):
         """Load a raw data-file.
 
         Args:
-            file_names (list of raw-file names:
+            file_names (list of raw-file names): uses cellpydata.file_names if None. If the
+               list contains more than one file name, then the runs will be merged together.
         """
+        # This function only loads one test at a time (but could contain several files). The
+        # function loadres() also implements loading several tests (using list of lists as
+        # input.
         if file_names:
             self.file_names = file_names
 
@@ -920,7 +944,14 @@ class cellpydata(object):
         self.tests_status = self._validate_tests()
 
     def loadres(self, filenames=None, check_file_type=True):
-        """Loads the data into the datastructure."""
+        """Convenience function for loading arbin-type data into the datastructure.
+
+        Args:
+            file_names ((lists of) list of raw-file names): uses cellpy.file_names if None.
+                If list-of-list, it loads each list into separate tests. The files in the
+                inner list will be merged.
+            check_file_type (bool): check file type if True (res-, or cellpy-format)
+        """
         # TODO: use type-checking
         txt = "number of tests: %i" % len(self.file_names)
         self.logger.debug(txt)
@@ -1016,12 +1047,16 @@ class cellpydata(object):
     #            self.number_of_tests=1
 
     def _validate_tests(self, level=0):
+        self.logger.debug("validating test")
         level = 0
         # simple validation for finding empty tests - should be expanded to
         # find not-complete tests, tests with missing prms etc
         v = []
         if level == 0:
             for test in self.tests:
+                # check that it contains all the necessary headers (and add missing ones)
+                # test = self._clean_up_normal_table(test)
+                # check that the test is not empty
                 v.append(self._is_not_empty_test(test))
         return v
 
@@ -1030,6 +1065,18 @@ class cellpydata(object):
             return False
         else:
             return True
+
+    def _clean_up_normal_table(self, test=None, test_number=None):
+        # check that test contains all the necessary headers (and add missing ones)
+        if test is None:
+            test_number = self._validate_test_number(test_number)
+            test = self.tests[test_number]
+
+        cellpy_headers = self.headers_normal
+        col_headers = test.dfdata.columns
+
+        self.logger.debug("_clean_up_normal_table: not implemented yet")
+        return test
 
     def _report_empty_test(self):
         self.logger.info("empty set")
@@ -1193,7 +1240,7 @@ class cellpydata(object):
         new_tests = []
 
         if query is None:
-            query = "where %s<4" % self.cycle_index_txt
+            query = "where %s<4" % self.headers_normal['cycle_index_txt']
             self.logger.warning(" Query not given. Setting it to %s" % query)
 
         # -------checking existence of file--------
@@ -1205,6 +1252,8 @@ class cellpydata(object):
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
+
+        # TODO (08.08.2017, jepe) Define instrument-dependent table_names instance etc.
 
         table_name_global = self.table_names["global"]
         table_name_stats = self.table_names["statistic"]
@@ -1251,12 +1300,12 @@ class cellpydata(object):
         # ---loading-normal-data--------------------
 
         print "Loading data."
-        print self.cycle_index_txt
+        print self.headers_normal['cycle_index_txt']
         sql_1 = "select * "
         sql_2 = "from %s " % table_name_normal
         sql_3 = "where %s=%s " % (self.test_id_txt, data.test_ID)
         sql_4 = "AND "
-        sql_5 = " order by %s" % self.data_point_txt
+        sql_5 = " order by %s" % self.headers_normal['data_point_txt']
         sql = sql_1 + sql_2 + sql_3 + sql_4 + query + sql_5
 
         normal_df = pd.read_sql_query(sql, conn)
@@ -1266,7 +1315,7 @@ class cellpydata(object):
         sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
                                                             self.test_id_txt,
                                                             data.test_ID,
-                                                            self.data_point_txt)
+                                                            self.headers_normal['data_point_txt'])
         summary_df = pd.read_sql_query(sql, conn)
         data.dfsummary = summary_df
         data.dfdata = normal_df
@@ -1327,7 +1376,7 @@ class cellpydata(object):
         sql = "select * from %s" % table_name_global
         global_data_df = pd.read_sql_query(sql, conn)
         # col_names = list(global_data_df.columns.values)
-        tests = global_data_df[self.test_id_txt]
+        tests = global_data_df[self.headers_normal['test_id_txt']] # OBS
         number_of_sets = len(tests)
         print ".",
 
@@ -1344,7 +1393,7 @@ class cellpydata(object):
             data.item_ID = global_data_df[self.item_id_txt][test_no]
             data.schedule_file_name = global_data_df[self.schedule_file_name_txt][test_no]
             data.start_datetime = global_data_df[self.start_datetime_txt][test_no]
-            data.test_ID = int(global_data_df[self.test_id_txt][test_no])
+            data.test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no]) # OBS
             data.test_name = global_data_df[self.test_name_txt][test_no]
             data.raw_data_files.append(fid)
 
@@ -1356,9 +1405,9 @@ class cellpydata(object):
 #                return
             # ---loading-statistic-data-----------------
             sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
-                                                                self.test_id_txt,
+                                                                self.headers_normal['test_id_txt'],
                                                                 data.test_ID,
-                                                                self.data_point_txt)
+                                                                self.headers_normal['data_point_txt'])
             summary_df = pd.read_sql_query(sql, conn)
             data.dfsummary = summary_df
             data.dfdata = normal_df
@@ -1381,17 +1430,17 @@ class cellpydata(object):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.test_id_txt, test_ID)
+        sql_3 = "where %s=%s " % (self.headers_normal['test_id_txt'], test_ID)
         sql_4 = ""
 
         if self.limit_loaded_cycles:
             if len(self.limit_loaded_cycles)>1:
-                sql_4 = "AND %s>%i " % (self.cycle_index_txt, self.limit_loaded_cycles[0])
-                sql_4 += "AND %s<%i " % (self.cycle_index_txt, self.limit_loaded_cycles[-1])
+                sql_4 = "AND %s>%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[0])
+                sql_4 += "AND %s<%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[-1])
             else:
-                sql_4 = "AND %s=%i " % (self.cycle_index_txt, self.limit_loaded_cycles[0])
+                sql_4 = "AND %s=%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[0])
 
-        sql_5 = "order by %s" % self.data_point_txt
+        sql_5 = "order by %s" % self.headers_normal['data_point_txt']
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         if not self.chunk_size:
@@ -1488,17 +1537,17 @@ class cellpydata(object):
         start_time_2 = t2.start_datetime
         diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(start_time_1)
         diff_time = diff_time.total_seconds()
-        sort_key = self.datetime_txt  # DateTime
+        sort_key = self.headers_normal['datetime_txt']  # DateTime
         # mod data points for set 2
-        data_point_header = self.data_point_txt
+        data_point_header = self.headers_normal['data_point_txt']
         last_data_point = max(t1.dfdata[data_point_header])
         t2.dfdata[data_point_header] = t2.dfdata[data_point_header] + last_data_point
         # mod cycle index for set 2
-        cycle_index_header = self.cycle_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
         last_cycle = max(t1.dfdata[cycle_index_header])
         t2.dfdata[cycle_index_header] = t2.dfdata[cycle_index_header] + last_cycle
         # mod test time for set 2
-        test_time_header = self.test_time_txt
+        test_time_header = self.headers_normal['test_time_txt']
         t2.dfdata[test_time_header] = t2.dfdata[test_time_header] + diff_time
         # merging
         dfdata2 = pd.concat([t1.dfdata, t2.dfdata], ignore_index=True)
@@ -1543,7 +1592,7 @@ class cellpydata(object):
 
         if merge_step_table:
             if step_table_made:
-                cycle_index_header = self.cycle_index_txt
+                cycle_index_header = self.headers_normal['cycle_index_txt']
                 t2.step_table[self.headers_step_table["cycle"]] = t2.dfdata[self.headers_step_table["cycle"]] + last_cycle
                 step_table2 = pd.concat([t1.step_table, t2.step_table], ignore_index=True)
                 test.step_table = step_table2
@@ -1554,7 +1603,7 @@ class cellpydata(object):
         test.no_cycles = max(dfdata2[cycle_index_header])
         test.dfdata = dfdata2
         test.merged = True
-        # to-do:
+        # TODO (jepe) update merging for more variables
         #        self.test_no = None
         #        self.charge_steps = None
         #        self.discharge_steps = None
@@ -1602,11 +1651,7 @@ class cellpydata(object):
             self._report_empty_test()
             return
 
-
-
-
-
-        step_index_header = self.step_index_txt
+        step_index_header = self.headers_normal['step_index_txt']
         self.logger.debug("*** validating step table")
         d = self.tests[test_number].dfdata
         s = self.tests[test_number].step_table
@@ -1614,7 +1659,7 @@ class cellpydata(object):
         if not self.tests[test_number].step_table_made:
             return False
 
-        no_cycles_dfdata = np.amax(d[self.cycle_index_txt])
+        no_cycles_dfdata = np.amax(d[self.headers_normal['cycle_index_txt']])
         headers_step_table = self.headers_step_table
         no_cycles_step_table = np.amax(s[headers_step_table["cycle"]])
 
@@ -1633,7 +1678,7 @@ class cellpydata(object):
             else:
                 for j in range(1, no_cycles_dfdata + 1):
                     cycle_number = j
-                    no_steps_dfdata = len(np.unique(d.loc[d[self.cycle_index_txt] == cycle_number, self.step_index_txt]))
+                    no_steps_dfdata = len(np.unique(d.loc[d[self.headers_normal['cycle_index_txt']] == cycle_number, self.headers_normal['step_index_txt']]))
                     no_steps_step_table = len(s.loc[s[headers_step_table["cycle"]] == cycle_number,
                                                     headers_step_table["step"]])
                     if no_steps_dfdata != no_steps_step_table:
@@ -1774,13 +1819,13 @@ class cellpydata(object):
         # 'type', 'info']
 
         # --- defining header txts ----
-        current_hdtxt = self.current_txt
-        voltage_hdtxt = self.voltage_txt
-        steptime_hdtxt = self.step_time_txt
-        ir_hdtxt = self.internal_resistance_txt
+        current_hdtxt = self.headers_normal['current_txt']
+        voltage_hdtxt = self.headers_normal['voltage_txt']
+        steptime_hdtxt = self.headers_normal['step_time_txt']
+        ir_hdtxt = self.headers_normal['internal_resistance_txt']
         ir_change_hdtxt = self.headers_step_table["internal_resistance_change"]
-        charge_hdtxt = self.charge_capacity_txt
-        discharge_hdtxt = self.discharge_capacity_txt
+        charge_hdtxt = self.headers_normal['charge_capacity_txt']
+        discharge_hdtxt = self.headers_normal['discharge_capacity_txt']
 
         # print f.head()
 
@@ -1886,9 +1931,9 @@ class cellpydata(object):
             self._report_empty_test()
             return
 
-        cycle_index_header = self.cycle_index_txt
-        step_index_header = self.step_index_txt
-        internal_resistance_txt = self.internal_resistance_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        step_index_header = self.headers_normal['step_index_txt']
+        internal_resistance_txt = self.headers_normal['internal_resistance_txt']
 
         headers_step_table = self.headers_step_table
 
@@ -2171,10 +2216,10 @@ class cellpydata(object):
         # test.dfdata
 
         # check if columns exist
-        c_txt = self.cycle_index_txt
-        s_txt = self.step_index_txt
-        y_txt = self.voltage_txt
-        x_txt = self.discharge_capacity_txt  # jepe fix
+        c_txt = self.headers_normal['cycle_index_txt']
+        s_txt = self.headers_normal['step_index_txt']
+        y_txt = self.headers_normal['voltage_txt']
+        x_txt = self.headers_normal['discharge_capacity_txt']  # jepe fix
 
         # no_cycles=np.amax(test.dfdata[c_txt])
         # print d.columns
@@ -2200,7 +2245,7 @@ class cellpydata(object):
             self._report_empty_test()
             return
         step_dict = {}
-        cycles = self.tests[test_number].dfdata[self.cycle_index_txt]
+        cycles = self.tests[test_number].dfdata[self.headers_normal['cycle_index_txt']]
         unique_cycles = cycles.unique()
         # number_of_cycles = len(unique_cycles)
         number_of_cycles = np.amax(cycles)
@@ -2218,9 +2263,9 @@ class cellpydata(object):
         crate_dict[cycle] = [step, c-rate]
         """
         self.logger.debug("this is using the old-type step-dict. Could very well be that it does not work")
-        c_txt = self.cycle_index_txt
-        s_txt = self.step_index_txt
-        x_txt = self.current_txt
+        c_txt = self.headers_normal['cycle_index_txt']
+        s_txt = self.headers_normal['step_index_txt']
+        x_txt = self.headers_normal['current_txt']
 
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -2509,8 +2554,8 @@ class cellpydata(object):
 
     def _cap_mod_summary(self, dfsummary, capacity_modifier):
         # modifies the summary table
-        discharge_title = self.discharge_capacity_txt
-        charge_title = self.charge_capacity_txt
+        discharge_title = self.headers_normal['discharge_capacity_txt']
+        charge_title = self.headers_normal['charge_capacity_txt']
         chargecap = 0.0
         dischargecap = 0.0
         # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
@@ -2534,12 +2579,12 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
-        cycle_index_header = self.cycle_index_txt
-        step_index_header = self.step_index_txt
-        discharge_index_header = self.discharge_capacity_txt
-        discharge_energy_index_header = self.discharge_energy_txt
-        charge_index_header = self.charge_capacity_txt
-        charge_energy_index_header = self.charge_energy_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        step_index_header = self.headers_normal['step_index_txt']
+        discharge_index_header = self.headers_normal['discharge_capacity_txt']
+        discharge_energy_index_header = self.headers_normal['discharge_energy_txt']
+        charge_index_header = self.headers_normal['charge_capacity_txt']
+        charge_energy_index_header = self.headers_normal['charge_energy_txt']
 
         dfdata = self.tests[test_number].dfdata
 
@@ -2607,9 +2652,9 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
-        cycle_index_header = self.cycle_index_txt
-        voltage_header = self.voltage_txt
-        step_index_header = self.step_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        voltage_header = self.headers_normal['voltage_txt']
+        step_index_header = self.headers_normal['step_index_txt']
         test = self.tests[test_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
@@ -2625,9 +2670,9 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
-        cycle_index_header = self.cycle_index_txt
-        voltage_header = self.voltage_txt
-        # step_index_header  = self.step_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        voltage_header = self.headers_normal['voltage_txt']
+        # step_index_header  = self.headers_normal['step_index_txt']
 
         test = self.tests[test_number].dfdata
         if cycle:
@@ -2656,9 +2701,9 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
-        cycle_index_header = self.cycle_index_txt
-        current_header = self.current_txt
-        # step_index_header  = self.step_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        current_header = self.headers_normal['current_txt']
+        # step_index_header  = self.headers_normal['step_index_txt']
 
         test = self.tests[test_number].dfdata
         if cycle:
@@ -2688,9 +2733,9 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
-        cycle_index_header = self.cycle_index_txt
-        step_time_header = self.step_time_txt
-        step_index_header = self.step_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        step_time_header = self.headers_normal['step_time_txt']
+        step_index_header = self.headers_normal['step_index_txt']
         test = self.tests[test_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
@@ -2706,9 +2751,9 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
-        cycle_index_header = self.cycle_index_txt
-        timestamp_header = self.test_time_txt
-        step_index_header = self.step_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        timestamp_header = self.headers_normal['test_time_txt']
+        step_index_header = self.headers_normal['step_index_txt']
         test = self.tests[test_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
@@ -2724,8 +2769,8 @@ class cellpydata(object):
         if test_number is None:
             self._report_empty_test()
             return
-        cycle_index_header = self.cycle_index_txt
-        timestamp_header = self.test_time_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        timestamp_header = self.headers_normal['test_time_txt']
 
         v = None
         test = self.tests[test_number].dfdata
@@ -2891,14 +2936,14 @@ class cellpydata(object):
         c = None
         v = None
         if cap_type == "charge":
-            column_txt = self.charge_capacity_txt
+            column_txt = self.headers_normal['charge_capacity_txt']
         else:
-            column_txt = self.discharge_capacity_txt
+            column_txt = self.headers_normal['discharge_capacity_txt']
         if cycle:
             step = cycles[cycle][0]
             selected_step = self._select_step(cycle, step, test_number)
             if not self.is_empty(selected_step):
-                v = selected_step[self.voltage_txt]
+                v = selected_step[self.headers_normal['voltage_txt']]
                 c = selected_step[column_txt] * 1000000 / mass
             else:
                 self.logger.debug("could not find any steps for this cycle")
@@ -2907,7 +2952,7 @@ class cellpydata(object):
             # get all the discharge cycles
             # this is a dataframe filtered on step and cycle
             d = self.select_steps(cycles, append_df=True)
-            v = d[self.voltage_txt]
+            v = d[self.headers_normal['voltage_txt']]
             c = d[column_txt] * 1000000 / mass
         return c, v
 
@@ -2998,8 +3043,8 @@ class cellpydata(object):
                 step = steps[index]
 
                 c = self._select_step(cycle_number, step)
-                t = c[self.step_time_txt]
-                o = c[self.voltage_txt]
+                t = c[self.headers_normal['step_time_txt']]
+                o = c[self.headers_normal['voltage_txt']]
                 return [t, o]
             else:
                 txt = "ERROR! cycle %i not found" % (cycle_number)  # jepe fix
@@ -3015,10 +3060,10 @@ class cellpydata(object):
 
                     if select_columns and not self.is_empty(c):
                         column_names = c.columns
-                        columns_to_keep = [self.cycle_index_txt,
-                                           self.step_time_txt, self.step_index_txt,
-                                           self.data_point_txt, self.datetime_txt,
-                                           self.voltage_txt,
+                        columns_to_keep = [self.headers_normal['cycle_index_txt'],
+                                           self.headers_normal['step_time_txt'], self.headers_normal['step_index_txt'],
+                                           self.headers_normal['data_point_txt'], self.headers_normal['datetime_txt'],
+                                           self.headers_normal['voltage_txt'],
                                            ]
                         for column_name in column_names:
                             if not columns_to_keep.count(column_name):
@@ -3036,7 +3081,7 @@ class cellpydata(object):
             self._report_empty_test()
             return
         d = self.tests[test_number].dfdata
-        cycle_index_header = self.cycle_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
         no_cycles = np.amax(d[cycle_index_header])
         return no_cycles
 
@@ -3048,7 +3093,7 @@ class cellpydata(object):
             self._report_empty_test()
             return
         d = self.tests[test_number].dfdata
-        cycle_index_header = self.cycle_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
         no_cycles = np.amax(d[cycle_index_header])
         # cycles = np.unique(d[cycle_index_header]).values
         cycles = np.unique(d[cycle_index_header])
@@ -3060,11 +3105,11 @@ class cellpydata(object):
             self._report_empty_test()
             return
         d = self.tests[test_number].dfdata
-        ir_txt = self.internal_resistance_txt
+        ir_txt = self.headers_normal['internal_resistance_txt']
         ir_data = np.unique(d[ir_txt])
         d2 = d.ix[ir_data.index]
         d2 = d2[["Cycle_Index", "DateTime", "Data_Point", "Internal_Resistance"]].sort(
-            [self.data_point_txt])  # jepe fix
+            [self.headers_normal['data_point_txt']])  # jepe fix
         # cycles = np.unique(d["Cycle_Index"])  # TODO: jepe fix
         ir_dict = {}
         for i in d2.index:
@@ -3112,7 +3157,6 @@ class cellpydata(object):
         #  Remove this later
         assert  float(from_unit / to_unit) == 1000000.0
         return float(from_unit / to_unit) / mass
-
 
     def get_diagnostics_plots(self, test_number=None, scaled=False, ):
         """Gets diagnostics plots.
@@ -3204,7 +3248,7 @@ class cellpydata(object):
             scc_max = np.amax(shifted_charge_cap)
             shifted_charge_cap = shifted_charge_cap / scc_max
 
-        out = {}
+        out = dict()
         out["cycles"] = cycles
         out["shifted_discharge_cap"] = shifted_discharge_cap
         out["shifted_charge_cap"] = shifted_charge_cap
@@ -3240,7 +3284,7 @@ class cellpydata(object):
                 mystep = step
 
         dataset = self.tests[test_number]
-        cycle_txt = self.cycle_index_txt
+        cycle_txt = self.headers_normal['cycle_index_txt']
         #        test_name = dataset.test_name # nice to get the name of the dataset / experiment as well
         #        sample_mass = dataset.mass # lets also get the sample mass (same as set in d.set_mass(m))
 
@@ -3249,7 +3293,7 @@ class cellpydata(object):
             if v:
                 print "selecting correct step",
                 print mystep
-            step_txt = self.step_index_txt
+            step_txt = self.headers_normal['step_index_txt']
             dfdata_cycle = dfdata[(dfdata[cycle_txt] == cycle) & (dfdata[step_txt] == mystep)]
         else:
             if not step and not step_type:
@@ -3450,8 +3494,8 @@ class cellpydata(object):
         # this function gives a set of indexes pointing to the last
         # datapoints for each cycle in the dataset
 
-        c_txt = self.cycle_index_txt  # header for the cycle number
-        d_txt = self.data_point_txt  # header for the point number
+        c_txt = self.headers_normal['cycle_index_txt']  # header for the cycle number
+        d_txt = self.headers_normal['data_point_txt']  # header for the point number
 
         steps = []
         max_step = max(dfdata[c_txt])
@@ -3481,8 +3525,8 @@ class cellpydata(object):
             self._report_empty_test()
             return
 
-        cycle_index_header = self.cycle_index_txt
-        step_index_header = self.step_index_txt
+        cycle_index_header = self.headers_normal['cycle_index_txt']
+        step_index_header = self.headers_normal['step_index_txt']
 
         step_table_txt_cycle = self.headers_step_table["cycle"]
         step_table_txt_step = self.headers_step_table["step"]
@@ -3592,18 +3636,18 @@ class cellpydata(object):
         specific_converter = self.get_converter_to_specific(test=test, mass=mass)
 
         # Retrieving the column header names for raw-data (dfdata)
-        dt_txt = self.datetime_txt
-        tt_txt = self.test_time_txt
-        st_txt = self.step_time_txt
-        c_txt = self.cycle_index_txt
-        d_txt = self.data_point_txt
-        s_txt = self.step_index_txt
-        voltage_header = self.voltage_txt
-        charge_txt = self.charge_capacity_txt
-        discharge_txt = self.discharge_capacity_txt
-        ir_txt = self.internal_resistance_txt
-        test_id_txt = self.test_id_txt
-        i_txt = self.current_txt
+        dt_txt = self.headers_normal['datetime_txt']
+        tt_txt = self.headers_normal['test_time_txt']
+        st_txt = self.headers_normal['step_time_txt']
+        c_txt = self.headers_normal['cycle_index_txt']
+        d_txt = self.headers_normal['data_point_txt']
+        s_txt = self.headers_normal['step_index_txt']
+        voltage_header = self.headers_normal['voltage_txt']
+        charge_txt = self.headers_normal['charge_capacity_txt']
+        discharge_txt = self.headers_normal['discharge_capacity_txt']
+        ir_txt = self.headers_normal['internal_resistance_txt']
+        test_id_txt = self.headers_normal['test_id_txt']
+        i_txt = self.headers_normal['current_txt']
 
         # Retrieving the column header names for summary-data (dfsummary)
         headers_summary = self.headers_summary

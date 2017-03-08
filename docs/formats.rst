@@ -42,56 +42,95 @@ is usually named a run. And each run is a `cellpy.cellreader.dataset` instance.
 
 Here is a list of other important class attributes in `cellpydata`:
 
+column headings - normal data
+..............................
+
+.. code-block:: python
+
+    cellpydata.headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
+    cellpydata.headers_normal['ac_impedance_txt'] = 'AC_Impedance'
+    cellpydata.headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
+    cellpydata.headers_normal['charge_energy_txt'] = 'Charge_Energy'
+    cellpydata.headers_normal['current_txt'] = 'Current'
+    cellpydata.headers_normal['cycle_index_txt'] = 'Cycle_Index'
+    cellpydata.headers_normal['data_point_txt'] = 'Data_Point'
+    cellpydata.headers_normal['datetime_txt'] = 'DateTime'
+    cellpydata.headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
+    cellpydata.headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
+    cellpydata.headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
+    cellpydata.headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
+    cellpydata.headers_normal['step_index_txt'] = 'Step_Index'
+    cellpydata.headers_normal['step_time_txt'] = 'Step_Time'
+    cellpydata.headers_normal['test_id_txt'] = 'Test_ID'
+    cellpydata.headers_normal['test_time_txt'] = 'Test_Time'
+    cellpydata.headers_normal['voltage_txt'] = 'Voltage'
+    cellpydata.headers_normal['dv_dt_txt'] = 'dV/dt'
+
 column headings - summary data
 ..............................
 
 .. code-block:: python
 
-    summary_txt_discharge_cap = "Discharge_Capacity(mAh/g)"
-    summary_txt_charge_cap = "Charge_Capacity(mAh/g)"
-    summary_txt_cum_charge_cap = "Cumulated_Charge_Capacity(mAh/g)"
-    summary_txt_coul_eff = "Coulombic_Efficiency(percentage)"
-    summary_txt_coul_diff = "Coulombic_Difference(mAh/g)"
-    summary_txt_cum_coul_diff = "Cumulated_Coulombic_Difference(mAh/g)"
-    summary_txt_discharge_cap_loss = "Discharge_Capacity_Loss(mAh/g)"
-    summary_txt_charge_cap_loss = "Charge_Capacity_Loss(mAh/g)"
-    summary_txt_cum_discharge_cap_loss = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
-    summary_txt_cum_charge_cap_loss = "Cumulated_Charge_Capacity_Loss(mAh/g)"
-    summary_txt_ir_discharge = "ir_discharge"
-    summary_txt_ir_charge = "ir_charge"
-    summary_txt_ocv_1_min = "ocv_first_min"
-    summary_txt_ocv_2_min = "ocv_second_min"
-    summary_txt_ocv_1_max = "ocv_first_max"
-    summary_txt_ocv_2_max = "ocv_second_max"
-    summary_txt_datetime_txt = "date_time_txt"
-    summary_txt_endv_discharge = "end_voltage_discharge"
-    summary_txt_endv_charge = "end_voltage_charge"
-
+    cellpydata.headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
+    cellpydata.headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
+    cellpydata.headers_summary["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
+    cellpydata.headers_summary["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
+    cellpydata.headers_summary["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
+    cellpydata.headers_summary["cumulated_coulombic_efficiency"] = "Cumulated_Coulombic_Efficiency(percentage)"
+    cellpydata.headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
+    cellpydata.headers_summary["cumulated_coulombic_difference"] = "Cumulated_Coulombic_Difference(mAh/g)"
+    cellpydata.headers_summary["discharge_capacity_loss"] = "Discharge_Capacity_Loss(mAh/g)"
+    cellpydata.headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
+    cellpydata.headers_summary["cumulated_discharge_capacity_loss"] = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
+    cellpydata.headers_summary["cumulated_charge_capacity_loss"] = "Cumulated_Charge_Capacity_Loss(mAh/g)"
+    cellpydata.headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
+    cellpydata.headers_summary["ir_charge"] = "IR_Charge(Ohms)"
+    cellpydata.headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
+    cellpydata.headers_summary["ocv_second_min"] = "OCV_Second_Min(V)"
+    cellpydata.headers_summary["ocv_first_max"] = "OCV_First_Max(V)"
+    cellpydata.headers_summary["ocv_second_max"] = "OCV_Second_Max(V)"
+    cellpydata.headers_summary["date_time_txt"] = "Date_Time_Txt(str)"
+    cellpydata.headers_summary["end_voltage_discharge"] = "End_Voltage_Discharge(V)"
+    cellpydata.headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
+    cellpydata.headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
+    cellpydata.headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
+    cellpydata.headers_summary["cumulated_ric"] = "RIC(none)"
+    cellpydata.headers_summary["low_level"] = "Low_Level(percentage)"  # Sum of irreversible capacity
+    cellpydata.headers_summary["high_level"] = "High_Level(percentage)"  # SEI loss
+    cellpydata.headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
+    cellpydata.headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
+    cellpydata.headers_summary["temperature_last"] = "Last_Temperature(C)"
+    cellpydata.headers_summary["temperature_mean"] = "Average_Temperature(C)"
+    cellpydata.headers_summary["pre_aux"] = "Aux_"
 
 column headings - step table
 ............................
 
 .. code-block:: python
 
-    step_table_txt_test = "test"
-    step_table_txt_cycle = "cycle"
-    step_table_txt_step = "step"
-    step_table_txt_type = "type"
-    step_table_txt_info = "info"
-    step_table_txt_I_ = "I_"
-    step_table_txt_V_ = "V_"
-    step_table_txt_C_ = "Charge_"
-    step_table_txt_D_ = "Discharge_"
-    step_table_txt_post_average = "avr"
-    step_table_txt_post_stdev = "std"
-    step_table_txt_post_max = "max"
-    step_table_txt_post_min = "min"
-    step_table_txt_post_start = "start"
-    step_table_txt_post_end = "end"
-    step_table_txt_post_delta = "delta"
-    step_table_txt_post_rate = "rate"
-    step_table_txt_ir = "IR"
-    step_table_txt_ir_change = "IR_pct_change"
+    cellpydata.headers_step_table["test"] = "test"
+    cellpydata.headers_step_table["cycle"] = "cycle"
+    cellpydata.headers_step_table["step"] = "step"
+    cellpydata.headers_step_table["sub_step"] = "sub_step"
+    cellpydata.headers_step_table["type"] = "type"
+    cellpydata.headers_step_table["sub_type"] = "sub_type"
+    cellpydata.headers_step_table["info"] = "info"
+    cellpydata.headers_step_table["pre_current"] = "I_"
+    cellpydata.headers_step_table["pre_voltage"] = "V_"
+    cellpydata.headers_step_table["pre_charge"] = "Charge_"
+    cellpydata.headers_step_table["pre_discharge"] = "Discharge_"
+    cellpydata.headers_step_table["pre_point"] = "datapoint_"
+    cellpydata.headers_step_table["pre_time"] = "time_"
+    cellpydata.headers_step_table["post_mean"] = "avr"
+    cellpydata.headers_step_table["post_std"] = "std"
+    cellpydata.headers_step_table["post_max"] = "max"
+    cellpydata.headers_step_table["post_min"] = "min"
+    cellpydata.headers_step_table["post_start"] = "start"
+    cellpydata.headers_step_table["post_end"] = "end"
+    cellpydata.headers_step_table["post_delta"] = "delta"
+    cellpydata.headers_step_table["post_rate"] = "rate"
+    cellpydata.headers_step_table["internal_resistance"] = "IR"
+    cellpydata.headers_step_table["internal_resistance_change"] = "IR_pct_change"
 
 step types
 ..........
