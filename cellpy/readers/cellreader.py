@@ -255,8 +255,10 @@ class dataset(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.logger.info("created dataset instance")
+
         self.test_no = None
         self.mass = 1.0  # mass of (active) material (in mg)
+        self.tot_mass = 1.0  # total mass of material (in mg)
         self.no_cycles = 0.0
         self.charge_steps = None  # not in use at the moment
         self.discharge_steps = None  # not in use at the moment
@@ -282,8 +284,13 @@ class dataset(object):
         self.start_datetime = None
         self.test_ID = None
         self.test_name = None
-        self.data = collections.OrderedDict()
-        self.summary = collections.OrderedDict()
+        # methods in cellpydata to update if adding new attributes:
+        #  _load_infotable()
+        # _create_infotable()
+
+        self.data = collections.OrderedDict()  # not used
+        self.summary = collections.OrderedDict()  # not used
+
         self.dfdata = None
         self.dfsummary = None
         self.dfsummary_made = False
@@ -311,7 +318,9 @@ class dataset(object):
         txt += "   GLOBAL\n"
         txt += "test ID:            %i\n" % self.test_ID
         txt += "material:           %s\n" % self.material
-        txt += "mass:               %f mg\n" % self.mass
+        txt += "mass (active):      %f mg\n" % self.mass
+        txt += "mass (total):       %f mg\n" % self.tot_mass
+        txt += "nominal capacity:   %f mAh/g\n" % self.nom_cap
         txt += "channel index:      %i\n" % self.channel_index
         txt += "test name:          %s\n" % self.test_name
         txt += "creator:            %s\n" % self.creator
@@ -322,9 +331,9 @@ class dataset(object):
             start_datetime_str = "NOT READABLE YET"
         txt += "start-date:         %s\n" % start_datetime_str
         txt += "   DATA:\n"
-        txt += str(self.dfdata)
+        txt += str(self.dfdata.head())
         txt += "   \nSUMMARY:\n"
-        txt += str(self.dfsummary)
+        txt += str(self.dfsummary.head())
 
         txt += "raw units:"
         txt += "     Currently defined in the cellpydata-object"
@@ -1176,7 +1185,26 @@ class cellpydata(object):
             fidtable_selected = False
         self.logger.debug("  h5")
         # this does not yet allow multiple sets
+
         newtests = []  # but this is ready when that time comes
+
+        # The infotable stores "meta-data". The follwing statements loads the content of infotable
+        # and updates div. dataset attributes. Maybe better use it as dict?
+
+        data = self._load_infotable(data, infotable, filename)
+
+        if fidtable_selected:
+            data.raw_data_files, data.raw_data_files_length = self._convert2fid_list(fidtable)
+        else:
+            data.raw_data_files = None
+            data.raw_data_files_length = None
+        newtests.append(data)
+        store.close()
+        # self.tests.append(data)
+        return newtests
+
+    def _load_infotable(self, data, infotable, filename):
+        # get attributes from infotable
         data.test_no = self._extract_from_dict(infotable, "test_no")
         data.mass = self._extract_from_dict(infotable, "mass")
         data.mass_given = True
@@ -1192,18 +1220,73 @@ class cellpydata(object):
 
         try:
             data.step_table_made = self._extract_from_dict(infotable, "step_table_made")
-        except:
+        except:  # not needed?
             data.step_table_made = None
+        return data
 
-        if fidtable_selected:
-            data.raw_data_files, data.raw_data_files_length = self._convert2fid_list(fidtable)
-        else:
-            data.raw_data_files = None
-            data.raw_data_files_length = None
-        newtests.append(data)
-        store.close()
-        # self.tests.append(data)
-        return newtests
+    def _extract_from_dict(self, t, x, default_value=None):
+        try:
+            value = t[x].values
+            if value:
+                value = value[0]
+        except:
+            value = default_value
+        return value
+
+    def _create_infotable(self, test_number=None):
+        # needed for saving class/dataset to hdf5
+        test_number = self._validate_test_number(test_number)
+        if test_number is None:
+            self._report_empty_test()
+            return
+        test = self.get_test(test_number)
+
+        infotable = collections.OrderedDict()
+        infotable["test_no"] = [test.test_no,]
+        infotable["mass"] = [test.mass,]
+        infotable["charge_steps"] = [test.charge_steps,]
+        infotable["discharge_steps"] =[ test.discharge_steps,]
+        infotable["ir_steps"] = [test.ir_steps,]
+        infotable["ocv_steps"] = [test.ocv_steps,]
+        infotable["nom_cap"] = [test.nom_cap,]
+        infotable["loaded_from"] = [test.loaded_from,]
+        infotable["channel_index"] = [test.channel_index,]
+        infotable["channel_number"] = [test.channel_number,]
+        infotable["creator"] = [test.creator,]
+        infotable["schedule_file_name"] = [test.schedule_file_name,]
+        infotable["item_ID"] = [test.item_ID,]
+        infotable["test_ID"] = [test.test_ID,]
+        infotable["test_name"] = [test.test_name,]
+        infotable["start_datetime"] = [test.start_datetime,]
+        infotable["dfsummary_made"] = [test.dfsummary_made,]
+        infotable["step_table_made"] = [test.step_table_made,]
+        infotable["cellpy_file_version"] = [test.cellpy_file_version,]
+
+        infotable = pd.DataFrame(infotable)
+
+        self.logger.debug("_create_infotable: fid")
+        fidtable = collections.OrderedDict()
+        fidtable["raw_data_name"] = []
+        fidtable["raw_data_full_name"] = []
+        fidtable["raw_data_size"] = []
+        fidtable["raw_data_last_modified"] = []
+        fidtable["raw_data_last_accessed"] = []
+        fidtable["raw_data_last_info_changed"] = []
+        fidtable["raw_data_location"] = []
+        fidtable["raw_data_files_length"] = []
+        fids = test.raw_data_files
+        fidtable["raw_data_fid"] = fids
+        for fid, length in zip(fids, test.raw_data_files_length):
+            fidtable["raw_data_name"].append(fid.name)
+            fidtable["raw_data_full_name"].append(fid.full_name)
+            fidtable["raw_data_size"].append(fid.size)
+            fidtable["raw_data_last_modified"].append(fid.last_modified)
+            fidtable["raw_data_last_accessed"].append(fid.last_accessed)
+            fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
+            fidtable["raw_data_location"].append(fid.location)
+            fidtable["raw_data_files_length"].append(length)
+        fidtable = pd.DataFrame(fidtable)
+        return infotable, fidtable
 
     def _convert2fid_list(self, tbl):
         self.logger.debug("_convert2fid_list")
@@ -2495,61 +2578,6 @@ class cellpydata(object):
                 print "save_test (hdf5): file exist - did not save",
                 print outfile_all
 
-    def _create_infotable(self, test_number=None):
-        # needed for saving class/dataset to hdf5
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        test = self.get_test(test_number)
-
-        infotable = collections.OrderedDict()
-        infotable["test_no"] = [test.test_no,]
-        infotable["mass"] = [test.mass,]
-        infotable["charge_steps"] = [test.charge_steps,]
-        infotable["discharge_steps"] =[ test.discharge_steps,]
-        infotable["ir_steps"] = [test.ir_steps,]
-        infotable["ocv_steps"] = [test.ocv_steps,]
-        infotable["nom_cap"] = [test.nom_cap,]
-        infotable["loaded_from"] = [test.loaded_from,]
-        infotable["channel_index"] = [test.channel_index,]
-        infotable["channel_number"] = [test.channel_number,]
-        infotable["creator"] = [test.creator,]
-        infotable["schedule_file_name"] = [test.schedule_file_name,]
-        infotable["item_ID"] = [test.item_ID,]
-        infotable["test_ID"] = [test.test_ID,]
-        infotable["test_name"] = [test.test_name,]
-        infotable["start_datetime"] = [test.start_datetime,]
-        infotable["dfsummary_made"] = [test.dfsummary_made,]
-        infotable["step_table_made"] = [test.step_table_made,]
-        infotable["cellpy_file_version"] = [test.cellpy_file_version,]
-
-        infotable = pd.DataFrame(infotable)
-
-        self.logger.debug("_create_infotable: fid")
-        fidtable = collections.OrderedDict()
-        fidtable["raw_data_name"] = []
-        fidtable["raw_data_full_name"] = []
-        fidtable["raw_data_size"] = []
-        fidtable["raw_data_last_modified"] = []
-        fidtable["raw_data_last_accessed"] = []
-        fidtable["raw_data_last_info_changed"] = []
-        fidtable["raw_data_location"] = []
-        fidtable["raw_data_files_length"] = []
-        fids = test.raw_data_files
-        fidtable["raw_data_fid"] = fids
-        for fid, length in zip(fids, test.raw_data_files_length):
-            fidtable["raw_data_name"].append(fid.name)
-            fidtable["raw_data_full_name"].append(fid.full_name)
-            fidtable["raw_data_size"].append(fid.size)
-            fidtable["raw_data_last_modified"].append(fid.last_modified)
-            fidtable["raw_data_last_accessed"].append(fid.last_accessed)
-            fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-            fidtable["raw_data_location"].append(fid.location)
-            fidtable["raw_data_files_length"].append(length)
-        fidtable = pd.DataFrame(fidtable)
-        return infotable, fidtable
-
     # --------------helper-functions------------------------------------------------
 
     def _cap_mod_summary(self, dfsummary, capacity_modifier):
@@ -3303,10 +3331,36 @@ class cellpydata(object):
                 dfdata_cycle = None
         return dfdata_cycle
 
-    # @print_function
-    def set_mass(self, masses, test_numbers=None, validated=None):
-        """Sets the mass (masses) for the test (tests).
-        """
+    def _set_mass(self, test_number, value):
+        try:
+            self.tests[test_number].mass = value
+            self.tests[test_number].mass_given = True
+        except AttributeError as e:
+            print "This test is empty"
+            print e
+
+    def _set_tot_mass(self, test_number, value):
+        try:
+            self.tests[test_number].tot_mass = value
+        except AttributeError as e:
+            print "This test is empty"
+            print e
+
+    def _set_nom_cap(self, test_number, value):
+        try:
+            self.tests[test_number].nom_cap = value
+        except AttributeError as e:
+            print "This test is empty"
+            print e
+
+    def _set_run_attribute(self, attr, vals, test_numbers=None, validated=None):
+        # Sets the val (vals) for the test (tests).
+        if attr == "mass":
+            setter = self._set_mass
+        elif attr == "tot_mass":
+            setter = self._set_tot_mass
+        elif attr == "nom_cap":
+            setter = self._set_nom_cap
 
         number_of_tests = len(self.tests)
         if not number_of_tests:
@@ -3320,27 +3374,32 @@ class cellpydata(object):
         if not self._is_listtype(test_numbers):
             test_numbers = [test_numbers, ]
 
-        if not self._is_listtype(masses):
-            masses = [masses, ]
+        if not self._is_listtype(vals):
+            vals = [vals, ]
         if validated is None:
-            for t, m in zip(test_numbers, masses):
-                try:
-                    self.tests[t].mass = m
-                    self.tests[t].mass_given = True
-                except AttributeError as e:
-                    print "This test is empty"
-                    print e
+            for t, m in zip(test_numbers, vals):
+                setter(t, m)
         else:
-            for t, m, v in zip(test_numbers, masses, validated):
+            for t, m, v in zip(test_numbers, vals, validated):
                 if v:
-                    try:
-                        self.tests[t].mass = m
-                        self.tests[t].mass_given = True
-                    except AttributeError as e:
-                        print "This test is empty"
-                        print e
+                    setter(t, m)
                 else:
-                    self.logger.debug("set_mass: this set is empty")
+                    self.logger.debug("_set_run_attribute: this set is empty")
+
+    def set_mass(self, masses, test_numbers=None, validated=None):
+        """Sets the mass (masses) for the test (tests).
+        """
+        self._set_run_attribute("mass", masses, test_numbers=test_numbers, validated=validated)
+
+    def set_tot_mass(self, masses, test_numbers=None, validated=None):
+        """Sets the mass (masses) for the test (tests).
+        """
+        self._set_run_attribute("tot_mass", masses, test_numbers=test_numbers, validated=validated)
+
+    def set_nom_cap(self, nom_caps, test_numbers=None, validated=None):
+        """Sets the mass (masses) for the test (tests).
+        """
+        self._set_run_attribute("nom_cap", nom_caps, test_numbers=test_numbers, validated=validated)
 
     def set_col_first(self, df, col_names):
         """set selected columns first in a pandas.DataFrame.
@@ -3505,14 +3564,6 @@ class cellpydata(object):
         last_items = dfdata[d_txt].isin(steps)
         return last_items
 
-    def _extract_from_dict(self, t, x, default_value=None):
-        try:
-            value = t[x].values
-            if value:
-                value = value[0]
-        except:
-            value = default_value
-        return value
 
     def _modify_cycle_number_using_cycle_step(self, from_tuple=[1, 4], to_cycle=44, test_number=None):
         # modify step-cycle tuple to new step-cycle tuple
@@ -4153,8 +4204,70 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     return outfile
 
 
-def loadcellcheck():
-    print "running loadcellcheck"
+def load_and_print_resfile(filename, info_dict=None):
+    """Load a raw data file and print information.
+
+    Args:
+        filename (str): name of the resfile.
+        info_dict (dict):
+
+    Returns:
+        info (str): string describing something.
+    """
+
+    # self.test_no = None
+    # self.mass = 1.0  # mass of (active) material (in mg)
+    # self.no_cycles = 0.0
+    # self.charge_steps = None  # not in use at the moment
+    # self.discharge_steps = None  # not in use at the moment
+    # self.ir_steps = None  # dict # not in use at the moment
+    # self.ocv_steps = None  # dict # not in use at the moment
+    # self.nom_cap = 3579  # mAh/g (used for finding c-rates)
+    # self.mass_given = False
+    # self.c_mode = True
+    # self.starts_with = "discharge"
+    # self.material = "noname"
+    # self.merged = False
+    # self.file_errors = None  # not in use at the moment
+    # self.loaded_from = None  # name of the .res file it is loaded from (can be list if merged)
+    # self.raw_data_files = []
+    # self.raw_data_files_length = []
+    # # self.parent_filename = None # name of the .res file it is loaded from (basename) (can be list if merded)
+    # # self.parent_filename = if listtype, for file in etc,,, os.path.basename(self.loaded_from)
+    # self.channel_index = None
+    # self.channel_number = None
+    # self.creator = None
+    # self.item_ID = None
+    # self.schedule_file_name = None
+    # self.start_datetime = None
+    # self.test_ID = None
+    # self.test_name = None
+
+    if info_dict is None:
+        info_dict = dict()
+        info_dict["mass"] = 1.23  # mg
+        info_dict["nom_cap"] = 3600  # mAh/g (active material)
+        info_dict["tot_mass"] = 2.33  # mAh/g (total mass of material)
+
+    d = cellpydata(verbose=True)
+
+    print "filename:", filename
+    print "info_dict in:",
+    print info_dict
+
+    d.loadres(filename)
+    d.set_mass(info_dict["mass"])
+    d.create_step_table()
+    d.make_summary()
+    for test in d.tests:
+        print "newtest"
+        print test
+
+    return info_dict
+
+
+def loadcell_check():
+    print "running loadcell_check"
     out_dir = r"C:\Cell_data\tmp"
     mass = 0.078609164
     rawfile =  r"C:\Cell_data\tmp\large_file_01.res"
@@ -4265,7 +4378,7 @@ if __name__ == "__main__":
     import logging
     from cellpy import log
     log.setup_logging(default_level=logging.DEBUG)
-    testfile = r"C:\Scripting\MyFiles\development_cellpy\cellpy\testdata\20160805_test001_45_cc_01.res"
-    load_and_save_resfile(testfile)
+    testfile = "../indata/20160805_test001_45_cc_01.res"
+    load_and_print_resfile(testfile)
     # just_load_srno(614, r"C:\Scripting\MyFiles\development_cellpy\cellpy\parametres\_cellpy_prms_devel.ini")
-    # loadcellcheck()
+    # loadcell_check()
