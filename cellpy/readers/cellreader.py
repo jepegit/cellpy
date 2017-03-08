@@ -330,10 +330,24 @@ class dataset(object):
         except:
             start_datetime_str = "NOT READABLE YET"
         txt += "start-date:         %s\n" % start_datetime_str
+
         txt += "   DATA:\n"
-        txt += str(self.dfdata.head())
+        try:
+            txt += str(self.dfdata.head())
+        except AttributeError:
+            txt += "EMPTY (Not processed yet)\n"
+
         txt += "   \nSUMMARY:\n"
-        txt += str(self.dfsummary.head())
+        try:
+            txt += str(self.dfsummary.head())
+        except AttributeError:
+            txt += "EMPTY (Not processed yet)\n"
+
+        txt += "   \nPARAMETERS:\n"
+        try:
+            txt += str(self.parameter_table.head())
+        except AttributeError:
+            txt += "EMPTY (Not processed yet)\n"
 
         txt += "raw units:"
         txt += "     Currently defined in the cellpydata-object"
@@ -4243,6 +4257,7 @@ def load_and_print_resfile(filename, info_dict=None):
     # self.test_ID = None
     # self.test_name = None
 
+    # NEXT: include nom_cap, tot_mass and  parameters table in save/load hdf5
     if info_dict is None:
         info_dict = dict()
         info_dict["mass"] = 1.23  # mg
@@ -4264,7 +4279,6 @@ def load_and_print_resfile(filename, info_dict=None):
         print test
 
     return info_dict
-
 
 def loadcell_check():
     print "running loadcell_check"
@@ -4347,10 +4361,10 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
 
 # TODO: make option to create step_table when loading file (loadres)
 # TODO next:
-# 1) new step_table structure [under dev]
-# 2) new summary structure
-# 3) new overall prms structure (i.e. run summary)
-# 4) change name and allow non-arbin type of files
+# 1) new step_table structure [OK]
+# 2) new summary structure [OK]
+# 3) new overall prms structure (i.e. run summary) [in progress]
+# 4) change name and allow non-arbin type of files [in progress]
 # NOTE
 #
 #
