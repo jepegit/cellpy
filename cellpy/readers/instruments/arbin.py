@@ -1,13 +1,15 @@
 """arbin data files"""
 
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
 
-#  move _loadres from cellreader.py here
-#  make it a class so that it is easy to implement plug-in capabilities later?
-
-import pandas as pd
 import os
 import tempfile
 import shutil
+from six.moves import range
+
+import pandas as pd
 
 from cellreader import dataset
 from cellreader import fileID
@@ -132,12 +134,12 @@ class ArbinLoader(object):
         else:
             normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
             if not self.last_chunk:
-                normal_df = normal_df_reader.next()
+                normal_df = next(normal_df_reader)
                 chunk_number = 1
             else:
                 chunk_number = 0
                 for j in range(self.last_chunk):
-                    normal_df = normal_df_reader.next()  # TODO: This is SLOW - should use itertools.islice
+                    normal_df = next(normal_df_reader)  # TODO: This is SLOW - should use itertools.islice
                     chunk_number += 1
 
             for chunk in normal_df_reader:
@@ -145,16 +147,16 @@ class ArbinLoader(object):
                 if self.load_until_error:
                     try:
                         normal_df = pd.concat([normal_df, chunk], ignore_index=True)
-                        print "*",
+                        print("*", end=' ')
                     except MemoryError:
-                        print " - Could not read complete file (MemoryError)."
-                        print "Last successfully loaded chunk number:", chunk_number
-                        print "Chunk size:", self.chunk_size
+                        print(" - Could not read complete file (MemoryError).")
+                        print("Last successfully loaded chunk number:", chunk_number)
+                        print("Chunk size:", self.chunk_size)
                         break
                 elif self.max_chunks:
                     if chunk_number < self.max_chunks:
                         normal_df = pd.concat([normal_df, chunk], ignore_index=True)
-                        print "*",
+                        print("*", end=' ')
                     else:
                         break
                 else:
@@ -172,7 +174,7 @@ class ArbinLoader(object):
         # is64bit_os = check64bit(System = "os")
         if USE_ADO:
             if is64bit_python:
-                print "using 64 bit python"
+                print("using 64 bit python")
                 constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
             else:
                 constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
@@ -198,7 +200,7 @@ class ArbinLoader(object):
         new_tests = []
         # -------checking existence of file--------
         if not os.path.isfile(file_name):
-            print "Missing file_\n   %s" % file_name
+            print("Missing file_\n   %s" % file_name)
 
         # -------checking file size etc------------
         filesize = os.path.getsize(file_name)
@@ -209,7 +211,7 @@ class ArbinLoader(object):
             error_message = "\nERROR (_loadres):\n"
             error_message += "%s > %s - File is too big!\n" % (hfilesize, humanize_bytes(self.max_res_filesize))
             error_message += "(edit self.max_res_filesize)\n"
-            print error_message
+            print(error_message)
             return None
             # sys.exit(FileError)
 
@@ -220,7 +222,7 @@ class ArbinLoader(object):
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
-        print ".",
+        print(".", end=' ')
 
         # ------connecting to the .res database----
         constr = self.__get_res_connector(temp_filename)
@@ -228,7 +230,7 @@ class ArbinLoader(object):
             conn = dbloader.connect(constr)  # adodbapi
         else:
             conn = dbloader.connect(constr, autocommit=True)
-        print ".",
+        print(".", end=' ')
 
         # ------get the global table-----------------
         sql = "select * from %s" % table_name_global
@@ -237,7 +239,7 @@ class ArbinLoader(object):
 
         tests = global_data_df[self.headers_normal['test_id_txt']]  # OBS
         number_of_sets = len(tests)
-        print ".",
+        print(".", end=' ')
 
         for test_no in range(number_of_sets):
             data = dataset()
@@ -273,7 +275,7 @@ class ArbinLoader(object):
             data.raw_data_files_length.append(length_of_test)
             new_tests.append(data)
             self._clean_up_loadres(None, conn, temp_filename)
-            print ". <-"
+            print(". <-")
         return new_tests
 
 
@@ -313,10 +315,10 @@ class ArbinLoader(object):
 
 def lp_resf(filename):
     """Load a raw data file """
-    print "1"
+    print("1")
     a = ArbinLoader()
     a.load(filename)
-    print "2"
+    print("2")
 
 
 
