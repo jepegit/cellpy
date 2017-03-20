@@ -22,7 +22,6 @@ Todo:
 
 """
 
-
 USE_ADO = False
 """string: set True if using adodbapi"""
 CELLPY_FILE_VERSION = 3
@@ -34,7 +33,7 @@ SUMMARY_TABLE_VERSION = 3
 if USE_ADO:
     try:
         import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
-    except:
+    except ImportError:
         USE_ADO = False
 
 else:
@@ -48,19 +47,21 @@ import shutil
 import os
 import sys
 import tempfile
-import types
+import datetime
+# import types
 import collections
-import time
+# import time
 import warnings
 import csv
 import itertools
-import cProfile
-import pstats
-import StringIO
+# import cProfile
+# import pstats
+# import StringIO
 from scipy import interpolate
 import numpy as np
 import pandas as pd
 import logging
+
 # import logging.config
 
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
@@ -69,8 +70,8 @@ pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
 # module_logger = logging.getLogger(__name__)
 
-def humanize_bytes(bytes, precision=1):
-    """Return a humanized string representation of a number of bytes.
+def humanize_bytes(b, precision=1):
+    """Return a humanized string representation of a number of b.
 
     Assumes `from __future__ import division`.
 
@@ -97,14 +98,14 @@ def humanize_bytes(bytes, precision=1):
         (1 << 30L, 'GB'),
         (1 << 20L, 'MB'),
         (1 << 10L, 'kB'),
-        (1, 'bytes')
+        (1, 'b')
     )
-    if bytes == 1:
+    if b == 1:
         return '1 byte'
     for factor, suffix in abbrevs:
-        if bytes >= factor:
+        if b >= factor:
             break
-    return '%.*f %s' % (precision, bytes / factor, suffix)
+    return '%.*f %s' % (precision, b / factor, suffix)
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
@@ -121,10 +122,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     """
 
     # This does not work for numpy-arrays
-    try:
-        test = datetime.time(0, 0)
-    except:
-        import datetime
+
     if option == "to_float":
         d = (xldate - 25589) * 86400.0
     elif option == "to_string":
@@ -137,6 +135,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     return d
 
 
+# noinspection PyPep8Naming
 def Convert2mAhg(c, mass=1.0):
     """Converts capacity in Ah to capacity in mAh/g.
 
@@ -150,6 +149,7 @@ def Convert2mAhg(c, mass=1.0):
     return 1000000 * c / mass
 
 
+# noinspection PyPep8Naming
 class fileID(object):
     """class for storing information about the raw-data files.
 
@@ -168,18 +168,18 @@ class fileID(object):
 
         """
 
-    def __init__(self, Filename=None):
+    def __init__(self, filename=None):
         make_defaults = True
-        if Filename:
-            if os.path.isfile(Filename):
-                fid_st = os.stat(Filename)
-                self.name = os.path.abspath(Filename)
-                self.full_name = Filename
+        if filename:
+            if os.path.isfile(filename):
+                fid_st = os.stat(filename)
+                self.name = os.path.abspath(filename)
+                self.full_name = filename
                 self.size = fid_st.st_size
                 self.last_modified = fid_st.st_mtime
                 self.last_accessed = fid_st.st_atime
                 self.last_info_changed = fid_st.st_ctime
-                self.location = os.path.dirname(Filename)
+                self.location = os.path.dirname(filename)
                 make_defaults = False
 
         if make_defaults:
@@ -193,28 +193,28 @@ class fileID(object):
 
     def __str__(self):
         txt = "\nfileID information\n"
-        txt += "full name: %s\n" % (self.full_name)
-        txt += "name: %s\n" % (self.name)
-        txt += "modified: %i\n" % (self.last_modified)
-        txt += "size: %i\n" % (self.size)
+        txt += "full name: %s\n" % self.full_name
+        txt += "name: %s\n" % self.name
+        txt += "modified: %i\n" % self.last_modified
+        txt += "size: %i\n" % self.size
         return txt
 
-    def populate(self, Filename):
+    def populate(self, filename):
         """Finds the file-stats and populates the class with stat values.
 
         Args:
-            Filename (str): name of the file.
+            filename (str): name of the file.
         """
 
-        if os.path.isfile(Filename):
-            fid_st = os.stat(Filename)
-            self.name = os.path.abspath(Filename)
-            self.full_name = Filename
+        if os.path.isfile(filename):
+            fid_st = os.stat(filename)
+            self.name = os.path.abspath(filename)
+            self.full_name = filename
             self.size = fid_st.st_size
             self.last_modified = fid_st.st_mtime
             self.last_accessed = fid_st.st_atime
             self.last_info_changed = fid_st.st_ctime
-            self.location = os.path.dirname(Filename)
+            self.location = os.path.dirname(filename)
 
     def get_raw(self):
         """Get a list with information about the file.
@@ -236,6 +236,7 @@ class fileID(object):
         return self.last_modified
 
 
+# noinspection PyPep8Naming
 class dataset(object):
     """Object to store data for a test.
 
@@ -354,6 +355,7 @@ class dataset(object):
         return txt
 
 
+# noinspection PyPep8Naming,PyPep8Naming
 class cellpydata(object):
     """Main class for working and storing data.
 
@@ -368,7 +370,7 @@ class cellpydata(object):
 
     def __init__(self, filenames=None,
                  selected_scans=None,
-                 verbose=False, # not in use
+                 verbose=False,  # not in use
                  profile=False,
                  filestatuschecker="size",  # "modified"
                  fetch_onliners=False,
@@ -422,7 +424,7 @@ class cellpydata(object):
         self.force_all = False  # not used yet - should be used when saving
         self.sep = ";"
         self.cycle_mode = 'anode'
-        self.use_decrp_functions = True # not used in the script - delete?
+        self.use_decrp_functions = True  # not used in the script - delete?
         self.max_res_filesize = 150000000
         self.load_only_summary = False
         self.select_minimal = False
@@ -563,7 +565,7 @@ class cellpydata(object):
 
         self.table_names = dict()
         self.headers_raw_global = dict()
-        self.headers_raw_normal =dict()
+        self.headers_raw_normal = dict()
         self.headers_raw_stats = dict()
         self.raw_limits = dict()
 
@@ -647,7 +649,7 @@ class cellpydata(object):
         self.raw_limits["stable_charge_soft"] = 5.0
         self.raw_limits["ir_change"] = 0.00001
 
-    def _create_logger(self, verbose = False):
+    def _create_logger(self, verbose=False):
         from cellpy import log
         self.logger = logging.getLogger(__name__)
         log.setup_logging(default_level=logging.DEBUG)
@@ -719,7 +721,7 @@ class cellpydata(object):
             If return_res is True it also returns list of raw-file_names as second argument.
             """
 
-        txt = "check_file_ids\n  checking file ids - using '%s'" % (self.filestatuschecker)
+        txt = "check_file_ids\n  checking file ids - using '%s'" % self.filestatuschecker
 
         self.logger.debug(txt)
         self.logger.info(txt)
@@ -800,9 +802,9 @@ class cellpydata(object):
                 full_name = fid.full_name
                 size = fid.size
                 mod = fid.last_modified
-                txt = "\nfileID information\nfull name: %s\n" % (full_name)
-                txt += "modified: %i\n" % (mod)
-                txt += "size: %i\n" % (size)
+                txt = "\nfileID information\nfull name: %s\n" % full_name
+                txt += "modified: %i\n" % mod
+                txt += "size: %i\n" % size
                 self.logger.debug(txt)
                 if strip_filenames:
                     name = os.path.basename(full_name)
@@ -819,7 +821,8 @@ class cellpydata(object):
             ids = dict()
         return ids
 
-    def _compare_ids(self, ids_res, ids_cellpy_file):
+    @staticmethod
+    def _compare_ids(ids_res, ids_cellpy_file):
         # Check if the ids are "the same", i.e. if the ids indicates wether new
         # data is likely to be found in the res-files checking length
 
@@ -848,13 +851,13 @@ class cellpydata(object):
         cellpyfile = os.path.basename(cellpyfile)
         cellpyfile = os.path.splitext(cellpyfile)[0]
         for j in range(counter_min, counter_max + 1):
-            lookFor = "%s%s%s%s" % (cellpyfile, counter_sep,
+            look_for = "%s%s%s%s" % (cellpyfile, counter_sep,
                                     str(j).zfill(counter_digits),
                                     res_extension)
 
-            lookFor = os.path.join(res_dir, lookFor)
-            if os.path.isfile(lookFor):
-                resfiles.append(lookFor)
+            look_for = os.path.join(res_dir, look_for)
+            if os.path.isfile(look_for):
+                resfiles.append(look_for)
 
         return resfiles
 
@@ -936,7 +939,7 @@ class cellpydata(object):
             self.file_names = file_names
 
         if not isinstance(file_names, (list, tuple)):
-            self.file_names = [file_names,]
+            self.file_names = [file_names, ]
 
         file_type = self.tester
         raw_file_loader = self.loader
@@ -966,11 +969,12 @@ class cellpydata(object):
         self.number_of_tests = len(self.tests)
         self.tests_status = self._validate_tests()
 
+    # noinspection PyIncorrectDocstring
     def loadres(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the datastructure.
 
         Args:
-            file_names ((lists of) list of raw-file names): uses cellpy.file_names if None.
+            filenames: ((lists of) list of raw-file names): uses cellpy.file_names if None.
                 If list-of-list, it loads each list into separate tests. The files in the
                 inner list will be merged.
             check_file_type (bool): check file type if True (res-, or cellpy-format)
@@ -1018,7 +1022,7 @@ class cellpydata(object):
                     first_test = True
                     newtests = None
                     for f2 in f:
-                        txt = "file: %s" % (f2)
+                        txt = "file: %s" % f2
                         self.logger.debug(txt)
                         if check_file_type:
                             filetype = self._check_file_type(f2)
@@ -1104,10 +1108,13 @@ class cellpydata(object):
     def _report_empty_test(self):
         self.logger.info("empty set")
 
-    def _empty_test(self):
+    @staticmethod
+    def _empty_test():
         return None
 
-    def _check64bit(self, System="python"):
+    # noinspection PyPep8Naming
+    @staticmethod
+    def _check64bit(System="python"):
         if System == "python":
             try:
                 return sys.maxsize > 2147483647
@@ -1130,7 +1137,7 @@ class cellpydata(object):
                 except:
                     return False  # is an older version of Python, assume also an older os (best we can guess)
 
-    def load(self,cellpy_file):
+    def load(self, cellpy_file):
         """Loads a cellpy file.
         """
         try:
@@ -1178,8 +1185,7 @@ class cellpydata(object):
         #     raise AttributeError
 
         if data.cellpy_file_version > CELLPY_FILE_VERSION:
-            raise AttributeError  #  TODO: make custom error
-
+            raise AttributeError  # TODO: make custom error
 
         data.dfsummary = store.select("cellpydata/dfsummary")
         data.dfdata = store.select("cellpydata/dfdata")
@@ -1238,7 +1244,8 @@ class cellpydata(object):
             data.step_table_made = None
         return data
 
-    def _extract_from_dict(self, t, x, default_value=None):
+    @staticmethod
+    def _extract_from_dict(t, x, default_value=None):
         try:
             value = t[x].values
             if value:
@@ -1256,25 +1263,25 @@ class cellpydata(object):
         test = self.get_test(test_number)
 
         infotable = collections.OrderedDict()
-        infotable["test_no"] = [test.test_no,]
-        infotable["mass"] = [test.mass,]
-        infotable["charge_steps"] = [test.charge_steps,]
-        infotable["discharge_steps"] =[ test.discharge_steps,]
-        infotable["ir_steps"] = [test.ir_steps,]
-        infotable["ocv_steps"] = [test.ocv_steps,]
-        infotable["nom_cap"] = [test.nom_cap,]
-        infotable["loaded_from"] = [test.loaded_from,]
-        infotable["channel_index"] = [test.channel_index,]
-        infotable["channel_number"] = [test.channel_number,]
-        infotable["creator"] = [test.creator,]
-        infotable["schedule_file_name"] = [test.schedule_file_name,]
-        infotable["item_ID"] = [test.item_ID,]
-        infotable["test_ID"] = [test.test_ID,]
-        infotable["test_name"] = [test.test_name,]
-        infotable["start_datetime"] = [test.start_datetime,]
-        infotable["dfsummary_made"] = [test.dfsummary_made,]
-        infotable["step_table_made"] = [test.step_table_made,]
-        infotable["cellpy_file_version"] = [test.cellpy_file_version,]
+        infotable["test_no"] = [test.test_no, ]
+        infotable["mass"] = [test.mass, ]
+        infotable["charge_steps"] = [test.charge_steps, ]
+        infotable["discharge_steps"] = [test.discharge_steps, ]
+        infotable["ir_steps"] = [test.ir_steps, ]
+        infotable["ocv_steps"] = [test.ocv_steps, ]
+        infotable["nom_cap"] = [test.nom_cap, ]
+        infotable["loaded_from"] = [test.loaded_from, ]
+        infotable["channel_index"] = [test.channel_index, ]
+        infotable["channel_number"] = [test.channel_number, ]
+        infotable["creator"] = [test.creator, ]
+        infotable["schedule_file_name"] = [test.schedule_file_name, ]
+        infotable["item_ID"] = [test.item_ID, ]
+        infotable["test_ID"] = [test.test_ID, ]
+        infotable["test_name"] = [test.test_name, ]
+        infotable["start_datetime"] = [test.start_datetime, ]
+        infotable["dfsummary_made"] = [test.dfsummary_made, ]
+        infotable["step_table_made"] = [test.step_table_made, ]
+        infotable["cellpy_file_version"] = [test.cellpy_file_version, ]
 
         infotable = pd.DataFrame(infotable)
 
@@ -1333,7 +1340,7 @@ class cellpydata(object):
             except WindowsError as e:
                 self.logger.warning("could not remove tmp-file\n%s %s" % (filename, e))
 
-    def _loadres_query(self, query=None, file_name=None, test_index = 0):
+    def _loadres_query(self, query=None, file_name=None, test_index=0):
         new_tests = []
 
         if query is None:
@@ -1342,7 +1349,7 @@ class cellpydata(object):
 
         # -------checking existence of file--------
         if not os.path.isfile(file_name):
-            self.logger.warning("Missing file_\n   %s" % (file_name))
+            self.logger.warning("Missing file_\n   %s" % file_name)
 
         # -------checking file size etc------------
         filesize = os.path.getsize(file_name)
@@ -1362,7 +1369,7 @@ class cellpydata(object):
         shutil.copy2(file_name, temp_dir)
 
         # ------connecting to the .res database----
-        constr = self.__get_res_connector(file_name, temp_filename)
+        constr = self.__get_res_connector(file_name)
         if USE_ADO:
             conn = dbloader.connect(constr)  # adodbapi
         else:
@@ -1437,7 +1444,7 @@ class cellpydata(object):
         new_tests = []
         # -------checking existence of file--------
         if not os.path.isfile(file_name):
-            print "Missing file_\n   %s" % (file_name)
+            print "Missing file_\n   %s" % file_name
 
         # -------checking file size etc------------
         filesize = os.path.getsize(file_name)
@@ -1473,7 +1480,7 @@ class cellpydata(object):
         sql = "select * from %s" % table_name_global
         global_data_df = pd.read_sql_query(sql, conn)
         # col_names = list(global_data_df.columns.values)
-        tests = global_data_df[self.headers_normal['test_id_txt']] # OBS
+        tests = global_data_df[self.headers_normal['test_id_txt']]  # OBS
         number_of_sets = len(tests)
         print ".",
 
@@ -1490,16 +1497,16 @@ class cellpydata(object):
             data.item_ID = global_data_df[self.item_id_txt][test_no]
             data.schedule_file_name = global_data_df[self.schedule_file_name_txt][test_no]
             data.start_datetime = global_data_df[self.start_datetime_txt][test_no]
-            data.test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no]) # OBS
+            data.test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
             data.test_name = global_data_df[self.test_name_txt][test_no]
             data.raw_data_files.append(fid)
 
             # ------------------------------------------
             # ---loading-normal-data--------------------
-            length_of_test, normal_df = self._load_res_normal_table(conn,data.test_ID)
-#            if length_of_test == 0:
-#                self.logger.warning("MemoryError")
-#                return
+            length_of_test, normal_df = self._load_res_normal_table(conn, data.test_ID)
+            #            if length_of_test == 0:
+            #                self.logger.warning("MemoryError")
+            #                return
             # ---loading-statistic-data-----------------
             sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
                                                                 self.headers_normal['test_id_txt'],
@@ -1514,6 +1521,7 @@ class cellpydata(object):
             print ". <-"
         return new_tests
 
+    # noinspection PyPep8Naming
     def _load_res_normal_table(self, conn, test_ID):
         table_name_normal = self.table_names["normal"]
         if self.load_only_summary:
@@ -1531,7 +1539,7 @@ class cellpydata(object):
         sql_4 = ""
 
         if self.limit_loaded_cycles:
-            if len(self.limit_loaded_cycles)>1:
+            if len(self.limit_loaded_cycles) > 1:
                 sql_4 = "AND %s>%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[0])
                 sql_4 += "AND %s<%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[-1])
             else:
@@ -1541,16 +1549,16 @@ class cellpydata(object):
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         if not self.chunk_size:
-#            try:
+            #            try:
             normal_df = pd.read_sql_query(sql, conn)
-#            except MemoryError as e:
-#                self.logger.warning("MemoryError")
-#                self.logger.warning(e)
-#                return 0, None
-#            except Exception as e:
-#                self.logger.warning("Exception")
-#                self.logger.warning(e)
-#                return 0, None
+            #            except MemoryError as e:
+            #                self.logger.warning("MemoryError")
+            #                self.logger.warning(e)
+            #                return 0, None
+            #            except Exception as e:
+            #                self.logger.warning("Exception")
+            #                self.logger.warning(e)
+            #                return 0, None
             length_of_test = normal_df.shape[0]
         else:
             normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
@@ -1567,7 +1575,7 @@ class cellpydata(object):
 
                 if self.load_until_error:
                     try:
-                        normal_df = pd.concat([normal_df,chunk], ignore_index=True)
+                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
                         print "*",
                     except MemoryError:
                         print " - Could not read complete file (MemoryError)."
@@ -1576,7 +1584,7 @@ class cellpydata(object):
                         break
                 elif self.max_chunks:
                     if chunk_number < self.max_chunks:
-                        normal_df = pd.concat([normal_df,chunk], ignore_index=True)
+                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
                         print "*",
                     else:
                         break
@@ -1690,7 +1698,8 @@ class cellpydata(object):
         if merge_step_table:
             if step_table_made:
                 cycle_index_header = self.headers_normal['cycle_index_txt']
-                t2.step_table[self.headers_step_table["cycle"]] = t2.dfdata[self.headers_step_table["cycle"]] + last_cycle
+                t2.step_table[self.headers_step_table["cycle"]] = t2.dfdata[
+                                                                      self.headers_step_table["cycle"]] + last_cycle
                 step_table2 = pd.concat([t1.step_table, t2.step_table], ignore_index=True)
                 test.step_table = step_table2
             else:
@@ -1725,10 +1734,10 @@ class cellpydata(object):
         # Returns test_number (or None if empty)
         # Remark! _is_not_empty_test returns True or False
 
-        if n != None:
+        if n is not None:
             v = n
         else:
-            if self.selected_test_number == None:
+            if self.selected_test_number is None:
                 v = 0
             else:
                 v = self.selected_test_number
@@ -1775,7 +1784,8 @@ class cellpydata(object):
             else:
                 for j in range(1, no_cycles_dfdata + 1):
                     cycle_number = j
-                    no_steps_dfdata = len(np.unique(d.loc[d[self.headers_normal['cycle_index_txt']] == cycle_number, self.headers_normal['step_index_txt']]))
+                    no_steps_dfdata = len(np.unique(d.loc[d[self.headers_normal['cycle_index_txt']] == cycle_number,
+                                                          self.headers_normal['step_index_txt']]))
                     no_steps_step_table = len(s.loc[s[headers_step_table["cycle"]] == cycle_number,
                                                     headers_step_table["step"]])
                     if no_steps_dfdata != no_steps_step_table:
@@ -1848,7 +1858,7 @@ class cellpydata(object):
         if steptype in self.list_of_step_types:
             steptypes.append(steptype)
         else:
-            txt = "%s is not a valid core steptype" % (steptype)
+            txt = "%s is not a valid core steptype" % steptype
             if steptype in helper_step_types:
                 txt = "but a helper steptype"
                 if steptype == 'ocv':
@@ -1909,6 +1919,7 @@ class cellpydata(object):
             out[cycle] = steplist
         return out
 
+    # noinspection PyPep8Naming
     def _extract_step_values(self, f):
         # ['cycle', 'step',
         # 'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta', 'I_rate',
@@ -1934,52 +1945,83 @@ class cellpydata(object):
         # ---current-
         I_avr = f[current_hdtxt].mean()
         I_std = f[current_hdtxt].std()
+        # noinspection PyPep8Naming
         I_max = f[current_hdtxt].max()
+        # noinspection PyPep8Naming
         I_min = f[current_hdtxt].min()
+        # noinspection PyPep8Naming
         I_start = f.iloc[0][current_hdtxt]
+        # noinspection PyPep8Naming
         I_end = f.iloc[-1][current_hdtxt]
 
         # I_delta = I_end-I_start
+        # noinspection PyPep8Naming
         I_delta = self._percentage_change(I_start, I_end, default_zero=True)
+        # noinspection PyPep8Naming
         I_rate = self._fractional_change(I_delta, t_delta)
 
         # ---voltage--
+        # noinspection PyPep8Naming
         V_avr = f[voltage_hdtxt].mean()
+        # noinspection PyPep8Naming
         V_std = f[voltage_hdtxt].std()
+        # noinspection PyPep8Naming
         V_max = f[voltage_hdtxt].max()
+        # noinspection PyPep8Naming
         V_min = f[voltage_hdtxt].min()
+        # noinspection PyPep8Naming
         V_start = f.iloc[0][voltage_hdtxt]
+        # noinspection PyPep8Naming
         V_end = f.iloc[-1][voltage_hdtxt]
 
         # V_delta = V_end-V_start
+        # noinspection PyPep8Naming
         V_delta = self._percentage_change(V_start, V_end, default_zero=True)
+        # noinspection PyPep8Naming
         V_rate = self._fractional_change(V_delta, t_delta)
 
         # ---charge---
+        # noinspection PyPep8Naming
         C_avr = f[charge_hdtxt].mean()
+        # noinspection PyPep8Naming
         C_std = f[charge_hdtxt].std()
+        # noinspection PyPep8Naming
         C_max = f[charge_hdtxt].max()
+        # noinspection PyPep8Naming
         C_min = f[charge_hdtxt].min()
+        # noinspection PyPep8Naming
         C_start = f.iloc[0][charge_hdtxt]
+        # noinspection PyPep8Naming
         C_end = f.iloc[-1][charge_hdtxt]
 
+        # noinspection PyPep8Naming
         C_delta = self._percentage_change(C_start, C_end, default_zero=True)
+        # noinspection PyPep8Naming
         C_rate = self._fractional_change(C_delta, t_delta)
 
         # ---discharge---
+        # noinspection PyPep8Naming
         D_avr = f[discharge_hdtxt].mean()
+        # noinspection PyPep8Naming
         D_std = f[discharge_hdtxt].std()
+        # noinspection PyPep8Naming
         D_max = f[discharge_hdtxt].max()
+        # noinspection PyPep8Naming
         D_min = f[discharge_hdtxt].min()
+        # noinspection PyPep8Naming
         D_start = f.iloc[0][discharge_hdtxt]
+        # noinspection PyPep8Naming
         D_end = f.iloc[-1][discharge_hdtxt]
 
+        # noinspection PyPep8Naming
         D_delta = self._percentage_change(D_start, D_end, default_zero=True)
+        # noinspection PyPep8Naming
         D_rate = self._fractional_change(D_delta, t_delta)
 
-
         # ---internal resistance ----
+        # noinspection PyPep8Naming
         IR = f.iloc[0][ir_hdtxt]
+        # noinspection PyPep8Naming
         IR_pct_change = f.iloc[0][ir_change_hdtxt]
 
         # ---output--
@@ -2045,7 +2087,6 @@ class cellpydata(object):
         step_table_txt_ir = headers_step_table["internal_resistance"]
         step_table_txt_ir_change = headers_step_table["internal_resistance_change"]
 
-
         # -------------create an "empty" df -----------------------------------
 
         # --- defining column names ---
@@ -2064,9 +2105,11 @@ class cellpydata(object):
 
         columns_end_limited = [headers_step_table["post_start"],
                                headers_step_table["post_end"],
-                               headers_step_table["post_delta"],]
+                               headers_step_table["post_delta"], ]
 
+        # noinspection PyPep8Naming
         columns_I = [headers_step_table["pre_current"] + x for x in columns_end]
+        # noinspection PyPep8Naming
         columns_V = [headers_step_table["pre_voltage"] + x for x in columns_end]
         columns_charge = [headers_step_table["pre_charge"] + x for x in columns_end]
         columns_discharge = [headers_step_table["pre_discharge"] + x for x in columns_end]
@@ -2272,7 +2315,7 @@ class cellpydata(object):
             self._report_empty_test()
             return
         if not append_df:
-            selected = []
+            selected = dict()
             for cycle, step in step_dict.items():
                 # print cycle, step
                 if len(step) > 1:
@@ -2350,10 +2393,12 @@ class cellpydata(object):
             step_dict[cycle] = [step]
         return step_dict
 
+    # noinspection PyPep8Naming
     def find_C_rates(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
         """Find the C-rates for the cycles (obs! under development)."""
         self.find_C_rates_old(steps, mass, nom_cap, silent, test_number)
 
+    # noinspection PyPep8Naming
     def find_C_rates_old(self, steps, mass=None, nom_cap=3579, silent=True, test_number=None):
         """Uses old type of step_dict, returns crate_dict.
 
@@ -2403,7 +2448,7 @@ class cellpydata(object):
 
         list_of_cycles = self.get_cycle_numbers(test_number=test_number)
         number_of_cycles = len(list_of_cycles)
-        txt = "you have %i cycles" % (number_of_cycles)
+        txt = "you have %i cycles" % number_of_cycles
         self.logger.debug(txt)
 
         out_data = []
@@ -2420,7 +2465,7 @@ class cellpydata(object):
                 out_data.append(c)
                 out_data.append(v)
             except:
-                txt = "could not extract cycle %i" % (cycle)
+                txt = "could not extract cycle %i" % cycle
                 self.logger.debug(txt)
 
         # Saving cycles in one .csv file (x,y,x,y,x,y...)
@@ -2492,10 +2537,10 @@ class cellpydata(object):
             test_number += 1
             if not self._is_not_empty_test(data):
                 print "exportcsv -"
-                print "empty test [%i]" % (test_number)
+                print "empty test [%i]" % test_number
                 print "not saved!"
             else:
-                if isinstance(data.loaded_from,(list, tuple)):
+                if isinstance(data.loaded_from, (list, tuple)):
                     txt = "merged file"
                     txt += "using first file as basename"
                     self.logger.debug(txt)
@@ -2568,7 +2613,7 @@ class cellpydata(object):
                 self.logger.debug("trying to make infotable")
                 infotbl, fidtbl = self._create_infotable(test_number=test_number)  # modify this
                 self.logger.debug("trying to save to hdf5")
-                txt = "\nHDF5 file: %s" % (outfile_all)
+                txt = "\nHDF5 file: %s" % outfile_all
                 self.logger.debug(txt)
                 store = pd.HDFStore(outfile_all)
                 self.logger.debug("trying to put dfdata")
@@ -2834,9 +2879,9 @@ class cellpydata(object):
                 self.logger.debug("returning full voltage col")
                 v = test[timestamp_header]
                 if in_minutes and v is not None:
-                    v = v / 60.0
+                    v /= 60.0
         if in_minutes and v is not None and not full:
-            v = v / 60.0
+            v /= 60.0
         return v
 
     def get_dcap(self, cycle=None, test_number=None):
@@ -3089,7 +3134,7 @@ class cellpydata(object):
                 o = c[self.headers_normal['voltage_txt']]
                 return [t, o]
             else:
-                txt = "ERROR! cycle %i not found" % (cycle_number)  # jepe fix
+                txt = "ERROR! cycle %i not found" % cycle_number  # jepe fix
                 self.logger.debug(txt)
                 return [None, None]
 
@@ -3196,8 +3241,8 @@ class cellpydata(object):
             from_unit_cap = self.raw_units["charge"]
             from_unit_mass = self.raw_units["mass"]
             from_unit = from_unit_cap / from_unit_mass
-        #  Remove this later
-        assert  float(from_unit / to_unit) == 1000000.0
+        # Remove this later
+        assert float(from_unit / to_unit) == 1000000.0
         return float(from_unit / to_unit) / mass
 
     def get_diagnostics_plots(self, test_number=None, scaled=False, ):
@@ -3235,25 +3280,34 @@ class cellpydata(object):
         shifted_charge_cap = []  # shifted charge capacity
 
         cycles = []
+        # noinspection PyPep8Naming
         RIC_cum = []
+        # noinspection PyPep8Naming
         RIC_disconnect_cum = []
+        # noinspection PyPep8Naming
         RIC_sei_cum = []
 
         cn_1 = 0.0
         ric_disconnect_cum = 0.0
         ric_sei_cum = 0.0
         ric_cum = 0.0
+        # noinspection PyPep8Naming
         C_n = None
+        # noinspection PyPep8Naming
         D_n = None
 
         for i, cycle in enumerate(cyclenos):
             try:
+                # noinspection PyPep8Naming
                 D_n = summarydata[discharge_txt][i]
+                # noinspection PyPep8Naming
                 C_n = summarydata[charge_txt][i]
                 dd = C_n - D_n
                 ric_n = (D_n - C_n) / C_n
                 try:
+                    # noinspection PyPep8Naming
                     C_n2 = summarydata[charge_txt][i + 1]
+                    # noinspection PyPep8Naming
                     D_n2 = summarydata[discharge_txt][i + 1]
                     ric_dis_n = (C_n - C_n2) / C_n
                     ric_sei_n = (D_n2 - C_n) / C_n
@@ -3281,14 +3335,14 @@ class cellpydata(object):
                 break
         if scaled is True:
             sdc_min = np.amin(shifted_discharge_cap)
-            shifted_discharge_cap = shifted_discharge_cap - sdc_min
+            shifted_discharge_cap -= sdc_min
             sdc_max = np.amax(shifted_discharge_cap)
-            shifted_discharge_cap = shifted_discharge_cap / sdc_max
+            shifted_discharge_cap /= sdc_max
 
             scc_min = np.amin(shifted_charge_cap)
-            shifted_charge_cap = shifted_charge_cap - scc_min
+            shifted_charge_cap -= scc_min
             scc_max = np.amax(shifted_charge_cap)
-            shifted_charge_cap = shifted_charge_cap / scc_max
+            shifted_charge_cap /= scc_max
 
         out = dict()
         out["cycles"] = cycles
@@ -3299,51 +3353,51 @@ class cellpydata(object):
         out["RIC_sei_cum"] = RIC_sei_cum
         return out
 
-    def get_cycle(self, cycle=1, step_type=None, step=None, v=False, test_number=None):
-        """Get cycle data.
-
-        Get the cycle data for cycle = cycle (default 1) for step_type or step. The function
-        returns a DataFrame filtered on cycle (and optionally step_type or step).
-        If neither step_type or step (number) is given, all data for the cycle will be returned
-        Warning: TODO - find out if copy or reference is returned
-        """
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
-            return
-        mystep = None
-        if v:
-            print "test number is %i" % test_number
-        if step_type:
-            # need to find the step-dict
-            mystep = self.find_step_numbers(step_type)[cycle][0]
-            if v:
-                print "selected step number %i" % mystep
-                print "all step numbers:"
-                print self.find_step_numbers(step_type)
-        else:
-            if step:
-                mystep = step
-
-        dataset = self.tests[test_number]
-        cycle_txt = self.headers_normal['cycle_index_txt']
-        #        test_name = dataset.test_name # nice to get the name of the dataset / experiment as well
-        #        sample_mass = dataset.mass # lets also get the sample mass (same as set in d.set_mass(m))
-
-        dfdata = dataset.dfdata
-        if mystep:
-            if v:
-                print "selecting correct step",
-                print mystep
-            step_txt = self.headers_normal['step_index_txt']
-            dfdata_cycle = dfdata[(dfdata[cycle_txt] == cycle) & (dfdata[step_txt] == mystep)]
-        else:
-            if not step and not step_type:
-                dfdata_cycle = dfdata[(dfdata[cycle_txt] == cycle)]
-            else:
-                print "ERROR! This cycle does not have any of your wanted steps"
-                dfdata_cycle = None
-        return dfdata_cycle
+    # def get_cycle(self, cycle=1, step_type=None, step=None, v=False, test_number=None):
+    #     """Get cycle data.
+    #
+    #     Get the cycle data for cycle = cycle (default 1) for step_type or step. The function
+    #     returns a DataFrame filtered on cycle (and optionally step_type or step).
+    #     If neither step_type or step (number) is given, all data for the cycle will be returned
+    #     Warning: TODO - find out if copy or reference is returned
+    #     """
+    #     test_number = self._validate_test_number(test_number)
+    #     if test_number is None:
+    #         self._report_empty_test()
+    #         return
+    #     mystep = None
+    #     if v:
+    #         print "test number is %i" % test_number
+    #     if step_type:
+    #         # need to find the step-dict
+    #         mystep = self.find_step_numbers(step_type)[cycle][0]
+    #         if v:
+    #             print "selected step number %i" % mystep
+    #             print "all step numbers:"
+    #             print self.find_step_numbers(step_type)
+    #     else:
+    #         if step:
+    #             mystep = step
+    #
+    #     _dataset = self.tests[test_number]
+    #     cycle_txt = self.headers_normal['cycle_index_txt']
+    #     #        test_name = dataset.test_name # nice to get the name of the dataset / experiment as well
+    #     #        sample_mass = dataset.mass # lets also get the sample mass (same as set in d.set_mass(m))
+    #
+    #     dfdata = _dataset.dfdata
+    #     if mystep:
+    #         if v:
+    #             print "selecting correct step",
+    #             print mystep
+    #         step_txt = self.headers_normal['step_index_txt']
+    #         dfdata_cycle = dfdata[(dfdata[cycle_txt] == cycle) & (dfdata[step_txt] == mystep)]
+    #     else:
+    #         if not step and not step_type:
+    #             dfdata_cycle = dfdata[(dfdata[cycle_txt] == cycle)]
+    #         else:
+    #             print "ERROR! This cycle does not have any of your wanted steps"
+    #             dfdata_cycle = None
+    #     return dfdata_cycle
 
     def _set_mass(self, test_number, value):
         try:
@@ -3415,7 +3469,8 @@ class cellpydata(object):
         """
         self._set_run_attribute("nom_cap", nom_caps, test_numbers=test_numbers, validated=validated)
 
-    def set_col_first(self, df, col_names):
+    @staticmethod
+    def set_col_first(df, col_names):
         """set selected columns first in a pandas.DataFrame.
 
         This function sets cols with names given in  col_names (a list) first in the DataFrame.
@@ -3496,7 +3551,8 @@ class cellpydata(object):
 
     # -----------internal-helpers---------------------------------------------------
 
-    def is_empty(self, v):
+    @staticmethod
+    def is_empty(v):
         try:
             if not v:
                 return True
@@ -3521,7 +3577,6 @@ class cellpydata(object):
         else:
             return False
 
-
     @staticmethod
     def _check_file_type(filename):
         extension = os.path.splitext(filename)[-1]
@@ -3536,10 +3591,11 @@ class cellpydata(object):
     def _bounds(x):
         return np.amin(x), np.amax(x)
 
-    def _roundup(self, x):
+    @staticmethod
+    def _roundup(x):
         n = 1000.0
         x = np.ceil(x * n)
-        x = x / n
+        x /= n
         return x
 
     def _rounddown(self, x):
@@ -3547,7 +3603,8 @@ class cellpydata(object):
         x = -x
         return x
 
-    def _reverse(self, x):
+    @staticmethod
+    def _reverse(x):
         x = x[::-1]
         # x = x.sort_index(ascending=True)
         return x
@@ -3573,17 +3630,18 @@ class cellpydata(object):
         steps = []
         max_step = max(dfdata[c_txt])
         for j in range(max_step):
-            last_item = max(dfdata.loc[dfdata[c_txt] == j + 1,d_txt])
+            last_item = max(dfdata.loc[dfdata[c_txt] == j + 1, d_txt])
             steps.append(last_item)
         last_items = dfdata[d_txt].isin(steps)
         return last_items
 
-
-    def _modify_cycle_number_using_cycle_step(self, from_tuple=[1, 4], to_cycle=44, test_number=None):
+    def _modify_cycle_number_using_cycle_step(self, from_tuple=None, to_cycle=44, test_number=None):
         # modify step-cycle tuple to new step-cycle tuple
         # from_tuple = [old cycle_number, old step_number]
         # to_cycle    = new cycle_number
 
+        if from_tuple is None:
+            from_tuple = [1, 4]
         self.logger.debug("**- _modify_cycle_step")
         test_number = self._validate_test_number(test_number)
         if test_number is None:
@@ -3625,7 +3683,7 @@ class cellpydata(object):
                 txt = "creating summary for file "
                 test = self.tests[j]
                 if not self._is_not_empty_test(test):
-                    print "empty test %i" % (j)
+                    print "empty test %i" % j
                     return
                 if isinstance(test.loaded_from, (list, tuple)):
                     for f in test.loaded_from:
@@ -3805,7 +3863,7 @@ class cellpydata(object):
             _second_step_txt = discharge_title
 
         self.logger.debug("Creates summary: coulombic efficiency ('%s')" % coulomb_title)
-        self.logger.debug("100 * ('%s')/('%s)" % (_second_step_txt,_first_step_txt ))
+        self.logger.debug("100 * ('%s')/('%s)" % (_second_step_txt, _first_step_txt))
         dfsummary[coulomb_title] = 100.0 * dfsummary[_second_step_txt] / dfsummary[_first_step_txt]
 
         self.logger.debug("Creates summary: coulombic difference ('%s')" % coulomb_diff_title)
@@ -3861,25 +3919,29 @@ class cellpydata(object):
 
         # --------------relative irreversible capacities as defined by Gauthier et al.---
         # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
-        RIC = (dfsummary[_first_step_txt].shift(1) - dfsummary[_second_step_txt])\
-              / dfsummary[_second_step_txt].shift(1)
+        # noinspection PyPep8Naming
+        RIC = (dfsummary[_first_step_txt].shift(1) - dfsummary[_second_step_txt]) \
+            / dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_title] = RIC.cumsum()
 
         # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
-        RIC_SEI = (dfsummary[_first_step_txt] - dfsummary[_second_step_txt].shift(1))\
-                  / dfsummary[_second_step_txt].shift(1)
+        # noinspection PyPep8Naming
+        RIC_SEI = (dfsummary[_first_step_txt] - dfsummary[_second_step_txt].shift(1)) \
+            / dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_sei_title] = RIC_SEI.cumsum()
 
         # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
-        RIC_disconnect = (dfsummary[_second_step_txt].shift(1) - dfsummary[_second_step_txt])\
-                         / dfsummary[_second_step_txt].shift(1)
+        # noinspection PyPep8Naming
+        RIC_disconnect = (dfsummary[_second_step_txt].shift(1) - dfsummary[_second_step_txt]) \
+            / dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_disconnect_title] = RIC_disconnect.cumsum()
 
         # -------------- shifted capacities as defined by J. Dahn et al. -----
         # need to double check this (including checking if it is valid in cathode mode).
         individual_edge_movement = dfsummary[_first_step_txt] - dfsummary[_second_step_txt]
         dfsummary[shifted_charge_capacity_title] = individual_edge_movement.cumsum()
-        dfsummary[shifted_discharge_capacity_title] = dfsummary[shifted_charge_capacity_title] + dfsummary[_first_step_txt]
+        dfsummary[shifted_discharge_capacity_title] = dfsummary[shifted_charge_capacity_title] + dfsummary[
+            _first_step_txt]
 
         if convert_date:
             self.logger.debug("converting date from xls-type")
@@ -3887,7 +3949,7 @@ class cellpydata(object):
 
         if find_ocv and not self.load_only_summary:
             # should remove this option
-            print 20*"*"
+            print 20 * "*"
             print "CONGRATULATIONS"
             print "-though this would never be run!"
             print "-find_ocv in make_summary"
@@ -3980,11 +4042,11 @@ class cellpydata(object):
             self.logger.debug(discharge_steps)
 
             for i in dfsummary.index:
-                txt = "index in dfsummary.index: %i" % (i)
+                txt = "index in dfsummary.index: %i" % i
                 self.logger.debug(txt)
                 # selecting the appropriate cycle
                 cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
-                txt = "cycle: %i" % (cycle)
+                txt = "cycle: %i" % cycle
                 self.logger.debug(txt)
                 step = discharge_steps[cycle]
 
@@ -4044,11 +4106,11 @@ class cellpydata(object):
             self.logger.debug(discharge_steps)
 
             for i in dfsummary.index:
-                txt = "index in dfsummary.index: %i" % (i)
+                txt = "index in dfsummary.index: %i" % i
                 self.logger.debug(txt)
                 # selecting the appropriate cycle
                 cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
-                txt = "cycle: %i" % (cycle)
+                txt = "cycle: %i" % cycle
                 self.logger.debug(txt)
                 step = discharge_steps[cycle]
                 if step[0]:
@@ -4120,6 +4182,7 @@ def just_load_srno(srno, prm_filename=None):
     that things are set up correctly
 
     Args:
+        prm_filename: name of parameter file (optional).
         srno (int): serial number
 
     Example:
@@ -4280,16 +4343,17 @@ def load_and_print_resfile(filename, info_dict=None):
 
     return info_dict
 
+
 def loadcell_check():
     print "running loadcell_check"
     out_dir = r"C:\Cell_data\tmp"
     mass = 0.078609164
-    rawfile =  r"C:\Cell_data\tmp\large_file_01.res"
+    rawfile = r"C:\Cell_data\tmp\large_file_01.res"
     cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
     cell_data = cellpydata()
     cell_data.select_minimal = True
     cell_data.chunk_size = 100000
-    #cell_data.last_chunk = 28
+    # cell_data.last_chunk = 28
     cell_data.load_until_error = True
     cell_data.max_res_filesize = 500000000
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
@@ -4319,10 +4383,10 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     for cycle in d_res.get_cycle_numbers():
         try:
             if type_of_data == 'ocvrlx_up':
-                print "getting ocvrlx up data for cycle %i" % (cycle)
+                print "getting ocvrlx up data for cycle %i" % cycle
                 t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
             else:
-                print "getting ocvrlx down data for cycle %i" % (cycle)
+                print "getting ocvrlx down data for cycle %i" % cycle
                 t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
             plt.plot(t, v)
             t = t.tolist()
@@ -4336,7 +4400,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
             out_data.append(v)
 
         except:
-            print "could not extract cycle %i" % (cycle)
+            print "could not extract cycle %i" % cycle
 
     save_to_file = False
     if save_to_file:
@@ -4346,7 +4410,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
         outfile = fileout + endstring
 
         delimiter = ";"
-        print "saving the file with delimiter '%s' " % (delimiter)
+        print "saving the file with delimiter '%s' " % delimiter
         with open(outfile, "wb") as f:
             writer = csv.writer(f, delimiter=delimiter)
             writer.writerows(itertools.izip_longest(*out_data))
@@ -4391,6 +4455,7 @@ if __name__ == "__main__":
     print sys.argv[0]
     import logging
     from cellpy import log
+
     log.setup_logging(default_level=logging.DEBUG)
     testfile = "../indata/20160805_test001_45_cc_01.res"
     load_and_print_resfile(testfile)
