@@ -70,6 +70,131 @@ pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
 # module_logger = logging.getLogger(__name__)
 
+
+def get_headers_summary():
+    # - headers for out-files
+    # 08.12.2016: added temperature_last, temperature_mean, aux_
+    headers_summary = dict()
+    headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
+    headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
+    headers_summary["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
+    headers_summary["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
+    headers_summary["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
+    headers_summary["cumulated_coulombic_efficiency"] = "Cumulated_Coulombic_Efficiency(percentage)"
+    headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
+    headers_summary["cumulated_coulombic_difference"] = "Cumulated_Coulombic_Difference(mAh/g)"
+    headers_summary["discharge_capacity_loss"] = "Discharge_Capacity_Loss(mAh/g)"
+    headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
+    headers_summary["cumulated_discharge_capacity_loss"] = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
+    headers_summary["cumulated_charge_capacity_loss"] = "Cumulated_Charge_Capacity_Loss(mAh/g)"
+    headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
+    headers_summary["ir_charge"] = "IR_Charge(Ohms)"
+    headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
+    headers_summary["ocv_second_min"] = "OCV_Second_Min(V)"
+    headers_summary["ocv_first_max"] = "OCV_First_Max(V)"
+    headers_summary["ocv_second_max"] = "OCV_Second_Max(V)"
+    headers_summary["date_time_txt"] = "Date_Time_Txt(str)"
+    headers_summary["end_voltage_discharge"] = "End_Voltage_Discharge(V)"
+    headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
+    headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
+    headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
+    headers_summary["cumulated_ric"] = "RIC(none)"
+    headers_summary["low_level"] = "Low_Level(percentage)"  # Sum of irreversible capacity
+    headers_summary["high_level"] = "High_Level(percentage)"  # SEI loss
+    headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
+    headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
+    headers_summary["temperature_last"] = "Last_Temperature(C)"
+    headers_summary["temperature_mean"] = "Average_Temperature(C)"
+    headers_summary["pre_aux"] = "Aux_"
+    return headers_summary
+
+
+def get_cellpy_units():
+    cellpy_units = dict()
+    cellpy_units["current"] = 0.001  # mA
+    cellpy_units["charge"] = 0.001  # Ah
+    cellpy_units["mass"] = 0.001  # mg (used for input of mass)
+    cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. specific capacity
+    return cellpy_units
+
+
+def get_headers_normal():
+    headers_normal = dict()
+    headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
+    headers_normal['ac_impedance_txt'] = 'AC_Impedance'
+    headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
+    headers_normal['charge_energy_txt'] = 'Charge_Energy'
+    headers_normal['current_txt'] = 'Current'
+    headers_normal['cycle_index_txt'] = 'Cycle_Index'
+    headers_normal['data_point_txt'] = 'Data_Point'
+    headers_normal['datetime_txt'] = 'DateTime'
+    headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
+    headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
+    headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
+    headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
+    headers_normal['step_index_txt'] = 'Step_Index'
+    headers_normal['step_time_txt'] = 'Step_Time'
+    headers_normal['test_id_txt'] = 'Test_ID'
+    headers_normal['test_time_txt'] = 'Test_Time'
+    headers_normal['voltage_txt'] = 'Voltage'
+    headers_normal['dv_dt_txt'] = 'dV/dt'
+    return headers_normal
+
+
+def get_headers_step_table():
+    # 08.12.2016: added sub_step, sub_type, and pre_time
+    headers_step_table = dict()
+    headers_step_table["test"] = "test"
+    headers_step_table["cycle"] = "cycle"
+    headers_step_table["step"] = "step"
+    headers_step_table["sub_step"] = "sub_step"
+    headers_step_table["type"] = "type"
+    headers_step_table["sub_type"] = "sub_type"
+    headers_step_table["info"] = "info"
+    headers_step_table["pre_current"] = "I_"
+    headers_step_table["pre_voltage"] = "V_"
+    headers_step_table["pre_charge"] = "Charge_"
+    headers_step_table["pre_discharge"] = "Discharge_"
+    headers_step_table["pre_point"] = "datapoint_"
+    headers_step_table["pre_time"] = "time_"
+    headers_step_table["post_mean"] = "avr"
+    headers_step_table["post_std"] = "std"
+    headers_step_table["post_max"] = "max"
+    headers_step_table["post_min"] = "min"
+    headers_step_table["post_start"] = "start"
+    headers_step_table["post_end"] = "end"
+    headers_step_table["post_delta"] = "delta"
+    headers_step_table["post_rate"] = "rate"
+    headers_step_table["internal_resistance"] = "IR"
+    headers_step_table["internal_resistance_change"] = "IR_pct_change"
+    return headers_step_table
+
+
+def check64bit(System="python"):
+    """checks if you are on a 64 bit platform"""
+    if System == "python":
+        try:
+            return sys.maxsize > 2147483647
+        except:
+            return sys.maxint > 2147483647
+    elif System == "os":
+        import platform
+        pm = platform.machine()
+        if pm != ".." and pm.endswith('64'):  # recent Python (not Iron)
+            return True
+        else:
+            if 'PROCESSOR_ARCHITEW6432' in os.environ:
+                return True  # 32 bit program running on 64 bit Windows
+            try:
+                return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')  # 64 bit Windows 64 bit program
+            except IndexError:
+                pass  # not Windows
+            try:
+                return '64' in platform.architecture()[0]  # this often works in Linux
+            except:
+                return False  # is an older version of Python, assume also an older os (best we can guess)
+
+
 def humanize_bytes(b, precision=1):
     """Return a humanized string representation of a number of b.
 
@@ -355,7 +480,6 @@ class dataset(object):
         return txt
 
 
-# noinspection PyPep8Naming,PyPep8Naming
 class cellpydata(object):
     """Main class for working and storing data.
 
@@ -440,128 +564,61 @@ class cellpydata(object):
         self.auto_dirs = True  # search in prm-file for res and hdf5 dirs in loadcel
 
         # - headers and instruments
-        self.headers_normal = self._set_headers_normal()
-        self.headers_summary = self._set_headers_summary()
-        self.headers_step_table = self._set_headers_step_table()
+        self.headers_normal = get_headers_normal()
+        self.headers_summary = get_headers_summary()
+        self.headers_step_table = get_headers_step_table()
 
         self.table_names = None  # dictionary defined in set_instruments
         self.set_instrument()
 
         # - units used by cellpy
-        self.cellpy_units = self._set_units()
-
-    @staticmethod
-    def _set_headers_step_table():
-        # 08.12.2016: added sub_step, sub_type, and pre_time
-        headers_step_table = dict()
-        headers_step_table["test"] = "test"
-        headers_step_table["cycle"] = "cycle"
-        headers_step_table["step"] = "step"
-        headers_step_table["sub_step"] = "sub_step"
-        headers_step_table["type"] = "type"
-        headers_step_table["sub_type"] = "sub_type"
-        headers_step_table["info"] = "info"
-        headers_step_table["pre_current"] = "I_"
-        headers_step_table["pre_voltage"] = "V_"
-        headers_step_table["pre_charge"] = "Charge_"
-        headers_step_table["pre_discharge"] = "Discharge_"
-        headers_step_table["pre_point"] = "datapoint_"
-        headers_step_table["pre_time"] = "time_"
-        headers_step_table["post_mean"] = "avr"
-        headers_step_table["post_std"] = "std"
-        headers_step_table["post_max"] = "max"
-        headers_step_table["post_min"] = "min"
-        headers_step_table["post_start"] = "start"
-        headers_step_table["post_end"] = "end"
-        headers_step_table["post_delta"] = "delta"
-        headers_step_table["post_rate"] = "rate"
-        headers_step_table["internal_resistance"] = "IR"
-        headers_step_table["internal_resistance_change"] = "IR_pct_change"
-        return headers_step_table
-
-    @staticmethod
-    def _set_headers_summary():
-        # - headers for out-files
-        # 08.12.2016: added temperature_last, temperature_mean, aux_
-        headers_summary = dict()
-        headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
-        headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
-        headers_summary["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
-        headers_summary["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
-        headers_summary["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
-        headers_summary["cumulated_coulombic_efficiency"] = "Cumulated_Coulombic_Efficiency(percentage)"
-        headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
-        headers_summary["cumulated_coulombic_difference"] = "Cumulated_Coulombic_Difference(mAh/g)"
-        headers_summary["discharge_capacity_loss"] = "Discharge_Capacity_Loss(mAh/g)"
-        headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
-        headers_summary["cumulated_discharge_capacity_loss"] = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
-        headers_summary["cumulated_charge_capacity_loss"] = "Cumulated_Charge_Capacity_Loss(mAh/g)"
-        headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
-        headers_summary["ir_charge"] = "IR_Charge(Ohms)"
-        headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
-        headers_summary["ocv_second_min"] = "OCV_Second_Min(V)"
-        headers_summary["ocv_first_max"] = "OCV_First_Max(V)"
-        headers_summary["ocv_second_max"] = "OCV_Second_Max(V)"
-        headers_summary["date_time_txt"] = "Date_Time_Txt(str)"
-        headers_summary["end_voltage_discharge"] = "End_Voltage_Discharge(V)"
-        headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
-        headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
-        headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
-        headers_summary["cumulated_ric"] = "RIC(none)"
-        headers_summary["low_level"] = "Low_Level(percentage)"  # Sum of irreversible capacity
-        headers_summary["high_level"] = "High_Level(percentage)"  # SEI loss
-        headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
-        headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
-        headers_summary["temperature_last"] = "Last_Temperature(C)"
-        headers_summary["temperature_mean"] = "Average_Temperature(C)"
-        headers_summary["pre_aux"] = "Aux_"
-
-        return headers_summary
-
-    @staticmethod
-    def _set_units():
-        cellpy_units = dict()
-        cellpy_units["current"] = 0.001  # mA
-        cellpy_units["charge"] = 0.001  # Ah
-        cellpy_units["mass"] = 0.001  # mg (used for input of mass)
-        cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. specific capacity
-        return cellpy_units
+        self.cellpy_units = get_cellpy_units()
 
     def set_instrument(self, instrument=None):
+        """
+
+        Args:
+            instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]
+
+        Sets the instrument used for obtaining the data (i.e. sets fileformat)
+
+        """
         if instrument is None:
             instrument = self.tester
 
         if instrument == "arbin":
             self._set_arbin()
 
-    @staticmethod
-    def _set_headers_normal():
-        # TODO: create dictionary for normal headers
-        # here we should set the normal headers (for the dfdata)
-        # at the moment, the script uses same headers as arbin
-        headers_normal = dict()
-        headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
-        headers_normal['ac_impedance_txt'] = 'AC_Impedance'
-        headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
-        headers_normal['charge_energy_txt'] = 'Charge_Energy'
-        headers_normal['current_txt'] = 'Current'
-        headers_normal['cycle_index_txt'] = 'Cycle_Index'
-        headers_normal['data_point_txt'] = 'Data_Point'
-        headers_normal['datetime_txt'] = 'DateTime'
-        headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
-        headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
-        headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
-        headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
-        headers_normal['step_index_txt'] = 'Step_Index'
-        headers_normal['step_time_txt'] = 'Step_Time'
-        headers_normal['test_id_txt'] = 'Test_ID'
-        headers_normal['test_time_txt'] = 'Test_Time'
-        headers_normal['voltage_txt'] = 'Voltage'
-        headers_normal['dv_dt_txt'] = 'dV/dt'
-        return headers_normal
+    def _set_biologic(self):
+        self.loader = self._load_biologic
+        # - units used
+        self.raw_units = dict()
+        self.raw_units["current"] = 1.0  # A
+        self.raw_units["charge"] = 1.0  # Ah
+        self.raw_units["mass"] = 0.001  # g
+
+        # - setting minimum selection
+        self.minimum_selection["biologic"] = ["Data_Point", "Test_Time", "Step_Time",
+                                           "DateTime", "Step_Index", "Cycle_Index",
+                                           "Current", "Voltage", "Charge_Capacity",
+                                           "Discharge_Capacity", "Internal_Resistance",
+                                           ]
+
+        # - setting limits (used for deciding step-type)
+        self.raw_limits["current_hard"] = 0.0000000000001
+        self.raw_limits["current_soft"] = 0.00001
+        self.raw_limits["stable_current_hard"] = 2.0
+        self.raw_limits["stable_current_soft"] = 4.0
+        self.raw_limits["stable_voltage_hard"] = 2.0
+        self.raw_limits["stable_voltage_soft"] = 4.0
+        self.raw_limits["stable_charge_hard"] = 2.0
+        self.raw_limits["stable_charge_soft"] = 5.0
+        self.raw_limits["ir_change"] = 0.00001
+
 
     def _set_arbin(self):
         self.loader = self._loadres
+        # TODO: here we should implement from instruments import arbin.load as loader etc.
 
         self.table_names = dict()
         self.headers_raw_global = dict()
@@ -935,6 +992,7 @@ class cellpydata(object):
         # This function only loads one test at a time (but could contain several files). The
         # function loadres() also implements loading several tests (using list of lists as
         # input.
+
         if file_names:
             self.file_names = file_names
 
@@ -953,7 +1011,7 @@ class cellpydata(object):
         test_number = 0
         test = None
         for f in self.file_names:
-            new_tests = raw_file_loader(f)
+            new_tests = raw_file_loader(f) # this should now work
             if test is not None:
                 new_tests[test_number] = self._append(test[test_number], new_tests[test_number])
                 for raw_data_file, file_size in zip(new_tests[test_number].raw_data_files,
@@ -1112,30 +1170,6 @@ class cellpydata(object):
     def _empty_test():
         return None
 
-    # noinspection PyPep8Naming
-    @staticmethod
-    def _check64bit(System="python"):
-        if System == "python":
-            try:
-                return sys.maxsize > 2147483647
-            except:
-                return sys.maxint > 2147483647
-        elif System == "os":
-            import platform
-            pm = platform.machine()
-            if pm != ".." and pm.endswith('64'):  # recent Python (not Iron)
-                return True
-            else:
-                if 'PROCESSOR_ARCHITEW6432' in os.environ:
-                    return True  # 32 bit program running on 64 bit Windows
-                try:
-                    return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')  # 64 bit Windows 64 bit program
-                except IndexError:
-                    pass  # not Windows
-                try:
-                    return '64' in platform.architecture()[0]  # this often works in Linux
-                except:
-                    return False  # is an older version of Python, assume also an older os (best we can guess)
 
     def load(self, cellpy_file):
         """Loads a cellpy file.
@@ -1429,6 +1463,11 @@ class cellpydata(object):
         print "q <-"
         return new_tests
 
+    def _load_biologic(self, file_name=None):
+        warnings.warn("not implemented")
+        new_tests = None
+        return new_tests
+
     def _loadres(self, file_name=None):
         """Loads data from arbin .res files.
 
@@ -1597,8 +1636,8 @@ class cellpydata(object):
 
     def __get_res_connector(self, temp_filename):
         # -------checking bit and os----------------
-        is64bit_python = self._check64bit(System="python")
-        # is64bit_os = self._check64bit(System = "os")
+        is64bit_python = check64bit(System="python")
+        # is64bit_os = check64bit(System = "os")
         if USE_ADO:
             if is64bit_python:
                 print "using 64 bit python"
