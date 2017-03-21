@@ -575,7 +575,7 @@ class cellpydata(object):
         self.cellpy_units = get_cellpy_units()
 
     def set_instrument(self, instrument=None):
-        """
+        """Set the instrument (i.e. tell cellpy what kind of file you are going to work with).
 
         Args:
             instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]
@@ -589,131 +589,53 @@ class cellpydata(object):
         if instrument == "arbin":
             self._set_arbin()
 
+
     def _set_biologic(self):
-        self.loader = self._load_biologic
-        # - units used
-        self.raw_units = dict()
-        self.raw_units["current"] = 1.0  # A
-        self.raw_units["charge"] = 1.0  # Ah
-        self.raw_units["mass"] = 0.001  # g
+        warnings.warn("not implemented")
 
-        # - setting minimum selection
-        self.minimum_selection["biologic"] = ["Data_Point", "Test_Time", "Step_Time",
-                                           "DateTime", "Step_Index", "Cycle_Index",
-                                           "Current", "Voltage", "Charge_Capacity",
-                                           "Discharge_Capacity", "Internal_Resistance",
-                                           ]
 
-        # - setting limits (used for deciding step-type)
-        self.raw_limits["current_hard"] = 0.0000000000001
-        self.raw_limits["current_soft"] = 0.00001
-        self.raw_limits["stable_current_hard"] = 2.0
-        self.raw_limits["stable_current_soft"] = 4.0
-        self.raw_limits["stable_voltage_hard"] = 2.0
-        self.raw_limits["stable_voltage_soft"] = 4.0
-        self.raw_limits["stable_charge_hard"] = 2.0
-        self.raw_limits["stable_charge_soft"] = 5.0
-        self.raw_limits["ir_change"] = 0.00001
+    def _set_pec(self):
+        warnings.warn("not implemented")
+
+
+    def _set_maccor(self):
+        warnings.warn("not implemented")
 
 
     def _set_arbin(self):
-        self.loader = self._loadres
-        # TODO: here we should implement from instruments import arbin.load as loader etc.
+        from .instruments import arbin as instr
 
-        self.table_names = dict()
-        self.headers_raw_global = dict()
-        self.headers_raw_normal = dict()
-        self.headers_raw_stats = dict()
-        self.raw_limits = dict()
 
-        # - table names
-        # self.tablename_normal = "Channel_Normal_Table"
-        # self.tablename_global = "Global_Table"
-        # self.tablename_statistic = "Channel_Statistic_Table"
+        # get information
+        self.raw_units = instr.get_raw_units()
+        self.raw_limits = instr.get_raw_limits()
 
-        self.table_names["normal"] = "Channel_Normal_Table"
-        self.table_names["global"] = "Global_Table"
-        self.table_names["statistic"] = "Channel_Statistic_Table"
+        # send information (should improve this later)
+        loader_class = instr.ArbinLoader()
+        loader_class.load_only_summary = self.load_only_summary
+        loader_class.select_minimal = self.select_minimal
+        loader_class.max_res_filesize = self.max_res_filesize
+        loader_class.chunk_size = self.chunk_size
+        loader_class.max_chunks = self.max_chunks
+        loader_class.last_chunk = self.last_chunk
+        loader_class.limit_loaded_cycles = self.limit_loaded_cycles
+        loader_class.load_until_error = self.load_until_error
 
-        # - global column headings
-        self.applications_path_txt = 'Applications_Path'
-        self.channel_index_txt = 'Channel_Index'
-        self.channel_number_txt = 'Channel_Number'
-        self.channel_type_txt = 'Channel_Type'
-        self.comments_txt = 'Comments'
-        self.creator_txt = 'Creator'
-        self.daq_index_txt = 'DAQ_Index'
-        self.item_id_txt = 'Item_ID'
-        self.log_aux_data_flag_txt = 'Log_Aux_Data_Flag'
-        self.log_chanstat_data_flag_txt = 'Log_ChanStat_Data_Flag'
-        self.log_event_data_flag_txt = 'Log_Event_Data_Flag'
-        self.log_smart_battery_data_flag_txt = 'Log_Smart_Battery_Data_Flag'
-        self.mapped_aux_conc_cnumber_txt = 'Mapped_Aux_Conc_CNumber'
-        self.mapped_aux_di_cnumber_txt = 'Mapped_Aux_DI_CNumber'
-        self.mapped_aux_do_cnumber_txt = 'Mapped_Aux_DO_CNumber'
-        self.mapped_aux_flow_rate_cnumber_txt = 'Mapped_Aux_Flow_Rate_CNumber'
-        self.mapped_aux_ph_number_txt = 'Mapped_Aux_PH_Number'
-        self.mapped_aux_pressure_number_txt = 'Mapped_Aux_Pressure_Number'
-        self.mapped_aux_temperature_number_txt = 'Mapped_Aux_Temperature_Number'
-        self.mapped_aux_voltage_number_txt = 'Mapped_Aux_Voltage_Number'
-        self.schedule_file_name_txt = 'Schedule_File_Name'  # KEEP FOR CELLPY FILE FORMAT
-        self.start_datetime_txt = 'Start_DateTime'
-        self.test_id_txt = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT
-        self.test_name_txt = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
+        # create loader
+        self.loader = loader_class.loader
 
-        # - normal table headings
-        # COMMENTED OUT 08.03.2017 - use self.headers_normal['aci_phase_angle_txt'] etc. instead.
-        # self.aci_phase_angle_txt = 'ACI_Phase_Angle'
-        # self.ac_impedance_txt = 'AC_Impedance'
-        # self.charge_capacity_txt = 'Charge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
-        # self.charge_energy_txt = 'Charge_Energy'  # KEEP FOR CELLPY FILE FORMAT
-        # self.current_txt = 'Current'  # KEEP FOR CELLPY FILE FORMAT
-        # self.cycle_index_txt = 'Cycle_Index'  # KEEP FOR CELLPY FILE FORMAT
-        # self.data_point_txt = 'Data_Point'  # KEEP FOR CELLPY FILE FORMAT
-        # self.datetime_txt = 'DateTime'  # KEEP FOR CELLPY FILE FORMAT
-        # self.discharge_capacity_txt = 'Discharge_Capacity'  # KEEP FOR CELLPY FILE FORMAT
-        # self.discharge_energy_txt = 'Discharge_Energy'  # KEEP FOR CELLPY FILE FORMAT
-        # self.internal_resistance_txt = 'Internal_Resistance'  # KEEP FOR CELLPY FILE FORMAT
-        # self.is_fc_data_txt = 'Is_FC_Data'
-        # self.step_index_txt = 'Step_Index'  # KEEP FOR CELLPY FILE FORMAT
-        # self.step_time_txt = 'Step_Time'  # KEEP FOR CELLPY FILE FORMAT
-        # self.test_id_txt = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT (already defined in global table headers list)
-        # self.test_time_txt = 'Test_Time'  # KEEP FOR CELLPY FILE FORMAT
-        # self.voltage_txt = 'Voltage'  # KEEP FOR CELLPY FILE FORMAT
-        # self.dv_dt_txt = 'dV/dt'
-
-        # - units used
-        self.raw_units = dict()
-        self.raw_units["current"] = 1.0  # A
-        self.raw_units["charge"] = 1.0  # Ah
-        self.raw_units["mass"] = 0.001  # g
-
-        # - setting minimum selection
-        self.minimum_selection["arbin"] = ["Data_Point", "Test_Time", "Step_Time",
-                                           "DateTime", "Step_Index", "Cycle_Index",
-                                           "Current", "Voltage", "Charge_Capacity",
-                                           "Discharge_Capacity", "Internal_Resistance",
-                                           ]
-
-        # - setting limits (used for deciding step-type)
-        self.raw_limits["current_hard"] = 0.0000000000001
-        self.raw_limits["current_soft"] = 0.00001
-        self.raw_limits["stable_current_hard"] = 2.0
-        self.raw_limits["stable_current_soft"] = 4.0
-        self.raw_limits["stable_voltage_hard"] = 2.0
-        self.raw_limits["stable_voltage_soft"] = 4.0
-        self.raw_limits["stable_charge_hard"] = 2.0
-        self.raw_limits["stable_charge_soft"] = 5.0
-        self.raw_limits["ir_change"] = 0.00001
 
     def _create_logger(self, verbose=False):
         from cellpy import log
         self.logger = logging.getLogger(__name__)
         log.setup_logging(default_level=logging.DEBUG)
 
+
     def set_cycle_mode(self, cycle_mode):
+        """set the cycle mode (will be deprecated soon - use cellpydata.cyclemode = "anode" etc.)"""
         # should use proper python 'setting' (decorator etc)
         self.cycle_mode = cycle_mode
+
 
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
@@ -999,19 +921,12 @@ class cellpydata(object):
         if not isinstance(file_names, (list, tuple)):
             self.file_names = [file_names, ]
 
-        file_type = self.tester
+        # file_type = self.tester
         raw_file_loader = self.loader
-        # if file_type == "arbin":
-        #     raw_file_loader = self._loadres
-        #     # HERE WE SHOULD INSTEAD IMPORT from instruments.arbin
-        #     #
-        # else:
-        #     raw_file_loader = self._loadres # only arbin available at the moment
-
         test_number = 0
         test = None
         for f in self.file_names:
-            new_tests = raw_file_loader(f) # this should now work
+            new_tests = raw_file_loader(f)  # this should now work
             if test is not None:
                 new_tests[test_number] = self._append(test[test_number], new_tests[test_number])
                 for raw_data_file, file_size in zip(new_tests[test_number].raw_data_files,
@@ -1037,12 +952,13 @@ class cellpydata(object):
                 inner list will be merged.
             check_file_type (bool): check file type if True (res-, or cellpy-format)
         """
-        # TODO: use type-checking
+        warnings.warn("deprecated - use load_raw instead")
         txt = "number of tests: %i" % len(self.file_names)
         self.logger.debug(txt)
         test_number = 0
         counter = 0
         filetype = "res"
+        raw_file_loader = self.loader
 
         # checking if new file_names is provided or if we should use the stored (self.file_names)
         # values
@@ -1062,7 +978,7 @@ class cellpydata(object):
                 if check_file_type:
                     filetype = self._check_file_type(f)
                 if filetype == "res":
-                    newtests = self._loadres(f)
+                    newtests = raw_file_loader(f)
                 elif filetype == "h5":
                     newtests = self._load_hdf5(f)
             else:  # item contains several file_names (sets of data) or is a single valued list
@@ -1070,7 +986,7 @@ class cellpydata(object):
                     if check_file_type:
                         filetype = self._check_file_type(f[0])
                     if filetype == "res":
-                        newtests = self._loadres(f[0])
+                        newtests = raw_file_loader(f[0])
 
                     elif filetype == "h5":
                         newtests = self._load_hdf5(f[0])
@@ -1085,7 +1001,7 @@ class cellpydata(object):
                         if check_file_type:
                             filetype = self._check_file_type(f2)
                         if filetype == "res":
-                            newtests1 = self._loadres(f2)  # loading file
+                            newtests1 = raw_file_loader(f2)  # loading file
 
                         # print "loaded file",
                         # print f2
@@ -1116,20 +1032,6 @@ class cellpydata(object):
         # validating tests
         self.tests_status = self._validate_tests()
 
-    #        if separate_datasets:
-    #            print "not implemented yet"
-    #        else:
-    #            if not tests:
-    #                tests=range(len(self.tests))
-    #            first_test = True
-    #            for test_number in tests:
-    #                if first_test:
-    #                    test = self.tests[test_number]
-    #                    first_test = False
-    #                else:
-    #                    test = self._append(test,self.tests[test_number])
-    #            self.tests = [test]
-    #            self.number_of_tests=1
 
     def _validate_tests(self, level=0):
         self.logger.debug("validating test")
@@ -1363,292 +1265,6 @@ class cellpydata(object):
             lengths.append(l)
         return fids, lengths
 
-    def _clean_up_loadres(self, cur, conn, filename):
-        if cur is not None:
-            cur.close()  # adodbapi
-        if conn is not None:
-            conn.close()  # adodbapi
-        if os.path.isfile(filename):
-            try:
-                os.remove(filename)
-            except WindowsError as e:
-                self.logger.warning("could not remove tmp-file\n%s %s" % (filename, e))
-
-    def _loadres_query(self, query=None, file_name=None, test_index=0):
-        new_tests = []
-
-        if query is None:
-            query = "where %s<4" % self.headers_normal['cycle_index_txt']
-            self.logger.warning(" Query not given. Setting it to %s" % query)
-
-        # -------checking existence of file--------
-        if not os.path.isfile(file_name):
-            self.logger.warning("Missing file_\n   %s" % file_name)
-
-        # -------checking file size etc------------
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.logger.debug(txt)
-
-        # TODO (08.08.2017, jepe) Define instrument-dependent table_names instance etc.
-
-        table_name_global = self.table_names["global"]
-        table_name_stats = self.table_names["statistic"]
-        table_name_normal = self.table_names["normal"]
-
-        # ------making temporary file-------------
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        shutil.copy2(file_name, temp_dir)
-
-        # ------connecting to the .res database----
-        constr = self.__get_res_connector(file_name)
-        if USE_ADO:
-            conn = dbloader.connect(constr)  # adodbapi
-        else:
-            conn = dbloader.connect(constr, autocommit=True)
-
-        # ------get the global table for selecting test-------------
-
-        sql = "select * from %s" % table_name_global
-        global_data_df = pd.read_sql_query(sql, conn)
-        tests = global_data_df[self.test_id_txt]
-        self.logger.warning("Tests in file: %s" % str(tests))
-
-        data = dataset()
-        test_no = tests[test_index]
-        data.test_no = test_no
-        data.loaded_from = file_name
-        print "Test number:",
-        print test_no
-
-        # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
-        data.channel_index = int(global_data_df[self.channel_index_txt][test_no])
-        data.channel_number = int(global_data_df[self.channel_number_txt][test_no])
-        data.creator = global_data_df[self.creator_txt][test_no]
-        data.item_ID = global_data_df[self.item_id_txt][test_no]
-        data.schedule_file_name = global_data_df[self.schedule_file_name_txt][test_no]
-        data.start_datetime = global_data_df[self.start_datetime_txt][test_no]
-        data.test_ID = int(global_data_df[self.test_id_txt][test_no])
-        data.test_name = global_data_df[self.test_name_txt][test_no]
-        print "Test name:",
-        print data.test_name
-        # ------------------------------------------
-        # ---loading-normal-data--------------------
-
-        print "Loading data."
-        print self.headers_normal['cycle_index_txt']
-        sql_1 = "select * "
-        sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.test_id_txt, data.test_ID)
-        sql_4 = "AND "
-        sql_5 = " order by %s" % self.headers_normal['data_point_txt']
-        sql = sql_1 + sql_2 + sql_3 + sql_4 + query + sql_5
-
-        normal_df = pd.read_sql_query(sql, conn)
-        length_of_test = normal_df.shape[0]
-
-        # ---loading-statistic-data-----------------
-        sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
-                                                            self.test_id_txt,
-                                                            data.test_ID,
-                                                            self.headers_normal['data_point_txt'])
-        summary_df = pd.read_sql_query(sql, conn)
-        data.dfsummary = summary_df
-        data.dfdata = normal_df
-        data.raw_data_files_length.append(length_of_test)
-        new_tests.append(data)
-        self._clean_up_loadres(None, conn, temp_filename)
-        print "q <-"
-        return new_tests
-
-    def _load_biologic(self, file_name=None):
-        warnings.warn("not implemented")
-        new_tests = None
-        return new_tests
-
-    def _loadres(self, file_name=None):
-        """Loads data from arbin .res files.
-
-        Args:
-            file_name (str): path to .res file.
-
-        Returns:
-            new_tests (list of data objects), FileError
-
-        """
-        # TODO: move this into instruments.arbin
-        # find all occurrences of self.something
-        new_tests = []
-        # -------checking existence of file--------
-        if not os.path.isfile(file_name):
-            print "Missing file_\n   %s" % file_name
-
-        # -------checking file size etc------------
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.logger.debug(txt)
-        if filesize > self.max_res_filesize and not self.load_only_summary:
-            error_message = "\nERROR (_loadres):\n"
-            error_message += "%s > %s - File is too big!\n" % (hfilesize, humanize_bytes(self.max_res_filesize))
-            error_message += "(edit self.max_res_filesize)\n"
-            print error_message
-            return None
-            # sys.exit(FileError)
-
-        table_name_global = self.table_names["global"]
-        table_name_stats = self.table_names["statistic"]
-
-        # ------making temporary file-------------
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        shutil.copy2(file_name, temp_dir)
-        print ".",
-
-        # ------connecting to the .res database----
-        constr = self.__get_res_connector(temp_filename)
-        if USE_ADO:
-            conn = dbloader.connect(constr)  # adodbapi
-        else:
-            conn = dbloader.connect(constr, autocommit=True)
-        print ".",
-
-        # ------get the global table-----------------
-        sql = "select * from %s" % table_name_global
-        global_data_df = pd.read_sql_query(sql, conn)
-        # col_names = list(global_data_df.columns.values)
-        tests = global_data_df[self.headers_normal['test_id_txt']]  # OBS
-        number_of_sets = len(tests)
-        print ".",
-
-        for test_no in range(number_of_sets):
-            data = dataset()
-            data.test_no = test_no
-            data.loaded_from = file_name
-            # creating fileID
-            fid = fileID(file_name)
-            # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
-            data.channel_index = int(global_data_df[self.channel_index_txt][test_no])
-            data.channel_number = int(global_data_df[self.channel_number_txt][test_no])
-            data.creator = global_data_df[self.creator_txt][test_no]
-            data.item_ID = global_data_df[self.item_id_txt][test_no]
-            data.schedule_file_name = global_data_df[self.schedule_file_name_txt][test_no]
-            data.start_datetime = global_data_df[self.start_datetime_txt][test_no]
-            data.test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
-            data.test_name = global_data_df[self.test_name_txt][test_no]
-            data.raw_data_files.append(fid)
-
-            # ------------------------------------------
-            # ---loading-normal-data--------------------
-            length_of_test, normal_df = self._load_res_normal_table(conn, data.test_ID)
-            #            if length_of_test == 0:
-            #                self.logger.warning("MemoryError")
-            #                return
-            # ---loading-statistic-data-----------------
-            sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
-                                                                self.headers_normal['test_id_txt'],
-                                                                data.test_ID,
-                                                                self.headers_normal['data_point_txt'])
-            summary_df = pd.read_sql_query(sql, conn)
-            data.dfsummary = summary_df
-            data.dfdata = normal_df
-            data.raw_data_files_length.append(length_of_test)
-            new_tests.append(data)
-            self._clean_up_loadres(None, conn, temp_filename)
-            print ". <-"
-        return new_tests
-
-    # noinspection PyPep8Naming
-    def _load_res_normal_table(self, conn, test_ID):
-        table_name_normal = self.table_names["normal"]
-        if self.load_only_summary:
-            return 0
-
-        if self.select_minimal:
-            columns = self.minimum_selection["arbin"]
-            columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
-        else:
-            columns_txt = "*"
-
-        sql_1 = "select %s " % columns_txt
-        sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.headers_normal['test_id_txt'], test_ID)
-        sql_4 = ""
-
-        if self.limit_loaded_cycles:
-            if len(self.limit_loaded_cycles) > 1:
-                sql_4 = "AND %s>%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[0])
-                sql_4 += "AND %s<%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[-1])
-            else:
-                sql_4 = "AND %s=%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[0])
-
-        sql_5 = "order by %s" % self.headers_normal['data_point_txt']
-        sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
-
-        if not self.chunk_size:
-            #            try:
-            normal_df = pd.read_sql_query(sql, conn)
-            #            except MemoryError as e:
-            #                self.logger.warning("MemoryError")
-            #                self.logger.warning(e)
-            #                return 0, None
-            #            except Exception as e:
-            #                self.logger.warning("Exception")
-            #                self.logger.warning(e)
-            #                return 0, None
-            length_of_test = normal_df.shape[0]
-        else:
-            normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
-            if not self.last_chunk:
-                normal_df = normal_df_reader.next()
-                chunk_number = 1
-            else:
-                chunk_number = 0
-                for j in range(self.last_chunk):
-                    normal_df = normal_df_reader.next()  # TODO: This is SLOW - should use itertools.islice
-                    chunk_number += 1
-
-            for chunk in normal_df_reader:
-
-                if self.load_until_error:
-                    try:
-                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
-                        print "*",
-                    except MemoryError:
-                        print " - Could not read complete file (MemoryError)."
-                        print "Last successfully loaded chunk number:", chunk_number
-                        print "Chunk size:", self.chunk_size
-                        break
-                elif self.max_chunks:
-                    if chunk_number < self.max_chunks:
-                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
-                        print "*",
-                    else:
-                        break
-                else:
-                    normal_df = pd.concat([normal_df, chunk], ignore_index=True)
-                chunk_number += 1
-            length_of_test = normal_df.shape[0]
-
-        return length_of_test, normal_df
-
-    def __get_res_connector(self, temp_filename):
-        # -------checking bit and os----------------
-        is64bit_python = check64bit(System="python")
-        # is64bit_os = check64bit(System = "os")
-        if USE_ADO:
-            if is64bit_python:
-                print "using 64 bit python"
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-            else:
-                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
-
-        else:
-            constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-
-        return constr
 
     def merge(self, tests=None, separate_datasets=False):
         """This function merges datasets into one set."""
