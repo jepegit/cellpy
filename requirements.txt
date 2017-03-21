@@ -12,3 +12,4 @@ tables
 pyodbc
 xlrd
 click
+six
