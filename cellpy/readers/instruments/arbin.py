@@ -8,17 +8,34 @@ import os
 import tempfile
 import shutil
 import logging
+import warnings
 from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
 
 import pandas as pd
 
-from cellreader import dataset
-from cellreader import fileID
-from cellreader import humanize_bytes
-from cellreader import check64bit
-from cellreader import dbloader
-from cellreader import USE_ADO
-from cellreader import get_headers_normal
+from cellpy.readers.cellreader import dataset
+from cellpy.readers.cellreader import fileID
+from cellpy.readers.cellreader import humanize_bytes
+from cellpy.readers.cellreader import check64bit
+from cellpy.readers.cellreader import USE_ADO
+from cellpy.readers.cellreader import get_headers_normal
+
+
+if USE_ADO:
+    try:
+        import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
+    except ImportError:
+        USE_ADO = False
+
+else:
+    try:
+        import pyodbc as dbloader
+    except ImportError:
+        warnings.warn("COULD NOT LOAD DBLOADER!",  ImportWarning)
+        dbloader = None
+
+
+
 
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",

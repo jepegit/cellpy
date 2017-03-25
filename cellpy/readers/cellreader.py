@@ -30,23 +30,9 @@ STEP_TABLE_VERSION = 3
 NORMAL_TABLE_VERSION = 3
 SUMMARY_TABLE_VERSION = 3
 
-if USE_ADO:
-    try:
-        import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
-    except ImportError:
-        USE_ADO = False
 
-else:
-    try:
-        import pyodbc as dbloader
-    except ImportError:
-        print "COULD NOT LOAD DBLOADER!"
-        dbloader = None
-
-import shutil
 import os
 import sys
-import tempfile
 import datetime
 # import types
 import collections
@@ -605,6 +591,7 @@ class cellpydata(object):
     def _set_arbin(self):
         from .instruments import arbin as instr
 
+        # TODO (jepe): should "migrate" import of dbloader to the instrument methods
 
         # get information
         self.raw_units = instr.get_raw_units()
@@ -952,7 +939,7 @@ class cellpydata(object):
                 inner list will be merged.
             check_file_type (bool): check file type if True (res-, or cellpy-format)
         """
-        warnings.warn("deprecated - use load_raw instead")
+        warnings.warn("deprecated - use load_raw instead", DeprecationWarning)
         txt = "number of tests: %i" % len(self.file_names)
         self.logger.debug(txt)
         test_number = 0
