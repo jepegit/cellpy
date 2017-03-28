@@ -6,7 +6,9 @@ import os
 import sys
 import types
 import pandas as pd
-
+import time
+import tempfile
+import shutil
 
 from cellpy.parametres import prmreader
 
@@ -90,7 +92,9 @@ class reader:
     def __init__(self, db_file=None,
                  db_datadir=None,
                  db_datadir_processed=None,
-                 prm_file=None):
+                 prm_file=None,
+                 test_mode=False):
+
         prms = prmreader.read(prm_file)
         if not db_file:
             self.db_path = prms.db_path
@@ -118,8 +122,17 @@ class reader:
         self.remove_row = [0]  # removing this row
         self.string_cols = [3, 4, 5, 6, 7, 8]
 
-        self.table = self._open_sheet("table")
-        self.ftable = self._open_sheet("file_names")
+        if not test_mode:
+            self.table = self._open_sheet("table")
+            self.ftable = self._open_sheet("file_names")
+        else:
+            print "in test-mode"
+            t0 = time.time()
+            self.table = self._open_sheet_tst("table")
+            print "* %f" % (time.time()-t0)
+            self.ftable = self._open_sheet_tst("file_names")
+            print "* %f" % (time.time()-t0)
+
 
     def _pick_info(self, serial_number, column_number):
         row = self.select_serial_number_row(serial_number)
@@ -129,10 +142,73 @@ class reader:
             x = x[0]
         return x
 
+
     @staticmethod
     def _select_col(df, no):
         """select specific column"""
         return df.iloc[:, no]
+
+    def _export_to_csv(self, sheet=None):
+        from xlrd import open_workbook
+        import csv
+
+        wb = open_workbook('Road-Accident-Safety-Data-Guide-1979-2004.xls')
+
+        for i in range(2, wb.nsheets):
+            sheet = wb.sheet_by_index(i)
+            print sheet.name
+            with open("data/%s.csv" % (sheet.name.replace(" ", "")), "w") as file:
+                writer = csv.writer(file, delimiter=",")
+                print sheet, sheet.name, sheet.ncols, sheet.nrows
+
+                header = [cell.value for cell in sheet.row(0)]
+                writer.writerow(header)
+
+                for row_idx in range(1, sheet.nrows):
+                    row = [int(cell.value) if isinstance(cell.value, float) else cell.value
+                           for cell in sheet.row(row_idx)]
+                    writer.writerow(row)
+
+
+    def _open_sheet_tst(self, sheet=None):
+        """Opens sheets and returns it"""
+        print "opening sheet",
+        if not sheet:
+            sheet = self.db_sheet_table
+        elif sheet == "table":
+            sheet = self.db_sheet_table
+        elif sheet == "file_names":
+            sheet = self.db_sheet_filenames
+        print sheet
+        t0 = time.time()
+
+        header = self.header
+        rows_to_skip = self.skiprows
+        print "* %f starting..." % (time.time() - t0)
+
+        # creating tmp-file
+        temp_dir = tempfile.gettempdir()
+        tmp_db_file = os.path.join(temp_dir, os.path.basename(self.db_file))
+        shutil.copy2(self.db_file, temp_dir)
+
+        work_book = pd.ExcelFile(tmp_db_file)
+        print "* %f work_book = pd.ExcelFile(self.db_file)..." % (time.time() - t0)
+        sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
+        print "* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (time.time() - t0)
+        if self.remove_row:
+            remove_index = sheet.index[self.remove_row]
+            sheet = sheet.drop(remove_index)
+            sheet.reindex(range(0, len(sheet.index)))
+
+        # removing tmp-file
+        if os.path.isfile(tmp_db_file):
+            print "removing tmp file",
+            print tmp_db_file
+            try:
+                os.remove(tmp_db_file)
+            except WindowsError as e:
+                print "could not remove tmp-file\n%s %s" % (tmp_db_file, e)
+        return sheet
 
     def _open_sheet(self, sheet=None):
         """Opens sheets and returns it"""

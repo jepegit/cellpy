@@ -2,6 +2,7 @@
 
 import os
 import glob
+import warnings
 from cellpy.parametres import prmreader
 
 
@@ -59,6 +60,10 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
                 file_format_explanation = "YYYYMMDD is date, EEE is electrode number "
                 file_format_explanation += "CC is cell number, TT is cell_type, RR is run number."
                 print file_format_explanation
+
+    # check if raw_file_dir exists
+    if not os.path.isdir(raw_file_dir):
+        warnings.warn("your raw file directory cannot be accessed!")
 
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
         glob_text_raw = "%s_*.%s" % (os.path.basename(run_name),raw_extension)
