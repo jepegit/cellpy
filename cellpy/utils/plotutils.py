@@ -11,6 +11,33 @@ import collections
 import numpy as np
 
 
+MARKERS = [ "."	,
+            ","	,
+            "o"	,
+            "v"	,
+            "^"	,
+            "<"	,
+            ">"	,
+            "1"	,
+            "2"	,
+            "3"	,
+            "4"	,
+            "8"	,
+            "s"	,
+            "p"	,
+            "P"	,
+            "*"	,
+            "h"	,
+            "H"	,
+            "+"	,
+            "x"	,
+            "X"	,
+            "D"	,
+            "d"	,
+            "|"	,
+            "_"	,
+                ]
+
 class Linestyle:
     def __init__(self):
         # ----------------overall-vars------------
