@@ -1034,6 +1034,15 @@ class cellpydata(object):
                 v.append(self._is_not_empty_test(test))
         return v
 
+    def check(self):
+        """Returns False if no tests exists or if one or more of the tests are empty"""
+
+        if len(self.tests_status) == 0:
+            return False
+        if all(self.tests_status):
+            return True
+        return False
+
     def _is_not_empty_test(self, test):
         if test is self._empty_test():
             return False

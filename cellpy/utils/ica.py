@@ -177,6 +177,7 @@ class Converter:
         if self.post_smoothing:
             points_fwhm = int(self.voltage_fwhm / voltage_step)
             sigma = np.amax([2, points_fwhm/2])
+            # gives OverflowError: cannot fit 'long' into an index-sized integer sometimes!
             incremental_capacity = gaussian_filter1d(incremental_capacity,sigma=sigma,order=self.gaussian_order,
                                                      output=None, mode=self.gaussian_mode,
                                                      cval=self.gaussian_cval, truncate=self.gaussian_truncate)
