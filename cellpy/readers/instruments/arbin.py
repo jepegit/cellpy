@@ -10,6 +10,7 @@ import shutil
 import logging
 import warnings
 from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
+import numpy as np
 
 import pandas as pd
 
@@ -49,76 +50,76 @@ TABLE_NAMES = {
 }
 
 
-def get_raw_limits():
-    """Include the settings for how to decide what kind of step you are examining here.
-
-    The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
-    for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
-    It is expected that different instruments (with different resolution etc.) have different
-    'epsilons'.
-
-    Returns: the raw limits (dict)
-
-    """
-    raw_limits = dict()
-    raw_limits["current_hard"] = 0.0000000000001
-    raw_limits["current_soft"] = 0.00001
-    raw_limits["stable_current_hard"] = 2.0
-    raw_limits["stable_current_soft"] = 4.0
-    raw_limits["stable_voltage_hard"] = 2.0
-    raw_limits["stable_voltage_soft"] = 4.0
-    raw_limits["stable_charge_hard"] = 2.0
-    raw_limits["stable_charge_soft"] = 5.0
-    raw_limits["ir_change"] = 0.00001
-    return raw_limits
-
-
-def get_raw_units():
-    """Include the settings for the units used by the instrument.
-
-    The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
-    Si units can be used). For example, for current defined in mA, the value for the
-    current unit-fraction will be 0.001.
-
-    Returns: dictionary containing the unit-fractions for current, charge, and mass
-
-    """
-    raw_units = dict()
-    raw_units["current"] = 1.0  # A
-    raw_units["charge"] = 1.0  # Ah
-    raw_units["mass"] = 0.001  # g
-    return raw_units
+# def get_raw_limits():
+#     """Include the settings for how to decide what kind of step you are examining here.
+#
+#     The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
+#     for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
+#     It is expected that different instruments (with different resolution etc.) have different
+#     'epsilons'.
+#
+#     Returns: the raw limits (dict)
+#
+#     """
+#     raw_limits = dict()
+#     raw_limits["current_hard"] = 0.0000000000001
+#     raw_limits["current_soft"] = 0.00001
+#     raw_limits["stable_current_hard"] = 2.0
+#     raw_limits["stable_current_soft"] = 4.0
+#     raw_limits["stable_voltage_hard"] = 2.0
+#     raw_limits["stable_voltage_soft"] = 4.0
+#     raw_limits["stable_charge_hard"] = 2.0
+#     raw_limits["stable_charge_soft"] = 5.0
+#     raw_limits["ir_change"] = 0.00001
+#     return raw_limits
 
 
-def get_headers_global():
-    """Defines the so-called global column headings for Arbin .res-files"""
-    headers = dict()
-    # - global column headings (specific for Arbin)
-    headers["applications_path_txt"] = 'Applications_Path'
-    headers["channel_index_txt"] = 'Channel_Index'
-    headers["channel_number_txt"] = 'Channel_Number'
-    headers["channel_type_txt"] = 'Channel_Type'
-    headers["comments_txt"] = 'Comments'
-    headers["creator_txt"] = 'Creator'
-    headers["daq_index_txt"] = 'DAQ_Index'
-    headers["item_id_txt"] = 'Item_ID'
-    headers["log_aux_data_flag_txt"] = 'Log_Aux_Data_Flag'
-    headers["log_chanstat_data_flag_txt"] = 'Log_ChanStat_Data_Flag'
-    headers["log_event_data_flag_txt"] = 'Log_Event_Data_Flag'
-    headers["log_smart_battery_data_flag_txt"] = 'Log_Smart_Battery_Data_Flag'
-    headers["mapped_aux_conc_cnumber_txt"] = 'Mapped_Aux_Conc_CNumber'
-    headers["mapped_aux_di_cnumber_txt"] = 'Mapped_Aux_DI_CNumber'
-    headers["mapped_aux_do_cnumber_txt"] = 'Mapped_Aux_DO_CNumber'
-    headers["mapped_aux_flow_rate_cnumber_txt"] = 'Mapped_Aux_Flow_Rate_CNumber'
-    headers["mapped_aux_ph_number_txt"] = 'Mapped_Aux_PH_Number'
-    headers["mapped_aux_pressure_number_txt"] = 'Mapped_Aux_Pressure_Number'
-    headers["mapped_aux_temperature_number_txt"] = 'Mapped_Aux_Temperature_Number'
-    headers["mapped_aux_voltage_number_txt"] = 'Mapped_Aux_Voltage_Number'
-    headers["schedule_file_name_txt"] = 'Schedule_File_Name'  # KEEP FOR CELLPY FILE FORMAT
-    headers["start_datetime_txt"] = 'Start_DateTime'
-    headers["test_id_txt"] = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT
-    headers["test_name_txt"] = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
-    return headers
+# def get_raw_units():
+#     """Include the settings for the units used by the instrument.
+#
+#     The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
+#     Si units can be used). For example, for current defined in mA, the value for the
+#     current unit-fraction will be 0.001.
+#
+#     Returns: dictionary containing the unit-fractions for current, charge, and mass
+#
+#     """
+#     raw_units = dict()
+#     raw_units["current"] = 1.0  # A
+#     raw_units["charge"] = 1.0  # Ah
+#     raw_units["mass"] = 0.001  # g
+#     return raw_units
+
+
+# def get_headers_global():
+#     """Defines the so-called global column headings for Arbin .res-files"""
+#     headers = dict()
+#     # - global column headings (specific for Arbin)
+#     headers["applications_path_txt"] = 'Applications_Path'
+#     headers["channel_index_txt"] = 'Channel_Index'
+#     headers["channel_number_txt"] = 'Channel_Number'
+#     headers["channel_type_txt"] = 'Channel_Type'
+#     headers["comments_txt"] = 'Comments'
+#     headers["creator_txt"] = 'Creator'
+#     headers["daq_index_txt"] = 'DAQ_Index'
+#     headers["item_id_txt"] = 'Item_ID'
+#     headers["log_aux_data_flag_txt"] = 'Log_Aux_Data_Flag'
+#     headers["log_chanstat_data_flag_txt"] = 'Log_ChanStat_Data_Flag'
+#     headers["log_event_data_flag_txt"] = 'Log_Event_Data_Flag'
+#     headers["log_smart_battery_data_flag_txt"] = 'Log_Smart_Battery_Data_Flag'
+#     headers["mapped_aux_conc_cnumber_txt"] = 'Mapped_Aux_Conc_CNumber'
+#     headers["mapped_aux_di_cnumber_txt"] = 'Mapped_Aux_DI_CNumber'
+#     headers["mapped_aux_do_cnumber_txt"] = 'Mapped_Aux_DO_CNumber'
+#     headers["mapped_aux_flow_rate_cnumber_txt"] = 'Mapped_Aux_Flow_Rate_CNumber'
+#     headers["mapped_aux_ph_number_txt"] = 'Mapped_Aux_PH_Number'
+#     headers["mapped_aux_pressure_number_txt"] = 'Mapped_Aux_Pressure_Number'
+#     headers["mapped_aux_temperature_number_txt"] = 'Mapped_Aux_Temperature_Number'
+#     headers["mapped_aux_voltage_number_txt"] = 'Mapped_Aux_Voltage_Number'
+#     headers["schedule_file_name_txt"] = 'Schedule_File_Name'  # KEEP FOR CELLPY FILE FORMAT
+#     headers["start_datetime_txt"] = 'Start_DateTime'
+#     headers["test_id_txt"] = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT
+#     headers["test_name_txt"] = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
+#     return headers
 
 
 class ArbinLoader(object):
@@ -140,7 +141,79 @@ class ArbinLoader(object):
         self.load_until_error = False
 
         self.headers_normal = get_headers_normal()
-        self.headers_global = get_headers_global()
+        self.headers_global = self.get_headers_global()
+
+    @staticmethod
+    def get_raw_units():
+        """Include the settings for the units used by the instrument.
+
+        The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
+        Si units can be used). For example, for current defined in mA, the value for the
+        current unit-fraction will be 0.001.
+
+        Returns: dictionary containing the unit-fractions for current, charge, and mass
+
+        """
+        raw_units = dict()
+        raw_units["current"] = 1.0  # A
+        raw_units["charge"] = 1.0  # Ah
+        raw_units["mass"] = 0.001  # g
+        return raw_units
+
+    @staticmethod
+    def get_headers_global():
+        """Defines the so-called global column headings for Arbin .res-files"""
+        headers = dict()
+        # - global column headings (specific for Arbin)
+        headers["applications_path_txt"] = 'Applications_Path'
+        headers["channel_index_txt"] = 'Channel_Index'
+        headers["channel_number_txt"] = 'Channel_Number'
+        headers["channel_type_txt"] = 'Channel_Type'
+        headers["comments_txt"] = 'Comments'
+        headers["creator_txt"] = 'Creator'
+        headers["daq_index_txt"] = 'DAQ_Index'
+        headers["item_id_txt"] = 'Item_ID'
+        headers["log_aux_data_flag_txt"] = 'Log_Aux_Data_Flag'
+        headers["log_chanstat_data_flag_txt"] = 'Log_ChanStat_Data_Flag'
+        headers["log_event_data_flag_txt"] = 'Log_Event_Data_Flag'
+        headers["log_smart_battery_data_flag_txt"] = 'Log_Smart_Battery_Data_Flag'
+        headers["mapped_aux_conc_cnumber_txt"] = 'Mapped_Aux_Conc_CNumber'
+        headers["mapped_aux_di_cnumber_txt"] = 'Mapped_Aux_DI_CNumber'
+        headers["mapped_aux_do_cnumber_txt"] = 'Mapped_Aux_DO_CNumber'
+        headers["mapped_aux_flow_rate_cnumber_txt"] = 'Mapped_Aux_Flow_Rate_CNumber'
+        headers["mapped_aux_ph_number_txt"] = 'Mapped_Aux_PH_Number'
+        headers["mapped_aux_pressure_number_txt"] = 'Mapped_Aux_Pressure_Number'
+        headers["mapped_aux_temperature_number_txt"] = 'Mapped_Aux_Temperature_Number'
+        headers["mapped_aux_voltage_number_txt"] = 'Mapped_Aux_Voltage_Number'
+        headers["schedule_file_name_txt"] = 'Schedule_File_Name'  # KEEP FOR CELLPY FILE FORMAT
+        headers["start_datetime_txt"] = 'Start_DateTime'
+        headers["test_id_txt"] = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT
+        headers["test_name_txt"] = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
+        return headers
+
+    @staticmethod
+    def get_raw_limits():
+        """Include the settings for how to decide what kind of step you are examining here.
+
+        The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
+        for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
+        It is expected that different instruments (with different resolution etc.) have different
+        'epsilons'.
+
+        Returns: the raw limits (dict)
+
+        """
+        raw_limits = dict()
+        raw_limits["current_hard"] = 0.0000000000001
+        raw_limits["current_soft"] = 0.00001
+        raw_limits["stable_current_hard"] = 2.0
+        raw_limits["stable_current_soft"] = 4.0
+        raw_limits["stable_voltage_hard"] = 2.0
+        raw_limits["stable_voltage_soft"] = 4.0
+        raw_limits["stable_charge_hard"] = 2.0
+        raw_limits["stable_charge_soft"] = 5.0
+        raw_limits["ir_change"] = 0.00001
+        return raw_limits
 
 
     def loader(self, file_name=None):
@@ -209,7 +282,10 @@ class ArbinLoader(object):
             data.test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
             data.raw_data_files.append(fid)
 
+            # --------- read raw-data (normal-data) -------------------------
             length_of_test, normal_df = self._load_res_normal_table(conn, data.test_ID)
+
+            # --------- read stats-data (summary-data) ----------------------
             sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
                                                                 self.headers_normal['test_id_txt'],
                                                                 data.test_ID,
@@ -330,13 +406,24 @@ class ArbinLoader(object):
         """
 
         raw_file_loader = self.loader
-        new_test = raw_file_loader(file_name)
-        return new_test
+        new_rundata = raw_file_loader(file_name)
+        new_rundata = self.inspect(new_rundata)
+        return new_rundata
 
+    def inspect(self, run_data):
+        """inspect the file.
+        
+        -adds missing columns (with np.nan)
+        """
 
-    def inspect(self):
-        """inspect the file"""
-        pass
+        checked_rundata = []
+        for data in run_data:
+            new_cols = data.dfdata.columns
+            for col in self.headers_normal:
+                if not col in new_cols:
+                    data.dfdata[col] = np.nan
+            checked_rundata.append(data)
+        return checked_rundata
 
     def repair(self):
         """try to repair a broken/corrupted file"""

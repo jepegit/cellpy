@@ -119,11 +119,17 @@ def get_headers_normal():
     headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
     headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
     headers_normal['step_index_txt'] = 'Step_Index'
+    headers_normal['sub_step_index_txt'] = 'Sub_Step_Index'  # new
     headers_normal['step_time_txt'] = 'Step_Time'
+    headers_normal['sub_step_time_txt'] = 'Sub_Step_Time'  # new
     headers_normal['test_id_txt'] = 'Test_ID'
     headers_normal['test_time_txt'] = 'Test_Time'
     headers_normal['voltage_txt'] = 'Voltage'
+    headers_normal['ref_voltage_txt'] = 'Reference_Voltage'  # new
     headers_normal['dv_dt_txt'] = 'dV/dt'
+    headers_normal['frequency_txt'] = 'Frequency'  # new
+    headers_normal['amplitude_txt'] = 'Amplitude'  # new
+
     return headers_normal
 
 
@@ -589,16 +595,14 @@ class cellpydata(object):
 
 
     def _set_arbin(self):
+        # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
+        # more transparent to separate them into respective methods pr instrument.
         from .instruments import arbin as instr
-
-        # TODO (jepe): should "migrate" import of dbloader to the instrument methods
-
-        # get information
-        self.raw_units = instr.get_raw_units()
-        self.raw_limits = instr.get_raw_limits()
-
-        # send information (should improve this later)
         loader_class = instr.ArbinLoader()
+        # get information
+        self.raw_units = loader_class.get_raw_units()
+        self.raw_limits = loader_class.get_raw_limits()
+        # send information (should improve this later)
         loader_class.load_only_summary = self.load_only_summary
         loader_class.select_minimal = self.select_minimal
         loader_class.max_res_filesize = self.max_res_filesize

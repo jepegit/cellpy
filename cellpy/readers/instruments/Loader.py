@@ -1,5 +1,4 @@
-"""This file contains methods for importing Bio-Logic files"""
-
+"""This file contains class for making file loaders"""
 
 from __future__ import division
 from __future__ import absolute_import
@@ -23,21 +22,18 @@ from cellpy.readers.cellreader import get_headers_normal
 
 
 import warnings
-warnings.warn("not implemented yet")
+# warnings.warn("not implemented yet")
 
 
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = []
 
 
-
-
-
-class BioLogicLoader(object):
-    """ Class for loading biologic-data from ?-files."""
+class Loader(object):
+    """ Class for loading data from measurement-files."""
 
     def __init__(self):
-        """initiates the BioLogicLoader class"""
+        """initiates Loader class"""
         # could use __init__(self, cellpydata_object) and set self.logger = cellpydata_object.logger etc.
         # then remember to include that as prm in "out of class" functions
         self.logger = logging.getLogger()
@@ -54,6 +50,7 @@ class BioLogicLoader(object):
 
         self.headers_normal = get_headers_normal()
 
+    @staticmethod
     def get_raw_limits():
         """Include the settings for how to decide what kind of step you are examining here.
 
@@ -62,10 +59,8 @@ class BioLogicLoader(object):
         It is expected that different instruments (with different resolution etc.) have different
         'epsilons'.
 
-        OBS! Not properly set yet.
-
         Returns: the raw limits (dict)
-
+        
         """
         raw_limits = dict()
         raw_limits["current_hard"] = 0.0000000000001
@@ -107,12 +102,12 @@ class BioLogicLoader(object):
 
         Returns:
             new_tests (list of data objects), FileError
-
         """
 
         new_tests = []
         if not os.path.isfile(file_name):
-            print("Missing file_\n   %s" % file_name)
+            txt = "Missing file_\n   %s" % file_name
+            self.logger.error(txt)
 
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
@@ -123,13 +118,12 @@ class BioLogicLoader(object):
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
-        print(".", end=' ')
-
-
+        txt = "."
+        self.logger.info(txt)
 
 
     def load(self, file_name):
-        """Load a raw data-file
+        """Load a raw data-file (convenience function).
 
         Args:
             file_name (path)
@@ -167,19 +161,3 @@ class BioLogicLoader(object):
         new_position =  last_position
         self.position = new_position
 
-
-def simple_check(filename):
-    """Load a raw data file """
-    print("1")
-    a = BioLogicLoader()
-    a.load(filename)
-    print("2")
-
-
-if __name__ == '__main__':
-    import logging
-    from cellpy import log
-
-    log.setup_logging(default_level=logging.DEBUG)
-    testfile = "../../indata/xxx.xx"
-    simple_check(testfile)
