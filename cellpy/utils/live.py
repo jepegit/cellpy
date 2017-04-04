@@ -1,4 +1,4 @@
-"""Routines for batch processing of cells"""
+"""Routines for streaming cell data"""
 
 from __future__ import division
 from __future__ import absolute_import
@@ -11,4 +11,4 @@ import logging
 logging.captureWarnings(True)
 
 if __name__ == '__main__':
-    warnings.warn("to be implemented")
+    warnings.warn("to be implemented",)
