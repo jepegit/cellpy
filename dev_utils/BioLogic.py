@@ -3,12 +3,12 @@
 
 # created by Chris Kerr
 # downloaded from https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py
+
 __all__ = ['MPTfileCSV', 'MPTfile']
 
 import sys
 import re
 import csv
-import os
 from os import SEEK_SET
 import time
 from datetime import date, datetime, timedelta
@@ -210,61 +210,34 @@ def VMPdata_dtype_from_colIDs(colIDs):
         elif colID == 39:
             dtype_dict['I Range'] = '<u2'
         elif colID == 70:
+
+            def read_VMP_modules(fileobj, read_module_data=True):
+                """Reads in module headers in the VMPmodule_hdr format. Yields a dict with
+                the headers and offset for each module.
+
+                N.B. the offset yielded is the offset to the start of the data i.e. after
+                the end of the header. The data runs from (offset) to (offset+length)"""
+                while True:
+                    module_magic = fileobj.read(len(b'MODULE'))
+                    if len(module_magic) == 0:  # end of file
+                        raise StopIteration
+                    elif module_magic != b'MODULE':
+                        raise ValueError("Found %r, expecting start of new VMP MODULE" % module_magic)
+
+                    hdr_bytes = fileobj.read(VMPmodule_hdr.itemsize)
+                    if len(hdr_bytes) < VMPmodule_hdr.itemsize:
+                        raise IOError("Unexpected end of file while reading module header")
+
             dtype_dict['P/W'] = '<f4'
         elif colID == 434:
             dtype_dict['(Q-Qo)/C'] = '<f4'
         elif colID == 435:
             dtype_dict['dQ/C'] = '<f4'
-
-        elif colID == 20:
-            dtype_dict['NotKnown_20'] = '<f4'
-        elif colID == 13:
-            dtype_dict['NotKnown_13'] = '<f4'
-        elif colID == 74:
-            dtype_dict['NotKnown_74'] = '<f4'
-        elif colID == 467:
-            dtype_dict['NotKnown_467'] = '<f4'
-        elif colID == 468:
-            dtype_dict['NotKnown_468'] = '<f4'
-        elif colID == 9:
-            dtype_dict['NotKnown_9'] = '<f4'
-
         else:
-            print "column type %d not implemented" % colID
-
-            #raise NotImplementedError("column type %d not implemented" % colID)
-
+            raise NotImplementedError("column type %d not implemented" % colID)
     return np.dtype(list(dtype_dict.items())), flags_dict, flags2_dict
-"""column type 20 not implemented
-column type 13 not implemented
-column type 74 not implemented
-column type 467 not implemented
-column type 468 not implemented
-column type 9 not implemented"""
 
-def read_VMP_modules(fileobj, read_module_data=True):
-    """Reads in module headers in the VMPmodule_hdr format. Yields a dict with
-    the headers and offset for each module.
 
-    N.B. the offset yielded is the offset to the start of the data i.e. after
-    the end of the header. The data runs from (offset) to (offset+length)"""
-    while True:
-        module_magic = fileobj.read(len(b'MODULE'))
-        print "module_magic:", module_magic
-
-        if len(module_magic) == 0:  # end of file
-            raise StopIteration
-        elif module_magic != b'MODULE':
-            raise ValueError("Found %r, expecting start of new VMP MODULE" % module_magic)
-        print "VMPmodule_hdr.itemsize:", VMPmodule_hdr.itemsize
-        print VMPmodule_hdr
-
-        hdr_bytes = fileobj.read(VMPmodule_hdr.itemsize)
-
-        print hdr_bytes
-
-        if len(hdr_bytes) < VMPmodule_hdr.itemsize:
-            raise IOError("Unexpected end of file while reading module header")
 
         hdr = np.fromstring(hdr_bytes, dtype=VMPmodule_hdr, count=1)
         hdr_dict = dict(((n, hdr[n][0]) for n in VMPmodule_hdr.names))
@@ -314,31 +287,11 @@ class MPRfile:
         modules = list(read_VMP_modules(mpr_file))
         self.modules = modules
         settings_mod, = (m for m in modules if m['shortname'] == b'VMP Set   ')
-        print "-jepe-"
-        print "settings_mod keys",
-        print settings_mod.keys()
-
         data_module, = (m for m in modules if m['shortname'] == b'VMP data  ')
-        print "-jepe-"
-        print "data_module keys",
-        print data_module.keys()
-
         maybe_log_module = [m for m in modules if m['shortname'] == b'VMP LOG   ']
-        print "-jepe-"
-        print "maybe_log_module",
-        #print maybe_log_module  # this is a list, not a dictionary
 
         n_data_points = np.fromstring(data_module['data'][:4], dtype='<u4')
-        print "-jepe-"
-        print "number of data points",
-        print n_data_points
-
         n_columns = np.fromstring(data_module['data'][4:5], dtype='u1')
-        print "-jepe-"
-        print "number of columns",
-        print n_columns
-        print "version of data",
-        print data_module['version']
 
         if data_module['version'] == 0:
             column_types = np.fromstring(data_module['data'][5:], dtype='u1',
@@ -361,35 +314,8 @@ class MPRfile:
             assert(not any(remaining_headers))
 
         self.dtype, self.flags_dict, self.flags2_dict = VMPdata_dtype_from_colIDs(column_types)
-        print "-jepe-1"
-        print "dtype:"
-        print self.dtype
-        print "flags_dict:"
-        print self.flags_dict
-        print "flags2_dict:"
-        print self.flags2_dict
-        print "----"
-        print len(main_data)
-        print type(main_data)
-        print "Error!"
-        print "This does not work as long as not all the columns are parsed"
-        print "self.data = np.fromstring(main_data, dtype=self.dtype)"
-        print len(main_data)
-        print len(self.dtype)
-        print len(main_data)/float(len(self.dtype))
-
-        print np.fromstring('\x01\x02', dtype=np.uint8)
-
-        #self.data = np.fromstring(main_data, dtype=self.dtype)
-        self.data = np.fromstring(main_data, dtype=np.uint8)
-        print self.data
-        print len(self.data)
-        print self.data.shape[0]
-        print n_data_points
-
-        # assert (self.data.shape[0] == n_data_points)
-        print "-jepe-2"
-
+        self.data = np.fromstring(main_data, dtype=self.dtype)
+        assert(self.data.shape[0] == n_data_points)
 
         ## No idea what these 'column types' mean or even if they are actually
         ## column types at all
@@ -399,7 +325,6 @@ class MPRfile:
 
         tm = time.strptime(str3(settings_mod['date']), '%m/%d/%y')
         self.startdate = date(tm.tm_year, tm.tm_mon, tm.tm_mday)
-        print "-jepe-3"
 
         if maybe_log_module:
             log_module, = maybe_log_module
@@ -443,22 +368,8 @@ class MPRfile:
         else:
             raise AttributeError("Flag '%s' not present" % flagname)
 
-
-def main(test_file):
-    if not os.path.isfile(test_file):
-        print "file not found"
-        return
-    with open(test_file, mode="rb") as infile:
-        file_content = infile.read()
-
-    print "lenght of file:"
-    print len(file_content)
-
-    print "testing galvani BioLogic.py"
-    mpr1 = MPRfile(test_file)
-
-    print mpr1
-
+def main(filename):
+    m = MPRfile(filename)
 
 if __name__ == '__main__':
     test_file = "../cellpy/data_ex/biologic/Bec01_01_1_C20_loop_20170219_01_MB_C02.mpr"
