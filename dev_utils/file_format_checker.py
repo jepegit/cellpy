@@ -21,6 +21,10 @@ hdr_dtype = np.dtype([('shortname', 'S10'),('longname', 'S25'),('length', '<u4')
                           ('version', '<u4'),('date', 'S8')])
 
 
+from biologic_file_format import bl_dtypes
+
+print bl_dtypes
+
 def VMPdata_dtype_from_colIDsOLD(colIDs):
     dtype_dict = OrderedDict()
     for colID in colIDs:
@@ -131,7 +135,8 @@ def check_biologic():
     print "Length of the header line:", hdr_dtype.itemsize
     print "Length of the filestamp line:", len(mpr_label)
 
-    test_file = "../cellpy/data_ex/biologic/Bec01_01_1_C20_loop_20170219_01_MB_C02.mpr"
+    # test_file = "../cellpy/data_ex/biologic/Bec01_01_1_C20_loop_20170219_01_MB_C02.mpr"
+    test_file = "../cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02.mpr"
     if not os.path.isfile(test_file):
         print "file not found"
         return
@@ -235,7 +240,11 @@ def check_biologic():
         print "ERROR you have some columns left"
 
     # now for the tedious bit: find out what each stuff is
-    dtype = VMPdata_dtype_from_colIDsOLD(column_types)
+    # dtype = VMPdata_dtype_from_colIDsOLD(column_types)
+    dtype_dict = OrderedDict()
+    for col in column_types:
+        dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
+    dtype = np.dtype(list(dtype_dict.items()))
     print 50*"="
     print "checking the dtypes"
     print
@@ -283,15 +292,25 @@ def check_biologic():
     print "remaining data: %fi" % (len_data - bulk_size*p)
 
     bulk = main_data[0:bulk_size*p]
+    bulk = main_data
     bulk_data = np.fromstring(bulk, dtype=dtype)
     #print bulk_data
     df = pd.DataFrame(bulk_data)
     print df.head(20)
     print df.tail(5)
+    filename_out = os.path.splitext(test_file)[0]+"_test_out.csv"
+    print test_file
+    print "->"
+    print filename_out
+    df.to_csv(filename_out, sep=";")
     #df.plot(x="time/s", y=["Ewe/V", "I/mA"])
-    fig, ax = plt.subplots(2)
-    ax[0].plot(df["time/s"], df["Ewe/V"])
-    ax[1].plot(df["time/s"], df["I/mA"])
+    fig, ax = plt.subplots(5)
+    ax[0].plot(df["time"], df["Ewe"])
+    ax[1].plot(df["time"], df["flags"], '.')
+    ax[2].plot(df["time"], df["flags2"], '.')
+    ax[3].plot(df["time"], df["Irange"], '.')
+    ax[4].plot(df["time"], df["NN_20"])
+
     plt.legend()
 
     plt.show()

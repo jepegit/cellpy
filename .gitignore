@@ -79,3 +79,7 @@ cellpy/outdata/20160830_sic006_74_cc_01.res_cap_voltage.csv
 *.csv
 .swp
 cellpy/data_ex/20160805_test001_45_cc_01.h5
+cellpy/data_ex/biologic/BioLogicDTypes.xlsx
+cellpy/data_ex/20160306_snx001_10_cc_01.h5
+*.mpr
+*.mpt
