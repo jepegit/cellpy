@@ -99,7 +99,7 @@ class BioLogicLoader(object):
         return raw_units
 
     @staticmethod
-    def loader(self, file_name=None):
+    def loader(file_name=None):
         """Loads data from biologic .? files.
 
         Args:
