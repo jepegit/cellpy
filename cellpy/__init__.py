@@ -18,4 +18,4 @@ __all__ = ["cellreader", "dbreader", "prmreader", "filefinder"]
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-# I wonder if adding prmreader.read() here makes the prms available as cellpy.parameters ?
+# I wonder if adding prmreader.read() here makes the prms available as cellpy.parametres?
