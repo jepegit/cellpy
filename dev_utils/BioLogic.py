@@ -210,24 +210,6 @@ def VMPdata_dtype_from_colIDs(colIDs):
         elif colID == 39:
             dtype_dict['I Range'] = '<u2'
         elif colID == 70:
-
-            def read_VMP_modules(fileobj, read_module_data=True):
-                """Reads in module headers in the VMPmodule_hdr format. Yields a dict with
-                the headers and offset for each module.
-
-                N.B. the offset yielded is the offset to the start of the data i.e. after
-                the end of the header. The data runs from (offset) to (offset+length)"""
-                while True:
-                    module_magic = fileobj.read(len(b'MODULE'))
-                    if len(module_magic) == 0:  # end of file
-                        raise StopIteration
-                    elif module_magic != b'MODULE':
-                        raise ValueError("Found %r, expecting start of new VMP MODULE" % module_magic)
-
-                    hdr_bytes = fileobj.read(VMPmodule_hdr.itemsize)
-                    if len(hdr_bytes) < VMPmodule_hdr.itemsize:
-                        raise IOError("Unexpected end of file while reading module header")
-
             dtype_dict['P/W'] = '<f4'
         elif colID == 434:
             dtype_dict['(Q-Qo)/C'] = '<f4'
@@ -256,6 +238,23 @@ def VMPdata_dtype_from_colIDs(colIDs):
             yield hdr_dict
             fileobj.seek(hdr_dict['offset'] + hdr_dict['length'], SEEK_SET)
 
+
+def read_VMP_modules(fileobj, read_module_data=True):
+    """Reads in module headers in the VMPmodule_hdr format. Yields a dict with
+    the headers and offset for each module.
+
+    N.B. the offset yielded is the offset to the start of the data i.e. after
+    the end of the header. The data runs from (offset) to (offset+length)"""
+    while True:
+        module_magic = fileobj.read(len(b'MODULE'))
+        if len(module_magic) == 0:  # end of file
+            raise StopIteration
+        elif module_magic != b'MODULE':
+            raise ValueError("Found %r, expecting start of new VMP MODULE" % module_magic)
+
+        hdr_bytes = fileobj.read(VMPmodule_hdr.itemsize)
+        if len(hdr_bytes) < VMPmodule_hdr.itemsize:
+            raise IOError("Unexpected end of file while reading module header")
 
 class MPRfile:
     """Bio-Logic .mpr file

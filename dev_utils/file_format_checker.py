@@ -243,7 +243,9 @@ def check_biologic():
     # dtype = VMPdata_dtype_from_colIDsOLD(column_types)
     dtype_dict = OrderedDict()
     for col in column_types:
+        txt = "%i: %s" % (col, bl_dtypes[col][1])
         dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
+        print txt
     dtype = np.dtype(list(dtype_dict.items()))
     print 50*"="
     print "checking the dtypes"
@@ -306,10 +308,11 @@ def check_biologic():
     #df.plot(x="time/s", y=["Ewe/V", "I/mA"])
     fig, ax = plt.subplots(5)
     ax[0].plot(df["time"], df["Ewe"])
+    ax[0].plot(df["time"], df["Ece"])
     ax[1].plot(df["time"], df["flags"], '.')
     ax[2].plot(df["time"], df["flags2"], '.')
-    ax[3].plot(df["time"], df["Irange"], '.')
-    ax[4].plot(df["time"], df["NN_20"])
+    ax[3].plot(df["time"], df["QChargeDischarge"], '.')
+    ax[4].plot(df["time"], df["phaseZce"])
 
     plt.legend()
 

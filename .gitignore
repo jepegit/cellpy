@@ -83,3 +83,6 @@ cellpy/data_ex/biologic/BioLogicDTypes.xlsx
 cellpy/data_ex/20160306_snx001_10_cc_01.h5
 *.mpr
 *.mpt
+cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02 _mpt_commented.xlsx
+cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented.xlsx
+cellpy/data_ex/biologic/BioLogicNotes.xlsx
