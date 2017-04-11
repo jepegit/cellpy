@@ -42,6 +42,14 @@ def create_custom_init_filename():
     return DEFAULT_FILENAME_START + os.environ.get("USERNAME") + DEFAULT_FILENAME_END
 
 
+# TODO (jepe): func for getting ini location
+
+# TODO (jepe): func for make csv dump of .xxx file (filetype as option or interpreted from extension)
+
+# TODO (jepe): func for giving stats of a file
+
+
+
 @click.group()
 def cli():
     pass

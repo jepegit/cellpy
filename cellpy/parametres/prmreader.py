@@ -13,6 +13,22 @@ db_filename: cellpy_db.xlsx
 dbc_filename: cellpy_dbc.xlsx
 """
 
+# [Instrument]
+# instrument_type: arbin
+# file_type: res
+
+# [Experiment]
+# cell_configuration: anode
+# localvars: ife
+
+
+# TODO (jepe): Should let cellpy read and store the prms on creation (optional)
+# TODO (jepe): func for returning prm file name and location
+# TODO (jepe): remove prm dbc_filename and logdir
+# TODO (jepe): add prm db_type instead
+# TODO (jepe): finish write_prm function
+
+
 import glob
 import os
 import sys
@@ -64,9 +80,13 @@ class read:
         self.search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
         self.search_path["filedir"] = self.script_dir
         self.search_path["userdir"] = os.path.expanduser("~")
-        self.default_name = "_cellpy_prms_default.ini"
+
         if search_order is None:
             self.search_order = ["curdir", "filedir", "userdir"]
+        else:
+            self.search_order = search_order
+
+        self.default_name = "_cellpy_prms_default.ini"
         self.prm_default = os.path.join(self.script_dir, self.default_name)
         self.prm_filename = prm_filename
         self.outdatadir = "..\outdata"
@@ -77,6 +97,7 @@ class read:
         self.db_filename = "cellpy_db.xlsx"
         self.dbc_filename = "cellpy_db.xlsx"
         prm_globtxt = "_cellpy_prms*.ini"
+
         if prm_filename:
             self._readprms(prm_filename=self.prm_filename)
         else:

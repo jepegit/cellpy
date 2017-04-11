@@ -79,3 +79,13 @@ cellpy/outdata/20160830_sic006_74_cc_01.res_cap_voltage.csv
 *.csv
 .swp
 cellpy/data_ex/20160805_test001_45_cc_01.h5
+cellpy/data_ex/biologic/BioLogicDTypes.xlsx
+cellpy/data_ex/20160306_snx001_10_cc_01.h5
+*.mpr
+*.mpt
+cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02 _mpt_commented.xlsx
+cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented.xlsx
+cellpy/data_ex/biologic/BioLogicNotes.xlsx
+cellpy/data_ex/biologic/~$Bec_03_02_C20_delith_GEIS_Soc20_steps_C02 _mpt_commented.xlsx
+cellpy/data_ex/biologic/~$Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented.xlsx
+dev_utils/BioLogic.py_tmp
