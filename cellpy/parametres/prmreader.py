@@ -211,7 +211,10 @@ class read:
 
         txt += "db_filename: \t%s\n" % self.db_filename
         txt += "dbc_filename:\t%s\n" % self.dbc_filename
-
+        txt += "------------------------------------------------------------\n"
+        txt += "seach-path:\n"
+        for p,v in self.search_path.items():
+            txt += "  %s:\t%s\n" % (p,v)
         return txt
 
 
