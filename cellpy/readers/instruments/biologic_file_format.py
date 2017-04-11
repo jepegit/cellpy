@@ -1,22 +1,30 @@
-"""File-format dict for BioLogic"""
+"""File-format dicts for BioLogic"""
 
-from collections import OrderedDict
+import numpy as np
+
 __version__ = "0.1"
 
 
 
+mpr_label = b'BIO-LOGIC MODULAR FILE\x1a                         \x00\x00\x00\x00'
+
+hdr_dtype = np.dtype([('shortname', 'S10'),('longname', 'S25'),('length', '<u4'),
+                          ('version', '<u4'),('date', 'S8')])
 
 
+#
 bl_flags_1 = {
     1: "mode",
     2: "ox/red",
     3: "error",
+    19: "control changes",
     21: "control changes",
     31: "Ns changes",
+    35: "Ns changes",
     65: "counter inc.",
 }
 
-
+#
 bl_flags_2 = {
     131: "Ns",
 }
