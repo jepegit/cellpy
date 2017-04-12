@@ -3,7 +3,15 @@ import pytest
 
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))
-relative_test_data_dir = "../cellpy/data_ex"
+
+relative_cellpy_dir = os.path.abspath(os.path.join(current_file_path, "../cellpy"))
+relative_test_data_dir = os.path.join(relative_cellpy_dir, "data_ex")
+
+relative_out_data_dir = os.path.join(relative_cellpy_dir, "outdata")
+relative_raw_data_dir = os.path.join(relative_cellpy_dir, "data_ex")
+relative_cellpy_data_dir = os.path.join(relative_cellpy_dir, "data_ex")
+relative_db_path = os.path.join(relative_cellpy_dir, "databases")
+
 test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
 test_res_file = "20160805_test001_45_cc_01.res"
 test_res_file_full = os.path.join(test_data_dir,test_res_file)
@@ -29,11 +37,16 @@ test_areal_loading = 0.0
 @pytest.fixture(scope="module")
 def db_reader():
     from cellpy import dbreader
+    from cellpy import prms
+    prms.outdatadir = relative_out_data_dir
+    prms.rawdatadir = relative_raw_data_dir
+    prms.cellpydatadir = relative_cellpy_data_dir
+    prms.db_path = relative_db_path
     return dbreader.reader()
 
 
 @pytest.fixture
-def clean_db_reader():
+def clean_db_reader():  # remove this?
     from cellpy import dbreader
     return dbreader.reader()
 

@@ -11,11 +11,11 @@ import logging
 from cellpy.readers import cellreader
 from cellpy.readers import dbreader
 from cellpy.readers import filefinder
-from cellpy.parametres import prmreader
+from cellpy.parameters import prmreader, prms
 
 
-__all__ = ["cellreader", "dbreader", "prmreader", "filefinder"]
+__all__ = ["cellreader", "dbreader", "prmreader", "prms", "filefinder"]
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-# I wonder if adding prmreader.read() here makes the prms available as cellpy.parametres?
+prms.set_defaults()

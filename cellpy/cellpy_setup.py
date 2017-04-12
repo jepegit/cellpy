@@ -24,7 +24,7 @@ dbc_filename: cellpy_dbc.xlsx
 
 
 def get_package_dir(init_filename=None):
-    prm_dir = pkg_resources.resource_filename("cellpy","parametres")
+    prm_dir = pkg_resources.resource_filename("cellpy","parameters")
     if not init_filename:
         init_filename = ORIGINAL_FILENAME
     src = os.path.join(prm_dir, init_filename)

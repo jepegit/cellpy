@@ -3,8 +3,10 @@
 import os
 import glob
 import warnings
-from cellpy.parametres import prmreader
-
+# from cellpy.parameters import prmreader
+import cellpy.parameters.prms as prms
+import logging
+logger = logging.getLogger(__name__)
 
 def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
                      raw_file_dir=None, cellpy_file_dir=None, prm_filename = None,
@@ -39,8 +41,14 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     if cellpy_file_extension is None:
         cellpy_file_extension = cellpy_file_extension
 
+    if prm_filename is not None:
+        warnings.warn("reading prm file disabled")
+
     if not all([raw_file_dir,cellpy_file_dir,file_name_format]):
-        prms = prmreader.read(prm_filename)
+        #import cellpy.parameters.prms as prms
+        # prms = prmreader.read()
+        logger.info("using prms already set")
+
 
     if raw_file_dir is None:
         raw_file_dir = prms.rawdatadir

@@ -8,7 +8,7 @@ from cellpy import cellreader, dbreader, prmreader, filefinder
 print "UNDER DEVELOPMENT"
 prm_file = r"..\parametres\_cellpy_prms_jpm.ini"
 
-print "Reading parametres"
+print "Reading parameters"
 prms = prmreader.read(prm_file)
 print prms
 excel_reader = dbreader.reader(prm_file=prm_file)
