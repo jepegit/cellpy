@@ -8,7 +8,7 @@ scipy>=0.18.1
 setuptools>=27.0.0
 PyYAML>=3.12
 lmfit==0.9.6
-tables
+tables==3.4.1
 pyodbc
 xlrd
 click
