@@ -7,5 +7,5 @@ tox==2.7.0
 coverage==4.3.4
 Sphinx==1.5.5
 cryptography==1.8.1
-PyYAML==3.11
+PyYAML==3.12
 pytest==2.9.2
