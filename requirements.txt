@@ -11,4 +11,4 @@ lmfit==0.9.6
 tables==3.4.1
 pyodbc==4.0.16
 xlrd==1.0.0
-click
+click==6.7
