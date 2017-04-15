@@ -38,10 +38,10 @@ test_areal_loading = 0.0
 def db_reader():
     from cellpy import dbreader
     from cellpy import prms
-    prms.outdatadir = relative_out_data_dir
-    prms.rawdatadir = relative_raw_data_dir
-    prms.cellpydatadir = relative_cellpy_data_dir
-    prms.db_path = relative_db_path
+    prms.Paths["outdatadir"] = relative_out_data_dir
+    prms.Paths["rawdatadir"] = relative_raw_data_dir
+    prms.Paths["cellpydatadir"] = relative_cellpy_data_dir
+    prms.Paths["db_path"] = relative_db_path
     return dbreader.reader()
 
 

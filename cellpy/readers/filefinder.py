@@ -49,20 +49,19 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         # prms = prmreader.read()
         logger.info("using prms already set")
 
-
     if raw_file_dir is None:
-        raw_file_dir = prms.rawdatadir
+        raw_file_dir = prms.Paths["rawdatadir"]
 
     if cellpy_file_dir is None:
-        cellpy_file_dir = prms.cellpydatadir
+        cellpy_file_dir = prms.Paths["cellpydatadir"]
 
     if file_name_format is None:
         try:
-            file_name_format = prms.file_name_format
+            file_name_format = prms.file_name_format # To be implemented in version 0.5
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
-            if version > 0.5:
-                print "Could not read file_name_format from _cellpy_prms_xxx.ini."
+            if version >= 0.5:
+                print "Could not read file_name_format from _cellpy_prms_xxx.conf."
                 print "Using:"
                 print "file_name_format:", file_name_format
                 file_format_explanation = "YYYYMMDD is date, EEE is electrode number "

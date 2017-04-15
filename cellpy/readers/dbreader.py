@@ -44,19 +44,19 @@ class reader:
             #prms = prmreader.read(prm_file)
 
         if not db_file:
-            self.db_path = prms.db_path
-            self.db_filename = prms.db_filename
+            self.db_path = prms.Paths["db_path"]
+            self.db_filename = prms.Paths["db_filename"]
             self.db_file = os.path.join(self.db_path, self.db_filename)
         else:
             self.db_path = os.path.dirname(db_file)
             self.db_filename = os.path.basename(db_file)
             self.db_file = db_file
         if not db_datadir:
-            self.db_datadir = prms.rawdatadir
+            self.db_datadir = prms.Paths["rawdatadir"]
         else:
             self.db_datadir = db_datadir
         if not db_datadir_processed:
-            self.db_datadir_processed = prms.cellpydatadir
+            self.db_datadir_processed = prms.Paths["cellpydatadir"]
         else:
             self.db_datadir_processed = db_datadir_processed
 

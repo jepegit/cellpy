@@ -47,14 +47,44 @@ def _write_prm_file(file_name=None):
     with open(file_name, "w") as config_file:
         yaml.dump(config_dict, config_file, default_flow_style=False,explicit_start=True, explicit_end=True)
 
-
+IS_DICT = True
 def _update_prms(config_dict):
+    logger.info("updating parameters")
+    logger.info(str(config_dict))
+
+    for key in config_dict:
+        if hasattr(prms, key):
+            _config_attr = getattr(prms, key)
+
+            if IS_DICT:
+                for k in config_dict[key]:
+                    _config_attr[k] = config_dict[key][k]
+            else:
+                setattr(_config_attr, config_dict[key])
+        else:
+            logger.info("\n  not-supported prm: %s" % key)
+
+    # prms.Paths = config_dict["Paths"]
+    #
+    # config_dict = {
+    #     "Paths": prms.Paths,
+    #     "FileNames": prms.FileNames,
+    #     "Db": prms.Db,
+    #     "DataSet": prms.DataSet,
+    #     "Reader": prms.Reader,
+    #     "Instruments": prms.Instruments,
+    #     "excel_db_cols": prms.excel_db_cols,
+    #     "excel_db_filename_cols": prms.excel_db_filename_cols,
+    # }
+
+
     print "updating parameters:"
     print config_dict
     # setattr etc
 
 
 def _pack_prms():
+    """if you introduce new 'save-able' parameter dictionaries, then you have to include them here"""
     config_dict = {
         "Paths": prms.Paths,
         "FileNames": prms.FileNames,
@@ -89,10 +119,11 @@ def _get_prm_file(file_name=None, search_order=None):
         if os.path.isfile(file_name):
             return file_name
         else:
-            print("log and continue?")
+            logger.info("Could not find the prm-file")
 
-    default_name = "_cellpy_prms_default.config"
-    prm_globtxt = "_cellpy_prms*.config"
+    default_name = prms._prm_default_name
+    prm_globtxt = prms._prm_globtxt
+
     script_dir = os.path.abspath(os.path.dirname(__file__))
 
     search_path = dict()
@@ -106,6 +137,8 @@ def _get_prm_file(file_name=None, search_order=None):
         search_order = search_order
 
 
+    # The default name for the prm file is at the moment in the script-dir, while
+    # default searching is in the userdir (yes, I know):
     prm_default = os.path.join(script_dir, default_name)
 
     # -searching-----------------------
@@ -331,11 +364,25 @@ class read:
         return txt
 
 
+def _save_current_prms_to_user_dir():
+    # This should be put into the cellpy setup script
+    file_name = os.path.join(prms.user_dir, prms._prm_default_name)
+    _write_prm_file(file_name)
+
 def main():
-    print "Testing"
+    print("Testing")
+    #out = r"C:\Users\jepe\_cellpy_prms_jepe.conf"
+    #_write_prm_file(out)
+    print prms.Reader
+
     f = _get_prm_file()
     _write_prm_file(f)
+
+    print f
+
     _read_prm_file(f)
+
+    print prms.Reader
 
 
 def old_main():
