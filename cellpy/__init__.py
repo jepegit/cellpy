@@ -12,7 +12,7 @@ import warnings
 from cellpy.readers import cellreader
 from cellpy.readers import dbreader
 from cellpy.readers import filefinder
-from cellpy.parameters import prmreader, prms
+from cellpy.parameters import prmreader
 
 
 

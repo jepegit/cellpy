@@ -3852,10 +3852,10 @@ def just_load_srno(srno, prm_filename=None):
     print "just_load_srno: srno: %i" % srno
 
     # ------------reading parameters--------------------------------------------
-    print "just_load_srno: read prms"
-    prm = prmreader.read(prm_filename)
-
-    print prm
+    # print "just_load_srno: read prms"
+    # prm = prmreader.read(prm_filename)
+    #
+    # print prm
 
     print "just_load_srno: making class and setting prms"
     d = cellpydata(verbose=True)
@@ -3863,7 +3863,8 @@ def just_load_srno(srno, prm_filename=None):
     # ------------reading db----------------------------------------------------
     print
     print "just_load_srno: starting to load reader"
-    reader = dbreader.reader(prm_filename)
+    # reader = dbreader.reader(prm_filename)
+    reader = dbreader.reader()
     print "------ok------"
 
     run_name = reader.get_cell_name(srno)

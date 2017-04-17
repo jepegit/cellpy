@@ -6,12 +6,8 @@ import os
 from cellpy import cellreader, dbreader, prmreader, filefinder
 
 print "UNDER DEVELOPMENT"
-prm_file = r"..\parametres\_cellpy_prms_jpm.ini"
 
-print "Reading parameters"
-prms = prmreader.read(prm_file)
-print prms
-excel_reader = dbreader.reader(prm_file=prm_file)
+excel_reader = dbreader.reader()
 b_name = "e002_screen_printed"
 serial_numbers = excel_reader.select_batch(b_name,5)
 print " - serial_numbers: "

@@ -12,6 +12,7 @@ relative_raw_data_dir = os.path.join(relative_cellpy_dir, "data_ex")
 relative_cellpy_data_dir = os.path.join(relative_cellpy_dir, "data_ex")
 relative_db_path = os.path.join(relative_cellpy_dir, "databases")
 
+test_db_filename = "cellpy_db.xlsx"
 test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
 test_res_file = "20160805_test001_45_cc_01.res"
 test_res_file_full = os.path.join(test_data_dir,test_res_file)
@@ -37,11 +38,12 @@ test_areal_loading = 0.0
 @pytest.fixture(scope="module")
 def db_reader():
     from cellpy import dbreader
-    from cellpy import prms
+    from cellpy.parameters import prms
     prms.Paths["outdatadir"] = relative_out_data_dir
     prms.Paths["rawdatadir"] = relative_raw_data_dir
     prms.Paths["cellpydatadir"] = relative_cellpy_data_dir
     prms.Paths["db_path"] = relative_db_path
+    prms.Paths["db_filename"] = test_db_filename
     return dbreader.reader()
 
 

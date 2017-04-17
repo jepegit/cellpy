@@ -50,19 +50,20 @@ def _write_prm_file(file_name=None):
 IS_DICT = True
 def _update_prms(config_dict):
     logger.info("updating parameters")
-    logger.info(str(config_dict))
+    logger.debug("new prms:" +str(config_dict))
 
     for key in config_dict:
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
 
-            if IS_DICT:
+            if IS_DICT: # TODO: use if isinstance(_config_attr, dict) or something similar
                 for k in config_dict[key]:
                     _config_attr[k] = config_dict[key][k]
             else:
                 setattr(_config_attr, config_dict[key])
         else:
             logger.info("\n  not-supported prm: %s" % key)
+
 
     # prms.Paths = config_dict["Paths"]
     #
@@ -101,8 +102,7 @@ def _pack_prms():
 
 def _read_prm_file(prm_filename):
     """read the prm file"""
-    print "reading",
-    print prm_filename
+    logger.info("Reading config-file: %s" % prm_filename)
     with open(prm_filename, "r") as config_file:
         prm_dict = yaml.load(config_file)
     _update_prms(prm_dict)
@@ -386,7 +386,7 @@ def main():
 
 
 def old_main():
-    r = read()
+    r = read()  # TODO: remove this
     print "\n----------------------Read file-----------------------------"
     print "Search path:"
     for k, d in r.search_path.items():
