@@ -64,8 +64,8 @@ setup(name=name,
         'outdata':
             [
              ],
-        'parametres':
-            ['parametres/_cellpy_prms_default.ini',
+        'parameters':
+            ['parameters/_cellpy_prms_default.ini',
              ],
         'scripts':
             ['scripts/simple_reader.py',
@@ -79,7 +79,7 @@ setup(name=name,
             'cellpy=cellpy.cellpy_setup:cli',
         ],
     },
-    #data_files=[userdir, ['cellpy/parametres/_cellpy_prms_default.ini']],
+    #data_files=[userdir, ['cellpy/parameters/_cellpy_prms_default.ini']],
     include_package_data=True,
     install_requires=requirements,
     license="MIT license",

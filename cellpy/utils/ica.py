@@ -1,5 +1,9 @@
 """ica contains routines for creating and working with incremental capacity analysis data"""
 
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import numpy as np
 from scipy import stats
@@ -7,6 +11,9 @@ from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter1d
+import logging
+import warnings
+from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
 
 
 METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
@@ -17,7 +24,12 @@ METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 # TODO: full-cell
 
 
-class Converter:
+class Converter(object):
+    """Class for dq-dv handling.
+    
+    Typical usage is to  (1) set the data,  (2) inspect the data, (3) pre-process the data,
+    (4) perform the dq-dv transform, and finally (5) post-process the data.
+    """
     def __init__(self):
         self.capacity = None
         self.voltage = None
@@ -36,6 +48,7 @@ class Converter:
         self.points_pr_split = 10
         self.minimum_splits = 3
         self.interpolation_method = 'linear'
+        self.increment_method = 'diff'
         self.pre_smoothing = True
         self.smoothing = True
         self.post_smoothing = True
@@ -64,10 +77,14 @@ class Converter:
         self.errors = []
 
     def set_data(self, capacity, voltage):
+        """Set the data"""
+
         self.capacity = capacity
         self.voltage = voltage
 
     def inspect_data(self, capacity=None, voltage=None):
+        """check and inspect the data"""
+
         if capacity is None:
             capacity = self.capacity
         if voltage is None:
@@ -90,7 +107,8 @@ class Converter:
         rest = self.number_of_points % self.points_pr_split
 
         if splits < self.minimum_splits:
-            print "no point in splitting, too little data"
+            txt = "no point in splitting, too little data"
+            logging.info(txt)
             self.errors.append("splitting: to few points")
         else:
             if rest > 0:
@@ -121,6 +139,7 @@ class Converter:
         self.normalising_factor = self.end_capacity
 
     def pre_process_data(self):
+        "perform some pre-processing of the data (i.e. interpolation)"
         capacity = self.capacity
         voltage = self.voltage
         len_capacity = self.len_capacity
@@ -143,9 +162,16 @@ class Converter:
                                                       self.savgol_filter_window_order)
 
     def increment_data(self):
+        """perform the dq-dv transform"""
+
+        # NOTE TO ASBJOERN: Probably insert method for "binning" instead of differentiating here
+        # (use self.increment_method as the variable for selecting method for)
+
         # ---- shifting to y-x ----------------------------------------
         len_voltage = len(self.voltage_preprocessed)
         v1, v2 = value_bounds(self.voltage_preprocessed)
+
+        # ---- interpolating ------------------------------------------
         f = interp1d(self.voltage_preprocessed, self.capacity_preprocessed, kind=self.interpolation_method)
 
         self.voltage_inverted = np.linspace(v1, v2, len_voltage)
@@ -163,12 +189,14 @@ class Converter:
                                                    self.savgol_filter_window_order)
 
         # ---  diff --------------------
-        self.incremental_capacity = np.ediff1d(self.capacity_inverted) / self.voltage_inverted_step
-        self._incremental_capacity = self.incremental_capacity
-        # --- need to adjust voltage ---
-        self.voltage_processed = self.voltage_inverted[1:] + 0.5 * self.voltage_inverted_step  # sentering
+        if self.increment_method == "diff":
+            self.incremental_capacity = np.ediff1d(self.capacity_inverted) / self.voltage_inverted_step
+            self._incremental_capacity = self.incremental_capacity
+            # --- need to adjust voltage ---
+            self.voltage_processed = self.voltage_inverted[1:] + 0.5 * self.voltage_inverted_step  # centering
 
     def post_process_data(self, voltage=None, incremental_capacity=None, voltage_step=None):
+        """perform post-processing (smoothing, normalisation, ...) of the data"""
         if voltage is None:
             voltage = self.voltage_processed
             incremental_capacity = self.incremental_capacity
@@ -195,6 +223,8 @@ def index_bounds(x):
 
 
 def dqdv(voltage, capacity):
+    """Convenience functions for creating dq-dv data from given capacity and voltage data"""
+
     converter = Converter()
     converter.set_data(capacity, voltage)
     converter.inspect_data()
@@ -205,9 +235,9 @@ def dqdv(voltage, capacity):
 
 
 def check_class_ica():
-    print 40 * "="
-    print "running check_class_ica"
-    print 40 * "-"
+    print(40 * "=")
+    print("running check_class_ica")
+    print(40 * "-")
     from cellpy import cellreader
     import matplotlib.pyplot as plt
 
@@ -223,27 +253,34 @@ def check_class_ica():
     # ---------- loading test-data ----------------------
     cell = cellreader.cellpydata()
     cell.load(test_cellpy_file_full)
-
-    # --A------- checking data --------------------------
     list_of_cycles = cell.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
-    print "you have %i cycles" % number_of_cycles
-    print "looking at cycle 1"
+    print("you have %i cycles" % number_of_cycles)
     cycle = 5
+    print("looking at cycle %i" % cycle)
+
+    # ---------- processing and plotting ----------------
     fig, (ax1,ax2) = plt.subplots(2,1)
     capacity, voltage = cell.get_ccap(cycle)
-    ax1.plot(capacity, voltage, "b-", label="raw")
+    ax1.plot(capacity, voltage, "b.-", label="raw")
     converter = Converter()
     converter.set_data(capacity, voltage)
     converter.inspect_data()
     converter.pre_process_data()
-    ax1.plot(converter.capacity_preprocessed, converter.voltage_preprocessed, "r-", label="pre")
+    ax1.plot(converter.capacity_preprocessed, converter.voltage_preprocessed, "r.-", alpha=0.3, label="pre-processed")
+
     converter.increment_data()
     converter.post_process_data()
-    ax2.plot(converter.voltage_processed, converter._incremental_capacity, "b-", label="inc")
-    ax2.plot(converter.voltage_processed, converter.incremental_capacity, "r-", label="post")
-    ax1.legend()
-    ax2.legend()
+
+    ax2.plot(converter.voltage_processed, converter._incremental_capacity, "b.-", label="incremented")
+    ax2.plot(converter.voltage_processed, converter.incremental_capacity, "r-", alpha=0.3, lw=4.0,
+             label="post-processed")
+    ax1.legend(numpoints=1)
+    ax2.legend(numpoints=1)
+    ax1.set_ylabel("Voltage (V)")
+    ax1.set_xlabel("Capacity (mAh/g)")
+    ax2.set_xlabel("Voltage (V)")
+    ax2.set_ylabel("dQ/dV (mAh/g/V)")
     plt.show()
 
 if __name__ == '__main__':

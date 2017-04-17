@@ -176,7 +176,7 @@ class summaryplot:
         matplotlib.rcParams['ytick.labelsize'] = 'medium'
 
     def read_prms(self, ):
-        self.prms = prmreader.read()
+        self.prms = prmreader.read() # TODO: remove this
         print "-------------read_prms--------------"
         print self.prms
 
@@ -790,7 +790,7 @@ class summaryplot:
             rawdatadir = self.prms.rawdatadir
         else:
             rawdatadir = self.rawdatadir
-            
+
         cycle_mode = self.cycle_mode
         if sort is True:
             self.sort_cells()
@@ -807,7 +807,7 @@ class summaryplot:
             cell_data.set_cycle_mode(cycle_mode)
             cell_data.loadcell(raw_files=rawfiles, cellpy_file=cellpyfiles, mass=my_mass, summary_on_raw=True,
                                force_raw=self.force_raw)
-            
+
             self.number_of_tests += cell_data.get_number_of_tests()
             self.tests.append(cell_data)
 
@@ -1136,7 +1136,7 @@ class summaryplot:
                     writer = csv.writer(f, delimiter=sep)
                     writer.writerows(itertools.izip_longest(*out_data))
                     # star (or asterix) means transpose (writing cols instead of rows)
-        
+
 
     def _export_dqdv(self, savedir, sep):
         """internal function for running dqdv script """
@@ -1527,7 +1527,7 @@ class summaryplot:
                 axis.set_xlim(lim)
             except:
                 "axis probably not found"
-                   
+
     # --------- legend tools ------------------------------------------------------
 
     def get_legend(self, canvas=1):
@@ -1709,7 +1709,7 @@ if __name__ == "__main__":
     from cellpy import log
     log_level = logging.INFO # set to logging.DEBUG for more output
     log.setup_logging(default_level=log_level)
-    
+
     #    plot types:
     #    1 - with end-voltage
     #    2 - without end-voltage
@@ -1731,7 +1731,7 @@ if __name__ == "__main__":
                     export_dqdv=True,
                     fetch_onliners=True,
                     cycle_mode="cathode",
-                    rawdatadir=rawdatadir) # 
+                    rawdatadir=rawdatadir) #
     print "plotting"
     a.showfig()  # showing individual figures (showfig(fignumber)) does not work in scripts
     print "ended figure"

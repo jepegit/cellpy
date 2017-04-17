@@ -86,7 +86,7 @@ for k in summary_columns:
     summary_dict[k] = []
 
 # -----------defining folders----------------------------
-prms = prmreader.read()
+prms = prmreader.read() # TODO: remove this
 db_path = prms.db_path
 outdatadir = prms.outdatadir
 filelogdir = prms.filelogdir

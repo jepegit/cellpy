@@ -6,97 +6,57 @@ import os
 import sys
 import types
 import pandas as pd
+import time
+import tempfile
+import shutil
+import logging
+import warnings
+# from cellpy.parameters import prmreader
+import cellpy.parameters.prms as prms
 
+logger = logging.getLogger(__name__)
 
-from cellpy.parametres import prmreader
-
-# TODO: read column names and numbers from custom file.
 # TODO: remove "bool" headers (F, M, etc.) in example db-file.
 
 
-class DbSheetCols:
+class DbSheetCols(object):
     def __init__(self, sheetname="db_table"):
-        # type: (str) -> None
         if sheetname == "db_table":
-            n = 6  # rev 09.05.2014 - inserted 6 new batch-name columns
-            self.serial_number_position = 0
-            self.exists = 3
-            self.exists_txt = 4
-            self.fileid = 11 + n
-            self.batch_no = 1
-            self.batch = 2
-            self.b01 = 5
-            self.b02 = 6
-            self.b03 = 7
-            self.b04 = 8
-            self.b05 = 9
-            self.b06 = 10
-            self.b07 = 11
-            self.b08 = 12
-
-            self.label = 7 + n
-            self.group = 8 + n
-            self.selected = 9 + n
-            self.cell_name = 10 + n
-            self.fi = 11 + n
-            self.file_name_indicator = 11 + n
-            self.comment_slurry = 12 + n
-            self.finished_run = 13 + n
-            self.F = 13 + n
-            self.hd5f_fixed = 13 + n
-            self.M = 14 + n
-            self.VC = 15 + n
-            self.FEC = 16 + n
-            self.LS = 17 + n
-            self.IPA = 18 + n
-            self.B = 19 + n
-            self.RATE = 20 + n
-            self.LC = 21 + n
-            self.SINODE = 22 + n
-
-            self.am = 29 + n
-            self.active_material = 29 + n
-            self.tm = 33 + n
-            self.total_material = 33 + n
-            self.wtSi = 34 + n
-            self.weight_percent_Si = 34 + n
-            self.Si = 34 + n
-            self.loading = 36 + n
-            self.general_comment = 41 + n
+            for key in prms.excel_db_cols:
+                setattr(self, key, prms.excel_db_cols[key])
 
         elif sheetname == "db_filenames":
-            self.serial_number_position = 0
-            self.serialno = 0
-            self.fileid = 1
-            self.files = 2
+            for key in prms.excel_db_filename_cols:
+                setattr(self, key, prms.excel_db_filename_cols[key])
 
-    def __str__(self):
-        txt = """
-        look into the source code
-        """
-        return txt
+    def __repr__(self):
+        return "<excel_db_cols: %s>" % self.__dict__
 
 
 class reader:
     def __init__(self, db_file=None,
                  db_datadir=None,
                  db_datadir_processed=None,
-                 prm_file=None):
-        prms = prmreader.read(prm_file)
+                 prm_file=None,
+                 test_mode=False):
+        if prm_file is not None:
+            warnings.warn("reading prm file inside db_reader is not allowed anymore\n")
+            #prms = prmreader.read(prm_file)
+
         if not db_file:
-            self.db_path = prms.db_path
-            self.db_filename = prms.db_filename
+            self.db_path = prms.Paths["db_path"]
+            self.db_filename = prms.Paths["db_filename"]
             self.db_file = os.path.join(self.db_path, self.db_filename)
         else:
             self.db_path = os.path.dirname(db_file)
             self.db_filename = os.path.basename(db_file)
             self.db_file = db_file
         if not db_datadir:
-            self.db_datadir = prms.rawdatadir
+            self.db_datadir = prms.Paths["rawdatadir"]
         else:
             self.db_datadir = db_datadir
         if not db_datadir_processed:
-            self.db_datadir_processed = prms.cellpydatadir
+            self.db_datadir_processed = prms.Paths["cellpydatadir"]
         else:
             self.db_datadir_processed = db_datadir_processed
 
@@ -109,8 +69,17 @@ class reader:
         self.remove_row = [0]  # removing this row
         self.string_cols = [3, 4, 5, 6, 7, 8]
 
-        self.table = self._open_sheet("table")
-        self.ftable = self._open_sheet("file_names")
+        if not test_mode:
+            self.table = self._open_sheet("table")
+            self.ftable = self._open_sheet("file_names")
+        else:
+            print "in test-mode"
+            t0 = time.time()
+            self.table = self._open_sheet_tst("table")
+            print "* %f" % (time.time()-t0)
+            self.ftable = self._open_sheet_tst("file_names")
+            print "* %f" % (time.time()-t0)
+
 
     def _pick_info(self, serial_number, column_number):
         row = self.select_serial_number_row(serial_number)
@@ -120,10 +89,73 @@ class reader:
             x = x[0]
         return x
 
+
     @staticmethod
     def _select_col(df, no):
         """select specific column"""
         return df.iloc[:, no]
+
+    def _export_to_csv(self, sheet=None):
+        from xlrd import open_workbook
+        import csv
+
+        wb = open_workbook('Road-Accident-Safety-Data-Guide-1979-2004.xls')
+
+        for i in range(2, wb.nsheets):
+            sheet = wb.sheet_by_index(i)
+            print sheet.name
+            with open("data/%s.csv" % (sheet.name.replace(" ", "")), "w") as file:
+                writer = csv.writer(file, delimiter=",")
+                print sheet, sheet.name, sheet.ncols, sheet.nrows
+
+                header = [cell.value for cell in sheet.row(0)]
+                writer.writerow(header)
+
+                for row_idx in range(1, sheet.nrows):
+                    row = [int(cell.value) if isinstance(cell.value, float) else cell.value
+                           for cell in sheet.row(row_idx)]
+                    writer.writerow(row)
+
+
+    def _open_sheet_tst(self, sheet=None):
+        """Opens sheets and returns it"""
+        print "opening sheet",
+        if not sheet:
+            sheet = self.db_sheet_table
+        elif sheet == "table":
+            sheet = self.db_sheet_table
+        elif sheet == "file_names":
+            sheet = self.db_sheet_filenames
+        print sheet
+        t0 = time.time()
+
+        header = self.header
+        rows_to_skip = self.skiprows
+        print "* %f starting..." % (time.time() - t0)
+
+        # creating tmp-file
+        temp_dir = tempfile.gettempdir()
+        tmp_db_file = os.path.join(temp_dir, os.path.basename(self.db_file))
+        shutil.copy2(self.db_file, temp_dir)
+
+        work_book = pd.ExcelFile(tmp_db_file)
+        print "* %f work_book = pd.ExcelFile(self.db_file)..." % (time.time() - t0)
+        sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
+        print "* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (time.time() - t0)
+        if self.remove_row:
+            remove_index = sheet.index[self.remove_row]
+            sheet = sheet.drop(remove_index)
+            sheet.reindex(range(0, len(sheet.index)))
+
+        # removing tmp-file
+        if os.path.isfile(tmp_db_file):
+            print "removing tmp file",
+            print tmp_db_file
+            try:
+                os.remove(tmp_db_file)
+            except WindowsError as e:
+                print "could not remove tmp-file\n%s %s" % (tmp_db_file, e)
+        return sheet
 
     def _open_sheet(self, sheet=None):
         """Opens sheets and returns it"""
@@ -135,6 +167,7 @@ class reader:
             sheet = self.db_sheet_filenames
         header = self.header
         rows_to_skip = self.skiprows
+
         work_book = pd.ExcelFile(self.db_file)
         sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
         if self.remove_row:
@@ -422,6 +455,11 @@ class reader:
 
     def inspect_hd5f_fixed(self, serial_number):
         column_number = self.db_sheet_cols.hd5f_fixed
+        insp = self._pick_info(serial_number, column_number)
+        return insp
+
+    def inspect_limited_capacity_cycling(self, serial_number):
+        column_number = self.db_sheet_cols.LC
         insp = self._pick_info(serial_number, column_number)
         return insp
 
