@@ -47,6 +47,7 @@ from scipy import interpolate
 import numpy as np
 import pandas as pd
 import logging
+import cellpy.parameters.prms as prms
 
 # import logging.config
 
@@ -55,6 +56,10 @@ pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
 
 # module_logger = logging.getLogger(__name__)
+
+
+
+
 
 
 def get_headers_summary():
@@ -375,18 +380,16 @@ class dataset(object):
         self.logger.info("created dataset instance")
 
         self.test_no = None
-        self.mass = 1.0  # mass of (active) material (in mg)
-        self.tot_mass = 1.0  # total mass of material (in mg)
+        self.mass = prms.Materials["default_mass"]  # mass of (active) material (in mg)
+        self.tot_mass = prms.Materials["default_mass"]  # total mass of material (in mg)
         self.no_cycles = 0.0
         self.charge_steps = None  # not in use at the moment
         self.discharge_steps = None  # not in use at the moment
         self.ir_steps = None  # dict # not in use at the moment
         self.ocv_steps = None  # dict # not in use at the moment
-        self.nom_cap = 3579  # mAh/g (used for finding c-rates)
+        self.nom_cap = prms.DataSet["nom_cap"] # mAh/g (used for finding c-rates)  # mAh/g (used for finding c-rates)
         self.mass_given = False
-        self.c_mode = True
-        self.starts_with = "discharge"
-        self.material = "noname"
+        self.material = prms.Materials["default_material"]
         self.merged = False
         self.file_errors = None  # not in use at the moment
         self.loaded_from = None  # name of the .res file it is loaded from (can be list if merged)
@@ -488,7 +491,7 @@ class cellpydata(object):
                  selected_scans=None,
                  verbose=False,  # not in use
                  profile=False,
-                 filestatuschecker="size",  # "modified"
+                 filestatuschecker=None,  # "modified"
                  fetch_onliners=False,
                  tester="arbin",
                  ):
@@ -497,6 +500,7 @@ class cellpydata(object):
         Returns:
             None:
         """
+
         self.tester = tester
         self.loader = None  # this will be set in the function set_instrument
         self.verbose = verbose  # not used anymore?
@@ -505,7 +509,10 @@ class cellpydata(object):
         self.logger.info("created cellpydata instance")
         self.profile = profile
         self.minimum_selection = {}
-        self.filestatuschecker = filestatuschecker
+        if filestatuschecker is None:
+            self.filestatuschecker = prms.Reader["filestatuschecker"]
+        else:
+            self.filestatuschecker = filestatuschecker
         self.forced_errors = 0
         self.summary_exists = False
 
@@ -536,24 +543,23 @@ class cellpydata(object):
                                    'ocvrlx_up', 'ocvrlx_down', 'ir',
                                    'rest', 'not_known']
         # - options
-        self.force_step_table_creation = True
-        self.force_all = False  # not used yet - should be used when saving
-        self.sep = ";"
-        self.cycle_mode = 'anode'
-        self.use_decrp_functions = True  # not used in the script - delete?
-        self.max_res_filesize = 150000000
-        self.load_only_summary = False
-        self.select_minimal = False
-        self.chunk_size = None  # 100000
-        self.max_chunks = None
-        self.last_chunk = None
-        self.limit_loaded_cycles = None
-        self.load_until_error = False
-        self.ensure_step_table = False
-        self.daniel_number = 5
-        self.raw_datadir = None
-        self.cellpy_datadir = None
-        self.auto_dirs = True  # search in prm-file for res and hdf5 dirs in loadcel
+        self.force_step_table_creation = prms.Reader["force_step_table_creation"]
+        self.force_all = prms.Reader["force_all"]
+        self.sep = prms.Reader["sep"]
+        self.cycle_mode = prms.Reader["cycle_mode"]
+        self.max_res_filesize = prms.Reader["max_res_filesize"]
+        self.load_only_summary = prms.Reader["load_only_summary"]
+        self.select_minimal = prms.Reader["select_minimal"]
+        self.chunk_size = prms.Reader["chunk_size"]  # 100000
+        self.max_chunks = prms.Reader["max_chunks"]
+        self.last_chunk = prms.Reader["last_chunk"]
+        self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]
+        self.load_until_error = prms.Reader["load_until_error"]
+        self.ensure_step_table = prms.Reader["ensure_step_table"]
+        self.daniel_number = prms.Reader["daniel_number"]
+        self.raw_datadir = prms.Reader["raw_datadir"]
+        self.cellpy_datadir = prms.Reader["cellpy_datadir"]
+        self.auto_dirs = prms.Reader["auto_dirs"]  # search in prm-file for res and hdf5 dirs in loadcell
 
         # - headers and instruments
         self.headers_normal = get_headers_normal()
@@ -3818,14 +3824,8 @@ def setup_cellpy_instance():
         making class and setting prms
 
     """
-    from cellpy import prmreader
-    prms = prmreader.read()
-    print "read prms"
-    print prms
     print "making class and setting prms"
     cellpy_instance = cellpydata(verbose=True)
-    cellpy_instance.set_cellpy_datadir(prms.cellpydatadir)
-    cellpy_instance.set_raw_datadir(prms.rawdatadir)
     return cellpy_instance
 
 
@@ -3851,20 +3851,20 @@ def just_load_srno(srno, prm_filename=None):
     from cellpy import dbreader, prmreader, filefinder
     print "just_load_srno: srno: %i" % srno
 
-    # ------------reading parametres--------------------------------------------
-    print "just_load_srno: read prms"
-    prms = prmreader.read(prm_filename)
-
-    print prms
+    # ------------reading parameters--------------------------------------------
+    # print "just_load_srno: read prms"
+    # prm = prmreader.read(prm_filename)
+    #
+    # print prm
 
     print "just_load_srno: making class and setting prms"
     d = cellpydata(verbose=True)
-    # d.set_cellpy_datadir(prms.cellpydatadir)
-    # d.set_raw_datadir(prms.rawdatadir)
+
     # ------------reading db----------------------------------------------------
     print
     print "just_load_srno: starting to load reader"
-    reader = dbreader.reader(prm_filename)
+    # reader = dbreader.reader(prm_filename)
+    reader = dbreader.reader()
     print "------ok------"
 
     run_name = reader.get_cell_name(srno)
@@ -3914,9 +3914,8 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     d = cellpydata(verbose=True)
 
     if not outdir:
-        from cellpy import prmreader
-        prms = prmreader.read()
-        outdir = prms.cellpydatadir
+        import cellpy.parameters.prms as prms
+        outdir = prms.Paths["cellpydatadir"]
 
     if not outfile:
         outfile = os.path.basename(filename).split(".")[0] + ".h5"
@@ -4114,5 +4113,5 @@ if __name__ == "__main__":
     log.setup_logging(default_level=logging.DEBUG)
     testfile = "../indata/20160805_test001_45_cc_01.res"
     load_and_print_resfile(testfile)
-    # just_load_srno(614, r"C:\Scripting\MyFiles\development_cellpy\cellpy\parametres\_cellpy_prms_devel.ini")
+    # just_load_srno(614, r"C:\Scripting\MyFiles\development_cellpy\cellpy\parameters\_cellpy_prms_devel.ini")
     # loadcell_check()

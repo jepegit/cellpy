@@ -259,7 +259,7 @@ if __name__ == '__main__':
     # plt.rcParams['ytick.major.pad'] = 8
     #
     #
-    # print "defining parametres"
+    # print "defining parameters"
     # c_rate = [0.05, 0.1]   # 1/[h]
     # change_i = [3]   # What cycle the current is changed
     # cell_capacity = 3.579   # [mAh / mg]

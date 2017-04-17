@@ -9,83 +9,28 @@ import pandas as pd
 import time
 import tempfile
 import shutil
+import logging
+import warnings
+# from cellpy.parameters import prmreader
+import cellpy.parameters.prms as prms
 
-from cellpy.parametres import prmreader
+logger = logging.getLogger(__name__)
 
-# TODO: read column names and numbers from custom file.
 # TODO: remove "bool" headers (F, M, etc.) in example db-file.
 
 
-class DbSheetCols:
+class DbSheetCols(object):
     def __init__(self, sheetname="db_table"):
-        # type: (str) -> None
         if sheetname == "db_table":
-            n = 6  # rev 09.05.2014 - inserted 6 new batch-name columns
-            self.serial_number_position = 0
-            self.exists = 3
-            self.exists_txt = 4
-            self.fileid = 11 + n
-            self.batch_no = 1
-            self.batch = 2
-            self.b01 = 5
-            self.b02 = 6
-            self.b03 = 7
-            self.b04 = 8
-            self.b05 = 9
-            self.b06 = 10
-            self.b07 = 11
-            self.b08 = 12
-
-            self.label = 7 + n
-            self.group = 8 + n
-            self.selected = 9 + n
-            self.cell_name = 10 + n
-            self.fi = 11 + n
-            self.file_name_indicator = 11 + n
-            self.comment_slurry = 12 + n
-            self.finished_run = 13 + n
-            self.F = 13 + n
-            self.M = 13 + n
-
-            self.hd5f_fixed = 14 + n
-            self.freeze = 14 + n
-            self.VC = 15 + n
-            self.FEC = 16 + n
-            self.LS = 17 + n
-            self.IPA = 18 + n
-            self.B = 19 + n
-            self.RATE = 20 + n
-            self.LC = 21 + n
-
-            self.A1 = 22 + n
-            self.A2 = 23 + n
-            self.A3 = 24 + n
-            self.A4 = 25 + n
-            self.A5 = 26 + n
-            self.A6 = 27 + n
-            self.channel = 28 + n
-
-            self.am = 29 + n
-            self.active_material = 29 + n
-            self.tm = 33 + n
-            self.total_material = 33 + n
-            self.wtSi = 34 + n
-            self.weight_percent_Si = 34 + n
-            self.Si = 34 + n
-            self.loading = 36 + n
-            self.general_comment = 41 + n
+            for key in prms.excel_db_cols:
+                setattr(self, key, prms.excel_db_cols[key])
 
         elif sheetname == "db_filenames":
-            self.serial_number_position = 0
-            self.serialno = 0
-            self.fileid = 1
-            self.files = 2
+            for key in prms.excel_db_filename_cols:
+                setattr(self, key, prms.excel_db_filename_cols[key])
 
-    def __str__(self):
-        txt = """
-        look into the source code
-        """
-        return txt
+    def __repr__(self):
+        return "<excel_db_cols: %s>" % self.__dict__
 
 
 class reader:
@@ -94,22 +39,24 @@ class reader:
                  db_datadir_processed=None,
                  prm_file=None,
                  test_mode=False):
+        if prm_file is not None:
+            warnings.warn("reading prm file inside db_reader is not allowed anymore\n")
+            #prms = prmreader.read(prm_file)
 
-        prms = prmreader.read(prm_file)
         if not db_file:
-            self.db_path = prms.db_path
-            self.db_filename = prms.db_filename
+            self.db_path = prms.Paths["db_path"]
+            self.db_filename = prms.Paths["db_filename"]
             self.db_file = os.path.join(self.db_path, self.db_filename)
         else:
             self.db_path = os.path.dirname(db_file)
             self.db_filename = os.path.basename(db_file)
             self.db_file = db_file
         if not db_datadir:
-            self.db_datadir = prms.rawdatadir
+            self.db_datadir = prms.Paths["rawdatadir"]
         else:
             self.db_datadir = db_datadir
         if not db_datadir_processed:
-            self.db_datadir_processed = prms.cellpydatadir
+            self.db_datadir_processed = prms.Paths["cellpydatadir"]
         else:
             self.db_datadir_processed = db_datadir_processed
 
@@ -220,6 +167,7 @@ class reader:
             sheet = self.db_sheet_filenames
         header = self.header
         rows_to_skip = self.skiprows
+
         work_book = pd.ExcelFile(self.db_file)
         sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
         if self.remove_row:

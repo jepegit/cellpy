@@ -34,6 +34,148 @@ import os
 import sys
 from collections import OrderedDict
 import ConfigParser
+import logging
+import yaml
+
+import cellpy.parameters.prms as prms
+
+logger = logging.getLogger(__name__)
+
+def _write_prm_file(file_name=None):
+    logger.info("saving configuration to %s" % file_name)
+    config_dict = _pack_prms()
+    with open(file_name, "w") as config_file:
+        yaml.dump(config_dict, config_file, default_flow_style=False,explicit_start=True, explicit_end=True)
+
+IS_DICT = True
+def _update_prms(config_dict):
+    logger.info("updating parameters")
+    logger.debug("new prms:" +str(config_dict))
+
+    for key in config_dict:
+        if hasattr(prms, key):
+            _config_attr = getattr(prms, key)
+
+            if IS_DICT: # TODO: use if isinstance(_config_attr, dict) or something similar
+                for k in config_dict[key]:
+                    _config_attr[k] = config_dict[key][k]
+            else:
+                setattr(_config_attr, config_dict[key])
+        else:
+            logger.info("\n  not-supported prm: %s" % key)
+
+
+    # prms.Paths = config_dict["Paths"]
+    #
+    # config_dict = {
+    #     "Paths": prms.Paths,
+    #     "FileNames": prms.FileNames,
+    #     "Db": prms.Db,
+    #     "DataSet": prms.DataSet,
+    #     "Reader": prms.Reader,
+    #     "Instruments": prms.Instruments,
+    #     "excel_db_cols": prms.excel_db_cols,
+    #     "excel_db_filename_cols": prms.excel_db_filename_cols,
+    # }
+
+
+
+def _pack_prms():
+    """if you introduce new 'save-able' parameter dictionaries, then you have to include them here"""
+    config_dict = {
+        "Paths": prms.Paths,
+        "FileNames": prms.FileNames,
+        "Db": prms.Db,
+        "DataSet": prms.DataSet,
+        "Reader": prms.Reader,
+        "Instruments": prms.Instruments,
+        "excel_db_cols": prms.excel_db_cols,
+        "excel_db_filename_cols": prms.excel_db_filename_cols,
+    }
+    return config_dict
+
+
+
+def _read_prm_file(prm_filename):
+    """read the prm file"""
+    logger.info("Reading config-file: %s" % prm_filename)
+    with open(prm_filename, "r") as config_file:
+        prm_dict = yaml.load(config_file)
+    _update_prms(prm_dict)
+
+
+def __look_at(file_name):
+    with open(file_name, "r") as config_file:
+        t = yaml.load(config_file)
+    print t
+
+def _get_prm_file(file_name=None, search_order=None):
+    """returns name of the prm file"""
+    if file_name is not None:
+        if os.path.isfile(file_name):
+            return file_name
+        else:
+            logger.info("Could not find the prm-file")
+
+    default_name = prms._prm_default_name
+    prm_globtxt = prms._prm_globtxt
+
+    script_dir = os.path.abspath(os.path.dirname(__file__))
+
+    search_path = dict()
+    search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
+    search_path["filedir"] = script_dir
+    search_path["userdir"] = os.path.expanduser("~")
+
+    if search_order is None:
+        search_order = ["userdir",] # ["curdir","filedir", "userdir",]
+    else:
+        search_order = search_order
+
+
+    # The default name for the prm file is at the moment in the script-dir, while
+    # default searching is in the userdir (yes, I know):
+    prm_default = os.path.join(script_dir, default_name)
+
+    # -searching-----------------------
+    search_dict = OrderedDict()
+
+    for key in search_order:
+        search_dict[key] = [None, None]
+        prm_directory = search_path[key]
+        default_file = os.path.join(prm_directory, default_name)
+
+        if os.path.isfile(default_file):
+            search_dict[key][0] = default_file
+
+        prm_globtxt_full = os.path.join(prm_directory, prm_globtxt)
+
+        user_files = glob.glob(prm_globtxt_full)
+
+        for f in user_files:
+            if os.path.basename(f) != os.path.basename(default_file):
+                search_dict[key][1] = f
+                break
+
+    # -selecting----------------------
+    prm_file = None
+    for key, file_list in search_dict.iteritems():
+        if file_list[-1]:
+            prm_file = file_list[-1]
+            break
+        else:
+            if not prm_file:
+                prm_file = file_list[0]
+
+    if prm_file:
+        prm_filename = prm_file
+    else:
+        prm_filename = prm_default
+
+    return prm_filename
+
+
+
 
 
 class read:
@@ -211,12 +353,36 @@ class read:
 
         txt += "db_filename: \t%s\n" % self.db_filename
         txt += "dbc_filename:\t%s\n" % self.dbc_filename
-
+        txt += "------------------------------------------------------------\n"
+        txt += "seach-path:\n"
+        for p,v in self.search_path.items():
+            txt += "  %s:\t%s\n" % (p,v)
         return txt
 
 
-if __name__ == "__main__":
-    r = read()
+def _save_current_prms_to_user_dir():
+    # This should be put into the cellpy setup script
+    file_name = os.path.join(prms.user_dir, prms._prm_default_name)
+    _write_prm_file(file_name)
+
+def main():
+    print("Testing")
+    #out = r"C:\Users\jepe\_cellpy_prms_jepe.conf"
+    #_write_prm_file(out)
+    print prms.Reader
+
+    f = _get_prm_file()
+    _write_prm_file(f)
+
+    print f
+
+    _read_prm_file(f)
+
+    print prms.Reader
+
+
+def old_main():
+    r = read()  # TODO: remove this
     print "\n----------------------Read file-----------------------------"
     print "Search path:"
     for k, d in r.search_path.items():
@@ -254,3 +420,8 @@ if __name__ == "__main__":
 
     if errors is False:
         print "All ok"
+
+
+
+if __name__ == "__main__":
+    main()
