@@ -79,10 +79,6 @@ def _update_prms(config_dict):
     # }
 
 
-    print "updating parameters:"
-    print config_dict
-    # setattr etc
-
 
 def _pack_prms():
     """if you introduce new 'save-able' parameter dictionaries, then you have to include them here"""
