@@ -1,4 +1,22 @@
-"""Routines for batch processing of cells"""
+"""Routines for batch processing of cells.
+
+typical usage:
+
+from cellpy.utils import batch
+
+# initialization of the batch class
+b = batch.init()
+
+# giving necessary info
+b.name = "experiment_set_01"
+b.project = "new_exiting_chemistry"
+ 
+# doing the stuff
+b.loadnsave()
+b.report()
+b.summaryplot()
+
+"""
 
 from __future__ import division
 from __future__ import absolute_import
@@ -10,6 +28,7 @@ import logging
 import pandas as pd
 import itertools
 import csv
+import json
 
 from cellpy.parameters import prms as prms
 from cellpy import cellreader, dbreader, filefinder
@@ -17,31 +36,201 @@ logger = logging.getLogger(__name__)
 
 logging.captureWarnings(True)
 
+
+
 batch_prms = dict()
 batch_prms["batch_name"] = "MyBatch"
 batch_prms["project_name"] = "MyCellpyProject"
 
 
-def _remove_date(label):
-    _ = label.split("_")
-    return _[1]+"_"+_[2]
+class Batch(object):
+    """The Batch object"""
 
-def create_labels(label):
-    return _remove_date(label)
+    def __init__(self, *args, **kwargs):
+
+        self.name = None
+        if len(args)>0:
+            self.name = args[0]
+
+        self.project = None
+        if len(args)>1:
+            self.project = args[1]
 
 
-def _fix_groups(groups):
-    _groups = []
-    for g in groups:
-        if not float(g) > 0:
-            _groups.append(1000)
+        self.time_stamp = None
+        self.selected_summaries = list()
+        self.output_format = None
+        self.batch_col = 5
+
+        self.info_file = None
+        self.project_dir = None
+        self.batch_dir = None
+        self.raw_dir = None
+        self.info_file = None
+
+        self.reader = None
+        self.info_df = None
+        self.summaries = None
+        self.stats = None
+
+        self._is_ready_for_plotting = False
+        self._is_ready_for_loading = False
+        self._is_ready_for_saving = False
+
+        self._packable = ['name', 'project', 'batch_col','selected_summaries',
+                          'output_format', 'time_stamp', 'project_dir', 'batch_dir', 'raw_dir']
+
+        # Not afraid to walk down un-known territory...
+        self._kwargs = kwargs
+        self._set_attributes()
+
+
+        # Just to keep track of the parameters (delete this):
+        for key in prms.Paths:
+            logger.info("Starting parameters:")
+            txt = "%s: %s" % (key, str(prms.Paths[key]))
+            logger.info(txt)
+
+        # Time to get to work...
+        self._set_reader()
+
+
+
+
+    def __str__(self):
+        txt0 = "<Cellpy.Utils.Batch instance in %s>:" % __name__
+        # How to kill a class: write "print(self)" in its __str__ method ;-)
+        txt1 = len(txt0)*"-"
+        txt = txt0 + "\n" + txt1 + "\n"
+        for attr in vars(self):
+            if not attr.startswith("_"):
+                if attr == "info_df":
+                    if self.info_df is None:
+                        txt += "%s: %s\n" % (str(attr), "None")
+                    else:
+                        txt += "%s: %s\n" % (str(attr), "pandas.DataFrame")
+                else:
+                    txt += "%s: %s\n" % (str(attr), str(getattr(self, attr)))
+        return txt
+
+
+    def _prm_packer(self, metadata=None):
+
+        packable = self._packable
+        if metadata is None:
+            _metadata = dict()
+            for p in packable:
+                _metadata[p] = getattr(self, p)
+            return _metadata
+
         else:
-            _groups.append(int(g))
-    return _groups
+            for p in metadata:
+                setattr(self, p, metadata[p])
 
 
-def _get_reader():
-    return dbreader.reader
+    def _set_attributes(self, attrs=None):
+        # Just for fun...
+        if attrs is None:
+            attrs = self._kwargs
+        for key in attrs:
+            if key.startswith("_"):
+                w_txt = "Cannot set attribute starting with '_' ('Not allowed', says the King)"
+                warnings.warn(w_txt)
+
+            if hasattr(self, key):
+                setattr(self,key, self._kwargs[key])
+            else:
+                w_txt = "Trying to set non-existing attribute (%s)" % key
+                warnings.warn(w_txt)
+
+    def _set_reader(self):
+        # look into the prms and find out what to use for reading the database
+        reader_label = prms.Db["db_type"]
+        self.reader = get_db_reader(reader_label)
+
+
+    def create_info_df(self):
+        """Creates a DataFrame with info about the runs (loaded from the DB)"""
+        logger.debug("running create_info_df")
+        # initializing the reader
+        reader = self.reader()
+        self.info_df = make_df_from_batch(self.name, batch_col=self.batch_col, reader=reader)
+        logger.info(str(self.info_df.head(5)))
+
+
+    def save_info_df(self):
+        """Saves the DataFrame with info about the runs to a JSON file"""
+        logger.debug("running save_info_df")
+
+        info_df = self.info_df
+        top_level_dict = {}
+        top_level_dict['info_df'] = info_df
+
+        # packing prms
+        top_level_dict['metadata'] = self._prm_packer()
+
+        jason_string = json.dumps(top_level_dict, default=lambda info_df: json.loads(info_df.to_json()))
+        with open(self.info_file, 'w') as outfile:
+            outfile.write(jason_string)
+
+
+    def load_info_df(self, file_name=None):
+        """Loads a DataFrame with all the needed info about the run (JSON file)"""
+        if file_name is None:
+            file_name = self.info_file
+
+        with open(file_name, 'r') as infile:
+            top_level_dict = json.load(infile)
+
+        new_info_df_dict = top_level_dict['info_df']
+        new_info_df = pd.DataFrame(new_info_df_dict)
+        self.info_df = new_info_df
+
+        self._prm_packer(top_level_dict['metadata'])
+        self.info_file = file_name
+
+
+    def create_folder_structure(self):
+        self.info_file, directories = create_folder_structure(self.info_df, self.project, self.name)
+        self.project_dir, self.batch_dir, self.raw_dir = directories
+
+    def load_and_save_raw(self):
+        pass
+
+
+    def make_summaries(self):
+        pass
+
+
+    def make_stats(self):
+        pass
+
+
+
+def get_db_reader(db_type):
+    if db_type == "simple_excel_reader":
+        return dbreader.reader
+
+
+
+
+def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
+    batch_name = batch_name
+    batch_col = batch_col
+    if reader is None:
+        reader_obj = get_db_reader(reader_label)
+        reader = reader_obj()
+
+    srnos = reader.select_batch(batch_name, batch_col)
+    info_dict = _create_info_dict(reader, srnos)
+    info_df = pd.DataFrame(info_dict)
+    info_df = info_df.sort_values(["groups", "filenames"])
+    info_df = _make_unique_groups(info_df)
+    info_df["labels"] = info_df["filenames"].apply(create_labels)
+    info_df.set_index("filenames", inplace=True)
+
+    return info_df
+
 
 
 def _create_info_dict(reader, srnos):
@@ -90,34 +279,13 @@ def _make_unique_groups(info_df):
     return info_df
 
 
-def set_project(project_name):
-    batch_prms["project_name"] = project_name
-
-    # project_name = "SiBEC"
-
-def make_df_from_batch(batch_name, batch_col=5, reader_type=None):
-    batch_name = batch_name
-    batch_col = batch_col
-
-    reader = _get_reader()
-    batch_prms["srnos"] = reader.select_batch(batch_name, batch_col)
-
-    info_dict = _create_info_dict(reader, srnos)
-    info_df = pd.DataFrame(info_dict)
-    info_df = info_df.sort_values(["groups", "filenames"])
-    info_df = _make_unique_groups(info_df)
-    info_df["labels"] = info_df["filenames"].apply(create_labels)
-    info_df.set_index("filenames", inplace=True)
-
-    return info_df
-
 def create_folder_structure(info_df, project_name=None, batch_name=None):
     if project_name is None:
         project_name = batch_prms["project_name"]
     if batch_name is None:
         batch_name = batch_prms["batch_name"]
-
     out_data_dir = prms.Paths["outdatadir"]
+
     project_dir = os.path.join(out_data_dir, project_name)
     batch_dir = os.path.join(project_dir, batch_name)
     raw_dir = os.path.join(batch_dir, "raw_data")
@@ -133,9 +301,8 @@ def create_folder_structure(info_df, project_name=None, batch_name=None):
     # create file-name for the info_df (json)
     info_file = "cellpy_batch_%s.json" % batch_name
     info_file = os.path.join(project_dir, info_file)
+    return (info_file, (project_dir, batch_dir, raw_dir))
 
-    # saving the json file
-    info_df.to_json(info_file)
 
 
 def save_multi(data, file_name, sep=";"):
@@ -146,6 +313,7 @@ def save_multi(data, file_name, sep=";"):
 
 
 def __read_and_save_data(info_df, raw_dir):
+    # not finished!
     cycle_mode = "anode"
     force_raw = False
     no_export = False
@@ -191,6 +359,8 @@ def __read_and_save_data(info_df, raw_dir):
 
 
 def save_summaries(frames, keys):
+    """writes the summaries to csv-files"""
+    # not finished!
     batch_dir = " get me"
     batch_name = " get me"
 
@@ -211,6 +381,25 @@ def save_summaries(frames, keys):
         _summary_df.to_csv(_summary_file_name, sep=";")
 
 #----------------------
+
+
+def _remove_date(label):
+    _ = label.split("_")
+    return _[1]+"_"+_[2]
+
+def create_labels(label):
+    return _remove_date(label)
+
+
+def _fix_groups(groups):
+    _groups = []
+    for g in groups:
+        if not float(g) > 0:
+            _groups.append(1000)
+        else:
+            _groups.append(int(g))
+    return _groups
+
 
 def extract_dqdv(cell_data, extract_func):
     # extracting charge
@@ -262,5 +451,26 @@ def export_dqdv(cell_data, savedir, sep):
     save_multi(data=out_data, file_name=outname_discharge, sep=sep)
 
 
+# -----------------------------------------------------------------------------
+
+def init(*args, **kwargs):
+    """Returns an initialized instance of the Batch class"""
+    b = Batch(*args, **kwargs)
+    return b
+
+
+def main():
+    print("Running batch.py")
+    b = init("bec_exp06", "SiBEC", reader="excel", me="Jan Petter")
+    b.create_info_df()
+    b.create_folder_structure()
+    b.save_info_df()
+    b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp06.json")
+    print(b)
+    print("The info DataFrame:")
+    print(b.info_df.head(5))
+
+
 if __name__ == '__main__':
-    warnings.warn("to be implemented")
+    main()
+
