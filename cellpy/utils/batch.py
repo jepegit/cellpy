@@ -38,9 +38,12 @@ logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
 
-batch_prms = dict()
-batch_prms["batch_name"] = "MyBatch"
-batch_prms["project_name"] = "MyCellpyProject"
+def create_selected_summaries_dict(summaries_list):
+    headers_summary = cellreader.get_headers_summary()
+    selected_summaries = dict()  # this should be sent as input
+    for h in summaries_list:
+        selected_summaries[h] = headers_summary[h]
+    return selected_summaries
 
 
 class Batch(object):
@@ -58,7 +61,11 @@ class Batch(object):
 
 
         self.time_stamp = None
-        self.selected_summaries = list()
+        self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
+                                   "cumulated_coulombic_efficiency",
+                                   "ir_discharge", "ir_charge",
+                                   "end_voltage_discharge", "end_voltage_charge"]
+
         self.output_format = None
         self.batch_col = 5
 
@@ -95,8 +102,6 @@ class Batch(object):
 
         # Time to get to work...
         self._set_reader()
-
-
 
 
     def __str__(self):
@@ -193,7 +198,7 @@ class Batch(object):
 
 
     def create_folder_structure(self):
-        self.info_file, directories = create_folder_structure(self.info_df, self.project, self.name)
+        self.info_file, directories = create_folder_structure(self.project, self.name)
         self.project_dir, self.batch_dir, self.raw_dir = directories
 
     def load_and_save_raw(self):
@@ -201,7 +206,7 @@ class Batch(object):
 
 
     def make_summaries(self):
-        save_summaries(self.frames, self.keys, self.batch_dir, self.name)
+        save_summaries(self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name)
 
 
     def make_stats(self):
@@ -283,13 +288,8 @@ def _make_unique_groups(info_df):
     return info_df
 
 
-def create_folder_structure(info_df, project_name=None, batch_name=None):
-    if project_name is None:
-        project_name = batch_prms["project_name"]
-    if batch_name is None:
-        batch_name = batch_prms["batch_name"]
+def create_folder_structure(project_name, batch_name):
     out_data_dir = prms.Paths["outdatadir"]
-
     project_dir = os.path.join(out_data_dir, project_name)
     batch_dir = os.path.join(project_dir, batch_name)
     raw_dir = os.path.join(batch_dir, "raw_data")
@@ -324,7 +324,12 @@ def read_and_save_data(info_df, raw_dir):
     do_export_dqdv = True
     keys = []
     frames = []
+    number_of_runs = len(info_df)
+    counter = 0
     for indx, row in info_df.iterrows():
+        counter += 1
+        h_txt = "[" + counter*"|" + (number_of_runs-counter)*"." + "]"
+        print(h_txt)
         # here we should print (or write to log) file n of N (e.g. [3/12] or [|||       ])
         if not row.raw_file_names:
             print("File not found!")
@@ -355,19 +360,12 @@ def read_and_save_data(info_df, raw_dir):
     return frames, keys
 
 
-def save_summaries(frames, keys, batch_dir, batch_name):
+def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
     """writes the summaries to csv-files"""
-
-    selected_summaries = dict() # this should be sent as input
-    selected_summaries["charge_cap"] = "Charge_Capacity(mAh/g)"
-    selected_summaries["discharge_cap"] = "Discharge_Capacity(mAh/g)"
-    selected_summaries["coulombic_eff"] = "Coulombic_Efficiency(percentage)"
-    selected_summaries["internal_resistance_charge"] = "IR_Charge(Ohms)"
-    selected_summaries["internal_resistance_discharge"] = "IR_Discharge(Ohms)"
-    selected_summaries["cum_coul_diff"] = "Cumulated_Coulombic_Difference(mAh/g)"
+    selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     summary_df = pd.concat(frames, keys=keys, axis=1)
     # saving the selected summaries
-    for key, value in selected_summaries.iteritems():
+    for key, value in selected_summaries_dict.iteritems():
         _summary_file_name = os.path.join(batch_dir, "summary_%s_%s.csv" % (key, batch_name))
         _summary_df = summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
         # include function to tweak headers here (need to learn MultiIndex)
@@ -459,9 +457,9 @@ def init(*args, **kwargs):
 def main():
     print("Running batch.py")
     b = init("bec_exp06", "SiBEC", reader="excel", me="Jan Petter")
-    # b.create_info_df()
-    # b.create_folder_structure()
-    # b.save_info_df()
+    b.create_info_df()
+    b.create_folder_structure()
+    b.save_info_df()
     b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp06.json")
     print(b)
     print("The info DataFrame:")
