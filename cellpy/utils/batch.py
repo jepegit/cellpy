@@ -27,6 +27,7 @@ import warnings
 import logging
 import pandas as pd
 import itertools
+import time
 import csv
 import json
 
@@ -35,7 +36,6 @@ from cellpy import cellreader, dbreader, filefinder
 logger = logging.getLogger(__name__)
 
 logging.captureWarnings(True)
-
 
 
 batch_prms = dict()
@@ -72,6 +72,8 @@ class Batch(object):
         self.info_df = None
         self.summaries = None
         self.stats = None
+        self.frames = None
+        self.keys = None
 
         self._is_ready_for_plotting = False
         self._is_ready_for_loading = False
@@ -195,11 +197,11 @@ class Batch(object):
         self.project_dir, self.batch_dir, self.raw_dir = directories
 
     def load_and_save_raw(self):
-        pass
+        self.frames, self.keys = read_and_save_data(self.info_df, self.raw_dir)
 
 
     def make_summaries(self):
-        pass
+        save_summaries(self.frames, self.keys, self.batch_dir, self.name)
 
 
     def make_stats(self):
@@ -210,8 +212,6 @@ class Batch(object):
 def get_db_reader(db_type):
     if db_type == "simple_excel_reader":
         return dbreader.reader
-
-
 
 
 def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
@@ -232,7 +232,6 @@ def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
     return info_df
 
 
-
 def _create_info_dict(reader, srnos):
     info_dict = dict()
     info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
@@ -241,6 +240,7 @@ def _create_info_dict(reader, srnos):
     info_dict["loadings"] = [reader.get_loading(srno) for srno in srnos]
     info_dict["fixed"] = [reader.inspect_hd5f_fixed(srno) for srno in srnos]
     info_dict["labels"] = [reader.get_label(srno) for srno in srnos]
+    info_dict["cell_type"] = ["anode" for srno in srnos]
 
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
@@ -249,7 +249,11 @@ def _create_info_dict(reader, srnos):
     groups = _fix_groups(_groups)
     info_dict["groups"] = groups
 
+    my_timer_start = time.time()
     info_dict = _find_files(info_dict)
+    my_timer_end = time.time()
+    if (my_timer_end - my_timer_start) > 5.0:
+        logger.info("The function _find_files was very slow. Save your info_df so you don't have to run it again!")
 
     return info_dict
 
@@ -312,9 +316,7 @@ def save_multi(data, file_name, sep=";"):
 
 
 
-def __read_and_save_data(info_df, raw_dir):
-    # not finished!
-    cycle_mode = "anode"
+def read_and_save_data(info_df, raw_dir):
     force_raw = False
     no_export = False
     export_cycles = True
@@ -323,48 +325,40 @@ def __read_and_save_data(info_df, raw_dir):
     keys = []
     frames = []
     for indx, row in info_df.iterrows():
+        # here we should print (or write to log) file n of N (e.g. [3/12] or [|||       ])
         if not row.raw_file_names:
             print("File not found!")
             print(indx)
         else:
             print("Processing (%s)..." % indx)
             cell_data = cellreader.cellpydata()
-            # cell_data.set_cellpy_datadir(prms.cellpydatadir)
-            # cell_data.set_raw_datadir(prms.rawdatadir)
-            cell_data.set_cycle_mode(cycle_mode)
+            cell_data.set_cycle_mode(row.cell_type)
             cell_data.loadcell(raw_files=row.raw_file_names, cellpy_file=row.cellpy_file_names,
                                mass=row.masses, summary_on_raw=True,
                                force_raw=force_raw)
             if not cell_data.check():
                 print("...not loaded...")
             else:
-                print("...loaded succesfully...")
-                # keys.append(row.filenames) # this will not work anymore since we promoted filenames to index
+                print("...loaded successfully...")
                 keys.append(indx)
-                # process summary
+
                 summary_tmp = cell_data.get_summary()
                 summary_tmp.set_index("Cycle_Index", inplace=True)
                 frames.append(summary_tmp)
 
-                # process raw_data
-                # export cycles
-                # save normal, stats, and step tables
                 if not no_export:
                     print("...exporting data....")
                     cell_data.exportcsv(raw_dir, sep=";", cycles=export_cycles, raw=export_raw)
-                    # calc and export dqdv
+
                     if do_export_dqdv:
                         export_dqdv(cell_data, savedir=raw_dir, sep=";")
     return frames, keys
 
 
-def save_summaries(frames, keys):
+def save_summaries(frames, keys, batch_dir, batch_name):
     """writes the summaries to csv-files"""
-    # not finished!
-    batch_dir = " get me"
-    batch_name = " get me"
 
-    selected_summaries = dict()
+    selected_summaries = dict() # this should be sent as input
     selected_summaries["charge_cap"] = "Charge_Capacity(mAh/g)"
     selected_summaries["discharge_cap"] = "Discharge_Capacity(mAh/g)"
     selected_summaries["coulombic_eff"] = "Coulombic_Efficiency(percentage)"
@@ -379,6 +373,8 @@ def save_summaries(frames, keys):
         # include function to tweak headers here (need to learn MultiIndex)
         _header = _summary_df.columns
         _summary_df.to_csv(_summary_file_name, sep=";")
+        logger.info("saved summary (%s) to %s" % (key, _summary_file_name))
+    logger.info("finished saving summaries")
 
 #----------------------
 
@@ -402,6 +398,7 @@ def _fix_groups(groups):
 
 
 def extract_dqdv(cell_data, extract_func):
+    from cellpy.utils.ica import dqdv
     # extracting charge
     list_of_cycles = cell_data.get_cycle_numbers()
     out_data = []
@@ -462,13 +459,17 @@ def init(*args, **kwargs):
 def main():
     print("Running batch.py")
     b = init("bec_exp06", "SiBEC", reader="excel", me="Jan Petter")
-    b.create_info_df()
-    b.create_folder_structure()
-    b.save_info_df()
+    # b.create_info_df()
+    # b.create_folder_structure()
+    # b.save_info_df()
     b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp06.json")
     print(b)
     print("The info DataFrame:")
     print(b.info_df.head(5))
+    b.load_and_save_raw()
+    b.make_summaries()
+    print("Finished!")
+
 
 
 if __name__ == '__main__':
