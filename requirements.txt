@@ -12,4 +12,4 @@ tables
 pyodbc
 xlrd
 click
-six
+six==1.10.0
