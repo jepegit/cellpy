@@ -7,7 +7,7 @@ pytest>=2.8.5
 scipy>=0.18.1
 setuptools>=27.0.0
 PyYAML>=3.12
-lmfit
+lmfit==0.9.6
 tables
 pyodbc
 xlrd
