@@ -11,5 +11,5 @@ lmfit
 tables
 pyodbc
 xlrd
-click
+click==6.7
 six
