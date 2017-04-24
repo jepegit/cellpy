@@ -39,6 +39,21 @@ logging.captureWarnings(True)
 
 
 def create_selected_summaries_dict(summaries_list):
+    """Creates a dictionary with summary column headers.
+    
+    Examples:
+        >>> summaries_to_output = ["discharge_capacity", "charge_capacity"]
+        >>> summaries_to_output_dict = create_selected_summaries_dict(summaries_to_output)
+        >>> print(summaries_to_output_dict)
+        {'discharge_capacity': "Discharge_Capacity(mAh/g)",
+               'charge_capacity': "Charge_Capacity(mAh/g)}
+         
+    Args:
+        summaries_list: list containing cellpy summary column id names
+
+    Returns: dictionary of the form {cellpy id name: cellpy summary header name,}
+
+    """
     headers_summary = cellreader.get_headers_summary()
     selected_summaries = dict()  # this should be sent as input
     for h in summaries_list:
@@ -212,9 +227,20 @@ class Batch(object):
     def make_stats(self):
         pass
 
+    def make_figures(self):
+        pass
+
 
 
 def get_db_reader(db_type):
+    """returns the db_reader.
+    
+    Args:
+        db_type: type of db_reader (string) in ('simple_excel_reader', )
+
+    Returns: db_reader (function)
+
+    """
     if db_type == "simple_excel_reader":
         return dbreader.reader
 
