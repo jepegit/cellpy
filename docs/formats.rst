@@ -20,8 +20,7 @@ tweaking your data is located. It also contains the header definitions, both for
 format, and for the various cell-tester file-formats that can be read. The class can contain
 several tests and each test is stored in a list.
 
-The class contains several attributes that can be accessed
-directly by the ordinary Pythonic way, e.g.:
+The class contains several attributes that can be assigned directly:
 
 .. code-block:: python
 
@@ -30,7 +29,8 @@ directly by the ordinary Pythonic way, e.g.:
     print cellpydata.cellpy_datadir
 
 
-The data for the run(s) are stored in the class attribute `cellpydata.tests`.
+The data for the run(s) are stored in the class attribute `cellpydata.tests` (this will most likely change
+in future versions).
 This attribute is just a list of runs (each run is a `cellpy.cellreader.dataset` instance).
 This implies that you can store many runs in one `cellpydata` instance. Sometimes this can be
 necessary, but it is recommended to only store one run in one instance. Most of the
