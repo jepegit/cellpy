@@ -13,7 +13,9 @@ from cellpy.readers import cellreader
 from cellpy.readers import dbreader
 from cellpy.readers import filefinder
 from cellpy.parameters import prmreader
+import cellpy._version
 
+__version__ = cellpy._version.__version__
 
 
 __all__ = ["cellreader", "dbreader", "prmreader", "prms", "filefinder"]

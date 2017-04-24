@@ -3,10 +3,12 @@ import click
 import pkg_resources
 
 from cellpy.parameters import prmreader
+import cellpy._version
 
 DEFAULT_FILENAME_START = "_cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
+VERSION = cellpy._version.__version__
 
 
 def save_prm_file(prm_filename):
@@ -80,8 +82,14 @@ def configloc():
         click.echo("[cellpy] File does not exist!")
 
 
+@click.command()
+def version():
+    txt = "[cellpy] version: " + str(VERSION)
+    click.echo(txt)
+
 cli.add_command(setup)
 cli.add_command(configloc)
+cli.add_command(version)
 
 # if __name__ == "__main__":
 #     init_filename = create_custom_init_filename()
