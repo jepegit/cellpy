@@ -28,7 +28,7 @@ install: pip install -r requirements_travis.txt
 
 # command to run tests, e.g. python setup.py test
 # script: tox -e ${TOXENV}
-# script: py.test
+script: py.test tests/test_nothing.py
 
 # After you create the Github repo and add it to Travis, run the
 # travis_pypi_setup.py script to finish PyPI deployment setup
