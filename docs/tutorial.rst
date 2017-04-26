@@ -29,7 +29,7 @@ cellpy version and the location of your configuration file):
 
     $ cellpy version
     [cellpy] version: 0.1.11
-    $
+
     $ cellpy configloc
     [cellpy] ->C:\Users\jepe\_cellpy_prms_jepe.conf
 
@@ -45,15 +45,15 @@ How the configuration parameters are set and read
 -------------------------------------------------
 
 When ``cellpy`` is imported, it sets a default set of parameters. Then it tries to read the parameters
-from you .conf-file (located in your user directory). If it is successful, the paramteters set in your .conf-file
+from your .conf-file (located in your user directory). If it is successful, the paramteters set in your .conf-file
 will over-ride the default ones.
 
 The parameters are stored in the module ``cellpy.parameters.prms`` as a dictionary of dictionaries. I know, this is
-probably not the most convenient method, but it is very easy (at least I think so) to change these into class-type
+probably not the most convenient method, but it is very easy (at least I hope so) to change these into class-type
 stuff in a later release of ``cellpy`` (using for example ``type(x, y, z)`` etc. or ``setattr`` etc).
 
-If you during your script (or in your `jupyter notebook`) would like to change some of the settings (*e.g.* if you
-want to use the cycle_mode option "cathode" instead of the default "anode"), then import the prms class and set new
+If you during your script (or in your ``jupyter notebook``) would like to change some of the settings (*e.g.* if you
+want to use the ``cycle_mode`` option "cathode" instead of the default "anode"), then import the prms class and set new
 values:
 
 .. code-block:: python
@@ -91,12 +91,12 @@ The configuration file
 ----------------------
 
 ``cellpy`` tries to read your .conf-file when imported the first time, and looks in your user directory
-(*e.g.* C:\Users\USERNAME on newer versions of windows) after files named ``_cellpy_prms_SOMENAME.conf``.
+(*e.g.* C:\\Users\\USERNAME on not-too-old versions of windows) after files named ``_cellpy_prms_SOMENAME.conf``.
 If you have run ``cellpy -setup`` in the cmd window or in the shell, a file named
 ``_cellpy_prms_USERNAME.conf`` (where USERNAME is
 your username) should exist in your home directory. This is a YAML-file and it is reasonably easy to read and edit (but
 remember that YAML is rather strict with regards to spaces and indentations). As an example, here are the first lines
-from one of the authors configuration file:
+from one of the authors' configuration file:
 
 .. code-block:: yaml
 
@@ -224,7 +224,7 @@ And save it:
 
     # defining a name for the cellpy_file (hdf5-format)
     cellpy_file = os.path.join(cellpy_data_dir, "20170101_ife01_cc2.h5")
-    cellpy_file.save_test()
+    cell_data.save_test(cellpy_file)
 
 For convinience, ``cellpy`` also has a mecellpy_filethod that simplifies this process a little bit.
 Using the ``loadcell`` method, you can specify both the raw file name(s) and the cellpy file name, and
@@ -319,14 +319,12 @@ TODO.
 Working with the pandas.DataFrame objects directly
 ==================================================
 
-The ``cellpydata`` object stores the data in several pandas.DataFrame objects. At the moment, it can also store
-more than one set of these DataFrames (called a 'test' containing associated meta data etc.). But it is not recommended to utilise this
-feature (it might be removed very soon (have not decided yet)).
+The ``cellpydata`` object stores the data in several pandas.DataFrame objects.
 The easies way to get to the DataFrames is by the following procedure:
 
 .. code-block:: python
 
-    # Assumed name of the cellpydata object: cellpy_data
+    # Assumed name of th``cellpydata`` objecte cellpydata object: cellpy_data
     # get the 'test':
     cellpy_test = cell_data.get_test() # returns a cellpy dataset object (cellpy.readers.cellreader.dataset)
     summary = cellpy_test.dfsummary # pandas.DataFrame with data vs cycle number (e.g. coulombic efficiency)
@@ -335,4 +333,9 @@ The easies way to get to the DataFrames is by the following procedure:
     # run_summary = cellpy_test.run_summary # not implemented yet (overall information like cycle lifetime)
 
 
-You can then manipulate your data with the standard pandas.DataFrame methods (and pandas method in general).
+You can then manipulate your data with the standard pandas.DataFrame methods (and pandas methods in general).
+
+.. note::
+    At the moment,``cellpydata`` objects can store several sets of test-data (several 'tests'). They are stored
+    in a list. It is not recommended to utilise this 'possible to store multiple tests' feature as it might be
+    removed very soon (have not decided upon that, yet).
