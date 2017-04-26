@@ -2,7 +2,7 @@
 Usage
 =====
 
-To use cellpy, start with importing the needed modules::
+To use ``cellpy``, start with importing the needed modules::
 
     >>> from cellpy import cellreader
 

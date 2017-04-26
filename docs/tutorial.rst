@@ -6,10 +6,10 @@ Tutorials
 The cellpy command
 ==================
 
-At the moment, only a very limited set of things can be achieved by running the ´cellpy´ command at the shell (or in
+At the moment, only a very limited set of things can be achieved by running the ``cellpy`` command at the shell (or in
 the cmd window).
 
-.. code-block:: bash
+.. code-block:: shell
 
     $ cellpy
     Usage: cellpy [OPTIONS] COMMAND [ARGS]...
@@ -25,7 +25,7 @@ the cmd window).
 A couple of commands are implemented to get some information about your cellpy environment (currently getting your
 cellpy version and the location of your configuration file):
 
-.. code-block:: bash
+.. code-block:: shell
 
     $ cellpy version
     [cellpy] version: 0.1.11
@@ -34,7 +34,7 @@ cellpy version and the location of your configuration file):
     [cellpy] ->C:\Users\jepe\_cellpy_prms_jepe.conf
 
 
-The most important command is probably the `setup` command (that should be run when you install cellpy for the first
+The most important command is probably the ``setup`` command (that should be run when you install cellpy for the first
 time).
 
 
@@ -44,13 +44,13 @@ Configuring cellpy
 How the configuration parameters are set and read
 -------------------------------------------------
 
-When `cellpy` is imported, it sets a default set of parameters. Then it tries to read the parameters from you .conf-file
-(located in your user directory). If it is successful, the paramteters set in your .conf-file will over-ride the
-default ones.
+When ``cellpy`` is imported, it sets a default set of parameters. Then it tries to read the parameters
+from you .conf-file (located in your user directory). If it is successful, the paramteters set in your .conf-file
+will over-ride the default ones.
 
-The parameters are stored in the module cellpy.parameters.prms as a dictionary of dictionaries. I know, this is
+The parameters are stored in the module ``cellpy.parameters.prms`` as a dictionary of dictionaries. I know, this is
 probably not the most convenient method, but it is very easy (at least I think so) to change these into class-type
-stuff in a later release of `cellpy` (using for example `type(x, y, z)` etc. or `setattr` etc).
+stuff in a later release of ``cellpy`` (using for example ``type(x, y, z)`` etc. or ``setattr`` etc).
 
 If you during your script (or in your `jupyter notebook`) would like to change some of the settings (*e.g.* if you
 want to use the cycle_mode option "cathode" instead of the default "anode"), then import the prms class and set new
@@ -90,9 +90,10 @@ A more thorough description of this will come in later releases (0.2.0 and up).
 The configuration file
 ----------------------
 
-`cellpy` tries to read your .conf-file when imported the first time, and looks in your user directory
-(*e.g.* C:\Users\USERNAME on newer versions of windows) after files named `_cellpy_prms_SOMENAME.conf`. If you have run
-`cellpy -setup` in the cmd window or in the shell, a file named `_cellpy_prms_USERNAME.conf` (where USERNAME is
+``cellpy`` tries to read your .conf-file when imported the first time, and looks in your user directory
+(*e.g.* C:\Users\USERNAME on newer versions of windows) after files named ``_cellpy_prms_SOMENAME.conf``.
+If you have run ``cellpy -setup``` in the cmd window or in the shell, a file named
+``_cellpy_prms_USERNAME.conf`` (where USERNAME is
 your username) should exist in your home directory. This is a YAML-file and it is reasonably easy to read and edit (but
 remember that YAML is rather strict with regards to spaces and indentations). As an example, here are the first lines
 from one of the authors configuration file:
@@ -125,7 +126,7 @@ from one of the authors configuration file:
       .
 
 As you can see, the author of this particular file most likely works with silicon as anode material for lithium ion
-batteries (the `nom_cap` is set to 3579 mAh/g, *i.e.* the theoretical gravimetric lithium capacity for silicon at
+batteries (the ``nom_cap`` is set to 3579 mAh/g, *i.e.* the theoretical gravimetric lithium capacity for silicon at
 normal temperatures). And, he or she is using windows.
 
 Looking further down in the file, you come to some sections related to the 'excel database reader':
@@ -141,7 +142,8 @@ Looking further down in the file, you come to some sections related to the 'exce
       .
 
 Here you can set custom column numbers for where the database reader should look for stuff. For example, if you have
-your entry specifying active material (mass) in column 100, then edit your configuration file entry `active_material`:
+your entry specifying active material (mass) in column 100, then edit your
+configuration file entry ``active_material``:
 
 .. code-block:: yaml
 
