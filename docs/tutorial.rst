@@ -216,7 +216,9 @@ Now we will read the files, merge them, and create a summary:
     # if the list of files are in a list they are automatically merged:
     cell_data.load_raw([raw_files])
     cell_data.set_mass(electrode_mass)
-    cell_data.make_summary() # it will automatically run the create_step_table function if it does not exist.
+    cell_data.make_summary()
+    # Note: make_summary will automatically run the
+    # create_step_table function if it does not exist.
 
 And save it:
 
@@ -326,11 +328,20 @@ The easies way to get to the DataFrames is by the following procedure:
 
     # Assumed name of th``cellpydata`` objecte cellpydata object: cellpy_data
     # get the 'test':
-    cellpy_test = cell_data.get_test() # returns a cellpy dataset object (cellpy.readers.cellreader.dataset)
-    summary = cellpy_test.dfsummary # pandas.DataFrame with data vs cycle number (e.g. coulombic efficiency)
-    rawdata = cellpy_test.dfdata # pandas.DataFrame with the raw data
-    step_table = cellpy_test.step_table # pandas.DataFrame with statistics on each step and info about step type
-    # run_summary = cellpy_test.run_summary # not implemented yet (overall information like cycle lifetime)
+    cellpy_test = cell_data.get_test()
+    # cellpy_test is now a cellpy dataset object (cellpy.readers.cellreader.dataset)
+
+    # pandas.DataFrame with data vs cycle number (e.g. coulombic efficiency):
+    summary = cellpy_test.dfsummary
+
+    # pandas.DataFrame with the raw data:
+    rawdata = cellpy_test.dfdata
+
+    # pandas.DataFrame with statistics on each step and info about step type:
+    step_table = cellpy_test.step_table
+
+    # run_summary = cellpy_test.run_summary
+    # This is not implemented yet (overall information like cycle lifetime)
 
 
 You can then manipulate your data with the standard pandas.DataFrame methods (and pandas methods in general).
