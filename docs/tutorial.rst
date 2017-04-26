@@ -326,7 +326,8 @@ The easies way to get to the DataFrames is by the following procedure:
 
 .. code-block:: python
 
-    # Assumed name of th``cellpydata`` objecte cellpydata object: cellpy_data
+    # Assumed name of the cellpydata object: cellpy_data
+
     # get the 'test':
     cellpy_test = cell_data.get_test()
     # cellpy_test is now a cellpy dataset object (cellpy.readers.cellreader.dataset)
@@ -341,7 +342,7 @@ The easies way to get to the DataFrames is by the following procedure:
     step_table = cellpy_test.step_table
 
     # run_summary = cellpy_test.run_summary
-    # This is not implemented yet (overall information like cycle lifetime)
+    # This is not implemented yet (overall information like cycle life-time)
 
 
 You can then manipulate your data with the standard pandas.DataFrame methods (and pandas methods in general).
