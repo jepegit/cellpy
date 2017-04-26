@@ -37,8 +37,12 @@ cellpy version and the location of your configuration file):
 The most important command is probably the `setup` command (that should be run when you install cellpy for the first
 time).
 
+
+Configuring cellpy
+==================
+
 How the configuration parameters are set and read
-=================================================
+-------------------------------------------------
 
 When `cellpy` is imported, it sets a default set of parameters. Then it tries to read the parameters from you .conf-file
 (located in your user directory). If it is successful, the paramteters set in your .conf-file will over-ride the
@@ -84,7 +88,7 @@ be assigned intuitively:
 A more thorough description of this will come in later releases (0.2.0 and up).
 
 The configuration file
-======================
+----------------------
 
 `cellpy` tries to read your .conf-file when imported the first time, and looks in your user directory
 (*e.g.* C:\Users\USERNAME on newer versions of windows) after files named `_cellpy_prms_SOMENAME.conf`. If you have run
@@ -163,33 +167,32 @@ A more in-depth description of this will come in later releases (0.2.0 and up). 
 the '.' means... it means nothing - it was just something I added in this tutorial text to indicate that there are
 more stuff in the actual file than what is shown here.
 
+Basic interaction with your data
+================================
 
 Read cell data
-==============
-
+--------------
 
 Extract current-voltage graphs
-==============================
-
+------------------------------
 
 Extract summaries of runs
-=========================
-
-
+-------------------------
 
 Create dQ/dV plots
-==================
-
-
+------------------
 
 Save / export data
-==================
+------------------
 
+Using some of the cellpy special utilities
+==========================================
 
+Fitting ocv-rlx data
+--------------------
 
 Data mining / using a database
 ==============================
-
 
 Using the batch utilities
 =========================
