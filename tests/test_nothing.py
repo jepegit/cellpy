@@ -1,5 +1,4 @@
 import os
-import tempfile
 import pytest
 
 # -------- defining overall path-names etc ----------
@@ -14,12 +13,6 @@ test_cellpy_file_tmp = "tmpfile.h5"
 test_cellpy_file_full = os.path.join(test_data_dir,test_cellpy_file)
 test_cellpy_file_tmp_full = os.path.join(test_data_dir,test_cellpy_file_tmp)
 test_run_name = "20160805_test001_45_cc"
-
-import logging
-from cellpy import log
-from cellpy.utils import ica
-
-log.setup_logging(default_level=logging.DEBUG)
 
 
 def test_empty():
