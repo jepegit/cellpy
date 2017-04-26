@@ -20,5 +20,9 @@ def test_empty():
     assert r is None
 
 
+def test_import_cellpy():
+    import cellpy
+
+
 
 
