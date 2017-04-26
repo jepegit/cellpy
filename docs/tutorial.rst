@@ -298,15 +298,41 @@ Using some of the cellpy special utilities
 Fitting ocv-rlx data
 --------------------
 
+TODO.
+
+Fitting ica data
+----------------
+
+TODO.
+
+
 Data mining / using a database
 ==============================
+
+TODO.
 
 Using the batch utilities
 =========================
 
+TODO.
+
 Working with the pandas.DataFrame objects directly
 ==================================================
 
-The ``cellpydata`` object stores the data in several pandas.DataFrame objects.
+The ``cellpydata`` object stores the data in several pandas.DataFrame objects. At the moment, it can also store
+more than one set of these DataFrames (called a 'test' containing associated meta data etc.). But it is not recommended to utilise this
+feature (it might be removed very soon (have not decided yet)).
+The easies way to get to the DataFrames is by the following procedure:
+
+.. code-block:: python
+
+    # Assumed name of the cellpydata object: cellpy_data
+    # get the 'test':
+    cellpy_test = cell_data.get_test() # returns a cellpy dataset object (cellpy.readers.cellreader.dataset)
+    summary = cellpy_test.dfsummary # pandas.DataFrame with data vs cycle number (e.g. coulombic efficiency)
+    rawdata = cellpy_test.dfdata # pandas.DataFrame with the raw data
+    step_table = cellpy_test.step_table # pandas.DataFrame with statistics on each step and info about step type
+    # run_summary = cellpy_test.run_summary # not implemented yet (overall information like cycle lifetime)
 
 
+You can then manipulate your data with the standard pandas.DataFrame methods (and pandas method in general).
