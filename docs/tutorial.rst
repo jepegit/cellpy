@@ -339,3 +339,5 @@ You can then manipulate your data with the standard pandas.DataFrame methods (an
     At the moment,``cellpydata`` objects can store several sets of test-data (several 'tests'). They are stored
     in a list. It is not recommended to utilise this 'possible to store multiple tests' feature as it might be
     removed very soon (have not decided upon that, yet).
+
+Happy pandas-ing!
