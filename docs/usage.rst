@@ -12,14 +12,13 @@ Lets define some variables::
     >>> Mass      = 0.982 # mass of active material in mg
     >>> OutFolder = r"C:\processed_data"
 
-Then load the data into the data-class (this is data obtained
-using an Arbin battery tester)::
+Then load the data into the data-class (this is data obtained using an Arbin battery tester,
+for the moment we assume that you are using the default settings where the default
+data-format is the Arbin .res format)::
 
     >>> d = cellreader.cellpydata()
-    >>> d.loadres(FileName) # this tells cellpy to read the arbin data file (.res format)
+    >>> d.loadraw(FileName) # this tells cellpy to read the arbin data file (.res format)
     >>> d.set_mass(Mass)
-
-
 
 Create a summary (for each cycle) and generate a step table (parsing the
 data and finding out what each step in each cycle is)::
@@ -33,7 +32,7 @@ You can save your data in csv-format easily by::
 
 Or maybe you want to take a closer look at the capacities for
 the different cycles? No problem. Now you are set to extract data
-for spesific cycles and steps::
+for specific cycles and steps::
 
     >>> list_of_cycles = d.get_cycle_numbers()
     >>> number_of_cycles = len(list_of_cycles)

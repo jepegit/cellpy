@@ -92,6 +92,8 @@ Ready to contribute? Here's how to set up `cellpy` for local development.
 
 7. Submit a pull request through the GitHub website.
 
+(Note: currently, tox is not set up properly, the plan is to have it up-and-running before version 0.2.0)
+
 Pull Request Guidelines
 -----------------------
 
