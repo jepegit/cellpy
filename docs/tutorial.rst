@@ -48,9 +48,9 @@ When ``cellpy`` is imported, it sets a default set of parameters. Then it tries 
 from your .conf-file (located in your user directory). If it is successful, the paramteters set in your .conf-file
 will over-ride the default ones.
 
-The parameters are stored in the module ``cellpy.parameters.prms`` as a dictionary of dictionaries. I know, this is
+The parameters are stored in the module ``cellpy.parameters.prms`` as in several dictionaries. I know, this is
 probably not the most convenient method, but it is very easy (at least I hope so) to change these into class-type
-stuff in a later release of ``cellpy`` (using for example ``type(x, y, z)`` etc. or ``setattr`` etc).
+stuff in a later release of ``cellpy`` (using for example ``type(x, y, z)`` *etc*. or ``setattr`` *etc*).
 
 If you during your script (or in your ``jupyter notebook``) would like to change some of the settings (*e.g.* if you
 want to use the ``cycle_mode`` option "cathode" instead of the default "anode"), then import the prms class and set new
@@ -61,10 +61,13 @@ values:
     from cellpy import parameters.prms
 
     # Changing cycle_mode to cathode
-    prms['Reader']['cycle_mode'] = 'cathode'
+    prms.Reader['cycle_mode'] = 'cathode'
 
     # Changing delimiter to  ',' (used when saving .csv files)
-    prms['Reader']['sep'] = ','
+    prms.Reader['sep'] = ','
+
+    # Changing the default folder for processed (output) data
+    prms.Paths['outdatadir'] = 'experiment01/processed_data'
 
 
 In some of the modules or classes, selected parameters are already 'transformed' to class attributes, and those can
@@ -190,17 +193,17 @@ Then define some settings and variables and create the cellpydata-object:
 
 .. code-block:: python
 
-    # These can also be set in the configuration file:
     raw_data_dir = r"C:\raw_data"
     out_data_dir = r"C:\processed_data"
     cellpy_data_dir = r"C:\cellpydata"
     cycle_mode = "anode" # default is usually "anode", but...
+    # These can also be set in the configuration file
+
     electrode_mass = 0.658 # active mass of electrode in mg
 
     # list of files to read (Arbin .res type):
     raw_file = ["20170101_ife01_cc_01.res", "20170101_ife01_cc_02.res"]
     # the second file is a 'continuation' of the first file...
-
 
     # list consisting of file names with full path
     raw_files = [os.path.join(raw_data_dir, f) for f in raw_file]
@@ -228,9 +231,9 @@ And save it:
     cellpy_file = os.path.join(cellpy_data_dir, "20170101_ife01_cc2.h5")
     cell_data.save_test(cellpy_file)
 
-For convinience, ``cellpy`` also has a mecellpy_filethod that simplifies this process a little bit.
+For convenience, ``cellpy`` also has a method that simplifies this process a little bit.
 Using the ``loadcell`` method, you can specify both the raw file name(s) and the cellpy file name, and
-``cellpy`` will check if the raw file is updated since the last time you saved the cellpy file - if not,
+``cellpy`` will check if the raw file(s) is/are updated since the last time you saved the cellpy file - if not,
 then it will load the cellpy file instead (this is usually much faster than loading the raw file(s)).
 You can also input the masses and enforce that it creates a summary automatically.
 
