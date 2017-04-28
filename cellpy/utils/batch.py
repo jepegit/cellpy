@@ -97,6 +97,12 @@ class Batch(object):
         self.frames = None
         self.keys = None
 
+        self.export_raw = True
+        self.export_cycles = False
+        self.export_ica = False
+        self.save_cellpy_file = True
+        self.force_raw_file = False
+
         self._is_ready_for_plotting = False
         self._is_ready_for_loading = False
         self._is_ready_for_saving = False
@@ -217,7 +223,13 @@ class Batch(object):
         self.project_dir, self.batch_dir, self.raw_dir = directories
 
     def load_and_save_raw(self):
-        self.frames, self.keys = read_and_save_data(self.info_df, self.raw_dir)
+        sep = prms.Reader["sep"]
+        self.frames, self.keys, errors = read_and_save_data(self.info_df, self.raw_dir, sep=sep,
+                                                    force_raw=self.force_raw_file,
+                                                    export_cycles=self.export_cycles,
+                                                    export_raw=self.export_raw,
+                                                    export_ica=self.export_ica,
+                                                    save=self.save_cellpy_file)
 
 
     def make_summaries(self):
@@ -342,48 +354,96 @@ def save_multi(data, file_name, sep=";"):
 
 
 
-def read_and_save_data(info_df, raw_dir):
-    force_raw = False
+def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
+                       export_cycles=False, export_raw=True,
+                       export_ica=False, save=True):
+    """Reads and saves cell data defined by the info-DataFrame.
+    
+    Args:
+        info_df: pandas.DataFrame with information about the runs.
+        raw_dir: path to location where you want to save raw data.
+        sep: delimiter to use when exporting to csv.
+        force_raw: load raw data even-though cellpy-file is up-to-data.
+        export_cycles: set to True for exporting cycles to csv.
+        export_raw: set to True for exporting raw data to csv.
+        export_ica: set to True for calculating and exporting dQ/dV to csv.
+        save: set to False to prevent saving a cellpy-file.
+
+    Returns: frames and keys.
+    """
+
     no_export = False
-    export_cycles = True
-    export_raw = True
-    do_export_dqdv = True
+    do_export_dqdv = export_ica
     keys = []
     frames = []
     number_of_runs = len(info_df)
     counter = 0
+    errors = []
     for indx, row in info_df.iterrows():
         counter += 1
         h_txt = "[" + counter*"|" + (number_of_runs-counter)*"." + "]"
+        l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
+        logger.debug(l_txt)
         print(h_txt)
         # here we should print (or write to log) file n of N (e.g. [3/12] or [|||       ])
         if not row.raw_file_names:
             print("File not found!")
             print(indx)
-        else:
-            print("Processing (%s)..." % indx)
-            cell_data = cellreader.cellpydata()
-            cell_data.set_cycle_mode(row.cell_type)
+            logger.debug("File(s) not found for index=%s" % indx)
+            errors.append(indx)
+            continue
+
+        print("Processing (%s)..." % indx)
+        logger.debug("Processing (%s)..." % indx)
+        cell_data = cellreader.cellpydata()
+        logger.debug("setting cycle mode (%s)..." % row.cell_type)
+        cell_data.set_cycle_mode(row.cell_type)
+        logger.debug("loading cell")
+        try:
             cell_data.loadcell(raw_files=row.raw_file_names, cellpy_file=row.cellpy_file_names,
                                mass=row.masses, summary_on_raw=True,
                                force_raw=force_raw)
-            if not cell_data.check():
-                print("...not loaded...")
+        except Exception as e:
+            logger.debug('Failed to load: '+ str(e))
+            errors.append("loadcell:" +str(indx))
+            continue
+
+        if not cell_data.check():
+            print("...not loaded...")
+            logger.debug("Did not pass check(). Could not load cell!")
+            errors.append("check:" +str(indx))
+            continue
+
+        print("...loaded successfully...")
+        keys.append(indx)
+
+        summary_tmp = cell_data.get_summary()
+        summary_tmp.set_index("Cycle_Index", inplace=True)
+        frames.append(summary_tmp)
+        if save:
+            if not row.fixed:
+                logger.info("saving cell to %s" % row.cellpy_file_names)
+                cell_data.save_test(row.cellpy_file_names)
             else:
-                print("...loaded successfully...")
-                keys.append(indx)
+                logger.debug("saving cell skipped (set to 'fixed' in info_df)")
 
-                summary_tmp = cell_data.get_summary()
-                summary_tmp.set_index("Cycle_Index", inplace=True)
-                frames.append(summary_tmp)
+        if no_export:
+            continue
 
-                if not no_export:
-                    print("...exporting data....")
-                    cell_data.exportcsv(raw_dir, sep=";", cycles=export_cycles, raw=export_raw)
+        if export_raw:
+            print("...exporting data....")
+            logger.debug("Exporting csv")
+            cell_data.exportcsv(raw_dir, sep=sep, cycles=export_cycles, raw=export_raw)
 
-                    if do_export_dqdv:
-                        export_dqdv(cell_data, savedir=raw_dir, sep=";")
-    return frames, keys
+        if do_export_dqdv:
+            logger.debug("Exporting dqdv")
+            try:
+                export_dqdv(cell_data, savedir=raw_dir, sep=sep)
+            except Exception as e:
+                print("...could not make/export dq/dv data...")
+                logger.debug("Failed to make/export dq/dv data (%s): %s" % (indx, str(e)))
+                errors.append("ica:" + str(indx))
+    return frames, keys, errors
 
 
 def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
