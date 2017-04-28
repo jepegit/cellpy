@@ -2,7 +2,7 @@
 Usage
 =====
 
-To use cellpy, start with importing the needed modules::
+To use ``cellpy``, start with importing the needed modules::
 
     >>> from cellpy import cellreader
 
@@ -17,7 +17,7 @@ for the moment we assume that you are using the default settings where the defau
 data-format is the Arbin .res format)::
 
     >>> d = cellreader.cellpydata()
-    >>> d.loadraw(FileName) # this tells cellpy to read the arbin data file (.res format)
+    >>> d.load_raw(FileName) # this tells cellpy to read the arbin data file (.res format)
     >>> d.set_mass(Mass)
 
 Create a summary (for each cycle) and generate a step table (parsing the
