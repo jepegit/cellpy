@@ -160,9 +160,21 @@ Instruments = {
 # --------------------------
 
 Materials = {
-"cell_class": "Li-Ion",
-"default_material": "silicon",
-"default_mass": 1.0,
+    "cell_class": "Li-Ion",
+    "default_material": "silicon",
+    "default_mass": 1.0,
+}
+# --------------------------
+# Batch-options
+# --------------------------
+
+
+Batch = {
+    "fig_extension": "png",
+    "dpi": 300,
+    "markersize": 4,
+    "symbol_label": "simple",
+    "color_style_label": "seaborn-deep",
 }
 
 

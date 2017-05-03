@@ -91,6 +91,7 @@ def _pack_prms():
         "Instruments": prms.Instruments,
         "excel_db_cols": prms.excel_db_cols,
         "excel_db_filename_cols": prms.excel_db_filename_cols,
+        "Batch": prms.Batch,
     }
     return config_dict
 

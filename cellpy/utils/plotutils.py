@@ -10,9 +10,12 @@ import os
 import warnings
 import logging
 import itertools
-import collections
-import numpy as np
-import matplotlib.pyplot as plt
+# import collections
+# import numpy as np
+# import matplotlib.pyplot as plt
+
+logger = logging.getLogger(__name__)
+logging.captureWarnings(True)
 
 SYMBOL_DICT = {"all": ['s', 'o', 'v', '^', '<', '>', 'D', 'p', '*', '1', '2', '.', ',',
                       '3', '4', '8', 'p', 'd', 'h', 'H', '+', 'x', 'X', '|', '_'],
@@ -37,6 +40,8 @@ COLOR_DICT = {'classic':  [u'b', u'g', u'r', u'c', u'm', u'y', u'k'],
 
 
 def create_colormarkerlist_for_info_df(info_df, symbol_label="all", color_style_label="seaborn-colorblind"):
+    logger.debug("symbol_label: " + symbol_label)
+    logger.debug("color_style_label: " + color_style_label)
     groups = info_df.groups.unique()
     sub_groups = info_df.sub_groups.unique()
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
