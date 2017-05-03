@@ -488,7 +488,7 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
         # include function to tweak headers here (need to learn MultiIndex)
         _header = _summary_df.columns
         _summary_df.to_csv(_summary_file_name, sep=";")
-        logger.info("saved summary (%s) to %s" % (key, _summary_file_name))
+        logger.info("saved summary (%s) to:\n       %s" % (key, _summary_file_name))
     logger.info("finished saving summaries")
     return summary_df
 
