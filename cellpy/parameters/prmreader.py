@@ -42,14 +42,14 @@ import cellpy.parameters.prms as prms
 logger = logging.getLogger(__name__)
 
 def _write_prm_file(file_name=None):
-    logger.info("saving configuration to %s" % file_name)
+    logger.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
     with open(file_name, "w") as config_file:
         yaml.dump(config_dict, config_file, default_flow_style=False,explicit_start=True, explicit_end=True)
 
 IS_DICT = True
 def _update_prms(config_dict):
-    logger.info("updating parameters")
+    logger.debug("updating parameters")
     logger.debug("new prms:" +str(config_dict))
 
     for key in config_dict:
@@ -98,7 +98,7 @@ def _pack_prms():
 
 def _read_prm_file(prm_filename):
     """read the prm file"""
-    logger.info("Reading config-file: %s" % prm_filename)
+    logger.debug("Reading config-file: %s" % prm_filename)
     with open(prm_filename, "r") as config_file:
         prm_dict = yaml.load(config_file)
     _update_prms(prm_dict)
@@ -338,7 +338,7 @@ class read:
             print e
 
     def _writeprms(self):
-        print "prmreader.py: _writeprms is not implemented yet"
+        print("prmreader.py: _writeprms is not implemented yet")
 
     def __str__(self):
         txt = ""

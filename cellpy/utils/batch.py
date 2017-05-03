@@ -103,9 +103,6 @@ class Batch(object):
         self.save_cellpy_file = True
         self.force_raw_file = False
 
-        self._is_ready_for_plotting = False
-        self._is_ready_for_loading = False
-        self._is_ready_for_saving = False
 
         self._packable = ['name', 'project', 'batch_col','selected_summaries',
                           'output_format', 'time_stamp', 'project_dir', 'batch_dir', 'raw_dir']
@@ -114,14 +111,19 @@ class Batch(object):
         self._kwargs = kwargs
         self._set_attributes()
 
-
         # Just to keep track of the parameters (delete this):
         for key in prms.Paths:
-            logger.info("Starting parameters:")
+            logger.debug("Starting parameters:")
             txt = "%s: %s" % (key, str(prms.Paths[key]))
-            logger.info(txt)
+            logger.debug(txt)
+
+        # These 'exist-attrs' are not used yet:
+        self._info_df_exists = False
+        self._folder_structure_exists = False
+        self._data_exists = False
 
         # Time to get to work...
+        logger.debug("created Batch class")
         self._set_reader()
 
 
@@ -168,8 +170,7 @@ class Batch(object):
             if hasattr(self, key):
                 setattr(self,key, self._kwargs[key])
             else:
-                w_txt = "Trying to set non-existing attribute (%s)" % key
-                warnings.warn(w_txt)
+                warnings.warn("Trying to set non-existing attribute (%s)" % key)
 
     def _set_reader(self):
         # look into the prms and find out what to use for reading the database
@@ -183,7 +184,7 @@ class Batch(object):
         # initializing the reader
         reader = self.reader()
         self.info_df = make_df_from_batch(self.name, batch_col=self.batch_col, reader=reader)
-        logger.info(str(self.info_df.head(5)))
+        logger.debug(str(self.info_df.head(5)))
 
 
     def save_info_df(self):
@@ -204,6 +205,7 @@ class Batch(object):
 
     def load_info_df(self, file_name=None):
         """Loads a DataFrame with all the needed info about the run (JSON file)"""
+
         if file_name is None:
             file_name = self.info_file
 
@@ -216,11 +218,13 @@ class Batch(object):
 
         self._prm_packer(top_level_dict['metadata'])
         self.info_file = file_name
-
+        logger.debug("loaded info_df")
+        logger.debug(" info_file: %s" % self.info_file)
 
     def create_folder_structure(self):
         self.info_file, directories = create_folder_structure(self.project, self.name)
         self.project_dir, self.batch_dir, self.raw_dir = directories
+        logger.debug("create folders:" + str(directories))
 
     def load_and_save_raw(self):
         sep = prms.Reader["sep"]
@@ -230,10 +234,11 @@ class Batch(object):
                                                     export_raw=self.export_raw,
                                                     export_ica=self.export_ica,
                                                     save=self.save_cellpy_file)
-
+        logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
         save_summaries(self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name)
+        logger.debug("made and saved summaries")
 
 
     def make_stats(self):
@@ -379,6 +384,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
     number_of_runs = len(info_df)
     counter = 0
     errors = []
+
+
     for indx, row in info_df.iterrows():
         counter += 1
         h_txt = "[" + counter*"|" + (number_of_runs-counter)*"." + "]"
@@ -443,6 +450,12 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
                 print("...could not make/export dq/dv data...")
                 logger.debug("Failed to make/export dq/dv data (%s): %s" % (indx, str(e)))
                 errors.append("ica:" + str(indx))
+    if len(errors) > 0:
+        print("Finished with errors!")
+        print(errors)
+    else:
+        print("Finished")
+
     return frames, keys, errors
 
 
@@ -536,23 +549,30 @@ def export_dqdv(cell_data, savedir, sep):
 
 def init(*args, **kwargs):
     """Returns an initialized instance of the Batch class"""
+
+    # set up cellpy logger
+    default_log_level = kwargs.pop("default_log_level", None)
+
+    import cellpy.log as log
+    log.setup_logging(custom_log_dir=prms.Paths["filelogdir"],
+                      default_level=default_log_level)
     b = Batch(*args, **kwargs)
     return b
 
 
 def main():
     print("Running batch.py")
-    b = init("bec_exp06", "SiBEC", reader="excel", me="Jan Petter")
-    b.create_info_df()
-    b.create_folder_structure()
-    b.save_info_df()
-    b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp06.json")
-    print(b)
-    print("The info DataFrame:")
-    print(b.info_df.head(5))
-    b.load_and_save_raw()
-    b.make_summaries()
-    print("Finished!")
+    b = init("bec_exp06", "SiBEC", default_log_level="DEBUG", reader="excel", me="Jan Petter")
+    # b.create_info_df()
+    # b.create_folder_structure()
+    # b.save_info_df()
+    # b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp06.json")
+    # print(b)
+    # print("The info DataFrame:")
+    # print(b.info_df.head(5))
+    # b.load_and_save_raw()
+    # b.make_summaries()
+    # print("Finished!")
 
 
 
