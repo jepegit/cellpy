@@ -1945,7 +1945,7 @@ class cellpydata(object):
         # calculates the change from x0 to x1 in percentage
         # i.e. returns (x1-x0)*100 / x0
         if x0 == 0.0:
-            self.logger.debug("DBZ(_percentage)")  # this will not print anything, set level to 1 to print
+            # self.logger.debug("DBZ(_percentage)")  # this will not print anything, set level to 1 to print
             difference = x1 - x0
             if difference != 0.0 and default_zero:
                 difference = 0.0
@@ -1958,7 +1958,7 @@ class cellpydata(object):
         # calculates the fraction of x0 and x1
         # i.e. returns x1 / x0
         if x1 == 0.0:
-            self.logger.debug("DBZ(_fractional)")  # this will not print anything, set level to 1 to print
+            # self.logger.debug("DBZ(_fractional)")  # this will not print anything, set level to 1 to print
             if default_zero:
                 difference = 0.0
             else:

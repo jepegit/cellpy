@@ -83,6 +83,9 @@ class Batch(object):
 
         self.output_format = None
         self.batch_col = 5
+        self.plot_style = dict()
+        self.plot_style["markersize"] = 4
+        self.plot_style["color"] = "k"
 
         self.info_file = None
         self.project_dir = None
@@ -93,6 +96,7 @@ class Batch(object):
         self.reader = None
         self.info_df = None
         self.summaries = None
+        self.summary_df = None
         self.stats = None
         self.frames = None
         self.keys = None
@@ -237,7 +241,7 @@ class Batch(object):
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
-        save_summaries(self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name)
+        self.summary_df = save_summaries(self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name)
         logger.debug("made and saved summaries")
 
 
@@ -245,7 +249,15 @@ class Batch(object):
         pass
 
     def make_figures(self):
-        pass
+        import cellpy.utils.plotutils as plot_utils
+        color_list, symbol_list = plot_utils.create_colormarkerlist_for_info_df(self.info_df, symbol_label="all", color_style_label="seaborn-colorblind")
+        plot_style = None
+        summary_df = self.summary_df
+        selected_summaries = self.selected_summaries
+        batch_dir = self.batch_dir
+        batch_name = self.name
+        fig, ax = plot_summary_figure(self.info_df, summary_df, color_list, symbol_list, selected_summaries,
+                                      batch_dir, batch_name, plot_style=self.plot_style)
 
 
 
@@ -265,11 +277,13 @@ def get_db_reader(db_type):
 def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
     batch_name = batch_name
     batch_col = batch_col
+    logger.debug("batch_name, batch_col: (%s,%i)" % (batch_name, batch_col))
     if reader is None:
         reader_obj = get_db_reader(reader_label)
         reader = reader_obj()
 
     srnos = reader.select_batch(batch_name, batch_col)
+    logger.debug("srnos:" + str(srnos))
     info_dict = _create_info_dict(reader, srnos)
     info_df = pd.DataFrame(info_dict)
     info_df = info_df.sort_values(["groups", "filenames"])
@@ -472,9 +486,129 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
         _summary_df.to_csv(_summary_file_name, sep=";")
         logger.info("saved summary (%s) to %s" % (key, _summary_file_name))
     logger.info("finished saving summaries")
+    return summary_df
 
-#----------------------
 
+def pick_summary_data(key, summary_df, selected_summaries):
+    selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
+    value = selected_summaries_dict[key]
+    return summary_df.iloc[:, summary_df.columns.get_level_values(1)==value]
+
+
+def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False, plotstyle=None):
+
+    if plotstyle is None:
+        plotstyle = dict()
+        plotstyle["markersize"] = 4
+        plotstyle["color"] = "k"
+
+    list_of_lines = list()
+
+    for datacol in df.columns:
+        group = info_df.get_value(datacol[0], "groups")
+        sub_group = info_df.get_value(datacol[0], "sub_groups")
+        color = color_list[group - 1]
+        marker = symbol_list[sub_group - 1]
+        plotstyle["marker"] = marker
+        plotstyle["markeredgecolor"] = color
+        plotstyle["color"] = color
+        plotstyle["markerfacecolor"] = 'none'
+
+        if not is_charge:
+            plotstyle["markerfacecolor"] = color
+        lines = ax.plot(df[datacol], **plotstyle)
+        list_of_lines.extend(lines)
+
+    return list_of_lines
+
+
+def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_summaries,
+                        batch_dir, batch_name, plot_style=None):
+    # Not finished yet
+
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+
+    standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)  # , figsize = (5,4))
+
+    # setting prms
+    if plot_style is None:
+        plot_style = dict()
+        plot_style["markersize"] = 4
+        plot_style["color"] = "k"
+
+    # pick data
+    ce_df = pick_summary_data("coulombic_efficiency", summary_df, selected_summaries)
+    cc_df = pick_summary_data("charge_capacity", summary_df, selected_summaries)
+    dc_df = pick_summary_data("discharge_capacity", summary_df, selected_summaries)
+    irc_df = pick_summary_data("ir_charge", summary_df, selected_summaries)
+    ird_df = pick_summary_data("ir_discharge", summary_df, selected_summaries)
+
+    # generate labels
+    ce_labels = [info_df.get_value(filename, "labels") for filename in ce_df.columns.get_level_values(0)]
+
+    # adding charge/discharge label
+    ce_labels.extend(["", "discharge", "charge"])
+
+    # plot ce
+    list_of_lines = plot_summary_data(ce_ax, ce_df, info_df=info_df, color_list=color_list,
+                                      symbol_list=symbol_list,is_charge=False, plotstyle=plot_style)
+
+    # adding charge/discharge label
+    color = plot_style["color"]
+    markersize = plot_style["markersize"]
+
+    open_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                  markeredgecolor=color, markerfacecolor='none',
+                                  markersize=markersize)
+    closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                    markeredgecolor=color, markerfacecolor=color,
+                                    markersize=markersize)
+    no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
+    list_of_lines.extend([no_label, closed_label, open_label])
+
+
+
+    ce_ax.set_ylabel("Coulombic\nefficiency\n(%)")
+    ce_ax.locator_params(nbins=5)
+
+    _list_of_lines = plot_summary_data(cap_ax, cc_df, is_charge=True, info_df=info_df, color_list=color_list,
+                                       symbol_list=symbol_list, plotstyle=plot_style)
+    _list_of_lines = plot_summary_data(cap_ax, dc_df, is_charge=False, info_df=info_df, color_list=color_list,
+                                       symbol_list=symbol_list, plotstyle=plot_style)
+    cap_ax.set_ylabel("Capacity\n(mAh/g)")
+    cap_ax.locator_params(nbins=4)
+
+    _list_of_lines = plot_summary_data(ir_ax, irc_df, is_charge=True, info_df=info_df, color_list=color_list,
+                                       symbol_list=symbol_list, plotstyle=plot_style)
+    _list_of_lines = plot_summary_data(ir_ax, ird_df, is_charge=False, info_df=info_df, color_list=color_list,
+                                       symbol_list=symbol_list, plotstyle=plot_style)
+
+    ir_ax.set_ylabel("Internal\nresistance\n(Ohms)")
+    ir_ax.set_xlabel("Cycle number")
+    ir_ax.locator_params(axis="y", nbins=4)
+    ir_ax.locator_params(axis="x", nbins=10)
+    # should use MaxNLocator here instead
+
+    # tweaking
+    plt.subplots_adjust(left=0.07, right=0.93, top=0.9, wspace=0.25, hspace=0.15)
+
+    # adding legend
+    logger.debug("trying to add legends " + str(ce_labels))
+    standard_fig.legend(handles=list_of_lines, labels=ce_labels,
+                        bbox_to_anchor=(1.02, 1.1), loc=2,
+                        # bbox_transform=plt.gcf().transFigure,
+                        bbox_transform=ce_ax.transAxes,
+                        numpoints=1,
+                        ncol=1, labelspacing=0.,
+                        prop={"size": 10})
+
+    # plt.tight_layout()
+    extension = "png"
+    figure_file_name = os.path.join(batch_dir, "summaryplot_1_%s.%s" % (batch_name, extension))
+    #plt.show()
+    standard_fig.savefig(figure_file_name, dpi=300, bbox_inches='tight')
+    return standard_fig, (ce_ax, cap_ax, ir_ax)
 
 def _remove_date(label):
     _ = label.split("_")

@@ -38,14 +38,6 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
                     except Exception as e:
                         warnings.warn("could not set custom log-dir" + str(e))
 
-            # print 20*"="
-            #
-            # for key, value in config.iteritems():
-            #     print key, value
-            # set "error_file_handler": {"filename": "cellpy_errors.log",}
-            # set "debug_file_handler": {"filename": "cellpy_errors.log",}
-            # set "info_file_handler": {"filename": "cellpy_errors.log",}
-            # pass
         if default_level:
             # set "root": {"level": "INFO",} to default_level
             w_txt = "could not set custom default level for logger"
@@ -57,7 +49,8 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
                     config["root"]["level"] = default_level
                     # setting streaming level
                     config["handlers"]["console"]["level"] = default_level
-                    config["handlers"]["console"]["formatter"] = "stamped"
+                    if default_level == "DEBUG":
+                        config["handlers"]["console"]["formatter"] = "stamped"
 
                 except Exception as e:
                     warnings.warn(w_txt + "\n" +str(e))
