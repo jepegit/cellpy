@@ -20,6 +20,7 @@ from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import USE_ADO
 from cellpy.readers.cellreader import get_headers_normal
+import cellpy.parameters.prms as prms
 
 
 if USE_ADO:
@@ -121,7 +122,6 @@ TABLE_NAMES = {
 #     headers["test_name_txt"] = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
 #     return headers
 
-
 class ArbinLoader(object):
     """ Class for loading arbin-data from res-files."""
 
@@ -129,16 +129,18 @@ class ArbinLoader(object):
         """initiates the ArbinLoader class"""
         # could use __init__(self, cellpydata_object) and set self.logger = cellpydata_object.logger etc.
         # then remember to include that as prm in "out of class" functions
+        #self.prms = prms
         self.logger = logging.getLogger()
-        self.load_only_summary = False
-        self.select_minimal = False
-        self.max_res_filesize = 150000000
+        self.load_only_summary = prms.Reader["load_only_summary"] # False
+        self.select_minimal = prms.Reader["select_minimal"] # False
 
-        self.chunk_size = None  # 100000
-        self.max_chunks = None
-        self.last_chunk = None
-        self.limit_loaded_cycles = None
-        self.load_until_error = False
+        self.max_res_filesize = prms.Instruments["max_res_filesize"]
+        self.chunk_size = prms.Instruments["chunk_size"]
+        self.max_chunks = prms.Instruments["max_chunks"]
+        self.last_chunk = prms.Instruments["last_chunk"]
+
+        self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"] # None
+        self.load_until_error = prms.Reader["load_until_error"] # False
 
         self.headers_normal = get_headers_normal()
         self.headers_global = self.get_headers_global()

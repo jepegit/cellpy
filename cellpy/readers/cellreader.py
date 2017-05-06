@@ -547,12 +547,12 @@ class cellpydata(object):
         self.force_all = prms.Reader["force_all"]
         self.sep = prms.Reader["sep"]
         self.cycle_mode = prms.Reader["cycle_mode"]
-        self.max_res_filesize = prms.Reader["max_res_filesize"]
+        #self.max_res_filesize = prms.Reader["max_res_filesize"]
         self.load_only_summary = prms.Reader["load_only_summary"]
         self.select_minimal = prms.Reader["select_minimal"]
-        self.chunk_size = prms.Reader["chunk_size"]  # 100000
-        self.max_chunks = prms.Reader["max_chunks"]
-        self.last_chunk = prms.Reader["last_chunk"]
+        #self.chunk_size = prms.Reader["chunk_size"]  # 100000
+        #self.max_chunks = prms.Reader["max_chunks"]
+        #self.last_chunk = prms.Reader["last_chunk"]
         self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]
         self.load_until_error = prms.Reader["load_until_error"]
         self.ensure_step_table = prms.Reader["ensure_step_table"]
@@ -604,22 +604,22 @@ class cellpydata(object):
         # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
         # more transparent to separate them into respective methods pr instrument.
         from .instruments import arbin as instr
-        loader_class = instr.ArbinLoader()
+        self.loader_class = instr.ArbinLoader()
         # get information
-        self.raw_units = loader_class.get_raw_units()
-        self.raw_limits = loader_class.get_raw_limits()
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
         # send information (should improve this later)
-        loader_class.load_only_summary = self.load_only_summary
-        loader_class.select_minimal = self.select_minimal
-        loader_class.max_res_filesize = self.max_res_filesize
-        loader_class.chunk_size = self.chunk_size
-        loader_class.max_chunks = self.max_chunks
-        loader_class.last_chunk = self.last_chunk
-        loader_class.limit_loaded_cycles = self.limit_loaded_cycles
-        loader_class.load_until_error = self.load_until_error
+        # loader_class.load_only_summary = self.load_only_summary
+        # loader_class.select_minimal = self.select_minimal
+        # loader_class.max_res_filesize = self.max_res_filesize
+        # loader_class.chunk_size = self.chunk_size
+        # loader_class.max_chunks = self.max_chunks
+        # loader_class.last_chunk = self.last_chunk
+        # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
+        # loader_class.load_until_error = self.load_until_error
 
         # create loader
-        self.loader = loader_class.loader
+        self.loader = self.loader_class.loader
 
 
     def _create_logger(self, verbose=False):
@@ -4006,10 +4006,7 @@ def loadcell_check():
     cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
     cell_data = cellpydata()
     cell_data.select_minimal = True
-    cell_data.chunk_size = 100000
-    # cell_data.last_chunk = 28
     cell_data.load_until_error = True
-    cell_data.max_res_filesize = 500000000
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:
