@@ -63,29 +63,19 @@ docs/_build/
 # PyBuilder
 target/
 cellpy/utils/testscripts_ocv_rlx/lmfit_example.py
-cellpy/testdata/
 cellpy/parametres/_cellpy_prms_devel.ini
-cellpy/data_ex/20160805_test001_45_cc_01_ocvrlx_down.csv
-cellpy/data_ex/20160805_test001_45_cc_01_ocvrlx_up.csv
-cellpy/data_ex/out/20160805_test001_45_cc.h5
-cellpy/data_ex/20160830_sic006_74_cc_01.res
-cellpy/outdata/20160830_sic006_74_cc_01_normal.csv
-cellpy/outdata/20160830_sic006_74_cc_01_stats.csv
-cellpy/outdata/20160830_sic006_74_cc_01_steps.csv
-cellpy/outdata/cap_cycle_sic006_74.csv
-cellpy/outdata/20160830_sic006_74_cc_01.res_cycles.csv
-cellpy/outdata/20160830_sic006_74_cc_01.res_cap_voltage.csv
+# cellpy/data_ex
+# cellpy/outdata
+# cellpy/indata
+# cellpy/databases
+
 *.res
 *.csv
 .swp
-cellpy/data_ex/20160805_test001_45_cc_01.h5
-cellpy/data_ex/biologic/BioLogicDTypes.xlsx
-cellpy/data_ex/20160306_snx001_10_cc_01.h5
 *.mpr
 *.mpt
-cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02 _mpt_commented.xlsx
-cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented.xlsx
-cellpy/data_ex/biologic/BioLogicNotes.xlsx
-cellpy/data_ex/biologic/~$Bec_03_02_C20_delith_GEIS_Soc20_steps_C02 _mpt_commented.xlsx
-cellpy/data_ex/biologic/~$Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented.xlsx
 dev_utils/BioLogic.py_tmp
+dev_data/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02 _mpt_commented.xlsx
+dev_data/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented.xlsx
+dev_data/20160306_snx001_10_cc_01.h5
+testdata/hdf5/20160306_snx001_10_cc_01.h5
