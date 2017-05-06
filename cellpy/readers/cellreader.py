@@ -929,7 +929,7 @@ class cellpydata(object):
         else:
             self.load(cellpy_file)
 
-    def load_raw(self, file_names=None):
+    def load_raw(self, file_names=None, **kwargs):
         """Load a raw data-file.
 
         Args:
@@ -951,7 +951,7 @@ class cellpydata(object):
         test_number = 0
         test = None
         for f in self.file_names:
-            new_tests = raw_file_loader(f)  # this should now work
+            new_tests = raw_file_loader(f, **kwargs)  # this should now work
             if test is not None:
                 new_tests[test_number] = self._append(test[test_number], new_tests[test_number])
                 for raw_data_file, file_size in zip(new_tests[test_number].raw_data_files,
