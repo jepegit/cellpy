@@ -18,23 +18,37 @@ from cellpy.readers.cellreader import dataset
 from cellpy.readers.cellreader import fileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
-from cellpy.readers.cellreader import USE_ADO
 from cellpy.readers.cellreader import get_headers_normal
 import cellpy.parameters.prms as prms
 
+# Select odbc module
+ODBC = prms._odbc
+use_ado = False
 
-if USE_ADO:
+if ODBC == "ado":
+    use_ado = True
     try:
         import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
     except ImportError:
-        USE_ADO = False
+        use_ado = False
 
-else:
-    try:
-        import pyodbc as dbloader
-    except ImportError:
-        warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
-        dbloader = None
+if not use_ado:
+    if ODBC == "pyodbc":
+        try:
+            import pyodbc as dbloader
+        except ImportError:
+            warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
+            dbloader = None
+    elif ODBC == "pypyodbc":
+        try:
+            import pypyodbc as dbloader
+        except ImportError:
+            warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
+            dbloader = None
+
+# Check if 64 bit python is used and give warning
+if check64bit(System="python"):
+    warnings.warn("using 64bit python: this is not tested and might cause errors")
 
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
@@ -145,9 +159,9 @@ class ArbinLoader(object):
     @staticmethod
     def __get_res_connector(temp_filename):
         is64bit_python = check64bit(System="python")
-        # TODO: should be made to a function
+        # TODO: Test if 64bit python can be used - for now: raise warning
         # is64bit_os = check64bit(System = "os")
-        if USE_ADO:
+        if use_ado:
             if is64bit_python:
                 print("using 64 bit python")
                 constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
@@ -225,7 +239,7 @@ class ArbinLoader(object):
         shutil.copy2(file_name, temp_dir)
         constr = self.__get_res_connector(temp_filename)
 
-        if USE_ADO:
+        if use_ado:
             conn = dbloader.connect(constr)
         else:
             conn = dbloader.connect(constr, autocommit=True)
@@ -368,7 +382,7 @@ class ArbinLoader(object):
         shutil.copy2(file_name, temp_dir)
         constr = self.__get_res_connector(temp_filename)
 
-        if USE_ADO:
+        if use_ado:
             conn = dbloader.connect(constr)
         else:
             conn = dbloader.connect(constr, autocommit=True)

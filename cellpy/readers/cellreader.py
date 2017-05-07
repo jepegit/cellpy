@@ -22,14 +22,11 @@ Todo:
 
 """
 
-USE_ADO = False
-"""string: set True if using adodbapi"""
 CELLPY_FILE_VERSION = 3
 MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 3
 NORMAL_TABLE_VERSION = 3
 SUMMARY_TABLE_VERSION = 3
-
 
 import os
 import sys
@@ -51,16 +48,11 @@ import cellpy.parameters.prms as prms
 
 # import logging.config
 
+# TODO: fix chained assignments and performance warnings (un-comment below and fix)
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
-
 # module_logger = logging.getLogger(__name__)
-
-
-
-
-
 
 def get_headers_summary():
     # - headers for out-files
