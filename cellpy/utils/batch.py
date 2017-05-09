@@ -242,10 +242,9 @@ class Batch(object):
                                                     save=self.save_cellpy_file)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
-    def make_summaries(self):
+    def make_summaries(self, include_with_total_mass=False):
         self.summary_df = save_summaries(self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name)
         logger.debug("made and saved summaries")
-
 
     def make_stats(self):
         pass
@@ -443,8 +442,16 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         keys.append(indx)
 
         summary_tmp = cell_data.get_summary()
-        summary_tmp.set_index("Cycle_Index", inplace=True)
+        logger.info("Trying to get summary_data")
+        if summary_tmp is None:
+            logger.info("No existing summary made - running make_summary")
+            cell_data.make_summary(find_end_voltage=True, find_ir=True)
+
+        if not summary_tmp.index.name == "Cycle_Index":
+            logger.debug("Setting index to Cycle_Index")
+            summary_tmp.set_index("Cycle_Index", inplace=True)
         frames.append(summary_tmp)
+
         if save:
             if not row.fixed:
                 logger.info("saving cell to %s" % row.cellpy_file_names)

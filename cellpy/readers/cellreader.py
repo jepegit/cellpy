@@ -1101,6 +1101,10 @@ class cellpydata(object):
 
     def load(self, cellpy_file):
         """Loads a cellpy file.
+        
+        Args:
+            cellpy_file (path, str): Full path to the cellpy file. 
+
         """
         try:
             new_tests = self._load_hdf5(cellpy_file)
@@ -1123,7 +1127,7 @@ class cellpydata(object):
         """Load a cellpy-file.
 
         Args:
-            filename (str):
+            filename (str): Name of the cellpy file.
 
         Returns:
             loaded tests (dataset-object)
@@ -1133,7 +1137,7 @@ class cellpydata(object):
             self.logger.warning("file does not exist")
             self.logger.warning(filename)
             sys.exit()
-        self.logger.info("c")
+        self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
         data = dataset()
 
@@ -1339,6 +1343,7 @@ class cellpydata(object):
         dfdata2 = pd.concat([t1.dfdata, t2.dfdata], ignore_index=True)
 
         # checking if we already have made a summary file of these datasets
+        # (to be used if merging summaries (but not properly implemented yet))
         if t1.dfsummary_made and t2.dfsummary_made:
             dfsummary_made = True
         else:
@@ -3211,23 +3216,26 @@ class cellpydata(object):
 
     def get_summary(self, test_number=None, use_dfsummary_made=False):
         """Retrieve summary returned as a pandas DataFrame."""
-        # TODO: there is something strange with this
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
-            return
+            return None
+
         test = self.get_test(test_number)
-        #        print "number of tests:",
-        #        print self.get_number_of_tests()
+
+        # This is a bit convoluted; in the old days, we used an attribute called dfsummary_made,
+        # that was set to True when the summary was made successfully. It is most likely never
+        # used anymore. And will most probably be deleted.
         if use_dfsummary_made:
             dfsummary_made = test.dfsummary_made
         else:
             dfsummary_made = True
 
         if not dfsummary_made:
-            print "Summary is not made yet"
+            warnings.warn("Summary is not made yet")
             return None
         else:
+            self.logger.info("returning tests[test_no].dfsummary")
             return test.dfsummary
 
     # -----------internal-helpers---------------------------------------------------
