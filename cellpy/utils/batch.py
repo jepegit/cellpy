@@ -228,11 +228,21 @@ class Batch(object):
         logger.debug(" info_file: %s" % self.info_file)
 
     def create_folder_structure(self):
+        """Creates a folder structure based on the project and batch name.
+        
+        Project - Batch-name - Raw-data-dir
+
+        The info_df json-file will be stored in the Project folder.
+        The summary-files will be saved in the Batch-name folder.
+        The raw data (including exported cycles and ica-data) will be saved to the Raw-data-dir.
+        
+        """
         self.info_file, directories = create_folder_structure(self.project, self.name)
         self.project_dir, self.batch_dir, self.raw_dir = directories
         logger.debug("create folders:" + str(directories))
 
     def load_and_save_raw(self):
+        """Loads the cellpy or raw-data file(s) and saves to csv"""
         sep = prms.Reader["sep"]
         self.frames, self.keys, errors = read_and_save_data(self.info_df, self.raw_dir, sep=sep,
                                                     force_raw=self.force_raw_file,
@@ -242,11 +252,13 @@ class Batch(object):
                                                     save=self.save_cellpy_file)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
-    def make_summaries(self, include_with_total_mass=False):
+    def make_summaries(self):
+        """Make and save summary csv files, each containing values from all cells"""
         self.summary_df = save_summaries(self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name)
         logger.debug("made and saved summaries")
 
     def make_stats(self):
+        """Not implemented yet"""
         pass
 
     def _create_colors_markers_list(self):
@@ -278,6 +290,17 @@ def get_db_reader(db_type):
 
 
 def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
+    """
+    
+    Args:
+        batch_name (str): Name of the batch.
+        batch_col (int): The column number where the batch name is in the db.
+        reader (method): the db-loader method.
+        reader_label (str): the label for the db-loader (if db-loader method is not given)
+
+    Returns: info_df (pandas DataFrame)
+
+    """
     batch_name = batch_name
     batch_col = batch_col
     logger.debug("batch_name, batch_col: (%s,%i)" % (batch_name, batch_col))
