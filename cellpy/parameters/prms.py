@@ -191,4 +191,6 @@ Batch = {
 _variable_that_is_not_saved_to_config = "Hei"
 _prm_default_name = "_cellpy_prms_default.conf"
 _prm_globtxt = "_cellpy_prms*.conf"
+_odbcs = ["pyodbc", "ado", "pypyodbc"]
+_odbc = "pyodbc"
 
