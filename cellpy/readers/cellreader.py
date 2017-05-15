@@ -22,14 +22,11 @@ Todo:
 
 """
 
-USE_ADO = False
-"""string: set True if using adodbapi"""
 CELLPY_FILE_VERSION = 3
 MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 3
 NORMAL_TABLE_VERSION = 3
 SUMMARY_TABLE_VERSION = 3
-
 
 import os
 import sys
@@ -51,16 +48,11 @@ import cellpy.parameters.prms as prms
 
 # import logging.config
 
+# TODO: fix chained assignments and performance warnings (un-comment below and fix)
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
-
 # module_logger = logging.getLogger(__name__)
-
-
-
-
-
 
 def get_headers_summary():
     # - headers for out-files
@@ -493,7 +485,7 @@ class cellpydata(object):
                  profile=False,
                  filestatuschecker=None,  # "modified"
                  fetch_onliners=False,
-                 tester="arbin",
+                 tester=None,
                  ):
         """
 
@@ -501,7 +493,10 @@ class cellpydata(object):
             None:
         """
 
-        self.tester = tester
+        if tester is None:
+            self.tester = prms.Instruments["tester"]
+        else:
+            self.tester = tester
         self.loader = None  # this will be set in the function set_instrument
         self.verbose = verbose  # not used anymore?
         # self._create_logger(self.verbose)
@@ -547,12 +542,12 @@ class cellpydata(object):
         self.force_all = prms.Reader["force_all"]
         self.sep = prms.Reader["sep"]
         self.cycle_mode = prms.Reader["cycle_mode"]
-        self.max_res_filesize = prms.Reader["max_res_filesize"]
+        #self.max_res_filesize = prms.Reader["max_res_filesize"]
         self.load_only_summary = prms.Reader["load_only_summary"]
         self.select_minimal = prms.Reader["select_minimal"]
-        self.chunk_size = prms.Reader["chunk_size"]  # 100000
-        self.max_chunks = prms.Reader["max_chunks"]
-        self.last_chunk = prms.Reader["last_chunk"]
+        #self.chunk_size = prms.Reader["chunk_size"]  # 100000
+        #self.max_chunks = prms.Reader["max_chunks"]
+        #self.last_chunk = prms.Reader["last_chunk"]
         self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]
         self.load_until_error = prms.Reader["load_until_error"]
         self.ensure_step_table = prms.Reader["ensure_step_table"]
@@ -587,6 +582,9 @@ class cellpydata(object):
         if instrument == "arbin":
             self._set_arbin()
 
+        elif instrument == "arbin_experimental":
+            self._set_arbin_experimental()
+
 
     def _set_biologic(self):
         warnings.warn("not implemented")
@@ -604,22 +602,44 @@ class cellpydata(object):
         # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
         # more transparent to separate them into respective methods pr instrument.
         from .instruments import arbin as instr
-        loader_class = instr.ArbinLoader()
+        self.loader_class = instr.ArbinLoader()
         # get information
-        self.raw_units = loader_class.get_raw_units()
-        self.raw_limits = loader_class.get_raw_limits()
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
         # send information (should improve this later)
-        loader_class.load_only_summary = self.load_only_summary
-        loader_class.select_minimal = self.select_minimal
-        loader_class.max_res_filesize = self.max_res_filesize
-        loader_class.chunk_size = self.chunk_size
-        loader_class.max_chunks = self.max_chunks
-        loader_class.last_chunk = self.last_chunk
-        loader_class.limit_loaded_cycles = self.limit_loaded_cycles
-        loader_class.load_until_error = self.load_until_error
+        # loader_class.load_only_summary = self.load_only_summary
+        # loader_class.select_minimal = self.select_minimal
+        # loader_class.max_res_filesize = self.max_res_filesize
+        # loader_class.chunk_size = self.chunk_size
+        # loader_class.max_chunks = self.max_chunks
+        # loader_class.last_chunk = self.last_chunk
+        # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
+        # loader_class.load_until_error = self.load_until_error
 
         # create loader
-        self.loader = loader_class.loader
+        self.loader = self.loader_class.loader
+
+    def _set_arbin_experimental(self):
+        # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
+        # more transparent to separate them into respective methods pr instrument.
+        from .instruments import arbin_experimental as instr
+        self.loader_class = instr.ArbinLoader()
+        # get information
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # send information (should improve this later)
+        # loader_class.load_only_summary = self.load_only_summary
+        # loader_class.select_minimal = self.select_minimal
+        # loader_class.max_res_filesize = self.max_res_filesize
+        # loader_class.chunk_size = self.chunk_size
+        # loader_class.max_chunks = self.max_chunks
+        # loader_class.last_chunk = self.last_chunk
+        # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
+        # loader_class.load_until_error = self.load_until_error
+
+        # create loader
+        self.loader = self.loader_class.loader
+
 
 
     def _create_logger(self, verbose=False):
@@ -901,7 +921,7 @@ class cellpydata(object):
         else:
             self.load(cellpy_file)
 
-    def load_raw(self, file_names=None):
+    def load_raw(self, file_names=None, **kwargs):
         """Load a raw data-file.
 
         Args:
@@ -923,7 +943,7 @@ class cellpydata(object):
         test_number = 0
         test = None
         for f in self.file_names:
-            new_tests = raw_file_loader(f)  # this should now work
+            new_tests = raw_file_loader(f, **kwargs)  # this should now work
             if test is not None:
                 new_tests[test_number] = self._append(test[test_number], new_tests[test_number])
                 for raw_data_file, file_size in zip(new_tests[test_number].raw_data_files,
@@ -1081,6 +1101,10 @@ class cellpydata(object):
 
     def load(self, cellpy_file):
         """Loads a cellpy file.
+        
+        Args:
+            cellpy_file (path, str): Full path to the cellpy file. 
+
         """
         try:
             new_tests = self._load_hdf5(cellpy_file)
@@ -1103,7 +1127,7 @@ class cellpydata(object):
         """Load a cellpy-file.
 
         Args:
-            filename (str):
+            filename (str): Name of the cellpy file.
 
         Returns:
             loaded tests (dataset-object)
@@ -1113,7 +1137,7 @@ class cellpydata(object):
             self.logger.warning("file does not exist")
             self.logger.warning(filename)
             sys.exit()
-        self.logger.info("c")
+        self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
         data = dataset()
 
@@ -1319,6 +1343,7 @@ class cellpydata(object):
         dfdata2 = pd.concat([t1.dfdata, t2.dfdata], ignore_index=True)
 
         # checking if we already have made a summary file of these datasets
+        # (to be used if merging summaries (but not properly implemented yet))
         if t1.dfsummary_made and t2.dfsummary_made:
             dfsummary_made = True
         else:
@@ -1945,7 +1970,7 @@ class cellpydata(object):
         # calculates the change from x0 to x1 in percentage
         # i.e. returns (x1-x0)*100 / x0
         if x0 == 0.0:
-            self.logger.debug("DBZ(_percentage)")  # this will not print anything, set level to 1 to print
+            # self.logger.debug("DBZ(_percentage)")  # this will not print anything, set level to 1 to print
             difference = x1 - x0
             if difference != 0.0 and default_zero:
                 difference = 0.0
@@ -1958,7 +1983,7 @@ class cellpydata(object):
         # calculates the fraction of x0 and x1
         # i.e. returns x1 / x0
         if x1 == 0.0:
-            self.logger.debug("DBZ(_fractional)")  # this will not print anything, set level to 1 to print
+            # self.logger.debug("DBZ(_fractional)")  # this will not print anything, set level to 1 to print
             if default_zero:
                 difference = 0.0
             else:
@@ -3191,23 +3216,26 @@ class cellpydata(object):
 
     def get_summary(self, test_number=None, use_dfsummary_made=False):
         """Retrieve summary returned as a pandas DataFrame."""
-        # TODO: there is something strange with this
         test_number = self._validate_test_number(test_number)
         if test_number is None:
             self._report_empty_test()
-            return
+            return None
+
         test = self.get_test(test_number)
-        #        print "number of tests:",
-        #        print self.get_number_of_tests()
+
+        # This is a bit convoluted; in the old days, we used an attribute called dfsummary_made,
+        # that was set to True when the summary was made successfully. It is most likely never
+        # used anymore. And will most probably be deleted.
         if use_dfsummary_made:
             dfsummary_made = test.dfsummary_made
         else:
             dfsummary_made = True
 
         if not dfsummary_made:
-            print "Summary is not made yet"
+            warnings.warn("Summary is not made yet")
             return None
         else:
+            self.logger.info("returning tests[test_no].dfsummary")
             return test.dfsummary
 
     # -----------internal-helpers---------------------------------------------------
@@ -4006,10 +4034,7 @@ def loadcell_check():
     cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
     cell_data = cellpydata()
     cell_data.select_minimal = True
-    cell_data.chunk_size = 100000
-    # cell_data.last_chunk = 28
     cell_data.load_until_error = True
-    cell_data.max_res_filesize = 500000000
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:

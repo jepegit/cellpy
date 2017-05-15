@@ -322,7 +322,7 @@ class reader:
 
         if not batch_col_number:
             batch_col_number = self.db_sheet_cols.batch
-
+        logger.debug("selecting batch - %s" % batch)
         sheet = self.table
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists

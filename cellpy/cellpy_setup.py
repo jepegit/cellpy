@@ -70,7 +70,7 @@ def setup():
     click.echo("[cellpy] %s" % os.path.dirname(dst_file))
     click.echo("[cellpy] File name: %s\n" % os.path.basename(init_filename))
     click.echo("[cellpy] OK! Now you can edit it (and save it with another name starting with")
-    click.echo("[cellpy] _cellpy_prms and ending with .ini if you want)")
+    click.echo("[cellpy] _cellpy_prms and ending with .conf if you want)")
     click.echo("[cellpy]")
 
 @click.command()
@@ -91,14 +91,15 @@ cli.add_command(setup)
 cli.add_command(configloc)
 cli.add_command(version)
 
-# if __name__ == "__main__":
-#     init_filename = create_custom_init_filename()
-#     print(init_filename)
-#     userdir, dst_file = get_user_dir_and_dst(init_filename)
-#     print(userdir)
-#     print(dst_file)
-#     print("trying to save it")
-#     save_prm_file(dst_file+"_dummy")
+if __name__ == "__main__":
+    print("\n\n*******RUNNING MAIN**(test)******\n")
+    init_filename = create_custom_init_filename()
+    print(init_filename)
+    userdir, dst_file = get_user_dir_and_dst(init_filename)
+    print(userdir)
+    print(dst_file)
+    print("trying to save it")
+    save_prm_file(dst_file+"_dummy")
 
 
 

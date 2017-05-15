@@ -59,12 +59,12 @@ Reader = {
     "force_all": False,  # not used yet - should be used when saving
     "sep": ";",
     "cycle_mode": 'anode',
-    "max_res_filesize": 150000000,  # instrument specific - move!
+    #"max_res_filesize": 150000000,  # instrument specific - move!
     "load_only_summary": False,
     "select_minimal": False,
-    "chunk_size": None,    # instrument specific - move!
-    "max_chunks": None,    # instrument specific - move!
-    "last_chunk": None,    # instrument specific - move!
+    #"chunk_size": None,    # instrument specific - move!
+    #"max_chunks": None,    # instrument specific - move!
+    #"last_chunk": None,    # instrument specific - move!
     "limit_loaded_cycles": None,
     "load_until_error": False,
     "ensure_step_table": False,
@@ -73,6 +73,7 @@ Reader = {
     "cellpy_datadir": None,
     "auto_dirs": True,  # search in prm-file for res and hdf5 dirs in loadcell
 }
+
 
 # --------------------------
 # DataSet
@@ -153,16 +154,33 @@ excel_db_filename_cols = {"serial_number_position": 0,
 Instruments = {
     "tester": "arbin",
     "cell_configuration": "anode",
+    "max_res_filesize": 150000000,
+    "chunk_size": None,
+    "max_chunks": None,
+    "last_chunk": None,
 }
+
 
 # --------------------------
 # Materials
 # --------------------------
 
 Materials = {
-"cell_class": "Li-Ion",
-"default_material": "silicon",
-"default_mass": 1.0,
+    "cell_class": "Li-Ion",
+    "default_material": "silicon",
+    "default_mass": 1.0,
+}
+# --------------------------
+# Batch-options
+# --------------------------
+
+
+Batch = {
+    "fig_extension": "png",
+    "dpi": 300,
+    "markersize": 4,
+    "symbol_label": "simple",
+    "color_style_label": "seaborn-deep",
 }
 
 
@@ -173,4 +191,6 @@ Materials = {
 _variable_that_is_not_saved_to_config = "Hei"
 _prm_default_name = "_cellpy_prms_default.conf"
 _prm_globtxt = "_cellpy_prms*.conf"
+_odbcs = ["pyodbc", "ado", "pypyodbc"]
+_odbc = "pyodbc"
 

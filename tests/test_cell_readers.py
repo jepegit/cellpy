@@ -5,15 +5,22 @@ import pytest
 
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))
-relative_test_data_dir = "../cellpy/data_ex"
+# relative_test_data_dir = "../cellpy/data_ex"
+relative_test_data_dir = "../testdata"
 test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
+test_data_dir_raw = os.path.join(test_data_dir, "data")
+
 test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir,test_res_file)
+test_res_file_full = os.path.join(test_data_dir_raw,test_res_file)
+
 test_data_dir_out = os.path.join(test_data_dir, "out")
+
+test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
 test_cellpy_file = "20160805_test001_45_cc.h5"
 test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_full = os.path.join(test_data_dir,test_cellpy_file)
-test_cellpy_file_tmp_full = os.path.join(test_data_dir,test_cellpy_file_tmp)
+test_cellpy_file_full = os.path.join(test_data_dir_cellpy,test_cellpy_file)
+test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,test_cellpy_file_tmp)
+
 test_run_name = "20160805_test001_45_cc"
 
 import logging
@@ -31,7 +38,7 @@ def test_search_for_files():
     import os
     from cellpy import filefinder
     run_files, cellpy_file = filefinder.search_for_files(test_run_name,
-                                                         raw_file_dir=test_data_dir,
+                                                         raw_file_dir=test_data_dir_raw,
                                                          cellpy_file_dir=test_data_dir_out)
     assert test_res_file_full in run_files
     assert os.path.basename(cellpy_file) == test_cellpy_file
@@ -52,6 +59,9 @@ def test_set_res_datadir(cellpy_data_instance):
     cellpy_data_instance.set_cellpy_datadir(test_data_dir)
     assert test_data_dir == cellpy_data_instance.cellpy_datadir
 
+
+# def test_use_experimental_reader():
+#     assert False
 
 def test_load_res(cellpy_data_instance):
     cellpy_data_instance.loadcell(test_res_file_full)
