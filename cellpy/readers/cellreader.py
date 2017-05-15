@@ -2269,7 +2269,7 @@ class cellpydata(object):
             return
 
         test = self.get_test(test_number)
-        dfsummary_made = test.dfsummary_made
+        dfsummary_made = test.dfsummary_made #
 
         if not dfsummary_made and not force:
             print "You should not save tests without making a summary first!"
