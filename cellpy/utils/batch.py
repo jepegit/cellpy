@@ -108,6 +108,7 @@ class Batch(object):
         self.export_ica = False
         self.save_cellpy_file = True
         self.force_raw_file = False
+        self.force_cellpy_file = False
 
 
         self._packable = ['name', 'project', 'batch_col','selected_summaries',
@@ -246,6 +247,7 @@ class Batch(object):
         sep = prms.Reader["sep"]
         self.frames, self.keys, errors = read_and_save_data(self.info_df, self.raw_dir, sep=sep,
                                                     force_raw=self.force_raw_file,
+                                                    force_cellpy=self.force_cellpy_file,
                                                     export_cycles=self.export_cycles,
                                                     export_raw=self.export_raw,
                                                     export_ica=self.export_ica,
@@ -399,7 +401,7 @@ def save_multi(data, file_name, sep=";"):
 
 
 
-def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
+def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=False,
                        export_cycles=False, export_raw=True,
                        export_ica=False, save=True):
     """Reads and saves cell data defined by the info-DataFrame.
@@ -408,7 +410,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         info_df: pandas.DataFrame with information about the runs.
         raw_dir: path to location where you want to save raw data.
         sep: delimiter to use when exporting to csv.
-        force_raw: load raw data even-though cellpy-file is up-to-data.
+        force_raw: load raw data even-though cellpy-file is up-to-date.
+        force_cellpy: load cellpy files even-though cellpy-file is not up-to-date.
         export_cycles: set to True for exporting cycles to csv.
         export_raw: set to True for exporting raw data to csv.
         export_ica: set to True for calculating and exporting dQ/dV to csv.
@@ -433,7 +436,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         logger.debug(l_txt)
         print(h_txt)
         # here we should print (or write to log) file n of N (e.g. [3/12] or [|||       ])
-        if not row.raw_file_names:
+        if not row.raw_file_names and not force_cellpy:
             print("File not found!")
             print(indx)
             logger.debug("File(s) not found for index=%s" % indx)
@@ -443,17 +446,28 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         print("Processing (%s)..." % indx)
         logger.debug("Processing (%s)..." % indx)
         cell_data = cellreader.cellpydata()
-        logger.debug("setting cycle mode (%s)..." % row.cell_type)
-        cell_data.set_cycle_mode(row.cell_type)
+        if not force_cellpy:
+            logger.debug("setting cycle mode (%s)..." % row.cell_type)
+            cell_data.set_cycle_mode(row.cell_type)
+
         logger.debug("loading cell")
-        try:
-            cell_data.loadcell(raw_files=row.raw_file_names, cellpy_file=row.cellpy_file_names,
-                               mass=row.masses, summary_on_raw=True,
-                               force_raw=force_raw)
-        except Exception as e:
-            logger.debug('Failed to load: '+ str(e))
-            errors.append("loadcell:" +str(indx))
-            continue
+        if not force_cellpy:
+            try:
+                cell_data.loadcell(raw_files=row.raw_file_names, cellpy_file=row.cellpy_file_names,
+                                   mass=row.masses, summary_on_raw=True,
+                                   force_raw=force_raw)
+            except Exception as e:
+                logger.debug('Failed to load: '+ str(e))
+                errors.append("loadcell:" +str(indx))
+                continue
+        else:
+            try:
+                cell_data.load(row.cellpy_file_names)
+            except Exception as e:
+                logger.debug('Failed to load: '+ str(e))
+                errors.append("load:" +str(indx))
+                continue
+
 
         if not cell_data.check():
             print("...not loaded...")

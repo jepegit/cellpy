@@ -33,6 +33,12 @@ def cellpy_data_instance():
     from cellpy import cellreader
     return cellreader.cellpydata()
 
+@pytest.fixture
+def dataset():
+    from cellpy import cellreader
+    d = cellreader.cellpydata()
+    d.load(test_cellpy_file_full)
+    return d
 
 def test_search_for_files():
     import os
@@ -80,6 +86,40 @@ def test_load_res(cellpy_data_instance):
     # cellpy_data_instance.save_test(test_cellpy_file_full)
 
 
+
+def test_make_summary(cellpy_data_instance):
+    cellpy_data_instance.load_raw(test_res_file_full)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_summary()
+    s1 = cellpy_data_instance.tests[0].dfsummary
+    s2 = cellpy_data_instance.get_test().dfsummary
+    s3 = cellpy_data_instance.get_summary()
+    assert s1.columns.tolist() == s2.columns.tolist()
+    assert s2.columns.tolist() == s3.columns.tolist()
+    assert s2.iloc[:,3].size == 17
+    assert s2.iloc[5,3] == s1.iloc[5,3]
+
+
+def test_create_cellpyfile(cellpy_data_instance):
+    # create a cellpy file from the res-file (used for testing)
+    cellpy_data_instance.load_raw(test_res_file_full)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    cellpy_data_instance.save_test(test_cellpy_file_full)
+
+
+def test_summary_from_cellpyfile(cellpy_data_instance):
+    cellpy_data_instance.load(test_cellpy_file_full)
+    s1 = cellpy_data_instance.get_summary()
+    mass = cellpy_data_instance.get_mass()
+    cellpy_data_instance.set_mass(mass)
+    cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    s2 = cellpy_data_instance.get_summary()
+    assert s1.columns.tolist() == s2.columns.tolist()
+    assert s2.iloc[:, 3].size == 17
+    assert s2.iloc[5, 3] == s1.iloc[5, 3]
+
+
 def test_load_cellpyfile(cellpy_data_instance):
     cellpy_data_instance.load(test_cellpy_file_full)
     run_number = 0
@@ -94,6 +134,35 @@ def test_load_cellpyfile(cellpy_data_instance):
     assert step_time == pytest.approx(my_test.dfdata.loc[4, "Step_Time"], 0.1)
     assert sum_test_time == pytest.approx(my_test.dfsummary.loc[:, "Test_Time"].sum(), 0.1)
     assert my_test.test_no == run_number
+
+
+def test_get_current_voltage(dataset):
+    v = dataset.get_voltage(cycle=5)
+    assert len(v) == 498
+    c = dataset.get_current(cycle=5)
+    assert len(c) == 498
+
+
+def test_get_capacity(dataset):
+    cc, vcc = dataset.get_ccap(cycle=5)
+    assert len(cc) == len(vcc)
+    assert len(cc) == 214
+    dc, vdc = dataset.get_dcap(cycle=5)
+    assert len(dc) == len(vdc)
+    assert len(dc) == 224
+    c, v = dataset.get_cap(cycle=5)
+    assert len(c) == len(v)
+
+
+@pytest.mark.parametrize("test_input,expected", [
+    ((1.0, 1.0), 1.0),
+    ((1.0, 0.1), 0.1),
+    ((0.1, 1.0), 10.0),
+    pytest.mark.xfail(((1.0, 0.001), 1.0)),
+])
+def test_get_converter_to_specific(dataset, test_input, expected):
+    c = dataset.get_converter_to_specific(mass=1.0, to_unit=test_input[0], from_unit=test_input[1])
+    assert c == expected
 
 
 def test_save_cellpyfile_with_extension(cellpy_data_instance):

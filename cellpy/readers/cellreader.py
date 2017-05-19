@@ -2269,7 +2269,7 @@ class cellpydata(object):
             return
 
         test = self.get_test(test_number)
-        dfsummary_made = test.dfsummary_made
+        dfsummary_made = test.dfsummary_made #
 
         if not dfsummary_made and not force:
             print "You should not save tests without making a summary first!"
@@ -2928,7 +2928,7 @@ class cellpydata(object):
             from_unit_mass = self.raw_units["mass"]
             from_unit = from_unit_cap / from_unit_mass
         # Remove this later
-        assert float(from_unit / to_unit) == 1000000.0
+        # assert float(from_unit / to_unit) == 1000000.0
         return float(from_unit / to_unit) / mass
 
     def get_diagnostics_plots(self, test_number=None, scaled=False, ):
