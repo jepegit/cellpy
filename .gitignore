@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 .idea/
-./utils/cell_ocv.pyc
+old/
 #./testdata/*.csv
 
 

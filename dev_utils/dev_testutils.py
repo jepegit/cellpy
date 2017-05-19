@@ -12,9 +12,9 @@ MAKE_DIST = "python setup.py sdist"  # creates a build with version number name
 UPLOAD_PYPI = "twine upload dist/*"  # uploads to pypi (note! remove old tar-files first if using *)
 
 # some sphinx commands
-BUILD = "sphinx-build -b html sourcedir builddir"
-EASYBUILD = "make html" # inside the docs directory
-CREATE_APIDOC = "sphinx-apidoc -o source ..\cellpy" # inside the docs directory
+# BUILD = "sphinx-build -b html sourcedir builddir" # not used
+EASY_BUILD = "make html" # inside the docs directory to make html docs
+CREATE_APIDOC = "sphinx-apidoc -o source ..\cellpy" # inside the docs directory to make .rst files for docstrings etc.
 
 
 

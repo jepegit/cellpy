@@ -1,14 +1,6 @@
 cellpy.utils package
 ====================
 
-Subpackages
------------
-
-.. toctree::
-
-    cellpy.utils.old
-    cellpy.utils.testscripts_ocv_rlx
-
 Submodules
 ----------
 
