@@ -7,13 +7,11 @@ This script is an example of how cellpy can be used.
 
 """
 
-from perform_fit import fitting_cell, save_cap_ocv
 from matplotlib.pyplot import MaxNLocator
-from textwrap import wrap
 from math import pi
 
-import fitting_cell_ocv as fco
-import sys, os, csv, itertools
+from old import fitting_cell_ocv as fco
+import sys, os, csv
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd

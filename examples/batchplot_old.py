@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 """Script for automatically loading cell-data and making summaries"""
 
-import sys
-import os
-
-from numpy import amin, amax, array, argsort
-import pandas as pd
-import itertools
 import csv
-import matplotlib.pyplot as plt
+import itertools
+import os
+import pickle as pl
+import sys
+
 import matplotlib
 import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.ticker import MaxNLocator
-import pickle as pl
+from numpy import amin, amax, array, argsort
 
 from cellpy import cellreader, dbreader, prmreader, filefinder
 from cellpy.utils import plotutils
@@ -1140,7 +1140,7 @@ class summaryplot:
 
     def _export_dqdv(self, savedir, sep):
         """internal function for running dqdv script """
-        from cellpy.utils.dqdv import dQdV
+        from old.dqdv import dQdV
         dqdv_numbermultiplyer = self.dqdv_numbermultiplyer
         dqdv_method = self.dqdv_method
         dqdv_finalinterpolation = self.dqdv_finalinterpolation
