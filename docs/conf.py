@@ -105,7 +105,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'cellpy'
-copyright = u"2016, Jan Petter Maehlen"
+copyright = u"2017, Jan Petter Maehlen"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout

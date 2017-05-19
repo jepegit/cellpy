@@ -11,6 +11,12 @@ PIP_DEVELOPMENT_MODE = "pip install -e ."  # will install in development mode fo
 MAKE_DIST = "python setup.py sdist"  # creates a build with version number name
 UPLOAD_PYPI = "twine upload dist/*"  # uploads to pypi (note! remove old tar-files first if using *)
 
+# some sphinx commands
+BUILD = "sphinx-build -b html sourcedir builddir"
+EASYBUILD = "make html" # inside the docs directory
+CREATE_APIDOC = "sphinx-apidoc -o source ..\cellpy" # inside the docs directory
+
+
 
 current_file_path = os.path.dirname(os.path.realpath(__file__))
 relative_test_dir = "../tests"

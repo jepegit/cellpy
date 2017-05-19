@@ -6,9 +6,8 @@ Subpackages
 
 .. toctree::
 
-    cellpy.parametres
+    cellpy.parameters
     cellpy.readers
-    cellpy.scripts
     cellpy.utils
 
 Submodules
@@ -18,6 +17,14 @@ cellpy.cellpy_setup module
 --------------------------
 
 .. automodule:: cellpy.cellpy_setup
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+cellpy.log module
+-----------------
+
+.. automodule:: cellpy.log
     :members:
     :undoc-members:
     :show-inheritance:

@@ -4,8 +4,21 @@ cellpy.utils package
 Subpackages
 -----------
 
+.. toctree::
+
+    cellpy.utils.old
+    cellpy.utils.testscripts_ocv_rlx
+
 Submodules
 ----------
+
+cellpy.utils.batch module
+-------------------------
+
+.. automodule:: cellpy.utils.batch
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 cellpy.utils.cell_ocv module
 ----------------------------
@@ -15,22 +28,37 @@ cellpy.utils.cell_ocv module
     :undoc-members:
     :show-inheritance:
 
-cellpy.utils.dqdv module
+cellpy.utils.ica module
+-----------------------
+
+.. automodule:: cellpy.utils.ica
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+cellpy.utils.live module
 ------------------------
 
-.. automodule:: cellpy.utils.dqdv
+.. automodule:: cellpy.utils.live
     :members:
     :undoc-members:
     :show-inheritance:
 
-cellpy.utils.ocv_rlx_read_ex module
------------------------------------
+cellpy.utils.ocv_rlx module
+---------------------------
 
-.. automodule:: cellpy.utils.ocv_rlx_read_ex
+.. automodule:: cellpy.utils.ocv_rlx
     :members:
     :undoc-members:
     :show-inheritance:
 
+cellpy.utils.plotutils module
+-----------------------------
+
+.. automodule:: cellpy.utils.plotutils
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 
 Module contents
