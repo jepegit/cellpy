@@ -7,4 +7,5 @@ Tutorials
 .. include:: Tutorials/basic_interaction.rst
 .. include:: Tutorials/pandas.rst
 .. include:: Tutorials/utils.rst
+.. include:: Tutorials/data_mining.rst
 
