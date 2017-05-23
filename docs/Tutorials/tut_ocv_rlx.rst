@@ -1,2 +1,0 @@
-Open Circuit Relaxation modeling
-================================

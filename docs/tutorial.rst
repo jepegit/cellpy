@@ -1,3 +1,10 @@
-.. include:: Tutorials/old_tutorial.rst
+=========
+Tutorials
+=========
 
-.. include:: Tutorials/tut_ocv_rlx.rst
+.. include:: Tutorials/the_cellpy_cmd.rst
+.. include:: Tutorials/configuring.rst
+.. include:: Tutorials/basic_interaction.rst
+.. include:: Tutorials/pandas.rst
+.. include:: Tutorials/utils.rst
+

@@ -20,7 +20,7 @@ import time
 from collections import OrderedDict
 from datetime import date
 
-from biologic_file_format import bl_dtypes, hdr_dtype, mpr_label
+from .biologic_file_format import bl_dtypes, hdr_dtype, mpr_label
 
 from cellpy.readers.cellreader import dataset
 from cellpy.readers.cellreader import fileID
