@@ -1,0 +1,45 @@
+
+
+* add dev_data to .gitignore
+* work on individual rst-files (atomisation)
+
+Naming
+
+tests -> datasets
+
+cellpy.dataset = dataset[0]
+
+@property
+def dataset(self,...i=None):
+    i = self.dataset_number
+    return cellpy.datasets[i]
+
+pick_normal_data : self.tests[0].dfdata, self.dataset.dfdata (check)
+pick_summary_data: dfsummary
+pick_xxx : get the dataframe
+
+
+get_xxx: helpers for looking and getting stuff
+
+put_xxx: put dataframes back
+
+save: hdf5
+load_cellpy -> load
+
+export: others
+load_raw -> import_raw
+
+Scheme
+Utils "similar" way
+
+- make object
+(- set properties)
+- feed object
+(- set properties)
+- run object
+- create reports, figures
+- export data, etc
+- jupyter notebook compatible
+
+Version control
+work with few files (AU)
