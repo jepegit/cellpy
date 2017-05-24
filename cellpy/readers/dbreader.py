@@ -81,6 +81,15 @@ class reader:
             print "* %f" % (time.time()-t0)
 
 
+    def pick_table(self):
+        """Pick the table.
+        
+        Returns: pandas.DataFrame
+
+        """
+        return self.table
+
+
     def _pick_info(self, serial_number, column_number):
         row = self.select_serial_number_row(serial_number)
         x = self._select_col(row, column_number)
