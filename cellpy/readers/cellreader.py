@@ -567,6 +567,11 @@ class cellpydata(object):
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()
 
+    @property
+    def dataset(self):
+        """returns the dataset instance"""
+        return self.datasets[self.selected_dataset_number]
+
     def set_instrument(self, instrument=None):
         """Set the instrument (i.e. tell cellpy what kind of file you are going to work with).
 
