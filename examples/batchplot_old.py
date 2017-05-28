@@ -1112,7 +1112,7 @@ class summaryplot:
                 out_data = []
                 for cycle in list_of_cycles:
                     try:
-                        dc, v = cell_data_object.get_dcap(cycle, test_number=test_number)
+                        dc, v = cell_data_object.get_dcap(cycle, dataset_number=test_number)
                         v, dQ = dqdv(v, dc)
                         v = v.tolist()
                         dQ = dQ.tolist()
@@ -1203,7 +1203,7 @@ class summaryplot:
                 out_data = []
                 for cycle in list_of_cycles:
                     try:
-                        dc, v = cell_data_object.get_dcap(cycle, test_number=test_number)
+                        dc, v = cell_data_object.get_dcap(cycle, dataset_number=test_number)
                         v, dQ = dQdV(v, dc,
                                      NumberMultiplyer=dqdv_numbermultiplyer,
                                      Method=dqdv_method,
@@ -1323,7 +1323,7 @@ class summaryplot:
                         if self.ensure_step_table:
                             cell_data_object.ensure_step_table = True
 
-                        cell_data_object.save_test(filename, test_number=test_number)
+                        cell_data_object.save_test(filename, dataset_number=test_number)
                     except:
                         print "Could not save",
                         print filename + ".h5"
