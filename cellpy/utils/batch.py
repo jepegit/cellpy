@@ -334,8 +334,11 @@ def _create_info_dict(reader, srnos):
 
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
+    for key in info_dict.keys():
+        logger.debug("%s: %s" % (key, str(info_dict[key])))
 
     _groups = [reader.get_group(srno) for srno in srnos]
+    logger.debug("groups: %s" % str(_groups))
     groups = _fix_groups(_groups)
     info_dict["groups"] = groups
 

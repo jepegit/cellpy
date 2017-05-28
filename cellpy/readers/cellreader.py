@@ -476,7 +476,7 @@ class cellpydata(object):
     several tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
-        tests (list): list of dataset objects.
+        datasets (list): list of dataset objects.
     """
 
     def __init__(self, filenames=None,
@@ -524,11 +524,11 @@ class cellpydata(object):
             if not self._is_listtype(self.selected_scans):
                 self.selected_scans = [self.selected_scans]
 
-        self.tests = []
-        self.tests_status = []
+        self.datasets = []
+        self.status_datasets = []
         self.step_table = None
-        self.selected_test_number = None
-        self.number_of_tests = 0
+        self.selected_dataset_number = None
+        self.number_of_datasets = 0
 
         self.capacity_modifiers = ['reset', ]
 
@@ -892,7 +892,7 @@ class cellpydata(object):
         """
 
         # This is a part of a dramatic API change. It will not be possible to
-        # load more than one set of tests (i.e. one single cellpy-file or
+        # load more than one set of datasets (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
         self.logger.info("started loadcell")
         if cellpy_file is None:
@@ -909,7 +909,7 @@ class cellpydata(object):
 
         if not similar:
             self.load_raw(raw_files)
-            if self.tests_status:  # Check if the run was loaded ([] if empty)
+            if self.status_datasets:  # Check if the run was loaded ([] if empty)
                 if mass:
                     self.set_mass(mass)
                 if summary_on_raw:
@@ -929,7 +929,7 @@ class cellpydata(object):
                list contains more than one file name, then the runs will be merged together.
         """
         # This function only loads one test at a time (but could contain several files). The
-        # function loadres() also implements loading several tests (using list of lists as
+        # function loadres() also implements loading several datasets (using list of lists as
         # input.
 
         if file_names:
@@ -940,24 +940,24 @@ class cellpydata(object):
 
         # file_type = self.tester
         raw_file_loader = self.loader
-        test_number = 0
+        set_number = 0
         test = None
         for f in self.file_names:
             new_tests = raw_file_loader(f, **kwargs)  # this should now work
             if test is not None:
-                new_tests[test_number] = self._append(test[test_number], new_tests[test_number])
-                for raw_data_file, file_size in zip(new_tests[test_number].raw_data_files,
-                                                    new_tests[test_number].raw_data_files_length):
-                    test[test_number].raw_data_files.append(raw_data_file)
-                    test[test_number].raw_data_files_length.append(file_size)
+                new_tests[set_number] = self._append(test[set_number], new_tests[set_number])
+                for raw_data_file, file_size in zip(new_tests[set_number].raw_data_files,
+                                                    new_tests[set_number].raw_data_files_length):
+                    test[set_number].raw_data_files.append(raw_data_file)
+                    test[set_number].raw_data_files_length.append(file_size)
             else:
                 test = new_tests
         if test:
-            self.tests.append(test[test_number])
+            self.datasets.append(test[set_number])
         else:
-            self.logger.warning("No new tests added!")
-        self.number_of_tests = len(self.tests)
-        self.tests_status = self._validate_tests()
+            self.logger.warning("No new datasets added!")
+        self.number_of_datasets = len(self.datasets)
+        self.status_datasets = self._validate_datasets()
 
     # noinspection PyIncorrectDocstring
     def loadres(self, filenames=None, check_file_type=True):
@@ -965,14 +965,14 @@ class cellpydata(object):
 
         Args:
             filenames: ((lists of) list of raw-file names): uses cellpy.file_names if None.
-                If list-of-list, it loads each list into separate tests. The files in the
+                If list-of-list, it loads each list into separate datasets. The files in the
                 inner list will be merged.
             check_file_type (bool): check file type if True (res-, or cellpy-format)
         """
         warnings.warn("deprecated - use load_raw instead", DeprecationWarning)
-        txt = "number of tests: %i" % len(self.file_names)
+        txt = "number of datasets: %i" % len(self.file_names)
         self.logger.debug(txt)
-        test_number = 0
+        set_number = 0
         counter = 0
         filetype = "res"
         raw_file_loader = self.loader
@@ -1027,54 +1027,54 @@ class cellpydata(object):
                             newtests = newtests1
                             first_test = False
                         else:
-                            newtests[test_number] = self._append(newtests[test_number], newtests1[test_number])
-                            for raw_data_file, file_size in zip(newtests1[test_number].raw_data_files,
-                                                                newtests1[test_number].raw_data_files_length):
-                                newtests[test_number].raw_data_files.append(raw_data_file)
-                                newtests[test_number].raw_data_files_length.append(file_size)
+                            newtests[set_number] = self._append(newtests[set_number], newtests1[set_number])
+                            for raw_data_file, file_size in zip(newtests1[set_number].raw_data_files,
+                                                                newtests1[set_number].raw_data_files_length):
+                                newtests[set_number].raw_data_files.append(raw_data_file)
+                                newtests[set_number].raw_data_files_length.append(file_size)
 
             if newtests:
                 for test in newtests:
-                    self.tests.append(test)
+                    self.datasets.append(test)
             else:
                 self.logger.debug("Could not load any files for this set")
                 self.logger.debug("Making it an empty test")
-                self.tests.append(self._empty_test())
+                self.datasets.append(self._empty_dataset())
 
         txt = " ok"
         self.logger.debug(txt)
-        self.number_of_tests = len(self.tests)
-        txt = "number of tests: %i" % self.number_of_tests
+        self.number_of_datasets = len(self.datasets)
+        txt = "number of datasets: %i" % self.number_of_datasets
         self.logger.debug(txt)
-        # validating tests
-        self.tests_status = self._validate_tests()
+        # validating datasets
+        self.status_datasets = self._validate_datasets()
 
 
-    def _validate_tests(self, level=0):
+    def _validate_datasets(self, level=0):
         self.logger.debug("validating test")
         level = 0
-        # simple validation for finding empty tests - should be expanded to
-        # find not-complete tests, tests with missing prms etc
+        # simple validation for finding empty datasets - should be expanded to
+        # find not-complete datasets, datasets with missing prms etc
         v = []
         if level == 0:
-            for test in self.tests:
+            for test in self.datasets:
                 # check that it contains all the necessary headers (and add missing ones)
                 # test = self._clean_up_normal_table(test)
                 # check that the test is not empty
-                v.append(self._is_not_empty_test(test))
+                v.append(self._is_not_empty_dataset(test))
         return v
 
     def check(self):
-        """Returns False if no tests exists or if one or more of the tests are empty"""
+        """Returns False if no datasets exists or if one or more of the datasets are empty"""
 
-        if len(self.tests_status) == 0:
+        if len(self.status_datasets) == 0:
             return False
-        if all(self.tests_status):
+        if all(self.status_datasets):
             return True
         return False
 
-    def _is_not_empty_test(self, test):
-        if test is self._empty_test():
+    def _is_not_empty_dataset(self, dataset):
+        if dataset is self._empty_dataset():
             return False
         else:
             return True
@@ -1082,8 +1082,8 @@ class cellpydata(object):
     def _clean_up_normal_table(self, test=None, test_number=None):
         # check that test contains all the necessary headers (and add missing ones)
         if test is None:
-            test_number = self._validate_test_number(test_number)
-            test = self.tests[test_number]
+            test_number = self._validate_dataset_number(test_number)
+            test = self.datasets[test_number]
 
         cellpy_headers = self.headers_normal
         col_headers = test.dfdata.columns
@@ -1091,11 +1091,11 @@ class cellpydata(object):
         self.logger.debug("_clean_up_normal_table: not implemented yet")
         return test
 
-    def _report_empty_test(self):
+    def _report_empty_dataset(self):
         self.logger.info("empty set")
 
     @staticmethod
-    def _empty_test():
+    def _empty_dataset():
         return None
 
 
@@ -1114,14 +1114,14 @@ class cellpydata(object):
 
         if new_tests:
             for test in new_tests:
-                self.tests.append(test)
+                self.datasets.append(test)
         else:
             # raise LoadError
             self.logger.warning("Could not load")
             self.logger.warning(str(cellpy_file))
 
-        self.number_of_tests = len(self.tests)
-        self.tests_status = self._validate_tests()
+        self.number_of_datasets = len(self.datasets)
+        self.status_datasets = self._validate_datasets()
 
     def _load_hdf5(self, filename):
         """Load a cellpy-file.
@@ -1130,7 +1130,7 @@ class cellpydata(object):
             filename (str): Name of the cellpy file.
 
         Returns:
-            loaded tests (dataset-object)
+            loaded datasets (dataset-object)
         """
         # loads from hdf5 formatted cellpy-file
         if not os.path.isfile(filename):
@@ -1186,7 +1186,7 @@ class cellpydata(object):
             data.raw_data_files_length = None
         newtests.append(data)
         store.close()
-        # self.tests.append(data)
+        # self.datasets.append(data)
         return newtests
 
     def _load_infotable(self, data, infotable, filename):
@@ -1220,13 +1220,13 @@ class cellpydata(object):
             value = default_value
         return value
 
-    def _create_infotable(self, test_number=None):
+    def _create_infotable(self, dataset_number=None):
         # needed for saving class/dataset to hdf5
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
+        dataset_number = self._validate_dataset_number(dataset_number)
+        if dataset_number is None:
+            self._report_empty_dataset()
             return
-        test = self.get_test(test_number)
+        test = self.get_dataset(dataset_number)
 
         infotable = collections.OrderedDict()
         infotable["test_no"] = [test.test_no, ]
@@ -1305,20 +1305,20 @@ class cellpydata(object):
             print "not implemented yet"
         else:
             if tests is None:
-                tests = range(len(self.tests))
+                tests = range(len(self.datasets))
             first_test = True
             for test_number in tests:
                 if first_test:
-                    test = self.tests[test_number]
+                    test = self.datasets[test_number]
                     first_test = False
                 else:
-                    test = self._append(test, self.tests[test_number])
-                    for raw_data_file, file_size in zip(self.tests[test_number].raw_data_files,
-                                                        self.tests[test_number].raw_data_files_length):
+                    test = self._append(test, self.datasets[test_number])
+                    for raw_data_file, file_size in zip(self.datasets[test_number].raw_data_files,
+                                                        self.datasets[test_number].raw_data_files_length):
                         test.raw_data_files.append(raw_data_file)
                         test.raw_data_files_length.append(file_size)
-            self.tests = [test]
-            self.number_of_tests = 1
+            self.datasets = [test]
+            self.number_of_datasets = 1
 
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
         test = t1
@@ -1416,20 +1416,20 @@ class cellpydata(object):
 
     # --------------iterate-and-find-in-data----------------------------------------
 
-    def _validate_test_number(self, n, check_for_empty=True):
+    def _validate_dataset_number(self, n, check_for_empty=True):
         # Returns test_number (or None if empty)
-        # Remark! _is_not_empty_test returns True or False
+        # Remark! _is_not_empty_dataset returns True or False
 
         if n is not None:
             v = n
         else:
-            if self.selected_test_number is None:
+            if self.selected_dataset_number is None:
                 v = 0
             else:
-                v = self.selected_test_number
+                v = self.selected_dataset_number
         # check if test is empty
         if check_for_empty:
-            not_empty = self._is_not_empty_test(self.tests[v])
+            not_empty = self._is_not_empty_dataset(self.datasets[v])
             if not_empty:
                 return v
             else:
@@ -1438,17 +1438,17 @@ class cellpydata(object):
             return v
 
     def _validata_step_table(self, test_number=None, simple=False):
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
 
         step_index_header = self.headers_normal['step_index_txt']
         self.logger.debug("*** validating step table")
-        d = self.tests[test_number].dfdata
-        s = self.tests[test_number].step_table
+        d = self.datasets[test_number].dfdata
+        s = self.datasets[test_number].step_table
 
-        if not self.tests[test_number].step_table_made:
+        if not self.datasets[test_number].step_table_made:
             return False
 
         no_cycles_dfdata = np.amax(d[self.headers_normal['cycle_index_txt']])
@@ -1485,11 +1485,11 @@ class cellpydata(object):
 
     def print_step_table(self, test_number=None):
         """Print the step table."""
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
-        st = self.tests[test_number].step_table
+        st = self.datasets[test_number].step_table
         print st
 
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False, cycle_number=None, test_number=None):
@@ -1515,18 +1515,18 @@ class cellpydata(object):
             [5,8]
 
         """
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
 
         # check if step_table is there
-        if not self.tests[test_number].step_table_made:
+        if not self.datasets[test_number].step_table_made:
             self.logger.debug("step_table not made")
 
             if self.force_step_table_creation or self.force_all:
                 self.logger.debug("creating step_table for")
-                self.logger.debug(self.tests[test_number].loaded_from)
+                self.logger.debug(self.datasets[test_number].loaded_from)
                 # print "CREAING STEP-TABLE"
                 self.create_step_table(test_number=test_number)
 
@@ -1575,7 +1575,7 @@ class cellpydata(object):
         self.logger.debug(steptypes)
 
         # retrieving step_table (for convinience)
-        st = self.tests[test_number].step_table
+        st = self.datasets[test_number].step_table
         # retrieving cycle numbers
         if cycle_number is None:
             # print "cycle number is none"
@@ -1751,9 +1751,9 @@ class cellpydata(object):
         Remark! x_delta is given in percentage.
         """
         # TODO: need to implement newly added columns (strategy: work with empty cols first)
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
 
         cycle_index_header = self.headers_normal['cycle_index_txt']
@@ -1821,11 +1821,11 @@ class cellpydata(object):
         # columns.append(step_table_txt_sub_type)
 
         # --- adding pct change col(s)-----
-        df = self.tests[test_number].dfdata
+        df = self.datasets[test_number].dfdata
         df[step_table_txt_ir_change] = df[internal_resistance_txt].pct_change()
 
         # --- finding size ------
-        df = self.tests[test_number].dfdata
+        df = self.datasets[test_number].dfdata
         number_of_rows = df.groupby([cycle_index_header, step_index_header]).size().shape[0]  # smart trick :-)
         # number_of_cols = len(columns)
         # print "number of rows:",
@@ -1963,8 +1963,8 @@ class cellpydata(object):
 
         # --- finally ------
 
-        self.tests[test_number].step_table = df_steps
-        self.tests[test_number].step_table_made = True
+        self.datasets[test_number].step_table = df_steps
+        self.datasets[test_number].step_table_made = True
 
     def _percentage_change(self, x0, x1, default_zero=True):
         # calculates the change from x0 to x1 in percentage
@@ -1996,9 +1996,9 @@ class cellpydata(object):
     def select_steps(self, step_dict, append_df=False, test_number=None):
         """Select steps (not documented yet)."""
         # step_dict={1:[1],2:[1],3:[1,2,3]}
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         if not append_df:
             selected = dict()
@@ -2034,11 +2034,11 @@ class cellpydata(object):
 
     def _select_step(self, cycle, step, test_number=None):
         # TODO: insert sub_step here
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
-        test = self.tests[test_number]
+        test = self.datasets[test_number]
         # test.dfdata
 
         # check if columns exist
@@ -2066,12 +2066,12 @@ class cellpydata(object):
     # @print_function
     def populate_step_dict(self, step, test_number=None):
         """Returns a dict with cycle numbers as keys and corresponding steps (list) as values."""
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         step_dict = {}
-        cycles = self.tests[test_number].dfdata[self.headers_normal['cycle_index_txt']]
+        cycles = self.datasets[test_number].dfdata[self.headers_normal['cycle_index_txt']]
         unique_cycles = cycles.unique()
         # number_of_cycles = len(unique_cycles)
         number_of_cycles = np.amax(cycles)
@@ -2095,14 +2095,14 @@ class cellpydata(object):
         s_txt = self.headers_normal['step_index_txt']
         x_txt = self.headers_normal['current_txt']
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         if not mass:
-            mass = self.tests[test_number].mass
+            mass = self.datasets[test_number].mass
 
-        d = self.tests[test_number].dfdata
+        d = self.datasets[test_number].dfdata
         c_rates_dict = {}
         for c, s in steps.iteritems():
             v = d[(d[c_txt] == c) & (d[s_txt] == s[0])]
@@ -2219,9 +2219,9 @@ class cellpydata(object):
         self.logger.debug(txt)
 
         test_number = -1
-        for data in self.tests:
+        for data in self.datasets:
             test_number += 1
-            if not self._is_not_empty_test(data):
+            if not self._is_not_empty_dataset(data):
                 print "exportcsv -"
                 print "empty test [%i]" % test_number
                 print "not saved!"
@@ -2262,17 +2262,17 @@ class cellpydata(object):
     def save_test(self, filename, test_number=None, force=False, overwrite=True, extension="h5"):
         """Save the data structure using pickle/hdf5."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
             print "Saving test failed!"
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
 
-        test = self.get_test(test_number)
+        test = self.get_dataset(test_number)
         dfsummary_made = test.dfsummary_made #
 
         if not dfsummary_made and not force:
-            print "You should not save tests without making a summary first!"
+            print "You should not save datasets without making a summary first!"
             print "If you really want to do it, use save_test with force=True"
         else:
             # check extension
@@ -2297,7 +2297,7 @@ class cellpydata(object):
                         self.logger.debug("save_test: creating step table")
                         self.create_step_table(test_number=test_number)
                 self.logger.debug("trying to make infotable")
-                infotbl, fidtbl = self._create_infotable(test_number=test_number)  # modify this
+                infotbl, fidtbl = self._create_infotable(dataset_number=test_number)  # modify this
                 self.logger.debug("trying to save to hdf5")
                 txt = "\nHDF5 file: %s" % outfile_all
                 self.logger.debug(txt)
@@ -2348,9 +2348,9 @@ class cellpydata(object):
                         capacity_modifier="reset",
                         allctypes=True):
         # modifies the normal table
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         cycle_index_header = self.headers_normal['cycle_index_txt']
         step_index_header = self.headers_normal['step_index_txt']
@@ -2359,7 +2359,7 @@ class cellpydata(object):
         charge_index_header = self.headers_normal['charge_capacity_txt']
         charge_energy_index_header = self.headers_normal['charge_energy_txt']
 
-        dfdata = self.tests[test_number].dfdata
+        dfdata = self.datasets[test_number].dfdata
 
         chargecap = 0.0
         dischargecap = 0.0
@@ -2404,31 +2404,31 @@ class cellpydata(object):
                 # discharge cycles
 
     def get_number_of_tests(self):
-        return self.number_of_tests
+        return self.number_of_datasets
 
-    def get_mass(self, test_number=None):
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
+    def get_mass(self, set_number=None):
+        set_number = self._validate_dataset_number(set_number)
+        if set_number is None:
+            self._report_empty_dataset()
             return
-        if not self.tests[test_number].mass_given:
+        if not self.datasets[set_number].mass_given:
             print "no mass"
-        return self.tests[test_number].mass
+        return self.datasets[set_number].mass
 
-    def get_test(self, n=0):
-        return self.tests[n]
+    def get_dataset(self, n=0):
+        return self.datasets[n]
 
-    def sget_voltage(self, cycle, step, test_number=None):
+    def sget_voltage(self, cycle, step, set_number=None):
         """Returns voltage for cycle, step."""
 
-        test_number = self._validate_test_number(test_number)
-        if test_number is None:
-            self._report_empty_test()
+        set_number = self._validate_dataset_number(set_number)
+        if set_number is None:
+            self._report_empty_dataset()
             return
         cycle_index_header = self.headers_normal['cycle_index_txt']
         voltage_header = self.headers_normal['voltage_txt']
         step_index_header = self.headers_normal['step_index_txt']
-        test = self.tests[test_number].dfdata
+        test = self.datasets[set_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
             v = c[voltage_header]
@@ -2439,15 +2439,15 @@ class cellpydata(object):
     def get_voltage(self, cycle=None, test_number=None, full=True):
         """Returns voltage (in V)."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         cycle_index_header = self.headers_normal['cycle_index_txt']
         voltage_header = self.headers_normal['voltage_txt']
         # step_index_header  = self.headers_normal['step_index_txt']
 
-        test = self.tests[test_number].dfdata
+        test = self.datasets[test_number].dfdata
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
@@ -2470,15 +2470,15 @@ class cellpydata(object):
     def get_current(self, cycle=None, test_number=None, full=True):
         """Returns current (in mA)."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         cycle_index_header = self.headers_normal['cycle_index_txt']
         current_header = self.headers_normal['current_txt']
         # step_index_header  = self.headers_normal['step_index_txt']
 
-        test = self.tests[test_number].dfdata
+        test = self.datasets[test_number].dfdata
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
@@ -2502,14 +2502,14 @@ class cellpydata(object):
     def sget_steptime(self, cycle, step, test_number=None):
         """Returns step time for cycle, step."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         cycle_index_header = self.headers_normal['cycle_index_txt']
         step_time_header = self.headers_normal['step_time_txt']
         step_index_header = self.headers_normal['step_index_txt']
-        test = self.tests[test_number].dfdata
+        test = self.datasets[test_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
             t = c[step_time_header]
@@ -2520,14 +2520,14 @@ class cellpydata(object):
     def sget_timestamp(self, cycle, step, test_number=None):
         """Returns timestamp for cycle, step."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         cycle_index_header = self.headers_normal['cycle_index_txt']
         timestamp_header = self.headers_normal['test_time_txt']
         step_index_header = self.headers_normal['step_index_txt']
-        test = self.tests[test_number].dfdata
+        test = self.datasets[test_number].dfdata
         c = test[(test[cycle_index_header] == cycle) & (test[step_index_header] == step)]
         if not self.is_empty(c):
             t = c[timestamp_header]
@@ -2538,15 +2538,15 @@ class cellpydata(object):
     def get_timestamp(self, cycle=None, test_number=None, in_minutes=False, full=True):
         """Returns timestamps (in sec or minutes (if in_minutes==True))."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         cycle_index_header = self.headers_normal['cycle_index_txt']
         timestamp_header = self.headers_normal['test_time_txt']
 
         v = None
-        test = self.tests[test_number].dfdata
+        test = self.datasets[test_number].dfdata
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
@@ -2573,9 +2573,9 @@ class cellpydata(object):
     def get_dcap(self, cycle=None, test_number=None):
         """Returns discharge_capacity (in mAh/g), and voltage."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         dc, v = self._get_cap(cycle, test_number, "discharge")
         return dc, v
@@ -2583,9 +2583,9 @@ class cellpydata(object):
     def get_ccap(self, cycle=None, test_number=None):
         """Returns charge_capacity (in mAh/g), and voltage."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         cc, v = self._get_cap(cycle, test_number, "charge")
         return cc, v
@@ -2612,9 +2612,9 @@ class cellpydata(object):
                capacity points (mAh/g) [points if given, arranged with stepsize if not],
                polarization (hysteresis)
         """
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         # if cycle is not given, then this function should iterate through cycles
         if not cycle:
@@ -2684,11 +2684,11 @@ class cellpydata(object):
     def _get_cap(self, cycle=None, test_number=None, cap_type="charge"):
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: does not allow for constant voltage yet
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
-        test = self.tests[test_number]
+        test = self.datasets[test_number]
         mass = self.get_mass(test_number)
         if cap_type == "charge_capacity":
             cap_type = "charge"
@@ -2752,9 +2752,9 @@ class cellpydata(object):
                     (TODO: check if copy or reference of dfdata is returned)
         """
         # function for getting ocv curves
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         if ocv_type in ['ocvrlx_up', 'ocvrlx_down']:
             ocv = self._get_ocv(test_number=None,
@@ -2783,9 +2783,9 @@ class cellpydata(object):
                  select_columns=True, cycle_number=None):
         # find ocv data in dataset
         # (voltage vs time, no current)
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
 
         if not ocv_steps:
@@ -2849,11 +2849,11 @@ class cellpydata(object):
     def get_number_of_cycles(self, test_number=None):
         """Fet the number of cycles in the test."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
-        d = self.tests[test_number].dfdata
+        d = self.datasets[test_number].dfdata
         cycle_index_header = self.headers_normal['cycle_index_txt']
         no_cycles = np.amax(d[cycle_index_header])
         return no_cycles
@@ -2861,11 +2861,11 @@ class cellpydata(object):
     def get_cycle_numbers(self, test_number=None):
         """Fet a list containing all the cycle numbers in the test."""
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
-        d = self.tests[test_number].dfdata
+        d = self.datasets[test_number].dfdata
         cycle_index_header = self.headers_normal['cycle_index_txt']
         no_cycles = np.amax(d[cycle_index_header])
         # cycles = np.unique(d[cycle_index_header]).values
@@ -2873,11 +2873,11 @@ class cellpydata(object):
         return cycles
 
     def get_ir(self, test_number=None):
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
-        d = self.tests[test_number].dfdata
+        d = self.datasets[test_number].dfdata
         ir_txt = self.headers_normal['internal_resistance_txt']
         ir_data = np.unique(d[ir_txt])
         d2 = d.ix[ir_data.index]
@@ -2910,11 +2910,11 @@ class cellpydata(object):
         """
 
         if not test:
-            test_number = self._validate_test_number(None)
+            test_number = self._validate_dataset_number(None)
             if test_number is None:
-                self._report_empty_test()
+                self._report_empty_dataset()
                 return
-            test = self.tests[test_number]
+            test = self.datasets[test_number]
 
         if not mass:
             mass = test.mass
@@ -2945,9 +2945,9 @@ class cellpydata(object):
         """
 
         # assuming each cycle consists of one discharge step followed by charge step
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
         # print "in get_diagnostics_plots: test_number = %i" % test_number
         cyclenos = self.get_cycle_numbers(test_number=test_number)
@@ -3047,9 +3047,9 @@ class cellpydata(object):
     #     If neither step_type or step (number) is given, all data for the cycle will be returned
     #     Warning: TODO - find out if copy or reference is returned
     #     """
-    #     test_number = self._validate_test_number(test_number)
+    #     test_number = self._validate_dataset_number(test_number)
     #     if test_number is None:
-    #         self._report_empty_test()
+    #         self._report_empty_dataset()
     #         return
     #     mystep = None
     #     if v:
@@ -3065,7 +3065,7 @@ class cellpydata(object):
     #         if step:
     #             mystep = step
     #
-    #     _dataset = self.tests[test_number]
+    #     _dataset = self.datasets[test_number]
     #     cycle_txt = self.headers_normal['cycle_index_txt']
     #     #        test_name = dataset.test_name # nice to get the name of the dataset / experiment as well
     #     #        sample_mass = dataset.mass # lets also get the sample mass (same as set in d.set_mass(m))
@@ -3087,28 +3087,28 @@ class cellpydata(object):
 
     def _set_mass(self, test_number, value):
         try:
-            self.tests[test_number].mass = value
-            self.tests[test_number].mass_given = True
+            self.datasets[test_number].mass = value
+            self.datasets[test_number].mass_given = True
         except AttributeError as e:
             print "This test is empty"
             print e
 
     def _set_tot_mass(self, test_number, value):
         try:
-            self.tests[test_number].tot_mass = value
+            self.datasets[test_number].tot_mass = value
         except AttributeError as e:
             print "This test is empty"
             print e
 
     def _set_nom_cap(self, test_number, value):
         try:
-            self.tests[test_number].nom_cap = value
+            self.datasets[test_number].nom_cap = value
         except AttributeError as e:
             print "This test is empty"
             print e
 
     def _set_run_attribute(self, attr, vals, test_numbers=None, validated=None):
-        # Sets the val (vals) for the test (tests).
+        # Sets the val (vals) for the test (datasets).
         if attr == "mass":
             setter = self._set_mass
         elif attr == "tot_mass":
@@ -3116,14 +3116,14 @@ class cellpydata(object):
         elif attr == "nom_cap":
             setter = self._set_nom_cap
 
-        number_of_tests = len(self.tests)
+        number_of_tests = len(self.datasets)
         if not number_of_tests:
-            print "no tests have been loaded yet"
-            print "cannot set mass before loading tests"
+            print "no datasets have been loaded yet"
+            print "cannot set mass before loading datasets"
             sys.exit(-1)
 
         if not test_numbers:
-            test_numbers = range(len(self.tests))
+            test_numbers = range(len(self.datasets))
 
         if not self._is_listtype(test_numbers):
             test_numbers = [test_numbers, ]
@@ -3141,17 +3141,17 @@ class cellpydata(object):
                     self.logger.debug("_set_run_attribute: this set is empty")
 
     def set_mass(self, masses, test_numbers=None, validated=None):
-        """Sets the mass (masses) for the test (tests).
+        """Sets the mass (masses) for the test (datasets).
         """
         self._set_run_attribute("mass", masses, test_numbers=test_numbers, validated=validated)
 
     def set_tot_mass(self, masses, test_numbers=None, validated=None):
-        """Sets the mass (masses) for the test (tests).
+        """Sets the mass (masses) for the test (datasets).
         """
         self._set_run_attribute("tot_mass", masses, test_numbers=test_numbers, validated=validated)
 
     def set_nom_cap(self, nom_caps, test_numbers=None, validated=None):
-        """Sets the mass (masses) for the test (tests).
+        """Sets the mass (masses) for the test (datasets).
         """
         self._set_run_attribute("nom_cap", nom_caps, test_numbers=test_numbers, validated=validated)
 
@@ -3181,12 +3181,12 @@ class cellpydata(object):
         Sets the testnumber default (all functions with prm test_number will
         then be run assuming the default set test_number)
         """
-        self.selected_test_number = test_number
+        self.selected_dataset_number = test_number
 
     def set_testnumber(self, test_number):
         """Set the testnumber.
 
-        Set the test_number that will be used (cellpydata.selected_test_number).
+        Set the test_number that will be used (cellpydata.selected_dataset_number).
         The class can save several datasets (but its not a frequently used feature),
         the datasets are stored in a list and test_number is the selected index in the list.
 
@@ -3205,23 +3205,23 @@ class cellpydata(object):
         except:
             self.logger.debug("assuming numeric")
 
-        number_of_tests = len(self.tests)
+        number_of_tests = len(self.datasets)
         if test_number >= number_of_tests:
             test_number = -1
-            self.logger.debug("you dont have that many tests, setting to last test")
+            self.logger.debug("you dont have that many datasets, setting to last test")
         elif test_number < -1:
             self.logger.debug("not a valid option, setting to first test")
             test_number = 0
-        self.selected_test_number = test_number
+        self.selected_dataset_number = test_number
 
     def get_summary(self, test_number=None, use_dfsummary_made=False):
         """Retrieve summary returned as a pandas DataFrame."""
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return None
 
-        test = self.get_test(test_number)
+        test = self.get_dataset(test_number)
 
         # This is a bit convoluted; in the old days, we used an attribute called dfsummary_made,
         # that was set to True when the summary was made successfully. It is most likely never
@@ -3235,7 +3235,7 @@ class cellpydata(object):
             warnings.warn("Summary is not made yet")
             return None
         else:
-            self.logger.info("returning tests[test_no].dfsummary")
+            self.logger.info("returning datasets[test_no].dfsummary")
             return test.dfsummary
 
     # -----------internal-helpers---------------------------------------------------
@@ -3332,9 +3332,9 @@ class cellpydata(object):
         if from_tuple is None:
             from_tuple = [1, 4]
         self.logger.debug("**- _modify_cycle_step")
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
 
         cycle_index_header = self.headers_normal['cycle_index_txt']
@@ -3344,11 +3344,11 @@ class cellpydata(object):
         step_table_txt_step = self.headers_step_table["step"]
 
         # modifying step_table
-        st = self.tests[test_number].step_table
+        st = self.datasets[test_number].step_table
         st[step_table_txt_cycle][
             (st[step_table_txt_cycle] == from_tuple[0]) & (st[step_table_txt_step] == from_tuple[1])] = to_cycle
         # modifying normal_table
-        nt = self.tests[test_number].dfdata
+        nt = self.datasets[test_number].dfdata
         nt[cycle_index_header][
             (nt[cycle_index_header] == from_tuple[0]) & (nt[step_index_header] == from_tuple[1])] = to_cycle
         # modifying summary_table
@@ -3368,10 +3368,10 @@ class cellpydata(object):
         # AC_Impedance(Ohm)	ACI_Phase_Angle(Deg)	Charge_Time(s)
         # DisCharge_Time(s)	Vmax_On_Cycle(V)	Coulombic_Efficiency
         if all_tests is True:
-            for j in range(len(self.tests)):
+            for j in range(len(self.datasets)):
                 txt = "creating summary for file "
-                test = self.tests[j]
-                if not self._is_not_empty_test(test):
+                test = self.datasets[j]
+                if not self._is_not_empty_dataset(test):
                     print "empty test %i" % j
                     return
                 if isinstance(test.loaded_from, (list, tuple)):
@@ -3395,9 +3395,9 @@ class cellpydata(object):
                                    )
         else:
             self.logger.debug("creating summary for only one test")
-            test_number = self._validate_test_number(test_number)
+            test_number = self._validate_dataset_number(test_number)
             if test_number is None:
-                self._report_empty_test()
+                self._report_empty_dataset()
                 return
             self._make_summary(test_number,
                                find_ocv=find_ocv,
@@ -3426,11 +3426,11 @@ class cellpydata(object):
         # TODO: insert diagnostics plots
         # TODO: check if cumulated capacity loss is defined correctly
 
-        test_number = self._validate_test_number(test_number)
+        test_number = self._validate_dataset_number(test_number)
         if test_number is None:
-            self._report_empty_test()
+            self._report_empty_dataset()
             return
-        test = self.tests[test_number]
+        test = self.datasets[test_number]
         #        if test.merged == True:
         #            use_cellpy_stat_file=False
 

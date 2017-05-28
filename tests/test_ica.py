@@ -36,7 +36,7 @@ def cellpy_data():
     cellpy_data_instance = cellreader.cellpydata()
     cellpy_data_instance.loadcell(test_res_file_full)
     run_number = 0
-    my_run = cellpy_data_instance.tests[run_number]
+    my_run = cellpy_data_instance.datasets[run_number]
     return my_run
 
 

@@ -75,7 +75,7 @@ def test_load_res(cellpy_data_instance):
     data_point = 2283
     step_time = 1500.05
     sum_discharge_time = 362198.12
-    my_test = cellpy_data_instance.tests[run_number]
+    my_test = cellpy_data_instance.datasets[run_number]
     assert my_test.dfsummary.loc[1,"Data_Point"] == data_point
     assert step_time == pytest.approx(my_test.dfdata.loc[4,"Step_Time"],0.1)
     assert sum_discharge_time == pytest.approx(my_test.dfsummary.loc[:,"Discharge_Time"].sum(),0.1)
@@ -91,8 +91,8 @@ def test_make_summary(cellpy_data_instance):
     cellpy_data_instance.load_raw(test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
-    s1 = cellpy_data_instance.tests[0].dfsummary
-    s2 = cellpy_data_instance.get_test().dfsummary
+    s1 = cellpy_data_instance.datasets[0].dfsummary
+    s2 = cellpy_data_instance.get_dataset().dfsummary
     s3 = cellpy_data_instance.get_summary()
     assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()
@@ -126,7 +126,7 @@ def test_load_cellpyfile(cellpy_data_instance):
     data_point = 2283
     step_time = 1500.05
     sum_test_time = 9301719.457
-    my_test = cellpy_data_instance.tests[run_number]
+    my_test = cellpy_data_instance.datasets[run_number]
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     unique_cycles_read = my_test.step_table.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
