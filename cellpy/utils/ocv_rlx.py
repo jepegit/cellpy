@@ -71,7 +71,7 @@ class MultiCycleOcvFit(object):
             time, voltage = self.data.get_ocv(ocv_type=ocv_type, cycle_number=cycle)
 
             if voltage is not None:
-                step_table = self.data.dataset # hope it works...
+                step_table = self.data.dataset.step_table # hope it works...
                 if ocv_type is 'ocvrlx_up':
                     end_voltage = step_table[(step_table['cycle'] == cycle) & (step_table['type'].isin(['discharge']))]['V_end'].values[0]
                     end_current = step_table[(step_table['cycle'] == cycle) & (step_table['type'].isin(['discharge']))]['I_end'].values[0]
