@@ -215,10 +215,12 @@ class Converter(object):
 
 
 def value_bounds(x):
+    """returns tuple with min and max in x"""
     return np.amin(x), np.amax(x)
 
 
 def index_bounds(x):
+    """returns tuple with first and last item in pandas Series x"""
     return x.iloc[0], x.iloc[-1]
 
 
@@ -243,7 +245,8 @@ def check_class_ica():
 
     # -------- defining overall path-names etc ----------
     current_file_path = os.path.dirname(os.path.realpath(__file__))
-    relative_test_data_dir = "../data_ex"
+    print(current_file_path)
+    relative_test_data_dir = "../../testdata/hdf5"
     test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
     test_data_dir_out = os.path.join(test_data_dir, "out")
     test_cellpy_file = "20160805_test001_45_cc.h5"
