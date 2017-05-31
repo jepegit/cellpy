@@ -527,7 +527,7 @@ class cellpydata(object):
         self.datasets = []
         self.status_datasets = []
         self.step_table = None
-        self.selected_dataset_number = None
+        self.selected_dataset_number = 0
         self.number_of_datasets = 0
 
         self.capacity_modifiers = ['reset', ]
@@ -571,6 +571,7 @@ class cellpydata(object):
     def dataset(self):
         """returns the dataset instance"""
         return self.datasets[self.selected_dataset_number]
+
 
     def set_instrument(self, instrument=None):
         """Set the instrument (i.e. tell cellpy what kind of file you are going to work with).
