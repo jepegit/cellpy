@@ -28,6 +28,8 @@ import itertools
 import time
 import csv
 import json
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 from cellpy.parameters import prms as prms
 from cellpy import cellreader, dbreader, filefinder
@@ -580,8 +582,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
                         batch_dir, batch_name, plot_style=None, show=False, save=True):
     # Not finished yet
 
-    import matplotlib.pyplot as plt
-    import matplotlib as mpl
+
 
     standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)  # , figsize = (5,4))
 
