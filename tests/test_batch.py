@@ -1,5 +1,6 @@
 import os
 import pytest
+import tempfile
 
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))
@@ -32,18 +33,23 @@ from cellpy.utils import batch
 
 log.setup_logging(default_level=logging.DEBUG)
 
-@pytest.fixture
-def cellpy_data_instance():
-    from cellpy import cellreader
-    return cellreader.cellpydata()
+
+@pytest.fixture()
+def clean_dir():
+    new_path = tempfile.mkdtemp()
+    return new_path
 
 
 @pytest.fixture
-def dataset():
-    from cellpy import cellreader
-    d = cellreader.cellpydata()
-    d.load(test_cellpy_file_full)
-    return d
+def batch_instance(clean_dir):
+    prms = batch.prms
+    prms.Paths["db_filename"] = test_db_filename
+    prms.Paths["cellpydatadir"] = test_data_dir_cellpy
+    prms.Paths["outdatadir"] = clean_dir
+    prms.Paths["rawdatadir"] = test_data_dir_raw
+    prms.Paths["db_path"] = test_data_dir_db
+    prms.Paths["filelogdir"] = clean_dir
+    return batch.init()
 
 
 def test_init():
@@ -52,69 +58,16 @@ def test_init():
     assert b.project is None
 
 
-def test_read_excel_db():
-    name = "NameOfRun"
+def test_read_excel_db(batch_instance):
+    name = "test"
     project = "ProjectOfRun"
     log_level = "INFO"
     b = batch.init(name, project, default_log_level=log_level, batch_col=5)
     b.create_info_df()
     b.create_folder_structure()
+    b.save_info_df()
+    info_file = b.info_file
+    b.load_info_df(info_file)
+    b.load_and_save_raw()
+    b.make_summaries()
 
-    # b.save_info_df()
-    # b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp06.json")
-    # print(b)
-    # print("The info DataFrame:")
-    # print(b.info_df.head(5))
-    # b.load_and_save_raw()
-    # b.make_summaries()
-    # print("Finished!")
-
-
-#
-# def test_set_prm():
-#     assert False
-#
-#
-# def test_set_load():
-#     assert False
-
-
-
-
-# def test_ica_converter(dataset):
-#     list_of_cycles = dataset.get_cycle_numbers()
-#     number_of_cycles = len(list_of_cycles)
-#     print("you have %i cycles" % number_of_cycles)
-#     cycle = 5
-#     print("looking at cycle %i" % cycle)
-#     capacity, voltage = dataset.get_ccap(cycle)
-#     converter = ica.Converter()
-#     converter.set_data(capacity, voltage)
-#     converter.inspect_data()
-#     converter.pre_process_data()
-#     converter.increment_data()
-#     converter.post_process_data()
-#
-#
-# @pytest.mark.parametrize("cycle", [1, 2, 3, 4, 5, 10])
-# def test_ica_dqdv(dataset, cycle):
-#     capacity, voltage = dataset.get_ccap(cycle)
-#     ica.dqdv(voltage, capacity)
-#
-#
-# def test_ica_value_bounds(dataset):
-#     capacity, voltage = dataset.get_ccap(5)
-#     c = ica.value_bounds(capacity)
-#     v = ica.value_bounds(voltage)
-#     assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)
-#     assert v == pytest.approx((0.15119725465774536, 1.0001134872436523), 0.0001)
-#
-#
-# def test_ica_index_bounds(dataset):
-#     capacity, voltage = dataset.get_ccap(5)
-#     c = ica.index_bounds(capacity)
-#     v = ica.index_bounds(voltage)
-#     assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)
-#     assert v == pytest.approx((0.15119725465774536, 1.0001134872436523), 0.0001)
-#
-#
