@@ -83,7 +83,7 @@ def test_load_res(cellpy_data_instance):
 
     # cellpy_data_instance.make_summary(find_ir=True)
     # cellpy_data_instance.create_step_table()
-    # cellpy_data_instance.save_test(test_cellpy_file_full)
+    # cellpy_data_instance.save(test_cellpy_file_full)
 
 
 
@@ -105,7 +105,7 @@ def test_create_cellpyfile(cellpy_data_instance):
     cellpy_data_instance.load_raw(test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-    cellpy_data_instance.save_test(test_cellpy_file_full)
+    cellpy_data_instance.save(test_cellpy_file_full)
 
 
 def test_summary_from_cellpyfile(cellpy_data_instance):
@@ -170,7 +170,7 @@ def test_save_cellpyfile_with_extension(cellpy_data_instance):
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.create_step_table()
     tmp_file = next(tempfile._get_candidate_names())+".h5"
-    cellpy_data_instance.save_test(tmp_file)
+    cellpy_data_instance.save(tmp_file)
     assert os.path.isfile(tmp_file)
     os.remove(tmp_file)
     assert not os.path.isfile(tmp_file)
@@ -181,7 +181,7 @@ def test_save_cellpyfile_auto_extension(cellpy_data_instance):
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.create_step_table()
     tmp_file = next(tempfile._get_candidate_names())
-    cellpy_data_instance.save_test(tmp_file)
+    cellpy_data_instance.save(tmp_file)
     assert os.path.isfile(tmp_file+".h5")
     os.remove(tmp_file+".h5")
     assert not os.path.isfile(tmp_file+".h5")
@@ -194,7 +194,7 @@ def test_save_cvs(cellpy_data_instance):
     temp_dir = tempfile.mkdtemp()
     cellpy_data_instance.exportcsv(datadir=temp_dir)
     shutil.rmtree(temp_dir)
-    # cellpy_data_instance.save_test(tmp_file)
+    # cellpy_data_instance.save(tmp_file)
     # assert os.path.isfile(tmp_file)
     # os.remove(tmp_file)
     # assert not os.path.isfile(tmp_file)

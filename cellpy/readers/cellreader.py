@@ -10,7 +10,7 @@ Example:
     >>> d = CellpyData()
     >>> d.loadcell(names = [file1.res, file2.res]) # loads and merges the runs
     >>> internal_resistance = d.get_ir()
-    >>> d.save_test("mytest.hdf")
+    >>> d.save("mytest.hdf")
 
 
 Todo:
@@ -2233,8 +2233,8 @@ class CellpyData(object):
                     self._export_cycles(outname=outname_cycles, dataset_number=dataset_number,
                                         sep=sep)
 
-    def save_test(self, filename, dataset_number=None, force=False, overwrite=True, extension="h5"):
-        """Save the data structure using pickle/hdf5."""
+    def save(self, filename, dataset_number=None, force=False, overwrite=True, extension="h5"):
+        """Save the data structure using hdf5."""
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2247,7 +2247,7 @@ class CellpyData(object):
 
         if not dfsummary_made and not force:
             print "You should not save datasets without making a summary first!"
-            print "If you really want to do it, use save_test with force=True"
+            print "If you really want to do it, use save with force=True"
         else:
             # check extension
             if not os.path.splitext(filename)[-1]:
@@ -2268,7 +2268,7 @@ class CellpyData(object):
                 if self.ensure_step_table:
                     self.logger.debug("ensure_step_table is on")
                     if not test.step_table_made:
-                        self.logger.debug("save_test: creating step table")
+                        self.logger.debug("save: creating step table")
                         self.create_step_table(dataset_number=dataset_number)
                 self.logger.debug("trying to make infotable")
                 infotbl, fidtbl = self._create_infotable(dataset_number=dataset_number)  # modify this
@@ -2294,7 +2294,7 @@ class CellpyData(object):
                 store.close()
                 # del store
             else:
-                print "save_test (hdf5): file exist - did not save",
+                print "save (hdf5): file exist - did not save",
                 print outfile_all
 
     # --------------helper-functions------------------------------------------------
@@ -3887,7 +3887,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     d.set_mass(mass)
     d.create_step_table()
     d.make_summary()
-    d.save_test(filename=outfile)
+    d.save(filename=outfile)
     d.exportcsv(datadir=outdir, cycles=True, raw=True, summary=True)
     return outfile
 
@@ -3968,7 +3968,7 @@ def loadcell_check():
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:
         cell_data.make_summary()
-    cell_data.save_test(cellpyfile)
+    cell_data.save(cellpyfile)
     cell_data.exportcsv(datadir=out_dir, cycles=True, raw=True, summary=True)
     print "ok"
 

@@ -55,7 +55,7 @@ And save it:
 
     # defining a name for the cellpy_file (hdf5-format)
     cellpy_file = os.path.join(cellpy_data_dir, "20170101_ife01_cc2.h5")
-    cell_data.save_test(cellpy_file)
+    cell_data.save(cellpy_file)
 
 For convenience, ``cellpy`` also has a method that simplifies this process a little bit.
 Using the ``loadcell`` method, you can specify both the raw file name(s) and the cellpy file name, and

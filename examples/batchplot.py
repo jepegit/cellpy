@@ -29,7 +29,7 @@ for n in serial_numbers:
         cell_data.loadcell(raw_files=rawfiles, cellpy_file=cellpyfile, mass=mass)
         if not cell_data.summary_exists:
             cell_data.make_summary()
-            cell_data.save_test(cellpyfile)
+            cell_data.save(cellpyfile)
         cell_data_dict[my_run_name].append(True)
     except IOError as e:
         print "ERROR - Could not load (IOError)"

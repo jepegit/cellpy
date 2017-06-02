@@ -35,7 +35,7 @@ Create property for picking dataset
 
 
 .. todo::
-    test it
+    test it (done)
 
 Make pickers for getting the DataFrames
 .......................................
@@ -55,7 +55,7 @@ Rename the save, load, etc
 ..........................
 
 save: hdf5
-load_cellpy -> load
+load_cellpy -> load (done)
 
 export: others
 load_raw -> import_raw

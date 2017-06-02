@@ -1323,7 +1323,7 @@ class summaryplot:
                         if self.ensure_step_table:
                             cell_data_object.ensure_step_table = True
 
-                        cell_data_object.save_test(filename, dataset_number=test_number)
+                        cell_data_object.save(filename, dataset_number=test_number)
                     except:
                         print "Could not save",
                         print filename + ".h5"

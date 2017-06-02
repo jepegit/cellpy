@@ -11,6 +11,7 @@ old/
 dev_data/
 # testdata/
 #./testdata/*.csv
+testdata/hdf5/20160805_test001_45_cc.h5
 
 
 # Distribution / packaging

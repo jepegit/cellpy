@@ -549,7 +549,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         if save:
             if not row.fixed:
                 logger.info("saving cell to %s" % row.cellpy_file_names)
-                cell_data.save_test(row.cellpy_file_names)
+                cell_data.save(row.cellpy_file_names)
             else:
                 logger.debug("saving cell skipped (set to 'fixed' in info_df)")
 
