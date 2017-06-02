@@ -71,7 +71,7 @@ class reader:
 
         if not test_mode:
             self.table = self._open_sheet("table")
-            self.ftable = self._open_sheet("file_names")
+            self.ftable = self._open_sheet("file_names") # will be removed soon!
         else:
             print "in test-mode"
             t0 = time.time()
@@ -79,6 +79,17 @@ class reader:
             print "* %f" % (time.time()-t0)
             self.ftable = self._open_sheet_tst("file_names")
             print "* %f" % (time.time()-t0)
+
+        good_db = self._validate()
+
+
+    def pick_table(self):
+        """Pick the table.
+        
+        Returns: pandas.DataFrame
+
+        """
+        return self.table
 
 
     def _pick_info(self, serial_number, column_number):
@@ -175,6 +186,26 @@ class reader:
             sheet = sheet.drop(remove_index)
             sheet.reindex(range(0, len(sheet.index)))
         return sheet
+
+
+    def _validate(self):
+        """Checks that the db-file is ok
+        
+        Returns:
+            True if OK, False if not.
+            """
+        probably_good_to_go = True
+        sheet = self.table
+        column_number_serial_number_position = self.db_sheet_cols.serial_number_position
+
+        # check if you have unique srnos
+        col_serial_number_position = sheet.iloc[:, column_number_serial_number_position]
+        if any(col_serial_number_position.duplicated()):
+            warnings.warn("your database is corrupt: duplicates encountered in the srno-column")
+            logger.debug("srno duplicates:\n" + str(col_serial_number_position.duplicated()))
+            probably_good_to_go = False
+        return probably_good_to_go
+
 
     def select_serial_number_row(self, serial_number):
         """Select row for identification number serial_number

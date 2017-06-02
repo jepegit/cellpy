@@ -255,7 +255,7 @@ class ArbinLoader(object):
 
         tests = global_data_df[self.headers_normal['test_id_txt']]
         number_of_sets = len(tests)
-        self.logger.debug("number of tests: %i" % number_of_sets)
+        self.logger.debug("number of datasets: %i" % number_of_sets)
         self.logger.debug("only selecting first test")
         test_no = 0
         self.logger.debug("setting data for test number %i" % test_no)
@@ -397,7 +397,7 @@ class ArbinLoader(object):
 
         tests = global_data_df[self.headers_normal['test_id_txt']]  # OBS
         number_of_sets = len(tests)
-        self.logger.debug("number of tests: %i" % number_of_sets)
+        self.logger.debug("number of datasets: %i" % number_of_sets)
 
         for test_no in range(number_of_sets):
             data = dataset()

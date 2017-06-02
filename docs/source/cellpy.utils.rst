@@ -12,14 +12,6 @@ cellpy.utils.batch module
     :undoc-members:
     :show-inheritance:
 
-cellpy.utils.cell_ocv module
-----------------------------
-
-.. automodule:: cellpy.utils.cell_ocv
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 cellpy.utils.ica module
 -----------------------
 

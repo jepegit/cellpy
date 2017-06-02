@@ -9,7 +9,7 @@ The easies way to get to the DataFrames is by the following procedure:
     # Assumed name of the cellpydata object: cellpy_data
 
     # get the 'test':
-    cellpy_test = cell_data.get_test()
+    cellpy_test = cell_data.get_dataset()
     # cellpy_test is now a cellpy dataset object (cellpy.readers.cellreader.dataset)
 
     # pandas.DataFrame with data vs cycle number (e.g. coulombic efficiency):

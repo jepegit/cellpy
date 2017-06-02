@@ -1,20 +1,4 @@
-"""Routines for batch processing of cells.
-
-typical usage:
-
-from cellpy.utils import batch
-
-# initialization of the batch class
-b = batch.init()
-
-# giving necessary info
-b.name = "experiment_set_01"
-b.project = "new_exiting_chemistry"
- 
-# doing the stuff
-b.load..plot...report etc
-
-"""
+"""Routines for batch processing of cells."""
 
 from __future__ import division
 from __future__ import absolute_import
@@ -28,6 +12,8 @@ import itertools
 import time
 import csv
 import json
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 from cellpy.parameters import prms as prms
 from cellpy import cellreader, dbreader, filefinder
@@ -61,7 +47,75 @@ def create_selected_summaries_dict(summaries_list):
 
 
 class Batch(object):
-    """The Batch object"""
+    """The Batch object
+    
+    The Batch class is a utility class for pipe-lining batch processing of cell cycle data.
+    It is primarily designed for use in `jupyter notebooks`. The typical usage structure is:
+    
+    1. Import the batch module (this also gives you access to the cellpy parameters (`batch.prms`)
+    
+    >>> from cellpy.utils import batch
+    
+    2. Initialization of the batch class
+    
+    >>> b = batch.init()
+    >>> # you can also give the name of the batch, the project name, the log-level, and the batch column number
+    >>> # as parameters to the batch.init function, e.g.
+    >>> # b = batch.init("batch_name", "project_name", default_log_level="INFO", batch_col=5)
+    
+    3. Set parameters for your experiment
+    
+    >>> b.name = "experiment_set_01"
+    >>> b.project = "new_exiting_chemistry"
+    >>> 
+    >>> # set additional parameters if the defaults are not ok:
+    >>> 
+    >>> b.export_raw = True
+    >>> b.export_cycles = True
+    >>> b.export_ica = True
+    >>> b.save_cellpy_file = True
+    >>> b.force_raw_file = False
+    >>> b.force_cellpy_file = True
+     
+    4. The next step is to extract and collect the information needed from your data-base into a DataFrame, and create
+       an appropriate folder structure (outdir/project_name/batch_name/raw_data)
+    
+    >>> b.create_info_df()
+    >>> 
+    >>> # or load it from a previous run:
+    >>> # filename = "../out_data/experiment_set_01/cellpy_batch_new_exiting_chemistry.json"
+    >>> # b.load_info_df(filename)
+    >>> 
+    >>> b.create_folder_structure()
+    >>> 
+    >>> # You can view your information DataFrame by the pandas head function:
+    >>> 
+    >>> b.info_df.head()
+    
+    5. To run the processing, you can use the convenience function `load_and_save_raw'. This function
+       loads all your data-files and saves csv-files of the results.
+    
+    >>> b.load_and_save_raw()
+    
+    6. Create some summary csv-files (e.g. containing charge capacities vs. cycle number for all your data-files).
+    
+    >>> b.make_summaries()
+    
+    7. Plot
+    
+    >>> b.plot_summaries()
+    
+    8. Create some statistics
+    
+    >>> b.make_stats()
+    ... Sorry, but I have not implemented this yet...
+    
+    9. Report
+    
+    >>> b.report()
+    ... Sorry, reporting is not implemented yet :-(
+    
+    """
 
     def __init__(self, *args, **kwargs):
 
@@ -334,8 +388,11 @@ def _create_info_dict(reader, srnos):
 
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
+    for key in info_dict.keys():
+        logger.debug("%s: %s" % (key, str(info_dict[key])))
 
     _groups = [reader.get_group(srno) for srno in srnos]
+    logger.debug("groups: %s" % str(_groups))
     groups = _fix_groups(_groups)
     info_dict["groups"] = groups
 
@@ -577,8 +634,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
                         batch_dir, batch_name, plot_style=None, show=False, save=True):
     # Not finished yet
 
-    import matplotlib.pyplot as plt
-    import matplotlib as mpl
+
 
     standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)  # , figsize = (5,4))
 
