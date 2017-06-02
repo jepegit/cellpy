@@ -31,14 +31,14 @@ The class contains several attributes that can be assigned directly:
 
 The data for the run(s) are stored in the class attribute `cellpydata.tests` (this will most likely change
 in future versions).
-This attribute is just a list of runs (each run is a `cellpy.cellreader.dataset` instance).
+This attribute is just a list of runs (each run is a `cellpy.cellreader.DataSet` instance).
 This implies that you can store many runs in one `cellpydata` instance. Sometimes this can be
 necessary, but it is recommended to only store one run in one instance. Most of the
 functions (the class methods) automatically selects the 0-th item in
 `cellpydata.tests` if the test_number is not explicitly given.
 
 You may already have figured it out: in cellpy, data for a given cell
-is usually named a run. And each run is a `cellpy.cellreader.dataset` instance.
+is usually named a run. And each run is a `cellpy.cellreader.DataSet` instance.
 
 Here is a list of other important class attributes in `cellpydata`:
 
@@ -246,10 +246,10 @@ cellpydata - methods
 
 Todo
 
-dataset
+DataSet
 ~~~~~~~
 
-Each run is a `cellpy.cellreader.dataset` instance. The instance contain general information about
+Each run is a `cellpy.cellreader.DataSet` instance. The instance contain general information about
 the run-settings (such as mass etc.). The measurement data, information, and summary is stored
 in three pandas.DataFrames:
 

@@ -22,7 +22,7 @@ from datetime import date
 
 from .biologic_file_format import bl_dtypes, hdr_dtype, mpr_label
 
-from cellpy.readers.cellreader import dataset
+from cellpy.readers.cellreader import DataSet
 from cellpy.readers.cellreader import fileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit

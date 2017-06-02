@@ -14,7 +14,7 @@ import numpy as np
 
 import pandas as pd
 
-from cellpy.readers.cellreader import dataset
+from cellpy.readers.cellreader import DataSet
 from cellpy.readers.cellreader import fileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
@@ -400,7 +400,7 @@ class ArbinLoader(object):
         self.logger.debug("number of datasets: %i" % number_of_sets)
 
         for test_no in range(number_of_sets):
-            data = dataset()
+            data = DataSet()
             data.test_no = test_no
             data.loaded_from = file_name
             fid = fileID(file_name)

@@ -351,7 +351,7 @@ class fileID(object):
 
 
 # noinspection PyPep8Naming
-class dataset(object):
+class DataSet(object):
     """Object to store data for a test.
 
     This class is used for storing all the relevant data for a 'run', i.e. all the
@@ -369,7 +369,7 @@ class dataset(object):
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.logger.info("created dataset instance")
+        self.logger.debug("created DataSet instance")
 
         self.test_no = None
         self.mass = prms.Materials["default_mass"]  # mass of (active) material (in mg)
@@ -435,7 +435,7 @@ class dataset(object):
         txt += "mass (total):       %f mg\n" % self.tot_mass
         txt += "nominal capacity:   %f mAh/g\n" % self.nom_cap
         txt += "channel index:      %i\n" % self.channel_index
-        txt += "dataset name:       %s\n" % self.name
+        txt += "DataSet name:       %s\n" % self.name
         txt += "creator:            %s\n" % self.creator
         txt += "schedule file name: %s\n" % self.schedule_file_name
         try:
@@ -476,7 +476,7 @@ class cellpydata(object):
     several tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
-        datasets (list): list of dataset objects.
+        datasets (list): list of DataSet objects.
     """
 
     def __init__(self, filenames=None,
@@ -569,7 +569,7 @@ class cellpydata(object):
 
     @property
     def dataset(self):
-        """returns the dataset instance"""
+        """returns the DataSet instance"""
         return self.datasets[self.selected_dataset_number]
 
 
@@ -1136,7 +1136,7 @@ class cellpydata(object):
             filename (str): Name of the cellpy file.
 
         Returns:
-            loaded datasets (dataset-object)
+            loaded datasets (DataSet-object)
         """
         # loads from hdf5 formatted cellpy-file
         if not os.path.isfile(filename):
@@ -1145,7 +1145,7 @@ class cellpydata(object):
             sys.exit()
         self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
-        data = dataset()
+        data = DataSet()
 
         infotable = store.select("cellpydata/info")
         try:
@@ -1181,7 +1181,7 @@ class cellpydata(object):
         newtests = []  # but this is ready when that time comes
 
         # The infotable stores "meta-data". The follwing statements loads the content of infotable
-        # and updates div. dataset attributes. Maybe better use it as dict?
+        # and updates div. DataSet attributes. Maybe better use it as dict?
 
         data = self._load_infotable(data, infotable, filename)
 
@@ -1239,7 +1239,7 @@ class cellpydata(object):
         return value
 
     def _create_infotable(self, dataset_number=None):
-        # needed for saving class/dataset to hdf5
+        # needed for saving class/DataSet to hdf5
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -2704,7 +2704,7 @@ class cellpydata(object):
         return c, v
 
     def get_ocv(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
-        """Find ocv data in dataset (voltage vs time).
+        """Find ocv data in DataSet (voltage vs time).
 
         Args:
             cycle_number (int): find for all cycles if None.
@@ -2755,7 +2755,7 @@ class cellpydata(object):
 
     def _get_ocv(self, ocv_steps=None, dataset_number=None, ocv_type='ocvrlx_up', select_last=True,
                  select_columns=True, cycle_number=None):
-        # find ocv data in dataset
+        # find ocv data in DataSet
         # (voltage vs time, no current)
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2870,7 +2870,7 @@ class cellpydata(object):
         """
 
         Args:
-            dataset: dataset object
+            dataset: DataSet object
             mass: mass of electrode (for example active material in mg)
             to_unit: (float) unit of input, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
@@ -3107,13 +3107,13 @@ class cellpydata(object):
     def set_dataset_number_force(self, dataset_number=0):
         """Force to set testnumber.
 
-        Sets the dataset number default (all functions with prm dataset_number will
+        Sets the DataSet number default (all functions with prm dataset_number will
         then be run assuming the default set dataset_number)
         """
         self.selected_dataset_number = dataset_number
 
     def set_testnumber(self, dataset_number):
-        """Set the dataset number.
+        """Set the DataSet number.
 
         Set the dataset_number that will be used (cellpydata.selected_dataset_number).
         The class can save several datasets (but its not a frequently used feature),

@@ -1061,7 +1061,7 @@ class summaryplot:
         for cell_data_object in self.tests:
             cell_data = cell_data_object.tests[test_number]
             if cell_data is None:
-                print "NoneType - dataset missing"
+                print "NoneType - DataSet missing"
             else:
                 filename = cell_data.loaded_from
                 no_merged_sets = ""
@@ -1149,7 +1149,7 @@ class summaryplot:
         for cell_data_object in self.tests:
             cell_data = cell_data_object.tests[test_number]
             if cell_data is None:
-                print "NoneType - dataset missing"
+                print "NoneType - DataSet missing"
             else:
                 filename = cell_data.loaded_from
                 no_merged_sets = ""
