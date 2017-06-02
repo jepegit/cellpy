@@ -219,7 +219,7 @@ def test_get_total_mass(db_reader):
 # def test_union(db_reader):
 #     assert True
 #
-# 
+#
 # def test_substract(db_reader):
 #     assert True
 #

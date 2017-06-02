@@ -264,7 +264,7 @@ def Convert2mAhg(c, mass=1.0):
 
 
 # noinspection PyPep8Naming
-class fileID(object):
+class FileID(object):
     """class for storing information about the raw-data files.
 
         This class is used for storing and handling raw-data file information. It is important
@@ -756,7 +756,7 @@ class cellpydata(object):
         for f in file_names:
             self.logger.debug("checking res file")
             self.logger.debug(f)
-            fid = fileID(f)
+            fid = FileID(f)
             self.logger.debug(fid)
             if fid.name is None:
                 print "file does not exist:"
@@ -1299,7 +1299,7 @@ class cellpydata(object):
         lengths = []
         counter = 0
         for item in tbl["raw_data_name"]:
-            fid = fileID()
+            fid = FileID()
             fid.name = item
             fid.full_name = tbl["raw_data_full_name"][counter]
             fid.size = tbl["raw_data_size"][counter]
