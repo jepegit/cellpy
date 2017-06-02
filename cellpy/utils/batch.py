@@ -332,6 +332,11 @@ class Batch(object):
         self.figure["summaries"] = fig
         self.axes["summaries"] = ax
 
+    def report(self):
+        """Not implemented yet"""
+        pass
+
+
 def get_db_reader(db_type):
     """returns the db_reader.
     
