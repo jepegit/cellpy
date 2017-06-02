@@ -33,7 +33,7 @@ def making_csv(filename, outfolder, mass, type_data):
     extract_ocvrlx(d, filename=filename, type_data=type_data)
 
     print "\nexporting raw-data and summary"
-    d.exportcsv(outfolder)
+    d.to_csv(outfolder)
 
     # Extracting cycles
     list_of_cycles = d.get_cycle_numbers()

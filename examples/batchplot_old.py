@@ -1287,7 +1287,7 @@ class summaryplot:
             try:
                 test_number = 0
                 for cell_data_object in self.tests:
-                    cell_data_object.exportcsv(savedir, sep=self.sep)
+                    cell_data_object.to_csv(savedir, sep=self.sep)
             except:
                 print "Error in exporting raw data"
 
@@ -1298,7 +1298,7 @@ class summaryplot:
             try:
                 test_number = 0
                 for cell_data_object in self.tests:
-                    cell_data_object.exportcsv(savedir, sep=self.sep, cycles=True, raw=False)
+                    cell_data_object.to_csv(savedir, sep=self.sep, cycles=True, raw=False)
 
             except:
                 print "Error in exporting cycles"

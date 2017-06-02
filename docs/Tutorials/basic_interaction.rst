@@ -112,13 +112,13 @@ Save / export data
 ------------------
 
 Saving data to cellpy format is done by the ``CellpyData.save`` method. To export data to csv format,
-``CellpyData`` has a method called ``exportcsv``.
+``CellpyData`` has a method called ``to_csv``.
 
 .. code-block:: python
 
     # export data to csv
     out_data_directory = r"C:\processed_data\csv"
     # this exports the summary data to a .csv file:
-    cell_data.exportcsv(out_data_directory, sep=";", cycles=False, raw=False)
+    cell_data.to_csv(out_data_directory, sep=";", cycles=False, raw=False)
     # export also the current voltage cycles by setting cycles=True
     # export also the raw data by setting raw=True

@@ -559,7 +559,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         if export_raw:
             print("...exporting data....")
             logger.debug("Exporting csv")
-            cell_data.exportcsv(raw_dir, sep=sep, cycles=export_cycles, raw=export_raw)
+            cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles, raw=export_raw)
 
         if do_export_dqdv:
             logger.debug("Exporting dqdv")

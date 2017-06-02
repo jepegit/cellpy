@@ -28,7 +28,7 @@ data and finding out what each step in each cycle is)::
 
 You can save your data in csv-format easily by::
 
-    >>> d.exportcsv(OutFolder)
+    >>> d.to_csv(OutFolder)
 
 Or maybe you want to take a closer look at the capacities for
 the different cycles? No problem. Now you are set to extract data

@@ -2181,7 +2181,7 @@ class CellpyData(object):
             txt += " Could not save it!"
         self.logger.debug(txt)
 
-    def exportcsv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True):
+    def to_csv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True):
         """Saves the data as .csv file(s)."""
 
         if sep is None:
@@ -2196,7 +2196,7 @@ class CellpyData(object):
         for data in self.datasets:
             dataset_number += 1
             if not self._is_not_empty_dataset(data):
-                print "exportcsv -"
+                print "to_csv -"
                 print "empty test [%i]" % dataset_number
                 print "not saved!"
             else:
@@ -3888,7 +3888,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     d.make_step_table()
     d.make_summary()
     d.save(filename=outfile)
-    d.exportcsv(datadir=outdir, cycles=True, raw=True, summary=True)
+    d.to_csv(datadir=outdir, cycles=True, raw=True, summary=True)
     return outfile
 
 
@@ -3969,7 +3969,7 @@ def loadcell_check():
     if not cell_data.summary_exists:
         cell_data.make_summary()
     cell_data.save(cellpyfile)
-    cell_data.exportcsv(datadir=out_dir, cycles=True, raw=True, summary=True)
+    cell_data.to_csv(datadir=out_dir, cycles=True, raw=True, summary=True)
     print "ok"
 
 
