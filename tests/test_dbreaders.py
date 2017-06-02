@@ -33,7 +33,7 @@ test_serial_number_labeled_eis = 620
 slurry_name = "test001"
 test_batch_name = "exp001"
 test_mass = 0.5103
-test_loading = 0.29
+test_loading = 0.96 # 0.29
 test_total_mass = 2.831
 test_areal_loading = 0.0
 
@@ -104,6 +104,7 @@ def test_filter_by_col_value(db_reader):
 
 def test_select_batch(db_reader):
     output = db_reader.select_batch(test_batch_name,db_reader.db_sheet_cols.batch)
+    print(test_batch_name)
     assert test_serial_number_not_in_batch not in output
     assert test_serial_number_one in output
     assert test_serial_number_labeled_not_existing not in output
