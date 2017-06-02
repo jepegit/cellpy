@@ -9,7 +9,7 @@ __pycache__/
 .idea/
 old/
 dev_data/
-testdata/*
+# testdata/
 #./testdata/*.csv
 
 
