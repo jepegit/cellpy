@@ -58,7 +58,7 @@ save: hdf5
 load_cellpy -> load (done)
 
 export: others
-from_raw -> import_raw
+load_raw -> import_raw
 
 Scheme
 ------

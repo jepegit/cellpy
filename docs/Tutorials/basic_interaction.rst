@@ -47,7 +47,7 @@ Now we will read the files, merge them, and create a summary:
     cell_data.set_mass(electrode_mass)
     cell_data.make_summary()
     # Note: make_summary will automatically run the
-    # create_step_table function if it does not exist.
+    # make_step_table function if it does not exist.
 
 And save it:
 

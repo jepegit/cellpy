@@ -965,7 +965,7 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
 
-    # noinspection PyIncorrectDocstring
+
     def from_res(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the datastructure.
 
@@ -1544,7 +1544,7 @@ class CellpyData(object):
                 self.logger.debug("creating step_table for")
                 self.logger.debug(self.datasets[dataset_number].loaded_from)
                 # print "CREAING STEP-TABLE"
-                self.create_step_table(dataset_number=dataset_number)
+                self.make_step_table(dataset_number=dataset_number)
 
             else:
                 print "ERROR! Cannot use get_steps: create step_table first"
@@ -1734,7 +1734,7 @@ class CellpyData(object):
                IR, IR_pct_change, ]
         return out
 
-    def create_step_table(self, dataset_number=None):
+    def make_step_table(self, dataset_number=None):
         """ Create a table (v.3) that contains summary information for each step.
 
         This function creates a table containing information about the different steps
@@ -2269,7 +2269,7 @@ class CellpyData(object):
                     self.logger.debug("ensure_step_table is on")
                     if not test.step_table_made:
                         self.logger.debug("save: creating step table")
-                        self.create_step_table(dataset_number=dataset_number)
+                        self.make_step_table(dataset_number=dataset_number)
                 self.logger.debug("trying to make infotable")
                 infotbl, fidtbl = self._create_infotable(dataset_number=dataset_number)  # modify this
                 self.logger.debug("trying to save to hdf5")
@@ -3371,7 +3371,7 @@ class CellpyData(object):
 
         if ensure_step_table and not self.load_only_summary:
             if not dataset.step_table_made:
-                self.create_step_table(dataset_number=dataset_number)
+                self.make_step_table(dataset_number=dataset_number)
 
         # Retrieve the converters etc.
         specific_converter = self.get_converter_to_specific(dataset=dataset, mass=mass)
@@ -3885,7 +3885,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
 
     d.from_res(filename)
     d.set_mass(mass)
-    d.create_step_table()
+    d.make_step_table()
     d.make_summary()
     d.save(filename=outfile)
     d.exportcsv(datadir=outdir, cycles=True, raw=True, summary=True)
@@ -3946,7 +3946,7 @@ def load_and_print_resfile(filename, info_dict=None):
 
     d.from_res(filename)
     d.set_mass(info_dict["mass"])
-    d.create_step_table()
+    d.make_step_table()
     d.make_summary()
     for test in d.tests:
         print "newtest"
@@ -3985,7 +3985,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     print filename
     d_res.from_res(filename)
     d_res.set_mass(mass)
-    d_res.create_step_table()
+    d_res.make_step_table()
     d_res.print_step_table()
     out_data = []
     for cycle in d_res.get_cycle_numbers():

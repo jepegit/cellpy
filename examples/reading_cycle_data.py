@@ -27,7 +27,7 @@ def making_csv(filename, outfolder, mass, type_data):
     d.from_res()
     d.set_mass(mass)
     d.make_summary()
-    d.create_step_table()
+    d.make_step_table()
 
     # Making ocv
     extract_ocvrlx(d, filename=filename, type_data=type_data)

@@ -82,7 +82,7 @@ def test_load_res(cellpy_data_instance):
     assert my_test.test_no == run_number
 
     # cellpy_data_instance.make_summary(find_ir=True)
-    # cellpy_data_instance.create_step_table()
+    # cellpy_data_instance.make_step_table()
     # cellpy_data_instance.save(test_cellpy_file_full)
 
 
@@ -168,7 +168,7 @@ def test_get_converter_to_specific(dataset, test_input, expected):
 def test_save_cellpyfile_with_extension(cellpy_data_instance):
     cellpy_data_instance.loadcell(test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
-    cellpy_data_instance.create_step_table()
+    cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())+".h5"
     cellpy_data_instance.save(tmp_file)
     assert os.path.isfile(tmp_file)
@@ -179,7 +179,7 @@ def test_save_cellpyfile_with_extension(cellpy_data_instance):
 def test_save_cellpyfile_auto_extension(cellpy_data_instance):
     cellpy_data_instance.loadcell(test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
-    cellpy_data_instance.create_step_table()
+    cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())
     cellpy_data_instance.save(tmp_file)
     assert os.path.isfile(tmp_file+".h5")
@@ -190,7 +190,7 @@ def test_save_cellpyfile_auto_extension(cellpy_data_instance):
 def test_save_cvs(cellpy_data_instance):
     cellpy_data_instance.loadcell(test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
-    cellpy_data_instance.create_step_table()
+    cellpy_data_instance.make_step_table()
     temp_dir = tempfile.mkdtemp()
     cellpy_data_instance.exportcsv(datadir=temp_dir)
     shutil.rmtree(temp_dir)

@@ -402,7 +402,7 @@ def _main():
     d = cellreader.CellpyData()
     d.from_res(os.path.join(datafolder_in, resfilename))
     d.set_mass(mass)
-    d.create_step_table()
+    d.make_step_table()
 
     if single_cell:
         # Sending data to ocv_fit object and running fit

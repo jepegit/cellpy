@@ -24,7 +24,7 @@ Create a summary (for each cycle) and generate a step table (parsing the
 data and finding out what each step in each cycle is)::
 
     >>> d.make_summary()
-    >>> d.create_step_table()
+    >>> d.make_step_table()
 
 You can save your data in csv-format easily by::
 
