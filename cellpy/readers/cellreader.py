@@ -481,7 +481,6 @@ class CellpyData(object):
 
     def __init__(self, filenames=None,
                  selected_scans=None,
-                 verbose=False,  # not in use
                  profile=False,
                  filestatuschecker=None,  # "modified"
                  fetch_onliners=False,
@@ -498,8 +497,6 @@ class CellpyData(object):
         else:
             self.tester = tester
         self.loader = None  # this will be set in the function set_instrument
-        self.verbose = verbose  # not used anymore?
-        # self._create_logger(self.verbose)
         self.logger = logging.getLogger(__name__)
         self.logger.info("created CellpyData instance")
         self.profile = profile
@@ -567,10 +564,31 @@ class CellpyData(object):
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()
 
+
     @property
     def dataset(self):
         """returns the DataSet instance"""
         return self.datasets[self.selected_dataset_number]
+
+    @property
+    def dataset_normal(self):
+        """returns the normal-data DataFrame from the DataSet instance"""
+        dset = self.dataset
+        return dset.dfdata
+
+
+    @property
+    def dataset_summary(self):
+        """returns the normal-data DataFrame from the DataSet instance"""
+        dset = self.dataset
+        return dset.dfsummary
+
+
+    @property
+    def dataset_steps(self):
+        """returns the normal-data DataFrame from the DataSet instance"""
+        dset = self.dataset
+        return dset.step_table
 
 
     def set_instrument(self, instrument=None):
@@ -607,7 +625,7 @@ class CellpyData(object):
     def _set_arbin(self):
         # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
         # more transparent to separate them into respective methods pr instrument.
-        from .instruments import arbin as instr
+        from cellpy.readers.instruments import arbin as instr
         self.loader_class = instr.ArbinLoader()
         # get information
         self.raw_units = self.loader_class.get_raw_units()
@@ -648,10 +666,10 @@ class CellpyData(object):
 
 
 
-    def _create_logger(self, verbose=False):
+    def _create_logger(self):
         from cellpy import log
         self.logger = logging.getLogger(__name__)
-        log.setup_logging(default_level=logging.DEBUG)
+        log.setup_logging(default_level="DEBUG")
 
 
     def set_cycle_mode(self, cycle_mode):
@@ -2190,7 +2208,7 @@ class CellpyData(object):
         txt += "---------------------------------------------------------------"
         txt += "Saving data"
         txt += "---------------------------------------------------------------"
-        self.logger.debug(txt)
+        self.logger.info(txt)
 
         dataset_number = -1
         for data in self.datasets:
@@ -3782,7 +3800,7 @@ def setup_cellpy_instance():
 
     """
     print "making class and setting prms"
-    cellpy_instance = CellpyData(verbose=True)
+    cellpy_instance = CellpyData()
     return cellpy_instance
 
 
@@ -3815,7 +3833,7 @@ def just_load_srno(srno, prm_filename=None):
     # print prm
 
     print "just_load_srno: making class and setting prms"
-    d = CellpyData(verbose=True)
+    d = CellpyData()
 
     # ------------reading db----------------------------------------------------
     print
@@ -3868,7 +3886,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     Returns:
         out_file_name (str): name of saved file.
     """
-    d = CellpyData(verbose=True)
+    d = CellpyData()
 
     if not outdir:
         import cellpy.parameters.prms as prms
@@ -3938,17 +3956,18 @@ def load_and_print_resfile(filename, info_dict=None):
         info_dict["nom_cap"] = 3600  # mAh/g (active material)
         info_dict["tot_mass"] = 2.33  # mAh/g (total mass of material)
 
-    d = CellpyData(verbose=True)
+    d = CellpyData()
 
     print "filename:", filename
     print "info_dict in:",
     print info_dict
 
-    d.from_res(filename)
+    d.from_raw(filename)
     d.set_mass(info_dict["mass"])
     d.make_step_table()
     d.make_summary()
-    for test in d.tests:
+
+    for test in d.datasets:
         print "newtest"
         print test
 
@@ -3983,7 +4002,8 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     type_of_data = "ocvrlx_up"
     d_res = setup_cellpy_instance()
     print filename
-    d_res.from_res(filename)
+    #d_res.from_res(filename)
+    d_res.from_raw(filename)
     d_res.set_mass(mass)
     d_res.make_step_table()
     d_res.print_step_table()
@@ -4031,15 +4051,6 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     return True
 
 
-# TODO: make option to create step_table when loading file (from_res)
-# TODO next:
-# 1) new step_table structure [OK]
-# 2) new summary structure [OK]
-# 3) new overall prms structure (i.e. run summary) [in progress]
-# 4) change name and allow non-arbin type of files [in progress]
-# NOTE
-#
-#
 # PROBLEMS:
 # 1. 27.06.2016 new PC with 64bit conda python package:
 #              Error opening connection to "Provider=Microsoft.ACE.OLEDB.12.0
@@ -4064,8 +4075,6 @@ if __name__ == "__main__":
     import logging
     from cellpy import log
 
-    log.setup_logging(default_level=logging.DEBUG)
-    testfile = "../indata/20160805_test001_45_cc_01.res"
+    log.setup_logging(default_level="DEBUG")
+    testfile = "../../testdata/data/20160805_test001_45_cc_01.res"
     load_and_print_resfile(testfile)
-    # just_load_srno(614, r"C:\Scripting\MyFiles\development_cellpy\cellpy\parameters\_cellpy_prms_devel.ini")
-    # loadcell_check()
