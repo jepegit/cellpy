@@ -26,13 +26,13 @@ log.setup_logging(default_level=logging.DEBUG)
 # @pytest.fixture
 # def cellpy_data_instance():
 #     from cellpy import cellreader
-#     return cellreader.cellpydata()
+#     return cellreader.CellpyData()
 
 
 @pytest.fixture
 def dataset():
     from cellpy import cellreader
-    d = cellreader.cellpydata()
+    d = cellreader.CellpyData()
     d.load(test_cellpy_file_full)
     return d
 

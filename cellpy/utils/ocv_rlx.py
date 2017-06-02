@@ -31,7 +31,7 @@ class MultiCycleOcvFit(object):
 
 
     def set_data(self, cellpydata):
-        """Sets the cellpydata."""
+        """Sets the CellpyData."""
 
         self.data = cellpydata
 
@@ -221,8 +221,8 @@ class OcvFit(object):
             c is found from using tau / r --> err(c) = err(r) + err(tau)
 
             Args:
-                cellpydata (cellpydata): data object from cellreader
-                cycle (int): cycle number to get from cellpydata object
+                cellpydata (CellpyData): data object from cellreader
+                cycle (int): cycle number to get from CellpyData object
 
             Returns:
                 None
@@ -399,7 +399,7 @@ def _main():
     print resfilename
 
     # Loading dataframe
-    d = cellreader.cellpydata()
+    d = cellreader.CellpyData()
     d.loadres(os.path.join(datafolder_in, resfilename))
     d.set_mass(mass)
     d.create_step_table()

@@ -7,7 +7,7 @@ raw data files, but we intend to implement more types soon. It also creates
 processed files in the hdf5-format.
 
 Example:
-    >>> d = cellpydata()
+    >>> d = CellpyData()
     >>> d.loadcell(names = [file1.res, file2.res]) # loads and merges the runs
     >>> internal_resistance = d.get_ir()
     >>> d.save_test("mytest.hdf")
@@ -397,7 +397,7 @@ class DataSet(object):
         self.start_datetime = None
         self.test_ID = None
         self.name = None
-        # methods in cellpydata to update if adding new attributes:
+        # methods in CellpyData to update if adding new attributes:
         #  _load_infotable()
         # _create_infotable()
 
@@ -463,11 +463,11 @@ class DataSet(object):
             txt += "EMPTY (Not processed yet)\n"
 
         txt += "raw units:"
-        txt += "     Currently defined in the cellpydata-object"
+        txt += "     Currently defined in the CellpyData-object"
         return txt
 
 
-class cellpydata(object):
+class CellpyData(object):
     """Main class for working and storing data.
 
     This class is the main work-horse for cellpy where all the functions for reading, selecting, and
@@ -501,7 +501,7 @@ class cellpydata(object):
         self.verbose = verbose  # not used anymore?
         # self._create_logger(self.verbose)
         self.logger = logging.getLogger(__name__)
-        self.logger.info("created cellpydata instance")
+        self.logger.info("created CellpyData instance")
         self.profile = profile
         self.minimum_selection = {}
         if filestatuschecker is None:
@@ -655,7 +655,7 @@ class cellpydata(object):
 
 
     def set_cycle_mode(self, cycle_mode):
-        """set the cycle mode (will be deprecated soon - use cellpydata.cyclemode = "anode" etc.)"""
+        """set the cycle mode (will be deprecated soon - use CellpyData.cyclemode = "anode" etc.)"""
         # should use proper python 'setting' (decorator etc)
         self.cycle_mode = cycle_mode
 
@@ -669,7 +669,7 @@ class cellpydata(object):
             directory (str): path to res-directory
 
         Example:
-            >>> d = cellpydata()
+            >>> d = CellpyData()
             >>> directory = r"C:\MyData\Arbindata"
             >>> d.set_raw_datadir(directory)
 
@@ -693,7 +693,7 @@ class cellpydata(object):
             directory (str): path to hdf5-directory
 
         Example:
-            >>> d = cellpydata()
+            >>> d = CellpyData()
             >>> directory = r"C:\MyData\HDF5"
             >>> d.set_raw_datadir(directory)
 
@@ -789,7 +789,7 @@ class cellpydata(object):
 
         store = pd.HDFStore(filename)
         try:
-            fidtable = store.select("cellpydata/fidtable")
+            fidtable = store.select("CellpyData/fidtable")
         except:
             self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable = None
@@ -888,7 +888,7 @@ class cellpydata(object):
             >>> ... my_run_name = my_dbreader.get_cell_name(srno)
             >>> ... mass = my_dbreader.get_mass(srno)
             >>> ... rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
-            >>> ... cell_data = cellreader.cellpydata()
+            >>> ... cell_data = cellreader.CellpyData()
             >>> ... cell_data.loadcell(raw_files = rawfiles, cellpy_file = cellpyfiles)
             >>> ... cell_data.set_mass(mass)
             >>> ... if not cell_data.summary_exists:
@@ -931,7 +931,7 @@ class cellpydata(object):
         """Load a raw data-file.
 
         Args:
-            file_names (list of raw-file names): uses cellpydata.file_names if None. If the
+            file_names (list of raw-file names): uses CellpyData.file_names if None. If the
                list contains more than one file name, then the runs will be merged together.
         """
         # This function only loads one test at a time (but could contain several files). The
@@ -1147,7 +1147,7 @@ class cellpydata(object):
         store = pd.HDFStore(filename)
         data = DataSet()
 
-        infotable = store.select("cellpydata/info")
+        infotable = store.select("CellpyData/info")
         try:
             data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
         except:
@@ -1159,17 +1159,17 @@ class cellpydata(object):
         if data.cellpy_file_version > CELLPY_FILE_VERSION:
             raise AttributeError  # TODO: make custom error
 
-        data.dfsummary = store.select("cellpydata/dfsummary")
-        data.dfdata = store.select("cellpydata/dfdata")
+        data.dfsummary = store.select("CellpyData/dfsummary")
+        data.dfdata = store.select("CellpyData/dfdata")
 
         try:
-            data.step_table = store.select("cellpydata/step_table")
+            data.step_table = store.select("CellpyData/step_table")
             data.step_table_made = True
         except:
             data.step_table = None
             data.step_table_made = False
         try:
-            fidtable = store.select("cellpydata/fidtable")
+            fidtable = store.select("CellpyData/fidtable")
             fidtable_selected = True
         except:
             fidtable = []
@@ -1526,7 +1526,7 @@ class cellpydata(object):
             instead of a list if pdtype is set to True.
 
         Example:
-            >>> my_charge_steps = cellpydata.get_step_numbers("charge", cycle_number = 3)
+            >>> my_charge_steps = CellpyData.get_step_numbers("charge", cycle_number = 3)
             >>> print my_charge_steps
             [5,8]
 
@@ -2277,20 +2277,20 @@ class cellpydata(object):
                 self.logger.debug(txt)
                 store = pd.HDFStore(outfile_all)
                 self.logger.debug("trying to put dfdata")
-                store.put("cellpydata/dfdata", test.dfdata)  # jepe: fix (get name from class)
+                store.put("CellpyData/dfdata", test.dfdata)  # jepe: fix (get name from class)
                 self.logger.debug("trying to put dfsummary")
-                store.put("cellpydata/dfsummary", test.dfsummary)
+                store.put("CellpyData/dfsummary", test.dfsummary)
 
                 self.logger.info("trying to put step_table")
                 if not test.step_table_made:
                     self.logger.debug(" no step_table made")
                 else:
-                    store.put("cellpydata/step_table", test.step_table)
+                    store.put("CellpyData/step_table", test.step_table)
 
                 self.logger.debug("trying to put infotbl")
-                store.put("cellpydata/info", infotbl)
+                store.put("CellpyData/info", infotbl)
                 self.logger.debug("trying to put fidtable")
-                store.put("cellpydata/fidtable", fidtbl)
+                store.put("CellpyData/fidtable", fidtbl)
                 store.close()
                 # del store
             else:
@@ -3115,7 +3115,7 @@ class cellpydata(object):
     def set_testnumber(self, dataset_number):
         """Set the DataSet number.
 
-        Set the dataset_number that will be used (cellpydata.selected_dataset_number).
+        Set the dataset_number that will be used (CellpyData.selected_dataset_number).
         The class can save several datasets (but its not a frequently used feature),
         the datasets are stored in a list and dataset_number is the selected index in the list.
 
@@ -3771,7 +3771,7 @@ def setup_cellpy_instance():
     from your parameters file (using prmreader.read()
 
     Returns:
-        an cellpydata object
+        an CellpyData object
 
     Example:
 
@@ -3782,7 +3782,7 @@ def setup_cellpy_instance():
 
     """
     print "making class and setting prms"
-    cellpy_instance = cellpydata(verbose=True)
+    cellpy_instance = CellpyData(verbose=True)
     return cellpy_instance
 
 
@@ -3815,7 +3815,7 @@ def just_load_srno(srno, prm_filename=None):
     # print prm
 
     print "just_load_srno: making class and setting prms"
-    d = cellpydata(verbose=True)
+    d = CellpyData(verbose=True)
 
     # ------------reading db----------------------------------------------------
     print
@@ -3868,7 +3868,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     Returns:
         out_file_name (str): name of saved file.
     """
-    d = cellpydata(verbose=True)
+    d = CellpyData(verbose=True)
 
     if not outdir:
         import cellpy.parameters.prms as prms
@@ -3938,7 +3938,7 @@ def load_and_print_resfile(filename, info_dict=None):
         info_dict["nom_cap"] = 3600  # mAh/g (active material)
         info_dict["tot_mass"] = 2.33  # mAh/g (total mass of material)
 
-    d = cellpydata(verbose=True)
+    d = CellpyData(verbose=True)
 
     print "filename:", filename
     print "info_dict in:",
@@ -3961,7 +3961,7 @@ def loadcell_check():
     mass = 0.078609164
     rawfile = r"C:\Cell_data\tmp\large_file_01.res"
     cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
-    cell_data = cellpydata()
+    cell_data = CellpyData()
     cell_data.select_minimal = True
     cell_data.load_until_error = True
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)

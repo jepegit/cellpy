@@ -24,7 +24,7 @@ for n in serial_numbers:
     cell_data_dict[my_run_name] = [mass, rawfiles, cellpyfile]
     print "   cellpyfile:", cellpyfile
 
-    cell_data = cellreader.cellpydata()
+    cell_data = cellreader.CellpyData()
     try:
         cell_data.loadcell(raw_files=rawfiles, cellpy_file=cellpyfile, mass=mass)
         if not cell_data.summary_exists:

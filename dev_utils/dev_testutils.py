@@ -44,7 +44,7 @@ def create_cellpyfile_in_example_dir(force=False):
         print test_cellpy_file_full
         force = True
     if force:
-        d = cellreader.cellpydata()
+        d = cellreader.CellpyData()
         d.loadcell(test_res_file_full)
         d.make_summary(find_ir=True)
         d.create_step_table()

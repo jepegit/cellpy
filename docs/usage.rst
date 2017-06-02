@@ -16,7 +16,7 @@ Then load the data into the data-class (this is data obtained using an Arbin bat
 for the moment we assume that you are using the default settings where the default
 data-format is the Arbin .res format)::
 
-    >>> d = cellreader.cellpydata()
+    >>> d = cellreader.CellpyData()
     >>> d.load_raw(FileName) # this tells cellpy to read the arbin data file (.res format)
     >>> d.set_mass(Mass)
 

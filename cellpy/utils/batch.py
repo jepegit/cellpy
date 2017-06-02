@@ -502,7 +502,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
 
         print("Processing (%s)..." % indx)
         logger.debug("Processing (%s)..." % indx)
-        cell_data = cellreader.cellpydata()
+        cell_data = cellreader.CellpyData()
         if not force_cellpy:
             logger.debug("setting cycle mode (%s)..." % row.cell_type)
             cell_data.set_cycle_mode(row.cell_type)

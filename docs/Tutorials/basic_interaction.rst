@@ -15,13 +15,13 @@ First, import modules, including the cellreader-object from ``cellpy``:
     import os
     from cellpy import cellreader
 
-Then define some settings and variables and create the cellpydata-object:
+Then define some settings and variables and create the CellpyData-object:
 
 .. code-block:: python
 
     raw_data_dir = r"C:\raw_data"
     out_data_dir = r"C:\processed_data"
-    cellpy_data_dir = r"C:\cellpydata"
+    cellpy_data_dir = r"C:\CellpyData"
     cycle_mode = "anode" # default is usually "anode", but...
     # These can also be set in the configuration file
 
@@ -34,8 +34,8 @@ Then define some settings and variables and create the cellpydata-object:
     # list consisting of file names with full path
     raw_files = [os.path.join(raw_data_dir, f) for f in raw_file]
 
-    # creating the cellpydata object and sets the cycle mode:
-    cell_data = cellreader.cellpydata()
+    # creating the CellpyData object and sets the cycle mode:
+    cell_data = cellreader.CellpyData()
     cell_data.set_cycle_mode(cycle_mode)
 
 Now we will read the files, merge them, and create a summary:
@@ -75,8 +75,8 @@ You can also input the masses and enforce that it creates a summary automaticall
 Extract current-voltage graphs
 ------------------------------
 
-If you have loaded your data into a cellpydata-object, let's now consider how to extract current-voltage graphs
-from your data. We assume that the name of your cellpydata-object is ``cell_data``:
+If you have loaded your data into a CellpyData-object, let's now consider how to extract current-voltage graphs
+from your data. We assume that the name of your CellpyData-object is ``cell_data``:
 
 
 .. code-block:: python
@@ -94,7 +94,7 @@ You can also get the capacity-voltage curves with both charge and discharge:
     # the second capacity (charge (delithiation) for typical anode half-cell experiments)
     # will be given "in reverse".
 
-The ``cellpydata`` object has several get-methods, including getting current, timestamps, etc.
+The ``CellpyData`` object has several get-methods, including getting current, timestamps, etc.
 
 Extract summaries of runs
 -------------------------
@@ -111,8 +111,8 @@ The methods for creating incremental capacity curves is located in the ``cellpy.
 Save / export data
 ------------------
 
-Saving data to cellpy format is done by the ``cellpydata.save`` method. To export data to csv format,
-``cellpydata`` has a method called ``exportcsv``.
+Saving data to cellpy format is done by the ``CellpyData.save`` method. To export data to csv format,
+``CellpyData`` has a method called ``exportcsv``.
 
 .. code-block:: python
 

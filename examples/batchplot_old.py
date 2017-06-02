@@ -801,7 +801,7 @@ class summaryplot:
             print my_run_name
             print 50*"-"
             rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
-            cell_data = cellreader.cellpydata(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
+            cell_data = cellreader.CellpyData(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
             cell_data.set_cellpy_datadir(cellpydatadir)
             cell_data.set_raw_datadir(rawdatadir)
             cell_data.set_cycle_mode(cycle_mode)

@@ -30,7 +30,7 @@ log.setup_logging(default_level=logging.DEBUG)
 @pytest.fixture(scope="module")
 def cellpy_data_instance():
     from cellpy import cellreader
-    return cellreader.cellpydata()
+    return cellreader.CellpyData()
 
 
 @pytest.fixture()
