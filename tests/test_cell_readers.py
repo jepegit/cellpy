@@ -31,12 +31,12 @@ log.setup_logging(default_level=logging.DEBUG)
 @pytest.fixture
 def cellpy_data_instance():
     from cellpy import cellreader
-    return cellreader.cellpydata()
+    return cellreader.CellpyData()
 
 @pytest.fixture
 def dataset():
     from cellpy import cellreader
-    d = cellreader.cellpydata()
+    d = cellreader.CellpyData()
     d.load(test_cellpy_file_full)
     return d
 
@@ -82,13 +82,13 @@ def test_load_res(cellpy_data_instance):
     assert my_test.test_no == run_number
 
     # cellpy_data_instance.make_summary(find_ir=True)
-    # cellpy_data_instance.create_step_table()
-    # cellpy_data_instance.save_test(test_cellpy_file_full)
+    # cellpy_data_instance.make_step_table()
+    # cellpy_data_instance.save(test_cellpy_file_full)
 
 
 
 def test_make_summary(cellpy_data_instance):
-    cellpy_data_instance.load_raw(test_res_file_full)
+    cellpy_data_instance.from_raw(test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
     s1 = cellpy_data_instance.datasets[0].dfsummary
@@ -102,10 +102,10 @@ def test_make_summary(cellpy_data_instance):
 
 def test_create_cellpyfile(cellpy_data_instance):
     # create a cellpy file from the res-file (used for testing)
-    cellpy_data_instance.load_raw(test_res_file_full)
+    cellpy_data_instance.from_raw(test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-    cellpy_data_instance.save_test(test_cellpy_file_full)
+    cellpy_data_instance.save(test_cellpy_file_full)
 
 
 def test_summary_from_cellpyfile(cellpy_data_instance):
@@ -168,9 +168,9 @@ def test_get_converter_to_specific(dataset, test_input, expected):
 def test_save_cellpyfile_with_extension(cellpy_data_instance):
     cellpy_data_instance.loadcell(test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
-    cellpy_data_instance.create_step_table()
+    cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())+".h5"
-    cellpy_data_instance.save_test(tmp_file)
+    cellpy_data_instance.save(tmp_file)
     assert os.path.isfile(tmp_file)
     os.remove(tmp_file)
     assert not os.path.isfile(tmp_file)
@@ -179,9 +179,9 @@ def test_save_cellpyfile_with_extension(cellpy_data_instance):
 def test_save_cellpyfile_auto_extension(cellpy_data_instance):
     cellpy_data_instance.loadcell(test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
-    cellpy_data_instance.create_step_table()
+    cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())
-    cellpy_data_instance.save_test(tmp_file)
+    cellpy_data_instance.save(tmp_file)
     assert os.path.isfile(tmp_file+".h5")
     os.remove(tmp_file+".h5")
     assert not os.path.isfile(tmp_file+".h5")
@@ -190,11 +190,11 @@ def test_save_cellpyfile_auto_extension(cellpy_data_instance):
 def test_save_cvs(cellpy_data_instance):
     cellpy_data_instance.loadcell(test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
-    cellpy_data_instance.create_step_table()
+    cellpy_data_instance.make_step_table()
     temp_dir = tempfile.mkdtemp()
-    cellpy_data_instance.exportcsv(datadir=temp_dir)
+    cellpy_data_instance.to_csv(datadir=temp_dir)
     shutil.rmtree(temp_dir)
-    # cellpy_data_instance.save_test(tmp_file)
+    # cellpy_data_instance.save(tmp_file)
     # assert os.path.isfile(tmp_file)
     # os.remove(tmp_file)
     # assert not os.path.isfile(tmp_file)

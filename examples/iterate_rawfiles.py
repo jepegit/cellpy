@@ -65,11 +65,11 @@ def acceptable_file_size(file_name, max_size=33333333):
 
 
 def load_and_create_summary(rawfiles, cellpyfile, mass):
-    cell_data = cellreader.cellpydata()
+    cell_data = cellreader.CellpyData()
     try:
         cell_data.loadcell(raw_files=rawfiles, cellpy_file=None, mass=mass)
         cell_data.make_summary()
-        cell_data.save_test(cellpyfile)
+        cell_data.save(cellpyfile)
     except:
         return None
     return cell_data.tests[0].dfsummary

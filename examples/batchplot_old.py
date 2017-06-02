@@ -801,7 +801,7 @@ class summaryplot:
             print my_run_name
             print 50*"-"
             rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
-            cell_data = cellreader.cellpydata(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
+            cell_data = cellreader.CellpyData(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
             cell_data.set_cellpy_datadir(cellpydatadir)
             cell_data.set_raw_datadir(rawdatadir)
             cell_data.set_cycle_mode(cycle_mode)
@@ -1061,7 +1061,7 @@ class summaryplot:
         for cell_data_object in self.tests:
             cell_data = cell_data_object.tests[test_number]
             if cell_data is None:
-                print "NoneType - dataset missing"
+                print "NoneType - DataSet missing"
             else:
                 filename = cell_data.loaded_from
                 no_merged_sets = ""
@@ -1149,7 +1149,7 @@ class summaryplot:
         for cell_data_object in self.tests:
             cell_data = cell_data_object.tests[test_number]
             if cell_data is None:
-                print "NoneType - dataset missing"
+                print "NoneType - DataSet missing"
             else:
                 filename = cell_data.loaded_from
                 no_merged_sets = ""
@@ -1287,7 +1287,7 @@ class summaryplot:
             try:
                 test_number = 0
                 for cell_data_object in self.tests:
-                    cell_data_object.exportcsv(savedir, sep=self.sep)
+                    cell_data_object.to_csv(savedir, sep=self.sep)
             except:
                 print "Error in exporting raw data"
 
@@ -1298,7 +1298,7 @@ class summaryplot:
             try:
                 test_number = 0
                 for cell_data_object in self.tests:
-                    cell_data_object.exportcsv(savedir, sep=self.sep, cycles=True, raw=False)
+                    cell_data_object.to_csv(savedir, sep=self.sep, cycles=True, raw=False)
 
             except:
                 print "Error in exporting cycles"
@@ -1323,7 +1323,7 @@ class summaryplot:
                         if self.ensure_step_table:
                             cell_data_object.ensure_step_table = True
 
-                        cell_data_object.save_test(filename, dataset_number=test_number)
+                        cell_data_object.save(filename, dataset_number=test_number)
                     except:
                         print "Could not save",
                         print filename + ".h5"

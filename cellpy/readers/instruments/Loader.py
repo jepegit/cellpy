@@ -14,8 +14,8 @@ import numpy as np
 
 import pandas as pd
 
-from cellpy.readers.cellreader import dataset
-from cellpy.readers.cellreader import fileID
+from cellpy.readers.cellreader import DataSet
+from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import get_headers_normal

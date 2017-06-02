@@ -254,7 +254,7 @@ def check_class_ica():
     mass = 0.078609164
 
     # ---------- loading test-data ----------------------
-    cell = cellreader.cellpydata()
+    cell = cellreader.CellpyData()
     cell.load(test_cellpy_file_full)
     list_of_cycles = cell.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)

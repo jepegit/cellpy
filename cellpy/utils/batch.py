@@ -502,7 +502,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
 
         print("Processing (%s)..." % indx)
         logger.debug("Processing (%s)..." % indx)
-        cell_data = cellreader.cellpydata()
+        cell_data = cellreader.CellpyData()
         if not force_cellpy:
             logger.debug("setting cycle mode (%s)..." % row.cell_type)
             cell_data.set_cycle_mode(row.cell_type)
@@ -549,7 +549,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         if save:
             if not row.fixed:
                 logger.info("saving cell to %s" % row.cellpy_file_names)
-                cell_data.save_test(row.cellpy_file_names)
+                cell_data.save(row.cellpy_file_names)
             else:
                 logger.debug("saving cell skipped (set to 'fixed' in info_df)")
 
@@ -559,7 +559,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         if export_raw:
             print("...exporting data....")
             logger.debug("Exporting csv")
-            cell_data.exportcsv(raw_dir, sep=sep, cycles=export_cycles, raw=export_raw)
+            cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles, raw=export_raw)
 
         if do_export_dqdv:
             logger.debug("Exporting dqdv")
