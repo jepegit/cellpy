@@ -24,7 +24,7 @@ def making_csv(filename, outfolder, mass, type_data):
 
     # Loading arbin-data
     d = cellreader.CellpyData(filename)
-    d.loadres()
+    d.from_res()
     d.set_mass(mass)
     d.make_summary()
     d.create_step_table()
@@ -132,7 +132,7 @@ def extract_ocvrlx(d_res, filename, type_data):
 # fileout = r"C:\Scripting\MyFiles\dev_cellpy\outdata" \
 #           r"\20160805_sic006_74_cc_01_"+type_of_data
 # sic006_74 = cellreader.CellpyData()
-# sic006_74.loadres(filename)
+# sic006_74.from_res(filename)
 # sic006_74.set_mass(mass)
 # list_of_cycles = sic006_74.get_cycle_numbers()
 # print len(list_of_cycles)

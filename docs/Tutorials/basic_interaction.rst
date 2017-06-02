@@ -43,7 +43,7 @@ Now we will read the files, merge them, and create a summary:
 .. code-block:: python
 
     # if the list of files are in a list they are automatically merged:
-    cell_data.load_raw([raw_files])
+    cell_data.from_raw([raw_files])
     cell_data.set_mass(electrode_mass)
     cell_data.make_summary()
     # Note: make_summary will automatically run the

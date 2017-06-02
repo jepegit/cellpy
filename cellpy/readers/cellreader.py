@@ -914,7 +914,7 @@ class CellpyData(object):
             self.load_only_summary = False
 
         if not similar:
-            self.load_raw(raw_files)
+            self.from_raw(raw_files)
             if self.status_datasets:  # Check if the run was loaded ([] if empty)
                 if mass:
                     self.set_mass(mass)
@@ -927,7 +927,7 @@ class CellpyData(object):
         else:
             self.load(cellpy_file)
 
-    def load_raw(self, file_names=None, **kwargs):
+    def from_raw(self, file_names=None, **kwargs):
         """Load a raw data-file.
 
         Args:
@@ -935,7 +935,7 @@ class CellpyData(object):
                list contains more than one file name, then the runs will be merged together.
         """
         # This function only loads one test at a time (but could contain several files). The
-        # function loadres() also implements loading several datasets (using list of lists as
+        # function from_res() also implements loading several datasets (using list of lists as
         # input.
 
         if file_names:
@@ -966,7 +966,7 @@ class CellpyData(object):
         self.status_datasets = self._validate_datasets()
 
     # noinspection PyIncorrectDocstring
-    def loadres(self, filenames=None, check_file_type=True):
+    def from_res(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the datastructure.
 
         Args:
@@ -975,7 +975,7 @@ class CellpyData(object):
                 inner list will be merged.
             check_file_type (bool): check file type if True (res-, or cellpy-format)
         """
-        warnings.warn("deprecated - use load_raw instead", DeprecationWarning)
+        warnings.warn("deprecated - use from_raw instead", DeprecationWarning)
         txt = "number of datasets: %i" % len(self.file_names)
         self.logger.debug(txt)
         set_number = 0
@@ -3883,7 +3883,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     print "outdir:", outdir
     print "mass:", mass, "mg"
 
-    d.loadres(filename)
+    d.from_res(filename)
     d.set_mass(mass)
     d.create_step_table()
     d.make_summary()
@@ -3944,7 +3944,7 @@ def load_and_print_resfile(filename, info_dict=None):
     print "info_dict in:",
     print info_dict
 
-    d.loadres(filename)
+    d.from_res(filename)
     d.set_mass(info_dict["mass"])
     d.create_step_table()
     d.make_summary()
@@ -3983,7 +3983,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     type_of_data = "ocvrlx_up"
     d_res = setup_cellpy_instance()
     print filename
-    d_res.loadres(filename)
+    d_res.from_res(filename)
     d_res.set_mass(mass)
     d_res.create_step_table()
     d_res.print_step_table()
@@ -4031,7 +4031,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     return True
 
 
-# TODO: make option to create step_table when loading file (loadres)
+# TODO: make option to create step_table when loading file (from_res)
 # TODO next:
 # 1) new step_table structure [OK]
 # 2) new summary structure [OK]

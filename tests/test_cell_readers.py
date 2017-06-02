@@ -88,7 +88,7 @@ def test_load_res(cellpy_data_instance):
 
 
 def test_make_summary(cellpy_data_instance):
-    cellpy_data_instance.load_raw(test_res_file_full)
+    cellpy_data_instance.from_raw(test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
     s1 = cellpy_data_instance.datasets[0].dfsummary
@@ -102,7 +102,7 @@ def test_make_summary(cellpy_data_instance):
 
 def test_create_cellpyfile(cellpy_data_instance):
     # create a cellpy file from the res-file (used for testing)
-    cellpy_data_instance.load_raw(test_res_file_full)
+    cellpy_data_instance.from_raw(test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
     cellpy_data_instance.save(test_cellpy_file_full)

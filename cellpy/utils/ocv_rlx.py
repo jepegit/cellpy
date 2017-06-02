@@ -400,7 +400,7 @@ def _main():
 
     # Loading dataframe
     d = cellreader.CellpyData()
-    d.loadres(os.path.join(datafolder_in, resfilename))
+    d.from_res(os.path.join(datafolder_in, resfilename))
     d.set_mass(mass)
     d.create_step_table()
 
