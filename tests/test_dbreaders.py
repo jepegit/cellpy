@@ -203,26 +203,26 @@ def test_get_total_mass(db_reader):
     output = db_reader.get_total_mass(test_serial_number_one)
     assert pytest.approx(output, 0.1) == test_total_mass
 
-
-def test_get_all(db_reader):
-    assert True
-
-
-def test_get_fileid(db_reader):
-    assert True
-
-
-def test_intersect(db_reader):
-    assert True
-
-
-def test_union(db_reader):
-    assert True
-
-
-def test_substract(db_reader):
-    assert True
-
-
-def test_substract_many(db_reader):
-    assert True
+#
+# def test_get_all(db_reader):
+#     assert True
+#
+#
+# def test_get_fileid(db_reader):
+#     assert True
+#
+#
+# def test_intersect(db_reader):
+#     assert True
+#
+#
+# def test_union(db_reader):
+#     assert True
+#
+# 
+# def test_substract(db_reader):
+#     assert True
+#
+#
+# def test_substract_many(db_reader):
+#     assert True
