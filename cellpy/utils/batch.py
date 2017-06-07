@@ -23,27 +23,115 @@ logging.captureWarnings(True)
 
 DEFAULT_PLOT_STYLE = {"markersize": prms.Batch["markersize"]}
 
-def create_selected_summaries_dict(summaries_list):
-    """Creates a dictionary with summary column headers.
-    
-    Examples:
-        >>> summaries_to_output = ["discharge_capacity", "charge_capacity"]
-        >>> summaries_to_output_dict = create_selected_summaries_dict(summaries_to_output)
-        >>> print(summaries_to_output_dict)
-        {'discharge_capacity': "Discharge_Capacity(mAh/g)",
-               'charge_capacity': "Charge_Capacity(mAh/g)}
-         
-    Args:
-        summaries_list: list containing cellpy summary column id names
 
-    Returns: dictionary of the form {cellpy id name: cellpy summary header name,}
 
-    """
-    headers_summary = cellreader.get_headers_summary()
-    selected_summaries = dict()  # this should be sent as input
-    for h in summaries_list:
-        selected_summaries[h] = headers_summary[h]
-    return selected_summaries
+def _create_info_dict(reader, srnos):
+    # reads from the db and populates a dictionary
+    info_dict = dict()
+    info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
+    info_dict["masses"] = [reader.get_mass(srno) for srno in srnos]
+    info_dict["total_masses"] = [reader.get_total_mass(srno) for srno in srnos]
+    info_dict["loadings"] = [reader.get_loading(srno) for srno in srnos]
+    info_dict["fixed"] = [reader.inspect_hd5f_fixed(srno) for srno in srnos]
+    info_dict["labels"] = [reader.get_label(srno) for srno in srnos]
+    info_dict["cell_type"] = ["anode" for srno in srnos]
+
+    info_dict["raw_file_names"] = []
+    info_dict["cellpy_file_names"] = []
+    for key in info_dict.keys():
+        logger.debug("%s: %s" % (key, str(info_dict[key])))
+
+    _groups = [reader.get_group(srno) for srno in srnos]
+    logger.debug("groups: %s" % str(_groups))
+    groups = _fix_groups(_groups)
+    info_dict["groups"] = groups
+
+    my_timer_start = time.time()
+    info_dict = _find_files(info_dict)
+    my_timer_end = time.time()
+    if (my_timer_end - my_timer_start) > 5.0:
+        logger.info("The function _find_files was very slow. Save your info_df so you don't have to run it again!")
+
+    return info_dict
+
+
+def _find_files(info_dict):
+    # searches for the raw data files and the cellpyfile-name
+    for run_name in info_dict["filenames"]:
+        raw_files, cellpyfile = filefinder.search_for_files(run_name)
+        if not raw_files:
+            raw_files = None
+        info_dict["raw_file_names"].append(raw_files)
+        info_dict["cellpy_file_names"].append(cellpyfile)
+
+    return info_dict
+
+
+def _save_multi(data, file_name, sep=";"):
+    """convenience function for storing data column-wise in a csv-file."""
+    with open(file_name, "wb") as f:
+        writer = csv.writer(f, delimiter=sep)
+        writer.writerows(itertools.izip_longest(*data))
+
+
+def _make_unique_groups(info_df):
+    # fixes group numbering
+    unique_g = info_df.groups.unique()
+    unique_g = sorted(unique_g)
+    new_unique_g = range(len(unique_g))
+    info_df["sub_groups"] = info_df["groups"] * 0
+    for i, j in zip(unique_g, new_unique_g):
+        counter = 1
+        for indx, row in info_df.loc[info_df.groups == i].iterrows():
+            info_df.set_value(indx, "sub_groups", counter)
+            counter += 1
+        info_df.loc[info_df.groups == i, 'groups'] = j + 1
+    return info_df
+
+
+def _remove_date(label):
+    _ = label.split("_")
+    return _[1] + "_" + _[2]
+
+
+def _fix_groups(groups):
+    _groups = []
+    for g in groups:
+        if not float(g) > 0:
+            _groups.append(1000)
+        else:
+            _groups.append(int(g))
+    return _groups
+
+
+def _extract_dqdv(cell_data, extract_func):
+    """Simple wrapper around the cellpy.utils.ica.dqdv function."""
+
+    from cellpy.utils.ica import dqdv
+    # extracting charge
+    list_of_cycles = cell_data.get_cycle_numbers()
+    out_data = []
+    for cycle in list_of_cycles:
+        c, v = extract_func(cycle)
+        try:
+            v, dQ = dqdv(v, c)
+            v = v.tolist()
+            dQ = dQ.tolist()
+        except IndexError or OverflowError as e:
+            error_in_dqdv = True
+            v = list()
+            dq = list()
+            print(" -could not process this (cycle %i)" % (cycle))
+            print(" %s" % e)
+
+        header_x = "dQ cycle_no %i" % cycle
+        header_y = "voltage cycle_no %i" % cycle
+        dQ.insert(0, header_x)
+        v.insert(0, header_y)
+
+        out_data.append(v)
+        out_data.append(dQ)
+    return out_data
 
 
 class Batch(object):
@@ -127,7 +215,6 @@ class Batch(object):
         if len(args)>1:
             self.project = args[1]
 
-
         self.time_stamp = None
         self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
                                    "cumulated_coulombic_efficiency",
@@ -164,7 +251,6 @@ class Batch(object):
         self.force_raw_file = False
         self.force_cellpy_file = False
 
-
         self._packable = ['name', 'project', 'batch_col','selected_summaries',
                           'output_format', 'time_stamp', 'project_dir', 'batch_dir', 'raw_dir']
 
@@ -187,7 +273,6 @@ class Batch(object):
         logger.debug("created Batch class")
         self._set_reader()
 
-
     def __str__(self):
         txt0 = "<Cellpy.Utils.Batch instance in %s>:" % __name__
         # How to kill a class: write "print(self)" in its __str__ method ;-)
@@ -204,7 +289,6 @@ class Batch(object):
                     txt += "%s: %s\n" % (str(attr), str(getattr(self, attr)))
         return txt
 
-
     def _prm_packer(self, metadata=None):
 
         packable = self._packable
@@ -217,7 +301,6 @@ class Batch(object):
         else:
             for p in metadata:
                 setattr(self, p, metadata[p])
-
 
     def _set_attributes(self, attrs=None):
         # Just for fun...
@@ -238,7 +321,6 @@ class Batch(object):
         reader_label = prms.Db["db_type"]
         self.reader = get_db_reader(reader_label)
 
-
     def create_info_df(self):
         """Creates a DataFrame with info about the runs (loaded from the DB)"""
         logger.debug("running create_info_df")
@@ -246,7 +328,6 @@ class Batch(object):
         reader = self.reader()
         self.info_df = make_df_from_batch(self.name, batch_col=self.batch_col, reader=reader)
         logger.debug(str(self.info_df.head(5)))
-
 
     def save_info_df(self):
         """Saves the DataFrame with info about the runs to a JSON file"""
@@ -262,7 +343,6 @@ class Batch(object):
         jason_string = json.dumps(top_level_dict, default=lambda info_df: json.loads(info_df.to_json()))
         with open(self.info_file, 'w') as outfile:
             outfile.write(jason_string)
-
 
     def load_info_df(self, file_name=None):
         """Loads a DataFrame with all the needed info about the run (JSON file)"""
@@ -287,7 +367,7 @@ class Batch(object):
         
         Project - Batch-name - Raw-data-dir
 
-        The info_df json-file will be stored in the Project folder.
+        The info_df JSON-file will be stored in the Project folder.
         The summary-files will be saved in the Batch-name folder.
         The raw data (including exported cycles and ica-data) will be saved to the Raw-data-dir.
         
@@ -321,14 +401,30 @@ class Batch(object):
         import cellpy.utils.plotutils as plot_utils
         return plot_utils.create_colormarkerlist_for_info_df(self.info_df, symbol_label=self.symbol_label,
                                                              color_style_label=self.color_style_label)
-    def plot_summaries(self, show=False, save=True):
+
+    def plot_summaries(self, show=False, save=True, figure_type=None):
+        """Plot summary graphs.
+        
+        Args:
+            show: shows the figure if True.
+            save: saves the figure if True.
+            figure_type: optional, figure type to create (not implemented yet).
+        """
+        default_figure_type = "summary"
+        if not figure_type:
+            figure_type = default_figure_type
+
+        if not figure_type in [default_figure_type,]:
+            logger.debug("unknown figure type selected")
+            figure_type = default_figure_type
+
         color_list, symbol_list = self._create_colors_markers_list()
         summary_df = self.summary_df
         selected_summaries = self.selected_summaries
         batch_dir = self.batch_dir
         batch_name = self.name
         fig, ax = plot_summary_figure(self.info_df, summary_df, color_list, symbol_list, selected_summaries,
-                                      batch_dir, batch_name, show=show, save=save)
+                                      batch_dir, batch_name, show=show, save=save, figure_type=figure_type)
         self.figure["summaries"] = fig
         self.axes["summaries"] = ax
 
@@ -337,8 +433,31 @@ class Batch(object):
         pass
 
 
+def create_selected_summaries_dict(summaries_list):
+    """Creates a dictionary with summary column headers.
+
+    Examples:
+        >>> summaries_to_output = ["discharge_capacity", "charge_capacity"]
+        >>> summaries_to_output_dict = create_selected_summaries_dict(summaries_to_output)
+        >>> print(summaries_to_output_dict)
+        {'discharge_capacity': "Discharge_Capacity(mAh/g)",
+               'charge_capacity': "Charge_Capacity(mAh/g)}
+
+    Args:
+        summaries_list: list containing cellpy summary column id names
+
+    Returns: dictionary of the form {cellpy id name: cellpy summary header name,}
+
+    """
+    headers_summary = cellreader.get_headers_summary()
+    selected_summaries = dict()  # this should be sent as input
+    for h in summaries_list:
+        selected_summaries[h] = headers_summary[h]
+    return selected_summaries
+
+
 def get_db_reader(db_type):
-    """returns the db_reader.
+    """Returns the db_reader.
     
     Args:
         db_type: type of db_reader (string) in ('simple_excel_reader', )
@@ -348,10 +467,12 @@ def get_db_reader(db_type):
     """
     if db_type == "simple_excel_reader":
         return dbreader.reader
+    else:
+        raise NotImplementedError
 
 
 def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
-    """
+    """Create a pandas DataFrame with the info needed for ``cellpy`` to load the runs.
     
     Args:
         batch_name (str): Name of the batch.
@@ -360,8 +481,8 @@ def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
         reader_label (str): the label for the db-loader (if db-loader method is not given)
 
     Returns: info_df (pandas DataFrame)
-
     """
+
     batch_name = batch_name
     batch_col = batch_col
     logger.debug("batch_name, batch_col: (%s,%i)" % (batch_name, batch_col))
@@ -381,61 +502,21 @@ def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
     return info_df
 
 
-def _create_info_dict(reader, srnos):
-    info_dict = dict()
-    info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
-    info_dict["masses"] = [reader.get_mass(srno) for srno in srnos]
-    info_dict["total_masses"] = [reader.get_total_mass(srno) for srno in srnos]
-    info_dict["loadings"] = [reader.get_loading(srno) for srno in srnos]
-    info_dict["fixed"] = [reader.inspect_hd5f_fixed(srno) for srno in srnos]
-    info_dict["labels"] = [reader.get_label(srno) for srno in srnos]
-    info_dict["cell_type"] = ["anode" for srno in srnos]
-
-    info_dict["raw_file_names"] = []
-    info_dict["cellpy_file_names"] = []
-    for key in info_dict.keys():
-        logger.debug("%s: %s" % (key, str(info_dict[key])))
-
-    _groups = [reader.get_group(srno) for srno in srnos]
-    logger.debug("groups: %s" % str(_groups))
-    groups = _fix_groups(_groups)
-    info_dict["groups"] = groups
-
-    my_timer_start = time.time()
-    info_dict = _find_files(info_dict)
-    my_timer_end = time.time()
-    if (my_timer_end - my_timer_start) > 5.0:
-        logger.info("The function _find_files was very slow. Save your info_df so you don't have to run it again!")
-
-    return info_dict
-
-
-def _find_files(info_dict):
-    for run_name in info_dict["filenames"]:
-        raw_files, cellpyfile = filefinder.search_for_files(run_name)
-        if not raw_files:
-            raw_files = None
-        info_dict["raw_file_names"].append(raw_files)
-        info_dict["cellpy_file_names"].append(cellpyfile)
-
-    return info_dict
-
-
-def _make_unique_groups(info_df):
-    unique_g = info_df.groups.unique()
-    unique_g = sorted(unique_g)
-    new_unique_g = range(len(unique_g))
-    info_df["sub_groups"] = info_df["groups"] * 0
-    for i, j in zip(unique_g, new_unique_g):
-        counter = 1
-        for indx, row in info_df.loc[info_df.groups == i].iterrows():
-            info_df.set_value(indx, "sub_groups", counter)
-            counter += 1
-        info_df.loc[info_df.groups == i, 'groups'] = j + 1
-    return info_df
-
-
 def create_folder_structure(project_name, batch_name):
+    """This function creates a folder structure for the batch project.
+    
+    The folder structure consists of main working folder ``project_name` located in the ``outdatadir`` (as defined
+    in the cellpy configuration file) with a sub-folder named ``batch_name``. It also creates a folder
+    inside the ``batch_name`` folder for storing the raw data.
+    If the folders does not exist, they will be made. The function also returns the name of the info-df.
+    
+    Args:
+        project_name: name of the project
+        batch_name: name of the batch
+
+    Returns: (info_file, (project_dir, batch_dir, raw_dir))
+
+    """
     out_data_dir = prms.Paths["outdatadir"]
     project_dir = os.path.join(out_data_dir, project_name)
     batch_dir = os.path.join(project_dir, batch_name)
@@ -455,18 +536,15 @@ def create_folder_structure(project_name, batch_name):
     return (info_file, (project_dir, batch_dir, raw_dir))
 
 
-
-def save_multi(data, file_name, sep=";"):
-    with open(file_name, "wb") as f:
-        writer = csv.writer(f, delimiter=sep)
-        writer.writerows(itertools.izip_longest(*data))
-
-
-
 def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=False,
                        export_cycles=False, export_raw=True,
                        export_ica=False, save=True):
     """Reads and saves cell data defined by the info-DataFrame.
+    
+    The function iterates through the ``info_df`` and loads data from the runs. It saves individual data
+    for each run (if selected), as well as returns a list of ``cellpy`` summary DataFrames, a list of
+    the indexes (one for each run; same as used as index in the ``info_df``), as well as a list with indexes
+    of runs (cells) where an error was encountered during loading.
     
     Args:
         info_df: pandas.DataFrame with information about the runs.
@@ -479,7 +557,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         export_ica: set to True for calculating and exporting dQ/dV to csv.
         save: set to False to prevent saving a cellpy-file.
 
-    Returns: frames and keys.
+    Returns: frames (list of cellpy summary DataFrames), keys (list of indexes),
+        errors (list of indexes that encountered errors).
     """
 
     no_export = False
@@ -489,7 +568,6 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
     number_of_runs = len(info_df)
     counter = 0
     errors = []
-
 
     for indx, row in info_df.iterrows():
         counter += 1
@@ -584,7 +662,19 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
 
 
 def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
-    """writes the summaries to csv-files"""
+    """Writes the summaries to csv-files
+    
+    Args:
+        frames: list of ``cellpy`` summary DataFrames
+        keys: list of indexes (typically run-names) for the different runs
+        selected_summaries: list defining which summary data to save
+        batch_dir: directory to save to
+        batch_name: the batch name (will be used for making the file-name(s))
+
+    Returns: a pandas DataFrame with your selected summaries.
+
+    """
+
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     summary_df = pd.concat(frames, keys=keys, axis=1)
     # saving the selected summaries
@@ -600,12 +690,38 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
 
 
 def pick_summary_data(key, summary_df, selected_summaries):
+    """picks the selected pandas.DataFrame"""
+
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     value = selected_summaries_dict[key]
     return summary_df.iloc[:, summary_df.columns.get_level_values(1)==value]
 
 
 def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False, plot_style=None):
+    """creates a plot of the selected df-data in the given axes.
+    
+    Typical usage:
+        standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)
+        list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df, info_df=info_df, color_list=color_list,
+                                                  symbol_list=symbol_list, is_charge=False, plot_style=plot_style)
+                                                  
+        # the ce_df is a pandas.DataFrame with ce-values for all your selected cells.
+        # the color_list and the symbol_list are both list with colors and symbols to use when plotting to ensure
+        # that if you have several subplots (axes), then the lines and symbols match up for each given cell.
+    
+    Args:
+        ax: the matplotlib axes to plot on
+        df: DataFrame with the data to plot
+        info_df: DataFrame with info for the data
+        color_list: List of colors to use
+        symbol_list: List of symbols to use
+        is_charge: plots open symbols if True
+        plot_style: selected style of the plot
+
+    Returns: list of the matplotlib lines (convenient to have if you are adding a custom legend)
+        the plot style (dictionary with matplotlib plotstyles)
+
+    """
 
     logger.debug("trying to plot summary data")
     if plot_style is None:
@@ -636,11 +752,29 @@ def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False,
 
 
 def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_summaries,
-                        batch_dir, batch_name, plot_style=None, show=False, save=True):
+                        batch_dir, batch_name, plot_style=None, show=False, save=True,
+                        figure_type=None):
+    """Create a figure with summary graphs.
+    
+    Not finished yet (but can be used).
+    
+    Args:
+        info_df: the pandas DataFrame with info about the runs.
+        summary_df: a pandas DataFrame with the summary data.
+        color_list: a list of colors to use (one pr. group)
+        symbol_list: a list of symbols to use (one pr. cell in the largest group)
+        selected_summaries: a list of the selected summaries to plot
+        batch_dir: path to the folder where the figure should be saved.
+        batch_name: the batch name.
+        plot_style: the matplotlib plot-style to use.
+        show: show the figure if True.
+        save: save the figure if True.
+        figure_type: a string for selecting type of figure to make (not used yet).
+    """
+
     # Not finished yet
 
-
-
+    logger.debug("creating figure ({})".format(figure_type))
     standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)  # , figsize = (5,4))
 
     # pick data
@@ -717,53 +851,22 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
         plt.show()
     return standard_fig, (ce_ax, cap_ax, ir_ax)
 
-def _remove_date(label):
-    _ = label.split("_")
-    return _[1]+"_"+_[2]
 
-def create_labels(label):
+def create_labels(label, *args):
+    """Returns a re-formatted label (currently it only removes the dates from the run-name)"""
     return _remove_date(label)
 
 
-def _fix_groups(groups):
-    _groups = []
-    for g in groups:
-        if not float(g) > 0:
-            _groups.append(1000)
-        else:
-            _groups.append(int(g))
-    return _groups
-
-def extract_dqdv(cell_data, extract_func):
-    from cellpy.utils.ica import dqdv
-    # extracting charge
-    list_of_cycles = cell_data.get_cycle_numbers()
-    out_data = []
-    for cycle in list_of_cycles:
-        c, v = extract_func(cycle)
-        try:
-            v, dQ = dqdv(v, c)
-            v = v.tolist()
-            dQ = dQ.tolist()
-        except IndexError or OverflowError as e:
-            error_in_dqdv = True
-            v = list()
-            dq = list()
-            print(" -could not process this (cycle %i)" % (cycle))
-            print(" %s" % e)
-
-        header_x = "dQ cycle_no %i" % cycle
-        header_y = "voltage cycle_no %i" % cycle
-        dQ.insert(0, header_x)
-        v.insert(0, header_y)
-
-        out_data.append(v)
-        out_data.append(dQ)
-    return out_data
-
-
 def export_dqdv(cell_data, savedir, sep):
-    filename = cell_data.tests[0].loaded_from  # should probably include a method in cellpyreader to extract this value
+    """Exports dQ/dV data from a CellpyData instance.
+    
+    Args:
+        cell_data: CellpyData instance
+        savedir: path to the folder where the files should be saved
+        sep: separator for the .csv-files.
+    """
+
+    filename = cell_data.dataset.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
     firstname += no_merged_sets
@@ -777,15 +880,13 @@ def export_dqdv(cell_data, savedir, sep):
     print("%s: you have %i cycles" % (filename, number_of_cycles))
 
     # extracting charge
-    out_data = extract_dqdv(cell_data, cell_data.get_ccap)
-    save_multi(data=out_data, file_name=outname_charge, sep=sep)
+    out_data = _extract_dqdv(cell_data, cell_data.get_ccap)
+    _save_multi(data=out_data, file_name=outname_charge, sep=sep)
 
     # extracting discharge
-    out_data = extract_dqdv(cell_data, cell_data.get_dcap)
-    save_multi(data=out_data, file_name=outname_discharge, sep=sep)
+    out_data = _extract_dqdv(cell_data, cell_data.get_dcap)
+    _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
 
-
-# -----------------------------------------------------------------------------
 
 def init(*args, **kwargs):
     """Returns an initialized instance of the Batch class"""
@@ -813,7 +914,6 @@ def main():
     # b.load_and_save_raw()
     # b.make_summaries()
     # print("Finished!")
-
 
 
 if __name__ == '__main__':
