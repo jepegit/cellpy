@@ -419,7 +419,7 @@ class reader:
         fsheet = self.ftable
         column_number_serial_number_position = self.db_sheet_filename_cols.serial_number_position
         column_number_start_filenames = self.db_sheet_filename_cols.files
-        column_number_hdf5 = self.db_sheet_cols.M
+        column_number_hdf5 = self.db_sheet_cols.finished_run
         column_number_filename = self.db_sheet_cols.fileid
         if full_path:
             datadir = self.db_datadir

@@ -88,6 +88,7 @@ figure_types["discharge_limited"] = FigureType(4, 1, [True, True], [False, True]
 
 def _create_info_dict(reader, srnos):
     # reads from the db and populates a dictionary
+    cell_type = prms.Instruments["cell_configuration"]
     info_dict = dict()
     info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
     info_dict["masses"] = [reader.get_mass(srno) for srno in srnos]
@@ -95,8 +96,7 @@ def _create_info_dict(reader, srnos):
     info_dict["loadings"] = [reader.get_loading(srno) for srno in srnos]
     info_dict["fixed"] = [reader.inspect_hd5f_fixed(srno) for srno in srnos]
     info_dict["labels"] = [reader.get_label(srno) for srno in srnos]
-    info_dict["cell_type"] = ["anode" for srno in srnos]
-
+    info_dict["cell_type"] = [cell_type for srno in srnos]
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
     for key in info_dict.keys():
@@ -277,8 +277,8 @@ class Batch(object):
             self.project = args[1]
 
         self.time_stamp = None
-        self.default_figure_types = figure_types.keys()
-        self.default_figure_type = self.default_figure_types[0]
+        self.default_figure_types = prms.Batch["figure_type"]
+        self.default_figure_type = "unlimited"
         self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
                                    "cumulated_coulombic_efficiency",
                                    "ir_discharge", "ir_charge",
@@ -384,6 +384,11 @@ class Batch(object):
         reader_label = prms.Db["db_type"]
         self.reader = get_db_reader(reader_label)
 
+    def _create_colors_markers_list(self):
+        import cellpy.utils.plotutils as plot_utils
+        return plot_utils.create_colormarkerlist_for_info_df(self.info_df, symbol_label=self.symbol_label,
+                                                             color_style_label=self.color_style_label)
+
     def create_info_df(self):
         """Creates a DataFrame with info about the runs (loaded from the DB)"""
         logger.debug("running create_info_df")
@@ -406,6 +411,7 @@ class Batch(object):
         jason_string = json.dumps(top_level_dict, default=lambda info_df: json.loads(info_df.to_json()))
         with open(self.info_file, 'w') as outfile:
             outfile.write(jason_string)
+        logger.info("Saved file to {}".format(self.info_file))
 
     def load_info_df(self, file_name=None):
         """Loads a DataFrame with all the needed info about the run (JSON file)"""
@@ -458,12 +464,7 @@ class Batch(object):
 
     def make_stats(self):
         """Not implemented yet"""
-        pass
-
-    def _create_colors_markers_list(self):
-        import cellpy.utils.plotutils as plot_utils
-        return plot_utils.create_colormarkerlist_for_info_df(self.info_df, symbol_label=self.symbol_label,
-                                                             color_style_label=self.color_style_label)
+        raise NotImplementedError
 
     def plot_summaries(self, show=False, save=True, figure_type=None):
         """Plot summary graphs.
@@ -493,7 +494,7 @@ class Batch(object):
 
     def report(self):
         """Not implemented yet"""
-        pass
+        raise NotImplementedError
 
 
 def create_selected_summaries_dict(summaries_list):
@@ -826,7 +827,6 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
                         batch_dir, batch_name, plot_style=None, show=False, save=True,
                         figure_type=None):
     """Create a figure with summary graphs.
-    
     Args:
         info_df: the pandas DataFrame with info about the runs.
         summary_df: a pandas DataFrame with the summary data.
@@ -984,10 +984,8 @@ def export_dqdv(cell_data, savedir, sep):
 
 def init(*args, **kwargs):
     """Returns an initialized instance of the Batch class"""
-
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
-
     import cellpy.log as log
     log.setup_logging(custom_log_dir=prms.Paths["filelogdir"],
                       default_level=default_log_level)
