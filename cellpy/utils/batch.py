@@ -24,6 +24,67 @@ logging.captureWarnings(True)
 DEFAULT_PLOT_STYLE = {"markersize": prms.Batch["markersize"]}
 
 
+class FigureType(object):
+    """Object for storing figure type definitions.
+
+    Creates and FigureType instance with information on number of subplots (rows and columns),
+    and selectors for showing charge and discharge as list of booleans.
+    
+    """
+
+    def __init__(self, number_of_rows=1, number_of_cols=1, capacity_selector=None, ir_selector=None,
+                 end_voltage_selector=None,
+                 axes = None):
+        self.number_of_rows_and_cols = (number_of_rows, number_of_cols)
+
+        self.capacity_selector = capacity_selector
+        if self.capacity_selector is None:
+            self.capacity_selector = [True, True]
+
+        self.ir_selector = ir_selector
+        if self.ir_selector is None:
+            self.ir_selector = [True, True]
+
+        self.end_voltage_selector = end_voltage_selector
+        if self.end_voltage_selector is None:
+            self.end_voltage_selector = [True, True]
+
+        self.axes = axes
+        if self.axes is None:
+            self.axes = {"ce_ax": 0}
+
+    @property
+    def rows(self):
+        return self.number_of_rows_and_cols[0]
+
+    @property
+    def columns(self):
+        return self.number_of_rows_and_cols[-1]
+
+    def retrieve_axis(self, ax_label, ax):
+        if ax_label in self.axes.keys():
+            return ax[self.axes[ax_label]]
+        else:
+            return None
+
+        # if figure_type == "summaries":
+        #     ce_ax, cap_ax, ir_ax = ax
+        #     ev_ax = None
+        # elif figure_type == "experimental":
+        #     ce_ax, cap_ax, ev_ax, ir_ax = ax
+        # else:
+        #     ce_ax, cap_ax, ir_ax = ax
+        #     ev_ax = None
+
+figure_types = dict()
+figure_types["summaries"] = FigureType(3,1, [True, True], [True, True], [True, True],
+                                       {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2,},)
+figure_types["unlimited"] = FigureType(3, 1, [True, True], [True, True], [True, True],
+                                         {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2,},)
+figure_types["charge_limited"] = FigureType(4, 1, [True, True], [True, False], [False, True],
+                                           {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
+figure_types["discharge_limited"] = FigureType(4, 1, [True, True], [False, True], [True, False],
+                                              {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
 
 def _create_info_dict(reader, srnos):
     # reads from the db and populates a dictionary
@@ -216,6 +277,8 @@ class Batch(object):
             self.project = args[1]
 
         self.time_stamp = None
+        self.default_figure_types = figure_types.keys()
+        self.default_figure_type = self.default_figure_types[0]
         self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
                                    "cumulated_coulombic_efficiency",
                                    "ir_discharge", "ir_charge",
@@ -408,15 +471,15 @@ class Batch(object):
         Args:
             show: shows the figure if True.
             save: saves the figure if True.
-            figure_type: optional, figure type to create (not implemented yet).
+            figure_type: optional, figure type to create.
         """
-        default_figure_type = "summary"
-        if not figure_type:
-            figure_type = default_figure_type
 
-        if not figure_type in [default_figure_type,]:
+        if not figure_type:
+            figure_type = self.default_figure_type
+
+        if not figure_type in self.default_figure_types:
             logger.debug("unknown figure type selected")
-            figure_type = default_figure_type
+            figure_type = self.default_figure_type
 
         color_list, symbol_list = self._create_colors_markers_list()
         summary_df = self.summary_df
@@ -425,8 +488,8 @@ class Batch(object):
         batch_name = self.name
         fig, ax = plot_summary_figure(self.info_df, summary_df, color_list, symbol_list, selected_summaries,
                                       batch_dir, batch_name, show=show, save=save, figure_type=figure_type)
-        self.figure["summaries"] = fig
-        self.axes["summaries"] = ax
+        self.figure[figure_type] = fig
+        self.axes[figure_type] = ax
 
     def report(self):
         """Not implemented yet"""
@@ -674,6 +737,14 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
     Returns: a pandas DataFrame with your selected summaries.
 
     """
+    if not frames:
+        print("Could save summaries - no summaries to save!")
+        logger.info("You have no frames - aborting")
+        return None
+    if not keys:
+        print("Could save summaries - no summaries to save!")
+        logger.info("You have no keys - aborting")
+        return None
 
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     summary_df = pd.concat(frames, keys=keys, axis=1)
@@ -756,8 +827,6 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
                         figure_type=None):
     """Create a figure with summary graphs.
     
-    Not finished yet (but can be used).
-    
     Args:
         info_df: the pandas DataFrame with info about the runs.
         summary_df: a pandas DataFrame with the summary data.
@@ -769,20 +838,24 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
         plot_style: the matplotlib plot-style to use.
         show: show the figure if True.
         save: save the figure if True.
-        figure_type: a string for selecting type of figure to make (not used yet).
+        figure_type: a string for selecting type of figure to make.
     """
-
-    # Not finished yet
+    figure_type_object = figure_types[figure_type]
 
     logger.debug("creating figure ({})".format(figure_type))
-    standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)  # , figsize = (5,4))
+    standard_fig, ax = plt.subplots(nrows=figure_type_object.rows, ncols=figure_type_object.columns,
+                                    sharex=True)
 
-    # pick data
+    ce_ax = figure_type_object.retrieve_axis("ce_ax", ax)
+    cap_ax = figure_type_object.retrieve_axis("cap_ax", ax)
+    ir_ax = figure_type_object.retrieve_axis("ir_ax", ax)
+    ev_ax = figure_type_object.retrieve_axis("ev_ax", ax)
+
+    # pick data (common for all plot types)
+    # could include a if cd_ax: pick_summary_data...
     ce_df = pick_summary_data("coulombic_efficiency", summary_df, selected_summaries)
     cc_df = pick_summary_data("charge_capacity", summary_df, selected_summaries)
     dc_df = pick_summary_data("discharge_capacity", summary_df, selected_summaries)
-    irc_df = pick_summary_data("ir_charge", summary_df, selected_summaries)
-    ird_df = pick_summary_data("ir_discharge", summary_df, selected_summaries)
 
     # generate labels
     ce_labels = [info_df.get_value(filename, "labels") for filename in ce_df.columns.get_level_values(0)]
@@ -793,6 +866,8 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     # plot ce
     list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df, info_df=info_df, color_list=color_list,
                                                   symbol_list=symbol_list, is_charge=False, plot_style=plot_style)
+    ce_ax.set_ylabel("Coulombic\nefficiency\n(%)")
+    ce_ax.locator_params(nbins=5)
 
     # adding charge/discharge label
     color = plot_style["color"]
@@ -807,9 +882,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
     list_of_lines.extend([no_label, closed_label, open_label])
 
-    ce_ax.set_ylabel("Coulombic\nefficiency\n(%)")
-    ce_ax.locator_params(nbins=5)
-
+    # plotting capacity (common)
     plot_summary_data(cap_ax, cc_df, is_charge=True, info_df=info_df, color_list=color_list,
                       symbol_list=symbol_list, plot_style=plot_style)
     plot_summary_data(cap_ax, dc_df, is_charge=False, info_df=info_df, color_list=color_list,
@@ -817,9 +890,15 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     cap_ax.set_ylabel("Capacity\n(mAh/g)")
     cap_ax.locator_params(nbins=4)
 
-    plot_summary_data(ir_ax, irc_df, is_charge=True, info_df=info_df, color_list=color_list,
-                      symbol_list=symbol_list, plot_style=plot_style)
-    plot_summary_data(ir_ax, ird_df, is_charge=False, info_df=info_df, color_list=color_list,
+    # plotting ir data (common)
+    plot_ir_charge, plot_ir_discharge = figure_type_object.ir_selector
+    if plot_ir_charge:
+        irc_df = pick_summary_data("ir_charge", summary_df, selected_summaries)
+        plot_summary_data(ir_ax, irc_df, is_charge=True, info_df=info_df, color_list=color_list,
+                          symbol_list=symbol_list, plot_style=plot_style)
+    if plot_ir_discharge:
+        ird_df = pick_summary_data("ir_discharge", summary_df, selected_summaries)
+        plot_summary_data(ir_ax, ird_df, is_charge=False, info_df=info_df, color_list=color_list,
                       symbol_list=symbol_list, plot_style=plot_style)
 
     ir_ax.set_ylabel("Internal\nresistance\n(Ohms)")
@@ -827,6 +906,21 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     ir_ax.locator_params(axis="y", nbins=4)
     ir_ax.locator_params(axis="x", nbins=10)
     # should use MaxNLocator here instead
+
+    # pick data (not common for all plot types)
+    if ev_ax is not None:
+        plot_ev_charge, plot_ev_discharge = figure_type_object.end_voltage_selector
+        if plot_ev_charge:
+            evc_df = pick_summary_data("end_voltage_charge", summary_df, selected_summaries)
+            plot_summary_data(ev_ax, evc_df, is_charge=True, info_df=info_df, color_list=color_list,
+                          symbol_list=symbol_list, plot_style=plot_style)
+        if plot_ev_discharge:
+            evd_df = pick_summary_data("end_voltage_discharge", summary_df, selected_summaries)
+            plot_summary_data(ev_ax, evd_df, is_charge=False, info_df=info_df, color_list=color_list,
+                              symbol_list=symbol_list, plot_style=plot_style)
+
+        ev_ax.set_ylabel("End\nvoltage\n(V)")
+        ev_ax.locator_params(axis="y", nbins=4)
 
     # tweaking
     plt.subplots_adjust(left=0.07, right=0.93, top=0.9, wspace=0.25, hspace=0.15)
@@ -845,7 +939,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     if save:
         extension = prms.Batch["fig_extension"]
         dpi = prms.Batch["dpi"]
-        figure_file_name = os.path.join(batch_dir, "summaryplot_1_%s.%s" % (batch_name, extension))
+        figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
         standard_fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
     if show:
         plt.show()
@@ -901,19 +995,40 @@ def init(*args, **kwargs):
     return b
 
 
+def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
+    number_of_stars_to_print = (79 - len(name))//2
+    print()
+    print(number_of_stars_to_print*"*", end='')
+    print(name, end='')
+    print(number_of_stars_to_print*"*")
+    for item in dir_items:
+        if not item.startswith("_"):
+            print("{}{}".format(bullet,item))
+
 def main():
-    print("Running batch.py")
-    b = init("bec_exp06", "SiBEC", default_log_level="DEBUG", reader="excel", me="Jan Petter")
-    # b.create_info_df()
-    # b.create_folder_structure()
-    # b.save_info_df()
-    # b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp06.json")
-    # print(b)
-    # print("The info DataFrame:")
-    # print(b.info_df.head(5))
-    # b.load_and_save_raw()
-    # b.make_summaries()
-    # print("Finished!")
+    LOAD_JSON = True
+    if not LOAD_JSON:
+        print("Running batch.py (loading from db)")
+        b = init("bec_exp06", "CellpyTest", default_log_level="DEBUG", reader="excel", me="Jan Petter")
+        b.create_info_df()
+        b.create_folder_structure()
+        b.save_info_df()
+        print(b.info_file)
+    else:
+        print("Running batch.py (loading JSON)")
+        b = init(default_log_level="DEBUG")
+        b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\CellpyTest\cellpy_batch_bec_exp06.json")
+    print(b)
+    print("The info DataFrame:")
+    print(b.info_df.head(5))
+    b.force_cellpy_file=True
+    b.load_and_save_raw()
+    b.make_summaries()
+    print(b.default_figure_types)
+    b.plot_summaries(show=False)
+    b.plot_summaries(show=True, figure_type="charge_limited")
+    _print_dict_keys(dir(b), name="batch instance")
+    print("Finished!")
 
 
 if __name__ == '__main__':

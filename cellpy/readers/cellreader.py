@@ -309,8 +309,14 @@ class FileID(object):
         txt = "\nfileID information\n"
         txt += "full name: %s\n" % self.full_name
         txt += "name: %s\n" % self.name
-        txt += "modified: %i\n" % self.last_modified
-        txt += "size: %i\n" % self.size
+        if self.last_modified is not None:
+            txt += "modified: %i\n" % self.last_modified
+        else:
+            txt += "modified: NAN\n"
+        if self.size is not None:
+            txt += "size: %i\n" % int(self.size)
+        else:
+            txt += "size: NAN\n"
         return txt
 
     def populate(self, filename):
