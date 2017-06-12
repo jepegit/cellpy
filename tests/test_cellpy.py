@@ -83,7 +83,7 @@ def test_setup_cellpy_instance():
     d = cellreader.setup_cellpy_instance()
 
 
-@pytest.mark.unimportant
+# @pytest.mark.unimportant
 def test_humanize_bytes():
     from cellpy import cellreader
     assert cellreader.humanize_bytes(1) == '1 byte'
