@@ -68,7 +68,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     if not all([raw_file_dir,cellpy_file_dir,file_name_format]):
         #import cellpy.parameters.prms as prms
         # prms = prmreader.read()
-        logger.info("using prms already set")
+        logger.debug("using prms already set")
 
     if raw_file_dir is None:
         raw_file_dir = prms.Paths["rawdatadir"]
