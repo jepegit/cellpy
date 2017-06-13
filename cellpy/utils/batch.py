@@ -277,8 +277,8 @@ class Batch(object):
             self.project = args[1]
 
         self.time_stamp = None
-        self.default_figure_types = prms.Batch["figure_type"]
-        self.default_figure_type = "unlimited"
+        self.default_figure_types = figure_types.keys()
+        self.default_figure_type = prms.Batch["figure_type"]
         self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
                                    "cumulated_coulombic_efficiency",
                                    "ir_discharge", "ir_charge",
