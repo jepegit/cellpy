@@ -14,8 +14,8 @@ import numpy as np
 
 import pandas as pd
 
-from cellpy.readers.cellreader import dataset
-from cellpy.readers.cellreader import fileID
+from cellpy.readers.cellreader import DataSet
+from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import get_headers_normal
@@ -256,12 +256,12 @@ class ArbinLoader(object):
 
         tests = global_data_df[self.headers_normal['test_id_txt']]
         number_of_sets = len(tests)
-        self.logger.debug("number of tests: %i" % number_of_sets)
+        self.logger.debug("number of datasets: %i" % number_of_sets)
         self.logger.debug("only selecting first test")
         test_no = 0
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
-        #fid = fileID(file_name)
+        #fid = FileID(file_name)
         start_datetime = global_data_df[self.headers_global['start_datetime_txt']][test_no]
         test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
         test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
@@ -398,13 +398,13 @@ class ArbinLoader(object):
 
         tests = global_data_df[self.headers_normal['test_id_txt']]  # OBS
         number_of_sets = len(tests)
-        self.logger.debug("number of tests: %i" % number_of_sets)
+        self.logger.debug("number of datasets: %i" % number_of_sets)
 
         for test_no in range(number_of_sets):
-            data = dataset()
+            data = DataSet()
             data.test_no = test_no
             data.loaded_from = file_name
-            fid = fileID(file_name)
+            fid = FileID(file_name)
             # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
             data.channel_index = int(global_data_df[self.headers_global['channel_index_txt']][test_no])
             data.channel_number = int(global_data_df[self.headers_global['channel_number_txt']][test_no])

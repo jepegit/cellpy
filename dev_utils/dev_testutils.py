@@ -11,6 +11,10 @@ PIP_DEVELOPMENT_MODE = "pip install -e ."  # will install in development mode fo
 MAKE_DIST = "python setup.py sdist"  # creates a build with version number name
 UPLOAD_PYPI = "twine upload dist/*"  # uploads to pypi (note! remove old tar-files first if using *)
 
+# some sphinx commands
+# BUILD = "sphinx-build -b html sourcedir builddir" # not used
+EASY_BUILD = "make html" # inside the docs directory to make html docs
+CREATE_APIDOC = "sphinx-apidoc -o source ..\cellpy" # inside the docs directory to make .rst files for docstrings etc.
 
 current_file_path = os.path.dirname(os.path.realpath(__file__))
 relative_test_dir = "../tests"
@@ -38,11 +42,11 @@ def create_cellpyfile_in_example_dir(force=False):
         print test_cellpy_file_full
         force = True
     if force:
-        d = cellreader.cellpydata()
+        d = cellreader.CellpyData()
         d.loadcell(test_res_file_full)
         d.make_summary(find_ir=True)
-        d.create_step_table()
-        d.save_test(test_cellpy_file_full)
+        d.make_step_table()
+        d.save(test_cellpy_file_full)
     print 79 * "="
 
 

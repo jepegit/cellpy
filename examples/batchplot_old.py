@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 """Script for automatically loading cell-data and making summaries"""
 
-import sys
-import os
-
-from numpy import amin, amax, array, argsort
-import pandas as pd
-import itertools
 import csv
-import matplotlib.pyplot as plt
+import itertools
+import os
+import pickle as pl
+import sys
+
 import matplotlib
 import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.ticker import MaxNLocator
-import pickle as pl
+from numpy import amin, amax, array, argsort
 
 from cellpy import cellreader, dbreader, prmreader, filefinder
 from cellpy.utils import plotutils
@@ -801,7 +801,7 @@ class summaryplot:
             print my_run_name
             print 50*"-"
             rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
-            cell_data = cellreader.cellpydata(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
+            cell_data = cellreader.CellpyData(verbose=self.verbose, fetch_onliners=self.fetch_onliners)
             cell_data.set_cellpy_datadir(cellpydatadir)
             cell_data.set_raw_datadir(rawdatadir)
             cell_data.set_cycle_mode(cycle_mode)
@@ -1061,7 +1061,7 @@ class summaryplot:
         for cell_data_object in self.tests:
             cell_data = cell_data_object.tests[test_number]
             if cell_data is None:
-                print "NoneType - dataset missing"
+                print "NoneType - DataSet missing"
             else:
                 filename = cell_data.loaded_from
                 no_merged_sets = ""
@@ -1112,7 +1112,7 @@ class summaryplot:
                 out_data = []
                 for cycle in list_of_cycles:
                     try:
-                        dc, v = cell_data_object.get_dcap(cycle, test_number=test_number)
+                        dc, v = cell_data_object.get_dcap(cycle, dataset_number=test_number)
                         v, dQ = dqdv(v, dc)
                         v = v.tolist()
                         dQ = dQ.tolist()
@@ -1140,7 +1140,7 @@ class summaryplot:
 
     def _export_dqdv(self, savedir, sep):
         """internal function for running dqdv script """
-        from cellpy.utils.dqdv import dQdV
+        from old.dqdv import dQdV
         dqdv_numbermultiplyer = self.dqdv_numbermultiplyer
         dqdv_method = self.dqdv_method
         dqdv_finalinterpolation = self.dqdv_finalinterpolation
@@ -1149,7 +1149,7 @@ class summaryplot:
         for cell_data_object in self.tests:
             cell_data = cell_data_object.tests[test_number]
             if cell_data is None:
-                print "NoneType - dataset missing"
+                print "NoneType - DataSet missing"
             else:
                 filename = cell_data.loaded_from
                 no_merged_sets = ""
@@ -1203,7 +1203,7 @@ class summaryplot:
                 out_data = []
                 for cycle in list_of_cycles:
                     try:
-                        dc, v = cell_data_object.get_dcap(cycle, test_number=test_number)
+                        dc, v = cell_data_object.get_dcap(cycle, dataset_number=test_number)
                         v, dQ = dQdV(v, dc,
                                      NumberMultiplyer=dqdv_numbermultiplyer,
                                      Method=dqdv_method,
@@ -1287,7 +1287,7 @@ class summaryplot:
             try:
                 test_number = 0
                 for cell_data_object in self.tests:
-                    cell_data_object.exportcsv(savedir, sep=self.sep)
+                    cell_data_object.to_csv(savedir, sep=self.sep)
             except:
                 print "Error in exporting raw data"
 
@@ -1298,7 +1298,7 @@ class summaryplot:
             try:
                 test_number = 0
                 for cell_data_object in self.tests:
-                    cell_data_object.exportcsv(savedir, sep=self.sep, cycles=True, raw=False)
+                    cell_data_object.to_csv(savedir, sep=self.sep, cycles=True, raw=False)
 
             except:
                 print "Error in exporting cycles"
@@ -1323,7 +1323,7 @@ class summaryplot:
                         if self.ensure_step_table:
                             cell_data_object.ensure_step_table = True
 
-                        cell_data_object.save_test(filename, test_number=test_number)
+                        cell_data_object.save(filename, dataset_number=test_number)
                     except:
                         print "Could not save",
                         print filename + ".h5"

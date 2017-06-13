@@ -1,6 +1,13 @@
 cellpy.readers package
 ======================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    cellpy.readers.instruments
+
 Submodules
 ----------
 

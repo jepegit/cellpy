@@ -105,7 +105,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'cellpy'
-copyright = u"2016, Jan Petter Maehlen"
+copyright = u"2017, Jan Petter Maehlen"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -191,7 +191,7 @@ html_theme = 'default'
 # here, relative to this directory. They are copied after the builtin
 # static files, so a file named "default.css" will overwrite the builtin
 # "default.css".
-html_static_path = ['_static']
+html_static_path = ['_build/_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
