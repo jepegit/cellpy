@@ -78,3 +78,6 @@ cellpy/parametres/_cellpy_prms_devel.ini
 dev_utils/BioLogic.py_tmp
 testdata/hdf5/20160306_snx001_10_cc_01.h5
 sh.exe.stackdump
+#examples/jupyter notebooks/
+#testdata/data/
+xdist/

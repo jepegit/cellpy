@@ -48,7 +48,7 @@ import cellpy.parameters.prms as prms
 
 # import logging.config
 
-# TODO: fix chained assignments and performance warnings (un-comment below and fix)
+# TODO: fix chained assignments and performance warnings (comment below and fix)
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
@@ -206,12 +206,20 @@ def humanize_bytes(b, precision=1):
     >>> humanize_bytes(1024*1234*1111,1)
     '1.3 GB'
     """
+    # abbrevs = (
+    #     (1 << 50L, 'PB'),
+    #     (1 << 40L, 'TB'),
+    #     (1 << 30L, 'GB'),
+    #     (1 << 20L, 'MB'),
+    #     (1 << 10L, 'kB'),
+    #     (1, 'b')
+    # )
     abbrevs = (
-        (1 << 50L, 'PB'),
-        (1 << 40L, 'TB'),
-        (1 << 30L, 'GB'),
-        (1 << 20L, 'MB'),
-        (1 << 10L, 'kB'),
+        (1 << 50, 'PB'),
+        (1 << 40, 'TB'),
+        (1 << 30, 'GB'),
+        (1 << 20, 'MB'),
+        (1 << 10, 'kB'),
         (1, 'b')
     )
     if b == 1:
@@ -309,8 +317,14 @@ class FileID(object):
         txt = "\nfileID information\n"
         txt += "full name: %s\n" % self.full_name
         txt += "name: %s\n" % self.name
-        txt += "modified: %i\n" % self.last_modified
-        txt += "size: %i\n" % self.size
+        if self.last_modified is not None:
+            txt += "modified: %i\n" % self.last_modified
+        else:
+            txt += "modified: NAN\n"
+        if self.size is not None:
+            txt += "size: %i\n" % int(self.size)
+        else:
+            txt += "size: NAN\n"
         return txt
 
     def populate(self, filename):
