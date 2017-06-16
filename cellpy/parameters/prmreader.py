@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 default_prms = """
 [Paths]
 outdatadir: ..\outdata
@@ -33,7 +38,7 @@ import glob
 import os
 import sys
 from collections import OrderedDict
-import ConfigParser
+import configparser
 import logging
 import yaml
 
@@ -108,7 +113,7 @@ def _read_prm_file(prm_filename):
 def __look_at(file_name):
     with open(file_name, "r") as config_file:
         t = yaml.load(config_file)
-    print t
+    print(t)
 
 def _get_prm_file(file_name=None, search_order=None):
     """returns name of the prm file"""
@@ -160,7 +165,7 @@ def _get_prm_file(file_name=None, search_order=None):
 
     # -selecting----------------------
     prm_file = None
-    for key, file_list in search_dict.iteritems():
+    for key, file_list in search_dict.items():
         if file_list[-1]:
             prm_file = file_list[-1]
             break
@@ -179,7 +184,7 @@ def _get_prm_file(file_name=None, search_order=None):
 
 
 
-class read:
+class read(object):
     """reads prm file for cellpy.
 
     To simplify usage, it is possible to store some commonly used parameters
@@ -261,7 +266,7 @@ class read:
                         break
 
             prm_file = None
-            for key, file_list in search_dict.iteritems():
+            for key, file_list in search_dict.items():
                 if file_list[-1]:
                     prm_file = file_list[-1]
                     break
@@ -275,7 +280,7 @@ class read:
                 self.prm_filename = self.prm_default
 
             if not os.path.isfile(self.prm_filename):
-                print "could not find ini-file"
+                print("could not find ini-file")
                 no_file = True
             else:
                 no_file = False
@@ -285,58 +290,58 @@ class read:
         try:
             too = parser.get(opt, name)
 
-        except ConfigParser.NoOptionError as e:
-            print "error",
-            print e
+        except configparser.NoOptionError as e:
+            print("error", end=' ')
+            print(e)
 
     def _readprms(self, prm_filename=None, no_file=False):
         if not prm_filename:
             prm_filename = self.prm_filename
-        parser = ConfigParser.SafeConfigParser()
+        parser = configparser.SafeConfigParser()
         if no_file:
-            import StringIO
-            parser.readfp(StringIO.StringIO(default_prms))
+            import io
+            parser.readfp(io.StringIO(default_prms))
         else:
             parser.read(prm_filename)
 
         opt = "Paths"
         try:
             self.outdatadir = parser.get(opt, "outdatadir")
-        except ConfigParser.NoOptionError as e:
-            print "prmreader.py:",
-            print e
+        except configparser.NoOptionError as e:
+            print("prmreader.py:", end=' ')
+            print(e)
         try:
             self.rawdatadir = parser.get(opt, "rawdatadir")
-        except ConfigParser.NoOptionError as e:
-            print "prmreader.py:",
-            print e
+        except configparser.NoOptionError as e:
+            print("prmreader.py:", end=' ')
+            print(e)
         try:
             self.cellpydatadir = parser.get(opt, "cellpydatadir")
-        except ConfigParser.NoOptionError as e:
-            print "prmreader.py:",
-            print e
+        except configparser.NoOptionError as e:
+            print("prmreader.py:", end=' ')
+            print(e)
         try:
             self.db_path = parser.get(opt, "db_path")
-        except ConfigParser.NoOptionError as e:
-            print "prmreader.py:",
-            print e
+        except configparser.NoOptionError as e:
+            print("prmreader.py:", end=' ')
+            print(e)
         try:
             self.filelogdir = parser.get(opt, "filelogdir")
-        except ConfigParser.NoOptionError as e:
-            print "prmreader.py:",
-            print e
+        except configparser.NoOptionError as e:
+            print("prmreader.py:", end=' ')
+            print(e)
 
         opt = "FileNames"
         try:
             self.db_filename = parser.get(opt, "db_filename")
-        except ConfigParser.NoOptionError as e:
-            print "prmreader.py:",
-            print e
+        except configparser.NoOptionError as e:
+            print("prmreader.py:", end=' ')
+            print(e)
         try:
             self.dbc_filename = parser.get(opt, "dbc_filename")
-        except ConfigParser.NoOptionError as e:
-            print "prmreader.py:",
-            print e
+        except configparser.NoOptionError as e:
+            print("prmreader.py:", end=' ')
+            print(e)
 
     def _writeprms(self):
         print("prmreader.py: _writeprms is not implemented yet")
@@ -356,7 +361,7 @@ class read:
         txt += "dbc_filename:\t%s\n" % self.dbc_filename
         txt += "------------------------------------------------------------\n"
         txt += "seach-path:\n"
-        for p,v in self.search_path.items():
+        for p,v in list(self.search_path.items()):
             txt += "  %s:\t%s\n" % (p,v)
         return txt
 
@@ -370,57 +375,57 @@ def main():
     print("Testing")
     #out = r"C:\Users\jepe\_cellpy_prms_jepe.conf"
     #_write_prm_file(out)
-    print prms.Reader
+    print(prms.Reader)
 
     f = _get_prm_file()
     _write_prm_file(f)
 
-    print f
+    print(f)
 
     _read_prm_file(f)
 
-    print prms.Reader
+    print(prms.Reader)
 
 
 def old_main():
     r = read()  # TODO: remove this
-    print "\n----------------------Read file-----------------------------"
-    print "Search path:"
-    for k, d in r.search_path.items():
-        print k, d,
-        print os.path.isdir(d)
+    print("\n----------------------Read file-----------------------------")
+    print("Search path:")
+    for k, d in list(r.search_path.items()):
+        print(k, d, end=' ')
+        print(os.path.isdir(d))
 
-    print "Prms:"
-    print "------------------------------------------------------------"
-    print r
-    print "------------------------------------------------------------"
+    print("Prms:")
+    print("------------------------------------------------------------")
+    print(r)
+    print("------------------------------------------------------------")
 
     errors = False
     if not os.path.isdir(r.db_path):
-        print "Error! db_path not found"
+        print("Error! db_path not found")
         errors = True
     if not os.path.isdir(r.outdatadir):
-        print "Error! outdatadir not found"
+        print("Error! outdatadir not found")
         errors = True
     if not os.path.isdir(r.rawdatadir):
-        print "Error! rawdatadir not found"
+        print("Error! rawdatadir not found")
         errors = True
     if not os.path.isdir(r.cellpydatadir):
-        print "Error! cellpydatadir not found"
+        print("Error! cellpydatadir not found")
         errors = True
     if not os.path.isdir(r.filelogdir):
-        print "Error! filelogdir not found"
+        print("Error! filelogdir not found")
         errors = True
 
     if not os.path.isfile(os.path.join(r.db_path, r.db_filename)):
-        print "Error! db_filename not found"
+        print("Error! db_filename not found")
         errors = True
     if not os.path.isfile(os.path.join(r.db_path, r.dbc_filename)):
-        print "Error! dbc_filename not found"
+        print("Error! dbc_filename not found")
         errors = True
 
     if errors is False:
-        print "All ok"
+        print("All ok")
 
 
 
