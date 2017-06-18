@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import pytest
 
@@ -60,7 +61,7 @@ def test_filter_select_col_numbers_true_false(db_reader):
     # db_reader.print_serial_number_info(615)
 
     column_numbers = [db_reader.db_sheet_cols.F, db_reader.db_sheet_cols.VC]
-    print "column_numbers:", column_numbers
+    print("column_numbers:", column_numbers)
 
     assert len(db_reader.filter_by_col(column_numbers)) == 0
 

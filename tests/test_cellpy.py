@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import pytest
 import tempfile
@@ -44,7 +45,7 @@ def setup_module():
     try:
         os.mkdir(test_data_dir_out)
     except:
-        print "could not make directory"
+        print("could not make directory")
 
 
 @pytest.mark.smoketest

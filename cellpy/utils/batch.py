@@ -4,6 +4,10 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import warnings
 import logging
@@ -29,7 +33,7 @@ class FigureType(object):
 
     Creates and FigureType instance with information on number of subplots (rows and columns),
     and selectors for showing charge and discharge as list of booleans.
-    
+
     """
 
     def __init__(self, number_of_rows=1, number_of_cols=1, capacity_selector=None, ir_selector=None,
@@ -62,7 +66,7 @@ class FigureType(object):
         return self.number_of_rows_and_cols[-1]
 
     def retrieve_axis(self, ax_label, ax):
-        if ax_label in self.axes.keys():
+        if ax_label in list(self.axes.keys()):
             return ax[self.axes[ax_label]]
         else:
             return None
@@ -99,7 +103,7 @@ def _create_info_dict(reader, srnos):
     info_dict["cell_type"] = [cell_type for srno in srnos]
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
-    for key in info_dict.keys():
+    for key in list(info_dict.keys()):
         logger.debug("%s: %s" % (key, str(info_dict[key])))
 
     _groups = [reader.get_group(srno) for srno in srnos]
@@ -132,14 +136,14 @@ def _save_multi(data, file_name, sep=";"):
     """convenience function for storing data column-wise in a csv-file."""
     with open(file_name, "wb") as f:
         writer = csv.writer(f, delimiter=sep)
-        writer.writerows(itertools.izip_longest(*data))
+        writer.writerows(itertools.zip_longest(*data))
 
 
 def _make_unique_groups(info_df):
     # fixes group numbering
     unique_g = info_df.groups.unique()
     unique_g = sorted(unique_g)
-    new_unique_g = range(len(unique_g))
+    new_unique_g = list(range(len(unique_g)))
     info_df["sub_groups"] = info_df["groups"] * 0
     for i, j in zip(unique_g, new_unique_g):
         counter = 1
@@ -197,73 +201,73 @@ def _extract_dqdv(cell_data, extract_func):
 
 class Batch(object):
     """The Batch object
-    
+
     The Batch class is a utility class for pipe-lining batch processing of cell cycle data.
     It is primarily designed for use in `jupyter notebooks`. The typical usage structure is:
-    
+
     1. Import the batch module (this also gives you access to the cellpy parameters (`batch.prms`)
-    
+
     >>> from cellpy.utils import batch
-    
+
     2. Initialization of the batch class
-    
+
     >>> b = batch.init()
     >>> # you can also give the name of the batch, the project name, the log-level, and the batch column number
     >>> # as parameters to the batch.init function, e.g.
     >>> # b = batch.init("batch_name", "project_name", default_log_level="INFO", batch_col=5)
-    
+
     3. Set parameters for your experiment
-    
+
     >>> b.name = "experiment_set_01"
     >>> b.project = "new_exiting_chemistry"
-    >>> 
+    >>>
     >>> # set additional parameters if the defaults are not ok:
-    >>> 
+    >>>
     >>> b.export_raw = True
     >>> b.export_cycles = True
     >>> b.export_ica = True
     >>> b.save_cellpy_file = True
     >>> b.force_raw_file = False
     >>> b.force_cellpy_file = True
-     
+
     4. The next step is to extract and collect the information needed from your data-base into a DataFrame, and create
        an appropriate folder structure (outdir/project_name/batch_name/raw_data)
-    
+
     >>> b.create_info_df()
-    >>> 
+    >>>
     >>> # or load it from a previous run:
     >>> # filename = "../out_data/experiment_set_01/cellpy_batch_new_exiting_chemistry.json"
     >>> # b.load_info_df(filename)
-    >>> 
+    >>>
     >>> b.create_folder_structure()
-    >>> 
+    >>>
     >>> # You can view your information DataFrame by the pandas head function:
-    >>> 
+    >>>
     >>> b.info_df.head()
-    
+
     5. To run the processing, you can use the convenience function `load_and_save_raw'. This function
        loads all your data-files and saves csv-files of the results.
-    
+
     >>> b.load_and_save_raw()
-    
+
     6. Create some summary csv-files (e.g. containing charge capacities vs. cycle number for all your data-files).
-    
+
     >>> b.make_summaries()
-    
+
     7. Plot
-    
+
     >>> b.plot_summaries()
-    
+
     8. Create some statistics
-    
+
     >>> b.make_stats()
     ... Sorry, but I have not implemented this yet...
-    
+
     9. Report
-    
+
     >>> b.report()
     ... Sorry, reporting is not implemented yet :-(
-    
+
     """
 
     def __init__(self, *args, **kwargs):
@@ -277,7 +281,7 @@ class Batch(object):
             self.project = args[1]
 
         self.time_stamp = None
-        self.default_figure_types = figure_types.keys()
+        self.default_figure_types = list(figure_types.keys())
         self.default_figure_type = prms.Batch["figure_type"]
         self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
                                    "cumulated_coulombic_efficiency",
@@ -433,13 +437,13 @@ class Batch(object):
 
     def create_folder_structure(self):
         """Creates a folder structure based on the project and batch name.
-        
+
         Project - Batch-name - Raw-data-dir
 
         The info_df JSON-file will be stored in the Project folder.
         The summary-files will be saved in the Batch-name folder.
         The raw data (including exported cycles and ica-data) will be saved to the Raw-data-dir.
-        
+
         """
         self.info_file, directories = create_folder_structure(self.project, self.name)
         self.project_dir, self.batch_dir, self.raw_dir = directories
@@ -468,7 +472,7 @@ class Batch(object):
 
     def plot_summaries(self, show=False, save=True, figure_type=None):
         """Plot summary graphs.
-        
+
         Args:
             show: shows the figure if True.
             save: saves the figure if True.
@@ -522,7 +526,7 @@ def create_selected_summaries_dict(summaries_list):
 
 def get_db_reader(db_type):
     """Returns the db_reader.
-    
+
     Args:
         db_type: type of db_reader (string) in ('simple_excel_reader', )
 
@@ -537,7 +541,7 @@ def get_db_reader(db_type):
 
 def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
     """Create a pandas DataFrame with the info needed for ``cellpy`` to load the runs.
-    
+
     Args:
         batch_name (str): Name of the batch.
         batch_col (int): The column number where the batch name is in the db.
@@ -568,12 +572,12 @@ def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
 
 def create_folder_structure(project_name, batch_name):
     """This function creates a folder structure for the batch project.
-    
+
     The folder structure consists of main working folder ``project_name` located in the ``outdatadir`` (as defined
     in the cellpy configuration file) with a sub-folder named ``batch_name``. It also creates a folder
     inside the ``batch_name`` folder for storing the raw data.
     If the folders does not exist, they will be made. The function also returns the name of the info-df.
-    
+
     Args:
         project_name: name of the project
         batch_name: name of the batch
@@ -604,12 +608,12 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
                        export_cycles=False, export_raw=True,
                        export_ica=False, save=True):
     """Reads and saves cell data defined by the info-DataFrame.
-    
+
     The function iterates through the ``info_df`` and loads data from the runs. It saves individual data
     for each run (if selected), as well as returns a list of ``cellpy`` summary DataFrames, a list of
     the indexes (one for each run; same as used as index in the ``info_df``), as well as a list with indexes
     of runs (cells) where an error was encountered during loading.
-    
+
     Args:
         info_df: pandas.DataFrame with information about the runs.
         raw_dir: path to location where you want to save raw data.
@@ -661,36 +665,45 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
                                    mass=row.masses, summary_on_raw=True,
                                    force_raw=force_raw)
             except Exception as e:
-                logger.debug('Failed to load: '+ str(e))
-                errors.append("loadcell:" +str(indx))
+                logger.debug('Failed to load: ' + str(e))
+                errors.append("loadcell:" + str(indx))
                 continue
         else:
             try:
                 cell_data.load(row.cellpy_file_names)
             except Exception as e:
-                logger.debug('Failed to load: '+ str(e))
-                errors.append("load:" +str(indx))
+                logger.debug('Failed to load: ' + str(e))
+                errors.append("load:" + str(indx))
                 continue
 
 
         if not cell_data.check():
             print("...not loaded...")
             logger.debug("Did not pass check(). Could not load cell!")
-            errors.append("check:" +str(indx))
+            errors.append("check:" + str(indx))
             continue
 
         print("...loaded successfully...")
         keys.append(indx)
 
-        summary_tmp = cell_data.get_summary()
+        summary_tmp = cell_data.dataset.dfsummary
         logger.info("Trying to get summary_data")
         if summary_tmp is None:
             logger.info("No existing summary made - running make_summary")
             cell_data.make_summary(find_end_voltage=True, find_ir=True)
 
+        if summary_tmp.index.name == b"Cycle_Index":
+            logger.debug("Strange: 'Cycle_Index' is a byte-string")
+            summary_tmp.index.name = 'Cycle_Index'
+
         if not summary_tmp.index.name == "Cycle_Index":
             logger.debug("Setting index to Cycle_Index")
+            # check if it is a byte-string
+            if b"Cycle_Index" in summary_tmp.columns:
+                logger.debug("Seems to be a byte-string in the column-headers")
+                summary_tmp.rename(columns={b"Cycle_Index": 'Cycle_Index'}, inplace=True)
             summary_tmp.set_index("Cycle_Index", inplace=True)
+
         frames.append(summary_tmp)
 
         if save:
@@ -727,7 +740,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
 
 def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
     """Writes the summaries to csv-files
-    
+
     Args:
         frames: list of ``cellpy`` summary DataFrames
         keys: list of indexes (typically run-names) for the different runs
@@ -750,7 +763,7 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     summary_df = pd.concat(frames, keys=keys, axis=1)
     # saving the selected summaries
-    for key, value in selected_summaries_dict.iteritems():
+    for key, value in selected_summaries_dict.items():
         _summary_file_name = os.path.join(batch_dir, "summary_%s_%s.csv" % (key, batch_name))
         _summary_df = summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
         # include function to tweak headers here (need to learn MultiIndex)
@@ -771,16 +784,16 @@ def pick_summary_data(key, summary_df, selected_summaries):
 
 def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False, plot_style=None):
     """creates a plot of the selected df-data in the given axes.
-    
+
     Typical usage:
         standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)
         list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df, info_df=info_df, color_list=color_list,
                                                   symbol_list=symbol_list, is_charge=False, plot_style=plot_style)
-                                                  
+
         # the ce_df is a pandas.DataFrame with ce-values for all your selected cells.
         # the color_list and the symbol_list are both list with colors and symbols to use when plotting to ensure
         # that if you have several subplots (axes), then the lines and symbols match up for each given cell.
-    
+
     Args:
         ax: the matplotlib axes to plot on
         df: DataFrame with the data to plot
@@ -953,7 +966,7 @@ def create_labels(label, *args):
 
 def export_dqdv(cell_data, savedir, sep):
     """Exports dQ/dV data from a CellpyData instance.
-    
+
     Args:
         cell_data: CellpyData instance
         savedir: path to the folder where the files should be saved

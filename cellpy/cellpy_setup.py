@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import click
 import pkg_resources
@@ -14,8 +15,8 @@ VERSION = cellpy._version.__version__
 def save_prm_file(prm_filename):
     """saves (writes) the prms to file"""
     prmreader._write_prm_file(prm_filename)
-    print "saved_prm_file"
-    print prm_filename
+    print("saved_prm_file")
+    print(prm_filename)
 
 
 def get_package_dir(init_filename=None):
