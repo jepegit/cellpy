@@ -1,3 +1,9 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 from lmfit import Parameters, minimize, report_fit, Model, report_ci
 import numpy as np
 import math
@@ -63,11 +69,11 @@ class MultiCycleOcvFit(object):
         try:
             ocv_fitter.create_model()
         except AttributeError as e:
-            print e
+            print(e)
             return
 
         for cycle in self.cycles:
-            print "Fitting cycle " + str(cycle)
+            print("Fitting cycle " + str(cycle))
             time, voltage = self.data.get_ocv(ocv_type=ocv_type, cycle_number=cycle)
 
             if voltage is not None:
@@ -179,9 +185,9 @@ class MultiCycleOcvFit(object):
         ax4.set_yscale("log")
 
         plot_data = self.get_best_fit_parameters_translated_grouped()
-        print plot_data['ocv']
-        print plot_data['ir']
-        print plot_data['r0']
+        print(plot_data['ocv'])
+        print(plot_data['ir'])
+        print(plot_data['r0'])
 
         ax1.plot(self.get_fit_cycles(), plot_data['ocv'])
         ax2.plot(self.get_fit_cycles(), plot_data['ir'])
@@ -291,7 +297,7 @@ class OcvFit(object):
     def _model(time, ocv, t0, w0, t1, w1, t2, w2, t3, w3, t4, w4):
         # Calculates a voltage profile for the given time array for a given set of parameters
         model = ocv
-        model = model + w0 * np.exp(-time / t0) + w1 * np.exp(-time / t1) + w2 * np.exp(-time / t2) + w3 * np.exp(-time / t3) + w4 * np.exp(-time / t4)
+        model = model + w0 * np.exp(old_div(-time, t0)) + w1 * np.exp(old_div(-time, t1)) + w2 * np.exp(old_div(-time, t2)) + w3 * np.exp(old_div(-time, t3)) + w4 * np.exp(old_div(-time, t4))
 
         return model
 
@@ -326,9 +332,9 @@ class OcvFit(object):
         try:
             self.fit_model()
         except ValueError as e:
-            print e
+            print(e)
         except AttributeError as e:
-            print e
+            print(e)
 
 
     def get_result(self):
@@ -346,14 +352,14 @@ class OcvFit(object):
     def get_best_fit_parameters_translated(self):
         result_dict = dict()
         result_dict['ocv'] = self.best_fit_parameters['ocv']
-        result_dict['ir'] = -((self.best_fit_parameters['ocv'] + self.best_fit_parameters['w0']
+        result_dict['ir'] = old_div(-((self.best_fit_parameters['ocv'] + self.best_fit_parameters['w0']
                             + self.best_fit_parameters['w1'] + self.best_fit_parameters['w2']
                             + self.best_fit_parameters['w3'] + self.best_fit_parameters['w4'])\
-                            - self.zero_voltage) / self.zero_current
+                            - self.zero_voltage), self.zero_current)
 
         for i in range(self.circuits):
-            result_dict['r' + str(i)] = self.best_fit_parameters['w' + str(i)] / self.zero_current
-            result_dict['c' + str(i)] = self.best_fit_parameters['t' + str(i)] / result_dict['r' + str(i)]
+            result_dict['r' + str(i)] = old_div(self.best_fit_parameters['w' + str(i)], self.zero_current)
+            result_dict['c' + str(i)] = old_div(self.best_fit_parameters['t' + str(i)], result_dict['r' + str(i)])
 
         return result_dict
 
@@ -363,9 +369,9 @@ def _main():
     import os
     import matplotlib.pyplot as plt
 
-    print 50 * "="
-    print "FITTING OCV ROUTINES - TEST"
-    print 50 * "-"
+    print(50 * "=")
+    print("FITTING OCV ROUTINES - TEST")
+    print(50 * "-")
 
     # filename(s) and folders etc
     resfilename = "20160809_TF7_A1_04_cc_02.res"
@@ -391,12 +397,12 @@ def _main():
     # cycles to test
     cycles = [i * 10 for i in range(1, 10)]
     cycles = [i * 1 for i in range(1, 100)]
-    print 50 * "-"
-    print "Loading data"
-    print 50 * "-"
+    print(50 * "-")
+    print("Loading data")
+    print(50 * "-")
 
-    print "loading file",
-    print resfilename
+    print("loading file", end=' ')
+    print(resfilename)
 
     # Loading dataframe
     d = cellreader.CellpyData()

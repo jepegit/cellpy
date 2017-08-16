@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 """simple 'db-reader' for excel
 """
+from __future__ import print_function
 
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import sys
 import types
 import pandas as pd
+import numpy as np
 import time
 import tempfile
 import shutil
@@ -33,7 +39,7 @@ class DbSheetCols(object):
         return "<excel_db_cols: %s>" % self.__dict__
 
 
-class reader:
+class reader(object):
     def __init__(self, db_file=None,
                  db_datadir=None,
                  db_datadir_processed=None,
@@ -73,19 +79,19 @@ class reader:
             self.table = self._open_sheet("table")
             self.ftable = self._open_sheet("file_names") # will be removed soon!
         else:
-            print "in test-mode"
+            print("in test-mode")
             t0 = time.time()
             self.table = self._open_sheet_tst("table")
-            print "* %f" % (time.time()-t0)
+            print("* %f" % (time.time()-t0))
             self.ftable = self._open_sheet_tst("file_names")
-            print "* %f" % (time.time()-t0)
+            print("* %f" % (time.time()-t0))
 
         good_db = self._validate()
 
 
     def pick_table(self):
         """Pick the table.
-        
+
         Returns: pandas.DataFrame
 
         """
@@ -114,10 +120,10 @@ class reader:
 
         for i in range(2, wb.nsheets):
             sheet = wb.sheet_by_index(i)
-            print sheet.name
+            print(sheet.name)
             with open("data/%s.csv" % (sheet.name.replace(" ", "")), "w") as file:
                 writer = csv.writer(file, delimiter=",")
-                print sheet, sheet.name, sheet.ncols, sheet.nrows
+                print(sheet, sheet.name, sheet.ncols, sheet.nrows)
 
                 header = [cell.value for cell in sheet.row(0)]
                 writer.writerow(header)
@@ -130,19 +136,19 @@ class reader:
 
     def _open_sheet_tst(self, sheet=None):
         """Opens sheets and returns it"""
-        print "opening sheet",
+        print("opening sheet", end=' ')
         if not sheet:
             sheet = self.db_sheet_table
         elif sheet == "table":
             sheet = self.db_sheet_table
         elif sheet == "file_names":
             sheet = self.db_sheet_filenames
-        print sheet
+        print(sheet)
         t0 = time.time()
 
         header = self.header
         rows_to_skip = self.skiprows
-        print "* %f starting..." % (time.time() - t0)
+        print("* %f starting..." % (time.time() - t0))
 
         # creating tmp-file
         temp_dir = tempfile.gettempdir()
@@ -150,22 +156,22 @@ class reader:
         shutil.copy2(self.db_file, temp_dir)
 
         work_book = pd.ExcelFile(tmp_db_file)
-        print "* %f work_book = pd.ExcelFile(self.db_file)..." % (time.time() - t0)
+        print("* %f work_book = pd.ExcelFile(self.db_file)..." % (time.time() - t0))
         sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
-        print "* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (time.time() - t0)
+        print("* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (time.time() - t0))
         if self.remove_row:
             remove_index = sheet.index[self.remove_row]
             sheet = sheet.drop(remove_index)
-            sheet.reindex(range(0, len(sheet.index)))
+            sheet.reindex(list(range(0, len(sheet.index))))
 
         # removing tmp-file
         if os.path.isfile(tmp_db_file):
-            print "removing tmp file",
-            print tmp_db_file
+            print("removing tmp file", end=' ')
+            print(tmp_db_file)
             try:
                 os.remove(tmp_db_file)
             except WindowsError as e:
-                print "could not remove tmp-file\n%s %s" % (tmp_db_file, e)
+                print("could not remove tmp-file\n%s %s" % (tmp_db_file, e))
         return sheet
 
     def _open_sheet(self, sheet=None):
@@ -184,13 +190,13 @@ class reader:
         if self.remove_row:
             remove_index = sheet.index[self.remove_row]
             sheet = sheet.drop(remove_index)
-            sheet.reindex(range(0, len(sheet.index)))
+            sheet.reindex(list(range(0, len(sheet.index))))
         return sheet
 
 
     def _validate(self):
         """Checks that the db-file is ok
-        
+
         Returns:
             True if OK, False if not.
             """
@@ -241,7 +247,7 @@ class reader:
             txt += ":\t %s\n" % str(value)
             txt += "\n"
         if print_to_screen:
-            print txt
+            print(txt)
             return None
         else:
             return txt
@@ -443,16 +449,14 @@ class reader:
         if not select_hdf5:
             try:
                 for filename in row_filenames.values[0][column_number_start_filenames:]:
-                    if filename and type(filename) in types.StringTypes:
-                        # TODO: find a better way to filter out nan-values
-                        # alternaive filename = str(filename)
-                        # if filename == "nan": (is empty)
+                    print(filename)
+                    if filename and isinstance(filename, str):
                         if full_path:
                             filename = os.path.join(datadir, filename)
                         filenames.append(filename)
             except:
                 if not non_sensitive:
-                    print "error reading file_names-row (res)"
+                    print("error reading file_names-row (res)")
                     sys.exit(-1)
         else:
             try:
@@ -464,7 +468,7 @@ class reader:
                 filenames.append(filename)
             except:
                 if not non_sensitive:
-                    print "error reading file_names-row (hdf5)"
+                    print("error reading file_names-row (hdf5)")
                     sys.exit(-1)
         return filenames
 
@@ -475,9 +479,23 @@ class reader:
         column_number = self.db_sheet_cols.selected
         for serial_number in serial_numbers:
             insp = self._pick_info(serial_number, column_number)
-            if insp > 0:
+            if insp and not self._isnan(insp):
                 new_serial_numbers.append(serial_number)
         return new_serial_numbers
+
+    @staticmethod
+    def _isnan(n):
+        if isinstance(n, str):
+            if n.lower == "nan":
+                return True
+        else:
+            try:
+                if np.isnan(n):
+                    return True
+            except TypeError:
+                return False
+        return False
+
 
     def inspect_finished(self, serial_number):
         column_number = self.db_sheet_cols.finished_run
@@ -615,193 +633,193 @@ class reader:
             criterion = df["A"].map(lambda x: x<12.2) (only series)
             df[criterion]
         """
-        print txt
+        print(txt)
 
 
 
 def _investigate_excel_dbreader_0():
     """Used for testing"""
-    print sys.argv[0]
+    print(sys.argv[0])
     t0 = time.time()
-    print "t0: %f" % t0
+    print("t0: %f" % t0)
     Reader = reader()
     Reader.print_serial_number_info(12)
 
 
 def _investigate_excel_dbreader_1():
     """Used for testing"""
-    print sys.argv[0]
+    print(sys.argv[0])
     t0 = time.time()
-    print "t0: %f" % t0
+    print("t0: %f" % t0)
     Reader = reader()
     serial_numbers = Reader.get_all()
-    print "dt: %f" % (time.time() - t0)
+    print("dt: %f" % (time.time() - t0))
     for j in serial_numbers:
-        print
-        print "checking file",
-        print j
-        print "Filenames:"
+        print()
+        print("checking file", end=' ')
+        print(j)
+        print("Filenames:")
         filenames = Reader.get_filenames(j)
         for fi in filenames:
-            print fi
-    print "dt: %f" % (time.time() - t0)
-    print "finished"
+            print(fi)
+    print("dt: %f" % (time.time() - t0))
+    print("finished")
 
 
 def _investigate_excel_dbreader_2():
     """Used for testing"""
-    print sys.argv[0]
+    print(sys.argv[0])
     Reader = reader()
-    print "testing filtering"
+    print("testing filtering")
     column_numbers = [Reader.db_sheet_cols.FEC, Reader.db_sheet_cols.VC]
     # column_numbers.append(reader.db_sheet_cols.LS)
     o = Reader.filter_by_col(column_numbers)
-    print o
-    print "testing selecting batch"
+    print(o)
+    print("testing selecting batch")
     batch_col = Reader.db_sheet_cols.b01
     batch = "my best"
     a = Reader.select_batch(batch, batch_col)
-    print a
+    print(a)
     batch = "l1"
     a = Reader.select_batch(batch)
-    print a
-    print "finished"
+    print(a)
+    print("finished")
 
 
 def _investigate_excel_dbreader_3():
     """Used for testing"""
-    print "STARTING"
-    print sys.argv[0]
+    print("STARTING")
+    print(sys.argv[0])
     t0 = time.time()
     Reader = reader()
     dt1 = time.time() - t0
-    print "first lets filter the db"
-    print "testing filtering"
+    print("first lets filter the db")
+    print("testing filtering")
     column_numbers = [Reader.db_sheet_cols.FEC, Reader.db_sheet_cols.VC]
     # column_numbers.append(reader.db_sheet_cols.LS)
     o = Reader.filter_by_col(column_numbers)
-    print o
-    print "testing selecting batch"
+    print(o)
+    print("testing selecting batch")
     batch_col = Reader.db_sheet_cols.b01
     batch = "buffer_ss_x"
     # batch = 12
     a = Reader.select_batch(batch, batch_col)
-    print a
-    print "\nselecting the first serial_number"
+    print(a)
+    print("\nselecting the first serial_number")
     serial_number = a[0]
-    print serial_number
-    print "testing picking info"
-    print "\nfirst give me the file_names for serial_number",
-    print serial_number
+    print(serial_number)
+    print("testing picking info")
+    print("\nfirst give me the file_names for serial_number", end=' ')
+    print(serial_number)
     filenames = Reader.get_filenames(serial_number)
     for filename in filenames:
-        print filename
-    print "\nthen print all info for serial_number",
-    print serial_number
+        print(filename)
+    print("\nthen print all info for serial_number", end=' ')
+    print(serial_number)
     Reader.print_serial_number_info(serial_number)
-    print "\nNow I want to get the mass for serial_number",
-    print serial_number
+    print("\nNow I want to get the mass for serial_number", end=' ')
+    print(serial_number)
     mass = Reader.get_mass(serial_number)
-    print mass,
-    print "mg"
+    print(mass, end=' ')
+    print("mg")
     dt2 = time.time() - t0
-    print "The script took %5.3f sec\n(out of this, loading db took %5.3f sec)" % (dt2, dt1)
+    print("The script took %5.3f sec\n(out of this, loading db took %5.3f sec)" % (dt2, dt1))
 
-    print "\nfinished"
+    print("\nfinished")
 
 
 def _investigate_excel_dbreader_4():
     """Used for testing"""
-    print "STARTING"
-    print sys.argv[0]
+    print("STARTING")
+    print(sys.argv[0])
     t0 = time.time()
     Reader = reader()
     serial_number = 340
-    print "inspect_finished",
-    print Reader.inspect_finished(serial_number)
+    print("inspect_finished", end=' ')
+    print(Reader.inspect_finished(serial_number))
     if Reader.inspect_finished(serial_number):
-        print "True"
+        print("True")
     else:
-        print "False"
+        print("False")
 
-    print "inspect_hd5f_exists",
-    print Reader.inspect_hd5f_exists(serial_number)
+    print("inspect_hd5f_exists", end=' ')
+    print(Reader.inspect_hd5f_exists(serial_number))
     if Reader.inspect_hd5f_exists(serial_number):
-        print "True"
+        print("True")
     else:
-        print "False"
+        print("False")
 
-    print "inspect_exists",
-    print Reader.inspect_exists(serial_number)
+    print("inspect_exists", end=' ')
+    print(Reader.inspect_exists(serial_number))
     if Reader.inspect_exists(serial_number):
-        print "True"
+        print("True")
     else:
-        print "False"
+        print("False")
 
-    print "get_comment",
-    print Reader.get_comment(serial_number)
+    print("get_comment", end=' ')
+    print(Reader.get_comment(serial_number))
 
-    print "get_loading",
-    print Reader.get_loading(serial_number),
-    print "mg/cm2"
+    print("get_loading", end=' ')
+    print(Reader.get_loading(serial_number), end=' ')
+    print("mg/cm2")
 
-    print "get_mass",
-    print Reader.get_mass(serial_number),
-    print "mg"
+    print("get_mass", end=' ')
+    print(Reader.get_mass(serial_number), end=' ')
+    print("mg")
 
-    print "get_total_mass",
-    print Reader.get_total_mass(serial_number),
-    print "mg"
+    print("get_total_mass", end=' ')
+    print(Reader.get_total_mass(serial_number), end=' ')
+    print("mg")
 
-    print "get_fileid",
-    print Reader.get_fileid(serial_number)
+    print("get_fileid", end=' ')
+    print(Reader.get_fileid(serial_number))
 
-    print "get_label",
-    print Reader.get_label(serial_number)
+    print("get_label", end=' ')
+    print(Reader.get_label(serial_number))
 
 
 def _investigate_excel_dbreader_5():
     """Used for testing"""
-    print "STARTING (test filter_by_slurry)"
-    print sys.argv[0]
+    print("STARTING (test filter_by_slurry)")
+    print(sys.argv[0])
     Reader = reader()
     slurries = ["es030", "es031"]
     serial_numbers = Reader.filter_by_slurry(slurries)
-    print "serial_number  cell_name    loading(mg/cm2)"
+    print("serial_number  cell_name    loading(mg/cm2)")
 
     for serial_number in serial_numbers:
-        print serial_number,
-        print Reader.get_cell_name(serial_number),
-        print Reader.get_loading(serial_number)
+        print(serial_number, end=' ')
+        print(Reader.get_cell_name(serial_number), end=' ')
+        print(Reader.get_loading(serial_number))
 
 
 def _investigate_excel_dbreader_6():
     """Used for testing"""
-    print "STARTING  (test filter_by_col_value)"
-    print sys.argv[0]
+    print("STARTING  (test filter_by_col_value)")
+    print(sys.argv[0])
     Reader = reader()
     n = 6
     col_no = 36 + n
     min_val = None
     max_val = 0.5
     serial_numbers = Reader.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
-    print
-    print "filtering within (%s - %s)" % (str(min_val), str(max_val))
-    print "serial_number  cell_name    loading(mg/cm2)"
+    print()
+    print("filtering within (%s - %s)" % (str(min_val), str(max_val)))
+    print("serial_number  cell_name    loading(mg/cm2)")
     for serial_number in serial_numbers:
-        print serial_number,
-        print Reader.get_cell_name(serial_number),
-        print Reader.get_loading(serial_number)
+        print(serial_number, end=' ')
+        print(Reader.get_cell_name(serial_number), end=' ')
+        print(Reader.get_loading(serial_number))
 
 
 def _investigate_excel_dbreader_7():
     """Used for testing"""
-    print "STARTING  (test mixed filtering)"
-    print sys.argv[0]
+    print("STARTING  (test mixed filtering)")
+    print(sys.argv[0])
     Reader = reader()
     n = 6
     col_no = 36 + n  # should be loading (30.10.2014)
-    print "using col_no %i for finding loading" % (col_no)
+    print("using col_no %i for finding loading" % (col_no))
     min_val = None
     max_val = 0.7
 
@@ -810,42 +828,42 @@ def _investigate_excel_dbreader_7():
     slurries = ["es030", "es031"]
     serial_numbers2 = Reader.filter_by_slurry(slurries, only_first=False)
 
-    print
-    print serial_numbers1
-    print
-    print serial_numbers2
+    print()
+    print(serial_numbers1)
+    print()
+    print(serial_numbers2)
 
     serial_numbers = [set(a) for a in [serial_numbers1, serial_numbers2]]
     serial_numbers = set.intersection(*serial_numbers)
 
-    print
-    print "filtering within (%s - %s)" % (str(min_val), str(max_val))
-    print "with cell_names containing"
+    print()
+    print("filtering within (%s - %s)" % (str(min_val), str(max_val)))
+    print("with cell_names containing")
     txt = ""
     for s in slurries:
         txt += "   _%s" % (s)
-    print txt
-    print
-    print "serial_number  cell_name    loading(mg/cm2)"
+    print(txt)
+    print()
+    print("serial_number  cell_name    loading(mg/cm2)")
     for serial_number in serial_numbers:
-        print serial_number,
-        print Reader.get_cell_name(serial_number),
-        print Reader.get_loading(serial_number)
+        print(serial_number, end=' ')
+        print(Reader.get_cell_name(serial_number), end=' ')
+        print(Reader.get_loading(serial_number))
 
 
 def _investigate_excel_dbreader_8():
     """Used for testing"""
-    print "STARTING  (test print serial_number info)"
+    print("STARTING  (test print serial_number info)")
 
-    print sys.argv[0]
+    print(sys.argv[0])
     Reader = reader()
-    print "path",
-    print Reader.db_path
-    print Reader.db_filename
-    print Reader.db_file
+    print("path", end=' ')
+    print(Reader.db_path)
+    print(Reader.db_filename)
+    print(Reader.db_file)
 
     serial_number = 620
-    print "printing"
+    print("printing")
     Reader.print_serial_number_info(serial_number)
 
 

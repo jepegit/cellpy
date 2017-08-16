@@ -1,6 +1,7 @@
 """Set up logger instance"""
 
 
+from builtins import str
 import os
 import json
 import logging.config

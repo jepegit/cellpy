@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import time
 from collections import OrderedDict
@@ -89,7 +90,7 @@ def _load_mpr(file_name):
         if m["shortname"].strip() == "VMP Set":
             settings_mod = m
     if settings_mod is None:
-        print "error - no setting module"
+        print("error - no setting module")
 
 
     tm = time.strptime(str(settings_mod['date']), '%m.%d.%y')
@@ -108,7 +109,7 @@ def _load_mpr(file_name):
         if m["shortname"].strip() == 'VMP data':
             data_module = m
     if data_module is None:
-        print "error - no data module"
+        print("error - no data module")
 
     data_version = data_module["version"]
 
@@ -138,7 +139,7 @@ def _load_mpr(file_name):
 
     whats_left = "%s" % str(remaining_headers).strip('\x00')
     if whats_left:
-        print "ERROR you have some columns left"
+        print("ERROR you have some columns left")
 
     # now for the tedious bit: find out what each stuff is
     # dtype = VMPdata_dtype_from_colIDsOLD(column_types)
@@ -146,7 +147,7 @@ def _load_mpr(file_name):
     for col in column_types:
         txt = "%i: %s" % (col, bl_dtypes[col][1])
         dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
-        print txt
+        print(txt)
     dtype = np.dtype(list(dtype_dict.items()))
     # print 50*"="
     # print "checking the dtypes"
@@ -159,8 +160,8 @@ def _load_mpr(file_name):
 
     p = dtype.itemsize
     if not p == (len(main_data)/n_data_points):
-        print "WARNING",
-        print "You have defined %i bytes, but it seems it should be %i" % (p,len(main_data)/n_data_points)
+        print("WARNING", end=' ')
+        print("You have defined %i bytes, but it seems it should be %i" % (p,len(main_data)/n_data_points))
     t = []
     # for n in range(20):
     #     #print n
@@ -170,7 +171,7 @@ def _load_mpr(file_name):
     #     print test_data['time/s']
     # print t
 
-    print "checking lenght of data"
+    print("checking lenght of data")
     len_data = len(main_data)
 
     # print len_data/n_data_points
@@ -220,26 +221,26 @@ def _load_mpr(file_name):
 
 if __name__ == '__main__':
 
-    print "Length of the header line:", hdr_dtype.itemsize
-    print "Length of the filestamp line:", len(mpr_label)
+    print("Length of the header line:", hdr_dtype.itemsize)
+    print("Length of the filestamp line:", len(mpr_label))
 
     # test_file = "../cellpy/data_ex/biologic/Bec01_01_1_C20_loop_20170219_01_MB_C02.mpr"
     file_name = "../cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02.mpr"
     if not os.path.isfile(file_name):
-        print "file not found"
+        print("file not found")
 
     statinfo = os.stat(file_name)
-    print "size of file:",
-    print statinfo.st_size
+    print("size of file:", end=' ')
+    print(statinfo.st_size)
 
     mpr_data, mpr_log, mpr_settings = _load_mpr(file_name)
-    print mpr_data.head(20)
-    print mpr_data.tail(5)
+    print(mpr_data.head(20))
+    print(mpr_data.tail(5))
 
     filename_out = os.path.splitext(file_name)[0] + "_test_out.csv"
-    print file_name
-    print "->"
-    print filename_out
+    print(file_name)
+    print("->")
+    print(filename_out)
     mpr_data.to_csv(filename_out, sep=";")
 
     fig, ax = plt.subplots(5)
