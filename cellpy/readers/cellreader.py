@@ -626,6 +626,7 @@ class CellpyData(object):
     def _set_arbin(self):
         # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
         # more transparent to separate them into respective methods pr instrument.
+
         from cellpy.readers.instruments import arbin as instr
         self.loader_class = instr.ArbinLoader()
         # get information

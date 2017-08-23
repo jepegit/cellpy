@@ -217,6 +217,121 @@ class ArbinLoader(object):
             checked_rundata.append(data)
         return checked_rundata
 
+
+    def _iterdump(self, file_name, headers = None):
+        """
+        Function for dumping values from a file.
+
+        Should only be used by developers.
+
+        Args:
+            file_name: name of the file
+            headers: list of headers to pick
+                default:
+                ["Discharge_Capacity", "Charge_Capacity"]
+
+        Returns: pandas.DataFrame
+
+        """
+        if headers is None:
+            headers = ["Discharge_Capacity", "Charge_Capacity"]
+
+        step_txt = self.headers_normal['step_index_txt']
+        point_txt = self.headers_normal['data_point_txt']
+        cycle_txt = self.headers_normal['cycle_index_txt']
+
+        self.logger.debug("iterating through file: %s" % file_name)
+        if not os.path.isfile(file_name):
+            print("Missing file_\n   %s" % file_name)
+
+        filesize = os.path.getsize(file_name)
+        hfilesize = humanize_bytes(filesize)
+        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
+        self.logger.info(txt)
+
+        table_name_global = TABLE_NAMES["global"]
+        table_name_stats = TABLE_NAMES["statistic"]
+        table_name_normal = TABLE_NAMES["normal"]
+
+        # creating temporary file and connection
+
+        temp_dir = tempfile.gettempdir()
+        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
+        shutil.copy2(file_name, temp_dir)
+        constr = self.__get_res_connector(temp_filename)
+
+        if use_ado:
+            conn = dbloader.connect(constr)
+        else:
+            conn = dbloader.connect(constr, autocommit=True)
+
+        self.logger.debug("tmp file: %s" % temp_filename)
+        self.logger.debug("constr str: %s" % constr)
+
+        # --------- read global-data ------------------------------------
+        self.logger.debug("reading global data table")
+        sql = "select * from %s" % table_name_global
+        global_data_df = pd.read_sql_query(sql, conn)
+        # col_names = list(global_data_df.columns.values)
+        self.logger.debug("sql statement: %s" % sql)
+
+        tests = global_data_df[self.headers_normal['test_id_txt']]
+        number_of_sets = len(tests)
+        self.logger.debug("number of datasets: %i" % number_of_sets)
+        self.logger.debug("only selecting first test")
+        test_no = 0
+        self.logger.debug("setting data for test number %i" % test_no)
+        loaded_from = file_name
+        #fid = FileID(file_name)
+        start_datetime = global_data_df[self.headers_global['start_datetime_txt']][test_no]
+        test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
+        test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
+
+        # --------- read raw-data (normal-data) -------------------------
+        self.logger.debug("reading raw-data")
+
+        columns = ["Data_Point", "Step_Index", "Cycle_Index"]
+        columns.extend(headers)
+        columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
+
+        sql_1 = "select %s " % columns_txt
+        sql_2 = "from %s " % table_name_normal
+        sql_3 = "where %s=%s " % (self.headers_normal['test_id_txt'], test_ID)
+        sql_5 = "order by %s" % self.headers_normal['data_point_txt']
+        import time
+        info_list = []
+        info_header = ["cycle", "row_count", "start_point", "end_point"]
+        info_header.extend(headers)
+        self.logger.info(" ".join(info_header))
+        self.logger.info("-------------------------------------------------")
+
+        for cycle_number in range(1,2000):
+            t1 = time.time()
+            self.logger.debug("picking cycle %i" % cycle_number)
+            sql_4 = "AND %s=%i " % (cycle_txt, cycle_number)
+            sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
+            self.logger.debug("sql statement: %s" % sql)
+            normal_df = pd.read_sql_query(sql, conn)
+            t2 = time.time()
+            dt = t2 - t1
+            self.logger.debug("time: %f" % dt)
+            if normal_df.empty:
+                self.logger.debug("reached the end")
+                break
+            row_count, _ = normal_df.shape
+            start_point = normal_df[point_txt].min()
+            end_point = normal_df[point_txt].max()
+            last = normal_df.iloc[-1,:]
+
+            step_list = [cycle_number, row_count, start_point, end_point]
+            step_list.extend([last[x] for x in headers])
+            info_list.append(step_list)
+
+        self._clean_up_loadres(None, conn, temp_filename)
+        info_dict = pd.DataFrame(info_list, columns=info_header)
+        return info_dict
+
+
     def investigate(self, file_name):
         step_txt = self.headers_normal['step_index_txt']
         point_txt = self.headers_normal['data_point_txt']
@@ -326,16 +441,16 @@ class ArbinLoader(object):
 
     def dump(self, file_name, path):
         """Dumps the raw file to an intermediate hdf5 file.
-        
+
         This method can be used if the raw file is too difficult to load and it
         is likely that it is more efficient to convert it to an hdf5 format
         and then load it using the `from_intermediate_file` function.
-        
+
         Args:
             file_name: name of the raw file
             path: path to where to store the intermediate hdf5 file (optional)
 
-        Returns: 
+        Returns:
             full path to stored intermediate hdf5 file
             information about the raw file (needed by the `from_intermediate_file` function)
 
