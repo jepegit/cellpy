@@ -286,8 +286,9 @@ class Batch(object):
         self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
                                    "cumulated_coulombic_efficiency",
                                    "ir_discharge", "ir_charge",
-                                   "end_voltage_discharge", "end_voltage_charge"]
+                                   "end_voltage_discharge", "end_voltage_charge",
 
+                                   ]
         self.output_format = None
         self.batch_col = 5
 
@@ -1041,6 +1042,14 @@ def main():
     b.plot_summaries(show=False)
     b.plot_summaries(show=True, figure_type="charge_limited")
     _print_dict_keys(dir(b), name="batch instance")
+
+    # creating custom plot
+    key = "ir_discharge"
+    summary_df = b.summary_df
+    df = pick_summary_data(key, summary_df, b.selected_summaries)
+    print(df.head())
+
+
     print("Finished!")
 
 
