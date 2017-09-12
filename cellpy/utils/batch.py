@@ -1019,7 +1019,7 @@ def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
             print("{}{}".format(bullet,item))
 
 def main():
-    LOAD_JSON = True
+    LOAD_JSON = False
     if not LOAD_JSON:
         print("Running batch.py (loading from db)")
         b = init("bec_exp06", "CellpyTest", default_log_level="DEBUG", reader="excel", me="Jan Petter")
