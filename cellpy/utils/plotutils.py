@@ -57,9 +57,9 @@ def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_l
     _color_list = []
     _symbol_list = []
     for i in groups:
-        _color_list.append(color_cycler.next())
+        _color_list.append(next(color_cycler))
     for i in sub_groups:
-        _symbol_list.append(symbol_cycler.next())
+        _symbol_list.append(next(symbol_cycler))
     return _color_list, _symbol_list
 
 

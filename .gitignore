@@ -74,6 +74,7 @@ cellpy/parametres/_cellpy_prms_devel.ini
 
 *.res
 *.csv
+*.py.bak
 .swp
 dev_utils/BioLogic.py_tmp
 testdata/hdf5/20160306_snx001_10_cc_01.h5
@@ -81,3 +82,5 @@ sh.exe.stackdump
 #examples/jupyter notebooks/
 #testdata/data/
 xdist/
+cellpy/readers/instruments/tmp.dat
+cellpy/readers/dbreader.py.rej

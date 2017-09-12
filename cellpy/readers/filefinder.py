@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import os
 import glob
 import warnings
@@ -82,12 +85,12 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
             if version >= 0.5:
-                print "Could not read file_name_format from _cellpy_prms_xxx.conf."
-                print "Using:"
-                print "file_name_format:", file_name_format
+                print("Could not read file_name_format from _cellpy_prms_xxx.conf.")
+                print("Using:")
+                print("file_name_format:", file_name_format)
                 file_format_explanation = "YYYYMMDD is date, EEE is electrode number "
                 file_format_explanation += "CC is cell number, TT is cell_type, RR is run number."
-                print file_format_explanation
+                print(file_format_explanation)
 
     # check if raw_file_dir exists
     if not os.path.isdir(raw_file_dir):
@@ -133,7 +136,7 @@ def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
     return res_files
 
 if __name__ == '__main__':
-    print "searching for files"
+    print("searching for files")
     my_run_name = "20160805_test001_45_cc"
     my_raw_file_dir = os.path.abspath("../data_ex")
     my_cellpy_file_dir = os.path.abspath("../data_ex")

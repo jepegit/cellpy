@@ -14,7 +14,10 @@ Todo:
     http://www.gamry.com/application-notes/EIS/basics-of-electrochemical-impedance-spectroscopy/
 
 """
+from __future__ import division
 
+from builtins import range
+from past.utils import old_div
 import numpy as np
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
@@ -55,7 +58,7 @@ def relaxation_rc(time, v0, tau_rc):
 
     """
 
-    return v0 * np.exp(-time / tau_rc)
+    return v0 * np.exp(old_div(-time, tau_rc))
 
 
 def ocv_relax_func(time, ocv, v0_rc, tau_rc, slope=None):
@@ -73,7 +76,7 @@ def ocv_relax_func(time, ocv, v0_rc, tau_rc, slope=None):
     """
 
     volt_rc = [relaxation_rc(time, v0_rc[rc], tau_rc[rc])
-               for rc in tau_rc.keys()]
+               for rc in list(tau_rc.keys())]
     return sum(volt_rc) + ocv
 
 
@@ -97,15 +100,15 @@ def guessing_parameters(v_start, i_start, v_0, v_ocv, contribute, tau_rc):
         raise ValueError('The sum of contribute does not add up to 1.')
     v_rlx = v_0 - v_ocv   # voltage over the rc-circuits without a reference
     if len(contribute) == 1:
-        v0_rc = {contribute.keys()[0]: v_rlx}
+        v0_rc = {list(contribute.keys())[0]: v_rlx}
     else:
-        v0_rc = {rc: v_rlx * rc_contri for rc, rc_contri in contribute.items()}
+        v0_rc = {rc: v_rlx * rc_contri for rc, rc_contri in list(contribute.items())}
     v_ir = v_start - v_0
 
     # r_ir = abs(v_start / i_start - sum(r_rc.values()))
-    r_ir = v_ir / i_start   # This one is different than r_ir...?
-    r_rc = {key: v0 / i_start for key, v0 in v0_rc.items()}
-    c_rc = {k: t / r for k, r in r_rc.items() for i, t in tau_rc.items()
+    r_ir = old_div(v_ir, i_start)   # This one is different than r_ir...?
+    r_rc = {key: old_div(v0, i_start) for key, v0 in list(v0_rc.items())}
+    c_rc = {k: old_div(t, r) for k, r in list(r_rc.items()) for i, t in list(tau_rc.items())
             if i == k}
     return\
         {'r_rc': r_rc, 'r_ir': r_ir, 'c_rc': c_rc, 'v0_rc': v0_rc}
