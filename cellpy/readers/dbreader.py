@@ -363,6 +363,7 @@ class reader(object):
         sheet = self.table
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists
+        logger.debug("serial number is in column number %i" % column_number_serial_number_position)
 
         if batch_col_number in self.string_cols:
             batch = str(batch)
@@ -371,7 +372,9 @@ class reader(object):
         # there only string values can be found
 
         criterion = sheet.iloc[:, batch_col_number] == batch
+        # print(sheet.iloc[:, exists_col_number])
         exists = sheet.iloc[:, exists_col_number] > 0
+
         sheet = sheet[criterion & exists]
         return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
