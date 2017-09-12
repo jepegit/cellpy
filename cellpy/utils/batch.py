@@ -650,16 +650,17 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
             logger.debug("File(s) not found for index=%s" % indx)
             errors.append(indx)
             continue
-
+        # TODO: need to fix so that thet logger is set properly outside of Batch object
         print("Processing (%s)..." % indx)
-        logger.debug("Processing (%s)..." % indx)
+        logger.info("Processing (%s)..." % indx)
         cell_data = cellreader.CellpyData()
         if not force_cellpy:
-            logger.debug("setting cycle mode (%s)..." % row.cell_type)
+            logger.info("setting cycle mode (%s)..." % row.cell_type)
             cell_data.set_cycle_mode(row.cell_type)
 
-        logger.debug("loading cell")
+        logger.info("loading cell")
         if not force_cellpy:
+            logger.info("not forcing")
             try:
                 cell_data.loadcell(raw_files=row.raw_file_names, cellpy_file=row.cellpy_file_names,
                                    mass=row.masses, summary_on_raw=True,
@@ -669,6 +670,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
                 errors.append("loadcell:" + str(indx))
                 continue
         else:
+            logger.info("forcing")
             try:
                 cell_data.load(row.cellpy_file_names)
             except Exception as e:

@@ -25,7 +25,7 @@ from __future__ import print_function
 from __future__ import division
 
 from builtins import str
-from builtins import zip
+#from builtins import zip
 from builtins import range
 from builtins import object
 from past.utils import old_div
@@ -927,6 +927,7 @@ class CellpyData(object):
             similar = False
         else:
             similar = self.check_file_ids(raw_files, cellpy_file)
+        self.logger.debug("checked if the files were similar")
 
         if only_summary:
             self.load_only_summary = True
@@ -934,7 +935,10 @@ class CellpyData(object):
             self.load_only_summary = False
 
         if not similar:
+            self.logger.info("cellpy file(s) needs updating - loading raw")
+            self.logger.debug(raw_files)
             self.from_raw(raw_files)
+            self.logger.debug("loaded files")
             if self.status_datasets:  # Check if the run was loaded ([] if empty)
                 if mass:
                     self.set_mass(mass)
@@ -968,16 +972,28 @@ class CellpyData(object):
         raw_file_loader = self.loader
         set_number = 0
         test = None
+        counter = 0
         for f in self.file_names:
+            self.logger.debug("loading raw file: {}".format(f))
             new_tests = raw_file_loader(f, **kwargs)  # this should now work
             if test is not None:
                 new_tests[set_number] = self._append(test[set_number], new_tests[set_number])
+                self.logger.debug("added this test - starting merging")
+                self.logger.debug(new_tests[set_number].raw_data_files)
+                self.logger.debug(new_tests[set_number].raw_data_files_length)
                 for raw_data_file, file_size in zip(new_tests[set_number].raw_data_files,
                                                     new_tests[set_number].raw_data_files_length):
+                    self.logger.debug(raw_data_file)
+
                     test[set_number].raw_data_files.append(raw_data_file)
                     test[set_number].raw_data_files_length.append(file_size)
+                    counter += 1
+                    if counter > 10:
+                        self.logger.debug("ERROR? Too many files to merge")
+                        raise ValueError("Too many files to merge - could be a p2-p3 zip thing")
             else:
                 test = new_tests
+        self.logger.debug("finished loading the raw-files")
         if test:
             self.datasets.append(test[set_number])
         else:
@@ -1133,7 +1149,10 @@ class CellpyData(object):
 
         """
         try:
+            self.logger.info("loading hdf5")
+            self.logger.info(cellpy_file)
             new_datasets = self._load_hdf5(cellpy_file)
+            self.logger.info("file loaded")
         except AttributeError:
             new_datasets = []
             self.logger.warning("This cellpy-file version is not supported by current reader (try to update cellpy).")

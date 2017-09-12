@@ -49,9 +49,9 @@ if not use_ado:
             warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
             dbloader = None
 
-# Check if 64 bit python is used and give warning
-if check64bit(System="python"):
-    warnings.warn("using 64bit python: this is not tested and might cause errors")
+# # Check if 64 bit python is used and give warning
+# if check64bit(System="python"):
+#     warnings.warn("using 64bit python: this is not tested and might cause errors")
 
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
@@ -162,17 +162,21 @@ class ArbinLoader(object):
     @staticmethod
     def __get_res_connector(temp_filename):
         is64bit_python = check64bit(System="python")
-        # TODO: Test if 64bit python can be used - for now: raise warning
+        # if is64bit_python:
+        #     print("\nTHIS IS 64 bit Python\n")
         # is64bit_os = check64bit(System = "os")
         if use_ado:
             if is64bit_python:
-                print("using 64 bit python")
                 constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
             else:
                 constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
 
         else:
-            constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+            if is64bit_python:
+                constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+            else:
+                constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+        # print("Constructor = {}".format(constr))
         return constr
 
     def _clean_up_loadres(self, cur, conn, filename):
