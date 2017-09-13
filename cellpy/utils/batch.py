@@ -471,6 +471,236 @@ class Batch(object):
         """Not implemented yet"""
         raise NotImplementedError
 
+
+    def plot_test(self, show=True, save=False):
+        # not ready for production yet...
+        # this plotting function can be used as template for making custom plotting functions
+        # need to create axes
+
+        figure_type = "shiftedcap"
+        fig, ax = plt.subplots()
+
+
+        # need to get symbol list etc
+        color_list, symbol_list = self._create_colors_markers_list()
+        plot_style = None
+        batch_dir = self.batch_dir
+        batch_name = self.name
+
+        # need to get the df
+        try:
+            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df, self.selected_summaries)
+            df_d = pick_summary_data("shifted_discharge_capacity", self.summary_df, self.selected_summaries)
+        except AttributeError:
+            logger.debug("shifted capacities not part of summary data (selected_summaries)")
+            return None
+
+        # generate labels
+        labels = [self.info_df.get_value(filename, "labels") for filename in df_c.columns.get_level_values(0)]
+
+        # adding charge/discharge label
+        labels.extend(["", "discharge", "charge"])
+
+
+        list_of_lines, plot_style = plot_summary_data(ax, df_d, info_df=self.info_df, color_list=color_list,
+                                                      symbol_list=symbol_list, is_charge=False,
+                                                      plot_style=plot_style)
+
+        # adding charge/discharge legend signs
+        color = plot_style["color"]
+        markersize = plot_style["markersize"]
+
+        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                      markeredgecolor=color, markerfacecolor='none',
+                                      markersize=markersize)
+        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                        markeredgecolor=color, markerfacecolor=color,
+                                        markersize=markersize)
+        no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
+        list_of_lines.extend([no_label, closed_label, open_label])
+
+
+
+
+        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
+                                                      symbol_list=symbol_list, is_charge=True,
+                                                      plot_style=plot_style)
+
+        # setting axes labels
+        ax.set_xlabel("cycle")
+        ax.set_ylabel("capacity")
+        # adding legend
+        logger.debug("trying to add legends " + str(labels))
+        fig.legend(handles=list_of_lines, labels=labels,
+                   bbox_to_anchor=(1.02, 1.1), loc=2,
+                   # bbox_transform=plt.gcf().transFigure,
+                   bbox_transform=ax.transAxes,
+                   numpoints=1,
+                   ncol=1, labelspacing=0.,
+                   prop={"size": 10})
+
+        if save:
+            extension = prms.Batch["fig_extension"]
+            dpi = prms.Batch["dpi"]
+            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
+            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+            plt.savefig()
+
+        if show:
+            plt.show()
+
+        return fig, ax
+
+
+    def plot_shifted_cap(self, show=True, save=False):
+        # not ready for production yet...
+        # this plotting function can be used as template for making custom plotting functions
+        # need to create axes
+
+        figure_type = "shiftedcap"
+        fig, ax = plt.subplots()
+
+        # need to get symbol list etc
+        color_list, symbol_list = self._create_colors_markers_list()
+        plot_style = None
+        batch_dir = self.batch_dir
+        batch_name = self.name
+
+        # need to get the df
+        try:
+            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df, self.selected_summaries)
+            df_d = pick_summary_data("shifted_discharge_capacity", self.summary_df, self.selected_summaries)
+        except AttributeError:
+            logger.debug("shifted capacities not part of summary data (selected_summaries)")
+            return None
+
+        # generate labels
+        labels = [self.info_df.get_value(filename, "labels") for filename in df_c.columns.get_level_values(0)]
+
+        # adding charge/discharge label
+        labels.extend(["", "discharge", "charge"])
+
+        list_of_lines, plot_style = plot_summary_data(ax, df_d, info_df=self.info_df, color_list=color_list,
+                                                      symbol_list=symbol_list, is_charge=False,
+                                                      plot_style=plot_style)
+
+        # adding charge/discharge legend signs
+        color = plot_style["color"]
+        markersize = plot_style["markersize"]
+
+        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                      markeredgecolor=color, markerfacecolor='none',
+                                      markersize=markersize)
+        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                        markeredgecolor=color, markerfacecolor=color,
+                                        markersize=markersize)
+        no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
+        list_of_lines.extend([no_label, closed_label, open_label])
+
+        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
+                          symbol_list=symbol_list, is_charge=True,
+                          plot_style=plot_style)
+
+        # setting axes labels
+        ax.set_xlabel("cycle")
+        ax.set_ylabel("capacity")
+        # adding legend
+        logger.debug("trying to add legends " + str(labels))
+        fig.legend(handles=list_of_lines, labels=labels,
+                   bbox_to_anchor=(1.02, 1.1), loc=2,
+                   # bbox_transform=plt.gcf().transFigure,
+                   bbox_transform=ax.transAxes,
+                   numpoints=1,
+                   ncol=1, labelspacing=0.,
+                   prop={"size": 10})
+
+        if save:
+            extension = prms.Batch["fig_extension"]
+            dpi = prms.Batch["dpi"]
+            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
+            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+            plt.savefig()
+
+        if show:
+            plt.show()
+
+        return fig, ax
+
+
+    def plot_cum_irrev(self, show=True, save=False):
+        # not ready for production yet...
+        #   seems low level and high level is percentage of slippage
+
+        figure_type = "irrevcum"
+        fig, ax = plt.subplots()
+
+        # need to get symbol list etc
+        color_list, symbol_list = self._create_colors_markers_list()
+        plot_style = None
+        batch_dir = self.batch_dir
+        batch_name = self.name
+
+        # need to get the df
+        try:
+            df_c = pick_summary_data("low_level", self.summary_df, self.selected_summaries)
+            df_d = pick_summary_data("high_level", self.summary_df, self.selected_summaries)
+        except AttributeError:
+            logger.debug("low_level not part of summary data (selected_summaries)")
+            return None
+
+        # generate labels
+        labels = [self.info_df.get_value(filename, "labels") for filename in df_c.columns.get_level_values(0)]
+
+        # adding charge/discharge label
+        labels.extend(["", "low_level", "high_level"])
+
+        list_of_lines, plot_style = plot_summary_data(ax, df_d, info_df=self.info_df, color_list=color_list,
+                                                      symbol_list=symbol_list, is_charge=False,
+                                                      plot_style=plot_style)
+
+        # adding charge/discharge legend signs
+        color = plot_style["color"]
+        markersize = plot_style["markersize"]
+
+        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                      markeredgecolor=color, markerfacecolor='none',
+                                      markersize=markersize)
+        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                        markeredgecolor=color, markerfacecolor=color,
+                                        markersize=markersize)
+        no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
+        list_of_lines.extend([no_label, closed_label, open_label])
+
+        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
+                          symbol_list=symbol_list, is_charge=True,
+                          plot_style=plot_style)
+
+        # setting axes labels
+        ax.set_xlabel("cycle")
+        ax.set_ylabel("percentage")
+        # adding legend
+        logger.debug("trying to add legends " + str(labels))
+        fig.legend(handles=list_of_lines, labels=labels,
+                   bbox_to_anchor=(1.02, 1.1), loc=2,
+                   # bbox_transform=plt.gcf().transFigure,
+                   bbox_transform=ax.transAxes,
+                   numpoints=1,
+                   ncol=1, labelspacing=0.,
+                   prop={"size": 10})
+
+        if save:
+            extension = prms.Batch["fig_extension"]
+            dpi = prms.Batch["dpi"]
+            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
+            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+            plt.savefig()
+
+        if show:
+            plt.show()
+
+        return fig, ax
+
+
     def plot_summaries(self, show=False, save=True, figure_type=None):
         """Plot summary graphs.
 
@@ -1024,6 +1254,8 @@ def main():
     if not LOAD_JSON:
         print("Running batch.py (loading from db)")
         b = init("bec_exp06", "CellpyTest", default_log_level="DEBUG", reader="excel", me="Jan Petter")
+        b.selected_summaries.extend(
+            ["shifted_charge_capacity", "shifted_discharge_capacity", "low_level", "high_level", ])
         b.create_info_df()
         b.create_folder_structure()
         b.save_info_df()
@@ -1043,12 +1275,11 @@ def main():
     b.plot_summaries(show=True, figure_type="charge_limited")
     _print_dict_keys(dir(b), name="batch instance")
 
-    # creating custom plot
-    key = "ir_discharge"
-    summary_df = b.summary_df
-    df = pick_summary_data(key, summary_df, b.selected_summaries)
-    print(df.head())
-
+    # test new plots
+    print("plotting cummulated irreversible capacities")
+    fig, ax = b.plot_cum_irrev(show=True)
+    print("plotting shifted capacities")
+    fig, ax = b.plot_shifted_cap(show=True)
 
     print("Finished!")
 
