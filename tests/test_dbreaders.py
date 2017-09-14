@@ -118,25 +118,25 @@ def test_select_batch_extra(db_reader):
     assert test_serial_number_labeled_not_existing not in output
 
 
-def test_get_raw_filenames(db_reader):
-    output = db_reader.get_raw_filenames(test_serial_number_one)
-    assert test_res_file_full == output[0]
-    assert os.path.isfile(output[0])
-
-
-def test_get_cellpy_filename(db_reader):
-    output = db_reader.get_cellpy_filename(test_serial_number_one)
-    assert test_cellpy_file_full == output[0]
-    assert os.path.isfile(output[0])
-
-
-def test_get_filenames(db_reader):
-    output = db_reader.get_filenames(test_serial_number_one)
-    assert test_cellpy_file_full == output[0]
-    assert os.path.isfile(output[0])
-    output = db_reader.get_filenames(test_serial_number_one, use_hdf5=False)
-    assert not test_cellpy_file_full == output[0]
-    assert test_res_file_full == output[0]
+# def test_get_raw_filenames(db_reader):
+#     output = db_reader.get_raw_filenames(test_serial_number_one)
+#     assert test_res_file_full == output[0]
+#     assert os.path.isfile(output[0])
+#
+#
+# def test_get_cellpy_filename(db_reader):
+#     output = db_reader.get_cellpy_filename(test_serial_number_one)
+#     assert test_cellpy_file_full == output[0]
+#     assert os.path.isfile(output[0])
+#
+#
+# def test_get_filenames(db_reader):
+#     output = db_reader.get_filenames(test_serial_number_one)
+#     assert test_cellpy_file_full == output[0]
+#     assert os.path.isfile(output[0])
+#     output = db_reader.get_filenames(test_serial_number_one, use_hdf5=False)
+#     assert not test_cellpy_file_full == output[0]
+#     assert test_res_file_full == output[0]
 
 
 def test_filter_selected(db_reader):
