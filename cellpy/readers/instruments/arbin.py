@@ -161,21 +161,32 @@ class ArbinLoader(object):
 
     @staticmethod
     def __get_res_connector(temp_filename):
+        import sys
         is64bit_python = check64bit(System="python")
         # if is64bit_python:
         #     print("\nTHIS IS 64 bit Python\n")
         # is64bit_os = check64bit(System = "os")
-        if use_ado:
-            if is64bit_python:
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-            else:
-                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
+        # ‘Microsoft Access Driver (*.mdb)’
+        # . «[driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]»?
 
-        else:
-            if is64bit_python:
-                constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-            else:
-                constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+        driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
+        constr = 'Driver=%s;Dbq=%s' % (driver, temp_filename)
+        # print(constr)
+        # constr2 = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+        # print(constr2)
+
+
+        # if use_ado:
+        #     if is64bit_python:
+        #         constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
+        #     else:
+        #         constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
+        #
+        # else:
+        #     if is64bit_python:
+        #         constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+        #     else:
+        #         constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
         # print("Constructor = {}".format(constr))
         return constr
 
