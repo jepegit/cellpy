@@ -70,14 +70,15 @@ class reader(object):
         self.db_sheet_filenames = "db_filenames"
         self.db_sheet_cols = DbSheetCols()
         self.db_sheet_filename_cols = DbSheetCols(self.db_sheet_filenames)
-        self.skiprows = None
+        self.skiprows = [1,]
         self.header = 0  # row that will be used to define headers
         self.remove_row = [0]  # removing this row
         self.string_cols = [3, 4, 5, 6, 7, 8]
+        dtypes_dict = {"d": np.int32}
 
         if not test_mode:
-            self.table = self._open_sheet("table")
-            self.ftable = self._open_sheet("file_names") # will be removed soon!
+            self.table = self._open_sheet("table", dtypes_dict=dtypes_dict)
+            #self.ftable = self._open_sheet("file_names") # will be removed soon!
         else:
             print("in test-mode")
             t0 = time.time()
@@ -159,10 +160,10 @@ class reader(object):
         print("* %f work_book = pd.ExcelFile(self.db_file)..." % (time.time() - t0))
         sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
         print("* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (time.time() - t0))
-        if self.remove_row:
-            remove_index = sheet.index[self.remove_row]
-            sheet = sheet.drop(remove_index)
-            sheet.reindex(list(range(0, len(sheet.index))))
+        # if self.remove_row:
+        #     remove_index = sheet.index[self.remove_row]
+        #     sheet = sheet.drop(remove_index)
+        #     sheet.reindex(list(range(0, len(sheet.index))))
 
         # removing tmp-file
         if os.path.isfile(tmp_db_file):
@@ -174,7 +175,7 @@ class reader(object):
                 print("could not remove tmp-file\n%s %s" % (tmp_db_file, e))
         return sheet
 
-    def _open_sheet(self, sheet=None):
+    def _open_sheet(self, sheet=None, dtypes_dict=None):
         """Opens sheets and returns it"""
         if not sheet:
             sheet = self.db_sheet_table
@@ -186,11 +187,7 @@ class reader(object):
         rows_to_skip = self.skiprows
 
         work_book = pd.ExcelFile(self.db_file)
-        sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
-        if self.remove_row:
-            remove_index = sheet.index[self.remove_row]
-            sheet = sheet.drop(remove_index)
-            sheet.reindex(list(range(0, len(sheet.index))))
+        sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip, dtype=dtypes_dict)
         return sheet
 
 
@@ -371,7 +368,7 @@ class reader(object):
         # there only string values can be found
 
         criterion = sheet.iloc[:, batch_col_number] == batch
-        exists = sheet.iloc[:, exists_col_number] > 0
+        exists = sheet.iloc[:, exists_col_number] > 0 # This will crash if the col is not of dtype number
         sheet = sheet[criterion & exists]
         return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
