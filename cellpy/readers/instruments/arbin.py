@@ -65,6 +65,7 @@ TABLE_NAMES = {
     "statistic": "Channel_Statistic_Table",
 }
 
+
 class ArbinLoader(object):
     """ Class for loading arbin-data from res-files."""
 
@@ -82,7 +83,8 @@ class ArbinLoader(object):
         self.max_chunks = prms.Instruments["max_chunks"]
         self.last_chunk = prms.Instruments["last_chunk"]
 
-        self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]  # None
+        # use the following prm to limit to loading only one cycle or from cycle>x to cycle<x+n
+        self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]  # None ([cycle from, cycle to])
         self.load_until_error = prms.Reader["load_until_error"]  # False
 
         self.headers_normal = get_headers_normal()
