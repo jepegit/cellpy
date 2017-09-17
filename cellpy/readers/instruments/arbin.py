@@ -26,6 +26,7 @@ import cellpy.parameters.prms as prms
 
 # Select odbc module
 ODBC = prms._odbc
+SEARCH_FOR_ODBC_DRIVERS = prms._sfod
 use_ado = False
 
 if ODBC == "ado":
@@ -159,36 +160,34 @@ class ArbinLoader(object):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    @staticmethod
-    def __get_res_connector(temp_filename):
-        import sys
-        is64bit_python = check64bit(System="python")
-        # if is64bit_python:
-        #     print("\nTHIS IS 64 bit Python\n")
-        # is64bit_os = check64bit(System = "os")
-        # ‘Microsoft Access Driver (*.mdb)’
-        # . «[driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]»?
 
-        driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
+    def __get_res_connector(self, temp_filename):
+        if use_ado:
+            is64bit_python = check64bit(System="python")
+            if is64bit_python:
+                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
+            else:
+                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
+            return constr
+
+        if SEARCH_FOR_ODBC_DRIVERS:
+            try:
+                driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
+            except IndexError as e:
+                self.logger.error(e)
+                print(e)
+                print("Could not find any odbc-drivers. Check out the homepage of pydobc for info on installing drivers")
+            self.logger.debug("odbc constr: {}".format(driver))
+        else:
+            is64bit_python = check64bit(System="python")
+            if is64bit_python:
+                driver = '{Microsoft Access Driver (*.mdb, *.accdb)}'
+            else:
+                driver = 'Microsoft Access Driver (*.mdb)'
+            self.logger.debug("odbc constr: {}".format(driver))
         constr = 'Driver=%s;Dbq=%s' % (driver, temp_filename)
-        # print(constr)
-        # constr2 = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-        # print(constr2)
-
-
-        # if use_ado:
-        #     if is64bit_python:
-        #         constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-        #     else:
-        #         constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
-        #
-        # else:
-        #     if is64bit_python:
-        #         constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-        #     else:
-        #         constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-        # print("Constructor = {}".format(constr))
         return constr
+
 
     def _clean_up_loadres(self, cur, conn, filename):
         if cur is not None:
@@ -233,7 +232,7 @@ class ArbinLoader(object):
         return checked_rundata
 
 
-    def _iterdump(self, file_name, headers = None):
+    def _iterdump(self, file_name, headers=None):
         """
         Function for dumping values from a file.
 
@@ -348,6 +347,14 @@ class ArbinLoader(object):
 
 
     def investigate(self, file_name):
+        """Investigate a .res file.
+
+        Args:
+            file_name: name of the file
+
+        Returns: dictionary with div. stats and info.
+
+        """
         step_txt = self.headers_normal['step_index_txt']
         point_txt = self.headers_normal['data_point_txt']
         cycle_txt = self.headers_normal['cycle_index_txt']
@@ -446,9 +453,6 @@ class ArbinLoader(object):
         self._clean_up_loadres(None, conn, temp_filename)
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
-
-
-
 
     def repair(self, file_name):
         """try to repair a broken/corrupted file"""
