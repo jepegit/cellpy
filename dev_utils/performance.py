@@ -54,11 +54,8 @@ def report_time(t1,t2):
 
 d = cellreader.CellpyData()
 
-prms.Instruments["chunk_size"] = 1000  # size pr chunk used by pandas when loading
-prms.Instruments["max_chunks"] = 5  # stops loading when reaching this?
-prms.Instruments["last_chunk"] = 200 # seems like pandas creates a generator and this runs next on it until StopIteration or reached 200
-
-
+prms.Instruments["chunk_size"] = 10000  # size pr chunk used by pandas when loading
+prms.Instruments["max_chunks"] = None  # stops loading when reaching this?
 
 
 # limit_loaded_cycles

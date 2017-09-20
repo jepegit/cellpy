@@ -634,7 +634,7 @@ class ArbinLoader(object):
                         self.logger.error(" - Could not read complete file (MemoryError).")
                         self.logger.error("Last successfully loaded chunk number:", chunk_number)
                         self.logger.error("Chunk size:", prms.Instruments['chunk_size'])
-                    break
+                        break
                 chunk_number += 1
             length_of_test = normal_df.shape[0]
             self.logger.debug("finished iterating (#rows: %i)", length_of_test)
