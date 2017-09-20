@@ -567,7 +567,7 @@ class CellpyData(object):
         #self.max_chunks = prms.Reader["max_chunks"]
         #self.last_chunk = prms.Reader["last_chunk"]
         self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]
-        self.load_until_error = prms.Reader["load_until_error"]
+        # self.load_until_error = prms.Reader["load_until_error"]
         self.ensure_step_table = prms.Reader["ensure_step_table"]
         self.daniel_number = prms.Reader["daniel_number"]
         self.raw_datadir = prms.Reader["raw_datadir"]
@@ -4000,7 +4000,7 @@ def loadcell_check():
     cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
     cell_data = CellpyData()
     cell_data.select_minimal = True
-    cell_data.load_until_error = True
+    # cell_data.load_until_error = True
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:

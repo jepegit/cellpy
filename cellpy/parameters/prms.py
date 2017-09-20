@@ -13,9 +13,6 @@ import os, sys
 #     def __repr__(self):
 #         return "<cellpy_prms: %s>" % self.__dict__
 
-
-
-
 # locations etc for reading custom parameters
 script_dir = os.path.abspath(os.path.dirname(__file__))
 cur_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -59,14 +56,9 @@ Reader = {
     "force_all": False,  # not used yet - should be used when saving
     "sep": ";",
     "cycle_mode": 'anode',
-    #"max_res_filesize": 150000000,  # instrument specific - move!
     "load_only_summary": False,
     "select_minimal": False,
-    #"chunk_size": None,    # instrument specific - move!
-    #"max_chunks": None,    # instrument specific - move!
-    #"last_chunk": None,    # instrument specific - move!
     "limit_loaded_cycles": None,
-    "load_until_error": False,
     "ensure_step_table": False,
     "daniel_number": 5,
     "raw_datadir": None,
@@ -97,55 +89,25 @@ excel_db_cols = {"serial_number_position": 0,
                     "fileid": 17,
                     "batch_no": 1,
                     "batch": 2,
-                    # "b01": 5,
-                    # "b02": 6,
-                    # "b03": 7,
-                    # "b04": 8,
-                    # "b05": 9,
-                    # "b06": 10,
-                    # "b07": 11,
-                    # "b08": 12,
                     "label": 13,
                     "group": 14,
                     "selected": 15,
                     "cell_name": 16,
-                    # "fi": 17,
                     "file_name_indicator": 17,
                     "comment_slurry": 18,
                     "finished_run": 19,
-                    # "F": 19,
-                    # "M": 19,
                     "hd5f_fixed": 20,
-                    # "freeze": 20,
-                    # "VC": 21,
-                    # "FEC": 22,
-                    # "LS": 23,
-                    # "IPA": 24,
-                    # "B": 25,
-                    # "RATE": 26,
                     "LC": 27,
-                    # "A1": 28,
-                    # "A2": 29,
-                    # "A3": 30,
-                    # "A4": 31,
-                    # "A5": 32,
-                    # "A6": 33,
-                    # "channel": 34,
-                    # "am": 35,
                     "active_material": 35,
-                    # "tm": 39,
                     "total_material": 39,
-                    # "wtSi": 40,
-                    # "weight_percent_Si": 40,
-                    # "Si": 40,
                     "loading": 42,
                     "general_comment": 47,
 }
 
 excel_db_filename_cols = {"serial_number_position": 0,
-                            "serialno": 0,
-                            "fileid": 1,
-                            "files": 2,
+                          "serialno": 0,
+                          "fileid": 1,
+                          "files": 2,
 }
 
 # --------------------------
@@ -157,7 +119,6 @@ Instruments = {
     "max_res_filesize": 150000000,
     "chunk_size": None,
     "max_chunks": None,
-    "last_chunk": None,
 }
 
 
@@ -195,4 +156,8 @@ _prm_globtxt = "_cellpy_prms*.conf"
 _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
 _sfod = True
+
+# used during development for testing new features
+
+_res_x = False
 
