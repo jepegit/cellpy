@@ -29,7 +29,16 @@ log.setup_logging(default_level="DEBUG")
 
 
 def load_it(cellpy_data_instance):
-    cellpy_data_instance.loadcell(test_res_file_full)
+    # cellpy_data_instance.loadcell(test_res_file_full)
+    raw_file_loader = cellpy_data_instance.loader
+    test = raw_file_loader(test_res_file_full)
+    cellpy_data_instance.datasets.append(test[0])
+
+
+def append_to_it(cellpy_data_instance):
+    raw_file_loader = cellpy_data_instance.loader
+    test = raw_file_loader(test_res_file_full)
+    cellpy_data_instance.datasets.append(test[0])
 
 
 def info(cellpy_data_instance):
@@ -55,16 +64,18 @@ def report_time(t1,t2):
 d = cellreader.CellpyData()
 
 prms.Instruments["chunk_size"] = 10000  # size pr chunk used by pandas when loading
-prms.Instruments["max_chunks"] = None  # stops loading when reaching this?
+prms.Instruments["max_chunks"] = 1  # stops loading when reaching this
 
 
-# limit_loaded_cycles
-print(prms.Instruments)
+current_chunk = 0
+# prms._res_chunk = current_chunk
+
 
 t1 = time.time()
 
-
 load_it(d)
+# set new current chunk
+# append_to_it(d)
 
 t2 = time.time()
 

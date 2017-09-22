@@ -159,5 +159,6 @@ _sfod = True
 
 # used during development for testing new features
 
-_res_x = False
+_res_chunk = 0
+
 

@@ -81,6 +81,7 @@ class ArbinLoader(object):
 
         self.headers_normal = get_headers_normal()
         self.headers_global = self.get_headers_global()
+        self.current_chunk = 0  # use this to set chunks to load
 
     @staticmethod
     def get_raw_units():
@@ -484,6 +485,7 @@ class ArbinLoader(object):
         Returns:
             new_tests (list of data objects)
         """
+        # TODO: insert kwargs - current chunk, only normal data, etc
         new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
@@ -564,7 +566,14 @@ class ArbinLoader(object):
             self._clean_up_loadres(None, conn, temp_filename)
         return new_tests
 
+
+    def _normal_table_generator(self, **kwargs):
+        pass
+
+
     def _load_res_normal_table(self, conn, test_ID, bad_steps):
+        # Note that this function is run each time you use the loader. This means that it is not ideal for
+        # handling generators etc
 
         self.logger.debug("starting loading raw-data")
         table_name_normal = TABLE_NAMES["normal"]
