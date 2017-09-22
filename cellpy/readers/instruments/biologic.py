@@ -56,7 +56,6 @@ class BioLogicLoader(object):
         self.max_chunks = None
         self.last_chunk = None
         self.limit_loaded_cycles = None
-        self.load_until_error = False
 
         self.headers_normal = get_headers_normal()
 
