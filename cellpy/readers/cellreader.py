@@ -567,7 +567,7 @@ class CellpyData(object):
         #self.max_chunks = prms.Reader["max_chunks"]
         #self.last_chunk = prms.Reader["last_chunk"]
         self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]
-        self.load_until_error = prms.Reader["load_until_error"]
+        # self.load_until_error = prms.Reader["load_until_error"]
         self.ensure_step_table = prms.Reader["ensure_step_table"]
         self.daniel_number = prms.Reader["daniel_number"]
         self.raw_datadir = prms.Reader["raw_datadir"]
@@ -885,7 +885,9 @@ class CellpyData(object):
 
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
                  summary_on_raw=False, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False, force_raw=False):
+                 summary_end_v=True, only_summary=False, only_first=False, force_raw=False,
+                 use_cellpy_stat_file=True):
+
         """Loads data for given cells.
 
         Args:
@@ -899,6 +901,7 @@ class CellpyData(object):
             only_summary (bool): get only the summary of the runs
             only_first (bool): only use the first file fitting search criteria
             force_raw (bool): only use raw-files
+            use_cellpy_stat_file (bool): use stat file if creating summary from raw
 
         Example:
 
@@ -945,7 +948,8 @@ class CellpyData(object):
                 if summary_on_raw:
                     self.make_summary(all_tests=False, find_ocv=summary_ocv,
                                       find_ir=summary_ir,
-                                      find_end_voltage=summary_end_v)
+                                      find_end_voltage=summary_end_v,
+                                      use_cellpy_stat_file=use_cellpy_stat_file)
             else:
                 self.logger.warning("Empty run!")
         else:
@@ -4000,7 +4004,7 @@ def loadcell_check():
     cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
     cell_data = CellpyData()
     cell_data.select_minimal = True
-    cell_data.load_until_error = True
+    # cell_data.load_until_error = True
     cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
     cell_data.set_mass(mass)
     if not cell_data.summary_exists:

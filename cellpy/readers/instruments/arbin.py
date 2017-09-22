@@ -26,6 +26,7 @@ import cellpy.parameters.prms as prms
 
 # Select odbc module
 ODBC = prms._odbc
+SEARCH_FOR_ODBC_DRIVERS = prms._sfod
 use_ado = False
 
 if ODBC == "ado":
@@ -64,6 +65,7 @@ TABLE_NAMES = {
     "statistic": "Channel_Statistic_Table",
 }
 
+
 class ArbinLoader(object):
     """ Class for loading arbin-data from res-files."""
 
@@ -73,19 +75,13 @@ class ArbinLoader(object):
         # then remember to include that as prm in "out of class" functions
         # self.prms = prms
         self.logger = logging.getLogger(__name__)
-        self.load_only_summary = prms.Reader["load_only_summary"]  # False
-        self.select_minimal = prms.Reader["select_minimal"]  # False
+        # use the following prm to limit to loading only one cycle or from cycle>x to cycle<x+n
+        # prms.Reader["limit_loaded_cycles"] = [cycle from, cycle to]
 
-        self.max_res_filesize = prms.Instruments["max_res_filesize"]
-        self.chunk_size = prms.Instruments["chunk_size"]
-        self.max_chunks = prms.Instruments["max_chunks"]
-        self.last_chunk = prms.Instruments["last_chunk"]
-
-        self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]  # None
-        self.load_until_error = prms.Reader["load_until_error"]  # False
 
         self.headers_normal = get_headers_normal()
         self.headers_global = self.get_headers_global()
+        self.current_chunk = 0  # use this to set chunks to load
 
     @staticmethod
     def get_raw_units():
@@ -159,36 +155,34 @@ class ArbinLoader(object):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    @staticmethod
-    def __get_res_connector(temp_filename):
-        import sys
-        is64bit_python = check64bit(System="python")
-        # if is64bit_python:
-        #     print("\nTHIS IS 64 bit Python\n")
-        # is64bit_os = check64bit(System = "os")
-        # ‘Microsoft Access Driver (*.mdb)’
-        # . «[driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]»?
 
-        driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
+    def __get_res_connector(self, temp_filename):
+        if use_ado:
+            is64bit_python = check64bit(System="python")
+            if is64bit_python:
+                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
+            else:
+                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
+            return constr
+
+        if SEARCH_FOR_ODBC_DRIVERS:
+            try:
+                driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
+            except IndexError as e:
+                self.logger.error(e)
+                print(e)
+                print("Could not find any odbc-drivers. Check out the homepage of pydobc for info on installing drivers")
+            self.logger.debug("odbc constr: {}".format(driver))
+        else:
+            is64bit_python = check64bit(System="python")
+            if is64bit_python:
+                driver = '{Microsoft Access Driver (*.mdb, *.accdb)}'
+            else:
+                driver = 'Microsoft Access Driver (*.mdb)'
+            self.logger.debug("odbc constr: {}".format(driver))
         constr = 'Driver=%s;Dbq=%s' % (driver, temp_filename)
-        # print(constr)
-        # constr2 = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-        # print(constr2)
-
-
-        # if use_ado:
-        #     if is64bit_python:
-        #         constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
-        #     else:
-        #         constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
-        #
-        # else:
-        #     if is64bit_python:
-        #         constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-        #     else:
-        #         constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
-        # print("Constructor = {}".format(constr))
         return constr
+
 
     def _clean_up_loadres(self, cur, conn, filename):
         if cur is not None:
@@ -233,7 +227,7 @@ class ArbinLoader(object):
         return checked_rundata
 
 
-    def _iterdump(self, file_name, headers = None):
+    def _iterdump(self, file_name, headers=None):
         """
         Function for dumping values from a file.
 
@@ -348,6 +342,14 @@ class ArbinLoader(object):
 
 
     def investigate(self, file_name):
+        """Investigate a .res file.
+
+        Args:
+            file_name: name of the file
+
+        Returns: dictionary with div. stats and info.
+
+        """
         step_txt = self.headers_normal['step_index_txt']
         point_txt = self.headers_normal['data_point_txt']
         cycle_txt = self.headers_normal['cycle_index_txt']
@@ -447,9 +449,6 @@ class ArbinLoader(object):
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
 
-
-
-
     def repair(self, file_name):
         """try to repair a broken/corrupted file"""
         raise NotImplemented
@@ -486,22 +485,23 @@ class ArbinLoader(object):
         Returns:
             new_tests (list of data objects)
         """
+        # TODO: insert kwargs - current chunk, only normal data, etc
         new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
 
-        self.logger.debug("in load")
+        self.logger.debug("in loader")
         self.logger.debug("filename: %s" % file_name)
 
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
-        if filesize > self.max_res_filesize and not self.load_only_summary:
+        if filesize > prms.Instruments["max_res_filesize"] and not prms.Reader["load_only_summary"]:
             error_message = "\nERROR (loader):\n"
-            error_message += "%s > %s - File is too big!\n" % (hfilesize, humanize_bytes(self.max_res_filesize))
-            error_message += "(edit self.max_res_filesize)\n"
+            error_message += "%s > %s - File is too big!\n" % (hfilesize, humanize_bytes(prms.Instruments["max_res_filesize"]))
+            error_message += "(edit prms.Instruments['max_res_filesize'])\n"
             print(error_message)
             return None
 
@@ -559,6 +559,10 @@ class ArbinLoader(object):
                                                                 data.test_ID,
                                                                 self.headers_normal['data_point_txt'])
             summary_df = pd.read_sql_query(sql, conn)
+            if summary_df.empty:
+                txt = "\nCould not find any summary (stats-file)!"
+                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+                warnings.warn(txt)
             data.dfsummary = summary_df
             data.dfdata = normal_df
             data.raw_data_files_length.append(length_of_test)
@@ -566,15 +570,22 @@ class ArbinLoader(object):
             self._clean_up_loadres(None, conn, temp_filename)
         return new_tests
 
+
+    def _normal_table_generator(self, **kwargs):
+        pass
+
+
     def _load_res_normal_table(self, conn, test_ID, bad_steps):
+        # Note that this function is run each time you use the loader. This means that it is not ideal for
+        # handling generators etc
 
         self.logger.debug("starting loading raw-data")
         table_name_normal = TABLE_NAMES["normal"]
 
-        if self.load_only_summary:  # SETTING
+        if prms.Reader["load_only_summary"]:  # SETTING
             warnings.warn("not implemented")
 
-        if self.select_minimal:  # SETTING
+        if prms.Reader["select_minimal"]:  # SETTING
             columns = MINIMUM_SELECTION
             columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
         else:
@@ -593,61 +604,50 @@ class ArbinLoader(object):
                 sql_4 += "AND NOT (%s=%i " % (self.headers_normal['cycle_index_txt'], bad_cycle)
                 sql_4 += "AND %s=%i) " % (self.headers_normal['step_index_txt'], bad_step)
 
-        if self.limit_loaded_cycles:
-            if len(self.limit_loaded_cycles) > 1:
-                sql_4 += "AND %s>%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[0])
-                sql_4 += "AND %s<%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[-1])
+        if prms.Reader["limit_loaded_cycles"]:
+            if len(prms.Reader["limit_loaded_cycles"]) > 1:
+                sql_4 += "AND %s>%i " % (self.headers_normal['cycle_index_txt'], prms.Reader["limit_loaded_cycles"][0])
+                sql_4 += "AND %s<%i " % (self.headers_normal['cycle_index_txt'], prms.Reader["limit_loaded_cycles"][-1])
             else:
-                sql_4 = "AND %s=%i " % (self.headers_normal['cycle_index_txt'], self.limit_loaded_cycles[0])
+                sql_4 = "AND %s=%i " % (self.headers_normal['cycle_index_txt'], prms.Reader["limit_loaded_cycles"][0])
 
         sql_5 = "order by %s" % self.headers_normal['data_point_txt']
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
+        self.logger.debug("INFO ABOUT LOAD RES NORMAL")
         self.logger.debug("sql statement: %s" % sql)
-        if not self.chunk_size:
+
+        if not prms.Instruments['chunk_size']:
             self.logger.debug("no chunk-size given")
             normal_df = pd.read_sql_query(sql, conn)
             length_of_test = normal_df.shape[0]
             self.logger.debug("loaded to normal_df (length = %i)" % length_of_test)
         else:
-            self.logger.debug("chunk-size: %s" % int(self.chunk_size))
-            normal_df_reader = pd.read_sql_query(sql, conn, chunksize=self.chunk_size)
+            self.logger.debug("chunk-size: %s" % int(prms.Instruments['chunk_size']))
+            self.logger.debug("creating a pd.read_sql_query generator")
+            normal_df_reader = pd.read_sql_query(sql, conn, chunksize=prms.Instruments['chunk_size'])
             normal_df = None
+            chunk_number = 0
             self.logger.debug("created pandas sql reader")
-            if not self.last_chunk:
-                self.logger.debug("not last chunk")
-                normal_df = next(normal_df_reader)
-                chunk_number = 1
-            else:
-                self.logger.debug("last chunk")
-                chunk_number = 0
-                for j in range(self.last_chunk):
-                    normal_df = next(normal_df_reader)  # TODO: This is SLOW - should use itertools.islice
-                    chunk_number += 1
-
-            self.logger.debug("-iterating chunk-wise")
+            self.logger.debug("iterating chunk-wise")
             for i, chunk in enumerate(normal_df_reader):
                 self.logger.debug("iteration number %i" % i)
-                if self.load_until_error:
-                    self.logger.debug("load_until_error mode")
+                if prms.Instruments["max_chunks"]:
+                    self.logger.debug("max number of chunks mode (%i)" % prms.Instruments["max_chunks"])
+                    if chunk_number < prms.Instruments["max_chunks"]:
+                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
+                        self.logger.debug("chunk %i of %i" % (i, prms.Instruments["max_chunks"]))
+                    else:
+                        break
+                else:
                     try:
                         normal_df = pd.concat([normal_df, chunk], ignore_index=True)
                         self.logger.debug("concatenated new chunk")
                     except MemoryError:
                         self.logger.error(" - Could not read complete file (MemoryError).")
                         self.logger.error("Last successfully loaded chunk number:", chunk_number)
-                        self.logger.error("Chunk size:", self.chunk_size)
+                        self.logger.error("Chunk size:", prms.Instruments['chunk_size'])
                         break
-                elif self.max_chunks:
-                    self.logger.debug("max number of chunks mode (%i)" % self.max_chunks)
-                    if chunk_number < self.max_chunks:
-                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
-                        self.logger.debug("chunk %i of %i" % (i, self.max_chunks))
-                    else:
-                        break
-                else:
-                    self.logger.debug("*else")
-                    normal_df = pd.concat([normal_df, chunk], ignore_index=True)
                 chunk_number += 1
             length_of_test = normal_df.shape[0]
             self.logger.debug("finished iterating (#rows: %i)", length_of_test)
@@ -667,4 +667,5 @@ if __name__ == '__main__':
     from cellpy import log
 
     log.setup_logging(default_level=logging.DEBUG)
+
 

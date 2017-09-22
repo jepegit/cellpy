@@ -12,3 +12,4 @@ PyYAML>=3.12
 future>=0.16.0
 pytables>=3.3.0
 pyodbc>=4.0.16
+future>=0.16.0
