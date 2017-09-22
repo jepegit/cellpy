@@ -559,6 +559,10 @@ class ArbinLoader(object):
                                                                 data.test_ID,
                                                                 self.headers_normal['data_point_txt'])
             summary_df = pd.read_sql_query(sql, conn)
+            if summary_df.empty:
+                txt = "\nCould not find any summary (stats-file)!"
+                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+                warnings.warn(txt)
             data.dfsummary = summary_df
             data.dfdata = normal_df
             data.raw_data_files_length.append(length_of_test)

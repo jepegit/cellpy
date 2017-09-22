@@ -885,7 +885,9 @@ class CellpyData(object):
 
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
                  summary_on_raw=False, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False, force_raw=False):
+                 summary_end_v=True, only_summary=False, only_first=False, force_raw=False,
+                 use_cellpy_stat_file=True):
+
         """Loads data for given cells.
 
         Args:
@@ -899,6 +901,7 @@ class CellpyData(object):
             only_summary (bool): get only the summary of the runs
             only_first (bool): only use the first file fitting search criteria
             force_raw (bool): only use raw-files
+            use_cellpy_stat_file (bool): use stat file if creating summary from raw
 
         Example:
 
@@ -945,7 +948,8 @@ class CellpyData(object):
                 if summary_on_raw:
                     self.make_summary(all_tests=False, find_ocv=summary_ocv,
                                       find_ir=summary_ir,
-                                      find_end_voltage=summary_end_v)
+                                      find_end_voltage=summary_end_v,
+                                      use_cellpy_stat_file=use_cellpy_stat_file)
             else:
                 self.logger.warning("Empty run!")
         else:

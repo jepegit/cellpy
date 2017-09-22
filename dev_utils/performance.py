@@ -28,6 +28,10 @@ test_run_name = "20160805_test001_45_cc"
 log.setup_logging(default_level="DEBUG")
 
 
+new_arbin_file = r"C:\Scripting\Processing\Celldata\indata\NewArbin\20170907_sic024_01_cc_01.res"
+new_arbin_mass = 0.824098422
+
+
 def load_it(cellpy_data_instance):
     # cellpy_data_instance.loadcell(test_res_file_full)
     raw_file_loader = cellpy_data_instance.loader
@@ -52,55 +56,35 @@ def report_time(t1,t2):
     print(txt)
 
 
+def time_routine():
+    d = cellreader.CellpyData()
 
-# print(prms.Paths)
-# print(prms.Reader)
-# print(prms.Instruments)
-# print(prms.Materials)
+    prms.Instruments["chunk_size"] = 10000  # size pr chunk used by pandas when loading
+    prms.Instruments["max_chunks"] = 1  # stops loading when reaching this
+    t1 = time.time()
 
+    load_it(d)
+    # set new current chunk
+    # append_to_it(d)
 
+    t2 = time.time()
 
+    # d.make_step_table()
+    # d.make_summary()
+    # info(d)
 
-d = cellreader.CellpyData()
-
-prms.Instruments["chunk_size"] = 10000  # size pr chunk used by pandas when loading
-prms.Instruments["max_chunks"] = 1  # stops loading when reaching this
-
-
-current_chunk = 0
-# prms._res_chunk = current_chunk
-
-
-t1 = time.time()
-
-load_it(d)
-# set new current chunk
-# append_to_it(d)
-
-t2 = time.time()
+    print("------------------finished------------------")
+    report_time(t1, t2)
 
 
-# d.make_step_table()
-# d.make_summary()
-# info(d)
+def missing_stats_file():
+    d = cellreader.CellpyData()
+    raw_file_loader = d.loader
+    test = raw_file_loader(new_arbin_file)
+    d.datasets.append(test[0])
+    d.set_mass(new_arbin_mass)
+    d.make_summary(use_cellpy_stat_file=False)
 
 
-
-print("------------------finished------------------")
-report_time(t1,t2)
-
-
-
-
-def test_load_res(cellpy_data_instance):
-    cellpy_data_instance.loadcell(test_res_file_full)
-    run_number = 0
-    data_point = 2283
-    step_time = 1500.05
-    sum_discharge_time = 362198.12
-    my_test = cellpy_data_instance.datasets[run_number]
-
-
-    # cellpy_data_instance.make_summary(find_ir=True)
-    # cellpy_data_instance.make_step_table()
-    # cellpy_data_instance.save(test_cellpy_file_full)
+if __name__ == "__main__":
+    missing_stats_file()

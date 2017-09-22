@@ -318,6 +318,7 @@ class Batch(object):
         self.save_cellpy_file = True
         self.force_raw_file = False
         self.force_cellpy_file = False
+        self.use_cellpy_stat_file = True
 
         self._packable = ['name', 'project', 'batch_col','selected_summaries',
                           'output_format', 'time_stamp', 'project_dir', 'batch_dir', 'raw_dir']
@@ -459,7 +460,8 @@ class Batch(object):
                                                     export_cycles=self.export_cycles,
                                                     export_raw=self.export_raw,
                                                     export_ica=self.export_ica,
-                                                    save=self.save_cellpy_file)
+                                                    save=self.save_cellpy_file,
+                                                    use_cellpy_stat_file=self.use_cellpy_stat_file)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
@@ -837,7 +839,7 @@ def create_folder_structure(project_name, batch_name):
 
 def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=False,
                        export_cycles=False, export_raw=True,
-                       export_ica=False, save=True):
+                       export_ica=False, save=True, use_cellpy_stat_file=True):
     """Reads and saves cell data defined by the info-DataFrame.
 
     The function iterates through the ``info_df`` and loads data from the runs. It saves individual data
@@ -895,7 +897,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
             try:
                 cell_data.loadcell(raw_files=row.raw_file_names, cellpy_file=row.cellpy_file_names,
                                    mass=row.masses, summary_on_raw=True,
-                                   force_raw=force_raw)
+                                   force_raw=force_raw,
+                                   use_cellpy_stat_file=use_cellpy_stat_file)
             except Exception as e:
                 logger.debug('Failed to load: ' + str(e))
                 errors.append("loadcell:" + str(indx))
