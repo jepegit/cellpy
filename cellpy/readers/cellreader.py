@@ -981,7 +981,7 @@ class CellpyData(object):
             self.logger.debug("loading raw file: {}".format(f))
             new_tests = raw_file_loader(f, **kwargs)  # this should now work
             if test is not None:
-                new_tests[set_number] = self._append(test[set_number], new_tests[set_number])
+                test[set_number] = self._append(test[set_number], new_tests[set_number])
                 self.logger.debug("added this test - starting merging")
                 self.logger.debug(new_tests[set_number].raw_data_files)
                 self.logger.debug(new_tests[set_number].raw_data_files_length)
