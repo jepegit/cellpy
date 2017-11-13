@@ -83,3 +83,4 @@ sh.exe.stackdump
 #testdata/data/
 xdist/
 cellpy/readers/instruments/tmp.dat
+examples/trying_stuff.py
