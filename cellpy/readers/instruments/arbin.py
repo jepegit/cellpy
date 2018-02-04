@@ -1,18 +1,18 @@
 """arbin res-type data files"""
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-
-from builtins import next
-from builtins import range
-from builtins import object
+# from __future__ import division
+# from __future__ import absolute_import
+# from __future__ import print_function
+#
+# from builtins import next
+# from builtins import range
+# from builtins import object
 import os
 import tempfile
 import shutil
 import logging
 import warnings
-from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
+# from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
 import numpy as np
 
 import pandas as pd
