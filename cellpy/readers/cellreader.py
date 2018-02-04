@@ -21,14 +21,14 @@ Todo:
     * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
 
 """
-from __future__ import print_function
-from __future__ import division
+# from __future__ import print_function
+# from __future__ import division
 
-from builtins import str
-#from builtins import zip
-from builtins import range
-from builtins import object
-from past.utils import old_div
+# from builtins import str
+# #from builtins import zip
+# from builtins import range
+# from builtins import object
+# from past.utils import old_div
 CELLPY_FILE_VERSION = 3
 MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 3
@@ -234,7 +234,9 @@ def humanize_bytes(b, precision=1):
     for factor, suffix in abbrevs:
         if b >= factor:
             break
-    return '%.*f %s' % (precision, old_div(b, factor), suffix)
+    # return '%.*f %s' % (precision, old_div(b, factor), suffix)
+    return '%.*f %s' % (precision, b // factor, suffix)
+
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
@@ -1145,17 +1147,18 @@ class CellpyData(object):
         return None
 
 
-    def load(self, cellpy_file):
+    def load(self, cellpy_file, parent_level="CellpyData"):
         """Loads a cellpy file.
 
         Args:
             cellpy_file (path, str): Full path to the cellpy file.
+            parent_level (str, optional): Parent level
 
         """
         try:
             self.logger.info("loading hdf5")
             self.logger.info(cellpy_file)
-            new_datasets = self._load_hdf5(cellpy_file)
+            new_datasets = self._load_hdf5(cellpy_file, parent_level)
             self.logger.info("file loaded")
         except AttributeError:
             new_datasets = []
@@ -1172,11 +1175,12 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
 
-    def _load_hdf5(self, filename):
+    def _load_hdf5(self, filename, parent_level="CellpyData"):
         """Load a cellpy-file.
 
         Args:
             filename (str): Name of the cellpy file.
+            parent_level (str) (optional): name of the parent level (defaults to "CellpyData")
 
         Returns:
             loaded datasets (DataSet-object)
@@ -1188,9 +1192,24 @@ class CellpyData(object):
             sys.exit()
         self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
+
+        # required_keys = ['dfdata', 'dfsummary', 'fidtable', 'info']
+        required_keys = ['dfdata', 'dfsummary', 'info']
+        required_keys = ["/" + parent_level + "/" + _ for _ in required_keys]
+
+        for key in required_keys:
+            if not key in store.keys():
+                self.logger.info(f"This hdf-file is not good enough - at least one key is missing: {key}")
+                raise Exception(f"OH MY GOD! At least one crucial key is missing {key}!")
+
+        self.logger.debug(f"Keys in current hdf5-file: {store.keys()}")
         data = DataSet()
 
-        infotable = store.select("CellpyData/info")
+        if parent_level != "CellpyData":
+            self.logger.debug("Using non-default parent label for the hdf-store: {}".format(parent_level))
+
+        infotable = store.select(parent_level+"/info")  # remark! changed spelling from lower letter to camel-case!
+
         try:
             data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
         except:
@@ -1202,17 +1221,17 @@ class CellpyData(object):
         if data.cellpy_file_version > CELLPY_FILE_VERSION:
             raise AttributeError  # TODO: make custom error
 
-        data.dfsummary = store.select("CellpyData/dfsummary")
-        data.dfdata = store.select("CellpyData/dfdata")
+        data.dfsummary = store.select(parent_level+"/dfsummary")
+        data.dfdata = store.select(parent_level+"/dfdata")
 
         try:
-            data.step_table = store.select("CellpyData/step_table")
+            data.step_table = store.select(parent_level+"/step_table")
             data.step_table_made = True
         except:
             data.step_table = None
             data.step_table_made = False
         try:
-            fidtable = store.select("CellpyData/fidtable")
+            fidtable = store.select(parent_level+"/fidtable") # remark! changed spelling from lower letter to camel-case!
             fidtable_selected = True
         except:
             fidtable = []
@@ -2048,8 +2067,7 @@ class CellpyData(object):
             else:
                 difference = np.nan
         else:
-            difference = old_div(x0, x1)
-
+            difference = x0/x1
         return difference
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
@@ -2939,14 +2957,14 @@ class CellpyData(object):
         if not to_unit:
             to_unit_cap = self.cellpy_units["charge"]
             to_unit_mass = self.cellpy_units["specific"]
-            to_unit = old_div(to_unit_cap, to_unit_mass)
+            to_unit = to_unit_cap/to_unit_mass
         if not from_unit:
             from_unit_cap = self.raw_units["charge"]
             from_unit_mass = self.raw_units["mass"]
-            from_unit = old_div(from_unit_cap, from_unit_mass)
+            from_unit = from_unit_cap/from_unit_mass
         # Remove this later
         # assert float(from_unit / to_unit) == 1000000.0
-        return old_div(float(old_div(from_unit, to_unit)), mass)
+        return from_unit/to_unit/mass
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False, ):
         """Gets diagnostics plots.
@@ -3006,14 +3024,14 @@ class CellpyData(object):
                 # noinspection PyPep8Naming
                 C_n = summarydata[charge_txt][i]
                 dd = C_n - D_n
-                ric_n = old_div((D_n - C_n), C_n)
+                ric_n = (D_n - C_n)/C_n
                 try:
                     # noinspection PyPep8Naming
                     C_n2 = summarydata[charge_txt][i + 1]
                     # noinspection PyPep8Naming
                     D_n2 = summarydata[discharge_txt][i + 1]
-                    ric_dis_n = old_div((C_n - C_n2), C_n)
-                    ric_sei_n = old_div((D_n2 - C_n), C_n)
+                    ric_dis_n = (C_n - C_n2)/C_n
+                    ric_sei_n = (D_n2 - C_n)/C_n
                 except:
                     ric_dis_n = None
                     ric_sei_n = None
@@ -3566,9 +3584,9 @@ class CellpyData(object):
             cap_ref = cap_ref.values[0]
             ref = dfsummary.loc[dfsummary[c_txt] < n, _second_step_txt].sum() \
                 + dfsummary.loc[dfsummary[c_txt] < n, _first_step_txt].sum() + cap_ref
-            dfsummary[low_level_at_cycle_n_txt] = (old_div(100, ref)) * (dfsummary[_first_step_txt].cumsum()
+            dfsummary[low_level_at_cycle_n_txt] = (100/ref) * (dfsummary[_first_step_txt].cumsum()
                                                                  - dfsummary[_second_step_txt].cumsum())
-            dfsummary[high_level_at_cycle_n_txt] = (old_div(100, ref)) * (dfsummary[_first_step_txt]
+            dfsummary[high_level_at_cycle_n_txt] = (100/ref) * (dfsummary[_first_step_txt]
                                                                   + dfsummary[_first_step_txt].cumsum()
                                                                   - dfsummary[_second_step_txt].cumsum())
         else:
@@ -3581,17 +3599,17 @@ class CellpyData(object):
         # --------------relative irreversible capacities as defined by Gauthier et al.---
         # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
         # noinspection PyPep8Naming
-        RIC = old_div((dfsummary[_first_step_txt].shift(1) - dfsummary[_second_step_txt]), dfsummary[_second_step_txt].shift(1))
+        RIC = (dfsummary[_first_step_txt].shift(1) - dfsummary[_second_step_txt])/dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_title] = RIC.cumsum()
 
         # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
         # noinspection PyPep8Naming
-        RIC_SEI = old_div((dfsummary[_first_step_txt] - dfsummary[_second_step_txt].shift(1)), dfsummary[_second_step_txt].shift(1))
+        RIC_SEI = (dfsummary[_first_step_txt] - dfsummary[_second_step_txt].shift(1))/dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_sei_title] = RIC_SEI.cumsum()
 
         # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
         # noinspection PyPep8Naming
-        RIC_disconnect = old_div((dfsummary[_second_step_txt].shift(1) - dfsummary[_second_step_txt]), dfsummary[_second_step_txt].shift(1))
+        RIC_disconnect = (dfsummary[_second_step_txt].shift(1) - dfsummary[_second_step_txt])/dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_disconnect_title] = RIC_disconnect.cumsum()
 
         # -------------- shifted capacities as defined by J. Dahn et al. -----

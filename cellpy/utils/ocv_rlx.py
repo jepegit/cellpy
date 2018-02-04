@@ -1,9 +1,9 @@
-from __future__ import division
-from __future__ import print_function
-from builtins import str
-from builtins import range
-from past.utils import old_div
-from builtins import object
+# from __future__ import division
+# from __future__ import print_function
+# from builtins import str
+# from builtins import range
+# from past.utils import old_div
+# from builtins import object
 from lmfit import Parameters, minimize, report_fit, Model, report_ci
 import numpy as np
 import math
@@ -19,11 +19,11 @@ class MultiCycleOcvFit(object):
 
     def __init__(self, cellpydata, cycles, circuits=3):
         """
-        
+
         Args:
-            cellpydata: 
-            cycles: 
-            circuits: 
+            cellpydata:
+            cycles:
+            circuits:
         """
         self.cycles = cycles
         self.data = cellpydata
@@ -50,10 +50,10 @@ class MultiCycleOcvFit(object):
 
     def run_fitting(self, ocv_type='ocvrlx_up', weighted=True):
         """
-        
+
         Args:
-            ocv_type: 
-            weighted: 
+            ocv_type:
+            weighted:
 
         Returns:
 
@@ -297,7 +297,7 @@ class OcvFit(object):
     def _model(time, ocv, t0, w0, t1, w1, t2, w2, t3, w3, t4, w4):
         # Calculates a voltage profile for the given time array for a given set of parameters
         model = ocv
-        model = model + w0 * np.exp(old_div(-time, t0)) + w1 * np.exp(old_div(-time, t1)) + w2 * np.exp(old_div(-time, t2)) + w3 * np.exp(old_div(-time, t3)) + w4 * np.exp(old_div(-time, t4))
+        model = model + w0 * np.exp(-time/t0) + w1 * np.exp(-time/t1) + w2 * np.exp(-time/t2) + w3 * np.exp(-time/t3) + w4 * np.exp(-time/t4)
 
         return model
 
@@ -352,14 +352,14 @@ class OcvFit(object):
     def get_best_fit_parameters_translated(self):
         result_dict = dict()
         result_dict['ocv'] = self.best_fit_parameters['ocv']
-        result_dict['ir'] = old_div(-((self.best_fit_parameters['ocv'] + self.best_fit_parameters['w0']
+        result_dict['ir'] = -((self.best_fit_parameters['ocv'] + self.best_fit_parameters['w0']
                             + self.best_fit_parameters['w1'] + self.best_fit_parameters['w2']
                             + self.best_fit_parameters['w3'] + self.best_fit_parameters['w4'])\
-                            - self.zero_voltage), self.zero_current)
+                            - self.zero_voltage)/self.zero_current
 
         for i in range(self.circuits):
-            result_dict['r' + str(i)] = old_div(self.best_fit_parameters['w' + str(i)], self.zero_current)
-            result_dict['c' + str(i)] = old_div(self.best_fit_parameters['t' + str(i)], result_dict['r' + str(i)])
+            result_dict['r' + str(i)] = self.best_fit_parameters['w' + str(i)]/self.zero_current
+            result_dict['c' + str(i)] = self.best_fit_parameters['t' + str(i)]/result_dict['r' + str(i)]
 
         return result_dict
 

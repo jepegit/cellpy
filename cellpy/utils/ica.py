@@ -1,11 +1,11 @@
 """ica contains routines for creating and working with incremental capacity analysis data"""
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-
-from builtins import zip
-from builtins import object
+# from __future__ import division
+# from __future__ import absolute_import
+# from __future__ import print_function
+#
+# from builtins import zip
+# from builtins import object
 import os
 import numpy as np
 from scipy import stats
@@ -28,7 +28,7 @@ METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 
 class Converter(object):
     """Class for dq-dv handling.
-    
+
     Typical usage is to  (1) set the data,  (2) inspect the data, (3) pre-process the data,
     (4) perform the dq-dv transform, and finally (5) post-process the data.
     """

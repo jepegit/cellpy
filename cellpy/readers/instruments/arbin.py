@@ -1,18 +1,18 @@
 """arbin res-type data files"""
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-
-from builtins import next
-from builtins import range
-from builtins import object
+# from __future__ import division
+# from __future__ import absolute_import
+# from __future__ import print_function
+#
+# from builtins import next
+# from builtins import range
+# from builtins import object
 import os
 import tempfile
 import shutil
 import logging
 import warnings
-from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
+# from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
 import numpy as np
 
 import pandas as pd
@@ -287,23 +287,13 @@ class ArbinLoader(object):
         tests = global_data_df[self.headers_normal['test_id_txt']]
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
-        for test in tests:
-            self.logger.debug("dataset: %s" % test)
-
-        # Check if test is empty
-        for test in tests:
-            sql = "select Test_ID from %s where %s=%s order by %s" % (table_name_normal, self.headers_normal['test_id_txt'], test, self.headers_normal['data_point_txt'])
-            normal_df = pd.read_sql_query(sql, conn)
-            if not normal_df.empty:
-                test_ID = int(test)
-                break
-        self.logger.debug("chosen first non-empty dataset: %i" % test_ID)
-
-        test_no = tests.inde(test)
+        self.logger.debug("only selecting first test")
+        test_no = 0
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
         #fid = FileID(file_name)
         start_datetime = global_data_df[self.headers_global['start_datetime_txt']][test_no]
+        test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
         test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
 
         # --------- read raw-data (normal-data) -------------------------
@@ -317,8 +307,6 @@ class ArbinLoader(object):
         sql_2 = "from %s " % table_name_normal
         sql_3 = "where %s=%s " % (self.headers_normal['test_id_txt'], test_ID)
         sql_5 = "order by %s" % self.headers_normal['data_point_txt']
-
-
         import time
         info_list = []
         info_header = ["cycle", "row_count", "start_point", "end_point"]

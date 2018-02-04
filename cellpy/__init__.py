@@ -4,8 +4,8 @@
 
 """
 
-__author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
-__email__ = 'tor.vara@nmbu.no', 'jepe@ife.no'
+__author__ = 'Jan Petter Maehlen'
+__email__ = 'jepe@ife.no'
 
 import logging
 import warnings
