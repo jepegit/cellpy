@@ -1145,17 +1145,18 @@ class CellpyData(object):
         return None
 
 
-    def load(self, cellpy_file):
+    def load(self, cellpy_file, parent_level="CellpyData"):
         """Loads a cellpy file.
 
         Args:
             cellpy_file (path, str): Full path to the cellpy file.
+            parent_level (str, optional): Parent level
 
         """
         try:
             self.logger.info("loading hdf5")
             self.logger.info(cellpy_file)
-            new_datasets = self._load_hdf5(cellpy_file)
+            new_datasets = self._load_hdf5(cellpy_file, parent_level)
             self.logger.info("file loaded")
         except AttributeError:
             new_datasets = []
@@ -1172,11 +1173,12 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
 
-    def _load_hdf5(self, filename):
+    def _load_hdf5(self, filename, parent_level="CellpyData"):
         """Load a cellpy-file.
 
         Args:
             filename (str): Name of the cellpy file.
+            parent_level (str) (optional): name of the parent level (defaults to "CellpyData")
 
         Returns:
             loaded datasets (DataSet-object)
@@ -1188,9 +1190,24 @@ class CellpyData(object):
             sys.exit()
         self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
+
+        # required_keys = ['dfdata', 'dfsummary', 'fidtable', 'info']
+        required_keys = ['dfdata', 'dfsummary', 'info']
+        required_keys = ["/" + parent_level + "/" + _ for _ in required_keys]
+
+        for key in required_keys:
+            if not key in store.keys():
+                self.logger.info(f"This hdf-file is not good enough - at least one key is missing: {key}")
+                raise Exception(f"OH MY GOD! At least one crucial key is missing {key}!")
+
+        self.logger.debug(f"Keys in current hdf5-file: {store.keys()}")
         data = DataSet()
 
-        infotable = store.select("CellpyData/info")
+        if parent_level != "CellpyData":
+            self.logger.debug("Using non-default parent label for the hdf-store: {}".format(parent_level))
+
+        infotable = store.select(parent_level+"/info")  # remark! changed spelling from lower letter to camel-case!
+
         try:
             data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
         except:
@@ -1202,17 +1219,17 @@ class CellpyData(object):
         if data.cellpy_file_version > CELLPY_FILE_VERSION:
             raise AttributeError  # TODO: make custom error
 
-        data.dfsummary = store.select("CellpyData/dfsummary")
-        data.dfdata = store.select("CellpyData/dfdata")
+        data.dfsummary = store.select(parent_level+"/dfsummary")
+        data.dfdata = store.select(parent_level+"/dfdata")
 
         try:
-            data.step_table = store.select("CellpyData/step_table")
+            data.step_table = store.select(parent_level+"/step_table")
             data.step_table_made = True
         except:
             data.step_table = None
             data.step_table_made = False
         try:
-            fidtable = store.select("CellpyData/fidtable")
+            fidtable = store.select(parent_level+"/fidtable") # remark! changed spelling from lower letter to camel-case!
             fidtable_selected = True
         except:
             fidtable = []

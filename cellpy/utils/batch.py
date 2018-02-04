@@ -451,7 +451,7 @@ class Batch(object):
         self.project_dir, self.batch_dir, self.raw_dir = directories
         logger.debug("create folders:" + str(directories))
 
-    def load_and_save_raw(self):
+    def load_and_save_raw(self, parent_level="CellpyData"):
         """Loads the cellpy or raw-data file(s) and saves to csv"""
         sep = prms.Reader["sep"]
         self.frames, self.keys, errors = read_and_save_data(self.info_df, self.raw_dir, sep=sep,
@@ -461,7 +461,8 @@ class Batch(object):
                                                     export_raw=self.export_raw,
                                                     export_ica=self.export_ica,
                                                     save=self.save_cellpy_file,
-                                                    use_cellpy_stat_file=self.use_cellpy_stat_file)
+                                                    use_cellpy_stat_file=self.use_cellpy_stat_file,
+                                                    parent_level=parent_level)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
@@ -839,7 +840,8 @@ def create_folder_structure(project_name, batch_name):
 
 def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=False,
                        export_cycles=False, export_raw=True,
-                       export_ica=False, save=True, use_cellpy_stat_file=True):
+                       export_ica=False, save=True, use_cellpy_stat_file=True,
+                       parent_level="CellpyData"):
     """Reads and saves cell data defined by the info-DataFrame.
 
     The function iterates through the ``info_df`` and loads data from the runs. It saves individual data
@@ -857,6 +859,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         export_raw: set to True for exporting raw data to csv.
         export_ica: set to True for calculating and exporting dQ/dV to csv.
         save: set to False to prevent saving a cellpy-file.
+        parent_level: optional, should use "cellpydata" for older hdf5-files and default for newer ones.
 
     Returns: frames (list of cellpy summary DataFrames), keys (list of indexes),
         errors (list of indexes that encountered errors).
@@ -906,9 +909,10 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         else:
             logger.info("forcing")
             try:
-                cell_data.load(row.cellpy_file_names)
+                cell_data.load(row.cellpy_file_names, parent_level=parent_level)
             except Exception as e:
-                logger.debug('Failed to load: ' + str(e))
+                logger.info(f"Critical exception encountered {type(e)} - skipping this file")
+                logger.debug('Failed to load. Error-message: ' + str(e))
                 errors.append("load:" + str(indx))
                 continue
 
@@ -1252,6 +1256,28 @@ def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
         if not item.startswith("_"):
             print("{}{}".format(bullet,item))
 
+
+def debugging():
+    """This one I use for debugging..."""
+    print("In debugging")
+    json_file = r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp02.json"
+
+    b = init(default_log_level="DEBUG")
+    b.load_info_df(json_file)
+    print(b.info_df.head())
+
+    # setting some variables
+    b.export_raw = False
+    b.export_cycles = False
+    b.export_ica = False
+    b.save_cellpy_file = True
+    b.force_raw_file = False
+    b.force_cellpy_file = True
+
+    b.load_and_save_raw(parent_level="cellpydata")
+
+
+
 def main():
     LOAD_JSON = False
     if not LOAD_JSON:
@@ -1288,5 +1314,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    debugging()
+    #main()
 
