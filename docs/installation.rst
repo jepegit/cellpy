@@ -32,6 +32,14 @@ the following:
 
 .. _setuptools: http://setuptools.readthedocs.io/en/latest/
 
+Several of the requirements are a bit difficult to install, in particular the packages `scipy` `numpy` and `pytables`.
+The recommended way is to use conda, e.g.:
+
+.. code-block:: console
+
+    $ conda install scipy numpy pytables
+
+
 If this is the first time you install ``cellpy``, it is recommended that you run the setup script:
 
 .. code-block:: console
