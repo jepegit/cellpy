@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# from __future__ import print_function
-# from builtins import str
-# from builtins import range
 import os
 import glob
 import warnings
-# from cellpy.parameters import prmreader
 import cellpy.parameters.prms as prms
 import logging
 logger = logging.getLogger(__name__)
+
 
 def create_full_names(run_name, cellpy_file_extension=None,
                      raw_file_dir=None, cellpy_file_dir=None):

@@ -24,7 +24,7 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 try:
     prmreader._read_prm_file(prmreader._get_prm_file())
-except:
+except Exception:
     warnings.warn("obs! could not load the config-file")
 
 

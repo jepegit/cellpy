@@ -1,17 +1,12 @@
 """This file contains methods for importing Bio-Logic files"""
 # This is based on the work by Chris Kerr
 # (https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
-#
-# from __future__ import division
-# from __future__ import absolute_import
-# from __future__ import print_function
 
 import os
 import tempfile
 import shutil
 import logging
 import warnings
-# from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
 import numpy as np
 import pandas as pd
 

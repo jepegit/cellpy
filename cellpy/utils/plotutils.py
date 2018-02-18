@@ -2,17 +2,11 @@
 """
 Utilities for helping to plot cellpy-data.
 """
-# from __future__ import division
-# from __future__ import absolute_import
-# from __future__ import print_function
 
 import os
 import warnings
 import logging
 import itertools
-# import collections
-# import numpy as np
-# import matplotlib.pyplot as plt
 
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
