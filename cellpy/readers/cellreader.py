@@ -45,6 +45,7 @@ import numpy as np
 import pandas as pd
 import logging
 import cellpy.parameters.prms as prms
+from cellpy.errors import WrongFileVersion
 
 # import logging.config
 
@@ -1202,14 +1203,14 @@ class CellpyData(object):
 
         try:
             data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
-        except:
+        except Exception:
             data.cellpy_file_version = 0
 
         # if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
         #     raise AttributeError
 
         if data.cellpy_file_version > CELLPY_FILE_VERSION:
-            raise AttributeError  # TODO: make custom error
+            raise WrongFileVersion
 
         data.dfsummary = store.select(parent_level + "/dfsummary")
         data.dfdata = store.select(parent_level + "/dfdata")

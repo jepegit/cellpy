@@ -22,13 +22,6 @@ dbc_filename: cellpy_dbc.xlsx
 # localvars: ife
 
 
-# TODO (jepe): Should let cellpy read and store the prms on creation (optional)
-# TODO (jepe): func for returning prm file name and location
-# TODO (jepe): remove prm dbc_filename and logdir
-# TODO (jepe): add prm db_type instead
-# TODO (jepe): finish write_prm function
-
-
 import glob
 import os
 import sys
