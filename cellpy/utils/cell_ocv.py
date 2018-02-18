@@ -14,10 +14,7 @@ Todo:
     http://www.gamry.com/application-notes/EIS/basics-of-electrochemical-impedance-spectroscopy/
 
 """
-# from __future__ import division
-#
-# from builtins import range
-# from past.utils import old_div
+
 import numpy as np
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'

@@ -1,11 +1,5 @@
 """ica contains routines for creating and working with incremental capacity analysis data"""
 
-# from __future__ import division
-# from __future__ import absolute_import
-# from __future__ import print_function
-#
-# from builtins import zip
-# from builtins import object
 import os
 import numpy as np
 from scipy import stats
@@ -15,8 +9,6 @@ from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter1d
 import logging
 import warnings
-from six.moves import range  # 'lazy' range (i.e. xrange in Py27)
-
 
 METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 

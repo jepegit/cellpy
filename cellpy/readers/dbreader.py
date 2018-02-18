@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """simple 'db-reader' for excel
 """
-# from __future__ import print_function
-#
-# from builtins import zip
-# from builtins import str
-# from builtins import range
-# from builtins import object
+
 import os
 import sys
 import types
@@ -17,7 +12,6 @@ import tempfile
 import shutil
 import logging
 import warnings
-# from cellpy.parameters import prmreader
 import cellpy.parameters.prms as prms
 
 logger = logging.getLogger(__name__)

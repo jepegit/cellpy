@@ -21,14 +21,7 @@ Todo:
     * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
 
 """
-# from __future__ import print_function
-# from __future__ import division
 
-# from builtins import str
-# #from builtins import zip
-# from builtins import range
-# from builtins import object
-# from past.utils import old_div
 CELLPY_FILE_VERSION = 3
 MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 3
@@ -60,6 +53,7 @@ warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
 # module_logger = logging.getLogger(__name__)
+
 
 def get_headers_summary():
     # - headers for out-files

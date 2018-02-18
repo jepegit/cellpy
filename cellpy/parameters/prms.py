@@ -1,6 +1,7 @@
 """cellpy parameters"""
 
-import os, sys
+import os
+import sys
 
 
 # class Parameter(object):
