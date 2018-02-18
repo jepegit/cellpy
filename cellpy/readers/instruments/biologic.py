@@ -22,19 +22,20 @@ from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import get_headers_normal
-
+from .mixin import Loader
 
 import warnings
+
 warnings.warn("not fully implemented yet")
 
-SEEK_SET = 0 # from start
-SEEK_CUR = 1 # from current position
-SEEK_END = 2 # from end of file
+SEEK_SET = 0  # from start
+SEEK_CUR = 1  # from current position
+SEEK_END = 2  # from end of file
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = []
 
 
-class BioLogicLoader(object):
+class BioLogicLoader(Loader):
     """ Class for loading biologic-data from ?-files."""
 
     def __init__(self):
@@ -99,7 +100,7 @@ class BioLogicLoader(object):
         raw_units["mass"] = 0.001  # g
         return raw_units
 
-    def loader(self,file_name=None):
+    def loader(self, file_name=None):
         """Loads data from biologic .? files.
 
         Args:
@@ -124,7 +125,6 @@ class BioLogicLoader(object):
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
         print(".", end=' ')
-
 
     def load(self, file_name):
         """Load a raw data-file
@@ -162,7 +162,7 @@ class BioLogicLoader(object):
     def get_update(self):
         last_position = self.position
         # self._update(last_position)
-        new_position =  last_position
+        new_position = last_position
         self.position = new_position
 
 
@@ -192,7 +192,7 @@ def simple_load_and_save(file_name):
 
     mpr_data, mpr_log, mpr_settings = _load_mpr(file_name)
 
-    print(50*"-")
+    print(50 * "-")
     print("\nhead:")
     print(mpr_data.head(20))
     print("\ntail:")
@@ -210,7 +210,6 @@ def simple_load_and_save(file_name):
     print(50 * "-")
     mpr_data.to_csv(filename_out, sep=";")
     print("OK")
-
 
 
 def _read_modules(fileobj):
@@ -248,13 +247,13 @@ def _load_mpr(file_name):
     counter = 0
     while True:
         counter += 1
-        txt =  "try %i\n" % (counter)
+        txt = "try %i\n" % counter
         new_module = _read_modules(file_obj)
         position = int(new_module["end"])
         mpr_modules.append(new_module)
         # write to log
         if position >= statinfo.st_size:
-            txt =  "-reached end of file\n"
+            txt = "-reached end of file\n"
             if position == statinfo.st_size:
                 txt += "--- exactly at end of file\n"
             # write to log
@@ -287,9 +286,8 @@ def _load_mpr(file_name):
 
     for bl_module in mpr_modules:
         for key, v in bl_module.items():
-            if not key=="data":
-                mpr_settings["module_items"].append((key,v))
-
+            if not key == "data":
+                mpr_settings["module_items"].append((key, v))
 
     # VMP data ---------------------------------------------------
     data_module = None
@@ -330,16 +328,15 @@ def _load_mpr(file_name):
 
     dtype_dict = OrderedDict()
     for col in column_types:
-        mpr_settings["column_types"].append([col,bl_dtypes[col][1]])
+        mpr_settings["column_types"].append([col, bl_dtypes[col][1]])
         dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
 
     dtype = np.dtype(list(dtype_dict.items()))
 
     p = dtype.itemsize
-    if not p == (len(main_data)/n_data_points):
+    if not p == (len(main_data) / n_data_points):
         print("WARNING")
-        print("You have defined %i bytes, but it seems it should be %i" % (p,len(main_data)/n_data_points))
-
+        print("You have defined %i bytes, but it seems it should be %i" % (p, len(main_data) / n_data_points))
 
     # print("checking lenght of data")
     len_data = len(main_data)
@@ -355,7 +352,7 @@ def _load_mpr(file_name):
     # print "multiplied %i" % (number_of_lines * p)
     # print "error %i" % (len_data - (number_of_lines*p))
     reminders = []
-    for j in range(1,100):
+    for j in range(1, 100):
         if not (len_data % j):
             reminders.append(j)
 
@@ -368,31 +365,32 @@ def _load_mpr(file_name):
     # bulk = main_data[0:bulk_size*p]
     bulk = main_data
     bulk_data = np.fromstring(bulk, dtype=dtype)
-    #print bulk_data
+    # print bulk_data
     mpr_data = pd.DataFrame(bulk_data)
 
     return mpr_data, mpr_log, mpr_settings
 
 
-    #print "dtype" # [('flags', 'u1'), ('flags2', '<u2'), ('I Range', '<u2'), ('time/s', '<f8'), ('NotKnown_20', '<f4'), ('Ewe/V', '<f4'), ('I/mA', '<f4'), ('NotKnown_13', '<f4'), ('NotKnown_74', '<f4'), ('NotKnown_467', '<f4'), ('NotKnown_468', '<f4'), ('NotKnown_9', '<f4')]
-    #print dtype
-    #print "flags_dict" # OrderedDict([('mode', (3, <type 'numpy.uint8'>)), ('ox/red', (4, <type 'numpy.bool_'>)), ('error', (8, <type 'numpy.bool_'>)), ('control changes', (16, <type 'numpy.bool_'>)), ('Ns changes', (32, <type 'numpy.bool_'>)), ('counter inc.', (128, <type 'numpy.bool_'>))])
-    #print "flags2_dict" # OrderedDict([('??', (1, <type 'numpy.bool_'>))])
+    # print "dtype" # [('flags', 'u1'), ('flags2', '<u2'), ('I Range', '<u2'), ('time/s', '<f8'), ('NotKnown_20', '<f4'), ('Ewe/V', '<f4'), ('I/mA', '<f4'), ('NotKnown_13', '<f4'), ('NotKnown_74', '<f4'), ('NotKnown_467', '<f4'), ('NotKnown_468', '<f4'), ('NotKnown_9', '<f4')]
+    # print dtype
+    # print "flags_dict" # OrderedDict([('mode', (3, <type 'numpy.uint8'>)), ('ox/red', (4, <type 'numpy.bool_'>)), ('error', (8, <type 'numpy.bool_'>)), ('control changes', (16, <type 'numpy.bool_'>)), ('Ns changes', (32, <type 'numpy.bool_'>)), ('counter inc.', (128, <type 'numpy.bool_'>))])
+    # print "flags2_dict" # OrderedDict([('??', (1, <type 'numpy.bool_'>))])
 
 
 
     # for line in lines_data[1:10]:
     #     print repr(line)
 
-    #print repr(main_data)
+    # print repr(main_data)
 
-    #data = np.fromstring(main_data, dtype=dtype)
+    # data = np.fromstring(main_data, dtype=dtype)
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import logging
     from cellpy import log
+
     log.setup_logging(default_level=logging.DEBUG)
 
     print("Length of the header line:", hdr_dtype.itemsize)
@@ -413,7 +411,6 @@ if __name__ == '__main__':
 
     print(mpr_settings)
 
-
     filename_out = os.path.splitext(file_name)[0] + "_test_out.csv"
     print(file_name)
     print("->")
@@ -429,4 +426,3 @@ if __name__ == '__main__':
 
     plt.legend()
     plt.show()
-

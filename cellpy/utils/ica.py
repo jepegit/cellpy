@@ -133,7 +133,7 @@ class Converter(object):
         self.normalising_factor = self.end_capacity
 
     def pre_process_data(self):
-        "perform some pre-processing of the data (i.e. interpolation)"
+        """perform some pre-processing of the data (i.e. interpolation)"""
         capacity = self.capacity
         voltage = self.voltage
         len_capacity = self.len_capacity

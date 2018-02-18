@@ -16,6 +16,7 @@ import cellpy.parameters.prms as prms
 
 logger = logging.getLogger(__name__)
 
+
 # TODO: remove "bool" headers (F, M, etc.) in example db-file.
 
 
@@ -33,6 +34,28 @@ class DbSheetCols(object):
         return "<excel_db_cols: %s>" % self.__dict__
 
 
+def _export_to_csv(sheet=None):
+    from xlrd import open_workbook
+    import csv
+
+    wb = open_workbook('Road-Accident-Safety-Data-Guide-1979-2004.xls')
+
+    for i in range(2, wb.nsheets):
+        sheet = wb.sheet_by_index(i)
+        print(sheet.name)
+        with open("data/%s.csv" % (sheet.name.replace(" ", "")), "w") as file:
+            writer = csv.writer(file, delimiter=",")
+            print(sheet, sheet.name, sheet.ncols, sheet.nrows)
+
+            header = [cell.value for cell in sheet.row(0)]
+            writer.writerow(header)
+
+            for row_idx in range(1, sheet.nrows):
+                row = [int(cell.value) if isinstance(cell.value, float) else cell.value
+                       for cell in sheet.row(row_idx)]
+                writer.writerow(row)
+
+
 class reader(object):
     def __init__(self, db_file=None,
                  db_datadir=None,
@@ -41,7 +64,7 @@ class reader(object):
                  test_mode=False):
         if prm_file is not None:
             warnings.warn("reading prm file inside db_reader is not allowed anymore\n")
-            #prms = prmreader.read(prm_file)
+            # prms = prmreader.read(prm_file)
 
         if not db_file:
             self.db_path = prms.Paths["db_path"]
@@ -64,7 +87,7 @@ class reader(object):
         self.db_sheet_filenames = "db_filenames"
         self.db_sheet_cols = DbSheetCols()
         self.db_sheet_filename_cols = DbSheetCols(self.db_sheet_filenames)
-        self.skiprows = [1,]
+        self.skiprows = [1, ]
         self.header = 0  # row that will be used to define headers
         self.remove_row = [0]  # removing this row
         self.string_cols = [3, 4, 5, 6, 7, 8]
@@ -72,17 +95,16 @@ class reader(object):
 
         if not test_mode:
             self.table = self._open_sheet("table", dtypes_dict=dtypes_dict)
-            #self.ftable = self._open_sheet("file_names") # will be removed soon!
+            # self.ftable = self._open_sheet("file_names") # will be removed soon!
         else:
             print("in test-mode")
             t0 = time.time()
             self.table = self._open_sheet_tst("table")
-            print("* %f" % (time.time()-t0))
+            print("* %f" % (time.time() - t0))
             self.ftable = self._open_sheet_tst("file_names")
-            print("* %f" % (time.time()-t0))
+            print("* %f" % (time.time() - t0))
 
         good_db = self._validate()
-
 
     def pick_table(self):
         """Pick the table.
@@ -92,7 +114,6 @@ class reader(object):
         """
         return self.table
 
-
     def _pick_info(self, serial_number, column_number):
         row = self.select_serial_number_row(serial_number)
         x = self._select_col(row, column_number)
@@ -101,33 +122,10 @@ class reader(object):
             x = x[0]
         return x
 
-
     @staticmethod
     def _select_col(df, no):
         """select specific column"""
         return df.iloc[:, no]
-
-    def _export_to_csv(self, sheet=None):
-        from xlrd import open_workbook
-        import csv
-
-        wb = open_workbook('Road-Accident-Safety-Data-Guide-1979-2004.xls')
-
-        for i in range(2, wb.nsheets):
-            sheet = wb.sheet_by_index(i)
-            print(sheet.name)
-            with open("data/%s.csv" % (sheet.name.replace(" ", "")), "w") as file:
-                writer = csv.writer(file, delimiter=",")
-                print(sheet, sheet.name, sheet.ncols, sheet.nrows)
-
-                header = [cell.value for cell in sheet.row(0)]
-                writer.writerow(header)
-
-                for row_idx in range(1, sheet.nrows):
-                    row = [int(cell.value) if isinstance(cell.value, float) else cell.value
-                           for cell in sheet.row(row_idx)]
-                    writer.writerow(row)
-
 
     def _open_sheet_tst(self, sheet=None):
         """Opens sheets and returns it"""
@@ -184,7 +182,6 @@ class reader(object):
         sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip, dtype=dtypes_dict)
         return sheet
 
-
     def _validate(self):
         """Checks that the db-file is ok
 
@@ -202,7 +199,6 @@ class reader(object):
             logger.debug("srno duplicates:\n" + str(col_serial_number_position.duplicated()))
             probably_good_to_go = False
         return probably_good_to_go
-
 
     def select_serial_number_row(self, serial_number):
         """Select row for identification number serial_number
@@ -362,10 +358,9 @@ class reader(object):
         # there only string values can be found
 
         criterion = sheet.iloc[:, batch_col_number] == batch
-        exists = sheet.iloc[:, exists_col_number] > 0 # This will crash if the col is not of dtype number
+        exists = sheet.iloc[:, exists_col_number] > 0  # This will crash if the col is not of dtype number
         sheet = sheet[criterion & exists]
         return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
-
 
     def get_raw_filenames(self, serialno, full_path=True, non_sensitive=False):
         """returns a list of the data file-names for experiment with serial number serialno.
@@ -424,7 +419,8 @@ class reader(object):
         else:
             datadir = None
             datadir_processed = None
-        col_serialno = fsheet.iloc[:, column_number_serial_number_position]  # selecting the row with serial numbers in it
+        col_serialno = fsheet.iloc[:,
+                       column_number_serial_number_position]  # selecting the row with serial numbers in it
         criterion_serialno = col_serialno == serial_number
         row_filenames = fsheet[criterion_serialno]  # now we pick out the row(s) with correct serial number
         if use_hdf5:
@@ -486,7 +482,6 @@ class reader(object):
             except TypeError:
                 return False
         return False
-
 
     def inspect_finished(self, serial_number):
         column_number = self.db_sheet_cols.finished_run
@@ -625,7 +620,6 @@ class reader(object):
             df[criterion]
         """
         print(txt)
-
 
 
 def _investigate_excel_dbreader_0():
@@ -810,14 +804,14 @@ def _investigate_excel_dbreader_7():
     Reader = reader()
     n = 6
     col_no = 36 + n  # should be loading (30.10.2014)
-    print("using col_no %i for finding loading" % (col_no))
+    print("using col_no %i for finding loading" % col_no)
     min_val = None
     max_val = 0.7
 
     serial_numbers1 = Reader.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
 
     slurries = ["es030", "es031"]
-    serial_numbers2 = Reader.filter_by_slurry(slurries, only_first=False)
+    serial_numbers2 = Reader.filter_by_slurry(slurries)
 
     print()
     print(serial_numbers1)
@@ -832,7 +826,7 @@ def _investigate_excel_dbreader_7():
     print("with cell_names containing")
     txt = ""
     for s in slurries:
-        txt += "   _%s" % (s)
+        txt += "   _%s" % s
     print(txt)
     print()
     print("serial_number  cell_name    loading(mg/cm2)")

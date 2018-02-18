@@ -14,6 +14,7 @@ from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import get_headers_normal
+from .mixin import Loader
 import cellpy.parameters.prms as prms
 
 # Select odbc module
@@ -58,8 +59,10 @@ TABLE_NAMES = {
 }
 
 
-class ArbinLoader(object):
+class ArbinLoader(Loader):
     """ Class for loading arbin-data from res-files."""
+
+    # Note: the class is sub-classing Loader. At the moment, Loader does not really contain anything...
 
     def __init__(self):
         """initiates the ArbinLoader class"""
@@ -147,7 +150,6 @@ class ArbinLoader(object):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-
     def __get_res_connector(self, temp_filename):
         if use_ado:
             is64bit_python = check64bit(System="python")
@@ -163,7 +165,8 @@ class ArbinLoader(object):
             except IndexError as e:
                 self.logger.error(e)
                 print(e)
-                print("Could not find any odbc-drivers. Check out the homepage of pydobc for info on installing drivers")
+                print(
+                    "Could not find any odbc-drivers. Check out the homepage of pydobc for info on installing drivers")
             self.logger.debug("odbc constr: {}".format(driver))
         else:
             is64bit_python = check64bit(System="python")
@@ -174,7 +177,6 @@ class ArbinLoader(object):
             self.logger.debug("odbc constr: {}".format(driver))
         constr = 'Driver=%s;Dbq=%s' % (driver, temp_filename)
         return constr
-
 
     def _clean_up_loadres(self, cur, conn, filename):
         if cur is not None:
@@ -202,7 +204,6 @@ class ArbinLoader(object):
         new_rundata = self.inspect(new_rundata)
         return new_rundata
 
-
     def inspect(self, run_data):
         """inspect the file.
 
@@ -217,7 +218,6 @@ class ArbinLoader(object):
                     data.dfdata[col] = np.nan
             checked_rundata.append(data)
         return checked_rundata
-
 
     def _iterdump(self, file_name, headers=None):
         """
@@ -283,7 +283,7 @@ class ArbinLoader(object):
         test_no = 0
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
-        #fid = FileID(file_name)
+        # fid = FileID(file_name)
         start_datetime = global_data_df[self.headers_global['start_datetime_txt']][test_no]
         test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
         test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
@@ -306,7 +306,7 @@ class ArbinLoader(object):
         self.logger.info(" ".join(info_header))
         self.logger.info("-------------------------------------------------")
 
-        for cycle_number in range(1,2000):
+        for cycle_number in range(1, 2000):
             t1 = time.time()
             self.logger.debug("picking cycle %i" % cycle_number)
             sql_4 = "AND %s=%i " % (cycle_txt, cycle_number)
@@ -322,7 +322,7 @@ class ArbinLoader(object):
             row_count, _ = normal_df.shape
             start_point = normal_df[point_txt].min()
             end_point = normal_df[point_txt].max()
-            last = normal_df.iloc[-1,:]
+            last = normal_df.iloc[-1, :]
 
             step_list = [cycle_number, row_count, start_point, end_point]
             step_list.extend([last[x] for x in headers])
@@ -331,7 +331,6 @@ class ArbinLoader(object):
         self._clean_up_loadres(None, conn, temp_filename)
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
-
 
     def investigate(self, file_name):
         """Investigate a .res file.
@@ -388,7 +387,7 @@ class ArbinLoader(object):
         test_no = 0
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
-        #fid = FileID(file_name)
+        # fid = FileID(file_name)
         start_datetime = global_data_df[self.headers_global['start_datetime_txt']][test_no]
         test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
         test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
@@ -408,7 +407,7 @@ class ArbinLoader(object):
         info_header = ["cycle", "step", "row_count", "start_point", "end_point"]
         self.logger.info(" ".join(info_header))
         self.logger.info("-------------------------------------------------")
-        for cycle_number in range(1,2000):
+        for cycle_number in range(1, 2000):
             t1 = time.time()
             self.logger.debug("picking cycle %i" % cycle_number)
             sql_4 = "AND %s=%i " % (cycle_txt, cycle_number)
@@ -492,7 +491,8 @@ class ArbinLoader(object):
         self.logger.debug(txt)
         if filesize > prms.Instruments["max_res_filesize"] and not prms.Reader["load_only_summary"]:
             error_message = "\nERROR (loader):\n"
-            error_message += "%s > %s - File is too big!\n" % (hfilesize, humanize_bytes(prms.Instruments["max_res_filesize"]))
+            error_message += "%s > %s - File is too big!\n" % (
+                hfilesize, humanize_bytes(prms.Instruments["max_res_filesize"]))
             error_message += "(edit prms.Instruments['max_res_filesize'])\n"
             print(error_message)
             return None
@@ -562,10 +562,8 @@ class ArbinLoader(object):
             self._clean_up_loadres(None, conn, temp_filename)
         return new_tests
 
-
     def _normal_table_generator(self, **kwargs):
         pass
-
 
     def _load_res_normal_table(self, conn, test_ID, bad_steps):
         # Note that this function is run each time you use the loader. This means that it is not ideal for
@@ -590,7 +588,7 @@ class ArbinLoader(object):
 
         if bad_steps is not None:
             if not isinstance(bad_steps, (list, tuple)):
-                bad_steps = [bad_steps,]
+                bad_steps = [bad_steps, ]
             for bad_cycle, bad_step in bad_steps:
                 self.logger.debug("bad_step def: [c=%i, s=%i]" % (bad_cycle, bad_step))
                 sql_4 += "AND NOT (%s=%i " % (self.headers_normal['cycle_index_txt'], bad_cycle)
@@ -646,6 +644,7 @@ class ArbinLoader(object):
 
         return length_of_test, normal_df
 
+
 def lp_resf(filename):
     """Load a raw data file """
     print("1")
@@ -659,5 +658,3 @@ if __name__ == '__main__':
     from cellpy import log
 
     log.setup_logging(default_level=logging.DEBUG)
-
-
