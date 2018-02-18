@@ -20,7 +20,8 @@ install:
   - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy pytest"
   - activate test-environment
   - pip install coverage
-  - conda install --yes --file requirements.txt
+  #- conda install --yes --file requirements.txt
+  - pip install -r requirements.txt
 
 test_script:
   - pytest
