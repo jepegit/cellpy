@@ -5,11 +5,12 @@ import glob
 import warnings
 import cellpy.parameters.prms as prms
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 def create_full_names(run_name, cellpy_file_extension=None,
-                     raw_file_dir=None, cellpy_file_dir=None):
+                      raw_file_dir=None, cellpy_file_dir=None):
     cellpy_file_extension = "h5"
 
     if cellpy_file_extension is None:
@@ -30,7 +31,7 @@ def create_full_names(run_name, cellpy_file_extension=None,
 
 
 def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
-                     raw_file_dir=None, cellpy_file_dir=None, prm_filename = None,
+                     raw_file_dir=None, cellpy_file_dir=None, prm_filename=None,
                      file_name_format=None):
     """Searches for files (raw-data files and cellpy-files).
 
@@ -65,8 +66,8 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     if prm_filename is not None:
         warnings.warn("reading prm file disabled")
 
-    if not all([raw_file_dir,cellpy_file_dir,file_name_format]):
-        #import cellpy.parameters.prms as prms
+    if not all([raw_file_dir, cellpy_file_dir, file_name_format]):
+        # import cellpy.parameters.prms as prms
         # prms = prmreader.read()
         logger.debug("using prms already set")
 
@@ -78,7 +79,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
 
     if file_name_format is None:
         try:
-            file_name_format = prms.file_name_format # To be implemented in version 0.5
+            file_name_format = prms.file_name_format  # To be implemented in version 0.5
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
             if version >= 0.5:
@@ -94,17 +95,17 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         warnings.warn("your raw file directory cannot be accessed!")
 
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
-        glob_text_raw = "%s_*.%s" % (os.path.basename(run_name),raw_extension)
+        glob_text_raw = "%s_*.%s" % (os.path.basename(run_name), raw_extension)
     else:
         glob_text_raw = file_name_format
 
-    glob_text_raw = os.path.join(raw_file_dir,glob_text_raw)
+    glob_text_raw = os.path.join(raw_file_dir, glob_text_raw)
     run_files = glob.glob(glob_text_raw)
 
     #  run_files = glob.glob1(raw_file_dir,glob_text_raw)
     run_files.sort()
     cellpy_file = run_name + "." + cellpy_file_extension
-    cellpy_file = os.path.join(cellpy_file_dir,cellpy_file)
+    cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
     return run_files, cellpy_file
 
@@ -123,14 +124,15 @@ def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
     cellpyfile = os.path.splitext(cellpyfile)[0]
     for j in range(counter_min, counter_max + 1):
         look_for = "%s%s%s%s" % (cellpyfile, counter_sep,
-                                str(j).zfill(counter_digits),
-                                res_extension)
+                                 str(j).zfill(counter_digits),
+                                 res_extension)
 
         look_for = os.path.join(res_dir, look_for)
         if os.path.isfile(look_for):
             res_files.append(look_for)
 
     return res_files
+
 
 if __name__ == '__main__':
     print("searching for files")

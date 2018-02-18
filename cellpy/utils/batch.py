@@ -13,6 +13,7 @@ import matplotlib as mpl
 
 from cellpy.parameters import prms as prms
 from cellpy import cellreader, dbreader, filefinder
+
 logger = logging.getLogger(__name__)
 
 logging.captureWarnings(True)
@@ -30,7 +31,7 @@ class FigureType(object):
 
     def __init__(self, number_of_rows=1, number_of_cols=1, capacity_selector=None, ir_selector=None,
                  end_voltage_selector=None,
-                 axes = None):
+                 axes=None):
         self.number_of_rows_and_cols = (number_of_rows, number_of_cols)
 
         self.capacity_selector = capacity_selector
@@ -63,24 +64,26 @@ class FigureType(object):
         else:
             return None
 
-        # if figure_type == "summaries":
-        #     ce_ax, cap_ax, ir_ax = ax
-        #     ev_ax = None
-        # elif figure_type == "experimental":
-        #     ce_ax, cap_ax, ev_ax, ir_ax = ax
-        # else:
-        #     ce_ax, cap_ax, ir_ax = ax
-        #     ev_ax = None
+            # if figure_type == "summaries":
+            #     ce_ax, cap_ax, ir_ax = ax
+            #     ev_ax = None
+            # elif figure_type == "experimental":
+            #     ce_ax, cap_ax, ev_ax, ir_ax = ax
+            # else:
+            #     ce_ax, cap_ax, ir_ax = ax
+            #     ev_ax = None
+
 
 figure_types = dict()
-figure_types["summaries"] = FigureType(3,1, [True, True], [True, True], [True, True],
-                                       {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2,},)
+figure_types["summaries"] = FigureType(3, 1, [True, True], [True, True], [True, True],
+                                       {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2, }, )
 figure_types["unlimited"] = FigureType(3, 1, [True, True], [True, True], [True, True],
-                                         {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2,},)
+                                       {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2, }, )
 figure_types["charge_limited"] = FigureType(4, 1, [True, True], [True, False], [False, True],
-                                           {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
+                                            {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
 figure_types["discharge_limited"] = FigureType(4, 1, [True, True], [False, True], [True, False],
-                                              {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
+                                               {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
+
 
 def _create_info_dict(reader, srnos):
     # reads from the db and populates a dictionary
@@ -178,7 +181,7 @@ def _extract_dqdv(cell_data, extract_func):
             error_in_dqdv = True
             v = list()
             dq = list()
-            print(" -could not process this (cycle %i)" % (cycle))
+            print(" -could not process this (cycle %i)" % cycle)
             print(" %s" % e)
 
         header_x = "dQ cycle_no %i" % cycle
@@ -265,11 +268,11 @@ class Batch(object):
     def __init__(self, *args, **kwargs):
 
         self.name = None
-        if len(args)>0:
+        if len(args) > 0:
             self.name = args[0]
 
         self.project = None
-        if len(args)>1:
+        if len(args) > 1:
             self.project = args[1]
 
         self.time_stamp = None
@@ -312,7 +315,7 @@ class Batch(object):
         self.force_cellpy_file = False
         self.use_cellpy_stat_file = True
 
-        self._packable = ['name', 'project', 'batch_col','selected_summaries',
+        self._packable = ['name', 'project', 'batch_col', 'selected_summaries',
                           'output_format', 'time_stamp', 'project_dir', 'batch_dir', 'raw_dir']
 
         # Not afraid to walk down un-known territory...
@@ -337,7 +340,7 @@ class Batch(object):
     def __str__(self):
         txt0 = "<Cellpy.Utils.Batch instance in %s>:" % __name__
         # How to kill a class: write "print(self)" in its __str__ method ;-)
-        txt1 = len(txt0)*"-"
+        txt1 = len(txt0) * "-"
         txt = txt0 + "\n" + txt1 + "\n"
         for attr in vars(self):
             if not attr.startswith("_"):
@@ -373,7 +376,7 @@ class Batch(object):
                 warnings.warn(w_txt)
 
             if hasattr(self, key):
-                setattr(self,key, self._kwargs[key])
+                setattr(self, key, self._kwargs[key])
             else:
                 warnings.warn("Trying to set non-existing attribute (%s)" % key)
 
@@ -400,11 +403,9 @@ class Batch(object):
         logger.debug("running save_info_df")
 
         info_df = self.info_df
-        top_level_dict = {}
-        top_level_dict['info_df'] = info_df
+        top_level_dict = {'info_df': info_df, 'metadata': self._prm_packer()}
 
         # packing prms
-        top_level_dict['metadata'] = self._prm_packer()
 
         jason_string = json.dumps(top_level_dict, default=lambda info_df: json.loads(info_df.to_json()))
         with open(self.info_file, 'w') as outfile:
@@ -447,14 +448,14 @@ class Batch(object):
         """Loads the cellpy or raw-data file(s) and saves to csv"""
         sep = prms.Reader["sep"]
         self.frames, self.keys, errors = read_and_save_data(self.info_df, self.raw_dir, sep=sep,
-                                                    force_raw=self.force_raw_file,
-                                                    force_cellpy=self.force_cellpy_file,
-                                                    export_cycles=self.export_cycles,
-                                                    export_raw=self.export_raw,
-                                                    export_ica=self.export_ica,
-                                                    save=self.save_cellpy_file,
-                                                    use_cellpy_stat_file=self.use_cellpy_stat_file,
-                                                    parent_level=parent_level)
+                                                            force_raw=self.force_raw_file,
+                                                            force_cellpy=self.force_cellpy_file,
+                                                            export_cycles=self.export_cycles,
+                                                            export_raw=self.export_raw,
+                                                            export_ica=self.export_ica,
+                                                            save=self.save_cellpy_file,
+                                                            use_cellpy_stat_file=self.use_cellpy_stat_file,
+                                                            parent_level=parent_level)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
@@ -466,7 +467,6 @@ class Batch(object):
         """Not implemented yet"""
         raise NotImplementedError
 
-
     def plot_test(self, show=True, save=False):
         # not ready for production yet...
         # this plotting function can be used as template for making custom plotting functions
@@ -474,7 +474,6 @@ class Batch(object):
 
         figure_type = "shiftedcap"
         fig, ax = plt.subplots()
-
 
         # need to get symbol list etc
         color_list, symbol_list = self._create_colors_markers_list()
@@ -496,7 +495,6 @@ class Batch(object):
         # adding charge/discharge label
         labels.extend(["", "discharge", "charge"])
 
-
         list_of_lines, plot_style = plot_summary_data(ax, df_d, info_df=self.info_df, color_list=color_list,
                                                       symbol_list=symbol_list, is_charge=False,
                                                       plot_style=plot_style)
@@ -514,12 +512,9 @@ class Batch(object):
         no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
         list_of_lines.extend([no_label, closed_label, open_label])
 
-
-
-
         plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
-                                                      symbol_list=symbol_list, is_charge=True,
-                                                      plot_style=plot_style)
+                          symbol_list=symbol_list, is_charge=True,
+                          plot_style=plot_style)
 
         # setting axes labels
         ax.set_xlabel("cycle")
@@ -545,7 +540,6 @@ class Batch(object):
             plt.show()
 
         return fig, ax
-
 
     def plot_shifted_cap(self, show=True, save=False):
         # not ready for production yet...
@@ -621,7 +615,6 @@ class Batch(object):
 
         return fig, ax
 
-
     def plot_cum_irrev(self, show=True, save=False):
         # not ready for production yet...
         #   seems low level and high level is percentage of slippage
@@ -694,7 +687,6 @@ class Batch(object):
             plt.show()
 
         return fig, ax
-
 
     def plot_summaries(self, show=False, save=True, figure_type=None):
         """Plot summary graphs.
@@ -827,7 +819,7 @@ def create_folder_structure(project_name, batch_name):
     # create file-name for the info_df (json)
     info_file = "cellpy_batch_%s.json" % batch_name
     info_file = os.path.join(project_dir, info_file)
-    return (info_file, (project_dir, batch_dir, raw_dir))
+    return info_file, (project_dir, batch_dir, raw_dir)
 
 
 def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=False,
@@ -842,6 +834,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
     of runs (cells) where an error was encountered during loading.
 
     Args:
+        use_cellpy_stat_file: use the stat file to perform the calculations.
         info_df: pandas.DataFrame with information about the runs.
         raw_dir: path to location where you want to save raw data.
         sep: delimiter to use when exporting to csv.
@@ -867,7 +860,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
 
     for indx, row in info_df.iterrows():
         counter += 1
-        h_txt = "[" + counter*"|" + (number_of_runs-counter)*"." + "]"
+        h_txt = "[" + counter * "|" + (number_of_runs - counter) * "." + "]"
         l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
         logger.debug(l_txt)
         print(h_txt)
@@ -907,7 +900,6 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
                 logger.debug('Failed to load. Error-message: ' + str(e))
                 errors.append("load:" + str(indx))
                 continue
-
 
         if not cell_data.check():
             print("...not loaded...")
@@ -1011,7 +1003,7 @@ def pick_summary_data(key, summary_df, selected_summaries):
 
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     value = selected_summaries_dict[key]
-    return summary_df.iloc[:, summary_df.columns.get_level_values(1)==value]
+    return summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
 
 
 def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False, plot_style=None):
@@ -1144,7 +1136,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     if plot_ir_discharge:
         ird_df = pick_summary_data("ir_discharge", summary_df, selected_summaries)
         plot_summary_data(ir_ax, ird_df, is_charge=False, info_df=info_df, color_list=color_list,
-                      symbol_list=symbol_list, plot_style=plot_style)
+                          symbol_list=symbol_list, plot_style=plot_style)
 
     ir_ax.set_ylabel("Internal\nresistance\n(Ohms)")
     ir_ax.set_xlabel("Cycle number")
@@ -1158,7 +1150,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
         if plot_ev_charge:
             evc_df = pick_summary_data("end_voltage_charge", summary_df, selected_summaries)
             plot_summary_data(ev_ax, evc_df, is_charge=True, info_df=info_df, color_list=color_list,
-                          symbol_list=symbol_list, plot_style=plot_style)
+                              symbol_list=symbol_list, plot_style=plot_style)
         if plot_ev_discharge:
             evd_df = pick_summary_data("end_voltage_discharge", summary_df, selected_summaries)
             plot_summary_data(ev_ax, evd_df, is_charge=False, info_df=info_df, color_list=color_list,
@@ -1239,14 +1231,14 @@ def init(*args, **kwargs):
 
 
 def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
-    number_of_stars_to_print = (79 - len(name))//2
+    number_of_stars_to_print = (79 - len(name)) // 2
     print()
-    print(number_of_stars_to_print*"*", end='')
+    print(number_of_stars_to_print * "*", end='')
     print(name, end='')
-    print(number_of_stars_to_print*"*")
+    print(number_of_stars_to_print * "*")
     for item in dir_items:
         if not item.startswith("_"):
-            print("{}{}".format(bullet,item))
+            print("{}{}".format(bullet, item))
 
 
 def debugging():
@@ -1269,7 +1261,6 @@ def debugging():
     b.load_and_save_raw(parent_level="cellpydata")
 
 
-
 def main():
     LOAD_JSON = False
     if not LOAD_JSON:
@@ -1288,7 +1279,7 @@ def main():
     print(b)
     print("The info DataFrame:")
     print(b.info_df.head(5))
-    b.force_cellpy_file=True
+    b.force_cellpy_file = True
     b.load_and_save_raw()
     b.make_summaries()
     print(b.default_figure_types)
@@ -1307,5 +1298,4 @@ def main():
 
 if __name__ == '__main__':
     debugging()
-    #main()
-
+    # main()

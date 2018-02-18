@@ -14,7 +14,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
     """
     # finding the json log-config
     if not default_json_path:
-        default_json_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"logging.json")
+        default_json_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "logging.json")
     path = default_json_path
     value = os.getenv(env_key, None)
     if value:
@@ -33,7 +33,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
                                      "debug_file_handler"]:
                     try:
                         file_name = config["handlers"][file_handler]["filename"]
-                        config["handlers"][file_handler]["filename"] = os.path.join(custom_log_dir,file_name)
+                        config["handlers"][file_handler]["filename"] = os.path.join(custom_log_dir, file_name)
                     except Exception as e:
                         warnings.warn("could not set custom log-dir" + str(e))
 
@@ -52,8 +52,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
                         config["handlers"]["console"]["formatter"] = "stamped"
 
                 except Exception as e:
-                    warnings.warn(w_txt + "\n" +str(e))
-
+                    warnings.warn(w_txt + "\n" + str(e))
 
         logging.config.dictConfig(config)
     else:
@@ -66,6 +65,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
         #     for hdlr in log.handlers[:]:  # remove all old handlers
         #         log.removeHandler(hdlr)
         #     log.addHandler(fileh)
+
 
 if __name__ == '__main__':
     setup_logging()

@@ -20,7 +20,7 @@ def save_prm_file(prm_filename):
 
 def get_package_dir(init_filename=None):
     """gets the folder where the cellpy package lives"""
-    prm_dir = pkg_resources.resource_filename("cellpy","parameters")
+    prm_dir = pkg_resources.resource_filename("cellpy", "parameters")
     if not init_filename:
         init_filename = DEFAULT_FILENAME
     src = os.path.join(prm_dir, init_filename)
@@ -31,7 +31,7 @@ def get_user_dir_and_dst(file_name):
     """gets the name of the user directory and full prm filepath"""
     user_dir = os.path.abspath(os.path.expanduser("~"))
     dst_dir = user_dir  # might include .cellpy directory here in the future (must then modify prmreader)
-    dst_file = os.path.join(dst_dir,file_name)
+    dst_file = os.path.join(dst_dir, file_name)
     return user_dir, dst_file
 
 
@@ -73,6 +73,7 @@ def setup():
     click.echo("[cellpy] _cellpy_prms and ending with .conf if you want)")
     click.echo("[cellpy]")
 
+
 @click.command()
 def configloc():
     click.echo("[cellpy] ->\n")
@@ -87,6 +88,7 @@ def version():
     txt = "[cellpy] version: " + str(VERSION)
     click.echo(txt)
 
+
 cli.add_command(setup)
 cli.add_command(configloc)
 cli.add_command(version)
@@ -99,8 +101,4 @@ if __name__ == "__main__":
     print(userdir)
     print(dst_file)
     print("trying to save it")
-    save_prm_file(dst_file+"_dummy")
-
-
-
-
+    save_prm_file(dst_file + "_dummy")
