@@ -52,10 +52,14 @@ import cellpy.parameters.prms as prms
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
+
 # module_logger = logging.getLogger(__name__)
 
 
 def get_headers_summary():
+    """Returns a dictionary containing the header-strings for the summary
+    (used as column headers for the summary pandas DataFrames)"""
+
     # - headers for out-files
     # 08.12.2016: added temperature_last, temperature_mean, aux_
     headers_summary = dict()
@@ -94,6 +98,8 @@ def get_headers_summary():
 
 
 def get_cellpy_units():
+    """Returns a dictionary with units"""
+
     cellpy_units = dict()
     cellpy_units["current"] = 0.001  # mA
     cellpy_units["charge"] = 0.001  # Ah
@@ -103,6 +109,8 @@ def get_cellpy_units():
 
 
 def get_headers_normal():
+    """Returns a dictionary containing the header-strings for the normal data
+        (used as column headers for the main data pandas DataFrames)"""
     headers_normal = dict()
     headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
     headers_normal['ac_impedance_txt'] = 'AC_Impedance'
@@ -132,6 +140,8 @@ def get_headers_normal():
 
 
 def get_headers_step_table():
+    """Returns a dictionary containing the header-strings for the steps table
+        (used as column headers for the steps pandas DataFrames)"""
     # 08.12.2016: added sub_step, sub_type, and pre_time
     headers_step_table = dict()
     headers_step_table["test"] = "test"
@@ -230,7 +240,6 @@ def humanize_bytes(b, precision=1):
             break
     # return '%.*f %s' % (precision, old_div(b, factor), suffix)
     return '%.*f %s' % (precision, b // factor, suffix)
-
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
@@ -396,7 +405,7 @@ class DataSet(object):
         self.discharge_steps = None  # not in use at the moment
         self.ir_steps = None  # dict # not in use at the moment
         self.ocv_steps = None  # dict # not in use at the moment
-        self.nom_cap = prms.DataSet["nom_cap"] # mAh/g (used for finding c-rates)  # mAh/g (used for finding c-rates)
+        self.nom_cap = prms.DataSet["nom_cap"]  # mAh/g (used for finding c-rates)  # mAh/g (used for finding c-rates)
         self.mass_given = False
         self.material = prms.Materials["default_material"]
         self.merged = False
@@ -556,12 +565,12 @@ class CellpyData(object):
         self.force_all = prms.Reader["force_all"]
         self.sep = prms.Reader["sep"]
         self.cycle_mode = prms.Reader["cycle_mode"]
-        #self.max_res_filesize = prms.Reader["max_res_filesize"]
+        # self.max_res_filesize = prms.Reader["max_res_filesize"]
         self.load_only_summary = prms.Reader["load_only_summary"]
         self.select_minimal = prms.Reader["select_minimal"]
-        #self.chunk_size = prms.Reader["chunk_size"]  # 100000
-        #self.max_chunks = prms.Reader["max_chunks"]
-        #self.last_chunk = prms.Reader["last_chunk"]
+        # self.chunk_size = prms.Reader["chunk_size"]  # 100000
+        # self.max_chunks = prms.Reader["max_chunks"]
+        # self.last_chunk = prms.Reader["last_chunk"]
         self.limit_loaded_cycles = prms.Reader["limit_loaded_cycles"]
         # self.load_until_error = prms.Reader["load_until_error"]
         self.ensure_step_table = prms.Reader["ensure_step_table"]
@@ -581,12 +590,10 @@ class CellpyData(object):
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()
 
-
     @property
     def dataset(self):
         """returns the DataSet instance"""
         return self.datasets[self.selected_dataset_number]
-
 
     def set_instrument(self, instrument=None):
         """Set the instrument (i.e. tell cellpy what kind of file you are going to work with).
@@ -606,18 +613,14 @@ class CellpyData(object):
         elif instrument == "arbin_experimental":
             self._set_arbin_experimental()
 
-
     def _set_biologic(self):
         warnings.warn("not implemented")
-
 
     def _set_pec(self):
         warnings.warn("not implemented")
 
-
     def _set_maccor(self):
         warnings.warn("not implemented")
-
 
     def _set_arbin(self):
         # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
@@ -662,19 +665,15 @@ class CellpyData(object):
         # create loader
         self.loader = self.loader_class.loader
 
-
-
     def _create_logger(self):
         from cellpy import log
         self.logger = logging.getLogger(__name__)
         log.setup_logging(default_level="DEBUG")
 
-
     def set_cycle_mode(self, cycle_mode):
         """set the cycle mode (will be deprecated soon - use CellpyData.cyclemode = "anode" etc.)"""
         # should use proper python 'setting' (decorator etc)
         self.cycle_mode = cycle_mode
-
 
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
@@ -870,8 +869,8 @@ class CellpyData(object):
         cellpyfile = os.path.splitext(cellpyfile)[0]
         for j in range(counter_min, counter_max + 1):
             look_for = "%s%s%s%s" % (cellpyfile, counter_sep,
-                                    str(j).zfill(counter_digits),
-                                    res_extension)
+                                     str(j).zfill(counter_digits),
+                                     res_extension)
 
             look_for = os.path.join(res_dir, look_for)
             if os.path.isfile(look_for):
@@ -1001,7 +1000,6 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
 
-
     def from_res(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the datastructure.
 
@@ -1091,7 +1089,6 @@ class CellpyData(object):
         # validating datasets
         self.status_datasets = self._validate_datasets()
 
-
     def _validate_datasets(self, level=0):
         self.logger.debug("validating test")
         level = 0
@@ -1139,7 +1136,6 @@ class CellpyData(object):
     @staticmethod
     def _empty_dataset():
         return None
-
 
     def load(self, cellpy_file, parent_level="CellpyData"):
         """Loads a cellpy file.
@@ -1202,7 +1198,7 @@ class CellpyData(object):
         if parent_level != "CellpyData":
             self.logger.debug("Using non-default parent label for the hdf-store: {}".format(parent_level))
 
-        infotable = store.select(parent_level+"/info")  # remark! changed spelling from lower letter to camel-case!
+        infotable = store.select(parent_level + "/info")  # remark! changed spelling from lower letter to camel-case!
 
         try:
             data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
@@ -1215,17 +1211,18 @@ class CellpyData(object):
         if data.cellpy_file_version > CELLPY_FILE_VERSION:
             raise AttributeError  # TODO: make custom error
 
-        data.dfsummary = store.select(parent_level+"/dfsummary")
-        data.dfdata = store.select(parent_level+"/dfdata")
+        data.dfsummary = store.select(parent_level + "/dfsummary")
+        data.dfdata = store.select(parent_level + "/dfdata")
 
         try:
-            data.step_table = store.select(parent_level+"/step_table")
+            data.step_table = store.select(parent_level + "/step_table")
             data.step_table_made = True
         except:
             data.step_table = None
             data.step_table_made = False
         try:
-            fidtable = store.select(parent_level+"/fidtable") # remark! changed spelling from lower letter to camel-case!
+            fidtable = store.select(
+                parent_level + "/fidtable")  # remark! changed spelling from lower letter to camel-case!
             fidtable_selected = True
         except:
             fidtable = []
@@ -1368,7 +1365,6 @@ class CellpyData(object):
             fids.append(fid)
             lengths.append(l)
         return fids, lengths
-
 
     def merge(self, datasets=None, separate_datasets=False):
         """This function merges datasets into one set."""
@@ -2038,7 +2034,8 @@ class CellpyData(object):
         self.datasets[dataset_number].step_table = df_steps
         self.datasets[dataset_number].step_table_made = True
 
-    def _percentage_change(self, x0, x1, default_zero=True):
+    @staticmethod
+    def _percentage_change(x0, x1, default_zero=True):
         # calculates the change from x0 to x1 in percentage
         # i.e. returns (x1-x0)*100 / x0
         if x0 == 0.0:
@@ -2051,7 +2048,8 @@ class CellpyData(object):
 
         return difference
 
-    def _fractional_change(self, x0, x1, default_zero=False):
+    @staticmethod
+    def _fractional_change(x0, x1, default_zero=False):
         # calculates the fraction of x0 and x1
         # i.e. returns x1 / x0
         if x1 == 0.0:
@@ -2061,7 +2059,7 @@ class CellpyData(object):
             else:
                 difference = np.nan
         else:
-            difference = x0/x1
+            difference = x0 / x1
         return difference
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
@@ -2149,7 +2147,6 @@ class CellpyData(object):
         for cycle in unique_cycles:
             step_dict[cycle] = [step]
         return step_dict
-
 
     # -------------save-and-export--------------------------------------------------
 
@@ -2298,7 +2295,7 @@ class CellpyData(object):
             return
 
         test = self.get_dataset(dataset_number)
-        dfsummary_made = test.dfsummary_made #
+        dfsummary_made = test.dfsummary_made  #
 
         if not dfsummary_made and not force:
             print("You should not save datasets without making a summary first!")
@@ -2951,14 +2948,14 @@ class CellpyData(object):
         if not to_unit:
             to_unit_cap = self.cellpy_units["charge"]
             to_unit_mass = self.cellpy_units["specific"]
-            to_unit = to_unit_cap/to_unit_mass
+            to_unit = to_unit_cap / to_unit_mass
         if not from_unit:
             from_unit_cap = self.raw_units["charge"]
             from_unit_mass = self.raw_units["mass"]
-            from_unit = from_unit_cap/from_unit_mass
+            from_unit = from_unit_cap / from_unit_mass
         # Remove this later
         # assert float(from_unit / to_unit) == 1000000.0
-        return from_unit/to_unit/mass
+        return from_unit / to_unit / mass
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False, ):
         """Gets diagnostics plots.
@@ -3018,14 +3015,14 @@ class CellpyData(object):
                 # noinspection PyPep8Naming
                 C_n = summarydata[charge_txt][i]
                 dd = C_n - D_n
-                ric_n = (D_n - C_n)/C_n
+                ric_n = (D_n - C_n) / C_n
                 try:
                     # noinspection PyPep8Naming
                     C_n2 = summarydata[charge_txt][i + 1]
                     # noinspection PyPep8Naming
                     D_n2 = summarydata[discharge_txt][i + 1]
-                    ric_dis_n = (C_n - C_n2)/C_n
-                    ric_sei_n = (D_n2 - C_n)/C_n
+                    ric_dis_n = (C_n - C_n2) / C_n
+                    ric_sei_n = (D_n2 - C_n) / C_n
                 except:
                     ric_dis_n = None
                     ric_sei_n = None
@@ -3067,7 +3064,6 @@ class CellpyData(object):
         out["RIC_disconnect_cum"] = RIC_disconnect_cum
         out["RIC_sei_cum"] = RIC_sei_cum
         return out
-
 
     def _set_mass(self, dataset_number, value):
         try:
@@ -3494,7 +3490,7 @@ class CellpyData(object):
             dfsummary = summary_df
             dataset.dfsummary = dfsummary
             dataset.dfsummary_made = True
-            self.logger.warn("not implemented yet")
+            self.logger.warning("not implemented yet")
             return
 
         column_names = dfsummary.columns
@@ -3577,10 +3573,10 @@ class CellpyData(object):
         if not cap_ref.empty:
             cap_ref = cap_ref.values[0]
             ref = dfsummary.loc[dfsummary[c_txt] < n, _second_step_txt].sum() \
-                + dfsummary.loc[dfsummary[c_txt] < n, _first_step_txt].sum() + cap_ref
-            dfsummary[low_level_at_cycle_n_txt] = (100/ref) * (dfsummary[_first_step_txt].cumsum()
+                  + dfsummary.loc[dfsummary[c_txt] < n, _first_step_txt].sum() + cap_ref
+            dfsummary[low_level_at_cycle_n_txt] = (100 / ref) * (dfsummary[_first_step_txt].cumsum()
                                                                  - dfsummary[_second_step_txt].cumsum())
-            dfsummary[high_level_at_cycle_n_txt] = (100/ref) * (dfsummary[_first_step_txt]
+            dfsummary[high_level_at_cycle_n_txt] = (100 / ref) * (dfsummary[_first_step_txt]
                                                                   + dfsummary[_first_step_txt].cumsum()
                                                                   - dfsummary[_second_step_txt].cumsum())
         else:
@@ -3593,17 +3589,19 @@ class CellpyData(object):
         # --------------relative irreversible capacities as defined by Gauthier et al.---
         # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
         # noinspection PyPep8Naming
-        RIC = (dfsummary[_first_step_txt].shift(1) - dfsummary[_second_step_txt])/dfsummary[_second_step_txt].shift(1)
+        RIC = (dfsummary[_first_step_txt].shift(1) - dfsummary[_second_step_txt]) / dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_title] = RIC.cumsum()
 
         # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
         # noinspection PyPep8Naming
-        RIC_SEI = (dfsummary[_first_step_txt] - dfsummary[_second_step_txt].shift(1))/dfsummary[_second_step_txt].shift(1)
+        RIC_SEI = (dfsummary[_first_step_txt] - dfsummary[_second_step_txt].shift(1)) / dfsummary[
+            _second_step_txt].shift(1)
         dfsummary[ric_sei_title] = RIC_SEI.cumsum()
 
         # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
         # noinspection PyPep8Naming
-        RIC_disconnect = (dfsummary[_second_step_txt].shift(1) - dfsummary[_second_step_txt])/dfsummary[_second_step_txt].shift(1)
+        RIC_disconnect = (dfsummary[_second_step_txt].shift(1) - dfsummary[_second_step_txt]) / dfsummary[
+            _second_step_txt].shift(1)
         dfsummary[ric_disconnect_title] = RIC_disconnect.cumsum()
 
         # -------------- shifted capacities as defined by J. Dahn et al. -----
@@ -3691,7 +3689,8 @@ class CellpyData(object):
             only_zeros_discharge = dfsummary[discharge_txt] * 0.0
             only_zeros_charge = dfsummary[charge_txt] * 0.0
             if not dataset.discharge_steps:
-                discharge_steps = self.get_step_numbers(steptype='discharge', allctypes=False, dataset_number=dataset_number)
+                discharge_steps = self.get_step_numbers(steptype='discharge', allctypes=False,
+                                                        dataset_number=dataset_number)
             else:
                 discharge_steps = dataset.discharge_steps
                 self.logger.debug("alrady have discharge_steps")
@@ -3723,7 +3722,8 @@ class CellpyData(object):
                 # finding end voltage for discharge
                 if step[-1]:  # selecting last
                     # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
-                    end_voltage_dc = dfdata[(dfdata[c_txt] == cycle) & (dataset.dfdata[s_txt] == step[-1])][voltage_header]
+                    end_voltage_dc = dfdata[(dfdata[c_txt] == cycle) & (dataset.dfdata[s_txt] == step[-1])][
+                        voltage_header]
                     # This will not work if there are more than one item in step
                     end_voltage_dc = end_voltage_dc.values[-1]  # selecting last (could also select amax)
                 else:
@@ -3732,7 +3732,8 @@ class CellpyData(object):
                 # finding end voltage for charge
                 step2 = charge_steps[cycle]
                 if step2[-1]:
-                    end_voltage_c = dfdata[(dfdata[c_txt] == cycle) & (dataset.dfdata[s_txt] == step2[-1])][voltage_header]
+                    end_voltage_c = dfdata[(dfdata[c_txt] == cycle) & (dataset.dfdata[s_txt] == step2[-1])][
+                        voltage_header]
                     end_voltage_c = end_voltage_c.values[-1]
                     # end_voltage_c = np.amax(end_voltage_c)
                 else:
@@ -3755,7 +3756,8 @@ class CellpyData(object):
             # TODO: use self.step_table instead for finding charge/discharge steps
             only_zeros = dfsummary[discharge_txt] * 0.0
             if not dataset.discharge_steps:
-                discharge_steps = self.get_step_numbers(steptype='discharge', allctypes=False, dataset_number=dataset_number)
+                discharge_steps = self.get_step_numbers(steptype='discharge', allctypes=False,
+                                                        dataset_number=dataset_number)
             else:
                 discharge_steps = dataset.discharge_steps
                 self.logger.debug("already have discharge_steps")
@@ -3935,7 +3937,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     print("outdir:", outdir)
     print("mass:", mass, "mg")
 
-    d.from_res(filename)
+    d.from_raw(filename)
     d.set_mass(mass)
     d.make_step_table()
     d.make_summary()
@@ -4036,7 +4038,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     type_of_data = "ocvrlx_up"
     d_res = setup_cellpy_instance()
     print(filename)
-    #d_res.from_res(filename)
+    # d_res.from_res(filename)
     d_res.from_raw(filename)
     d_res.set_mass(mass)
     d_res.make_step_table()

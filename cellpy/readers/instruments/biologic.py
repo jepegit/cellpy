@@ -22,6 +22,7 @@ from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import get_headers_normal
+from .mixin import Loader
 
 
 import warnings
@@ -34,7 +35,7 @@ SEEK_END = 2 # from end of file
 MINIMUM_SELECTION = []
 
 
-class BioLogicLoader(object):
+class BioLogicLoader(Loader):
     """ Class for loading biologic-data from ?-files."""
 
     def __init__(self):
