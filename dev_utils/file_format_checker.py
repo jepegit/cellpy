@@ -30,9 +30,6 @@ def _read_modules(fileobj):
     # Setting the position in the file (why?, isnt this already where we are?)
     fileobj.seek(hdr_dict['offset'] + hdr_dict['length'], SEEK_SET)
     hdr_dict['end'] = fileobj.tell()
-    # Maybe due to the "speed-up" tweak in Python 2.7 for .read()?
-    # No, it seems that you can set the file position "further" than the actual size of the file
-    # That is maybe strange.
     return hdr_dict
 
 
@@ -46,38 +43,45 @@ def _load_mpr(file_name):
     file_obj = open(file_name, mode="rb")
 
     # Starting with reading the "first line"
+    print(">> searching for label:")
     label = file_obj.read(len(mpr_label))  # this is the file-stamp
+    print(label)
 
     # Then, lets iterate through the file and get the modules
     counter = 0
+    print(">> iterating through the file searching for module")
     while True:
         counter += 1
-        txt =  "try %i\n" % (counter)
+        txt = f"try {counter}\n"
         new_module = _read_modules(file_obj)
         position = int(new_module["end"])
         mpr_modules.append(new_module)
         # write to log
         if position >= statinfo.st_size:
-            txt =  "-reached end of file\n"
+            txt = "-reached end of file"
             if position == statinfo.st_size:
-                txt += "--- exactly at end of file\n"
+                txt += " --- exactly at end of file\n"
+            else:
+                txt += "\n"
             # write to log
             break
-
+    print(txt)
     # closing the file
     file_obj.close()
+    print(f">> found {len(mpr_modules)} modules")
+    # sys.exit()
 
     #So - lets see what we got in this module:
-    # for bl_module in mpr_modules:
-    #     print 50*":"
-    #     for key, v in bl_module.items():
-    #         if not key=="data":
-    #             print "%s: %s" % (key, v)
-    #
-    #
-    #
-    # print "\n"
-    # print 50*"-"
+    for bl_module in mpr_modules:
+        print(50*":")
+        for key, v in bl_module.items():
+            if not key=="data":
+                print("%s: %s" % (key, v))
+
+    print("\n")
+    print(50*"-")
+
+    #sys.exit()
 
     # VMP log -----------------------------------------------
     # Not implemented yet
@@ -87,16 +91,14 @@ def _load_mpr(file_name):
     # print "parsing the VMP Set module\n"
     settings_mod = None
     for m in mpr_modules:
-        if m["shortname"].strip() == "VMP Set":
+        if m["shortname"].strip().decode() == "VMP Set":
             settings_mod = m
     if settings_mod is None:
         print("error - no setting module")
 
-
-    tm = time.strptime(str(settings_mod['date']), '%m.%d.%y')
+    tm = time.strptime(settings_mod['date'].decode(), '%m.%d.%y')
     startdate = date(tm.tm_year, tm.tm_mon, tm.tm_mday)
-    # print "startdate:",
-    # print startdate
+    print(f"startdate: {startdate}")
 
     mpr_settings = dict()
     mpr_settings["start_date"] = startdate
@@ -106,7 +108,7 @@ def _load_mpr(file_name):
     # print "parsing the VMP data module\n"
     data_module = None
     for m in mpr_modules:
-        if m["shortname"].strip() == 'VMP data':
+        if m["shortname"].strip().decode() == 'VMP data':
             data_module = m
     if data_module is None:
         print("error - no data module")
@@ -115,9 +117,9 @@ def _load_mpr(file_name):
 
     n_data_points = np.fromstring(data_module['data'][:4], dtype='<u4')[0]
     n_columns = np.fromstring(data_module['data'][4:5], dtype='u1')[0]
-    # print "v: %i" % data_version
-    # print "#points: %i" % n_data_points
-    # print "#cols: %i" % n_columns
+    print(f"v: {data_version}")
+    print(f"#points:{n_data_points}")
+    print(f"#cols: {n_columns}")
 
 
     if data_version == 0:
@@ -149,14 +151,14 @@ def _load_mpr(file_name):
         dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
         print(txt)
     dtype = np.dtype(list(dtype_dict.items()))
-    # print 50*"="
-    # print "checking the dtypes"
-    # print
-    # print dtype.shape
-    # print dtype.name
-    # print dtype.names
-    # print dtype.descr
-    # print dtype.itemsize
+    # print(50*"=")
+    # print("checking the dtypes")
+    # print()
+    # print( dtype.shape)
+    # print( dtype.name)
+    # print( dtype.names)
+    # print( dtype.descr)
+    # print( dtype.itemsize)
 
     p = dtype.itemsize
     if not p == (len(main_data)/n_data_points):
@@ -164,70 +166,59 @@ def _load_mpr(file_name):
         print("You have defined %i bytes, but it seems it should be %i" % (p,len(main_data)/n_data_points))
     t = []
     # for n in range(20):
-    #     #print n
     #     test_line = main_data[n*p:(n+1)*p]
-    #     #print repr(test_line)
+    #     #print(repr(test_line))
     #     test_data = np.fromstring(test_line, dtype=dtype)
-    #     print test_data['time/s']
-    # print t
+    #     print(test_data['time/s'])
 
     print("checking lenght of data")
     len_data = len(main_data)
 
-    # print len_data/n_data_points
+    # print(len_data/n_data_points)
     #
-    # print "len_data %i " % len_data
+    # print("len_data %i " % len_data)
 
     number_of_lines = len_data / p
-    # print "length of lines %i " % p
-    # print "number of lines %i " % number_of_lines
+    # print("length of lines %i " % p)
+    # print("number of lines %i " % number_of_lines)
     #
-    # print "multiplied %i" % (number_of_lines * p)
-    # print "error %i" % (len_data - (number_of_lines*p))
+    # print("multiplied %i" % (number_of_lines * p))
+    # print("error %i" % (len_data - (number_of_lines*p)))
     reminders = []
     for j in range(1,100):
         if not (len_data % j):
             reminders.append(j)
 
-    # print reminders
+    # print(reminders)
 
     # bulk_size = 100
-    # print "checking bulk of total size: %i" % (bulk_size*p)
-    # print "remaining data: %fi" % (len_data - bulk_size*p)
+    # print("checking bulk of total size: %i" % (bulk_size*p))
+    # print("remaining data: %fi" % (len_data - bulk_size*p))
 
     # bulk = main_data[0:bulk_size*p]
     bulk = main_data
     bulk_data = np.fromstring(bulk, dtype=dtype)
-    #print bulk_data
+    #print(bulk_data)
     mpr_data = pd.DataFrame(bulk_data)
 
     return mpr_data, mpr_log, mpr_settings
 
 
-    #print "dtype" # [('flags', 'u1'), ('flags2', '<u2'), ('I Range', '<u2'), ('time/s', '<f8'), ('NotKnown_20', '<f4'), ('Ewe/V', '<f4'), ('I/mA', '<f4'), ('NotKnown_13', '<f4'), ('NotKnown_74', '<f4'), ('NotKnown_467', '<f4'), ('NotKnown_468', '<f4'), ('NotKnown_9', '<f4')]
-    #print dtype
-    #print "flags_dict" # OrderedDict([('mode', (3, <type 'numpy.uint8'>)), ('ox/red', (4, <type 'numpy.bool_'>)), ('error', (8, <type 'numpy.bool_'>)), ('control changes', (16, <type 'numpy.bool_'>)), ('Ns changes', (32, <type 'numpy.bool_'>)), ('counter inc.', (128, <type 'numpy.bool_'>))])
-    #print "flags2_dict" # OrderedDict([('??', (1, <type 'numpy.bool_'>))])
 
-
-
-    # for line in lines_data[1:10]:
-    #     print repr(line)
-
-    #print repr(main_data)
-
-    #data = np.fromstring(main_data, dtype=dtype)
 
 
 if __name__ == '__main__':
+    import sys, os
 
     print("Length of the header line:", hdr_dtype.itemsize)
     print("Length of the filestamp line:", len(mpr_label))
 
-    # test_file = "../cellpy/data_ex/biologic/Bec01_01_1_C20_loop_20170219_01_MB_C02.mpr"
-    file_name = "../cellpy/data_ex/biologic/Bec_03_02_C20_delith_GEIS_Soc20_steps_C02.mpr"
+    file_path = "../dev_data/biologic/"
+    _file_name = "Bec_03_02_C20_delith_GEIS_Soc20_steps_C02.mpr"
+    file_name = os.path.join(file_path, _file_name)
     if not os.path.isfile(file_name):
         print("file not found")
+        sys.exit()
 
     statinfo = os.stat(file_name)
     print("size of file:", end=' ')
