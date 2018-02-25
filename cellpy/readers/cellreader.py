@@ -114,7 +114,11 @@ def get_headers_normal():
         (used as column headers for the main data pandas DataFrames)"""
     headers_normal = dict()
     headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
+    headers_normal['ref_aci_phase_angle_txt'] = 'Reference_ACI_Phase_Angle'  # new
+
     headers_normal['ac_impedance_txt'] = 'AC_Impedance'
+    headers_normal['ref_ac_impedance_txt'] = 'Reference_AC_Impedance'  # new
+
     headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
     headers_normal['charge_energy_txt'] = 'Charge_Energy'
     headers_normal['current_txt'] = 'Current'
@@ -124,15 +128,20 @@ def get_headers_normal():
     headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
     headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
     headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
+
     headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
     headers_normal['step_index_txt'] = 'Step_Index'
     headers_normal['sub_step_index_txt'] = 'Sub_Step_Index'  # new
+
     headers_normal['step_time_txt'] = 'Step_Time'
     headers_normal['sub_step_time_txt'] = 'Sub_Step_Time'  # new
+
     headers_normal['test_id_txt'] = 'Test_ID'
     headers_normal['test_time_txt'] = 'Test_Time'
+
     headers_normal['voltage_txt'] = 'Voltage'
     headers_normal['ref_voltage_txt'] = 'Reference_Voltage'  # new
+
     headers_normal['dv_dt_txt'] = 'dV/dt'
     headers_normal['frequency_txt'] = 'Frequency'  # new
     headers_normal['amplitude_txt'] = 'Amplitude'  # new

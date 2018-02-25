@@ -209,7 +209,12 @@ class MprLoader(Loader):
         # maybe insert tweaking of mpr_data here
         dfdata = mpr_data
         length_of_test = dfdata.shape[0]
-        print(length_of_test)
+        self.logger.debug(f"length of test: {length_of_test}")
+
+        print("----------trying-to-rename-cols--------------------")
+        # tname = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\out.xxx"
+        # self.__raw_export(tname, dfdata)
+        dfdata = self._rename_headers(dfdata)
 
         # ---------  stats-data (summary-data) ----------------------
         summary_df = self._create_summary_data(mpr_log, mpr_settings)
@@ -321,10 +326,75 @@ class MprLoader(Loader):
 
         return mpr_data, mpr_log, mpr_settings
 
+    def _rename_header(self, dfdata, cellpy_headers, h_old, h_new):
+        try:
+            #dfdata[cellpy_headers[h_old]] = dfdata[h_new]
+            dfdata.rename(columns={h_new: cellpy_headers[h_old]}, inplace=True)
+            return dfdata
+        except KeyError as e:
+            # warnings.warn(f"KeyError {e}")
+            self.logger.info(f"Problem during conversion to cellpy-format ({e})")
+
+    def _generate_cycle_index(self, dfdata):
+        return 1
+
+    def _generate_datetime(self, dfdata):
+        return 1
+
+    def _generate_step_index(self, dfdata, cellpy_headers):
+        return self._rename_header(dfdata, cellpy_headers, "step_index_txt", "flags2")
+
+    def _generate_step_time(self, dfdata, cellpy_headers):
+        dfdata[cellpy_headers["step_time_txt"]] = np.nan
+        return dfdata
+
+    def _generate_sub_step_time(self, dfdata, cellpy_headers):
+        dfdata[cellpy_headers["sub_step_time_txt"]] = np.nan
+        return dfdata
+
+    def _rename_headers(self, dfdata):
+        print(dfdata.columns)
+        cellpy_headers = get_headers_normal()
+        print(cellpy_headers)
+
+        # should ideally use the info from bl_dtypes, will do that later
+        dfdata[cellpy_headers["internal_resistance_txt"]] = np.nan
+        dfdata[cellpy_headers["data_point_txt"]] = np.arange(1,dfdata.shape[0]+1,1)
+        dfdata[cellpy_headers["cycle_index_txt"]] = self._generate_cycle_index(dfdata)
+        dfdata[cellpy_headers["datetime_txt"]] = self._generate_datetime(dfdata)
+
+        dfdata = self._generate_step_time(dfdata, cellpy_headers)
+        dfdata = self._generate_sub_step_time(dfdata, cellpy_headers)
+        dfdata = self._generate_step_index(dfdata, cellpy_headers)
+        dfdata[cellpy_headers["sub_step_index_txt"]] = dfdata[cellpy_headers["step_index_txt"]]
+
+        dfdata[cellpy_headers["datetime_txt"]] = self._generate_datetime(dfdata)
+
+        # simple renaming of column headers for the rest
+        self._rename_header(dfdata, cellpy_headers,"frequency_txt", "freq")
+        self._rename_header(dfdata, cellpy_headers, "voltage_txt", "Ewe")
+        self._rename_header(dfdata, cellpy_headers, "current_txt", "I")
+        self._rename_header(dfdata, cellpy_headers, "aci_phase_angle_txt", "phaseZ")
+        self._rename_header(dfdata, cellpy_headers, "amplitude_txt", "absZ")
+        self._rename_header(dfdata, cellpy_headers, "ref_voltage_txt", "Ece")
+        self._rename_header(dfdata, cellpy_headers, "ref_aci_phase_angle_txt", "phaseZce")
+        self._rename_header(dfdata, cellpy_headers, "discharge_capacity_txt", "QChargeDischarge")
+        self._rename_header(dfdata, cellpy_headers, "charge_capacity_txt", "QChargeDischarge")
+        self._rename_header(dfdata, cellpy_headers, "test_time_txt", "time")
+        return dfdata
 
     def _create_summary_data(self, *args):
         raise NotImplementedError
 
+
+    def __raw_export(self, filename, df):
+        filename_out = os.path.splitext(filename)[0] + "_test_out.csv"
+        print("\n--------EXPORTING----------------------------")
+        print(filename)
+        print("->")
+        print(filename_out)
+        df.to_csv(filename_out, sep=";")
+        print("------OK--------------------------------------")
 
     def _clean_up(self, tmp_filename):
         if os.path.isfile(tmp_filename):
