@@ -608,14 +608,28 @@ class CellpyData(object):
         if instrument is None:
             instrument = self.tester
 
-        if instrument == "arbin":
+        if instrument in ["arbin", "arbin_res"]:
             self._set_arbin()
 
         elif instrument == "arbin_experimental":
             self._set_arbin_experimental()
 
+        elif instrument in ["biologics", "biologics_mpr"]:
+            self._set_biologic()
+
+        else:
+            raise Exception(f"option does not exist: '{instrument}'")
+
     def _set_biologic(self):
-        warnings.warn("not implemented")
+        warnings.warn("Experimental! Not ready for production!")
+        from cellpy.readers.instruments import biologics_mpr as instr
+
+        self.loader_class = instr.MprLoader()
+        # get information
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # create loader
+        self.loader = self.loader_class.loader
 
     def _set_pec(self):
         warnings.warn("not implemented")
