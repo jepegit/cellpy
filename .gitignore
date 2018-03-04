@@ -76,3 +76,4 @@ cellpy/parametres/_cellpy_prms_devel.ini
 sh.exe.stackdump
 xdist/
 
+testdata/data/geis.mpt

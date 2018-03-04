@@ -3505,7 +3505,11 @@ class CellpyData(object):
             dfdata = dataset.dfdata
             if use_cellpy_stat_file:
                 # This should work even if dfdata does not contain all data from the test
-                summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
+                try:
+                    summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
+                except KeyError:
+                    self.logger.info("error in stat_file (?) - using _select_last")
+                    summary_requirment = self._select_last(dfdata)
             else:
                 summary_requirment = self._select_last(dfdata)
             dfsummary = dfdata[summary_requirment]

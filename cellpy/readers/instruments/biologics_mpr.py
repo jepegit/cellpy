@@ -63,6 +63,10 @@ class MprLoader(Loader):
         self.logger = logging.getLogger(__name__)
         self.headers_normal = get_headers_normal()
         self.current_chunk = 0  # use this to set chunks to load
+        self.mpr_data = None
+        self.mpr_log = None
+        self.mpr_settings = None
+        self.cellpy_headers = get_headers_normal()
 
     @staticmethod
     def get_raw_units():
@@ -205,20 +209,23 @@ class MprLoader(Loader):
 
         # --------- read raw-data (normal-data) -------------------------
         self.logger.debug("reading raw-data")
-        mpr_data, mpr_log, mpr_settings = self._load_mpr_data(temp_filename, bad_steps)
-        # maybe insert tweaking of mpr_data here
-        dfdata = mpr_data
-        length_of_test = dfdata.shape[0]
+        self.mpr_data = None
+        self.mpr_log = None
+        self.mpr_settings = None
+
+        self.mpr_data, self.mpr_log, self.mpr_settings = self._load_mpr_data(temp_filename, bad_steps)
+        length_of_test = self.mpr_data.shape[0]
         self.logger.debug(f"length of test: {length_of_test}")
 
         print("----------trying-to-rename-cols--------------------")
-        # tname = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\out.xxx"
-        # self.__raw_export(tname, dfdata)
-        dfdata = self._rename_headers(dfdata)
+        tname = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\out.xxx"
+        self.__raw_export(tname, self.mpr_data)
+        self._rename_headers()
+        tname_new = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\newout.xxx"
+        self.__raw_export(tname_new, self.mpr_data)
 
         # ---------  stats-data (summary-data) ----------------------
-        summary_df = self._create_summary_data(mpr_log, mpr_settings)
-
+        summary_df = self._create_summary_data()
 
         if summary_df.empty:
             txt = "\nCould not find any summary (stats-file)!"
@@ -226,7 +233,7 @@ class MprLoader(Loader):
             warnings.warn(txt)
 
         data.dfsummary = summary_df
-        data.dfdata = dfdata
+        data.dfdata = self.mpr_data
         data.raw_data_files_length.append(length_of_test)
         new_tests.append(data)
 
@@ -326,65 +333,74 @@ class MprLoader(Loader):
 
         return mpr_data, mpr_log, mpr_settings
 
-    def _rename_header(self, dfdata, cellpy_headers, h_old, h_new):
+    def _rename_header(self, h_old, h_new):
         try:
-            #dfdata[cellpy_headers[h_old]] = dfdata[h_new]
-            dfdata.rename(columns={h_new: cellpy_headers[h_old]}, inplace=True)
-            return dfdata
+            self.mpr_data.rename(columns={h_new: self.cellpy_headers[h_old]}, inplace=True)
         except KeyError as e:
             # warnings.warn(f"KeyError {e}")
             self.logger.info(f"Problem during conversion to cellpy-format ({e})")
 
-    def _generate_cycle_index(self, dfdata):
+    def _generate_cycle_index(self):
         return 1
 
-    def _generate_datetime(self, dfdata):
+    def _generate_datetime(self):
         return 1
 
-    def _generate_step_index(self, dfdata, cellpy_headers):
-        return self._rename_header(dfdata, cellpy_headers, "step_index_txt", "flags2")
+    def _generate_step_index(self):
+        cellpy_header_txt = "step_index_txt"
+        biologics_header_txt = "flags2"
+        self._rename_header(cellpy_header_txt, biologics_header_txt)
+        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] += 1
 
-    def _generate_step_time(self, dfdata, cellpy_headers):
-        dfdata[cellpy_headers["step_time_txt"]] = np.nan
-        return dfdata
+    def _generate_step_time(self):
+        self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
 
-    def _generate_sub_step_time(self, dfdata, cellpy_headers):
-        dfdata[cellpy_headers["sub_step_time_txt"]] = np.nan
-        return dfdata
+    def _generate_sub_step_time(self):
+        self.mpr_data[self.cellpy_headers["sub_step_time_txt"]] = np.nan
 
-    def _rename_headers(self, dfdata):
-        print(dfdata.columns)
-        cellpy_headers = get_headers_normal()
-        print(cellpy_headers)
+    def _generate_capacities(self):
+        cap_col = self.mpr_data["QChargeDischarge"]
+        self.mpr_data[self.cellpy_headers["discharge_capacity_txt"]] = [0.0 if x < 0 else x for x in cap_col]
+        self.mpr_data[self.cellpy_headers["charge_capacity_txt"]] = [0.0 if x >= 0 else x for x in cap_col]
 
+    def _rename_headers(self):
         # should ideally use the info from bl_dtypes, will do that later
-        dfdata[cellpy_headers["internal_resistance_txt"]] = np.nan
-        dfdata[cellpy_headers["data_point_txt"]] = np.arange(1,dfdata.shape[0]+1,1)
-        dfdata[cellpy_headers["cycle_index_txt"]] = self._generate_cycle_index(dfdata)
-        dfdata[cellpy_headers["datetime_txt"]] = self._generate_datetime(dfdata)
+        self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
+        self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1,self.mpr_data.shape[0]+1,1)
+        self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = self._generate_cycle_index()
+        self.mpr_data[self.cellpy_headers["datetime_txt"]] = self._generate_datetime()
 
-        dfdata = self._generate_step_time(dfdata, cellpy_headers)
-        dfdata = self._generate_sub_step_time(dfdata, cellpy_headers)
-        dfdata = self._generate_step_index(dfdata, cellpy_headers)
-        dfdata[cellpy_headers["sub_step_index_txt"]] = dfdata[cellpy_headers["step_index_txt"]]
+        self._generate_step_time()
+        self._generate_sub_step_time()
+        self._generate_step_index()
+        self._generate_capacities()
 
-        dfdata[cellpy_headers["datetime_txt"]] = self._generate_datetime(dfdata)
+        self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[self.cellpy_headers["step_index_txt"]]
+        self.mpr_data[self.cellpy_headers["datetime_txt"]] = self._generate_datetime()
 
         # simple renaming of column headers for the rest
-        self._rename_header(dfdata, cellpy_headers,"frequency_txt", "freq")
-        self._rename_header(dfdata, cellpy_headers, "voltage_txt", "Ewe")
-        self._rename_header(dfdata, cellpy_headers, "current_txt", "I")
-        self._rename_header(dfdata, cellpy_headers, "aci_phase_angle_txt", "phaseZ")
-        self._rename_header(dfdata, cellpy_headers, "amplitude_txt", "absZ")
-        self._rename_header(dfdata, cellpy_headers, "ref_voltage_txt", "Ece")
-        self._rename_header(dfdata, cellpy_headers, "ref_aci_phase_angle_txt", "phaseZce")
-        self._rename_header(dfdata, cellpy_headers, "discharge_capacity_txt", "QChargeDischarge")
-        self._rename_header(dfdata, cellpy_headers, "charge_capacity_txt", "QChargeDischarge")
-        self._rename_header(dfdata, cellpy_headers, "test_time_txt", "time")
-        return dfdata
+        self._rename_header("frequency_txt", "freq")
+        self._rename_header("voltage_txt", "Ewe")
+        self._rename_header("current_txt", "I")
+        self._rename_header("aci_phase_angle_txt", "phaseZ")
+        self._rename_header("amplitude_txt", "absZ")
+        self._rename_header("ref_voltage_txt", "Ece")
+        self._rename_header("ref_aci_phase_angle_txt", "phaseZce")
+        self._rename_header("test_time_txt", "time")
 
-    def _create_summary_data(self, *args):
-        raise NotImplementedError
+
+    def _create_summary_data(self):
+        # Summary data should contain datapoint-number for last point in the cycle. It must also contain
+        # capacity
+        df_summary = pd.DataFrame()
+        mpr_log = self.mpr_log
+        mpr_settings = self.mpr_settings
+        warnings.warn("not implemented")
+        self.logger.info(mpr_settings)
+        self.logger.info(mpr_log)
+        start_date = mpr_settings["start_date"]
+        self.logger.info(start_date)
+        return df_summary
 
 
     def __raw_export(self, filename, df):
@@ -408,9 +424,12 @@ class MprLoader(Loader):
 
 if __name__ == '__main__':
     import logging
+    import sys
     from cellpy import log
     from cellpy import cellreader
     file_name = 'C:\\Scripting\\MyFiles\\development_cellpy\\testdata\\data\\geis.mpr'
+    # Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented
+    # Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out.csv
     log.setup_logging(default_level="DEBUG")
     instrument = "biologics_mpr"
     cellpy_data_instance = cellreader.CellpyData()
@@ -420,4 +439,5 @@ if __name__ == '__main__':
     cellpy_data_instance.make_summary()
     temp_dir = tempfile.mkdtemp()
     cellpy_data_instance.to_csv(datadir=temp_dir)
+    # cellpy_data_instance.to_csv(r'C:\Scripting\MyFiles\development_cellpy\dev_data\tmp')
     shutil.rmtree(temp_dir)
