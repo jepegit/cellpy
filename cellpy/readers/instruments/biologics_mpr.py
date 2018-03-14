@@ -10,7 +10,7 @@ import pandas as pd
 
 import time
 from collections import OrderedDict
-from datetime import date
+import datetime
 
 from biologic_file_format import bl_dtypes, hdr_dtype, mpr_label
 
@@ -218,13 +218,17 @@ class MprLoader(Loader):
         self.logger.debug(f"length of test: {length_of_test}")
 
         print("----------trying-to-rename-cols--------------------")
-        tname = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\out.xxx"
+        # >>>>>>>>>>>>>>>> REMOVE ======================================
+        tname = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\before_renaming_headers.xxx"
         self.__raw_export(tname, self.mpr_data)
+        # ====================================== <<<<<<<<<<<<<<<<<<<<<<<
         self._rename_headers()
-        tname_new = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\newout.xxx"
+        tname_new = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\after_renaming_headers.xxx"
+        # >>>>>>>>>>>>>>>> REMOVE ======================================
         self.__raw_export(tname_new, self.mpr_data)
+        # ====================================== <<<<<<<<<<<<<<<<<<<<<<<
 
-        # ---------  stats-data (summary-data) ----------------------
+        # ---------  stats-data (summary-data) -------------------------
         summary_df = self._create_summary_data()
 
         if summary_df.empty:
@@ -240,6 +244,68 @@ class MprLoader(Loader):
         self._clean_up(temp_filename)
         return new_tests
 
+
+    def _parse_mpr_log_data(self, mpr_log):
+        end_date = mpr_log["end_date"]
+        # mpr_log["length2"]
+        # mpr_log["end2"]
+        # mpr_log["offset2"]
+        # mpr_log["version2"]
+        # print(mpr_log['data'][:4])
+        # print(mpr_log['data'][4:5])
+        # a = np.fromstring(mpr_log['data'][:4], dtype='<u4')[0]
+        # b = np.fromstring(mpr_log['data'][4:5], dtype='u1')[0]
+        #
+        # first_line = mpr_log["data"][:100]
+        # a1 = np.fromstring(mpr_log['data'][:4], dtype='<u4')
+        # a2 = np.fromstring(mpr_log['data'][4:8], dtype='<u4')
+        # a3 = np.fromstring(mpr_log['data'][8:12], dtype='<u4')
+        # a4 = np.fromstring(mpr_log['data'][12:16], dtype='<u4')
+        #
+        # for i in range(0, len(mpr_log['data']), 4):
+        #     data = mpr_log['data'][i:i+4]
+        #     x = np.fromstring(data, dtype='<u4')
+        #     y = np.fromstring(data, dtype='S4')
+        #
+        #
+        # print(first_line)
+        # column_types = np.fromstring(mpr_log['data'][5:], dtype='u1', count=b)
+        #
+        # remaining_headers = mpr_log['data'][5 + b:100]
+        # main_data = mpr_log['data'][100:]
+
+        # elif data_version == 2:
+        #     column_types = np.fromstring(data_module['data'][5:], dtype='<u2', count=n_columns)
+        #     main_data = data_module['data'][405:]
+        #     remaining_headers = data_module['data'][5 + 2 * n_columns:405]
+        #
+        # else:
+        #     raise ValueError("Unrecognised version for data module: %d" % data_version)
+        #
+        # whats_left = remaining_headers.strip(b'\x00').decode("utf8")
+        # if whats_left:
+        #     self.logger.debug("UPS! you have some columns left")
+        #     self.logger.debug(whats_left)
+        #
+        # dtype_dict = OrderedDict()
+        # for col in column_types:
+        #     dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
+        # dtype = np.dtype(list(dtype_dict.items()))
+        #
+        # p = dtype.itemsize
+        # if not p == (len(main_data) / n_data_points):
+        #     self.logger.info("WARNING! You have defined %i bytes, but it seems it should be %i" % (p, len(main_data) /
+        #                                                                                            n_data_points))
+        # bulk = main_data
+        # bulk_data = np.fromstring(bulk, dtype=dtype)
+        #
+        #
+        #
+        #
+        # for d in data:
+        #     print(d.decode(), end=" ")
+        # print(data)
+        return None
 
 
     def _load_mpr_data(self, filename, bad_steps):
@@ -268,6 +334,7 @@ class MprLoader(Loader):
 
         file_obj.close()
 
+        # ------------- set -----------------------------------
         settings_mod = None
         for m in mpr_modules:
             if m["shortname"].strip().decode() == "VMP Set":
@@ -276,11 +343,17 @@ class MprLoader(Loader):
             print("error - no setting module")
 
         tm = time.strptime(settings_mod['date'].decode(), '%m.%d.%y')
-        startdate = date(tm.tm_year, tm.tm_mon, tm.tm_mday)
+        startdate = datetime.date(tm.tm_year, tm.tm_mon, tm.tm_mday)
 
         mpr_settings = dict()
         mpr_settings["start_date"] = startdate
+        mpr_settings["length"] = settings_mod['length']
+        mpr_settings["end"] = settings_mod['end']
+        mpr_settings["offset"] = settings_mod['offset']
+        mpr_settings["version"] = settings_mod['version']
+        mpr_settings["data"] = settings_mod['data']  # Not sure if I will ever need it, but just in case....
 
+        # ------------- data -----------------------------------
         data_module = None
         for m in mpr_modules:
             if m["shortname"].strip().decode() == 'VMP data':
@@ -329,6 +402,67 @@ class MprLoader(Loader):
 
         self.logger.debug(mpr_data.columns)
         self.logger.debug(mpr_data.head())
+
+        # ------------- log  -----------------------------------
+        log_module = None
+        for m in mpr_modules:
+            if m["shortname"].strip().decode() == "VMP LOG":
+                log_module = m
+        if log_module is None:
+            print("error - no log module")
+
+        tm = time.strptime(log_module['date'].decode(), '%m.%d.%y')
+        enddate = datetime.date(tm.tm_year, tm.tm_mon, tm.tm_mday)
+
+        mpr_settings["end_date"] = enddate
+        mpr_settings["length2"] = log_module['length']
+        mpr_settings["end2"] = log_module['end']
+        mpr_settings["offset2"] = log_module['offset']
+        mpr_settings["version2"] = log_module['version']
+
+
+        # duplicating values also into mpr_log
+        mpr_log = dict()
+        mpr_log["end_date"] = enddate
+        mpr_log["length2"] = log_module['length']
+        mpr_log["end2"] = log_module['end']
+        mpr_log["offset2"] = log_module['offset']
+        mpr_log["version2"] = log_module['version']
+        mpr_log["data"] = log_module['data']   # Not sure if I will ever need it, but just in case....
+
+
+        log_data = self._parse_mpr_log_data(mpr_log)
+        #
+        # # And now for the difficult part: finding stuff including timestamps...
+        # ole_timestamp1 = np.fromstring(log_module['data'][465:],
+        #                                dtype='<f8', count=1)
+        # ole_timestamp2 = np.fromstring(log_module['data'][469:],
+        #                                dtype='<f8', count=1)
+        # ole_timestamp3 = np.fromstring(log_module['data'][473:],
+        #                                dtype='<f8', count=1)
+        #
+        # # if ole_timestamp1 > 40000 and ole_timestamp1 < 50000:
+        #     ole_timestamp = ole_timestamp1
+        # elif ole_timestamp2 > 40000 and ole_timestamp2 < 50000:
+        #     ole_timestamp = ole_timestamp2
+        # elif ole_timestamp3 > 40000 and ole_timestamp3 < 50000:
+        #     ole_timestamp = ole_timestamp3
+        # else:
+        #     raise ValueError("Could not find timestamp in the LOG module")
+        #
+        # ole_base = datetime(1899, 12, 30, tzinfo=None)
+        # ole_timedelta = datetime.timedelta(days=ole_timestamp[0])
+        # mpr_settings['time_stamp'] = ole_base + ole_timedelta
+        # if mpr_settings["start_date"] != mpr_settings['time_stamp'].date():
+        #     raise ValueError("""Date mismatch:
+        #                 Start date: %s
+        #                 End date: %s
+        #                 Timestamp: %s""" % (mpr_settings["start_date"], mpr_settings["end_date"],
+        #                                     mpr_settings['time_stamp']))
+        # # ############################
+        # #
+
+
         # TODO: rename headers (use bl_dtypes) to correspond to the cellpy-headers (and do the needed arithmetic)
 
         return mpr_data, mpr_log, mpr_settings
@@ -341,10 +475,25 @@ class MprLoader(Loader):
             self.logger.info(f"Problem during conversion to cellpy-format ({e})")
 
     def _generate_cycle_index(self):
-        return 1
+        # This function should generate the cycle index. This is version 0.
+        cellpy_header_txt = "cycle_index_txt"
+        biologics_header_txt = "cycleno"
+        try:
+            cycle_index_col = self.mpr_data[biologics_header_txt]
+            self._rename_header(cellpy_header_txt, biologics_header_txt)
+        except KeyError:
+            self.logger.debug(f"The Biologics data does not contain the '{biologics_header_txt}' keyword")
+            self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = 1
 
     def _generate_datetime(self):
-        return 1
+        start_date = self.mpr_settings["start_date"]
+        print(self.mpr_settings)
+        cellpy_header_txt = "datetime_txt"
+        date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
+        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] = start_date.strftime(date_format)
+        print(type(start_date))
+        # need timestamp from log (start-time)
+        # need time-column
 
     def _generate_step_index(self):
         cellpy_header_txt = "step_index_txt"
@@ -367,8 +516,8 @@ class MprLoader(Loader):
         # should ideally use the info from bl_dtypes, will do that later
         self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
         self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1,self.mpr_data.shape[0]+1,1)
-        self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = self._generate_cycle_index()
-        self.mpr_data[self.cellpy_headers["datetime_txt"]] = self._generate_datetime()
+        self._generate_datetime()
+        self._generate_cycle_index()
 
         self._generate_step_time()
         self._generate_sub_step_time()
@@ -376,7 +525,6 @@ class MprLoader(Loader):
         self._generate_capacities()
 
         self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[self.cellpy_headers["step_index_txt"]]
-        self.mpr_data[self.cellpy_headers["datetime_txt"]] = self._generate_datetime()
 
         # simple renaming of column headers for the rest
         self._rename_header("frequency_txt", "freq")
@@ -439,5 +587,5 @@ if __name__ == '__main__':
     cellpy_data_instance.make_summary()
     temp_dir = tempfile.mkdtemp()
     cellpy_data_instance.to_csv(datadir=temp_dir)
-    # cellpy_data_instance.to_csv(r'C:\Scripting\MyFiles\development_cellpy\dev_data\tmp')
+    cellpy_data_instance.to_csv(r'C:\Scripting\MyFiles\development_cellpy\dev_data\tmp')
     shutil.rmtree(temp_dir)

@@ -124,7 +124,7 @@ def get_headers_normal():
     headers_normal['current_txt'] = 'Current'
     headers_normal['cycle_index_txt'] = 'Cycle_Index'
     headers_normal['data_point_txt'] = 'Data_Point'
-    headers_normal['datetime_txt'] = 'DateTime'
+    headers_normal['datetime_txt'] = 'DateTime'  # The only header that uses camel case.. hmmm...
     headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
     headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
     headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
@@ -269,13 +269,16 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
 
     if option == "to_float":
         d = (xldate - 25589) * 86400.0
-    elif option == "to_string":
-        d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
-        # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds, excel cannot cope with this!
-        date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
-        d = d.strftime(date_format)
     else:
-        d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
+        try:
+            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
+            # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds, excel cannot cope with this!
+            if option == "to_string":
+                date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
+                d = d.strftime(date_format)
+        except TypeError:
+            warnings.warn(f'The date is not of correct type [{xldate}]')
+            d = xldate
     return d
 
 
@@ -3419,7 +3422,7 @@ class CellpyData(object):
                       find_ocv=False,
                       find_ir=False,
                       find_end_voltage=False,
-                      convert_date=True,
+                      convert_date=True,  # TODO: this is only needed for arbin-data
                       sort_my_columns=True,
                       use_cellpy_stat_file=True,
                       ensure_step_table=False,
