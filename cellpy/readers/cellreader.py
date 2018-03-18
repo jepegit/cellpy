@@ -3364,7 +3364,8 @@ class CellpyData(object):
     # ----------making-summary------------------------------------------------------
     def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
                      use_cellpy_stat_file=True, all_tests=True,
-                     dataset_number=0, ensure_step_table=None):
+                     dataset_number=0, ensure_step_table=None,
+                     convert_date=True):
         """Convenience function that makes a summary of the cycling data."""
 
         if ensure_step_table is None:
@@ -3399,6 +3400,7 @@ class CellpyData(object):
                                    find_end_voltage=find_end_voltage,
                                    use_cellpy_stat_file=use_cellpy_stat_file,
                                    ensure_step_table=ensure_step_table,
+                                   convert_date=convert_date,
                                    )
         else:
             self.logger.debug("creating summary for only one test")
@@ -3412,6 +3414,7 @@ class CellpyData(object):
                                find_end_voltage=find_end_voltage,
                                use_cellpy_stat_file=use_cellpy_stat_file,
                                ensure_step_table=ensure_step_table,
+                               convert_date=convert_date,
                                )
 
     def _make_summary(self,

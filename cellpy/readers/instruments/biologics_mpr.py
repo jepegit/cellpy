@@ -5,14 +5,13 @@ import tempfile
 import shutil
 import logging
 import warnings
-import numpy as np
-import pandas as pd
-
 import time
 from collections import OrderedDict
 import datetime
+import pandas as pd
+import numpy as np
 
-from biologic_file_format import bl_dtypes, hdr_dtype, mpr_label
+from biologic_file_format import bl_dtypes, hdr_dtype, mpr_label, bl_log_pos_dtype
 
 from cellpy.readers.cellreader import DataSet
 from cellpy.readers.cellreader import FileID
@@ -23,20 +22,27 @@ from cellpy.readers.instruments.mixin import Loader
 import cellpy.parameters.prms as prms
 
 
+OLE_TIME_ZERO = datetime.datetime(1899, 12, 30, 0, 0, 0)
 SEEK_SET = 0  # from start
 SEEK_CUR = 1  # from current position
 SEEK_END = 2  # from end of file
 
+
+def ole2datetime(oledt):
+    """converts from ole datetime float to datetime"""
+    return OLE_TIME_ZERO + datetime.timedelta(days=float(oledt))
+
+
+def datetime2ole(dt):
+    """converts from datetime object to ole datetime float"""
+    delta = dt - OLE_TIME_ZERO
+    delta_float = delta / datetime.timedelta(days=1)  # trick from SO
+    return delta_float
+
+
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
                      "Current", "Voltage", "Charge_Capacity", "Discharge_Capacity", "Internal_Resistance"]
-
-# Names of the tables in the .res db that is used by cellpy
-TABLE_NAMES = {
-    "normal": "Channel_Normal_Table",
-    "global": "Global_Table",
-    "statistic": "Channel_Statistic_Table",
-}
 
 
 def _read_modules(fileobj):
@@ -49,9 +55,6 @@ def _read_modules(fileobj):
     fileobj.seek(hdr_dict['offset'] + hdr_dict['length'], SEEK_SET)
     hdr_dict['end'] = fileobj.tell()
     return hdr_dict
-
-
-
 
 
 class MprLoader(Loader):
@@ -176,11 +179,7 @@ class MprLoader(Loader):
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
 
-        table_name_global = TABLE_NAMES["global"]
-        table_name_stats = TABLE_NAMES["statistic"]
-
         # creating temporary file and connection
-
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
@@ -213,7 +212,7 @@ class MprLoader(Loader):
         self.mpr_log = None
         self.mpr_settings = None
 
-        self.mpr_data, self.mpr_log, self.mpr_settings = self._load_mpr_data(temp_filename, bad_steps)
+        self._load_mpr_data(temp_filename, bad_steps)
         length_of_test = self.mpr_data.shape[0]
         self.logger.debug(f"length of test: {length_of_test}")
 
@@ -245,66 +244,20 @@ class MprLoader(Loader):
         return new_tests
 
 
-    def _parse_mpr_log_data(self, mpr_log):
-        end_date = mpr_log["end_date"]
-        # mpr_log["length2"]
-        # mpr_log["end2"]
-        # mpr_log["offset2"]
-        # mpr_log["version2"]
-        # print(mpr_log['data'][:4])
-        # print(mpr_log['data'][4:5])
-        # a = np.fromstring(mpr_log['data'][:4], dtype='<u4')[0]
-        # b = np.fromstring(mpr_log['data'][4:5], dtype='u1')[0]
-        #
-        # first_line = mpr_log["data"][:100]
-        # a1 = np.fromstring(mpr_log['data'][:4], dtype='<u4')
-        # a2 = np.fromstring(mpr_log['data'][4:8], dtype='<u4')
-        # a3 = np.fromstring(mpr_log['data'][8:12], dtype='<u4')
-        # a4 = np.fromstring(mpr_log['data'][12:16], dtype='<u4')
-        #
-        # for i in range(0, len(mpr_log['data']), 4):
-        #     data = mpr_log['data'][i:i+4]
-        #     x = np.fromstring(data, dtype='<u4')
-        #     y = np.fromstring(data, dtype='S4')
-        #
-        #
-        # print(first_line)
-        # column_types = np.fromstring(mpr_log['data'][5:], dtype='u1', count=b)
-        #
-        # remaining_headers = mpr_log['data'][5 + b:100]
-        # main_data = mpr_log['data'][100:]
+    def _parse_mpr_log_data(self):
+        for value in bl_log_pos_dtype:
+            key, start, end, dtype = value
+            self.mpr_log[key] = np.fromstring(self.mpr_log["data"][start:], dtype=dtype, count=1)[0]
+            if 'a' in dtype:
+                self.mpr_log[key] = self.mpr_log[key].decode('utf8')
 
-        # elif data_version == 2:
-        #     column_types = np.fromstring(data_module['data'][5:], dtype='<u2', count=n_columns)
-        #     main_data = data_module['data'][405:]
-        #     remaining_headers = data_module['data'][5 + 2 * n_columns:405]
-        #
-        # else:
-        #     raise ValueError("Unrecognised version for data module: %d" % data_version)
-        #
-        # whats_left = remaining_headers.strip(b'\x00').decode("utf8")
-        # if whats_left:
-        #     self.logger.debug("UPS! you have some columns left")
-        #     self.logger.debug(whats_left)
-        #
-        # dtype_dict = OrderedDict()
-        # for col in column_types:
-        #     dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
-        # dtype = np.dtype(list(dtype_dict.items()))
-        #
-        # p = dtype.itemsize
-        # if not p == (len(main_data) / n_data_points):
-        #     self.logger.info("WARNING! You have defined %i bytes, but it seems it should be %i" % (p, len(main_data) /
-        #                                                                                            n_data_points))
-        # bulk = main_data
-        # bulk_data = np.fromstring(bulk, dtype=dtype)
-        #
-        #
-        #
-        #
-        # for d in data:
-        #     print(d.decode(), end=" ")
-        # print(data)
+        # converting dates
+        date_datetime = ole2datetime(self.mpr_log["Acquisition started on"])
+        self.mpr_log["Start"] = date_datetime
+
+
+    def _parse_mpr_settings_data(self):
+        self.mpr_settings["Jan Petter"] = "super-cool"
         return None
 
 
@@ -352,6 +305,8 @@ class MprLoader(Loader):
         mpr_settings["offset"] = settings_mod['offset']
         mpr_settings["version"] = settings_mod['version']
         mpr_settings["data"] = settings_mod['data']  # Not sure if I will ever need it, but just in case....
+        self.mpr_settings = mpr_settings
+        self._parse_mpr_settings_data()
 
         # ------------- data -----------------------------------
         data_module = None
@@ -362,7 +317,6 @@ class MprLoader(Loader):
             print("error - no data module")
 
         data_version = data_module["version"]
-
         n_data_points = np.fromstring(data_module['data'][:4], dtype='<u4')[0]
         n_columns = np.fromstring(data_module['data'][4:5], dtype='u1')[0]
 
@@ -380,7 +334,6 @@ class MprLoader(Loader):
 
         else:
             raise ValueError("Unrecognised version for data module: %d" % data_version)
-
 
         whats_left = remaining_headers.strip(b'\x00').decode("utf8")
         if whats_left:
@@ -414,14 +367,6 @@ class MprLoader(Loader):
         tm = time.strptime(log_module['date'].decode(), '%m.%d.%y')
         enddate = datetime.date(tm.tm_year, tm.tm_mon, tm.tm_mday)
 
-        mpr_settings["end_date"] = enddate
-        mpr_settings["length2"] = log_module['length']
-        mpr_settings["end2"] = log_module['end']
-        mpr_settings["offset2"] = log_module['offset']
-        mpr_settings["version2"] = log_module['version']
-
-
-        # duplicating values also into mpr_log
         mpr_log = dict()
         mpr_log["end_date"] = enddate
         mpr_log["length2"] = log_module['length']
@@ -429,43 +374,9 @@ class MprLoader(Loader):
         mpr_log["offset2"] = log_module['offset']
         mpr_log["version2"] = log_module['version']
         mpr_log["data"] = log_module['data']   # Not sure if I will ever need it, but just in case....
-
-
-        log_data = self._parse_mpr_log_data(mpr_log)
-        #
-        # # And now for the difficult part: finding stuff including timestamps...
-        # ole_timestamp1 = np.fromstring(log_module['data'][465:],
-        #                                dtype='<f8', count=1)
-        # ole_timestamp2 = np.fromstring(log_module['data'][469:],
-        #                                dtype='<f8', count=1)
-        # ole_timestamp3 = np.fromstring(log_module['data'][473:],
-        #                                dtype='<f8', count=1)
-        #
-        # # if ole_timestamp1 > 40000 and ole_timestamp1 < 50000:
-        #     ole_timestamp = ole_timestamp1
-        # elif ole_timestamp2 > 40000 and ole_timestamp2 < 50000:
-        #     ole_timestamp = ole_timestamp2
-        # elif ole_timestamp3 > 40000 and ole_timestamp3 < 50000:
-        #     ole_timestamp = ole_timestamp3
-        # else:
-        #     raise ValueError("Could not find timestamp in the LOG module")
-        #
-        # ole_base = datetime(1899, 12, 30, tzinfo=None)
-        # ole_timedelta = datetime.timedelta(days=ole_timestamp[0])
-        # mpr_settings['time_stamp'] = ole_base + ole_timedelta
-        # if mpr_settings["start_date"] != mpr_settings['time_stamp'].date():
-        #     raise ValueError("""Date mismatch:
-        #                 Start date: %s
-        #                 End date: %s
-        #                 Timestamp: %s""" % (mpr_settings["start_date"], mpr_settings["end_date"],
-        #                                     mpr_settings['time_stamp']))
-        # # ############################
-        # #
-
-
-        # TODO: rename headers (use bl_dtypes) to correspond to the cellpy-headers (and do the needed arithmetic)
-
-        return mpr_data, mpr_log, mpr_settings
+        self.mpr_log = mpr_log
+        self._parse_mpr_log_data()
+        self.mpr_data = mpr_data
 
     def _rename_header(self, h_old, h_new):
         try:
@@ -485,15 +396,16 @@ class MprLoader(Loader):
             self.logger.debug(f"The Biologics data does not contain the '{biologics_header_txt}' keyword")
             self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = 1
 
+
     def _generate_datetime(self):
         start_date = self.mpr_settings["start_date"]
-        print(self.mpr_settings)
+        start_datetime = self.mpr_log["Start"]
         cellpy_header_txt = "datetime_txt"
         date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
-        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] = start_date.strftime(date_format)
-        print(type(start_date))
-        # need timestamp from log (start-time)
-        # need time-column
+        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] = [start_datetime + datetime.timedelta(seconds=n)
+                                                                 for n in self.mpr_data["time"].values]
+        # self.mpr_data[self.cellpy_headers[cellpy_header_txt]].start_date.strftime(date_format)
+        # TODO: currently storing as datetime object (while for arbindata it is stored as str)
 
     def _generate_step_index(self):
         cellpy_header_txt = "step_index_txt"
@@ -514,6 +426,7 @@ class MprLoader(Loader):
 
     def _rename_headers(self):
         # should ideally use the info from bl_dtypes, will do that later
+
         self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
         self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1,self.mpr_data.shape[0]+1,1)
         self._generate_datetime()
@@ -524,8 +437,6 @@ class MprLoader(Loader):
         self._generate_step_index()
         self._generate_capacities()
 
-        self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[self.cellpy_headers["step_index_txt"]]
-
         # simple renaming of column headers for the rest
         self._rename_header("frequency_txt", "freq")
         self._rename_header("voltage_txt", "Ewe")
@@ -535,6 +446,10 @@ class MprLoader(Loader):
         self._rename_header("ref_voltage_txt", "Ece")
         self._rename_header("ref_aci_phase_angle_txt", "phaseZce")
         self._rename_header("test_time_txt", "time")
+
+        self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[self.cellpy_headers["step_index_txt"]]
+
+
 
 
     def _create_summary_data(self):
@@ -584,7 +499,7 @@ if __name__ == '__main__':
     cellpy_data_instance.set_instrument(instrument=instrument)
     cellpy_data_instance.from_raw(file_name)
     cellpy_data_instance.make_step_table()
-    cellpy_data_instance.make_summary()
+    cellpy_data_instance.make_summary(convert_date=False)
     temp_dir = tempfile.mkdtemp()
     cellpy_data_instance.to_csv(datadir=temp_dir)
     cellpy_data_instance.to_csv(r'C:\Scripting\MyFiles\development_cellpy\dev_data\tmp')
