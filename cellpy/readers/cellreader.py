@@ -671,26 +671,26 @@ class CellpyData(object):
         # create loader
         self.loader = self.loader_class.loader
 
-    def _set_arbin_experimental(self):
-        # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
-        # more transparent to separate them into respective methods pr instrument.
-        from .instruments import arbin_experimental as instr
-        self.loader_class = instr.ArbinLoader()
-        # get information
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # send information (should improve this later)
-        # loader_class.load_only_summary = self.load_only_summary
-        # loader_class.select_minimal = self.select_minimal
-        # loader_class.max_res_filesize = self.max_res_filesize
-        # loader_class.chunk_size = self.chunk_size
-        # loader_class.max_chunks = self.max_chunks
-        # loader_class.last_chunk = self.last_chunk
-        # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
-        # loader_class.load_until_error = self.load_until_error
-
-        # create loader
-        self.loader = self.loader_class.loader
+    # def _set_arbin_experimental(self):
+    #     # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
+    #     # more transparent to separate them into respective methods pr instrument.
+    #     from .instruments import arbin_experimental as instr
+    #     self.loader_class = instr.ArbinLoader()
+    #     # get information
+    #     self.raw_units = self.loader_class.get_raw_units()
+    #     self.raw_limits = self.loader_class.get_raw_limits()
+    #     # send information (should improve this later)
+    #     # loader_class.load_only_summary = self.load_only_summary
+    #     # loader_class.select_minimal = self.select_minimal
+    #     # loader_class.max_res_filesize = self.max_res_filesize
+    #     # loader_class.chunk_size = self.chunk_size
+    #     # loader_class.max_chunks = self.max_chunks
+    #     # loader_class.last_chunk = self.last_chunk
+    #     # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
+    #     # loader_class.load_until_error = self.load_until_error
+    #
+    #     # create loader
+    #     self.loader = self.loader_class.loader
 
     def _create_logger(self):
         from cellpy import log

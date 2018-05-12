@@ -1,5 +1,4 @@
 """arbin res-type data files"""
-
 import os
 import tempfile
 import shutil
