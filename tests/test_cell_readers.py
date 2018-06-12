@@ -105,7 +105,9 @@ def test_create_cellpyfile(cellpy_data_instance):
     cellpy_data_instance.from_raw(test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    print(f"trying to save the cellpy file to {test_cellpy_file_full}")
     cellpy_data_instance.save(test_cellpy_file_full)
+
 
 
 def test_summary_from_cellpyfile(cellpy_data_instance):
