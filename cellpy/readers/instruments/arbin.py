@@ -14,7 +14,7 @@ from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import get_headers_normal
-from .mixin import Loader
+from cellpy.readers.instruments.mixin import Loader
 import cellpy.parameters.prms as prms
 
 # Select odbc module
