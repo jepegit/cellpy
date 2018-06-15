@@ -484,23 +484,50 @@ class MprLoader(Loader):
         pass
 
 
-
 if __name__ == '__main__':
     import logging
-    import sys
+    import sys, os
     from cellpy import log
     from cellpy import cellreader
-    file_name = 'C:\\Scripting\\MyFiles\\development_cellpy\\testdata\\data\\geis.mpr'
-    # Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out_commented
-    # Bec_03_02_C20_delith_GEIS_Soc20_steps_C02_test_out.csv
+
+    # -------- defining overall path-names etc ----------
+    current_file_path = os.path.dirname(os.path.realpath(__file__))
+    # relative_test_data_dir = "../cellpy/data_ex"
+    relative_test_data_dir = "../../../testdata"
+    realtive_out_data_dir = "../../../dev_data"
+    test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
+    test_data_dir_out = os.path.abspath(os.path.join(current_file_path, realtive_out_data_dir))
+    test_data_dir_raw = os.path.join(test_data_dir, "data")
+    if not os.path.isdir(test_data_dir_raw):
+        print(f"Could not find {test_data_dir_raw}")
+        sys.exit(-23)
+    if not os.path.isdir(test_data_dir_out):
+        sys.exit(-24)
+
+    if not os.path.isdir(os.path.join(test_data_dir_out, "out")):
+        os.mkdir(os.path.join(test_data_dir_out, "out"))
+    test_data_dir_out = os.path.join(test_data_dir_out, "out")
+
+    test_raw_file = "geis.mpr"
+    test_raw_file_full = os.path.join(test_data_dir_raw, test_raw_file)
+
+    test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
+    test_cellpy_file = "geis.h5"
+    test_cellpy_file_tmp = "tmpfile.h5"
+    test_cellpy_file_full = os.path.join(test_data_dir_cellpy, test_cellpy_file)
+    test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy, test_cellpy_file_tmp)
+
+    file_name = test_raw_file_full
+    print(file_name)
     log.setup_logging(default_level="DEBUG")
     instrument = "biologics_mpr"
     cellpy_data_instance = cellreader.CellpyData()
     cellpy_data_instance.set_instrument(instrument=instrument)
     cellpy_data_instance.from_raw(file_name)
+    print(cellpy_data_instance)
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary(convert_date=False)
     temp_dir = tempfile.mkdtemp()
     cellpy_data_instance.to_csv(datadir=temp_dir)
-    cellpy_data_instance.to_csv(r'C:\Scripting\MyFiles\development_cellpy\dev_data\tmp')
+    cellpy_data_instance.to_csv(datadir=test_data_dir_out)
     shutil.rmtree(temp_dir)
