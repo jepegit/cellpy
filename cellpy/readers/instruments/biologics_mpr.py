@@ -112,7 +112,6 @@ class MprLoader(Loader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-
     def load(self, file_name):
         """Load a raw data-file
 
@@ -127,17 +126,14 @@ class MprLoader(Loader):
         new_rundata = self.inspect(new_rundata)
         return new_rundata
 
-
     def inspect(self, run_data):
         """inspect the file.
         """
         return run_data
 
-
     def repair(self, file_name):
         """try to repair a broken/corrupted file"""
         raise NotImplementedError
-
 
     def dump(self, file_name, path):
         """Dumps the raw file to an intermediate hdf5 file.
@@ -156,7 +152,6 @@ class MprLoader(Loader):
 
         """
         raise NotImplementedError
-
 
     def loader(self, file_name, bad_steps=None, **kwargs):
         """Loads data from biologics .mpr files.
@@ -243,7 +238,6 @@ class MprLoader(Loader):
         self._clean_up(temp_filename)
         return new_tests
 
-
     def _parse_mpr_log_data(self):
         for value in bl_log_pos_dtype:
             key, start, end, dtype = value
@@ -255,11 +249,9 @@ class MprLoader(Loader):
         date_datetime = ole2datetime(self.mpr_log["Acquisition started on"])
         self.mpr_log["Start"] = date_datetime
 
-
     def _parse_mpr_settings_data(self):
         self.mpr_settings["Jan Petter"] = "super-cool"
         return None
-
 
     def _load_mpr_data(self, filename, bad_steps):
         stats_info = os.stat(filename)
@@ -396,7 +388,6 @@ class MprLoader(Loader):
             self.logger.debug(f"The Biologics data does not contain the '{biologics_header_txt}' keyword")
             self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = 1
 
-
     def _generate_datetime(self):
         start_date = self.mpr_settings["start_date"]
         start_datetime = self.mpr_log["Start"]
@@ -449,9 +440,6 @@ class MprLoader(Loader):
 
         self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[self.cellpy_headers["step_index_txt"]]
 
-
-
-
     def _create_summary_data(self):
         # Summary data should contain datapoint-number for last point in the cycle. It must also contain
         # capacity
@@ -464,7 +452,6 @@ class MprLoader(Loader):
         start_date = mpr_settings["start_date"]
         self.logger.info(start_date)
         return df_summary
-
 
     def __raw_export(self, filename, df):
         filename_out = os.path.splitext(filename)[0] + "_test_out.csv"
