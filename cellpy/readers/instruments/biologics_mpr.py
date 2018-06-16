@@ -227,6 +227,7 @@ class MprLoader(Loader):
 
         if summary_df.empty:
             txt = "\nCould not find any summary (stats-file)!"
+            txt += " (summary_df.empty = True)"
             txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
             warnings.warn(txt)
 
@@ -399,15 +400,18 @@ class MprLoader(Loader):
         # TODO: currently storing as datetime object (while for arbindata it is stored as str)
 
     def _generate_step_index(self):
+        # TODO: check and optionally fix me
         cellpy_header_txt = "step_index_txt"
         biologics_header_txt = "flags2"
         self._rename_header(cellpy_header_txt, biologics_header_txt)
         self.mpr_data[self.cellpy_headers[cellpy_header_txt]] += 1
 
     def _generate_step_time(self):
+        # TODO: fix me
         self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
 
     def _generate_sub_step_time(self):
+        # TODO: fix me
         self.mpr_data[self.cellpy_headers["sub_step_time_txt"]] = np.nan
 
     def _generate_capacities(self):
@@ -446,7 +450,8 @@ class MprLoader(Loader):
         df_summary = pd.DataFrame()
         mpr_log = self.mpr_log
         mpr_settings = self.mpr_settings
-        warnings.warn("not implemented")
+        # TODO: @jepe - finalise making summary of mpr-files after figuring out steps etc
+        warnings.warn("Creating summary data for biologics mpr-files is not implemented yet")
         self.logger.info(mpr_settings)
         self.logger.info(mpr_log)
         start_date = mpr_settings["start_date"]
@@ -473,7 +478,8 @@ class MprLoader(Loader):
 
 if __name__ == '__main__':
     import logging
-    import sys, os
+    import sys
+    import os
     from cellpy import log
     from cellpy import cellreader
 
@@ -481,9 +487,9 @@ if __name__ == '__main__':
     current_file_path = os.path.dirname(os.path.realpath(__file__))
     # relative_test_data_dir = "../cellpy/data_ex"
     relative_test_data_dir = "../../../testdata"
-    realtive_out_data_dir = "../../../dev_data"
+    relative_out_data_dir = "../../../dev_data"
     test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-    test_data_dir_out = os.path.abspath(os.path.join(current_file_path, realtive_out_data_dir))
+    test_data_dir_out = os.path.abspath(os.path.join(current_file_path, relative_out_data_dir))
     test_data_dir_raw = os.path.join(test_data_dir, "data")
     if not os.path.isdir(test_data_dir_raw):
         print(f"Could not find {test_data_dir_raw}")
@@ -505,16 +511,30 @@ if __name__ == '__main__':
     test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy, test_cellpy_file_tmp)
 
     file_name = test_raw_file_full
-    print(file_name)
+    print("\n======================mpr-dev===========================")
+    print(f"Test-file: {file_name}")
     log.setup_logging(default_level="DEBUG")
     instrument = "biologics_mpr"
     cellpy_data_instance = cellreader.CellpyData()
     cellpy_data_instance.set_instrument(instrument=instrument)
+    print("starting to load the file")
     cellpy_data_instance.from_raw(file_name)
+    print("printing cellpy instance:")
     print(cellpy_data_instance)
+
+    print("---make step table")
     cellpy_data_instance.make_step_table()
+
+    print("---make summary")
     cellpy_data_instance.make_summary(convert_date=False)
-    temp_dir = tempfile.mkdtemp()
-    cellpy_data_instance.to_csv(datadir=temp_dir)
-    cellpy_data_instance.to_csv(datadir=test_data_dir_out)
-    shutil.rmtree(temp_dir)
+
+    print("---saving to csv")
+    try:
+        temp_dir = tempfile.mkdtemp()
+        cellpy_data_instance.to_csv(datadir=temp_dir)
+        cellpy_data_instance.to_csv(datadir=test_data_dir_out)
+        print("---saving to hdf5")
+        print("NOT YET")
+    finally:
+        shutil.rmtree(temp_dir)
+
