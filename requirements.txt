@@ -6,7 +6,7 @@ click>=6.6
 lmfit>=0.9.7
 scipy>=0.19.0
 pandas>=0.19.0
-pytables
+pytables>=3.4.3
 setuptools>=35.0.1
 six>=1.10.0
 pyyaml>=3.12
