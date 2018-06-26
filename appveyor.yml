@@ -3,10 +3,10 @@ build: false
 environment:
   matrix:
     - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda3
+      MINICONDA: C:\Miniconda3-x64
       PYTHON_ARC: "64"
     - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda3-x64
+      MINICONDA: C:\Miniconda3
       PYTHON_ARC: "32"
 
 init:
