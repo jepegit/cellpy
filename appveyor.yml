@@ -21,7 +21,7 @@ install:
   - activate test-environment
   - pip install coverage
   #- conda install --yes --file requirements.txt
-  - pip install -r requirements.txt
+  - pip install -r requirements_appveyor.txt
 
 test_script:
   - pytest
