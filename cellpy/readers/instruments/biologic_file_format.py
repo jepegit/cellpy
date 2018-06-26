@@ -10,6 +10,16 @@ hdr_dtype = np.dtype([('shortname', 'S10'), ('longname', 'S25'), ('length', '<u4
                       ('version', '<u4'), ('date', 'S8')])
 
 #
+bl_log_pos_dtype = {
+    ("User", 139, 143, 'a4'),
+    ("Directory", 594, 639, 'a45'),
+    ("File", 640, 684, 'a45'),
+    ("Host", 850, 863, 'a13'),
+    ("Comments", 1213, 1255, 'a42'),
+    ("Acquisition started on", 585, 593, '<f8'),
+}
+
+
 bl_flags_1 = {
     1: "mode",
     2: "ox/red",

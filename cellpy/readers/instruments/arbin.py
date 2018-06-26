@@ -1,9 +1,9 @@
 """arbin res-type data files"""
-
 import os
 import tempfile
 import shutil
 import logging
+import platform
 import warnings
 import numpy as np
 
@@ -14,12 +14,16 @@ from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
 from cellpy.readers.cellreader import check64bit
 from cellpy.readers.cellreader import get_headers_normal
-from .mixin import Loader
+from cellpy.readers.instruments.mixin import Loader
 import cellpy.parameters.prms as prms
 
 # Select odbc module
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._sfod
+try:
+    DRIVER = prms.odbc_driver
+except AttributeError:
+    DRIVER = "NO DRIVER"
 use_ado = False
 
 if ODBC == "ado":
@@ -42,6 +46,17 @@ if not use_ado:
         except ImportError:
             warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
             dbloader = None
+
+
+# finding out some stuff about the platform
+is_posix = False
+is_macos = False
+if os.name == "posix":
+    is_posix = True
+plfrm = platform.system()
+if plfrm == "Darwin":
+    is_macos = True
+
 
 # # Check if 64 bit python is used and give warning
 # if check64bit(System="python"):
@@ -151,6 +166,7 @@ class ArbinLoader(Loader):
         return raw_limits
 
     def __get_res_connector(self, temp_filename):
+
         if use_ado:
             is64bit_python = check64bit(System="python")
             if is64bit_python:
@@ -163,11 +179,17 @@ class ArbinLoader(Loader):
             try:
                 driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
             except IndexError as e:
-                self.logger.error(e)
-                print(e)
-                print(
-                    "Could not find any odbc-drivers. Check out the homepage of pydobc for info on installing drivers")
+                driver = DRIVER
+                if is_macos:
+                    driver = "/usr/local/lib/libmdbodbc.dylib"
+                else:
+                    self.logger.error(e)
+                    print(e)
+                    print("Could not find any odbc-drivers."
+                          "Check out the homepage of pydobc for info on installing drivers")
+
             self.logger.debug("odbc constr: {}".format(driver))
+
         else:
             is64bit_python = check64bit(System="python")
             if is64bit_python:
@@ -499,27 +521,57 @@ class ArbinLoader(Loader):
 
         table_name_global = TABLE_NAMES["global"]
         table_name_stats = TABLE_NAMES["statistic"]
+        table_name_normal = TABLE_NAMES["normal"]
 
         # creating temporary file and connection
 
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
-        constr = self.__get_res_connector(temp_filename)
-
-        if use_ado:
-            conn = dbloader.connect(constr)
-        else:
-            conn = dbloader.connect(constr, autocommit=True)
-
         self.logger.debug("tmp file: %s" % temp_filename)
-        self.logger.debug("constr str: %s" % constr)
 
-        self.logger.debug("reading global data table")
-        sql = "select * from %s" % table_name_global
-        global_data_df = pd.read_sql_query(sql, conn)
-        # col_names = list(global_data_df.columns.values)
-        self.logger.debug("sql statement: %s" % sql)
+        # windows
+        if not is_posix:
+            constr = self.__get_res_connector(temp_filename)
+
+            if use_ado:
+                conn = dbloader.connect(constr)
+            else:
+                conn = dbloader.connect(constr, autocommit=True)
+            self.logger.debug("constr str: %s" % constr)
+
+            self.logger.debug("reading global data table")
+            sql = "select * from %s" % table_name_global
+            self.logger.debug("sql statement: %s" % sql)
+            global_data_df = pd.read_sql_query(sql, conn)
+            # col_names = list(global_data_df.columns.values)
+
+        else:
+            import subprocess
+            if is_macos:
+                self.logger.debug("\nMAC OSX USING MDBTOOLS")
+            else:
+                self.logger.debug("\nPOSIX USING MBDTOOLS")
+
+            # creating tmp-filenames
+            temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
+            temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
+            temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
+
+            # making the cmds
+            mdb_prms = []
+            mdb_prms.append((table_name_global, temp_csv_filename_global))
+            mdb_prms.append((table_name_normal, temp_csv_filename_normal))
+            mdb_prms.append((table_name_stats, temp_csv_filename_stats))
+
+            # executing cmds
+            for table_name, tmp_file in mdb_prms:
+                with open(tmp_file, "w") as f:
+                    subprocess.call(["mdb-export", temp_filename, table_name], stdout=f)
+                    self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
+
+            # use pandas to load in the data
+            global_data_df = pd.read_csv(temp_csv_filename_global)
 
         tests = global_data_df[self.headers_normal['test_id_txt']]  # OBS
         number_of_sets = len(tests)
@@ -541,16 +593,34 @@ class ArbinLoader(Loader):
             data.test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
             data.raw_data_files.append(fid)
 
-            # --------- read raw-data (normal-data) -------------------------
             self.logger.debug("reading raw-data")
-            length_of_test, normal_df = self._load_res_normal_table(conn, data.test_ID, bad_steps)
+            if not is_posix:
+                # --------- read raw-data (normal-data) -------------------------
+                length_of_test, normal_df = self._load_res_normal_table(conn, data.test_ID, bad_steps)
+                # --------- read stats-data (summary-data) ----------------------
+                sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
+                                                                    self.headers_normal['test_id_txt'],
+                                                                    data.test_ID,
+                                                                    self.headers_normal['data_point_txt'])
+                summary_df = pd.read_sql_query(sql, conn)
+                self._clean_up_loadres(None, conn, temp_filename)
+            else:
 
-            # --------- read stats-data (summary-data) ----------------------
-            sql = "select * from %s where %s=%s order by %s" % (table_name_stats,
-                                                                self.headers_normal['test_id_txt'],
-                                                                data.test_ID,
-                                                                self.headers_normal['data_point_txt'])
-            summary_df = pd.read_sql_query(sql, conn)
+                data.test_ID
+                normal_df = pd.read_csv(temp_csv_filename_normal)
+                # filter on test ID
+                normal_df = normal_df[normal_df[self.headers_normal['test_id_txt']] == data.test_ID]
+                length_of_test = normal_df.shape[0]
+                summary_df = pd.read_csv(temp_csv_filename_stats)
+                # clean up
+                for f in [temp_filename, temp_csv_filename_stats, temp_csv_filename_normal,
+                          temp_csv_filename_global]:
+                    if os.path.isfile(f):
+                        try:
+                            os.remove(f)
+                        except WindowsError as e:
+                            self.logger.warning("could not remove tmp-file\n%s %s" % (f, e))
+
             if summary_df.empty:
                 txt = "\nCould not find any summary (stats-file)!"
                 txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
@@ -559,7 +629,6 @@ class ArbinLoader(Loader):
             data.dfdata = normal_df
             data.raw_data_files_length.append(length_of_test)
             new_tests.append(data)
-            self._clean_up_loadres(None, conn, temp_filename)
         return new_tests
 
     def _normal_table_generator(self, **kwargs):

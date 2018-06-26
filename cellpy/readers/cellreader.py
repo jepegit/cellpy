@@ -114,25 +114,34 @@ def get_headers_normal():
         (used as column headers for the main data pandas DataFrames)"""
     headers_normal = dict()
     headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
+    headers_normal['ref_aci_phase_angle_txt'] = 'Reference_ACI_Phase_Angle'  # new
+
     headers_normal['ac_impedance_txt'] = 'AC_Impedance'
+    headers_normal['ref_ac_impedance_txt'] = 'Reference_AC_Impedance'  # new
+
     headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
     headers_normal['charge_energy_txt'] = 'Charge_Energy'
     headers_normal['current_txt'] = 'Current'
     headers_normal['cycle_index_txt'] = 'Cycle_Index'
     headers_normal['data_point_txt'] = 'Data_Point'
-    headers_normal['datetime_txt'] = 'DateTime'
+    headers_normal['datetime_txt'] = 'DateTime'  # The only header that uses camel case.. hmmm...
     headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
     headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
     headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
+
     headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
     headers_normal['step_index_txt'] = 'Step_Index'
     headers_normal['sub_step_index_txt'] = 'Sub_Step_Index'  # new
+
     headers_normal['step_time_txt'] = 'Step_Time'
     headers_normal['sub_step_time_txt'] = 'Sub_Step_Time'  # new
+
     headers_normal['test_id_txt'] = 'Test_ID'
     headers_normal['test_time_txt'] = 'Test_Time'
+
     headers_normal['voltage_txt'] = 'Voltage'
     headers_normal['ref_voltage_txt'] = 'Reference_Voltage'  # new
+
     headers_normal['dv_dt_txt'] = 'dV/dt'
     headers_normal['frequency_txt'] = 'Frequency'  # new
     headers_normal['amplitude_txt'] = 'Amplitude'  # new
@@ -260,13 +269,16 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
 
     if option == "to_float":
         d = (xldate - 25589) * 86400.0
-    elif option == "to_string":
-        d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
-        # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds, excel cannot cope with this!
-        date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
-        d = d.strftime(date_format)
     else:
-        d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
+        try:
+            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
+            # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds, excel cannot cope with this!
+            if option == "to_string":
+                date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
+                d = d.strftime(date_format)
+        except TypeError:
+            warnings.warn(f'The date is not of correct type [{xldate}]')
+            d = xldate
     return d
 
 
@@ -608,14 +620,28 @@ class CellpyData(object):
         if instrument is None:
             instrument = self.tester
 
-        if instrument == "arbin":
+        if instrument in ["arbin", "arbin_res"]:
             self._set_arbin()
 
         elif instrument == "arbin_experimental":
             self._set_arbin_experimental()
 
+        elif instrument in ["biologics", "biologics_mpr"]:
+            self._set_biologic()
+
+        else:
+            raise Exception(f"option does not exist: '{instrument}'")
+
     def _set_biologic(self):
-        warnings.warn("not implemented")
+        warnings.warn("Experimental! Not ready for production!")
+        from cellpy.readers.instruments import biologics_mpr as instr
+
+        self.loader_class = instr.MprLoader()
+        # get information
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # create loader
+        self.loader = self.loader_class.loader
 
     def _set_pec(self):
         warnings.warn("not implemented")
@@ -645,26 +671,26 @@ class CellpyData(object):
         # create loader
         self.loader = self.loader_class.loader
 
-    def _set_arbin_experimental(self):
-        # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
-        # more transparent to separate them into respective methods pr instrument.
-        from .instruments import arbin_experimental as instr
-        self.loader_class = instr.ArbinLoader()
-        # get information
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # send information (should improve this later)
-        # loader_class.load_only_summary = self.load_only_summary
-        # loader_class.select_minimal = self.select_minimal
-        # loader_class.max_res_filesize = self.max_res_filesize
-        # loader_class.chunk_size = self.chunk_size
-        # loader_class.max_chunks = self.max_chunks
-        # loader_class.last_chunk = self.last_chunk
-        # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
-        # loader_class.load_until_error = self.load_until_error
-
-        # create loader
-        self.loader = self.loader_class.loader
+    # def _set_arbin_experimental(self):
+    #     # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
+    #     # more transparent to separate them into respective methods pr instrument.
+    #     from .instruments import arbin_experimental as instr
+    #     self.loader_class = instr.ArbinLoader()
+    #     # get information
+    #     self.raw_units = self.loader_class.get_raw_units()
+    #     self.raw_limits = self.loader_class.get_raw_limits()
+    #     # send information (should improve this later)
+    #     # loader_class.load_only_summary = self.load_only_summary
+    #     # loader_class.select_minimal = self.select_minimal
+    #     # loader_class.max_res_filesize = self.max_res_filesize
+    #     # loader_class.chunk_size = self.chunk_size
+    #     # loader_class.max_chunks = self.max_chunks
+    #     # loader_class.last_chunk = self.last_chunk
+    #     # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
+    #     # loader_class.load_until_error = self.load_until_error
+    #
+    #     # create loader
+    #     self.loader = self.loader_class.loader
 
     def _create_logger(self):
         from cellpy import log
@@ -3338,7 +3364,8 @@ class CellpyData(object):
     # ----------making-summary------------------------------------------------------
     def make_summary(self, find_ocv=False, find_ir=False, find_end_voltage=False,
                      use_cellpy_stat_file=True, all_tests=True,
-                     dataset_number=0, ensure_step_table=None):
+                     dataset_number=0, ensure_step_table=None,
+                     convert_date=True):
         """Convenience function that makes a summary of the cycling data."""
 
         if ensure_step_table is None:
@@ -3373,6 +3400,7 @@ class CellpyData(object):
                                    find_end_voltage=find_end_voltage,
                                    use_cellpy_stat_file=use_cellpy_stat_file,
                                    ensure_step_table=ensure_step_table,
+                                   convert_date=convert_date,
                                    )
         else:
             self.logger.debug("creating summary for only one test")
@@ -3386,6 +3414,7 @@ class CellpyData(object):
                                find_end_voltage=find_end_voltage,
                                use_cellpy_stat_file=use_cellpy_stat_file,
                                ensure_step_table=ensure_step_table,
+                               convert_date=convert_date,
                                )
 
     def _make_summary(self,
@@ -3396,7 +3425,7 @@ class CellpyData(object):
                       find_ocv=False,
                       find_ir=False,
                       find_end_voltage=False,
-                      convert_date=True,
+                      convert_date=True,  # TODO: this is only needed for arbin-data
                       sort_my_columns=True,
                       use_cellpy_stat_file=True,
                       ensure_step_table=False,
@@ -3482,7 +3511,11 @@ class CellpyData(object):
             dfdata = dataset.dfdata
             if use_cellpy_stat_file:
                 # This should work even if dfdata does not contain all data from the test
-                summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
+                try:
+                    summary_requirment = dfdata[d_txt].isin(summary_df[d_txt])
+                except KeyError:
+                    self.logger.info("error in stat_file (?) - using _select_last")
+                    summary_requirment = self._select_last(dfdata)
             else:
                 summary_requirment = self._select_last(dfdata)
             dfsummary = dfdata[summary_requirment]
