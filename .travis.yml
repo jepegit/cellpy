@@ -35,7 +35,9 @@ install:
   - pip install -r requirements_travis.txt
   - pip install -r requirements_appveyor.txt
 
-script: py.test tests/tests_for_travis.py
+script:
+#  - py.test tests/tests_for_travis.py
+  - pytest
 
 deploy:
   provider: pypi
