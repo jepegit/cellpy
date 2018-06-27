@@ -6,12 +6,12 @@
 #  - sudo apt-get install -y mdbtools
 
 env:
-  - TOXENV=py36
+  - JEPE=konge
 language: python
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
-  - "3.5"
   - "3.6"
+#  - "3.7"
 install:
   - sudo apt-get update
   - sudo apt-get install -y mdbtools
@@ -55,7 +55,7 @@ deploy:
       UGtGM0YraXVlQjZIajdHZ3VBRk55STY4blg0eGdkREw4QmsvN1pZNGNXNGRtQ29taWl4bVZlYnY0
       em9WdC90UEJ2TE9QTWpTejBsVmFCM0N5OFB2VmZKek55TGI0a3NFK3N1K3RZVU1vbUJWSmk0OGc9
   true:
-    condition: $TOXENV == py36
+    condition: $JEPE == konge
     repo: jepegit/cellpy
     tags: true
 
