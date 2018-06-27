@@ -2,6 +2,7 @@
 
 import os
 import glob
+import pathlib
 import warnings
 import cellpy.parameters.prms as prms
 import logging
@@ -99,12 +100,22 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     else:
         glob_text_raw = file_name_format
 
-    glob_text_raw = os.path.join(raw_file_dir, glob_text_raw)
-    run_files = glob.glob(glob_text_raw)
+    # TODO: use pathlib
 
-    #  run_files = glob.glob1(raw_file_dir,glob_text_raw)
-    run_files.sort()
-    cellpy_file = run_name + "." + cellpy_file_extension
+    use_pathlib_path = True
+    return_as_str_list = True
+
+    if use_pathlib_path:
+        run_files = pathlib.Path(raw_file_dir).glob(glob_text_raw)
+        if return_as_str_list:
+            run_files = [str(f.resolve()) for f in run_files]
+
+    else:
+        glob_text_raw = os.path.join(raw_file_dir, glob_text_raw)
+        run_files = glob.glob(glob_text_raw)
+        run_files.sort()
+
+    cellpy_file = "{0}.{1}".format(run_name, cellpy_file_extension)
     cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
     return run_files, cellpy_file

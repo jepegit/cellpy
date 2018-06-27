@@ -143,7 +143,8 @@ def _make_unique_groups(info_df):
     for i, j in zip(unique_g, new_unique_g):
         counter = 1
         for indx, row in info_df.loc[info_df.groups == i].iterrows():
-            info_df.set_value(indx, "sub_groups", counter)
+            info_df.at[indx, "sub_groups"] = counter
+            # info_df.set_value(indx, "sub_groups", counter)
             counter += 1
         info_df.loc[info_df.groups == i, 'groups'] = j + 1
     return info_df
