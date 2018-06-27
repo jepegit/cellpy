@@ -33,6 +33,7 @@ install:
   - source activate test-environment
   - python setup.py install
   - pip install -r requirements_travis.txt
+  - pip install -r requirements_appveyor.txt
 
 script: py.test tests/tests_for_travis.py
 
