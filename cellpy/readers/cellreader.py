@@ -2644,99 +2644,113 @@ class CellpyData(object):
         return cc, v
 
     def get_cap(self, cycle=None, dataset_number=None,
-                polarization=False,
-                stepsize=0.2,
-                points=None):
+                method="back-and-forth",
+                shift=0.0,):
         """Gets the capacity for the run.
-
-        For polarization = True: calculates hysteresis.
-        For cycle=None: not implemented yet, cycle set to 2.
+        For cycle=None: not implemented yet, cycle set to 1.
 
         Args:
             cycle (int): cycle number.
-            polarization (bool): get polarization.
-            stepsize (float): used for calculating polarization.
-            points (int): used for calculating polarization.
+            method (string): how the curves are given
+                "back-and-forth" - standard back and forth; discharge (or charge) reversed from where charge (or
+                    discharge) ends.
+                "forth" - discharge (or charge) continues along x-axis.
+                "forth-and-forth" - discharge (or charge) also starts at 0 (or shift if not shift=0.0)
+            shift: start-value for charge (or discharge) (typically used when plotting shifted-capacity).
             dataset_number (int): test number (default first) (usually not used).
 
-        Returns:
-            if polarization = False: capacity (mAh/g), voltage
-            if polarization = True: capacity (mAh/g), voltage,
-               capacity points (mAh/g) [points if given, arranged with stepsize if not],
-               polarization (hysteresis)
+        Returns: capacity (mAh/g), voltage
         """
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
             return
+
         # if cycle is not given, then this function should iterate through cycles
         if not cycle:
-            cycle = 2
-        cc, cv = self.get_ccap(cycle, dataset_number)
-        dc, dv = self.get_dcap(cycle, dataset_number)
+            cycle = self.get_cycle_numbers()
 
-        if self.cycle_mode.lower() == "anode":
-            _first_step_c = dc
-            _first_step_v = dv
-            _last_step_c = cc
-            _last_step_v = cv
-        else:
-            _first_step_c = cc
-            _first_step_v = cv
-            _last_step_c = dc
-            _last_step_v = dv
+        if not isinstance(cycle, (collections.Iterable, )):
+            cycle = [cycle]
 
-        _last = np.amax(_first_step_c)
-        _last_step_c = _last - _last_step_c
-        c = pd.concat([_first_step_c, _last_step_c], axis=0)
-        v = pd.concat([_first_step_v, _last_step_v], axis=0)
-        if polarization:
-            # interpolate cc cv dc dv and find difference
-            pv, p = self._polarization(_last_step_c, _last_step_v, _first_step_c, _last_step_v, stepsize, points)
+        method = method.lower()
+        if method not in ["back-and-forth", "forth", "forth-and-forth"]:
+            warnings.warn(f"method '{method}' is not a valid option - setting to 'back-and-forth'")
+            method = "back-and-forth"
 
-            return c, v, pv, p
-        else:
-            return c, v
+        capacity = None
+        voltage = None
 
-    # @print_function
-    def _polarization(self, cc, cv, dc, dv, stepsize=0.2, points=None):
-        # used when finding the voltage difference in discharge vs charge
-        # should probably be labelled "hysteresis" instead of polarization
-        # cc = charge cap
-        # cv = voltage (during charging)
-        # dc = discharge cap
-        # vv = voltage (during discharging)
-        # stepsize - maybe extend so that the function selects proper stepsize
-        # points = [cap1, cap2, cap3, ...] (returns p for given cap points)
-        stepsize = 0.2
-        cc = self._reverse(cc)
-        cv = self._reverse(cv)
-        min_dc, max_dc = self._bounds(dc)
-        min_cc, max_cc = self._bounds(cc)
-        start_cap = max(min_dc, min_cc)
-        end_cap = min(max_dc, max_cc)
-        #        print min_dc, min_cc, start_cap
-        #        print self._roundup(start_cap)
-        #        print max_dc, max_cc, end_cap
-        #        print self._rounddown(end_cap)
-        # TODO check if points are within bounds (implement it later if needed)
-        if not points:
-            points = np.arange(self._roundup(start_cap), self._rounddown(end_cap), stepsize)
-        else:
-            if min(points) < start_cap:
-                print("ERROR, point %f less than bound (%f)" % (min(points), start_cap))
-            if max(points) > end_cap:
-                print("ERROR, point %f bigger than bound (%f)" % (max(points), end_cap))
-        f1 = interpolate.interp1d(dc, dv)
-        f2 = interpolate.interp1d(cc, cv)
-        dv_new = f1(points)
-        cv_new = f2(points)
-        p = cv_new - dv_new
-        return points, p
+        initial = True
+        for current_cycle in cycle:
+            self.logger.debug(f"processing cycle {current_cycle}")
+
+            cc, cv = self.get_ccap(current_cycle, dataset_number)
+            dc, dv = self.get_dcap(current_cycle, dataset_number)
+
+            if initial:
+                self.logger.debug("(initial cycle)")
+                prev_end = shift
+                initial = False
+
+            if self.cycle_mode.lower() == "anode":
+                _first_step_c = dc
+                _first_step_v = dv
+                _last_step_c = cc
+                _last_step_v = cv
+            else:
+                _first_step_c = cc
+                _first_step_v = cv
+                _last_step_c = dc
+                _last_step_v = dv
+
+            if method == "back-and-forth":
+                _last = np.amax(_first_step_c)  # should change amax to last point
+                if _last_step_c is not None:
+                    _last_step_c = _last - _last_step_c + prev_end
+                else:
+                    self.logger.debug("no last charge step found")
+                if _first_step_c is not None:
+                    _first_step_c += prev_end
+                else:
+                    self.logger.debug("no first charge step found")
+
+                prev_end = np.amin(_last_step_c)  # should change amin to last point
+
+            elif method == "forth":
+                _last = np.amax(_first_step_c)  # should change amax to last point
+                if _last_step_c is not None:
+                    _last_step_c += _last + prev_end
+                else:
+                    self.logger.debug("no last charge step found")
+                if _first_step_c is not None:
+                    _first_step_c += prev_end
+                else:
+                    self.logger.debug("no first charge step found")
+
+                prev_end = np.amax(_last_step_c)  # should change amin to last point
+
+            elif method == "forth-and-forth":
+                if _last_step_c is not None:
+                    _last_step_c += shift
+                else:
+                    self.logger.debug("no last charge step found")
+                if _first_step_c is not None:
+                    _first_step_c += shift
+                else:
+                    self.logger.debug("no first charge step found")
+
+            c = pd.concat([_first_step_c, _last_step_c], axis=0)
+            v = pd.concat([_first_step_v, _last_step_v], axis=0)
+
+            capacity = pd.concat([capacity, c], axis=0)
+            voltage = pd.concat([voltage, v], axis=0)
+
+        return capacity, voltage
 
     def _get_cap(self, cycle=None, dataset_number=None, cap_type="charge"):
         # used when extracting capacities (get_ccap, get_dcap)
-        # TODO: does not allow for constant voltage yet
+        # TODO: does not allow for constant voltage yet?
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
