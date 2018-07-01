@@ -310,6 +310,7 @@ class Batch(object):
 
         self.export_raw = True
         self.export_cycles = False
+        self.shifted_cycles = False
         self.export_ica = False
         self.save_cellpy_file = True
         self.force_raw_file = False
@@ -452,6 +453,7 @@ class Batch(object):
                                                             force_raw=self.force_raw_file,
                                                             force_cellpy=self.force_cellpy_file,
                                                             export_cycles=self.export_cycles,
+                                                            shifted_cycles=self.shifted_cycles,
                                                             export_raw=self.export_raw,
                                                             export_ica=self.export_ica,
                                                             save=self.save_cellpy_file,
@@ -824,7 +826,7 @@ def create_folder_structure(project_name, batch_name):
 
 
 def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=False,
-                       export_cycles=False, export_raw=True,
+                       export_cycles=False, shifted_cycles=False, export_raw=True,
                        export_ica=False, save=True, use_cellpy_stat_file=True,
                        parent_level="CellpyData"):
     """Reads and saves cell data defined by the info-DataFrame.
@@ -842,6 +844,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         force_raw: load raw data even-though cellpy-file is up-to-date.
         force_cellpy: load cellpy files even-though cellpy-file is not up-to-date.
         export_cycles: set to True for exporting cycles to csv.
+        shifted_cycles: set to True for exporting the cycles with a cumulated shift.
         export_raw: set to True for exporting raw data to csv.
         export_ica: set to True for calculating and exporting dQ/dV to csv.
         save: set to False to prevent saving a cellpy-file.
@@ -944,7 +947,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         if export_raw:
             print("...exporting data....")
             logger.debug("Exporting csv")
-            cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles, raw=export_raw)
+            cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles, shifted=shifted_cycles, raw=export_raw)
 
         if do_export_dqdv:
             logger.debug("Exporting dqdv")

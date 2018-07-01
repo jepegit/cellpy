@@ -79,6 +79,7 @@ def test_read_excel_db(batch_instance):
     print("making summaries")
     b.make_summaries()
 
+
 if __name__ == "__main__":
 
     prms = batch.prms

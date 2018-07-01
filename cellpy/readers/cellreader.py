@@ -2159,7 +2159,6 @@ class CellpyData(object):
         else:
             return v
 
-    # @print_function
     def populate_step_dict(self, step, dataset_number=None):
         """Returns a dict with cycle numbers as keys and corresponding steps (list) as values."""
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -2175,9 +2174,9 @@ class CellpyData(object):
             step_dict[cycle] = [step]
         return step_dict
 
-    # -------------save-and-export--------------------------------------------------
+    def _export_cycles(self, dataset_number, setname=None, sep=None, outname=None, shifted=False, method=None, shift=0.0):
+        # export voltage - capacity curves to .csv file
 
-    def _export_cycles(self, dataset_number, setname=None, sep=None, outname=None):
         self.logger.debug("exporting cycles")
         lastname = "_cycles.csv"
         if sep is None:
@@ -2191,10 +2190,26 @@ class CellpyData(object):
         self.logger.debug(txt)
 
         out_data = []
+        c = None
+        if not method:
+            method = "back-and-forth"
+        if shifted:
+            method = "back-and-forth"
+            shift = 0.0
+            _last = 0.0
 
         for cycle in list_of_cycles:
             try:
-                c, v = self.get_cap(cycle, dataset_number=dataset_number)
+                if shifted and c is not None:
+                    shift = _last
+                    # print(f"shifted = {shift}, first={_first}")
+                c, v = self.get_cap(cycle, dataset_number=dataset_number,
+                                    method=method,
+                                    shift=shift,
+                                    )
+                _last = c.iat[-1]
+                _first = c.iat[0]
+
                 c = c.tolist()
                 v = v.tolist()
                 header_x = "cap cycle_no %i" % cycle
@@ -2203,9 +2218,12 @@ class CellpyData(object):
                 v.insert(0, header_y)
                 out_data.append(c)
                 out_data.append(v)
-            except:
+                txt = "extracted cycle %i" % cycle
+                self.logger.info(txt)
+            except ImportError as e:
                 txt = "could not extract cycle %i" % cycle
-                self.logger.debug(txt)
+                self.logger.info(txt)
+                self.logger.debug(e)
 
         # Saving cycles in one .csv file (x,y,x,y,x,y...)
         # print "saving the file with delimiter '%s' " % (sep)
@@ -2215,8 +2233,8 @@ class CellpyData(object):
             writer.writerows(itertools.zip_longest(*out_data))
             # star (or asterix) means transpose (writing cols instead of rows)
         txt = outname
-        txt += " OK"
-        self.logger.debug(txt)
+        txt += " exported."
+        self.logger.info(txt)
 
     def _export_normal(self, data, setname=None, sep=None, outname=None):
         lastname = "_normal.csv"
@@ -2228,9 +2246,10 @@ class CellpyData(object):
         try:
             data.dfdata.to_csv(outname, sep=sep)
             txt += " OK"
-        except:
+        except Exception as e:
             txt += " Could not save it!"
-        self.logger.debug(txt)
+            self.logger.debug(e)
+        self.logger.info(txt)
 
     def _export_stats(self, data, setname=None, sep=None, outname=None):
         lastname = "_stats.csv"
@@ -2242,9 +2261,10 @@ class CellpyData(object):
         try:
             data.dfsummary.to_csv(outname, sep=sep)
             txt += " OK"
-        except:
+        except Exception as e:
             txt += " Could not save it!"
-        self.logger.debug(txt)
+            self.logger.debug(e)
+        self.logger.info(txt)
 
     def _export_steptable(self, data, setname=None, sep=None, outname=None):
         lastname = "_steps.csv"
@@ -2256,12 +2276,32 @@ class CellpyData(object):
         try:
             data.step_table.to_csv(outname, sep=sep)
             txt += " OK"
-        except:
+        except Exception as e:
             txt += " Could not save it!"
-        self.logger.debug(txt)
+            self.logger.debug(e)
+        self.logger.info(txt)
 
-    def to_csv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True):
-        """Saves the data as .csv file(s)."""
+    def to_csv(self, datadir=None, sep=None, cycles=False, raw=True, summary=True, shifted=False,
+               method=None, shift=0.0):
+        """Saves the data as .csv file(s).
+
+        Args:
+            datadir: folder where to save the data (uses current folder if not given).
+            sep: the separator to use in the csv file (defaults to CellpyData.sep).
+            cycles: (bool) export voltage-capacity curves if True.
+            raw: (bool) export raw-data if True.
+            summary: (bool) export summary if True.
+            shifted (bool): export with cumulated shift.
+            method (string): how the curves are given
+                "back-and-forth" - standard back and forth; discharge (or charge) reversed from where charge (or
+                    discharge) ends.
+                "forth" - discharge (or charge) continues along x-axis.
+                "forth-and-forth" - discharge (or charge) also starts at 0 (or shift if not shift=0.0)
+            shift: start-value for charge (or discharge)
+
+        Returns: Nothing
+
+        """
 
         if sep is None:
             sep = self.sep
@@ -2310,10 +2350,20 @@ class CellpyData(object):
                 if cycles:
                     outname_cycles = firstname + "_cycles.csv"
                     self._export_cycles(outname=outname_cycles, dataset_number=dataset_number,
-                                        sep=sep)
+                                        sep=sep, shifted=shifted, method=method, shift=shift)
 
     def save(self, filename, dataset_number=None, force=False, overwrite=True, extension="h5"):
-        """Save the data structure using hdf5."""
+        """Save the data structure to cellpy-format.
+
+        Args:
+            filename: (str) the name you want to give the file
+            dataset_number: (int) if you have several datasets, chose the one you want (probably leave this untouched)
+            force: (bool) save a file even if the summary is not made yet (not recommended)
+            overwrite: (bool) save the new version of the file even if old one exists.
+            extension: (str) filename extension.
+
+        Returns: Nothing at all.
+        """
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2711,9 +2761,13 @@ class CellpyData(object):
                 else:
                     self.logger.debug("no last charge step found")
                 if _first_step_c is not None:
+                    _first = _first_step_c.iat[0]
                     _first_step_c += prev_end
+                    _new_first = _first_step_c.iat[0]
                 else:
                     self.logger.debug("no first charge step found")
+                self.logger.debug(f"current shifts used: prev_end = {prev_end}")
+                self.logger.debug(f"shifting start from {_first} to {_new_first}")
 
                 prev_end = np.amin(_last_step_c)  # should change amin to last point
 
