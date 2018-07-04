@@ -19,11 +19,11 @@ test_areal_loading = 0.0
 def db_reader():
     from cellpy import dbreader
     from cellpy.parameters import prms
-    prms.Paths["outdatadir"] = fdv.test_data_dir_out
-    prms.Paths["rawdatadir"] = fdv.test_data_dir_raw
-    prms.Paths["cellpydatadir"] = fdv.test_data_dir_cellpy
-    prms.Paths["db_path"] = fdv.test_data_dir_db
-    prms.Paths["db_filename"] = fdv.test_db_filename
+    prms.Paths["outdatadir"] = fdv.output_dir
+    prms.Paths["rawdatadir"] = fdv.raw_data_dir
+    prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
+    prms.Paths["db_path"] = fdv.db_dir
+    prms.Paths["db_filename"] = fdv.db_file_name
     return dbreader.reader()
 
 
@@ -144,7 +144,7 @@ def test_get_label(db_reader):
 
 def test_get_cell_name(db_reader):
     output = db_reader.get_cell_name(test_serial_number_one)
-    assert output == fdv.test_run_name
+    assert output == fdv.run_name
 
 
 def test_get_comment(db_reader):

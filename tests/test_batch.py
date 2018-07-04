@@ -18,11 +18,11 @@ def clean_dir():
 @pytest.fixture
 def batch_instance(clean_dir):
     prms = batch.prms
-    prms.Paths["db_filename"] = fdv.test_db_filename
-    prms.Paths["cellpydatadir"] = fdv.test_data_dir_cellpy
+    prms.Paths["db_filename"] = fdv.db_file_name
+    prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
     prms.Paths["outdatadir"] = clean_dir
-    prms.Paths["rawdatadir"] = fdv.test_data_dir_raw
-    prms.Paths["db_path"] = fdv.test_data_dir_db
+    prms.Paths["rawdatadir"] = fdv.raw_data_dir
+    prms.Paths["db_path"] = fdv.db_dir
     prms.Paths["filelogdir"] = clean_dir
     return batch.init()
 
@@ -58,11 +58,11 @@ def test_read_excel_db(batch_instance):
 if __name__ == "__main__":
 
     prms = batch.prms
-    prms.Paths["db_filename"] = fdv.test_db_filename
-    prms.Paths["cellpydatadir"] = fdv.test_data_dir_cellpy
+    prms.Paths["db_filename"] = fdv.db_file_name
+    prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
     prms.Paths["outdatadir"] = clean_dir()
-    prms.Paths["rawdatadir"] = fdv.test_data_dir_raw
-    prms.Paths["db_path"] = fdv.test_data_dir_db
+    prms.Paths["rawdatadir"] = fdv.raw_data_dir
+    prms.Paths["db_path"] = fdv.db_dir
     prms.Paths["filelogdir"] = clean_dir()
     b = batch.init(default_log_level="DEBUG")
     test_read_excel_db(b)

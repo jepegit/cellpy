@@ -4,33 +4,35 @@ import os
 
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))
-relative_test_data_dir = "../testdata"
-test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
+_relative_data_dir = "../testdata"
+data_dir = os.path.abspath(os.path.join(current_file_path, _relative_data_dir))
 
-test_data_dir_raw = os.path.join(test_data_dir, "data")
-test_data_dir_out = os.path.join(test_data_dir, "out")
-test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
-test_data_dir_db = os.path.join(test_data_dir, "db")
+raw_data_dir = os.path.join(data_dir, "data")
+output_dir = os.path.join(data_dir, "out")
+cellpy_data_dir = os.path.join(data_dir, "hdf5")
+db_dir = os.path.join(data_dir, "db")
 
 # -------- common files -----------------------------
 
-test_cellpy_file = "20160805_test001_45_cc.h5"
-test_cellpy_file_full = os.path.join(test_data_dir_cellpy, test_cellpy_file)
+cellpy_file_name = "20160805_test001_45_cc.h5"
+cellpy_file_path = os.path.join(cellpy_data_dir, cellpy_file_name)
 
-test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy, test_cellpy_file_tmp)
+temporary_cellpy_file_name = "tmpfile.h5"
+temporary_cellpy_file_path = os.path.join(cellpy_data_dir, temporary_cellpy_file_name)
 
-test_db_filename = "cellpy_db.xlsx"
-test_db_filename_full = os.path.join(test_data_dir_db, test_db_filename)
+db_file_name = "cellpy_db.xlsx"
+db_file_path = os.path.join(db_dir, db_file_name)
 
-test_run_name = "20160805_test001_45_cc"
+run_name = "20160805_test001_45_cc"
 
-test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir_raw, test_res_file)
+# -------- arbin specific files ---------------------
+
+res_file_name = "20160805_test001_45_cc_01.res"
+res_file_path = os.path.join(raw_data_dir, res_file_name)
 
 # -------- biologics specific files -----------------
-test_mpr_file = "geis.mpr"
-test_mpr_file_full = os.path.join(test_data_dir_raw, test_mpr_file)
+mpr_file_name = "geis.mpr"
+mpr_file_path = os.path.join(raw_data_dir, mpr_file_name)
 
-test_mpr_cellpy_file = "geis.h5"
-test_mpr_cellpy_file_full = os.path.join(test_data_dir_cellpy, test_mpr_cellpy_file)
+mpr_cellpy_file_name = "geis.h5"
+mpr_cellpy_file_path = os.path.join(cellpy_data_dir, mpr_cellpy_file_name)

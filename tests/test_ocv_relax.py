@@ -11,7 +11,7 @@ log.setup_logging(default_level=logging.DEBUG)
 def dataset():
     from cellpy import cellreader
     d = cellreader.CellpyData()
-    d.load(fdv.test_cellpy_file_full)
+    d.load(fdv.cellpy_file_path)
     return d
 
 

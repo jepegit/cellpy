@@ -21,7 +21,7 @@ def clean_dir():
 def setup_module():
     import os
     try:
-        os.mkdir(fdv.test_data_dir_out)
+        os.mkdir(fdv.output_dir)
     except:
         print("could not make directory")
 
@@ -30,7 +30,7 @@ def setup_module():
 def test_extract_ocvrlx(clean_dir):
     import os
     from cellpy import cellreader
-    f_in = os.path.join(fdv.test_data_dir, fdv.test_res_file)
+    f_in = os.path.join(fdv.data_dir, fdv.res_file_name)
     f_out = os.path.join(clean_dir, "out_")
     assert cellreader.extract_ocvrlx(f_in, f_out) == True
 
@@ -38,7 +38,7 @@ def test_extract_ocvrlx(clean_dir):
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader
-    f_in = os.path.join(fdv.test_data_dir_raw, fdv.test_res_file)
+    f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
     new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
     assert os.path.isfile(new_file)
 
@@ -77,4 +77,4 @@ def test_humanize_bytes():
 
 def teardown_module():
     import shutil
-    shutil.rmtree(fdv.test_data_dir_out)
+    shutil.rmtree(fdv.output_dir)
