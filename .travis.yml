@@ -35,7 +35,6 @@ install:
   - pip install -r requirements_travis.txt
 
 script:
-#  - py.test tests/tests_for_travis.py
   - pytest
 
 deploy:

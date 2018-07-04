@@ -2,29 +2,10 @@ import os
 import tempfile
 import shutil
 import pytest
-
-# -------- defining overall path-names etc ----------
-current_file_path = os.path.dirname(os.path.realpath(__file__))
-# relative_test_data_dir = "../cellpy/data_ex"
-relative_test_data_dir = "../testdata"
-test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-test_data_dir_raw = os.path.join(test_data_dir, "data")
-
-test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir_raw,test_res_file)
-
-test_data_dir_out = os.path.join(test_data_dir, "out")
-
-test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
-test_cellpy_file = "20160805_test001_45_cc.h5"
-test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_full = os.path.join(test_data_dir_cellpy,test_cellpy_file)
-test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,test_cellpy_file_tmp)
-
-test_run_name = "20160805_test001_45_cc"
-
 import logging
 from cellpy import log
+from . import fdv
+
 log.setup_logging(default_level=logging.DEBUG)
 
 
@@ -33,21 +14,23 @@ def cellpy_data_instance():
     from cellpy import cellreader
     return cellreader.CellpyData()
 
+
 @pytest.fixture
 def dataset():
     from cellpy import cellreader
     d = cellreader.CellpyData()
-    d.load(test_cellpy_file_full)
+    d.load(fdv.test_cellpy_file_full)
     return d
+
 
 def test_search_for_files():
     import os
     from cellpy import filefinder
-    run_files, cellpy_file = filefinder.search_for_files(test_run_name,
-                                                         raw_file_dir=test_data_dir_raw,
-                                                         cellpy_file_dir=test_data_dir_out)
-    assert test_res_file_full in run_files
-    assert os.path.basename(cellpy_file) == test_cellpy_file
+    run_files, cellpy_file = filefinder.search_for_files(fdv.test_run_name,
+                                                         raw_file_dir=fdv.test_data_dir_raw,
+                                                         cellpy_file_dir=fdv.test_data_dir_out)
+    assert fdv.test_res_file_full in run_files
+    assert os.path.basename(cellpy_file) == fdv.test_cellpy_file
 
 
 def test_set_res_datadir_wrong(cellpy_data_instance):
@@ -62,23 +45,23 @@ def test_set_res_datadir_none(cellpy_data_instance):
 
 
 def test_set_res_datadir(cellpy_data_instance):
-    cellpy_data_instance.set_cellpy_datadir(test_data_dir)
-    assert test_data_dir == cellpy_data_instance.cellpy_datadir
+    cellpy_data_instance.set_cellpy_datadir(fdv.test_data_dir)
+    assert fdv.test_data_dir == cellpy_data_instance.cellpy_datadir
 
 
 # def test_use_experimental_reader():
 #     assert False
 
 def test_load_res(cellpy_data_instance):
-    cellpy_data_instance.loadcell(test_res_file_full)
+    cellpy_data_instance.loadcell(fdv.test_res_file_full)
     run_number = 0
     data_point = 2283
     step_time = 1500.05
     sum_discharge_time = 362198.12
     my_test = cellpy_data_instance.datasets[run_number]
-    assert my_test.dfsummary.loc[1,"Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.dfdata.loc[4,"Step_Time"],0.1)
-    assert sum_discharge_time == pytest.approx(my_test.dfsummary.loc[:,"Discharge_Time"].sum(),0.1)
+    assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
+    assert step_time == pytest.approx(my_test.dfdata.loc[4, "Step_Time"], 0.1)
+    assert sum_discharge_time == pytest.approx(my_test.dfsummary.loc[:, "Discharge_Time"].sum(), 0.1)
     assert my_test.test_no == run_number
 
     # cellpy_data_instance.make_summary(find_ir=True)
@@ -86,9 +69,8 @@ def test_load_res(cellpy_data_instance):
     # cellpy_data_instance.save(test_cellpy_file_full)
 
 
-
 def test_make_summary(cellpy_data_instance):
-    cellpy_data_instance.from_raw(test_res_file_full)
+    cellpy_data_instance.from_raw(fdv.test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
     s1 = cellpy_data_instance.datasets[0].dfsummary
@@ -96,22 +78,21 @@ def test_make_summary(cellpy_data_instance):
     s3 = cellpy_data_instance.get_summary()
     assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()
-    assert s2.iloc[:,3].size == 17
-    assert s2.iloc[5,3] == s1.iloc[5,3]
+    assert s2.iloc[:, 3].size == 17
+    assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
 def test_create_cellpyfile(cellpy_data_instance):
     # create a cellpy file from the res-file (used for testing)
-    cellpy_data_instance.from_raw(test_res_file_full)
+    cellpy_data_instance.from_raw(fdv.test_res_file_full)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-    print(f"trying to save the cellpy file to {test_cellpy_file_full}")
-    cellpy_data_instance.save(test_cellpy_file_full)
-
+    print(f"trying to save the cellpy file to {fdv.test_cellpy_file_full}")
+    cellpy_data_instance.save(fdv.test_cellpy_file_full)
 
 
 def test_summary_from_cellpyfile(cellpy_data_instance):
-    cellpy_data_instance.load(test_cellpy_file_full)
+    cellpy_data_instance.load(fdv.test_cellpy_file_full)
     s1 = cellpy_data_instance.get_summary()
     mass = cellpy_data_instance.get_mass()
     cellpy_data_instance.set_mass(mass)
@@ -123,7 +104,7 @@ def test_summary_from_cellpyfile(cellpy_data_instance):
 
 
 def test_load_cellpyfile(cellpy_data_instance):
-    cellpy_data_instance.load(test_cellpy_file_full)
+    cellpy_data_instance.load(fdv.test_cellpy_file_full)
     run_number = 0
     data_point = 2283
     step_time = 1500.05
@@ -168,7 +149,7 @@ def test_get_converter_to_specific(dataset, test_input, expected):
 
 
 def test_save_cellpyfile_with_extension(cellpy_data_instance):
-    cellpy_data_instance.loadcell(test_res_file_full)
+    cellpy_data_instance.loadcell(fdv.test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())+".h5"
@@ -179,7 +160,7 @@ def test_save_cellpyfile_with_extension(cellpy_data_instance):
 
 
 def test_save_cellpyfile_auto_extension(cellpy_data_instance):
-    cellpy_data_instance.loadcell(test_res_file_full)
+    cellpy_data_instance.loadcell(fdv.test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())
@@ -190,7 +171,7 @@ def test_save_cellpyfile_auto_extension(cellpy_data_instance):
 
 
 def test_save_cvs(cellpy_data_instance):
-    cellpy_data_instance.loadcell(test_res_file_full)
+    cellpy_data_instance.loadcell(fdv.test_res_file_full)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     temp_dir = tempfile.mkdtemp()

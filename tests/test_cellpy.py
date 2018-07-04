@@ -1,30 +1,8 @@
-from __future__ import print_function
-import os
 import pytest
 import tempfile
-
-# -------- defining overall path-names etc ----------
-current_file_path = os.path.dirname(os.path.realpath(__file__))
-# relative_test_data_dir = "../cellpy/data_ex"
-relative_test_data_dir = "../testdata"
-test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-test_data_dir_raw = os.path.join(test_data_dir, "data")
-
-test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir_raw,test_res_file)
-
-test_data_dir_out = os.path.join(test_data_dir, "out")
-
-test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
-test_cellpy_file = "20160805_test001_45_cc.h5"
-test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_full = os.path.join(test_data_dir_cellpy,test_cellpy_file)
-test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,test_cellpy_file_tmp)
-
-test_run_name = "20160805_test001_45_cc"
-
 import logging
 from cellpy import log
+from . import fdv
 log.setup_logging(default_level=logging.DEBUG)
 
 
@@ -43,7 +21,7 @@ def clean_dir():
 def setup_module():
     import os
     try:
-        os.mkdir(test_data_dir_out)
+        os.mkdir(fdv.test_data_dir_out)
     except:
         print("could not make directory")
 
@@ -52,7 +30,7 @@ def setup_module():
 def test_extract_ocvrlx(clean_dir):
     import os
     from cellpy import cellreader
-    f_in = os.path.join(test_data_dir, test_res_file)
+    f_in = os.path.join(fdv.test_data_dir, fdv.test_res_file)
     f_out = os.path.join(clean_dir, "out_")
     assert cellreader.extract_ocvrlx(f_in, f_out) == True
 
@@ -60,7 +38,7 @@ def test_extract_ocvrlx(clean_dir):
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader
-    f_in = os.path.join(test_data_dir_raw, test_res_file)
+    f_in = os.path.join(fdv.test_data_dir_raw, fdv.test_res_file)
     new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
     assert os.path.isfile(new_file)
 
@@ -99,4 +77,4 @@ def test_humanize_bytes():
 
 def teardown_module():
     import shutil
-    shutil.rmtree(test_data_dir_out)
+    shutil.rmtree(fdv.test_data_dir_out)
