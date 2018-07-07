@@ -16,6 +16,7 @@ examples/trying_stuff.py
 dev_utils/BioLogic.py_tmp
 *.csv
 
+dev_utils/.ipynb_checkpoints
 
 # Distribution / packaging
 .Python

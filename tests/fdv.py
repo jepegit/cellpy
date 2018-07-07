@@ -1,4 +1,4 @@
-"""Files, Directories, and Variables to be used in the tests."""
+"""Files, Directories, and Variables to be used in the tests. This works only for the test-files!"""
 
 import os
 

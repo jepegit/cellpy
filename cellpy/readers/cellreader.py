@@ -1202,11 +1202,10 @@ class CellpyData(object):
         Returns:
             loaded datasets (DataSet-object)
         """
-        # loads from hdf5 formatted cellpy-file
+
         if not os.path.isfile(filename):
-            self.logger.warning("file does not exist")
-            self.logger.warning(filename)
-            sys.exit()
+            self.logger.info(r"file does not exist: {filename}")
+            raise IOError
         self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
 
