@@ -28,7 +28,6 @@ help:
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
-
 clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
@@ -49,6 +48,13 @@ clean-test: ## remove test and coverage artifacts
 lint: ## check style with flake8
 	flake8 cellpy tests
 
+dev-env: ## sets up a development environment
+	pip install -e .
+
+dist:  ## makes a distribution and uploads to PyPI
+	clean-build
+	python setup.py sdist
+	twine upload dist/*
 
 coverage: ## check code coverage quickly with the default Python
 	pytest --cov

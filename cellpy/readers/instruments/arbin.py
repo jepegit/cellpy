@@ -47,7 +47,6 @@ if not use_ado:
             warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
             dbloader = None
 
-
 # finding out some stuff about the platform
 is_posix = False
 is_macos = False
@@ -56,7 +55,6 @@ if os.name == "posix":
 plfrm = platform.system()
 if plfrm == "Darwin":
     is_macos = True
-
 
 # # Check if 64 bit python is used and give warning
 # if check64bit(System="python"):
@@ -74,6 +72,7 @@ TABLE_NAMES = {
 }
 
 
+# noinspection PyPep8Naming
 class ArbinLoader(Loader):
     """ Class for loading arbin-data from res-files."""
 
@@ -87,7 +86,6 @@ class ArbinLoader(Loader):
         self.logger = logging.getLogger(__name__)
         # use the following prm to limit to loading only one cycle or from cycle>x to cycle<x+n
         # prms.Reader["limit_loaded_cycles"] = [cycle from, cycle to]
-
 
         self.headers_normal = get_headers_normal()
         self.headers_global = self.get_headers_global()
@@ -634,6 +632,7 @@ class ArbinLoader(Loader):
     def _normal_table_generator(self, **kwargs):
         pass
 
+    # noinspection PyPep8Naming
     def _load_res_normal_table(self, conn, test_ID, bad_steps):
         # Note that this function is run each time you use the loader. This means that it is not ideal for
         # handling generators etc

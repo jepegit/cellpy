@@ -12,6 +12,7 @@ import warnings
 
 METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 
+
 # TODO: documentation and tests
 # TODO: fitting of o-c curves and differentiation
 # TODO: modeling and fitting
@@ -24,6 +25,7 @@ class Converter(object):
     Typical usage is to  (1) set the data,  (2) inspect the data, (3) pre-process the data,
     (4) perform the dq-dv transform, and finally (5) post-process the data.
     """
+
     def __init__(self):
         self.capacity = None
         self.voltage = None
@@ -146,8 +148,8 @@ class Converter(object):
         self.voltage_preprocessed = f(self.capacity_preprocessed)
 
         if self.pre_smoothing:
-            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_capacity/5))
-            savgol_filter_window_length = int(len_capacity/savgol_filter_window_divisor)
+            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_capacity / 5))
+            savgol_filter_window_length = int(len_capacity / savgol_filter_window_divisor)
 
             if savgol_filter_window_length % 2 == 0:
                 savgol_filter_window_length -= 1
@@ -198,8 +200,8 @@ class Converter(object):
 
         if self.post_smoothing:
             points_fwhm = int(self.voltage_fwhm / voltage_step)
-            sigma = np.amax([2, points_fwhm/2])
-            incremental_capacity = gaussian_filter1d(incremental_capacity,sigma=sigma,order=self.gaussian_order,
+            sigma = np.amax([2, points_fwhm / 2])
+            incremental_capacity = gaussian_filter1d(incremental_capacity, sigma=sigma, order=self.gaussian_order,
                                                      output=None, mode=self.gaussian_mode,
                                                      cval=self.gaussian_cval, truncate=self.gaussian_truncate)
 
@@ -257,7 +259,7 @@ def check_class_ica():
     print("looking at cycle %i" % cycle)
 
     # ---------- processing and plotting ----------------
-    fig, (ax1,ax2) = plt.subplots(2,1)
+    fig, (ax1, ax2) = plt.subplots(2, 1)
     capacity, voltage = cell.get_ccap(cycle)
     ax1.plot(capacity, voltage, "b.-", label="raw")
     converter = Converter()
@@ -279,6 +281,7 @@ def check_class_ica():
     ax2.set_xlabel("Voltage (V)")
     ax2.set_ylabel("dQ/dV (mAh/g/V)")
     plt.show()
+
 
 if __name__ == '__main__':
     check_class_ica()

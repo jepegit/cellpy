@@ -441,7 +441,7 @@ class reader(object):
                         if full_path:
                             filename = os.path.join(datadir, filename)
                         filenames.append(filename)
-            except:
+            except Exception:
                 if not non_sensitive:
                     print("error reading file_names-row (res)")
                     sys.exit(-1)
@@ -453,7 +453,7 @@ class reader(object):
                 else:
                     filename += ".h5"
                 filenames.append(filename)
-            except:
+            except Exception:
                 if not non_sensitive:
                     print("error reading file_names-row (hdf5)")
                     sys.exit(-1)

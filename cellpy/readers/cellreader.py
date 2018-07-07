@@ -22,12 +22,6 @@ Todo:
 
 """
 
-CELLPY_FILE_VERSION = 3
-MINIMUM_CELLPY_FILE_VERSION = 1
-STEP_TABLE_VERSION = 3
-NORMAL_TABLE_VERSION = 3
-SUMMARY_TABLE_VERSION = 3
-
 import os
 import sys
 import datetime
@@ -48,6 +42,12 @@ import cellpy.parameters.prms as prms
 from cellpy.errors import WrongFileVersion
 
 # import logging.config
+
+CELLPY_FILE_VERSION = 3
+MINIMUM_CELLPY_FILE_VERSION = 1
+STEP_TABLE_VERSION = 3
+NORMAL_TABLE_VERSION = 3
+SUMMARY_TABLE_VERSION = 3
 
 # TODO: fix chained assignments and performance warnings (comment below and fix)
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
@@ -183,10 +183,7 @@ def get_headers_step_table():
 def check64bit(System="python"):
     """checks if you are on a 64 bit platform"""
     if System == "python":
-        try:
-            return sys.maxsize > 2147483647
-        except:
-            return sys.maxsize > 2147483647
+        return sys.maxsize > 2147483647
     elif System == "os":
         import platform
         pm = platform.machine()
@@ -201,7 +198,7 @@ def check64bit(System="python"):
                 pass  # not Windows
             try:
                 return '64' in platform.architecture()[0]  # this often works in Linux
-            except:
+            except Exception:
                 return False  # is an older version of Python, assume also an older os (best we can guess)
 
 
@@ -479,7 +476,7 @@ class DataSet(object):
         txt += "schedule file name: %s\n" % self.schedule_file_name
         try:
             start_datetime_str = xldate_as_datetime(self.start_datetime)
-        except:
+        except Exception:
             start_datetime_str = "NOT READABLE YET"
         txt += "start-date:         %s\n" % start_datetime_str
 
@@ -832,7 +829,7 @@ class CellpyData(object):
         store = pd.HDFStore(filename)
         try:
             fidtable = store.select("CellpyData/fidtable")
-        except:
+        except Exception:
             self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable = None
         finally:
@@ -1243,14 +1240,14 @@ class CellpyData(object):
         try:
             data.step_table = store.select(parent_level + "/step_table")
             data.step_table_made = True
-        except:
+        except Exception:
             data.step_table = None
             data.step_table_made = False
         try:
             fidtable = store.select(
                 parent_level + "/fidtable")  # remark! changed spelling from lower letter to camel-case!
             fidtable_selected = True
-        except:
+        except Exception:
             fidtable = []
             self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable_selected = False
@@ -1296,7 +1293,7 @@ class CellpyData(object):
 
         try:
             data.step_table_made = self._extract_from_dict(infotable, "step_table_made")
-        except:  # not needed?
+        except Exception:  # not needed?
             data.step_table_made = None
         return data
 
@@ -1306,7 +1303,7 @@ class CellpyData(object):
             value = t[x].values
             if value:
                 value = value[0]
-        except:
+        except Exception:
             value = default_value
         return value
 
@@ -1386,10 +1383,10 @@ class CellpyData(object):
             fid.last_accessed = tbl["raw_data_last_accessed"][counter]
             fid.last_info_changed = tbl["raw_data_last_info_changed"][counter]
             fid.location = tbl["raw_data_location"][counter]
-            l = tbl["raw_data_files_length"][counter]
+            length = tbl["raw_data_files_length"][counter]
             counter += 1
             fids.append(fid)
-            lengths.append(l)
+            lengths.append(length)
         return fids, lengths
 
     def merge(self, datasets=None, separate_datasets=False):
@@ -1453,12 +1450,12 @@ class CellpyData(object):
             self_made_summary = True
             try:
                 test_it = t1.dfsummary[cycle_index_header]
-            except:
+            except Exception:
                 self_made_summary = False
                 # print "have not made a summary myself"
             try:
                 test_it = t2.dfsummary[cycle_index_header]
-            except:
+            except Exception:
                 self_made_summary = False
 
             if self_made_summary:
@@ -1968,7 +1965,6 @@ class CellpyData(object):
         #        print max_average_current
         #
 
-
         # - setting limits
         current_limit_value_hard = self.raw_limits["current_hard"]
         current_limit_value_soft = self.raw_limits["current_soft"]
@@ -2036,7 +2032,6 @@ class CellpyData(object):
         df_steps.loc[mask_voltage_stable & mask_current_positive & mask_current_down, step_table_txt_type] = 'cv_charge'
 
         # --- internal resistance ----
-        # df_steps.loc[mask_no_change & mask_ir_changed, step_table_txt_type] = 'ir' # assumes that IR is stored in just one row
         df_steps.loc[mask_no_change, step_table_txt_type] = 'ir'  # assumes that IR is stored in just one row
 
         # --- CV steps ----
@@ -2049,7 +2044,6 @@ class CellpyData(object):
         # "voltametry_discharge"
         # mask_discharge_changed
         # mask_voltage_down
-
 
         # test
         # outfile = r"C:\Scripting\MyFiles\dev_cellpy\tmp\test_new_steptable.csv"
@@ -2102,10 +2096,12 @@ class CellpyData(object):
                 if len(step) > 1:
                     for s in step:
                         c = self._select_step(cycle, s, dataset_number)
-                        if not self.is_empty(c): selected.append(c)
+                        if not self.is_empty(c):
+                            selected.append(c)
                 else:
                     c = self._select_step(cycle, step, dataset_number)
-                    if not self.is_empty(c): selected.append(c)
+                    if not self.is_empty(c):
+                        selected.append(c)
         else:
             first = True
             for cycle, step in list(step_dict.items()):
@@ -2173,7 +2169,8 @@ class CellpyData(object):
             step_dict[cycle] = [step]
         return step_dict
 
-    def _export_cycles(self, dataset_number, setname=None, sep=None, outname=None, shifted=False, method=None, shift=0.0):
+    def _export_cycles(self, dataset_number, setname=None, sep=None, outname=None, shifted=False, method=None,
+                       shift=0.0):
         # export voltage - capacity curves to .csv file
 
         self.logger.debug("exporting cycles")
@@ -2694,7 +2691,7 @@ class CellpyData(object):
 
     def get_cap(self, cycle=None, dataset_number=None,
                 method="back-and-forth",
-                shift=0.0,):
+                shift=0.0, ):
         """Gets the capacity for the run.
         For cycle=None: not implemented yet, cycle set to 1.
 
@@ -2719,7 +2716,7 @@ class CellpyData(object):
         if not cycle:
             cycle = self.get_cycle_numbers()
 
-        if not isinstance(cycle, (collections.Iterable, )):
+        if not isinstance(cycle, (collections.Iterable,)):
             cycle = [cycle]
 
         method = method.lower()
@@ -3117,7 +3114,7 @@ class CellpyData(object):
                     D_n2 = summarydata[discharge_txt][i + 1]
                     ric_dis_n = (C_n - C_n2) / C_n
                     ric_sei_n = (D_n2 - C_n) / C_n
-                except:
+                except Exception:
                     ric_dis_n = None
                     ric_sei_n = None
                     self.logger.debug("could not get i+1 (probably last point)")
@@ -3136,7 +3133,7 @@ class CellpyData(object):
                 RIC_sei_cum.append(ric_sei_cum)
                 RIC_cum.append(ric_cum)
 
-            except:
+            except Exception:
                 self.logger.debug("end of summary")
                 break
         if scaled is True:
@@ -3276,7 +3273,7 @@ class CellpyData(object):
                 dataset_number = -1
             elif dataset_number_txt.lower() in ["first", "zero", "beginning", "default"]:
                 dataset_number = 0
-        except:
+        except Exception:
             self.logger.debug("assuming numeric")
 
         number_of_tests = len(self.datasets)
@@ -3321,13 +3318,13 @@ class CellpyData(object):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             try:
                 if v.empty:
                     return True
                 else:
                     return False
-            except:
+            except Exception:
                 if v.isnull:
                     return False
                 else:
@@ -4164,7 +4161,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
             out_data.append(t)
             out_data.append(v)
 
-        except:
+        except Exception:
             print("could not extract cycle %i" % cycle)
 
     save_to_file = False

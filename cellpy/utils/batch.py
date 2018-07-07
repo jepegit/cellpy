@@ -175,6 +175,7 @@ def _extract_dqdv(cell_data, extract_func):
     for cycle in list_of_cycles:
         c, v = extract_func(cycle)
         try:
+            # noinspection PyPep8Naming
             v, dQ = dqdv(v, c)
             v = v.tolist()
             dQ = dQ.tolist()

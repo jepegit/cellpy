@@ -57,13 +57,13 @@ def setup():
         click.echo("[cellpy]  -> Trying to keep old configuration parameters...\n")
     try:
         save_prm_file(dst_file)
-    except:
+    except Exception:
         click.echo("[cellpy] Something went wrong! Could not write the file")
         click.echo("[cellpy] Trying to write a file called %s instead" % DEFAULT_FILENAME)
         try:
             userdir, dst_file = get_user_dir_and_dst(init_filename)
             save_prm_file(dst_file)
-        except:
+        except Exception:
             click.echo("[cellpy] No, that did not work either. Well, guess you have to talk to the developers.")
 
     click.echo("[cellpy] Directory path:\n")

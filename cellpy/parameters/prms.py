@@ -3,7 +3,6 @@
 import os
 import sys
 
-
 # class Parameter(object):
 #     """class for storing parameters"""
 #     def __init__(self, name, prm_dict):
@@ -40,13 +39,13 @@ Paths = {
     "db_path": cur_dir,
     "filelogdir": cur_dir,
     "db_filename": "cellpy_db.xlsx",
-    }
+}
 
 # --------------------------
 # FileNames
 # --------------------------
 FileNames = {
-    }
+}
 
 # --------------------------
 # Reader
@@ -67,7 +66,6 @@ Reader = {
     "auto_dirs": True,  # search in prm-file for res and hdf5 dirs in loadcell
 }
 
-
 # --------------------------
 # DataSet
 # --------------------------
@@ -85,31 +83,31 @@ Db = {
 # ExcelReader
 # --------------------------
 excel_db_cols = {"serial_number_position": 0,
-                    "exists": 3,
-                    "exists_txt": 4,
-                    "fileid": 17,
-                    "batch_no": 1,
-                    "batch": 2,
-                    "label": 13,
-                    "group": 14,
-                    "selected": 15,
-                    "cell_name": 16,
-                    "file_name_indicator": 17,
-                    "comment_slurry": 18,
-                    "finished_run": 19,
-                    "hd5f_fixed": 20,
-                    "LC": 27,
-                    "active_material": 35,
-                    "total_material": 39,
-                    "loading": 42,
-                    "general_comment": 47,
-}
+                 "exists": 3,
+                 "exists_txt": 4,
+                 "fileid": 17,
+                 "batch_no": 1,
+                 "batch": 2,
+                 "label": 13,
+                 "group": 14,
+                 "selected": 15,
+                 "cell_name": 16,
+                 "file_name_indicator": 17,
+                 "comment_slurry": 18,
+                 "finished_run": 19,
+                 "hd5f_fixed": 20,
+                 "LC": 27,
+                 "active_material": 35,
+                 "total_material": 39,
+                 "loading": 42,
+                 "general_comment": 47,
+                 }
 
 excel_db_filename_cols = {"serial_number_position": 0,
                           "serialno": 0,
                           "fileid": 1,
                           "files": 2,
-}
+                          }
 
 # --------------------------
 # Instruments
@@ -121,7 +119,6 @@ Instruments = {
     "chunk_size": None,
     "max_chunks": None,
 }
-
 
 # --------------------------
 # Materials
@@ -146,7 +143,6 @@ Batch = {
     "figure_type": "unlimited",
 }
 
-
 # --------------------------
 # Other non-config
 # --------------------------
@@ -161,5 +157,3 @@ _sfod = True
 # used during development for testing new features
 
 _res_chunk = 0
-
-

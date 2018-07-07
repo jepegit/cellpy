@@ -21,7 +21,6 @@ from cellpy.readers.cellreader import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 import cellpy.parameters.prms as prms
 
-
 OLE_TIME_ZERO = datetime.datetime(1899, 12, 30, 0, 0, 0)
 SEEK_SET = 0  # from start
 SEEK_CUR = 1  # from current position
@@ -167,7 +166,6 @@ class MprLoader(Loader):
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
-
 
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
@@ -366,7 +364,7 @@ class MprLoader(Loader):
         mpr_log["end2"] = log_module['end']
         mpr_log["offset2"] = log_module['offset']
         mpr_log["version2"] = log_module['version']
-        mpr_log["data"] = log_module['data']   # Not sure if I will ever need it, but just in case....
+        mpr_log["data"] = log_module['data']  # Not sure if I will ever need it, but just in case....
         self.mpr_log = mpr_log
         self._parse_mpr_log_data()
         self.mpr_data = mpr_data
@@ -423,7 +421,7 @@ class MprLoader(Loader):
         # should ideally use the info from bl_dtypes, will do that later
 
         self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
-        self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1,self.mpr_data.shape[0]+1,1)
+        self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1, self.mpr_data.shape[0] + 1, 1)
         self._generate_datetime()
         self._generate_cycle_index()
 
@@ -537,4 +535,3 @@ if __name__ == '__main__':
         print("NOT YET")
     finally:
         shutil.rmtree(temp_dir)
-

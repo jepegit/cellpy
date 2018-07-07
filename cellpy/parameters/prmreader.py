@@ -61,7 +61,6 @@ def _update_prms(config_dict):
         else:
             logger.info("\n  not-supported prm: %s" % key)
 
-
             # prms.Paths = config_dict["Paths"]
             #
             # config_dict = {
