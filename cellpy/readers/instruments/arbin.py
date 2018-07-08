@@ -234,7 +234,7 @@ class ArbinLoader(Loader):
         for data in run_data:
             new_cols = data.dfdata.columns
             for col in self.headers_normal:
-                if not col in new_cols:
+                if col not in new_cols:
                     data.dfdata[col] = np.nan
             checked_rundata.append(data)
         return checked_rundata

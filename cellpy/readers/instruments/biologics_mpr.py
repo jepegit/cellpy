@@ -12,7 +12,8 @@ import datetime
 import pandas as pd
 import numpy as np
 
-from cellpy.readers.instruments.biologic_file_format import bl_dtypes, hdr_dtype, mpr_label, bl_log_pos_dtype
+from cellpy.readers.instruments.biologic_file_format import bl_dtypes, \
+    hdr_dtype, mpr_label, bl_log_pos_dtype
 from cellpy.readers.cellreader import DataSet
 from cellpy.readers.cellreader import FileID
 from cellpy.readers.cellreader import humanize_bytes
@@ -40,8 +41,10 @@ def datetime2ole(dt):
 
 
 # The columns to choose if minimum selection is selected
-MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
-                     "Current", "Voltage", "Charge_Capacity", "Discharge_Capacity", "Internal_Resistance"]
+MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime",
+                     "Step_Index", "Cycle_Index",
+                     "Current", "Voltage", "Charge_Capacity",
+                     "Discharge_Capacity", "Internal_Resistance"]
 
 
 def _read_modules(fileobj):
@@ -231,7 +234,8 @@ class MprLoader(Loader):
     def _parse_mpr_log_data(self):
         for value in bl_log_pos_dtype:
             key, start, end, dtype = value
-            self.mpr_log[key] = np.fromstring(self.mpr_log["data"][start:], dtype=dtype, count=1)[0]
+            self.mpr_log[key] = \
+            np.fromstring(self.mpr_log["data"][start:], dtype=dtype, count=1)[0]
             if 'a' in dtype:
                 self.mpr_log[key] = self.mpr_log[key].decode('utf8')
 
@@ -286,7 +290,8 @@ class MprLoader(Loader):
         mpr_settings["end"] = settings_mod['end']
         mpr_settings["offset"] = settings_mod['offset']
         mpr_settings["version"] = settings_mod['version']
-        mpr_settings["data"] = settings_mod['data']  # Not sure if I will ever need it, but just in case....
+        mpr_settings["data"] = settings_mod[
+            'data']  # Not sure if I will ever need it, but just in case....
         self.mpr_settings = mpr_settings
         self._parse_mpr_settings_data()
 
@@ -310,12 +315,14 @@ class MprLoader(Loader):
             main_data = data_module['data'][100:]
 
         elif data_version == 2:
-            column_types = np.fromstring(data_module['data'][5:], dtype='<u2', count=n_columns)
+            column_types = np.fromstring(data_module['data'][5:], dtype='<u2',
+                                         count=n_columns)
             main_data = data_module['data'][405:]
             remaining_headers = data_module['data'][5 + 2 * n_columns:405]
 
         else:
-            raise ValueError("Unrecognised version for data module: %d" % data_version)
+            raise ValueError(
+                "Unrecognised version for data module: %d" % data_version)
 
         whats_left = remaining_headers.strip(b'\x00').decode("utf8")
         if whats_left:
@@ -329,8 +336,10 @@ class MprLoader(Loader):
 
         p = dtype.itemsize
         if not p == (len(main_data) / n_data_points):
-            self.logger.info("WARNING! You have defined %i bytes, but it seems it should be %i" % (p, len(main_data) /
-                                                                                                   n_data_points))
+            self.logger.info(
+                "WARNING! You have defined %i bytes, but it seems it should be %i" % (
+                p, len(main_data) /
+                n_data_points))
         bulk = main_data
         bulk_data = np.fromstring(bulk, dtype=dtype)
         mpr_data = pd.DataFrame(bulk_data)
@@ -355,17 +364,20 @@ class MprLoader(Loader):
         mpr_log["end2"] = log_module['end']
         mpr_log["offset2"] = log_module['offset']
         mpr_log["version2"] = log_module['version']
-        mpr_log["data"] = log_module['data']  # Not sure if I will ever need it, but just in case....
+        mpr_log["data"] = log_module[
+            'data']  # Not sure if I will ever need it, but just in case....
         self.mpr_log = mpr_log
         self._parse_mpr_log_data()
         self.mpr_data = mpr_data
 
     def _rename_header(self, h_old, h_new):
         try:
-            self.mpr_data.rename(columns={h_new: self.cellpy_headers[h_old]}, inplace=True)
+            self.mpr_data.rename(columns={h_new: self.cellpy_headers[h_old]},
+                                 inplace=True)
         except KeyError as e:
             # warnings.warn(f"KeyError {e}")
-            self.logger.info(f"Problem during conversion to cellpy-format ({e})")
+            self.logger.info(
+                f"Problem during conversion to cellpy-format ({e})")
 
     def _generate_cycle_index(self):
         # This function should generate the cycle index. This is version 0.
@@ -375,7 +387,8 @@ class MprLoader(Loader):
             cycle_index_col = self.mpr_data[biologics_header_txt]
             self._rename_header(cellpy_header_txt, biologics_header_txt)
         except KeyError:
-            self.logger.debug(f"The Biologics data does not contain the '{biologics_header_txt}' keyword")
+            self.logger.debug(
+                f"The Biologics data does not contain the '{biologics_header_txt}' keyword")
             self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = 1
 
     def _generate_datetime(self):
@@ -383,8 +396,9 @@ class MprLoader(Loader):
         start_datetime = self.mpr_log["Start"]
         cellpy_header_txt = "datetime_txt"
         date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
-        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] = [start_datetime + datetime.timedelta(seconds=n)
-                                                                 for n in self.mpr_data["time"].values]
+        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] = [
+            start_datetime + datetime.timedelta(seconds=n)
+            for n in self.mpr_data["time"].values]
         # self.mpr_data[self.cellpy_headers[cellpy_header_txt]].start_date.strftime(date_format)
         # TODO: currently storing as datetime object (while for arbindata it is stored as str)
 
@@ -405,14 +419,19 @@ class MprLoader(Loader):
 
     def _generate_capacities(self):
         cap_col = self.mpr_data["QChargeDischarge"]
-        self.mpr_data[self.cellpy_headers["discharge_capacity_txt"]] = [0.0 if x < 0 else x for x in cap_col]
-        self.mpr_data[self.cellpy_headers["charge_capacity_txt"]] = [0.0 if x >= 0 else x for x in cap_col]
+        self.mpr_data[self.cellpy_headers["discharge_capacity_txt"]] = [
+            0.0 if x < 0 else x for x in cap_col]
+        self.mpr_data[self.cellpy_headers["charge_capacity_txt"]] = [
+            0.0 if x >= 0 else x for x in cap_col]
 
     def _rename_headers(self):
         # should ideally use the info from bl_dtypes, will do that later
 
         self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
-        self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1, self.mpr_data.shape[0] + 1, 1)
+        self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1,
+                                                                         self.mpr_data.shape[
+                                                                             0] + 1,
+                                                                         1)
         self._generate_datetime()
         self._generate_cycle_index()
 
@@ -431,7 +450,8 @@ class MprLoader(Loader):
         self._rename_header("ref_aci_phase_angle_txt", "phaseZce")
         self._rename_header("test_time_txt", "time")
 
-        self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[self.cellpy_headers["step_index_txt"]]
+        self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = \
+        self.mpr_data[self.cellpy_headers["step_index_txt"]]
 
     def _create_summary_data(self):
         # Summary data should contain datapoint-number for last point in the cycle. It must also contain
@@ -440,7 +460,8 @@ class MprLoader(Loader):
         mpr_log = self.mpr_log
         mpr_settings = self.mpr_settings
         # TODO: @jepe - finalise making summary of mpr-files after figuring out steps etc
-        warnings.warn("Creating summary data for biologics mpr-files is not implemented yet")
+        warnings.warn(
+            "Creating summary data for biologics mpr-files is not implemented yet")
         self.logger.info(mpr_settings)
         self.logger.info(mpr_log)
         start_date = mpr_settings["start_date"]
@@ -461,7 +482,8 @@ class MprLoader(Loader):
             try:
                 os.remove(tmp_filename)
             except WindowsError as e:
-                self.logger.warning("could not remove tmp-file\n%s %s" % (tmp_filename, e))
+                self.logger.warning(
+                    "could not remove tmp-file\n%s %s" % (tmp_filename, e))
         pass
 
 
@@ -477,8 +499,10 @@ if __name__ == '__main__':
     # relative_test_data_dir = "../cellpy/data_ex"
     relative_test_data_dir = "../../../testdata"
     relative_out_data_dir = "../../../dev_data"
-    test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-    test_data_dir_out = os.path.abspath(os.path.join(current_file_path, relative_out_data_dir))
+    test_data_dir = os.path.abspath(
+        os.path.join(current_file_path, relative_test_data_dir))
+    test_data_dir_out = os.path.abspath(
+        os.path.join(current_file_path, relative_out_data_dir))
     test_data_dir_raw = os.path.join(test_data_dir, "data")
     if not os.path.isdir(test_data_dir_raw):
         print(f"Could not find {test_data_dir_raw}")
@@ -497,7 +521,8 @@ if __name__ == '__main__':
     test_cellpy_file = "geis.h5"
     test_cellpy_file_tmp = "tmpfile.h5"
     test_cellpy_file_full = os.path.join(test_data_dir_cellpy, test_cellpy_file)
-    test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy, test_cellpy_file_tmp)
+    test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,
+                                             test_cellpy_file_tmp)
 
     raw_file_name = test_raw_file_full
     print("\n======================mpr-dev===========================")
