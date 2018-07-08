@@ -24,13 +24,13 @@ def db_reader():
     prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
     prms.Paths["db_path"] = fdv.db_dir
     prms.Paths["db_filename"] = fdv.db_file_name
-    return dbreader.reader()
+    return dbreader.Reader()
 
 
 @pytest.fixture
 def clean_db_reader():  # remove this?
     from cellpy import dbreader
-    return dbreader.reader()
+    return dbreader.Reader()
 
 
 def test_filter_select_col_numbers_true_false(db_reader):

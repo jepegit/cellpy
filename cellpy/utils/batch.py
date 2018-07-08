@@ -176,9 +176,9 @@ def _extract_dqdv(cell_data, extract_func):
         c, v = extract_func(cycle)
         try:
             # noinspection PyPep8Naming
-            v, dQ = dqdv(v, c)
+            v, dq = dqdv(v, c)
             v = v.tolist()
-            dQ = dQ.tolist()
+            dq = dq.tolist()
         except IndexError or OverflowError as e:
             error_in_dqdv = True
             v = list()
@@ -188,11 +188,11 @@ def _extract_dqdv(cell_data, extract_func):
 
         header_x = "dQ cycle_no %i" % cycle
         header_y = "voltage cycle_no %i" % cycle
-        dQ.insert(0, header_x)
+        dq.insert(0, header_x)
         v.insert(0, header_y)
 
         out_data.append(v)
-        out_data.append(dQ)
+        out_data.append(dq)
     return out_data
 
 
@@ -756,7 +756,7 @@ def get_db_reader(db_type):
 
     """
     if db_type == "simple_excel_reader":
-        return dbreader.reader
+        return dbreader.Reader
     else:
         raise NotImplementedError
 
@@ -1267,8 +1267,8 @@ def debugging():
 
 
 def main():
-    LOAD_JSON = False
-    if not LOAD_JSON:
+    load_json = False
+    if not load_json:
         print("Running batch.py (loading from db)")
         b = init("bec_exp06", "CellpyTest", default_log_level="DEBUG", reader="excel", me="Jan Petter")
         b.selected_summaries.extend(

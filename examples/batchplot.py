@@ -7,7 +7,7 @@ from cellpy import cellreader, dbreader, prmreader, filefinder
 
 print "UNDER DEVELOPMENT"
 
-excel_reader = dbreader.reader()
+excel_reader = dbreader.Reader()
 b_name = "e002_screen_printed"
 serial_numbers = excel_reader.select_batch(b_name,5)
 print " - serial_numbers: "

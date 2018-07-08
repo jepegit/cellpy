@@ -19,7 +19,7 @@ import cellpy.parameters.prms as prms
 
 # Select odbc module
 ODBC = prms._odbc
-SEARCH_FOR_ODBC_DRIVERS = prms._sfod
+SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 try:
     DRIVER = prms.odbc_driver
 except AttributeError:
@@ -52,8 +52,8 @@ is_posix = False
 is_macos = False
 if os.name == "posix":
     is_posix = True
-plfrm = platform.system()
-if plfrm == "Darwin":
+current_platform = platform.system()
+if current_platform == "Darwin":
     is_macos = True
 
 # # Check if 64 bit python is used and give warning
@@ -166,7 +166,7 @@ class ArbinLoader(Loader):
     def __get_res_connector(self, temp_filename):
 
         if use_ado:
-            is64bit_python = check64bit(System="python")
+            is64bit_python = check64bit(current_system="python")
             if is64bit_python:
                 constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
             else:
@@ -189,7 +189,7 @@ class ArbinLoader(Loader):
             self.logger.debug("odbc constr: {}".format(driver))
 
         else:
-            is64bit_python = check64bit(System="python")
+            is64bit_python = check64bit(current_system="python")
             if is64bit_python:
                 driver = '{Microsoft Access Driver (*.mdb, *.accdb)}'
             else:
@@ -549,7 +549,7 @@ class ArbinLoader(Loader):
             if is_macos:
                 self.logger.debug("\nMAC OSX USING MDBTOOLS")
             else:
-                self.logger.debug("\nPOSIX USING MBDTOOLS")
+                self.logger.debug("\nPOSIX USING MDBTOOLS")
 
             # creating tmp-filenames
             temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
@@ -557,10 +557,8 @@ class ArbinLoader(Loader):
             temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
 
             # making the cmds
-            mdb_prms = []
-            mdb_prms.append((table_name_global, temp_csv_filename_global))
-            mdb_prms.append((table_name_normal, temp_csv_filename_normal))
-            mdb_prms.append((table_name_stats, temp_csv_filename_stats))
+            mdb_prms = [(table_name_global, temp_csv_filename_global), (table_name_normal, temp_csv_filename_normal),
+                        (table_name_stats, temp_csv_filename_stats)]
 
             # executing cmds
             for table_name, tmp_file in mdb_prms:
@@ -603,8 +601,6 @@ class ArbinLoader(Loader):
                 summary_df = pd.read_sql_query(sql, conn)
                 self._clean_up_loadres(None, conn, temp_filename)
             else:
-
-                data.test_ID
                 normal_df = pd.read_csv(temp_csv_filename_normal)
                 # filter on test ID
                 normal_df = normal_df[normal_df[self.headers_normal['test_id_txt']] == data.test_ID]
@@ -711,14 +707,6 @@ class ArbinLoader(Loader):
             self.logger.debug("finished iterating (#rows: %i)", length_of_test)
 
         return length_of_test, normal_df
-
-
-def lp_resf(filename):
-    """Load a raw data file """
-    print("1")
-    a = ArbinLoader()
-    a.load(filename)
-    print("2")
 
 
 if __name__ == '__main__':

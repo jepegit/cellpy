@@ -249,9 +249,9 @@ class OcvFit(object):
     def reset_weights(self):
         self.weights = None
 
-    def set_weights_power_law(self, prefactor=1, power=-2, zeroLevel=1):
+    def set_weights_power_law(self, prefactor=1, power=-2, zero_level=1):
         if self.voltage is not None:
-            self.weights = [prefactor * pow(time + 1, power) + zeroLevel for time in self.time]
+            self.weights = [prefactor * pow(time + 1, power) + zero_level for time in self.time]
         else:
             raise NotImplementedError('Data is not set. Set data using set_data().')
 
@@ -331,7 +331,7 @@ class OcvFit(object):
         result_dict['ocv'] = self.best_fit_parameters['ocv']
         result_dict['ir'] = -((self.best_fit_parameters['ocv'] + self.best_fit_parameters['w0']
                                + self.best_fit_parameters['w1'] + self.best_fit_parameters['w2']
-                               + self.best_fit_parameters['w3'] + self.best_fit_parameters['w4']) \
+                               + self.best_fit_parameters['w3'] + self.best_fit_parameters['w4'])
                               - self.zero_voltage) / self.zero_current
 
         for i in range(self.circuits):

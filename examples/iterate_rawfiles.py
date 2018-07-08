@@ -86,7 +86,7 @@ for k in summary_columns:
     summary_dict[k] = []
 
 # -----------defining folders----------------------------
-prms = prmreader.read() # TODO: remove this
+prms = prmreader.Read() # TODO: remove this
 db_path = prms.db_path
 outdatadir = prms.outdatadir
 filelogdir = prms.filelogdir
@@ -94,7 +94,7 @@ cellpydatadir = prms.cellpydatadir
 rawdatadir = prms.rawdatadir
 
 # -----------selecting runs------------------------------
-excel_reader = dbreader.reader()
+excel_reader = dbreader.Reader()
 db_table = excel_reader.table
 # db_table is a DataFrame where we can use ordinary pandas stuff to select
 # the wanted srnos

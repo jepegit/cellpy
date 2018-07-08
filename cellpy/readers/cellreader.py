@@ -25,23 +25,16 @@ Todo:
 import os
 import sys
 import datetime
-# import types
 import collections
-# import time
 import warnings
 import csv
 import itertools
-# import cProfile
-# import pstats
-# import StringIO
 from scipy import interpolate
 import numpy as np
 import pandas as pd
 import logging
 import cellpy.parameters.prms as prms
 from cellpy.errors import WrongFileVersion
-
-# import logging.config
 
 CELLPY_FILE_VERSION = 3
 MINIMUM_CELLPY_FILE_VERSION = 1
@@ -124,7 +117,7 @@ def get_headers_normal():
     headers_normal['current_txt'] = 'Current'
     headers_normal['cycle_index_txt'] = 'Cycle_Index'
     headers_normal['data_point_txt'] = 'Data_Point'
-    headers_normal['datetime_txt'] = 'DateTime'  # The only header that uses camel case.. hmmm...
+    headers_normal['datetime_txt'] = 'DateTime'  # The only header that uses camel case...
     headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
     headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
     headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
@@ -180,11 +173,11 @@ def get_headers_step_table():
     return headers_step_table
 
 
-def check64bit(System="python"):
+def check64bit(current_system="python"):
     """checks if you are on a 64 bit platform"""
-    if System == "python":
+    if current_system == "python":
         return sys.maxsize > 2147483647
-    elif System == "os":
+    elif current_system == "os":
         import platform
         pm = platform.machine()
         if pm != ".." and pm.endswith('64'):  # recent Python (not Iron)
@@ -285,7 +278,7 @@ def Convert2mAhg(c, mass=1.0):
 
     Args:
         c (float or numpy array): capacity in mA.
-        mass (float): cmass in mg.
+        mass (float): mass in mg.
 
     Returns:
         float: 1000000 * c / mass
@@ -340,11 +333,11 @@ class FileID(object):
         txt += "full name: %s\n" % self.full_name
         txt += "name: %s\n" % self.name
         if self.last_modified is not None:
-            txt += "modified: %i\n" % self.last_modified
+            txt += f"modified: {self.last_modified}\n"
         else:
             txt += "modified: NAN\n"
         if self.size is not None:
-            txt += "size: %i\n" % int(self.size)
+            txt += "size: {self.size}\n"
         else:
             txt += "size: NAN\n"
         return txt
@@ -423,8 +416,6 @@ class DataSet(object):
         self.loaded_from = None  # name of the .res file it is loaded from (can be list if merged)
         self.raw_data_files = []
         self.raw_data_files_length = []
-        # self.parent_filename = None # name of the .res file it is loaded from (basename) (can be list if merded)
-        # self.parent_filename = if listtype, for file in etc,,, os.path.basename(self.loaded_from)
         self.channel_index = None
         self.channel_number = None
         self.creator = None
@@ -465,20 +456,21 @@ class DataSet(object):
             txt += self.loaded_from
             txt += "\n"
         txt += "   GLOBAL\n"
-        txt += "test ID:            %i\n" % self.test_ID
-        txt += "material:           %s\n" % self.material
-        txt += "mass (active):      %f mg\n" % self.mass
-        txt += "mass (total):       %f mg\n" % self.tot_mass
-        txt += "nominal capacity:   %f mAh/g\n" % self.nom_cap
-        txt += "channel index:      %i\n" % self.channel_index
-        txt += "DataSet name:       %s\n" % self.name
-        txt += "creator:            %s\n" % self.creator
-        txt += "schedule file name: %s\n" % self.schedule_file_name
+        txt += f"material:            {self.material}\n"
+        txt += f"mass (active):       {self.mass}\n"
+        txt += f"test ID:             {self.test_ID}\n"
+        txt += f"mass (total):        {self.tot_mass}\n"
+        txt += f"nominal capacity:    {self.nom_cap}\n"
+        txt += f"channel index:       {self.channel_index}\n"
+        txt += f"DataSet name:        {self.name}\n"
+        txt += f"creator:             {self.creator}\n"
+        txt += f"schedule file name:  {self.schedule_file_name}\n"
+
         try:
             start_datetime_str = xldate_as_datetime(self.start_datetime)
         except Exception:
             start_datetime_str = "NOT READABLE YET"
-        txt += "start-date:         %s\n" % start_datetime_str
+        txt += f"start-date:         {start_datetime_str}\n"
 
         txt += "   DATA:\n"
         try:
@@ -519,7 +511,7 @@ class CellpyData(object):
                  selected_scans=None,
                  profile=False,
                  filestatuschecker=None,  # "modified"
-                 fetch_onliners=False,
+                 fetch_one_liners=False,
                  tester=None,
                  ):
         """
@@ -844,8 +836,8 @@ class CellpyData(object):
                 size = fid.size
                 mod = fid.last_modified
                 txt = "\nfileID information\nfull name: %s\n" % full_name
-                txt += "modified: %i\n" % mod
-                txt += "size: %i\n" % size
+                txt += f"modified: {mod}\n"
+                txt += "size: {size}\n"
                 self.logger.debug(txt)
                 if strip_filenames:
                     name = os.path.basename(full_name)
@@ -864,9 +856,6 @@ class CellpyData(object):
 
     @staticmethod
     def _compare_ids(ids_res, ids_cellpy_file):
-        # Check if the ids are "the same", i.e. if the ids indicates wether new
-        # data is likely to be found in the res-files checking length
-
         similar = True
         l_res = len(ids_res)
         l_cellpy = len(ids_cellpy_file)
@@ -1528,7 +1517,7 @@ class CellpyData(object):
         else:
             return v
 
-    def _validata_step_table(self, dataset_number=None, simple=False):
+    def _validate_step_table(self, dataset_number=None, simple=False):
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -3973,7 +3962,7 @@ def just_load_srno(srno, prm_filename=None):
     print()
     print("just_load_srno: starting to load reader")
     # reader = dbreader.reader(prm_filename)
-    reader = dbreader.reader()
+    reader = dbreader.Reader()
     print("------ok------")
 
     run_name = reader.get_cell_name(srno)

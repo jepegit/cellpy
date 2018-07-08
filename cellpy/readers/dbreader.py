@@ -56,7 +56,7 @@ def _export_to_csv(sheet=None):
                 writer.writerow(row)
 
 
-class reader(object):
+class Reader(object):
     def __init__(self, db_file=None,
                  db_datadir=None,
                  db_datadir_processed=None,
@@ -213,7 +213,6 @@ class reader(object):
         sheet = self.table
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
         col_serial_number_position = sheet.iloc[:, column_number_serial_number_position]
-        # col_serial_number_position = sheet.ix[:,column_number_serial_number_position] # decrp
         return sheet[col_serial_number_position == serial_number]
 
     def print_serial_number_info(self, serial_number, print_to_screen=True):
@@ -304,7 +303,7 @@ class reader(object):
                             min_val=None, max_val=None):
         """filters sheet/table by column.
 
-        The routine returns the serialnos with min_val <= values >= max_val in the selected
+        The routine returns the serial-numbers with min_val <= values >= max_val in the selected
         column.
 
         Args:
@@ -368,7 +367,7 @@ class reader(object):
         Args:
             serialno (int): serial number
             full_path (bool): return filename(s) with full path if True
-            non_sensitive (bool): dont stop even if file names are missing if True
+            non_sensitive (bool): don´t stop even if file names are missing if True
 
         Returns:
             list of file_names
@@ -383,7 +382,7 @@ class reader(object):
         Args:
             serialno (int): serial number
             full_path (bool): return filename(s) with full path if True
-            non_sensitive (bool): dont stop even if file names are missing if True
+            non_sensitive (bool): don´t stop even if file names are missing if True
 
         Returns:
             [filename]
@@ -402,7 +401,7 @@ class reader(object):
             full_path (bool): return filename(s) with full path if True.
             use_hdf5 (bool): if True, return hdf5 filename if it exists (existence is checked
                              only in the db).
-            non_sensitive (bool): dont stop even if file names are missing if True.
+            non_sensitive (bool): do not stop even if file names are missing if True.
             only_hdf5 (bool): return hdf5 filename if True.
 
         Returns:
@@ -569,17 +568,17 @@ class reader(object):
         return serial_numbers
 
     @staticmethod
-    def substract(list1, list2):
+    def subtract(list1, list2):
         list1 = set(list1)
         list2 = set(list2)
         serial_numbers = set.difference(list1, list2)
         return serial_numbers
 
     @staticmethod
-    def substract_many(list1, lists):
-        slists = [set(a) for a in lists]
+    def subtract_many(list1, lists):
+        list_of_sets = [set(a) for a in lists]
         list1 = set(list1)
-        serial_numbers = set.difference(list1, *slists)
+        serial_numbers = set.difference(list1, *list_of_sets)
         return serial_numbers
 
     @staticmethod
@@ -627,8 +626,8 @@ def _investigate_excel_dbreader_0():
     print(sys.argv[0])
     t0 = time.time()
     print("t0: %f" % t0)
-    Reader = reader()
-    Reader.print_serial_number_info(12)
+    r = Reader()
+    r.print_serial_number_info(12)
 
 
 def _investigate_excel_dbreader_1():
@@ -636,15 +635,15 @@ def _investigate_excel_dbreader_1():
     print(sys.argv[0])
     t0 = time.time()
     print("t0: %f" % t0)
-    Reader = reader()
-    serial_numbers = Reader.get_all()
+    r = Reader()
+    serial_numbers = r.get_all()
     print("dt: %f" % (time.time() - t0))
     for j in serial_numbers:
         print()
         print("checking file", end=' ')
         print(j)
         print("Filenames:")
-        filenames = Reader.get_filenames(j)
+        filenames = r.get_filenames(j)
         for fi in filenames:
             print(fi)
     print("dt: %f" % (time.time() - t0))
@@ -654,19 +653,19 @@ def _investigate_excel_dbreader_1():
 def _investigate_excel_dbreader_2():
     """Used for testing"""
     print(sys.argv[0])
-    Reader = reader()
+    r = Reader()
     print("testing filtering")
-    column_numbers = [Reader.db_sheet_cols.FEC, Reader.db_sheet_cols.VC]
+    column_numbers = [r.db_sheet_cols.FEC, r.db_sheet_cols.VC]
     # column_numbers.append(reader.db_sheet_cols.LS)
-    o = Reader.filter_by_col(column_numbers)
+    o = r.filter_by_col(column_numbers)
     print(o)
     print("testing selecting batch")
-    batch_col = Reader.db_sheet_cols.b01
+    batch_col = r.db_sheet_cols.b01
     batch = "my best"
-    a = Reader.select_batch(batch, batch_col)
+    a = r.select_batch(batch, batch_col)
     print(a)
     batch = "l1"
-    a = Reader.select_batch(batch)
+    a = r.select_batch(batch)
     print(a)
     print("finished")
 
@@ -676,19 +675,19 @@ def _investigate_excel_dbreader_3():
     print("STARTING")
     print(sys.argv[0])
     t0 = time.time()
-    Reader = reader()
+    r = Reader()
     dt1 = time.time() - t0
     print("first lets filter the db")
     print("testing filtering")
-    column_numbers = [Reader.db_sheet_cols.FEC, Reader.db_sheet_cols.VC]
+    column_numbers = [r.db_sheet_cols.FEC, r.db_sheet_cols.VC]
     # column_numbers.append(reader.db_sheet_cols.LS)
-    o = Reader.filter_by_col(column_numbers)
+    o = r.filter_by_col(column_numbers)
     print(o)
     print("testing selecting batch")
-    batch_col = Reader.db_sheet_cols.b01
+    batch_col = r.db_sheet_cols.b01
     batch = "buffer_ss_x"
     # batch = 12
-    a = Reader.select_batch(batch, batch_col)
+    a = r.select_batch(batch, batch_col)
     print(a)
     print("\nselecting the first serial_number")
     serial_number = a[0]
@@ -696,15 +695,15 @@ def _investigate_excel_dbreader_3():
     print("testing picking info")
     print("\nfirst give me the file_names for serial_number", end=' ')
     print(serial_number)
-    filenames = Reader.get_filenames(serial_number)
+    filenames = r.get_filenames(serial_number)
     for filename in filenames:
         print(filename)
     print("\nthen print all info for serial_number", end=' ')
     print(serial_number)
-    Reader.print_serial_number_info(serial_number)
+    r.print_serial_number_info(serial_number)
     print("\nNow I want to get the mass for serial_number", end=' ')
     print(serial_number)
-    mass = Reader.get_mass(serial_number)
+    mass = r.get_mass(serial_number)
     print(mass, end=' ')
     print("mg")
     dt2 = time.time() - t0
@@ -718,100 +717,100 @@ def _investigate_excel_dbreader_4():
     print("STARTING")
     print(sys.argv[0])
     t0 = time.time()
-    Reader = reader()
+    r = Reader()
     serial_number = 340
     print("inspect_finished", end=' ')
-    print(Reader.inspect_finished(serial_number))
-    if Reader.inspect_finished(serial_number):
+    print(r.inspect_finished(serial_number))
+    if r.inspect_finished(serial_number):
         print("True")
     else:
         print("False")
 
     print("inspect_hd5f_exists", end=' ')
-    print(Reader.inspect_hd5f_exists(serial_number))
-    if Reader.inspect_hd5f_exists(serial_number):
+    print(r.inspect_hd5f_exists(serial_number))
+    if r.inspect_hd5f_exists(serial_number):
         print("True")
     else:
         print("False")
 
     print("inspect_exists", end=' ')
-    print(Reader.inspect_exists(serial_number))
-    if Reader.inspect_exists(serial_number):
+    print(r.inspect_exists(serial_number))
+    if r.inspect_exists(serial_number):
         print("True")
     else:
         print("False")
 
     print("get_comment", end=' ')
-    print(Reader.get_comment(serial_number))
+    print(r.get_comment(serial_number))
 
     print("get_loading", end=' ')
-    print(Reader.get_loading(serial_number), end=' ')
+    print(r.get_loading(serial_number), end=' ')
     print("mg/cm2")
 
     print("get_mass", end=' ')
-    print(Reader.get_mass(serial_number), end=' ')
+    print(r.get_mass(serial_number), end=' ')
     print("mg")
 
     print("get_total_mass", end=' ')
-    print(Reader.get_total_mass(serial_number), end=' ')
+    print(r.get_total_mass(serial_number), end=' ')
     print("mg")
 
     print("get_fileid", end=' ')
-    print(Reader.get_fileid(serial_number))
+    print(r.get_fileid(serial_number))
 
     print("get_label", end=' ')
-    print(Reader.get_label(serial_number))
+    print(r.get_label(serial_number))
 
 
 def _investigate_excel_dbreader_5():
     """Used for testing"""
     print("STARTING (test filter_by_slurry)")
     print(sys.argv[0])
-    Reader = reader()
+    r = Reader()
     slurries = ["es030", "es031"]
-    serial_numbers = Reader.filter_by_slurry(slurries)
+    serial_numbers = r.filter_by_slurry(slurries)
     print("serial_number  cell_name    loading(mg/cm2)")
 
     for serial_number in serial_numbers:
         print(serial_number, end=' ')
-        print(Reader.get_cell_name(serial_number), end=' ')
-        print(Reader.get_loading(serial_number))
+        print(r.get_cell_name(serial_number), end=' ')
+        print(r.get_loading(serial_number))
 
 
 def _investigate_excel_dbreader_6():
     """Used for testing"""
     print("STARTING  (test filter_by_col_value)")
     print(sys.argv[0])
-    Reader = reader()
+    r = Reader()
     n = 6
     col_no = 36 + n
     min_val = None
     max_val = 0.5
-    serial_numbers = Reader.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
+    serial_numbers = r.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
     print()
     print("filtering within (%s - %s)" % (str(min_val), str(max_val)))
     print("serial_number  cell_name    loading(mg/cm2)")
     for serial_number in serial_numbers:
         print(serial_number, end=' ')
-        print(Reader.get_cell_name(serial_number), end=' ')
-        print(Reader.get_loading(serial_number))
+        print(r.get_cell_name(serial_number), end=' ')
+        print(r.get_loading(serial_number))
 
 
 def _investigate_excel_dbreader_7():
     """Used for testing"""
     print("STARTING  (test mixed filtering)")
     print(sys.argv[0])
-    Reader = reader()
+    r = Reader()
     n = 6
     col_no = 36 + n  # should be loading (30.10.2014)
     print("using col_no %i for finding loading" % col_no)
     min_val = None
     max_val = 0.7
 
-    serial_numbers1 = Reader.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
+    serial_numbers1 = r.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
 
     slurries = ["es030", "es031"]
-    serial_numbers2 = Reader.filter_by_slurry(slurries)
+    serial_numbers2 = r.filter_by_slurry(slurries)
 
     print()
     print(serial_numbers1)
@@ -832,8 +831,8 @@ def _investigate_excel_dbreader_7():
     print("serial_number  cell_name    loading(mg/cm2)")
     for serial_number in serial_numbers:
         print(serial_number, end=' ')
-        print(Reader.get_cell_name(serial_number), end=' ')
-        print(Reader.get_loading(serial_number))
+        print(r.get_cell_name(serial_number), end=' ')
+        print(r.get_loading(serial_number))
 
 
 def _investigate_excel_dbreader_8():
@@ -841,19 +840,17 @@ def _investigate_excel_dbreader_8():
     print("STARTING  (test print serial_number info)")
 
     print(sys.argv[0])
-    Reader = reader()
+    r = Reader()
     print("path", end=' ')
-    print(Reader.db_path)
-    print(Reader.db_filename)
-    print(Reader.db_file)
+    print(r.db_path)
+    print(r.db_filename)
+    print(r.db_file)
 
     serial_number = 620
     print("printing")
-    Reader.print_serial_number_info(serial_number)
+    r.print_serial_number_info(serial_number)
 
 
 if __name__ == "__main__":
-    import time
     from pylab import *
-
     _investigate_excel_dbreader_8()

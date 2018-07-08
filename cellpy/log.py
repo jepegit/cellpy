@@ -60,12 +60,6 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
             default_level = logging.INFO
         logging.basicConfig(level=default_level)
 
-        # if custom_log_dir:
-        #     log = logging.getLogger()  # root logger
-        #     for hdlr in log.handlers[:]:  # remove all old handlers
-        #         log.removeHandler(hdlr)
-        #     log.addHandler(fileh)
-
 
 if __name__ == '__main__':
     setup_logging()

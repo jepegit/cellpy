@@ -210,16 +210,7 @@ class MprLoader(Loader):
         self.logger.debug(f"length of test: {length_of_test}")
 
         print("----------trying-to-rename-cols--------------------")
-        # >>>>>>>>>>>>>>>> REMOVE ======================================
-        # tname = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\before_renaming_headers.xxx"
-        # self.__raw_export(tname, self.mpr_data)
-        # ====================================== <<<<<<<<<<<<<<<<<<<<<<<
         self._rename_headers()
-        # tname_new = r"C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\after_renaming_headers.xxx"
-        # # >>>>>>>>>>>>>>>> REMOVE ======================================
-        # self.__raw_export(tname_new, self.mpr_data)
-        # # ====================================== <<<<<<<<<<<<<<<<<<<<<<<
-
         # ---------  stats-data (summary-data) -------------------------
         summary_df = self._create_summary_data()
 
@@ -508,15 +499,15 @@ if __name__ == '__main__':
     test_cellpy_file_full = os.path.join(test_data_dir_cellpy, test_cellpy_file)
     test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy, test_cellpy_file_tmp)
 
-    file_name = test_raw_file_full
+    raw_file_name = test_raw_file_full
     print("\n======================mpr-dev===========================")
-    print(f"Test-file: {file_name}")
+    print(f"Test-file: {raw_file_name}")
     log.setup_logging(default_level="DEBUG")
     instrument = "biologics_mpr"
     cellpy_data_instance = cellreader.CellpyData()
     cellpy_data_instance.set_instrument(instrument=instrument)
     print("starting to load the file")
-    cellpy_data_instance.from_raw(file_name)
+    cellpy_data_instance.from_raw(raw_file_name)
     print("printing cellpy instance:")
     print(cellpy_data_instance)
 

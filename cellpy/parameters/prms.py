@@ -152,7 +152,7 @@ _prm_default_name = "_cellpy_prms_default.conf"
 _prm_globtxt = "_cellpy_prms*.conf"
 _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
-_sfod = True
+_search_for_odbc_driver = True
 
 # used during development for testing new features
 
