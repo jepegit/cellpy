@@ -51,7 +51,8 @@ def _export_to_csv(sheet=None):
             writer.writerow(header)
 
             for row_idx in range(1, sheet.nrows):
-                row = [int(cell.value) if isinstance(cell.value, float) else cell.value
+                row = [int(cell.value) if isinstance(cell.value,
+                                                     float) else cell.value
                        for cell in sheet.row(row_idx)]
                 writer.writerow(row)
 
@@ -63,7 +64,8 @@ class Reader(object):
                  prm_file=None,
                  test_mode=False):
         if prm_file is not None:
-            warnings.warn("reading prm file inside db_reader is not allowed anymore\n")
+            warnings.warn(
+                "reading prm file inside db_reader is not allowed anymore\n")
             # prms = prmreader.read(prm_file)
 
         if not db_file:
@@ -95,7 +97,6 @@ class Reader(object):
 
         if not test_mode:
             self.table = self._open_sheet("table", dtypes_dict=dtypes_dict)
-            # self.ftable = self._open_sheet("file_names") # will be removed soon!
         else:
             print("in test-mode")
             t0 = time.time()
@@ -149,9 +150,12 @@ class Reader(object):
         shutil.copy2(self.db_file, temp_dir)
 
         work_book = pd.ExcelFile(tmp_db_file)
-        print("* %f work_book = pd.ExcelFile(self.db_file)..." % (time.time() - t0))
+        print("* %f work_book = pd.ExcelFile(self.db_file)..." % (
+                time.time() - t0))
         sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
-        print("* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (time.time() - t0))
+        print(
+            "* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (
+                    time.time() - t0))
         # if self.remove_row:
         #     remove_index = sheet.index[self.remove_row]
         #     sheet = sheet.drop(remove_index)
@@ -179,7 +183,8 @@ class Reader(object):
         rows_to_skip = self.skiprows
 
         work_book = pd.ExcelFile(self.db_file)
-        sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip, dtype=dtypes_dict)
+        sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip,
+                                dtype=dtypes_dict)
         return sheet
 
     def _validate(self):
@@ -193,10 +198,13 @@ class Reader(object):
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
 
         # check if you have unique srnos
-        col_serial_number_position = sheet.iloc[:, column_number_serial_number_position]
+        col_serial_number_position = sheet.iloc[:,
+                                     column_number_serial_number_position]
         if any(col_serial_number_position.duplicated()):
-            warnings.warn("your database is corrupt: duplicates encountered in the srno-column")
-            logger.debug("srno duplicates:\n" + str(col_serial_number_position.duplicated()))
+            warnings.warn(
+                "your database is corrupt: duplicates encountered in the srno-column")
+            logger.debug("srno duplicates:\n" + str(
+                col_serial_number_position.duplicated()))
             probably_good_to_go = False
         return probably_good_to_go
 
@@ -212,7 +220,8 @@ class Reader(object):
 
         sheet = self.table
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
-        col_serial_number_position = sheet.iloc[:, column_number_serial_number_position]
+        col_serial_number_position = sheet.iloc[:,
+                                     column_number_serial_number_position]
         return sheet[col_serial_number_position == serial_number]
 
     def print_serial_number_info(self, serial_number, print_to_screen=True):
@@ -241,7 +250,8 @@ class Reader(object):
     def filter_by_slurry(self, slurry, appender="_"):
         """Filters sheet/table by slurry name.
 
-        Input is slurry name or list of slurry names, for example 'es030' or ["es012","es033","es031"].
+        Input is slurry name or list of slurry names, for example 'es030' or
+        ["es012","es033","es031"].
 
         Args:
             slurry (str or list of strings): slurry names.
@@ -269,11 +279,13 @@ class Reader(object):
                 search_string += "|"
                 search_string += s_s
 
-        criterion = sheet.iloc[:, column_number_cellname].str.contains(search_string)
+        criterion = sheet.iloc[:, column_number_cellname].str.contains(
+            search_string)
         exists = sheet.iloc[:, exists_col_number] > 0
         sheet = sheet[criterion & exists]
 
-        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:,
+               column_number_serial_number_position].values.astype(int)
 
     def filter_by_col(self, column_numbers):
         """filters sheet/table by columns (input is column numbers)
@@ -294,17 +306,19 @@ class Reader(object):
         column_number_serial_number_position = self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists
         for column_number in column_numbers:
-            criterion = sheet.iloc[:, column_number] > 0  # this does not work all the time
+            criterion = sheet.iloc[:,
+                        column_number] > 0  # this does not work all the time
             exists = sheet.iloc[:, exists_col_number] > 0
             sheet = sheet[criterion & exists]
-        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:,
+               column_number_serial_number_position].values.astype(int)
 
     def filter_by_col_value(self, column_number,
                             min_val=None, max_val=None):
         """filters sheet/table by column.
 
-        The routine returns the serial-numbers with min_val <= values >= max_val in the selected
-        column.
+        The routine returns the serial-numbers with min_val <= values >= max_val
+        in the selected column.
 
         Args:
             column_number (int): column number (min 0).
@@ -338,10 +352,12 @@ class Reader(object):
         else:
             sheet = sheet[exists]
 
-        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:,
+               column_number_serial_number_position].values.astype(int)
 
     def select_batch(self, batch, batch_col_number=None):
-        """selects the batch batch in column batch_col_number (default: DbSheetCols.batch)"""
+        """selects the batch batch in column batch_col_number
+        (default: DbSheetCols.batch)"""
 
         if not batch_col_number:
             batch_col_number = self.db_sheet_cols.batch
@@ -352,37 +368,47 @@ class Reader(object):
 
         if batch_col_number in self.string_cols:
             batch = str(batch)
-        # possible problem: some cols have objects (that are compared as the type they look like (i.e. int then str))
+        # possible problem: some cols have objects (that are compared as the
+        # type they look like (i.e. int then str))
         # this does not apply for cols that in excel were defined as string
         # there only string values can be found
 
         criterion = sheet.iloc[:, batch_col_number] == batch
-        exists = sheet.iloc[:, exists_col_number] > 0  # This will crash if the col is not of dtype number
+        exists = sheet.iloc[:,
+                 exists_col_number] > 0
+        # This will crash if the col is not of dtype number
         sheet = sheet[criterion & exists]
-        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:,
+               column_number_serial_number_position].values.astype(int)
 
     def get_raw_filenames(self, serialno, full_path=True, non_sensitive=False):
-        """returns a list of the data file-names for experiment with serial number serialno.
+        """returns a list of the data file-names for experiment with serial
+        number serialno.
 
         Args:
             serialno (int): serial number
             full_path (bool): return filename(s) with full path if True
-            non_sensitive (bool): don´t stop even if file names are missing if True
+            non_sensitive (bool): don´t stop even if file names are missing if
+                True
 
         Returns:
             list of file_names
         """
-        files = self.get_filenames(serialno, full_path=full_path, use_hdf5=False,
+        files = self.get_filenames(serialno, full_path=full_path,
+                                   use_hdf5=False,
                                    non_sensitive=non_sensitive)
         return files
 
-    def get_cellpy_filename(self, serialno, full_path=True, non_sensitive=False):
-        """returns a list of the hdf5 file-name for experiment with serial number serialno.
+    def get_cellpy_filename(self, serialno, full_path=True,
+                            non_sensitive=False):
+        """returns a list of the hdf5 file-name for experiment with serial
+        number serialno.
 
         Args:
             serialno (int): serial number
             full_path (bool): return filename(s) with full path if True
-            non_sensitive (bool): don´t stop even if file names are missing if True
+            non_sensitive (bool): don´t stop even if file names are missing if
+                True
 
         Returns:
             [filename]
@@ -394,14 +420,16 @@ class Reader(object):
 
     def get_filenames(self, serial_number, full_path=True, use_hdf5=True,
                       non_sensitive=False, only_hdf5=False):
-        """returns a list of the data file-names for experiment with serial number serialno.
+        """returns a list of the data file-names for experiment with serial
+        number serialno.
 
         Args:
             serial_number (int): serial number.
             full_path (bool): return filename(s) with full path if True.
-            use_hdf5 (bool): if True, return hdf5 filename if it exists (existence is checked
-                             only in the db).
-            non_sensitive (bool): do not stop even if file names are missing if True.
+            use_hdf5 (bool): if True, return hdf5 filename if it exists
+                (existence is checked only in the db).
+            non_sensitive (bool): do not stop even if file names are missing if
+                True.
             only_hdf5 (bool): return hdf5 filename if True.
 
         Returns:
@@ -419,9 +447,12 @@ class Reader(object):
             datadir = None
             datadir_processed = None
         col_serialno = fsheet.iloc[:,
-                       column_number_serial_number_position]  # selecting the row with serial numbers in it
+                       column_number_serial_number_position]
+        # selecting the row with serial numbers in it
         criterion_serialno = col_serialno == serial_number
-        row_filenames = fsheet[criterion_serialno]  # now we pick out the row(s) with correct serial number
+        row_filenames = fsheet[
+            criterion_serialno]
+        # now we pick out the row(s) with correct serial number
         if use_hdf5:
             select_hdf5 = True
             if not only_hdf5:
@@ -434,7 +465,8 @@ class Reader(object):
         filenames = []
         if not select_hdf5:
             try:
-                for filename in row_filenames.values[0][column_number_start_filenames:]:
+                for filename in row_filenames.values[0][
+                                column_number_start_filenames:]:
                     print(filename)
                     if filename and isinstance(filename, str):
                         if full_path:
@@ -446,7 +478,8 @@ class Reader(object):
                     sys.exit(-1)
         else:
             try:
-                filename = self._pick_info(serial_number, column_number_filename)
+                filename = self._pick_info(serial_number,
+                                           column_number_filename)
                 if full_path:
                     filename = os.path.join(datadir_processed, filename) + ".h5"
                 else:
@@ -541,14 +574,17 @@ class Reader(object):
         return total_mass
 
     def get_all(self):
-        return self.filter_by_col([self.db_sheet_cols.serial_number_position, self.db_sheet_cols.exists])
+        return self.filter_by_col([self.db_sheet_cols.serial_number_position,
+                                   self.db_sheet_cols.exists])
 
     def get_fileid(self, serialno, full_path=True):
         column_number_fileid = self.db_sheet_cols.fileid
         if not full_path:
             filename = self._pick_info(serialno, column_number_fileid)
         else:
-            filename = os.path.join(self.db_datadir_processed, self._pick_info(serialno, column_number_fileid))
+            filename = os.path.join(self.db_datadir_processed,
+                                    self._pick_info(serialno,
+                                                    column_number_fileid))
         return filename
 
     @staticmethod
@@ -707,7 +743,9 @@ def _investigate_excel_dbreader_3():
     print(mass, end=' ')
     print("mg")
     dt2 = time.time() - t0
-    print("The script took %5.3f sec\n(out of this, loading db took %5.3f sec)" % (dt2, dt1))
+    print(
+        "The script took %5.3f sec\n(out of this, loading db took %5.3f sec)" % (
+        dt2, dt1))
 
     print("\nfinished")
 
@@ -786,7 +824,8 @@ def _investigate_excel_dbreader_6():
     col_no = 36 + n
     min_val = None
     max_val = 0.5
-    serial_numbers = r.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
+    serial_numbers = r.filter_by_col_value(col_no, min_val=min_val,
+                                           max_val=max_val)
     print()
     print("filtering within (%s - %s)" % (str(min_val), str(max_val)))
     print("serial_number  cell_name    loading(mg/cm2)")
@@ -807,7 +846,8 @@ def _investigate_excel_dbreader_7():
     min_val = None
     max_val = 0.7
 
-    serial_numbers1 = r.filter_by_col_value(col_no, min_val=min_val, max_val=max_val)
+    serial_numbers1 = r.filter_by_col_value(col_no, min_val=min_val,
+                                            max_val=max_val)
 
     slurries = ["es030", "es031"]
     serial_numbers2 = r.filter_by_slurry(slurries)
@@ -853,4 +893,5 @@ def _investigate_excel_dbreader_8():
 
 if __name__ == "__main__":
     from pylab import *
+
     _investigate_excel_dbreader_8()

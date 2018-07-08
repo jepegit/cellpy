@@ -24,8 +24,9 @@ DEFAULT_PLOT_STYLE = {"markersize": prms.Batch["markersize"]}
 class FigureType(object):
     """Object for storing figure type definitions.
 
-    Creates and FigureType instance with information on number of subplots (rows and columns),
-    and selectors for showing charge and discharge as list of booleans.
+    Creates and FigureType instance with information on number of subplots
+    (rows and columns), and selectors for showing charge and discharge as list
+    of booleans.
 
     """
 
@@ -209,19 +210,23 @@ def _extract_dqdv(cell_data, extract_func):
 class Batch(object):
     """The Batch object
 
-    The Batch class is a utility class for pipe-lining batch processing of cell cycle data.
-    It is primarily designed for use in `jupyter notebooks`. The typical usage structure is:
+    The Batch class is a utility class for pipe-lining batch processing of cell
+    cycle data. It is primarily designed for use in `jupyter notebooks`.@
+    The typical usage structure is:
 
-    1. Import the batch module (this also gives you access to the cellpy parameters (`batch.prms`)
+    1. Import the batch module (this also gives you access to the cellpy@
+        parameters (`batch.prms`)
 
     >>> from cellpy.utils import batch
 
     2. Initialization of the batch class
 
     >>> b = batch.init()
-    >>> # you can also give the name of the batch, the project name, the log-level, and the batch column number
+    >>> # you can also give the name of the batch, the project name,
+    >>> # the log-level, and the batch column number
     >>> # as parameters to the batch.init function, e.g.
-    >>> # b = batch.init("batch_name", "project_name", default_log_level="INFO", batch_col=5)
+    >>> # b = batch.init("batch_name", "project_name",
+    >>> # default_log_level="INFO", batch_col=5)
 
     3. Set parameters for your experiment
 
@@ -237,8 +242,9 @@ class Batch(object):
     >>> b.force_raw_file = False
     >>> b.force_cellpy_file = True
 
-    4. The next step is to extract and collect the information needed from your data-base into a DataFrame, and create
-       an appropriate folder structure (outdir/project_name/batch_name/raw_data)
+    4. The next step is to extract and collect the information needed from your
+       data-base into a DataFrame, and create an appropriate folder structure
+       (outdir/project_name/batch_name/raw_data)
 
     >>> b.create_info_df()
     >>>
@@ -252,12 +258,14 @@ class Batch(object):
     >>>
     >>> b.info_df.head()
 
-    5. To run the processing, you can use the convenience function `load_and_save_raw'. This function
-       loads all your data-files and saves csv-files of the results.
+    5. To run the processing, you can use the convenience function
+        `load_and_save_raw'. This function
+        loads all your data-files and saves csv-files of the results.
 
     >>> b.load_and_save_raw()
 
-    6. Create some summary csv-files (e.g. containing charge capacities vs. cycle number for all your data-files).
+    6. Create some summary csv-files (e.g. containing charge capacities vs.
+        cycle number for all your data-files).
 
     >>> b.make_summaries()
 
@@ -433,7 +441,8 @@ class Batch(object):
         logger.info("Saved file to {}".format(self.info_file))
 
     def load_info_df(self, file_name=None):
-        """Loads a DataFrame with all the needed info about the run (JSON file)"""
+        """Loads a DataFrame with all the needed info about the run
+        (JSON file)"""
 
         if file_name is None:
             file_name = self.info_file
@@ -457,7 +466,8 @@ class Batch(object):
 
         The info_df JSON-file will be stored in the Project folder.
         The summary-files will be saved in the Batch-name folder.
-        The raw data (including exported cycles and ica-data) will be saved to the Raw-data-dir.
+        The raw data (including exported cycles and ica-data) will be saved to
+            the Raw-data-dir.
 
         """
         self.info_file, directories = create_folder_structure(self.project,
@@ -494,10 +504,6 @@ class Batch(object):
         raise NotImplementedError
 
     def plot_test(self, show=True, save=False):
-        # not ready for production yet...
-        # this plotting function can be used as template for making custom plotting functions
-        # need to create axes
-
         figure_type = "shiftedcap"
         fig, ax = plt.subplots()
 
@@ -579,9 +585,6 @@ class Batch(object):
         return fig, ax
 
     def plot_shifted_cap(self, show=True, save=False):
-        # not ready for production yet...
-        # this plotting function can be used as template for making custom plotting functions
-        # need to create axes
 
         figure_type = "shiftedcap"
         fig, ax = plt.subplots()
@@ -793,7 +796,8 @@ def create_selected_summaries_dict(summaries_list):
     Args:
         summaries_list: list containing cellpy summary column id names
 
-    Returns: dictionary of the form {cellpy id name: cellpy summary header name,}
+    Returns: dictionary of the form {cellpy id name: cellpy summary
+        header name,}
 
     """
     headers_summary = cellreader.get_headers_summary()

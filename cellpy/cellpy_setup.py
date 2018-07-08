@@ -30,14 +30,15 @@ def get_package_dir(init_filename=None):
 def get_user_dir_and_dst(file_name):
     """gets the name of the user directory and full prm filepath"""
     user_dir = os.path.abspath(os.path.expanduser("~"))
-    dst_dir = user_dir  # might include .cellpy directory here in the future (must then modify prmreader)
+    dst_dir = user_dir
     dst_file = os.path.join(dst_dir, file_name)
     return user_dir, dst_file
 
 
 def create_custom_init_filename():
     """creates a custom prms filename"""
-    return DEFAULT_FILENAME_START + os.environ.get("USERNAME") + DEFAULT_FILENAME_END
+    return DEFAULT_FILENAME_START + os.environ.get(
+        "USERNAME") + DEFAULT_FILENAME_END
 
 
 @click.group()
@@ -54,22 +55,26 @@ def setup():
     click.echo("[cellpy] (%s)\n" % userdir)
     if os.path.isfile(dst_file):
         click.echo("[cellpy] File already exists!")
-        click.echo("[cellpy]  -> Trying to keep old configuration parameters...\n")
+        click.echo(
+            "[cellpy]  -> Trying to keep old configuration parameters...\n")
     try:
         save_prm_file(dst_file)
     except Exception:
         click.echo("[cellpy] Something went wrong! Could not write the file")
-        click.echo("[cellpy] Trying to write a file called %s instead" % DEFAULT_FILENAME)
+        click.echo(
+            "[cellpy] Trying to write a file called %s instead" % DEFAULT_FILENAME)
         try:
             userdir, dst_file = get_user_dir_and_dst(init_filename)
             save_prm_file(dst_file)
         except Exception:
-            click.echo("[cellpy] No, that did not work either. Well, guess you have to talk to the developers.")
+            click.echo(
+                "[cellpy] No, that did not work either. Well, guess you have to talk to the developers.")
 
     click.echo("[cellpy] Directory path:\n")
     click.echo("[cellpy] %s" % os.path.dirname(dst_file))
     click.echo("[cellpy] File name: %s\n" % os.path.basename(init_filename))
-    click.echo("[cellpy] OK! Now you can edit it (and save it with another name starting with")
+    click.echo(
+        "[cellpy] OK! Now you can edit it (and save it with another name starting with")
     click.echo("[cellpy] _cellpy_prms and ending with .conf if you want)")
     click.echo("[cellpy]")
 

@@ -10,7 +10,6 @@ import yaml
 
 import cellpy.parameters.prms as prms
 
-
 default_prms = """
 [Paths]
 outdatadir: ..\outdata
@@ -24,7 +23,6 @@ db_filename: cellpy_db.xlsx
 dbc_filename: cellpy_dbc.xlsx
 """
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +30,8 @@ def _write_prm_file(file_name=None):
     logger.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
     with open(file_name, "w") as config_file:
-        yaml.dump(config_dict, config_file, default_flow_style=False, explicit_start=True, explicit_end=True)
+        yaml.dump(config_dict, config_file, default_flow_style=False,
+                  explicit_start=True, explicit_end=True)
 
 
 def _update_prms(config_dict):
@@ -49,7 +48,9 @@ def _update_prms(config_dict):
 
 
 def _pack_prms():
-    """if you introduce new 'save-able' parameter dictionaries, then you have to include them here"""
+    """if you introduce new 'save-able' parameter dictionaries, then you have
+    to include them here"""
+
     config_dict = {
         "Paths": prms.Paths,
         "FileNames": prms.FileNames,
@@ -101,8 +102,8 @@ def _get_prm_file(file_name=None, search_order=None):
     else:
         search_order = search_order
 
-    # The default name for the prm file is at the moment in the script-dir, while
-    # default searching is in the userdir (yes, I know):
+    # The default name for the prm file is at the moment in the script-dir,@
+    # while default searching is in the userdir (yes, I know):
     prm_default = os.path.join(script_dir, default_name)
 
     # -searching-----------------------
@@ -174,8 +175,8 @@ class Read(object):
 
     Args:
         prm_filename (str)(optional) : parameter file name
-        search_order (list)(optional): list with paths to search in ascending priority
-                                       (available options: ["curdir","filedir","userdir"]).
+        search_order (list)(optional): list with paths to search in ascending
+            priority (available options: ["curdir","filedir","userdir"]).
     """
 
     # should include more prms
@@ -185,7 +186,8 @@ class Read(object):
         self.script_dir = os.path.abspath(os.path.dirname(__file__))
 
         self.search_path = dict()
-        self.search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
+        self.search_path["curdir"] = os.path.abspath(
+            os.path.dirname(sys.argv[0]))
         self.search_path["filedir"] = self.script_dir
         self.search_path["userdir"] = os.path.expanduser("~")
 

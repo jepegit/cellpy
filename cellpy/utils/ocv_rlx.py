@@ -50,7 +50,8 @@ class MultiCycleOcvFit(object):
         """
         ocv_fitter = OcvFit()
         ocv_fitter.set_circuits(self.circuits)
-        time, voltage = self.data.get_ocv(ocv_type=ocv_type, cycle_number=self.cycles[0])
+        time, voltage = self.data.get_ocv(ocv_type=ocv_type,
+                                          cycle_number=self.cycles[0])
         if voltage is not None and time is not None:
             ocv_fitter.set_data(time, voltage)
         else:
@@ -64,24 +65,29 @@ class MultiCycleOcvFit(object):
 
         for cycle in self.cycles:
             print("Fitting cycle " + str(cycle))
-            time, voltage = self.data.get_ocv(ocv_type=ocv_type, cycle_number=cycle)
+            time, voltage = self.data.get_ocv(ocv_type=ocv_type,
+                                              cycle_number=cycle)
 
             if voltage is not None:
                 step_table = self.data.dataset.step_table  # hope it works...
                 if ocv_type is 'ocvrlx_up':
-                    end_voltage = step_table[(step_table['cycle'] == cycle) & (step_table['type'].isin(['discharge']))][
+                    end_voltage = step_table[(step_table['cycle'] == cycle) & (
+                        step_table['type'].isin(['discharge']))][
                         'V_end'].values[0]
-                    end_current = step_table[(step_table['cycle'] == cycle) & (step_table['type'].isin(['discharge']))][
+                    end_current = step_table[(step_table['cycle'] == cycle) & (
+                        step_table['type'].isin(['discharge']))][
                         'I_end'].values[0]
                     ocv_fitter.set_zero_voltage(end_voltage)
                     ocv_fitter.set_zero_current(end_current)
                 elif ocv_type is 'ocvrlx_down':
                     end_voltage = \
-                        step_table[(step_table['cycle'] == cycle) & (step_table['type'].isin(['charge']))][
+                        step_table[(step_table['cycle'] == cycle) & (
+                            step_table['type'].isin(['charge']))][
                             'V_end'].values[
                             0]
                     end_current = \
-                        step_table[(step_table['cycle'] == cycle) & (step_table['type'].isin(['charge']))][
+                        step_table[(step_table['cycle'] == cycle) & (
+                            step_table['type'].isin(['charge']))][
                             'I_end'].values[
                             0]
                     ocv_fitter.set_zero_voltage(end_voltage)
@@ -94,8 +100,10 @@ class MultiCycleOcvFit(object):
 
                 self.fit_cycles.append(cycle)
                 self.result.append(ocv_fitter.get_result())
-                self.best_fit_parameters.append(ocv_fitter.get_best_fit_parameters())
-                self.best_fit_parameters_translated.append(ocv_fitter.get_best_fit_parameters_translated())
+                self.best_fit_parameters.append(
+                    ocv_fitter.get_best_fit_parameters())
+                self.best_fit_parameters_translated.append(
+                    ocv_fitter.get_best_fit_parameters_translated())
                 self.best_fit_data.append(ocv_fitter.get_best_fit_data())
 
     def get_best_fit_data(self):
@@ -113,22 +121,29 @@ class MultiCycleOcvFit(object):
     def get_best_fit_parameters_grouped(self):
         """Returns a dictionary of the best fit."""
         result_dict = dict()
-        result_dict['ocv'] = [parameters['ocv'] for parameters in self.best_fit_parameters]
+        result_dict['ocv'] = [parameters['ocv'] for parameters in
+                              self.best_fit_parameters]
 
         for i in range(self.circuits):
-            result_dict['t' + str(i)] = [parameters['t' + str(i)] for parameters in self.best_fit_parameters]
-            result_dict['w' + str(i)] = [parameters['w' + str(i)] for parameters in self.best_fit_parameters]
+            result_dict['t' + str(i)] = [parameters['t' + str(i)] for parameters
+                                         in self.best_fit_parameters]
+            result_dict['w' + str(i)] = [parameters['w' + str(i)] for parameters
+                                         in self.best_fit_parameters]
         return result_dict
 
     def get_best_fit_parameters_translated_grouped(self):
         """Returns the parameters as a dictionary of the 'real units' for the best fit."""
         result_dict = dict()
-        result_dict['ocv'] = [parameters['ocv'] for parameters in self.best_fit_parameters_translated]
-        result_dict['ir'] = [parameters['ir'] for parameters in self.best_fit_parameters_translated]
+        result_dict['ocv'] = [parameters['ocv'] for parameters in
+                              self.best_fit_parameters_translated]
+        result_dict['ir'] = [parameters['ir'] for parameters in
+                             self.best_fit_parameters_translated]
 
         for i in range(self.circuits):
-            result_dict['r' + str(i)] = [parameters['r' + str(i)] for parameters in self.best_fit_parameters_translated]
-            result_dict['c' + str(i)] = [parameters['c' + str(i)] for parameters in self.best_fit_parameters_translated]
+            result_dict['r' + str(i)] = [parameters['r' + str(i)] for parameters
+                                         in self.best_fit_parameters_translated]
+            result_dict['c' + str(i)] = [parameters['c' + str(i)] for parameters
+                                         in self.best_fit_parameters_translated]
         return result_dict
 
     def get_fit_cycles(self):
@@ -164,7 +179,9 @@ class MultiCycleOcvFit(object):
         ax2.plot(self.get_fit_cycles(), plot_data['ocv'])
 
     def plot_summary_translated(self):
-        """Convenience function for plotting the summary of the fit (translated)"""
+        """Convenience function for plotting the summary of the
+        fit (translated)"""
+
         fig2 = plt.figure()
         ax1 = fig2.add_subplot(221)
         ax1.set_title('OCV (V)')
@@ -212,9 +229,11 @@ class OcvFit(object):
         self.best_fit_parameters = dict()
 
     def set_cellpydata(self, cellpydata, cycle):
-        """Performing fit of the OCV steps in the cycles set by set_cycles() from the data set by set_data()
+        """Performing fit of the OCV steps in the cycles set by set_cycles()
+        from the data set by set_data()
 
-            r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
+            r is found by calculating v0 / i_start --> err(r)= err(v0) +
+                err(i_start).
             c is found from using tau / r --> err(c) = err(r) + err(tau)
 
             Args:
@@ -226,7 +245,8 @@ class OcvFit(object):
             """
         self.data = cellpydata
         self.step_table = self.data.dataset  # hope it works...
-        time, voltage = self.data.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
+        time, voltage = self.data.get_ocv(ocv_type='ocvrlx_up',
+                                          cycle_number=cycle)
         self.time = np.array(time)
         self.voltage = np.array(voltage)
 
@@ -251,9 +271,11 @@ class OcvFit(object):
 
     def set_weights_power_law(self, prefactor=1, power=-2, zero_level=1):
         if self.voltage is not None:
-            self.weights = [prefactor * pow(time + 1, power) + zero_level for time in self.time]
+            self.weights = [prefactor * pow(time + 1, power) + zero_level for
+                            time in self.time]
         else:
-            raise NotImplementedError('Data is not set. Set data using set_data().')
+            raise NotImplementedError(
+                'Data is not set. Set data using set_data().')
 
     def create_model(self):
         params = Parameters()
@@ -277,9 +299,11 @@ class OcvFit(object):
 
     @staticmethod
     def _model(time, ocv, t0, w0, t1, w1, t2, w2, t3, w3, t4, w4):
-        # Calculates a voltage profile for the given time array for a given set of parameters
+        # Calculates a voltage profile for the given
+        # time array for a given set of parameters
         model = ocv
-        model = model + w0 * np.exp(-time / t0) + w1 * np.exp(-time / t1) + w2 * np.exp(-time / t2) + w3 * np.exp(
+        model = model + w0 * np.exp(-time / t0) + w1 * np.exp(
+            -time / t1) + w2 * np.exp(-time / t2) + w3 * np.exp(
             -time / t3) + w4 * np.exp(-time / t4)
 
         return model
@@ -287,22 +311,27 @@ class OcvFit(object):
     def fit_model(self):
 
         if self.model is not None:
-            self.result = self.model.fit(self.voltage, weights=self.weights, time=self.time, params=self.params)
+            self.result = self.model.fit(self.voltage, weights=self.weights,
+                                         time=self.time, params=self.params)
         else:
-            raise NotImplementedError('Model is not created. Set model using create_model().')
+            raise NotImplementedError(
+                'Model is not created. Set model using create_model().')
 
         self.best_fit_parameters = self.result.best_values
         self.best_fit_data = [self.time, self.voltage, self.result.best_fit]
 
     def run_fit(self):
 
-        """Performing fit of the OCV steps in the cycles set by set_cycles() from the data set by set_data()
+        """Performing fit of the OCV steps in the cycles set by set_cycles()
+        from the data set by set_data()
 
-            r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
+            r is found by calculating v0 / i_start --> err(r)= err(v0) +
+                err(i_start).
             c is found from using tau / r --> err(c) = err(r) + err(tau)
 
             Returns:
-                None: Resulting best fit parameters are stored in self.result for the given cycles
+                None: Resulting best fit parameters are stored in self.result
+                for the given cycles
             """
 
         # Check if data is set
@@ -329,14 +358,19 @@ class OcvFit(object):
     def get_best_fit_parameters_translated(self):
         result_dict = dict()
         result_dict['ocv'] = self.best_fit_parameters['ocv']
-        result_dict['ir'] = -((self.best_fit_parameters['ocv'] + self.best_fit_parameters['w0']
-                               + self.best_fit_parameters['w1'] + self.best_fit_parameters['w2']
-                               + self.best_fit_parameters['w3'] + self.best_fit_parameters['w4'])
+        result_dict['ir'] = -((self.best_fit_parameters['ocv'] +
+                               self.best_fit_parameters['w0']
+                               + self.best_fit_parameters['w1'] +
+                               self.best_fit_parameters['w2']
+                               + self.best_fit_parameters['w3'] +
+                               self.best_fit_parameters['w4'])
                               - self.zero_voltage) / self.zero_current
 
         for i in range(self.circuits):
-            result_dict['r' + str(i)] = self.best_fit_parameters['w' + str(i)] / self.zero_current
-            result_dict['c' + str(i)] = self.best_fit_parameters['t' + str(i)] / result_dict['r' + str(i)]
+            result_dict['r' + str(i)] = self.best_fit_parameters[
+                                            'w' + str(i)] / self.zero_current
+            result_dict['c' + str(i)] = self.best_fit_parameters['t' + str(i)] / \
+                                        result_dict['r' + str(i)]
 
         return result_dict
 
