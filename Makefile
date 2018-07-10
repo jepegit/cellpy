@@ -46,7 +46,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 
 lint: ## check style with flake8
-	flake8 cellpy tests
+	flake8 cellpy/ tests/
 
 dev-env: ## sets up a development environment
 	pip install -e .

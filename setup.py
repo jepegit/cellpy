@@ -68,10 +68,7 @@ setup(name=name,
             ['parameters/_cellpy_prms_default.ini',
              ],
         'scripts':
-            ['scripts/simple_reader.py',
-             # 'scripts/make_hdf5.py',
-             # 'scripts/FetchArbinData.py',
-             # 'scripts/batchplot.py
+            ['examples/simple_reader.py',
              ],
              },
     entry_points={
