@@ -1,9 +1,11 @@
 import pytest
 import tempfile
+import os
 import logging
 from cellpy import log
 from . import fdv
-log.setup_logging(default_level=logging.DEBUG)
+
+log.setup_logging(default_level="DEBUG")
 
 
 @pytest.fixture(scope="module")
@@ -24,6 +26,29 @@ def setup_module():
         os.mkdir(fdv.output_dir)
     except:
         print("could not make directory")
+
+
+def test_logger(clean_dir):
+    test_logging_json = os.path.join(fdv.data_dir, "test_logging.json")
+    log.setup_logging(default_level="DEBUG")
+    tmp_logger = logging.getLogger()
+    assert tmp_logger.level == logging.DEBUG
+
+    log.setup_logging(default_level="INFO")
+    tmp_logger = logging.getLogger()
+    assert tmp_logger.level == logging.INFO
+
+    log.setup_logging()
+    tmp_logger = logging.getLogger()
+    assert tmp_logger.level == logging.INFO
+
+    log.setup_logging(default_json_path="./a_file_that_does_not_exist.json")
+    assert len(logging.getLogger().handlers) == 4
+    log.setup_logging(default_json_path=test_logging_json)
+    tmp_logger = logging.getLogger()
+    log.setup_logging(custom_log_dir=clean_dir)
+    tmp_logger = logging.getLogger()
+    rfh = tmp_logger.handlers[-1]
 
 
 @pytest.mark.smoketest

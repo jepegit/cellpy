@@ -359,7 +359,7 @@ class FileID(object):
         else:
             txt += "modified: NAN\n"
         if self.size is not None:
-            txt += "size: {self.size}\n"
+            txt += f"size: {self.size}\n"
         else:
             txt += "size: NAN\n"
         return txt

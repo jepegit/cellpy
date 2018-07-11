@@ -49,8 +49,32 @@ def test_set_res_datadir(cellpy_data_instance):
     assert fdv.data_dir == cellpy_data_instance.cellpy_datadir
 
 
-# def test_use_experimental_reader():
-#     assert False
+def test_fid(cellpy_data_instance):
+    cellpy_data_instance.loadcell(fdv.res_file_path)
+    my_test = cellpy_data_instance.dataset
+    assert len(my_test.raw_data_files) == 1
+    fid_object = my_test.raw_data_files[0]
+    print(fid_object)
+    print(fid_object.get_raw())
+    print(fid_object.get_name())
+    print(fid_object.get_size())
+    print(fid_object.get_last())
+
+
+def test_str_cellpy_data_object(dataset):
+    assert str(dataset.dataset).find("silicon") >= 0
+    assert str(dataset.dataset).find("rosenborg") < 0
+
+
+def test_only_fid():
+    from cellpy.readers.cellreader import FileID
+    my_fid_one = FileID()
+    my_file = fdv.cellpy_file_path
+    my_fid_one.populate(my_file)
+    my_fid_two = FileID(my_file)
+    assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
+    assert my_fid_one.get_size() == my_fid_two.get_size()
+
 
 def test_load_res(cellpy_data_instance):
     cellpy_data_instance.loadcell(fdv.res_file_path)
