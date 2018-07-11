@@ -4,11 +4,11 @@ import glob
 import os
 import sys
 from collections import OrderedDict
-import configparser
 import logging
 import yaml
 
 import cellpy.parameters.prms as prms
+from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 default_prms = """
 [Paths]
@@ -29,9 +29,12 @@ logger = logging.getLogger(__name__)
 def _write_prm_file(file_name=None):
     logger.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
-    with open(file_name, "w") as config_file:
-        yaml.dump(config_dict, config_file, default_flow_style=False,
-                  explicit_start=True, explicit_end=True)
+    try:
+        with open(file_name, "w") as config_file:
+            yaml.dump(config_dict, config_file, default_flow_style=False,
+                      explicit_start=True, explicit_end=True)
+    except yaml.YAMLError:
+        raise ConfigFileNotWritten
 
 
 def _update_prms(config_dict):
@@ -68,9 +71,13 @@ def _pack_prms():
 def _read_prm_file(prm_filename):
     """read the prm file"""
     logger.debug("Reading config-file: %s" % prm_filename)
-    with open(prm_filename, "r") as config_file:
-        prm_dict = yaml.load(config_file)
-    _update_prms(prm_dict)
+    try:
+        with open(prm_filename, "r") as config_file:
+            prm_dict = yaml.load(config_file)
+    except yaml.YAMLError:
+        raise ConfigFileNotRead
+    else:
+        _update_prms(prm_dict)
 
 
 def __look_at(file_name):
@@ -115,6 +122,7 @@ def _get_prm_file(file_name=None, search_order=None):
         default_file = os.path.join(prm_directory, default_name)
 
         if os.path.isfile(default_file):
+            # noinspection PyTypeChecker
             search_dict[key][0] = default_file
 
         prm_globtxt_full = os.path.join(prm_directory, prm_globtxt)

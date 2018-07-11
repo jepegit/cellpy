@@ -4,7 +4,6 @@
 
 import os
 import sys
-import types
 import pandas as pd
 import numpy as np
 import time
@@ -23,38 +22,15 @@ logger = logging.getLogger(__name__)
 class DbSheetCols(object):
     def __init__(self, sheetname="db_table"):
         if sheetname == "db_table":
-            for key in prms.excel_db_cols:
-                setattr(self, key, prms.excel_db_cols[key])
+            for table_key in prms.excel_db_cols:
+                setattr(self, table_key, prms.excel_db_cols[table_key])
 
         elif sheetname == "db_filenames":
-            for key in prms.excel_db_filename_cols:
-                setattr(self, key, prms.excel_db_filename_cols[key])
+            for name_key in prms.excel_db_filename_cols:
+                setattr(self, name_key, prms.excel_db_filename_cols[name_key])
 
     def __repr__(self):
-        return "<excel_db_cols: %s>" % self.__dict__
-
-
-def _export_to_csv(sheet=None):
-    from xlrd import open_workbook
-    import csv
-
-    wb = open_workbook('Road-Accident-Safety-Data-Guide-1979-2004.xls')
-
-    for i in range(2, wb.nsheets):
-        sheet = wb.sheet_by_index(i)
-        print(sheet.name)
-        with open("data/%s.csv" % (sheet.name.replace(" ", "")), "w") as file:
-            writer = csv.writer(file, delimiter=",")
-            print(sheet, sheet.name, sheet.ncols, sheet.nrows)
-
-            header = [cell.value for cell in sheet.row(0)]
-            writer.writerow(header)
-
-            for row_idx in range(1, sheet.nrows):
-                row = [int(cell.value) if isinstance(cell.value,
-                                                     float) else cell.value
-                       for cell in sheet.row(row_idx)]
-                writer.writerow(row)
+        return f"<excel_db_cols: {self.__dict__}>"
 
 
 class Reader(object):
@@ -105,7 +81,7 @@ class Reader(object):
             self.ftable = self._open_sheet_tst("file_names")
             print("* %f" % (time.time() - t0))
 
-        good_db = self._validate()
+        # good_db = self._validate()
 
     def pick_table(self):
         """Pick the table.
@@ -151,11 +127,12 @@ class Reader(object):
 
         work_book = pd.ExcelFile(tmp_db_file)
         print("* %f work_book = pd.ExcelFile(self.db_file)..." % (
-                time.time() - t0))
+            time.time() - t0))
         sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)
         print(
-            "* %f sheet = work_book.parse(sheet, header=header, skiprows=rows_to_skip)..." % (
-                    time.time() - t0))
+            "* %f sheet = work_book.parse(sheet, header=header,"
+            "skiprows=rows_to_skip)..." % (
+                time.time() - t0))
         # if self.remove_row:
         #     remove_index = sheet.index[self.remove_row]
         #     sheet = sheet.drop(remove_index)
@@ -167,8 +144,8 @@ class Reader(object):
             print(tmp_db_file)
             try:
                 os.remove(tmp_db_file)
-            except WindowsError as e:
-                print("could not remove tmp-file\n%s %s" % (tmp_db_file, e))
+            except WindowsError as err:
+                print("could not remove tmp-file\n%s %s" % (tmp_db_file, err))
         return sheet
 
     def _open_sheet(self, sheet=None, dtypes_dict=None):
@@ -195,14 +172,16 @@ class Reader(object):
             """
         probably_good_to_go = True
         sheet = self.table
-        column_number_serial_number_position = self.db_sheet_cols.serial_number_position
+        column_number_serial_number_position = \
+            self.db_sheet_cols.serial_number_position
 
         # check if you have unique srnos
-        col_serial_number_position = sheet.iloc[:,
-                                     column_number_serial_number_position]
+        col_serial_number_position = \
+            sheet.iloc[:, column_number_serial_number_position]
         if any(col_serial_number_position.duplicated()):
             warnings.warn(
-                "your database is corrupt: duplicates encountered in the srno-column")
+                "your database is corrupt: duplicates"
+                " encountered in the srno-column")
             logger.debug("srno duplicates:\n" + str(
                 col_serial_number_position.duplicated()))
             probably_good_to_go = False
@@ -219,9 +198,10 @@ class Reader(object):
         """
 
         sheet = self.table
-        column_number_serial_number_position = self.db_sheet_cols.serial_number_position
-        col_serial_number_position = sheet.iloc[:,
-                                     column_number_serial_number_position]
+        column_number_serial_number_position = \
+            self.db_sheet_cols.serial_number_position
+        col_serial_number_position = \
+            sheet.iloc[:, column_number_serial_number_position]
         return sheet[col_serial_number_position == serial_number]
 
     def print_serial_number_info(self, serial_number, print_to_screen=True):
@@ -229,7 +209,8 @@ class Reader(object):
 
         Args:
             serial_number: serial number.
-            print_to_screen: runs the print statement if True, returns txt if not.
+            print_to_screen: runs the print statement if True,
+                returns txt if not.
 
         Returns:
             txt if print_to_screen is False, else None.
@@ -262,9 +243,11 @@ class Reader(object):
         """
 
         sheet = self.table
-        column_number_serial_number_position = self.db_sheet_cols.serial_number_position
+        column_number_serial_number_position = \
+            self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists
         column_number_cellname = self.db_sheet_cols.cell_name
+        search_string = ""
 
         if not isinstance(slurry, (list, tuple)):
             slurry = [slurry, ]
@@ -284,8 +267,7 @@ class Reader(object):
         exists = sheet.iloc[:, exists_col_number] > 0
         sheet = sheet[criterion & exists]
 
-        return sheet.iloc[:,
-               column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
     def filter_by_col(self, column_numbers):
         """filters sheet/table by columns (input is column numbers)
@@ -303,15 +285,15 @@ class Reader(object):
         if not isinstance(column_numbers, (list, tuple)):
             column_numbers = [column_numbers, ]
         sheet = self.table
-        column_number_serial_number_position = self.db_sheet_cols.serial_number_position
+        column_number_serial_number_position = \
+            self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists
         for column_number in column_numbers:
-            criterion = sheet.iloc[:,
-                        column_number] > 0  # this does not work all the time
+            # this does not work all the time
+            criterion = sheet.iloc[:, column_number] > 0
             exists = sheet.iloc[:, exists_col_number] > 0
             sheet = sheet[criterion & exists]
-        return sheet.iloc[:,
-               column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
     def filter_by_col_value(self, column_number,
                             min_val=None, max_val=None):
@@ -329,7 +311,8 @@ class Reader(object):
             pandas.DataFrame
         """
         sheet = self.table
-        column_number_serial_number_position = self.db_sheet_cols.serial_number_position
+        column_number_serial_number_position = \
+            self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists
 
         exists = sheet.iloc[:, exists_col_number] > 0
@@ -348,12 +331,12 @@ class Reader(object):
             if max_val is not None:
                 criterion = sheet.iloc[:, column_number] <= max_val
 
+            # noinspection PyUnboundLocalVariable
             sheet = sheet[criterion & exists]
         else:
             sheet = sheet[exists]
 
-        return sheet.iloc[:,
-               column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
     def select_batch(self, batch, batch_col_number=None):
         """selects the batch batch in column batch_col_number
@@ -363,7 +346,8 @@ class Reader(object):
             batch_col_number = self.db_sheet_cols.batch
         logger.debug("selecting batch - %s" % batch)
         sheet = self.table
-        column_number_serial_number_position = self.db_sheet_cols.serial_number_position
+        column_number_serial_number_position = \
+            self.db_sheet_cols.serial_number_position
         exists_col_number = self.db_sheet_cols.exists
 
         if batch_col_number in self.string_cols:
@@ -374,12 +358,10 @@ class Reader(object):
         # there only string values can be found
 
         criterion = sheet.iloc[:, batch_col_number] == batch
-        exists = sheet.iloc[:,
-                 exists_col_number] > 0
+        exists = sheet.iloc[:, exists_col_number] > 0
         # This will crash if the col is not of dtype number
         sheet = sheet[criterion & exists]
-        return sheet.iloc[:,
-               column_number_serial_number_position].values.astype(int)
+        return sheet.iloc[:, column_number_serial_number_position].values.astype(int)
 
     def get_raw_filenames(self, serialno, full_path=True, non_sensitive=False):
         """returns a list of the data file-names for experiment with serial
@@ -436,7 +418,8 @@ class Reader(object):
             list of file names (str)
         """
         fsheet = self.ftable
-        column_number_serial_number_position = self.db_sheet_filename_cols.serial_number_position
+        column_number_serial_number_position = \
+            self.db_sheet_filename_cols.serial_number_position
         column_number_start_filenames = self.db_sheet_filename_cols.files
         column_number_hdf5 = self.db_sheet_cols.finished_run
         column_number_filename = self.db_sheet_cols.fileid
@@ -446,8 +429,7 @@ class Reader(object):
         else:
             datadir = None
             datadir_processed = None
-        col_serialno = fsheet.iloc[:,
-                       column_number_serial_number_position]
+        col_serialno = fsheet.iloc[:, column_number_serial_number_position]
         # selecting the row with serial numbers in it
         criterion_serialno = col_serialno == serial_number
         row_filenames = fsheet[
@@ -464,6 +446,7 @@ class Reader(object):
         # now I think it is time to convert the values to a list
         filenames = []
         if not select_hdf5:
+            # noinspection PyBroadException
             try:
                 for filename in row_filenames.values[0][
                                 column_number_start_filenames:]:
@@ -477,6 +460,7 @@ class Reader(object):
                     print("error reading file_names-row (res)")
                     sys.exit(-1)
         else:
+            # noinspection PyBroadException
             try:
                 filename = self._pick_info(serial_number,
                                            column_number_filename)
@@ -744,8 +728,8 @@ def _investigate_excel_dbreader_3():
     print("mg")
     dt2 = time.time() - t0
     print(
-        "The script took %5.3f sec\n(out of this, loading db took %5.3f sec)" % (
-        dt2, dt1))
+        "The script took %5.3f sec\n(out of this,"
+        " loading db took %5.3f sec)" % (dt2, dt1))
 
     print("\nfinished")
 
@@ -754,7 +738,7 @@ def _investigate_excel_dbreader_4():
     """Used for testing"""
     print("STARTING")
     print(sys.argv[0])
-    t0 = time.time()
+    # t0 = time.time()
     r = Reader()
     serial_number = 340
     print("inspect_finished", end=' ')
@@ -815,6 +799,7 @@ def _investigate_excel_dbreader_5():
         print(r.get_loading(serial_number))
 
 
+# noinspection PyTypeChecker
 def _investigate_excel_dbreader_6():
     """Used for testing"""
     print("STARTING  (test filter_by_col_value)")
@@ -846,6 +831,7 @@ def _investigate_excel_dbreader_7():
     min_val = None
     max_val = 0.7
 
+    # noinspection PyTypeChecker
     serial_numbers1 = r.filter_by_col_value(col_no, min_val=min_val,
                                             max_val=max_val)
 

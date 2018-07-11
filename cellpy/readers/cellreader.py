@@ -18,7 +18,8 @@ Todo:
     * Include functions gradually from old version
     * Rename datastructure
     * Remove mass dependency in summary data
-    * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or pd.loc[(pd.["step"]==1),"x"]
+    * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or
+        pd.loc[(pd.["step"]==1),"x"]
 
 """
 
@@ -59,16 +60,24 @@ def get_headers_summary():
     headers_summary = dict()
     headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
     headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
-    headers_summary["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
-    headers_summary["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
-    headers_summary["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
-    headers_summary["cumulated_coulombic_efficiency"] = "Cumulated_Coulombic_Efficiency(percentage)"
+    headers_summary["cumulated_charge_capacity"] = \
+        "Cumulated_Charge_Capacity(mAh/g)"
+    headers_summary["cumulated_discharge_capacity"] = \
+        "Cumulated_Discharge_Capacity(mAh/g)"
+    headers_summary["coulombic_efficiency"] = \
+        "Coulombic_Efficiency(percentage)"
+    headers_summary["cumulated_coulombic_efficiency"] = \
+        "Cumulated_Coulombic_Efficiency(percentage)"
     headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
-    headers_summary["cumulated_coulombic_difference"] = "Cumulated_Coulombic_Difference(mAh/g)"
-    headers_summary["discharge_capacity_loss"] = "Discharge_Capacity_Loss(mAh/g)"
+    headers_summary["cumulated_coulombic_difference"] = \
+        "Cumulated_Coulombic_Difference(mAh/g)"
+    headers_summary["discharge_capacity_loss"] = \
+        "Discharge_Capacity_Loss(mAh/g)"
     headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
-    headers_summary["cumulated_discharge_capacity_loss"] = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
-    headers_summary["cumulated_charge_capacity_loss"] = "Cumulated_Charge_Capacity_Loss(mAh/g)"
+    headers_summary["cumulated_discharge_capacity_loss"] = \
+        "Cumulated_Discharge_Capacity_Loss(mAh/g)"
+    headers_summary["cumulated_charge_capacity_loss"] = \
+        "Cumulated_Charge_Capacity_Loss(mAh/g)"
     headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
     headers_summary["ir_charge"] = "IR_Charge(Ohms)"
     headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
@@ -81,10 +90,14 @@ def get_headers_summary():
     headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
     headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
     headers_summary["cumulated_ric"] = "RIC(none)"
-    headers_summary["low_level"] = "Low_Level(percentage)"  # Sum of irreversible capacity
-    headers_summary["high_level"] = "High_Level(percentage)"  # SEI loss
-    headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
-    headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
+    # Sum of irreversible capacity:
+    headers_summary["low_level"] = "Low_Level(percentage)"
+    # SEI loss:
+    headers_summary["high_level"] = "High_Level(percentage)"
+    headers_summary["shifted_charge_capacity"] = \
+        "Charge_Endpoint_Slippage(mAh/g)"
+    headers_summary["shifted_discharge_capacity"] = \
+        "Discharge_Endpoint_Slippage(mAh/g)"
     headers_summary["temperature_last"] = "Last_Temperature(C)"
     headers_summary["temperature_mean"] = "Average_Temperature(C)"
     headers_summary["pre_aux"] = "Aux_"
@@ -98,7 +111,7 @@ def get_cellpy_units():
     cellpy_units["current"] = 0.001  # mA
     cellpy_units["charge"] = 0.001  # Ah
     cellpy_units["mass"] = 0.001  # mg (used for input of mass)
-    cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. specific capacity
+    cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. spec. capacity)
     return cellpy_units
 
 
@@ -107,7 +120,7 @@ def get_headers_normal():
         (used as column headers for the main data pandas DataFrames)"""
     headers_normal = dict()
     headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
-    headers_normal['ref_aci_phase_angle_txt'] = 'Reference_ACI_Phase_Angle'  # new
+    headers_normal['ref_aci_phase_angle_txt'] = 'Reference_ACI_Phase_Angle'
 
     headers_normal['ac_impedance_txt'] = 'AC_Impedance'
     headers_normal['ref_ac_impedance_txt'] = 'Reference_AC_Impedance'  # new
@@ -117,7 +130,7 @@ def get_headers_normal():
     headers_normal['current_txt'] = 'Current'
     headers_normal['cycle_index_txt'] = 'Cycle_Index'
     headers_normal['data_point_txt'] = 'Data_Point'
-    headers_normal['datetime_txt'] = 'DateTime'  # The only header that uses camel case...
+    headers_normal['datetime_txt'] = 'DateTime'
     headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
     headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
     headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
@@ -186,13 +199,17 @@ def check64bit(current_system="python"):
             if 'PROCESSOR_ARCHITEW6432' in os.environ:
                 return True  # 32 bit program running on 64 bit Windows
             try:
-                return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')  # 64 bit Windows 64 bit program
+                # 64 bit Windows 64 bit program
+                return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')
             except IndexError:
                 pass  # not Windows
             try:
-                return '64' in platform.architecture()[0]  # this often works in Linux
+                # this often works in Linux
+                return '64' in platform.architecture()[0]
             except Exception:
-                return False  # is an older version of Python, assume also an older os (best we can guess)
+                # is an older version of Python, assume also an older os@
+                # (best we can guess)
+                return False
 
 
 def humanize_bytes(b, precision=1):
@@ -248,7 +265,8 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     Args:
         xldate (str): date stamp in Excel format.
         datemode (int): 0 for 1900-based, 1 for 1904-based.
-        option (str): option in ("to_datetime", "to_float", "to_string"), return value
+        option (str): option in ("to_datetime", "to_float", "to_string"),
+            return value
 
     Returns:
         datetime (datetime object, float, or string).
@@ -261,8 +279,10 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
         d = (xldate - 25589) * 86400.0
     else:
         try:
-            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
-            # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds, excel cannot cope with this!
+            d = datetime.datetime(1899, 12, 30) + \
+                datetime.timedelta(days=xldate + 1462 * datemode)
+            # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds,
+            # excel cannot cope with this!
             if option == "to_string":
                 date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
                 d = d.strftime(date_format)
@@ -290,15 +310,17 @@ def Convert2mAhg(c, mass=1.0):
 class FileID(object):
     """class for storing information about the raw-data files.
 
-        This class is used for storing and handling raw-data file information. It is important
-        to keep track of when the data was extracted from the raw-data files so that it is
-        easy to know if the hdf5-files used for storing "treated" data is up-to-date.
+        This class is used for storing and handling raw-data file information.
+        It is important to keep track of when the data was extracted from the
+        raw-data files so that it is easy to know if the hdf5-files used for
+        @storing "treated" data is up-to-date.
 
         Attributes:
             name (str): Filename of the raw-data file.
             full_name (str): Filename including path of the raw-data file.
             size (float): Size of the raw-data file.
-            last_modified (datetime): Last time of modification of the raw-data file.
+            last_modified (datetime): Last time of modification of the raw-data
+                file.
             last_accessed (datetime): last time of access of the raw-data file.
             last_info_changed (datetime): st_ctime of the raw-data file.
             location (str): Location of the raw-data file.
@@ -383,8 +405,8 @@ class FileID(object):
 class DataSet(object):
     """Object to store data for a test.
 
-    This class is used for storing all the relevant data for a 'run', i.e. all the
-    data collected by the tester as stored in the raw-files.
+    This class is used for storing all the relevant data for a 'run', i.e. all
+    the data collected by the tester as stored in the raw-files.
 
     Attributes:
         test_no (int): test number.
@@ -392,7 +414,7 @@ class DataSet(object):
         dfdata (pandas.DataFrame): contains the experimental data points.
         dfsummary (pandas.DataFrame): contains summary of the data pr. cycle.
         step_table (pandas.DataFrame): information for each step, used for
-                                       defining type of step (charge, discharge, etc.)
+            defining type of step (charge, discharge, etc.)
 
     """
 
@@ -401,19 +423,19 @@ class DataSet(object):
         self.logger.debug("created DataSet instance")
 
         self.test_no = None
-        self.mass = prms.Materials["default_mass"]  # mass of (active) material (in mg)
-        self.tot_mass = prms.Materials["default_mass"]  # total mass of material (in mg)
+        self.mass = prms.Materials["default_mass"]  # active material (in mg)
+        self.tot_mass = prms.Materials["default_mass"]  # total material (in mg)
         self.no_cycles = 0.0
         self.charge_steps = None  # not in use at the moment
         self.discharge_steps = None  # not in use at the moment
         self.ir_steps = None  # dict # not in use at the moment
         self.ocv_steps = None  # dict # not in use at the moment
-        self.nom_cap = prms.DataSet["nom_cap"]  # mAh/g (used for finding c-rates)  # mAh/g (used for finding c-rates)
+        self.nom_cap = prms.DataSet["nom_cap"]  # mAh/g (for finding c-rates)
         self.mass_given = False
         self.material = prms.Materials["default_material"]
         self.merged = False
         self.file_errors = None  # not in use at the moment
-        self.loaded_from = None  # name of the .res file it is loaded from (can be list if merged)
+        self.loaded_from = None  # loaded from (can be list if merged)
         self.raw_data_files = []
         self.raw_data_files_length = []
         self.channel_index = None
@@ -441,7 +463,8 @@ class DataSet(object):
         self.step_table_version = STEP_TABLE_VERSION
         self.cellpy_file_version = CELLPY_FILE_VERSION
         self.normal_table_version = NORMAL_TABLE_VERSION
-        # ready for use if implementing loading units (will probably never happen).
+        # ready for use if implementing loading units
+        # (will probably never happen).
         self.raw_units = dict()  # units used for raw_data
 
     def __str__(self):
@@ -498,9 +521,10 @@ class DataSet(object):
 class CellpyData(object):
     """Main class for working and storing data.
 
-    This class is the main work-horse for cellpy where all the functions for reading, selecting, and
-    tweaking your data is located. It also contains the header definitions, both for the cellpy hdf5
-    format, and for the various cell-tester file-formats that can be read. The class can contain
+    This class is the main work-horse for cellpy where all the functions for
+    reading, selecting, and tweaking your data is located. It also contains the
+    header definitions, both for the cellpy hdf5 format, and for the various
+    cell-tester file-formats that can be read. The class can contain
     several tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
@@ -563,7 +587,8 @@ class CellpyData(object):
                                    'ocvrlx_up', 'ocvrlx_down', 'ir',
                                    'rest', 'not_known']
         # - options
-        self.force_step_table_creation = prms.Reader["force_step_table_creation"]
+        self.force_step_table_creation = \
+            prms.Reader["force_step_table_creation"]
         self.force_all = prms.Reader["force_all"]
         self.sep = prms.Reader["sep"]
         self.cycle_mode = prms.Reader["cycle_mode"]
@@ -579,7 +604,8 @@ class CellpyData(object):
         self.daniel_number = prms.Reader["daniel_number"]
         self.raw_datadir = prms.Reader["raw_datadir"]
         self.cellpy_datadir = prms.Reader["cellpy_datadir"]
-        self.auto_dirs = prms.Reader["auto_dirs"]  # search in prm-file for res and hdf5 dirs in loadcell
+        # search in prm-file for res and hdf5 dirs in loadcell:
+        self.auto_dirs = prms.Reader["auto_dirs"]
 
         # - headers and instruments
         self.headers_normal = get_headers_normal()
@@ -598,7 +624,7 @@ class CellpyData(object):
         return self.datasets[self.selected_dataset_number]
 
     def set_instrument(self, instrument=None):
-        """Set the instrument (i.e. tell cellpy what kind of file you are going to work with).
+        """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Args:
             instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]
@@ -639,8 +665,9 @@ class CellpyData(object):
         warnings.warn("not implemented")
 
     def _set_arbin(self):
-        # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
-        # more transparent to separate them into respective methods pr instrument.
+        # Note! All these _set_instrument methods can be generalized to one
+        # method. At the moment, I find it more transparent to separate them
+        # into respective methods pr instrument.
 
         from cellpy.readers.instruments import arbin as instr
         self.loader_class = instr.ArbinLoader()
@@ -661,8 +688,10 @@ class CellpyData(object):
         self.loader = self.loader_class.loader
 
     # def _set_arbin_experimental(self):
-    #     # Note! All these _set_instrument methods can be generalized to one method. At the moment, I find it
-    #     # more transparent to separate them into respective methods pr instrument.
+    #     # Note! All these _set_instrument methods can be generalized to one
+    #     # method. At the moment, I find it
+    #     # more transparent to separate them into respective methods pr
+    #     # instrument.
     #     from .instruments import arbin_experimental as instr
     #     self.loader_class = instr.ArbinLoader()
     #     # get information
@@ -687,14 +716,17 @@ class CellpyData(object):
         log.setup_logging(default_level="DEBUG")
 
     def set_cycle_mode(self, cycle_mode):
-        """set the cycle mode (will be deprecated soon - use CellpyData.cyclemode = "anode" etc.)"""
+        """set the cycle mode.
+
+        (will be deprecated soon - use CellpyData.cyclemode = "anode" etc.)"""
         # should use proper python 'setting' (decorator etc)
         self.cycle_mode = cycle_mode
 
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
 
-        Used for setting directory for looking for res-files. A valid directory name is required.
+        Used for setting directory for looking for res-files.@
+        A valid directory name is required.
 
         Args:
             directory (str): path to res-directory
@@ -718,7 +750,8 @@ class CellpyData(object):
     def set_cellpy_datadir(self, directory=None):
         """Set the directory containing .hdf5-files.
 
-        Used for setting directory for looking for hdf5-files. A valid directory name is required.
+        Used for setting directory for looking for hdf5-files.
+        A valid directory name is required.
 
         Args:
             directory (str): path to hdf5-directory
@@ -750,11 +783,14 @@ class CellpyData(object):
 
 
         Returns:
-            False if the raw files are newer than the cellpy hdf5-file (update needed).
-            If return_res is True it also returns list of raw-file_names as second argument.
+            False if the raw files are newer than the cellpy hdf5-file
+                (update needed).
+            If return_res is True it also returns list of raw-file_names as
+                second argument.
             """
 
-        txt = "check_file_ids\n  checking file ids - using '%s'" % self.filestatuschecker
+        txt = "check_file_ids\n  checking file ids - using '%s'" \
+              % self.filestatuschecker
 
         self.logger.debug(txt)
         self.logger.info(txt)
@@ -822,12 +858,14 @@ class CellpyData(object):
         try:
             fidtable = store.select("CellpyData/fidtable")
         except Exception:
-            self.logger.warning("no fidtable - you should update your hdf5-file")
+            self.logger.warning("no fidtable -"
+                                " you should update your hdf5-file")
             fidtable = None
         finally:
             store.close()
         if fidtable is not None:
-            raw_data_files, raw_data_files_length = self._convert2fid_list(fidtable)
+            raw_data_files, raw_data_files_length = \
+                self._convert2fid_list(fidtable)
             txt = "contains %i res-files" % (len(raw_data_files))
             self.logger.debug(txt)
             ids = dict()
@@ -893,7 +931,8 @@ class CellpyData(object):
 
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
                  summary_on_raw=False, summary_ir=True, summary_ocv=False,
-                 summary_end_v=True, only_summary=False, only_first=False, force_raw=False,
+                 summary_end_v=True, only_summary=False, only_first=False,
+                 force_raw=False,
                  use_cellpy_stat_file=True):
 
         """Loads data for given cells.
@@ -918,9 +957,11 @@ class CellpyData(object):
             >>> for srno in srnos:
             >>> ... my_run_name = my_dbreader.get_cell_name(srno)
             >>> ... mass = my_dbreader.get_mass(srno)
-            >>> ... rawfiles, cellpyfiles = filefinder.search_for_files(my_run_name)
+            >>> ... rawfiles, cellpyfiles = \
+            >>> ...     filefinder.search_for_files(my_run_name)
             >>> ... cell_data = cellreader.CellpyData()
-            >>> ... cell_data.loadcell(raw_files = rawfiles, cellpy_file = cellpyfiles)
+            >>> ... cell_data.loadcell(raw_files=rawfiles,
+            >>> ...                    cellpy_file=cellpyfiles)
             >>> ... cell_data.set_mass(mass)
             >>> ... if not cell_data.summary_exists:
             >>> ...     cell_data.make_summary() # etc. etc.
@@ -950,7 +991,8 @@ class CellpyData(object):
             self.logger.debug(raw_files)
             self.from_raw(raw_files)
             self.logger.debug("loaded files")
-            if self.status_datasets:  # Check if the run was loaded ([] if empty)
+            # Check if the run was loaded ([] if empty)
+            if self.status_datasets:
                 if mass:
                     self.set_mass(mass)
                 if summary_on_raw:
@@ -967,12 +1009,13 @@ class CellpyData(object):
         """Load a raw data-file.
 
         Args:
-            file_names (list of raw-file names): uses CellpyData.file_names if None. If the
-               list contains more than one file name, then the runs will be merged together.
+            file_names (list of raw-file names): uses CellpyData.file_names if
+                None. If the list contains more than one file name, then the
+                runs will be merged together.
         """
-        # This function only loads one test at a time (but could contain several files). The
-        # function from_res() also implements loading several datasets (using list of lists as
-        # input.
+        # This function only loads one test at a time (but could contain several
+        # files). The function from_res() also implements loading several
+        # datasets (using list of lists as input).
 
         if file_names:
             self.file_names = file_names
@@ -989,7 +1032,8 @@ class CellpyData(object):
             self.logger.debug("loading raw file: {}".format(f))
             new_tests = raw_file_loader(f, **kwargs)  # this should now work
             if test is not None:
-                test[set_number] = self._append(test[set_number], new_tests[set_number])
+                test[set_number] = self._append(test[set_number],
+                                                new_tests[set_number])
                 self.logger.debug("added this test - starting merging")
                 self.logger.debug(new_tests[set_number].raw_data_files)
                 self.logger.debug(new_tests[set_number].raw_data_files_length)
@@ -1002,7 +1046,8 @@ class CellpyData(object):
                     counter += 1
                     if counter > 10:
                         self.logger.debug("ERROR? Too many files to merge")
-                        raise ValueError("Too many files to merge - could be a p2-p3 zip thing")
+                        raise ValueError("Too many files to merge - "
+                                         "could be a p2-p3 zip thing")
             else:
                 test = new_tests
         self.logger.debug("finished loading the raw-files")
@@ -1014,13 +1059,16 @@ class CellpyData(object):
         self.status_datasets = self._validate_datasets()
 
     def from_res(self, filenames=None, check_file_type=True):
-        """Convenience function for loading arbin-type data into the datastructure.
+        """Convenience function for loading arbin-type data into the
+        datastructure.
 
         Args:
-            filenames: ((lists of) list of raw-file names): uses cellpy.file_names if None.
-                If list-of-list, it loads each list into separate datasets. The files in the
-                inner list will be merged.
-            check_file_type (bool): check file type if True (res-, or cellpy-format)
+            filenames: ((lists of) list of raw-file names): uses
+                cellpy.file_names if None.
+                If list-of-list, it loads each list into separate datasets.
+                The files in the inner list will be merged.
+            check_file_type (bool): check file type if True
+                (res-, or cellpy-format)
         """
         warnings.warn("deprecated - use from_raw instead", DeprecationWarning)
         txt = "number of datasets: %i" % len(self.file_names)
@@ -1030,29 +1078,33 @@ class CellpyData(object):
         filetype = "res"
         raw_file_loader = self.loader
 
-        # checking if new file_names is provided or if we should use the stored (self.file_names)
-        # values
+        # checking if new file_names is provided or if we should use the stored
+        # (self.file_names) values
         if filenames:
             self.file_names = filenames
             if not self._is_listtype(self.file_names):
                 self.file_names = [self.file_names]
 
-        # self.file_names is now a list of file_names or list of lists of file_names
+        # self.file_names is now a list of file_names or list of lists of
+        # file_names
 
         for f in self.file_names:  # iterating through list
             self.logger.debug(f)
             list_type = self._is_listtype(f)
             counter += 1
 
-            if not list_type:  # item contains contains only one filename, f=filename_01, so load it
+            if not list_type:  # item contains contains only one filename,
+                # f=filename_01, so load it
                 if check_file_type:
                     filetype = self._check_file_type(f)
                 if filetype == "res":
                     newtests = raw_file_loader(f)
                 elif filetype == "h5":
                     newtests = self._load_hdf5(f)
-            else:  # item contains several file_names (sets of data) or is a single valued list
-                if not len(f) > 1:  # f = [file_01,] single valued list, so load it
+            else:  # item contains several file_names (sets of data) or is a
+                # single valued list. f = [file_01,] single valued list,
+                # so load it
+                if not len(f) > 1:
                     if check_file_type:
                         filetype = self._check_file_type(f[0])
                     if filetype == "res":
@@ -1060,7 +1112,8 @@ class CellpyData(object):
 
                     elif filetype == "h5":
                         newtests = self._load_hdf5(f[0])
-                else:  # f = [file_01, file_02, ....] multiple files, so merge them
+                else:  # f = [file_01, file_02, ....] multiple files,
+                    # so merge them
                     txt = "multiple files - merging"
                     self.logger.debug(txt)
                     first_test = True
@@ -1080,7 +1133,8 @@ class CellpyData(object):
                             newtests = newtests1
                             first_test = False
                         else:
-                            newtests[set_number] = self._append(newtests[set_number], newtests1[set_number])
+                            newtests[set_number] = self._append(newtests[set_number],
+                                                                newtests1[set_number])
                             for raw_data_file, file_size in zip(newtests1[set_number].raw_data_files,
                                                                 newtests1[set_number].raw_data_files_length):
                                 newtests[set_number].raw_data_files.append(raw_data_file)
@@ -1117,7 +1171,8 @@ class CellpyData(object):
         return v
 
     def check(self):
-        """Returns False if no datasets exists or if one or more of the datasets are empty"""
+        """Returns False if no datasets exists or if one or more of the datasets
+        are empty"""
 
         if len(self.status_datasets) == 0:
             return False
@@ -1132,7 +1187,8 @@ class CellpyData(object):
             return True
 
     def _clean_up_normal_table(self, test=None, dataset_number=None):
-        # check that test contains all the necessary headers (and add missing ones)
+        # check that test contains all the necessary headers (and add missing
+        # ones)
         if test is None:
             dataset_number = self._validate_dataset_number(dataset_number)
             test = self.datasets[dataset_number]
@@ -1165,7 +1221,8 @@ class CellpyData(object):
             self.logger.info("file loaded")
         except AttributeError:
             new_datasets = []
-            self.logger.warning("This cellpy-file version is not supported by current reader (try to update cellpy).")
+            self.logger.warning("This cellpy-file version is not supported by"
+                                "current reader (try to update cellpy).")
 
         if new_datasets:
             for dataset in new_datasets:
@@ -1183,7 +1240,8 @@ class CellpyData(object):
 
         Args:
             filename (str): Name of the cellpy file.
-            parent_level (str) (optional): name of the parent level (defaults to "CellpyData")
+            parent_level (str) (optional): name of the parent level
+                (defaults to "CellpyData")
 
         Returns:
             loaded datasets (DataSet-object)
@@ -1201,19 +1259,24 @@ class CellpyData(object):
 
         for key in required_keys:
             if not key in store.keys():
-                self.logger.info(f"This hdf-file is not good enough - at least one key is missing: {key}")
-                raise Exception(f"OH MY GOD! At least one crucial key is missing {key}!")
+                self.logger.info(f"This hdf-file is not good enough - "
+                                 f"at least one key is missing: {key}")
+                raise Exception(f"OH MY GOD! At least one crucial key"
+                                f"is missing {key}!")
 
         self.logger.debug(f"Keys in current hdf5-file: {store.keys()}")
         data = DataSet()
 
         if parent_level != "CellpyData":
-            self.logger.debug("Using non-default parent label for the hdf-store: {}".format(parent_level))
+            self.logger.debug("Using non-default parent label for the "
+                              "hdf-store: {}".format(parent_level))
 
-        infotable = store.select(parent_level + "/info")  # remark! changed spelling from lower letter to camel-case!
+        infotable = store.select(parent_level + "/info")  # remark! changed
+        # spelling from lower letter to camel-case!
 
         try:
-            data.cellpy_file_version = self._extract_from_dict(infotable, "cellpy_file_version")
+            data.cellpy_file_version = \
+                self._extract_from_dict(infotable, "cellpy_file_version")
         except Exception:
             data.cellpy_file_version = 0
 
@@ -1234,7 +1297,8 @@ class CellpyData(object):
             data.step_table_made = False
         try:
             fidtable = store.select(
-                parent_level + "/fidtable")  # remark! changed spelling from lower letter to camel-case!
+                parent_level + "/fidtable")  # remark! changed spelling from
+            # lower letter to camel-case!
             fidtable_selected = True
         except Exception:
             fidtable = []
@@ -1245,13 +1309,15 @@ class CellpyData(object):
 
         newtests = []  # but this is ready when that time comes
 
-        # The infotable stores "meta-data". The follwing statements loads the content of infotable
-        # and updates div. DataSet attributes. Maybe better use it as dict?
+        # The infotable stores "meta-data". The follwing statements loads the
+        # content of infotable and updates div. DataSet attributes.
+        # Maybe better use it as dict?
 
         data = self._load_infotable(data, infotable, filename)
 
         if fidtable_selected:
-            data.raw_data_files, data.raw_data_files_length = self._convert2fid_list(fidtable)
+            data.raw_data_files, data.raw_data_files_length = \
+                self._convert2fid_list(fidtable)
         else:
             data.raw_data_files = None
             data.raw_data_files_length = None
@@ -1268,10 +1334,13 @@ class CellpyData(object):
         data.loaded_from = filename
         data.charge_steps = self._extract_from_dict(infotable, "charge_steps")
         data.channel_index = self._extract_from_dict(infotable, "channel_index")
-        data.channel_number = self._extract_from_dict(infotable, "channel_number")
+        data.channel_number = \
+            self._extract_from_dict(infotable, "channel_number")
         data.creator = self._extract_from_dict(infotable, "creator")
-        data.schedule_file_name = self._extract_from_dict(infotable, "schedule_file_name")
-        data.start_datetime = self._extract_from_dict(infotable, "start_datetime")
+        data.schedule_file_name = \
+            self._extract_from_dict(infotable, "schedule_file_name")
+        data.start_datetime = \
+            self._extract_from_dict(infotable, "start_datetime")
         data.test_ID = self._extract_from_dict(infotable, "test_ID")
         # hack to allow the renaming of tests to datasets
         try:
@@ -1281,7 +1350,8 @@ class CellpyData(object):
             data.name = self._extract_from_dict(infotable, "test_name")
 
         try:
-            data.step_table_made = self._extract_from_dict(infotable, "step_table_made")
+            data.step_table_made = \
+                self._extract_from_dict(infotable, "step_table_made")
         except Exception:  # not needed?
             data.step_table_made = None
         return data
@@ -1405,17 +1475,20 @@ class CellpyData(object):
         # finding diff of time
         start_time_1 = t1.start_datetime
         start_time_2 = t2.start_datetime
-        diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(start_time_1)
+        diff_time = xldate_as_datetime(start_time_2) - \
+                    xldate_as_datetime(start_time_1)
         diff_time = diff_time.total_seconds()
         sort_key = self.headers_normal['datetime_txt']  # DateTime
         # mod data points for set 2
         data_point_header = self.headers_normal['data_point_txt']
         last_data_point = max(t1.dfdata[data_point_header])
-        t2.dfdata[data_point_header] = t2.dfdata[data_point_header] + last_data_point
+        t2.dfdata[data_point_header] = t2.dfdata[data_point_header] + \
+                                       last_data_point
         # mod cycle index for set 2
         cycle_index_header = self.headers_normal['cycle_index_txt']
         last_cycle = max(t1.dfdata[cycle_index_header])
-        t2.dfdata[cycle_index_header] = t2.dfdata[cycle_index_header] + last_cycle
+        t2.dfdata[cycle_index_header] = t2.dfdata[cycle_index_header] + \
+                                        last_cycle
         # mod test time for set 2
         test_time_header = self.headers_normal['test_time_txt']
         t2.dfdata[test_time_header] = t2.dfdata[test_time_header] + diff_time
@@ -1450,11 +1523,13 @@ class CellpyData(object):
             if self_made_summary:
                 # mod cycle index for set 2
                 last_cycle = max(t1.dfsummary[cycle_index_header])
-                t2.dfsummary[cycle_index_header] = t2.dfsummary[cycle_index_header] + last_cycle
+                t2.dfsummary[cycle_index_header] = t2.dfsummary[cycle_index_header] \
+                                                   + last_cycle
                 # mod test time for set 2
-                t2.dfsummary[test_time_header] = t2.dfsummary[test_time_header] + diff_time
-                # to-do: mod all the cumsum stuff in the summary (best to make summary after merging)
-                # merging
+                t2.dfsummary[test_time_header] = t2.dfsummary[test_time_header] \
+                                                 + diff_time
+                # to-do: mod all the cumsum stuff in the summary (best to make
+                # summary after merging) merging
             else:
                 t2.dfsummary[data_point_header] = t2.dfsummary[data_point_header] + last_data_point
             dfsummary2 = pd.concat([t1.dfsummary, t2.dfsummary], ignore_index=True)
@@ -1466,10 +1541,12 @@ class CellpyData(object):
                 cycle_index_header = self.headers_normal['cycle_index_txt']
                 t2.step_table[self.headers_step_table["cycle"]] = t2.dfdata[
                                                                       self.headers_step_table["cycle"]] + last_cycle
-                step_table2 = pd.concat([t1.step_table, t2.step_table], ignore_index=True)
+                step_table2 = pd.concat([t1.step_table, t2.step_table],
+                                        ignore_index=True)
                 test.step_table = step_table2
             else:
-                self.logger.debug("could not merge step tables (non-existing) - create them first!")
+                self.logger.debug("could not merge step tables (non-existing) -"
+                                  "create them first!")
 
         # then the rest...
         test.no_cycles = max(dfdata2[cycle_index_header])
@@ -1494,7 +1571,7 @@ class CellpyData(object):
 
         return test
 
-    # --------------iterate-and-find-in-data----------------------------------------
+    # --------------iterate-and-find-in-data-----------------------------------
 
     def _validate_dataset_number(self, n, check_for_empty=True):
         # Returns dataset_number (or None if empty)
@@ -1572,7 +1649,8 @@ class CellpyData(object):
         st = self.datasets[dataset_number].step_table
         print(st)
 
-    def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False, cycle_number=None, dataset_number=None):
+    def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False,
+                         cycle_number=None, dataset_number=None):
         # TODO: include sub_steps here
         """Get the step numbers of selected type.
 
@@ -1583,14 +1661,17 @@ class CellpyData(object):
             allctypes (bool): get all types of charge (or discharge).
             pdtype (bool): return results as pandas.DataFrame
             cycle_number (int): selected cycle, selects all if not set.
-            dataset_number (int): test number (default first) (usually not used).
+            dataset_number (int): test number (default first)
+                (usually not used).
 
         Returns:
-            List of step numbers corresponding to the selected steptype. Returns a pandas.DataFrame
+            List of step numbers corresponding to the selected steptype.
+                Returns a pandas.DataFrame
             instead of a list if pdtype is set to True.
 
         Example:
-            >>> my_charge_steps = CellpyData.get_step_numbers("charge", cycle_number = 3)
+            >>> my_charge_steps = CellpyData.get_step_numbers("charge",
+            cycle_number = 3)
             >>> print my_charge_steps
             [5,8]
 
