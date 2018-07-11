@@ -1249,7 +1249,7 @@ class CellpyData(object):
         """
 
         if not os.path.isfile(filename):
-            self.logger.info(r"file does not exist: {filename}")
+            self.logger.info(f"file does not exist: {filename}")
             raise IOError
         self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
