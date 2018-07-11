@@ -61,11 +61,6 @@ def test_fid(cellpy_data_instance):
     print(fid_object.get_last())
 
 
-def test_str_cellpy_data_object(dataset):
-    assert str(dataset.dataset).find("silicon") >= 0
-    assert str(dataset.dataset).find("rosenborg") < 0
-
-
 def test_only_fid():
     from cellpy.readers.cellreader import FileID
     my_fid_one = FileID()
@@ -207,4 +202,6 @@ def test_save_cvs(cellpy_data_instance):
     # assert not os.path.isfile(tmp_file)
 
 
-
+def test_str_cellpy_data_object(dataset):
+    assert str(dataset.dataset).find("silicon") >= 0
+    assert str(dataset.dataset).find("rosenborg") < 0
