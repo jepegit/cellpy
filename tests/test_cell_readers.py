@@ -18,9 +18,25 @@ def cellpy_data_instance():
 @pytest.fixture
 def dataset():
     from cellpy import cellreader
-    d = cellreader.CellpyData()
-    d.load(fdv.cellpy_file_path)
-    return d
+    a = cellreader.CellpyData()
+    a.from_raw(fdv.res_file_path)
+    a.set_mass(1.0)
+    a.make_summary(find_ocv=False, find_ir=True,
+                   find_end_voltage=True)
+    a.save(fdv.cellpy_file_path)
+
+    b = cellreader.CellpyData()
+    b.load(fdv.cellpy_file_path)
+    return b
+
+
+def test_create_cellpyfile(cellpy_data_instance):
+    # create a cellpy file from the res-file (used for testing)
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    print(f"trying to save the cellpy file to {fdv.cellpy_file_path}")
+    cellpy_data_instance.save(fdv.cellpy_file_path)
 
 
 def test_search_for_files():
@@ -101,13 +117,7 @@ def test_make_summary(cellpy_data_instance):
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
-def test_create_cellpyfile(cellpy_data_instance):
-    # create a cellpy file from the res-file (used for testing)
-    cellpy_data_instance.from_raw(fdv.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
-    cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-    print(f"trying to save the cellpy file to {fdv.cellpy_file_path}")
-    cellpy_data_instance.save(fdv.cellpy_file_path)
+
 
 
 def test_summary_from_cellpyfile(cellpy_data_instance):
