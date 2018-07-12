@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import os
+import types
 import logging
 from cellpy import log
 from . import fdv
@@ -33,22 +34,35 @@ def test_logger(clean_dir):
     log.setup_logging(default_level="DEBUG")
     tmp_logger = logging.getLogger()
     assert tmp_logger.level == logging.DEBUG
+    tmp_logger.info("debug: testing logger (info)")
+    tmp_logger.debug("debug: testing logger (debug)")
 
     log.setup_logging(default_level="INFO")
     tmp_logger = logging.getLogger()
-    assert tmp_logger.level == logging.INFO
+    assert tmp_logger.level == logging.DEBUG  # root logger
+    
+    tmp_logger.info("info: testing logger (info)")
+    tmp_logger.debug("info: testing logger (debug)")
 
     log.setup_logging()
     tmp_logger = logging.getLogger()
-    assert tmp_logger.level == logging.INFO
+    assert tmp_logger.level == logging.DEBUG
+
+    tmp_logger.info("default: testing logger (info)")
+    tmp_logger.debug("default: testing logger (debug)")
 
     log.setup_logging(default_json_path="./a_file_that_does_not_exist.json")
     assert len(logging.getLogger().handlers) == 4
+
     log.setup_logging(default_json_path=test_logging_json)
     tmp_logger = logging.getLogger()
+
     log.setup_logging(custom_log_dir=clean_dir)
     tmp_logger = logging.getLogger()
     rfh = tmp_logger.handlers[-1]
+    tmp_logger.info("customdir, default: testing logger (info)")
+    tmp_logger.debug("customdir, default: testing logger (debug)")
+    tmp_logger.error("customdir, default: testing logger (error)")
 
 
 @pytest.mark.smoketest

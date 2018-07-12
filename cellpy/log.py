@@ -28,8 +28,10 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
         # changing config if required by user
         if custom_log_dir:
             if not os.path.isdir(custom_log_dir):
-                warnings.warn(
-                    "could not set custom log-dir - non-existing directory")
+                warning_txt = ("Could not set custom log-dir - "
+                               "non-existing directory"
+                               f"\n{custom_log_dir}")
+                warnings.warn(warning_txt)
             else:
                 for file_handler in ["error_file_handler", "info_file_handler",
                                      "debug_file_handler"]:
@@ -52,7 +54,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
             else:
                 try:
                     # setting root level
-                    config["root"]["level"] = default_level
+                    # config["root"]["level"] = default_level
                     # setting streaming level
                     config["handlers"]["console"]["level"] = default_level
                     if default_level == "DEBUG":

@@ -117,9 +117,6 @@ def test_make_summary(cellpy_data_instance):
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
-
-
-
 def test_summary_from_cellpyfile(cellpy_data_instance):
     cellpy_data_instance.load(fdv.cellpy_file_path)
     s1 = cellpy_data_instance.get_summary()

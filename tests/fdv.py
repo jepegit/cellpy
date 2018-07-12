@@ -1,4 +1,6 @@
-"""Files, Directories, and Variables to be used in the tests. This works only for the test-files!"""
+"""Files, Directories, and Variables to be used in the tests.
+
+This works only for the running pytest on the test-files!"""
 
 import os
 
@@ -11,6 +13,7 @@ raw_data_dir = os.path.join(data_dir, "data")
 output_dir = os.path.join(data_dir, "out")
 cellpy_data_dir = os.path.join(data_dir, "hdf5")
 db_dir = os.path.join(data_dir, "db")
+log_dir = os.path.join(data_dir, "log")
 
 # -------- common files -----------------------------
 
