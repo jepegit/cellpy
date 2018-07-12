@@ -5,6 +5,7 @@ import json
 import logging.config
 import logging
 import warnings
+from cellpy import prms
 
 
 def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
@@ -12,7 +13,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
     """Setup logging configuration
 
     """
-    # finding the json log-config
+
     if not default_json_path:
         default_json_path = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "logging.json")
@@ -21,30 +22,36 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
     if value:
         path = value
 
-    # reading the json log-config file
     if os.path.exists(path):
         with open(path, 'rt') as f:
             config = json.load(f)
-        # changing config if required by user
+
+        log_dir = os.path.abspath(prms.Paths["filelogdir"])
+
         if custom_log_dir:
-            if not os.path.isdir(custom_log_dir):
-                warning_txt = ("Could not set custom log-dir - "
-                               "non-existing directory"
-                               f"\n{custom_log_dir}")
-                warnings.warn(warning_txt)
-            else:
-                for file_handler in ["error_file_handler", "info_file_handler",
-                                     "debug_file_handler"]:
-                    try:
-                        file_name = config["handlers"][file_handler]["filename"]
-                        config["handlers"][file_handler][
-                            "filename"] = os.path.join(custom_log_dir,
-                                                       file_name)
-                    except Exception as e:
-                        warnings.warn("could not set custom log-dir" + str(e))
+            log_dir = custom_log_dir
+
+        if not os.path.isdir(log_dir):
+            warning_txt = ("Could not set custom log-dir - "
+                           "non-existing directory"
+                           f"\n{custom_log_dir}")
+            warnings.warn(warning_txt)
+            log_dir = os.getcwd()
+
+        for file_handler in ["error_file_handler", "info_file_handler",
+                             "debug_file_handler"]:
+            try:
+                file_name = config["handlers"][file_handler]["filename"]
+                print(f"Filename: {file_name}")
+                print(f"Full path: {os.path.join(log_dir,file_name)}")
+
+                config["handlers"][file_handler][
+                    "filename"] = os.path.join(log_dir,
+                                               file_name)
+            except Exception as e:
+                warnings.warn("could not set custom log-dir" + str(e))
 
         if default_level:
-            # set "root": {"level": "INFO",} to default_level
             w_txt = "could not set custom default level for logger"
             if default_level not in ["INFO", "DEBUG"]:
                 _txt = "\nonly 'INFO' and 'DEBUG' is supported"
@@ -53,9 +60,6 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
 
             else:
                 try:
-                    # setting root level
-                    # config["root"]["level"] = default_level
-                    # setting streaming level
                     config["handlers"]["console"]["level"] = default_level
                     if default_level == "DEBUG":
                         config["handlers"]["console"]["formatter"] = "stamped"
