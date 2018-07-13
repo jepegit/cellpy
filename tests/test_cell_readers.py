@@ -1,6 +1,7 @@
 import os
 import tempfile
 import shutil
+import datetime
 import pytest
 import logging
 from cellpy import log
@@ -37,6 +38,26 @@ def test_create_cellpyfile(cellpy_data_instance):
     cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
     print(f"trying to save the cellpy file to {fdv.cellpy_file_path}")
     cellpy_data_instance.save(fdv.cellpy_file_path)
+
+
+@pytest.mark.parametrize("xldate, datemode, option, expected", [
+    (0, 0, "to_datetime", datetime.datetime(1899, 12, 30, 0, 0)),
+    (0, 1, "to_datetime", datetime.datetime(1904, 1, 1, 0, 0)),
+    (100, 0, "to_datetime", datetime.datetime(1900, 4, 9, 0, 0)),
+    (0, 0, "to_float", -2210889600.0),
+    (0, 0, "to_string", "1899-12-30 00:00:00"),
+    pytest.mark.xfail((0, 0, "to_datetime", 0)),
+])
+def test_xldate_as_datetime(xldate, datemode, option, expected):
+    from cellpy import cellreader
+    result = cellreader.xldate_as_datetime(xldate, datemode, option)
+    assert result == expected
+
+
+def test_check64bit():
+    from cellpy import cellreader
+    cellreader.check64bit()
+    cellreader.check64bit("os")
 
 
 def test_search_for_files():
