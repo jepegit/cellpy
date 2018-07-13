@@ -57,7 +57,7 @@ dist:  ## makes a distribution and uploads to PyPI
 	twine upload dist/*
 
 coverage: ## check code coverage quickly with the default Python
-	pytest --cov
+	pytest --cov --durations=10
 		coverage report -m
 		coverage html
 		$(BROWSER) htmlcov/index.html

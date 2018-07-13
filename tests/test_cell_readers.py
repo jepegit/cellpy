@@ -18,7 +18,7 @@ def cellpy_data_instance():
     return cellreader.CellpyData()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def dataset():
     from cellpy import cellreader
     a = cellreader.CellpyData()
