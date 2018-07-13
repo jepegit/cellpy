@@ -4,6 +4,8 @@ import shutil
 import datetime
 import pytest
 import logging
+
+from cellpy.exceptions import DeprecatedFeature
 from cellpy import log
 from . import fdv
 
@@ -54,58 +56,70 @@ def test_xldate_as_datetime(xldate, datemode, option, expected):
     assert result == expected
 
 
-def test_validate_dataset_number():
-    print("MISSING TEST")
+@pytest.mark.parametrize("number", [0,pytest.mark.xfail(2, raises=IndexError)])
+def test_validate_dataset_number(dataset, number):
+    dataset._validate_dataset_number(number)
 
 
 def test_merge():
     print("MISSING TEST")
 
 
-def test_clean_up_normal_table():
-    print("MISSING TEST")
-    print("DELETE FUNC?")
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_clean_up_normal_table(dataset):
+    dataset._clean_up_normal_table()
 
 
-def test_print_step_table():
-    print("MISSING TEST")
+def test_print_step_table(dataset):
+    dataset.print_step_table()
 
 
-def test_select_steps():
-    print("MISSING TEST")
-    print("DELETE FUNC?")
+@pytest.mark.xfail(raises=DeprecatedFeature)
+def test_select_steps(dataset):
+    step_dict = dict()
+    dataset.select_steps(step_dict)
 
 
-def test_populate_step_dict():
-    print("MISSING TEST")
-    print("DELETE FUNC?")
+@pytest.mark.xfail(raises=DeprecatedFeature)
+def test_populate_step_dict(dataset):
+    dataset.populate_step_dict(step="charge")
 
 
-def test_from_res():
-    print("MISSING TEST")
-    print("DELETE FUNC?")
+@pytest.mark.xfail(raises=DeprecatedFeature)
+def test_from_res(dataset):
+    dataset.from_res()
 
 
-def test_cap_mod_summary():
-    print("MISSING TEST")
-    print("DELETE FUNC?")
+def test_cap_mod_summary(dataset):
+    summary = dataset.dataset.dfsummary
+    dataset._cap_mod_summary(summary, "reset")
 
 
-def test_cap_mod_normal():
-    print("MISSING TEST")
-    print("DELETE FUNC?")
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_cap_mod_summary_fail(dataset):
+    summary = dataset.dataset.dfsummary
+    dataset._cap_mod_summary(summary, "fix")
 
 
-def test_get_number_of_tests():
-    print("MISSING TEST")
+def test_cap_mod_normal(dataset):
+    dataset._cap_mod_normal()
 
 
-def test_sget_voltage():
-    print("MISSING TEST")
+def test_get_number_of_tests(dataset):
+    n = dataset.get_number_of_tests()
+    assert n == 1
 
 
-def test_sget_steptime():
-    print("MISSING TEST")
+def test_sget_voltage(dataset):
+    steps = dataset.get_step_numbers("charge")
+    x = dataset.sget_voltage(3, steps[3])
+    assert len(x) == 378
+
+
+def test_sget_steptime(dataset):
+    steps = dataset.get_step_numbers("charge")
+    x = dataset.sget_steptime(3, steps[3])
+    assert len(x) == 378
 
 
 def test_sget_timestamp():
@@ -130,7 +144,7 @@ def test_get_diagnostics_plot():
 
 def test_set_testnumber():
     print("MISSING TEST")
-    
+
 
 def test_check64bit():
     from cellpy import cellreader

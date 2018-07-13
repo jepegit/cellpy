@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 import logging
 import cellpy.parameters.prms as prms
-from cellpy.errors import WrongFileVersion
+from cellpy.exceptions import WrongFileVersion, DeprecatedFeature
 
 CELLPY_FILE_VERSION = 3
 MINIMUM_CELLPY_FILE_VERSION = 1
@@ -1071,91 +1071,8 @@ class CellpyData(object):
             check_file_type (bool): check file type if True
                 (res-, or cellpy-format)
         """
-        warnings.warn("deprecated - use from_raw instead", DeprecationWarning)
-        txt = "number of datasets: %i" % len(self.file_names)
-        self.logger.debug(txt)
-        set_number = 0
-        counter = 0
-        filetype = "res"
-        raw_file_loader = self.loader
+        raise DeprecatedFeature
 
-        # checking if new file_names is provided or if we should use the stored
-        # (self.file_names) values
-        if filenames:
-            self.file_names = filenames
-            if not self._is_listtype(self.file_names):
-                self.file_names = [self.file_names]
-
-        # self.file_names is now a list of file_names or list of lists of
-        # file_names
-
-        for f in self.file_names:  # iterating through list
-            self.logger.debug(f)
-            list_type = self._is_listtype(f)
-            counter += 1
-
-            if not list_type:  # item contains contains only one filename,
-                # f=filename_01, so load it
-                if check_file_type:
-                    filetype = self._check_file_type(f)
-                if filetype == "res":
-                    newtests = raw_file_loader(f)
-                elif filetype == "h5":
-                    newtests = self._load_hdf5(f)
-            else:  # item contains several file_names (sets of data) or is a
-                # single valued list. f = [file_01,] single valued list,
-                # so load it
-                if not len(f) > 1:
-                    if check_file_type:
-                        filetype = self._check_file_type(f[0])
-                    if filetype == "res":
-                        newtests = raw_file_loader(f[0])
-
-                    elif filetype == "h5":
-                        newtests = self._load_hdf5(f[0])
-                else:  # f = [file_01, file_02, ....] multiple files,
-                    # so merge them
-                    txt = "multiple files - merging"
-                    self.logger.debug(txt)
-                    first_test = True
-                    newtests = None
-                    for f2 in f:
-                        txt = "file: %s" % f2
-                        self.logger.debug(txt)
-                        if check_file_type:
-                            filetype = self._check_file_type(f2)
-                        if filetype == "res":
-                            newtests1 = raw_file_loader(f2)  # loading file
-
-                        # print "loaded file",
-                        # print f2
-
-                        if first_test:
-                            newtests = newtests1
-                            first_test = False
-                        else:
-                            newtests[set_number] = self._append(newtests[set_number],
-                                                                newtests1[set_number])
-                            for raw_data_file, file_size in zip(newtests1[set_number].raw_data_files,
-                                                                newtests1[set_number].raw_data_files_length):
-                                newtests[set_number].raw_data_files.append(raw_data_file)
-                                newtests[set_number].raw_data_files_length.append(file_size)
-
-            if newtests:
-                for test in newtests:
-                    self.datasets.append(test)
-            else:
-                self.logger.debug("Could not load any files for this set")
-                self.logger.debug("Making it an empty test")
-                self.datasets.append(self._empty_dataset())
-
-        txt = " ok"
-        self.logger.debug(txt)
-        self.number_of_datasets = len(self.datasets)
-        txt = "number of datasets: %i" % self.number_of_datasets
-        self.logger.debug(txt)
-        # validating datasets
-        self.status_datasets = self._validate_datasets()
 
     def _validate_datasets(self, level=0):
         self.logger.debug("validating test")
@@ -1190,15 +1107,7 @@ class CellpyData(object):
     def _clean_up_normal_table(self, test=None, dataset_number=None):
         # check that test contains all the necessary headers (and add missing
         # ones)
-        if test is None:
-            dataset_number = self._validate_dataset_number(dataset_number)
-            test = self.datasets[dataset_number]
-
-        cellpy_headers = self.headers_normal
-        col_headers = test.dfdata.columns
-
-        self.logger.debug("_clean_up_normal_table: not implemented yet")
-        return test
+        raise NotImplementedError
 
     def _report_empty_dataset(self):
         self.logger.info("empty set")
@@ -2192,44 +2101,7 @@ class CellpyData(object):
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
         """Select steps (not documented yet)."""
-        # step_dict={1:[1],2:[1],3:[1,2,3]}
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-        if not append_df:
-            selected = dict()
-            for cycle, step in list(step_dict.items()):
-                # print cycle, step
-                if len(step) > 1:
-                    for s in step:
-                        c = self._select_step(cycle, s, dataset_number)
-                        if not self.is_empty(c):
-                            selected.append(c)
-                else:
-                    c = self._select_step(cycle, step, dataset_number)
-                    if not self.is_empty(c):
-                        selected.append(c)
-        else:
-            first = True
-            for cycle, step in list(step_dict.items()):
-                if len(step) > 1:
-                    for s in step:
-                        c = self._select_step(cycle, s, dataset_number)
-                        if first:
-                            selected = c.copy()
-                            first = False
-                        else:
-                            selected = selected.append(c, ignore_index=True)
-                else:
-                    c = self._select_step(cycle, step, dataset_number)
-                    if first:
-                        selected = c.copy()
-                        first = False
-                    else:
-                        selected = selected.append(c, ignore_index=True)
-
-        return selected
+        raise DeprecatedFeature
 
     def _select_step(self, cycle, step, dataset_number=None):
         # TODO: insert sub_step here
@@ -2265,18 +2137,7 @@ class CellpyData(object):
     def populate_step_dict(self, step, dataset_number=None):
         """Returns a dict with cycle numbers as keys
         and corresponding steps (list) as values."""
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-        step_dict = {}
-        cycles = self.datasets[dataset_number].dfdata[self.headers_normal['cycle_index_txt']]
-        unique_cycles = cycles.unique()
-        # number_of_cycles = len(unique_cycles)
-        number_of_cycles = np.amax(cycles)
-        for cycle in unique_cycles:
-            step_dict[cycle] = [step]
-        return step_dict
+        raise DeprecatedFeature
 
     def _export_cycles(self, dataset_number, setname=None,
                        sep=None, outname=None, shifted=False, method=None,
@@ -2551,7 +2412,7 @@ class CellpyData(object):
 
     # --------------helper-functions--------------------------------------------
 
-    def _cap_mod_summary(self, dfsummary, capacity_modifier):
+    def _cap_mod_summary(self, dfsummary, capacity_modifier="reset"):
         # modifies the summary table
         discharge_title = self.headers_normal['discharge_capacity_txt']
         charge_title = self.headers_normal['charge_capacity_txt']
@@ -2569,6 +2430,8 @@ class CellpyData(object):
                 chargecap_2 = row[charge_title]
                 dfsummary[charge_title][index] = chargecap_2 - chargecap
                 chargecap = chargecap_2
+        else:
+            raise NotImplementedError
 
         return dfsummary
 
@@ -2576,6 +2439,7 @@ class CellpyData(object):
                         capacity_modifier="reset",
                         allctypes=True):
         # modifies the normal table
+        self.logger.debug("Not properly checked yet! Use with caution!")
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -2606,7 +2470,6 @@ class CellpyData(object):
                                                          dataset_number=dataset_number)
 
                 steps = discharge_cycles[j]
-                print("----------------------------------------")
                 txt = "Cycle  %i (discharge):  " % j
                 self.logger.debug(txt)
                 # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"]
@@ -2627,19 +2490,18 @@ class CellpyData(object):
                                                       cycle_number=j,
                                                       dataset_number=dataset_number)
                 steps = charge_cycles[j]
-                print("----------------------------------------")
                 txt = "Cycle  %i (charge):  " % j
                 self.logger.debug(txt)
 
                 selection = (dfdata[cycle_index_header] == j) & \
                             (dfdata[step_index_header].isin(steps))
-                c0 = dfdata[selection].iloc[0][cap_header]
-                e0 = dfdata[selection].iloc[0][e_header]
-                dfdata[cap_header][selection] = (dfdata[selection][cap_header]
-                                                 - c0)
-                dfdata[e_header][selection] = (dfdata[selection][e_header] - e0)
 
-                # discharge cycles
+                if any(selection):
+                    c0 = dfdata[selection].iloc[0][cap_header]
+                    e0 = dfdata[selection].iloc[0][e_header]
+                    dfdata[cap_header][selection] = (dfdata[selection][cap_header]
+                                                     - c0)
+                    dfdata[e_header][selection] = (dfdata[selection][e_header] - e0)
 
     def get_number_of_tests(self):
         return self.number_of_datasets
@@ -2997,6 +2859,8 @@ class CellpyData(object):
         else:
             # get all the discharge cycles
             # this is a dataframe filtered on step and cycle
+            raise Exception
+            # TODO: fix this now!
             d = self.select_steps(cycles, append_df=True)
             v = d[self.headers_normal['voltage_txt']]
             c = d[column_txt] * 1000000 / mass

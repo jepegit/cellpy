@@ -417,7 +417,7 @@ def _main():
     # Loading dataframe
     d = cellreader.CellpyData()
     # noinspection PyDeprecation
-    d.from_res(os.path.join(datafolder_in, resfilename))
+    d.from_raw(os.path.join(datafolder_in, resfilename))
     d.set_mass(mass)
     d.make_step_table()
 

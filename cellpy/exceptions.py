@@ -14,3 +14,14 @@ class ConfigFileNotWritten(Error):
 class ConfigFileNotRead(Error):
     """Raised when the configuration file cannot be read"""
     pass
+
+
+class WrongFileVersion(Error):
+    """Raised when the file version is wrong"""
+    pass
+
+
+class DeprecatedFeature(Error):
+    """Raised when the feature is recentlhy deprecated"""
+    pass
+
