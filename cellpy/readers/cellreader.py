@@ -2519,7 +2519,20 @@ class CellpyData(object):
         return self.datasets[n]
 
     def sget_voltage(self, cycle, step, set_number=None):
-        """Returns voltage for cycle, step."""
+        """Returns voltage for cycle, step.
+
+        Convinience function; same as issuing
+           dfdata[(dfdata[cycle_index_header] == cycle) &
+                 (dfdata[step_index_header] == step)][voltage_header]
+
+        Args:
+            cycle: cycle number
+            step: step number
+            set_number: the dataset number (automatic selection if None)
+
+        Returns:
+            pandas.Series or None if empty
+        """
 
         set_number = self._validate_dataset_number(set_number)
         if set_number is None:
@@ -2538,7 +2551,17 @@ class CellpyData(object):
             return None
 
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
-        """Returns voltage (in V)."""
+        """Returns voltage (in V).
+
+        Args:
+            cycle: cycle number (all cycles if None)
+            dataset_number: first dataset if None
+            full: valid only for cycle=None (i.e. all cycles), returns the full
+               pandas.Series if True, else a list of pandas.Series
+
+        Returns:
+            pandas.Series (or list of pandas.Series if cycle=None og full=False)
+        """
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2569,7 +2592,17 @@ class CellpyData(object):
             return v
 
     def get_current(self, cycle=None, dataset_number=None, full=True):
-        """Returns current (in mA)."""
+        """Returns current (in mA).
+
+        Args:
+            cycle: cycle number (all cycles if None)
+            dataset_number: first dataset if None
+            full: valid only for cycle=None (i.e. all cycles), returns the full
+               pandas.Series if True, else a list of pandas.Series
+
+        Returns:
+            pandas.Series (or list of pandas.Series if cycle=None og full=False)
+        """
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2587,7 +2620,7 @@ class CellpyData(object):
                 return v
         else:
             if not full:
-                self.logger.debug("getting voltage-curves for all cycles")
+                self.logger.debug("getting current-curves for all cycles")
                 v = []
                 no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
@@ -2599,9 +2632,21 @@ class CellpyData(object):
                 v = test[current_header]
             return v
 
-    # @print_function
     def sget_steptime(self, cycle, step, dataset_number=None):
-        """Returns step time for cycle, step."""
+        """Returns step time for cycle, step.
+
+        Convinience function; same as issuing
+           dfdata[(dfdata[cycle_index_header] == cycle) &
+                 (dfdata[step_index_header] == step)][step_time_header]
+
+        Args:
+            cycle: cycle number
+            step: step number
+            dataset_number: the dataset number (automatic selection if None)
+
+        Returns:
+            pandas.Series or None if empty
+        """
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2620,7 +2665,20 @@ class CellpyData(object):
             return None
 
     def sget_timestamp(self, cycle, step, dataset_number=None):
-        """Returns timestamp for cycle, step."""
+        """Returns timestamp for cycle, step.
+
+        Convinience function; same as issuing
+           dfdata[(dfdata[cycle_index_header] == cycle) &
+                 (dfdata[step_index_header] == step)][timestamp_header]
+
+        Args:
+            cycle: cycle number
+            step: step number
+            dataset_number: the dataset number (automatic selection if None)
+
+        Returns:
+            pandas.Series or None if empty
+        """
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2640,7 +2698,18 @@ class CellpyData(object):
 
     def get_timestamp(self, cycle=None, dataset_number=None,
                       in_minutes=False, full=True):
-        """Returns timestamps (in sec or minutes (if in_minutes==True))."""
+        """Returns timestamps (in sec or minutes (if in_minutes==True)).
+
+        Args:
+            cycle: cycle number (all if None)
+            dataset_number: first dataset if None
+            in_minutes: return values in minutes instead of seconds if True
+            full: valid only for cycle=None (i.e. all cycles), returns the full
+               pandas.Series if True, else a list of pandas.Series
+
+        Returns:
+            pandas.Series (or list of pandas.Series if cycle=None og full=False)
+        """
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2655,9 +2724,10 @@ class CellpyData(object):
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
                 v = c[timestamp_header]
+
         else:
             if not full:
-                self.logger.debug("getting voltage-curves for all cycles")
+                self.logger.debug("getting timestapm for all cycles")
                 v = []
                 no_cycles = np.amax(test[cycle_index_header])
                 for j in range(1, no_cycles + 1):
@@ -2666,11 +2736,11 @@ class CellpyData(object):
                     c = test[(test[cycle_index_header] == j)]
                     v.append(c[timestamp_header])
             else:
-                self.logger.debug("returning full voltage col")
+                self.logger.debug("returning full timestamp col")
                 v = test[timestamp_header]
                 if in_minutes and v is not None:
                     v /= 60.0
-        if in_minutes and v is not None and not full:
+        if in_minutes and v is not None:
             v /= 60.0
         return v
 
@@ -2859,11 +2929,11 @@ class CellpyData(object):
         else:
             # get all the discharge cycles
             # this is a dataframe filtered on step and cycle
-            raise Exception
+            raise NotImplementedError
             # TODO: fix this now!
-            d = self.select_steps(cycles, append_df=True)
-            v = d[self.headers_normal['voltage_txt']]
-            c = d[column_txt] * 1000000 / mass
+            # d = self.select_steps(cycles, append_df=True)
+            # v = d[self.headers_normal['voltage_txt']]
+            # c = d[column_txt] * 1000000 / mass
         return c, v
 
     def get_ocv(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
@@ -2991,7 +3061,7 @@ class CellpyData(object):
             return ocv
 
     def get_number_of_cycles(self, dataset_number=None):
-        """Fet the number of cycles in the test."""
+        """Get the number of cycles in the test."""
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -3003,7 +3073,7 @@ class CellpyData(object):
         return no_cycles
 
     def get_cycle_numbers(self, dataset_number=None):
-        """Fet a list containing all the cycle numbers in the test."""
+        """Get a list containing all the cycle numbers in the test."""
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -3017,6 +3087,15 @@ class CellpyData(object):
         return cycles
 
     def get_ir(self, dataset_number=None):
+        """Get the IR data (needs checking; use with caution).
+
+        Args:
+            dataset_number: the dataset number (automatic selection if None)
+
+        Returns:
+            dictionary
+        """
+
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -3039,7 +3118,7 @@ class CellpyData(object):
 
     def get_converter_to_specific(self, dataset=None, mass=None,
                                   to_unit=None, from_unit=None):
-        """
+        """get the convertion values
 
         Args:
             dataset: DataSet object

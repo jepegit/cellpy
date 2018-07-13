@@ -122,8 +122,30 @@ def test_sget_steptime(dataset):
     assert len(x) == 378
 
 
-def test_sget_timestamp():
-    print("MISSING TEST")
+def test_sget_timestamp(dataset):
+    steps = dataset.get_step_numbers("charge")
+    x = dataset.sget_timestamp(3, steps[3])
+    assert len(x) == 378
+    assert x.iloc[0] == pytest.approx(287559.945, 0.01)
+
+
+@pytest.mark.parametrize("cycle, in_minutes, full, expected", [
+    (3, False, True, 248277.107),
+    (3, True, True, 248277.107/60),
+    (None, False, True, 300.010),
+    pytest.mark.xfail((3, False, True, 1.0)),
+])
+def test_get_timestamp(dataset, cycle, in_minutes, full, expected):
+    x = dataset.get_timestamp(cycle=cycle, in_minutes=in_minutes, full=full)
+    assert x.iloc[0] == pytest.approx(expected, 0.001)
+
+
+@pytest.mark.parametrize("cycle, in_minutes, full, expected", [
+    (None, False, False, 248277.107),
+])
+def test_get_timestamp_list(dataset, cycle, in_minutes, full, expected):
+    x = dataset.get_timestamp(cycle=cycle, in_minutes=in_minutes, full=full)
+    assert x[2].iloc[0] == pytest.approx(expected, 0.001)
 
 
 def test_get_steptime():
