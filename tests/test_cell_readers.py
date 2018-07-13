@@ -54,6 +54,84 @@ def test_xldate_as_datetime(xldate, datemode, option, expected):
     assert result == expected
 
 
+def test_validate_dataset_number():
+    print("MISSING TEST")
+
+
+def test_merge():
+    print("MISSING TEST")
+
+
+def test_clean_up_normal_table():
+    print("MISSING TEST")
+    print("DELETE FUNC?")
+
+
+def test_print_step_table():
+    print("MISSING TEST")
+
+
+def test_select_steps():
+    print("MISSING TEST")
+    print("DELETE FUNC?")
+
+
+def test_populate_step_dict():
+    print("MISSING TEST")
+    print("DELETE FUNC?")
+
+
+def test_from_res():
+    print("MISSING TEST")
+    print("DELETE FUNC?")
+
+
+def test_cap_mod_summary():
+    print("MISSING TEST")
+    print("DELETE FUNC?")
+
+
+def test_cap_mod_normal():
+    print("MISSING TEST")
+    print("DELETE FUNC?")
+
+
+def test_get_number_of_tests():
+    print("MISSING TEST")
+
+
+def test_sget_voltage():
+    print("MISSING TEST")
+
+
+def test_sget_steptime():
+    print("MISSING TEST")
+
+
+def test_sget_timestamp():
+    print("MISSING TEST")
+
+
+def test_get_steptime():
+    print("MISSING TEST")
+
+
+def test_get_number_of_cycles():
+    print("MISSING TEST")
+
+
+def test_get_ir():
+    print("MISSING TEST")
+
+
+def test_get_diagnostics_plot():
+    print("MISSING TEST")
+
+
+def test_set_testnumber():
+    print("MISSING TEST")
+    
+
 def test_check64bit():
     from cellpy import cellreader
     cellreader.check64bit()
