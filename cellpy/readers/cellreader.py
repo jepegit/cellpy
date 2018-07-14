@@ -1050,7 +1050,6 @@ class CellpyData(object):
         """
         raise DeprecatedFeature
 
-
     def _validate_datasets(self, level=0):
         self.logger.debug("validating test")
         level = 0
