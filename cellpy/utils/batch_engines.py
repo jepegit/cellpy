@@ -2,6 +2,7 @@ import logging
 import os
 import pandas as pd
 
+
 class BaseExperiment:
     def __init__(self):
         self.journal = None
