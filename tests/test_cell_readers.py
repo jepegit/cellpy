@@ -148,24 +148,27 @@ def test_get_timestamp_list(dataset, cycle, in_minutes, full, expected):
     assert x[2].iloc[0] == pytest.approx(expected, 0.001)
 
 
-def test_get_steptime():
-    print("MISSING TEST")
+def test_get_number_of_cycles(dataset):
+    n = dataset.get_number_of_cycles()
+    assert n == 18
 
 
-def test_get_number_of_cycles():
-    print("MISSING TEST")
+@pytest.mark.xfail(raises=DeprecatedFeature)
+def test_get_ir(dataset):
+    dataset.get_ir()
 
 
-def test_get_ir():
-    print("MISSING TEST")
+def test_get_diagnostics_plot(dataset):
+    dataset.get_diagnostics_plots()
 
 
-def test_get_diagnostics_plot():
-    print("MISSING TEST")
-
-
-def test_set_testnumber():
-    print("MISSING TEST")
+def test_set_testnumber(dataset):
+    dataset.set_testnumber(0)
+    n1 = dataset.selected_dataset_number
+    assert n1 == 0
+    dataset.set_testnumber(1)
+    n2 = dataset.selected_dataset_number
+    assert n2 == -1
 
 
 def test_check64bit():
@@ -198,6 +201,19 @@ def test_set_res_datadir_none(cellpy_data_instance):
 def test_set_res_datadir(cellpy_data_instance):
     cellpy_data_instance.set_cellpy_datadir(fdv.data_dir)
     assert fdv.data_dir == cellpy_data_instance.cellpy_datadir
+
+
+def test_set_raw_datadir(dataset):
+    print("missing test")
+
+
+def test_set_logger(dataset):
+    print("missing test")
+
+
+def test_merge(dataset):
+    print("missing test")
+    print("maybe deprecated")
 
 
 def test_fid(cellpy_data_instance):

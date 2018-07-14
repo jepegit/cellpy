@@ -9,7 +9,7 @@ processed files in the hdf5-format.
 Example:
     >>> d = CellpyData()
     >>> d.loadcell(names = [file1.res, file2.res]) # loads and merges the runs
-    >>> internal_resistance = d.get_ir()
+    >>> voltage_curves = d.get_cap()
     >>> d.save("mytest.hdf")
 
 
@@ -905,29 +905,6 @@ class CellpyData(object):
             similar = False
 
         return similar
-
-    def _find_resfiles_old(self, cellpyfile, counter_min=1, counter_max=10):
-        # function to find res files by locating all files of the form
-        # (date-label)_(slurry-label)_(el-label)_(cell-type)_*
-        # UNDER DEVELOPMENT
-
-        counter_sep = "_"
-        counter_digits = 2
-        res_extension = ".res"
-        res_dir = self.raw_datadir
-        resfiles = []
-        cellpyfile = os.path.basename(cellpyfile)
-        cellpyfile = os.path.splitext(cellpyfile)[0]
-        for j in range(counter_min, counter_max + 1):
-            look_for = "%s%s%s%s" % (cellpyfile, counter_sep,
-                                     str(j).zfill(counter_digits),
-                                     res_extension)
-
-            look_for = os.path.join(res_dir, look_for)
-            if os.path.isfile(look_for):
-                resfiles.append(look_for)
-
-        return resfiles
 
     def loadcell(self, raw_files, cellpy_file=None, mass=None,
                  summary_on_raw=False, summary_ir=True, summary_ocv=False,
@@ -3087,34 +3064,9 @@ class CellpyData(object):
         return cycles
 
     def get_ir(self, dataset_number=None):
-        """Get the IR data (needs checking; use with caution).
+        """Get the IR data (Deprecated)."""
 
-        Args:
-            dataset_number: the dataset number (automatic selection if None)
-
-        Returns:
-            dictionary
-        """
-
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-        d = self.datasets[dataset_number].dfdata
-        ir_txt = self.headers_normal['internal_resistance_txt']
-        ir_data = np.unique(d[ir_txt])
-        d2 = d.ix[ir_data.index]
-        d2 = d2[["Cycle_Index", "DateTime", "Data_Point",
-                 "Internal_Resistance"]].sort(
-            [self.headers_normal['data_point_txt']])  # jepe fix
-        # cycles = np.unique(d["Cycle_Index"])  # TODO: jepe fix
-        ir_dict = {}
-        for i in d2.index:
-            cycle = d2.ix[i]["Cycle_Index"]  # TODO: jepe fix
-            if cycle not in ir_dict:
-                ir_dict[cycle] = []
-            ir_dict[cycle].append(d2.ix[i]["Internal_Resistance"])  # jepe fix
-        return ir_dict
+        raise DeprecatedFeature
 
     def get_converter_to_specific(self, dataset=None, mass=None,
                                   to_unit=None, from_unit=None):
@@ -3156,7 +3108,7 @@ class CellpyData(object):
         # assert float(from_unit / to_unit) == 1000000.0
         return from_unit / to_unit / mass
 
-    def get_diagnostics_plots(self, dataset_number=None, scaled=False, ):
+    def get_diagnostics_plots(self, dataset_number=None, scaled=False):
         """Gets diagnostics plots.
 
         Args:
@@ -3173,6 +3125,9 @@ class CellpyData(object):
 
         # assuming each cycle consists of one discharge step followed by
         # charge step
+        warnings.warn("This feature will be deprecated soon. Extract"
+                      " diagnostics from the summary instead.",
+                      DeprecationWarning)
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
