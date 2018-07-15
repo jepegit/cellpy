@@ -22,6 +22,11 @@ class WrongFileVersion(Error):
 
 
 class DeprecatedFeature(Error):
-    """Raised when the feature is recentlhy deprecated"""
+    """Raised when the feature is recently deprecated"""
+    pass
+
+
+class NullData(Error):
+    """Raised when required data is missing (e.g. voltage = None)"""
     pass
 

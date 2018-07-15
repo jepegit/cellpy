@@ -2653,7 +2653,7 @@ class CellpyData(object):
             dataset_number: the dataset number (automatic selection if None)
 
         Returns:
-            pandas.Series or None if empty
+            pandas.Series
         """
 
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -2670,7 +2670,7 @@ class CellpyData(object):
             t = c[timestamp_header]
             return t
         else:
-            return None
+            return pd.Series()
 
     def get_timestamp(self, cycle=None, dataset_number=None,
                       in_minutes=False, full=True):
@@ -2694,7 +2694,7 @@ class CellpyData(object):
         cycle_index_header = self.headers_normal['cycle_index_txt']
         timestamp_header = self.headers_normal['test_time_txt']
 
-        v = None
+        v = pd.Series()
         test = self.datasets[dataset_number].dfdata
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
@@ -2883,12 +2883,8 @@ class CellpyData(object):
                                        dataset_number=dataset_number)
 
         self.logger.debug(cycles)
-        #        cycles = self.find_step_numbers(step_type ="charge_capacity",
-        #                   dataset_number = dataset_number)
-        #        self.logger.debug(cycles)
-        #        sys.exit(-1)
-        c = None
-        v = None
+        c = pd.Series()
+        v = pd.Series()
         if cap_type == "charge":
             column_txt = self.headers_normal['charge_capacity_txt']
         else:
