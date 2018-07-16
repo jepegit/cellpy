@@ -1,0 +1,19 @@
+name: cellpy
+dependencies:
+  - numpy
+  - xlrd
+  - matplotlib
+  - cryptography
+  - click
+  - scipy
+  - pandas
+  - pytables
+  - setuptools
+  - pyyaml
+  - pip:
+    - lmfit
+    - lmfit
+    - python-box
+    - tables
+    - pyodbc
+
