@@ -1,12 +1,13 @@
 Using the batch utilities
 -------------------------
 
-First a short warning. This version of the batch utility should only be considered as and intermediate solution. A new
-batch utility is currently under development. So, with that being said, here is a short description of how to
-use the current utility. 
+First a short warning. This version of the batch utility should only be considered as an intermediate solution. A new
+batch utility is currently under development (jippi?).
 
-Starting
-~~~~~~~~
+So, with that being said, here is a short description of how to use the current utility. 
+
+Starting (setting things up)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Jupyter Notebooks is the recommended "tool" for running the cellpy batch feature. The first step is to import the `cellpy.utils.batch.Batch` class from `cellpy` and initialize it. The Batch class is a utility class for pipe-lining
 batch processing of cell cycle data.
@@ -40,9 +41,11 @@ The next step is to set some parameters that `Batch` needs.
     # you also have access to cellpy´s main parameter structure
     b.prms.Reader.cycle_mode = "cathode"
     
+Extracting meta-data
+~~~~~~~~~~~~~~~~~~~~
 
 The next step is to extract and collect the information needed from your data-base into a DataFrame, 
-and create an appropriate folder structure (outdir/project_name/batch_name/raw_data)
+and create an appropriate folder structure (`outdir/project_name/batch_name/raw_data`)
 
 .. code-block:: python
 
@@ -57,6 +60,9 @@ and create an appropriate folder structure (outdir/project_name/batch_name/raw_d
     
     b.info_df.head()
 
+Processing data
+~~~~~~~~~~~~~~~
+
 To run the processing, you should then use the convenience function `load_and_save_raw'. This function
 loads all your data-files and saves csv-files of the results.
 
@@ -64,7 +70,7 @@ loads all your data-files and saves csv-files of the results.
 
     b.load_and_save_raw()
 
-The next step is to create some summary csv-files (e.g. containing charge capacities vs. cycle number for
+The next step is to create some summary csv-files (*e.g.* containing charge capacities *vs.* cycle number for
 all your data-files) and plot the results.
 
 .. code-block:: python
@@ -72,3 +78,4 @@ all your data-files) and plot the results.
     b.make_summaries()
     b.plot_summaries()
 
+Now it is time to relax and maybe drink a cup of coffee.
