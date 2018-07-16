@@ -17,6 +17,7 @@ dev_utils/BioLogic.py_tmp
 *.csv
 
 dev_utils/.ipynb_checkpoints
+*.ipynb_checkpoints
 
 # Distribution / packaging
 .Python
