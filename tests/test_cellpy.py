@@ -1,31 +1,12 @@
-from __future__ import print_function
-import os
 import pytest
 import tempfile
-
-# -------- defining overall path-names etc ----------
-current_file_path = os.path.dirname(os.path.realpath(__file__))
-# relative_test_data_dir = "../cellpy/data_ex"
-relative_test_data_dir = "../testdata"
-test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-test_data_dir_raw = os.path.join(test_data_dir, "data")
-
-test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir_raw,test_res_file)
-
-test_data_dir_out = os.path.join(test_data_dir, "out")
-
-test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
-test_cellpy_file = "20160805_test001_45_cc.h5"
-test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_full = os.path.join(test_data_dir_cellpy,test_cellpy_file)
-test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,test_cellpy_file_tmp)
-
-test_run_name = "20160805_test001_45_cc"
-
+import os
 import logging
 from cellpy import log
-log.setup_logging(default_level=logging.DEBUG)
+from cellpy import prms
+from . import fdv
+
+log.setup_logging(default_level="DEBUG")
 
 
 @pytest.fixture(scope="module")
@@ -43,16 +24,76 @@ def clean_dir():
 def setup_module():
     import os
     try:
-        os.mkdir(test_data_dir_out)
+        os.mkdir(fdv.output_dir)
     except:
         print("could not make directory")
+
+
+def test_logger(clean_dir):
+    test_logging_json = os.path.join(fdv.data_dir, "test_logging.json")
+    prms.Paths["filelogdir"] = fdv.log_dir
+
+    log.setup_logging()
+    tmp_logger = logging.getLogger()
+    assert tmp_logger.level == logging.DEBUG
+
+    tmp_logger.info("default: testing logger (info)")
+    tmp_logger.debug("default: testing logger (debug)")
+    tmp_logger.error("default: testing logger (error)")
+
+    for handler in tmp_logger.handlers:
+        if handler.name == "console":
+            assert handler.level == logging.INFO
+        if handler.name == "info_file_handler":
+            assert handler.level == logging.INFO
+        elif handler.name == "error_file_handler":
+            assert handler.level == logging.ERROR
+        elif handler.name == "debug_file_handler":
+            assert handler.level == logging.DEBUG
+
+    log.setup_logging(default_level="DEBUG")
+    tmp_logger = logging.getLogger()
+    tmp_logger.info("default: testing logger (info)")
+    tmp_logger.debug("default: testing logger (debug)")
+    tmp_logger.error("default: testing logger (error)")
+
+    for handler in tmp_logger.handlers:
+        if handler.name == "console":
+            assert handler.level == logging.DEBUG
+        if handler.name == "info_file_handler":
+            assert handler.level == logging.INFO
+        elif handler.name == "error_file_handler":
+            assert handler.level == logging.ERROR
+        elif handler.name == "debug_file_handler":
+            assert handler.level == logging.DEBUG
+
+    log.setup_logging(default_level="INFO")
+    for handler in logging.getLogger().handlers:
+        if handler.name == "console":
+            assert handler.level == logging.INFO
+        if handler.name == "info_file_handler":
+            assert handler.level == logging.INFO
+        elif handler.name == "error_file_handler":
+            assert handler.level == logging.ERROR
+        elif handler.name == "debug_file_handler":
+            assert handler.level == logging.DEBUG
+
+    log.setup_logging(default_json_path="./a_file_that_does_not_exist.json")
+    assert len(logging.getLogger().handlers) == 4
+
+    log.setup_logging(default_json_path=test_logging_json)
+    log.setup_logging(custom_log_dir=clean_dir)
+    tmp_logger = logging.getLogger()
+    tmp_logger.info("customdir, default: testing logger (info)")
+    tmp_logger.debug("customdir, default: testing logger (debug)")
+    tmp_logger.error("customdir, default: testing logger (error)")
 
 
 @pytest.mark.smoketest
 def test_extract_ocvrlx(clean_dir):
     import os
     from cellpy import cellreader
-    f_in = os.path.join(test_data_dir, test_res_file)
+    f_in = os.path.join(fdv.data_dir, fdv.res_file_name)
     f_out = os.path.join(clean_dir, "out_")
     assert cellreader.extract_ocvrlx(f_in, f_out) == True
 
@@ -60,7 +101,7 @@ def test_extract_ocvrlx(clean_dir):
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader
-    f_in = os.path.join(test_data_dir_raw, test_res_file)
+    f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
     new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
     assert os.path.isfile(new_file)
 
@@ -99,4 +140,4 @@ def test_humanize_bytes():
 
 def teardown_module():
     import shutil
-    shutil.rmtree(test_data_dir_out)
+    shutil.rmtree(fdv.output_dir)

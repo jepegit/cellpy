@@ -1,7 +1,8 @@
 """cellpy parameters"""
 
-import os, sys
-
+import os
+import sys
+import box
 
 # class Parameter(object):
 #     """class for storing parameters"""
@@ -39,13 +40,14 @@ Paths = {
     "db_path": cur_dir,
     "filelogdir": cur_dir,
     "db_filename": "cellpy_db.xlsx",
-    }
-
+}
+Paths = box.Box(Paths)
 # --------------------------
 # FileNames
 # --------------------------
 FileNames = {
-    }
+}
+FileNames = box.Box(FileNames)
 
 # --------------------------
 # Reader
@@ -65,7 +67,7 @@ Reader = {
     "cellpy_datadir": None,
     "auto_dirs": True,  # search in prm-file for res and hdf5 dirs in loadcell
 }
-
+Reader = box.Box(Reader)
 
 # --------------------------
 # DataSet
@@ -73,42 +75,47 @@ Reader = {
 DataSet = {
     "nom_cap": 3579,  # mAh/g (used for finding c-rates)
 }
+DataSet = box.Box(DataSet)
+
 # --------------------------
 # Db
 # --------------------------
 Db = {
     "db_type": "simple_excel_reader",
 }
+Db = box.Box(Db)
 
 # --------------------------
 # ExcelReader
 # --------------------------
 excel_db_cols = {"serial_number_position": 0,
-                    "exists": 3,
-                    "exists_txt": 4,
-                    "fileid": 17,
-                    "batch_no": 1,
-                    "batch": 2,
-                    "label": 13,
-                    "group": 14,
-                    "selected": 15,
-                    "cell_name": 16,
-                    "file_name_indicator": 17,
-                    "comment_slurry": 18,
-                    "finished_run": 19,
-                    "hd5f_fixed": 20,
-                    "LC": 27,
-                    "active_material": 35,
-                    "total_material": 39,
-                    "loading": 42,
-                    "general_comment": 47,
-}
+                 "exists": 3,
+                 "exists_txt": 4,
+                 "fileid": 17,
+                 "batch_no": 1,
+                 "batch": 2,
+                 "label": 13,
+                 "group": 14,
+                 "selected": 15,
+                 "cell_name": 16,
+                 "file_name_indicator": 17,
+                 "comment_slurry": 18,
+                 "finished_run": 19,
+                 "hd5f_fixed": 20,
+                 "LC": 27,
+                 "active_material": 35,
+                 "total_material": 39,
+                 "loading": 42,
+                 "general_comment": 47,
+                 }
+excel_db_cols = box.Box(excel_db_cols)
 
 excel_db_filename_cols = {"serial_number_position": 0,
                           "serialno": 0,
                           "fileid": 1,
                           "files": 2,
-}
+                          }
+excel_db_filename_cols = box.Box(excel_db_filename_cols)
 
 # --------------------------
 # Instruments
@@ -120,7 +127,7 @@ Instruments = {
     "chunk_size": None,
     "max_chunks": None,
 }
-
+Instruments = box.Box(Instruments)
 
 # --------------------------
 # Materials
@@ -131,6 +138,8 @@ Materials = {
     "default_material": "silicon",
     "default_mass": 1.0,
 }
+Materials = box.Box(Materials)
+
 # --------------------------
 # Batch-options
 # --------------------------
@@ -144,7 +153,7 @@ Batch = {
     "color_style_label": "seaborn-deep",
     "figure_type": "unlimited",
 }
-
+Batch = box.Box(Batch)
 
 # --------------------------
 # Other non-config
@@ -155,10 +164,8 @@ _prm_default_name = "_cellpy_prms_default.conf"
 _prm_globtxt = "_cellpy_prms*.conf"
 _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
-_sfod = True
+_search_for_odbc_driver = True
 
 # used during development for testing new features
 
 _res_chunk = 0
-
-

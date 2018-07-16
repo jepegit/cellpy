@@ -8,6 +8,15 @@ Installation
 Stable release
 --------------
 
+``cellpy`` uses several packages that are a bit cumbersome to install on windows. It is therefore recommended
+to install one of the ``anaconda`` python packages (python 3.6 or above) before installing ``cellpy``.
+If you chose ``miniconda``, you should install ``scipy``, ``numpy`` and ``pytables`` using ``conda``:
+
+.. code-block:: console
+
+    $ conda install scipy numpy pytables
+
+
 To install ``cellpy``, run this command in your terminal:
 
 .. code-block:: console
@@ -47,7 +56,7 @@ copied to your user folder).
 
 .. note:: At the moment, I have not really figured out how to implement and install something for reading
     access database files on other operating systems than windows. So, for now, I guess ``cellpy`` only will
-    work on windows (and automatic building with Travis gets challenging).
+    work on windows.
 
 
 From sources
@@ -55,24 +64,19 @@ From sources
 
 The sources for ``cellpy`` can be downloaded from the `Github repo`_.
 
-You can either clone the public repository:
+You can clone the public repository by:
 
 .. code-block:: console
 
     $ git clone git://github.com/jepegit/cellpy
 
-Or download the `tarball`_:
+
+Once you have a copy of the source, you can install in development mode using pip:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/jepegit/cellpy/tarball/master
+    $ pip install -e .
 
-Once you have a copy of the source, you can install it with:
-
-.. code-block:: console
-
-    $ python setup.py install
-
+(assuming that you are in the project folder, i. e. the folder that contains the setup.py file)
 
 .. _Github repo: https://github.com/jepegit/cellpy
-.. _tarball: https://github.com/jepegit/cellpy/tarball/master

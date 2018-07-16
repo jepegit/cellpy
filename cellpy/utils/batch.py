@@ -1,13 +1,5 @@
 """Routines for batch processing of cells."""
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-
-from builtins import zip
-from builtins import str
-from builtins import range
-from builtins import object
 import os
 import warnings
 import logging
@@ -21,6 +13,7 @@ import matplotlib as mpl
 
 from cellpy.parameters import prms as prms
 from cellpy import cellreader, dbreader, filefinder
+
 logger = logging.getLogger(__name__)
 
 logging.captureWarnings(True)
@@ -31,14 +24,16 @@ DEFAULT_PLOT_STYLE = {"markersize": prms.Batch["markersize"]}
 class FigureType(object):
     """Object for storing figure type definitions.
 
-    Creates and FigureType instance with information on number of subplots (rows and columns),
-    and selectors for showing charge and discharge as list of booleans.
+    Creates and FigureType instance with information on number of subplots
+    (rows and columns), and selectors for showing charge and discharge as list
+    of booleans.
 
     """
 
-    def __init__(self, number_of_rows=1, number_of_cols=1, capacity_selector=None, ir_selector=None,
+    def __init__(self, number_of_rows=1, number_of_cols=1,
+                 capacity_selector=None, ir_selector=None,
                  end_voltage_selector=None,
-                 axes = None):
+                 axes=None):
         self.number_of_rows_and_cols = (number_of_rows, number_of_cols)
 
         self.capacity_selector = capacity_selector
@@ -71,24 +66,34 @@ class FigureType(object):
         else:
             return None
 
-        # if figure_type == "summaries":
-        #     ce_ax, cap_ax, ir_ax = ax
-        #     ev_ax = None
-        # elif figure_type == "experimental":
-        #     ce_ax, cap_ax, ev_ax, ir_ax = ax
-        # else:
-        #     ce_ax, cap_ax, ir_ax = ax
-        #     ev_ax = None
+            # if figure_type == "summaries":
+            #     ce_ax, cap_ax, ir_ax = ax
+            #     ev_ax = None
+            # elif figure_type == "experimental":
+            #     ce_ax, cap_ax, ev_ax, ir_ax = ax
+            # else:
+            #     ce_ax, cap_ax, ir_ax = ax
+            #     ev_ax = None
+
 
 figure_types = dict()
-figure_types["summaries"] = FigureType(3,1, [True, True], [True, True], [True, True],
-                                       {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2,},)
-figure_types["unlimited"] = FigureType(3, 1, [True, True], [True, True], [True, True],
-                                         {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2,},)
-figure_types["charge_limited"] = FigureType(4, 1, [True, True], [True, False], [False, True],
-                                           {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
-figure_types["discharge_limited"] = FigureType(4, 1, [True, True], [False, True], [True, False],
-                                              {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3, }, )
+figure_types["summaries"] = FigureType(3, 1, [True, True], [True, True],
+                                       [True, True],
+                                       {"ce_ax": 0, "cap_ax": 1,
+                                        "ir_ax": 2, }, )
+figure_types["unlimited"] = FigureType(3, 1, [True, True], [True, True],
+                                       [True, True],
+                                       {"ce_ax": 0, "cap_ax": 1,
+                                        "ir_ax": 2, }, )
+figure_types["charge_limited"] = FigureType(4, 1, [True, True], [True, False],
+                                            [False, True],
+                                            {"ce_ax": 0, "cap_ax": 1,
+                                             "ev_ax": 2, "ir_ax": 3, }, )
+figure_types["discharge_limited"] = FigureType(4, 1, [True, True],
+                                               [False, True], [True, False],
+                                               {"ce_ax": 0, "cap_ax": 1,
+                                                "ev_ax": 2, "ir_ax": 3, }, )
+
 
 def _create_info_dict(reader, srnos):
     # reads from the db and populates a dictionary
@@ -115,7 +120,8 @@ def _create_info_dict(reader, srnos):
     info_dict = _find_files(info_dict)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
-        logger.info("The function _find_files was very slow. Save your info_df so you don't have to run it again!")
+        logger.info(
+            "The function _find_files was very slow. Save your info_df so you don't have to run it again!")
 
     return info_dict
 
@@ -148,7 +154,8 @@ def _make_unique_groups(info_df):
     for i, j in zip(unique_g, new_unique_g):
         counter = 1
         for indx, row in info_df.loc[info_df.groups == i].iterrows():
-            info_df.set_value(indx, "sub_groups", counter)
+            info_df.at[indx, "sub_groups"] = counter
+            # info_df.set_value(indx, "sub_groups", counter)
             counter += 1
         info_df.loc[info_df.groups == i, 'groups'] = j + 1
     return info_df
@@ -179,42 +186,47 @@ def _extract_dqdv(cell_data, extract_func):
     for cycle in list_of_cycles:
         c, v = extract_func(cycle)
         try:
-            v, dQ = dqdv(v, c)
+            # noinspection PyPep8Naming
+            v, dq = dqdv(v, c)
             v = v.tolist()
-            dQ = dQ.tolist()
+            dq = dq.tolist()
         except IndexError or OverflowError as e:
             error_in_dqdv = True
             v = list()
             dq = list()
-            print(" -could not process this (cycle %i)" % (cycle))
+            print(" -could not process this (cycle %i)" % cycle)
             print(" %s" % e)
 
         header_x = "dQ cycle_no %i" % cycle
         header_y = "voltage cycle_no %i" % cycle
-        dQ.insert(0, header_x)
+        dq.insert(0, header_x)
         v.insert(0, header_y)
 
         out_data.append(v)
-        out_data.append(dQ)
+        out_data.append(dq)
     return out_data
 
 
 class Batch(object):
     """The Batch object
 
-    The Batch class is a utility class for pipe-lining batch processing of cell cycle data.
-    It is primarily designed for use in `jupyter notebooks`. The typical usage structure is:
+    The Batch class is a utility class for pipe-lining batch processing of cell
+    cycle data. It is primarily designed for use in `jupyter notebooks`.@
+    The typical usage structure is:
 
-    1. Import the batch module (this also gives you access to the cellpy parameters (`batch.prms`)
+    1. Import the batch module (this also gives you access to the cellpy@
+        parameters (`batch.prms`)
 
     >>> from cellpy.utils import batch
 
     2. Initialization of the batch class
 
     >>> b = batch.init()
-    >>> # you can also give the name of the batch, the project name, the log-level, and the batch column number
+    >>> # you can also give the name of the batch, the project name,
+    >>> # the log-level, and the batch column number
     >>> # as parameters to the batch.init function, e.g.
-    >>> # b = batch.init("batch_name", "project_name", default_log_level="INFO", batch_col=5)
+    >>> # b = batch.init("batch_name", "project_name",
+    >>> # default_log_level="INFO", batch_col=5)
 
     3. Set parameters for your experiment
 
@@ -230,8 +242,9 @@ class Batch(object):
     >>> b.force_raw_file = False
     >>> b.force_cellpy_file = True
 
-    4. The next step is to extract and collect the information needed from your data-base into a DataFrame, and create
-       an appropriate folder structure (outdir/project_name/batch_name/raw_data)
+    4. The next step is to extract and collect the information needed from your
+       data-base into a DataFrame, and create an appropriate folder structure
+       (outdir/project_name/batch_name/raw_data)
 
     >>> b.create_info_df()
     >>>
@@ -245,12 +258,14 @@ class Batch(object):
     >>>
     >>> b.info_df.head()
 
-    5. To run the processing, you can use the convenience function `load_and_save_raw'. This function
-       loads all your data-files and saves csv-files of the results.
+    5. To run the processing, you can use the convenience function
+        `load_and_save_raw'. This function
+        loads all your data-files and saves csv-files of the results.
 
     >>> b.load_and_save_raw()
 
-    6. Create some summary csv-files (e.g. containing charge capacities vs. cycle number for all your data-files).
+    6. Create some summary csv-files (e.g. containing charge capacities vs.
+        cycle number for all your data-files).
 
     >>> b.make_summaries()
 
@@ -273,20 +288,22 @@ class Batch(object):
     def __init__(self, *args, **kwargs):
 
         self.name = None
-        if len(args)>0:
+        if len(args) > 0:
             self.name = args[0]
 
         self.project = None
-        if len(args)>1:
+        if len(args) > 1:
             self.project = args[1]
 
         self.time_stamp = None
         self.default_figure_types = list(figure_types.keys())
         self.default_figure_type = prms.Batch["figure_type"]
-        self.selected_summaries = ["discharge_capacity", "charge_capacity", "coulombic_efficiency",
+        self.selected_summaries = ["discharge_capacity", "charge_capacity",
+                                   "coulombic_efficiency",
                                    "cumulated_coulombic_efficiency",
                                    "ir_discharge", "ir_charge",
-                                   "end_voltage_discharge", "end_voltage_charge",
+                                   "end_voltage_discharge",
+                                   "end_voltage_charge",
 
                                    ]
         self.output_format = None
@@ -314,14 +331,16 @@ class Batch(object):
 
         self.export_raw = True
         self.export_cycles = False
+        self.shifted_cycles = False
         self.export_ica = False
         self.save_cellpy_file = True
         self.force_raw_file = False
         self.force_cellpy_file = False
         self.use_cellpy_stat_file = True
 
-        self._packable = ['name', 'project', 'batch_col','selected_summaries',
-                          'output_format', 'time_stamp', 'project_dir', 'batch_dir', 'raw_dir']
+        self._packable = ['name', 'project', 'batch_col', 'selected_summaries',
+                          'output_format', 'time_stamp', 'project_dir',
+                          'batch_dir', 'raw_dir']
 
         # Not afraid to walk down un-known territory...
         self._kwargs = kwargs
@@ -345,7 +364,7 @@ class Batch(object):
     def __str__(self):
         txt0 = "<Cellpy.Utils.Batch instance in %s>:" % __name__
         # How to kill a class: write "print(self)" in its __str__ method ;-)
-        txt1 = len(txt0)*"-"
+        txt1 = len(txt0) * "-"
         txt = txt0 + "\n" + txt1 + "\n"
         for attr in vars(self):
             if not attr.startswith("_"):
@@ -381,7 +400,7 @@ class Batch(object):
                 warnings.warn(w_txt)
 
             if hasattr(self, key):
-                setattr(self,key, self._kwargs[key])
+                setattr(self, key, self._kwargs[key])
             else:
                 warnings.warn("Trying to set non-existing attribute (%s)" % key)
 
@@ -392,7 +411,8 @@ class Batch(object):
 
     def _create_colors_markers_list(self):
         import cellpy.utils.plotutils as plot_utils
-        return plot_utils.create_colormarkerlist_for_info_df(self.info_df, symbol_label=self.symbol_label,
+        return plot_utils.create_colormarkerlist_for_info_df(self.info_df,
+                                                             symbol_label=self.symbol_label,
                                                              color_style_label=self.color_style_label)
 
     def create_info_df(self):
@@ -400,7 +420,8 @@ class Batch(object):
         logger.debug("running create_info_df")
         # initializing the reader
         reader = self.reader()
-        self.info_df = make_df_from_batch(self.name, batch_col=self.batch_col, reader=reader)
+        self.info_df = make_df_from_batch(self.name, batch_col=self.batch_col,
+                                          reader=reader)
         logger.debug(str(self.info_df.head(5)))
 
     def save_info_df(self):
@@ -408,19 +429,20 @@ class Batch(object):
         logger.debug("running save_info_df")
 
         info_df = self.info_df
-        top_level_dict = {}
-        top_level_dict['info_df'] = info_df
+        top_level_dict = {'info_df': info_df, 'metadata': self._prm_packer()}
 
         # packing prms
-        top_level_dict['metadata'] = self._prm_packer()
 
-        jason_string = json.dumps(top_level_dict, default=lambda info_df: json.loads(info_df.to_json()))
+        jason_string = json.dumps(top_level_dict,
+                                  default=lambda info_df: json.loads(
+                                      info_df.to_json()))
         with open(self.info_file, 'w') as outfile:
             outfile.write(jason_string)
         logger.info("Saved file to {}".format(self.info_file))
 
     def load_info_df(self, file_name=None):
-        """Loads a DataFrame with all the needed info about the run (JSON file)"""
+        """Loads a DataFrame with all the needed info about the run
+        (JSON file)"""
 
         if file_name is None:
             file_name = self.info_file
@@ -444,121 +466,44 @@ class Batch(object):
 
         The info_df JSON-file will be stored in the Project folder.
         The summary-files will be saved in the Batch-name folder.
-        The raw data (including exported cycles and ica-data) will be saved to the Raw-data-dir.
+        The raw data (including exported cycles and ica-data) will be saved to
+            the Raw-data-dir.
 
         """
-        self.info_file, directories = create_folder_structure(self.project, self.name)
+        self.info_file, directories = create_folder_structure(self.project,
+                                                              self.name)
         self.project_dir, self.batch_dir, self.raw_dir = directories
         logger.debug("create folders:" + str(directories))
 
-    def load_and_save_raw(self):
+    def load_and_save_raw(self, parent_level="CellpyData"):
         """Loads the cellpy or raw-data file(s) and saves to csv"""
         sep = prms.Reader["sep"]
-        self.frames, self.keys, errors = read_and_save_data(self.info_df, self.raw_dir, sep=sep,
-                                                    force_raw=self.force_raw_file,
-                                                    force_cellpy=self.force_cellpy_file,
-                                                    export_cycles=self.export_cycles,
-                                                    export_raw=self.export_raw,
-                                                    export_ica=self.export_ica,
-                                                    save=self.save_cellpy_file,
-                                                    use_cellpy_stat_file=self.use_cellpy_stat_file)
+        self.frames, self.keys, errors = read_and_save_data(self.info_df,
+                                                            self.raw_dir,
+                                                            sep=sep,
+                                                            force_raw=self.force_raw_file,
+                                                            force_cellpy=self.force_cellpy_file,
+                                                            export_cycles=self.export_cycles,
+                                                            shifted_cycles=self.shifted_cycles,
+                                                            export_raw=self.export_raw,
+                                                            export_ica=self.export_ica,
+                                                            save=self.save_cellpy_file,
+                                                            use_cellpy_stat_file=self.use_cellpy_stat_file,
+                                                            parent_level=parent_level)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
         """Make and save summary csv files, each containing values from all cells"""
-        self.summary_df = save_summaries(self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name)
+        self.summary_df = save_summaries(self.frames, self.keys,
+                                         self.selected_summaries,
+                                         self.batch_dir, self.name)
         logger.debug("made and saved summaries")
 
     def make_stats(self):
         """Not implemented yet"""
         raise NotImplementedError
 
-
     def plot_test(self, show=True, save=False):
-        # not ready for production yet...
-        # this plotting function can be used as template for making custom plotting functions
-        # need to create axes
-
-        figure_type = "shiftedcap"
-        fig, ax = plt.subplots()
-
-
-        # need to get symbol list etc
-        color_list, symbol_list = self._create_colors_markers_list()
-        plot_style = None
-        batch_dir = self.batch_dir
-        batch_name = self.name
-
-        # need to get the df
-        try:
-            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df, self.selected_summaries)
-            df_d = pick_summary_data("shifted_discharge_capacity", self.summary_df, self.selected_summaries)
-        except AttributeError:
-            logger.debug("shifted capacities not part of summary data (selected_summaries)")
-            return None
-
-        # generate labels
-        labels = [self.info_df.get_value(filename, "labels") for filename in df_c.columns.get_level_values(0)]
-
-        # adding charge/discharge label
-        labels.extend(["", "discharge", "charge"])
-
-
-        list_of_lines, plot_style = plot_summary_data(ax, df_d, info_df=self.info_df, color_list=color_list,
-                                                      symbol_list=symbol_list, is_charge=False,
-                                                      plot_style=plot_style)
-
-        # adding charge/discharge legend signs
-        color = plot_style["color"]
-        markersize = plot_style["markersize"]
-
-        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                      markeredgecolor=color, markerfacecolor='none',
-                                      markersize=markersize)
-        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                        markeredgecolor=color, markerfacecolor=color,
-                                        markersize=markersize)
-        no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
-        list_of_lines.extend([no_label, closed_label, open_label])
-
-
-
-
-        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
-                                                      symbol_list=symbol_list, is_charge=True,
-                                                      plot_style=plot_style)
-
-        # setting axes labels
-        ax.set_xlabel("cycle")
-        ax.set_ylabel("capacity")
-        # adding legend
-        logger.debug("trying to add legends " + str(labels))
-        fig.legend(handles=list_of_lines, labels=labels,
-                   bbox_to_anchor=(1.02, 1.1), loc=2,
-                   # bbox_transform=plt.gcf().transFigure,
-                   bbox_transform=ax.transAxes,
-                   numpoints=1,
-                   ncol=1, labelspacing=0.,
-                   prop={"size": 10})
-
-        if save:
-            extension = prms.Batch["fig_extension"]
-            dpi = prms.Batch["dpi"]
-            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
-            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
-            plt.savefig()
-
-        if show:
-            plt.show()
-
-        return fig, ax
-
-
-    def plot_shifted_cap(self, show=True, save=False):
-        # not ready for production yet...
-        # this plotting function can be used as template for making custom plotting functions
-        # need to create axes
-
         figure_type = "shiftedcap"
         fig, ax = plt.subplots()
 
@@ -570,20 +515,27 @@ class Batch(object):
 
         # need to get the df
         try:
-            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df, self.selected_summaries)
-            df_d = pick_summary_data("shifted_discharge_capacity", self.summary_df, self.selected_summaries)
+            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df,
+                                     self.selected_summaries)
+            df_d = pick_summary_data("shifted_discharge_capacity",
+                                     self.summary_df, self.selected_summaries)
         except AttributeError:
-            logger.debug("shifted capacities not part of summary data (selected_summaries)")
+            logger.debug(
+                "shifted capacities not part of summary data (selected_summaries)")
             return None
 
         # generate labels
-        labels = [self.info_df.get_value(filename, "labels") for filename in df_c.columns.get_level_values(0)]
+        labels = [self.info_df.get_value(filename, "labels") for filename in
+                  df_c.columns.get_level_values(0)]
 
         # adding charge/discharge label
         labels.extend(["", "discharge", "charge"])
 
-        list_of_lines, plot_style = plot_summary_data(ax, df_d, info_df=self.info_df, color_list=color_list,
-                                                      symbol_list=symbol_list, is_charge=False,
+        list_of_lines, plot_style = plot_summary_data(ax, df_d,
+                                                      info_df=self.info_df,
+                                                      color_list=color_list,
+                                                      symbol_list=symbol_list,
+                                                      is_charge=False,
                                                       plot_style=plot_style)
 
         # adding charge/discharge legend signs
@@ -591,12 +543,15 @@ class Batch(object):
         markersize = plot_style["markersize"]
 
         open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                      markeredgecolor=color, markerfacecolor='none',
+                                      markeredgecolor=color,
+                                      markerfacecolor='none',
                                       markersize=markersize)
         closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                        markeredgecolor=color, markerfacecolor=color,
+                                        markeredgecolor=color,
+                                        markerfacecolor=color,
                                         markersize=markersize)
-        no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
+        no_label = mpl.lines.Line2D([], [], color='none', marker='s',
+                                    markersize=0)
         list_of_lines.extend([no_label, closed_label, open_label])
 
         plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
@@ -619,7 +574,8 @@ class Batch(object):
         if save:
             extension = prms.Batch["fig_extension"]
             dpi = prms.Batch["dpi"]
-            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
+            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
+            figure_type, batch_name, extension))
             fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
             plt.savefig()
 
@@ -628,6 +584,87 @@ class Batch(object):
 
         return fig, ax
 
+    def plot_shifted_cap(self, show=True, save=False):
+
+        figure_type = "shiftedcap"
+        fig, ax = plt.subplots()
+
+        # need to get symbol list etc
+        color_list, symbol_list = self._create_colors_markers_list()
+        plot_style = None
+        batch_dir = self.batch_dir
+        batch_name = self.name
+
+        # need to get the df
+        try:
+            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df,
+                                     self.selected_summaries)
+            df_d = pick_summary_data("shifted_discharge_capacity",
+                                     self.summary_df, self.selected_summaries)
+        except AttributeError:
+            logger.debug(
+                "shifted capacities not part of summary data (selected_summaries)")
+            return None
+
+        # generate labels
+        labels = [self.info_df.get_value(filename, "labels") for filename in
+                  df_c.columns.get_level_values(0)]
+
+        # adding charge/discharge label
+        labels.extend(["", "discharge", "charge"])
+
+        list_of_lines, plot_style = plot_summary_data(ax, df_d,
+                                                      info_df=self.info_df,
+                                                      color_list=color_list,
+                                                      symbol_list=symbol_list,
+                                                      is_charge=False,
+                                                      plot_style=plot_style)
+
+        # adding charge/discharge legend signs
+        color = plot_style["color"]
+        markersize = plot_style["markersize"]
+
+        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                      markeredgecolor=color,
+                                      markerfacecolor='none',
+                                      markersize=markersize)
+        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
+                                        markeredgecolor=color,
+                                        markerfacecolor=color,
+                                        markersize=markersize)
+        no_label = mpl.lines.Line2D([], [], color='none', marker='s',
+                                    markersize=0)
+        list_of_lines.extend([no_label, closed_label, open_label])
+
+        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
+                          symbol_list=symbol_list, is_charge=True,
+                          plot_style=plot_style)
+
+        # setting axes labels
+        ax.set_xlabel("cycle")
+        ax.set_ylabel("capacity")
+        # adding legend
+        logger.debug("trying to add legends " + str(labels))
+        fig.legend(handles=list_of_lines, labels=labels,
+                   bbox_to_anchor=(1.02, 1.1), loc=2,
+                   # bbox_transform=plt.gcf().transFigure,
+                   bbox_transform=ax.transAxes,
+                   numpoints=1,
+                   ncol=1, labelspacing=0.,
+                   prop={"size": 10})
+
+        if save:
+            extension = prms.Batch["fig_extension"]
+            dpi = prms.Batch["dpi"]
+            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
+            figure_type, batch_name, extension))
+            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+            plt.savefig()
+
+        if show:
+            plt.show()
+
+        return fig, ax
 
     def plot_cum_irrev(self, show=True, save=False):
         # not ready for production yet...
@@ -644,20 +681,27 @@ class Batch(object):
 
         # need to get the df
         try:
-            df_c = pick_summary_data("low_level", self.summary_df, self.selected_summaries)
-            df_d = pick_summary_data("high_level", self.summary_df, self.selected_summaries)
+            df_c = pick_summary_data("low_level", self.summary_df,
+                                     self.selected_summaries)
+            df_d = pick_summary_data("high_level", self.summary_df,
+                                     self.selected_summaries)
         except AttributeError:
-            logger.debug("low_level not part of summary data (selected_summaries)")
+            logger.debug(
+                "low_level not part of summary data (selected_summaries)")
             return None
 
         # generate labels
-        labels = [self.info_df.get_value(filename, "labels") for filename in df_c.columns.get_level_values(0)]
+        labels = [self.info_df.get_value(filename, "labels") for filename in
+                  df_c.columns.get_level_values(0)]
 
         # adding charge/discharge label
         labels.extend(["", "low_level", "high_level"])
 
-        list_of_lines, plot_style = plot_summary_data(ax, df_d, info_df=self.info_df, color_list=color_list,
-                                                      symbol_list=symbol_list, is_charge=False,
+        list_of_lines, plot_style = plot_summary_data(ax, df_d,
+                                                      info_df=self.info_df,
+                                                      color_list=color_list,
+                                                      symbol_list=symbol_list,
+                                                      is_charge=False,
                                                       plot_style=plot_style)
 
         # adding charge/discharge legend signs
@@ -665,12 +709,15 @@ class Batch(object):
         markersize = plot_style["markersize"]
 
         open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                      markeredgecolor=color, markerfacecolor='none',
+                                      markeredgecolor=color,
+                                      markerfacecolor='none',
                                       markersize=markersize)
         closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                        markeredgecolor=color, markerfacecolor=color,
+                                        markeredgecolor=color,
+                                        markerfacecolor=color,
                                         markersize=markersize)
-        no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
+        no_label = mpl.lines.Line2D([], [], color='none', marker='s',
+                                    markersize=0)
         list_of_lines.extend([no_label, closed_label, open_label])
 
         plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
@@ -693,7 +740,8 @@ class Batch(object):
         if save:
             extension = prms.Batch["fig_extension"]
             dpi = prms.Batch["dpi"]
-            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
+            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
+            figure_type, batch_name, extension))
             fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
             plt.savefig()
 
@@ -701,7 +749,6 @@ class Batch(object):
             plt.show()
 
         return fig, ax
-
 
     def plot_summaries(self, show=False, save=True, figure_type=None):
         """Plot summary graphs.
@@ -724,8 +771,10 @@ class Batch(object):
         selected_summaries = self.selected_summaries
         batch_dir = self.batch_dir
         batch_name = self.name
-        fig, ax = plot_summary_figure(self.info_df, summary_df, color_list, symbol_list, selected_summaries,
-                                      batch_dir, batch_name, show=show, save=save, figure_type=figure_type)
+        fig, ax = plot_summary_figure(self.info_df, summary_df, color_list,
+                                      symbol_list, selected_summaries,
+                                      batch_dir, batch_name, show=show,
+                                      save=save, figure_type=figure_type)
         self.figure[figure_type] = fig
         self.axes[figure_type] = ax
 
@@ -747,7 +796,8 @@ def create_selected_summaries_dict(summaries_list):
     Args:
         summaries_list: list containing cellpy summary column id names
 
-    Returns: dictionary of the form {cellpy id name: cellpy summary header name,}
+    Returns: dictionary of the form {cellpy id name: cellpy summary
+        header name,}
 
     """
     headers_summary = cellreader.get_headers_summary()
@@ -767,19 +817,21 @@ def get_db_reader(db_type):
 
     """
     if db_type == "simple_excel_reader":
-        return dbreader.reader
+        return dbreader.Reader
     else:
         raise NotImplementedError
 
 
 def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
-    """Create a pandas DataFrame with the info needed for ``cellpy`` to load the runs.
+    """Create a pandas DataFrame with the info needed for ``cellpy`` to load
+    the runs.
 
     Args:
         batch_name (str): Name of the batch.
         batch_col (int): The column number where the batch name is in the db.
         reader (method): the db-loader method.
-        reader_label (str): the label for the db-loader (if db-loader method is not given)
+        reader_label (str): the label for the db-loader (if db-loader method is
+            not given)
 
     Returns: info_df (pandas DataFrame)
     """
@@ -806,10 +858,12 @@ def make_df_from_batch(batch_name, batch_col=5, reader=None, reader_label=None):
 def create_folder_structure(project_name, batch_name):
     """This function creates a folder structure for the batch project.
 
-    The folder structure consists of main working folder ``project_name` located in the ``outdatadir`` (as defined
-    in the cellpy configuration file) with a sub-folder named ``batch_name``. It also creates a folder
+    The folder structure consists of main working folder ``project_name`
+    located in the ``outdatadir`` (as defined in the cellpy configuration file)
+    with a sub-folder named ``batch_name``. It also creates a folder
     inside the ``batch_name`` folder for storing the raw data.
-    If the folders does not exist, they will be made. The function also returns the name of the info-df.
+    If the folders does not exist, they will be made. The function also returns
+    the name of the info-df.
 
     Args:
         project_name: name of the project
@@ -834,29 +888,39 @@ def create_folder_structure(project_name, batch_name):
     # create file-name for the info_df (json)
     info_file = "cellpy_batch_%s.json" % batch_name
     info_file = os.path.join(project_dir, info_file)
-    return (info_file, (project_dir, batch_dir, raw_dir))
+    return info_file, (project_dir, batch_dir, raw_dir)
 
 
-def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=False,
-                       export_cycles=False, export_raw=True,
-                       export_ica=False, save=True, use_cellpy_stat_file=True):
+def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
+                       force_cellpy=False,
+                       export_cycles=False, shifted_cycles=False,
+                       export_raw=True,
+                       export_ica=False, save=True, use_cellpy_stat_file=True,
+                       parent_level="CellpyData"):
     """Reads and saves cell data defined by the info-DataFrame.
 
-    The function iterates through the ``info_df`` and loads data from the runs. It saves individual data
-    for each run (if selected), as well as returns a list of ``cellpy`` summary DataFrames, a list of
-    the indexes (one for each run; same as used as index in the ``info_df``), as well as a list with indexes
-    of runs (cells) where an error was encountered during loading.
+    The function iterates through the ``info_df`` and loads data from the runs.
+    It saves individual data for each run (if selected), as well as returns a
+    list of ``cellpy`` summary DataFrames, a list of the indexes (one for each
+    run; same as used as index in the ``info_df``), as well as a list with
+    indexes of runs (cells) where an error was encountered during loading.
 
     Args:
+        use_cellpy_stat_file: use the stat file to perform the calculations.
         info_df: pandas.DataFrame with information about the runs.
         raw_dir: path to location where you want to save raw data.
         sep: delimiter to use when exporting to csv.
         force_raw: load raw data even-though cellpy-file is up-to-date.
-        force_cellpy: load cellpy files even-though cellpy-file is not up-to-date.
+        force_cellpy: load cellpy files even-though cellpy-file is not
+            up-to-date.
         export_cycles: set to True for exporting cycles to csv.
+        shifted_cycles: set to True for exporting the cycles with a cumulated
+            shift.
         export_raw: set to True for exporting raw data to csv.
         export_ica: set to True for calculating and exporting dQ/dV to csv.
         save: set to False to prevent saving a cellpy-file.
+        parent_level: optional, should use "cellpydata" for older hdf5-files and
+            default for newer ones.
 
     Returns: frames (list of cellpy summary DataFrames), keys (list of indexes),
         errors (list of indexes that encountered errors).
@@ -872,18 +936,17 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
 
     for indx, row in info_df.iterrows():
         counter += 1
-        h_txt = "[" + counter*"|" + (number_of_runs-counter)*"." + "]"
+        h_txt = "[" + counter * "|" + (number_of_runs - counter) * "." + "]"
         l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
         logger.debug(l_txt)
         print(h_txt)
-        # here we should print (or write to log) file n of N (e.g. [3/12] or [|||       ])
         if not row.raw_file_names and not force_cellpy:
             print("File not found!")
             print(indx)
             logger.debug("File(s) not found for index=%s" % indx)
             errors.append(indx)
             continue
-        # TODO: need to fix so that thet logger is set properly outside of Batch object
+        # TODO: need to fix so that thet logger is set properly outside Batch
         print("Processing (%s)..." % indx)
         logger.info("Processing (%s)..." % indx)
         cell_data = cellreader.CellpyData()
@@ -895,7 +958,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         if not force_cellpy:
             logger.info("not forcing")
             try:
-                cell_data.loadcell(raw_files=row.raw_file_names, cellpy_file=row.cellpy_file_names,
+                cell_data.loadcell(raw_files=row.raw_file_names,
+                                   cellpy_file=row.cellpy_file_names,
                                    mass=row.masses, summary_on_raw=True,
                                    force_raw=force_raw,
                                    use_cellpy_stat_file=use_cellpy_stat_file)
@@ -906,12 +970,13 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         else:
             logger.info("forcing")
             try:
-                cell_data.load(row.cellpy_file_names)
+                cell_data.load(row.cellpy_file_names, parent_level=parent_level)
             except Exception as e:
-                logger.debug('Failed to load: ' + str(e))
+                logger.info(
+                    f"Critical exception encountered {type(e)} - skipping this file")
+                logger.debug('Failed to load. Error-message: ' + str(e))
                 errors.append("load:" + str(indx))
                 continue
-
 
         if not cell_data.check():
             print("...not loaded...")
@@ -937,7 +1002,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
             # check if it is a byte-string
             if b"Cycle_Index" in summary_tmp.columns:
                 logger.debug("Seems to be a byte-string in the column-headers")
-                summary_tmp.rename(columns={b"Cycle_Index": 'Cycle_Index'}, inplace=True)
+                summary_tmp.rename(columns={b"Cycle_Index": 'Cycle_Index'},
+                                   inplace=True)
             summary_tmp.set_index("Cycle_Index", inplace=True)
 
         frames.append(summary_tmp)
@@ -955,7 +1021,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
         if export_raw:
             print("...exporting data....")
             logger.debug("Exporting csv")
-            cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles, raw=export_raw)
+            cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles,
+                             shifted=shifted_cycles, raw=export_raw)
 
         if do_export_dqdv:
             logger.debug("Exporting dqdv")
@@ -963,7 +1030,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False, force_cellpy=
                 export_dqdv(cell_data, savedir=raw_dir, sep=sep)
             except Exception as e:
                 print("...could not make/export dq/dv data...")
-                logger.debug("Failed to make/export dq/dv data (%s): %s" % (indx, str(e)))
+                logger.debug("Failed to make/export dq/dv data (%s): %s" % (
+                indx, str(e)))
                 errors.append("ica:" + str(indx))
     if len(errors) > 0:
         print("Finished with errors!")
@@ -1000,12 +1068,15 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
     summary_df = pd.concat(frames, keys=keys, axis=1)
     # saving the selected summaries
     for key, value in selected_summaries_dict.items():
-        _summary_file_name = os.path.join(batch_dir, "summary_%s_%s.csv" % (key, batch_name))
-        _summary_df = summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
+        _summary_file_name = os.path.join(batch_dir, "summary_%s_%s.csv" % (
+        key, batch_name))
+        _summary_df = summary_df.iloc[:,
+                      summary_df.columns.get_level_values(1) == value]
         # include function to tweak headers here (need to learn MultiIndex)
         _header = _summary_df.columns
         _summary_df.to_csv(_summary_file_name, sep=";")
-        logger.info("saved summary (%s) to:\n       %s" % (key, _summary_file_name))
+        logger.info(
+            "saved summary (%s) to:\n       %s" % (key, _summary_file_name))
     logger.info("finished saving summaries")
     return summary_df
 
@@ -1015,20 +1086,27 @@ def pick_summary_data(key, summary_df, selected_summaries):
 
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     value = selected_summaries_dict[key]
-    return summary_df.iloc[:, summary_df.columns.get_level_values(1)==value]
+    return summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
 
 
-def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False, plot_style=None):
+def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False,
+                      plot_style=None):
     """creates a plot of the selected df-data in the given axes.
 
     Typical usage:
-        standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1, sharex=True)
-        list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df, info_df=info_df, color_list=color_list,
-                                                  symbol_list=symbol_list, is_charge=False, plot_style=plot_style)
+        standard_fig, (ce_ax, cap_ax, ir_ax) = plt.subplots(nrows=3, ncols=1,
+                                                            sharex=True)
+        list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df,
+                                                      info_df=info_df,
+                                                      color_list=color_list,
+                                                      symbol_list=symbol_list,
+                                                      is_charge=False,
+                                                      plot_style=plot_style)
 
-        # the ce_df is a pandas.DataFrame with ce-values for all your selected cells.
-        # the color_list and the symbol_list are both list with colors and symbols to use when plotting to ensure
-        # that if you have several subplots (axes), then the lines and symbols match up for each given cell.
+        the ce_df is a pandas.DataFrame with ce-values for all your selected
+        cells. the color_list and the symbol_list are both list with colors and
+        symbols to use when plotting to ensure that if you have several subplots
+        (axes), then the lines and symbols match up for each given cell.
 
     Args:
         ax: the matplotlib axes to plot on
@@ -1039,8 +1117,8 @@ def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False,
         is_charge: plots open symbols if True
         plot_style: selected style of the plot
 
-    Returns: list of the matplotlib lines (convenient to have if you are adding a custom legend)
-        the plot style (dictionary with matplotlib plotstyles)
+    Returns: list of the matplotlib lines (convenient to have if you are adding
+        a custom legend) the plot style (dictionary with matplotlib plotstyles)
 
     """
 
@@ -1072,15 +1150,18 @@ def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False,
     return list_of_lines, plot_style
 
 
-def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_summaries,
-                        batch_dir, batch_name, plot_style=None, show=False, save=True,
+def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
+                        selected_summaries,
+                        batch_dir, batch_name, plot_style=None, show=False,
+                        save=True,
                         figure_type=None):
     """Create a figure with summary graphs.
     Args:
         info_df: the pandas DataFrame with info about the runs.
         summary_df: a pandas DataFrame with the summary data.
         color_list: a list of colors to use (one pr. group)
-        symbol_list: a list of symbols to use (one pr. cell in the largest group)
+        symbol_list: a list of symbols to use (one pr. cell in the largest
+            group)
         selected_summaries: a list of the selected summaries to plot
         batch_dir: path to the folder where the figure should be saved.
         batch_name: the batch name.
@@ -1092,7 +1173,8 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     figure_type_object = figure_types[figure_type]
 
     logger.debug("creating figure ({})".format(figure_type))
-    standard_fig, ax = plt.subplots(nrows=figure_type_object.rows, ncols=figure_type_object.columns,
+    standard_fig, ax = plt.subplots(nrows=figure_type_object.rows,
+                                    ncols=figure_type_object.columns,
                                     sharex=True)
 
     ce_ax = figure_type_object.retrieve_axis("ce_ax", ax)
@@ -1102,19 +1184,25 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
 
     # pick data (common for all plot types)
     # could include a if cd_ax: pick_summary_data...
-    ce_df = pick_summary_data("coulombic_efficiency", summary_df, selected_summaries)
+    ce_df = pick_summary_data("coulombic_efficiency", summary_df,
+                              selected_summaries)
     cc_df = pick_summary_data("charge_capacity", summary_df, selected_summaries)
-    dc_df = pick_summary_data("discharge_capacity", summary_df, selected_summaries)
+    dc_df = pick_summary_data("discharge_capacity", summary_df,
+                              selected_summaries)
 
     # generate labels
-    ce_labels = [info_df.get_value(filename, "labels") for filename in ce_df.columns.get_level_values(0)]
+    ce_labels = [info_df.get_value(filename, "labels") for filename in
+                 ce_df.columns.get_level_values(0)]
 
     # adding charge/discharge label
     ce_labels.extend(["", "discharge", "charge"])
 
     # plot ce
-    list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df, info_df=info_df, color_list=color_list,
-                                                  symbol_list=symbol_list, is_charge=False, plot_style=plot_style)
+    list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df, info_df=info_df,
+                                                  color_list=color_list,
+                                                  symbol_list=symbol_list,
+                                                  is_charge=False,
+                                                  plot_style=plot_style)
     ce_ax.set_ylabel("Coulombic\nefficiency\n(%)")
     ce_ax.locator_params(nbins=5)
 
@@ -1126,15 +1214,18 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
                                   markeredgecolor=color, markerfacecolor='none',
                                   markersize=markersize)
     closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                    markeredgecolor=color, markerfacecolor=color,
+                                    markeredgecolor=color,
+                                    markerfacecolor=color,
                                     markersize=markersize)
     no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
     list_of_lines.extend([no_label, closed_label, open_label])
 
     # plotting capacity (common)
-    plot_summary_data(cap_ax, cc_df, is_charge=True, info_df=info_df, color_list=color_list,
+    plot_summary_data(cap_ax, cc_df, is_charge=True, info_df=info_df,
+                      color_list=color_list,
                       symbol_list=symbol_list, plot_style=plot_style)
-    plot_summary_data(cap_ax, dc_df, is_charge=False, info_df=info_df, color_list=color_list,
+    plot_summary_data(cap_ax, dc_df, is_charge=False, info_df=info_df,
+                      color_list=color_list,
                       symbol_list=symbol_list, plot_style=plot_style)
     cap_ax.set_ylabel("Capacity\n(mAh/g)")
     cap_ax.locator_params(nbins=4)
@@ -1143,12 +1234,15 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     plot_ir_charge, plot_ir_discharge = figure_type_object.ir_selector
     if plot_ir_charge:
         irc_df = pick_summary_data("ir_charge", summary_df, selected_summaries)
-        plot_summary_data(ir_ax, irc_df, is_charge=True, info_df=info_df, color_list=color_list,
+        plot_summary_data(ir_ax, irc_df, is_charge=True, info_df=info_df,
+                          color_list=color_list,
                           symbol_list=symbol_list, plot_style=plot_style)
     if plot_ir_discharge:
-        ird_df = pick_summary_data("ir_discharge", summary_df, selected_summaries)
-        plot_summary_data(ir_ax, ird_df, is_charge=False, info_df=info_df, color_list=color_list,
-                      symbol_list=symbol_list, plot_style=plot_style)
+        ird_df = pick_summary_data("ir_discharge", summary_df,
+                                   selected_summaries)
+        plot_summary_data(ir_ax, ird_df, is_charge=False, info_df=info_df,
+                          color_list=color_list,
+                          symbol_list=symbol_list, plot_style=plot_style)
 
     ir_ax.set_ylabel("Internal\nresistance\n(Ohms)")
     ir_ax.set_xlabel("Cycle number")
@@ -1160,19 +1254,24 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     if ev_ax is not None:
         plot_ev_charge, plot_ev_discharge = figure_type_object.end_voltage_selector
         if plot_ev_charge:
-            evc_df = pick_summary_data("end_voltage_charge", summary_df, selected_summaries)
-            plot_summary_data(ev_ax, evc_df, is_charge=True, info_df=info_df, color_list=color_list,
-                          symbol_list=symbol_list, plot_style=plot_style)
+            evc_df = pick_summary_data("end_voltage_charge", summary_df,
+                                       selected_summaries)
+            plot_summary_data(ev_ax, evc_df, is_charge=True, info_df=info_df,
+                              color_list=color_list,
+                              symbol_list=symbol_list, plot_style=plot_style)
         if plot_ev_discharge:
-            evd_df = pick_summary_data("end_voltage_discharge", summary_df, selected_summaries)
-            plot_summary_data(ev_ax, evd_df, is_charge=False, info_df=info_df, color_list=color_list,
+            evd_df = pick_summary_data("end_voltage_discharge", summary_df,
+                                       selected_summaries)
+            plot_summary_data(ev_ax, evd_df, is_charge=False, info_df=info_df,
+                              color_list=color_list,
                               symbol_list=symbol_list, plot_style=plot_style)
 
         ev_ax.set_ylabel("End\nvoltage\n(V)")
         ev_ax.locator_params(axis="y", nbins=4)
 
     # tweaking
-    plt.subplots_adjust(left=0.07, right=0.93, top=0.9, wspace=0.25, hspace=0.15)
+    plt.subplots_adjust(left=0.07, right=0.93, top=0.9, wspace=0.25,
+                        hspace=0.15)
 
     # adding legend
     logger.debug("trying to add legends " + str(ce_labels))
@@ -1188,7 +1287,8 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
     if save:
         extension = prms.Batch["fig_extension"]
         dpi = prms.Batch["dpi"]
-        figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension))
+        figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
+        figure_type, batch_name, extension))
         standard_fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
     if show:
         plt.show()
@@ -1196,7 +1296,8 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list, selected_s
 
 
 def create_labels(label, *args):
-    """Returns a re-formatted label (currently it only removes the dates from the run-name)"""
+    """Returns a re-formatted label (currently it only removes the dates
+    from the run-name)"""
     return _remove_date(label)
 
 
@@ -1243,22 +1344,45 @@ def init(*args, **kwargs):
 
 
 def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
-    number_of_stars_to_print = (79 - len(name))//2
+    number_of_stars_to_print = (79 - len(name)) // 2
     print()
-    print(number_of_stars_to_print*"*", end='')
+    print(number_of_stars_to_print * "*", end='')
     print(name, end='')
-    print(number_of_stars_to_print*"*")
+    print(number_of_stars_to_print * "*")
     for item in dir_items:
         if not item.startswith("_"):
-            print("{}{}".format(bullet,item))
+            print("{}{}".format(bullet, item))
+
+
+def debugging():
+    """This one I use for debugging..."""
+    print("In debugging")
+    json_file = r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp02.json"
+
+    b = init(default_log_level="DEBUG")
+    b.load_info_df(json_file)
+    print(b.info_df.head())
+
+    # setting some variables
+    b.export_raw = False
+    b.export_cycles = False
+    b.export_ica = False
+    b.save_cellpy_file = True
+    b.force_raw_file = False
+    b.force_cellpy_file = True
+
+    b.load_and_save_raw(parent_level="cellpydata")
+
 
 def main():
-    LOAD_JSON = False
-    if not LOAD_JSON:
+    load_json = False
+    if not load_json:
         print("Running batch.py (loading from db)")
-        b = init("bec_exp06", "CellpyTest", default_log_level="DEBUG", reader="excel", me="Jan Petter")
+        b = init("bec_exp06", "CellpyTest", default_log_level="DEBUG",
+                 reader="excel", me="Jan Petter")
         b.selected_summaries.extend(
-            ["shifted_charge_capacity", "shifted_discharge_capacity", "low_level", "high_level", ])
+            ["shifted_charge_capacity", "shifted_discharge_capacity",
+             "low_level", "high_level", ])
         b.create_info_df()
         b.create_folder_structure()
         b.save_info_df()
@@ -1266,11 +1390,12 @@ def main():
     else:
         print("Running batch.py (loading JSON)")
         b = init(default_log_level="DEBUG")
-        b.load_info_df(r"C:\Scripting\Processing\Celldata\outdata\CellpyTest\cellpy_batch_bec_exp06.json")
+        b.load_info_df(
+            r"C:\Scripting\Processing\Celldata\outdata\CellpyTest\cellpy_batch_bec_exp06.json")
     print(b)
     print("The info DataFrame:")
     print(b.info_df.head(5))
-    b.force_cellpy_file=True
+    b.force_cellpy_file = True
     b.load_and_save_raw()
     b.make_summaries()
     print(b.default_figure_types)
@@ -1288,5 +1413,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-
+    debugging()
+    # main()

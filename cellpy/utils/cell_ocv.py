@@ -14,10 +14,7 @@ Todo:
     http://www.gamry.com/application-notes/EIS/basics-of-electrochemical-impedance-spectroscopy/
 
 """
-from __future__ import division
 
-from builtins import range
-from past.utils import old_div
 import numpy as np
 
 __author__ = 'Tor Kristian Vara', 'Jan Petter Maehlen'
@@ -58,7 +55,7 @@ def relaxation_rc(time, v0, tau_rc):
 
     """
 
-    return v0 * np.exp(old_div(-time, tau_rc))
+    return v0 * np.exp(-time/tau_rc)
 
 
 def ocv_relax_func(time, ocv, v0_rc, tau_rc, slope=None):

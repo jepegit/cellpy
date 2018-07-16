@@ -1,28 +1,13 @@
-from __future__ import print_function
-import os
 import pytest
-
-# -------- defining overall path-names etc ----------
-current_file_path = os.path.dirname(os.path.realpath(__file__))
-# relative_test_data_dir = "../cellpy/data_ex"
-relative_test_data_dir = "../testdata"
-test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-test_data_dir_raw = os.path.join(test_data_dir, "data")
-test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir_raw,test_res_file)
-test_data_dir_out = os.path.join(test_data_dir, "out")
-test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
-test_cellpy_file = "20160805_test001_45_cc.h5"
-test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_full = os.path.join(test_data_dir_cellpy,test_cellpy_file)
-test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,test_cellpy_file_tmp)
-test_run_name = "20160805_test001_45_cc"
-
 import logging
+import pandas as pd
 from cellpy import log
 from cellpy.utils import ica
+from . import fdv
+from cellpy.exceptions import NullData
 
 log.setup_logging(default_level=logging.DEBUG)
+
 
 @pytest.fixture
 def cellpy_data_instance():
@@ -34,16 +19,16 @@ def cellpy_data_instance():
 def dataset():
     from cellpy import cellreader
     d = cellreader.CellpyData()
-    d.load(test_cellpy_file_full)
+    d.load(fdv.cellpy_file_path)
     return d
 
 
 def test_ica_converter(dataset):
     list_of_cycles = dataset.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
-    print("you have %i cycles" % number_of_cycles)
+    logging.debug(f"you have {number_of_cycles} cycles")
     cycle = 5
-    print("looking at cycle %i" % cycle)
+    logging.debug(f"looking at cycle {cycle}")
     capacity, voltage = dataset.get_ccap(cycle)
     converter = ica.Converter()
     converter.set_data(capacity, voltage)
@@ -51,6 +36,16 @@ def test_ica_converter(dataset):
     converter.pre_process_data()
     converter.increment_data()
     converter.post_process_data()
+
+
+@pytest.mark.xfail(raises=NullData)
+def test_none_data():
+    ica.dqdv(None, None)
+
+
+@pytest.mark.xfail(raises=NullData)
+def test_short_data():
+    ica.dqdv(pd.Series(), pd.Series())
 
 
 @pytest.mark.parametrize("cycle", [1, 2, 3, 4, 5, 10])

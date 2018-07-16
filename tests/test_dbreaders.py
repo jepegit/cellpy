@@ -1,31 +1,7 @@
-from __future__ import print_function
-import os
 import pytest
+from . import fdv
 
-# -------- defining overall path-names etc ----------
-current_file_path = os.path.dirname(os.path.realpath(__file__))
-relative_test_data_dir = "../testdata"
-test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-test_data_dir_raw = os.path.join(test_data_dir, "data")
-
-test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir_raw,test_res_file)
-
-test_data_dir_out = os.path.join(test_data_dir, "out")
-
-test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
-test_cellpy_file = "20160805_test001_45_cc.h5"
-test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_full = os.path.join(test_data_dir_cellpy,test_cellpy_file)
-test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,test_cellpy_file_tmp)
-
-test_run_name = "20160805_test001_45_cc"
-
-test_data_dir_db = os.path.join(test_data_dir, "db")
-test_db_filename = "cellpy_db.xlsx"
-
-
-# specific for this module
+# parameters and variables specific for this module
 test_serial_number_one = 614
 test_serial_number_two = 615
 test_serial_number_not_in_batch = 621
@@ -34,7 +10,7 @@ test_serial_number_labeled_eis = 620
 slurry_name = "test001"
 test_batch_name = "exp001"
 test_mass = 0.5103
-test_loading = 0.96 # 0.29
+test_loading = 0.96  # 0.29
 test_total_mass = 2.831
 test_areal_loading = 0.0
 
@@ -43,18 +19,18 @@ test_areal_loading = 0.0
 def db_reader():
     from cellpy import dbreader
     from cellpy.parameters import prms
-    prms.Paths["outdatadir"] = test_data_dir_out
-    prms.Paths["rawdatadir"] = test_data_dir_raw
-    prms.Paths["cellpydatadir"] = test_data_dir_cellpy
-    prms.Paths["db_path"] = test_data_dir_db
-    prms.Paths["db_filename"] = test_db_filename
-    return dbreader.reader()
+    prms.Paths["outdatadir"] = fdv.output_dir
+    prms.Paths["rawdatadir"] = fdv.raw_data_dir
+    prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
+    prms.Paths["db_path"] = fdv.db_dir
+    prms.Paths["db_filename"] = fdv.db_file_name
+    return dbreader.Reader()
 
 
 @pytest.fixture
 def clean_db_reader():  # remove this?
     from cellpy import dbreader
-    return dbreader.reader()
+    return dbreader.Reader()
 
 
 def test_filter_select_col_numbers_true_false(db_reader):
@@ -168,7 +144,7 @@ def test_get_label(db_reader):
 
 def test_get_cell_name(db_reader):
     output = db_reader.get_cell_name(test_serial_number_one)
-    assert output == test_run_name
+    assert output == fdv.run_name
 
 
 def test_get_comment(db_reader):

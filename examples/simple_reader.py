@@ -16,8 +16,8 @@ import pandas as pd
 try:
     import pyodbc as dbloader
 except ImportError:
-    print "could not import dbloader (pyodbc)"
-    print "this script will not work without"
+    print("could not import dbloader (pyodbc)")
+    print("this script will not work without")
     sys.exit(0)
 
 
@@ -36,11 +36,16 @@ def convert2mAhg(d, mass=0.02):
 
 
 def main():
-    filename = r"C:\Cell_data\testdata.res" # write file name here
-    lim_low = 10 # write minimum value for capacity (points less than that will be removed)
-    lim_high = 6050 # write maximum value for capacity (points larger than that will be removed)
-    mass = 0.8369 # mass of (active material of) electrode in mg
-    outdir = r"C:\Cell_data\tmp" # write path to were you want to save the data
+    # write file name here:
+    filename = r"C:\Cell_data\testdata.res"
+    # write min value for capacity (points less than that will be removed):
+    lim_low = 10
+    # write max value for capacity (points larger than that will be removed):
+    lim_high = 6050
+    # mass of (active material of) electrode in mg:
+    mass = 0.8369
+    # write path to were you want to save the data:
+    outdir = r"C:\Cell_data\tmp"
 
 
     tablename_normal = "Channel_Normal_Table"
@@ -51,19 +56,19 @@ def main():
     outfile = os.path.join(outdir, fname + "_out.csv")
     outfile2 = os.path.join(outdir, fname + "_cdc.csv")
 
-
-    print "filename:", filename
+    print("filename:"), filename
 
     # ------making temporary file-------------
     temp_dir = tempfile.gettempdir()
     temp_filename = os.path.join(temp_dir, os.path.basename(filename))
-    print "Copying to tmp-file"
-    print "temp_filename:", temp_filename
+    print("Copying to tmp-file")
+    print("temp_filename:"), temp_filename
 
     shutil.copy2(filename, temp_dir)
-    print "Finished to tmp-file"
+    print("Finished to tmp-file")
 
-    constructor = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' + temp_filename
+    constructor = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' \
+                  + temp_filename
     conn = dbloader.connect(constructor, autocommit=True)
     cur = conn.cursor()
     sql = "select * from %s ORDER BY Test_Time" % tablename_normal
@@ -71,12 +76,11 @@ def main():
     col_names = [i[0] for i in cur.description]
 
     # all_data=cur.fetchall()
-    print "COLS:"
+    print("COLS:")
     for cname in col_names:
-        print cname
+        print(cname)
 
-    print
-    print "reading file",
+    print("\nreading file")
 
     # print all_data
     t = time.time()
@@ -108,7 +112,7 @@ def main():
 
         limit_counter += 1
         if limit_counter >= limit:
-            print "x",
+            print("x"),
             break
 
         state_counter += 1
@@ -124,11 +128,8 @@ def main():
 
         # is this a new cycle?
         if _cycle > cycle and cycle >= 1:
-            # text = "(%i -> %i)" % (cycle,_cycle)
-            # print text,
-            print ".",
+            print(".", end=" ")
             if I.count(cycle) == 0:
-                # print "s"
                 I.append(cycle)
                 V.append(v)
                 T.append(t)
@@ -151,9 +152,6 @@ def main():
                     T[i] = t2
                     V[i] = v2
 
-        # print
-
-        # updating variables
         step = _step
         cycle = _cycle
         v = _v
@@ -163,32 +161,22 @@ def main():
 
     ofile.close()
 
-    print "finnished reading"
-    print
-    print "Number of lines:",
-    print state_counter
-    print "Excecution time:",
-    print time.time() - t
-    print "Length of data:",
-    print len(V)
-    print
+    print(f"finnished reading\nNumber of lines: {state_counter}")
+    print(f"Excecution time: {time.time() - t}\nLength of data: {V}")
 
     if os.path.isfile(temp_filename):
         try:
-            print "...removing tmp-file"
-            print temp_filename
+            print(f"...removing tmp-file {temp_filename}")
             os.remove(temp_filename)
         except WindowsError as e:
-            print "...could not remove tmp-file"
-            print temp_filename
-            print e
+            print(f"...could not remove tmp-file {temp_filename} - {e}")
 
-    print "DATA:"
-    print "(I,D)"
+    print("DATA:")
+    print("(I,D)")
     for j, i in zip(I, D):
         if j > 10:
             break
-        print "%f %f" % (j, i)
+        print("%f %f") % (j, i)
 
     I = np.array(I)
     D = convert2mAhg(D, mass)
@@ -199,15 +187,19 @@ def main():
 
     selection = (df.Charge_Capacity > lim_low) & (df.Charge_Capacity < lim_high)
     df_filtered = df[selection]
-    df_filtered.to_csv(outfile2, sep=";", index=False, columns=["Cycle", "Discharge_Capacity", "Charge_Capacity"])
+    df_filtered.to_csv(outfile2, sep=";", index=False,
+                       columns=["Cycle", "Discharge_Capacity",
+                                "Charge_Capacity"])
 
     plt.plot(I, C, '-', label="charge")
-    plt.plot(df_filtered.Cycle, df_filtered.Charge_Capacity, 'o', label="filtered-charge")
+    plt.plot(df_filtered.Cycle, df_filtered.Charge_Capacity, 'o',
+             label="filtered-charge")
     plt.xlabel("cycle")
     plt.ylabel("mAh/g")
     plt.legend()
     plt.show()
     # this script is not properly tested yet
+
 
 if __name__ == "__main__":
     main()
