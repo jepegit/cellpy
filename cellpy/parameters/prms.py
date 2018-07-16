@@ -2,6 +2,7 @@
 
 import os
 import sys
+import box
 
 # class Parameter(object):
 #     """class for storing parameters"""
@@ -40,12 +41,13 @@ Paths = {
     "filelogdir": cur_dir,
     "db_filename": "cellpy_db.xlsx",
 }
-
+Paths = box.Box(Paths)
 # --------------------------
 # FileNames
 # --------------------------
 FileNames = {
 }
+FileNames = box.Box(FileNames)
 
 # --------------------------
 # Reader
@@ -65,6 +67,7 @@ Reader = {
     "cellpy_datadir": None,
     "auto_dirs": True,  # search in prm-file for res and hdf5 dirs in loadcell
 }
+Reader = box.Box(Reader)
 
 # --------------------------
 # DataSet
@@ -72,12 +75,15 @@ Reader = {
 DataSet = {
     "nom_cap": 3579,  # mAh/g (used for finding c-rates)
 }
+DataSet = box.Box(DataSet)
+
 # --------------------------
 # Db
 # --------------------------
 Db = {
     "db_type": "simple_excel_reader",
 }
+Db = box.Box(Db)
 
 # --------------------------
 # ExcelReader
@@ -102,12 +108,14 @@ excel_db_cols = {"serial_number_position": 0,
                  "loading": 42,
                  "general_comment": 47,
                  }
+excel_db_cols = box.Box(excel_db_cols)
 
 excel_db_filename_cols = {"serial_number_position": 0,
                           "serialno": 0,
                           "fileid": 1,
                           "files": 2,
                           }
+excel_db_filename_cols = box.Box(excel_db_filename_cols)
 
 # --------------------------
 # Instruments
@@ -119,6 +127,7 @@ Instruments = {
     "chunk_size": None,
     "max_chunks": None,
 }
+Instruments = box.Box(Instruments)
 
 # --------------------------
 # Materials
@@ -129,6 +138,8 @@ Materials = {
     "default_material": "silicon",
     "default_mass": 1.0,
 }
+Materials = box.Box(Materials)
+
 # --------------------------
 # Batch-options
 # --------------------------
@@ -142,6 +153,7 @@ Batch = {
     "color_style_label": "seaborn-deep",
     "figure_type": "unlimited",
 }
+Batch = box.Box(Batch)
 
 # --------------------------
 # Other non-config

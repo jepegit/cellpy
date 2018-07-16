@@ -47,7 +47,6 @@ SUMMARY_TABLE_VERSION = 3
 warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
 
-
 # module_logger = logging.getLogger(__name__)
 
 

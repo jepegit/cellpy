@@ -10,6 +10,8 @@ import yaml
 import cellpy.parameters.prms as prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
+USE_BOX = True
+
 default_prms = """
 [Paths]
 outdatadir: ..\outdata
@@ -55,15 +57,15 @@ def _pack_prms():
     to include them here"""
 
     config_dict = {
-        "Paths": prms.Paths,
-        "FileNames": prms.FileNames,
-        "Db": prms.Db,
-        "DataSet": prms.DataSet,
-        "Reader": prms.Reader,
-        "Instruments": prms.Instruments,
-        "excel_db_cols": prms.excel_db_cols,
-        "excel_db_filename_cols": prms.excel_db_filename_cols,
-        "Batch": prms.Batch,
+        "Paths": prms.Paths.to_dict(),
+        "FileNames": prms.FileNames.to_dict(),
+        "Db": prms.Db.to_dict(),
+        "DataSet": prms.DataSet.to_dict(),
+        "Reader": prms.Reader.to_dict(),
+        "Instruments": prms.Instruments.to_dict(),
+        "excel_db_cols": prms.excel_db_cols.to_dict(),
+        "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
+        "Batch": prms.Batch.to_dict(),
     }
     return config_dict
 
