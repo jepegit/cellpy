@@ -13,4 +13,4 @@ pyyaml>=3.12
 future>=0.16.0
 pyodbc>=4.0.16
 future>=0.16.0
-python-box
+python-box==3.2.0
