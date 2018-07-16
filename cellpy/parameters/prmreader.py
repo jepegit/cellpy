@@ -10,7 +10,6 @@ import yaml
 import cellpy.parameters.prms as prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
-USE_BOX = True
 
 default_prms = """
 [Paths]
