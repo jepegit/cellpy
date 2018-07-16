@@ -2,6 +2,7 @@
 
 import os
 import glob
+import pathlib
 import warnings
 import cellpy.parameters.prms as prms
 import logging
@@ -9,6 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# noinspection PyUnusedLocal
 def create_full_names(run_name, cellpy_file_extension=None,
                       raw_file_dir=None, cellpy_file_dir=None):
     cellpy_file_extension = "h5"
@@ -30,6 +32,7 @@ def create_full_names(run_name, cellpy_file_extension=None,
     return raw_file, cellpy_file
 
 
+# noinspection PyUnusedLocal
 def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
                      raw_file_dir=None, cellpy_file_dir=None, prm_filename=None,
                      file_name_format=None):
@@ -39,13 +42,15 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     Args:
         run_name(str): run-file identification.
         raw_extension(str): optional, extension of run-files (without the '.').
-        cellpy_file_extension(str): optional, extension for cellpy files (without the '.').
-        raw_file_dir(path): optional, directory where to look for run-files (default: read prm-file)
-        cellpy_file_dir(path): optional, directory where to look for cellpy-files
-                              (default: read prm-file)
+        cellpy_file_extension(str): optional, extension for cellpy files
+            (without the '.').
+        raw_file_dir(path): optional, directory where to look for run-files
+            (default: read prm-file)
+        cellpy_file_dir(path): optional, directory where to look for
+            cellpy-files (default: read prm-file)
         prm_filename(path): optional parameter file can be given.
         file_name_format(str): format of raw-file names or a glob pattern
-                               (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+            (default: YYYYMMDD_[name]EEE_CC_TT_RR).
 
     Returns:
         run-file names (list) and cellpy-file-name (path).
@@ -79,15 +84,19 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
 
     if file_name_format is None:
         try:
-            file_name_format = prms.file_name_format  # To be implemented in version 0.5
+            # To be implemented in version 0.5:
+            file_name_format = prms.file_name_format
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
             if version >= 0.5:
-                print("Could not read file_name_format from _cellpy_prms_xxx.conf.")
+                print("Could not read file_name_format "
+                      "from _cellpy_prms_xxx.conf.")
                 print("Using:")
                 print("file_name_format:", file_name_format)
-                file_format_explanation = "YYYYMMDD is date, EEE is electrode number "
-                file_format_explanation += "CC is cell number, TT is cell_type, RR is run number."
+                file_format_explanation = "YYYYMMDD is date,"
+                file_format_explanation += " EEE is electrode number"
+                file_format_explanation += " CC is cell number,"
+                file_format_explanation += " TT is cell_type, RR is run number."
                 print(file_format_explanation)
 
     # check if raw_file_dir exists
@@ -99,12 +108,22 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     else:
         glob_text_raw = file_name_format
 
-    glob_text_raw = os.path.join(raw_file_dir, glob_text_raw)
-    run_files = glob.glob(glob_text_raw)
+    # TODO: use pathlib
 
-    #  run_files = glob.glob1(raw_file_dir,glob_text_raw)
-    run_files.sort()
-    cellpy_file = run_name + "." + cellpy_file_extension
+    use_pathlib_path = True
+    return_as_str_list = True
+
+    if use_pathlib_path:
+        run_files = pathlib.Path(raw_file_dir).glob(glob_text_raw)
+        if return_as_str_list:
+            run_files = [str(f.resolve()) for f in run_files]
+
+    else:
+        glob_text_raw = os.path.join(raw_file_dir, glob_text_raw)
+        run_files = glob.glob(glob_text_raw)
+        run_files.sort()
+
+    cellpy_file = "{0}.{1}".format(run_name, cellpy_file_extension)
     cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
     return run_files, cellpy_file
@@ -139,4 +158,5 @@ if __name__ == '__main__':
     my_run_name = "20160805_test001_45_cc"
     my_raw_file_dir = os.path.abspath("../data_ex")
     my_cellpy_file_dir = os.path.abspath("../data_ex")
-    search_for_files(my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir)
+    search_for_files(my_run_name, raw_file_dir=my_raw_file_dir,
+                     cellpy_file_dir=my_cellpy_file_dir)

@@ -16,6 +16,7 @@ SYMBOL_DICT = {"all": ['s', 'o', 'v', '^', '<', '>', 'D', 'p', '*', '1', '2', '.
                "simple": ['s', 'o', 'v', '^', '<', '>', '*', 'd'],
                }
 
+# noinspection SpellCheckingInspection,SpellCheckingInspection,SpellCheckingInspection
 COLOR_DICT = {'classic': [u'b', u'g', u'r', u'c', u'm', u'y', u'k'],
               'grayscale': [u'0.00', u'0.40', u'0.60', u'0.70'],
               'bmh': [u'#348ABD', u'#A60628', u'#7A68A6', u'#467821', u'#D55E00', u'#CC79A7', u'#56B4E9',

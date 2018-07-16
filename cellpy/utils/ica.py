@@ -8,9 +8,11 @@ from scipy.signal import savgol_filter
 from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter1d
 import logging
+from cellpy.exceptions import NullData
 import warnings
 
 METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
+
 
 # TODO: documentation and tests
 # TODO: fitting of o-c curves and differentiation
@@ -24,6 +26,7 @@ class Converter(object):
     Typical usage is to  (1) set the data,  (2) inspect the data, (3) pre-process the data,
     (4) perform the dq-dv transform, and finally (5) post-process the data.
     """
+
     def __init__(self):
         self.capacity = None
         self.voltage = None
@@ -68,6 +71,8 @@ class Converter(object):
         self.std_err_median = None
         self.std_err_mean = None
 
+        self.fixed_voltage_range = False
+
         self.errors = []
 
     def set_data(self, capacity, voltage):
@@ -84,13 +89,21 @@ class Converter(object):
         if voltage is None:
             voltage = self.voltage
 
+        if capacity is None or voltage is None:
+            raise NullData
+
+        self.len_capacity = len(capacity)
+        self.len_voltage = len(voltage)
+
+        if self.len_capacity <= 1:
+            raise NullData
+        if self.len_voltage <= 1:
+            raise NullData
+
         d_capacity = np.diff(capacity)
         d_voltage = np.diff(voltage)
         self.d_capacity_mean = np.mean(d_capacity)
         self.d_voltage_mean = np.mean(d_voltage)
-
-        self.len_capacity = len(capacity)
-        self.len_voltage = len(voltage)
 
         self.min_capacity, self.max_capacity = value_bounds(capacity)
         self.start_capacity, self.end_capacity = index_bounds(capacity)
@@ -146,8 +159,8 @@ class Converter(object):
         self.voltage_preprocessed = f(self.capacity_preprocessed)
 
         if self.pre_smoothing:
-            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_capacity/5))
-            savgol_filter_window_length = int(len_capacity/savgol_filter_window_divisor)
+            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_capacity / 5))
+            savgol_filter_window_length = int(len_capacity / savgol_filter_window_divisor)
 
             if savgol_filter_window_length % 2 == 0:
                 savgol_filter_window_length -= 1
@@ -189,8 +202,11 @@ class Converter(object):
             # --- need to adjust voltage ---
             self.voltage_processed = self.voltage_inverted[1:] + 0.5 * self.voltage_inverted_step  # centering
 
-    def post_process_data(self, voltage=None, incremental_capacity=None, voltage_step=None):
-        """perform post-processing (smoothing, normalisation, ...) of the data"""
+    def post_process_data(self, voltage=None, incremental_capacity=None,
+                          voltage_step=None):
+        """perform post-processing (smoothing, normalisation, interpolation) of
+        the data"""
+
         if voltage is None:
             voltage = self.voltage_processed
             incremental_capacity = self.incremental_capacity
@@ -198,14 +214,30 @@ class Converter(object):
 
         if self.post_smoothing:
             points_fwhm = int(self.voltage_fwhm / voltage_step)
-            sigma = np.amax([2, points_fwhm/2])
-            incremental_capacity = gaussian_filter1d(incremental_capacity,sigma=sigma,order=self.gaussian_order,
+            sigma = np.amax([2, points_fwhm / 2])
+            self.incremental_capacity = gaussian_filter1d(incremental_capacity, sigma=sigma, order=self.gaussian_order,
                                                      output=None, mode=self.gaussian_mode,
                                                      cval=self.gaussian_cval, truncate=self.gaussian_truncate)
 
         if self.normalise:
             area = simps(incremental_capacity, voltage)
             self.incremental_capacity = incremental_capacity * self.normalising_factor / abs(area)
+
+        fixed_range = False
+        if isinstance(self.fixed_voltage_range, np.ndarray):
+            fixed_range = True
+        else:
+            if self.fixed_voltage_range:
+                fixed_range = True
+        if fixed_range:
+            v1, v2, number_of_points = self.fixed_voltage_range
+            v = np.linspace(v1, v2, number_of_points)
+            f = interp1d(x=self.voltage_processed, y=self.incremental_capacity,
+                         kind=self.interpolation_method, bounds_error=False,
+                         fill_value=np.NaN)
+
+            self.incremental_capacity = f(v)
+            self.voltage_processed = v
 
 
 def value_bounds(x):
@@ -219,7 +251,8 @@ def index_bounds(x):
 
 
 def dqdv(voltage, capacity):
-    """Convenience functions for creating dq-dv data from given capacity and voltage data"""
+    """Convenience functions for creating dq-dv data from given capacity and
+    voltage data"""
 
     converter = Converter()
     converter.set_data(capacity, voltage)
@@ -257,21 +290,34 @@ def check_class_ica():
     print("looking at cycle %i" % cycle)
 
     # ---------- processing and plotting ----------------
-    fig, (ax1,ax2) = plt.subplots(2,1)
+    fig, (ax1, ax2) = plt.subplots(2, 1)
     capacity, voltage = cell.get_ccap(cycle)
     ax1.plot(capacity, voltage, "b.-", label="raw")
     converter = Converter()
     converter.set_data(capacity, voltage)
     converter.inspect_data()
     converter.pre_process_data()
-    ax1.plot(converter.capacity_preprocessed, converter.voltage_preprocessed, "r.-", alpha=0.3, label="pre-processed")
+    ax1.plot(converter.capacity_preprocessed, converter.voltage_preprocessed,
+             "r.-", alpha=0.3, label="pre-processed")
 
     converter.increment_data()
-    converter.post_process_data()
+    ax2.plot(converter.voltage_processed, converter.incremental_capacity,
+             "b.-", label="incremented")
 
-    ax2.plot(converter.voltage_processed, converter._incremental_capacity, "b.-", label="incremented")
-    ax2.plot(converter.voltage_processed, converter.incremental_capacity, "r-", alpha=0.3, lw=4.0,
-             label="post-processed")
+    converter.fixed_voltage_range = False
+    converter.post_smoothing = True
+    converter.normalise = False
+    converter.post_process_data()
+    ax2.plot(converter.voltage_processed, converter.incremental_capacity,
+             "y-", alpha=0.3, lw=4.0, label="smoothed")
+
+    converter.fixed_voltage_range = np.array((0.1, 1.2, 100))
+    converter.post_smoothing = False
+    converter.normalise = False
+    converter.post_process_data()
+    ax2.plot(converter.voltage_processed, converter.incremental_capacity,
+             "go", alpha=0.7,
+             label="fixed voltage range")
     ax1.legend(numpoints=1)
     ax2.legend(numpoints=1)
     ax1.set_ylabel("Voltage (V)")
@@ -279,6 +325,7 @@ def check_class_ica():
     ax2.set_xlabel("Voltage (V)")
     ax2.set_ylabel("dQ/dV (mAh/g/V)")
     plt.show()
+
 
 if __name__ == '__main__':
     check_class_ica()
