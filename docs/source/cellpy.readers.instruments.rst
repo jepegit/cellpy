@@ -4,10 +4,10 @@ cellpy.readers.instruments package
 Submodules
 ----------
 
-cellpy.readers.instruments.Loader module
-----------------------------------------
+cellpy.readers.instruments.mixin module
+---------------------------------------
 
-.. automodule:: cellpy.readers.instruments.Loader
+.. automodule:: cellpy.readers.instruments.mixin
     :members:
     :undoc-members:
     :show-inheritance:
@@ -20,38 +20,13 @@ cellpy.readers.instruments.arbin module
     :undoc-members:
     :show-inheritance:
 
-cellpy.readers.instruments.arbin_experimental module
-----------------------------------------------------
+cellpy.readers.instruments.biologics_mpr module
+-----------------------------------------------
 
-.. automodule:: cellpy.readers.instruments.arbin_experimental
+.. automodule:: cellpy.readers.instruments.biologics_mpr
     :members:
     :undoc-members:
     :show-inheritance:
-
-cellpy.readers.instruments.biologic module
-------------------------------------------
-
-.. automodule:: cellpy.readers.instruments.biologic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-cellpy.readers.instruments.biologic_file_format module
-------------------------------------------------------
-
-.. automodule:: cellpy.readers.instruments.biologic_file_format
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-cellpy.readers.instruments.maccor module
-----------------------------------------
-
-.. automodule:: cellpy.readers.instruments.maccor
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

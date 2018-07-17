@@ -211,10 +211,10 @@ class Batch(object):
     """The Batch object
 
     The Batch class is a utility class for pipe-lining batch processing of cell
-    cycle data. It is primarily designed for use in `jupyter notebooks`.@
+    cycle data. It is primarily designed for use in `jupyter notebooks`.
     The typical usage structure is:
 
-    1. Import the batch module (this also gives you access to the cellpy@
+    1. Import the batch module (this also gives you access to the cellpy
         parameters (`batch.prms`)
 
     >>> from cellpy.utils import batch
