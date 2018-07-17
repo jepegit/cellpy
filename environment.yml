@@ -12,7 +12,6 @@ dependencies:
   - pyyaml
   - pip:
     - lmfit
-    - lmfit
     - python-box
     - tables
     - pyodbc
