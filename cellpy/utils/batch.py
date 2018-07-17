@@ -97,7 +97,7 @@ figure_types["discharge_limited"] = FigureType(4, 1, [True, True],
 
 def _create_info_dict(reader, srnos):
     # reads from the db and populates a dictionary
-    cell_type = prms.Instruments["cell_configuration"]
+    cell_type = prms.Reader["cycle_mode"]
     info_dict = dict()
     info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
     info_dict["masses"] = [reader.get_mass(srno) for srno in srnos]
@@ -211,10 +211,10 @@ class Batch(object):
     """The Batch object
 
     The Batch class is a utility class for pipe-lining batch processing of cell
-    cycle data. It is primarily designed for use in `jupyter notebooks`.@
+    cycle data. It is primarily designed for use in `jupyter notebooks`.
     The typical usage structure is:
 
-    1. Import the batch module (this also gives you access to the cellpy@
+    1. Import the batch module (this also gives you access to the cellpy
         parameters (`batch.prms`)
 
     >>> from cellpy.utils import batch
@@ -259,7 +259,7 @@ class Batch(object):
     >>> b.info_df.head()
 
     5. To run the processing, you can use the convenience function
-        `load_and_save_raw'. This function
+        `load_and_save_raw`. This function
         loads all your data-files and saves csv-files of the results.
 
     >>> b.load_and_save_raw()
@@ -467,7 +467,7 @@ class Batch(object):
         The info_df JSON-file will be stored in the Project folder.
         The summary-files will be saved in the Batch-name folder.
         The raw data (including exported cycles and ica-data) will be saved to
-            the Raw-data-dir.
+        the Raw-data-dir.
 
         """
         self.info_file, directories = create_folder_structure(self.project,
@@ -895,7 +895,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
                        force_cellpy=False,
                        export_cycles=False, shifted_cycles=False,
                        export_raw=True,
-                       export_ica=False, save=True, use_cellpy_stat_file=True,
+                       export_ica=False, save=True, use_cellpy_stat_file=False,
                        parent_level="CellpyData"):
     """Reads and saves cell data defined by the info-DataFrame.
 
@@ -1160,8 +1160,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
         info_df: the pandas DataFrame with info about the runs.
         summary_df: a pandas DataFrame with the summary data.
         color_list: a list of colors to use (one pr. group)
-        symbol_list: a list of symbols to use (one pr. cell in the largest
-            group)
+        symbol_list: a list of symbols to use (one pr. cell in the largest group)
         selected_summaries: a list of the selected summaries to plot
         batch_dir: path to the folder where the figure should be saved.
         batch_name: the batch name.

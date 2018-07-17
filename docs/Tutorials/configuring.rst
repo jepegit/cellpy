@@ -8,9 +8,7 @@ When ``cellpy`` is imported, it sets a default set of parameters. Then it tries 
 from your .conf-file (located in your user directory). If it is successful, the paramteters set in your .conf-file
 will over-ride the default ones.
 
-The parameters are stored in the module ``cellpy.parameters.prms`` as in several dictionaries. I know, this is
-probably not the most convenient method, but it is very easy (at least I hope so) to change these into class-type
-stuff in a later release of ``cellpy`` (using for example ``type(x, y, z)`` *etc*. or ``setattr`` *etc*).
+The parameters are stored in the module ``cellpy.parameters.prms``.
 
 If you during your script (or in your ``jupyter notebook``) would like to change some of the settings (*e.g.* if you
 want to use the ``cycle_mode`` option "cathode" instead of the default "anode"), then import the prms class and set new
@@ -21,34 +19,14 @@ values:
     from cellpy import parameters.prms
 
     # Changing cycle_mode to cathode
-    prms.Reader['cycle_mode'] = 'cathode'
+    prms.Reader.cycle_mode = 'cathode'
 
     # Changing delimiter to  ',' (used when saving .csv files)
-    prms.Reader['sep'] = ','
+    prms.Reader.sep = ','
 
     # Changing the default folder for processed (output) data
-    prms.Paths['outdatadir'] = 'experiment01/processed_data'
+    prms.Paths.outdatadir = 'experiment01/processed_data'
 
-
-In some of the modules or classes, selected parameters are already 'transformed' to class attributes, and those can
-be assigned intuitively:
-
-
-.. code-block:: python
-
-    from cellpy import dbreader as dr
-
-    print(dr.db_sheet_cols.batch)
-    # prints the column number for the column containing the "batch" label
-
-    dr.db_sheet_cols.batch = 3
-    # sets the column number for the column containing the "batch" label to 3
-
-    print(dr.db_sheet_cols.batch)
-    # prints '3', the new column number for the column containing the "batch" label
-
-
-A more thorough description of this will come in later releases (0.2.0 and up).
 
 The configuration file
 ----------------------

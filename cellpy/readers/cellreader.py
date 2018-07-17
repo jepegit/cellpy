@@ -717,7 +717,7 @@ class CellpyData(object):
     def set_cycle_mode(self, cycle_mode):
         """set the cycle mode.
 
-        (will be deprecated soon - use CellpyData.cyclemode = "anode" etc.)"""
+        (will be deprecated soon - use prms.Reader.cycle_mode = "anode" etc.)"""
         # should use proper python 'setting' (decorator etc)
         self.cycle_mode = cycle_mode
 
@@ -909,7 +909,7 @@ class CellpyData(object):
                  summary_on_raw=False, summary_ir=True, summary_ocv=False,
                  summary_end_v=True, only_summary=False, only_first=False,
                  force_raw=False,
-                 use_cellpy_stat_file=True):
+                 use_cellpy_stat_file=None):
 
         """Loads data for given cells.
 
@@ -3505,7 +3505,7 @@ class CellpyData(object):
     # ----------making-summary------------------------------------------------------
     def make_summary(self, find_ocv=False, find_ir=False,
                      find_end_voltage=False,
-                     use_cellpy_stat_file=True, all_tests=True,
+                     use_cellpy_stat_file=None, all_tests=True,
                      dataset_number=0, ensure_step_table=None,
                      convert_date=True):
         """Convenience function that makes a summary of the cycling data."""
@@ -3517,6 +3517,11 @@ class CellpyData(object):
         # Charge_Energy(Wh)	Discharge_Energy(Wh)	Internal_Resistance(Ohm)
         # AC_Impedance(Ohm)	ACI_Phase_Angle(Deg)	Charge_Time(s)
         # DisCharge_Time(s)	Vmax_On_Cycle(V)	Coulombic_Efficiency
+        if use_cellpy_stat_file is None:
+            use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
+            self.logger.debug("using use_cellpy_stat_file from prms")
+            self.logger.debug(f"use_cellpy_stat_file: {use_cellpy_stat_file}")
+
         if all_tests is True:
             for j in range(len(self.datasets)):
                 txt = "creating summary for file "
@@ -3570,14 +3575,11 @@ class CellpyData(object):
                       # TODO: this is only needed for arbin-data:
                       convert_date=True,
                       sort_my_columns=True,
-                      use_cellpy_stat_file=True,
+                      use_cellpy_stat_file=False,
                       ensure_step_table=False,
                       # capacity_modifier = None,
                       # test=None
                       ):
-
-        # TODO: insert diagnostics plots
-        # TODO: check if cumulated capacity loss is defined correctly
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
