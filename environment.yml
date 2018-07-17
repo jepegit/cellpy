@@ -13,6 +13,4 @@ dependencies:
   - pip:
     - lmfit
     - python-box
-    - tables
-    - pyodbc
 
