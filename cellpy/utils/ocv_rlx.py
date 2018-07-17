@@ -232,17 +232,17 @@ class OcvFit(object):
         """Performing fit of the OCV steps in the cycles set by set_cycles()
         from the data set by set_data()
 
-            r is found by calculating v0 / i_start --> err(r)= err(v0) +
-                err(i_start).
-            c is found from using tau / r --> err(c) = err(r) + err(tau)
+        r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
+        c is found from using tau / r --> err(c) = err(r) + err(tau)
 
-            Args:
-                cellpydata (CellpyData): data object from cellreader
-                cycle (int): cycle number to get from CellpyData object
+        Args:
+            cellpydata (CellpyData): data object from cellreader
+            cycle (int): cycle number to get from CellpyData object
 
-            Returns:
-                None
-            """
+        Returns:
+            None
+
+        """
         self.data = cellpydata
         self.step_table = self.data.dataset  # hope it works...
         time, voltage = self.data.get_ocv(ocv_type='ocvrlx_up',
@@ -321,18 +321,17 @@ class OcvFit(object):
         self.best_fit_data = [self.time, self.voltage, self.result.best_fit]
 
     def run_fit(self):
-
         """Performing fit of the OCV steps in the cycles set by set_cycles()
         from the data set by set_data()
 
-            r is found by calculating v0 / i_start --> err(r)= err(v0) +
-                err(i_start).
-            c is found from using tau / r --> err(c) = err(r) + err(tau)
+        r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
 
-            Returns:
-                None: Resulting best fit parameters are stored in self.result
-                for the given cycles
-            """
+        c is found from using tau / r --> err(c) = err(r) + err(tau)
+
+        Returns:
+            None: Resulting best fit parameters are stored in self.result for the given cycles
+
+        """
 
         # Check if data is set
         if self.time is []:
