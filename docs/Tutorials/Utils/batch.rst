@@ -10,7 +10,7 @@ Starting (setting things up)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Jupyter Notebooks is the recommended "tool" for running the cellpy batch feature. The first step is to import
-the `cellpy.utils.batch.Batch` class from `cellpy` and initialize it. The Batch class is a utility class for pipe-lining
+the `cellpy.utils.batch.Batch` class from ``cellpy`` and initialize it. The ``Batch`` class is a utility class for pipe-lining
 batch processing of cell cycle data.
 
 
@@ -64,7 +64,7 @@ and create an appropriate folder structure (`outdir/project_name/batch_name/raw_
 Processing data
 ~~~~~~~~~~~~~~~
 
-To run the processing, you should then use the convenience function `load_and_save_raw`. This function
+To run the processing, you should then use the convenience function ``load_and_save_raw``. This function
 loads all your data-files and saves csv-files of the results.
 
 .. code-block:: python

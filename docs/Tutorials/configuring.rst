@@ -21,34 +21,14 @@ values:
     from cellpy import parameters.prms
 
     # Changing cycle_mode to cathode
-    prms.Reader['cycle_mode'] = 'cathode'
+    prms.Reader.cycle_mode = 'cathode'
 
     # Changing delimiter to  ',' (used when saving .csv files)
-    prms.Reader['sep'] = ','
+    prms.Reader.sep = ','
 
     # Changing the default folder for processed (output) data
-    prms.Paths['outdatadir'] = 'experiment01/processed_data'
+    prms.Paths.outdatadir = 'experiment01/processed_data'
 
-
-In some of the modules or classes, selected parameters are already 'transformed' to class attributes, and those can
-be assigned intuitively:
-
-
-.. code-block:: python
-
-    from cellpy import dbreader as dr
-
-    print(dr.db_sheet_cols.batch)
-    # prints the column number for the column containing the "batch" label
-
-    dr.db_sheet_cols.batch = 3
-    # sets the column number for the column containing the "batch" label to 3
-
-    print(dr.db_sheet_cols.batch)
-    # prints '3', the new column number for the column containing the "batch" label
-
-
-A more thorough description of this will come in later releases (0.2.0 and up).
 
 The configuration file
 ----------------------

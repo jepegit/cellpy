@@ -259,7 +259,7 @@ class Batch(object):
     >>> b.info_df.head()
 
     5. To run the processing, you can use the convenience function
-        `load_and_save_raw'. This function
+        `load_and_save_raw`. This function
         loads all your data-files and saves csv-files of the results.
 
     >>> b.load_and_save_raw()
@@ -467,7 +467,7 @@ class Batch(object):
         The info_df JSON-file will be stored in the Project folder.
         The summary-files will be saved in the Batch-name folder.
         The raw data (including exported cycles and ica-data) will be saved to
-            the Raw-data-dir.
+        the Raw-data-dir.
 
         """
         self.info_file, directories = create_folder_structure(self.project,
@@ -1160,8 +1160,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
         info_df: the pandas DataFrame with info about the runs.
         summary_df: a pandas DataFrame with the summary data.
         color_list: a list of colors to use (one pr. group)
-        symbol_list: a list of symbols to use (one pr. cell in the largest
-            group)
+        symbol_list: a list of symbols to use (one pr. cell in the largest group)
         selected_summaries: a list of the selected summaries to plot
         batch_dir: path to the folder where the figure should be saved.
         batch_name: the batch name.
