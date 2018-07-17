@@ -17,7 +17,6 @@ Db:
   db_type: simple_excel_reader
 FileNames: {}
 Instruments:
-  cell_configuration: anode
   tester: arbin
 Paths:
   cellpydatadir: C:\Scripting\MyFiles\development_cellpy\cellpy\parameters
@@ -127,7 +126,7 @@ def test_save_prm_file(clean_dir):
 
     prmreader._read_prm_file(tmp_config_file_name)
     prms.Instruments["tester"] = "biologics"
-    prms.Instruments.cell_configuration = "cathode"
+    prms.Reader.cycle_mode = "cathode"
     prmreader._write_prm_file(tmp_config_file_name)
     prmreader._read_prm_file(tmp_config_file_name)
     assert prms.Instruments.tester == "biologics"

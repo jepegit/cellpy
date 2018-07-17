@@ -97,7 +97,7 @@ figure_types["discharge_limited"] = FigureType(4, 1, [True, True],
 
 def _create_info_dict(reader, srnos):
     # reads from the db and populates a dictionary
-    cell_type = prms.Instruments["cell_configuration"]
+    cell_type = prms.Reader["cycle_mode"]
     info_dict = dict()
     info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
     info_dict["masses"] = [reader.get_mass(srno) for srno in srnos]
@@ -895,7 +895,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
                        force_cellpy=False,
                        export_cycles=False, shifted_cycles=False,
                        export_raw=True,
-                       export_ica=False, save=True, use_cellpy_stat_file=True,
+                       export_ica=False, save=True, use_cellpy_stat_file=False,
                        parent_level="CellpyData"):
     """Reads and saves cell data defined by the info-DataFrame.
 

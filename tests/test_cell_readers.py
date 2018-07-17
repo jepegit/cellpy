@@ -264,7 +264,7 @@ def test_make_summary(cellpy_data_instance):
     s3 = cellpy_data_instance.get_summary()
     assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()
-    assert s2.iloc[:, 3].size == 17
+    assert s2.iloc[:, 3].size == 18
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
@@ -273,10 +273,11 @@ def test_summary_from_cellpyfile(cellpy_data_instance):
     s1 = cellpy_data_instance.get_summary()
     mass = cellpy_data_instance.get_mass()
     cellpy_data_instance.set_mass(mass)
-    cellpy_data_instance.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    cellpy_data_instance.make_summary(find_ocv=False, find_ir=True,
+                                      find_end_voltage=True)
     s2 = cellpy_data_instance.get_summary()
     assert s1.columns.tolist() == s2.columns.tolist()
-    assert s2.iloc[:, 3].size == 17
+    assert s2.iloc[:, 3].size == 18
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 

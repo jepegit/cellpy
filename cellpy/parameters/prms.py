@@ -57,12 +57,13 @@ Reader = {
     "force_step_table_creation": True,
     "force_all": False,  # not used yet - should be used when saving
     "sep": ";",
-    "cycle_mode": 'anode',
+    "cycle_mode": 'anode',  # used in cellreader (593)
     "load_only_summary": False,
     "select_minimal": False,
     "limit_loaded_cycles": None,
     "ensure_step_table": False,
     "daniel_number": 5,
+    "use_cellpy_stat_file": False,
     "raw_datadir": None,
     "cellpy_datadir": None,
     "auto_dirs": True,  # search in prm-file for res and hdf5 dirs in loadcell
@@ -122,7 +123,6 @@ excel_db_filename_cols = box.Box(excel_db_filename_cols)
 # --------------------------
 Instruments = {
     "tester": "arbin",
-    "cell_configuration": "anode",
     "max_res_filesize": 150000000,
     "chunk_size": None,
     "max_chunks": None,
