@@ -21,7 +21,7 @@ included_packages=find_packages(exclude=['build', 'docs', 'templates'])
 requirements = [
     'scipy', 'numpy', 'pandas', 'python-box', 'setuptools', 'pyyaml',
     'matplotlib', 'xlrd', 'click',
-    # 'pytables',
+    'pytables',
 ]
 
 test_requirements = [
