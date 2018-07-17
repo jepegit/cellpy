@@ -51,7 +51,6 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
@@ -77,10 +76,4 @@ cellpy/parametres/_cellpy_prms_devel.ini
 
 sh.exe.stackdump
 xdist/
-<<<<<<< HEAD
-cellpy/readers/instruments/tmp.dat
-cellpy/readers/dbreader.py.rej
-=======
 
-testdata/data/geis.mpt
->>>>>>> release/0.1.22.a1
