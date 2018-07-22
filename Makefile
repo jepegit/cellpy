@@ -29,7 +29,8 @@ help:
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
-	rm -fr dist/
+	echo "IN CLEAN BUILD"
+	find . -name '*.tar.gz' -exec rm -fr {} +
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
 
@@ -49,8 +50,8 @@ lint: ## check style with flake8
 dev-env: ## sets up a development environment
 	pip install -e .
 
-dist:  ## makes a distribution and uploads to PyPI
-	clean-build
+distro:  ## makes a distribution and uploads to PyPI
+	make clean-build
 	python setup.py sdist
 	twine upload dist/*
 
