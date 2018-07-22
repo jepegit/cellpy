@@ -1,0 +1,15 @@
+step;type;info
+1;ocvrlx_down;first relaxation
+2;ir;
+3;discharge;
+4;ir;
+5;ocvrlx_up;
+6;charge;
+7;ir;
+8;ocvrlx_down;good
+10;discharge;
+11;ir;
+12;ocvrlx_up;use this
+13;charge;
+14;ir;
+15;ocvrlx_down;

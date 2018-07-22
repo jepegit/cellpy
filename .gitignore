@@ -14,7 +14,6 @@ testdata/hdf5/20160306_snx001_10_cc_01.h5
 cellpy/readers/instruments/tmp.dat
 examples/trying_stuff.py
 dev_utils/BioLogic.py_tmp
-*.csv
 
 dev_utils/.ipynb_checkpoints
 *.ipynb_checkpoints
@@ -77,3 +76,5 @@ cellpy/parametres/_cellpy_prms_devel.ini
 sh.exe.stackdump
 xdist/
 
+C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\after_renaming_headers_test_out.csv
+C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\before_renaming_headers_test_out.csv
