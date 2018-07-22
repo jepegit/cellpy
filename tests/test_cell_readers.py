@@ -5,6 +5,7 @@ import datetime
 import pytest
 import logging
 
+import cellpy.readers.core
 from cellpy.exceptions import DeprecatedFeature
 from cellpy import log
 from . import fdv
@@ -52,7 +53,7 @@ def test_create_cellpyfile(cellpy_data_instance):
 ])
 def test_xldate_as_datetime(xldate, datemode, option, expected):
     from cellpy import cellreader
-    result = cellreader.xldate_as_datetime(xldate, datemode, option)
+    result = cellpy.readers.core.xldate_as_datetime(xldate, datemode, option)
     assert result == expected
 
 
@@ -230,8 +231,8 @@ def test_set_testnumber(dataset):
 
 def test_check64bit():
     from cellpy import cellreader
-    cellreader.check64bit()
-    cellreader.check64bit("os")
+    cellpy.readers.core.check64bit()
+    cellpy.readers.core.check64bit("os")
 
 
 def test_search_for_files():
@@ -286,7 +287,7 @@ def test_fid(cellpy_data_instance):
 
 
 def test_only_fid():
-    from cellpy.readers.cellreader import FileID
+    from cellpy.readers.core import FileID
     my_fid_one = FileID()
     my_file = fdv.cellpy_file_path
     my_fid_one.populate(my_file)

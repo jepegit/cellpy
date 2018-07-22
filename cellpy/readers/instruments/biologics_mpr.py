@@ -14,11 +14,8 @@ import numpy as np
 
 from cellpy.readers.instruments.biologic_file_format import bl_dtypes, \
     hdr_dtype, mpr_label, bl_log_pos_dtype
-from cellpy.readers.cellreader import DataSet
-from cellpy.readers.cellreader import FileID
-from cellpy.readers.cellreader import humanize_bytes
-from cellpy.readers.cellreader import check64bit
-from cellpy.readers.cellreader import get_headers_normal
+from cellpy.readers.core import FileID, DataSet, check64bit, humanize_bytes
+from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 import cellpy.parameters.prms as prms
 
