@@ -48,7 +48,6 @@ from one of the authors' configuration file:
       db_type: simple_excel_reader
     FileNames: {}
     Instruments:
-      cell_configuration: anode
       tester: arbin
     Paths:
       cellpydatadir:  C:\ExperimentalData\BatteryTestData\Arbin\HDF5
