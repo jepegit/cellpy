@@ -26,6 +26,9 @@ temporary_cellpy_file_path = os.path.join(cellpy_data_dir, temporary_cellpy_file
 db_file_name = "cellpy_db.xlsx"
 db_file_path = os.path.join(db_dir, db_file_name)
 
+step_table_file_name = "steps.csv"
+step_table_file_path = os.path.join(raw_data_dir, step_table_file_name)
+
 run_name = "20160805_test001_45_cc"
 
 # -------- arbin specific files ---------------------

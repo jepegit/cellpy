@@ -1765,7 +1765,47 @@ class CellpyData(object):
                IR, IR_pct_change, ]
         return out
 
-    def make_step_table(self, dataset_number=None):
+    def load_step_specifications(self, file_name, long=True,
+                                 dataset_number=None):
+        """ Load a table that contains step-type definitions.
+
+        This function loads a file containing a specification for each step or
+        for each (cycle_number, step_number) combinations if long==True. The
+        step_cycle specifications that are allowed are stored in the variable
+        cellreader.list_of_step_types.
+        """
+
+        dataset_number = self._validate_dataset_number(dataset_number)
+        if dataset_number is None:
+            self._report_empty_dataset()
+            return
+
+        if not long:
+            # the table only consists of steps (not cycle,step pairs) assuming
+            # that the step numbers uniquely defines step type (this is true
+            # for arbin at least).
+            raise NotImplementedError
+
+        step_specs = pd.read_csv(file_name, sep=prms.Reader.sep)
+        if "step" not in step_specs.columns:
+            self.logger.info("step col is missing")
+            raise IOError
+
+        if "type" not in step_specs.columns:
+            self.logger.info("type col is missing")
+            raise IOError
+
+        if long and "cycle" not in step_specs.columns:
+            self.logger.info("cycle col is missing")
+            raise IOError
+
+        self.make_step_table(custom_step_definition=True,
+                             step_specifications=step_specs)
+
+    def make_step_table(self, custom_step_definition=False,
+                        step_specifications=None,
+                        dataset_number=None):
+
         """ Create a table (v.3) that contains summary information for each step.
 
         This function creates a table containing information about the
@@ -1775,13 +1815,9 @@ class CellpyData(object):
         The format of the step_table is:
 
             index - cycleno - stepno -
-
             Current info (average, stdev, max, min, start, end, delta, rate) -
-
             Voltage info (average,  stdev, max, min, start, end, delta, rate) -
-
             Type (from pre-defined list) -
-
             Info
 
         Header names (pr. 03.03.2016):
@@ -1995,49 +2031,53 @@ class CellpyData(object):
                          (df_steps[delta_current_txt] == 0) & \
                          (df_steps[delta_charge_txt] == 0) & \
                          (df_steps[delta_discharge_txt] == 0)
-        #          self.list_of_step_types = ['charge','discharge',
-        #                                   'cv_charge','cv_discharge',
-        #                                   'charge_cv','discharge_cv',
-        #                                   'ocvrlx_up','ocvrlx_down','ir',
-        #                                   'rest','not_known']
-        # - options
 
-        # --- ocv -------
-        df_steps.loc[mask_no_current_hard & mask_voltage_up,
-                     step_table_txt_type] = 'ocvrlx_up'
-        df_steps.loc[mask_no_current_hard & mask_voltage_down,
-                     step_table_txt_type] = 'ocvrlx_down'
+        if custom_step_definition:
+            self.logger.debug("parsing custom step definition")
+            for row in step_specifications.itertuples():
+                self.logger.debug(f"cycle: {row.cycle} step: {row.step}"
+                                  f" type: {row.type}")
+                df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
+                             (df_steps[step_table_txt_cycle] == row.cycle),
+                             "type"] = row.type
 
-        # --- charge and discharge ----
-        # df_steps.loc[mask_galvanostatic & mask_current_negative,
-        # step_table_txt_type] = 'discharge'
-        df_steps.loc[mask_discharge_changed & mask_current_negative,
-                     step_table_txt_type] = 'discharge'
-        # df_steps.loc[mask_galvanostatic & mask_current_positive,
-        # step_table_txt_type] = 'charge'
-        df_steps.loc[mask_charge_changed & mask_current_positive,
-                     step_table_txt_type] = 'charge'
+        else:
+            # --- ocv -------
+            df_steps.loc[mask_no_current_hard & mask_voltage_up,
+                         step_table_txt_type] = 'ocvrlx_up'
+            df_steps.loc[mask_no_current_hard & mask_voltage_down,
+                         step_table_txt_type] = 'ocvrlx_down'
 
-        df_steps.loc[
-            mask_voltage_stable & mask_current_negative & mask_current_down,
-            step_table_txt_type] = 'cv_discharge'
-        df_steps.loc[mask_voltage_stable & mask_current_positive &
-                     mask_current_down, step_table_txt_type] = 'cv_charge'
+            # --- charge and discharge ----
+            # df_steps.loc[mask_galvanostatic & mask_current_negative,
+            # step_table_txt_type] = 'discharge'
+            df_steps.loc[mask_discharge_changed & mask_current_negative,
+                         step_table_txt_type] = 'discharge'
+            # df_steps.loc[mask_galvanostatic & mask_current_positive,
+            # step_table_txt_type] = 'charge'
+            df_steps.loc[mask_charge_changed & mask_current_positive,
+                         step_table_txt_type] = 'charge'
 
-        # --- internal resistance ----
-        df_steps.loc[mask_no_change, step_table_txt_type] = 'ir'
-        # assumes that IR is stored in just one row
+            df_steps.loc[
+                mask_voltage_stable & mask_current_negative & mask_current_down,
+                step_table_txt_type] = 'cv_discharge'
+            df_steps.loc[mask_voltage_stable & mask_current_positive &
+                         mask_current_down, step_table_txt_type] = 'cv_charge'
 
-        # --- CV steps ----
+            # --- internal resistance ----
+            df_steps.loc[mask_no_change, step_table_txt_type] = 'ir'
+            # assumes that IR is stored in just one row
 
-        # "voltametry_charge"
-        # mask_charge_changed
-        # mask_voltage_up
-        # (could also include abs-delta-cumsum current)
+            # --- CV steps ----
 
-        # "voltametry_discharge"
-        # mask_discharge_changed
-        # mask_voltage_down
+            # "voltametry_charge"
+            # mask_charge_changed
+            # mask_voltage_up
+            # (could also include abs-delta-cumsum current)
+
+            # "voltametry_discharge"
+            # mask_discharge_changed
+            # mask_voltage_down
 
         # --- finally ------
 

@@ -238,6 +238,28 @@ def test_only_fid():
     assert my_fid_one.get_size() == my_fid_two.get_size()
 
 
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_load_step_specs_not_wide(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    # cellpy_data_instance.set_mass(1.0)
+    file_name = "xxx.xxx"
+    # file_name = fdv.step_table_file_path
+    # assert os.path.isfile(file_name)
+    cellpy_data_instance.load_step_specifications(file_name, long=False)
+
+
+def test_load_step_specs(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    file_name = fdv.step_table_file_path
+    assert os.path.isfile(file_name)
+    cellpy_data_instance.load_step_specifications(file_name)
+    step_table = cellpy_data_instance.dataset.step_table
+    t = step_table.loc[(step_table.cycle == 1) &
+                       (step_table.step == 8), "type"].values[0]
+    assert t == "ocvrlx_down"
+
+
 def test_load_res(cellpy_data_instance):
     cellpy_data_instance.loadcell(fdv.res_file_path)
     run_number = 0
