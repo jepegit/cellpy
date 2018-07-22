@@ -61,8 +61,65 @@ def test_validate_dataset_number(dataset, number):
     dataset._validate_dataset_number(number)
 
 
-def test_merge():
-    print("MISSING TEST")
+def test_merge(cellpy_data_instance):
+    f1 = fdv.res_file_path
+    f2 = fdv.res_file_path2
+    assert os.path.isfile(f1)
+    assert os.path.isfile(f2)
+    cellpy_data_instance.from_raw(f1)
+    cellpy_data_instance.from_raw(f2)
+
+    assert len(cellpy_data_instance.datasets) == 2
+
+    table_first = cellpy_data_instance.datasets[0].dfdata.describe()
+    count_first = table_first.loc["count", "Data_Point"]
+
+    table_second = cellpy_data_instance.datasets[1].dfdata.describe()
+    count_second = table_second.loc["count", "Data_Point"]
+
+    cellpy_data_instance.merge()
+    assert len(cellpy_data_instance.datasets) == 2
+
+    table_all = cellpy_data_instance.datasets[0].dfdata.describe()
+    count_all = table_all.loc["count", "Data_Point"]
+    assert len(cellpy_data_instance.datasets) == 1
+
+    assert pytest.approx(count_all, 0.001) == (count_first + count_second)
+
+
+def test_merge_auto_from_list():
+    from cellpy import cellreader
+    cdi1 = cellreader.CellpyData()
+    cdi2 = cellreader.CellpyData()
+    cdi3 = cellreader.CellpyData()
+
+    f1 = fdv.res_file_path
+    f2 = fdv.res_file_path2
+    assert os.path.isfile(f1)
+    assert os.path.isfile(f2)
+
+    files = [f1, f2]
+    cdi1.from_raw(f1)
+    cdi2.from_raw(f2)
+    cdi3.from_raw(files)
+
+    len_first = len(cdi1.datasets)
+    table_first = cdi1.datasets[0].dfdata.describe()
+    count_first = table_first.loc["count", "Data_Point"]
+
+    len_second = len(cdi2.datasets)
+    table_second = cdi2.datasets[0].dfdata.describe()
+    count_second = table_second.loc["count", "Data_Point"]
+
+    len_all= len(cdi3.datasets)
+    table_all = cdi3.datasets[0].dfdata.describe()
+    count_all = table_all.loc["count", "Data_Point"]
+
+    assert len_first == 1
+    assert len_second == 1
+    assert len_all == 1
+
+    assert pytest.approx(count_all, 0.001) == (count_first + count_second)
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
