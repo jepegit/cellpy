@@ -11,7 +11,8 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from cellpy.parameters import prms as prms
+import cellpy.parameters.internal_settings
+from cellpy.parameters import prms
 from cellpy import cellreader, dbreader, filefinder
 
 logger = logging.getLogger(__name__)
@@ -800,7 +801,7 @@ def create_selected_summaries_dict(summaries_list):
         header name,}
 
     """
-    headers_summary = cellreader.get_headers_summary()
+    headers_summary = cellpy.parameters.internal_settings.get_headers_summary()
     selected_summaries = dict()  # this should be sent as input
     for h in summaries_list:
         selected_summaries[h] = headers_summary[h]
