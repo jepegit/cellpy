@@ -238,14 +238,27 @@ def test_only_fid():
     assert my_fid_one.get_size() == my_fid_two.get_size()
 
 
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_load_step_specs_not_wide(cellpy_data_instance):
+@pytest.mark.parametrize("cycle, step, expected_type, expected_info",
+                         [(1, 8, "ocvrlx_down", "good"),
+                          (2, 8, "ocvrlx_down", "good"),
+                          (3, 6, "charge", "nan"),
+                          pytest.mark.xfail(
+                              (1, 8, "ocvrlx_up", "good")
+                          ), ])
+def test_load_step_specs_short(cellpy_data_instance, cycle, step,
+                               expected_type, expected_info):
     cellpy_data_instance.from_raw(fdv.res_file_path)
-    # cellpy_data_instance.set_mass(1.0)
-    file_name = "xxx.xxx"
-    # file_name = fdv.step_table_file_path
-    # assert os.path.isfile(file_name)
-    cellpy_data_instance.load_step_specifications(file_name, long=False)
+    cellpy_data_instance.set_mass(1.0)
+    file_name = fdv.short_step_table_file_path
+    assert os.path.isfile(file_name)
+    cellpy_data_instance.load_step_specifications(file_name, short=True)
+    step_table = cellpy_data_instance.dataset.step_table
+    t = step_table.loc[(step_table.cycle == cycle) &
+                       (step_table.step == step), "type"].values[0]
+    assert t == expected_type
+    i = step_table.loc[(step_table.cycle == cycle) &
+                       (step_table.step == step), "info"].values[0]
+    assert str(i) == expected_info
 
 
 def test_load_step_specs(cellpy_data_instance):

@@ -1765,12 +1765,12 @@ class CellpyData(object):
                IR, IR_pct_change, ]
         return out
 
-    def load_step_specifications(self, file_name, long=True,
+    def load_step_specifications(self, file_name, short=False,
                                  dataset_number=None):
         """ Load a table that contains step-type definitions.
 
         This function loads a file containing a specification for each step or
-        for each (cycle_number, step_number) combinations if long==True. The
+        for each (cycle_number, step_number) combinations if short==False. The
         step_cycle specifications that are allowed are stored in the variable
         cellreader.list_of_step_types.
         """
@@ -1780,11 +1780,11 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
 
-        if not long:
-            # the table only consists of steps (not cycle,step pairs) assuming
-            # that the step numbers uniquely defines step type (this is true
-            # for arbin at least).
-            raise NotImplementedError
+        # if short:
+        #     # the table only consists of steps (not cycle,step pairs) assuming
+        #     # that the step numbers uniquely defines step type (this is true
+        #     # for arbin at least).
+        #     raise NotImplementedError
 
         step_specs = pd.read_csv(file_name, sep=prms.Reader.sep)
         if "step" not in step_specs.columns:
@@ -1795,15 +1795,17 @@ class CellpyData(object):
             self.logger.info("type col is missing")
             raise IOError
 
-        if long and "cycle" not in step_specs.columns:
+        if not short and "cycle" not in step_specs.columns:
             self.logger.info("cycle col is missing")
             raise IOError
 
         self.make_step_table(custom_step_definition=True,
-                             step_specifications=step_specs)
+                             step_specifications=step_specs,
+                             short=short)
 
     def make_step_table(self, custom_step_definition=False,
                         step_specifications=None,
+                        short=False,
                         dataset_number=None):
 
         """ Create a table (v.3) that contains summary information for each step.
@@ -2034,12 +2036,27 @@ class CellpyData(object):
 
         if custom_step_definition:
             self.logger.debug("parsing custom step definition")
-            for row in step_specifications.itertuples():
-                self.logger.debug(f"cycle: {row.cycle} step: {row.step}"
-                                  f" type: {row.type}")
-                df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
-                             (df_steps[step_table_txt_cycle] == row.cycle),
-                             "type"] = row.type
+            if not short:
+                self.logger.debug("using long format (cycle,step)")
+                for row in step_specifications.itertuples():
+                    self.logger.debug(f"cycle: {row.cycle} step: {row.step}"
+                                      f" type: {row.type}")
+                    df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
+                                 (df_steps[step_table_txt_cycle] == row.cycle),
+                                 "type"] = row.type
+                    df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
+                                 (df_steps[step_table_txt_cycle] == row.cycle),
+                                 "info"] = row.info
+            else:
+                self.logger.debug("using short format (step)")
+                for row in step_specifications.itertuples():
+                    self.logger.debug(f"step: {row.step} "
+                                      f"type: {row.type}"
+                                      f"info: {row.info}")
+                    df_steps.loc[df_steps[step_table_txt_step] == row.step,
+                                 "type"] = row.type
+                    df_steps.loc[df_steps[step_table_txt_step] == row.step,
+                                 "info"] = row.info
 
         else:
             # --- ocv -------
