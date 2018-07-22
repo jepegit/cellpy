@@ -1099,6 +1099,7 @@ class CellpyData(object):
             parent_level (str, optional): Parent level
 
         """
+
         try:
             self.logger.info("loading hdf5")
             self.logger.info(cellpy_file)
@@ -1335,9 +1336,11 @@ class CellpyData(object):
 
     def merge(self, datasets=None, separate_datasets=False):
         """This function merges datasets into one set."""
-        print("merging")
+        self.logger.info("merging")
         if separate_datasets:
-            print("not implemented yet")
+            warnings.warn("The option seperate_datasets=True is"
+                          "not implemented yet. Performing merging, but"
+                          "neglecting the option.")
         else:
             if datasets is None:
                 datasets = list(range(len(self.datasets)))
@@ -1363,6 +1366,7 @@ class CellpyData(object):
         diff_time = xldate_as_datetime(start_time_2) - \
                     xldate_as_datetime(start_time_1)
         diff_time = diff_time.total_seconds()
+
         sort_key = self.headers_normal['datetime_txt']  # DateTime
         # mod data points for set 2
         data_point_header = self.headers_normal['data_point_txt']
