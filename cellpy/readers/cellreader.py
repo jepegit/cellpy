@@ -24,8 +24,8 @@ Todo:
 """
 
 import os
+import logging
 import sys
-import datetime
 import collections
 import warnings
 import csv
@@ -33,488 +33,21 @@ import itertools
 from scipy import interpolate
 import numpy as np
 import pandas as pd
-import logging
-import cellpy.parameters.prms as prms
+from cellpy.parameters import prms
 from cellpy.exceptions import WrongFileVersion, DeprecatedFeature
-
-CELLPY_FILE_VERSION = 3
-MINIMUM_CELLPY_FILE_VERSION = 1
-STEP_TABLE_VERSION = 3
-NORMAL_TABLE_VERSION = 3
-SUMMARY_TABLE_VERSION = 3
-
-# TODO: fix chained assignments and performance warnings (comment below and fix)
-warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
-pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
-
-# module_logger = logging.getLogger(__name__)
-
-
-def get_headers_summary():
-    """Returns a dictionary containing the header-strings for the summary
-    (used as column headers for the summary pandas DataFrames)"""
-
-    # - headers for out-files
-    # 08.12.2016: added temperature_last, temperature_mean, aux_
-    headers_summary = dict()
-    headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
-    headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
-    headers_summary["cumulated_charge_capacity"] = \
-        "Cumulated_Charge_Capacity(mAh/g)"
-    headers_summary["cumulated_discharge_capacity"] = \
-        "Cumulated_Discharge_Capacity(mAh/g)"
-    headers_summary["coulombic_efficiency"] = \
-        "Coulombic_Efficiency(percentage)"
-    headers_summary["cumulated_coulombic_efficiency"] = \
-        "Cumulated_Coulombic_Efficiency(percentage)"
-    headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
-    headers_summary["cumulated_coulombic_difference"] = \
-        "Cumulated_Coulombic_Difference(mAh/g)"
-    headers_summary["discharge_capacity_loss"] = \
-        "Discharge_Capacity_Loss(mAh/g)"
-    headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
-    headers_summary["cumulated_discharge_capacity_loss"] = \
-        "Cumulated_Discharge_Capacity_Loss(mAh/g)"
-    headers_summary["cumulated_charge_capacity_loss"] = \
-        "Cumulated_Charge_Capacity_Loss(mAh/g)"
-    headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
-    headers_summary["ir_charge"] = "IR_Charge(Ohms)"
-    headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
-    headers_summary["ocv_second_min"] = "OCV_Second_Min(V)"
-    headers_summary["ocv_first_max"] = "OCV_First_Max(V)"
-    headers_summary["ocv_second_max"] = "OCV_Second_Max(V)"
-    headers_summary["date_time_txt"] = "Date_Time_Txt(str)"
-    headers_summary["end_voltage_discharge"] = "End_Voltage_Discharge(V)"
-    headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
-    headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
-    headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
-    headers_summary["cumulated_ric"] = "RIC(none)"
-    # Sum of irreversible capacity:
-    headers_summary["low_level"] = "Low_Level(percentage)"
-    # SEI loss:
-    headers_summary["high_level"] = "High_Level(percentage)"
-    headers_summary["shifted_charge_capacity"] = \
-        "Charge_Endpoint_Slippage(mAh/g)"
-    headers_summary["shifted_discharge_capacity"] = \
-        "Discharge_Endpoint_Slippage(mAh/g)"
-    headers_summary["temperature_last"] = "Last_Temperature(C)"
-    headers_summary["temperature_mean"] = "Average_Temperature(C)"
-    headers_summary["pre_aux"] = "Aux_"
-    return headers_summary
-
-
-def get_cellpy_units():
-    """Returns a dictionary with units"""
-
-    cellpy_units = dict()
-    cellpy_units["current"] = 0.001  # mA
-    cellpy_units["charge"] = 0.001  # Ah
-    cellpy_units["mass"] = 0.001  # mg (used for input of mass)
-    cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. spec. capacity)
-    return cellpy_units
-
-
-def get_headers_normal():
-    """Returns a dictionary containing the header-strings for the normal data
-        (used as column headers for the main data pandas DataFrames)"""
-    headers_normal = dict()
-    headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
-    headers_normal['ref_aci_phase_angle_txt'] = 'Reference_ACI_Phase_Angle'
-
-    headers_normal['ac_impedance_txt'] = 'AC_Impedance'
-    headers_normal['ref_ac_impedance_txt'] = 'Reference_AC_Impedance'  # new
-
-    headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
-    headers_normal['charge_energy_txt'] = 'Charge_Energy'
-    headers_normal['current_txt'] = 'Current'
-    headers_normal['cycle_index_txt'] = 'Cycle_Index'
-    headers_normal['data_point_txt'] = 'Data_Point'
-    headers_normal['datetime_txt'] = 'DateTime'
-    headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
-    headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
-    headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
-
-    headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
-    headers_normal['step_index_txt'] = 'Step_Index'
-    headers_normal['sub_step_index_txt'] = 'Sub_Step_Index'  # new
-
-    headers_normal['step_time_txt'] = 'Step_Time'
-    headers_normal['sub_step_time_txt'] = 'Sub_Step_Time'  # new
-
-    headers_normal['test_id_txt'] = 'Test_ID'
-    headers_normal['test_time_txt'] = 'Test_Time'
-
-    headers_normal['voltage_txt'] = 'Voltage'
-    headers_normal['ref_voltage_txt'] = 'Reference_Voltage'  # new
-
-    headers_normal['dv_dt_txt'] = 'dV/dt'
-    headers_normal['frequency_txt'] = 'Frequency'  # new
-    headers_normal['amplitude_txt'] = 'Amplitude'  # new
-
-    return headers_normal
-
-
-def get_headers_step_table():
-    """Returns a dictionary containing the header-strings for the steps table
-        (used as column headers for the steps pandas DataFrames)"""
-    # 08.12.2016: added sub_step, sub_type, and pre_time
-    headers_step_table = dict()
-    headers_step_table["test"] = "test"
-    headers_step_table["cycle"] = "cycle"
-    headers_step_table["step"] = "step"
-    headers_step_table["sub_step"] = "sub_step"
-    headers_step_table["type"] = "type"
-    headers_step_table["sub_type"] = "sub_type"
-    headers_step_table["info"] = "info"
-    headers_step_table["pre_current"] = "I_"
-    headers_step_table["pre_voltage"] = "V_"
-    headers_step_table["pre_charge"] = "Charge_"
-    headers_step_table["pre_discharge"] = "Discharge_"
-    headers_step_table["pre_point"] = "datapoint_"
-    headers_step_table["pre_time"] = "time_"
-    headers_step_table["post_mean"] = "avr"
-    headers_step_table["post_std"] = "std"
-    headers_step_table["post_max"] = "max"
-    headers_step_table["post_min"] = "min"
-    headers_step_table["post_start"] = "start"
-    headers_step_table["post_end"] = "end"
-    headers_step_table["post_delta"] = "delta"
-    headers_step_table["post_rate"] = "rate"
-    headers_step_table["internal_resistance"] = "IR"
-    headers_step_table["internal_resistance_change"] = "IR_pct_change"
-    return headers_step_table
-
-
-def check64bit(current_system="python"):
-    """checks if you are on a 64 bit platform"""
-    if current_system == "python":
-        return sys.maxsize > 2147483647
-    elif current_system == "os":
-        import platform
-        pm = platform.machine()
-        if pm != ".." and pm.endswith('64'):  # recent Python (not Iron)
-            return True
-        else:
-            if 'PROCESSOR_ARCHITEW6432' in os.environ:
-                return True  # 32 bit program running on 64 bit Windows
-            try:
-                # 64 bit Windows 64 bit program
-                return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')
-            except IndexError:
-                pass  # not Windows
-            try:
-                # this often works in Linux
-                return '64' in platform.architecture()[0]
-            except Exception:
-                # is an older version of Python, assume also an older os@
-                # (best we can guess)
-                return False
-
-
-def humanize_bytes(b, precision=1):
-    """Return a humanized string representation of a number of b.
-
-    Assumes `from __future__ import division`.
-
-    >>> humanize_bytes(1)
-    '1 byte'
-    >>> humanize_bytes(1024)
-    '1.0 kB'
-    >>> humanize_bytes(1024*123)
-    '123.0 kB'
-    >>> humanize_bytes(1024*12342)
-    '12.1 MB'
-    >>> humanize_bytes(1024*12342,2)
-    '12.05 MB'
-    >>> humanize_bytes(1024*1234,2)
-    '1.21 MB'
-    >>> humanize_bytes(1024*1234*1111,2)
-    '1.31 GB'
-    >>> humanize_bytes(1024*1234*1111,1)
-    '1.3 GB'
-    """
-    # abbrevs = (
-    #     (1 << 50L, 'PB'),
-    #     (1 << 40L, 'TB'),
-    #     (1 << 30L, 'GB'),
-    #     (1 << 20L, 'MB'),
-    #     (1 << 10L, 'kB'),
-    #     (1, 'b')
-    # )
-    abbrevs = (
-        (1 << 50, 'PB'),
-        (1 << 40, 'TB'),
-        (1 << 30, 'GB'),
-        (1 << 20, 'MB'),
-        (1 << 10, 'kB'),
-        (1, 'b')
-    )
-    if b == 1:
-        return '1 byte'
-    for factor, suffix in abbrevs:
-        if b >= factor:
-            break
-    # return '%.*f %s' % (precision, old_div(b, factor), suffix)
-    return '%.*f %s' % (precision, b // factor, suffix)
-
-
-def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
-    """Converts a xls date stamp to a more sensible format.
-
-    Args:
-        xldate (str): date stamp in Excel format.
-        datemode (int): 0 for 1900-based, 1 for 1904-based.
-        option (str): option in ("to_datetime", "to_float", "to_string"),
-            return value
-
-    Returns:
-        datetime (datetime object, float, or string).
-
-    """
-
-    # This does not work for numpy-arrays
-
-    if option == "to_float":
-        d = (xldate - 25589) * 86400.0
-    else:
-        try:
-            d = datetime.datetime(1899, 12, 30) + \
-                datetime.timedelta(days=xldate + 1462 * datemode)
-            # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds,
-            # excel cannot cope with this!
-            if option == "to_string":
-                date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
-                d = d.strftime(date_format)
-        except TypeError:
-            warnings.warn(f'The date is not of correct type [{xldate}]')
-            d = xldate
-    return d
-
-
-# noinspection PyPep8Naming
-def Convert2mAhg(c, mass=1.0):
-    """Converts capacity in Ah to capacity in mAh/g.
-
-    Args:
-        c (float or numpy array): capacity in mA.
-        mass (float): mass in mg.
-
-    Returns:
-        float: 1000000 * c / mass
-    """
-    return 1000000 * c / mass
-
-
-# noinspection PyPep8Naming
-class FileID(object):
-    """class for storing information about the raw-data files.
-
-        This class is used for storing and handling raw-data file information.
-        It is important to keep track of when the data was extracted from the
-        raw-data files so that it is easy to know if the hdf5-files used for
-        @storing "treated" data is up-to-date.
-
-        Attributes:
-            name (str): Filename of the raw-data file.
-            full_name (str): Filename including path of the raw-data file.
-            size (float): Size of the raw-data file.
-            last_modified (datetime): Last time of modification of the raw-data
-                file.
-            last_accessed (datetime): last time of access of the raw-data file.
-            last_info_changed (datetime): st_ctime of the raw-data file.
-            location (str): Location of the raw-data file.
-
-        """
-
-    def __init__(self, filename=None):
-        make_defaults = True
-        if filename:
-            if os.path.isfile(filename):
-                fid_st = os.stat(filename)
-                self.name = os.path.abspath(filename)
-                self.full_name = filename
-                self.size = fid_st.st_size
-                self.last_modified = fid_st.st_mtime
-                self.last_accessed = fid_st.st_atime
-                self.last_info_changed = fid_st.st_ctime
-                self.location = os.path.dirname(filename)
-                make_defaults = False
-
-        if make_defaults:
-            self.name = None
-            self.full_name = None
-            self.size = 0
-            self.last_modified = None
-            self.last_accessed = None
-            self.last_info_changed = None
-            self.location = None
-
-    def __str__(self):
-        txt = "\nfileID information\n"
-        txt += "full name: %s\n" % self.full_name
-        txt += "name: %s\n" % self.name
-        if self.last_modified is not None:
-            txt += f"modified: {self.last_modified}\n"
-        else:
-            txt += "modified: NAN\n"
-        if self.size is not None:
-            txt += f"size: {self.size}\n"
-        else:
-            txt += "size: NAN\n"
-        return txt
-
-    def populate(self, filename):
-        """Finds the file-stats and populates the class with stat values.
-
-        Args:
-            filename (str): name of the file.
-        """
-
-        if os.path.isfile(filename):
-            fid_st = os.stat(filename)
-            self.name = os.path.abspath(filename)
-            self.full_name = filename
-            self.size = fid_st.st_size
-            self.last_modified = fid_st.st_mtime
-            self.last_accessed = fid_st.st_atime
-            self.last_info_changed = fid_st.st_ctime
-            self.location = os.path.dirname(filename)
-
-    def get_raw(self):
-        """Get a list with information about the file.
-
-        The returned list contains name, size, last_modified and location.
-        """
-        return [self.name, self.size, self.last_modified, self.location]
-
-    def get_name(self):
-        """Get the filename."""
-        return self.name
-
-    def get_size(self):
-        """Get the size of the file."""
-        return self.size
-
-    def get_last(self):
-        """Get last modification time of the file."""
-        return self.last_modified
-
-
-# noinspection PyPep8Naming
-class DataSet(object):
-    """Object to store data for a test.
-
-    This class is used for storing all the relevant data for a 'run', i.e. all
-    the data collected by the tester as stored in the raw-files.
-
-    Attributes:
-        test_no (int): test number.
-        mass (float): mass of electrode [mg].
-        dfdata (pandas.DataFrame): contains the experimental data points.
-        dfsummary (pandas.DataFrame): contains summary of the data pr. cycle.
-        step_table (pandas.DataFrame): information for each step, used for
-            defining type of step (charge, discharge, etc.)
-
-    """
-
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug("created DataSet instance")
-
-        self.test_no = None
-        self.mass = prms.Materials["default_mass"]  # active material (in mg)
-        self.tot_mass = prms.Materials["default_mass"]  # total material (in mg)
-        self.no_cycles = 0.0
-        self.charge_steps = None  # not in use at the moment
-        self.discharge_steps = None  # not in use at the moment
-        self.ir_steps = None  # dict # not in use at the moment
-        self.ocv_steps = None  # dict # not in use at the moment
-        self.nom_cap = prms.DataSet["nom_cap"]  # mAh/g (for finding c-rates)
-        self.mass_given = False
-        self.material = prms.Materials["default_material"]
-        self.merged = False
-        self.file_errors = None  # not in use at the moment
-        self.loaded_from = None  # loaded from (can be list if merged)
-        self.raw_data_files = []
-        self.raw_data_files_length = []
-        self.channel_index = None
-        self.channel_number = None
-        self.creator = None
-        self.item_ID = None
-        self.schedule_file_name = None
-        self.start_datetime = None
-        self.test_ID = None
-        self.name = None
-        # methods in CellpyData to update if adding new attributes:
-        #  _load_infotable()
-        # _create_infotable()
-
-        self.data = collections.OrderedDict()  # not used
-        self.summary = collections.OrderedDict()  # not used
-
-        self.dfdata = None
-        self.dfsummary = None
-        self.dfsummary_made = False
-        self.step_table = collections.OrderedDict()
-        self.step_table_made = False
-        self.parameter_table = collections.OrderedDict()
-        self.summary_version = SUMMARY_TABLE_VERSION
-        self.step_table_version = STEP_TABLE_VERSION
-        self.cellpy_file_version = CELLPY_FILE_VERSION
-        self.normal_table_version = NORMAL_TABLE_VERSION
-        # ready for use if implementing loading units
-        # (will probably never happen).
-        self.raw_units = dict()  # units used for raw_data
-
-    def __str__(self):
-        txt = "_cellpy_data_dataset_class_\n"
-        txt += "loaded from file\n"
-        if isinstance(self.loaded_from, (list, tuple)):
-            for f in self.loaded_from:
-                txt += f
-                txt += "\n"
-
-        else:
-            txt += self.loaded_from
-            txt += "\n"
-        txt += "   GLOBAL\n"
-        txt += f"material:            {self.material}\n"
-        txt += f"mass (active):       {self.mass}\n"
-        txt += f"test ID:             {self.test_ID}\n"
-        txt += f"mass (total):        {self.tot_mass}\n"
-        txt += f"nominal capacity:    {self.nom_cap}\n"
-        txt += f"channel index:       {self.channel_index}\n"
-        txt += f"DataSet name:        {self.name}\n"
-        txt += f"creator:             {self.creator}\n"
-        txt += f"schedule file name:  {self.schedule_file_name}\n"
-
-        try:
-            start_datetime_str = xldate_as_datetime(self.start_datetime)
-        except Exception:
-            start_datetime_str = "NOT READABLE YET"
-        txt += f"start-date:         {start_datetime_str}\n"
-
-        txt += "   DATA:\n"
-        try:
-            txt += str(self.dfdata.head())
-        except AttributeError:
-            txt += "EMPTY (Not processed yet)\n"
-
-        txt += "   \nSUMMARY:\n"
-        try:
-            txt += str(self.dfsummary.head())
-        except AttributeError:
-            txt += "EMPTY (Not processed yet)\n"
-
-        txt += "   \nPARAMETERS:\n"
-        try:
-            txt += str(self.parameter_table.head())
-        except AttributeError:
-            txt += "EMPTY (Not processed yet)\n"
-
-        txt += "raw units:"
-        txt += "     Currently defined in the CellpyData-object"
-        return txt
+from cellpy.parameters.internal_settings import get_headers_summary, \
+    get_cellpy_units, get_headers_normal, get_headers_step_table
+from cellpy.readers.core import FileID, DataSet, CELLPY_FILE_VERSION, \
+    xldate_as_datetime
+
+
+# TODO: performance warnings probably due to mixed types within cols (pytables)
+performance_warning_level = "ignore"  # "ignore", "error"
+warnings.filterwarnings(performance_warning_level,
+                        category=pd.io.pytables.PerformanceWarning)
+pd.set_option('mode.chained_assignment', None)  # "raise", "warn", None
+
+module_logger = logging.getLogger(__name__)
 
 
 class CellpyData(object):
@@ -856,7 +389,7 @@ class CellpyData(object):
         store = pd.HDFStore(filename)
         try:
             fidtable = store.select("CellpyData/fidtable")
-        except Exception:
+        except KeyError:
             self.logger.warning("no fidtable -"
                                 " you should update your hdf5-file")
             fidtable = None
@@ -1099,6 +632,7 @@ class CellpyData(object):
             parent_level (str, optional): Parent level
 
         """
+
         try:
             self.logger.info("loading hdf5")
             self.logger.info(cellpy_file)
@@ -1335,9 +869,11 @@ class CellpyData(object):
 
     def merge(self, datasets=None, separate_datasets=False):
         """This function merges datasets into one set."""
-        print("merging")
+        self.logger.info("merging")
         if separate_datasets:
-            print("not implemented yet")
+            warnings.warn("The option seperate_datasets=True is"
+                          "not implemented yet. Performing merging, but"
+                          "neglecting the option.")
         else:
             if datasets is None:
                 datasets = list(range(len(self.datasets)))
@@ -1363,6 +899,7 @@ class CellpyData(object):
         diff_time = xldate_as_datetime(start_time_2) - \
                     xldate_as_datetime(start_time_1)
         diff_time = diff_time.total_seconds()
+
         sort_key = self.headers_normal['datetime_txt']  # DateTime
         # mod data points for set 2
         data_point_header = self.headers_normal['data_point_txt']
@@ -2456,11 +1993,11 @@ class CellpyData(object):
 
             for index, row in dfsummary.iterrows():
                 dischargecap_2 = row[discharge_title]
-                dfsummary[discharge_title][index] = dischargecap_2 - \
-                                                    dischargecap
+                dfsummary.loc[index, discharge_title] = dischargecap_2 - \
+                                                        dischargecap
                 dischargecap = dischargecap_2
                 chargecap_2 = row[charge_title]
-                dfsummary[charge_title][index] = chargecap_2 - chargecap
+                dfsummary.loc[index, charge_title] = chargecap_2 - chargecap
                 chargecap = chargecap_2
         else:
             raise NotImplementedError
@@ -2510,9 +2047,8 @@ class CellpyData(object):
                             (dfdata[step_index_header].isin(steps))
                 c0 = dfdata[selection].iloc[0][cap_header]
                 e0 = dfdata[selection].iloc[0][e_header]
-                dfdata[cap_header][selection] = (dfdata[selection][cap_header]
-                                                 - c0)
-                dfdata[e_header][selection] = (dfdata[selection][e_header] - e0)
+                dfdata.loc[selection, cap_header] = (dfdata.loc[selection, cap_header]- c0)
+                dfdata.loc[selection, e_header] = (dfdata.loc[selection, e_header] - e0)
 
                 cap_type = "charge"
                 e_header = charge_energy_index_header
@@ -2531,9 +2067,8 @@ class CellpyData(object):
                 if any(selection):
                     c0 = dfdata[selection].iloc[0][cap_header]
                     e0 = dfdata[selection].iloc[0][e_header]
-                    dfdata[cap_header][selection] = (dfdata[selection][cap_header]
-                                                     - c0)
-                    dfdata[e_header][selection] = (dfdata[selection][e_header] - e0)
+                    dfdata.loc[selection, cap_header] = (dfdata.loc[selection, cap_header] - c0)
+                    dfdata.loc[selection, e_header] = (dfdata.loc[selection, e_header] - e0)
 
     def get_number_of_tests(self):
         return self.number_of_datasets
@@ -3728,7 +3263,7 @@ class CellpyData(object):
                     summary_requirment = self._select_last(dfdata)
             else:
                 summary_requirment = self._select_last(dfdata)
-            dfsummary = dfdata[summary_requirment]
+            dfsummary = dfdata[summary_requirment].copy()
         else:
             # summary_requirment = self._reloadrows_raw(summary_df[d_txt])
             dfsummary = summary_df
@@ -4145,7 +3680,7 @@ def just_load_srno(srno, prm_filename=None):
         ....
 
         """
-    from cellpy import dbreader, prmreader, filefinder
+    from cellpy import dbreader, filefinder
     print("just_load_srno: srno: %i" % srno)
 
     # ------------reading parameters--------------------------------------------

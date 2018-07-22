@@ -5,6 +5,7 @@ import datetime
 import pytest
 import logging
 
+import cellpy.readers.core
 from cellpy.exceptions import DeprecatedFeature
 from cellpy import log
 from . import fdv
@@ -52,7 +53,7 @@ def test_create_cellpyfile(cellpy_data_instance):
 ])
 def test_xldate_as_datetime(xldate, datemode, option, expected):
     from cellpy import cellreader
-    result = cellreader.xldate_as_datetime(xldate, datemode, option)
+    result = cellpy.readers.core.xldate_as_datetime(xldate, datemode, option)
     assert result == expected
 
 
@@ -61,8 +62,65 @@ def test_validate_dataset_number(dataset, number):
     dataset._validate_dataset_number(number)
 
 
-def test_merge():
-    print("MISSING TEST")
+def test_merge(cellpy_data_instance):
+    f1 = fdv.res_file_path
+    f2 = fdv.res_file_path2
+    assert os.path.isfile(f1)
+    assert os.path.isfile(f2)
+    cellpy_data_instance.from_raw(f1)
+    cellpy_data_instance.from_raw(f2)
+
+    assert len(cellpy_data_instance.datasets) == 2
+
+    table_first = cellpy_data_instance.datasets[0].dfdata.describe()
+    count_first = table_first.loc["count", "Data_Point"]
+
+    table_second = cellpy_data_instance.datasets[1].dfdata.describe()
+    count_second = table_second.loc["count", "Data_Point"]
+
+    cellpy_data_instance.merge()
+    assert len(cellpy_data_instance.datasets) == 2
+
+    table_all = cellpy_data_instance.datasets[0].dfdata.describe()
+    count_all = table_all.loc["count", "Data_Point"]
+    assert len(cellpy_data_instance.datasets) == 1
+
+    assert pytest.approx(count_all, 0.001) == (count_first + count_second)
+
+
+def test_merge_auto_from_list():
+    from cellpy import cellreader
+    cdi1 = cellreader.CellpyData()
+    cdi2 = cellreader.CellpyData()
+    cdi3 = cellreader.CellpyData()
+
+    f1 = fdv.res_file_path
+    f2 = fdv.res_file_path2
+    assert os.path.isfile(f1)
+    assert os.path.isfile(f2)
+
+    files = [f1, f2]
+    cdi1.from_raw(f1)
+    cdi2.from_raw(f2)
+    cdi3.from_raw(files)
+
+    len_first = len(cdi1.datasets)
+    table_first = cdi1.datasets[0].dfdata.describe()
+    count_first = table_first.loc["count", "Data_Point"]
+
+    len_second = len(cdi2.datasets)
+    table_second = cdi2.datasets[0].dfdata.describe()
+    count_second = table_second.loc["count", "Data_Point"]
+
+    len_all= len(cdi3.datasets)
+    table_all = cdi3.datasets[0].dfdata.describe()
+    count_all = table_all.loc["count", "Data_Point"]
+
+    assert len_first == 1
+    assert len_second == 1
+    assert len_all == 1
+
+    assert pytest.approx(count_all, 0.001) == (count_first + count_second)
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
@@ -173,8 +231,8 @@ def test_set_testnumber(dataset):
 
 def test_check64bit():
     from cellpy import cellreader
-    cellreader.check64bit()
-    cellreader.check64bit("os")
+    cellpy.readers.core.check64bit()
+    cellpy.readers.core.check64bit("os")
 
 
 def test_search_for_files():
@@ -229,7 +287,7 @@ def test_fid(cellpy_data_instance):
 
 
 def test_only_fid():
-    from cellpy.readers.cellreader import FileID
+    from cellpy.readers.core import FileID
     my_fid_one = FileID()
     my_file = fdv.cellpy_file_path
     my_fid_one.populate(my_file)
@@ -399,3 +457,10 @@ def test_save_cvs(cellpy_data_instance):
 def test_str_cellpy_data_object(dataset):
     assert str(dataset.dataset).find("silicon") >= 0
     assert str(dataset.dataset).find("rosenborg") < 0
+
+
+def test_check_cellpy_file(cellpy_data_instance):
+    file_name = fdv.cellpy_file_path
+    ids = cellpy_data_instance._check_cellpy_file(file_name)
+
+

@@ -4,6 +4,14 @@ cellpy.parameters package
 Submodules
 ----------
 
+cellpy.parameters.internal\_settings module
+-------------------------------------------
+
+.. automodule:: cellpy.parameters.internal_settings
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 cellpy.parameters.prmreader module
 ----------------------------------
 

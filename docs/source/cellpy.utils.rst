@@ -12,6 +12,30 @@ cellpy.utils.batch module
     :undoc-members:
     :show-inheritance:
 
+cellpy.utils.batch2 module
+--------------------------
+
+.. automodule:: cellpy.utils.batch2
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+cellpy.utils.batch\_engines module
+----------------------------------
+
+.. automodule:: cellpy.utils.batch_engines
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+cellpy.utils.cell\_ocv module
+-----------------------------
+
+.. automodule:: cellpy.utils.cell_ocv
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 cellpy.utils.ica module
 -----------------------
 
@@ -28,8 +52,8 @@ cellpy.utils.live module
     :undoc-members:
     :show-inheritance:
 
-cellpy.utils.ocv_rlx module
----------------------------
+cellpy.utils.ocv\_rlx module
+----------------------------
 
 .. automodule:: cellpy.utils.ocv_rlx
     :members:

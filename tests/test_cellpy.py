@@ -2,6 +2,8 @@ import pytest
 import tempfile
 import os
 import logging
+
+import cellpy.readers.core
 from cellpy import log
 from cellpy import prms
 from . import fdv
@@ -128,14 +130,14 @@ def test_setup_cellpy_instance():
 # @pytest.mark.unimportant
 def test_humanize_bytes():
     from cellpy import cellreader
-    assert cellreader.humanize_bytes(1) == '1 byte'
-    assert cellreader.humanize_bytes(1024) == '1.0 kB'
-    assert cellreader.humanize_bytes(1024 * 123) == '123.0 kB'
-    assert cellreader.humanize_bytes(1024 * 12342) == '12.0 MB'
-    assert cellreader.humanize_bytes(1024 * 12342, 2) == '12.00 MB'
-    assert cellreader.humanize_bytes(1024 * 1234, 2) == '1.00 MB'
-    assert cellreader.humanize_bytes(1024 * 1234 * 1111, 2) == '1.00 GB'
-    assert cellreader.humanize_bytes(1024 * 1234 * 1111, 1) == '1.0 GB'
+    assert cellpy.readers.core.humanize_bytes(1) == '1 byte'
+    assert cellpy.readers.core.humanize_bytes(1024) == '1.0 kB'
+    assert cellpy.readers.core.humanize_bytes(1024 * 123) == '123.0 kB'
+    assert cellpy.readers.core.humanize_bytes(1024 * 12342) == '12.0 MB'
+    assert cellpy.readers.core.humanize_bytes(1024 * 12342, 2) == '12.00 MB'
+    assert cellpy.readers.core.humanize_bytes(1024 * 1234, 2) == '1.00 MB'
+    assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 2) == '1.00 GB'
+    assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 1) == '1.0 GB'
 
 
 def teardown_module():
