@@ -19,6 +19,14 @@ cellpy.readers.cellreader module
     :undoc-members:
     :show-inheritance:
 
+cellpy.readers.core module
+--------------------------
+
+.. automodule:: cellpy.readers.core
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 cellpy.readers.dbreader module
 ------------------------------
 

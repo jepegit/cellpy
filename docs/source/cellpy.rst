@@ -13,10 +13,18 @@ Subpackages
 Submodules
 ----------
 
-cellpy.cellpy_setup module
---------------------------
+cellpy.cellpy\_setup module
+---------------------------
 
 .. automodule:: cellpy.cellpy_setup
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+cellpy.exceptions module
+------------------------
+
+.. automodule:: cellpy.exceptions
     :members:
     :undoc-members:
     :show-inheritance:
