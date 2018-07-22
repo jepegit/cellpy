@@ -40,13 +40,14 @@ from cellpy.parameters.internal_settings import get_headers_summary, \
 from cellpy.readers.core import FileID, DataSet, CELLPY_FILE_VERSION, \
     xldate_as_datetime
 
-DEBUG = logging.DEBUG
 
-# TODO: fix chained assignments and performance warnings (comment below and fix)
-warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
-pd.set_option('mode.chained_assignment', None)  # "raise" "warn"
+# TODO: performance warnings probably due to mixed types within cols (pytables)
+performance_warning_level = "ignore"  # "ignore", "error"
+warnings.filterwarnings(performance_warning_level,
+                        category=pd.io.pytables.PerformanceWarning)
+pd.set_option('mode.chained_assignment', None)  # "raise", "warn", None
 
-# module_logger = logging.getLogger(__name__)
+module_logger = logging.getLogger(__name__)
 
 
 class CellpyData(object):
@@ -388,7 +389,7 @@ class CellpyData(object):
         store = pd.HDFStore(filename)
         try:
             fidtable = store.select("CellpyData/fidtable")
-        except Exception:
+        except KeyError:
             self.logger.warning("no fidtable -"
                                 " you should update your hdf5-file")
             fidtable = None
@@ -1992,11 +1993,11 @@ class CellpyData(object):
 
             for index, row in dfsummary.iterrows():
                 dischargecap_2 = row[discharge_title]
-                dfsummary[discharge_title][index] = dischargecap_2 - \
-                                                    dischargecap
+                dfsummary.loc[index, discharge_title] = dischargecap_2 - \
+                                                        dischargecap
                 dischargecap = dischargecap_2
                 chargecap_2 = row[charge_title]
-                dfsummary[charge_title][index] = chargecap_2 - chargecap
+                dfsummary.loc[index, charge_title] = chargecap_2 - chargecap
                 chargecap = chargecap_2
         else:
             raise NotImplementedError
@@ -2046,9 +2047,8 @@ class CellpyData(object):
                             (dfdata[step_index_header].isin(steps))
                 c0 = dfdata[selection].iloc[0][cap_header]
                 e0 = dfdata[selection].iloc[0][e_header]
-                dfdata[cap_header][selection] = (dfdata[selection][cap_header]
-                                                 - c0)
-                dfdata[e_header][selection] = (dfdata[selection][e_header] - e0)
+                dfdata.loc[selection, cap_header] = (dfdata.loc[selection, cap_header]- c0)
+                dfdata.loc[selection, e_header] = (dfdata.loc[selection, e_header] - e0)
 
                 cap_type = "charge"
                 e_header = charge_energy_index_header
@@ -2067,9 +2067,8 @@ class CellpyData(object):
                 if any(selection):
                     c0 = dfdata[selection].iloc[0][cap_header]
                     e0 = dfdata[selection].iloc[0][e_header]
-                    dfdata[cap_header][selection] = (dfdata[selection][cap_header]
-                                                     - c0)
-                    dfdata[e_header][selection] = (dfdata[selection][e_header] - e0)
+                    dfdata.loc[selection, cap_header] = (dfdata.loc[selection, cap_header] - c0)
+                    dfdata.loc[selection, e_header] = (dfdata.loc[selection, e_header] - e0)
 
     def get_number_of_tests(self):
         return self.number_of_datasets
@@ -3264,7 +3263,7 @@ class CellpyData(object):
                     summary_requirment = self._select_last(dfdata)
             else:
                 summary_requirment = self._select_last(dfdata)
-            dfsummary = dfdata[summary_requirment]
+            dfsummary = dfdata[summary_requirment].copy()
         else:
             # summary_requirment = self._reloadrows_raw(summary_df[d_txt])
             dfsummary = summary_df

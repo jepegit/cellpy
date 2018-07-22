@@ -457,3 +457,10 @@ def test_save_cvs(cellpy_data_instance):
 def test_str_cellpy_data_object(dataset):
     assert str(dataset.dataset).find("silicon") >= 0
     assert str(dataset.dataset).find("rosenborg") < 0
+
+
+def test_check_cellpy_file(cellpy_data_instance):
+    file_name = fdv.cellpy_file_path
+    ids = cellpy_data_instance._check_cellpy_file(file_name)
+
+
