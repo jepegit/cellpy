@@ -1366,7 +1366,7 @@ class CellpyData(object):
         diff_time = xldate_as_datetime(start_time_2) - \
                     xldate_as_datetime(start_time_1)
         diff_time = diff_time.total_seconds()
-        
+
         sort_key = self.headers_normal['datetime_txt']  # DateTime
         # mod data points for set 2
         data_point_header = self.headers_normal['data_point_txt']
