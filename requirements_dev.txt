@@ -9,7 +9,7 @@ coverage==4.3.4
 Sphinx==1.5.5
 cryptography==1.8.1
 PyYAML==3.12
-pytest==3.0.7
+pytest==3.6.4
 =======
 pip>=9.0.1
 wheel>=0.29.0
