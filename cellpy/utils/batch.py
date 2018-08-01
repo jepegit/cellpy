@@ -954,7 +954,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
             logger.debug("File(s) not found for index=%s" % indx)
             errors.append(indx)
             continue
-        # TODO: need to fix so that thet logger is set properly outside Batch
+        # TODO: need to fix so that the logger is set properly outside Batch
         print("Processing (%s)..." % indx)
         logger.info("Processing (%s)..." % indx)
         cell_data = cellreader.CellpyData()
@@ -980,8 +980,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
             try:
                 cell_data.load(row.cellpy_file_names, parent_level=parent_level)
             except Exception as e:
-                logger.info(
-                    f"Critical exception encountered {type(e)} - skipping this file")
+                logger.info(f"Critical exception encountered {type(e)} "
+                            "- skipping this file")
                 logger.debug('Failed to load. Error-message: ' + str(e))
                 errors.append("load:" + str(indx))
                 continue
@@ -1330,19 +1330,19 @@ def export_dqdv(cell_data, savedir, sep):
 
     list_of_cycles = cell_data.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
-    logger.info("%s: you have %i cycles" % (filename, number_of_cycles))
+    logger.debug("%s: you have %i cycles" % (filename, number_of_cycles))
 
     # extracting charge
     out_data = _extract_dqdv(cell_data, cell_data.get_ccap)
-    logger.info("extracted ica for charge")
+    logger.debug("extracted ica for charge")
     _save_multi(data=out_data, file_name=outname_charge, sep=sep)
-    logger.info("saved ica for charge")
+    logger.debug("saved ica for charge")
 
     # extracting discharge
     out_data = _extract_dqdv(cell_data, cell_data.get_dcap)
-    logger.info("extracxted ica for discharge")
+    logger.debug("extracxted ica for discharge")
     _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
-    logger.info("saved ica for discharge")
+    logger.debug("saved ica for discharge")
 
 
 def init(*args, **kwargs):
