@@ -1755,7 +1755,7 @@ class CellpyData(object):
                 out_data.append(c)
                 out_data.append(v)
                 txt = "extracted cycle %i" % cycle
-                self.logger.info(txt)
+                self.logger.debug(txt)
             except ImportError as e:
                 txt = "could not extract cycle %i" % cycle
                 self.logger.info(txt)

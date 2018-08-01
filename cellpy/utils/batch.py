@@ -141,9 +141,16 @@ def _find_files(info_dict):
 
 def _save_multi(data, file_name, sep=";"):
     """convenience function for storing data column-wise in a csv-file."""
-    with open(file_name, "wb") as f:
+    logger.debug("saving multi")
+    with open(file_name, "w") as f:
+        logger.debug(f"{file_name} opened")
         writer = csv.writer(f, delimiter=sep)
-        writer.writerows(itertools.zip_longest(*data))
+        try:
+            writer.writerows(itertools.zip_longest(*data))
+        except Exception as e:
+            logger.info("Exception encountered in batch._save_multi:")
+            print(e)
+        logger.info("wrote rows using itertools")
 
 
 def _make_unique_groups(info_df):
@@ -181,30 +188,31 @@ def _extract_dqdv(cell_data, extract_func):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
     from cellpy.utils.ica import dqdv
-    # extracting charge
     list_of_cycles = cell_data.get_cycle_numbers()
     out_data = []
     for cycle in list_of_cycles:
         c, v = extract_func(cycle)
-        try:
-            # noinspection PyPep8Naming
-            v, dq = dqdv(v, c)
-            v = v.tolist()
-            dq = dq.tolist()
-        except IndexError or OverflowError as e:
-            error_in_dqdv = True
-            v = list()
-            dq = list()
-            print(" -could not process this (cycle %i)" % cycle)
-            print(" %s" % e)
+        if v.any():
+            try:
+                # noinspection PyPep8Naming
+                v, dq = dqdv(v, c)
+                v = v.tolist()
+                dq = dq.tolist()
+            except IndexError or OverflowError as e:
+                v = list()
+                dq = list()
+                logger.info(" -could not process this (cycle %i)" % cycle)
+                logger.info(" %s" % e)
 
-        header_x = "dQ cycle_no %i" % cycle
-        header_y = "voltage cycle_no %i" % cycle
-        dq.insert(0, header_x)
-        v.insert(0, header_y)
+            header_x = "dQ cycle_no %i" % cycle
+            header_y = "voltage cycle_no %i" % cycle
+            dq.insert(0, header_x)
+            v.insert(0, header_y)
 
-        out_data.append(v)
-        out_data.append(dq)
+            out_data.append(v)
+            out_data.append(dq)
+        else:
+            logger.info(f"Empty step encountered for cycle={cycle}")
     return out_data
 
 
@@ -926,7 +934,6 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
     Returns: frames (list of cellpy summary DataFrames), keys (list of indexes),
         errors (list of indexes that encountered errors).
     """
-
     no_export = False
     do_export_dqdv = export_ica
     keys = []
@@ -1309,27 +1316,33 @@ def export_dqdv(cell_data, savedir, sep):
         savedir: path to the folder where the files should be saved
         sep: separator for the .csv-files.
     """
-
+    logger.info("Exporting dQ/dV")
     filename = cell_data.dataset.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
     firstname += no_merged_sets
     if savedir:
         firstname = os.path.join(savedir, os.path.basename(firstname))
+        logger.debug(f"savedir is true: {firstname}")
+
     outname_charge = firstname + "_dqdv_charge.csv"
     outname_discharge = firstname + "_dqdv_discharge.csv"
 
     list_of_cycles = cell_data.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
-    print("%s: you have %i cycles" % (filename, number_of_cycles))
+    logger.info("%s: you have %i cycles" % (filename, number_of_cycles))
 
     # extracting charge
     out_data = _extract_dqdv(cell_data, cell_data.get_ccap)
+    logger.info("extracted ica for charge")
     _save_multi(data=out_data, file_name=outname_charge, sep=sep)
+    logger.info("saved ica for charge")
 
     # extracting discharge
     out_data = _extract_dqdv(cell_data, cell_data.get_dcap)
+    logger.info("extracxted ica for discharge")
     _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
+    logger.info("saved ica for discharge")
 
 
 def init(*args, **kwargs):
