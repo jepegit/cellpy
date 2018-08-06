@@ -419,8 +419,8 @@ class Batch(object):
         self.reader = get_db_reader(reader_label)
 
     def _create_colors_markers_list(self):
-        import cellpy.utils.plotutils as plot_utils
-        return plot_utils.create_colormarkerlist_for_info_df(self.info_df,
+        from cellpy.utils import plotutils
+        return plotutils.create_colormarkerlist_for_info_df(self.info_df,
                                                              symbol_label=self.symbol_label,
                                                              color_style_label=self.color_style_label)
 
