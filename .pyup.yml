@@ -1,1 +1,3 @@
 branch: develop
+update: insecure
+pin: false
