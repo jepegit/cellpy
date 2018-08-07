@@ -148,6 +148,7 @@ def _save_multi(data, file_name, sep=";"):
         try:
             writer.writerows(itertools.zip_longest(*data))
         except Exception as e:
+            # TODO (jepe): use a custom exception here (NotSavedButWhoCares)
             logger.info("Exception encountered in batch._save_multi:")
             # print(e)
         logger.debug("wrote rows using itertools in _save_multi")
