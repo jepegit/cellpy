@@ -150,7 +150,7 @@ def _save_multi(data, file_name, sep=";"):
         except Exception as e:
             logger.info("Exception encountered in batch._save_multi:")
             # print(e)
-        logger.info("wrote rows using itertools")
+        logger.debug("wrote rows using itertools in _save_multi")
 
 
 def _make_unique_groups(info_df):
@@ -345,7 +345,7 @@ class Batch(object):
         self.save_cellpy_file = True
         self.force_raw_file = False
         self.force_cellpy_file = False
-        self.use_cellpy_stat_file = True
+        self.use_cellpy_stat_file = None
 
         self._packable = ['name', 'project', 'batch_col', 'selected_summaries',
                           'output_format', 'time_stamp', 'project_dir',
@@ -487,6 +487,11 @@ class Batch(object):
     def load_and_save_raw(self, parent_level="CellpyData"):
         """Loads the cellpy or raw-data file(s) and saves to csv"""
         sep = prms.Reader["sep"]
+        if self.use_cellpy_stat_file is None:
+            use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
+        else:
+            use_cellpy_stat_file = self.use_cellpy_stat_file
+        logger.debug(f"b.load_and_save_raw: use_cellpy_stat_file = {use_cellpy_stat_file}")
         self.frames, self.keys, errors = read_and_save_data(self.info_df,
                                                             self.raw_dir,
                                                             sep=sep,
@@ -497,7 +502,7 @@ class Batch(object):
                                                             export_raw=self.export_raw,
                                                             export_ica=self.export_ica,
                                                             save=self.save_cellpy_file,
-                                                            use_cellpy_stat_file=self.use_cellpy_stat_file,
+                                                            use_cellpy_stat_file=use_cellpy_stat_file,
                                                             parent_level=parent_level)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
@@ -949,14 +954,13 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         logger.debug(l_txt)
         print(h_txt)
         if not row.raw_file_names and not force_cellpy:
-            print("File not found!")
+            print("File(s) not found!")
             print(indx)
             logger.debug("File(s) not found for index=%s" % indx)
             errors.append(indx)
             continue
-        # TODO: need to fix so that the logger is set properly outside Batch
-        print("Processing (%s)..." % indx)
-        logger.info("Processing (%s)..." % indx)
+        else:
+            logger.info(f"Processing {indx}")
         cell_data = cellreader.CellpyData()
         if not force_cellpy:
             logger.info("setting cycle mode (%s)..." % row.cell_type)
@@ -1028,18 +1032,17 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
 
         if export_raw:
             print("...exporting data....")
-            logger.debug("Exporting csv")
+            logger.info("exporting csv")
             cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles,
                              shifted=shifted_cycles, raw=export_raw)
 
         if do_export_dqdv:
-            logger.debug("Exporting dqdv")
+            logger.info("exporting dqdv")
             try:
                 export_dqdv(cell_data, savedir=raw_dir, sep=sep)
             except Exception as e:
                 print("...could not make/export dq/dv data...")
-                logger.debug("Failed to make/export dq/dv data (%s): %s" % (
-                indx, str(e)))
+                logger.debug("Failed to make/export dq/dv data (%s): %s" % (indx, str(e)))
                 errors.append("ica:" + str(indx))
     if len(errors) > 0:
         print("Finished with errors!")
