@@ -142,14 +142,14 @@ def _find_files(info_dict):
 def _save_multi(data, file_name, sep=";"):
     """convenience function for storing data column-wise in a csv-file."""
     logger.debug("saving multi")
-    with open(file_name, "w") as f:
+    with open(file_name, "w", newline='') as f:
         logger.debug(f"{file_name} opened")
         writer = csv.writer(f, delimiter=sep)
         try:
             writer.writerows(itertools.zip_longest(*data))
         except Exception as e:
             logger.info("Exception encountered in batch._save_multi:")
-            print(e)
+            # print(e)
         logger.info("wrote rows using itertools")
 
 
