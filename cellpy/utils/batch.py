@@ -14,6 +14,7 @@ import matplotlib as mpl
 import cellpy.parameters.internal_settings
 from cellpy.parameters import prms
 from cellpy import cellreader, dbreader, filefinder
+from cellpy.exceptions import ExportFailed
 
 logger = logging.getLogger(__name__)
 
@@ -148,9 +149,8 @@ def _save_multi(data, file_name, sep=";"):
         try:
             writer.writerows(itertools.zip_longest(*data))
         except Exception as e:
-            # TODO (jepe): use a custom exception here (NotSavedButWhoCares)
-            logger.info("Exception encountered in batch._save_multi:")
-            # print(e)
+            logger.info(f"Exception encountered in batch._save_multi: {e}")
+            raise ExportFailed
         logger.debug("wrote rows using itertools in _save_multi")
 
 
@@ -535,8 +535,8 @@ class Batch(object):
             df_d = pick_summary_data("shifted_discharge_capacity",
                                      self.summary_df, self.selected_summaries)
         except AttributeError:
-            logger.debug(
-                "shifted capacities not part of summary data (selected_summaries)")
+            logger.debug("shifted capacities not part of summary data "
+                         "(selected_summaries)")
             return None
 
         # generate labels
@@ -617,8 +617,8 @@ class Batch(object):
             df_d = pick_summary_data("shifted_discharge_capacity",
                                      self.summary_df, self.selected_summaries)
         except AttributeError:
-            logger.debug(
-                "shifted capacities not part of summary data (selected_summaries)")
+            logger.debug("shifted capacities not part of summary data "
+                         "(selected_summaries)")
             return None
 
         # generate labels
@@ -1339,14 +1339,22 @@ def export_dqdv(cell_data, savedir, sep):
     # extracting charge
     out_data = _extract_dqdv(cell_data, cell_data.get_ccap)
     logger.debug("extracted ica for charge")
-    _save_multi(data=out_data, file_name=outname_charge, sep=sep)
-    logger.debug("saved ica for charge")
+    try:
+        _save_multi(data=out_data, file_name=outname_charge, sep=sep)
+    except ExportFailed:
+        logger.info("could not export ica for charge")
+    else:
+        logger.debug("saved ica for charge")
 
     # extracting discharge
     out_data = _extract_dqdv(cell_data, cell_data.get_dcap)
     logger.debug("extracxted ica for discharge")
-    _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
-    logger.debug("saved ica for discharge")
+    try:
+        _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
+    except ExportFailed:
+        logger.info("could not export ica for discharge")
+    else:
+        logger.debug("saved ica for discharge")
 
 
 def init(*args, **kwargs):

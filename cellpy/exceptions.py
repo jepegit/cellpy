@@ -26,6 +26,11 @@ class DeprecatedFeature(Error):
     pass
 
 
+class ExportFailed(Error):
+    """Raised when exporting data failed"""
+    pass
+
+
 class NullData(Error):
     """Raised when required data is missing (e.g. voltage = None)"""
     pass
