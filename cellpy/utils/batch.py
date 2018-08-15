@@ -546,45 +546,71 @@ class Batch(object):
         # adding charge/discharge label
         labels.extend(["", "discharge", "charge"])
 
-        list_of_lines, plot_style = plot_summary_data(ax, df_d,
-                                                      info_df=self.info_df,
-                                                      color_list=color_list,
-                                                      symbol_list=symbol_list,
-                                                      is_charge=False,
-                                                      plot_style=plot_style)
+        list_of_lines, plot_style = plot_summary_data(
+            ax, df_d,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=False,
+            plot_style=plot_style,
+        )
 
         # adding charge/discharge legend signs
         color = plot_style["color"]
         markersize = plot_style["markersize"]
 
-        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                      markeredgecolor=color,
-                                      markerfacecolor='none',
-                                      markersize=markersize)
-        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                        markeredgecolor=color,
-                                        markerfacecolor=color,
-                                        markersize=markersize)
-        no_label = mpl.lines.Line2D([], [], color='none', marker='s',
-                                    markersize=0)
+        open_label = mpl.lines.Line2D(
+            [], [],
+            color=color,
+            marker='s',
+            markeredgecolor=color,
+            markerfacecolor='none',
+            markersize=markersize
+        )
+
+        closed_label = mpl.lines.Line2D(
+            [], [],
+            color=color,
+            marker='s',
+            markeredgecolor=color,
+            markerfacecolor=color,
+            markersize=markersize
+        )
+
+        no_label = mpl.lines.Line2D(
+            [], [],
+            color='none',
+            marker='s',
+            markersize=0
+        )
+
         list_of_lines.extend([no_label, closed_label, open_label])
 
-        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
-                          symbol_list=symbol_list, is_charge=True,
-                          plot_style=plot_style)
+        plot_summary_data(
+            ax, df_c,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=True,
+            plot_style=plot_style
+        )
 
         # setting axes labels
         ax.set_xlabel("cycle")
         ax.set_ylabel("capacity")
         # adding legend
         logger.debug("trying to add legends " + str(labels))
-        fig.legend(handles=list_of_lines, labels=labels,
-                   bbox_to_anchor=(1.02, 1.1), loc=2,
-                   # bbox_transform=plt.gcf().transFigure,
-                   bbox_transform=ax.transAxes,
-                   numpoints=1,
-                   ncol=1, labelspacing=0.,
-                   prop={"size": 10})
+        fig.legend(
+            handles=list_of_lines,
+            labels=labels,
+            bbox_to_anchor=(1.02, 1.1),
+            loc=2,
+            # bbox_transform=plt.gcf().transFigure,
+            bbox_transform=ax.transAxes,
+            numpoints=1,
+            ncol=1, labelspacing=0.,
+            prop={"size": 10}
+        )
 
         if save:
             extension = prms.Batch["fig_extension"]
