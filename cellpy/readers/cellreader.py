@@ -1709,7 +1709,8 @@ class CellpyData(object):
 
     def _export_cycles(self, dataset_number, setname=None,
                        sep=None, outname=None, shifted=False, method=None,
-                       shift=0.0):
+                       shift=0.0,
+                       last_cycle=None):
         # export voltage - capacity curves to .csv file
 
         self.logger.debug("exporting cycles")
@@ -1720,10 +1721,12 @@ class CellpyData(object):
             outname = setname + lastname
 
         list_of_cycles = self.get_cycle_numbers(dataset_number=dataset_number)
-        number_of_cycles = len(list_of_cycles)
-        txt = "you have %i cycles" % number_of_cycles
-        self.logger.debug(txt)
-
+        self.logger.debug(f"you have {len(list_of_cycles)} cycles")
+        if last_cycle is not None:
+            list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
+            self.logger.debug(f"only processing up to cycle {last_cycle}")
+            self.logger.debug(f"you have {len(list_of_cycles)}"
+                              f"cycles to process")
         out_data = []
         c = None
         if not method:
@@ -1818,7 +1821,8 @@ class CellpyData(object):
 
     def to_csv(self, datadir=None, sep=None, cycles=False, raw=True,
                summary=True, shifted=False,
-               method=None, shift=0.0):
+               method=None, shift=0.0,
+               last_cycle=None):
         """Saves the data as .csv file(s).
 
         Args:
@@ -1838,6 +1842,7 @@ class CellpyData(object):
                 "forth-and-forth" - discharge (or charge) also starts at 0 (or
                     shift if not shift=0.0)
             shift: start-value for charge (or discharge)
+            last_cycle: process only up to this cycle (if not None).
 
         Returns: Nothing
 
@@ -1891,7 +1896,8 @@ class CellpyData(object):
                     self._export_cycles(outname=outname_cycles,
                                         dataset_number=dataset_number,
                                         sep=sep, shifted=shifted,
-                                        method=method, shift=shift)
+                                        method=method, shift=shift,
+                                        last_cycle=last_cycle)
 
     def save(self, filename, dataset_number=None, force=False, overwrite=True,
              extension="h5"):

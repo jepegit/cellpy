@@ -185,11 +185,15 @@ def _fix_groups(groups):
     return _groups
 
 
-def _extract_dqdv(cell_data, extract_func):
+def _extract_dqdv(cell_data, extract_func, last_cycle):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
     from cellpy.utils.ica import dqdv
     list_of_cycles = cell_data.get_cycle_numbers()
+    if last_cycle is not None:
+        list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
+        logger.debug(f"only processing up to cycle {last_cycle}")
+        logger.debug(f"you have {len(list_of_cycles)} cycles to process")
     out_data = []
     for cycle in list_of_cycles:
         c, v = extract_func(cycle)
@@ -1064,15 +1068,16 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         if export_raw:
             print("...exporting data....")
             logger.info("exporting csv")
-            # TODO: implement last_cycle
             cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles,
-                             shifted=shifted_cycles, raw=export_raw)
+                             shifted=shifted_cycles, raw=export_raw,
+                             last_cycle=last_cycle)
 
         if do_export_dqdv:
             logger.info("exporting dqdv")
             try:
                 # TODO: implement last_cycle
-                export_dqdv(cell_data, savedir=raw_dir, sep=sep)
+                export_dqdv(cell_data, savedir=raw_dir, sep=sep,
+                            last_cycle=last_cycle)
             except Exception as e:
                 print("...could not make/export dq/dv data...")
                 logger.debug("Failed to make/export dq/dv data (%s): %s" % (indx, str(e)))
@@ -1344,13 +1349,14 @@ def create_labels(label, *args):
     return _remove_date(label)
 
 
-def export_dqdv(cell_data, savedir, sep):
+def export_dqdv(cell_data, savedir, sep, last_cycle=None):
     """Exports dQ/dV data from a CellpyData instance.
 
     Args:
         cell_data: CellpyData instance
         savedir: path to the folder where the files should be saved
         sep: separator for the .csv-files.
+        last_cycle: only export up to this cycle (if not None)
     """
     logger.info("Exporting dQ/dV")
     filename = cell_data.dataset.loaded_from
@@ -1369,7 +1375,7 @@ def export_dqdv(cell_data, savedir, sep):
     logger.debug("%s: you have %i cycles" % (filename, number_of_cycles))
 
     # extracting charge
-    out_data = _extract_dqdv(cell_data, cell_data.get_ccap)
+    out_data = _extract_dqdv(cell_data, cell_data.get_ccap, last_cycle)
     logger.debug("extracted ica for charge")
     try:
         _save_multi(data=out_data, file_name=outname_charge, sep=sep)
