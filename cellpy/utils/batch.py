@@ -347,6 +347,7 @@ class Batch(object):
         self.force_raw_file = False
         self.force_cellpy_file = False
         self.use_cellpy_stat_file = None
+        self.last_cycle = None
 
         self._packable = ['name', 'project', 'batch_col', 'selected_summaries',
                           'output_format', 'time_stamp', 'project_dir',
@@ -504,7 +505,8 @@ class Batch(object):
                                                             export_ica=self.export_ica,
                                                             save=self.save_cellpy_file,
                                                             use_cellpy_stat_file=use_cellpy_stat_file,
-                                                            parent_level=parent_level)
+                                                            parent_level=parent_level,
+                                                            last_cycle=self.last_cycle)
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
@@ -937,7 +939,9 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
                        export_cycles=False, shifted_cycles=False,
                        export_raw=True,
                        export_ica=False, save=True, use_cellpy_stat_file=False,
-                       parent_level="CellpyData"):
+                       parent_level="CellpyData",
+                       last_cycle=None,
+                       ):
     """Reads and saves cell data defined by the info-DataFrame.
 
     The function iterates through the ``info_df`` and loads data from the runs.
@@ -1060,12 +1064,14 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         if export_raw:
             print("...exporting data....")
             logger.info("exporting csv")
+            # TODO: implement last_cycle
             cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles,
                              shifted=shifted_cycles, raw=export_raw)
 
         if do_export_dqdv:
             logger.info("exporting dqdv")
             try:
+                # TODO: implement last_cycle
                 export_dqdv(cell_data, savedir=raw_dir, sep=sep)
             except Exception as e:
                 print("...could not make/export dq/dv data...")
