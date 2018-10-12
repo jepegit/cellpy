@@ -1189,6 +1189,7 @@ class CellpyData(object):
     # noinspection PyPep8Naming
     def _extract_step_values(self, f):
         # ['cycle', 'step',
+        # 'no', 'time'
         # 'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta',
         #  'I_rate',
         # 'V_avr', 'V_std', 'V_max', 'V_min', 'V_start', 'V_end', 'V_delta',
@@ -1199,6 +1200,7 @@ class CellpyData(object):
         current_hdtxt = self.headers_normal['current_txt']
         voltage_hdtxt = self.headers_normal['voltage_txt']
         steptime_hdtxt = self.headers_normal['step_time_txt']
+        point_hdtx = self.headers_normal['data_point_txt']
         ir_hdtxt = self.headers_normal['internal_resistance_txt']
         ir_change_hdtxt = self.headers_step_table["internal_resistance_change"]
         charge_hdtxt = self.headers_normal['charge_capacity_txt']
@@ -1210,6 +1212,11 @@ class CellpyData(object):
         t_start = f.iloc[0][steptime_hdtxt]
         t_end = f.iloc[-1][steptime_hdtxt]
         t_delta = t_end - t_start  # OBS! will be used as denominator
+
+        #--data-point-
+        n_start = f.iloc[0][point_hdtx]
+        n_end = f.iloc[-1][point_hdtx]
+        n_delta = n_end - n_start + 1
 
         # ---current-
         I_avr = f[current_hdtxt].mean()
@@ -1294,11 +1301,14 @@ class CellpyData(object):
         IR_pct_change = f.iloc[0][ir_change_hdtxt]
 
         # ---output--
-        out = [I_avr, I_std, I_max, I_min, I_start, I_end, I_delta, I_rate,
-               V_avr, V_std, V_max, V_min, V_start, V_end, V_delta, V_rate,
-               C_avr, C_std, C_max, C_min, C_start, C_end, C_delta, C_rate,
-               D_avr, D_std, D_max, D_min, D_start, D_end, D_delta, D_rate,
-               IR, IR_pct_change, ]
+        out = [
+            n_start, n_end, n_delta, t_start, t_end, t_delta,
+            I_avr, I_std, I_max, I_min, I_start, I_end, I_delta, I_rate,
+            V_avr, V_std, V_max, V_min, V_start, V_end, V_delta, V_rate,
+            C_avr, C_std, C_max, C_min, C_start, C_end, C_delta, C_rate,
+            D_avr, D_std, D_max, D_min, D_start, D_end, D_delta, D_rate,
+            IR, IR_pct_change,
+        ]
         return out
 
     def load_step_specifications(self, file_name, short=False,
@@ -1353,27 +1363,12 @@ class CellpyData(object):
         The format of the step_table is:
 
             index - cycleno - stepno -
+            Logging info (row numbers (min, max, delta), time (min, max, delta) -
             Current info (average, stdev, max, min, start, end, delta, rate) -
             Voltage info (average,  stdev, max, min, start, end, delta, rate) -
-            Type (from pre-defined list) -
+            Type (from pre-defined list) - SubType -
             Info
-
-        Header names (pr. 03.03.2016):
-
-            'cycle', 'step',
-            'I_avr', 'I_std', 'I_max', 'I_min',
-                 'I_start', 'I_end', 'I_delta', 'I_rate',
-            'V_avr'...,
-            'C_avr'...,
-            'D_avr'...,
-            'IR','IR_pct_change',
-            'type', 'info'
-
-        8.12.2016: added sub_step, sub_type, and pre_time, pre_point
-        Remark! x_delta is given in percentage.
         """
-        # TODO: need to implement newly added columns
-        # (strategy: work with empty cols first)
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -1402,7 +1397,6 @@ class CellpyData(object):
 
         # --- defining column names ---
         # (should probably migrate this to own function and add to self)
-        columns = [step_table_txt_cycle, step_table_txt_step]
 
         columns_end = [headers_step_table["post_mean"],
                        headers_step_table["post_std"],
@@ -1432,22 +1426,28 @@ class CellpyData(object):
         columns_time = [headers_step_table["pre_time"] +
                         x for x in columns_end_limited]
 
+        columns = [step_table_txt_cycle, step_table_txt_step]
+        columns.append(step_table_txt_sub_step)
+        pre_cols = len(columns)
+
+        columns.extend(columns_point)
+        columns.extend(columns_time)
         columns.extend(columns_I)
         columns.extend(columns_V)
         columns.extend(columns_charge)
         columns.extend(columns_discharge)
 
+
         columns.append(step_table_txt_ir)
         columns.append(step_table_txt_ir_change)
+        middle_cols = len(columns) - pre_cols
 
         columns.append(step_table_txt_type)
         columns.append(step_table_txt_info)
 
-        # CONTINUE FROM HERE:
-        # columns.extend(columns_point)
-        # columns.extend(columns_time)
-        # columns.append(step_table_txt_sub_step)
-        # columns.append(step_table_txt_sub_type)
+        columns.append(step_table_txt_sub_type)
+
+        post_cols = len(columns) - pre_cols - middle_cols
 
         # --- adding pct change col(s)-----
         df = self.datasets[dataset_number].dfdata
@@ -1457,9 +1457,6 @@ class CellpyData(object):
         df = self.datasets[dataset_number].dfdata
         number_of_rows = df.groupby([cycle_index_header,
                                      step_index_header]).size().shape[0]
-        # number_of_cols = len(columns)
-        # print "number of rows:",
-        # print number_of_rows
 
         # --- creating it ----
         index = np.arange(0, number_of_rows)
@@ -1467,8 +1464,6 @@ class CellpyData(object):
 
         # ------------------- finding cycle numbers ---------------------------
         list_of_cycles = df[cycle_index_header].unique()
-        # print "list of cycles:"
-        # print list_of_cycles
 
         # ------------------ iterating and populating step_table --------------
         counter = 0
@@ -1477,18 +1472,14 @@ class CellpyData(object):
             df_cycle = df[mask_cycle]
             steps = df_cycle[step_index_header].unique()
             for step in steps:
-                # info = "None"
                 mask_step = df_cycle[step_index_header] == step
                 df_step = df_cycle[mask_step]
-                # print "checking cycle %i - step %i" % (cycle,step)
                 result = self._extract_step_values(df_step)
-
-                # inserting into step_table
                 df_steps.iloc[counter][step_table_txt_cycle] = cycle
                 df_steps.iloc[counter][step_table_txt_step] = step
-                # df_steps.iloc[counter]["info"] = info
-                df_steps.iloc[counter, 2:-2] = result
-
+                # inserting sub-step number for future use
+                df_steps.iloc[counter][step_table_txt_sub_step] = 0
+                df_steps.iloc[counter, pre_cols:-post_cols] = result
                 counter += 1
 
         average_current_txt = headers_step_table["pre_current"] + \
@@ -1506,12 +1497,7 @@ class CellpyData(object):
         delta_discharge_txt = headers_step_table["pre_discharge"] + \
                               headers_step_table["post_delta"]
 
-        # max_average_current = df_steps[average_current_txt].max()
-        #        print "max average current:"
-        #        print max_average_current
-        #
 
-        # - setting limits
         current_limit_value_hard = self.raw_limits["current_hard"]
         current_limit_value_soft = self.raw_limits["current_soft"]
         stable_current_limit_hard = self.raw_limits["stable_current_hard"]
@@ -1522,38 +1508,32 @@ class CellpyData(object):
         stable_charge_limit_soft = self.raw_limits["stable_charge_soft"]
         ir_change_limit = self.raw_limits["ir_change"]
 
-        #
-        #        minimum_change_limit = 2.0 # percent
-        #        minimum_change_limit_voltage_cv = 5.0 # percent
-        #        minimum_change_limit_current_cv = 10.0 # percent
-        #        minimum_stable_limit = 0.001 # percent
-        #        typicall_current_max = 0.001 # A
-        #        minimum_ierror_limit = 0.0001 # A
+        mask_no_current_hard = (
+            df_steps[max_current_txt].abs() + df_steps[min_current_txt].abs()
+        ) < current_limit_value_hard
 
-        # --- no current
-        # ocv
+        mask_no_current_soft = (
+            df_steps[max_current_txt].abs() + df_steps[min_current_txt].abs()
+        ) < current_limit_value_soft
 
-        # no current - no change in charge and discharge
-        mask_no_current_hard = (df_steps[max_current_txt].abs() + df_steps[
-            min_current_txt].abs()) < current_limit_value_hard
-        mask_no_current_soft = (df_steps[max_current_txt].abs() + df_steps[
-            min_current_txt].abs()) < current_limit_value_soft
+        mask_voltage_down = df_steps[delta_voltage_txt] < -stable_voltage_limit_hard
 
-        mask_voltage_down = df_steps[delta_voltage_txt] < \
-                            -stable_voltage_limit_hard
-        mask_voltage_up = df_steps[delta_voltage_txt] > \
-                          stable_voltage_limit_hard
-        mask_voltage_stable = df_steps[delta_voltage_txt].abs() < \
-                              stable_voltage_limit_hard
+        mask_voltage_up = df_steps[delta_voltage_txt] > stable_voltage_limit_hard
+
+        mask_voltage_stable = df_steps[delta_voltage_txt].abs() < stable_voltage_limit_hard
 
         mask_current_down = df_steps[delta_current_txt] < \
                             -stable_current_limit_soft
+
         mask_current_up = df_steps[delta_current_txt] > \
                           stable_current_limit_soft
+
         mask_current_negative = df_steps[average_current_txt] < \
                                 -current_limit_value_hard
+
         mask_current_positive = df_steps[average_current_txt] > \
                                 current_limit_value_hard
+
         mask_galvanostatic = df_steps[delta_current_txt].abs() < \
                              stable_current_limit_soft
 
@@ -1595,19 +1575,14 @@ class CellpyData(object):
                                  "info"] = row.info
 
         else:
-            # --- ocv -------
             df_steps.loc[mask_no_current_hard & mask_voltage_up,
                          step_table_txt_type] = 'ocvrlx_up'
             df_steps.loc[mask_no_current_hard & mask_voltage_down,
                          step_table_txt_type] = 'ocvrlx_down'
 
-            # --- charge and discharge ----
-            # df_steps.loc[mask_galvanostatic & mask_current_negative,
-            # step_table_txt_type] = 'discharge'
             df_steps.loc[mask_discharge_changed & mask_current_negative,
                          step_table_txt_type] = 'discharge'
-            # df_steps.loc[mask_galvanostatic & mask_current_positive,
-            # step_table_txt_type] = 'charge'
+
             df_steps.loc[mask_charge_changed & mask_current_positive,
                          step_table_txt_type] = 'charge'
 
@@ -1621,6 +1596,9 @@ class CellpyData(object):
             df_steps.loc[mask_no_change, step_table_txt_type] = 'ir'
             # assumes that IR is stored in just one row
 
+            # --- sub-step-txt -----------
+            df_steps[step_table_txt_sub_type] = None
+
             # --- CV steps ----
 
             # "voltametry_charge"
@@ -1632,7 +1610,16 @@ class CellpyData(object):
             # mask_discharge_changed
             # mask_voltage_down
 
-        # --- finally ------
+        # fixing dtype (remove this when original dtypes are fixed)
+        for col in df_steps.columns:
+            if col not in [
+                step_table_txt_sub_type,
+                step_table_txt_info,
+                step_table_txt_type
+            ]:
+                df_steps[col] = df_steps[col].apply(pd.to_numeric)
+            else:
+                df_steps[col] = df_steps[col].astype('str')
 
         self.datasets[dataset_number].step_table = df_steps
         self.datasets[dataset_number].step_table_made = True
