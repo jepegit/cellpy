@@ -12,7 +12,7 @@ import pandas as pd
 from cellpy.readers.core import FileID, DataSet, check64bit, humanize_bytes
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
-import cellpy.parameters.prms as prms
+from cellpy.parameters import prms
 
 # Select odbc module
 ODBC = prms._odbc

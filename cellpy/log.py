@@ -42,8 +42,10 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
                              "debug_file_handler"]:
             try:
                 file_name = config["handlers"][file_handler]["filename"]
-                print(f"Filename: {file_name}")
-                print(f"Full path: {os.path.join(log_dir,file_name)}")
+                logging.info(f"Filename: {file_name}")
+                logging.info(f"Full path: {os.path.join(log_dir,file_name)}")
+                # print(f"Filename: {file_name}")
+                # print(f"Full path: {os.path.join(log_dir,file_name)}")
 
                 config["handlers"][file_handler][
                     "filename"] = os.path.join(log_dir,

@@ -4,12 +4,18 @@ import pandas as pd
 
 
 class BaseExperiment:
+    """An experiment contains experimental data and meta-data."""
     def __init__(self):
         self.journal = None
         self.data = None
 
 
 class BaseJournal:
+    """A journal keeps track of the details of the experiment.
+
+    The journal should at a mimnimum conain information about the name and
+    project the experiment has."""
+
     def __init__(self):
         self.pages = None  # pandas.DataFrame
         self.name = None
@@ -34,6 +40,7 @@ class BaseJournal:
 
 
 class BaseExporter:
+    """An exporter ..."""
     def __init__(self):
         self.engines = None
         self.dumpers = None
@@ -60,23 +67,28 @@ class BaseAnalyzer:
 
 # Engines
 def cycles_engine():
+    """engine to extract cycles"""
     pass
 
 
 def dq_dv_engine():
+    """engine that performs incremental analysis of the cycle-data"""
     pass
 
 
 # Dumpers
 def csv_dumper():
+    """dump data to csv"""
     pass
 
 
 def excel_dumper():
+    """dump data to excel xlxs-format"""
     pass
 
 
 def origin_dumper():
+    """dump data to a format suitable for use in OriginLab"""
     pass
 
 

@@ -11,7 +11,7 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from cellpy.parameters import prms as prms
+from cellpy.parameters import prms
 from cellpy import cellreader, dbreader, filefinder
 
 logger = logging.getLogger(__name__)

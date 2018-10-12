@@ -11,7 +11,7 @@ import tempfile
 import shutil
 import logging
 import warnings
-import cellpy.parameters.prms as prms
+from cellpy.parameters import prms
 
 logger = logging.getLogger(__name__)
 

@@ -271,11 +271,11 @@ class CellpyData(object):
         """
 
         if directory is None:
-            print("no directory name given")
+            self.logger.info("no directory name given")
             return
         if not os.path.isdir(directory):
-            print(directory)
-            print("directory does not exist")
+            self.logger.info(directory)
+            self.logger.info("directory does not exist")
             return
         self.raw_datadir = directory
 
@@ -296,10 +296,10 @@ class CellpyData(object):
         """
 
         if directory is None:
-            print("no directory name given")
+            self.logger.info("no directory name given")
             return
         if not os.path.isdir(directory):
-            print("directory does not exist")
+            self.logger.info("directory does not exist")
             return
         self.cellpy_datadir = directory
 
@@ -358,8 +358,7 @@ class CellpyData(object):
             fid = FileID(f)
             self.logger.debug(fid)
             if fid.name is None:
-                print("file does not exist:")
-                print(f)
+                warnings.warn(f"file does not exist: {f}")
                 if abort_on_missing:
                     sys.exit(-1)
             else:
@@ -1113,9 +1112,9 @@ class CellpyData(object):
                 self.make_step_table(dataset_number=dataset_number)
 
             else:
-                print("ERROR! Cannot use get_steps: create step_table first")
-                print(" you could use find_step_numbers method instead")
-                print(" (but I don't recommend it)")
+                self.logger.info("ERROR! Cannot use get_steps: create step_table first")
+                self.logger.info(" you could use find_step_numbers method instead")
+                self.logger.info(" (but I don't recommend it)")
                 return None
 
         # check if steptype is valid
@@ -1691,10 +1690,10 @@ class CellpyData(object):
         # print d.columns
 
         if not any(test.dfdata.columns == c_txt):
-            print("error - cannot find %s" % c_txt)
+            self.logger.info("error - cannot find %s" % c_txt)
             sys.exit(-1)
         if not any(test.dfdata.columns == s_txt):
-            print("error - cannot find %s" % s_txt)
+            self.logger.info("error - cannot find %s" % s_txt)
             sys.exit(-1)
 
         v = test.dfdata[(test.dfdata[c_txt] == cycle) & (test.dfdata[s_txt] == step)]
@@ -1710,7 +1709,8 @@ class CellpyData(object):
 
     def _export_cycles(self, dataset_number, setname=None,
                        sep=None, outname=None, shifted=False, method=None,
-                       shift=0.0):
+                       shift=0.0,
+                       last_cycle=None):
         # export voltage - capacity curves to .csv file
 
         self.logger.debug("exporting cycles")
@@ -1721,10 +1721,12 @@ class CellpyData(object):
             outname = setname + lastname
 
         list_of_cycles = self.get_cycle_numbers(dataset_number=dataset_number)
-        number_of_cycles = len(list_of_cycles)
-        txt = "you have %i cycles" % number_of_cycles
-        self.logger.debug(txt)
-
+        self.logger.debug(f"you have {len(list_of_cycles)} cycles")
+        if last_cycle is not None:
+            list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
+            self.logger.debug(f"only processing up to cycle {last_cycle}")
+            self.logger.debug(f"you have {len(list_of_cycles)}"
+                              f"cycles to process")
         out_data = []
         c = None
         if not method:
@@ -1755,8 +1757,8 @@ class CellpyData(object):
                 out_data.append(c)
                 out_data.append(v)
                 txt = "extracted cycle %i" % cycle
-                self.logger.info(txt)
-            except ImportError as e:
+                self.logger.debug(txt)
+            except IndexError as e:
                 txt = "could not extract cycle %i" % cycle
                 self.logger.info(txt)
                 self.logger.debug(e)
@@ -1764,7 +1766,7 @@ class CellpyData(object):
         # Saving cycles in one .csv file (x,y,x,y,x,y...)
         # print "saving the file with delimiter '%s' " % (sep)
         self.logger.debug("writing cycles to file")
-        with open(outname, "w") as f:
+        with open(outname, "w", newline='') as f:
             writer = csv.writer(f, delimiter=sep)
             writer.writerows(itertools.zip_longest(*out_data))
             # star (or asterix) means transpose (writing cols instead of rows)
@@ -1819,7 +1821,8 @@ class CellpyData(object):
 
     def to_csv(self, datadir=None, sep=None, cycles=False, raw=True,
                summary=True, shifted=False,
-               method=None, shift=0.0):
+               method=None, shift=0.0,
+               last_cycle=None):
         """Saves the data as .csv file(s).
 
         Args:
@@ -1839,6 +1842,7 @@ class CellpyData(object):
                 "forth-and-forth" - discharge (or charge) also starts at 0 (or
                     shift if not shift=0.0)
             shift: start-value for charge (or discharge)
+            last_cycle: process only up to this cycle (if not None).
 
         Returns: Nothing
 
@@ -1846,19 +1850,16 @@ class CellpyData(object):
 
         if sep is None:
             sep = self.sep
-        txt = "\n\n"
-        txt += "---------------------------------------------------------------"
-        txt += "Saving data"
-        txt += "---------------------------------------------------------------"
-        self.logger.info(txt)
+
+        self.logger.info("saving to csv (CellpyData.to_csv")
 
         dataset_number = -1
         for data in self.datasets:
             dataset_number += 1
             if not self._is_not_empty_dataset(data):
-                print("to_csv -")
-                print("empty test [%i]" % dataset_number)
-                print("not saved!")
+                self.logger.info("to_csv -")
+                self.logger.info("empty test [%i]" % dataset_number)
+                self.logger.info("not saved!")
             else:
                 if isinstance(data.loaded_from, (list, tuple)):
                     txt = "merged file"
@@ -1895,7 +1896,8 @@ class CellpyData(object):
                     self._export_cycles(outname=outname_cycles,
                                         dataset_number=dataset_number,
                                         sep=sep, shifted=shifted,
-                                        method=method, shift=shift)
+                                        method=method, shift=shift,
+                                        last_cycle=last_cycle)
 
     def save(self, filename, dataset_number=None, force=False, overwrite=True,
              extension="h5"):
@@ -1916,7 +1918,7 @@ class CellpyData(object):
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
-            print("Saving test failed!")
+            self.logger.info("Saving test failed!")
             self._report_empty_dataset()
             return
 
@@ -1924,9 +1926,8 @@ class CellpyData(object):
         dfsummary_made = test.dfsummary_made  #
 
         if not dfsummary_made and not force:
-            print("You should not save datasets without making a "
-                  "summary first!")
-            print("If you really want to do it, use save with force=True")
+            self.logger.info("You should not save datasets without making a summary first!")
+            self.logger.info("If you really want to do it, use save with force=True")
         else:
             # check extension
             if not os.path.splitext(filename)[-1]:
@@ -1963,7 +1964,7 @@ class CellpyData(object):
                 self.logger.debug("trying to put dfsummary")
                 store.put("CellpyData/dfsummary", test.dfsummary)
 
-                self.logger.info("trying to put step_table")
+                self.logger.debug("trying to put step_table")
                 if not test.step_table_made:
                     self.logger.debug(" no step_table made")
                 else:
@@ -1976,8 +1977,8 @@ class CellpyData(object):
                 store.close()
                 # del store
             else:
-                print("save (hdf5): file exist - did not save", end=' ')
-                print(outfile_all)
+                self.logger.info("save (hdf5): file exist - did not save", end=' ')
+                self.logger.info(outfile_all)
 
     # --------------helper-functions--------------------------------------------
 
@@ -2079,7 +2080,7 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
         if not self.datasets[set_number].mass_given:
-            print("no mass")
+            self.logger.info("no mass")
         return self.datasets[set_number].mass
 
     def get_dataset(self, n=0):
@@ -2400,6 +2401,8 @@ class CellpyData(object):
             if method == "back-and-forth":
                 _last = np.amax(_first_step_c)
                 # should change amax to last point
+                _first = None
+                _new_first = None
                 if _last_step_c is not None:
                     _last_step_c = _last - _last_step_c + prev_end
                 else:
@@ -2409,7 +2412,7 @@ class CellpyData(object):
                     _first_step_c += prev_end
                     _new_first = _first_step_c.iat[0]
                 else:
-                    self.logger.debug("no first charge step found")
+                    self.logger.debug("probably empty (_first_step_c is None)")
                 self.logger.debug(f"current shifts used: prev_end = {prev_end}")
                 self.logger.debug(f"shifting start from {_first} to "
                                   f"{_new_first}")
@@ -2722,9 +2725,9 @@ class CellpyData(object):
         cyclenos = self.get_cycle_numbers(dataset_number=dataset_number)
         summarydata = self.get_summary(dataset_number=dataset_number)
         if summarydata is None:
-            print("Warning! no summarydata made yet (get_diagnostics_plots "
+            self.logger.info("Warning! no summarydata made yet (get_diagnostics_plots "
                   "works on summarydata)")
-            print("returning None")
+            self.logger.info("returning None")
             return None
 
         discharge_txt = self.headers_summary["discharge_capacity"]
@@ -2814,22 +2817,22 @@ class CellpyData(object):
             self.datasets[dataset_number].mass = value
             self.datasets[dataset_number].mass_given = True
         except AttributeError as e:
-            print("This test is empty")
-            print(e)
+            self.logger.info("This test is empty")
+            self.logger.info(e)
 
     def _set_tot_mass(self, dataset_number, value):
         try:
             self.datasets[dataset_number].tot_mass = value
         except AttributeError as e:
-            print("This test is empty")
-            print(e)
+            self.logger.info("This test is empty")
+            self.logger.info(e)
 
     def _set_nom_cap(self, dataset_number, value):
         try:
             self.datasets[dataset_number].nom_cap = value
         except AttributeError as e:
-            print("This test is empty")
-            print(e)
+            self.logger.info("This test is empty")
+            self.logger.info(e)
 
     def _set_run_attribute(self, attr, vals, dataset_number=None,
                            validated=None):
@@ -2843,8 +2846,8 @@ class CellpyData(object):
 
         number_of_tests = len(self.datasets)
         if not number_of_tests:
-            print("no datasets have been loaded yet")
-            print("cannot set mass before loading datasets")
+            self.logger.info("no datasets have been loaded yet")
+            self.logger.info("cannot set mass before loading datasets")
             sys.exit(-1)
 
         if not dataset_number:
@@ -3119,7 +3122,7 @@ class CellpyData(object):
                 txt = "creating summary for file "
                 test = self.datasets[j]
                 if not self._is_not_empty_dataset(test):
-                    print("empty test %i" % j)
+                    self.logger.info("empty test %i" % j)
                     return
                 if isinstance(test.loaded_from, (list, tuple)):
                     for f in test.loaded_from:
@@ -3421,13 +3424,10 @@ class CellpyData(object):
 
         if find_ocv and not self.load_only_summary:
             # should remove this option
-            print(20 * "*")
-            print("CONGRATULATIONS")
-            print("-though this would never be run!")
-            print("-find_ocv in make_summary")
-            print("  this is a stupid routine that can be implemented "
-                  "much better!")
-            print(20 * "*")
+            self.logger.info("CONGRATULATIONS")
+            self.logger.info("-though this would never be run!")
+            self.logger.info("-find_ocv in make_summary")
+            self.logger.info("  this is a stupid routine that can be implemented much better!")
             do_ocv_1 = True
             do_ocv_2 = True
 
@@ -3898,7 +3898,7 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
 
         delimiter = ";"
         print("saving the file with delimiter '%s' " % delimiter)
-        with open(outfile, "w") as f:
+        with open(outfile, "w", newline='') as f:
             writer = csv.writer(f, delimiter=delimiter)
             writer.writerows(itertools.zip_longest(*out_data))
             # star (or asterix) means transpose (writing cols instead of rows)

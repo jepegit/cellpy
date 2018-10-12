@@ -4,7 +4,7 @@ import os
 import glob
 import pathlib
 import warnings
-import cellpy.parameters.prms as prms
+from cellpy.parameters import prms
 import logging
 
 logger = logging.getLogger(__name__)
