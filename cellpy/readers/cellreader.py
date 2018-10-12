@@ -2008,8 +2008,13 @@ class CellpyData(object):
     # --------------helper-functions--------------------------------------------
     @staticmethod
     def _fix_dtype_step_table(dataset):
+        hst = get_headers_step_table()
         for col in dataset.step_table.columns:
-            if not col == "type":
+            if col not in [
+                hst["cycle"],
+                hst["sub_step"],
+                hst["info"],
+            ]:
                 dataset.step_table[col] = dataset.step_table[col].\
                     apply(pd.to_numeric)
             else:
