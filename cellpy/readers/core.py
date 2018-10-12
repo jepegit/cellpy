@@ -179,11 +179,11 @@ class DataSet(object):
         txt += "loaded from file\n"
         if isinstance(self.loaded_from, (list, tuple)):
             for f in self.loaded_from:
-                txt += f
+                txt += str(f)
                 txt += "\n"
 
         else:
-            txt += self.loaded_from
+            txt += str(self.loaded_from)
             txt += "\n"
         txt += "   GLOBAL\n"
         txt += f"material:            {self.material}\n"
