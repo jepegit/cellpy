@@ -1923,64 +1923,111 @@ class CellpyData(object):
             return
 
         test = self.get_dataset(dataset_number)
-        dfsummary_made = test.dfsummary_made  #
+
+        dfsummary_made = test.dfsummary_made
 
         if not dfsummary_made and not force:
-            self.logger.info("You should not save datasets without making a summary first!")
-            self.logger.info("If you really want to do it, use save with force=True")
+            self.logger.info(
+                "You should not save datasets "
+                "without making a summary first!"
+            )
+            self.logger.info(
+                "If you really want to do it, "
+                "use save with force=True"
+            )
+            return
+
+        step_table_made = test.step_table_made
+        if not step_table_made and not force and not self.ensure_step_table:
+            self.logger.info(
+                "You should not save datasets "
+                "without making a step-table first!"
+            )
+            self.logger.info(
+                "If you really want to do it, "
+                "use save with force=True"
+            )
+            return
+
+        if not os.path.splitext(filename)[-1]:
+            outfile_all = filename + "." + extension
         else:
-            # check extension
-            if not os.path.splitext(filename)[-1]:
-                outfile_all = filename + "." + extension
+            outfile_all = filename
+
+        if os.path.isfile(outfile_all):
+            self.logger.debug("Outfile exists")
+            if overwrite:
+                self.logger.debug("overwrite = True")
+                os.remove(outfile_all)
             else:
-                outfile_all = filename
-            # check if file exists
-            write_file = True
-            if os.path.isfile(outfile_all):
-                self.logger.debug("Outfile exists")
-                if overwrite:
-                    self.logger.debug("overwrite = True")
-                    os.remove(outfile_all)
-                else:
-                    write_file = False
-
-            if write_file:
-                if self.ensure_step_table:
-                    self.logger.debug("ensure_step_table is on")
-                    if not test.step_table_made:
-                        self.logger.debug("save: creating step table")
-                        self.make_step_table(dataset_number=dataset_number)
-                self.logger.debug("trying to make infotable")
-                # modify this:
-                infotbl, fidtbl = \
-                    self._create_infotable(dataset_number=dataset_number)
-                self.logger.debug("trying to save to hdf5")
-                txt = "\nHDF5 file: %s" % outfile_all
-                self.logger.debug(txt)
-                store = pd.HDFStore(outfile_all)
-                self.logger.debug("trying to put dfdata")
-                # jepe: fix (get name from class):
-                store.put("CellpyData/dfdata", test.dfdata)
-                self.logger.debug("trying to put dfsummary")
-                store.put("CellpyData/dfsummary", test.dfsummary)
-
-                self.logger.debug("trying to put step_table")
-                if not test.step_table_made:
-                    self.logger.debug(" no step_table made")
-                else:
-                    store.put("CellpyData/step_table", test.step_table)
-
-                self.logger.debug("trying to put infotbl")
-                store.put("CellpyData/info", infotbl)
-                self.logger.debug("trying to put fidtable")
-                store.put("CellpyData/fidtable", fidtbl)
-                store.close()
-                # del store
-            else:
-                self.logger.info("save (hdf5): file exist - did not save", end=' ')
+                self.logger.info(
+                    "save (hdf5): file exist - did not save",
+                    end=' '
+                )
                 self.logger.info(outfile_all)
+                return
+
+        if self.ensure_step_table:
+            self.logger.debug("ensure_step_table is on")
+            if not test.step_table_made:
+                self.logger.debug("save: creating step table")
+                self.make_step_table(dataset_number=dataset_number)
+
+        # This method can probalby be updated using pandas transpose trick
+        self.logger.debug("trying to make infotable")
+        infotbl, fidtbl = self._create_infotable(
+            dataset_number=dataset_number
+        )
+        root = prms._cellpyfile_root
+
+        self.logger.debug("trying to save to hdf5")
+        txt = "\nHDF5 file: %s" % outfile_all
+        self.logger.debug(txt)
+
+        store = pd.HDFStore(
+            outfile_all,
+            complib=prms._cellpyfile_complib,
+            complevel=prms._cellpyfile_complevel,
+        )
+
+        self.logger.debug("trying to put dfdata")
+        store.put(root + "/dfdata", test.dfdata,
+                  format=prms._cellpyfile_dfdata_format)
+
+        self.logger.debug("trying to put dfsummary")
+        store.put(root + "/dfsummary", test.dfsummary,
+                  format=prms._cellpyfile_dfsummary_format)
+
+        self.logger.debug("trying to put infotbl")
+        store.put(root + "/info", infotbl,
+                  format=prms._cellpyfile_infotable_format)
+
+        self.logger.debug("trying to put fidtable")
+        store.put(root + "/fidtable", fidtbl,
+                  format=prms._cellpyfile_fidtable_format)
+
+        self.logger.debug("trying to put step_table")
+        try:
+            store.put(root + "/step_table", test.step_table,
+                      format=prms._cellpyfile_stepdata_format)
+        except TypeError:
+            test = self._fix_dtype_step_table(test)
+            store.put(root + "/step_table", test.step_table,
+                      format=prms._cellpyfile_stepdata_format)
+
+        store.close()
+        # del store
 
     # --------------helper-functions--------------------------------------------
+    @staticmethod
+    def _fix_dtype_step_table(dataset):
+        for col in dataset.step_table.columns:
+            if not col == "type":
+                dataset.step_table[col] = dataset.step_table[col].\
+                    apply(pd.to_numeric)
+            else:
+                dataset.step_table[col] = dataset.step_table[col].astype('str')
+        return dataset
 
     def _cap_mod_summary(self, dfsummary, capacity_modifier="reset"):
         # modifies the summary table

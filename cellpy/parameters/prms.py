@@ -166,6 +166,15 @@ _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
 _search_for_odbc_driver = True
 
+_cellpyfile_root = "CellpyData"
+_cellpyfile_complevel = 1
+_cellpyfile_complib = None  # currentlty defaults to "zlib"
+_cellpyfile_dfdata_format = "table"
+_cellpyfile_dfsummary_format = "table"
+_cellpyfile_stepdata_format = "table"
+_cellpyfile_infotable_format = "fixed"
+_cellpyfile_fidtable_format = "fixed"
+
 # used during development for testing new features
 
 _res_chunk = 0
