@@ -110,10 +110,20 @@ headers_normal = box.Box(headers_normal)
 headers_step_table["test"] = "test"
 headers_step_table["cycle"] = "cycle"
 headers_step_table["step"] = "step"
+headers_step_table["step_time"] = "step_time"
 headers_step_table["sub_step"] = "sub_step"
 headers_step_table["type"] = "type"
 headers_step_table["sub_type"] = "sub_type"
 headers_step_table["info"] = "info"
+headers_step_table["voltage"] = "voltage"
+headers_step_table["current"] = "current"
+headers_step_table["charge"] = "charge"
+headers_step_table["discharge"] = "discharge"
+headers_step_table["point"] = "point"
+headers_step_table["internal_resistance"] = "ir"
+headers_step_table["internal_resistance_change"] = "ir_pct_change"
+
+
 headers_step_table["pre_current"] = "I_"
 headers_step_table["pre_voltage"] = "V_"
 headers_step_table["pre_charge"] = "Charge_"
@@ -128,8 +138,7 @@ headers_step_table["post_start"] = "start"
 headers_step_table["post_end"] = "end"
 headers_step_table["post_delta"] = "delta"
 headers_step_table["post_rate"] = "rate"
-headers_step_table["internal_resistance"] = "IR"
-headers_step_table["internal_resistance_change"] = "IR_pct_change"
+
 
 headers_step_table = box.Box(headers_step_table)
 
