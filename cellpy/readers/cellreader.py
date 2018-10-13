@@ -1325,7 +1325,7 @@ class CellpyData(object):
                         short=False,
                         dataset_number=None):
 
-        self.make_step_table_old(custom_step_definition,
+        self.make_step_table_new(custom_step_definition,
                         step_specifications,
                         short,
                         dataset_number)
@@ -1460,7 +1460,7 @@ class CellpyData(object):
         mask_charge_changed = df_steps.loc[:, (shdr.charge, "delta")].abs() > \
             stable_charge_limit_hard
 
-        mask_discharge_changed = df_steps.loc[:, (shdr.charge, "delta")].abs() > \
+        mask_discharge_changed = df_steps.loc[:, (shdr.discharge, "delta")].abs() > \
             stable_charge_limit_hard
 
         mask_no_change = (df_steps.loc[:, (shdr.voltage, "delta")] == 0) & \
@@ -1494,6 +1494,7 @@ class CellpyData(object):
                                  "info"] = row.info
 
         else:
+            self.logger.debug("masking and labelling steps")
             df_steps.loc[mask_no_current_hard & mask_voltage_up, shdr.type] = \
                 'ocvrlx_up'
 

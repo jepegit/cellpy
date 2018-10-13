@@ -124,20 +124,21 @@ headers_step_table["internal_resistance"] = "ir"
 headers_step_table["internal_resistance_change"] = "ir_pct_change"
 
 
-headers_step_table["pre_current"] = "I_"
-headers_step_table["pre_voltage"] = "V_"
-headers_step_table["pre_charge"] = "Charge_"
-headers_step_table["pre_discharge"] = "Discharge_"
-headers_step_table["pre_point"] = "datapoint_"
-headers_step_table["pre_time"] = "time_"
-headers_step_table["post_mean"] = "avr"
-headers_step_table["post_std"] = "std"
-headers_step_table["post_max"] = "max"
-headers_step_table["post_min"] = "min"
-headers_step_table["post_start"] = "start"
-headers_step_table["post_end"] = "end"
-headers_step_table["post_delta"] = "delta"
-headers_step_table["post_rate"] = "rate"
+# #fix this (old)
+# headers_step_table["pre_current"] = "I_"
+# headers_step_table["pre_voltage"] = "V_"
+# headers_step_table["pre_charge"] = "Charge_"
+# headers_step_table["pre_discharge"] = "Discharge_"
+# headers_step_table["pre_point"] = "datapoint_"
+# headers_step_table["pre_time"] = "time_"
+# headers_step_table["post_mean"] = "avr"
+# headers_step_table["post_std"] = "std"
+# headers_step_table["post_max"] = "max"
+# headers_step_table["post_min"] = "min"
+# headers_step_table["post_start"] = "start"  # first
+# headers_step_table["post_end"] = "end"  # last
+# headers_step_table["post_delta"] = "delta"
+# headers_step_table["post_rate"] = "rate"  # does not exist anymore
 
 
 headers_step_table = box.Box(headers_step_table)
