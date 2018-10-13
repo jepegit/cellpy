@@ -1188,100 +1188,6 @@ class CellpyData(object):
             out[cycle] = steplist
         return out
 
-    # noinspection PyPep8Naming
-    def _extract_step_values(self, f):
-        # ['cycle', 'step',
-        # 'no', 'time'
-        # 'I_avr', 'I_std', 'I_max', 'I_min', 'I_start', 'I_end', 'I_delta',
-        #  'I_rate',
-        # 'V_avr', 'V_std', 'V_max', 'V_min', 'V_start', 'V_end', 'V_delta',
-        # 'V_rate',
-        # 'type', 'info']
-
-        # --- defining header txts ----
-        current_hdtxt = self.headers_normal['current_txt']
-        voltage_hdtxt = self.headers_normal['voltage_txt']
-        steptime_hdtxt = self.headers_normal['step_time_txt']
-        point_hdtx = self.headers_normal['data_point_txt']
-        ir_hdtxt = self.headers_normal['internal_resistance_txt']
-        ir_change_hdtxt = self.headers_step_table["internal_resistance_change"]
-        charge_hdtxt = self.headers_normal['charge_capacity_txt']
-        discharge_hdtxt = self.headers_normal['discharge_capacity_txt']
-
-        # print f.head()
-
-        # ---time----
-        t_start = f.iloc[0][steptime_hdtxt]
-        t_end = f.iloc[-1][steptime_hdtxt]
-        t_delta = t_end - t_start  # OBS! will be used as denominator
-
-        # --data-point-
-        n_start = f.iloc[0][point_hdtx]
-        n_end = f.iloc[-1][point_hdtx]
-        n_delta = n_end - n_start + 1
-
-        # ---current-
-        i = f[current_hdtxt].values
-        I_avr = i.mean()
-        I_std = i.std()
-        I_max = i.max()
-        I_min = i.min()
-        I_start = i[0]
-        I_end = i[-1]
-        I_delta = self._percentage_change(I_start, I_end, default_zero=True)
-        I_rate = self._fractional_change(I_delta, t_delta)
-
-        # ---voltage--
-        v = f[voltage_hdtxt].values
-        V_avr = v.mean()
-        V_std = v.std()
-        V_max = v.max()
-        V_min = v.min()
-        V_start = v[0]
-        V_end = v[-1]
-        V_delta = self._percentage_change(V_start, V_end, default_zero=True)
-        V_rate = self._fractional_change(V_delta, t_delta)
-
-        # ---charge---
-        c = f[charge_hdtxt].values
-        C_avr = c.mean()
-        C_std = c.std()
-        C_max = c.max()
-        C_min = c.min()
-        C_start = c[0]
-        C_end = c[-1]
-        C_delta = self._percentage_change(C_start, C_end, default_zero=True)
-        C_rate = self._fractional_change(C_delta, t_delta)
-
-        # ---discharge---
-        d = f[discharge_hdtxt].values
-        D_avr = d.mean()
-        D_std = d.std()
-        D_max = d.max()
-        D_min = d.min()
-        D_start = d[0]
-        D_end = d[-1]
-
-        D_delta = self._percentage_change(D_start, D_end, default_zero=True)
-        D_rate = self._fractional_change(D_delta, t_delta)
-
-        # ---internal resistance ----
-        # noinspection PyPep8Naming
-        IR = f.iloc[0][ir_hdtxt]
-        # noinspection PyPep8Naming
-        IR_pct_change = f.iloc[0][ir_change_hdtxt]
-
-        # ---output--
-        out = [
-            n_start, n_end, n_delta, t_start, t_end, t_delta,
-            I_avr, I_std, I_max, I_min, I_start, I_end, I_delta, I_rate,
-            V_avr, V_std, V_max, V_min, V_start, V_end, V_delta, V_rate,
-            C_avr, C_std, C_max, C_min, C_start, C_end, C_delta, C_rate,
-            D_avr, D_std, D_max, D_min, D_start, D_end, D_delta, D_rate,
-            IR, IR_pct_change,
-        ]
-        return out
-
     def load_step_specifications(self, file_name, short=False,
                                  dataset_number=None):
         """ Load a table that contains step-type definitions.
@@ -1320,17 +1226,7 @@ class CellpyData(object):
                              step_specifications=step_specs,
                              short=short)
 
-    def make_step_table(self,  custom_step_definition=False,
-                        step_specifications=None,
-                        short=False,
-                        dataset_number=None):
-
-        self.make_step_table_new(custom_step_definition,
-                        step_specifications,
-                        short,
-                        dataset_number)
-
-    def make_step_table_new(self, custom_step_definition=False,
+    def make_step_table(self, custom_step_definition=False,
                         step_specifications=None,
                         short=False,
                         dataset_number=None):
@@ -1360,8 +1256,8 @@ class CellpyData(object):
         shdr = self.headers_step_table
 
         df = self.datasets[dataset_number].dfdata
-        df[shdr.internal_resistance_change] = \
-            df[nhdr.internal_resistance_txt].pct_change()
+        # df[shdr.internal_resistance_change] = \
+        #     df[nhdr.internal_resistance_txt].pct_change()
 
         def first(x):
             return x.iloc[0]
@@ -1379,15 +1275,23 @@ class CellpyData(object):
 
             return difference
 
-        # TODO: continue renamening cols using Box
-
         keep = [
-            nhdr.data_point_txt,  # continue from here
+            nhdr.data_point_txt,
             nhdr.step_time_txt,
             nhdr.step_index_txt,
-                              "Cycle_Index", "Current", "Voltage",
-                              "Charge_Capacity", "Discharge_Capacity",
-                              "Internal_Resistance", "ir_pct_change"]
+            nhdr.cycle_index_txt,
+            nhdr.current_txt,
+            nhdr.voltage_txt,
+            nhdr.ref_voltage_txt,
+            nhdr.charge_capacity_txt,
+            nhdr.discharge_capacity_txt,
+            nhdr.internal_resistance_txt,
+            # "ir_pct_change"
+        ]
+
+        # only use col-names that exist:
+        keep = [col for col in keep if col in df.columns]
+
         df = df[keep]
         df[nhdr.sub_step_index_txt] = 1
         rename_dict = {
@@ -1548,313 +1452,6 @@ class CellpyData(object):
 
         self.datasets[dataset_number].step_table = df_steps
         self.datasets[dataset_number].step_table_made = True
-
-    def make_step_table_old(self, custom_step_definition=False,
-                        step_specifications=None,
-                        short=False,
-                        dataset_number=None):
-
-        """ Create a table (v.3) that contains summary information for each step.
-
-        This function creates a table containing information about the
-        different steps for each cycle and, based on that, decides what type of
-        step it is (e.g. charge) for each cycle.
-
-        The format of the step_table is:
-
-            index - cycleno - stepno -
-            Logging info (row numbers (min, max, delta), time (min, max, delta) -
-            Current info (average, stdev, max, min, start, end, delta, rate) -
-            Voltage info (average,  stdev, max, min, start, end, delta, rate) -
-            Type (from pre-defined list) - SubType -
-            Info
-        """
-
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-
-        cycle_index_header = self.headers_normal['cycle_index_txt']
-        step_index_header = self.headers_normal['step_index_txt']
-        internal_resistance_txt = self.headers_normal['internal_resistance_txt']
-
-        headers_step_table = self.headers_step_table
-
-        step_table_txt_cycle = headers_step_table["cycle"]
-        step_table_txt_step = headers_step_table["step"]
-        step_table_txt_sub_step = headers_step_table["sub_step"]
-
-        step_table_txt_type = headers_step_table["type"]
-        step_table_txt_sub_type = headers_step_table["sub_type"]
-
-        step_table_txt_info = headers_step_table["info"]
-        step_table_txt_ir = headers_step_table["internal_resistance"]
-        step_table_txt_ir_change = \
-            headers_step_table["internal_resistance_change"]
-
-        # -------------create an "empty" df -----------------------------------
-
-        # --- defining column names ---
-        # (should probably migrate this to own function and add to self)
-
-        columns_end = [headers_step_table["post_mean"],
-                       headers_step_table["post_std"],
-                       headers_step_table["post_max"],
-                       headers_step_table["post_min"],
-                       headers_step_table["post_start"],
-                       headers_step_table["post_end"],
-                       headers_step_table["post_delta"],
-                       headers_step_table["post_rate"],
-                       ]
-
-        columns_end_limited = [headers_step_table["post_start"],
-                               headers_step_table["post_end"],
-                               headers_step_table["post_delta"], ]
-
-        # noinspection PyPep8Naming
-        columns_I = [headers_step_table["pre_current"] + x for x in columns_end]
-        # noinspection PyPep8Naming
-        columns_V = [headers_step_table["pre_voltage"] + x for x in columns_end]
-        columns_charge = [headers_step_table["pre_charge"] +
-                          x for x in columns_end]
-        columns_discharge = [headers_step_table["pre_discharge"] +
-                             x for x in columns_end]
-
-        columns_point = [headers_step_table["pre_point"] +
-                         x for x in columns_end_limited]
-        columns_time = [headers_step_table["pre_time"] +
-                        x for x in columns_end_limited]
-
-        columns = [step_table_txt_cycle, step_table_txt_step]
-        columns.append(step_table_txt_sub_step)
-        pre_cols = len(columns)
-
-        columns.extend(columns_point)
-        columns.extend(columns_time)
-        columns.extend(columns_I)
-        columns.extend(columns_V)
-        columns.extend(columns_charge)
-        columns.extend(columns_discharge)
-
-
-        columns.append(step_table_txt_ir)
-        columns.append(step_table_txt_ir_change)
-        middle_cols = len(columns) - pre_cols
-
-        columns.append(step_table_txt_type)
-        columns.append(step_table_txt_info)
-
-        columns.append(step_table_txt_sub_type)
-
-        post_cols = len(columns) - pre_cols - middle_cols
-
-        # --- adding pct change col(s)-----
-        df = self.datasets[dataset_number].dfdata
-        df[step_table_txt_ir_change] = df[internal_resistance_txt].pct_change()
-
-        # --- finding size ------
-        df = self.datasets[dataset_number].dfdata
-        number_of_rows = df.groupby([cycle_index_header,
-                                     step_index_header]).size().shape[0]
-
-        # --- creating it ----
-        index = np.arange(0, number_of_rows)
-        df_steps = pd.DataFrame(index=index, columns=columns)
-
-        # ------------------- finding cycle numbers ---------------------------
-        list_of_cycles = df[cycle_index_header].unique()
-
-        # ------------------ iterating and populating step_table --------------
-        counter = 0
-
-        # Oh no, he uses a for-loop. Cracy man.
-        for cycle in list_of_cycles:
-            mask_cycle = df[cycle_index_header] == cycle
-            df_cycle = df[mask_cycle]
-            steps = df_cycle[step_index_header].unique()
-            for step in steps:
-                mask_step = df_cycle[step_index_header] == step
-                df_step = df_cycle[mask_step]
-                result = self._extract_step_values(df_step)
-                df_steps.iloc[counter][step_table_txt_cycle] = cycle
-                df_steps.iloc[counter][step_table_txt_step] = step
-                # inserting sub-step number for future use
-                df_steps.iloc[counter][step_table_txt_sub_step] = 0
-                df_steps.iloc[counter, pre_cols:-post_cols] = result
-                counter += 1
-
-        average_current_txt = headers_step_table["pre_current"] + \
-                              headers_step_table["post_mean"]
-        min_current_txt = headers_step_table["pre_current"] + \
-                          headers_step_table["post_min"]
-        max_current_txt = headers_step_table["pre_current"] + \
-                          headers_step_table["post_max"]
-        delta_current_txt = headers_step_table["pre_current"] + \
-                            headers_step_table["post_delta"]
-        delta_voltage_txt = headers_step_table["pre_voltage"] + \
-                            headers_step_table["post_delta"]
-        delta_charge_txt = headers_step_table["pre_charge"] + \
-                           headers_step_table["post_delta"]
-        delta_discharge_txt = headers_step_table["pre_discharge"] + \
-                              headers_step_table["post_delta"]
-
-
-        current_limit_value_hard = self.raw_limits["current_hard"]
-        current_limit_value_soft = self.raw_limits["current_soft"]
-        stable_current_limit_hard = self.raw_limits["stable_current_hard"]
-        stable_current_limit_soft = self.raw_limits["stable_current_soft"]
-        stable_voltage_limit_hard = self.raw_limits["stable_voltage_hard"]
-        stable_voltage_limit_soft = self.raw_limits["stable_voltage_soft"]
-        stable_charge_limit_hard = self.raw_limits["stable_charge_hard"]
-        stable_charge_limit_soft = self.raw_limits["stable_charge_soft"]
-        ir_change_limit = self.raw_limits["ir_change"]
-
-        mask_no_current_hard = (
-            df_steps[max_current_txt].abs() + df_steps[min_current_txt].abs()
-        ) < current_limit_value_hard
-
-        mask_no_current_soft = (
-            df_steps[max_current_txt].abs() + df_steps[min_current_txt].abs()
-        ) < current_limit_value_soft
-
-        mask_voltage_down = df_steps[delta_voltage_txt] < -stable_voltage_limit_hard
-
-        mask_voltage_up = df_steps[delta_voltage_txt] > stable_voltage_limit_hard
-
-        mask_voltage_stable = df_steps[delta_voltage_txt].abs() < stable_voltage_limit_hard
-
-        mask_current_down = df_steps[delta_current_txt] < \
-                            -stable_current_limit_soft
-
-        mask_current_up = df_steps[delta_current_txt] > \
-                          stable_current_limit_soft
-
-        mask_current_negative = df_steps[average_current_txt] < \
-                                -current_limit_value_hard
-
-        mask_current_positive = df_steps[average_current_txt] > \
-                                current_limit_value_hard
-
-        mask_galvanostatic = df_steps[delta_current_txt].abs() < \
-                             stable_current_limit_soft
-
-        mask_charge_changed = df_steps[delta_charge_txt].abs() > \
-                              stable_charge_limit_hard
-        mask_discharge_changed = df_steps[delta_discharge_txt].abs() > \
-                                 stable_charge_limit_hard
-
-        mask_ir_changed = df_steps[step_table_txt_ir_change].abs() > \
-                          ir_change_limit
-
-        mask_no_change = (df_steps[delta_voltage_txt] == 0) & \
-                         (df_steps[delta_current_txt] == 0) & \
-                         (df_steps[delta_charge_txt] == 0) & \
-                         (df_steps[delta_discharge_txt] == 0)
-
-        if custom_step_definition:
-            self.logger.debug("parsing custom step definition")
-            if not short:
-                self.logger.debug("using long format (cycle,step)")
-                for row in step_specifications.itertuples():
-                    self.logger.debug(f"cycle: {row.cycle} step: {row.step}"
-                                      f" type: {row.type}")
-                    df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
-                                 (df_steps[step_table_txt_cycle] == row.cycle),
-                                 "type"] = row.type
-                    df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
-                                 (df_steps[step_table_txt_cycle] == row.cycle),
-                                 "info"] = row.info
-            else:
-                self.logger.debug("using short format (step)")
-                for row in step_specifications.itertuples():
-                    self.logger.debug(f"step: {row.step} "
-                                      f"type: {row.type}"
-                                      f"info: {row.info}")
-                    df_steps.loc[df_steps[step_table_txt_step] == row.step,
-                                 "type"] = row.type
-                    df_steps.loc[df_steps[step_table_txt_step] == row.step,
-                                 "info"] = row.info
-
-        else:
-            df_steps.loc[mask_no_current_hard & mask_voltage_up,
-                         step_table_txt_type] = 'ocvrlx_up'
-            df_steps.loc[mask_no_current_hard & mask_voltage_down,
-                         step_table_txt_type] = 'ocvrlx_down'
-
-            df_steps.loc[mask_discharge_changed & mask_current_negative,
-                         step_table_txt_type] = 'discharge'
-
-            df_steps.loc[mask_charge_changed & mask_current_positive,
-                         step_table_txt_type] = 'charge'
-
-            df_steps.loc[
-                mask_voltage_stable & mask_current_negative & mask_current_down,
-                step_table_txt_type] = 'cv_discharge'
-            df_steps.loc[mask_voltage_stable & mask_current_positive &
-                         mask_current_down, step_table_txt_type] = 'cv_charge'
-
-            # --- internal resistance ----
-            df_steps.loc[mask_no_change, step_table_txt_type] = 'ir'
-            # assumes that IR is stored in just one row
-
-            # --- sub-step-txt -----------
-            df_steps[step_table_txt_sub_type] = None
-
-            # --- CV steps ----
-
-            # "voltametry_charge"
-            # mask_charge_changed
-            # mask_voltage_up
-            # (could also include abs-delta-cumsum current)
-
-            # "voltametry_discharge"
-            # mask_discharge_changed
-            # mask_voltage_down
-
-        # fixing dtype (remove this when original dtypes are fixed)
-        for col in df_steps.columns:
-            if col not in [
-                step_table_txt_sub_type,
-                step_table_txt_info,
-                step_table_txt_type
-            ]:
-                df_steps[col] = df_steps[col].apply(pd.to_numeric)
-            else:
-                df_steps[col] = df_steps[col].astype('str')
-
-        self.datasets[dataset_number].step_table = df_steps
-        self.datasets[dataset_number].step_table_made = True
-
-    @staticmethod
-    def _percentage_change(x0, x1, default_zero=True):
-        # calculates the change from x0 to x1 in percentage
-        # i.e. returns (x1-x0)*100 / x0
-        if x0 == 0.0:
-            # self.logger.debug("DBZ(_percentage)")
-            # this will not print anything, set level to 1 to print
-            difference = x1 - x0
-            if difference != 0.0 and default_zero:
-                difference = 0.0
-        else:
-            difference = (x1 - x0) * 100 / x0
-
-        return difference
-
-    @staticmethod
-    def _fractional_change(x0, x1, default_zero=False):
-        # calculates the fraction of x0 and x1
-        # i.e. returns x1 / x0
-        if x1 == 0.0:
-            # self.logger.debug("DBZ(_fractional)")
-            # this will not print anything, set level to 1 to print
-            if default_zero:
-                difference = 0.0
-            else:
-                difference = np.nan
-        else:
-            difference = x0 / x1
-        return difference
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
         """Select steps (not documented yet)."""
