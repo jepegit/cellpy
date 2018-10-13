@@ -1322,7 +1322,7 @@ class CellpyData(object):
                         short=False,
                         dataset_number=None):
 
-        """ Create a table (v.3) that contains summary information for each step.
+        """ Create a table (v.4) that contains summary information for each step.
 
         This function creates a table containing information about the
         different steps for each cycle and, based on that, decides what type of
@@ -1330,10 +1330,10 @@ class CellpyData(object):
 
         The format of the step_table is:
 
-            index - cycleno - stepno -
-            Logging info (row numbers (min, max, delta), time (min, max, delta) -
-            Current info (average, stdev, max, min, start, end, delta, rate) -
-            Voltage info (average,  stdev, max, min, start, end, delta, rate) -
+            index: cycleno - stepno - sub-step-no
+            Logging info (average, stdev, max, min, start, end, delta) -
+            Current info (average, stdev, max, min, start, end, delta) -
+            Voltage info (average,  stdev, max, min, start, end, delta) -
             Type (from pre-defined list) - SubType -
             Info
         """
@@ -1343,26 +1343,37 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
 
-        cycle_index_header = self.headers_normal['cycle_index_txt']
-        step_index_header = self.headers_normal['step_index_txt']
-        internal_resistance_txt = self.headers_normal['internal_resistance_txt']
+        nhdr = self.headers_normal
+        shdr = self.headers_step_table
 
-        headers_step_table = self.headers_step_table
-
-        step_table_txt_cycle = headers_step_table["cycle"]
-        step_table_txt_step = headers_step_table["step"]
-        step_table_txt_sub_step = headers_step_table["sub_step"]
-
-        step_table_txt_type = headers_step_table["type"]
-        step_table_txt_sub_type = headers_step_table["sub_type"]
-
-        step_table_txt_info = headers_step_table["info"]
-        step_table_txt_ir = headers_step_table["internal_resistance"]
-        step_table_txt_ir_change = \
-            headers_step_table["internal_resistance_change"]
+        # over-riding...
+        shdr["test"] = "test"
+        shdr["cycle"] = "cycle"
+        shdr["step"] = "step"
+        shdr["sub_step"] = "sub_step"
+        shdr["type"] = "type"
+        shdr["sub_type"] = "sub_type"
+        shdr["info"] = "info"
+        shdr["pre_current"] = "I_"
+        shdr["pre_voltage"] = "V_"
+        shdr["pre_charge"] = "Charge_"
+        shdr["pre_discharge"] = "Discharge_"
+        shdr["pre_point"] = "datapoint_"
+        shdr["pre_time"] = "time_"
+        shdr["post_mean"] = "avr"
+        shdr["post_std"] = "std"
+        shdr["post_max"] = "max"
+        shdr["post_min"] = "min"
+        shdr["post_start"] = "start"
+        shdr["post_end"] = "end"
+        shdr["post_delta"] = "delta"
+        shdr["post_rate"] = "rate"
+        shdr["internal_resistance"] = "IR"
+        shdr["internal_resistance_change"] = "IR_pct_change"
 
         df = self.datasets[dataset_number].dfdata
-        df[step_table_txt_ir_change] = df[internal_resistance_txt].pct_change()
+        df[shdr.internal_resistance_change] = \
+            df[nhdr.internal_resistance_txt].pct_change()
 
         def first(x):
             return x.iloc[0]
@@ -1380,15 +1391,18 @@ class CellpyData(object):
 
             return difference
 
+        # TODO: continue renamening cols using Box
 
-        column_names = ["Data_Point", "Step_Time", "Step_Index",
+        keep = [
+            nhdr.data_point_txt,  # continue from here
+            "Step_Time", "Step_Index",
                               "Cycle_Index", "Current", "Voltage",
                               "Charge_Capacity", "Discharge_Capacity",
                               "Internal_Resistance", "IR_pct_change"]
-        df = df[column_names]
-        df["SubStep_Index"] = 1
+        df = df[keep]
+        df[nhdr.sub_step_index_txt] = 1
         rename_dict = {
-            "Cycle_Index": "cycle",
+            nhdr.cycle_index.txt: shdr.cycle,  # continue from here
             "Step_Index": "step",
             "SubStep_Index": "substep",
             "Data_Point": "datapoint",
@@ -1417,57 +1431,45 @@ class CellpyData(object):
         stable_charge_limit_soft = self.raw_limits["stable_charge_soft"]
         ir_change_limit = self.raw_limits["ir_change"]
 
-
-
         mask_no_current_hard = (
-            df_steps.loc[:, ("I", "max")].abs() + df_steps.loc[:, ("I", "min")].abs()
+            df_steps.loc[:, ("I", "max")].abs()
+            + df_steps.loc[:, ("I", "min")].abs()
         ) < current_limit_value_hard
 
-        mask_voltage_down = df_steps.loc[:, ("V", "delta")] < -stable_voltage_limit_hard
+        mask_voltage_down = df_steps.loc[:, ("V", "delta")] < \
+            - stable_voltage_limit_hard
 
-        mask_voltage_up = df_steps.loc[:, ("V", "delta")] > stable_voltage_limit_hard
+        mask_voltage_up = df_steps.loc[:, ("V", "delta")] > \
+            stable_voltage_limit_hard
 
-        mask_voltage_stable = df_steps.loc[:, ("V", "delta")].abs() < stable_voltage_limit_hard
+        mask_voltage_stable = df_steps.loc[:, ("V", "delta")].abs() < \
+            stable_voltage_limit_hard
 
         mask_current_down = df_steps.loc[:, ("I", "delta")] < \
-                            -stable_current_limit_soft
+            - stable_current_limit_soft
 
         mask_current_up = df_steps.loc[:, ("I", "delta")] > \
-                          stable_current_limit_soft
-
-
-        #
-        # mask_current_positive = df_steps[average_current_txt] > \
-        #                         current_limit_value_hard
-        #
-        # mask_galvanostatic = df_steps[delta_current_txt].abs() < \
-        #                      stable_current_limit_soft
-        #
-        # mask_charge_changed = df_steps[delta_charge_txt].abs() > \
-        #                       stable_charge_limit_hard
-        #
-
-
+            stable_current_limit_soft
 
         mask_current_negative = df_steps.loc[:, ("I", "avr")] < \
-                                -current_limit_value_hard
+            - current_limit_value_hard
 
         mask_current_positive = df_steps.loc[:, ("I", "avr")] > \
-                                current_limit_value_hard
+            current_limit_value_hard
 
         mask_galvanostatic = df_steps.loc[:, ("I", "delta")].abs() < \
-                             stable_current_limit_soft
+            stable_current_limit_soft
 
         mask_charge_changed = df_steps.loc[:, ("Charge", "delta")].abs() > \
-                              stable_charge_limit_hard
-        mask_discharge_changed = df_steps.loc[:, ("Discharge", "delta")].abs() > \
-                                 stable_charge_limit_hard
+            stable_charge_limit_hard
 
+        mask_discharge_changed = df_steps.loc[:, ("Discharge", "delta")].abs() > \
+            stable_charge_limit_hard
 
         mask_no_change = (df_steps.loc[:, ("V", "delta")] == 0) & \
-                         (df_steps.loc[:, ("I", "delta")] == 0) & \
-                         (df_steps.loc[:, ("Charge", "delta")] == 0) & \
-                         (df_steps.loc[:, ("Discharge", "delta")] == 0)
+            (df_steps.loc[:, ("I", "delta")] == 0) & \
+            (df_steps.loc[:, ("Charge", "delta")] == 0) & \
+            (df_steps.loc[:, ("Discharge", "delta")] == 0)
 
         if custom_step_definition:
             self.logger.debug("parsing custom step definition")
@@ -1476,11 +1478,11 @@ class CellpyData(object):
                 for row in step_specifications.itertuples():
                     self.logger.debug(f"cycle: {row.cycle} step: {row.step}"
                                       f" type: {row.type}")
-                    df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
-                                 (df_steps[step_table_txt_cycle] == row.cycle),
+                    df_steps.loc[(df_steps[shdr.step] == row.step) &
+                                 (df_steps[shdr.cycle] == row.cycle),
                                  "type"] = row.type
-                    df_steps.loc[(df_steps[step_table_txt_step] == row.step) &
-                                 (df_steps[step_table_txt_cycle] == row.cycle),
+                    df_steps.loc[(df_steps[shdr.step] == row.step) &
+                                 (df_steps[shdr.cycle] == row.cycle),
                                  "info"] = row.info
             else:
                 self.logger.debug("using short format (step)")
@@ -1488,37 +1490,38 @@ class CellpyData(object):
                     self.logger.debug(f"step: {row.step} "
                                       f"type: {row.type}"
                                       f"info: {row.info}")
-                    df_steps.loc[df_steps[step_table_txt_step] == row.step,
+                    df_steps.loc[df_steps[shdr.step] == row.step,
                                  "type"] = row.type
-                    df_steps.loc[df_steps[step_table_txt_step] == row.step,
+                    df_steps.loc[df_steps[shdr.step] == row.step,
                                  "info"] = row.info
 
         else:
-            # This does not produce what we want: check it
-            df_steps.loc[mask_no_current_hard & mask_voltage_up, "type"] = 'ocvrlx_up'
+            df_steps.loc[mask_no_current_hard & mask_voltage_up, "type"] = \
+                'ocvrlx_up'
 
-            # also wrong
             df_steps.loc[mask_no_current_hard & mask_voltage_down,
-                         step_table_txt_type] = 'ocvrlx_down'
+                         shdr.type] = 'ocvrlx_down'
 
             df_steps.loc[mask_discharge_changed & mask_current_negative,
-                         step_table_txt_type] = 'discharge'
+                         shdr.type] = 'discharge'
 
             df_steps.loc[mask_charge_changed & mask_current_positive,
-                         step_table_txt_type] = 'charge'
+                         shdr.type] = 'charge'
 
             df_steps.loc[
                 mask_voltage_stable & mask_current_negative & mask_current_down,
-                step_table_txt_type] = 'cv_discharge'
+                shdr.type
+            ] = 'cv_discharge'
+
             df_steps.loc[mask_voltage_stable & mask_current_positive &
-                         mask_current_down, step_table_txt_type] = 'cv_charge'
+                         mask_current_down, shdr.type] = 'cv_charge'
 
             # --- internal resistance ----
-            df_steps.loc[mask_no_change, step_table_txt_type] = 'ir'
+            df_steps.loc[mask_no_change, shdr.type] = 'ir'
             # assumes that IR is stored in just one row
 
             # --- sub-step-txt -----------
-            df_steps[step_table_txt_sub_type] = None
+            df_steps[shdr.sub_type] = None
 
             # --- CV steps ----
 
@@ -1530,6 +1533,8 @@ class CellpyData(object):
             # "voltametry_discharge"
             # mask_discharge_changed
             # mask_voltage_down
+
+        # TODO: ensure dtypes
 
         self.datasets[dataset_number].step_table = df_steps
         self.datasets[dataset_number].step_table_made = True

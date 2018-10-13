@@ -1,5 +1,7 @@
 """Internal settings and definitions and functions for getting them."""
 
+import box
+
 cellpy_units = dict()
 headers_normal = dict()
 headers_summary = dict()
@@ -62,6 +64,8 @@ headers_summary["temperature_last"] = "Last_Temperature(C)"
 headers_summary["temperature_mean"] = "Average_Temperature(C)"
 headers_summary["pre_aux"] = "Aux_"
 
+headers_summary = box.Box(headers_summary)
+
 ############################# Normal ###########################################
 
 headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
@@ -97,6 +101,8 @@ headers_normal['dv_dt_txt'] = 'dV/dt'
 headers_normal['frequency_txt'] = 'Frequency'  # new
 headers_normal['amplitude_txt'] = 'Amplitude'  # new
 
+headers_normal = box.Box(headers_normal)
+
 ############################### step table #####################################
 
 # 08.12.2016: added sub_step, sub_type, and pre_time
@@ -124,6 +130,8 @@ headers_step_table["post_delta"] = "delta"
 headers_step_table["post_rate"] = "rate"
 headers_step_table["internal_resistance"] = "IR"
 headers_step_table["internal_resistance_change"] = "IR_pct_change"
+
+headers_step_table = box.Box(headers_step_table)
 
 
 def get_headers_summary():
