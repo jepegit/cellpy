@@ -1065,7 +1065,8 @@ class CellpyData(object):
         print(st)
 
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False,
-                         cycle_number=None, dataset_number=None):
+                         cycle_number=None, dataset_number=None,
+                         steptable=None):
         # TODO: include sub_steps here
         """Get the step numbers of selected type.
 
@@ -1078,6 +1079,7 @@ class CellpyData(object):
             cycle_number (int): selected cycle, selects all if not set.
             dataset_number (int): test number (default first)
                 (usually not used).
+            steptable (pandas.DataFrame): optional steptable
 
         Returns:
             List of step numbers corresponding to the selected steptype.
@@ -1090,26 +1092,29 @@ class CellpyData(object):
             [5,8]
 
         """
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
 
-        # check if step_table is there
-        if not self.datasets[dataset_number].step_table_made:
-            self.logger.debug("step_table not made")
+        if steptable is None:
+            dataset_number = self._validate_dataset_number(dataset_number)
+            if dataset_number is None:
+                self._report_empty_dataset()
+                return
 
-            if self.force_step_table_creation or self.force_all:
-                self.logger.debug("creating step_table for")
-                self.logger.debug(self.datasets[dataset_number].loaded_from)
-                # print "CREAING STEP-TABLE"
-                self.make_step_table(dataset_number=dataset_number)
+            if not self.datasets[dataset_number].step_table_made:
+                self.logger.debug("step_table not made")
 
-            else:
-                self.logger.info("ERROR! Cannot use get_steps: create step_table first")
-                self.logger.info(" you could use find_step_numbers method instead")
-                self.logger.info(" (but I don't recommend it)")
-                return None
+                if self.force_step_table_creation or self.force_all:
+                    self.logger.debug("creating step_table for")
+                    self.logger.debug(self.datasets[dataset_number].loaded_from)
+                    # print "CREAING STEP-TABLE"
+                    self.make_step_table(dataset_number=dataset_number)
+
+                else:
+                    self.logger.info("ERROR! Cannot use get_steps: "
+                                     "create step_table first")
+                    self.logger.info(" you could use find_step_numbers"
+                                     " method instead")
+                    self.logger.info(" (but I don't recommend it)")
+                    return None
 
         # check if steptype is valid
         steptype = steptype.lower()
@@ -1149,7 +1154,10 @@ class CellpyData(object):
         self.logger.debug("Your steptypes:")
         self.logger.debug(steptypes)
 
-        st = self.datasets[dataset_number].step_table
+        if steptable is None:
+            st = self.datasets[dataset_number].step_table
+        else:
+            st = steptable
         shdr = self.headers_step_table
 
         # retrieving cycle numbers
