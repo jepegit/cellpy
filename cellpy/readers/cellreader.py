@@ -1685,7 +1685,7 @@ class CellpyData(object):
                                         last_cycle=last_cycle)
 
     def save(self, filename, dataset_number=None, force=False, overwrite=True,
-             extension="h5"):
+             extension="h5", ensure_step_table=None):
         """Save the data structure to cellpy-format.
 
         Args:
@@ -1697,9 +1697,12 @@ class CellpyData(object):
             overwrite: (bool) save the new version of the file even if old one
                 exists.
             extension: (str) filename extension.
+            ensure_step_table: (bool) make step-table if missing.
 
         Returns: Nothing at all.
         """
+        if ensure_step_table is None:
+            ensure_step_table = self.ensure_step_table
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -1723,7 +1726,8 @@ class CellpyData(object):
             return
 
         step_table_made = test.step_table_made
-        if not step_table_made and not force and not self.ensure_step_table:
+
+        if not step_table_made and not force and not ensure_step_table:
             self.logger.info(
                 "You should not save datasets "
                 "without making a step-table first!"
@@ -1752,7 +1756,7 @@ class CellpyData(object):
                 self.logger.info(outfile_all)
                 return
 
-        if self.ensure_step_table:
+        if ensure_step_table:
             self.logger.debug("ensure_step_table is on")
             if not test.step_table_made:
                 self.logger.debug("save: creating step table")
@@ -1776,6 +1780,12 @@ class CellpyData(object):
         )
 
         self.logger.debug("trying to put dfdata")
+
+        self.logger.debug(" - lets set Data_Point as index")
+        hdr_data_point = self.headers_normal.data_point_txt
+        test.dfdata = test.dfdata.set_index(hdr_data_point,
+                                            drop=False)
+
         store.put(root + "/dfdata", test.dfdata,
                   format=prms._cellpyfile_dfdata_format)
 
@@ -1800,14 +1810,26 @@ class CellpyData(object):
             store.put(root + "/step_table", test.step_table,
                       format=prms._cellpyfile_stepdata_format)
 
+        # creating indexes
+        # hdr_data_point = self.headers_normal.data_point_txt
+        # hdr_cycle_steptable = self.headers_step_table.cycle
+        # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+
+        # store.create_table_index(root + "/dfdata", columns=[hdr_data_point],
+        #                          optlevel=9, kind='full')
+
         store.close()
         # del store
 
     # --------------helper-functions--------------------------------------------
-    @staticmethod
-    def _fix_dtype_step_table(dataset):
+    def _fix_dtype_step_table(self, dataset):
         hst = get_headers_step_table()
-        for col in dataset.step_table.columns:
+        try:
+            cols = dataset.step_table.columns
+        except AttributeError:
+            self.logger.info("could not extract columns from step_table")
+            return
+        for col in cols:
             if col not in [
                 hst["cycle"],
                 hst["sub_step"],

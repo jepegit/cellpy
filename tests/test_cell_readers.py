@@ -391,7 +391,7 @@ def test_load_cellpyfile(cellpy_data_instance):
     unique_cycles_read = my_test.step_table.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
     assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.dfdata.loc[4, "Step_Time"], 0.1)
+    assert step_time == pytest.approx(my_test.dfdata.loc[5, "Step_Time"], 0.1)
     assert sum_test_time == pytest.approx(my_test.dfsummary.loc[:, "Test_Time"].sum(), 0.1)
     assert my_test.test_no == run_number
 
