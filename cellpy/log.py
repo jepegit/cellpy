@@ -32,9 +32,11 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
             log_dir = custom_log_dir
 
         if not os.path.isdir(log_dir):
-            warning_txt = ("Could not set custom log-dir - "
+            warning_txt = ("\nCould not set custom log-dir - "
                            "non-existing directory"
-                           f"\n{custom_log_dir}")
+                           f"\nDir: {log_dir}"
+                           "\nUsing current directory instead: "
+                           f"{os.getcwd()}")
             warnings.warn(warning_txt)
             log_dir = os.getcwd()
 
@@ -46,15 +48,14 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
                 logging.info(f"Full path: {os.path.join(log_dir,file_name)}")
                 # print(f"Filename: {file_name}")
                 # print(f"Full path: {os.path.join(log_dir,file_name)}")
-
                 config["handlers"][file_handler][
                     "filename"] = os.path.join(log_dir,
                                                file_name)
             except Exception as e:
-                warnings.warn("could not set custom log-dir" + str(e))
+                warnings.warn("\nCould not set custom log-dir" + str(e))
 
         if default_level:
-            w_txt = "could not set custom default level for logger"
+            w_txt = "\nCould not set custom default level for logger"
             if default_level not in ["INFO", "DEBUG"]:
                 _txt = "\nonly 'INFO' and 'DEBUG' is supported"
                 _txt += " as default_level"

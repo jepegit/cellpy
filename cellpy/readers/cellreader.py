@@ -632,10 +632,10 @@ class CellpyData(object):
         """
 
         try:
-            self.logger.info("loading hdf5")
+            self.logger.info("loading cellpy-file (hdf5):")
             self.logger.info(cellpy_file)
             new_datasets = self._load_hdf5(cellpy_file, parent_level)
-            self.logger.info("file loaded")
+            self.logger.info("cellpy-file loaded")
         except AttributeError:
             new_datasets = []
             self.logger.warning("This cellpy-file version is not supported by"
@@ -667,7 +667,6 @@ class CellpyData(object):
         if not os.path.isfile(filename):
             self.logger.info(f"file does not exist: {filename}")
             raise IOError
-        self.logger.info("-from cellpy-file")
         store = pd.HDFStore(filename)
 
         # required_keys = ['dfdata', 'dfsummary', 'fidtable', 'info']
@@ -766,11 +765,11 @@ class CellpyData(object):
             warnings.warn("OLD TYPE STYLE FOUND!")
             data.name = self._extract_from_dict(infotable, "test_name")
 
-        try:
-            data.step_table_made = \
-                self._extract_from_dict(infotable, "step_table_made")
-        except Exception:  # not needed?
-            data.step_table_made = None
+        data.step_table_made = \
+            self._extract_from_dict(infotable, "step_table_made")
+        data.dfsummary_made = \
+            self._extract_from_dict(infotable, "dfsummary_made")
+
         return data
 
     @staticmethod
@@ -1266,12 +1265,12 @@ class CellpyData(object):
             return x.iloc[-1]
 
         def delta(x, default_zero=True):
-            if first(x) == 0.0:
-                difference = last(x) - first(x)
+            if x.iloc[0] == 0.0:
+                difference = x.iloc[-1] - x.iloc[0]
                 if difference != 0.0 and default_zero:
                     difference = 0.0
             else:
-                difference = (last(x) - first(x)) * 100 / first(x)
+                difference = (x.iloc[-1] - x.iloc[0]) * 100 / x.iloc[0]
 
             return difference
 
