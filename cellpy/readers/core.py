@@ -8,7 +8,7 @@ import warnings
 from cellpy.parameters import prms
 
 
-CELLPY_FILE_VERSION = 3
+CELLPY_FILE_VERSION = 4
 MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 3
 NORMAL_TABLE_VERSION = 3

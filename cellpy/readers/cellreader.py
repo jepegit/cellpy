@@ -14,9 +14,6 @@ Example:
 
 
 Todo:
-    * Documentation needed
-    * Include functions gradually from old version
-    * Rename datastructure
     * Remove mass dependency in summary data
     * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or
         pd.loc[(pd.["step"]==1),"x"]
@@ -35,10 +32,14 @@ import numpy as np
 import pandas as pd
 from cellpy.parameters import prms
 from cellpy.exceptions import WrongFileVersion, DeprecatedFeature
-from cellpy.parameters.internal_settings import get_headers_summary, \
-    get_cellpy_units, get_headers_normal, get_headers_step_table
-from cellpy.readers.core import FileID, DataSet, CELLPY_FILE_VERSION, \
-    xldate_as_datetime
+from cellpy.parameters.internal_settings import (
+    get_headers_summary, get_cellpy_units,
+    get_headers_normal, get_headers_step_table
+)
+from cellpy.readers.core import (
+    FileID, DataSet, CELLPY_FILE_VERSION,
+    MINIMUM_CELLPY_FILE_VERSION, xldate_as_datetime
+)
 
 
 # TODO: performance warnings probably due to mixed types within cols (pytables)
@@ -70,11 +71,6 @@ class CellpyData(object):
                  fetch_one_liners=False,
                  tester=None,
                  ):
-        """
-
-        Returns:
-            None:
-        """
 
         if tester is None:
             self.tester = prms.Instruments["tester"]
@@ -588,7 +584,8 @@ class CellpyData(object):
         v = []
         if level == 0:
             for test in self.datasets:
-                # check that it contains all the necessary headers (and add missing ones)
+                # check that it contains all the necessary headers
+                # (and add missing ones)
                 # test = self._clean_up_normal_table(test)
                 # check that the test is not empty
                 v.append(self._is_not_empty_dataset(test))
@@ -611,8 +608,8 @@ class CellpyData(object):
             return True
 
     def _clean_up_normal_table(self, test=None, dataset_number=None):
-        # check that test contains all the necessary headers (and add missing
-        # ones)
+        # check that test contains all the necessary headers
+        # (and add missing ones)
         raise NotImplementedError
 
     def _report_empty_dataset(self):
@@ -687,17 +684,16 @@ class CellpyData(object):
             self.logger.debug("Using non-default parent label for the "
                               "hdf-store: {}".format(parent_level))
 
-        infotable = store.select(parent_level + "/info")  # remark! changed
-        # spelling from lower letter to camel-case!
-
+        # checking file version
+        infotable = store.select(parent_level + "/info")
         try:
             data.cellpy_file_version = \
                 self._extract_from_dict(infotable, "cellpy_file_version")
         except Exception:
             data.cellpy_file_version = 0
 
-        # if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
-        #     raise AttributeError
+        if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
+            raise WrongFileVersion
 
         if data.cellpy_file_version > CELLPY_FILE_VERSION:
             raise WrongFileVersion
