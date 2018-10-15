@@ -2918,12 +2918,15 @@ class CellpyData(object):
 
         c_txt = self.headers_normal['cycle_index_txt']
         d_txt = self.headers_normal['data_point_txt']
-
         steps = []
+        unique_steps = dfdata[c_txt].unique()
         max_step = max(dfdata[c_txt])
         for j in range(max_step):
-            last_item = max(dfdata.loc[dfdata[c_txt] == j + 1, d_txt])
-            steps.append(last_item)
+            if j + 1 not in unique_steps:
+                self.logger.info(f"Cycle {j+1} is missing!")
+            else:
+                last_item = max(dfdata.loc[dfdata[c_txt] == j + 1, d_txt])
+                steps.append(last_item)
         last_items = dfdata[d_txt].isin(steps)
         return last_items
 
