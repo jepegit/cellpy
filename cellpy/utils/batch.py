@@ -123,7 +123,9 @@ def _create_info_dict(reader, srnos):
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logger.info(
-            "The function _find_files was very slow. Save your info_df so you don't have to run it again!")
+            "The function _find_files was very slow. "
+            "Save your info_df so you don't have to run it again!"
+        )
 
     return info_dict
 
@@ -263,7 +265,8 @@ class Batch(object):
     >>> b.create_info_df()
     >>>
     >>> # or load it from a previous run:
-    >>> # filename = "../out_data/experiment_set_01/cellpy_batch_new_exiting_chemistry.json"
+    >>> # filename = "../out_data/experiment_set_01/cellpy_batch" +
+    >>> #   "_new_exiting_chemistry.json"
     >>> # b.load_info_df(filename)
     >>>
     >>> b.create_folder_structure()
@@ -411,7 +414,8 @@ class Batch(object):
             attrs = self._kwargs
         for key in attrs:
             if key.startswith("_"):
-                w_txt = "Cannot set attribute starting with '_' ('Not allowed', says the King)"
+                w_txt = "Cannot set attribute starting with '_' " \
+                        "('Not allowed', says the King)"
                 warnings.warn(w_txt)
 
             if hasattr(self, key):
@@ -426,9 +430,11 @@ class Batch(object):
 
     def _create_colors_markers_list(self):
         from cellpy.utils import plotutils
-        return plotutils.create_colormarkerlist_for_info_df(self.info_df,
-                                                             symbol_label=self.symbol_label,
-                                                             color_style_label=self.color_style_label)
+        return plotutils.create_colormarkerlist_for_info_df(
+            self.info_df,
+            symbol_label=self.symbol_label,
+            color_style_label=self.color_style_label
+        )
 
     def create_info_df(self):
         """Creates a DataFrame with info about the runs (loaded from the DB)"""
@@ -497,24 +503,28 @@ class Batch(object):
             use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
         else:
             use_cellpy_stat_file = self.use_cellpy_stat_file
-        logger.debug(f"b.load_and_save_raw: use_cellpy_stat_file = {use_cellpy_stat_file}")
-        self.frames, self.keys, errors = read_and_save_data(self.info_df,
-                                                            self.raw_dir,
-                                                            sep=sep,
-                                                            force_raw=self.force_raw_file,
-                                                            force_cellpy=self.force_cellpy_file,
-                                                            export_cycles=self.export_cycles,
-                                                            shifted_cycles=self.shifted_cycles,
-                                                            export_raw=self.export_raw,
-                                                            export_ica=self.export_ica,
-                                                            save=self.save_cellpy_file,
-                                                            use_cellpy_stat_file=use_cellpy_stat_file,
-                                                            parent_level=parent_level,
-                                                            last_cycle=self.last_cycle)
+        logger.debug(f"b.load_and_save_raw: "
+                     f"use_cellpy_stat_file = {use_cellpy_stat_file}")
+        self.frames, self.keys, errors = read_and_save_data(
+            self.info_df,
+            self.raw_dir,
+            sep=sep,
+            force_raw=self.force_raw_file,
+            force_cellpy=self.force_cellpy_file,
+            export_cycles=self.export_cycles,
+            shifted_cycles=self.shifted_cycles,
+            export_raw=self.export_raw,
+            export_ica=self.export_ica,
+            save=self.save_cellpy_file,
+            use_cellpy_stat_file=use_cellpy_stat_file,
+            parent_level=parent_level,
+            last_cycle=self.last_cycle
+        )
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
-        """Make and save summary csv files, each containing values from all cells"""
+        """Make and save summary csv files,
+        each containing values from all cells"""
         self.summary_df = save_summaries(self.frames, self.keys,
                                          self.selected_summaries,
                                          self.batch_dir, self.name)
@@ -835,7 +845,9 @@ def create_selected_summaries_dict(summaries_list):
 
     Examples:
         >>> summaries_to_output = ["discharge_capacity", "charge_capacity"]
-        >>> summaries_to_output_dict = create_selected_summaries_dict(summaries_to_output)
+        >>> summaries_to_output_dict = create_selected_summaries_dict(
+        >>>    summaries_to_output
+        >>> )
         >>> print(summaries_to_output_dict)
         {'discharge_capacity': "Discharge_Capacity(mAh/g)",
                'charge_capacity': "Charge_Capacity(mAh/g)}
@@ -1081,7 +1093,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
                             last_cycle=last_cycle)
             except Exception as e:
                 print("...could not make/export dq/dv data...")
-                logger.debug("Failed to make/export dq/dv data (%s): %s" % (indx, str(e)))
+                logger.debug("Failed to make/export "
+                             "dq/dv data (%s): %s" % (indx, str(e)))
                 errors.append("ica:" + str(indx))
     if len(errors) > 0:
         print("Finished with errors!")
@@ -1210,7 +1223,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
         info_df: the pandas DataFrame with info about the runs.
         summary_df: a pandas DataFrame with the summary data.
         color_list: a list of colors to use (one pr. group)
-        symbol_list: a list of symbols to use (one pr. cell in the largest group)
+        symbol_list: a list of symbols to use (one pr. cell in largest group)
         selected_summaries: a list of the selected summaries to plot
         batch_dir: path to the folder where the figure should be saved.
         batch_name: the batch name.
@@ -1301,7 +1314,8 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
 
     # pick data (not common for all plot types)
     if ev_ax is not None:
-        plot_ev_charge, plot_ev_discharge = figure_type_object.end_voltage_selector
+        plot_ev_charge, plot_ev_discharge = figure_type_object\
+            .end_voltage_selector
         if plot_ev_charge:
             evc_df = pick_summary_data("end_voltage_charge", summary_df,
                                        selected_summaries)
@@ -1421,7 +1435,8 @@ def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
 def debugging():
     """This one I use for debugging..."""
     print("In debugging")
-    json_file = r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp02.json"
+    json_file = r"C:\Scripting\Processing\Cell" \
+                r"data\outdata\SiBEC\cellpy_batch_bec_exp02.json"
 
     b = init(default_log_level="DEBUG")
     b.load_info_df(json_file)
@@ -1455,7 +1470,9 @@ def main():
         print("Running batch.py (loading JSON)")
         b = init(default_log_level="DEBUG")
         b.load_info_df(
-            r"C:\Scripting\Processing\Celldata\outdata\CellpyTest\cellpy_batch_bec_exp06.json")
+            r"C:\Scripting\Processing\Cell"
+            r"data\outdata\CellpyTest\cellpy_batch_bec_exp06.json"
+        )
     print(b)
     print("The info DataFrame:")
     print(b.info_df.head(5))
