@@ -316,10 +316,7 @@ class CellpyData(object):
                 second argument.
             """
 
-        txt = "check_file_ids\n  checking file ids - using '%s'" \
-              % self.filestatuschecker
-
-        self.logger.debug(txt)
+        txt = "checking file ids - using '%s'" % self.filestatuschecker
         self.logger.info(txt)
 
         ids_cellpy_file = self._check_cellpy_file(cellpyfile)
@@ -1174,7 +1171,7 @@ class CellpyData(object):
         # retrieving cycle numbers
         if cycle_number is None:
             # print "cycle number is none"
-            cycle_numbers = self.get_cycle_numbers(dataset_number)
+            cycle_numbers = self.get_cycle_numbers(dataset_number, steptable=steptable)
         else:
             cycle_numbers = [cycle_number, ]
 
@@ -1413,8 +1410,11 @@ class CellpyData(object):
 
         else:
             self.logger.debug("masking and labelling steps")
-            df_steps.loc[mask_no_current_hard & mask_voltage_up, shdr.type] = \
-                'ocvrlx_up'
+            df_steps.loc[mask_no_current_hard & mask_voltage_stable,
+                         shdr.type] = 'rest'
+
+            df_steps.loc[mask_no_current_hard & mask_voltage_up,
+                         shdr.type] = 'ocvrlx_up'
 
             df_steps.loc[mask_no_current_hard & mask_voltage_down,
                          shdr.type] = 'ocvrlx_down'
@@ -2500,30 +2500,30 @@ class CellpyData(object):
                         ocv.append(c)
             return ocv
 
-    def get_number_of_cycles(self, dataset_number=None):
+    def get_number_of_cycles(self, dataset_number=None, steptable=None):
         """Get the number of cycles in the test."""
-
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-        d = self.datasets[dataset_number].dfdata
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        no_cycles = np.amax(d[cycle_index_header])
+        if steptable is None:
+            dataset_number = self._validate_dataset_number(dataset_number)
+            if dataset_number is None:
+                self._report_empty_dataset()
+                return
+            d = self.datasets[dataset_number].dfdata
+            no_cycles = np.amax(d[self.headers_normal.cycle_index_txt])
+        else:
+            no_cycles = np.amax(steptable[self.headers_step_table.cycle])
         return no_cycles
 
-    def get_cycle_numbers(self, dataset_number=None):
+    def get_cycle_numbers(self, dataset_number=None, steptable=None):
         """Get a list containing all the cycle numbers in the test."""
-
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-        d = self.datasets[dataset_number].dfdata
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        no_cycles = np.amax(d[cycle_index_header])
-        # cycles = np.unique(d[cycle_index_header]).values
-        cycles = np.unique(d[cycle_index_header])
+        if steptable is None:
+            dataset_number = self._validate_dataset_number(dataset_number)
+            if dataset_number is None:
+                self._report_empty_dataset()
+                return
+            d = self.datasets[dataset_number].dfdata
+            cycles = np.unique(d[self.headers_normal.cycle_index_txt])
+        else:
+            cycles = np.unique(steptable[self.headers_step_table.cycle])
         return cycles
 
     def get_ir(self, dataset_number=None):
