@@ -201,7 +201,6 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
         c, v = extract_func(cycle)
         if v.any():
             try:
-                # noinspection PyPep8Naming
                 v, dq = dqdv(v, c)
                 v = v.tolist()
                 dq = dq.tolist()
@@ -1001,8 +1000,8 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         logger.debug(l_txt)
         print(h_txt)
         if not row.raw_file_names and not force_cellpy:
-            print("File(s) not found!")
-            print(indx)
+            logger.info("File(s) not found!")
+            logger.info(indx)
             logger.debug("File(s) not found for index=%s" % indx)
             errors.append(indx)
             continue
@@ -1038,12 +1037,12 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
                 continue
 
         if not cell_data.check():
-            print("...not loaded...")
+            logger.info("...not loaded...")
             logger.debug("Did not pass check(). Could not load cell!")
             errors.append("check:" + str(indx))
             continue
 
-        print("...loaded successfully...")
+        logger.info("...loaded successfully...")
         keys.append(indx)
 
         summary_tmp = cell_data.dataset.dfsummary
@@ -1079,7 +1078,6 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
             continue
 
         if export_raw:
-            print("...exporting data....")
             logger.info("exporting csv")
             cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles,
                              shifted=shifted_cycles, raw=export_raw,
@@ -1088,19 +1086,19 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         if do_export_dqdv:
             logger.info("exporting dqdv")
             try:
-                # TODO: implement last_cycle
                 export_dqdv(cell_data, savedir=raw_dir, sep=sep,
                             last_cycle=last_cycle)
             except Exception as e:
-                print("...could not make/export dq/dv data...")
+                logging.error("Could not make/export dq/dv data")
                 logger.debug("Failed to make/export "
                              "dq/dv data (%s): %s" % (indx, str(e)))
                 errors.append("ica:" + str(indx))
+
     if len(errors) > 0:
-        print("Finished with errors!")
-        print(errors)
+        logger.error("Finished with errors!")
+        logger.debug(errors)
     else:
-        print("Finished")
+        logger.info("Finished")
 
     return frames, keys, errors
 
@@ -1119,11 +1117,11 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
 
     """
     if not frames:
-        print("Could save summaries - no summaries to save!")
+        logger.info("Could save summaries - no summaries to save!")
         logger.info("You have no frames - aborting")
         return None
     if not keys:
-        print("Could save summaries - no summaries to save!")
+        logger.info("Could save summaries - no summaries to save!")
         logger.info("You have no keys - aborting")
         return None
 
@@ -1373,7 +1371,7 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
         sep: separator for the .csv-files.
         last_cycle: only export up to this cycle (if not None)
     """
-    logger.info("Exporting dQ/dV")
+    logger.debug("exporting dqdv")
     filename = cell_data.dataset.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
@@ -1400,7 +1398,7 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
         logger.debug("saved ica for charge")
 
     # extracting discharge
-    out_data = _extract_dqdv(cell_data, cell_data.get_dcap)
+    out_data = _extract_dqdv(cell_data, cell_data.get_dcap, last_cycle)
     logger.debug("extracxted ica for discharge")
     try:
         _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
