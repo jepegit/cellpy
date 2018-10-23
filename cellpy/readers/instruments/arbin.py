@@ -494,6 +494,7 @@ class ArbinLoader(Loader):
             new_tests (list of data objects)
         """
         # TODO: insert kwargs - current chunk, only normal data, etc
+
         new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
@@ -616,6 +617,7 @@ class ArbinLoader(Loader):
                 txt = "\nCould not find any summary (stats-file)!"
                 txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
                 warnings.warn(txt)
+            # normal_df = normal_df.set_index("Data_Point")
             data.dfsummary = summary_df
             data.dfdata = normal_df
             data.raw_data_files_length.append(length_of_test)
@@ -702,7 +704,6 @@ class ArbinLoader(Loader):
                 chunk_number += 1
             length_of_test = normal_df.shape[0]
             self.logger.debug("finished iterating (#rows: %i)", length_of_test)
-
         return length_of_test, normal_df
 
 

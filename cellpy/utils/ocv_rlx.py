@@ -69,26 +69,27 @@ class MultiCycleOcvFit(object):
                                               cycle_number=cycle)
 
             if voltage is not None:
-                step_table = self.data.dataset.step_table  # hope it works...
+                step_table = self.data.dataset.step_table
+                hdr = self.data.headers_step_table
                 if ocv_type is 'ocvrlx_up':
                     end_voltage = step_table[(step_table['cycle'] == cycle) & (
                         step_table['type'].isin(['discharge']))][
-                        'V_end'].values[0]
+                        hdr.voltage + "_last"].values[0]
                     end_current = step_table[(step_table['cycle'] == cycle) & (
                         step_table['type'].isin(['discharge']))][
-                        'I_end'].values[0]
+                        hdr.current + "_last"].values[0]
                     ocv_fitter.set_zero_voltage(end_voltage)
                     ocv_fitter.set_zero_current(end_current)
                 elif ocv_type is 'ocvrlx_down':
                     end_voltage = \
                         step_table[(step_table['cycle'] == cycle) & (
                             step_table['type'].isin(['charge']))][
-                            'V_end'].values[
+                            hdr.voltage + "_last"].values[
                             0]
                     end_current = \
                         step_table[(step_table['cycle'] == cycle) & (
                             step_table['type'].isin(['charge']))][
-                            'I_end'].values[
+                            hdr.current + "_last"].values[
                             0]
                     ocv_fitter.set_zero_voltage(end_voltage)
                     ocv_fitter.set_zero_current(end_current)
