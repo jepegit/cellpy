@@ -52,4 +52,4 @@ mpr_cellpy_file_path = os.path.join(cellpy_data_dir, mpr_cellpy_file_name)
 
 # -------- some values set used by the old batch ----
 example_file_for_batch = "20160805_test001_45_cc_01_cycles.csv"
-tot_cycles = 36
+tot_cycles = 34

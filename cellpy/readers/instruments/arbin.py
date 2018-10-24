@@ -155,7 +155,7 @@ class ArbinLoader(Loader):
         raw_limits["stable_current_soft"] = 4.0
         raw_limits["stable_voltage_hard"] = 2.0
         raw_limits["stable_voltage_soft"] = 4.0
-        raw_limits["stable_charge_hard"] = 2.0
+        raw_limits["stable_charge_hard"] = 0.9
         raw_limits["stable_charge_soft"] = 5.0
         raw_limits["ir_change"] = 0.00001
         return raw_limits
@@ -611,9 +611,11 @@ class ArbinLoader(Loader):
                         try:
                             os.remove(f)
                         except WindowsError as e:
-                            self.logger.warning("could not remove tmp-file\n%s %s" % (f, e))
+                            self.logger.warning(
+                                f"could not remove tmp-file\n{f} {e}"
+                            )
 
-            if summary_df.empty:
+            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
                 txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
                 warnings.warn(txt)

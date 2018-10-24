@@ -58,6 +58,7 @@ Reader = {
     "force_all": False,  # not used yet - should be used when saving
     "sep": ";",
     "cycle_mode": 'anode',  # used in cellreader (593)
+    "sorted_data": True,  # finding step-types assumes sorted data
     "load_only_summary": False,
     "select_minimal": False,
     "limit_loaded_cycles": None,
