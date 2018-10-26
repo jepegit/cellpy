@@ -250,7 +250,7 @@ def index_bounds(x):
     return x.iloc[0], x.iloc[-1]
 
 
-def dqdv_cycle(cycle):
+def dqdv_cycle(cycle, splitter=True):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycle.
 
@@ -260,6 +260,7 @@ def dqdv_cycle(cycle):
         Args:
             cycle (pandas.DataFrame): the cycle data ('voltage', 'capacity',
                  'direction' (1 or -1)).
+            splitter (bool): insert a np.NaN row between charge and discharge.
 
         Returns:
             List of step numbers corresponding to the selected steptype.
@@ -287,6 +288,11 @@ def dqdv_cycle(cycle):
     converter.post_process_data()
     voltage_first = converter.voltage_processed
     incremental_capacity_first = converter.incremental_capacity
+
+    if splitter:
+        voltage_first = np.append(voltage_first, np.NaN)
+        incremental_capacity_first = np.append(incremental_capacity_first,
+                                               np.NaN)
 
     converter = Converter()
     converter.set_data(c_last["capacity"], c_last["voltage"])
