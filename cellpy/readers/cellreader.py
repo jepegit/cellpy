@@ -2226,7 +2226,10 @@ class CellpyData(object):
 
     def get_cap(self, cycle=None, dataset_number=None,
                 method="back-and-forth",
-                shift=0.0, ):
+                shift=0.0,
+                categorical_column=False,
+                dynamic=False,
+                ):
         """Gets the capacity for the run.
         For cycle=None: not implemented yet, cycle set to 1.
 
@@ -2240,11 +2243,17 @@ class CellpyData(object):
                     (or shift if not shift=0.0)
             shift: start-value for charge (or discharge) (typically used when
                 plotting shifted-capacity).
+            categorical_column: add a categorical column showing if it is
+                charge or discharge.
             dataset_number (int): test number (default first)
                 (usually not used).
+            dynamic: for dynamic retrieving data from cellpy-file.
 
-        Returns: capacity (mAh/g), voltage
+        Returns:
+            capacity (mAh/g) and voltage if not categorical_column is True,
+            else pandas.DataFrame (voltage, capacity, direction (-1, 1))
         """
+
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -2266,6 +2275,7 @@ class CellpyData(object):
 
         capacity = None
         voltage = None
+        cycle_df = None
 
         initial = True
         for current_cycle in cycle:
@@ -2347,13 +2357,41 @@ class CellpyData(object):
                 else:
                     self.logger.debug("no first charge step found")
 
-            c = pd.concat([_first_step_c, _last_step_c], axis=0)
-            v = pd.concat([_first_step_v, _last_step_v], axis=0)
+            if categorical_column:
+                try:
+                    _first_df = pd.DataFrame(
+                            {
+                                "voltage": _first_step_v.values,
+                                "capacity": _first_step_c.values
+                             }
+                    )
+                    _first_df["direction"] = -1
 
-            capacity = pd.concat([capacity, c], axis=0)
-            voltage = pd.concat([voltage, v], axis=0)
+                    _last_df = pd.DataFrame(
+                        {
+                            "voltage": _last_step_v.values,
+                            "capacity": _last_step_c.values
+                        }
+                    )
+                    _last_df["direction"] = 1
 
-        return capacity, voltage
+                except AttributeError:
+                    self.logger.info("could not extract cycle")
+
+                c = pd.concat([_first_df, _last_df], axis=0)
+                cycle_df = pd.concat([cycle_df, c], axis=0)
+
+            else:
+                c = pd.concat([_first_step_c, _last_step_c], axis=0)
+                v = pd.concat([_first_step_v, _last_step_v], axis=0)
+
+                capacity = pd.concat([capacity, c], axis=0)
+                voltage = pd.concat([voltage, v], axis=0)
+
+        if categorical_column:
+            return cycle_df
+        else:
+            return capacity, voltage
 
     def _get_cap(self, cycle=None, dataset_number=None, cap_type="charge"):
         # used when extracting capacities (get_ccap, get_dcap)
