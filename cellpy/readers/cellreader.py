@@ -3494,7 +3494,8 @@ class CellpyData(object):
                 txt = "index in dfsummary.index: %i" % i
                 self.logger.debug(txt)
                 # selecting the appropriate cycle
-                cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
+                #cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
+                cycle = dfsummary.iloc[i][c_txt]
                 txt = "cycle: %i" % cycle
                 self.logger.debug(txt)
                 step = discharge_steps[cycle]
