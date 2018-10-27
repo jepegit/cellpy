@@ -21,6 +21,7 @@ Todo:
 """
 
 import os
+from pathlib import Path
 import logging
 import sys
 import collections
@@ -79,6 +80,7 @@ class CellpyData(object):
         self.loader = None  # this will be set in the function set_instrument
         self.logger = logging.getLogger(__name__)
         self.logger.info("created CellpyData instance")
+        self.name = None
         self.profile = profile
         self.minimum_selection = {}
         if filestatuschecker is None:
@@ -563,6 +565,7 @@ class CellpyData(object):
             self.logger.warning("No new datasets added!")
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
+        self._invent_a_name()
 
     def from_res(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the
@@ -621,6 +624,15 @@ class CellpyData(object):
     def _empty_dataset():
         return None
 
+    def _invent_a_name(self, filename=None, override=False):
+        if filename is None:
+            self.name = "nameless"
+            return
+        if self.name and not override:
+            return
+        path = Path(filename)
+        self.name = name = path.with_suffix("").name
+
     def load(self, cellpy_file, parent_level="CellpyData"):
         """Loads a cellpy file.
 
@@ -650,6 +662,7 @@ class CellpyData(object):
 
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
+        self._invent_a_name(cellpy_file)
 
     def _load_hdf5(self, filename, parent_level="CellpyData"):
         """Load a cellpy-file.
