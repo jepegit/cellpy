@@ -21,16 +21,29 @@ SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 use_subprocess = prms.Instruments.use_subprocess
 detect_subprocess_need = prms.Instruments.detect_subprocess_need
 
+# Finding out some stuff about the platform
+is_posix = False
+is_macos = False
+if os.name == "posix":
+    is_posix = True
+current_platform = platform.system()
+if current_platform == "Darwin":
+    is_macos = True
+
 if detect_subprocess_need:
     python_version, os_version = platform.architecture()
     if python_version == "64bit" and prms.Instruments.office_version == "32bit":
         use_subprocess = True
 
-if use_subprocess:
+if use_subprocess and not is_posix:
+    # The windows users most likely have a strange custom path to mdbtools etc.
     if not prms.Instruments.sub_process_path:
         sub_process_path = str(prms._sub_process_path)
     else:
         sub_process_path = str(prms.Instruments.sub_process_path)
+
+if is_posix:
+    sub_process_path = "mdb-export"
 
 try:
     DRIVER = prms.odbc_driver
@@ -59,15 +72,6 @@ if not use_ado:
             warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
             dbloader = None
 
-# finding out some stuff about the platform
-is_posix = False
-is_macos = False
-if os.name == "posix":
-    is_posix = True
-current_platform = platform.system()
-if current_platform == "Darwin":
-    is_macos = True
-
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
                      "Current", "Voltage", "Charge_Capacity", "Discharge_Capacity", "Internal_Resistance"]
@@ -80,7 +84,6 @@ TABLE_NAMES = {
 }
 
 
-# noinspection PyPep8Naming
 class ArbinLoader(Loader):
     """ Class for loading arbin-data from res-files."""
 
