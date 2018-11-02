@@ -1,6 +1,7 @@
 """cellpy parameters"""
 
 import os
+from pathlib import Path
 import sys
 import box
 
@@ -127,6 +128,10 @@ Instruments = {
     "max_res_filesize": 150000000,
     "chunk_size": None,
     "max_chunks": None,
+    "use_subprocess": False,
+    "detect_subprocess_need": True,
+    "sub_process_path": None,
+    "office_version": "32bit",
 }
 Instruments = box.Box(Instruments)
 
@@ -166,6 +171,8 @@ _prm_globtxt = "_cellpy_prms*.conf"
 _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
 _search_for_odbc_driver = True
+_sub_process_path = Path(__file__) / "../../../bin/mdbtools-win/mdb-export"
+_sub_process_path = _sub_process_path.resolve()
 
 _cellpyfile_root = "CellpyData"
 _cellpyfile_complevel = 1

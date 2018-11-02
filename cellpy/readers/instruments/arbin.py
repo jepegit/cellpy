@@ -17,6 +17,21 @@ from cellpy.parameters import prms
 # Select odbc module
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
+
+use_subprocess = prms.Instruments.use_subprocess
+detect_subprocess_need = prms.Instruments.detect_subprocess_need
+
+if detect_subprocess_need:
+    python_version, os_version = platform.architecture()
+    if python_version == "64bit" and prms.Instruments.office_version == "32bit":
+        use_subprocess = True
+
+if use_subprocess:
+    if not prms.Instruments.sub_process_path:
+        sub_process_path = str(prms._sub_process_path)
+    else:
+        sub_process_path = str(prms.Instruments.sub_process_path)
+
 try:
     DRIVER = prms.odbc_driver
 except AttributeError:
@@ -52,10 +67,6 @@ if os.name == "posix":
 current_platform = platform.system()
 if current_platform == "Darwin":
     is_macos = True
-
-# # Check if 64 bit python is used and give warning
-# if check64bit(System="python"):
-#     warnings.warn("using 64bit python: this is not tested and might cause errors")
 
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
@@ -526,8 +537,14 @@ class ArbinLoader(Loader):
         shutil.copy2(file_name, temp_dir)
         self.logger.debug("tmp file: %s" % temp_filename)
 
-        # windows
-        if not is_posix:
+        use_mdbtools = False
+        if use_subprocess:
+            use_mdbtools = True
+        if is_posix:
+            use_mdbtools = True
+
+        # windows with same python bit as windows bit (the ideal case)
+        if not use_mdbtools:
             constr = self.__get_res_connector(temp_filename)
 
             if use_ado:
@@ -544,10 +561,13 @@ class ArbinLoader(Loader):
 
         else:
             import subprocess
-            if is_macos:
-                self.logger.debug("\nMAC OSX USING MDBTOOLS")
+            if is_posix:
+                if is_macos:
+                    self.logger.debug("\nMAC OSX USING MDBTOOLS")
+                else:
+                    self.logger.debug("\nPOSIX USING MDBTOOLS")
             else:
-                self.logger.debug("\nPOSIX USING MDBTOOLS")
+                self.logger.debug("\nWINDOWS USING MDBTOOLS-WIN")
 
             # creating tmp-filenames
             temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
@@ -561,7 +581,7 @@ class ArbinLoader(Loader):
             # executing cmds
             for table_name, tmp_file in mdb_prms:
                 with open(tmp_file, "w") as f:
-                    subprocess.call(["mdb-export", temp_filename, table_name], stdout=f)
+                    subprocess.call([sub_process_path, temp_filename, table_name], stdout=f)
                     self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
 
             # use pandas to load in the data
@@ -588,7 +608,7 @@ class ArbinLoader(Loader):
             data.raw_data_files.append(fid)
 
             self.logger.debug("reading raw-data")
-            if not is_posix:
+            if not use_mdbtools:
                 # --------- read raw-data (normal-data) -------------------------
                 length_of_test, normal_df = self._load_res_normal_table(conn, data.test_ID, bad_steps)
                 # --------- read stats-data (summary-data) ----------------------
