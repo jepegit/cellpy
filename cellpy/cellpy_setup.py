@@ -1,4 +1,5 @@
 import os
+import getpass
 import click
 import pkg_resources
 
@@ -36,10 +37,14 @@ def get_user_dir_and_dst(init_filename):
     return user_dir, dst_file
 
 
+def get_user_name():
+    """get the user name of the current user (cross platform)"""
+    return getpass.getuser()
+
+
 def create_custom_init_filename():
     """creates a custom prms filename"""
-    return DEFAULT_FILENAME_START + os.environ.get(
-        "USERNAME") + DEFAULT_FILENAME_END
+    return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
 
 
 @click.group()

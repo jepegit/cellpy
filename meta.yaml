@@ -8,13 +8,29 @@ source:
 
 requirements:
   host:
-    - python
+    - python >= 3.6
     - setuptools
 
   run:
-    - python
+    - python >= 3.6
+    - python>=3.6
+    - numpy
+    - xlrd
+    - matplotlib
+    - cryptography
+    - click
+    - scipy
+    - pandas
+    - pytables
+    - setuptools
+    - pyyaml
+    - pip:
+      - lmfit
+      - python-box
 
 test:
+  requires:
+    - pytest
   imports:
     -
 
