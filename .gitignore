@@ -10,6 +10,7 @@ __pycache__/
 old/
 dev_data/
 testdata/hdf5/20160805_test001_45_cc.h5
+testdata/hdf5/20160805_test001_47_cc.h5
 testdata/hdf5/20160306_snx001_10_cc_01.h5
 cellpy/readers/instruments/tmp.dat
 examples/trying_stuff.py
