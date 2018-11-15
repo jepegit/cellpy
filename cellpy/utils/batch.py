@@ -14,7 +14,7 @@ import matplotlib as mpl
 import cellpy.parameters.internal_settings
 from cellpy.parameters import prms
 from cellpy import cellreader, dbreader, filefinder
-from cellpy.exceptions import ExportFailed
+from cellpy.exceptions import ExportFailed, NullData
 
 logger = logging.getLogger(__name__)
 
@@ -198,27 +198,24 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
         logger.debug(f"you have {len(list_of_cycles)} cycles to process")
     out_data = []
     for cycle in list_of_cycles:
-        c, v = extract_func(cycle)
-        if v.any():
-            try:
-                v, dq = dqdv(v, c)
-                v = v.tolist()
-                dq = dq.tolist()
-            except IndexError or OverflowError as e:
-                v = list()
-                dq = list()
-                logger.info(" -could not process this (cycle %i)" % cycle)
-                logger.info(" %s" % e)
+        try:
+            c, v = extract_func(cycle)
+            v, dq = dqdv(v, c)
+            v = v.tolist()
+            dq = dq.tolist()
+        except NullData as e:
+            v = list()
+            dq = list()
+            logger.info(" Ups! Could not process this (cycle %i)" % cycle)
+            logger.info(" %s" % e)
 
-            header_x = "dQ cycle_no %i" % cycle
-            header_y = "voltage cycle_no %i" % cycle
-            dq.insert(0, header_x)
-            v.insert(0, header_y)
+        header_x = "dQ cycle_no %i" % cycle
+        header_y = "voltage cycle_no %i" % cycle
+        dq.insert(0, header_x)
+        v.insert(0, header_y)
 
-            out_data.append(v)
-            out_data.append(dq)
-        else:
-            logger.info(f"Empty step encountered for cycle={cycle}")
+        out_data.append(v)
+        out_data.append(dq)
     return out_data
 
 
