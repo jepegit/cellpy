@@ -131,8 +131,10 @@ class CellpyData(object):
         # self.load_until_error = prms.Reader.load_until_error
         self.ensure_step_table = prms.Reader.ensure_step_table
         self.daniel_number = prms.Reader.daniel_number
-        self.raw_datadir = prms.Reader.raw_datadir
-        self.cellpy_datadir = prms.Reader.cellpy_datadir
+        # self.raw_datadir = prms.Reader.raw_datadir
+        self.raw_datadir = prms.Paths.rawdatadir
+        # self.cellpy_datadir = prms.Reader.cellpy_datadir
+        self.cellpy_datadir = prms.Paths.cellpydatadir
         # search in prm-file for res and hdf5 dirs in loadcell:
         self.auto_dirs = prms.Reader.auto_dirs
 

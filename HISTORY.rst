@@ -3,6 +3,12 @@ History
 =======
 
 
+0.2.1 (2018)
+------------
+
+* Allow for using mdbtools also on win
+
+
 0.2.0 (2018-10-17)
 ------------------
 
