@@ -14,7 +14,7 @@ UPLOAD_PYPI = "twine upload dist/*"  # uploads to pypi (note! remove old tar-fil
 
 # some sphinx commands
 # BUILD = "sphinx-build -b html sourcedir builddir" # not used
-EASY_BUILD = "make html" # inside the docs directory to make html docs
+EASY_BUILD = "make html"  # inside the docs directory to make html docs
 CREATE_APIDOC = "sphinx-apidoc -o source ..\cellpy" # inside the docs directory to make .rst files for docstrings etc.
 
 current_file_path = os.path.dirname(os.path.realpath(__file__))

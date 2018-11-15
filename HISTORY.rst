@@ -2,6 +2,15 @@
 History
 =======
 
+
+0.2.0 (2018-10-17)
+------------------
+
+* Improved creation of step tables (much faster)
+* Default compression on cellpy (hdf5) files
+* Bug fixes
+
+
 0.1.22 (2018-07-17)
 -------------------
 
