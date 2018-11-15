@@ -2421,15 +2421,15 @@ class CellpyData(object):
             cap_type = "discharge"
         # cycles = self.find_step_numbers(step_type =cap_type,
         # dataset_number = dataset_number)
-        self.logger.debug("in _get_cap: finding step numbers")
-        if cycle:
-            self.logger.debug("for cycle")
-            self.logger.debug(cycle)
+        # self.logger.debug("in _get_cap: finding step numbers")
+        # if cycle:
+        #     self.logger.debug("for cycle")
+        #     self.logger.debug(cycle)
         cycles = self.get_step_numbers(steptype=cap_type, allctypes=False,
                                        cycle_number=cycle,
                                        dataset_number=dataset_number)
 
-        self.logger.debug(cycles)
+        # self.logger.debug(cycles)
         c = pd.Series()
         v = pd.Series()
         if cap_type == "charge":
