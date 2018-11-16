@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 import cellpy.parameters.internal_settings
-from cellpy.parameters import prms
+from cellpy import prms
 from cellpy import cellreader, dbreader, filefinder
-from cellpy.exceptions import ExportFailed
+from cellpy.exceptions import ExportFailed, NullData
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,8 @@ def _create_info_dict(reader, srnos):
     info_dict["groups"] = groups
 
     my_timer_start = time.time()
-    info_dict = _find_files(info_dict)
+    filename_cache = []
+    info_dict = _find_files(info_dict, filename_cache)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logger.info(
@@ -130,10 +131,13 @@ def _create_info_dict(reader, srnos):
     return info_dict
 
 
-def _find_files(info_dict):
+def _find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
     for run_name in info_dict["filenames"]:
-        raw_files, cellpyfile = filefinder.search_for_files(run_name)
+        if prms._use_filename_cache:
+            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(run_name, cache=filename_cache)
+        else:
+            raw_files, cellpyfile = filefinder.search_for_files(run_name)
         if not raw_files:
             raw_files = None
         info_dict["raw_file_names"].append(raw_files)
@@ -198,27 +202,24 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
         logger.debug(f"you have {len(list_of_cycles)} cycles to process")
     out_data = []
     for cycle in list_of_cycles:
-        c, v = extract_func(cycle)
-        if v.any():
-            try:
-                v, dq = dqdv(v, c)
-                v = v.tolist()
-                dq = dq.tolist()
-            except IndexError or OverflowError as e:
-                v = list()
-                dq = list()
-                logger.info(" -could not process this (cycle %i)" % cycle)
-                logger.info(" %s" % e)
+        try:
+            c, v = extract_func(cycle)
+            v, dq = dqdv(v, c)
+            v = v.tolist()
+            dq = dq.tolist()
+        except NullData as e:
+            v = list()
+            dq = list()
+            logger.info(" Ups! Could not process this (cycle %i)" % cycle)
+            logger.info(" %s" % e)
 
-            header_x = "dQ cycle_no %i" % cycle
-            header_y = "voltage cycle_no %i" % cycle
-            dq.insert(0, header_x)
-            v.insert(0, header_y)
+        header_x = "dQ cycle_no %i" % cycle
+        header_y = "voltage cycle_no %i" % cycle
+        dq.insert(0, header_x)
+        v.insert(0, header_y)
 
-            out_data.append(v)
-            out_data.append(dq)
-        else:
-            logger.info(f"Empty step encountered for cycle={cycle}")
+        out_data.append(v)
+        out_data.append(dq)
     return out_data
 
 

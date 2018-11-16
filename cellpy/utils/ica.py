@@ -250,6 +250,67 @@ def index_bounds(x):
     return x.iloc[0], x.iloc[-1]
 
 
+def dqdv_cycle(cycle, splitter=True):
+    """Convenience functions for creating dq-dv data from given capacity and
+    voltage cycle.
+
+    Returns the a DataFrame with a 'voltage' and a 'incremental_capacity'
+    column.
+
+        Args:
+            cycle (pandas.DataFrame): the cycle data ('voltage', 'capacity',
+                 'direction' (1 or -1)).
+            splitter (bool): insert a np.NaN row between charge and discharge.
+
+        Returns:
+            List of step numbers corresponding to the selected steptype.
+                Returns a pandas.DataFrame
+            instead of a list if pdtype is set to True.
+
+        Example:
+            >>> cycle_df = my_data.get_cap(
+            >>> ...   1,
+            >>> ...   categorical_column=True,
+            >>> ...   method = "forth-and-forth"
+            >>> ... )
+            >>> voltage, incremental = ica.dqdv_cycle(cycle)
+
+    """
+
+    c_first = cycle.loc[cycle["direction"] == -1]
+    c_last = cycle.loc[cycle["direction"] == 1]
+
+    converter = Converter()
+    converter.set_data(c_first["capacity"], c_first["voltage"])
+    converter.inspect_data()
+    converter.pre_process_data()
+    converter.increment_data()
+    converter.post_process_data()
+    voltage_first = converter.voltage_processed
+    incremental_capacity_first = converter.incremental_capacity
+
+    if splitter:
+        voltage_first = np.append(voltage_first, np.NaN)
+        incremental_capacity_first = np.append(incremental_capacity_first,
+                                               np.NaN)
+
+    converter = Converter()
+    converter.set_data(c_last["capacity"], c_last["voltage"])
+    converter.inspect_data()
+    converter.pre_process_data()
+    converter.increment_data()
+    converter.post_process_data()
+    voltage_last = converter.voltage_processed[::-1]
+    incremental_capacity_last = converter.incremental_capacity[::-1]
+
+    voltage = np.concatenate((voltage_first,
+                              voltage_last))
+    incremental_capacity = np.concatenate((incremental_capacity_first,
+                                           incremental_capacity_last))
+
+    return voltage, incremental_capacity
+
+
 def dqdv(voltage, capacity):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage data"""

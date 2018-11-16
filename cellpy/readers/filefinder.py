@@ -2,6 +2,7 @@
 
 import os
 import glob
+import fnmatch
 import pathlib
 import warnings
 from cellpy.parameters import prms
@@ -35,7 +36,7 @@ def create_full_names(run_name, cellpy_file_extension=None,
 # noinspection PyUnusedLocal
 def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
                      raw_file_dir=None, cellpy_file_dir=None, prm_filename=None,
-                     file_name_format=None):
+                     file_name_format=None, cache=None):
     """Searches for files (raw-data files and cellpy-files).
 
 
@@ -51,6 +52,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         prm_filename(path): optional parameter file can be given.
         file_name_format(str): format of raw-file names or a glob pattern
             (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+        cache(list): list of cached file names to search through
 
     Returns:
         run-file names (list) and cellpy-file-name (path).
@@ -61,7 +63,6 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     version = 0.1
     # might include searching and removing "." in extensions
     # should include extension definitions in prm file (version 0.6)
-
     if raw_extension is None:
         raw_extension = res_extension
 
@@ -105,28 +106,42 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
 
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
         glob_text_raw = "%s_*.%s" % (os.path.basename(run_name), raw_extension)
+        reg_exp_raw = "xxx"
     else:
         glob_text_raw = file_name_format
-
-    # TODO: use pathlib
-
-    use_pathlib_path = True
-    return_as_str_list = True
-
-    if use_pathlib_path:
-        run_files = pathlib.Path(raw_file_dir).glob(glob_text_raw)
-        if return_as_str_list:
-            run_files = [str(f.resolve()) for f in run_files]
-
-    else:
-        glob_text_raw = os.path.join(raw_file_dir, glob_text_raw)
-        run_files = glob.glob(glob_text_raw)
-        run_files.sort()
 
     cellpy_file = "{0}.{1}".format(run_name, cellpy_file_extension)
     cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
-    return run_files, cellpy_file
+    # TODO: use pathlib
+
+    if cache is None:
+
+        use_pathlib_path = False
+        return_as_str_list = True
+
+        if use_pathlib_path:
+            logger.debug("using pathlib.Path")
+            run_files = pathlib.Path(raw_file_dir).glob(glob_text_raw)
+            if return_as_str_list:
+                run_files = [str(f.resolve()) for f in run_files]
+                run_files.sort()
+
+        else:
+            glob_text_raw_full = os.path.join(raw_file_dir, glob_text_raw)
+            run_files = glob.glob(glob_text_raw_full)
+            run_files.sort()
+
+        return run_files, cellpy_file
+
+    else:
+        logger.debug("using cache in filefinder")
+        if len(cache) == 0:
+            cache = os.listdir(raw_file_dir)
+        run_files = [os.path.join(raw_file_dir, x) for x in cache if fnmatch.fnmatch(x, glob_text_raw)]
+        run_files.sort()
+
+        return run_files, cellpy_file, cache
 
 
 def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):

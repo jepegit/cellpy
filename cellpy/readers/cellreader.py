@@ -21,6 +21,7 @@ Todo:
 """
 
 import os
+from pathlib import Path
 import logging
 import sys
 import collections
@@ -31,7 +32,7 @@ from scipy import interpolate
 import numpy as np
 import pandas as pd
 from cellpy.parameters import prms
-from cellpy.exceptions import WrongFileVersion, DeprecatedFeature
+from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
 from cellpy.parameters.internal_settings import (
     get_headers_summary, get_cellpy_units,
     get_headers_normal, get_headers_step_table
@@ -79,6 +80,7 @@ class CellpyData(object):
         self.loader = None  # this will be set in the function set_instrument
         self.logger = logging.getLogger(__name__)
         self.logger.info("created CellpyData instance")
+        self.name = None
         self.profile = profile
         self.minimum_selection = {}
         if filestatuschecker is None:
@@ -129,8 +131,10 @@ class CellpyData(object):
         # self.load_until_error = prms.Reader.load_until_error
         self.ensure_step_table = prms.Reader.ensure_step_table
         self.daniel_number = prms.Reader.daniel_number
-        self.raw_datadir = prms.Reader.raw_datadir
-        self.cellpy_datadir = prms.Reader.cellpy_datadir
+        # self.raw_datadir = prms.Reader.raw_datadir
+        self.raw_datadir = prms.Paths.rawdatadir
+        # self.cellpy_datadir = prms.Reader.cellpy_datadir
+        self.cellpy_datadir = prms.Paths.cellpydatadir
         # search in prm-file for res and hdf5 dirs in loadcell:
         self.auto_dirs = prms.Reader.auto_dirs
 
@@ -553,11 +557,17 @@ class CellpyData(object):
                 test = new_tests
         self.logger.debug("finished loading the raw-files")
         if test:
+
+            if not prms.Reader.sorted_data:
+                self.logger.debug("sorting data")
+                test[set_number] = self._sort_data(test[set_number])
+
             self.datasets.append(test[set_number])
         else:
             self.logger.warning("No new datasets added!")
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
+        self._invent_a_name()
 
     def from_res(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the
@@ -616,6 +626,15 @@ class CellpyData(object):
     def _empty_dataset():
         return None
 
+    def _invent_a_name(self, filename=None, override=False):
+        if filename is None:
+            self.name = "nameless"
+            return
+        if self.name and not override:
+            return
+        path = Path(filename)
+        self.name = name = path.with_suffix("").name
+
     def load(self, cellpy_file, parent_level="CellpyData"):
         """Loads a cellpy file.
 
@@ -645,6 +664,7 @@ class CellpyData(object):
 
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
+        self._invent_a_name(cellpy_file)
 
     def _load_hdf5(self, filename, parent_level="CellpyData"):
         """Load a cellpy-file.
@@ -1237,6 +1257,15 @@ class CellpyData(object):
                              step_specifications=step_specs,
                              short=short)
 
+    def _sort_data(self, dataset):
+        if self.headers_normal.data_point_txt in dataset.dfdata.columns:
+            dataset.dfdata = dataset.dfdata.sort_values(
+                self.headers_normal.data_point_txt
+            ).reset_index()
+            return dataset
+
+        self.logger.debug("_sort_data: no datapoint header to sort by")
+
     def make_step_table(self, custom_step_definition=False,
                         step_specifications=None,
                         short=False,
@@ -1258,6 +1287,7 @@ class CellpyData(object):
             Info
         """
 
+        self.logger.debug("*** MAKING STEP-TABLE ***")
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -1276,11 +1306,11 @@ class CellpyData(object):
         def last(x):
             return x.iloc[-1]
 
-        def delta(x, default_zero=True):
+        def delta(x, default_other=True):
             if x.iloc[0] == 0.0:
                 difference = x.iloc[-1] - x.iloc[0]
-                if difference != 0.0 and default_zero:
-                    difference = 0.0
+                if difference != 0.0 and default_other:
+                    difference = difference/x.iloc[-1]
             else:
                 difference = (x.iloc[-1] - x.iloc[0]) * 100 / x.iloc[0]
 
@@ -1545,19 +1575,22 @@ class CellpyData(object):
                                     method=method,
                                     shift=shift,
                                     )
-                _last = c.iat[-1]
-                _first = c.iat[0]
+                if c is None:
+                    self.logger.debug("NoneType from get_cap")
+                else:
+                    _last = c.iat[-1]
+                    _first = c.iat[0]
 
-                c = c.tolist()
-                v = v.tolist()
-                header_x = "cap cycle_no %i" % cycle
-                header_y = "voltage cycle_no %i" % cycle
-                c.insert(0, header_x)
-                v.insert(0, header_y)
-                out_data.append(c)
-                out_data.append(v)
-                txt = "extracted cycle %i" % cycle
-                self.logger.debug(txt)
+                    c = c.tolist()
+                    v = v.tolist()
+                    header_x = "cap cycle_no %i" % cycle
+                    header_y = "voltage cycle_no %i" % cycle
+                    c.insert(0, header_x)
+                    v.insert(0, header_y)
+                    out_data.append(c)
+                    out_data.append(v)
+                    txt = "extracted cycle %i" % cycle
+                    self.logger.debug(txt)
             except IndexError as e:
                 txt = "could not extract cycle %i" % cycle
                 self.logger.info(txt)
@@ -2208,7 +2241,10 @@ class CellpyData(object):
 
     def get_cap(self, cycle=None, dataset_number=None,
                 method="back-and-forth",
-                shift=0.0, ):
+                shift=0.0,
+                categorical_column=False,
+                dynamic=False,
+                ):
         """Gets the capacity for the run.
         For cycle=None: not implemented yet, cycle set to 1.
 
@@ -2222,11 +2258,17 @@ class CellpyData(object):
                     (or shift if not shift=0.0)
             shift: start-value for charge (or discharge) (typically used when
                 plotting shifted-capacity).
+            categorical_column: add a categorical column showing if it is
+                charge or discharge.
             dataset_number (int): test number (default first)
                 (usually not used).
+            dynamic: for dynamic retrieving data from cellpy-file.
 
-        Returns: capacity (mAh/g), voltage
+        Returns:
+            capacity (mAh/g) and voltage if not categorical_column is True,
+            else pandas.DataFrame (voltage, capacity, direction (-1, 1))
         """
+
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -2248,13 +2290,24 @@ class CellpyData(object):
 
         capacity = None
         voltage = None
+        cycle_df = None
 
         initial = True
         for current_cycle in cycle:
             self.logger.debug(f"processing cycle {current_cycle}")
+            try:
+                cc, cv = self.get_ccap(current_cycle, dataset_number)
+                dc, dv = self.get_dcap(current_cycle, dataset_number)
+            except NullData as e:
+                self.logger.debug(e)
+                self.logger.debug("breaking out of loop")
+                break
 
-            cc, cv = self.get_ccap(current_cycle, dataset_number)
-            dc, dv = self.get_dcap(current_cycle, dataset_number)
+            if cc.empty:
+                self.logger.debug("get_ccap returns empty cc Series")
+
+            if dc.empty:
+                self.logger.debug("get_ccap returns empty dc Series")
 
             if initial:
                 self.logger.debug("(initial cycle)")
@@ -2319,13 +2372,41 @@ class CellpyData(object):
                 else:
                     self.logger.debug("no first charge step found")
 
-            c = pd.concat([_first_step_c, _last_step_c], axis=0)
-            v = pd.concat([_first_step_v, _last_step_v], axis=0)
+            if categorical_column:
+                try:
+                    _first_df = pd.DataFrame(
+                            {
+                                "voltage": _first_step_v.values,
+                                "capacity": _first_step_c.values
+                             }
+                    )
+                    _first_df["direction"] = -1
 
-            capacity = pd.concat([capacity, c], axis=0)
-            voltage = pd.concat([voltage, v], axis=0)
+                    _last_df = pd.DataFrame(
+                        {
+                            "voltage": _last_step_v.values,
+                            "capacity": _last_step_c.values
+                        }
+                    )
+                    _last_df["direction"] = 1
 
-        return capacity, voltage
+                except AttributeError:
+                    self.logger.info("could not extract cycle")
+
+                c = pd.concat([_first_df, _last_df], axis=0)
+                cycle_df = pd.concat([cycle_df, c], axis=0)
+
+            else:
+                c = pd.concat([_first_step_c, _last_step_c], axis=0)
+                v = pd.concat([_first_step_v, _last_step_v], axis=0)
+
+                capacity = pd.concat([capacity, c], axis=0)
+                voltage = pd.concat([voltage, v], axis=0)
+
+        if categorical_column:
+            return cycle_df
+        else:
+            return capacity, voltage
 
     def _get_cap(self, cycle=None, dataset_number=None, cap_type="charge"):
         # used when extracting capacities (get_ccap, get_dcap)
@@ -2342,15 +2423,15 @@ class CellpyData(object):
             cap_type = "discharge"
         # cycles = self.find_step_numbers(step_type =cap_type,
         # dataset_number = dataset_number)
-        self.logger.debug("in _get_cap: finding step numbers")
-        if cycle:
-            self.logger.debug("for cycle")
-            self.logger.debug(cycle)
+        # self.logger.debug("in _get_cap: finding step numbers")
+        # if cycle:
+        #     self.logger.debug("for cycle")
+        #     self.logger.debug(cycle)
         cycles = self.get_step_numbers(steptype=cap_type, allctypes=False,
                                        cycle_number=cycle,
                                        dataset_number=dataset_number)
 
-        self.logger.debug(cycles)
+        # self.logger.debug(cycles)
         c = pd.Series()
         v = pd.Series()
         if cap_type == "charge":
@@ -2366,6 +2447,7 @@ class CellpyData(object):
             else:
                 self.logger.debug("could not find any steps for this cycle")
                 txt = "(c:%i s:%i type:%s)" % (cycle, step, cap_type)
+                raise NullData("no steps found " + txt)
         else:
             # get all the discharge cycles
             # this is a dataframe filtered on step and cycle
@@ -3007,7 +3089,7 @@ class CellpyData(object):
                         txt += f
                         txt += "\n"
                 else:
-                    txt += test.loaded_from
+                    txt += str(test.loaded_from)
 
                 if not test.mass_given:
                     txt += " mass for test %i is not given" % j
@@ -3427,7 +3509,8 @@ class CellpyData(object):
                 txt = "index in dfsummary.index: %i" % i
                 self.logger.debug(txt)
                 # selecting the appropriate cycle
-                cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
+                #cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
+                cycle = dfsummary.iloc[i][c_txt]
                 txt = "cycle: %i" % cycle
                 self.logger.debug(txt)
                 step = discharge_steps[cycle]

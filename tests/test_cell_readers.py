@@ -247,13 +247,18 @@ def test_search_for_files():
 
 def test_set_res_datadir_wrong(cellpy_data_instance):
     _ = r"X:\A_dir\That\Does\Not\Exist\random_random9103414"
+    before = cellpy_data_instance.cellpy_datadir
     cellpy_data_instance.set_cellpy_datadir(_)
+    after = cellpy_data_instance.cellpy_datadir
     assert _ != cellpy_data_instance.cellpy_datadir
+    assert before == after
 
 
 def test_set_res_datadir_none(cellpy_data_instance):
+    before = cellpy_data_instance.cellpy_datadir
     cellpy_data_instance.set_cellpy_datadir()
-    assert cellpy_data_instance.cellpy_datadir is None
+    after = cellpy_data_instance.cellpy_datadir
+    assert before == after
 
 
 def test_set_res_datadir(cellpy_data_instance):
