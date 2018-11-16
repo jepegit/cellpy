@@ -7,7 +7,7 @@ from collections import OrderedDict
 import logging
 import yaml
 
-import cellpy.parameters.prms as prms
+from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 

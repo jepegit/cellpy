@@ -17,6 +17,7 @@ Contents:
    tutorial
    formats
    examples
+   tips_and_tricks
    contributing
    authors
    history

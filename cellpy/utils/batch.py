@@ -12,8 +12,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 import cellpy.parameters.internal_settings
-from cellpy.parameters import prms
+from cellpy import prms
 from cellpy import cellreader, dbreader, filefinder
+from cellpy.exceptions import ExportFailed, NullData
 
 logger = logging.getLogger(__name__)
 
@@ -118,19 +119,25 @@ def _create_info_dict(reader, srnos):
     info_dict["groups"] = groups
 
     my_timer_start = time.time()
-    info_dict = _find_files(info_dict)
+    filename_cache = []
+    info_dict = _find_files(info_dict, filename_cache)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logger.info(
-            "The function _find_files was very slow. Save your info_df so you don't have to run it again!")
+            "The function _find_files was very slow. "
+            "Save your info_df so you don't have to run it again!"
+        )
 
     return info_dict
 
 
-def _find_files(info_dict):
+def _find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
     for run_name in info_dict["filenames"]:
-        raw_files, cellpyfile = filefinder.search_for_files(run_name)
+        if prms._use_filename_cache:
+            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(run_name, cache=filename_cache)
+        else:
+            raw_files, cellpyfile = filefinder.search_for_files(run_name)
         if not raw_files:
             raw_files = None
         info_dict["raw_file_names"].append(raw_files)
@@ -141,9 +148,16 @@ def _find_files(info_dict):
 
 def _save_multi(data, file_name, sep=";"):
     """convenience function for storing data column-wise in a csv-file."""
-    with open(file_name, "wb") as f:
+    logger.debug("saving multi")
+    with open(file_name, "w", newline='') as f:
+        logger.debug(f"{file_name} opened")
         writer = csv.writer(f, delimiter=sep)
-        writer.writerows(itertools.zip_longest(*data))
+        try:
+            writer.writerows(itertools.zip_longest(*data))
+        except Exception as e:
+            logger.info(f"Exception encountered in batch._save_multi: {e}")
+            raise ExportFailed
+        logger.debug("wrote rows using itertools in _save_multi")
 
 
 def _make_unique_groups(info_df):
@@ -177,26 +191,27 @@ def _fix_groups(groups):
     return _groups
 
 
-def _extract_dqdv(cell_data, extract_func):
+def _extract_dqdv(cell_data, extract_func, last_cycle):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
     from cellpy.utils.ica import dqdv
-    # extracting charge
     list_of_cycles = cell_data.get_cycle_numbers()
+    if last_cycle is not None:
+        list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
+        logger.debug(f"only processing up to cycle {last_cycle}")
+        logger.debug(f"you have {len(list_of_cycles)} cycles to process")
     out_data = []
     for cycle in list_of_cycles:
-        c, v = extract_func(cycle)
         try:
-            # noinspection PyPep8Naming
+            c, v = extract_func(cycle)
             v, dq = dqdv(v, c)
             v = v.tolist()
             dq = dq.tolist()
-        except IndexError or OverflowError as e:
-            error_in_dqdv = True
+        except NullData as e:
             v = list()
             dq = list()
-            print(" -could not process this (cycle %i)" % cycle)
-            print(" %s" % e)
+            logger.info(" Ups! Could not process this (cycle %i)" % cycle)
+            logger.info(" %s" % e)
 
         header_x = "dQ cycle_no %i" % cycle
         header_y = "voltage cycle_no %i" % cycle
@@ -250,7 +265,8 @@ class Batch(object):
     >>> b.create_info_df()
     >>>
     >>> # or load it from a previous run:
-    >>> # filename = "../out_data/experiment_set_01/cellpy_batch_new_exiting_chemistry.json"
+    >>> # filename = "../out_data/experiment_set_01/cellpy_batch" +
+    >>> #   "_new_exiting_chemistry.json"
     >>> # b.load_info_df(filename)
     >>>
     >>> b.create_folder_structure()
@@ -337,7 +353,8 @@ class Batch(object):
         self.save_cellpy_file = True
         self.force_raw_file = False
         self.force_cellpy_file = False
-        self.use_cellpy_stat_file = True
+        self.use_cellpy_stat_file = None
+        self.last_cycle = None
 
         self._packable = ['name', 'project', 'batch_col', 'selected_summaries',
                           'output_format', 'time_stamp', 'project_dir',
@@ -397,7 +414,8 @@ class Batch(object):
             attrs = self._kwargs
         for key in attrs:
             if key.startswith("_"):
-                w_txt = "Cannot set attribute starting with '_' ('Not allowed', says the King)"
+                w_txt = "Cannot set attribute starting with '_' " \
+                        "('Not allowed', says the King)"
                 warnings.warn(w_txt)
 
             if hasattr(self, key):
@@ -411,10 +429,12 @@ class Batch(object):
         self.reader = get_db_reader(reader_label)
 
     def _create_colors_markers_list(self):
-        import cellpy.utils.plotutils as plot_utils
-        return plot_utils.create_colormarkerlist_for_info_df(self.info_df,
-                                                             symbol_label=self.symbol_label,
-                                                             color_style_label=self.color_style_label)
+        from cellpy.utils import plotutils
+        return plotutils.create_colormarkerlist_for_info_df(
+            self.info_df,
+            symbol_label=self.symbol_label,
+            color_style_label=self.color_style_label
+        )
 
     def create_info_df(self):
         """Creates a DataFrame with info about the runs (loaded from the DB)"""
@@ -479,22 +499,32 @@ class Batch(object):
     def load_and_save_raw(self, parent_level="CellpyData"):
         """Loads the cellpy or raw-data file(s) and saves to csv"""
         sep = prms.Reader["sep"]
-        self.frames, self.keys, errors = read_and_save_data(self.info_df,
-                                                            self.raw_dir,
-                                                            sep=sep,
-                                                            force_raw=self.force_raw_file,
-                                                            force_cellpy=self.force_cellpy_file,
-                                                            export_cycles=self.export_cycles,
-                                                            shifted_cycles=self.shifted_cycles,
-                                                            export_raw=self.export_raw,
-                                                            export_ica=self.export_ica,
-                                                            save=self.save_cellpy_file,
-                                                            use_cellpy_stat_file=self.use_cellpy_stat_file,
-                                                            parent_level=parent_level)
+        if self.use_cellpy_stat_file is None:
+            use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
+        else:
+            use_cellpy_stat_file = self.use_cellpy_stat_file
+        logger.debug(f"b.load_and_save_raw: "
+                     f"use_cellpy_stat_file = {use_cellpy_stat_file}")
+        self.frames, self.keys, errors = read_and_save_data(
+            self.info_df,
+            self.raw_dir,
+            sep=sep,
+            force_raw=self.force_raw_file,
+            force_cellpy=self.force_cellpy_file,
+            export_cycles=self.export_cycles,
+            shifted_cycles=self.shifted_cycles,
+            export_raw=self.export_raw,
+            export_ica=self.export_ica,
+            save=self.save_cellpy_file,
+            use_cellpy_stat_file=use_cellpy_stat_file,
+            parent_level=parent_level,
+            last_cycle=self.last_cycle
+        )
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
-        """Make and save summary csv files, each containing values from all cells"""
+        """Make and save summary csv files,
+        each containing values from all cells"""
         self.summary_df = save_summaries(self.frames, self.keys,
                                          self.selected_summaries,
                                          self.batch_dir, self.name)
@@ -521,8 +551,8 @@ class Batch(object):
             df_d = pick_summary_data("shifted_discharge_capacity",
                                      self.summary_df, self.selected_summaries)
         except AttributeError:
-            logger.debug(
-                "shifted capacities not part of summary data (selected_summaries)")
+            logger.debug("shifted capacities not part of summary data "
+                         "(selected_summaries)")
             return None
 
         # generate labels
@@ -532,45 +562,71 @@ class Batch(object):
         # adding charge/discharge label
         labels.extend(["", "discharge", "charge"])
 
-        list_of_lines, plot_style = plot_summary_data(ax, df_d,
-                                                      info_df=self.info_df,
-                                                      color_list=color_list,
-                                                      symbol_list=symbol_list,
-                                                      is_charge=False,
-                                                      plot_style=plot_style)
+        list_of_lines, plot_style = plot_summary_data(
+            ax, df_d,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=False,
+            plot_style=plot_style,
+        )
 
         # adding charge/discharge legend signs
         color = plot_style["color"]
         markersize = plot_style["markersize"]
 
-        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                      markeredgecolor=color,
-                                      markerfacecolor='none',
-                                      markersize=markersize)
-        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                        markeredgecolor=color,
-                                        markerfacecolor=color,
-                                        markersize=markersize)
-        no_label = mpl.lines.Line2D([], [], color='none', marker='s',
-                                    markersize=0)
+        open_label = mpl.lines.Line2D(
+            [], [],
+            color=color,
+            marker='s',
+            markeredgecolor=color,
+            markerfacecolor='none',
+            markersize=markersize
+        )
+
+        closed_label = mpl.lines.Line2D(
+            [], [],
+            color=color,
+            marker='s',
+            markeredgecolor=color,
+            markerfacecolor=color,
+            markersize=markersize
+        )
+
+        no_label = mpl.lines.Line2D(
+            [], [],
+            color='none',
+            marker='s',
+            markersize=0
+        )
+
         list_of_lines.extend([no_label, closed_label, open_label])
 
-        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
-                          symbol_list=symbol_list, is_charge=True,
-                          plot_style=plot_style)
+        plot_summary_data(
+            ax, df_c,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=True,
+            plot_style=plot_style
+        )
 
         # setting axes labels
         ax.set_xlabel("cycle")
         ax.set_ylabel("capacity")
         # adding legend
         logger.debug("trying to add legends " + str(labels))
-        fig.legend(handles=list_of_lines, labels=labels,
-                   bbox_to_anchor=(1.02, 1.1), loc=2,
-                   # bbox_transform=plt.gcf().transFigure,
-                   bbox_transform=ax.transAxes,
-                   numpoints=1,
-                   ncol=1, labelspacing=0.,
-                   prop={"size": 10})
+        fig.legend(
+            handles=list_of_lines,
+            labels=labels,
+            bbox_to_anchor=(1.02, 1.1),
+            loc=2,
+            # bbox_transform=plt.gcf().transFigure,
+            bbox_transform=ax.transAxes,
+            numpoints=1,
+            ncol=1, labelspacing=0.,
+            prop={"size": 10}
+        )
 
         if save:
             extension = prms.Batch["fig_extension"]
@@ -603,8 +659,8 @@ class Batch(object):
             df_d = pick_summary_data("shifted_discharge_capacity",
                                      self.summary_df, self.selected_summaries)
         except AttributeError:
-            logger.debug(
-                "shifted capacities not part of summary data (selected_summaries)")
+            logger.debug("shifted capacities not part of summary data "
+                         "(selected_summaries)")
             return None
 
         # generate labels
@@ -789,7 +845,9 @@ def create_selected_summaries_dict(summaries_list):
 
     Examples:
         >>> summaries_to_output = ["discharge_capacity", "charge_capacity"]
-        >>> summaries_to_output_dict = create_selected_summaries_dict(summaries_to_output)
+        >>> summaries_to_output_dict = create_selected_summaries_dict(
+        >>>    summaries_to_output
+        >>> )
         >>> print(summaries_to_output_dict)
         {'discharge_capacity': "Discharge_Capacity(mAh/g)",
                'charge_capacity': "Charge_Capacity(mAh/g)}
@@ -897,7 +955,9 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
                        export_cycles=False, shifted_cycles=False,
                        export_raw=True,
                        export_ica=False, save=True, use_cellpy_stat_file=False,
-                       parent_level="CellpyData"):
+                       parent_level="CellpyData",
+                       last_cycle=None,
+                       ):
     """Reads and saves cell data defined by the info-DataFrame.
 
     The function iterates through the ``info_df`` and loads data from the runs.
@@ -926,7 +986,6 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
     Returns: frames (list of cellpy summary DataFrames), keys (list of indexes),
         errors (list of indexes that encountered errors).
     """
-
     no_export = False
     do_export_dqdv = export_ica
     keys = []
@@ -942,14 +1001,13 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         logger.debug(l_txt)
         print(h_txt)
         if not row.raw_file_names and not force_cellpy:
-            print("File not found!")
-            print(indx)
+            logger.info("File(s) not found!")
+            logger.info(indx)
             logger.debug("File(s) not found for index=%s" % indx)
             errors.append(indx)
             continue
-        # TODO: need to fix so that thet logger is set properly outside Batch
-        print("Processing (%s)..." % indx)
-        logger.info("Processing (%s)..." % indx)
+        else:
+            logger.info(f"Processing {indx}")
         cell_data = cellreader.CellpyData()
         if not force_cellpy:
             logger.info("setting cycle mode (%s)..." % row.cell_type)
@@ -973,19 +1031,19 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
             try:
                 cell_data.load(row.cellpy_file_names, parent_level=parent_level)
             except Exception as e:
-                logger.info(
-                    f"Critical exception encountered {type(e)} - skipping this file")
+                logger.info(f"Critical exception encountered {type(e)} "
+                            "- skipping this file")
                 logger.debug('Failed to load. Error-message: ' + str(e))
                 errors.append("load:" + str(indx))
                 continue
 
         if not cell_data.check():
-            print("...not loaded...")
+            logger.info("...not loaded...")
             logger.debug("Did not pass check(). Could not load cell!")
             errors.append("check:" + str(indx))
             continue
 
-        print("...loaded successfully...")
+        logger.info("...loaded successfully...")
         keys.append(indx)
 
         summary_tmp = cell_data.dataset.dfsummary
@@ -1012,6 +1070,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         if save:
             if not row.fixed:
                 logger.info("saving cell to %s" % row.cellpy_file_names)
+                cell_data.ensure_step_table = True
                 cell_data.save(row.cellpy_file_names)
             else:
                 logger.debug("saving cell skipped (set to 'fixed' in info_df)")
@@ -1020,25 +1079,27 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
             continue
 
         if export_raw:
-            print("...exporting data....")
-            logger.debug("Exporting csv")
+            logger.info("exporting csv")
             cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles,
-                             shifted=shifted_cycles, raw=export_raw)
+                             shifted=shifted_cycles, raw=export_raw,
+                             last_cycle=last_cycle)
 
         if do_export_dqdv:
-            logger.debug("Exporting dqdv")
+            logger.info("exporting dqdv")
             try:
-                export_dqdv(cell_data, savedir=raw_dir, sep=sep)
+                export_dqdv(cell_data, savedir=raw_dir, sep=sep,
+                            last_cycle=last_cycle)
             except Exception as e:
-                print("...could not make/export dq/dv data...")
-                logger.debug("Failed to make/export dq/dv data (%s): %s" % (
-                indx, str(e)))
+                logging.error("Could not make/export dq/dv data")
+                logger.debug("Failed to make/export "
+                             "dq/dv data (%s): %s" % (indx, str(e)))
                 errors.append("ica:" + str(indx))
+
     if len(errors) > 0:
-        print("Finished with errors!")
-        print(errors)
+        logger.error("Finished with errors!")
+        logger.debug(errors)
     else:
-        print("Finished")
+        logger.info("Finished")
 
     return frames, keys, errors
 
@@ -1057,11 +1118,11 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
 
     """
     if not frames:
-        print("Could save summaries - no summaries to save!")
+        logger.info("Could save summaries - no summaries to save!")
         logger.info("You have no frames - aborting")
         return None
     if not keys:
-        print("Could save summaries - no summaries to save!")
+        logger.info("Could save summaries - no summaries to save!")
         logger.info("You have no keys - aborting")
         return None
 
@@ -1161,7 +1222,7 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
         info_df: the pandas DataFrame with info about the runs.
         summary_df: a pandas DataFrame with the summary data.
         color_list: a list of colors to use (one pr. group)
-        symbol_list: a list of symbols to use (one pr. cell in the largest group)
+        symbol_list: a list of symbols to use (one pr. cell in largest group)
         selected_summaries: a list of the selected summaries to plot
         batch_dir: path to the folder where the figure should be saved.
         batch_name: the batch name.
@@ -1252,7 +1313,8 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
 
     # pick data (not common for all plot types)
     if ev_ax is not None:
-        plot_ev_charge, plot_ev_discharge = figure_type_object.end_voltage_selector
+        plot_ev_charge, plot_ev_discharge = figure_type_object\
+            .end_voltage_selector
         if plot_ev_charge:
             evc_df = pick_summary_data("end_voltage_charge", summary_df,
                                        selected_summaries)
@@ -1301,35 +1363,50 @@ def create_labels(label, *args):
     return _remove_date(label)
 
 
-def export_dqdv(cell_data, savedir, sep):
+def export_dqdv(cell_data, savedir, sep, last_cycle=None):
     """Exports dQ/dV data from a CellpyData instance.
 
     Args:
         cell_data: CellpyData instance
         savedir: path to the folder where the files should be saved
         sep: separator for the .csv-files.
+        last_cycle: only export up to this cycle (if not None)
     """
-
+    logger.debug("exporting dqdv")
     filename = cell_data.dataset.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
     firstname += no_merged_sets
     if savedir:
         firstname = os.path.join(savedir, os.path.basename(firstname))
+        logger.debug(f"savedir is true: {firstname}")
+
     outname_charge = firstname + "_dqdv_charge.csv"
     outname_discharge = firstname + "_dqdv_discharge.csv"
 
     list_of_cycles = cell_data.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
-    print("%s: you have %i cycles" % (filename, number_of_cycles))
+    logger.debug("%s: you have %i cycles" % (filename, number_of_cycles))
 
     # extracting charge
-    out_data = _extract_dqdv(cell_data, cell_data.get_ccap)
-    _save_multi(data=out_data, file_name=outname_charge, sep=sep)
+    out_data = _extract_dqdv(cell_data, cell_data.get_ccap, last_cycle)
+    logger.debug("extracted ica for charge")
+    try:
+        _save_multi(data=out_data, file_name=outname_charge, sep=sep)
+    except ExportFailed:
+        logger.info("could not export ica for charge")
+    else:
+        logger.debug("saved ica for charge")
 
     # extracting discharge
-    out_data = _extract_dqdv(cell_data, cell_data.get_dcap)
-    _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
+    out_data = _extract_dqdv(cell_data, cell_data.get_dcap, last_cycle)
+    logger.debug("extracxted ica for discharge")
+    try:
+        _save_multi(data=out_data, file_name=outname_discharge, sep=sep)
+    except ExportFailed:
+        logger.info("could not export ica for discharge")
+    else:
+        logger.debug("saved ica for discharge")
 
 
 def init(*args, **kwargs):
@@ -1357,7 +1434,8 @@ def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
 def debugging():
     """This one I use for debugging..."""
     print("In debugging")
-    json_file = r"C:\Scripting\Processing\Celldata\outdata\SiBEC\cellpy_batch_bec_exp02.json"
+    json_file = r"C:\Scripting\Processing\Cell" \
+                r"data\outdata\SiBEC\cellpy_batch_bec_exp02.json"
 
     b = init(default_log_level="DEBUG")
     b.load_info_df(json_file)
@@ -1391,7 +1469,9 @@ def main():
         print("Running batch.py (loading JSON)")
         b = init(default_log_level="DEBUG")
         b.load_info_df(
-            r"C:\Scripting\Processing\Celldata\outdata\CellpyTest\cellpy_batch_bec_exp06.json")
+            r"C:\Scripting\Processing\Cell"
+            r"data\outdata\CellpyTest\cellpy_batch_bec_exp06.json"
+        )
     print(b)
     print("The info DataFrame:")
     print(b.info_df.head(5))

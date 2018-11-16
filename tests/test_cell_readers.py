@@ -247,13 +247,18 @@ def test_search_for_files():
 
 def test_set_res_datadir_wrong(cellpy_data_instance):
     _ = r"X:\A_dir\That\Does\Not\Exist\random_random9103414"
+    before = cellpy_data_instance.cellpy_datadir
     cellpy_data_instance.set_cellpy_datadir(_)
+    after = cellpy_data_instance.cellpy_datadir
     assert _ != cellpy_data_instance.cellpy_datadir
+    assert before == after
 
 
 def test_set_res_datadir_none(cellpy_data_instance):
+    before = cellpy_data_instance.cellpy_datadir
     cellpy_data_instance.set_cellpy_datadir()
-    assert cellpy_data_instance.cellpy_datadir is None
+    after = cellpy_data_instance.cellpy_datadir
+    assert before == after
 
 
 def test_set_res_datadir(cellpy_data_instance):
@@ -348,6 +353,12 @@ def test_load_res(cellpy_data_instance):
     # cellpy_data_instance.save(test_cellpy_file_full)
 
 
+def test_make_step_table(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table()
+
+
 def test_make_summary(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
@@ -385,7 +396,7 @@ def test_load_cellpyfile(cellpy_data_instance):
     unique_cycles_read = my_test.step_table.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
     assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.dfdata.loc[4, "Step_Time"], 0.1)
+    assert step_time == pytest.approx(my_test.dfdata.loc[5, "Step_Time"], 0.1)
     assert sum_test_time == pytest.approx(my_test.dfsummary.loc[:, "Test_Time"].sum(), 0.1)
     assert my_test.test_no == run_number
 

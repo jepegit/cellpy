@@ -1,6 +1,7 @@
 """cellpy parameters"""
 
 import os
+from pathlib import Path
 import sys
 import box
 
@@ -58,6 +59,7 @@ Reader = {
     "force_all": False,  # not used yet - should be used when saving
     "sep": ";",
     "cycle_mode": 'anode',  # used in cellreader (593)
+    "sorted_data": True,  # finding step-types assumes sorted data
     "load_only_summary": False,
     "select_minimal": False,
     "limit_loaded_cycles": None,
@@ -126,6 +128,10 @@ Instruments = {
     "max_res_filesize": 150000000,
     "chunk_size": None,
     "max_chunks": None,
+    "use_subprocess": False,
+    "detect_subprocess_need": True,
+    "sub_process_path": None,
+    "office_version": "32bit",
 }
 Instruments = box.Box(Instruments)
 
@@ -165,6 +171,18 @@ _prm_globtxt = "_cellpy_prms*.conf"
 _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
 _search_for_odbc_driver = True
+_use_filename_cache = True
+_sub_process_path = Path(__file__) / "../../../bin/mdbtools-win/mdb-export"
+_sub_process_path = _sub_process_path.resolve()
+
+_cellpyfile_root = "CellpyData"
+_cellpyfile_complevel = 1
+_cellpyfile_complib = None  # currentlty defaults to "zlib"
+_cellpyfile_dfdata_format = "table"
+_cellpyfile_dfsummary_format = "table"
+_cellpyfile_stepdata_format = "table"
+_cellpyfile_infotable_format = "fixed"
+_cellpyfile_fidtable_format = "fixed"
 
 # used during development for testing new features
 

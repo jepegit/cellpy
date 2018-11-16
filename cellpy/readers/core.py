@@ -8,7 +8,7 @@ import warnings
 from cellpy.parameters import prms
 
 
-CELLPY_FILE_VERSION = 3
+CELLPY_FILE_VERSION = 4
 MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 3
 NORMAL_TABLE_VERSION = 3
@@ -179,11 +179,11 @@ class DataSet(object):
         txt += "loaded from file\n"
         if isinstance(self.loaded_from, (list, tuple)):
             for f in self.loaded_from:
-                txt += f
+                txt += str(f)
                 txt += "\n"
 
         else:
-            txt += self.loaded_from
+            txt += str(self.loaded_from)
             txt += "\n"
         txt += "   GLOBAL\n"
         txt += f"material:            {self.material}\n"
