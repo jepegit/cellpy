@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 import cellpy.parameters.internal_settings
-from cellpy.parameters import prms
+from cellpy import prms
 from cellpy import cellreader, dbreader, filefinder
 from cellpy.exceptions import ExportFailed, NullData
 
@@ -119,7 +119,8 @@ def _create_info_dict(reader, srnos):
     info_dict["groups"] = groups
 
     my_timer_start = time.time()
-    info_dict = _find_files(info_dict)
+    filename_cache = []
+    info_dict = _find_files(info_dict, filename_cache)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logger.info(
@@ -130,10 +131,13 @@ def _create_info_dict(reader, srnos):
     return info_dict
 
 
-def _find_files(info_dict):
+def _find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
     for run_name in info_dict["filenames"]:
-        raw_files, cellpyfile = filefinder.search_for_files(run_name)
+        if prms._use_filename_cache:
+            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(run_name, cache=filename_cache)
+        else:
+            raw_files, cellpyfile = filefinder.search_for_files(run_name)
         if not raw_files:
             raw_files = None
         info_dict["raw_file_names"].append(raw_files)

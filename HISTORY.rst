@@ -7,6 +7,8 @@ History
 ------------
 
 * Allow for using mdbtools also on win
+* Slightly faster find_files using cache and fnmatch
+* Bug fix: error in sorting files when using pathlib fixed
 
 
 0.2.0 (2018-10-17)

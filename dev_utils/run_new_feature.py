@@ -15,7 +15,8 @@ def set_temp(tempdir="/temp"):
     prms.Paths.cellpydir = tempdir
 
 
-def main():
+def print_prms():
+    """this function will show only the 'box'-type attributes and their content in the cellpy.prms module"""
     print("running")
     print("--goal:")
     print("  convenience function for prms")
@@ -37,4 +38,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    print_prms()
