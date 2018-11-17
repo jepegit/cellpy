@@ -9,11 +9,11 @@ __pycache__/
 .idea/
 old/
 
-dev_data/
 testdata/hdf5/20160805_test001_45_cc.h5
 testdata/hdf5/20160805_test001_47_cc.h5
 testdata/hdf5/20160306_snx001_10_cc_01.h5
 
+dev_data/
 dev_data/tmp
 dev_data/bugfixing
 
