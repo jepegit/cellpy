@@ -9,6 +9,12 @@ class BaseExperiment:
         self.journal = None
         self.data = None
 
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
+
 
 class BaseJournal:
     """A journal keeps track of the details of the experiment.
@@ -22,6 +28,12 @@ class BaseJournal:
         self.project = None
         self.parameter_values = None
         self.file_name = None
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
 
     def from_db(self):
         pass
@@ -46,6 +58,12 @@ class BaseExporter:
         self.dumpers = None
         self.experiment = None
 
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
+
     def _assign_engine(self, name=None):
         pass
 
@@ -54,15 +72,36 @@ class BaseExporter:
 
 
 class BasePlotter:
-    pass
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
 
 
 class BaseReporter:
-    pass
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
 
 
 class BaseAnalyzer:
-    pass
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
 
 
 # Engines
@@ -94,43 +133,58 @@ def origin_dumper():
 
 # Experiments
 class CyclingExperiment(BaseExperiment):
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 class ImpedanceExperiment(BaseExperiment):
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 class LifeTimeExperiment(BaseExperiment):
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 # Journals
 class LabJournal(BaseJournal):
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 # Exporters
 class CSVExporter(BaseExporter):
     def __init__(self):
-        super()
+        super().__init__()
         self._assign_engine("cycles_engine")
         self._assign_dumper("csv_dumper")
 
 
 class OriginLabExporter(BaseExporter):
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 class ExcelExporter(BaseExporter):
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 def main():
+    my_experiment = CyclingExperiment()
+    my_journal = LabJournal()
     my_exporter = CSVExporter()
+
+    my_experiment.journal = my_journal
+    print(my_journal)
+    print(my_experiment)
     print(my_exporter)
 
 
 if __name__ == "__main__":
-    print("running main in batch_engines")
+    print(60 * "-")
+    print("Running main in batch_engines")
+    print(60 * "-")
     main()
+    print(60 * "-")
