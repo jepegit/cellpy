@@ -539,6 +539,10 @@ class Reader(object):
         insp = self._pick_info(serial_number, column_number)
         return insp
 
+    @staticmethod
+    def get_cell_type(serial_number):
+        return prms.Reader.cycle_mode
+
     def get_loading(self, serial_number):
         column_number = self.db_sheet_cols.loading
         insp = self._pick_info(serial_number, column_number)
