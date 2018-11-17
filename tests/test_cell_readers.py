@@ -58,7 +58,9 @@ def test_xldate_as_datetime(xldate, datemode, option, expected):
     assert result == expected
 
 
-@pytest.mark.parametrize("number", [0,pytest.mark.xfail(2, raises=IndexError)])
+@pytest.mark.parametrize("number", [
+    0, pytest.param(2, marks=pytest.mark.xfail),
+])
 def test_validate_dataset_number(dataset, number):
     dataset._validate_dataset_number(number)
 
