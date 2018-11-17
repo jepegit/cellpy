@@ -1493,5 +1493,5 @@ def main():
 
 
 if __name__ == '__main__':
-    debugging()
-    # main()
+    # debugging()
+    main()

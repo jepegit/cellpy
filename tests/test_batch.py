@@ -47,21 +47,13 @@ def test_read_excel_db(batch_instance):
     name = "test"
     project = "ProjectOfRun"
     log_level = "INFO"
-    print("creating batch instance")
     b = batch.init(name, project, default_log_level=log_level, batch_col=5)
-    print("creating info df")
     b.create_info_df()
-    print("creating folder structure")
     b.create_folder_structure()
-    print("saving info df")
     b.save_info_df()
     info_file = b.info_file
-    print("loading")
-    print(info_file)
     b.load_info_df(info_file)
-    print("loading and saving raw-files")
     b.load_and_save_raw()
-    print("making summaries")
     b.make_summaries()
 
 
