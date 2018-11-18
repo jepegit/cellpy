@@ -13,6 +13,14 @@ from cellpy.exceptions import ExportFailed, NullData
 logger = logging.getLogger(__name__)
 
 
+def look_up_and_get(cellpy_file_name, table_name):
+    """extracts table from cellpy hdf5-file"""
+
+    print(f"\nTrying to run 'look_up_and_get(cellpy_file_name, table_name)'")
+    print(f"with prms {cellpy_file_name}, {table_name}")
+    print("OH-NO!!!!!!!!! -> 'look_up_and_get' is not made yet!")
+
+
 def create_folder_structure(project_name, batch_name):
     """This function creates a folder structure for the batch project.
 

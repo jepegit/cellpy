@@ -53,7 +53,7 @@ class Doer:
 
 class BaseExperiment:
     """An experiment contains experimental data and meta-data."""
-    def __init__(self):
+    def __init__(self, *args):
         self.journal = None
         self.data = None
         self.log_level = "INFO"
@@ -67,7 +67,7 @@ class BaseExperiment:
         return self.__class__.__name__
 
     def update(self):
-        """get data"""
+        """get or link data"""
         pass
 
 
@@ -187,6 +187,11 @@ def cycles_engine():
     pass
 
 
+def summary_engine():
+    """engine to extract summary data"""
+    pass
+
+
 def dq_dv_engine():
     """engine that performs incremental analysis of the cycle-data"""
     pass
@@ -253,9 +258,188 @@ def origin_dumper():
 
 # Experiments
 class CyclingExperiment(BaseExperiment):
-    def __init__(self):
-        super().__init__()
+    """Load experimental data into memory.
+
+    This is a re-implementation of the old batch behaviour where
+    all the data are read into memory using the cellpy loadcell method.
+    """
+
+    def __init__(self, *args):
+        super().__init__(*args)
         self.journal = LabJournal()
+
+        self.force_cellpy = False
+        self.force_raw = False
+        self.save_cellpy = True
+        self.parent_level = "CellpyData"
+        self.accept_errors = True
+        self.all_in_memory = False
+
+        self.summary_frames = None
+        self.step_table_frames = None
+        self.cell_data_frames = None
+        self.errors = dict()
+
+    def update(self):
+        logger.info("[update experiment]")
+        pages = self.journal.pages
+
+        # Note to myself: replacing frames-list with frames-dicts
+        summary_frames = dict()
+        step_table_frames = dict()
+        cell_data_frames = dict()
+        number_of_runs = len(pages)
+        counter = 0
+        errors = []
+
+        for indx, row in pages.iterrows():
+            counter += 1
+            h_txt = "[" + counter * "|" + (
+                    number_of_runs - counter) * "." + "]"
+            l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
+            logger.debug(l_txt)
+            print(h_txt)
+
+            if not row.raw_file_names and not self.force_cellpy:
+                logger.info("File(s) not found!")
+                logger.info(indx)
+                logger.debug("File(s) not found for index=%s" % indx)
+                errors.append(indx)
+                continue
+            else:
+                logger.info(f"Processing {indx}")
+            cell_data = cellreader.CellpyData()
+            if not self.force_cellpy:
+                logger.info(
+                    "setting cycle mode (%s)..." % row.cell_type)
+                cell_data.set_cycle_mode(row.cell_type)
+
+            logger.info("loading cell")
+            if not self.force_cellpy:
+                logger.info("not forcing")
+                try:
+                    cell_data.loadcell(
+                        raw_files=row.raw_file_names,
+                        cellpy_file=row.cellpy_file_names,
+                        mass=row.masses,
+                        summary_on_raw=True,
+                        force_raw=self.force_raw,
+                        use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file
+                    )
+                except Exception as e:
+                    logger.info('Failed to load: ' + str(e))
+                    errors.append("loadcell:" + str(indx))
+                    if not self.accept_errors:
+                        raise Exception(e)
+                    continue
+            else:
+                logger.info("forcing")
+                try:
+                    cell_data.load(row.cellpy_file_names,
+                                   parent_level=self.parent_level)
+                except Exception as e:
+                    logger.info(
+                        f"Critical exception encountered {type(e)} "
+                        "- skipping this file")
+                    logger.debug(
+                        'Failed to load. Error-message: ' + str(e))
+                    errors.append("load:" + str(indx))
+                    if not self.accept_errors:
+                        raise Exception(e)
+
+                    continue
+
+            if not cell_data.check():
+                logger.info("...not loaded...")
+                logger.debug(
+                    "Did not pass check(). Could not load cell!")
+                errors.append("check:" + str(indx))
+                continue
+
+            logger.info("...loaded successfully...")
+
+            summary_tmp = cell_data.dataset.dfsummary
+            logger.info("Trying to get summary_data")
+
+            step_table_tmp = cell_data.dataset.step_table
+
+            if step_table_tmp is None:
+                logger.info(
+                    "No existing steptable made - running make_step_table"
+                )
+
+                cell_data.make_step_table()
+
+            if summary_tmp is None:
+                logger.info(
+                    "No existing summary made - running make_summary"
+                )
+
+                cell_data.make_summary(find_end_voltage=True,
+                                       find_ir=True)
+
+            if self.all_in_memory:
+                cell_data_frames[indx] = cell_data
+
+            if summary_tmp.index.name == b"Cycle_Index":
+                logger.debug("Strange: 'Cycle_Index' is a byte-string")
+                summary_tmp.index.name = 'Cycle_Index'
+
+            if not summary_tmp.index.name == "Cycle_Index":
+                logger.debug("Setting index to Cycle_Index")
+                # check if it is a byte-string
+                if b"Cycle_Index" in summary_tmp.columns:
+                    logger.debug(
+                        "Seems to be a byte-string in the column-headers")
+                    summary_tmp.rename(
+                        columns={b"Cycle_Index": 'Cycle_Index'},
+                        inplace=True)
+                summary_tmp.set_index("Cycle_Index", inplace=True)
+
+            step_table_frames[indx] = step_table_tmp
+            summary_frames[indx] = summary_tmp
+            if self.save_cellpy:
+                logger.info("saving to cellpy-format")
+                if not row.fixed:
+                    logger.info("saving cell to %s" % row.cellpy_file_names)
+                    cell_data.ensure_step_table = True
+                    cell_data.save(row.cellpy_file_names)
+                else:
+                    logger.debug(
+                        "saving cell skipped (set to 'fixed' in info_df)")
+
+        self.errors["update"] = errors
+        self.summary_frames = summary_frames
+        self.step_table_frames = step_table_frames
+        if self.all_in_memory:
+            self.cell_data_frames = cell_data_frames
+
+    def link(self):
+        logging.info("[estblishing links]")
+        logging.info("checking and establishing link to data")
+        step_table_frames = dict()
+        counter = 0
+        errors = []
+        try:
+            for indx, row in self.journal.pages.iterrows():
+
+                counter += 1
+                l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
+                logger.debug(l_txt)
+                logger.info(f"linking cellpy-file: {row.cellpy_file_names}")
+
+                if not os.path.isfile(row.cellpy_file_names):
+                    logger.error("File does not exist")
+                    raise IOError
+
+                step_table_frames[indx] = helper.look_up_and_get(
+                    row.cellpy_file_names,
+                    "step_table"
+                )
+
+        except IOError as e:
+            logger.warning(e)
+            logger.warning("links not established - try update")
 
 
 class ImpedanceExperiment(BaseExperiment):
@@ -273,6 +457,7 @@ class LabJournal(BaseJournal):
     def __init__(self):
         super().__init__()
         self.db_reader = dbreader.Reader()
+        self.batch_col = 5
 
     def _check_file_name(self, file_name):
         if file_name is None:
@@ -281,12 +466,14 @@ class LabJournal(BaseJournal):
             file_name = self.file_name
         return file_name
 
-    def from_db(self, col=5):
-        name = self.name
+    def from_db(self, batch_col=None):
+        if batch_col is None:
+            batch_col = self.batch_col
+        batch_name = self.name
         logger.debug(
-            "batch_name, batch_col: (%s,%i)" % (name, col)
+            "batch_name, batch_col: (%s,%i)" % (batch_name, batch_col)
         )
-        srnos = self.db_reader.select_batch(name, col)
+        srnos = self.db_reader.select_batch(batch_name, batch_col)
         self.pages = simple_db_engine(self.db_reader, srnos)
 
     def from_file(self, file_name=None):
@@ -365,8 +552,9 @@ class LabJournal(BaseJournal):
 class CSVExporter(BaseExporter):
     def __init__(self):
         super().__init__()
-        self._assign_engine("cycles_engine")
-        self._assign_dumper("csv_dumper")
+        self._assign_engine(summary_engine)
+        self._assign_engine(cycles_engine)
+        self._assign_dumper(csv_dumper)
 
 
 class OriginLabExporter(BaseExporter):
@@ -386,23 +574,41 @@ def main():
     pages = "/Users/jepe/scripting/cellpy/dev_data/cellpy_batch_test.json"
     my_experiment = CyclingExperiment()
     my_experiment.journal.from_file(pages)
+    # print("lab-journal pages for my_experiment:")
+    # print(my_experiment.journal.pages.head(10))
+
+    # setting up the experiment
     prebens_experiment = CyclingExperiment()
     prebens_experiment.journal.project = "prebens_experiment"
     prebens_experiment.journal.name = "test"
+    prebens_experiment.journal.batch_col = 5
     prebens_experiment.journal.from_db()
     prebens_experiment.journal.to_file()
 
-    my_exporter = CSVExporter()
-    my_analyzer = BaseAnalyzer()
-    my_plotter = BasePlotter()
+    print("lab-journal pages for prebens_experiment:")
+    print(prebens_experiment.journal.pages.head(10))
+    prebens_experiment.update()
 
-    # print(my_experiment)
-    # print(my_exporter)
+    prebens_experiment.link()  # Not implemented yet (linking without checking)
+    #
+    # print(prebens_experiment.step_table_frames)
+    # print(prebens_experiment.summary_frames)
 
-    print("-----exporter-----")
-    my_exporter.assign(my_experiment)
-    my_exporter.do()
-    my_exporter.info()
+    exporter = CSVExporter()
+    exporter.assign(prebens_experiment)
+    exporter.do()
+
+    # my_exporter = CSVExporter()
+    # my_analyzer = BaseAnalyzer()
+    # my_plotter = BasePlotter()
+    #
+    # # print(my_experiment)
+    # # print(my_exporter)
+    #
+    # print("-----exporter-----")
+    # my_exporter.assign(my_experiment)
+    # my_exporter.do()
+    # my_exporter.info()
 
     # print("----reporter----")
     # my_reporter = BaseReporter(my_experiment, prebens_experiment)
@@ -429,7 +635,7 @@ if __name__ == "__main__":
     prms.Paths["db_path"] = "/Users/jepe/scripting/cellpy/testdata/db"
     prms.Paths["filelogdir"] = "/Users/jepe/scripting/cellpy/testdata/log"
 
-    cellpy.log.setup_logging(default_level="DEBUG")
+    cellpy.log.setup_logging(default_level="INFO")
     logging.info("If you see this - then logging works")
 
     print(60 * "=")
