@@ -7,6 +7,7 @@ import json
 from cellpy import prms
 from cellpy import cellreader, dbreader, filefinder
 from cellpy.utils import batch_helpers as helper
+from cellpy.exceptions import ExportFailed, NullData, UnderDefined
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class Doer:
 
         for arg in args:
             if not isinstance(arg, BaseExperiment):
-                err = f"{repr(arg)} is not instance of BaseExperiment"
+                err = f"{repr(arg)} is not an instance of BaseExperiment"
                 raise TypeError(err)
         return args
 
@@ -73,7 +74,7 @@ class BaseExperiment:
 class BaseJournal:
     """A journal keeps track of the details of the experiment.
 
-    The journal should at a mimnimum conain information about the name and
+    The journal should at a mimnimum contain information about the name and
     project the experiment has."""
 
     packable = [
@@ -86,7 +87,6 @@ class BaseJournal:
         self.pages = None  # pandas.DataFrame
         self.name = None
         self.project = None
-        self.parameter_values = None
         self.file_name = None
         self.time_stamp = None
         self.project_dir = None
@@ -97,7 +97,6 @@ class BaseJournal:
         return f"{self.__class__.__name__}\n" \
                f"  - name: {str(self.name)}\n" \
                f"  - project: {str(self.project)}\n"\
-               f"  - parameter_values: {str(self.parameter_values)}\n" \
                f"  - file_name: {str(self.file_name)}\n" \
                f"  - pages: \n{str(self.pages)}"
 
@@ -116,22 +115,22 @@ class BaseJournal:
                 if hasattr(self, p):
                     setattr(self, p, metadata[p])
                 else:
-                    print(f"UNKNOWN VAR: {p}")
+                    logging.debug(f"unknown variable encountered: {p}")
 
     def from_db(self):
-        pass
+        logging.debug("not implemented")
 
     def from_file(self, file_name):
-        pass
+        raise NotImplementedError
 
     def to_file(self, file_name=None):
-        pass
+        raise NotImplementedError
 
     def generate_file_name(self):
-        pass
+        logging.debug("not implemented")
 
     def look_for_file(self):
-        pass
+        logging.debug("not implemented")
 
 
 # Do-ers
@@ -139,18 +138,32 @@ class BaseExporter(Doer):
     """An exporter exports your data to a given format"""
     def __init__(self, *args):
         super().__init__(*args)
-        self.engines = None
-        self.dumpers = None
-        self.experiment = None
+        self.engines = list()
+        self.dumpers = list()
 
-    def _assign_engine(self, name=None):
-        pass
+    def _assign_engine(self, engine):
+        self.engines.append(engine)
 
-    def _assign_dumper(self, name=None):
-        pass
+    def _assign_dumper(self, dumper):
+        self.dumpers.append(dumper)
 
     def _generate_name(self):
         pass
+
+    def _run_engine(self, engine):
+        pass
+
+    def _run_dumper(self, dumper):
+        pass
+
+    def do(self):
+        if not self.experiments:
+            raise UnderDefined("cannot run until "
+                               "you have assigned an experiment")
+        for engine in self.engines:
+            logging.debug(f"handling - {str(engine)}")
+            for dumper in self.dumpers:
+                logging.debug(f"exporting - {str(dumper)}")
 
 
 class BasePlotter(Doer):
@@ -277,8 +290,7 @@ class LabJournal(BaseJournal):
         self.pages = simple_db_engine(self.db_reader, srnos)
 
     def from_file(self, file_name=None):
-        """Loads a DataFrame with all the needed info about the run
-            (JSON file)"""
+        """Loads a DataFrame with all the needed info about the experiment"""
 
         file_name = self._check_file_name(file_name)
 
@@ -292,10 +304,58 @@ class LabJournal(BaseJournal):
         self._prm_packer(top_level_dict['metadata'])
 
     def to_file(self, file_name=None):
+        """Saves a DataFrame with all the needed info about the experiment"""
+
         file_name = self._check_file_name(file_name)
+        pages = self.pages
+
+        top_level_dict = {
+            'info_df': pages,
+            'metadata': self._prm_packer()
+        }
+
+        jason_string = json.dumps(
+            top_level_dict,
+            default=lambda info_df: json.loads(
+                info_df.to_json()
+            )
+        )
+
+        self.generate_bookshelf()
+
+        with open(file_name, 'w') as outfile:
+            outfile.write(jason_string)
+
+        self.file_name = file_name
+        logger.info("Saved file to {}".format(file_name))
+
+    def generate_bookshelf(self):
+        """make folders where we would like to put results etc"""
+
+        out_data_dir = prms.Paths.outdatadir
+        project_dir = os.path.join(out_data_dir, self.project)
+        batch_dir = os.path.join(project_dir, self.name)
+        raw_dir = os.path.join(batch_dir, "raw_data")
+
+        # create the folders
+        if not os.path.isdir(project_dir):
+            os.mkdir(project_dir)
+        if not os.path.isdir(batch_dir):
+            os.mkdir(batch_dir)
+        if not os.path.isdir(raw_dir):
+            os.mkdir(raw_dir)
+
+        return project_dir, batch_dir, raw_dir
 
     def generate_file_name(self):
-        return "filename"
+        """generate a suitable file name for the experiment"""
+        if not self.project:
+            raise UnderDefined("project name not given")
+
+        out_data_dir = prms.Paths.outdatadir
+        project_dir = os.path.join(out_data_dir, self.project)
+        file_name = "cellpy_batch_%s.json" % self.name
+        self.file_name = os.path.join(project_dir, file_name)
 
     def look_for_file(self):
         pass
@@ -320,22 +380,6 @@ class ExcelExporter(BaseExporter):
 
 
 def main():
-    import cellpy.parameters.internal_settings
-    from cellpy import prms
-    from cellpy import cellreader, dbreader, filefinder
-    from cellpy.exceptions import ExportFailed, NullData
-
-    prms.Paths["db_filename"] = "cellpy_db.xlsx"
-    prms.Paths["cellpydatadir"] = "/Users/jepe/scripting/cellpy/testdata/hdf5"
-    prms.Paths["outdatadir"] = "/Users/jepe/cellpy_data"
-    prms.Paths["rawdatadir"] = "/Users/jepe/scripting/cellpy/testdata/data"
-    prms.Paths["db_path"] = "/Users/jepe/scripting/cellpy/testdata/db"
-    prms.Paths["filelogdir"] = "/Users/jepe/scripting/cellpy/testdata/log"
-
-
-    #logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-
     # --------------------------------------------------------------------------
     # my_analyzis
     # --------------------------------------------------------------------------
@@ -343,8 +387,10 @@ def main():
     my_experiment = CyclingExperiment()
     my_experiment.journal.from_file(pages)
     prebens_experiment = CyclingExperiment()
+    prebens_experiment.journal.project = "prebens_experiment"
     prebens_experiment.journal.name = "test"
     prebens_experiment.journal.from_db()
+    prebens_experiment.journal.to_file()
 
     my_exporter = CSVExporter()
     my_analyzer = BaseAnalyzer()
@@ -353,26 +399,43 @@ def main():
     # print(my_experiment)
     # print(my_exporter)
 
-    print("-----plotter-----")
-    my_plotter.assign(my_experiment)
-    my_plotter.do()
-    my_plotter.info()
+    print("-----exporter-----")
+    my_exporter.assign(my_experiment)
+    my_exporter.do()
+    my_exporter.info()
 
-    print("----reporter----")
-    my_reporter = BaseReporter(my_experiment, prebens_experiment)
-    my_reporter.do()
-    my_reporter.info()
-
-    print("----content-in-journal-1--")
-    print(my_experiment.journal)
-
-    print("----content-in-journal-2--")
-    print(prebens_experiment.journal)
+    # print("----reporter----")
+    # my_reporter = BaseReporter(my_experiment, prebens_experiment)
+    # my_reporter.do()
+    # my_reporter.info()
+    #
+    # print("----content-in-journal-1--")
+    # print(my_experiment.journal)
+    #
+    # print("----content-in-journal-2--")
+    # print(prebens_experiment.journal)
 
 
 if __name__ == "__main__":
-    print(60 * "-")
+    import cellpy.log
+    from cellpy import prms
+    import os
+
+    prms.Paths["db_filename"] = "cellpy_db.xlsx"
+    # These prms works for me on my mac, but probably not for you:
+    prms.Paths["cellpydatadir"] = "/Users/jepe/scripting/cellpy/testdata/hdf5"
+    prms.Paths["outdatadir"] = "/Users/jepe/cellpy_data"
+    prms.Paths["rawdatadir"] = "/Users/jepe/scripting/cellpy/testdata/data"
+    prms.Paths["db_path"] = "/Users/jepe/scripting/cellpy/testdata/db"
+    prms.Paths["filelogdir"] = "/Users/jepe/scripting/cellpy/testdata/log"
+
+    cellpy.log.setup_logging(default_level="DEBUG")
+    logging.info("If you see this - then logging works")
+
+    print(60 * "=")
     print("Running main in batch_engines")
     print(60 * "-")
+
     main()
+
     print(60 * "-")

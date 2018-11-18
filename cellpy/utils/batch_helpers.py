@@ -13,6 +13,42 @@ from cellpy.exceptions import ExportFailed, NullData
 logger = logging.getLogger(__name__)
 
 
+def create_folder_structure(project_name, batch_name):
+    """This function creates a folder structure for the batch project.
+
+    The folder structure consists of main working folder ``project_name`
+    located in the ``outdatadir`` (as defined in the cellpy configuration file)
+    with a sub-folder named ``batch_name``. It also creates a folder
+    inside the ``batch_name`` folder for storing the raw data.
+    If the folders does not exist, they will be made. The function also returns
+    the name of the info-df.
+
+    Args:
+        project_name: name of the project
+        batch_name: name of the batch
+
+    Returns: (info_file, (project_dir, batch_dir, raw_dir))
+
+    """
+    out_data_dir = prms.Paths["outdatadir"]
+    project_dir = os.path.join(out_data_dir, project_name)
+    batch_dir = os.path.join(project_dir, batch_name)
+    raw_dir = os.path.join(batch_dir, "raw_data")
+
+    # create folders
+    if not os.path.isdir(project_dir):
+        os.mkdir(project_dir)
+    if not os.path.isdir(batch_dir):
+        os.mkdir(batch_dir)
+    if not os.path.isdir(raw_dir):
+        os.mkdir(raw_dir)
+
+    # create file-name for the info_df (json)
+    info_file = "cellpy_batch_%s.json" % batch_name
+    info_file = os.path.join(project_dir, info_file)
+    return info_file, (project_dir, batch_dir, raw_dir)
+
+
 def find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
     for run_name in info_dict["filenames"]:
