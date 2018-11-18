@@ -22,18 +22,14 @@ def test_initial():
 
 def test_base_exporter():
     base_exporter = batch_engines.BaseExporter()
-    base_exporter._assign_engine()
-    base_exporter._assign_dumper()
+    base_exporter._assign_engine(batch_engines.cycles_engine)
+    base_exporter._assign_dumper(batch_engines.csv_dumper)
 
 
 def test_base_journal():
     base_journal = batch_engines.BaseJournal()
-    base_journal.from_db()
-    base_journal.from_file("experiment_001.json")
-    base_journal.to_file("experiment_001.json")
-    base_journal.generate_file_name()
-    base_journal.look_for_file()
 
 
 def test_base_experiment():
     base_experiment = batch_engines.BaseExperiment()
+
