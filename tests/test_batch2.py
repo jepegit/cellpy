@@ -1,9 +1,12 @@
 import pytest
 import tempfile
 import logging
+
+import cellpy.utils.dumpers
+import cellpy.utils.engines
 from cellpy import log
 from cellpy import prms
-import cellpy.utils.batch_engines as batch_engines
+import cellpy.utils.batch_core as batch_engines
 from . import fdv
 
 log.setup_logging(default_level=logging.DEBUG)
@@ -22,8 +25,8 @@ def test_initial():
 
 def test_base_exporter():
     base_exporter = batch_engines.BaseExporter()
-    base_exporter._assign_engine(batch_engines.cycles_engine)
-    base_exporter._assign_dumper(batch_engines.csv_dumper)
+    base_exporter._assign_engine(cellpy.utils.engines.cycles_engine)
+    base_exporter._assign_dumper(cellpy.utils.dumpers.csv_dumper)
 
 
 def test_base_journal():
