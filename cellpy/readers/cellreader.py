@@ -1685,7 +1685,7 @@ class CellpyData(object):
         if sep is None:
             sep = self.sep
 
-        self.logger.info("saving to csv (CellpyData.to_csv")
+        self.logger.debug("saving to csv (CellpyData.to_csv)")
 
         dataset_number = -1
         for data in self.datasets:

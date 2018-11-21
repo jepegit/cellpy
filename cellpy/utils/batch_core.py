@@ -219,6 +219,12 @@ class CyclingExperiment(BaseExperiment):
         self.accept_errors = True
         self.all_in_memory = False
 
+        self.export_cycles = False
+        self.shifted_cycles = False
+        self.export_raw = True
+        self.export_ica = False
+        self.last_cycle = None
+
         self.summary_frames = None
         self.step_table_frames = None
         self.cell_data_frames = None
@@ -251,8 +257,10 @@ class CyclingExperiment(BaseExperiment):
                 logging.debug("File(s) not found for index=%s" % indx)
                 errors.append(indx)
                 continue
+
             else:
                 logging.info(f"Processing {indx}")
+
             cell_data = cellreader.CellpyData()
             if not self.force_cellpy:
                 logging.info(
@@ -277,6 +285,7 @@ class CyclingExperiment(BaseExperiment):
                     if not self.accept_errors:
                         raise Exception(e)
                     continue
+
             else:
                 logging.info("forcing")
                 try:
@@ -342,6 +351,7 @@ class CyclingExperiment(BaseExperiment):
 
             step_table_frames[indx] = step_table_tmp
             summary_frames[indx] = summary_tmp
+
             if self.save_cellpy:
                 logging.info("saving to cellpy-format")
                 if not row.fixed:
@@ -351,6 +361,41 @@ class CyclingExperiment(BaseExperiment):
                 else:
                     logging.debug(
                         "saving cell skipped (set to 'fixed' in info_df)")
+
+            if self.export_raw or self.export_cycles:
+                export_text = "exporting"
+                if self.export_raw:
+                    export_text += " [raw]"
+                if self.export_cycles:
+                    export_text += " [cycles]"
+                logging.info(export_text)
+                cell_data.to_csv(
+                    self.journal.raw_dir,
+                    sep=prms.Reader.sep,
+                    cycles=self.export_cycles,
+                    shifted=self.shifted_cycles,
+                    raw=self.export_raw,
+                    last_cycle=self.last_cycle
+                )
+
+            if self.export_ica:
+                logging.info("exporting [ica]")
+                try:
+                    helper.export_dqdv(
+                        cell_data,
+                        savedir=self.journal.raw_dir,
+                        sep=prms.Reader.sep,
+                        last_cycle=self.last_cycle
+                    )
+                except Exception as e:
+                    logging.error(
+                        "Could not make/export dq/dv data"
+                    )
+                    logging.debug(
+                        "Failed to make/export "
+                        "dq/dv data (%s): %s" % (indx, str(e))
+                    )
+                    errors.append("ica:" + str(indx))
 
         self.errors["update"] = errors
         self.summary_frames = summary_frames
@@ -421,6 +466,8 @@ class LabJournal(BaseJournal):
         )
         srnos = self.db_reader.select_batch(batch_name, batch_col)
         self.pages = simple_db_engine(self.db_reader, srnos)
+        self.generate_shelf_names()
+        self.generate_bookshelf()
 
     def from_file(self, file_name=None):
         """Loads a DataFrame with all the needed info about the experiment"""
@@ -435,6 +482,8 @@ class LabJournal(BaseJournal):
         self.pages = pages
         self.file_name = file_name
         self._prm_packer(top_level_dict['metadata'])
+        self.generate_shelf_names()
+        self.generate_bookshelf()
 
     def to_file(self, file_name=None):
         """Saves a DataFrame with all the needed info about the experiment"""
@@ -462,13 +511,24 @@ class LabJournal(BaseJournal):
         self.file_name = file_name
         logging.info("Saved file to {}".format(file_name))
 
+    def generate_shelf_names(self):
+        self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
+        self.batch_dir = os.path.join(self.project_dir, self.name)
+        self.raw_dir = os.path.join(self.batch_dir, "raw_data")
+
     def generate_bookshelf(self):
         """make folders where we would like to put results etc"""
 
-        out_data_dir = prms.Paths.outdatadir
-        project_dir = os.path.join(out_data_dir, self.project)
-        batch_dir = os.path.join(project_dir, self.name)
-        raw_dir = os.path.join(batch_dir, "raw_data")
+        project_dir = self.project_dir
+        raw_dir = self.raw_dir
+        batch_dir = self.batch_dir
+
+        if project_dir is None:
+            raise UnderDefined("no project directory defined")
+        if raw_dir is None:
+            raise UnderDefined("no raw directory defined")
+        if batch_dir is None:
+            raise UnderDefined("no batcb directory defined")
 
         # create the folders
         if not os.path.isdir(project_dir):
@@ -574,6 +634,9 @@ def main():
 
     # setting up the experiment
     prebens_experiment = CyclingExperiment()
+    prebens_experiment.export_raw = True
+    prebens_experiment.export_cycles = True
+    prebens_experiment.export_ica = True
     prebens_experiment.journal.project = "prebens_experiment"
     prebens_experiment.journal.name = "test"
     prebens_experiment.journal.batch_col = 5

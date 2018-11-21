@@ -9,19 +9,24 @@ from cellpy.utils import batch_helpers as helper
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
     logging.debug("cycles_engine")
+    logging.info("Not ready for production")
     # raise NotImplementedError
 
     experiments = kwargs["experiments"]
 
     farms = []
-    barn = "raw_dir"
+    barn = "raw_dir"  # Its a murder in the red barn - murder in the red barn
 
     for experiment in experiments:
         farms.append([])
         if experiment.all_in_memory:
             print("all in memory")
+            for key in experiment.cell_data_frames:
+                print(f"extracting cycles from {key}")
         else:
             print("dont have it in memory - need to lookup in the files")
+            for key in experiment.step_table_frames:
+                print(f"looking up cellpyfile for {key}")
 
     return farms, barn
 
