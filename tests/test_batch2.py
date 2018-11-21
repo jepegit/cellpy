@@ -23,10 +23,10 @@ def test_initial():
     print(dir(batch_engines))
 
 
-def test_base_exporter():
-    base_exporter = batch_engines.BaseExporter()
-    base_exporter._assign_engine(cellpy.utils.engines.cycles_engine)
-    base_exporter._assign_dumper(cellpy.utils.dumpers.csv_dumper)
+def test_csv_exporter():
+    exporter = batch_engines.CSVExporter()
+    exporter._assign_engine(cellpy.utils.engines.cycles_engine)
+    exporter._assign_dumper(cellpy.utils.dumpers.csv_dumper)
 
 
 def test_base_journal():

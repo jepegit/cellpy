@@ -31,6 +31,7 @@ import itertools
 from scipy import interpolate
 import numpy as np
 import pandas as pd
+from pandas.errors import PerformanceWarning
 from cellpy.parameters import prms
 from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
 from cellpy.parameters.internal_settings import (
@@ -1821,6 +1822,8 @@ class CellpyData(object):
         txt = "\nHDF5 file: %s" % outfile_all
         self.logger.debug(txt)
 
+        warnings.simplefilter("ignore", PerformanceWarning)
+
         store = pd.HDFStore(
             outfile_all,
             complib=prms._cellpyfile_complib,
@@ -1867,6 +1870,7 @@ class CellpyData(object):
         #                          optlevel=9, kind='full')
 
         store.close()
+        warnings.simplefilter("default", PerformanceWarning)
         # del store
 
     # --------------helper-functions--------------------------------------------
@@ -3445,8 +3449,8 @@ class CellpyData(object):
                     v_max = j["Voltage"].max()  # jepe fix
                     # print v_min,v_max
                     dv = v_max - v_min
-                    ocvcol_min.ix[index] = v_min
-                    ocvcol_max.ix[index] = v_max
+                    ocvcol_min.iloc[index] = v_min
+                    ocvcol_max.iloc[index] = v_max
 
                 dfsummary.insert(0, column=ocv_1_v_min_title, value=ocvcol_min)
                 dfsummary.insert(0, column=ocv_1_v_max_title, value=ocvcol_max)
@@ -3466,8 +3470,8 @@ class CellpyData(object):
                     v_min = j["Voltage"].min()  # jepe fix
                     v_max = j["Voltage"].max()  # jepe fix
                     dv = v_max - v_min
-                    ocvcol_min.ix[index] = v_min
-                    ocvcol_max.ix[index] = v_max
+                    ocvcol_min.iloc[index] = v_min
+                    ocvcol_max.iloc[index] = v_max
                 dfsummary.insert(0, column=ocv_2_v_min_title, value=ocvcol_min)
                 dfsummary.insert(0, column=ocv_2_v_max_title, value=ocvcol_max)
 
@@ -3509,7 +3513,6 @@ class CellpyData(object):
                 txt = "index in dfsummary.index: %i" % i
                 self.logger.debug(txt)
                 # selecting the appropriate cycle
-                #cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
                 cycle = dfsummary.iloc[i][c_txt]
                 txt = "cycle: %i" % cycle
                 self.logger.debug(txt)
@@ -3590,7 +3593,7 @@ class CellpyData(object):
                 txt = "index in dfsummary.index: %i" % i
                 self.logger.debug(txt)
                 # selecting the appropriate cycle
-                cycle = dfsummary.ix[i][c_txt]  # "Cycle_Index" = i + 1
+                cycle = dfsummary.iloc[i][c_txt]  # "Cycle_Index" = i + 1
                 txt = "cycle: %i" % cycle
                 self.logger.debug(txt)
                 step = discharge_steps[cycle]

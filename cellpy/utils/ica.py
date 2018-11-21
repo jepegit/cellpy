@@ -164,9 +164,13 @@ class Converter(object):
 
             if savgol_filter_window_length % 2 == 0:
                 savgol_filter_window_length -= 1
-            self.voltage_preprocessed = savgol_filter(self.voltage_preprocessed,
-                                                      np.amax([3, savgol_filter_window_length]),
-                                                      self.savgol_filter_window_order)
+            savgol_filter_window_length = np.amax([3, savgol_filter_window_length])
+
+            self.voltage_preprocessed = savgol_filter(
+                self.voltage_preprocessed,
+                savgol_filter_window_length,
+                self.savgol_filter_window_order
+            )
 
     def increment_data(self):
         """perform the dq-dv transform"""
