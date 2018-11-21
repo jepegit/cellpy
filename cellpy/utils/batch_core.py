@@ -1,23 +1,28 @@
 import logging
+import abc
 import pandas as pd
 import json
 
 from cellpy import cellreader, dbreader
 from cellpy.utils import batch_helpers as helper
 from cellpy.exceptions import UnderDefined
-from cellpy.utils.dumpers import csv_dumper
+from cellpy.utils.dumpers import csv_dumper, screen_dumper
 from cellpy.utils.engines import cycles_engine, summary_engine, simple_db_engine
 
-logger = logging.getLogger(__name__)
+# logging = logging.getLogger(__name__)
 
+empty_farm = []
 
 class Doer:
     """Base class for all the classes that do something to the experiment"""
     def __init__(self, *args):
         self.experiments = []
+        self.farms = []
+        self.barn = None
         args = self._validate_base_experiment_type(args)
         if args:
             self.experiments.extend(args)
+            self.farms.append(empty_farm)
 
     def __str__(self):
         return self.__class__.__name__
@@ -45,6 +50,11 @@ class Doer:
 
     def assign(self, experiment):
         self.experiments.append(experiment)
+        self.farms.append(empty_farm)
+
+    def empty_the_farms(self):
+        logging.debug("emptying the farm for all the pandas")
+        self.farms = [[] for _ in self.farms]
 
     def do(self):
         print("Sorry, don't know what I should do!")
@@ -133,12 +143,13 @@ class BaseJournal:
 
 
 # Do-ers
-class BaseExporter(Doer):
+class BaseExporter(Doer, metaclass=abc.ABCMeta):
     """An exporter exports your data to a given format"""
     def __init__(self, *args):
         super().__init__(*args)
         self.engines = list()
         self.dumpers = list()
+        self._use_dir = None
 
     def _assign_engine(self, engine):
         self.engines.append(engine)
@@ -146,13 +157,16 @@ class BaseExporter(Doer):
     def _assign_dumper(self, dumper):
         self.dumpers.append(dumper)
 
-    def _generate_name(self):
+    @abc.abstractmethod
+    def generate_name(self):
         pass
 
-    def _run_engine(self, engine):
+    @abc.abstractmethod
+    def run_engine(self, engine):
         pass
 
-    def _run_dumper(self, dumper):
+    @abc.abstractmethod
+    def run_dumper(self, dumper):
         pass
 
     def do(self):
@@ -160,9 +174,13 @@ class BaseExporter(Doer):
             raise UnderDefined("cannot run until "
                                "you have assigned an experiment")
         for engine in self.engines:
-            logging.debug(f"handling - {str(engine)}")
+            self.empty_the_farms()
+            logging.debug(f"running - {str(engine)}")
+            self.run_engine(engine)
+
             for dumper in self.dumpers:
                 logging.debug(f"exporting - {str(dumper)}")
+                self.run_dumper(dumper)
 
 
 class BasePlotter(Doer):
@@ -204,10 +222,11 @@ class CyclingExperiment(BaseExperiment):
         self.summary_frames = None
         self.step_table_frames = None
         self.cell_data_frames = None
+        self.selected_summaries = None
         self.errors = dict()
 
     def update(self):
-        logger.info("[update experiment]")
+        logging.info("[update experiment]")
         pages = self.journal.pages
 
         # Note to myself: replacing frames-list with frames-dicts
@@ -223,26 +242,26 @@ class CyclingExperiment(BaseExperiment):
             h_txt = "[" + counter * "|" + (
                     number_of_runs - counter) * "." + "]"
             l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
-            logger.debug(l_txt)
+            logging.debug(l_txt)
             print(h_txt)
 
             if not row.raw_file_names and not self.force_cellpy:
-                logger.info("File(s) not found!")
-                logger.info(indx)
-                logger.debug("File(s) not found for index=%s" % indx)
+                logging.info("File(s) not found!")
+                logging.info(indx)
+                logging.debug("File(s) not found for index=%s" % indx)
                 errors.append(indx)
                 continue
             else:
-                logger.info(f"Processing {indx}")
+                logging.info(f"Processing {indx}")
             cell_data = cellreader.CellpyData()
             if not self.force_cellpy:
-                logger.info(
+                logging.info(
                     "setting cycle mode (%s)..." % row.cell_type)
                 cell_data.set_cycle_mode(row.cell_type)
 
-            logger.info("loading cell")
+            logging.info("loading cell")
             if not self.force_cellpy:
-                logger.info("not forcing")
+                logging.info("not forcing")
                 try:
                     cell_data.loadcell(
                         raw_files=row.raw_file_names,
@@ -253,21 +272,21 @@ class CyclingExperiment(BaseExperiment):
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file
                     )
                 except Exception as e:
-                    logger.info('Failed to load: ' + str(e))
+                    logging.info('Failed to load: ' + str(e))
                     errors.append("loadcell:" + str(indx))
                     if not self.accept_errors:
                         raise Exception(e)
                     continue
             else:
-                logger.info("forcing")
+                logging.info("forcing")
                 try:
                     cell_data.load(row.cellpy_file_names,
                                    parent_level=self.parent_level)
                 except Exception as e:
-                    logger.info(
+                    logging.info(
                         f"Critical exception encountered {type(e)} "
                         "- skipping this file")
-                    logger.debug(
+                    logging.debug(
                         'Failed to load. Error-message: ' + str(e))
                     errors.append("load:" + str(indx))
                     if not self.accept_errors:
@@ -275,28 +294,28 @@ class CyclingExperiment(BaseExperiment):
                     continue
 
             if not cell_data.check():
-                logger.info("...not loaded...")
-                logger.debug(
+                logging.info("...not loaded...")
+                logging.debug(
                     "Did not pass check(). Could not load cell!")
                 errors.append("check:" + str(indx))
                 continue
 
-            logger.info("...loaded successfully...")
+            logging.info("...loaded successfully...")
 
             summary_tmp = cell_data.dataset.dfsummary
-            logger.info("Trying to get summary_data")
+            logging.info("Trying to get summary_data")
 
             step_table_tmp = cell_data.dataset.step_table
 
             if step_table_tmp is None:
-                logger.info(
+                logging.info(
                     "No existing steptable made - running make_step_table"
                 )
 
                 cell_data.make_step_table()
 
             if summary_tmp is None:
-                logger.info(
+                logging.info(
                     "No existing summary made - running make_summary"
                 )
 
@@ -307,14 +326,14 @@ class CyclingExperiment(BaseExperiment):
                 cell_data_frames[indx] = cell_data
 
             if summary_tmp.index.name == b"Cycle_Index":
-                logger.debug("Strange: 'Cycle_Index' is a byte-string")
+                logging.debug("Strange: 'Cycle_Index' is a byte-string")
                 summary_tmp.index.name = 'Cycle_Index'
 
             if not summary_tmp.index.name == "Cycle_Index":
-                logger.debug("Setting index to Cycle_Index")
+                logging.debug("Setting index to Cycle_Index")
                 # check if it is a byte-string
                 if b"Cycle_Index" in summary_tmp.columns:
-                    logger.debug(
+                    logging.debug(
                         "Seems to be a byte-string in the column-headers")
                     summary_tmp.rename(
                         columns={b"Cycle_Index": 'Cycle_Index'},
@@ -324,13 +343,13 @@ class CyclingExperiment(BaseExperiment):
             step_table_frames[indx] = step_table_tmp
             summary_frames[indx] = summary_tmp
             if self.save_cellpy:
-                logger.info("saving to cellpy-format")
+                logging.info("saving to cellpy-format")
                 if not row.fixed:
-                    logger.info("saving cell to %s" % row.cellpy_file_names)
+                    logging.info("saving cell to %s" % row.cellpy_file_names)
                     cell_data.ensure_step_table = True
                     cell_data.save(row.cellpy_file_names)
                 else:
-                    logger.debug(
+                    logging.debug(
                         "saving cell skipped (set to 'fixed' in info_df)")
 
         self.errors["update"] = errors
@@ -350,11 +369,11 @@ class CyclingExperiment(BaseExperiment):
 
                 counter += 1
                 l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
-                logger.debug(l_txt)
-                logger.info(f"linking cellpy-file: {row.cellpy_file_names}")
+                logging.debug(l_txt)
+                logging.info(f"linking cellpy-file: {row.cellpy_file_names}")
 
                 if not os.path.isfile(row.cellpy_file_names):
-                    logger.error("File does not exist")
+                    logging.error("File does not exist")
                     raise IOError
 
                 step_table_frames[indx] = helper.look_up_and_get(
@@ -363,8 +382,8 @@ class CyclingExperiment(BaseExperiment):
                 )
 
         except IOError as e:
-            logger.warning(e)
-            logger.warning("links not established - try update")
+            logging.warning(e)
+            logging.warning("links not established - try update")
 
 
 class ImpedanceExperiment(BaseExperiment):
@@ -397,7 +416,7 @@ class LabJournal(BaseJournal):
         if batch_col is None:
             batch_col = self.batch_col
         batch_name = self.name
-        logger.debug(
+        logging.debug(
             "batch_name, batch_col: (%s,%i)" % (batch_name, batch_col)
         )
         srnos = self.db_reader.select_batch(batch_name, batch_col)
@@ -441,7 +460,7 @@ class LabJournal(BaseJournal):
             outfile.write(jason_string)
 
         self.file_name = file_name
-        logger.info("Saved file to {}".format(file_name))
+        logging.info("Saved file to {}".format(file_name))
 
     def generate_bookshelf(self):
         """make folders where we would like to put results etc"""
@@ -454,10 +473,13 @@ class LabJournal(BaseJournal):
         # create the folders
         if not os.path.isdir(project_dir):
             os.mkdir(project_dir)
+            logging.info(f"created folder {project_dir}")
         if not os.path.isdir(batch_dir):
             os.mkdir(batch_dir)
+            logging.info(f"created folder {batch_dir}")
         if not os.path.isdir(raw_dir):
             os.mkdir(raw_dir)
+            logging.info(f"created folder {raw_dir}")
 
         return project_dir, batch_dir, raw_dir
 
@@ -484,6 +506,19 @@ class CSVExporter(BaseExporter):
         self._assign_engine(summary_engine)
         self._assign_engine(cycles_engine)
         self._assign_dumper(csv_dumper)
+        # self._assign_dumper(screen_dumper)
+
+    def generate_name(self):
+        """function for generating appropriate file-name(s)"""
+        print("GENERATE NAME")
+
+    def run_engine(self, engine):
+        logging.debug("running engine")
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
+
+    def run_dumper(self, dumper):
+        logging.debug("running dumper")
+        dumper(experiments=self.experiments, farms=self.farms, barn=self.barn)
 
 
 class OriginLabExporter(BaseExporter):
@@ -549,11 +584,18 @@ def main():
     print(prebens_experiment.journal.pages.head(10))
     prebens_experiment.update()
 
-    prebens_experiment.link()  # Not implemented yet (linking without checking)
+    # prebens_experiment.link()  # Not implemented yet (linking without checking)
     #
+
+    # TODO: pick data from h5-files
+    # TODO: create summaries of summaries
+    # TODO: export summaries to csv
+    # TODO: export raw-data etc to csv
+
     # print(prebens_experiment.step_table_frames)
     # print(prebens_experiment.summary_frames)
 
+    print("\nNow it is time for exporting data")
     exporter = CSVExporter()
     exporter.assign(prebens_experiment)
     exporter.do()

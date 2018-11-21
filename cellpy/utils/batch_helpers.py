@@ -6,9 +6,10 @@ import pandas as pd
 import csv
 import itertools
 
-from cellpy import prms
-from cellpy import cellreader, dbreader, filefinder
+from cellpy import cellreader, dbreader, filefinder, prms
 from cellpy.exceptions import ExportFailed, NullData
+import cellpy.parameters.internal_settings
+from cellpy.parameters import prms
 
 logger = logging.getLogger(__name__)
 
@@ -121,3 +122,70 @@ def create_labels(label, *args):
     """Returns a re-formatted label (currently it only removes the dates
     from the run-name)"""
     return _remove_date(label)
+
+
+def create_selected_summaries_dict(summaries_list):
+    """Creates a dictionary with summary column headers.
+
+    Examples:
+        >>> summaries_to_output = ["discharge_capacity", "charge_capacity"]
+        >>> summaries_to_output_dict = create_selected_summaries_dict(
+        >>>    summaries_to_output
+        >>> )
+        >>> print(summaries_to_output_dict)
+        {'discharge_capacity': "Discharge_Capacity(mAh/g)",
+               'charge_capacity': "Charge_Capacity(mAh/g)}
+
+    Args:
+        summaries_list: list containing cellpy summary column id names
+
+    Returns: dictionary of the form {cellpy id name: cellpy summary
+        header name,}
+
+    """
+    headers_summary = cellpy.parameters.internal_settings.get_headers_summary()
+    selected_summaries = dict()  # this should be sent as input
+    for h in summaries_list:
+        selected_summaries[h] = headers_summary[h]
+    return selected_summaries
+
+
+def pick_summary_data(key, summary_df, selected_summaries):
+    """picks the selected pandas.DataFrame"""
+
+    selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
+    value = selected_summaries_dict[key]
+    return summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
+
+
+def join_summaries(summary_frames, selected_summaries):
+    """parse the summaries and combine based on column (selected_summaries)"""
+
+    selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
+    frames = []
+    keys = []
+    for key in summary_frames:
+        keys.append(key)
+        frames.append(summary_frames[key])
+
+    out = []
+
+    summary_df = pd.concat(frames, keys=keys, axis=1)
+
+    for key, value in selected_summaries_dict.items():
+        _summary_df = summary_df.iloc[
+                      :, summary_df.columns.get_level_values(1) == value
+                      ]
+        _summary_df.name = key
+        out.append(_summary_df)
+    logger.debug("finished joining summaries")
+
+    return out
+
+
+def generate_folder_names(name, project):
+    out_data_dir = prms.Paths.outdatadir
+    project_dir = os.path.join(out_data_dir, project)
+    batch_dir = os.path.join(project_dir, name)
+    raw_dir = os.path.join(batch_dir, "raw_data")
+    return out_data_dir, project_dir, batch_dir, raw_dir
