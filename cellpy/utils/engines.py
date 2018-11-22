@@ -8,7 +8,7 @@ from cellpy.utils import batch_helpers as helper
 
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
-    logging.debug("cycles_engine")
+    logging.info("cycles_engine:")
     logging.info("Not ready for production")
     # raise NotImplementedError
 
@@ -20,13 +20,13 @@ def cycles_engine(**kwargs):
     for experiment in experiments:
         farms.append([])
         if experiment.all_in_memory:
-            print("all in memory")
+            logging.debug("all in memory")
             for key in experiment.cell_data_frames:
-                print(f"extracting cycles from {key}")
+                logging.debug(f"extracting cycles from {key}")
         else:
-            print("dont have it in memory - need to lookup in the files")
+            logging.debug("dont have it in memory - need to lookup in the files")
             for key in experiment.step_table_frames:
-                print(f"looking up cellpyfile for {key}")
+                logging.debug(f"looking up cellpyfile for {key}")
 
     return farms, barn
 
