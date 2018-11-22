@@ -15,7 +15,7 @@ def csv_dumper(**kwargs):
         name = experiment.journal.name
         project = experiment.journal.project
         project_dir, batch_dir, raw_dir = \
-            experiment.journal.generate_bookshelf()
+            experiment.journal.paginate()
         if batch_dir is None:
             logging.info("have to generate folder-name on the fly")
             out_data_dir, project_dir, batch_dir, raw_dir = \

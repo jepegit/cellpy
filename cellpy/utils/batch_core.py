@@ -13,6 +13,7 @@ from cellpy.utils.engines import cycles_engine, summary_engine, simple_db_engine
 
 empty_farm = []
 
+
 class Doer:
     """Base class for all the classes that do something to the experiment"""
     def __init__(self, *args):
@@ -79,6 +80,14 @@ class BaseExperiment:
         """get or link data"""
         pass
 
+    def status(self):
+        """describe the status and health of your experiment"""
+        pass
+
+    def info(self):
+        """print information about the experiment"""
+        print(self)
+
 
 class BaseJournal:
     """A journal keeps track of the details of the experiment.
@@ -132,13 +141,19 @@ class BaseJournal:
     def from_file(self, file_name):
         raise NotImplementedError
 
+    def create(self):
+        """create a journal manually"""
+        raise NotImplementedError
+
     def to_file(self, file_name=None):
         raise NotImplementedError
 
-    def generate_file_name(self):
-        logging.debug("not implemented")
+    def paginate(self):
+        """create folders for saving output"""
+        raise NotImplementedError
 
-    def look_for_file(self):
+    def generate_file_name(self):
+        """create a file name for saving the journal"""
         logging.debug("not implemented")
 
 
@@ -205,7 +220,10 @@ class CyclingExperiment(BaseExperiment):
     """Load experimental data into memory.
 
     This is a re-implementation of the old batch behaviour where
-    all the data are read into memory using the cellpy loadcell method.
+    all the data-files are processed secuentially (and optionally exported)
+    while the summary tables are kept and processed. This implementation
+    also saves the step tables (for later use when using look-up
+    functionallity).
     """
 
     def __init__(self, *args):
@@ -234,8 +252,6 @@ class CyclingExperiment(BaseExperiment):
     def update(self):
         logging.info("[update experiment]")
         pages = self.journal.pages
-
-        # Note to myself: replacing frames-list with frames-dicts
         summary_frames = dict()
         step_table_frames = dict()
         cell_data_frames = dict()
@@ -425,10 +441,15 @@ class CyclingExperiment(BaseExperiment):
                     row.cellpy_file_names,
                     "step_table"
                 )
+            self.step_table_frames = step_table_frames
 
         except IOError as e:
             logging.warning(e)
-            logging.warning("links not established - try update")
+            e_txt = "links not established - try update"
+            logging.warning(e_txt)
+            errors.append(e_txt)
+
+        self.errors["link"] = errors
 
 
 class ImpedanceExperiment(BaseExperiment):
@@ -457,17 +478,22 @@ class LabJournal(BaseJournal):
             file_name = self.file_name
         return file_name
 
-    def from_db(self, batch_col=None):
+    def from_db(self, project=None, name=None, batch_col=None):
         if batch_col is None:
             batch_col = self.batch_col
-        batch_name = self.name
+        if project is not None:
+            self.project = project
+        if name is None:
+            name = self.name
+        else:
+            self.name = name
         logging.debug(
-            "batch_name, batch_col: (%s,%i)" % (batch_name, batch_col)
+            "batch_name, batch_col: (%s,%i)" % (name, batch_col)
         )
-        srnos = self.db_reader.select_batch(batch_name, batch_col)
+        srnos = self.db_reader.select_batch(name, batch_col)
         self.pages = simple_db_engine(self.db_reader, srnos)
-        self.generate_shelf_names()
-        self.generate_bookshelf()
+        self.generate_folder_names()
+        self.paginate()
 
     def from_file(self, file_name=None):
         """Loads a DataFrame with all the needed info about the experiment"""
@@ -482,8 +508,8 @@ class LabJournal(BaseJournal):
         self.pages = pages
         self.file_name = file_name
         self._prm_packer(top_level_dict['metadata'])
-        self.generate_shelf_names()
-        self.generate_bookshelf()
+        self.generate_folder_names()
+        self.paginate()
 
     def to_file(self, file_name=None):
         """Saves a DataFrame with all the needed info about the experiment"""
@@ -503,7 +529,7 @@ class LabJournal(BaseJournal):
             )
         )
 
-        self.generate_bookshelf()
+        self.paginate()
 
         with open(file_name, 'w') as outfile:
             outfile.write(jason_string)
@@ -511,12 +537,12 @@ class LabJournal(BaseJournal):
         self.file_name = file_name
         logging.info("Saved file to {}".format(file_name))
 
-    def generate_shelf_names(self):
+    def generate_folder_names(self):
         self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
         self.batch_dir = os.path.join(self.project_dir, self.name)
         self.raw_dir = os.path.join(self.batch_dir, "raw_data")
 
-    def generate_bookshelf(self):
+    def paginate(self):
         """make folders where we would like to put results etc"""
 
         project_dir = self.project_dir
@@ -626,9 +652,9 @@ def main():
     # --------------------------------------------------------------------------
     # my_analyzis
     # --------------------------------------------------------------------------
-    pages = "/Users/jepe/scripting/cellpy/dev_data/cellpy_batch_test.json"
-    my_experiment = CyclingExperiment()
-    my_experiment.journal.from_file(pages)
+    # pages = "/Users/jepe/scripting/cellpy/dev_data/cellpy_batch_test.json"
+    # my_experiment = CyclingExperiment()
+    # my_experiment.journal.from_file(pages)
     # print("lab-journal pages for my_experiment:")
     # print(my_experiment.journal.pages.head(10))
 
@@ -651,9 +677,6 @@ def main():
     #
 
     # TODO: pick data from h5-files
-    # TODO: create summaries of summaries
-    # TODO: export summaries to csv
-    # TODO: export raw-data etc to csv
 
     # print(prebens_experiment.step_table_frames)
     # print(prebens_experiment.summary_frames)
