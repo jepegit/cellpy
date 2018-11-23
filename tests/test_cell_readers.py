@@ -12,7 +12,6 @@ from . import fdv
 
 log.setup_logging(default_level=logging.DEBUG)
 
-
 @pytest.fixture
 def cellpy_data_instance():
     from cellpy import cellreader

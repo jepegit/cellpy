@@ -6,6 +6,9 @@ from cellpy.utils import ica
 from . import fdv
 from cellpy.exceptions import NullData
 
+import warnings
+warnings.simplefilter("ignore", FutureWarning)
+
 log.setup_logging(default_level=logging.DEBUG)
 
 

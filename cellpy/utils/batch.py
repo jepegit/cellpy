@@ -22,6 +22,8 @@ logging.captureWarnings(True)
 
 DEFAULT_PLOT_STYLE = {"markersize": prms.Batch["markersize"]}
 
+warnings.warn("will be removed shortly", DeprecationWarning)
+
 
 class FigureType(object):
     """Object for storing figure type definitions.
