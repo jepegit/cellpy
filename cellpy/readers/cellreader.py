@@ -646,10 +646,10 @@ class CellpyData(object):
         """
 
         try:
-            self.logger.info("loading cellpy-file (hdf5):")
-            self.logger.info(cellpy_file)
+            self.logger.debug("loading cellpy-file (hdf5):")
+            self.logger.debug(cellpy_file)
             new_datasets = self._load_hdf5(cellpy_file, parent_level)
-            self.logger.info("cellpy-file loaded")
+            self.logger.debug("cellpy-file loaded")
         except AttributeError:
             new_datasets = []
             self.logger.warning("This cellpy-file version is not supported by"

@@ -1,5 +1,6 @@
 import logging
 import os
+import collections
 import abc
 import pandas as pd
 import json
@@ -63,11 +64,37 @@ class Doer:
         print("Sorry, don't know what I should do!")
 
 
+class Data(dict):
+
+    def __init__(self, experiment, *args):
+        super().__init__(*args)
+        self.experiment = experiment
+
+    def __getitem__(self, id):
+        cellpy_data_object = self.__look_up__(id)
+        return cellpy_data_object
+
+    def __look_up__(self, id):
+
+        if self.experiment.cell_data_frames is not None:
+            return self.experiment.cell_data_frames[id]
+        else:
+            logging.debug("looking up from cellpyfile")
+            pages = self.experiment.journal.pages
+            info = pages.loc[id, :]
+            cellpy_file = info["cellpy_file_names"]
+            # linking not implemented yet - loading whole file in mem instead
+            return self.experiment._load_cellpy_file(cellpy_file)
+
+
 class BaseExperiment:
     """An experiment contains experimental data and meta-data."""
     def __init__(self, *args):
         self.journal = None
-        self.data = None
+        self.summary_frames = None
+        self.step_table_frames = None
+        self.cell_data_frames = None
+        self.parent_level = "CellpyData"
         self.log_level = "INFO"
 
     def __str__(self):
@@ -77,6 +104,20 @@ class BaseExperiment:
 
     def __repr__(self):
         return self.__class__.__name__
+
+    def _link_cellpy_file(self, file_name):
+        raise NotImplementedError
+
+    def _load_cellpy_file(self, file_name):
+        cellpy_data = cellreader.CellpyData()
+        cellpy_data.load(file_name, self.parent_level)
+        logging.info(f"< {file_name}")
+        return cellpy_data
+
+    @property
+    def data(self):
+        data_object = Data(self)
+        return data_object
 
     def update(self):
         """get or link data"""
@@ -235,7 +276,6 @@ class CyclingExperiment(BaseExperiment):
         self.force_cellpy = False
         self.force_raw = False
         self.save_cellpy = True
-        self.parent_level = "CellpyData"
         self.accept_errors = True
         self.all_in_memory = False
 
@@ -244,11 +284,8 @@ class CyclingExperiment(BaseExperiment):
         self.export_raw = True
         self.export_ica = False
         self.last_cycle = None
-
-        self.summary_frames = None
-        self.step_table_frames = None
-        self.cell_data_frames = None
         self.selected_summaries = None
+
         self.errors = dict()
 
     def update(self):
@@ -659,12 +696,13 @@ def main():
     # my_experiment.journal.from_file(pages)
     # print("lab-journal pages for my_experiment:")
     # print(my_experiment.journal.pages.head(10))
-
+    # import sys
+    # import matplotlib.pyplot as plt
     # setting up the experiment
     prebens_experiment = CyclingExperiment()
-    prebens_experiment.export_raw = True
-    prebens_experiment.export_cycles = True
-    prebens_experiment.export_ica = True
+    prebens_experiment.export_raw = False
+    prebens_experiment.export_cycles = False
+    prebens_experiment.export_ica = False
     prebens_experiment.journal.project = "prebens_experiment"
     prebens_experiment.journal.name = "test"
     prebens_experiment.journal.batch_col = 5
@@ -675,9 +713,14 @@ def main():
     print(prebens_experiment.journal.pages.head(10))
     prebens_experiment.update()
 
-    # prebens_experiment.link()  # Not implemented yet (linking without checking)
     #
+    voltage_cycles = prebens_experiment.data["20160805_test001_45_cc"].get_cap(
+        cycle=(1, 2, 3))
 
+    # plt.plot(voltage_cycles[0], voltage_cycles[1])
+    # plt.show()
+    #
+    # prebens_experiment.link()
     # TODO: pick data from h5-files
 
     # print(prebens_experiment.step_table_frames)
