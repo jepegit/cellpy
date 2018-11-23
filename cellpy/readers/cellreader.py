@@ -1120,7 +1120,7 @@ class CellpyData(object):
             [5,8]
 
         """
-
+        # self.logger.debug("Trying to get step-types")
         if steptable is None:
             dataset_number = self._validate_dataset_number(dataset_number)
             if dataset_number is None:
@@ -1179,8 +1179,8 @@ class CellpyData(object):
             for st in add_these:
                 steptypes.append(st)
 
-        self.logger.debug("Your steptypes:")
-        self.logger.debug(steptypes)
+        # self.logger.debug("Your steptypes:")
+        # self.logger.debug(steptypes)
 
         if steptable is None:
             st = self.datasets[dataset_number].step_table
@@ -1202,8 +1202,8 @@ class CellpyData(object):
             return out
 
         # if not pdtype, return a dict instead
-        self.logger.debug("out as dict; out[cycle] = [s1,s2,...]")
-        self.logger.debug("(same behaviour as find_step_numbers)")
+        # self.logger.debug("out as dict; out[cycle] = [s1,s2,...]")
+        # self.logger.debug("(same behaviour as find_step_numbers)")
         out = dict()
         for cycle in cycle_numbers:
             steplist = []
