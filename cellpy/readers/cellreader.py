@@ -265,7 +265,7 @@ class CellpyData(object):
 
         Example:
             >>> d = CellpyData()
-            >>> directory = r"C:\MyData\Arbindata"
+            >>> directory = "MyData/Arbindata"
             >>> d.set_raw_datadir(directory)
 
         """
@@ -290,7 +290,7 @@ class CellpyData(object):
 
         Example:
             >>> d = CellpyData()
-            >>> directory = r"C:\MyData\HDF5"
+            >>> directory = "MyData/HDF5"
             >>> d.set_raw_datadir(directory)
 
         """

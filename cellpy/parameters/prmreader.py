@@ -13,11 +13,11 @@ from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 default_prms = """
 [Paths]
-outdatadir: ..\outdata
-rawdatadir: ..\indata
-cellpydatadir: ..\indata
-db_path: ..\databases
-filelogdir: ..\databases
+outdatadir: ../outdata
+rawdatadir: ../indata
+cellpydatadir: ../indata
+db_path: ../databases
+filelogdir: ../databases
 
 [FileNames]
 db_filename: cellpy_db.xlsx
