@@ -5,6 +5,7 @@ import logging
 from cellpy import prms
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
+from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
 
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -29,6 +30,8 @@ class Batch:
 
         self.exporter = CSVExporter()
         self.exporter.assign(self.experiment)
+        self.plotter = CyclingSummaryPlotter()
+        self.plotter.assign(self.experiment)
 
     def create_info_df(self):
         print(self.experiment.journal.name)
@@ -51,6 +54,9 @@ class Batch:
 
     def make_summaries(self):
         self.exporter.do()
+
+    def plot_summaries(self):
+        self.plotter.do()
 
 
 def main():
