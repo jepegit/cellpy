@@ -55,4 +55,5 @@ example_file_for_batch = "20160805_test001_45_cc_01_cycles.csv"
 tot_cycles = 34
 
 # -------- new batch --------------------------------
-pages = "/Users/jepe/scripting/cellpy/dev_data/cellpy_batch_test.json"
+pages = "cellpy_batch_test.json"
+pages = os.path.join(db_dir, pages)
