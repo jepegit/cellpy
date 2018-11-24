@@ -1,0 +1,247 @@
+import logging
+import abc
+
+from cellpy import cellreader
+from cellpy.exceptions import UnderDefined
+
+
+empty_farm = []
+
+
+class Doer(metaclass=abc.ABCMeta):
+    """Base class for all the classes that do something to the experiment"""
+    def __init__(self, *args):
+        self.experiments = []
+        self.farms = []
+        self.barn = None
+        args = self._validate_base_experiment_type(args)
+        if args:
+            self.experiments.extend(args)
+            self.farms.append(empty_farm)
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+    @staticmethod
+    def _validate_base_experiment_type(args):
+        if len(args) == 0:
+            return None
+
+        for arg in args:
+            if not isinstance(arg, BaseExperiment):
+                err = f"{repr(arg)} is not an instance of BaseExperiment"
+                raise TypeError(err)
+        return args
+
+    def info(self):
+        print("Sorry, but I don't have much to share.")
+        print("This is me:")
+        print(self)
+        print("And these are the experiments assigned to me:")
+        print(self.experiments)
+
+    def assign(self, experiment):
+        self.experiments.append(experiment)
+        self.farms.append(empty_farm)
+
+    def empty_the_farms(self):
+        logging.debug("emptying the farm for all the pandas")
+        self.farms = [[] for _ in self.farms]
+
+    @abc.abstractmethod
+    def do(self):
+        pass
+
+
+class Data(dict):
+
+    def __init__(self, experiment, *args):
+        super().__init__(*args)
+        self.experiment = experiment
+
+    def __getitem__(self, id):
+        cellpy_data_object = self.__look_up__(id)
+        return cellpy_data_object
+
+    def __look_up__(self, id):
+
+        if self.experiment.cell_data_frames is not None:
+            return self.experiment.cell_data_frames[id]
+        else:
+            logging.debug("looking up from cellpyfile")
+            pages = self.experiment.journal.pages
+            info = pages.loc[id, :]
+            cellpy_file = info["cellpy_file_names"]
+            # linking not implemented yet - loading whole file in mem instead
+            return self.experiment._load_cellpy_file(cellpy_file)
+
+
+class BaseExperiment(metaclass=abc.ABCMeta):
+    """An experiment contains experimental data and meta-data."""
+    def __init__(self, *args):
+        self.journal = None
+        self.summary_frames = None
+        self.step_table_frames = None
+        self.cell_data_frames = None
+        self.parent_level = "CellpyData"
+        self.log_level = "INFO"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}\n" \
+               f"journal: \n{str(self.journal)}\n" \
+               f"data: \n{str(self.data)}"
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+    def _link_cellpy_file(self, file_name):
+        raise NotImplementedError
+
+    def _load_cellpy_file(self, file_name):
+        cellpy_data = cellreader.CellpyData()
+        cellpy_data.load(file_name, self.parent_level)
+        logging.info(f"< {file_name}")
+        return cellpy_data
+
+    @property
+    def data(self):
+        data_object = Data(self)
+        return data_object
+
+    @abc.abstractmethod
+    def update(self):
+        """get or link data"""
+        pass
+
+    def status(self):
+        """describe the status and health of your experiment"""
+        raise NotImplementedError
+
+    def info(self):
+        """print information about the experiment"""
+        print(self)
+
+
+class BaseJournal:
+    """A journal keeps track of the details of the experiment.
+
+    The journal should at a mimnimum contain information about the name and
+    project the experiment has."""
+
+    packable = [
+        'name', 'project',
+        'time_stamp', 'project_dir',
+        'batch_dir', 'raw_dir'
+    ]
+
+    def __init__(self):
+        self.pages = None  # pandas.DataFrame
+        self.name = None
+        self.project = None
+        self.file_name = None
+        self.time_stamp = None
+        self.project_dir = None
+        self.batch_dir = None
+        self.raw_dir = None
+
+    def __str__(self):
+        return f"{self.__class__.__name__}\n" \
+               f"  - name: {str(self.name)}\n" \
+               f"  - project: {str(self.project)}\n"\
+               f"  - file_name: {str(self.file_name)}\n" \
+               f"  - pages: \n{str(self.pages)}"
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+    def _prm_packer(self, metadata=None):
+        if metadata is None:
+            _metadata = dict()
+            for p in self.packable:
+                _metadata[p] = getattr(self, p)
+            return _metadata
+
+        else:
+            for p in metadata:
+                if hasattr(self, p):
+                    setattr(self, p, metadata[p])
+                else:
+                    logging.debug(f"unknown variable encountered: {p}")
+
+    def from_db(self):
+        logging.debug("not implemented")
+
+    def from_file(self, file_name):
+        raise NotImplementedError
+
+    def create(self):
+        """create a journal manually"""
+        raise NotImplementedError
+
+    def to_file(self, file_name=None):
+        raise NotImplementedError
+
+    def paginate(self):
+        """create folders for saving output"""
+        raise NotImplementedError
+
+    def generate_file_name(self):
+        """create a file name for saving the journal"""
+        logging.debug("not implemented")
+
+
+# Do-ers
+class BaseExporter(Doer, metaclass=abc.ABCMeta):
+    """An exporter exports your data to a given format"""
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.engines = list()
+        self.dumpers = list()
+        self._use_dir = None
+
+    def _assign_engine(self, engine):
+        self.engines.append(engine)
+
+    def _assign_dumper(self, dumper):
+        self.dumpers.append(dumper)
+
+    @abc.abstractmethod
+    def run_engine(self, engine):
+        pass
+
+    @abc.abstractmethod
+    def run_dumper(self, dumper):
+        pass
+
+    def do(self):
+        if not self.experiments:
+            raise UnderDefined("cannot run until "
+                               "you have assigned an experiment")
+        for engine in self.engines:
+            self.empty_the_farms()
+            logging.debug(f"running - {str(engine)}")
+            self.run_engine(engine)
+
+            for dumper in self.dumpers:
+                logging.debug(f"exporting - {str(dumper)}")
+                self.run_dumper(dumper)
+
+
+class BasePlotter(Doer):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
+class BaseReporter(Doer):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
+class BaseAnalyzer(Doer):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+

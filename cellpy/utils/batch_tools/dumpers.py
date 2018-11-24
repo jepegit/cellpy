@@ -2,7 +2,7 @@ import logging
 import os
 
 from cellpy import prms
-from cellpy.utils.batch_helpers import generate_folder_names
+from cellpy.utils.batch_tools.batch_helpers import generate_folder_names
 
 
 def csv_dumper(**kwargs):

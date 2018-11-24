@@ -3,7 +3,8 @@
 import logging
 
 from cellpy import prms
-from cellpy.utils.batch_core import CyclingExperiment, CSVExporter
+from cellpy.utils.batch_tools.batch_exporters import CSVExporter
+from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)

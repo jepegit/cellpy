@@ -6,7 +6,7 @@ from cellpy.utils import batch
 from . import fdv
 
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level=logging.INFO)
 
 
 @pytest.fixture()
@@ -24,12 +24,12 @@ def batch_instance(clean_dir):
     prms.Paths["rawdatadir"] = fdv.raw_data_dir
     prms.Paths["db_path"] = fdv.db_dir
     prms.Paths["filelogdir"] = clean_dir
-    return batch.init()
+    return batch
 
 
 @pytest.fixture
 def populated_batch(batch_instance):
-    b = batch.init("test", "ProjectOfRun", default_log_level="INFO",
+    b = batch_instance.init("test", "ProjectOfRun", default_log_level="INFO",
                    batch_col=5)
     b.create_info_df()
     b.create_folder_structure()
@@ -37,8 +37,8 @@ def populated_batch(batch_instance):
     return b
 
 
-def test_init():
-    b = batch.init()
+def test_init(batch_instance):
+    b = batch_instance.init()
     assert b.summaries is None
     assert b.project is None
 
@@ -47,7 +47,8 @@ def test_read_excel_db(batch_instance):
     name = "test"
     project = "ProjectOfRun"
     log_level = "INFO"
-    b = batch.init(name, project, default_log_level=log_level, batch_col=5)
+    b = batch_instance.init(name, project, default_log_level=log_level,
+                            batch_col=5)
     b.create_info_df()
     b.create_folder_structure()
     b.save_info_df()
@@ -64,8 +65,10 @@ def test_read_excel_db(batch_instance):
 ])
 def test_last_cycle(batch_instance, test_input, expected):
     import os, pandas
-    b = batch.init("test", "ProjectOfRun", default_log_level="DEBUG",
-                   batch_col=5)
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="INFO",
+        batch_col=5
+    )
     b.create_info_df()
     b.create_folder_structure()
     b.export_cycles = True

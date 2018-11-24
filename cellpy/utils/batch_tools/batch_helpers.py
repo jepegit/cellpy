@@ -9,7 +9,6 @@ import itertools
 from cellpy import cellreader, dbreader, filefinder, prms
 from cellpy.exceptions import ExportFailed, NullData
 import cellpy.parameters.internal_settings
-from cellpy.parameters import prms
 
 logger = logging.getLogger(__name__)
 

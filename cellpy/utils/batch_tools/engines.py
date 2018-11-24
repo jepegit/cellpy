@@ -2,8 +2,8 @@ import time
 import logging
 import pandas as pd
 
-from cellpy import cellreader, dbreader
-from cellpy.utils import batch_helpers as helper
+from cellpy import dbreader
+from cellpy.utils.batch_tools import batch_helpers as helper
 
 
 def cycles_engine(**kwargs):
@@ -65,8 +65,10 @@ def summary_engine(**kwargs):
             ]
         else:
             selected_summaries = experiment.selected_summaries
-
-        farm = helper.join_summaries(experiment.summary_frames, selected_summaries)
+        farm = helper.join_summaries(
+            experiment.summary_frames,
+            selected_summaries
+        )
         farms.append(farm)
     barn = "batch_dir"
 
