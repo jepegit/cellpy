@@ -85,8 +85,49 @@ DataSet = box.Box(DataSet)
 # --------------------------
 Db = {
     "db_type": "simple_excel_reader",
+    "db_table_name": "db_table",
+    "db_header_row": 0,
+    "db_unit_row": 1,
+    "db_data_start_row": 2,
+    "db_search_start_row": 2,
+    "db_search_end_row": -1,
 }
 Db = box.Box(Db)
+
+# --------------------------
+# New Excel Reader
+#---------------------------
+
+DbCols = {
+    "id": "id",
+    "exists": "exists",
+    "batch_number": "batch",
+    "sub_batch_number_01": "b01",
+    "sub_batch_number_02": "b02",
+    "sub_batch_number_03": "b03",
+    "sub_batch_number_04": "b04",
+    "sub_batch_number_05": "b05",
+    "sub_batch_number_06": "b06",
+    "sub_batch_number_07": "b07",
+    "project": "project",
+    "label": "label",
+    "group": "group",
+    "selected": "selected",
+    "cell_name": "cell",
+    "cell_type": "cell_type",
+    "experiment_type": "experiment_type",
+    "active_material": "mass_active_material",
+    "total_material": "mass_total",
+    "loading": "areal_loading",
+    "file_name_indicator": "file_name_indicator",
+    "raw_file_names": "raw_file_names",
+    "cellpy_file_name": "cellpy_file_name",
+    "comment_slurry": "comment_slurry",
+    "comment_cell": "comment_cell",
+    "comment_general": "comment_general",
+    "freeze": "freeze",
+}
+DbCols = box.Box(DbCols)
 
 # --------------------------
 # ExcelReader
