@@ -15,6 +15,33 @@ class CyclingExperiment(BaseExperiment):
     while the summary tables are kept and processed. This implementation
     also saves the step tables (for later use when using look-up
     functionallity).
+
+
+    Attributes:
+        journal (:obj: LabJournal): information about the experiment.
+        force_cellpy (bool): tries only to load the cellpy-file if True.
+        force_raw (bool): loads raw-file(s) even though appropriate cellpy-file
+           exists if True.
+        save_cellpy (bool): saves a cellpy-file for each cell if True.
+        accept_errors (bool): in case of error, dont raise an exception, but
+           continue to the next file if True.
+        all_in_memory (bool): store the cellpydata-objects in memory if True.
+        export_cycles (bool): export voltage-capacity curves if True.
+        shifted_cycles (bool): set this to True if you want to export the
+           voltage-capacity curves using the shifted-cycles option (only valid
+           if you set export_cycles to True).
+        export_raw (bool): export the raw-data if True.
+        export_ica (bool): export dq-dv curves if True.
+        last_cycle (int): sets the last cycle (i.e. the highest cycle number)
+           that you would like to process dq-dv on). Use all if None (the
+           default value).
+        selected_summaries (list): a list of summary labels defining what
+           summary columns to make joint summaries from (optional).
+        errors (dict): contains a dictionary listing all the errors encountered.
+
+    Example:
+
+
     """
 
     def __init__(self, *args):

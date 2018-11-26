@@ -9,7 +9,15 @@ empty_farm = []
 
 
 class Doer(metaclass=abc.ABCMeta):
-    """Base class for all the classes that do something to the experiment"""
+    """Base class for all the classes that do something to the experiment.
+
+    Attributes:
+        info: print information about the doer.
+        assign (:obj: experiment): assign a experiment to the doer.
+        empty_the_farms: remove all the farms from the doer.
+        do: abc.abstract method that must be overridden.
+    """
+
     def __init__(self, *args):
         self.experiments = []
         self.farms = []
@@ -37,6 +45,8 @@ class Doer(metaclass=abc.ABCMeta):
         return args
 
     def info(self):
+        """Delivers some info to you about the class."""
+
         print("Sorry, but I don't have much to share.")
         print("This is me:")
         print(self)
@@ -44,6 +54,8 @@ class Doer(metaclass=abc.ABCMeta):
         print(self.experiments)
 
     def assign(self, experiment):
+        """Assign an experiment."""
+
         self.experiments.append(experiment)
         self.farms.append(empty_farm)
 
@@ -57,6 +69,7 @@ class Doer(metaclass=abc.ABCMeta):
 
 
 class Data(dict):
+    """Class that is used to access the experiment.journal.pages DataFrame."""
 
     def __init__(self, experiment, *args):
         super().__init__(*args)
@@ -108,20 +121,27 @@ class BaseExperiment(metaclass=abc.ABCMeta):
 
     @property
     def data(self):
+        """Property for accessing the underlying data in an experiment.
+
+        Example:
+            >>> cell_data_one = experiment.data["2018_cell_001"]
+            >>> capacity, voltage = cell_data_one.get_cap(cycle=1)
+        """
+
         data_object = Data(self)
         return data_object
 
     @abc.abstractmethod
     def update(self):
-        """get or link data"""
+        """Get or link data."""
         pass
 
     def status(self):
-        """describe the status and health of your experiment"""
+        """Describe the status and health of your experiment."""
         raise NotImplementedError
 
     def info(self):
-        """print information about the experiment"""
+        """Print information about the experiment."""
         print(self)
 
 
@@ -129,7 +149,22 @@ class BaseJournal:
     """A journal keeps track of the details of the experiment.
 
     The journal should at a mimnimum contain information about the name and
-    project the experiment has."""
+    project the experiment has.
+
+    Attributes:
+        pages (pandas.DataFrame): table with information about each cell/file.
+        name (str): the name of the experiment (used in db-lookup).
+        project(str): the name of the project the experiment belongs to (used
+           for making folder names).
+        file_name (str or path): the file name used in the to_file method.
+        project_dir: folder where to put the batch (or experiment) files and
+           information.
+        batch_dir: folder in project_dir where summary-files and information
+            and results related to the current experiment are stored.
+        raw_dir: folder in batch_dir where cell-specific information and results
+            are stored (e.g. raw-data, dq/dv data, voltage-capacity cycles).
+
+    """
 
     packable = [
         'name', 'project',
@@ -172,30 +207,43 @@ class BaseJournal:
                     logging.debug(f"unknown variable encountered: {p}")
 
     def from_db(self):
+        """Make journal pages by looking up a database.
+
+        Default to using the simple excel "database" provided by cellpy.
+
+        If you dont have a database or you dont know how to make and use one,
+        look in the cellpy documentation for other solutions
+        (e.g. manually create a file that can be loaded by the ``from_file``
+        method).
+        """
         logging.debug("not implemented")
 
     def from_file(self, file_name):
         raise NotImplementedError
 
     def create(self):
-        """create a journal manually"""
+        """Create a journal manually"""
         raise NotImplementedError
 
     def to_file(self, file_name=None):
+        """Save journal pages to a file.
+
+        The file can then be used in later sessions using the
+        `from_file` method."""
         raise NotImplementedError
 
     def paginate(self):
-        """create folders for saving output"""
+        """Create folders used for saving the different output files."""
         raise NotImplementedError
 
     def generate_file_name(self):
-        """create a file name for saving the journal"""
+        """Create a file name for saving the journal."""
         logging.debug("not implemented")
 
 
 # Do-ers
 class BaseExporter(Doer, metaclass=abc.ABCMeta):
-    """An exporter exports your data to a given format"""
+    """An exporter exports your data to a given format."""
     def __init__(self, *args):
         super().__init__(*args)
         self.engines = list()

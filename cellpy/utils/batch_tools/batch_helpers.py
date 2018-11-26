@@ -1,6 +1,8 @@
 import logging
 import os
 import time
+from functools import wraps
+
 import pandas as pd
 
 import csv
@@ -13,8 +15,72 @@ import cellpy.parameters.internal_settings
 logger = logging.getLogger(__name__)
 
 
+class DocInherit(object):
+    """Docstring inheriting method descriptor.
+
+    The class itself is also used as a decorator.
+
+    Usage:
+
+        class Foo(object):
+            def foo(self):
+                "Frobber"
+                pass
+
+        class Bar(Foo):
+            @doc_inherit
+            def foo(self):
+                pass
+
+    Reference:
+       https://stackoverflow.com/questions/2025562/
+       inherit-docstrings-in-python-class-inheritance
+    """
+
+    def __init__(self, mthd):
+        self.mthd = mthd
+        self.name = mthd.__name__
+
+    def __get__(self, obj, cls):
+        if obj:
+            return self.get_with_inst(obj, cls)
+        else:
+            return self.get_no_inst(cls)
+
+    def get_with_inst(self, obj, cls):
+
+        overridden = getattr(super(cls, obj), self.name, None)
+
+        @wraps(self.mthd, assigned=('__name__','__module__'))
+        def f(*args, **kwargs):
+            return self.mthd(obj, *args, **kwargs)
+
+        return self.use_parent_doc(f, overridden)
+
+    def get_no_inst(self, cls):
+
+        for parent in cls.__mro__[1:]:
+            overridden = getattr(parent, self.name, None)
+            if overridden: break
+
+        @wraps(self.mthd, assigned=('__name__','__module__'))
+        def f(*args, **kwargs):
+            return self.mthd(*args, **kwargs)
+
+        return self.use_parent_doc(f, overridden)
+
+    def use_parent_doc(self, func, source):
+        if source is None:
+            raise NameError("Can't find '%s' in parents" % self.name)
+        func.__doc__ = source.__doc__
+        return func
+
+
+doc_inherit = DocInherit
+
+
 def look_up_and_get(cellpy_file_name, table_name):
-    """extracts table from cellpy hdf5-file"""
+    """Extracts table from cellpy hdf5-file."""
 
     print(f"\nTrying to run 'look_up_and_get(cellpy_file_name, table_name)'")
     print(f"with prms {cellpy_file_name}, {table_name}")
@@ -73,6 +139,7 @@ def find_files(info_dict, filename_cache=None):
 
 
 def fix_groups(groups):
+    """Takes care of strange group numbers."""
     _groups = []
     for g in groups:
         if not float(g) > 0:
@@ -83,7 +150,7 @@ def fix_groups(groups):
 
 
 def save_multi(data, file_name, sep=";"):
-    """convenience function for storing data column-wise in a csv-file."""
+    """Convenience function for storing data column-wise in a csv-file."""
     logger.debug("saving multi")
     with open(file_name, "w", newline='') as f:
         logger.debug(f"{file_name} opened")
@@ -98,6 +165,7 @@ def save_multi(data, file_name, sep=";"):
 
 
 def make_unique_groups(info_df):
+    """This function cleans up the group numbers a bit."""
     # fixes group numbering
     unique_g = info_df.groups.unique()
     unique_g = sorted(unique_g)
@@ -184,6 +252,8 @@ def join_summaries(summary_frames, selected_summaries):
 
 
 def generate_folder_names(name, project):
+    """Creates sensible folder names."""
+
     out_data_dir = prms.Paths.outdatadir
     project_dir = os.path.join(out_data_dir, project)
     batch_dir = os.path.join(project_dir, name)

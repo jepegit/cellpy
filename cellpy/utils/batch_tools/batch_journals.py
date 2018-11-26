@@ -9,9 +9,11 @@ from cellpy.parameters import prms
 from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
+from cellpy.utils.batch_tools.batch_helpers import doc_inherit
 
 
 class LabJournal(BaseJournal):
+
     def __init__(self):
         super().__init__()
         self.db_reader = dbreader.Reader()
@@ -24,6 +26,7 @@ class LabJournal(BaseJournal):
             file_name = self.file_name
         return file_name
 
+    @doc_inherit
     def from_db(self, project=None, name=None, batch_col=None):
         if batch_col is None:
             batch_col = self.batch_col
@@ -84,12 +87,13 @@ class LabJournal(BaseJournal):
         logging.info("Saved file to {}".format(file_name))
 
     def generate_folder_names(self):
+        """Set appropriate folder names."""
         self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
         self.batch_dir = os.path.join(self.project_dir, self.name)
         self.raw_dir = os.path.join(self.batch_dir, "raw_data")
 
     def paginate(self):
-        """make folders where we would like to put results etc"""
+        """Make folders where we would like to put results etc."""
 
         project_dir = self.project_dir
         raw_dir = self.raw_dir
