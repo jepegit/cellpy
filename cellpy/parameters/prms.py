@@ -171,9 +171,9 @@ Instruments = {
     "chunk_size": None,
     "max_chunks": None,
     "use_subprocess": False,
-    "detect_subprocess_need": True,
+    "detect_subprocess_need": False,
     "sub_process_path": None,
-    "office_version": "32bit",
+    "office_version": "64bit",
 }
 Instruments = box.Box(Instruments)
 

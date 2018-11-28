@@ -31,12 +31,15 @@ if current_platform == "Darwin":
     is_macos = True
 
 if detect_subprocess_need:
+    logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
     if python_version == "64bit" and prms.Instruments.office_version == "32bit":
+        logging.debug("python 64bit and office 32bit -> setting use_subprocess to True")
         use_subprocess = True
 
 if use_subprocess and not is_posix:
     # The windows users most likely have a strange custom path to mdbtools etc.
+    logging.debug("using subprocess (most lilkely mdbtools) on non-posix (most likely windows)")
     if not prms.Instruments.sub_process_path:
         sub_process_path = str(prms._sub_process_path)
     else:
@@ -48,11 +51,15 @@ if is_posix:
 try:
     DRIVER = prms.odbc_driver
 except AttributeError:
+    logging.debug("FYI: you have not defined any odbc_driver(s) "
+                  "in your prm file! Maybe not too smart of you?")
     DRIVER = "NO DRIVER"
+
 use_ado = False
 
 if ODBC == "ado":
     use_ado = True
+    logging.debug("Trying to use adodbapi as ado loader")
     try:
         import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
     except ImportError:
@@ -65,6 +72,7 @@ if not use_ado:
         except ImportError:
             warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
             dbloader = None
+
     elif ODBC == "pypyodbc":
         try:
             import pypyodbc as dbloader
@@ -185,19 +193,31 @@ class ArbinLoader(Loader):
             return constr
 
         if SEARCH_FOR_ODBC_DRIVERS:
+            logging.debug("Searching for odbc drivers")
             try:
-                driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
+                drivers = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver]
+                logging.debug(f"Found these: {drivers}")
+                driver = drivers[0]
+
             except IndexError as e:
+                logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
                 driver = DRIVER
                 if is_macos:
                     driver = "/usr/local/lib/libmdbodbc.dylib"
                 else:
                     self.logger.error(e)
                     print(e)
-                    print("Could not find any odbc-drivers."
+                    print("\nCould not find any odbc-drivers suitable for .res-type files. "
                           "Check out the homepage of pydobc for info on installing drivers")
+                    print("One solution that might work is downloading "
+                          "the Microsoft Access database engine (in correct bytes (32 or 64)) "
+                          "from:\n"
+                          "https://www.microsoft.com/en-us/download/details.aspx?id=13255")
+                    print("Or install mdbtools and set it up "
+                          "(check the cellpy docs for help)")
+                    print("\n")
 
-            self.logger.debug("odbc constr: {}".format(driver))
+            self.logger.debug(f"odbc constr: {driver}")
 
         else:
             is64bit_python = check64bit(current_system="python")

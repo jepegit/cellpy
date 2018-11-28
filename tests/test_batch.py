@@ -17,7 +17,7 @@ from cellpy import prms
 from cellpy.utils import batch2 as batch
 from . import fdv
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level="DEBUG")
 
 
 @pytest.fixture(scope="module")
@@ -41,8 +41,8 @@ def batch_instance(clean_dir):
 def populated_batch(batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun",
-        default_log_level="INFO",
-        batch_col=5
+        default_log_level="DEBUG",
+        batch_col="b01"
     )
     b.create_info_df()
     b.create_folder_structure()
