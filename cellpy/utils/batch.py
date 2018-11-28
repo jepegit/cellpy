@@ -13,7 +13,8 @@ import matplotlib as mpl
 
 import cellpy.parameters.internal_settings
 from cellpy import prms
-from cellpy import cellreader, dbreader, filefinder
+from cellpy import cellreader, filefinder
+from cellpy.readers import dbreader_old as dbreader
 from cellpy.exceptions import ExportFailed, NullData
 
 logger = logging.getLogger(__name__)

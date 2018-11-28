@@ -17,7 +17,7 @@ class LabJournal(BaseJournal):
     def __init__(self):
         super().__init__()
         self.db_reader = dbreader.Reader()
-        self.batch_col = 5
+        self.batch_col = "b01"
 
     def _check_file_name(self, file_name):
         if file_name is None:
@@ -37,7 +37,7 @@ class LabJournal(BaseJournal):
         else:
             self.name = name
         logging.debug(
-            "batch_name, batch_col: (%s,%i)" % (name, batch_col)
+            f"batch_name, batch_col: {name}, {batch_col}"
         )
         srnos = self.db_reader.select_batch(name, batch_col)
         self.pages = simple_db_engine(self.db_reader, srnos)
