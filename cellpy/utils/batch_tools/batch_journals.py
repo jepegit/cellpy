@@ -9,7 +9,7 @@ from cellpy.parameters import prms
 from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
-from cellpy.utils.batch_tools.batch_helpers import doc_inherit
+from cellpy.readers.core import doc_inherit
 
 
 class LabJournal(BaseJournal):

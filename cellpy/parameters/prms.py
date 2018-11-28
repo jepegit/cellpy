@@ -174,6 +174,7 @@ Instruments = {
     "detect_subprocess_need": False,
     "sub_process_path": None,
     "office_version": "64bit",
+    "custom_instrument_definitions_file": None,
 }
 Instruments = box.Box(Instruments)
 

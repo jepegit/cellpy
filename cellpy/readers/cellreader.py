@@ -170,11 +170,17 @@ class CellpyData(object):
         if instrument in ["arbin", "arbin_res"]:
             self._set_arbin()
 
+        elif instrument == "arbin_sql":
+            self._set_arbin_sql()
+
         elif instrument == "arbin_experimental":
             self._set_arbin_experimental()
 
         elif instrument in ["biologics", "biologics_mpr"]:
             self._set_biologic()
+
+        elif instrument == "custom":
+            self._set_custom()
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")
@@ -184,10 +190,10 @@ class CellpyData(object):
         from cellpy.readers.instruments import biologics_mpr as instr
 
         self.loader_class = instr.MprLoader()
-        # get information
+        # ----- get information --------------------------
         self.raw_units = self.loader_class.get_raw_units()
         self.raw_limits = self.loader_class.get_raw_limits()
-        # create loader
+        # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
     def _set_pec(self):
@@ -196,27 +202,24 @@ class CellpyData(object):
     def _set_maccor(self):
         warnings.warn("not implemented")
 
-    def _set_arbin(self):
-        # Note! All these _set_instrument methods can be generalized to one
-        # method. At the moment, I find it more transparent to separate them
-        # into respective methods pr instrument.
+    def _set_custom(self):
+        # use a custom format (csv with information lines on top)
+        from cellpy.readers.instruments import custom as instr
+        self.loader_class = instr.CustomLoader()
 
+        warnings.warn("not ready for use yet")
+
+    def _set_arbin_sql(self):
+        warnings.warn("not implemented")
+
+    def _set_arbin(self):
         from cellpy.readers.instruments import arbin as instr
         self.loader_class = instr.ArbinLoader()
-        # get information
+        # ----- get information --------------------------
         self.raw_units = self.loader_class.get_raw_units()
         self.raw_limits = self.loader_class.get_raw_limits()
-        # send information (should improve this later)
-        # loader_class.load_only_summary = self.load_only_summary
-        # loader_class.select_minimal = self.select_minimal
-        # loader_class.max_res_filesize = self.max_res_filesize
-        # loader_class.chunk_size = self.chunk_size
-        # loader_class.max_chunks = self.max_chunks
-        # loader_class.last_chunk = self.last_chunk
-        # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
-        # loader_class.load_until_error = self.load_until_error
 
-        # create loader
+        # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
     # def _set_arbin_experimental(self):

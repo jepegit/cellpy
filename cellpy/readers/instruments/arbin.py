@@ -9,7 +9,8 @@ import numpy as np
 
 import pandas as pd
 
-from cellpy.readers.core import FileID, DataSet, check64bit, humanize_bytes
+from cellpy.readers.core import FileID, DataSet, \
+    check64bit, humanize_bytes, doc_inherit
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.parameters import prms
@@ -95,8 +96,6 @@ TABLE_NAMES = {
 class ArbinLoader(Loader):
     """ Class for loading arbin-data from res-files."""
 
-    # Note: the class is sub-classing Loader. At the moment, Loader does not really contain anything...
-
     def __init__(self):
         """initiates the ArbinLoader class"""
         # could use __init__(self, cellpydata_object) and set self.logger = cellpydata_object.logger etc.
@@ -112,15 +111,6 @@ class ArbinLoader(Loader):
 
     @staticmethod
     def get_raw_units():
-        """Include the settings for the units used by the instrument.
-
-        The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
-        Si units can be used). For example, for current defined in mA, the value for the
-        current unit-fraction will be 0.001.
-
-        Returns: dictionary containing the unit-fractions for current, charge, and mass
-
-        """
         raw_units = dict()
         raw_units["current"] = 1.0  # A
         raw_units["charge"] = 1.0  # Ah
@@ -160,16 +150,6 @@ class ArbinLoader(Loader):
 
     @staticmethod
     def get_raw_limits():
-        """Include the settings for how to decide what kind of step you are examining here.
-
-        The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
-        for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
-        It is expected that different instruments (with different resolution etc.) have different
-        'epsilons'.
-
-        Returns: the raw limits (dict)
-
-        """
         raw_limits = dict()
         raw_limits["current_hard"] = 0.0000000000001
         raw_limits["current_soft"] = 0.00001
@@ -672,7 +652,6 @@ class ArbinLoader(Loader):
     def _normal_table_generator(self, **kwargs):
         pass
 
-    # noinspection PyPep8Naming
     def _load_res_normal_table(self, conn, test_ID, bad_steps):
         # Note that this function is run each time you use the loader. This means that it is not ideal for
         # handling generators etc
@@ -756,4 +735,4 @@ if __name__ == '__main__':
     import logging
     from cellpy import log
 
-    log.setup_logging(default_level=logging.DEBUG)
+    log.setup_logging(default_level="DEBUG")
