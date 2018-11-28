@@ -14,7 +14,7 @@ from cellpy.utils.batch_tools import (
 from cellpy import log
 from cellpy import prms
 
-from cellpy.utils import batch2 as batch
+from cellpy.utils import batch as batch
 from . import fdv
 
 log.setup_logging(default_level="DEBUG")

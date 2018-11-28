@@ -134,10 +134,19 @@ class Reader(object):
         logging.debug(f"Skipping the following rows: {rows_to_skip}")
         logging.debug(f"Declaring the following dtyps: {dtypes_dict}")
         work_book = pd.ExcelFile(self.db_file)
-        sheet = work_book.parse(
-            table_name, header=header_row, skiprows=rows_to_skip,
-            dtype=dtypes_dict, nrows=nrows,
-        )
+        try:
+            sheet = work_book.parse(
+                table_name, header=header_row, skiprows=rows_to_skip,
+                dtype=dtypes_dict, nrows=nrows,
+            )
+        except ValueError as e:
+            logging.debug("Could not parse all the columns (ValueError) "
+                          "using given dtypes. Trying without dtypes.")
+            logging.debug(str(e))
+            sheet = work_book.parse(
+                table_name, header=header_row, skiprows=rows_to_skip,
+                nrows=nrows,
+            )
 
         return sheet
 

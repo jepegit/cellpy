@@ -29,6 +29,7 @@ class CSVExporter(BaseExporter):
         self._assign_engine(cycles_engine)
         self._assign_dumper(csv_dumper)
         self._assign_dumper(screen_dumper)
+        self.current_engine = None
 
     def run_engine(self, engine):
         """run engine (once pr. experiment).
@@ -49,6 +50,8 @@ class CSVExporter(BaseExporter):
         to the experiments batch directory.
         """
         logging.debug("running engine")
+        self.current_engine = engine
+
         self.farms, self.barn = engine(
             experiments=self.experiments,
             farms=self.farms
@@ -58,7 +61,7 @@ class CSVExporter(BaseExporter):
         """run dumber (once pr. engine)
 
         Args:
-            dumper: dumper to run (funtion or mehtod).
+            dumper: dumper to run (function or method).
 
         The dumper takes the attributes experiments, farms, and barn as input.
         """
@@ -67,7 +70,8 @@ class CSVExporter(BaseExporter):
         dumper(
             experiments=self.experiments,
             farms=self.farms,
-            barn=self.barn
+            barn=self.barn,
+            engine=self.current_engine,
         )
 
 

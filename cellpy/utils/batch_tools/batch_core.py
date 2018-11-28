@@ -12,10 +12,9 @@ class Doer(metaclass=abc.ABCMeta):
     """Base class for all the classes that do something to the experiment.
 
     Attributes:
-        info: print information about the doer.
-        assign (:obj: experiment): assign a experiment to the doer.
-        empty_the_farms: remove all the farms from the doer.
-        do: abc.abstract method that must be overridden.
+        experiments: list of experiments.
+        farms: list of farms (containing pandas DataFrames).
+        barn (str): identifier for where to place the output-files.
     """
 
     def __init__(self, *args):
@@ -60,6 +59,8 @@ class Doer(metaclass=abc.ABCMeta):
         self.farms.append(empty_farm)
 
     def empty_the_farms(self):
+        """Free all the farms for content (empty all lists)."""
+
         logging.debug("emptying the farm for all the pandas")
         self.farms = [[] for _ in self.farms]
 
@@ -99,6 +100,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self.summary_frames = None
         self.step_table_frames = None
         self.cell_data_frames = None
+        self.memory_dumped = dict()
         self.parent_level = "CellpyData"
         self.log_level = "INFO"
 

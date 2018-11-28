@@ -42,17 +42,41 @@ def csv_dumper(**kwargs):
 
 
 def excel_dumper(**kwargs):
-    """dump data to excel xlxs-format"""
+    """Dump data to excel xlxs-format."""
     pass
 
 
 def origin_dumper(**kwargs):
-    """dump data to a format suitable for use in OriginLab"""
+    """Dump data to a format suitable for use in OriginLab."""
     pass
 
 
+def ram_dumper(**kwargs):
+    """Dump data to 'memory' for later usage."""
+    logging.debug("trying to save stuff in memory")
+    farms = kwargs["farms"]
+    experiments = kwargs["experiments"]
+    engine = kwargs["engine"]
+
+    try:
+        engine_name = engine.__name__
+    except AttributeError:
+        engine_name = engine.__dict__.__name__
+
+    accepted_engines = ["summary_engine",]
+    if engine_name in accepted_engines:
+        logging.debug("found the engine that I will try to dump from: "
+                      f"{engine_name}")
+
+        for experiment, farm in zip(experiments, farms):
+            name = experiment.journal.name
+            project = experiment.journal.project
+            experiment.memory_dumped[engine_name] = farm
+            logging.debug(f"farm put into memory_dumped ({project}::{name})")
+
+
 def screen_dumper(**kwargs):
-    """dump data to screen"""
+    """Dump data to screen."""
     farms = kwargs["farms"]
     logging.info("dumping to screen")
 
