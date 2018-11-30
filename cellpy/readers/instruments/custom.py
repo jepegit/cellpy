@@ -1,11 +1,68 @@
 import logging
 import os
 
+import pandas as pd
+
 from cellpy.parameters.internal_settings import get_headers_normal
+
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.readers.core import FileID, DataSet, \
     check64bit, humanize_bytes, doc_inherit
 from cellpy.parameters import prms
+
+DEFAULT_CONFIG = {
+    "structure": {
+        "format": "csv",
+        "table_name": None,
+        "header_definitions": "labels",
+        "comment_chars": ("#", "!"),
+        "sep": ";",
+        "locate_start_data_by": "line_number",
+        "locate_end_data_by": "EOF",
+        "locate_vars_by": "key_value_pairs",
+        "start_data": 19,
+    },
+    "variables":
+        {
+            "mass": "mass",
+            "total_mass": "total_mass",
+            "scheduel_file": "scheduel_file",
+            "operator": "name",
+            "fid_last_modification_time": None,
+            "fid_size": None,
+            "fid_last_accessed": None,
+        },
+    "headers":
+        {
+            "charge_capacity_txt": "charge_capacity",
+            "current_txt": "current",
+            "cycle_index_txt": "cycle",
+            "datetime_txt": "date_stamp",
+            "discharge_capacity_txt": "discharge_Capacity",
+            "step_index_txt": "step",
+            "step_time_txt": "step_time",
+            "test_time_txt": "test_time",
+            "voltage_txt": "voltage",
+        },
+    "units":
+        {
+            "current": 0.001,
+            "charge": 0.001,
+            "mass": 0.001,
+            "specific": 1.0,
+        },
+    "limits": {
+           "current_hard":  0.0000000000001,
+           "current_soft":  0.00001,
+           "stable_current_hard":  2.0,
+           "stable_current_soft":  4.0,
+           "stable_voltage_hard":  2.0,
+           "stable_voltage_soft":  4.0,
+           "stable_charge_hard":  0.9,
+           "stable_charge_soft":  5.0,
+           "ir_change":  0.00001,
+    }
+}
 
 
 class CustomLoader(Loader):
@@ -45,40 +102,153 @@ class CustomLoader(Loader):
 
         self.logger = logging.getLogger(__name__)
         self.headers_normal = get_headers_normal()
-        self.def_file = self.pick_definition_file()
+        self.definition_file = self.pick_definition_file()
+        self.units = None
+        self.limits = None
+        self.headers = None
+        self.variables = None
+        self.structure = None
 
     @staticmethod
     def pick_definition_file():
         return prms.Instruments.custom_instrument_definitions_file
 
     def parse_definition_file(self):
-        # self.settings = parse(self.def_file)
-        pass
+        if self.definition_file is None:
+            logging.info("no definition file for custom format")
+            logging.info("using default settings")
+            settings = DEFAULT_CONFIG
+        else:
+            raise NotImplementedError
 
-    @staticmethod
-    def get_raw_units():
-        raw_units = dict()
-        raw_units["current"] = 1.0  # A # = self.settings.xxx.xxx
-        raw_units["charge"] = 1.0  # Ah
-        raw_units["mass"] = 0.001  # g
-        return raw_units
+        self.units = settings["units"]
+        self.limits = settings["limits"]
+        self.headers = settings["headers"]
+        self.variables = settings["variables"]
+        self.structure = settings["structure"]
 
-    @staticmethod
+    @doc_inherit
+    def get_raw_units(self):
+        return self.units
+
+    @doc_inherit
     def get_raw_limits(self):
-        raw_limits = dict()
-        raw_limits["current_hard"] = 0.0000000000001 # self.settings.xxx
-        raw_limits["current_soft"] = 0.00001
-        raw_limits["stable_current_hard"] = 2.0
-        raw_limits["stable_current_soft"] = 4.0
-        raw_limits["stable_voltage_hard"] = 2.0
-        raw_limits["stable_voltage_soft"] = 4.0
-        raw_limits["stable_charge_hard"] = 0.9
-        raw_limits["stable_charge_soft"] = 5.0
-        raw_limits["ir_change"] = 0.00001
-        return raw_limits
+        return self.limits
+
+    def _find_data_start(self):
+        raise NotImplementedError
 
     def loader(self, file_name, **kwargs):
         new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return
+
+        # find out strategy (based on structure)
+        if self.structure["format"] != "csv":
+            raise NotImplementedError
+
+
+        # "table_name": None,
+        # "header_definitions": "labels",
+        # "comment_chars": ["#", "!"],
+        # "sep": ";",
+        # "locate_start_data_by": "line_number",
+        # "locate_end_data_by": "EOF",
+        # "locate_vars_by": "key_value_pairs",
+
+        sep = self.structure.get("sep", prms.Reader.sep)
+        if sep is None:
+            sep = prms.Reader.sep
+
+        locate_vars_by = self.structure.get("locate_vars_by", "key_value_pairs")
+        comment_chars = self.structure.get("comment_chars", ["#", "!"])
+        header_row = self.structure.get("start_data", None)
+        if header_row is None:
+            logging.debug("header row number not given")
+            raise IOError
+
+        # parse variables
+        var_lines = []
+        with open(file_name, "rb") as fp:
+            for i, line in enumerate(fp):
+                if i < header_row:
+                    line = line.strip()
+                    try:
+                        line = line.decode()
+                    except UnicodeDecodeError:
+                        logging.debug("UnicodeDecodeError: "
+                                      "skipping this line: "
+                                      f"{line}")
+                    else:
+                        if line.startswith(comment_chars):
+                            logging.debug(f"Comment: {line}")
+                        else:
+                            var_lines.append(line)
+                else:
+                    break
+
+        if locate_vars_by == "key_value_pairs":
+            for line in var_lines:
+                parts = line.split(sep)
+                variable = parts[0]
+                value = parts[1]
+                print(f"{variable}::{value}")
+
+                # CONTINUE FROM HERE
+        else:
+            raise NotImplementedError
+
+
+
+        # parse data
+        raw = pd.read_csv(
+            file_name,
+            sep=sep,
+            header=header_row,
+            skip_blank_lines=False,
+        )
+        print(raw.head())
+
+
+        # parse data part
+        #   - load into pd
+        #   - translate column names
+        #   - decide what to do with missing columns
+        #   - decide what to do with unkown columns
+        #   - validate dtypes ?
+        #   - convert to correct units
+
+        return new_tests
+
+    def inspect(self, data):
+        return data
+
+    def load(self, file_name):
+        """Load a raw data-file
+
+        Args:
+            file_name (path)
+
+        Returns:
+            loaded test
+        """
+        self.parse_definition_file()
+        raw_file_loader = self.loader
+        new_rundata = raw_file_loader(file_name)
+        new_rundata = self.inspect(new_rundata)
+        return new_rundata
+
+
+if __name__ == "__main__":
+    import pathlib
+    print("running this")
+    loader = CustomLoader()
+    loader.pick_definition_file()
+    datadir = "/Users/jepe/scripting/cellpy/dev_data"
+    datadir = pathlib.Path(datadir)
+    my_file_name = datadir / "custom_data_001.csv"
+    # print(help(loader.get_raw_units))
+    # print(help(loader.get_raw_limits))
+    print(f"Trying to load {my_file_name}")
+    loader.load(my_file_name)
