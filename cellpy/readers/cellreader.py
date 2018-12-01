@@ -36,7 +36,7 @@ from cellpy.parameters import prms
 from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
 from cellpy.parameters.internal_settings import (
     get_headers_summary, get_cellpy_units,
-    get_headers_normal, get_headers_step_table
+    get_headers_normal, get_headers_step_table, cellpy_attributes
 )
 from cellpy.readers.core import (
     FileID, DataSet, CELLPY_FILE_VERSION,
@@ -206,8 +206,11 @@ class CellpyData(object):
         # use a custom format (csv with information lines on top)
         from cellpy.readers.instruments import custom as instr
         self.loader_class = instr.CustomLoader()
-
-        warnings.warn("not ready for use yet")
+        # ----- get information --------------------------
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # ----- create the loader ------------------------
+        self.loader = self.loader_class.loader
 
     def _set_arbin_sql(self):
         warnings.warn("not implemented")
@@ -761,29 +764,36 @@ class CellpyData(object):
 
     def _load_infotable(self, data, infotable, filename):
         # get attributes from infotable
-        data.test_no = self._extract_from_dict(infotable, "test_no")
-        data.mass = self._extract_from_dict(infotable, "mass")
-        data.mass_given = True
+
+        for attribute in cellpy_attributes:
+            value = self._extract_from_dict(infotable, attribute)
+            setattr(data, attribute, value)
+
+        if data.mass is None:
+            data.mass = 1.0
+        else:
+            data.mass_given = True
+
         data.loaded_from = str(filename)
-        data.charge_steps = self._extract_from_dict(infotable, "charge_steps")
-        data.channel_index = self._extract_from_dict(infotable, "channel_index")
-        data.channel_number = \
-            self._extract_from_dict(infotable, "channel_number")
-        data.creator = self._extract_from_dict(infotable, "creator")
-        data.schedule_file_name = \
-            self._extract_from_dict(infotable, "schedule_file_name")
-        data.start_datetime = \
-            self._extract_from_dict(infotable, "start_datetime")
-        data.test_ID = self._extract_from_dict(infotable, "test_ID")
+
         # hack to allow the renaming of tests to datasets
         try:
             data.name = self._extract_from_dict_hard(infotable, "name")
-        except DeprecatedFeature:
-            warnings.warn("OLD TYPE STYLE FOUND!")
+        except KeyError:
+            warnings.warn("OLD-TYPE: Recommend to save in new format!")
             data.name = self._extract_from_dict(infotable, "test_name")
 
-        data.step_table_made = \
-            self._extract_from_dict(infotable, "step_table_made")
+        # unpcaking the raw data limits
+        for key in data.raw_limits:
+            try:
+                data.raw_limits[key] = self._extract_from_dict_hard(infotable, key)
+            except KeyError:
+                warnings.warn("OLD-TYPE: Recommend to save in new format!")
+
+        data.step_table_made = self._extract_from_dict(
+            infotable,
+            "step_table_made"
+        )
         data.dfsummary_made = \
             self._extract_from_dict(infotable, "dfsummary_made")
 
@@ -808,32 +818,25 @@ class CellpyData(object):
 
     def _create_infotable(self, dataset_number=None):
         # needed for saving class/DataSet to hdf5
+
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
             return
+
         test = self.get_dataset(dataset_number)
 
         infotable = collections.OrderedDict()
-        infotable["test_no"] = [test.test_no, ]
-        infotable["mass"] = [test.mass, ]
-        infotable["charge_steps"] = [test.charge_steps, ]
-        infotable["discharge_steps"] = [test.discharge_steps, ]
-        infotable["ir_steps"] = [test.ir_steps, ]
-        infotable["ocv_steps"] = [test.ocv_steps, ]
-        infotable["nom_cap"] = [test.nom_cap, ]
-        infotable["loaded_from"] = [test.loaded_from, ]
-        infotable["channel_index"] = [test.channel_index, ]
-        infotable["channel_number"] = [test.channel_number, ]
-        infotable["creator"] = [test.creator, ]
-        infotable["schedule_file_name"] = [test.schedule_file_name, ]
-        infotable["item_ID"] = [test.item_ID, ]
-        infotable["test_ID"] = [test.test_ID, ]
-        infotable["name"] = [test.name, ]
-        infotable["start_datetime"] = [test.start_datetime, ]
-        infotable["dfsummary_made"] = [test.dfsummary_made, ]
-        infotable["step_table_made"] = [test.step_table_made, ]
+
+        for attribute in cellpy_attributes:
+            value = getattr(test, attribute)
+            infotable[attribute] = [value, ]
+
         infotable["cellpy_file_version"] = [test.cellpy_file_version, ]
+
+        limits = test.raw_limits
+        for key in limits:
+            infotable[key] = limits[key]
 
         infotable = pd.DataFrame(infotable)
 

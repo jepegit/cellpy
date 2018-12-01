@@ -3,7 +3,8 @@ import os
 
 import pandas as pd
 
-from cellpy.parameters.internal_settings import get_headers_normal
+from cellpy.parameters.internal_settings import get_headers_normal, \
+    cellpy_attributes
 
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.readers.core import FileID, DataSet, \
@@ -26,11 +27,23 @@ DEFAULT_CONFIG = {
         {
             "mass": "mass",
             "total_mass": "total_mass",
-            "scheduel_file": "scheduel_file",
-            "operator": "name",
-            "fid_last_modification_time": None,
-            "fid_size": None,
-            "fid_last_accessed": None,
+            "schedule_file": "schedule_file",
+            "schedule": "schedule",
+            "creator": "operator",
+            "test_no": "test_number",
+            "loaded_from": "loaded_from",
+            "channel_index": "channel_index",
+            "channel_number": "channel_number",
+            "item_ID": "instrument",
+            "test_ID": "test_name",
+            "cell_name": "cell",
+            "material": "material",
+            "counter_electrode": "counter",
+            "reference_electrode": "reference",
+            "start_datetime": "date",
+            "fid_last_modification_time": "last_modified",
+            "fid_size": "size",
+            "fid_last_accessed": "last_accessed",
         },
     "headers":
         {
@@ -148,15 +161,6 @@ class CustomLoader(Loader):
         if self.structure["format"] != "csv":
             raise NotImplementedError
 
-
-        # "table_name": None,
-        # "header_definitions": "labels",
-        # "comment_chars": ["#", "!"],
-        # "sep": ";",
-        # "locate_start_data_by": "line_number",
-        # "locate_end_data_by": "EOF",
-        # "locate_vars_by": "key_value_pairs",
-
         sep = self.structure.get("sep", prms.Reader.sep)
         if sep is None:
             sep = prms.Reader.sep
@@ -188,18 +192,46 @@ class CustomLoader(Loader):
                 else:
                     break
 
+        var_dict = dict()
         if locate_vars_by == "key_value_pairs":
             for line in var_lines:
                 parts = line.split(sep)
-                variable = parts[0]
-                value = parts[1]
-                print(f"{variable}::{value}")
+                try:
+                    var_dict[parts[0]] = parts[1]
+                except IndexError as e:
+                    logging.debug(f"{e}\ncould not split var-value\n{line}")
 
-                # CONTINUE FROM HERE
         else:
             raise NotImplementedError
 
+        data = DataSet()
+        data.test_no = 1
+        data.loaded_from = file_name
+        fid = self._generate_fid(file_name, var_dict)
 
+        # parsing cellpydata attributes
+        for attribute in cellpy_attributes:
+            key = self.variables.get(attribute, None)
+            # print(f"{attribute} -> {key}")
+            if key:
+                val = var_dict.pop(key, None)
+                # print(f"{attribute}: {val}")
+                setattr(data, attribute, val)
+
+        data.raw_data_files.append(fid)
+
+        # setting optional attributes (will be implemented later I hope)
+        key = self.variables.get("mass", None)
+        if key:
+            mass = var_dict.pop(key, None)
+            logging.debug("mass is given, but not propagated")
+
+        key = self.variables.get("total_mass", None)
+        if key:
+            total_mass = var_dict.pop(key, None)
+            logging.debug("total_mass is given, but not propagated")
+
+        logging.debug(f"unused vars: {var_dict}")
 
         # parse data
         raw = pd.read_csv(
@@ -208,18 +240,55 @@ class CustomLoader(Loader):
             header=header_row,
             skip_blank_lines=False,
         )
-        print(raw.head())
 
-
-        # parse data part
-        #   - load into pd
         #   - translate column names
+        rename_col_dict = dict()
+
+        for col_def in self.headers:
+            new_name = self.headers_normal[col_def]
+            old_name = self.headers[col_def]
+            if old_name in raw.columns:
+                rename_col_dict[old_name] = new_name
+
+        raw = raw.rename(columns=rename_col_dict)
         #   - decide what to do with missing columns
         #   - decide what to do with unkown columns
         #   - validate dtypes ?
         #   - convert to correct units
-
+        data.raw_data_files_length.append(raw.shape[0])
+        data.dfsummary = None
+        data.dfdata = raw
+        new_tests.append(data)
         return new_tests
+
+    def _generate_fid(self, file_name, var_dict):
+        fid = FileID()
+        last_modified = var_dict.get(
+            self.variables["fid_last_modification_time"],
+            None,
+        )
+        size = var_dict.get(
+            self.variables["fid_size"],
+            None,
+        )
+        last_accessed = var_dict.get(
+            self.variables["fid_last_accessed"],
+            None,
+        )
+
+        if any([last_modified, size, last_accessed]):
+            fid.name = os.path.abspath(file_name)
+            fid.full_name = file_name
+            fid.location = os.path.dirname(file_name)
+
+            fid.size = size
+            fid.last_modified = last_modified
+            fid.last_accessed = last_accessed
+            fid.last_info_changed = last_accessed
+        else:
+            fid.populate(file_name)
+
+        return fid
 
     def inspect(self, data):
         return data
@@ -242,13 +311,14 @@ class CustomLoader(Loader):
 
 if __name__ == "__main__":
     import pathlib
+    from pprint import pprint
     print("running this")
     loader = CustomLoader()
-    loader.pick_definition_file()
+    # loader.pick_definition_file()
     datadir = "/Users/jepe/scripting/cellpy/dev_data"
     datadir = pathlib.Path(datadir)
     my_file_name = datadir / "custom_data_001.csv"
     # print(help(loader.get_raw_units))
     # print(help(loader.get_raw_limits))
-    print(f"Trying to load {my_file_name}")
+    # print(f"Trying to load {my_file_name}")
     loader.load(my_file_name)

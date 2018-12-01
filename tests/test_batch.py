@@ -97,6 +97,7 @@ def test_cycling_experiment_to_file(cycling_experiment):
 
 def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
     name = fdv.run_name
+    print(name)
     capacity, voltage = updated_cycling_experiment.data[name].get_cap(
         cycle=1,
     )

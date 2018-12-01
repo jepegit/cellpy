@@ -48,3 +48,7 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def loader(self, *args, **kwargs):
         pass
+
+    def convert_units(self):
+        pass
+

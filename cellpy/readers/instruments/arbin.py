@@ -641,7 +641,7 @@ class ArbinLoader(Loader):
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
                 txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-                warnings.warn(txt)
+                logging.debug(txt)
             # normal_df = normal_df.set_index("Data_Point")
             data.dfsummary = summary_df
             data.dfdata = normal_df

@@ -479,3 +479,23 @@ def test_check_cellpy_file(cellpy_data_instance):
     ids = cellpy_data_instance._check_cellpy_file(file_name)
 
 
+def test_cellpyfile_roundtrip():
+    from cellpy import cellreader
+    cdi = cellreader.CellpyData()
+
+    # create a cellpy file from the res-file
+    cdi.from_raw(fdv.res_file_path)
+    cdi.set_mass(1.0)
+    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    print(f"trying to save the cellpy file to {fdv.cellpy_file_path}")
+    cdi.save(fdv.cellpy_file_path)
+
+    # load the cellpy file
+    cdi = cellreader.CellpyData()
+    print(f"trying to load the cellpy file {fdv.cellpy_file_path}")
+    cdi.load(fdv.cellpy_file_path)
+    print(f"updating the file")
+    cdi.make_step_table()
+    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+
+

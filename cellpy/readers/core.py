@@ -7,7 +7,10 @@ import warnings
 from functools import wraps
 
 from cellpy.parameters import prms
-
+from cellpy.parameters.internal_settings import (
+    cellpy_attributes,
+    cellpy_limits, cellpy_units,
+)
 
 CELLPY_FILE_VERSION = 4
 MINIMUM_CELLPY_FILE_VERSION = 1
@@ -146,6 +149,8 @@ class DataSet(object):
         self.loaded_from = None  # loaded from (can be list if merged)
         self.raw_data_files = []
         self.raw_data_files_length = []
+        self.raw_units = cellpy_units
+        self.raw_limits = cellpy_limits
         self.channel_index = None
         self.channel_number = None
         self.creator = None
@@ -173,7 +178,6 @@ class DataSet(object):
         self.normal_table_version = NORMAL_TABLE_VERSION
         # ready for use if implementing loading units
         # (will probably never happen).
-        self.raw_units = dict()  # units used for raw_data
 
     def __str__(self):
         txt = "_cellpy_data_dataset_class_\n"
