@@ -487,15 +487,29 @@ def test_cellpyfile_roundtrip():
     cdi.from_raw(fdv.res_file_path)
     cdi.set_mass(1.0)
     cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-    print(f"trying to save the cellpy file to {fdv.cellpy_file_path}")
     cdi.save(fdv.cellpy_file_path)
 
     # load the cellpy file
     cdi = cellreader.CellpyData()
-    print(f"trying to load the cellpy file {fdv.cellpy_file_path}")
     cdi.load(fdv.cellpy_file_path)
-    print(f"updating the file")
     cdi.make_step_table()
     cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+
+
+def test_load_custom_default(cellpy_data_instance):
+    from cellpy import prms
+    import matplotlib.pyplot as plt
+    file_name = fdv.custom_file_paths
+    prms.Instruments.custom_instrument_definitions_file = None
+    cellpy_data_instance.set_instrument("custom")
+    cellpy_data_instance.from_raw(file_name)
+    cellpy_data_instance.make_step_table()
+    cellpy_data_instance.make_summary()
+    summary = cellpy_data_instance.dataset.dfsummary
+    val = summary.loc[
+              summary["Cycle_Index"] == 2,
+              ["Cycle_Index", "Discharge_Endpoint_Slippage(mAh/g)"]
+          ].values[0][-1]
+    assert 593.031 == pytest.approx(val, 0.1)
 
 

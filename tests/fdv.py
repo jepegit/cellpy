@@ -57,3 +57,7 @@ tot_cycles = 34
 # -------- new batch --------------------------------
 pages = "cellpy_batch_test.json"
 pages = os.path.join(db_dir, pages)
+
+# -------- custom file format -----------------------
+custom_file_name = "custom_data_001.csv"
+custom_file_paths = os.path.join(raw_data_dir, custom_file_name)

@@ -331,7 +331,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
                 date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
                 d = d.strftime(date_format)
         except TypeError:
-            warnings.warn(f'The date is not of correct type [{xldate}]')
+            logging.info(f'The date is not of correct type [{xldate}]')
             d = xldate
     return d
 

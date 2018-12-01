@@ -210,6 +210,7 @@ class CellpyData(object):
         self.raw_units = self.loader_class.get_raw_units()
         self.raw_limits = self.loader_class.get_raw_limits()
         # ----- create the loader ------------------------
+        logging.debug("setting custom file-type (will be used when loading raw")
         self.loader = self.loader_class.loader
 
     def _set_arbin_sql(self):
@@ -3025,12 +3026,13 @@ class CellpyData(object):
         steps = []
         unique_steps = dfdata[c_txt].unique()
         max_step = max(dfdata[c_txt])
-        for j in range(max_step):
+        for j in range(int(max_step)):
             if j + 1 not in unique_steps:
                 warnings.warn(f"Cycle {j+1} is missing!")
             else:
                 last_item = max(dfdata.loc[dfdata[c_txt] == j + 1, d_txt])
                 steps.append(last_item)
+
         last_items = dfdata[d_txt].isin(steps)
         return last_items
 

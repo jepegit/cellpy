@@ -47,6 +47,7 @@ DEFAULT_CONFIG = {
         },
     "headers":
         {
+            "data_point_txt": "index",
             "charge_capacity_txt": "charge_capacity",
             "current_txt": "current",
             "cycle_index_txt": "cycle",
@@ -121,6 +122,7 @@ class CustomLoader(Loader):
         self.headers = None
         self.variables = None
         self.structure = None
+        self.parse_definition_file()
 
     @staticmethod
     def pick_definition_file():
@@ -215,6 +217,8 @@ class CustomLoader(Loader):
             # print(f"{attribute} -> {key}")
             if key:
                 val = var_dict.pop(key, None)
+                if key in ["mass", ]:
+                    val = float(val)
                 # print(f"{attribute}: {val}")
                 setattr(data, attribute, val)
 
@@ -314,7 +318,7 @@ class CustomLoader(Loader):
         Returns:
             loaded test
         """
-        self.parse_definition_file()
+
         new_rundata = self.loader(file_name)
         new_rundata = self.inspect(new_rundata)
         return new_rundata
@@ -326,7 +330,7 @@ if __name__ == "__main__":
     print("running this")
     loader = CustomLoader()
     # loader.pick_definition_file()
-    datadir = "/Users/jepe/scripting/cellpy/dev_data"
+    datadir = "/Users/jepe/scripting/cellpy/test_data"
     datadir = pathlib.Path(datadir)
     my_file_name = datadir / "custom_data_001.csv"
     # print(help(loader.get_raw_units))
