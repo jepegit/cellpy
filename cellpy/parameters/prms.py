@@ -131,38 +131,6 @@ DbCols = {
 DbCols = box.Box(DbCols)
 
 # --------------------------
-# ExcelReader
-# --------------------------
-excel_db_cols = {"serial_number_position": 0,
-                 "exists": 3,
-                 "exists_txt": 4,
-                 "fileid": 17,
-                 "batch_no": 1,
-                 "batch": 2,
-                 "label": 13,
-                 "group": 14,
-                 "selected": 15,
-                 "cell_name": 16,
-                 "file_name_indicator": 17,
-                 "comment_slurry": 18,
-                 "finished_run": 19,
-                 "hd5f_fixed": 20,
-                 "LC": 27,
-                 "active_material": 35,
-                 "total_material": 39,
-                 "loading": 42,
-                 "general_comment": 47,
-                 }
-excel_db_cols = box.Box(excel_db_cols)
-
-excel_db_filename_cols = {"serial_number_position": 0,
-                          "serialno": 0,
-                          "fileid": 1,
-                          "files": 2,
-                          }
-excel_db_filename_cols = box.Box(excel_db_filename_cols)
-
-# --------------------------
 # Instruments
 # --------------------------
 Instruments = {

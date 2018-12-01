@@ -19,7 +19,7 @@ class DbSheetCols(object):
             setattr(self, table_key, prms.DbCols[table_key][level])
 
     def __repr__(self):
-        return f"<excel_db_cols: {self.__dict__}>"
+        return f"<DbCols: {self.__dict__}>"
 
 
 class Reader(object):

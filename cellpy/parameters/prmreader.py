@@ -59,11 +59,12 @@ def _pack_prms():
         "Paths": prms.Paths.to_dict(),
         "FileNames": prms.FileNames.to_dict(),
         "Db": prms.Db.to_dict(),
+        "DbCols": prms.DbCols.to_dict(),
         "DataSet": prms.DataSet.to_dict(),
         "Reader": prms.Reader.to_dict(),
         "Instruments": prms.Instruments.to_dict(),
-        "excel_db_cols": prms.excel_db_cols.to_dict(),
-        "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
+        # "excel_db_cols": prms.excel_db_cols.to_dict(),
+        # "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
         "Batch": prms.Batch.to_dict(),
     }
     return config_dict

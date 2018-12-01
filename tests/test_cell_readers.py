@@ -498,7 +498,6 @@ def test_cellpyfile_roundtrip():
 
 def test_load_custom_default(cellpy_data_instance):
     from cellpy import prms
-    import matplotlib.pyplot as plt
     file_name = fdv.custom_file_paths
     prms.Instruments.custom_instrument_definitions_file = None
     cellpy_data_instance.set_instrument("custom")
