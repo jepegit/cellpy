@@ -15,6 +15,8 @@ from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.parameters import prms
 
+DEBUG_MODE = False
+
 # Select odbc module
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
@@ -236,18 +238,20 @@ class ArbinLoader(Loader):
         return new_rundata
 
     def inspect(self, run_data):
-        """inspect the file.
+        """Inspect the file -> reports to log (debug)"""
 
-        -adds missing columns (with np.nan)
-        """
+        if DEBUG_MODE:
+            checked_rundata = []
+            for data in run_data:
+                new_cols = data.dfdata.columns
+                for col in self.headers_normal:
+                    if col not in new_cols:
+                        logging.debug(f"Missing col: {col}")
+                        # data.dfdata[col] = np.nan
+                checked_rundata.append(data)
+        else:
+            checked_rundata = run_data
 
-        checked_rundata = []
-        for data in run_data:
-            new_cols = data.dfdata.columns
-            for col in self.headers_normal:
-                if col not in new_cols:
-                    data.dfdata[col] = np.nan
-            checked_rundata.append(data)
         return checked_rundata
 
     def _iterdump(self, file_name, headers=None):

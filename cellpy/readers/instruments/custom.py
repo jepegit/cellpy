@@ -238,7 +238,6 @@ class CustomLoader(Loader):
         return new_tests
 
     def _parse_csv_data(self, file_name, sep, header_row):
-        # parse data
         raw = pd.read_csv(
             file_name,
             sep=sep,
