@@ -221,11 +221,6 @@ class CustomLoader(Loader):
         data.raw_data_files.append(fid)
 
         # setting optional attributes (will be implemented later I hope)
-        key = self.variables.get("mass", None)
-        if key:
-            mass = var_dict.pop(key, None)
-            logging.debug("mass is given, but not propagated")
-
         key = self.variables.get("total_mass", None)
         if key:
             total_mass = var_dict.pop(key, None)
@@ -233,6 +228,16 @@ class CustomLoader(Loader):
 
         logging.debug(f"unused vars: {var_dict}")
 
+        raw = self._parse_csv_data(file_name, sep, header_row)
+        raw = self._rename_cols(raw)
+        raw = self._check_cycleno_stepno(raw)
+        data.raw_data_files_length.append(raw.shape[0])
+        data.dfsummary = None
+        data.dfdata = raw
+        new_tests.append(data)
+        return new_tests
+
+    def _parse_csv_data(self, file_name, sep, header_row):
         # parse data
         raw = pd.read_csv(
             file_name,
@@ -240,8 +245,9 @@ class CustomLoader(Loader):
             header=header_row,
             skip_blank_lines=False,
         )
+        return raw
 
-        #   - translate column names
+    def _rename_cols(self, raw):
         rename_col_dict = dict()
 
         for col_def in self.headers:
@@ -251,15 +257,19 @@ class CustomLoader(Loader):
                 rename_col_dict[old_name] = new_name
 
         raw = raw.rename(columns=rename_col_dict)
-        #   - decide what to do with missing columns
-        #   - decide what to do with unkown columns
-        #   - validate dtypes ?
-        #   - convert to correct units
-        data.raw_data_files_length.append(raw.shape[0])
-        data.dfsummary = None
-        data.dfdata = raw
-        new_tests.append(data)
-        return new_tests
+        return raw
+
+    def _check_cycleno_stepno(self, raw):
+        return raw
+
+    def _convert_to_cellpy_units(self, data):
+        return data
+
+    def _check_columns(self, data):
+        return data
+
+    def _check_dtypes(self, data):
+        return data
 
     def _generate_fid(self, file_name, var_dict):
         fid = FileID()
@@ -291,6 +301,9 @@ class CustomLoader(Loader):
         return fid
 
     def inspect(self, data):
+        data = self._convert_to_cellpy_units(data)
+        data = self._check_columns(data)
+        data = self._check_dtypes(data)
         return data
 
     def load(self, file_name):
@@ -303,8 +316,7 @@ class CustomLoader(Loader):
             loaded test
         """
         self.parse_definition_file()
-        raw_file_loader = self.loader
-        new_rundata = raw_file_loader(file_name)
+        new_rundata = self.loader(file_name)
         new_rundata = self.inspect(new_rundata)
         return new_rundata
 
