@@ -30,7 +30,6 @@ DEFAULT_CONFIG = {
             "schedule_file": "schedule_file",
             "schedule": "schedule",
             "creator": "operator",
-            "test_no": "test_number",
             "loaded_from": "loaded_from",
             "channel_index": "channel_index",
             "channel_number": "channel_number",
@@ -209,7 +208,6 @@ class CustomLoader(Loader):
             raise NotImplementedError
 
         data = DataSet()
-        data.test_no = 1
         data.loaded_from = file_name
         fid = self._generate_fid(file_name, var_dict)
 
