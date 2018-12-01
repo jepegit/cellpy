@@ -44,7 +44,7 @@ from cellpy.readers.core import (
 )
 
 
-# TODO: performance warnings probably due to mixed types within cols (pytables)
+# TODO: @jepe - performance warnings - mixed types within cols (pytables)
 performance_warning_level = "ignore"  # "ignore", "error"
 warnings.filterwarnings(performance_warning_level,
                         category=pd.io.pytables.PerformanceWarning)
@@ -155,6 +155,7 @@ class CellpyData(object):
         """returns the DataSet instance"""
         return self.datasets[self.selected_dataset_number]
 
+    # TODO: @jepe - merge the _set_xxinstrument methods into one method
     def set_instrument(self, instrument=None):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
@@ -1004,7 +1005,7 @@ class CellpyData(object):
         test.no_cycles = max(dfdata2[cycle_index_header])
         test.dfdata = dfdata2
         test.merged = True
-        # TODO (jepe) update merging for more variables
+        # TODO: @jepe -  update merging for more variables
 
         return test
 
@@ -1100,7 +1101,7 @@ class CellpyData(object):
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False,
                          cycle_number=None, dataset_number=None,
                          steptable=None):
-        # TODO: include sub_steps here
+        # TODO: @jepe - include sub_steps here
         """Get the step numbers of selected type.
 
         Returns the selected step_numbers for the  elected type of step(s).
@@ -1510,7 +1511,7 @@ class CellpyData(object):
         raise DeprecatedFeature
 
     def _select_step(self, cycle, step, dataset_number=None):
-        # TODO: insert sub_step here
+        # TODO: @jepe - insert sub_step here
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -1906,8 +1907,9 @@ class CellpyData(object):
         charge_title = self.headers_normal.charge_capacity_txt
         chargecap = 0.0
         dischargecap = 0.0
-        # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or
-        # pd.loc[(pd.["step"]==1),"x"]
+
+        # TODO: @jepe - use pd.loc[row,column]
+
         if capacity_modifier == "reset":
 
             for index, row in dfsummary.iterrows():
@@ -1960,7 +1962,7 @@ class CellpyData(object):
                 steps = discharge_cycles[j]
                 txt = "Cycle  %i (discharge):  " % j
                 self.logger.debug(txt)
-                # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"]
+                # TODO: @jepe - use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"]
                 # for col or pd.loc[(pd.["step"]==1),"x"]
                 selection = (dfdata[cycle_index_header] == j) & \
                             (dfdata[step_index_header].isin(steps))
@@ -2421,7 +2423,7 @@ class CellpyData(object):
 
     def _get_cap(self, cycle=None, dataset_number=None, cap_type="charge"):
         # used when extracting capacities (get_ccap, get_dcap)
-        # TODO: does not allow for constant voltage yet?
+        # TODO: @jepe - does not allow for constant voltage yet?
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -3139,7 +3141,7 @@ class CellpyData(object):
                       find_ocv=False,
                       find_ir=False,
                       find_end_voltage=False,
-                      # TODO: this is only needed for arbin-data:
+                      # TODO: @jepe - this is only needed for arbin-data:
                       convert_date=True,
                       sort_my_columns=True,
                       use_cellpy_stat_file=False,
@@ -3528,7 +3530,7 @@ class CellpyData(object):
 
                 # finding end voltage for discharge
                 if step[-1]:  # selecting last
-                    # TODO use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"]
+                    # TODO: @jepe - use pd.loc[row,column]
                     # for col or pd.loc[(pd.["step"]==1),"x"]
                     end_voltage_dc = dfdata[
                         (dfdata[c_txt] == cycle) &

@@ -397,21 +397,21 @@ class MprLoader(Loader):
             start_datetime + datetime.timedelta(seconds=n)
             for n in self.mpr_data["time"].values]
         # self.mpr_data[self.cellpy_headers[cellpy_header_txt]].start_date.strftime(date_format)
-        # TODO: currently storing as datetime object (while for arbindata it is stored as str)
+        # TODO: @jepe - currently storing as datetime object (while for arbindata it is stored as str)
 
     def _generate_step_index(self):
-        # TODO: check and optionally fix me
+        # TODO: @jepe - check and optionally fix me
         cellpy_header_txt = "step_index_txt"
         biologics_header_txt = "flags2"
         self._rename_header(cellpy_header_txt, biologics_header_txt)
         self.mpr_data[self.cellpy_headers[cellpy_header_txt]] += 1
 
     def _generate_step_time(self):
-        # TODO: fix me
+        # TODO: @jepe - fix me
         self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
 
     def _generate_sub_step_time(self):
-        # TODO: fix me
+        # TODO: @jepe - fix me
         self.mpr_data[self.cellpy_headers["sub_step_time_txt"]] = np.nan
 
     def _generate_capacities(self):
@@ -425,10 +425,12 @@ class MprLoader(Loader):
         # should ideally use the info from bl_dtypes, will do that later
 
         self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
-        self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(1,
-                                                                         self.mpr_data.shape[
-                                                                             0] + 1,
-                                                                         1)
+        self.mpr_data[
+            self.cellpy_headers["data_point_txt"]
+        ] = np.arange(
+            1,
+            self.mpr_data.shape[0] + 1, 1
+        )
         self._generate_datetime()
         self._generate_cycle_index()
 

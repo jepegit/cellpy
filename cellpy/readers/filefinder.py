@@ -113,7 +113,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     cellpy_file = "{0}.{1}".format(run_name, cellpy_file_extension)
     cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
-    # TODO: use pathlib
+    # TODO: @jepe - use pathlib
 
     if cache is None:
 

@@ -511,7 +511,7 @@ class ArbinLoader(Loader):
         Returns:
             new_tests (list of data objects)
         """
-        # TODO: insert kwargs - current chunk, only normal data, etc
+        # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
 
         new_tests = []
         if not os.path.isfile(file_name):

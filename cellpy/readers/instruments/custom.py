@@ -128,6 +128,8 @@ class CustomLoader(Loader):
     def pick_definition_file():
         return prms.Instruments.custom_instrument_definitions_file
 
+    # TODO: @jepe - create yaml file example (from DEFAULT_CONFIG)
+    # TODO: @jepe - create yaml file parser
     def parse_definition_file(self):
         if self.definition_file is None:
             logging.info("no definition file for custom format")
@@ -261,6 +263,8 @@ class CustomLoader(Loader):
 
         raw = raw.rename(columns=rename_col_dict)
         return raw
+
+    # TODO: @jepe - finalize the _check sub-modules
 
     def _check_cycleno_stepno(self, raw):
         return raw

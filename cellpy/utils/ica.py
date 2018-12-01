@@ -14,10 +14,10 @@ import warnings
 METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 
 
-# TODO: documentation and tests
-# TODO: fitting of o-c curves and differentiation
-# TODO: modeling and fitting
-# TODO: full-cell
+# TODO: @jepe - documentation and tests
+# TODO: @jepe - fitting of o-c curves and differentiation
+# TODO: @jepe - modeling and fitting
+# TODO: @jepe - full-cell
 
 
 class Converter(object):
