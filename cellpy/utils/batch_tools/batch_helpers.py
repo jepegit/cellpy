@@ -76,10 +76,16 @@ def fix_groups(groups):
     """Takes care of strange group numbers."""
     _groups = []
     for g in groups:
-        if not float(g) > 0:
+        try:
+            if not float(g) > 0:
+                _groups.append(1000)
+            else:
+                _groups.append(int(g))
+        except TypeError as e:
+            logging.info("Error in reading group number (check your db)")
+            logging.debug(g)
+            logging.debug(e)
             _groups.append(1000)
-        else:
-            _groups.append(int(g))
     return _groups
 
 
