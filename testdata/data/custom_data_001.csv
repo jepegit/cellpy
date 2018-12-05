@@ -1,4 +1,5 @@
 # PRIME INSTRUMENT FILE --- M12X---!! HEAD !!---M13B---;;;;;;;;;
+number of headers ; 19
 operator;Jan Petter Maehlen;;;;;;;;
 date;01.01.2016;;;;;;;;
 instrument;bobby;;;;;;;;
@@ -15,7 +16,6 @@ mass;0.0012;;;;;;;;
 6588;R12;;;;;;;;
 7712;Problem encountered - reloading config;;;;;;;;
 78999;R0;;;;;;;;
-0;0;;;;;;;;
 # PRIME INSTRUMENT FILE ---268876-;;;;;;;;;
 index;test_time;step_time;date_stamp;step;cycle;current;voltage;charge_capacity;discharge_Capacity
 0;120.001;120.001;43374.41542824074;1;1;0.0;1.13625813;0.0;0.0

@@ -22,6 +22,12 @@ DEFAULT_CONFIG = {
         "locate_end_data_by": "EOF",
         "locate_vars_by": "key_value_pairs",
         "start_data": 19,
+        "header_info_line": 1,
+        "start_data_offset": 0,
+        "header_info_parse": "in_key",
+        "header_info_splitter": ";",
+        "file_type_id_line": 0,
+        "file_type_id_match": None,
     },
     "variables":
         {
@@ -151,8 +157,33 @@ class CustomLoader(Loader):
     def get_raw_limits(self):
         return self.limits
 
-    def _find_data_start(self):
-        raise NotImplementedError
+    def _find_data_start(self, file_name, sep):
+        if self.structure["locate_start_data_by"] != "line_number":
+            raise NotImplementedError
+        if not self.structure["start_data"] is None:
+            return self.structure["start_data"] + \
+                   self.structure["start_data_offset"]
+
+        else:
+            logging.debug("searching for line where data starts")
+            header_info_line = self.structure["header_info_line"]
+            header_info_parse = self.structure["header_info_parse"]
+            header_info_splitter = self.structure["header_info_splitter"]
+            header_info_line = self.structure["header_info_line"]
+
+            with open(file_name, "rb") as fp:
+                for i, line_ in enumerate(fp):
+                    if i == header_info_line:
+                        line = line_.strip()
+                        line = line.decode()
+                        break
+
+            if header_info_parse == "in_key":
+                _, v = line.split(header_info_splitter)
+            else:
+                _, v = line.split(sep)
+            v = int(v)
+            return v
 
     def loader(self, file_name, **kwargs):
         new_tests = []
@@ -172,8 +203,7 @@ class CustomLoader(Loader):
         comment_chars = self.structure.get("comment_chars", ["#", "!"])
         header_row = self.structure.get("start_data", None)
         if header_row is None:
-            logging.debug("header row number not given")
-            raise IOError
+            header_row = self._find_data_start(file_name, sep)
 
         # parse variables
         var_lines = []
