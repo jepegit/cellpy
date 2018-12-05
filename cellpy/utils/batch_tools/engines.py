@@ -102,7 +102,7 @@ def simple_db_engine(reader=None, srnos=None):
         logging.debug("%s: %s" % (key, str(info_dict[key])))
 
     _groups = [reader.get_group(srno) for srno in srnos]
-    logging.debug("groups: %s" % str(_groups))
+    logging.debug(">\ngroups: %s" % str(_groups))
     groups = helper.fix_groups(_groups)
     info_dict["groups"] = groups
 
