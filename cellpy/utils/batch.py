@@ -38,6 +38,9 @@ class Batch:
         self.plotter.assign(self.experiment)
         self._info_df = self.info_file
 
+    def __str__(self):
+        return str(self.experiment)
+
     @property
     def info_file(self):
         return self.experiment.journal.file_name
@@ -112,8 +115,8 @@ def main():
 
     print("---INITIALISATION OF BATCH---")
     b = init(name, project, batch_col=batch_col)
-    b.export_raw = True
-    b.export_cycles = True
+    b.experiment.export_raw = True
+    b.experiment.export_cycles = True
     b.create_info_df()
     b.create_folder_structure()
     b.load_and_save_raw()

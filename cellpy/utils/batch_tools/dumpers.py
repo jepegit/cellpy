@@ -78,9 +78,10 @@ def ram_dumper(**kwargs):
 def screen_dumper(**kwargs):
     """Dump data to screen."""
     farms = kwargs["farms"]
+    engine = kwargs["engine"]
     logging.info("dumping to screen")
 
-    print("\n[Screen dumper]")
+    print(f"\n[Screen dumper] ({engine})")
     try:
         if len(farms) == 1:
             print(f"You have one farm with little pandas.")
