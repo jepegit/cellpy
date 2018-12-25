@@ -94,7 +94,21 @@ class CellpyData(object):
                  filestatuschecker=None,  # "modified"
                  fetch_one_liners=False,
                  tester=None,
+                 initialize=False,
                  ):
+        """CellpyData object
+
+        Args:
+            filenames: list of files to load.
+            selected_scans:
+            profile: experimental feature.
+            filestatuschecker: property to compare cellpy and raw-files;
+               default read from prms-file.
+            fetch_one_liners: experimental feature.
+            tester: instrument used (e.g. "arbin") (checks prms-file as
+               default).
+            initialize: create a dummy (empty) dataset; defaults to False.
+        """
 
         if tester is None:
             self.tester = prms.Instruments.tester
@@ -171,6 +185,14 @@ class CellpyData(object):
 
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()
+
+        if initialize:
+            self.initialize()
+
+    def initialize(self):
+        self.logger.info("Intializing...")
+        self.datasets.append(DataSet())
+
 
     @property
     def dataset(self):
@@ -802,6 +824,9 @@ class CellpyData(object):
 
         # hack to allow the renaming of tests to datasets
         try:
+            name = self._extract_from_dict_hard(infotable, "name")
+            if not isinstance(name, str):
+                raise KeyError("strange format of the 'name' attr")
             data.name = self._extract_from_dict_hard(infotable, "name")
         except KeyError:
             warnings.warn("OLD-TYPE: Recommend to save in new format!")

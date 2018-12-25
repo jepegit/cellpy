@@ -78,7 +78,6 @@ class CyclingExperiment(BaseExperiment):
 
         pages = self.journal.pages
         summary_frames = dict()
-        step_table_frames = dict()
         cell_data_frames = dict()
         number_of_runs = len(pages)
         counter = 0
@@ -155,9 +154,7 @@ class CyclingExperiment(BaseExperiment):
             summary_tmp = cell_data.dataset.dfsummary
             logging.info("Trying to get summary_data")
 
-            step_table_tmp = cell_data.dataset.step_table
-
-            if step_table_tmp is None:
+            if cell_data.dataset.step_table is None:
                 logging.info(
                     "No existing steptable made - running make_step_table"
                 )
@@ -171,11 +168,6 @@ class CyclingExperiment(BaseExperiment):
 
                 cell_data.make_summary(find_end_voltage=True,
                                        find_ir=True)
-
-            if self.all_in_memory:
-                cell_data_frames[indx] = cell_data
-            else:
-                cell_data_frames[indx] = cellreader.CellpyData()
 
             if summary_tmp.index.name == b"Cycle_Index":
                 logging.debug("Strange: 'Cycle_Index' is a byte-string")
@@ -192,8 +184,15 @@ class CyclingExperiment(BaseExperiment):
                         inplace=True)
                 summary_tmp.set_index("Cycle_Index", inplace=True)
 
-            step_table_frames[indx] = step_table_tmp
             summary_frames[indx] = summary_tmp
+
+            if self.all_in_memory:
+                cell_data_frames[indx] = cell_data
+            else:
+                cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
+                cell_data_frames[indx].dataset.step_table = \
+                    cell_data.dataset.step_table
+                cell_data_frames[indx].dataset.step_table_made = True
 
             if self.save_cellpy:
                 logging.info("saving to cellpy-format")
@@ -242,7 +241,6 @@ class CyclingExperiment(BaseExperiment):
 
         self.errors["update"] = errors
         self.summary_frames = summary_frames
-        self.step_table_frames = step_table_frames
         self.cell_data_frames = cell_data_frames
 
     def status(self):
@@ -255,8 +253,7 @@ class CyclingExperiment(BaseExperiment):
 
     def link(self):
         logging.info("[estblishing links]")
-        logging.info("checking and establishing link to data")
-        step_table_frames = dict()
+        logging.debug("checking and establishing link to data")
         cell_data_frames = dict()
         counter = 0
         errors = []
@@ -272,15 +269,17 @@ class CyclingExperiment(BaseExperiment):
                     logging.error("File does not exist")
                     raise IOError
 
-                cell_data_frames[indx] = cellreader.CellpyData()
+                cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
 
-                step_table_frames[indx] = helper.look_up_and_get(
+                step_table = helper.look_up_and_get(
                     row.cellpy_file_names,
                     "step_table"
                 )
 
+                cell_data_frames[indx].dataset.step_table = step_table
+                cell_data_frames[indx].dataset.step_table_made = True
+
             self.cell_data_frames = cell_data_frames
-            self.step_table_frames = step_table_frames
 
         except IOError as e:
             logging.warning(e)

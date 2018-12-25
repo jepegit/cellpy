@@ -129,7 +129,7 @@ class DataSet(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
         self.logger.debug("created DataSet instance")
 
@@ -159,6 +159,10 @@ class DataSet(object):
         self.start_datetime = None
         self.test_ID = None
         self.name = None
+        for k in kwargs:
+            if hasattr(self, k):
+                setattr(self, k, kwargs[k])
+
         # methods in CellpyData to update if adding new attributes:
         #  _load_infotable()
         # _create_infotable()

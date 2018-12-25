@@ -94,9 +94,13 @@ class Data(dict):
         return t
 
     def __look_up__(self, id):
-        if self.experiment.cell_data_frames is not None:
-            return self.experiment.cell_data_frames[id]
-        else:
+        try:
+            if not self.experiment.cell_data_frames[id].dataset.dfdata.empty:
+                return self.experiment.cell_data_frames[id]
+            else:
+                raise AttributeError
+
+        except AttributeError:
             logging.debug("looking up from cellpyfile")
             pages = self.experiment.journal.pages
             info = pages.loc[id, :]
@@ -110,7 +114,6 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def __init__(self, *args):
         self.journal = None
         self.summary_frames = None
-        self.step_table_frames = None
         self.cell_data_frames = None
         self.memory_dumped = dict()
         self.parent_level = "CellpyData"

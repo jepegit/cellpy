@@ -28,6 +28,7 @@ def look_up_and_get(cellpy_file_name, table_name):
     logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
     store = pd.HDFStore(cellpy_file_name)
     table = store.select(table_path)
+    store.close()
     return table
 
 
