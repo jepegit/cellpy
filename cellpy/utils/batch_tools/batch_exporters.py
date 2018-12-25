@@ -21,14 +21,18 @@ class CSVExporter(BaseExporter):
         >>> exporter = CSVExporter(my_experiment)
         >>> exporter.do()
 
+    Args:
+        use_screen_dumper (bool): dump info to screen (default False).
+
 
     """
-    def __init__(self):
+    def __init__(self, use_screen_dumper=False):
         super().__init__()
         self._assign_engine(summary_engine)
         self._assign_engine(cycles_engine)
         self._assign_dumper(csv_dumper)
-        self._assign_dumper(screen_dumper)
+        if use_screen_dumper:
+            self._assign_dumper(screen_dumper)
         self.current_engine = None
 
     def run_engine(self, engine):

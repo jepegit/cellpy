@@ -66,6 +66,28 @@ class CellpyData(object):
         datasets (list): list of DataSet objects.
     """
 
+    def __str__(self):
+        txt = "<CellpyData-object>\n"
+        if self.name:
+            txt += f"name: {self.name}\n"
+        if self.table_names:
+            txt += f"table_names: {self.table_names}\n"
+        if self.tester:
+            txt += f"tester: {self.tester}\n"
+        if self.datasets:
+            txt += "datasets: [ ->\n"
+            for i, d in enumerate(self.datasets):
+                txt += f"   ({i})\n"
+                for t in str(d).split("\n"):
+                    txt += "     "
+                    txt += t
+                    txt += "\n"
+                txt += "\n"
+            txt += "]"
+        else:
+            txt = "datasets: []"
+        return txt
+
     def __init__(self, filenames=None,
                  selected_scans=None,
                  profile=False,

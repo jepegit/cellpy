@@ -80,8 +80,20 @@ class Data(dict):
         cellpy_data_object = self.__look_up__(id)
         return cellpy_data_object
 
-    def __look_up__(self, id):
+    def __str__(self):
+        t = ""
+        if not self.experiment.cell_data_frames:
+            t += "{}"
+        else:
+            for k in self.experiment.cell_data_frames:
+                t += f"{k}\n"
+                t += str(self.experiment.cell_data_frames[k])
+                t += "\n"
 
+        t += "\n"
+        return t
+
+    def __look_up__(self, id):
         if self.experiment.cell_data_frames is not None:
             return self.experiment.cell_data_frames[id]
         else:

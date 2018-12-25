@@ -16,9 +16,19 @@ logger = logging.getLogger(__name__)
 def look_up_and_get(cellpy_file_name, table_name):
     """Extracts table from cellpy hdf5-file."""
 
-    print(f"\nTrying to run 'look_up_and_get(cellpy_file_name, table_name)'")
-    print(f"with prms {cellpy_file_name}, {table_name}")
-    print("OH-NO!!!!!!!!! -> 'look_up_and_get' is not made yet!")
+    # infoname = '/CellpyData/info'
+    # dataname = '/CellpyData/dfdata'
+    # summaryname = '/CellpyData/dfsummary'
+    # fidname = '/CellpyData/fidtable'
+    # stepname = '/CellpyData/step_table'
+
+    root = '/CellpyData'
+    table_path = '/'.join([root, table_name])
+
+    logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
+    store = pd.HDFStore(cellpy_file_name)
+    table = store.select(table_path)
+    return table
 
 
 def create_folder_structure(project_name, batch_name):

@@ -74,6 +74,16 @@ def test_csv_exporter(updated_cycling_experiment):
     exporter.do()
 
 
+def test_link(cycling_experiment):
+    # exporter = batch_exporters.CSVExporter()
+    # exporter.assign(cycling_experiment)
+    cycling_experiment.status()
+    cycling_experiment.link()
+    cycling_experiment.status()
+    cycling_experiment.update(all_in_memory=True)
+    cycling_experiment.status()
+
+
 def test_load_from_file(batch_instance):
     experiment = batch_experiments.CyclingExperiment()
     pages = fdv.pages

@@ -1,4 +1,5 @@
 import logging
+import os
 
 from cellpy.readers import cellreader
 from cellpy import prms
@@ -63,8 +64,18 @@ class CyclingExperiment(BaseExperiment):
 
         self.errors = dict()
 
-    def update(self):
+    def update(self, all_in_memory=None):
+        """Updates the selected datasets.
+
+        Args:
+            all_in_memory (bool): store the cellpydata in memory (default
+            False)
+
+        """
         logging.info("[update experiment]")
+        if all_in_memory is not None:
+            self.all_in_memory = all_in_memory
+
         pages = self.journal.pages
         summary_frames = dict()
         step_table_frames = dict()
@@ -99,7 +110,7 @@ class CyclingExperiment(BaseExperiment):
 
             logging.info("loading cell")
             if not self.force_cellpy:
-                logging.info("not forcing")
+                logging.debug("not forcing")
                 try:
                     cell_data.loadcell(
                         raw_files=row.raw_file_names,
@@ -163,6 +174,8 @@ class CyclingExperiment(BaseExperiment):
 
             if self.all_in_memory:
                 cell_data_frames[indx] = cell_data
+            else:
+                cell_data_frames[indx] = cellreader.CellpyData()
 
             if summary_tmp.index.name == b"Cycle_Index":
                 logging.debug("Strange: 'Cycle_Index' is a byte-string")
@@ -230,13 +243,21 @@ class CyclingExperiment(BaseExperiment):
         self.errors["update"] = errors
         self.summary_frames = summary_frames
         self.step_table_frames = step_table_frames
-        if self.all_in_memory:
-            self.cell_data_frames = cell_data_frames
+        self.cell_data_frames = cell_data_frames
+
+    def status(self):
+        print("\n")
+        print(" STATUS ".center(80, "="))
+
+        print(self)
+
+        print(80 * "=")
 
     def link(self):
         logging.info("[estblishing links]")
         logging.info("checking and establishing link to data")
         step_table_frames = dict()
+        cell_data_frames = dict()
         counter = 0
         errors = []
         try:
@@ -251,10 +272,14 @@ class CyclingExperiment(BaseExperiment):
                     logging.error("File does not exist")
                     raise IOError
 
+                cell_data_frames[indx] = cellreader.CellpyData()
+
                 step_table_frames[indx] = helper.look_up_and_get(
                     row.cellpy_file_names,
                     "step_table"
                 )
+
+            self.cell_data_frames = cell_data_frames
             self.step_table_frames = step_table_frames
 
         except IOError as e:
