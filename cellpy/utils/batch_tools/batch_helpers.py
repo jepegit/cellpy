@@ -177,7 +177,7 @@ def pick_summary_data(key, summary_df, selected_summaries):
     return summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
 
 
-def join_summaries(summary_frames, selected_summaries):
+def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     """parse the summaries and combine based on column (selected_summaries)"""
 
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
@@ -188,14 +188,20 @@ def join_summaries(summary_frames, selected_summaries):
         frames.append(summary_frames[key])
 
     out = []
-
     summary_df = pd.concat(frames, keys=keys, axis=1)
-
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[
                       :, summary_df.columns.get_level_values(1) == value
                       ]
         _summary_df.name = key
+
+        if not keep_old_header:
+            try:
+                _summary_df.columns = _summary_df.columns.droplevel(-1)
+            except AttributeError as e:
+                logging.debug("could not drop level from frame")
+                logging.debug(e)
+
         out.append(_summary_df)
     logger.debug("finished joining summaries")
 

@@ -42,7 +42,7 @@ class CSVExporter(BaseExporter):
             engine: engine to run (function or method).
 
         The method issues the engine command (with experiments and farms
-        as input) that returns an updated farms and well as the barn and
+        as input) that returns an updated farms as well as the barn and
         assigns them both to self.
 
         The farms attribute is a list of farms, i.e. [farm1, farm2, ...], where
