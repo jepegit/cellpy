@@ -263,7 +263,12 @@ class CyclingExperiment(BaseExperiment):
         each cell.
 
         The experiment will then contain a CellpyData object for each cell
-        (in the cell_data_frames attribute) with only the step-table.
+        (in the cell_data_frames attribute) with only the step-table stored.
+
+        Remark that running update persists the summary frames instead (or
+        everything in case you specify all_in_memory=True).
+        This might be considered "a strange and unexpected behaviour". Sorry
+        for that (but the authors of this package is also a bit strange...).
 
         """
         logging.info("[estblishing links]")
