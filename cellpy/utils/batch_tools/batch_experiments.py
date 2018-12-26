@@ -259,6 +259,13 @@ class CyclingExperiment(BaseExperiment):
         print(80 * "=")
 
     def link(self):
+        """Ensure that an appropriate link to the cellpy-files exists for
+        each cell.
+
+        The experiment will then contain a CellpyData object for each cell
+        (in the cell_data_frames attribute) with only the step-table.
+
+        """
         logging.info("[estblishing links]")
         logging.debug("checking and establishing link to data")
         cell_data_frames = dict()

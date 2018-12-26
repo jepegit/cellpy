@@ -70,11 +70,23 @@ class Doer(metaclass=abc.ABCMeta):
 
 
 class Data(dict):
-    """Class that is used to access the experiment.journal.pages DataFrame."""
+    """Class that is used to access the experiment.journal.pages DataFrame.
+
+    The Data class loads the complete cellpy-file if dfdata is not already
+    loaded in memory. In future version, it could be that the Data object
+    will return a link allowing querying instead to save memory usage...
+
+    Remark that some cellpy (cellreader.CellpyData) function might not work if
+    you have the dfdata in memory, but not summary data (if the cellpy function
+    requires summary data or other settings not set as default).
+    """
+
+    # TODO (jepe): decide if we should inclued querying functionallity here.
 
     def __init__(self, experiment, *args):
         super().__init__(*args)
         self.experiment = experiment
+        self.query_mode = False
 
     def __getitem__(self, id):
         cellpy_data_object = self.__look_up__(id)
@@ -93,20 +105,25 @@ class Data(dict):
         t += "\n"
         return t
 
-    def __look_up__(self, id):
+    def __look_up__(self, identification):
         try:
-            if not self.experiment.cell_data_frames[id].dataset.dfdata.empty:
-                return self.experiment.cell_data_frames[id]
+            if not self.experiment.cell_data_frames[
+                identification
+            ].dataset.dfdata.empty:
+                return self.experiment.cell_data_frames[identification]
             else:
                 raise AttributeError
 
         except AttributeError:
             logging.debug("looking up from cellpyfile")
             pages = self.experiment.journal.pages
-            info = pages.loc[id, :]
+            info = pages.loc[identification, :]
             cellpy_file = info["cellpy_file_names"]
             # linking not implemented yet - loading whole file in mem instead
-            return self.experiment._load_cellpy_file(cellpy_file)
+            if not self.query_mode:
+                return self.experiment._load_cellpy_file(cellpy_file)
+            else:
+                raise NotImplementedError
 
 
 class BaseExperiment(metaclass=abc.ABCMeta):
@@ -133,7 +150,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def _load_cellpy_file(self, file_name):
         cellpy_data = cellreader.CellpyData()
         cellpy_data.load(file_name, self.parent_level)
-        logging.info(f"< {file_name}")
+        logging.info(f" <- {file_name}")
         return cellpy_data
 
     @property

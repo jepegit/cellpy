@@ -328,6 +328,7 @@ def test_load_step_specs_short(cellpy_data_instance, cycle, step,
     assert str(i) == expected_info
 
 
+@pytest.mark.slowtest
 def test_load_step_specs(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)

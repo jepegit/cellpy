@@ -75,6 +75,7 @@ def test_csv_exporter(updated_cycling_experiment):
     exporter.do()
 
 
+@pytest.mark.slowtest
 def test_update_time(cycling_experiment):
     t0 = time.time()
     cycling_experiment.update(all_in_memory=True)
@@ -98,7 +99,8 @@ def test_update_time(cycling_experiment):
     print(f"This took {dt} seconds")
 
 
-def test_link(cycling_experiment):
+@pytest.mark.slowtest
+def test_link_time(cycling_experiment):
     t0 = time.time()
     cycling_experiment.link()
     cycling_experiment.status()
@@ -118,6 +120,13 @@ def test_link(cycling_experiment):
     t1 = time.time()
     dt = t1-t0
     print(f"This took {dt} seconds")
+
+
+def test_link(cycling_experiment):
+    cycling_experiment.link()
+    cycling_experiment.status()
+    names = cycling_experiment.cell_names
+    print(names)
 
 
 def test_load_from_file(batch_instance):
