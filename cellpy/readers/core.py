@@ -63,7 +63,7 @@ class FileID(object):
             self.location = None
 
     def __str__(self):
-        txt = "\nfileID information\n"
+        txt = "\n<fileID>\n"
         txt += "full name: %s\n" % self.full_name
         txt += "name: %s\n" % self.name
         if self.last_modified is not None:

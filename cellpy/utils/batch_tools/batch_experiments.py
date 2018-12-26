@@ -243,6 +243,13 @@ class CyclingExperiment(BaseExperiment):
         self.summary_frames = summary_frames
         self.cell_data_frames = cell_data_frames
 
+    @property
+    def cell_names(self):
+        try:
+            return [key for key in self.cell_data_frames]
+        except TypeError:
+            return None
+
     def status(self):
         print("\n")
         print(" STATUS ".center(80, "="))

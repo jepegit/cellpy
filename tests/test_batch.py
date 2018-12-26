@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import logging
+import time
 
 from cellpy.utils.batch_tools import (
     batch_experiments,
@@ -17,7 +18,7 @@ from cellpy import prms
 from cellpy.utils import batch as batch
 from . import fdv
 
-log.setup_logging(default_level="DEBUG")
+log.setup_logging(default_level="INFO")
 
 
 @pytest.fixture(scope="module")
@@ -74,14 +75,49 @@ def test_csv_exporter(updated_cycling_experiment):
     exporter.do()
 
 
-def test_link(cycling_experiment):
-    # exporter = batch_exporters.CSVExporter()
-    # exporter.assign(cycling_experiment)
+def test_update_time(cycling_experiment):
+    t0 = time.time()
+    cycling_experiment.update(all_in_memory=True)
     cycling_experiment.status()
+    names = cycling_experiment.cell_names
+    for name in names:
+        # print(name)
+        cell = cycling_experiment.data[name]
+        cycles = cell.get_cycle_numbers()
+
+        for cycle in cycles:
+            capacity, voltage = cell.get_cap(
+                cycle=cycle,
+            )
+            try:
+                l = len(capacity)
+            except TypeError as e:
+                print(e)
+    t1 = time.time()
+    dt = t1-t0
+    print(f"This took {dt} seconds")
+
+
+def test_link(cycling_experiment):
+    t0 = time.time()
     cycling_experiment.link()
-    # cycling_experiment.status()
-    # cycling_experiment.update(all_in_memory=True)
-    # cycling_experiment.status()
+    cycling_experiment.status()
+    names = cycling_experiment.cell_names
+    for name in names:
+        cell = cycling_experiment.data[name]
+        cycles = cell.get_cycle_numbers()
+
+        for cycle in cycles:
+            capacity, voltage = cell.get_cap(
+                cycle=cycle,
+            )
+            try:
+                l = len(capacity)
+            except TypeError as e:
+                print(e)
+    t1 = time.time()
+    dt = t1-t0
+    print(f"This took {dt} seconds")
 
 
 def test_load_from_file(batch_instance):
