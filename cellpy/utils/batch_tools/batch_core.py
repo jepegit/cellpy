@@ -27,7 +27,7 @@ class Doer(metaclass=abc.ABCMeta):
             self.farms.append(empty_farm)
 
     def __str__(self):
-        return self.__class__.__name__
+        return f"({self.__class__.__name__})"
 
     def __repr__(self):
         return self.__class__.__name__
@@ -98,7 +98,7 @@ class Data(dict):
             t += "{}"
         else:
             for k in self.experiment.cell_data_frames:
-                t += f"{k}\n"
+                t += f"'{k}'\n"
                 t += str(self.experiment.cell_data_frames[k])
                 t += "\n"
 
@@ -137,7 +137,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self.log_level = "INFO"
 
     def __str__(self):
-        return f"{self.__class__.__name__}\n" \
+        return f"[{self.__class__.__name__}]\n" \
                f"journal: \n{str(self.journal)}\n" \
                f"data: \n{str(self.data)}"
 
@@ -217,11 +217,12 @@ class BaseJournal:
         self.raw_dir = None
 
     def __str__(self):
-        return f"{self.__class__.__name__}\n" \
+        return f"({self.__class__.__name__})\n" \
                f"  - name: {str(self.name)}\n" \
                f"  - project: {str(self.project)}\n"\
                f"  - file_name: {str(self.file_name)}\n" \
-               f"  - pages: \n{str(self.pages)}"
+               f"  - pages: ->\n{str(self.pages)}\n" \
+               f"           <-\n"
 
     def __repr__(self):
         return self.__class__.__name__

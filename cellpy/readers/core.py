@@ -184,7 +184,7 @@ class DataSet(object):
         # (will probably never happen).
 
     def __str__(self):
-        txt = "_cellpy_data_dataset_class_\n"
+        txt = "<DataSet>\n"
         txt += "loaded from file\n"
         if isinstance(self.loaded_from, (list, tuple)):
             for f in self.loaded_from:
@@ -194,7 +194,7 @@ class DataSet(object):
         else:
             txt += str(self.loaded_from)
             txt += "\n"
-        txt += "   GLOBAL\n"
+        txt += "\n* GLOBAL\n"
         txt += f"material:            {self.material}\n"
         txt += f"mass (active):       {self.mass}\n"
         txt += f"test ID:             {self.test_ID}\n"
@@ -206,24 +206,28 @@ class DataSet(object):
         txt += f"schedule file name:  {self.schedule_file_name}\n"
 
         try:
-            start_datetime_str = xldate_as_datetime(self.start_datetime)
-        except Exception:
+            if self.start_datetime:
+                start_datetime_str = xldate_as_datetime(self.start_datetime)
+            else:
+                start_datetime_str = "Not given"
+        except AttributeError:
             start_datetime_str = "NOT READABLE YET"
+
         txt += f"start-date:         {start_datetime_str}\n"
 
-        txt += "   DATA:\n"
+        txt += "\n* DATA:\n"
         try:
             txt += str(self.dfdata.head())
         except AttributeError:
             txt += "EMPTY (Not processed yet)\n"
 
-        txt += "   \nSUMMARY:\n"
+        txt += "\n* SUMMARY:\n"
         try:
             txt += str(self.dfsummary.head())
         except AttributeError:
             txt += "EMPTY (Not processed yet)\n"
 
-        txt += "   \nPARAMETERS:\n"
+        txt += "\n* PARAMETERS:\n"
         try:
             txt += str(self.parameter_table.head())
         except AttributeError:

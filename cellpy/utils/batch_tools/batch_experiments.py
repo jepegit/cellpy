@@ -253,9 +253,13 @@ class CyclingExperiment(BaseExperiment):
     def status(self):
         print("\n")
         print(" STATUS ".center(80, "="))
-
         print(self)
-
+        print(" summary frames ".center(80, "-"))
+        for key in self.summary_frames:
+            print(f" {{{key}}}")
+        print(" memory dumped ".center(80, "-"))
+        for key in self.memory_dumped:
+            print(f"{key}: {type(self.memory_dumped[key])}")
         print(80 * "=")
 
     def link(self):

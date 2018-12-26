@@ -62,19 +62,22 @@ class Batch:
         self.experiment.journal.pages = df
 
     def create_info_df(self):
-        print(self.experiment.journal.name)
-        print(self.experiment.journal.project)
+        logging.info(f"name: {self.experiment.journal.name}")
+        logging.info(f"project: {self.experiment.journal.project}")
         self.experiment.journal.from_db()
         self.experiment.journal.to_file()
 
     def create_folder_structure(self):
         self.experiment.journal.paginate()
+        logging.info("created folders")
 
     def save_info_df(self):
         self.experiment.journal.to_file()
+        logging.info("saving journal pages")
+        print(" journal ".center(80, "-"))
         print(self.experiment.journal.pages.head(10))
         print()
-        print("saved to:")
+        print("->")
         print(self.experiment.journal.file_name)
 
     def load_and_save_raw(self):

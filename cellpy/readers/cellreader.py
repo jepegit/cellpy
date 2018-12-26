@@ -67,7 +67,7 @@ class CellpyData(object):
     """
 
     def __str__(self):
-        txt = "<CellpyData-object>\n"
+        txt = "<CellpyData>\n"
         if self.name:
             txt += f"name: {self.name}\n"
         if self.table_names:
@@ -86,6 +86,7 @@ class CellpyData(object):
             txt += "]"
         else:
             txt = "datasets: []"
+        txt += "\n"
         return txt
 
     def __init__(self, filenames=None,
