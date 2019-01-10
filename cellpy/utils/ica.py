@@ -306,7 +306,6 @@ def dqdv_cycle(cycle, splitter=True):
     converter.post_process_data()
     voltage_last = converter.voltage_processed[::-1]
     incremental_capacity_last = converter.incremental_capacity[::-1]
-
     voltage = np.concatenate((voltage_first,
                               voltage_last))
     incremental_capacity = np.concatenate((incremental_capacity_first,
