@@ -25,7 +25,7 @@ def cycles_engine(**kwargs):
                 logging.debug(f"extracting cycles from {key}")
         else:
             logging.debug("dont have it in memory - need to lookup in the files")
-            for key in experiment.step_table_frames:
+            for key in experiment.cell_data_frames:
                 logging.debug(f"looking up cellpyfile for {key}")
 
     return farms, barn

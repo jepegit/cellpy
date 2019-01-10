@@ -16,9 +16,20 @@ logger = logging.getLogger(__name__)
 def look_up_and_get(cellpy_file_name, table_name):
     """Extracts table from cellpy hdf5-file."""
 
-    print(f"\nTrying to run 'look_up_and_get(cellpy_file_name, table_name)'")
-    print(f"with prms {cellpy_file_name}, {table_name}")
-    print("OH-NO!!!!!!!!! -> 'look_up_and_get' is not made yet!")
+    # infoname = '/CellpyData/info'
+    # dataname = '/CellpyData/dfdata'
+    # summaryname = '/CellpyData/dfsummary'
+    # fidname = '/CellpyData/fidtable'
+    # stepname = '/CellpyData/step_table'
+
+    root = '/CellpyData'
+    table_path = '/'.join([root, table_name])
+
+    logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
+    store = pd.HDFStore(cellpy_file_name)
+    table = store.select(table_path)
+    store.close()
+    return table
 
 
 def create_folder_structure(project_name, batch_name):
@@ -166,7 +177,7 @@ def pick_summary_data(key, summary_df, selected_summaries):
     return summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
 
 
-def join_summaries(summary_frames, selected_summaries):
+def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     """parse the summaries and combine based on column (selected_summaries)"""
 
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
@@ -177,14 +188,20 @@ def join_summaries(summary_frames, selected_summaries):
         frames.append(summary_frames[key])
 
     out = []
-
     summary_df = pd.concat(frames, keys=keys, axis=1)
-
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[
                       :, summary_df.columns.get_level_values(1) == value
                       ]
         _summary_df.name = key
+
+        if not keep_old_header:
+            try:
+                _summary_df.columns = _summary_df.columns.droplevel(-1)
+            except AttributeError as e:
+                logging.debug("could not drop level from frame")
+                logging.debug(e)
+
         out.append(_summary_df)
     logger.debug("finished joining summaries")
 

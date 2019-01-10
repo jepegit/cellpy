@@ -27,7 +27,7 @@ class Doer(metaclass=abc.ABCMeta):
             self.farms.append(empty_farm)
 
     def __str__(self):
-        return self.__class__.__name__
+        return f"({self.__class__.__name__})"
 
     def __repr__(self):
         return self.__class__.__name__
@@ -70,27 +70,60 @@ class Doer(metaclass=abc.ABCMeta):
 
 
 class Data(dict):
-    """Class that is used to access the experiment.journal.pages DataFrame."""
+    """Class that is used to access the experiment.journal.pages DataFrame.
+
+    The Data class loads the complete cellpy-file if dfdata is not already
+    loaded in memory. In future version, it could be that the Data object
+    will return a link allowing querying instead to save memory usage...
+
+    Remark that some cellpy (cellreader.CellpyData) function might not work if
+    you have the dfdata in memory, but not summary data (if the cellpy function
+    requires summary data or other settings not set as default).
+    """
+
+    # TODO (jepe): decide if we should inclued querying functionallity here.
 
     def __init__(self, experiment, *args):
         super().__init__(*args)
         self.experiment = experiment
+        self.query_mode = False
 
     def __getitem__(self, id):
         cellpy_data_object = self.__look_up__(id)
         return cellpy_data_object
 
-    def __look_up__(self, id):
-
-        if self.experiment.cell_data_frames is not None:
-            return self.experiment.cell_data_frames[id]
+    def __str__(self):
+        t = ""
+        if not self.experiment.cell_data_frames:
+            t += "{}"
         else:
+            for k in self.experiment.cell_data_frames:
+                t += f"'{k}'\n"
+                t += str(self.experiment.cell_data_frames[k])
+                t += "\n"
+
+        t += "\n"
+        return t
+
+    def __look_up__(self, identification):
+        try:
+            if not self.experiment.cell_data_frames[
+                identification
+            ].dataset.dfdata.empty:
+                return self.experiment.cell_data_frames[identification]
+            else:
+                raise AttributeError
+
+        except AttributeError:
             logging.debug("looking up from cellpyfile")
             pages = self.experiment.journal.pages
-            info = pages.loc[id, :]
+            info = pages.loc[identification, :]
             cellpy_file = info["cellpy_file_names"]
             # linking not implemented yet - loading whole file in mem instead
-            return self.experiment._load_cellpy_file(cellpy_file)
+            if not self.query_mode:
+                return self.experiment._load_cellpy_file(cellpy_file)
+            else:
+                raise NotImplementedError
 
 
 class BaseExperiment(metaclass=abc.ABCMeta):
@@ -98,14 +131,13 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def __init__(self, *args):
         self.journal = None
         self.summary_frames = None
-        self.step_table_frames = None
         self.cell_data_frames = None
         self.memory_dumped = dict()
         self.parent_level = "CellpyData"
         self.log_level = "INFO"
 
     def __str__(self):
-        return f"{self.__class__.__name__}\n" \
+        return f"[{self.__class__.__name__}]\n" \
                f"journal: \n{str(self.journal)}\n" \
                f"data: \n{str(self.data)}"
 
@@ -118,7 +150,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def _load_cellpy_file(self, file_name):
         cellpy_data = cellreader.CellpyData()
         cellpy_data.load(file_name, self.parent_level)
-        logging.info(f"< {file_name}")
+        logging.info(f" <- {file_name}")
         return cellpy_data
 
     @property
@@ -185,11 +217,12 @@ class BaseJournal:
         self.raw_dir = None
 
     def __str__(self):
-        return f"{self.__class__.__name__}\n" \
+        return f"({self.__class__.__name__})\n" \
                f"  - name: {str(self.name)}\n" \
                f"  - project: {str(self.project)}\n"\
                f"  - file_name: {str(self.file_name)}\n" \
-               f"  - pages: \n{str(self.pages)}"
+               f"  - pages: ->\n{str(self.pages)}\n" \
+               f"           <-\n"
 
     def __repr__(self):
         return self.__class__.__name__
