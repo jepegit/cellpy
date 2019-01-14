@@ -86,7 +86,7 @@ def simple_db_engine(reader=None, srnos=None):
     """engine that gets values from the simple excel 'db'"""
 
     if reader is None:
-        reader = dbreader.Reader
+        reader = dbreader.Reader()
 
     info_dict = dict()
     info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
