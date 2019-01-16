@@ -21,7 +21,7 @@ class CyclingExperiment(BaseExperiment):
     Attributes:
         journal (:obj: LabJournal): information about the experiment.
         force_cellpy (bool): tries only to load the cellpy-file if True.
-        force_raw (bool): loads raw-file(s) even though appropriate cellpy-file
+        force_raw_file (bool): loads raw-file(s) even though appropriate cellpy-file
            exists if True.
         save_cellpy (bool): saves a cellpy-file for each cell if True.
         accept_errors (bool): in case of error, dont raise an exception, but
@@ -50,7 +50,7 @@ class CyclingExperiment(BaseExperiment):
         self.journal = LabJournal()
 
         self.force_cellpy = False
-        self.force_raw = False
+        self.force_raw_file = False
         self.save_cellpy = True
         self.accept_errors = True
         self.all_in_memory = False
@@ -116,7 +116,7 @@ class CyclingExperiment(BaseExperiment):
                         cellpy_file=row.cellpy_file_names,
                         mass=row.masses,
                         summary_on_raw=True,
-                        force_raw=self.force_raw,
+                        force_raw=prms.force_raw_file,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file
                     )
                 except Exception as e:
