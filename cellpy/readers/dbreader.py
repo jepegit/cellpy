@@ -190,8 +190,22 @@ class Reader(object):
         """
         sheet = self.table
         col = self.db_sheet_cols.id
-        filter = sheet.loc[:, col] == serial_number
-        return sheet.loc[filter, :]
+        rows = sheet.loc[:, col] == serial_number
+        return sheet.loc[rows, :]
+
+    def select_all(self, serial_numbers):
+        """Select rows for identification for a list of serial_number.
+
+        Args:
+            serial_numbers: list (or ndarray) of serial numbers
+
+        Returns:
+            pandas.DataFrame
+        """
+        sheet = self.table
+        col = self.db_sheet_cols.id
+        rows = sheet.loc[:, col].isin(serial_numbers)
+        return sheet.loc[rows, :]
 
     def print_serial_number_info(self, serial_number, print_to_screen=True):
         """Print information about the run.

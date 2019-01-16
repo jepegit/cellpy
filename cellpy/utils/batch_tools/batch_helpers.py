@@ -71,6 +71,7 @@ def create_folder_structure(project_name, batch_name):
 def find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
     for run_name in info_dict["filenames"]:
+        logger.debug(f"checking for {run_name}")
         if prms._use_filename_cache:
             raw_files, cellpyfile, filename_cache = filefinder.search_for_files(run_name, cache=filename_cache)
         else:

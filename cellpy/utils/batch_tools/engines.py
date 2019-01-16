@@ -5,6 +5,8 @@ import pandas as pd
 from cellpy import dbreader
 from cellpy.utils.batch_tools import batch_helpers as helper
 
+logger = logging.getLogger(__name__)
+
 
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
@@ -33,7 +35,7 @@ def cycles_engine(**kwargs):
 
 def raw_data_engine(**kwargs):
     """engine to extract raw data"""
-    logging.debug("cycles_engine")
+    logger.debug("cycles_engine")
     raise NotImplementedError
 
     experiments = kwargs["experiments"]
@@ -48,7 +50,7 @@ def raw_data_engine(**kwargs):
 
 def summary_engine(**kwargs):
     """engine to extract summary data"""
-    logging.debug("summary_engine")
+    logger.debug("summary_engine")
     # farms = kwargs["farms"]
 
     farms = []
@@ -86,7 +88,8 @@ def simple_db_engine(reader=None, srnos=None):
     """engine that gets values from the simple excel 'db'"""
 
     if reader is None:
-        reader = dbreader.Reader
+        reader = dbreader.Reader()
+        logger.debug("No reader provided. Creating one myself.")
 
     info_dict = dict()
     info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
@@ -98,11 +101,14 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict["cell_type"] = [reader.get_cell_type(srno) for srno in srnos]
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
+
+    logger.debug("created info-dict")
+
     for key in list(info_dict.keys()):
-        logging.debug("%s: %s" % (key, str(info_dict[key])))
+        logger.debug("%s: %s" % (key, str(info_dict[key])))
 
     _groups = [reader.get_group(srno) for srno in srnos]
-    logging.debug(">\ngroups: %s" % str(_groups))
+    logger.debug(">\ngroups: %s" % str(_groups))
     groups = helper.fix_groups(_groups)
     info_dict["groups"] = groups
 
@@ -111,7 +117,7 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict = helper.find_files(info_dict, filename_cache)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
-        logging.info(
+        logger.info(
             "The function _find_files was very slow. "
             "Save your info_df so you don't have to run it again!"
         )
