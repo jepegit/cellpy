@@ -116,7 +116,7 @@ class CyclingExperiment(BaseExperiment):
                         cellpy_file=row.cellpy_file_names,
                         mass=row.masses,
                         summary_on_raw=True,
-                        force_raw=prms.force_raw_file,
+                        force_raw=self.force_raw_file,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file
                     )
                 except Exception as e:
