@@ -2,6 +2,7 @@ import pytest
 import tempfile
 import logging
 import time
+import pandas
 
 from cellpy.utils.batch_tools import (
     batch_experiments,
@@ -70,6 +71,7 @@ def updated_cycling_experiment(cycling_experiment):
 
 
 def test_csv_exporter(updated_cycling_experiment):
+    logging.info(f"using pandas {pandas.__version__}")
     exporter = batch_exporters.CSVExporter()
     exporter.assign(updated_cycling_experiment)
     exporter.do()
