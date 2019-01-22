@@ -6,6 +6,13 @@ from cellpy.utils.batch_tools.batch_core import BasePlotter
 
 class CyclingSummaryPlotter(BasePlotter):
     def __init__(self):
+        """
+        Attributes:
+            experiments: list of experiments.
+            farms: list of farms (containing pandas DataFrames).
+            barn (str): identifier for where to place the output-files.
+        """
+
         super().__init__()
 
     def do(self):
