@@ -773,18 +773,20 @@ class CellpyData(object):
 
         try:
             data.step_table = store.select(parent_level + "/step_table")
-            data.step_table_made = True
         except Exception:
-            data.step_table = None
-            data.step_table_made = False
+            self.logging.debug("could not get step_table from cellpy-file")
+            data.step_table = pd.DataFrame()
+
         try:
             fidtable = store.select(
                 parent_level + "/fidtable")  # remark! changed spelling from
             # lower letter to camel-case!
             fidtable_selected = True
         except Exception:
+            self.logging.debug("could not get fid-table from cellpy-file")
             fidtable = []
-            self.logger.warning("no fidtable - you should update your hdf5-file")
+
+            warnings.warn("no fidtable - you should update your hdf5-file")
             fidtable_selected = False
         self.logger.debug("  h5")
         # this does not yet allow multiple sets
@@ -827,24 +829,25 @@ class CellpyData(object):
             name = self._extract_from_dict_hard(infotable, "name")
             if not isinstance(name, str):
                 raise KeyError("strange format of the 'name' attr")
-            data.name = self._extract_from_dict_hard(infotable, "name")
+            data.name = name
+
         except KeyError:
+            self.logger.debug(f"missing key in infotable: name")
             warnings.warn("OLD-TYPE: Recommend to save in new format!")
-            data.name = self._extract_from_dict(infotable, "test_name")
+            try:
+                name = self._extract_from_dict(infotable, "test_name")
+            except Exception:
+                name = "no_name"
+                self.logger.debug("name set to 'no_name")
+            data.name = name
 
         # unpcaking the raw data limits
         for key in data.raw_limits:
             try:
                 data.raw_limits[key] = self._extract_from_dict_hard(infotable, key)
             except KeyError:
+                self.logger.debug(f"missing key in infotable: {key}")
                 warnings.warn("OLD-TYPE: Recommend to save in new format!")
-
-        data.step_table_made = self._extract_from_dict(
-            infotable,
-            "step_table_made"
-        )
-        data.dfsummary_made = \
-            self._extract_from_dict(infotable, "dfsummary_made")
 
         return data
 
@@ -901,20 +904,25 @@ class CellpyData(object):
         fidtable["raw_data_files_length"] = []
         fids = test.raw_data_files
         fidtable["raw_data_fid"] = fids
-        for fid, length in zip(fids, test.raw_data_files_length):
-            fidtable["raw_data_name"].append(fid.name)
-            fidtable["raw_data_full_name"].append(fid.full_name)
-            fidtable["raw_data_size"].append(fid.size)
-            fidtable["raw_data_last_modified"].append(fid.last_modified)
-            fidtable["raw_data_last_accessed"].append(fid.last_accessed)
-            fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-            fidtable["raw_data_location"].append(fid.location)
-            fidtable["raw_data_files_length"].append(length)
+        if fids:
+            for fid, length in zip(fids, test.raw_data_files_length):
+                fidtable["raw_data_name"].append(fid.name)
+                fidtable["raw_data_full_name"].append(fid.full_name)
+                fidtable["raw_data_size"].append(fid.size)
+                fidtable["raw_data_last_modified"].append(fid.last_modified)
+                fidtable["raw_data_last_accessed"].append(fid.last_accessed)
+                fidtable["raw_data_last_info_changed"].append(
+                    fid.last_info_changed
+                )
+                fidtable["raw_data_location"].append(fid.location)
+                fidtable["raw_data_files_length"].append(length)
+        else:
+            warnings.warn("seems you lost info about your raw-data")
         fidtable = pd.DataFrame(fidtable)
         return infotable, fidtable
 
     def _convert2fid_list(self, tbl):
-        self.logger.debug("_convert2fid_list")
+        self.logger.debug("converting loaded fidtable to FileID object")
         fids = []
         lengths = []
         counter = 0
@@ -931,6 +939,8 @@ class CellpyData(object):
             counter += 1
             fids.append(fid)
             lengths.append(length)
+        if counter < 1:
+            self.logger.debug("info about raw files missing")
         return fids, lengths
 
     def merge(self, datasets=None, separate_datasets=False):
@@ -989,6 +999,7 @@ class CellpyData(object):
             dfsummary_made = True
         else:
             dfsummary_made = False
+
         # checking if we already have made step tables for these datasets
         if t1.step_table_made and t2.step_table_made:
             step_table_made = True
@@ -1184,7 +1195,7 @@ class CellpyData(object):
                 return
 
             if not self.datasets[dataset_number].step_table_made:
-                self.logger.debug("step_table not made")
+                self.logger.debug("step_table is not made")
 
                 if self.force_step_table_creation or self.force_all:
                     self.logger.debug("creating step_table for")
@@ -1551,7 +1562,6 @@ class CellpyData(object):
         df_steps.columns = flat_cols
 
         self.datasets[dataset_number].step_table = df_steps
-        self.datasets[dataset_number].step_table_made = True
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
         """Select steps (not documented yet)."""
@@ -1564,7 +1574,6 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
         test = self.datasets[dataset_number]
-        # test.dfdata
 
         # check if columns exist
         c_txt = self.headers_normal.cycle_index_txt
@@ -3291,7 +3300,6 @@ class CellpyData(object):
             # summary_requirment = self._reloadrows_raw(summary_df[d_txt])
             dfsummary = summary_df
             dataset.dfsummary = dfsummary
-            dataset.dfsummary_made = True
             self.logger.warning("not implemented yet")
             return
 
@@ -3687,7 +3695,6 @@ class CellpyData(object):
             dfsummary = self.set_col_first(dfsummary, new_first_col_list)
 
         dataset.dfsummary = dfsummary
-        dataset.dfsummary_made = True
 
 
 def setup_cellpy_instance():

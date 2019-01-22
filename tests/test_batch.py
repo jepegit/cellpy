@@ -126,6 +126,7 @@ def test_link_time(cycling_experiment):
 
 def test_link(cycling_experiment):
     cycling_experiment.link()
+    print(cycling_experiment)
     cycling_experiment.status()
     names = cycling_experiment.cell_names
     print(names)

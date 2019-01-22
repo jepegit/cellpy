@@ -6,6 +6,8 @@ import sys
 import warnings
 from functools import wraps
 
+import pandas as pd
+
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     cellpy_attributes,
@@ -170,11 +172,11 @@ class DataSet(object):
         self.data = collections.OrderedDict()  # not used
         self.summary = collections.OrderedDict()  # not used
 
-        self.dfdata = None
-        self.dfsummary = None
-        self.dfsummary_made = False
+        self.dfdata = pd.DataFrame()
+        self.dfsummary = pd.DataFrame()
+        # self.dfsummary_made = False  # Should be removed
         self.step_table = collections.OrderedDict()
-        self.step_table_made = False
+        # self.step_table_made = False  # Should be removed
         self.parameter_table = collections.OrderedDict()
         self.summary_version = SUMMARY_TABLE_VERSION
         self.step_table_version = STEP_TABLE_VERSION
@@ -236,6 +238,24 @@ class DataSet(object):
         txt += "raw units:"
         txt += "     Currently defined in the CellpyData-object"
         return txt
+
+    @property
+    def dfsummary_made(self):
+        """check if the summary table exists"""
+        try:
+            empty = self.dfsummary.empty
+        except AttributeError:
+            empty = True
+        return not empty
+
+    @property
+    def step_table_made(self):
+        """check if the step table exists"""
+        try:
+            empty = self.step_table.empty
+        except AttributeError:
+            empty = True
+        return not empty
 
 
 def check64bit(current_system="python"):

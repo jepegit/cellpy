@@ -192,7 +192,7 @@ class CyclingExperiment(BaseExperiment):
                 cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
                 cell_data_frames[indx].dataset.step_table = \
                     cell_data.dataset.step_table
-                cell_data_frames[indx].dataset.step_table_made = True
+                # cell_data_frames[indx].dataset.step_table_made = True
 
             if self.save_cellpy:
                 logging.info("saving to cellpy-format")
@@ -255,11 +255,13 @@ class CyclingExperiment(BaseExperiment):
         print(" STATUS ".center(80, "="))
         print(self)
         print(" summary frames ".center(80, "-"))
-        for key in self.summary_frames:
-            print(f" {{{key}}}")
+        if self.summary_frames is not None:
+            for key in self.summary_frames:
+                print(f" {{{key}}}")
         print(" memory dumped ".center(80, "-"))
-        for key in self.memory_dumped:
-            print(f"{key}: {type(self.memory_dumped[key])}")
+        if self.memory_dumped is not None:
+            for key in self.memory_dumped:
+                print(f"{key}: {type(self.memory_dumped[key])}")
         print(80 * "=")
 
     def link(self):
@@ -300,7 +302,6 @@ class CyclingExperiment(BaseExperiment):
                 )
 
                 cell_data_frames[indx].dataset.step_table = step_table
-                cell_data_frames[indx].dataset.step_table_made = True
 
             self.cell_data_frames = cell_data_frames
 
