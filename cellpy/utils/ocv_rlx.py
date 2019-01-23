@@ -17,12 +17,6 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
 
     """select points"""
 
-    # plan:
-    #   take the cellpydata object and extract all the ocvs
-    #   then create a DataFrame: cycle_no, step_no, point1, ...., pointN
-    # this DataFrame can then be returned and furthered filtered
-    # or we can also apply some filtering within this function also
-
     if cycles is None:
         cycles = cellpydata.get_cycle_numbers()
     else:
@@ -80,7 +74,10 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
         poi = []
         _end = end
         for j in range(max(1, number_of_points-2)):
-            _end = _end/2.0
+            if selection_method == "martin":
+                _end = _end / 2.0
+            else:
+                _end = _end / 2.0
             poi.append(_end)
 
         poi.reverse()
