@@ -9,8 +9,6 @@ from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.exceptions import UnderDefined
 from cellpy import prms
 
-prms.Batch.backend = "bokeh"
-
 if prms.Batch.backend == "bokeh":
     try:
         import bokeh
@@ -22,7 +20,11 @@ if prms.Batch.backend == "bokeh":
 
     except ImportError:
         prms.Batch.backend == "matplotlib"
-        logging.warn("could not import bokeh -> using matplotlib instead")
+        logging.warning("could not import bokeh -> using matplotlib instead")
+
+    except ModuleNotFoundError:
+        prms.Batch.backend == "matplotlib"
+        logging.warning("could not import bokeh -> using matplotlib instead")
 
 
 def create_legend(info, c, option="clean", use_index=False):
