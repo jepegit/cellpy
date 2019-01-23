@@ -15,6 +15,10 @@ dependencies:
   - setuptools
   - pyyaml
   - pyodbc
+  - coverage
+  - wheel
+  - flake8
+  - Sphinx
   - pip:
     - lmfit
     - python-box
