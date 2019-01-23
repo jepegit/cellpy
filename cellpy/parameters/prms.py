@@ -161,15 +161,20 @@ Materials = box.Box(Materials)
 # Batch-options
 # --------------------------
 
-
 Batch = {
     "fig_extension": "png",
+    "backend": "bokeh",
+    "notebook": True,
     "dpi": 300,
     "markersize": 4,
     "symbol_label": "simple",
     "color_style_label": "seaborn-deep",
     "figure_type": "unlimited",
+    "summary_plot_width": 900,
+    "summary_plot_height": 800,
+    "summary_plot_height_fractions": [0.2, 0.5, 0.3],
 }
+
 Batch = box.Box(Batch)
 
 # --------------------------

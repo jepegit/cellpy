@@ -87,6 +87,10 @@ class Batch:
         self.exporter.do()
 
     def plot_summaries(self):
+        if prms.Batch.backend == "bokeh":
+            import bokeh.plotting
+            if prms.Batch.notebook:
+                bokeh.plotting.output_notebook()
         self.plotter.do()
 
 

@@ -162,6 +162,6 @@ def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
     assert len(capacity) == 1105
 
 
-def test_cycling_summary_plotter(updated_cycling_experiment):
-    plotter = batch_plotters.CyclingSummaryPlotter(updated_cycling_experiment)
-    plotter.do()
+def test_cycling_summary_plotter(populated_batch):
+    populated_batch.make_summaries()
+    populated_batch.plot_summaries()
