@@ -1,5 +1,6 @@
 import logging
 import warnings
+import sys
 
 import itertools
 import pandas as pd
@@ -8,6 +9,9 @@ from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.exceptions import UnderDefined
 from cellpy import prms
+
+
+print(prms.Batch.backend)
 
 if prms.Batch.backend == "bokeh":
     try:
@@ -19,11 +23,11 @@ if prms.Batch.backend == "bokeh":
         import bokeh.models.annotations
 
     except ImportError:
-        prms.Batch.backend == "matplotlib"
+        prms.Batch.backend = "matplotlib"
         logging.warning("could not import bokeh -> using matplotlib instead")
 
     except ModuleNotFoundError:
-        prms.Batch.backend == "matplotlib"
+        prms.Batch.backend = "matplotlib"
         logging.warning("could not import bokeh -> using matplotlib instead")
 
 
@@ -249,6 +253,7 @@ def plot_cycle_life_summary(info, summaries, width=900, height=800,
     # from bokeh.models.annotations import Legend
 
     logging.debug(f"   * stacking and plotting")
+    logging.debug(f"      backend: {prms.Batch.backend}")
 
     discharge_capacity = summaries.discharge_capacity
     charge_capacity = summaries.charge_capacity
@@ -312,7 +317,7 @@ def summary_plotting_engine(**kwargs):
     farms = kwargs["farms"]
     barn = None
 
-    logging.debug("_preparing_data_for_plotting")
+    logging.debug("    - summary_plot_engine")
     farms = _preparing_data_and_plotting(
         experiments=experiments,
         farms=farms
@@ -332,8 +337,8 @@ def _plotting_data(pages, summaries, width, height, height_fractions):
         )
     else:
         logging.info(
-            "the {prms.Batch.backend} "
-            "back-end is not implemented yet"
+            f"the {prms.Batch.backend} "
+            f"back-end is not implemented yet"
         )
 
     return canvas
@@ -341,6 +346,7 @@ def _plotting_data(pages, summaries, width, height, height_fractions):
 
 def _preparing_data_and_plotting(**kwargs):
     # sub-engine
+    logging.debug("    - _preparing_data_and_plotting")
     experiments = kwargs["experiments"]
     farms = kwargs["farms"]
 
@@ -356,7 +362,6 @@ def _preparing_data_and_plotting(**kwargs):
             )
             print(experiment)
         else:
-            logging.debug(" --> preparing data")
             pages = experiment.journal.pages
             try:
                 keys = [df.name for df in
@@ -442,7 +447,7 @@ class CyclingSummaryPlotter(BasePlotter):
         notify it through a debug (logger) statement.
         """
 
-        logging.debug("start engine")
+        logging.debug("start engine::")
 
         self.current_engine = engine
 
@@ -450,7 +455,7 @@ class CyclingSummaryPlotter(BasePlotter):
             experiments=self.experiments,
             farms=self.farms
         )
-        logging.debug("engine ended")
+        logging.debug("::engine ended")
 
     def run_dumper(self, dumper):
         """run dumber (once pr. engine)
@@ -464,14 +469,14 @@ class CyclingSummaryPlotter(BasePlotter):
         (for example experiments).
         """
 
-        logging.debug("start dumper")
+        logging.debug("start dumper::")
         dumper(
             experiments=self.experiments,
             farms=self.farms,
             barn=self.barn,
             engine=self.current_engine,
         )
-        logging.debug("dumper ended")
+        logging.debug("::dumper ended")
 
     def do(self):
         if not self.experiments:

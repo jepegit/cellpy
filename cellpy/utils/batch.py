@@ -88,9 +88,19 @@ class Batch:
 
     def plot_summaries(self):
         if prms.Batch.backend == "bokeh":
-            import bokeh.plotting
-            if prms.Batch.notebook:
-                bokeh.plotting.output_notebook()
+
+            try:
+                import bokeh.plotting
+                if prms.Batch.notebook:
+                    bokeh.plotting.output_notebook()
+
+            except ModuleNotFoundError:
+                prms.Batch.backend = "matplotlib"
+                logging.warning(
+                    "could not find the bokeh "
+                    "module -> using matplotlib instead"
+                )
+
         self.plotter.do()
 
 
