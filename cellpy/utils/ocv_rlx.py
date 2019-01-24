@@ -1,3 +1,4 @@
+import logging
 from lmfit import Parameters, minimize, report_fit, Model, report_ci
 import numpy as np
 import math
@@ -13,7 +14,8 @@ import pandas as pd
 # some utility functions
 
 def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
-                      number_of_points=5):
+                      number_of_points=5,
+                      direction=None):
 
     """select points"""
 
@@ -22,6 +24,9 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
     else:
         if not isinstance(cycles, (list, tuple)):
             cycles = [cycles, ]
+
+    if direction is None:
+        direction = "both"
 
     ocv_rlx_id = "ocvrlx"
     cols_to_keep = ["Cycle_Index", "Step_Index", "Step_Time", "Voltage"]
@@ -65,6 +70,7 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
         )
 
         cycle, step = (row['cycle'], row['step'])
+        info = row['type']
 
         v_df = df.loc[
             (df["Cycle_Index"] == cycle) &
@@ -72,11 +78,17 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
         ]
 
         poi = []
+
         _end = end
+
         for j in range(max(1, number_of_points-2)):
             if selection_method == "martin":
+                logging.info("using the 'martin'-method")
                 _end = _end / 2.0
             else:
+                # more methods to come?
+                logging.info("only one mehtod is implemented")
+                logging.info("using the 'martin'-method")
                 _end = _end / 2.0
             poi.append(_end)
 
@@ -98,13 +110,23 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
         poi.append(end)
         voi.insert(0, first)
         voi.append(last)
-        d = {h: [v] for h, v in zip(headers2, voi)}
+        d1 = {"cycle": cycle}
+        d2 = {h: [v] for h, v in zip(headers2, voi)}
+        d = {**d1, **d2}
         result = pd.DataFrame(d)
-        result["cycle"] = cycle
         result["step"] = step
+        result["type"] = info
         results_list.append(result)
 
     final = pd.concat(results_list)
+
+    if direction == "down":
+        final = final.loc[final["type"] == "ocvrlx_down", :]
+    elif direction == "up":
+        final = final.loc[final["type"] == "ocvrlx_up", :]
+
+    final = final.reset_index(drop=True)
+
     return final
 
 
@@ -559,6 +581,9 @@ def new_function():
     print(cycles)
     df = select_ocv_points(cell)
     print(df.head(30))
+
+    df2 = select_ocv_points(cell, direction="up")
+    print(df2.head(30))
 
 
 if __name__ == '__main__':
