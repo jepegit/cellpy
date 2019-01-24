@@ -1,40 +1,81 @@
+{% set name = "cellpy" %}
+{% set version = "0.2.1" %}
+
 package:
-  name: cellpy
-  version: "0.2.0"
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
 
 source:
-  git_rev: release/v.0.2.0
-  git_url: https://github.com/jepegit/cellpy
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e852ea6ab326d8a5f24f979bb86a8b46c668e3cf69f84140e24ac3910ef61076
+
+build:
+  number: 0
+  entry_points:
+    - cellpy=cellpy.cellpy_setup:cli
+#  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv "
 
 requirements:
   host:
-    - python >= 3.6
-    - setuptools
-
-  run:
-    - python >= 3.6
-    - python>=3.6
-    - numpy
-    - xlrd
-    - matplotlib
-    - cryptography
     - click
-    - scipy
+    - matplotlib
+    - numpy
     - pandas
-    - pytables
-    - setuptools
+    - pip
+    - python
+    - python-box
     - pyyaml
-    - pip:
-      - lmfit
-      - python-box
+    - scipy
+    - setuptools
+    - xlrd
+  run:
+    - click
+    - matplotlib
+    - numpy
+    - pandas
+    - python
+    - python-box
+    - pyyaml
+    - scipy
+    - setuptools
+    - xlrd
+    - lmfit
 
 test:
-  requires:
-    - pytest
   imports:
-    -
+    - cellpy
+    - cellpy.parameters
+    - cellpy.readers
+    - cellpy.readers.instruments
+    - cellpy.utils
+    - tests
+  commands:
+    - cellpy --help
+  requires:
+    - click
+    - lmfit
+    - numpy
+    - pandas
+    - pyodbc
+    - pytables
+    - pytest
+    - python-box
+    - pyyaml
+    - matplotlib
+    - scipy
+    - setuptools
+    - xlrd
 
 about:
-  home:
-  license:
+  home: https://github.com/jepegit/cellpy
+  license: MIT
+  license_family: MIT
   license_file:
+  summary: Extract data from battery cell testers.
+  doc_url:
+  dev_url:
+
+extra:
+  recipe-maintainers:
+    - jepegit
+

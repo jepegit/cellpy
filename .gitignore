@@ -8,11 +8,17 @@ __pycache__/
 
 .idea/
 old/
-dev_data/
-testdata/hdf5/20160805_test001_45_cc.h5
+
+#testdata/hdf5/20160805_test001_45_cc.h5
 testdata/hdf5/20160805_test001_47_cc.h5
 testdata/hdf5/20160306_snx001_10_cc_01.h5
+
+dev_data/
+dev_data/tmp
+dev_data/bugfixing
+
 cellpy/readers/instruments/tmp.dat
+
 examples/trying_stuff.py
 dev_utils/BioLogic.py_tmp
 
@@ -77,9 +83,4 @@ cellpy/parametres/_cellpy_prms_devel.ini
 sh.exe.stackdump
 xdist/
 
-C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\after_renaming_headers_test_out.csv
-C:\Scripting\MyFiles\development_cellpy\dev_data\tmp\before_renaming_headers_test_out.csv
-20180919_FC_LFP2_cen14_01_cc_01_normal.csv
-20180919_FC_LFP2_cen14_01_cc_01_stats.csv
-20180919_FC_LFP2_cen14_01_cc_01_steps.csv
-20160805_test001_47_cc.h5
+

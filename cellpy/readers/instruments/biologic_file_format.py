@@ -20,20 +20,24 @@ bl_log_pos_dtype = {
 }
 
 
-bl_flags_1 = {
-    1: "mode",
-    2: "ox/red",
-    3: "error",
-    19: "control changes",
-    21: "control changes",
-    31: "Ns changes",
-    35: "Ns changes",
-    65: "counter inc.",
-}
+# bl_flags = {
+#     1: ["mode", (np.uint8(0x03), np.uint8)],
+#     2: ["ox/red", (np.uint8(0x04), np.bool_)],
+#     3: ["error", (np.uint8(0x08), np.bool_)],
+#     21: ["control changes", (np.uint8(0x10), np.bool_)],
+#     31: ["Ns changes", (np.uint8(0x20), np.bool_)],
+#     65: ["counter inc.", (np.uint8(0x80), np.bool_)],
+#     131: ["Ns", (np.uint8(0x03), np.bool_)], # must check this
+# }
 
-#
-bl_flags_2 = {
-    131: "Ns",
+bl_flags = {
+    1: ["mode", (3, np.uint8)],
+    2: ["ox/red", (4, np.bool_)],
+    3: ["error", (8, np.bool_)],
+    21: ["control changes", (16, np.bool_)],
+    31: ["Ns changes", (32, np.bool_)],
+    65: ["counter inc.", (128, np.bool_)],
+    131: ["Ns", (256, np.bool_)],  # must check this
 }
 
 # colno: [dtype, ColHeader, unit, BL_name, cellpyname]

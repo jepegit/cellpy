@@ -9,10 +9,13 @@ import numpy as np
 
 import pandas as pd
 
-from cellpy.readers.core import FileID, DataSet, check64bit, humanize_bytes
+from cellpy.readers.core import FileID, DataSet, \
+    check64bit, humanize_bytes, doc_inherit
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.parameters import prms
+
+DEBUG_MODE = False
 
 # Select odbc module
 ODBC = prms._odbc
@@ -31,12 +34,15 @@ if current_platform == "Darwin":
     is_macos = True
 
 if detect_subprocess_need:
+    logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
     if python_version == "64bit" and prms.Instruments.office_version == "32bit":
+        logging.debug("python 64bit and office 32bit -> setting use_subprocess to True")
         use_subprocess = True
 
 if use_subprocess and not is_posix:
     # The windows users most likely have a strange custom path to mdbtools etc.
+    logging.debug("using subprocess (most lilkely mdbtools) on non-posix (most likely windows)")
     if not prms.Instruments.sub_process_path:
         sub_process_path = str(prms._sub_process_path)
     else:
@@ -48,11 +54,15 @@ if is_posix:
 try:
     DRIVER = prms.odbc_driver
 except AttributeError:
+    logging.debug("FYI: you have not defined any odbc_driver(s) "
+                  "in your prm file! Maybe not too smart of you?")
     DRIVER = "NO DRIVER"
+
 use_ado = False
 
 if ODBC == "ado":
     use_ado = True
+    logging.debug("Trying to use adodbapi as ado loader")
     try:
         import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
     except ImportError:
@@ -65,6 +75,7 @@ if not use_ado:
         except ImportError:
             warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
             dbloader = None
+
     elif ODBC == "pypyodbc":
         try:
             import pypyodbc as dbloader
@@ -87,8 +98,6 @@ TABLE_NAMES = {
 class ArbinLoader(Loader):
     """ Class for loading arbin-data from res-files."""
 
-    # Note: the class is sub-classing Loader. At the moment, Loader does not really contain anything...
-
     def __init__(self):
         """initiates the ArbinLoader class"""
         # could use __init__(self, cellpydata_object) and set self.logger = cellpydata_object.logger etc.
@@ -104,15 +113,6 @@ class ArbinLoader(Loader):
 
     @staticmethod
     def get_raw_units():
-        """Include the settings for the units used by the instrument.
-
-        The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
-        Si units can be used). For example, for current defined in mA, the value for the
-        current unit-fraction will be 0.001.
-
-        Returns: dictionary containing the unit-fractions for current, charge, and mass
-
-        """
         raw_units = dict()
         raw_units["current"] = 1.0  # A
         raw_units["charge"] = 1.0  # Ah
@@ -152,16 +152,6 @@ class ArbinLoader(Loader):
 
     @staticmethod
     def get_raw_limits():
-        """Include the settings for how to decide what kind of step you are examining here.
-
-        The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
-        for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
-        It is expected that different instruments (with different resolution etc.) have different
-        'epsilons'.
-
-        Returns: the raw limits (dict)
-
-        """
         raw_limits = dict()
         raw_limits["current_hard"] = 0.0000000000001
         raw_limits["current_soft"] = 0.00001
@@ -185,19 +175,31 @@ class ArbinLoader(Loader):
             return constr
 
         if SEARCH_FOR_ODBC_DRIVERS:
+            logging.debug("Searching for odbc drivers")
             try:
-                driver = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver][0]
+                drivers = [driver for driver in dbloader.drivers() if 'Microsoft Access Driver' in driver]
+                logging.debug(f"Found these: {drivers}")
+                driver = drivers[0]
+
             except IndexError as e:
+                logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
                 driver = DRIVER
                 if is_macos:
                     driver = "/usr/local/lib/libmdbodbc.dylib"
                 else:
                     self.logger.error(e)
                     print(e)
-                    print("Could not find any odbc-drivers."
+                    print("\nCould not find any odbc-drivers suitable for .res-type files. "
                           "Check out the homepage of pydobc for info on installing drivers")
+                    print("One solution that might work is downloading "
+                          "the Microsoft Access database engine (in correct bytes (32 or 64)) "
+                          "from:\n"
+                          "https://www.microsoft.com/en-us/download/details.aspx?id=13255")
+                    print("Or install mdbtools and set it up "
+                          "(check the cellpy docs for help)")
+                    print("\n")
 
-            self.logger.debug("odbc constr: {}".format(driver))
+            self.logger.debug(f"odbc constr: {driver}")
 
         else:
             is64bit_python = check64bit(current_system="python")
@@ -236,18 +238,20 @@ class ArbinLoader(Loader):
         return new_rundata
 
     def inspect(self, run_data):
-        """inspect the file.
+        """Inspect the file -> reports to log (debug)"""
 
-        -adds missing columns (with np.nan)
-        """
+        if DEBUG_MODE:
+            checked_rundata = []
+            for data in run_data:
+                new_cols = data.dfdata.columns
+                for col in self.headers_normal:
+                    if col not in new_cols:
+                        logging.debug(f"Missing col: {col}")
+                        # data.dfdata[col] = np.nan
+                checked_rundata.append(data)
+        else:
+            checked_rundata = run_data
 
-        checked_rundata = []
-        for data in run_data:
-            new_cols = data.dfdata.columns
-            for col in self.headers_normal:
-                if col not in new_cols:
-                    data.dfdata[col] = np.nan
-            checked_rundata.append(data)
         return checked_rundata
 
     def _iterdump(self, file_name, headers=None):
@@ -507,7 +511,7 @@ class ArbinLoader(Loader):
         Returns:
             new_tests (list of data objects)
         """
-        # TODO: insert kwargs - current chunk, only normal data, etc
+        # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
 
         new_tests = []
         if not os.path.isfile(file_name):
@@ -641,7 +645,7 @@ class ArbinLoader(Loader):
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
                 txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-                warnings.warn(txt)
+                logging.debug(txt)
             # normal_df = normal_df.set_index("Data_Point")
             data.dfsummary = summary_df
             data.dfdata = normal_df
@@ -652,7 +656,6 @@ class ArbinLoader(Loader):
     def _normal_table_generator(self, **kwargs):
         pass
 
-    # noinspection PyPep8Naming
     def _load_res_normal_table(self, conn, test_ID, bad_steps):
         # Note that this function is run each time you use the loader. This means that it is not ideal for
         # handling generators etc
@@ -736,4 +739,4 @@ if __name__ == '__main__':
     import logging
     from cellpy import log
 
-    log.setup_logging(default_level=logging.DEBUG)
+    log.setup_logging(default_level="DEBUG")

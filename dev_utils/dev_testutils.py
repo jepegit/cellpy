@@ -12,6 +12,8 @@ PIP_DEVELOPMENT_MODE = "pip install -e ."  # will install in development mode fo
 MAKE_DIST = "python setup.py sdist"  # creates a build with version number name
 UPLOAD_PYPI = "twine upload dist/*"  # uploads to pypi (note! remove old tar-files first if using *)
 
+FIND_ALL_REQS = "pipreqs --savepath pipreqs_requirements.txt cellpy"
+
 # some sphinx commands
 # BUILD = "sphinx-build -b html sourcedir builddir" # not used
 EASY_BUILD = "make html"  # inside the docs directory to make html docs

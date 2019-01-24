@@ -12,7 +12,6 @@ from . import fdv
 
 log.setup_logging(default_level=logging.DEBUG)
 
-
 @pytest.fixture
 def cellpy_data_instance():
     from cellpy import cellreader
@@ -49,7 +48,8 @@ def test_create_cellpyfile(cellpy_data_instance):
     (100, 0, "to_datetime", datetime.datetime(1900, 4, 9, 0, 0)),
     (0, 0, "to_float", -2210889600.0),
     (0, 0, "to_string", "1899-12-30 00:00:00"),
-    pytest.mark.xfail((0, 0, "to_datetime", 0)),
+    pytest.param(0, 0, "to_datetime", 0,
+                 marks=pytest.mark.xfail),
 ])
 def test_xldate_as_datetime(xldate, datemode, option, expected):
     from cellpy import cellreader
@@ -57,7 +57,9 @@ def test_xldate_as_datetime(xldate, datemode, option, expected):
     assert result == expected
 
 
-@pytest.mark.parametrize("number", [0,pytest.mark.xfail(2, raises=IndexError)])
+@pytest.mark.parametrize("number", [
+    0, pytest.param(2, marks=pytest.mark.xfail),
+])
 def test_validate_dataset_number(dataset, number):
     dataset._validate_dataset_number(number)
 
@@ -191,7 +193,7 @@ def test_sget_timestamp(dataset):
     (3, False, True, 248277.107),
     (3, True, True, 248277.107/60),
     (None, False, True, 300.010),
-    pytest.mark.xfail((3, False, True, 1.0)),
+    pytest.param(3, False, True, 1.0, marks=pytest.mark.xfail),
 ])
 def test_get_timestamp(dataset, cycle, in_minutes, full, expected):
     x = dataset.get_timestamp(cycle=cycle, in_minutes=in_minutes, full=full)
@@ -301,13 +303,15 @@ def test_only_fid():
     assert my_fid_one.get_size() == my_fid_two.get_size()
 
 
-@pytest.mark.parametrize("cycle, step, expected_type, expected_info",
-                         [(1, 8, "ocvrlx_down", "good"),
-                          (2, 8, "ocvrlx_down", "good"),
-                          (3, 6, "charge", "nan"),
-                          pytest.mark.xfail(
-                              (1, 8, "ocvrlx_up", "good")
-                          ), ])
+@pytest.mark.parametrize(
+    "cycle, step, expected_type, expected_info",
+    [
+        (1, 8, "ocvrlx_down", "good"),
+        (2, 8, "ocvrlx_down", "good"),
+        (3, 6, "charge", "nan"),
+        pytest.param(1, 8, "ocvrlx_up", "good", marks=pytest.mark.xfail),
+    ]
+)
 def test_load_step_specs_short(cellpy_data_instance, cycle, step,
                                expected_type, expected_info):
     cellpy_data_instance.from_raw(fdv.res_file_path)
@@ -324,6 +328,7 @@ def test_load_step_specs_short(cellpy_data_instance, cycle, step,
     assert str(i) == expected_info
 
 
+@pytest.mark.slowtest
 def test_load_step_specs(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
@@ -423,7 +428,7 @@ def test_get_capacity(dataset):
     ((1.0, 1.0), 1.0),
     ((1.0, 0.1), 0.1),
     ((0.1, 1.0), 10.0),
-    pytest.mark.xfail(((1.0, 0.001), 1.0)),
+    pytest.param((1.0, 0.001), 1.0, marks=pytest.mark.xfail),
 ])
 def test_get_converter_to_specific(dataset, test_input, expected):
     c = dataset.get_converter_to_specific(mass=1.0, to_unit=test_input[0], from_unit=test_input[1])
@@ -473,5 +478,38 @@ def test_str_cellpy_data_object(dataset):
 def test_check_cellpy_file(cellpy_data_instance):
     file_name = fdv.cellpy_file_path
     ids = cellpy_data_instance._check_cellpy_file(file_name)
+
+
+def test_cellpyfile_roundtrip():
+    from cellpy import cellreader
+    cdi = cellreader.CellpyData()
+
+    # create a cellpy file from the res-file
+    cdi.from_raw(fdv.res_file_path)
+    cdi.set_mass(1.0)
+    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    cdi.save(fdv.cellpy_file_path)
+
+    # load the cellpy file
+    cdi = cellreader.CellpyData()
+    cdi.load(fdv.cellpy_file_path)
+    cdi.make_step_table()
+    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+
+
+def test_load_custom_default(cellpy_data_instance):
+    from cellpy import prms
+    file_name = fdv.custom_file_paths
+    prms.Instruments.custom_instrument_definitions_file = None
+    cellpy_data_instance.set_instrument("custom")
+    cellpy_data_instance.from_raw(file_name)
+    cellpy_data_instance.make_step_table()
+    cellpy_data_instance.make_summary()
+    summary = cellpy_data_instance.dataset.dfsummary
+    val = summary.loc[
+              summary["Cycle_Index"] == 2,
+              ["Cycle_Index", "Discharge_Endpoint_Slippage(mAh/g)"]
+          ].values[0][-1]
+    assert 593.031 == pytest.approx(val, 0.1)
 
 

@@ -1,3 +1,4 @@
+import logging
 from lmfit import Parameters, minimize, report_fit, Model, report_ci
 import numpy as np
 import math
@@ -8,6 +9,126 @@ import pandas as pd
 
 # TODO: (28.05.2017 jepe) Tests are missing!!!!!!!! - AU: fix!
 # TODO: (28.05.2017 jepe) Docstrings are missing!!!!!!!! - AU: fix!
+
+
+# some utility functions
+
+def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
+                      number_of_points=5,
+                      direction=None):
+
+    """select points"""
+
+    if cycles is None:
+        cycles = cellpydata.get_cycle_numbers()
+    else:
+        if not isinstance(cycles, (list, tuple)):
+            cycles = [cycles, ]
+
+    if direction is None:
+        direction = "both"
+
+    ocv_rlx_id = "ocvrlx"
+    cols_to_keep = ["Cycle_Index", "Step_Index", "Step_Time", "Voltage"]
+    step_table = cellpydata.dataset.step_table
+    dfdata = cellpydata.dataset.dfdata
+    ocv_steps = step_table.loc[
+        step_table["cycle"].isin(cycles), :
+    ]
+    ocv_steps = ocv_steps.loc[
+        ocv_steps.type.str.startswith(ocv_rlx_id), :
+    ]
+
+    # this df is not used - but I think it should be possible to do something...
+    df = dfdata.loc[dfdata["Cycle_Index"].isin(cycles), cols_to_keep]
+
+    df = df.loc[
+        (df["Cycle_Index"].isin(ocv_steps["cycle"])) &
+        (df["Step_Index"].isin(ocv_steps["step"])), :
+    ]
+
+    headers2 = []
+    for j in range(number_of_points):
+        n = str(j).zfill(2)
+        headers2.append(f"point_{n}")
+
+    # doing an iteration (thought I didnt have to, but...) (fix later)
+
+    results_list = list()
+
+    for index, row in ocv_steps.iterrows():
+        first, last, delta = (
+            row['voltage_last'],
+            row['voltage_last'],
+            row['voltage_delta']
+        )
+
+        start, end, step = (
+            row['step_time_first'],
+            row['step_time_last'],
+            row['step_time_delta']
+        )
+
+        cycle, step = (row['cycle'], row['step'])
+        info = row['type']
+
+        v_df = df.loc[
+            (df["Cycle_Index"] == cycle) &
+            (df["Step_Index"] == step), ["Step_Time", "Voltage"]
+        ]
+
+        poi = []
+
+        _end = end
+
+        for j in range(max(1, number_of_points-2)):
+            if selection_method == "martin":
+                logging.info("using the 'martin'-method")
+                _end = _end / 2.0
+            else:
+                # more methods to come?
+                logging.info("only one mehtod is implemented")
+                logging.info("using the 'martin'-method")
+                _end = _end / 2.0
+            poi.append(_end)
+
+        poi.reverse()
+
+        df_poi = pd.DataFrame({"Step_Time": poi})
+        df_poi["Voltage"] = np.nan
+
+        v_df = v_df.append(df_poi, ignore_index=True)
+        v_df = v_df.sort_values("Step_Time").reset_index(drop=True)
+        v_df["new"] = v_df["Voltage"].interpolate()
+
+        voi = []
+        for p in poi:
+            _v = v_df.loc[v_df["Step_Time"].isin([p]), "new"].values
+            voi.append(_v[0])
+
+        poi.insert(0, start)
+        poi.append(end)
+        voi.insert(0, first)
+        voi.append(last)
+        d1 = {"cycle": cycle}
+        d2 = {h: [v] for h, v in zip(headers2, voi)}
+        d = {**d1, **d2}
+        result = pd.DataFrame(d)
+        result["step"] = step
+        result["type"] = info
+        results_list.append(result)
+
+    final = pd.concat(results_list)
+
+    if direction == "down":
+        final = final.loc[final["type"] == "ocvrlx_down", :]
+    elif direction == "up":
+        final = final.loc[final["type"] == "ocvrlx_up", :]
+
+    final = final.reset_index(drop=True)
+
+    return final
+
 
 class MultiCycleOcvFit(object):
     def __init__(self, cellpydata, cycles, circuits=3):
@@ -451,5 +572,21 @@ def _main():
         #     print best_fit_parameters
 
 
+def new_function():
+    from cellpy import cellreader
+    f = "/Users/jepe/scripting/cellpy/testdata/hdf5/20160805_test001_45_cc.h5"
+    cell = cellreader.CellpyData()
+    cell.load(f)
+    cycles = cell.get_cycle_numbers()
+    print(cycles)
+    df = select_ocv_points(cell)
+    print(df.head(30))
+
+    df2 = select_ocv_points(cell, direction="up")
+    print(df2.head(30))
+
+
 if __name__ == '__main__':
-    _main()
+    print("ocv-rlx".center(80, "="))
+    new_function()
+

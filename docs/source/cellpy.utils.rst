@@ -23,7 +23,7 @@ cellpy.utils.batch2 module
 cellpy.utils.batch\_engines module
 ----------------------------------
 
-.. automodule:: cellpy.utils.batch_engines
+.. automodule:: cellpy.utils.batch_tools
     :members:
     :undoc-members:
     :show-inheritance:
