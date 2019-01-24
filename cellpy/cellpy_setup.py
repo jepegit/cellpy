@@ -85,9 +85,8 @@ def setup():
     click.echo("[cellpy] %s" % os.path.dirname(dst_file))
     click.echo("[cellpy] File name: %s\n" % os.path.basename(init_filename))
     click.echo(
-        "[cellpy] OK! Now you can edit it"
-        + "(and save it with another name starting with")
-    click.echo("[cellpy] _cellpy_prms and ending with .conf if you want)")
+        "[cellpy] OK! Now you can edit it."
+        + f"For example by issuing \n[your-favourite-editor] {init_filename}")
     click.echo("[cellpy]")
 
 

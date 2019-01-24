@@ -85,40 +85,50 @@ DataSet = box.Box(DataSet)
 # --------------------------
 Db = {
     "db_type": "simple_excel_reader",
+    "db_table_name": "db_table",
+    "db_header_row": 0,
+    "db_unit_row": 1,
+    "db_data_start_row": 2,
+    "db_search_start_row": 2,
+    "db_search_end_row": -1,
 }
 Db = box.Box(Db)
 
 # --------------------------
-# ExcelReader
-# --------------------------
-excel_db_cols = {"serial_number_position": 0,
-                 "exists": 3,
-                 "exists_txt": 4,
-                 "fileid": 17,
-                 "batch_no": 1,
-                 "batch": 2,
-                 "label": 13,
-                 "group": 14,
-                 "selected": 15,
-                 "cell_name": 16,
-                 "file_name_indicator": 17,
-                 "comment_slurry": 18,
-                 "finished_run": 19,
-                 "hd5f_fixed": 20,
-                 "LC": 27,
-                 "active_material": 35,
-                 "total_material": 39,
-                 "loading": 42,
-                 "general_comment": 47,
-                 }
-excel_db_cols = box.Box(excel_db_cols)
+# New Excel Reader
+#   attribute = (header, dtype)
+#---------------------------
 
-excel_db_filename_cols = {"serial_number_position": 0,
-                          "serialno": 0,
-                          "fileid": 1,
-                          "files": 2,
-                          }
-excel_db_filename_cols = box.Box(excel_db_filename_cols)
+DbCols = {
+    "id": ("id", "int"),
+    "exists": ("exists", "bol"),
+    "batch": ("batch", "str"),
+    "sub_batch_01": ("b01", "str"),
+    "sub_batch_02": ("b02", "str"),
+    "sub_batch_03": ("b03", "str"),
+    "sub_batch_04": ("b04", "str"),
+    "sub_batch_05": ("b05", "str"),
+    "sub_batch_06": ("b06", "str"),
+    "sub_batch_07": ("b07", "str"),
+    "project": ("project", "str"),
+    "label": ("label", "str"),
+    "group": ("group", "int"),
+    "selected": ("selected", "bol"),
+    "cell_name": ("cell", "str"),
+    "cell_type": ("cell_type", "cat"),
+    "experiment_type": ("experiment_type", "cat"),
+    "active_material": ("mass_active_material", "float"),
+    "total_material": ("mass_total", "float"),
+    "loading": ("loading_active_material", "float"),
+    "file_name_indicator": ("file_name_indicator", "str"),
+    "raw_file_names": ("raw_file_names", "list"),
+    "cellpy_file_name": ("cellpy_file_name", "str"),
+    "comment_slurry": ("comment_slurry", "str"),
+    "comment_cell": ("comment_cell", "str"),
+    "comment_general": ("comment_general", "str"),
+    "freeze": ("freeze", "bol"),
+}
+DbCols = box.Box(DbCols)
 
 # --------------------------
 # Instruments
@@ -129,9 +139,10 @@ Instruments = {
     "chunk_size": None,
     "max_chunks": None,
     "use_subprocess": False,
-    "detect_subprocess_need": True,
+    "detect_subprocess_need": False,
     "sub_process_path": None,
-    "office_version": "32bit",
+    "office_version": "64bit",
+    "custom_instrument_definitions_file": None,
 }
 Instruments = box.Box(Instruments)
 
@@ -150,15 +161,20 @@ Materials = box.Box(Materials)
 # Batch-options
 # --------------------------
 
-
 Batch = {
     "fig_extension": "png",
+    "backend": "bokeh",
+    "notebook": True,
     "dpi": 300,
     "markersize": 4,
     "symbol_label": "simple",
     "color_style_label": "seaborn-deep",
     "figure_type": "unlimited",
+    "summary_plot_width": 900,
+    "summary_plot_height": 800,
+    "summary_plot_height_fractions": [0.2, 0.5, 0.3],
 }
+
 Batch = box.Box(Batch)
 
 # --------------------------
@@ -187,3 +203,5 @@ _cellpyfile_fidtable_format = "fixed"
 # used during development for testing new features
 
 _res_chunk = 0
+
+

@@ -33,7 +33,6 @@ def create_full_names(run_name, cellpy_file_extension=None,
     return raw_file, cellpy_file
 
 
-# noinspection PyUnusedLocal
 def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
                      raw_file_dir=None, cellpy_file_dir=None, prm_filename=None,
                      file_name_format=None, cache=None):
@@ -63,6 +62,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     version = 0.1
     # might include searching and removing "." in extensions
     # should include extension definitions in prm file (version 0.6)
+    logger.debug(f"searching for {run_name}")
     if raw_extension is None:
         raw_extension = res_extension
 
@@ -113,7 +113,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
     cellpy_file = "{0}.{1}".format(run_name, cellpy_file_extension)
     cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
-    # TODO: use pathlib
+    # TODO: @jepe - use pathlib
 
     if cache is None:
 

@@ -2,9 +2,8 @@
 """Code to read in data files from Bio-Logic instruments"""
 
 # created by Chris Kerr
-# downloaded from https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py
-
-__all__ = ['MPTfileCSV', 'MPTfile']
+# downloaded from
+#    https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py
 
 import sys
 import re
@@ -15,7 +14,6 @@ from datetime import date, datetime, timedelta
 from collections import OrderedDict
 
 import numpy as np
-
 
 if sys.version_info.major <= 2:
     str3 = str
@@ -39,9 +37,7 @@ def fieldname_to_dtype(fieldname):
                        "|Ewe|/V", "|I|/A", "Phase(Z)/deg", "|Z|/Ohm",
                        "Re(Z)/Ohm", "-Im(Z)/Ohm"):
         return (fieldname, np.float_)
-    # N.B. I'm not sure what 'Ns' is as in the only file I have with that
-    # header it never has any value other than '0'
-    elif fieldname in ("cycle number", "I Range", "Ns"):
+    elif fieldname in ("cycle number", "I Range", "Ns", "half cycle"):
         return (fieldname, np.int_)
     elif fieldname in ("dq/mA.h", "dQ/mA.h"):
         return ("dQ/mA.h", np.float_)
@@ -141,6 +137,7 @@ def MPTfileCSV(file_or_path):
 
     return mpt_csv, comments
 
+from pprint import pprint
 
 VMPmodule_hdr = np.dtype([('shortname', 'S10'),
                           ('longname', 'S25'),
@@ -155,6 +152,7 @@ def VMPdata_dtype_from_colIDs(colIDs):
     flags2_dict = OrderedDict()
     for colID in colIDs:
         if colID in (1, 2, 3, 21, 31, 65):
+            print(f"----colID is {colID}----")
             dtype_dict['flags'] = 'u1'
             if colID == 1:
                 flags_dict['mode'] = (np.uint8(0x03), np.uint8)
@@ -169,60 +167,102 @@ def VMPdata_dtype_from_colIDs(colIDs):
             elif colID == 65:
                 flags_dict['counter inc.'] = (np.uint8(0x80), np.bool_)
             else:
-                raise NotImplementedError("flag %d not implemented" % colID)
-        elif colID in (131,):
-            dtype_dict['flags2'] = '<u2'
-            if colID == 131:
-                flags2_dict['??'] = (np.uint16(0x0001), np.bool_)
-        elif colID == 4:
-            dtype_dict['time/s'] = '<f8'
-        elif colID == 5:
-            dtype_dict['control/V/mA'] = '<f4'
-        # 6 is Ewe, 77 is <Ewe>, I don't see the difference
-        elif colID in (6, 77):
-            dtype_dict['Ewe/V'] = '<f4'
-        # Can't see any difference between 7 and 23
-        elif colID in (7, 23):
-            dtype_dict['dQ/mA.h'] = '<f8'
-        # 76 is <I>, 8 is either I or <I> ??
-        elif colID in (8, 76):
-            dtype_dict['I/mA'] = '<f4'
-        elif colID == 11:
-            dtype_dict['I/mA'] = '<f8'
-        elif colID == 19:
-            dtype_dict['control/V'] = '<f4'
-        elif colID == 24:
-            dtype_dict['cycle number'] = '<f8'
-        elif colID == 32:
-            dtype_dict['freq/Hz'] = '<f4'
-        elif colID == 33:
-            dtype_dict['|Ewe|/V'] = '<f4'
-        elif colID == 34:
-            dtype_dict['|I|/A'] = '<f4'
-        elif colID == 35:
-            dtype_dict['Phase(Z)/deg'] = '<f4'
-        elif colID == 36:
-            dtype_dict['|Z|/Ohm'] = '<f4'
-        elif colID == 37:
-            dtype_dict['Re(Z)/Ohm'] = '<f4'
-        elif colID == 38:
-            dtype_dict['-Im(Z)/Ohm'] = '<f4'
-        elif colID == 39:
-            dtype_dict['I Range'] = '<u2'
-        elif colID == 70:
-            dtype_dict['P/W'] = '<f4'
-        elif colID == 434:
-            dtype_dict['(Q-Qo)/C'] = '<f4'
-        elif colID == 435:
-            dtype_dict['dQ/C'] = '<f4'
+                print("flag %d not implemented" % colID)
+                flags_dict[str(colID)] =(np.uint8(0x03), np.uint8)
+                # raise NotImplementedError("flag %d not implemented" % colID)
+            pprint(flags_dict)
+
         else:
-            raise NotImplementedError("column type %d not implemented" % colID)
+            print(f"----colID is {colID}--(not flag)--")
+            if colID == 4:
+                dtype_dict['time/s'] = '<f8'
+            elif colID == 5:
+                dtype_dict['control/V/mA'] = '<f4'
+            # 6 is Ewe, 77 is <Ewe>, I don't see the difference
+            elif colID in (6, 77):
+                dtype_dict['Ewe/V'] = '<f4'
+            # Can't see any difference between 7 and 23
+            elif colID in (7, 23):
+                dtype_dict['dQ/mA.h'] = '<f8'
+            # 76 is <I>, 8 is either I or <I> ??
+            elif colID in (8, 76):
+                dtype_dict['I/mA'] = '<f4'
+            elif colID == 9:
+                dtype_dict['Ece/V'] = '<f4'
+            elif colID == 11:
+                dtype_dict['I/mA'] = '<f8'
+            elif colID == 13:
+                dtype_dict['(Q-Qo)/mA.h'] = '<f8'
+            elif colID == 19:
+                dtype_dict['control/V'] = '<f4'
+            elif colID == 24:
+                dtype_dict['cycle number'] = '<f8'
+            elif colID == 32:
+                dtype_dict['freq/Hz'] = '<f4'
+            elif colID == 33:
+                dtype_dict['|Ewe|/V'] = '<f4'
+            elif colID == 34:
+                dtype_dict['|I|/A'] = '<f4'
+            elif colID == 35:
+                dtype_dict['Phase(Z)/deg'] = '<f4'
+            elif colID == 36:
+                dtype_dict['|Z|/Ohm'] = '<f4'
+            elif colID == 37:
+                dtype_dict['Re(Z)/Ohm'] = '<f4'
+            elif colID == 38:
+                dtype_dict['-Im(Z)/Ohm'] = '<f4'
+            elif colID == 39:
+                dtype_dict['I Range'] = '<u2'
+            elif colID == 70:
+                dtype_dict['P/W'] = '<f4'
+            elif colID == 125:
+                dtype_dict['Capacitance charge/µF'] = '<f8'
+            elif colID == 126:
+                dtype_dict['Capacitance discharge/µF'] = '<f8'
+            elif colID == 131:
+                dtype_dict['Ns'] = '<u2'
+            elif colID == 169:
+                dtype_dict['Cs/µF'] = '<f4'
+            elif colID == 172:
+                dtype_dict['Cp/µF'] = '<f4'
+            elif colID == 434:
+                dtype_dict['(Q-Qo)/C'] = '<f4'
+            elif colID == 435:
+                dtype_dict['dQ/C'] = '<f4'
+            elif colID == 467:
+                dtype_dict['Q charge/discharge/mA.h'] = '<f8'
+            elif colID == 468:
+                dtype_dict['half cycle'] = '<u4'
+            else:
+                print("column type %d not implemented" % colID)
+                dtype_dict[str(colID)] = '<f8'
+                #raise NotImplementedError("column type %d not implemented" % colID)
+            pprint(dtype_dict)
     return np.dtype(list(dtype_dict.items())), flags_dict, flags2_dict
 
 
+def read_VMP_modules(fileobj, read_module_data=True):
+    """Reads in module headers in the VMPmodule_hdr format. Yields a dict with
+    the headers and offset for each module.
+
+    N.B. the offset yielded is the offset to the start of the data i.e. after
+    the end of the header. The data runs from (offset) to (offset+length)"""
+    while True:
+        module_magic = fileobj.read(len(b'MODULE'))
+        if len(module_magic) == 0:  # end of file
+            raise StopIteration
+        elif module_magic != b'MODULE':
+            raise ValueError(
+                "Found %r, expecting start of new VMP MODULE" % module_magic)
+
+        hdr_bytes = fileobj.read(VMPmodule_hdr.itemsize)
+        if len(hdr_bytes) < VMPmodule_hdr.itemsize:
+            raise IOError("Unexpected end of file while reading module header")
 
         hdr = np.fromstring(hdr_bytes, dtype=VMPmodule_hdr, count=1)
         hdr_dict = dict(((n, hdr[n][0]) for n in VMPmodule_hdr.names))
+        print("---hdr-dict---")
+        pprint(hdr_dict)
         hdr_dict['offset'] = fileobj.tell()
         if read_module_data:
             hdr_dict['data'] = fileobj.read(hdr_dict['length'])
@@ -238,23 +278,6 @@ def VMPdata_dtype_from_colIDs(colIDs):
             yield hdr_dict
             fileobj.seek(hdr_dict['offset'] + hdr_dict['length'], SEEK_SET)
 
-
-def read_VMP_modules(fileobj, read_module_data=True):
-    """Reads in module headers in the VMPmodule_hdr format. Yields a dict with
-    the headers and offset for each module.
-
-    N.B. the offset yielded is the offset to the start of the data i.e. after
-    the end of the header. The data runs from (offset) to (offset+length)"""
-    while True:
-        module_magic = fileobj.read(len(b'MODULE'))
-        if len(module_magic) == 0:  # end of file
-            raise StopIteration
-        elif module_magic != b'MODULE':
-            raise ValueError("Found %r, expecting start of new VMP MODULE" % module_magic)
-
-        hdr_bytes = fileobj.read(VMPmodule_hdr.itemsize)
-        if len(hdr_bytes) < VMPmodule_hdr.itemsize:
-            raise IOError("Unexpected end of file while reading module header")
 
 class MPRfile:
     """Bio-Logic .mpr file
@@ -283,21 +306,29 @@ class MPRfile:
         if magic != mpr_magic:
             raise ValueError('Invalid magic for .mpr file: %s' % magic)
 
+        print("----getting-modules----")
         modules = list(read_VMP_modules(mpr_file))
+        print("-- got modules")
         self.modules = modules
+
         settings_mod, = (m for m in modules if m['shortname'] == b'VMP Set   ')
         data_module, = (m for m in modules if m['shortname'] == b'VMP data  ')
-        maybe_log_module = [m for m in modules if m['shortname'] == b'VMP LOG   ']
-
+        maybe_log_module = [m for m in modules if
+                            m['shortname'] == b'VMP LOG   ']
+        print("---checking data module---")
         n_data_points = np.fromstring(data_module['data'][:4], dtype='<u4')
         n_columns = np.fromstring(data_module['data'][4:5], dtype='u1')
+        n_columns = np.asscalar(n_columns)  # Compatibility with recent numpy
+        print(f"points, colums :: {n_data_points}, {n_columns}")
 
         if data_module['version'] == 0:
+            print("data version 0")
             column_types = np.fromstring(data_module['data'][5:], dtype='u1',
                                          count=n_columns)
             remaining_headers = data_module['data'][5 + n_columns:100]
             main_data = data_module['data'][100:]
         elif data_module['version'] == 2:
+            print("data version 2")
             column_types = np.fromstring(data_module['data'][5:], dtype='<u2',
                                          count=n_columns)
             ## There is 405 bytes of data before the main array starts
@@ -308,13 +339,27 @@ class MPRfile:
                              data_module['version'])
 
         if sys.version_info.major <= 2:
-            assert(all((b == '\x00' for b in remaining_headers)))
+            assert (all((b == '\x00' for b in remaining_headers)))
         else:
-            assert(not any(remaining_headers))
+            assert (not any(remaining_headers))
 
-        self.dtype, self.flags_dict, self.flags2_dict = VMPdata_dtype_from_colIDs(column_types)
+        column_types = np.sort(column_types)
+        print("-----col types-----")
+        pprint(column_types)
+        print("No we start parsing them...")
+        self.dtype, self.flags_dict, self.flags2_dict = VMPdata_dtype_from_colIDs(
+            column_types)
+
+        print("---dtype")
+        pprint(self.dtype)
+        print("---flags")
+        print(self.flags_dict)
+        print("---flags2")
+        print(self.flags2_dict)
+
+        print("And now we will convert them to floats")
         self.data = np.fromstring(main_data, dtype=self.dtype)
-        assert(self.data.shape[0] == n_data_points)
+        assert (self.data.shape[0] == n_data_points)
 
         ## No idea what these 'column types' mean or even if they are actually
         ## column types at all
@@ -339,12 +384,18 @@ class MPRfile:
                                            dtype='<f8', count=1)
             ole_timestamp3 = np.fromstring(log_module['data'][473:],
                                            dtype='<f8', count=1)
+            ole_timestamp4 = np.fromstring(log_module['data'][585:],
+                                           dtype='<f8', count=1)
+
             if ole_timestamp1 > 40000 and ole_timestamp1 < 50000:
                 ole_timestamp = ole_timestamp1
             elif ole_timestamp2 > 40000 and ole_timestamp2 < 50000:
                 ole_timestamp = ole_timestamp2
             elif ole_timestamp3 > 40000 and ole_timestamp3 < 50000:
                 ole_timestamp = ole_timestamp3
+            elif ole_timestamp4 > 40000 and ole_timestamp4 < 50000:
+                ole_timestamp = ole_timestamp4
+
             else:
                 raise ValueError("Could not find timestamp in the LOG module")
 
@@ -355,7 +406,8 @@ class MPRfile:
                 raise ValueError("""Date mismatch:
                 Start date: %s
                 End date: %s
-                Timestamp: %s""" % (self.startdate, self.enddate, self.timestamp))
+                Timestamp: %s""" % (
+                self.startdate, self.enddate, self.timestamp))
 
     def get_flag(self, flagname):
         if flagname in self.flags_dict:
@@ -367,9 +419,12 @@ class MPRfile:
         else:
             raise AttributeError("Flag '%s' not present" % flagname)
 
+
 def main(filename):
     m = MPRfile(filename)
 
+
 if __name__ == '__main__':
-    test_file = "../cellpy/data_ex/biologic/Bec01_01_1_C20_loop_20170219_01_MB_C02.mpr"
+
+    test_file = "/Users/jepe/scripting/cellpy/testdata/data/geis.mpr"
     main(test_file)

@@ -3,9 +3,25 @@
 import box
 
 cellpy_units = dict()
+cellpy_limits = dict()
 headers_normal = dict()
 headers_summary = dict()
 headers_step_table = dict()
+
+################################ cellpy attributes##############################
+
+cellpy_attributes = [
+    "mass",
+    "channel_index",
+    "channel_number",
+    "creator",
+    "schedule_file_name",
+    "start_datetime",
+    "test_ID",
+    "test_no",
+    "name",
+    "nom_cap",
+]
 
 ################################ cellpy units ##################################
 
@@ -13,6 +29,18 @@ cellpy_units["current"] = 0.001  # mA
 cellpy_units["charge"] = 0.001  # Ah
 cellpy_units["mass"] = 0.001  # mg (used for input of mass)
 cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. spec. capacity)
+
+################################ cellpy limits #################################
+
+cellpy_limits["current_hard"] = 0.0000000000001
+cellpy_limits["current_soft"] = 0.00001
+cellpy_limits["stable_current_hard"] = 2.0
+cellpy_limits["stable_current_soft"] = 4.0
+cellpy_limits["stable_voltage_hard"] = 2.0
+cellpy_limits["stable_voltage_soft"] = 4.0
+cellpy_limits["stable_charge_hard"] = 0.9
+cellpy_limits["stable_charge_soft"] = 5.0
+cellpy_limits["ir_change"] = 0.00001
 
 ######################## headers for out-files #################################
 

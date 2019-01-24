@@ -5,6 +5,8 @@ import os
 import sys
 from collections import OrderedDict
 import logging
+
+import box
 import yaml
 
 from cellpy.parameters import prms
@@ -13,11 +15,11 @@ from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 default_prms = """
 [Paths]
-outdatadir: ..\outdata
-rawdatadir: ..\indata
-cellpydatadir: ..\indata
-db_path: ..\databases
-filelogdir: ..\databases
+outdatadir: ../outdata
+rawdatadir: ../indata
+cellpydatadir: ../indata
+db_path: ../databases
+filelogdir: ../databases
 
 [FileNames]
 db_filename: cellpy_db.xlsx
@@ -59,11 +61,12 @@ def _pack_prms():
         "Paths": prms.Paths.to_dict(),
         "FileNames": prms.FileNames.to_dict(),
         "Db": prms.Db.to_dict(),
+        "DbCols": prms.DbCols.to_dict(),
         "DataSet": prms.DataSet.to_dict(),
         "Reader": prms.Reader.to_dict(),
         "Instruments": prms.Instruments.to_dict(),
-        "excel_db_cols": prms.excel_db_cols.to_dict(),
-        "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
+        # "excel_db_cols": prms.excel_db_cols.to_dict(),
+        # "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
         "Batch": prms.Batch.to_dict(),
     }
     return config_dict
@@ -157,6 +160,29 @@ def _save_current_prms_to_user_dir():
     # This should be put into the cellpy setup script
     file_name = os.path.join(prms.user_dir, prms._prm_default_name)
     _write_prm_file(file_name)
+
+
+def info():
+    """this function will show only the 'box'-type
+    attributes and their content in the cellpy.prms module"""
+    print("running")
+    print("--goal:")
+    print("  convenience function for prms")
+    print(type(prms))
+    print(prms.__name__)
+
+    for key in prms.__dict__:
+        if isinstance(prms.__dict__[key], box.Box):
+            print()
+            print(80 * "=")
+            print(f"prms.{key}:")
+            print(80 * "-")
+            for subkey in prms.__dict__[key]:
+                print(
+                    f"prms.{key}.{subkey} = ",
+                    f"{prms.__dict__[key][subkey]}"
+                )
+            print(80 * "=")
 
 
 def main():

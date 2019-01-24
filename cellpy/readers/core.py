@@ -4,9 +4,15 @@ import os
 import collections
 import sys
 import warnings
+from functools import wraps
+
+import pandas as pd
 
 from cellpy.parameters import prms
-
+from cellpy.parameters.internal_settings import (
+    cellpy_attributes,
+    cellpy_limits, cellpy_units,
+)
 
 CELLPY_FILE_VERSION = 4
 MINIMUM_CELLPY_FILE_VERSION = 1
@@ -59,7 +65,7 @@ class FileID(object):
             self.location = None
 
     def __str__(self):
-        txt = "\nfileID information\n"
+        txt = "\n<fileID>\n"
         txt += "full name: %s\n" % self.full_name
         txt += "name: %s\n" % self.name
         if self.last_modified is not None:
@@ -125,7 +131,7 @@ class DataSet(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
         self.logger.debug("created DataSet instance")
 
@@ -145,6 +151,8 @@ class DataSet(object):
         self.loaded_from = None  # loaded from (can be list if merged)
         self.raw_data_files = []
         self.raw_data_files_length = []
+        self.raw_units = cellpy_units
+        self.raw_limits = cellpy_limits
         self.channel_index = None
         self.channel_number = None
         self.creator = None
@@ -153,6 +161,10 @@ class DataSet(object):
         self.start_datetime = None
         self.test_ID = None
         self.name = None
+        for k in kwargs:
+            if hasattr(self, k):
+                setattr(self, k, kwargs[k])
+
         # methods in CellpyData to update if adding new attributes:
         #  _load_infotable()
         # _create_infotable()
@@ -160,11 +172,11 @@ class DataSet(object):
         self.data = collections.OrderedDict()  # not used
         self.summary = collections.OrderedDict()  # not used
 
-        self.dfdata = None
-        self.dfsummary = None
-        self.dfsummary_made = False
+        self.dfdata = pd.DataFrame()
+        self.dfsummary = pd.DataFrame()
+        # self.dfsummary_made = False  # Should be removed
         self.step_table = collections.OrderedDict()
-        self.step_table_made = False
+        # self.step_table_made = False  # Should be removed
         self.parameter_table = collections.OrderedDict()
         self.summary_version = SUMMARY_TABLE_VERSION
         self.step_table_version = STEP_TABLE_VERSION
@@ -172,10 +184,9 @@ class DataSet(object):
         self.normal_table_version = NORMAL_TABLE_VERSION
         # ready for use if implementing loading units
         # (will probably never happen).
-        self.raw_units = dict()  # units used for raw_data
 
     def __str__(self):
-        txt = "_cellpy_data_dataset_class_\n"
+        txt = "<DataSet>\n"
         txt += "loaded from file\n"
         if isinstance(self.loaded_from, (list, tuple)):
             for f in self.loaded_from:
@@ -185,7 +196,7 @@ class DataSet(object):
         else:
             txt += str(self.loaded_from)
             txt += "\n"
-        txt += "   GLOBAL\n"
+        txt += "\n* GLOBAL\n"
         txt += f"material:            {self.material}\n"
         txt += f"mass (active):       {self.mass}\n"
         txt += f"test ID:             {self.test_ID}\n"
@@ -197,24 +208,28 @@ class DataSet(object):
         txt += f"schedule file name:  {self.schedule_file_name}\n"
 
         try:
-            start_datetime_str = xldate_as_datetime(self.start_datetime)
-        except Exception:
+            if self.start_datetime:
+                start_datetime_str = xldate_as_datetime(self.start_datetime)
+            else:
+                start_datetime_str = "Not given"
+        except AttributeError:
             start_datetime_str = "NOT READABLE YET"
+
         txt += f"start-date:         {start_datetime_str}\n"
 
-        txt += "   DATA:\n"
+        txt += "\n* DATA:\n"
         try:
             txt += str(self.dfdata.head())
         except AttributeError:
             txt += "EMPTY (Not processed yet)\n"
 
-        txt += "   \nSUMMARY:\n"
+        txt += "\n* SUMMARY:\n"
         try:
             txt += str(self.dfsummary.head())
         except AttributeError:
             txt += "EMPTY (Not processed yet)\n"
 
-        txt += "   \nPARAMETERS:\n"
+        txt += "\n* PARAMETERS:\n"
         try:
             txt += str(self.parameter_table.head())
         except AttributeError:
@@ -223,6 +238,24 @@ class DataSet(object):
         txt += "raw units:"
         txt += "     Currently defined in the CellpyData-object"
         return txt
+
+    @property
+    def dfsummary_made(self):
+        """check if the summary table exists"""
+        try:
+            empty = self.dfsummary.empty
+        except AttributeError:
+            empty = True
+        return not empty
+
+    @property
+    def step_table_made(self):
+        """check if the step table exists"""
+        try:
+            empty = self.step_table.empty
+        except AttributeError:
+            empty = True
+        return not empty
 
 
 def check64bit(current_system="python"):
@@ -326,7 +359,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
                 date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
                 d = d.strftime(date_format)
         except TypeError:
-            warnings.warn(f'The date is not of correct type [{xldate}]')
+            logging.info(f'The date is not of correct type [{xldate}]')
             d = xldate
     return d
 
@@ -342,3 +375,67 @@ def Convert2mAhg(c, mass=1.0):
         float: 1000000 * c / mass
     """
     return 1000000 * c / mass
+
+
+class DocInherit(object):
+    """Docstring inheriting method descriptor.
+
+    The class itself is also used as a decorator.
+
+    Usage:
+
+        class Foo(object):
+            def foo(self):
+                "Frobber"
+                pass
+
+        class Bar(Foo):
+            @doc_inherit
+            def foo(self):
+                pass
+
+    Reference:
+       https://stackoverflow.com/questions/2025562/
+       inherit-docstrings-in-python-class-inheritance
+    """
+
+    def __init__(self, mthd):
+        self.mthd = mthd
+        self.name = mthd.__name__
+
+    def __get__(self, obj, cls):
+        if obj:
+            return self.get_with_inst(obj, cls)
+        else:
+            return self.get_no_inst(cls)
+
+    def get_with_inst(self, obj, cls):
+
+        overridden = getattr(super(cls, obj), self.name, None)
+
+        @wraps(self.mthd, assigned=('__name__','__module__'))
+        def f(*args, **kwargs):
+            return self.mthd(obj, *args, **kwargs)
+
+        return self.use_parent_doc(f, overridden)
+
+    def get_no_inst(self, cls):
+
+        for parent in cls.__mro__[1:]:
+            overridden = getattr(parent, self.name, None)
+            if overridden: break
+
+        @wraps(self.mthd, assigned=('__name__','__module__'))
+        def f(*args, **kwargs):
+            return self.mthd(*args, **kwargs)
+
+        return self.use_parent_doc(f, overridden)
+
+    def use_parent_doc(self, func, source):
+        if source is None:
+            raise NameError("Can't find '%s' in parents" % self.name)
+        func.__doc__ = source.__doc__
+        return func
+
+
+doc_inherit = DocInherit

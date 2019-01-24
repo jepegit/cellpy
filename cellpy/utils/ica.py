@@ -14,10 +14,10 @@ import warnings
 METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 
 
-# TODO: documentation and tests
-# TODO: fitting of o-c curves and differentiation
-# TODO: modeling and fitting
-# TODO: full-cell
+# TODO: @jepe - documentation and tests
+# TODO: @jepe - fitting of o-c curves and differentiation
+# TODO: @jepe - modeling and fitting
+# TODO: @jepe - full-cell
 
 
 class Converter(object):
@@ -164,9 +164,13 @@ class Converter(object):
 
             if savgol_filter_window_length % 2 == 0:
                 savgol_filter_window_length -= 1
-            self.voltage_preprocessed = savgol_filter(self.voltage_preprocessed,
-                                                      np.amax([3, savgol_filter_window_length]),
-                                                      self.savgol_filter_window_order)
+            savgol_filter_window_length = np.amax([3, savgol_filter_window_length])
+
+            self.voltage_preprocessed = savgol_filter(
+                self.voltage_preprocessed,
+                savgol_filter_window_length,
+                self.savgol_filter_window_order
+            )
 
     def increment_data(self):
         """perform the dq-dv transform"""
@@ -302,7 +306,6 @@ def dqdv_cycle(cycle, splitter=True):
     converter.post_process_data()
     voltage_last = converter.voltage_processed[::-1]
     incremental_capacity_last = converter.incremental_capacity[::-1]
-
     voltage = np.concatenate((voltage_first,
                               voltage_last))
     incremental_capacity = np.concatenate((incremental_capacity_first,

@@ -35,3 +35,8 @@ class NullData(Error):
     """Raised when required data is missing (e.g. voltage = None)"""
     pass
 
+
+class UnderDefined(Error):
+    """Raised when trying something that requires you to set
+    a missing prm first"""
+
