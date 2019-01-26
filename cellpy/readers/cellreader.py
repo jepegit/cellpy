@@ -2086,8 +2086,16 @@ class CellpyData(object):
         voltage_header = self.headers_normal.voltage_txt
         step_index_header = self.headers_normal.step_index_txt
         test = self.datasets[set_number].dfdata
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(f"The varialbe step is a list."
+                          f"Should be an integer."
+                          f"{step}")
+            step = step[0]
+
         c = test[(test[cycle_index_header] == cycle) &
                  (test[step_index_header] == step)]
+
         if not self.is_empty(c):
             v = c[voltage_header]
             return v
@@ -2200,8 +2208,18 @@ class CellpyData(object):
         step_time_header = self.headers_normal.step_time_txt
         step_index_header = self.headers_normal.step_index_txt
         test = self.datasets[dataset_number].dfdata
-        c = test[(test[cycle_index_header] == cycle) &
-                 (test[step_index_header] == step)]
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(f"The varialbe step is a list."
+                          f"Should be an integer."
+                          f"{step}")
+            step = step[0]
+
+        c = test.loc[
+            (test[cycle_index_header] == cycle) &
+            (test[step_index_header] == step), :
+        ]
+
         if not self.is_empty(c):
             t = c[step_time_header]
             return t
@@ -2232,6 +2250,13 @@ class CellpyData(object):
         timestamp_header = self.headers_normal.test_time_txt
         step_index_header = self.headers_normal.step_index_txt
         test = self.datasets[dataset_number].dfdata
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(f"The varialbe step is a list."
+                          f"Should be an integer."
+                          f"{step}")
+            step = step[0]
+
         c = test[(test[cycle_index_header] == cycle) &
                  (test[step_index_header] == step)]
         if not self.is_empty(c):
@@ -2383,7 +2408,7 @@ class CellpyData(object):
                 prev_end = shift
                 initial = False
 
-            if self.cycle_mode.lower() == "anode":
+            if self.cycle_mode == "anode":
                 _first_step_c = dc
                 _first_step_v = dv
                 _last_step_c = cc
@@ -3339,7 +3364,7 @@ class CellpyData(object):
         #                   cumcharge_title)
         dfsummary[cumcharge_title] = dfsummary[charge_title].cumsum()
 
-        if self.cycle_mode.lower() == "anode":
+        if self.cycle_mode == "anode":
             self.logger.info("assuming cycling anode half-cell (discharge "
                              "before charge)")
             _first_step_txt = discharge_title
