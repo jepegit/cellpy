@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 
 import pandas as pd
 
@@ -281,8 +282,9 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
     logger.debug("extracted ica for charge")
     try:
         save_multi(data=out_data, file_name=outname_charge, sep=sep)
-    except ExportFailed:
+    except ExportFailed as e:
         logger.info("could not export ica for charge")
+        warnings.warn(f"ExportFailed exception raised: {e}")
     else:
         logger.debug("saved ica for charge")
 
@@ -291,7 +293,8 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
     logger.debug("extracxted ica for discharge")
     try:
         save_multi(data=out_data, file_name=outname_discharge, sep=sep)
-    except ExportFailed:
+    except ExportFailed as e:
         logger.info("could not export ica for discharge")
+        warnings.warn(f"ExportFailed exception raised: {e}")
     else:
         logger.debug("saved ica for discharge")
