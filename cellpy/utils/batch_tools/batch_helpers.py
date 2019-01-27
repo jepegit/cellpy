@@ -165,7 +165,7 @@ def create_selected_summaries_dict(summaries_list):
 
     """
     headers_summary = cellpy.parameters.internal_settings.get_headers_summary()
-    selected_summaries = dict()  # this should be sent as input
+    selected_summaries = dict()
     for h in summaries_list:
         selected_summaries[h] = headers_summary[h]
     return selected_summaries
@@ -187,6 +187,8 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     keys = []
     for key in summary_frames:
         keys.append(key)
+        if summary_frames[key].empty:
+            logging.debug("Empty summary_frame encountered")
         frames.append(summary_frames[key])
 
     out = []
