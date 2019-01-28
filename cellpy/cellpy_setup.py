@@ -20,9 +20,15 @@ def save_prm_file(prm_filename):
     print(prm_filename)
 
 
-def get_package_dir(init_filename=None):
+def get_package_prm_dir():
     """gets the folder where the cellpy package lives"""
     prm_dir = pkg_resources.resource_filename("cellpy", "parameters")
+    return prm_dir
+
+
+def get_default_config_file_path(init_filename=None):
+    """gets the path to the default config-file"""
+    prm_dir = get_package_prm_dir()
     if not init_filename:
         init_filename = DEFAULT_FILENAME
     src = os.path.join(prm_dir, init_filename)
@@ -53,7 +59,16 @@ def cli():
 
 
 @click.command()
-def setup():
+@click.option('--dry-run/--no-dry-run', default=False)
+@click.option('--bleeding-edge/--no-bleeding-edge', default=False)
+def setup(dry_run, bleeding_edge):
+    if bleeding_edge:
+        click.echo("[cellpy] Bleeding-edge mode!")
+        click.echo("         Plan:")
+        click.echo("           1) add option for creating folders")
+        click.echo("           2) check if requirements are satisfied")
+        click.echo("[cellpy] ... comming soon...")
+
     init_filename = create_custom_init_filename()
     userdir, dst_file = get_user_dir_and_dst(init_filename)
     click.echo("\n")
@@ -65,7 +80,10 @@ def setup():
         click.echo(
             "[cellpy]  -> Trying to keep old configuration parameters...\n")
     try:
-        save_prm_file(dst_file)
+        if dry_run:
+            print(f"dry-run: skipping actual saving of {dst_file}")
+        else:
+            save_prm_file(dst_file)
     except ConfigFileNotWritten:
         click.echo("[cellpy] Something went wrong! Could not write the file")
         click.echo(
@@ -74,7 +92,10 @@ def setup():
 
         try:
             userdir, dst_file = get_user_dir_and_dst(init_filename)
-            save_prm_file(dst_file)
+            if dry_run:
+                print(f"dry-run: skipping actual saving of {dst_file}")
+            else:
+                save_prm_file(dst_file)
 
         except ConfigFileNotWritten:
             _txt = "[cellpy] No, that did not work either." \

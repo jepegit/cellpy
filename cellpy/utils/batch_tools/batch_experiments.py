@@ -52,7 +52,7 @@ class CyclingExperiment(BaseExperiment):
         self.force_cellpy = False
         self.force_raw_file = False
         self.save_cellpy = True
-        self.accept_errors = True
+        self.accept_errors = False
         self.all_in_memory = False
 
         self.export_cycles = False
