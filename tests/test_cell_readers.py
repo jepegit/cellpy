@@ -172,19 +172,20 @@ def test_get_number_of_tests(dataset):
 
 def test_sget_voltage(dataset):
     steps = dataset.get_step_numbers("charge")
-    x = dataset.sget_voltage(3, steps[3])
+    print(steps)
+    x = dataset.sget_voltage(3, steps[3][0])
     assert len(x) == 378
 
 
 def test_sget_steptime(dataset):
     steps = dataset.get_step_numbers("charge")
-    x = dataset.sget_steptime(3, steps[3])
+    x = dataset.sget_steptime(3, steps[3][0])
     assert len(x) == 378
 
 
 def test_sget_timestamp(dataset):
     steps = dataset.get_step_numbers("charge")
-    x = dataset.sget_timestamp(3, steps[3])
+    x = dataset.sget_timestamp(3, steps[3][0])
     assert len(x) == 378
     assert x.iloc[0] == pytest.approx(287559.945, 0.01)
 

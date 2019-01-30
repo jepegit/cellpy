@@ -10,6 +10,11 @@ from cellpy.exceptions import NullData
 # warnings.simplefilter("ignore", FutureWarning)
 # warnings.simplefilter("error", FutureWarning)
 
+# note! FutureWarning in converter.pre_process_data()
+#    scipy/signal/_savitzky_golay.py:175: in _fit_edge
+#    FutureWarning: Using a non-tuple sequence for multidimensional
+#      indexing is deprecated
+
 log.setup_logging(default_level=logging.DEBUG)
 
 
@@ -28,6 +33,7 @@ def dataset():
 
 
 def test_ica_converter(dataset):
+    # warnings.simplefilter("error", FutureWarning)
     list_of_cycles = dataset.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
     logging.debug(f"you have {number_of_cycles} cycles")

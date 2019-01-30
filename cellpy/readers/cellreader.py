@@ -194,11 +194,15 @@ class CellpyData(object):
         self.logger.info("Intializing...")
         self.datasets.append(DataSet())
 
-
     @property
     def dataset(self):
         """returns the DataSet instance"""
         return self.datasets[self.selected_dataset_number]
+
+    @property
+    def empty(self):
+        """gives False if the CellpyData object is empty (or un-functional)"""
+        return not self.check()
 
     # TODO: @jepe - merge the _set_xxinstrument methods into one method
     def set_instrument(self, instrument=None):
@@ -560,8 +564,10 @@ class CellpyData(object):
                                       use_cellpy_stat_file=use_cellpy_stat_file)
             else:
                 self.logger.warning("Empty run!")
+
         else:
             self.load(cellpy_file)
+        return self
 
     def from_raw(self, file_names=None, **kwargs):
         """Load a raw data-file.
@@ -621,6 +627,7 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
         self._invent_a_name()
+        return self
 
     def from_res(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the
@@ -718,6 +725,7 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
         self._invent_a_name(cellpy_file)
+        return self
 
     def _load_hdf5(self, filename, parent_level="CellpyData"):
         """Load a cellpy-file.
@@ -860,9 +868,8 @@ class CellpyData(object):
             value = t[x].values
             if value:
                 value = value[0]
-        except Exception as e:
+        except KeyError:
             value = default_value
-            warnings.warn(f"Unhandled exception raised: {e}")
         return value
 
     @staticmethod
@@ -970,6 +977,7 @@ class CellpyData(object):
                         dataset.raw_data_files_length.append(file_size)
             self.datasets = [dataset]
             self.number_of_datasets = 1
+        return self
 
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
         test = t1
@@ -1015,15 +1023,12 @@ class CellpyData(object):
             self_made_summary = True
             try:
                 test_it = t1.dfsummary[cycle_index_header]
-            except Exception as e:
+            except KeyError as e:
                 self_made_summary = False
-                # print "have not made a summary myself"
-                warnings.warn(f"Unhandled exception raised: {e}")
             try:
                 test_it = t2.dfsummary[cycle_index_header]
-            except Exception as e:
+            except KeyError as e:
                 self_made_summary = False
-                warnings.warn(f"Unhandled exception raised: {e}")
 
             if self_made_summary:
                 # mod cycle index for set 2
@@ -1568,6 +1573,7 @@ class CellpyData(object):
         df_steps.columns = flat_cols
 
         self.datasets[dataset_number].step_table = df_steps
+        return self
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
         """Select steps (not documented yet)."""
@@ -3225,6 +3231,7 @@ class CellpyData(object):
                                ensure_step_table=ensure_step_table,
                                convert_date=convert_date,
                                )
+        return self
 
     def _make_summary(self,
                       dataset_number=None,

@@ -123,7 +123,7 @@ class CyclingExperiment(BaseExperiment):
                     logging.info('Failed to load: ' + str(e))
                     errors.append("loadcell:" + str(indx))
                     if not self.accept_errors:
-                        raise Exception(e)
+                        raise e
                     continue
 
             else:
@@ -139,7 +139,7 @@ class CyclingExperiment(BaseExperiment):
                         'Failed to load. Error-message: ' + str(e))
                     errors.append("load:" + str(indx))
                     if not self.accept_errors:
-                        raise Exception(e)
+                        raise e
                     continue
 
             if not cell_data.check():
