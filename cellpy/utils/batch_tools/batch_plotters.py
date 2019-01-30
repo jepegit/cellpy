@@ -11,7 +11,7 @@ from cellpy.exceptions import UnderDefined
 from cellpy import prms
 
 
-print(prms.Batch.backend)
+# print(prms.Batch.backend)
 
 if prms.Batch.backend == "bokeh":
     try:

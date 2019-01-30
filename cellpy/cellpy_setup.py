@@ -53,6 +53,18 @@ def create_custom_init_filename():
     return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
 
 
+def check_if_needed_modules_exists():
+    pass
+
+
+def modify_config_file():
+    pass
+
+
+def create_cellpy_folders():
+    pass
+
+
 @click.group()
 def cli():
     pass
@@ -84,6 +96,7 @@ def setup(dry_run, bleeding_edge):
             print(f"dry-run: skipping actual saving of {dst_file}")
         else:
             save_prm_file(dst_file)
+
     except ConfigFileNotWritten:
         click.echo("[cellpy] Something went wrong! Could not write the file")
         click.echo(
@@ -126,9 +139,44 @@ def version():
     click.echo(txt)
 
 
+@click.command()
+def examples():
+    txt = "[cellpy] The plan is that this cmd will download examples.\n"
+    txt += "[cellpy] For now it only prins the link to the git-hub\n"
+    txt += "[cellpy] repository:\n"
+    txt += "[cellpy]\n"
+    txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
+    txt += "[cellpy]\n"
+    click.echo(txt)
+
+
+@click.command()
+def test():
+    txt = "[cellpy] The plan is that this cmd will run some tests.\n"
+    txt += "[cellpy] For now it only prins the link to the git-hub\n"
+    txt += "[cellpy] repository:\n"
+    txt += "[cellpy]\n"
+    txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
+    txt += "[cellpy]\n"
+    click.echo(txt)
+
+
+@click.command()
+@click.option('--journal', default=None)
+def run(journal):
+    txt = f"[cellpy] The plan is that this cmd will run a batch run\n"
+    txt += f"[cellpy] journal: {journal}\n"
+    txt += "[cellpy]\n"
+    click.echo(txt)
+
+
 cli.add_command(setup)
 cli.add_command(configloc)
 cli.add_command(version)
+cli.add_command(examples)
+cli.add_command(test)
+cli.add_command(run)
+
 
 if __name__ == "__main__":
     print("\n\n*******RUNNING MAIN**(test)******\n")

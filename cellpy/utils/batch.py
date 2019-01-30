@@ -55,6 +55,10 @@ class Batch:
             logging.info("no summary exists")
 
     @property
+    def summary_columns(self):
+        return self.summaries.columns.get_level_values(0)
+
+    @property
     def info_df(self):
         return self.experiment.journal.pages
 

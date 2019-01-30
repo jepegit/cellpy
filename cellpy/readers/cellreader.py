@@ -2399,7 +2399,7 @@ class CellpyData(object):
 
         capacity = None
         voltage = None
-        cycle_df = None
+        cycle_df = pd.DataFrame()
 
         initial = True
         for current_cycle in cycle:
@@ -2501,9 +2501,13 @@ class CellpyData(object):
 
                 except AttributeError:
                     self.logger.info(f"could not extract cycle {current_cycle}")
+                else:
 
-                c = pd.concat([_first_df, _last_df], axis=0)
-                cycle_df = pd.concat([cycle_df, c], axis=0)
+                    c = pd.concat([_first_df, _last_df], axis=0)
+                    if cycle_df.empty:
+                        cycle_df = c
+                    else:
+                        cycle_df = pd.concat([cycle_df, c], axis=0)
 
             else:
                 c = pd.concat([_first_step_c, _last_step_c], axis=0)
