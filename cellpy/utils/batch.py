@@ -8,6 +8,7 @@ from cellpy import prms
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
+from cellpy.utils.batch_tools.batch_analyzers import OCVRelaxationAnalyzer
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,10 @@ class Batch:
             return pd.concat(self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
         except KeyError:
             logging.info("no summary exists")
+
+    @property
+    def summary_columns(self):
+        return self.summaries.columns.get_level_values(0)
 
     @property
     def info_df(self):
@@ -112,8 +117,8 @@ def main():
     out_data_path = r"C:\Scripting\Processing\Test\out"
 
     # Use these when working on my MacBook:
-    # test_data_path = "/Users/jepe/scripting/cellpy/testdata"
-    # out_data_path = "/Users/jepe/cellpy_data"
+    test_data_path = "/Users/jepe/scripting/cellpy/testdata"
+    out_data_path = "/Users/jepe/cellpy_data"
 
     test_data_path = Path(test_data_path)
     out_data_path = Path(out_data_path)
@@ -134,12 +139,27 @@ def main():
     b = init(name, project, batch_col=batch_col)
     b.experiment.export_raw = True
     b.experiment.export_cycles = True
+    print("*creating info df*")
     b.create_info_df()
+    print("*creating folder structure*")
     b.create_folder_structure()
+    print("*load and save*")
     b.load_and_save_raw()
+    print("*make summaries*")
     b.make_summaries()
     summaries = b.experiment.memory_dumped
-
+    print("*plotting summaries*")
+    b.plot_summaries()
+    print("*using special features*")
+    print(" - select_ocv_points")
+    analyzer = OCVRelaxationAnalyzer()
+    analyzer.assign(b.experiment)
+    analyzer.do()
+    ocv_df_list = analyzer.farms[0]
+    for df in ocv_df_list:
+        df_up = df.loc[df.type == "ocvrlx_up", :]
+        df_down = df.loc[df.type == "ocvrlx_down", :]
+        print(df_up)
     print("---FINISHED---")
 
 

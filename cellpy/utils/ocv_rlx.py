@@ -83,7 +83,7 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
 
         for j in range(max(1, number_of_points-2)):
             if selection_method == "martin":
-                logging.info("using the 'martin'-method")
+                logging.debug("using the 'martin'-method")
                 _end = _end / 2.0
             else:
                 # more methods to come?
@@ -575,8 +575,8 @@ def _main():
 def new_function():
     from cellpy import cellreader
     f = "/Users/jepe/scripting/cellpy/testdata/hdf5/20160805_test001_45_cc.h5"
-    cell = cellreader.CellpyData()
-    cell.load(f)
+    cell = cellreader.CellpyData().load(f)
+    # cell.load(f)
     cycles = cell.get_cycle_numbers()
     print(cycles)
     df = select_ocv_points(cell)

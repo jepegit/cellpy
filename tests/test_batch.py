@@ -66,6 +66,7 @@ def cycling_experiment(batch_instance):
 
 @pytest.fixture(scope="module")
 def updated_cycling_experiment(cycling_experiment):
+    logging.info(f"using pandas {pandas.__version__}")
     cycling_experiment.update()
     return cycling_experiment
 

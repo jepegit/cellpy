@@ -242,7 +242,7 @@ class MprLoader(Loader):
     def _parse_mpr_log_data(self):
         for value in bl_log_pos_dtype:
             key, start, end, dtype = value
-            self.mpr_log[key] = np.fromstring(
+            self.mpr_log[key] = np.frombuffer(  # replaced np.fromstring
                 self.mpr_log["data"][start:],
                 dtype=dtype,
                 count=1

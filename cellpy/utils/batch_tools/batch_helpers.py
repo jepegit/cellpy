@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 
 import pandas as pd
 
@@ -164,7 +165,7 @@ def create_selected_summaries_dict(summaries_list):
 
     """
     headers_summary = cellpy.parameters.internal_settings.get_headers_summary()
-    selected_summaries = dict()  # this should be sent as input
+    selected_summaries = dict()
     for h in summaries_list:
         selected_summaries[h] = headers_summary[h]
     return selected_summaries
@@ -186,6 +187,8 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     keys = []
     for key in summary_frames:
         keys.append(key)
+        if summary_frames[key].empty:
+            logging.debug("Empty summary_frame encountered")
         frames.append(summary_frames[key])
 
     out = []
@@ -281,8 +284,9 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
     logger.debug("extracted ica for charge")
     try:
         save_multi(data=out_data, file_name=outname_charge, sep=sep)
-    except ExportFailed:
+    except ExportFailed as e:
         logger.info("could not export ica for charge")
+        warnings.warn(f"ExportFailed exception raised: {e}")
     else:
         logger.debug("saved ica for charge")
 
@@ -291,7 +295,8 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
     logger.debug("extracxted ica for discharge")
     try:
         save_multi(data=out_data, file_name=outname_discharge, sep=sep)
-    except ExportFailed:
+    except ExportFailed as e:
         logger.info("could not export ica for discharge")
+        warnings.warn(f"ExportFailed exception raised: {e}")
     else:
         logger.debug("saved ica for discharge")
