@@ -84,3 +84,4 @@ sh.exe.stackdump
 xdist/
 
 
+.pytest_cache/

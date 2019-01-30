@@ -13,7 +13,7 @@ class Doer(metaclass=abc.ABCMeta):
 
     Attributes:
         experiments: list of experiments.
-        farms: list of farms (containing pandas DataFrames).
+        farms: list of farms (containing pandas DataFrames) (one pr experiment).
         barn (str): identifier for where to place the output-files.
     """
 

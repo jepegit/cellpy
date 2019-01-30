@@ -194,11 +194,15 @@ class CellpyData(object):
         self.logger.info("Intializing...")
         self.datasets.append(DataSet())
 
-
     @property
     def dataset(self):
         """returns the DataSet instance"""
         return self.datasets[self.selected_dataset_number]
+
+    @property
+    def empty(self):
+        """gives False if the CellpyData object is empty (or un-functional)"""
+        return not self.check()
 
     # TODO: @jepe - merge the _set_xxinstrument methods into one method
     def set_instrument(self, instrument=None):
@@ -560,8 +564,10 @@ class CellpyData(object):
                                       use_cellpy_stat_file=use_cellpy_stat_file)
             else:
                 self.logger.warning("Empty run!")
+
         else:
             self.load(cellpy_file)
+        return self
 
     def from_raw(self, file_names=None, **kwargs):
         """Load a raw data-file.
@@ -621,6 +627,7 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
         self._invent_a_name()
+        return self
 
     def from_res(self, filenames=None, check_file_type=True):
         """Convenience function for loading arbin-type data into the
@@ -718,6 +725,7 @@ class CellpyData(object):
         self.number_of_datasets = len(self.datasets)
         self.status_datasets = self._validate_datasets()
         self._invent_a_name(cellpy_file)
+        return self
 
     def _load_hdf5(self, filename, parent_level="CellpyData"):
         """Load a cellpy-file.
@@ -759,8 +767,9 @@ class CellpyData(object):
         try:
             data.cellpy_file_version = \
                 self._extract_from_dict(infotable, "cellpy_file_version")
-        except Exception:
+        except Exception as e:
             data.cellpy_file_version = 0
+            warnings.warn(f"Unhandled exception raised: {e}")
 
         if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
             raise WrongFileVersion
@@ -773,16 +782,17 @@ class CellpyData(object):
 
         try:
             data.step_table = store.select(parent_level + "/step_table")
-        except Exception:
+        except Exception as e:
             self.logging.debug("could not get step_table from cellpy-file")
             data.step_table = pd.DataFrame()
+            warnings.warn(f"Unhandled exception raised: {e}")
 
         try:
             fidtable = store.select(
                 parent_level + "/fidtable")  # remark! changed spelling from
             # lower letter to camel-case!
             fidtable_selected = True
-        except Exception:
+        except Exception as e:
             self.logging.debug("could not get fid-table from cellpy-file")
             fidtable = []
 
@@ -836,9 +846,10 @@ class CellpyData(object):
             warnings.warn("OLD-TYPE: Recommend to save in new format!")
             try:
                 name = self._extract_from_dict(infotable, "test_name")
-            except Exception:
+            except Exception as e:
                 name = "no_name"
                 self.logger.debug("name set to 'no_name")
+                warnings.warn(f"Unhandled exception raised: {e}")
             data.name = name
 
         # unpcaking the raw data limits
@@ -857,7 +868,7 @@ class CellpyData(object):
             value = t[x].values
             if value:
                 value = value[0]
-        except Exception:
+        except KeyError:
             value = default_value
         return value
 
@@ -966,6 +977,7 @@ class CellpyData(object):
                         dataset.raw_data_files_length.append(file_size)
             self.datasets = [dataset]
             self.number_of_datasets = 1
+        return self
 
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
         test = t1
@@ -1011,12 +1023,11 @@ class CellpyData(object):
             self_made_summary = True
             try:
                 test_it = t1.dfsummary[cycle_index_header]
-            except Exception:
+            except KeyError as e:
                 self_made_summary = False
-                # print "have not made a summary myself"
             try:
                 test_it = t2.dfsummary[cycle_index_header]
-            except Exception:
+            except KeyError as e:
                 self_made_summary = False
 
             if self_made_summary:
@@ -1562,6 +1573,7 @@ class CellpyData(object):
         df_steps.columns = flat_cols
 
         self.datasets[dataset_number].step_table = df_steps
+        return self
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
         """Select steps (not documented yet)."""
@@ -1685,6 +1697,7 @@ class CellpyData(object):
         except Exception as e:
             txt += " Could not save it!"
             self.logger.debug(e)
+            warnings.warn(f"Unhandled exception raised: {e}")
         self.logger.info(txt)
 
     def _export_stats(self, data, setname=None, sep=None, outname=None):
@@ -1700,6 +1713,7 @@ class CellpyData(object):
         except Exception as e:
             txt += " Could not save it!"
             self.logger.debug(e)
+            warnings.warn(f"Unhandled exception raised: {e}")
         self.logger.info(txt)
 
     def _export_steptable(self, data, setname=None, sep=None, outname=None):
@@ -1715,6 +1729,7 @@ class CellpyData(object):
         except Exception as e:
             txt += " Could not save it!"
             self.logger.debug(e)
+            warnings.warn(f"Unhandled exception raised: {e}")
         self.logger.info(txt)
 
     def to_csv(self, datadir=None, sep=None, cycles=False, raw=True,
@@ -2086,8 +2101,16 @@ class CellpyData(object):
         voltage_header = self.headers_normal.voltage_txt
         step_index_header = self.headers_normal.step_index_txt
         test = self.datasets[set_number].dfdata
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(f"The varialbe step is a list."
+                          f"Should be an integer."
+                          f"{step}")
+            step = step[0]
+
         c = test[(test[cycle_index_header] == cycle) &
                  (test[step_index_header] == step)]
+
         if not self.is_empty(c):
             v = c[voltage_header]
             return v
@@ -2200,8 +2223,18 @@ class CellpyData(object):
         step_time_header = self.headers_normal.step_time_txt
         step_index_header = self.headers_normal.step_index_txt
         test = self.datasets[dataset_number].dfdata
-        c = test[(test[cycle_index_header] == cycle) &
-                 (test[step_index_header] == step)]
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(f"The varialbe step is a list."
+                          f"Should be an integer."
+                          f"{step}")
+            step = step[0]
+
+        c = test.loc[
+            (test[cycle_index_header] == cycle) &
+            (test[step_index_header] == step), :
+        ]
+
         if not self.is_empty(c):
             t = c[step_time_header]
             return t
@@ -2232,6 +2265,13 @@ class CellpyData(object):
         timestamp_header = self.headers_normal.test_time_txt
         step_index_header = self.headers_normal.step_index_txt
         test = self.datasets[dataset_number].dfdata
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(f"The varialbe step is a list."
+                          f"Should be an integer."
+                          f"{step}")
+            step = step[0]
+
         c = test[(test[cycle_index_header] == cycle) &
                  (test[step_index_header] == step)]
         if not self.is_empty(c):
@@ -2359,7 +2399,7 @@ class CellpyData(object):
 
         capacity = None
         voltage = None
-        cycle_df = None
+        cycle_df = pd.DataFrame()
 
         initial = True
         for current_cycle in cycle:
@@ -2383,7 +2423,7 @@ class CellpyData(object):
                 prev_end = shift
                 initial = False
 
-            if self.cycle_mode.lower() == "anode":
+            if self.cycle_mode == "anode":
                 _first_step_c = dc
                 _first_step_v = dv
                 _last_step_c = cc
@@ -2461,9 +2501,13 @@ class CellpyData(object):
 
                 except AttributeError:
                     self.logger.info(f"could not extract cycle {current_cycle}")
+                else:
 
-                c = pd.concat([_first_df, _last_df], axis=0)
-                cycle_df = pd.concat([cycle_df, c], axis=0)
+                    c = pd.concat([_first_df, _last_df], axis=0)
+                    if cycle_df.empty:
+                        cycle_df = c
+                    else:
+                        cycle_df = pd.concat([cycle_df, c], axis=0)
 
             else:
                 c = pd.concat([_first_step_c, _last_step_c], axis=0)
@@ -2796,10 +2840,11 @@ class CellpyData(object):
                     D_n2 = summarydata[discharge_txt][i + 1]
                     ric_dis_n = (C_n - C_n2) / C_n
                     ric_sei_n = (D_n2 - C_n) / C_n
-                except Exception:
+                except Exception as e:
                     ric_dis_n = None
                     ric_sei_n = None
                     self.logger.debug("could not get i+1 (probably last point)")
+                    warnings.warn(f"Unhandled exception raised: {e}")
 
                 dn = cn_1 + D_n
                 cn = dn - C_n
@@ -2815,8 +2860,9 @@ class CellpyData(object):
                 RIC_sei_cum.append(ric_sei_cum)
                 RIC_cum.append(ric_cum)
 
-            except Exception:
+            except Exception as e:
                 self.logger.debug("end of summary")
+                warnings.warn(f"Unhandled exception raised: {e}")
                 break
         if scaled is True:
             sdc_min = np.amin(shifted_discharge_cap)
@@ -2965,8 +3011,9 @@ class CellpyData(object):
             elif dataset_number_txt.lower() in ["first", "zero", "beginning",
                                                 "default"]:
                 dataset_number = 0
-        except Exception:
+        except Exception as e:
             self.logger.debug("assuming numeric")
+            warnings.warn(f"Unhandled exception raised: {e}")
 
         number_of_tests = len(self.datasets)
         if dataset_number >= number_of_tests:
@@ -3188,6 +3235,7 @@ class CellpyData(object):
                                ensure_step_table=ensure_step_table,
                                convert_date=convert_date,
                                )
+        return self
 
     def _make_summary(self,
                       dataset_number=None,
@@ -3339,7 +3387,7 @@ class CellpyData(object):
         #                   cumcharge_title)
         dfsummary[cumcharge_title] = dfsummary[charge_title].cumsum()
 
-        if self.cycle_mode.lower() == "anode":
+        if self.cycle_mode == "anode":
             self.logger.info("assuming cycling anode half-cell (discharge "
                              "before charge)")
             _first_step_txt = discharge_title
@@ -3928,10 +3976,10 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
     for cycle in d_res.get_cycle_numbers():
         try:
             if type_of_data == 'ocvrlx_up':
-                print("getting ocvrlx up data for cycle %i" % cycle)
+                logging.info("getting ocvrlx up data for cycle %i" % cycle)
                 t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
             else:
-                print("getting ocvrlx down data for cycle %i" % cycle)
+                logging.info("getting ocvrlx down data for cycle %i" % cycle)
                 t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
             plt.plot(t, v)
             t = t.tolist()
@@ -3944,8 +3992,9 @@ def extract_ocvrlx(filename, fileout, mass=1.00):
             out_data.append(t)
             out_data.append(v)
 
-        except Exception:
-            print("could not extract cycle %i" % cycle)
+        except Exception as e:
+            logging.info("could not extract cycle %i" % cycle)
+            warnings.warn(f"Unhandled exception raised: {e}")
 
     save_to_file = False
     if save_to_file:
