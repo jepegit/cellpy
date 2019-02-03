@@ -3745,6 +3745,45 @@ class CellpyData(object):
         dataset.dfsummary = dfsummary
 
 
+def _collect_capacity_curves(data, direction="charge"):
+    """Create a list of pandas.DataFrames, one for each charge step.
+
+    The DataFrames are named by its cycle number.
+
+    Input: CellpyData
+    Returns: list of pandas.DataFrames
+        minimum voltage value,
+        maximum voltage value"""
+
+    minimum_v_value = np.Inf
+    maximum_v_value = -np.Inf
+    charge_list = []
+    cycles = data.get_cycle_numbers()
+    for cycle in cycles:
+        try:
+            if direction == "charge":
+                q, v = data.get_ccap(cycle)
+            else:
+                q, v = data.get_dcap(cycle)
+
+        except NullData as e:
+            print(e)
+            break
+
+        else:
+            d = pd.DataFrame({"q": q, "v": v})
+            # d.name = f"{cycle}"
+            d.name = cycle
+            charge_list.append(d)
+            v_min = v.min()
+            v_max = v.max()
+            if v_min < minimum_v_value:
+                minimum_v_value = v_min
+            if v_max > maximum_v_value:
+                maximum_v_value = v_max
+    return charge_list, cycles, minimum_v_value, maximum_v_value
+
+
 def setup_cellpy_instance():
     """Prepares for a cellpy session.
 

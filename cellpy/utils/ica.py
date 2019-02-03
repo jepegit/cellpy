@@ -1,15 +1,20 @@
 """ica contains routines for creating and working with incremental capacity analysis data"""
 
 import os
+import logging
+import warnings
+
 import numpy as np
 from scipy import stats
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter1d
-import logging
+import pandas as pd
+
 from cellpy.exceptions import NullData
-import warnings
+from cellpy.readers.cellreader import _collect_capacity_curves
+
 
 METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 
@@ -75,11 +80,18 @@ class Converter(object):
 
         self.errors = []
 
-    def set_data(self, capacity, voltage):
+    def set_data(self, capacity, voltage=None,
+                 capacity_label="q", voltage_label="v"
+                 ):
         """Set the data"""
 
-        self.capacity = capacity
-        self.voltage = voltage
+        if isinstance(capacity, pd.DataFrame):
+            self.capacity = capacity[capacity_label]
+            self.voltage = capacity[voltage_label]
+        else:
+            assert len(capacity) == len(voltage)
+            self.capacity = capacity
+            self.voltage = voltage
 
     def inspect_data(self, capacity=None, voltage=None):
         """check and inspect the data"""
@@ -327,29 +339,123 @@ def dqdv(voltage, capacity):
     return converter.voltage_processed, converter.incremental_capacity
 
 
+def _constrained_dq_dv_using_dataframes(capacity, minimum_v, maximum_v):
+    converter = Converter()
+    converter.set_data(capacity)
+    converter.inspect_data()
+    converter.pre_process_data()
+    converter.increment_data()
+    converter.fixed_voltage_range = [minimum_v, maximum_v, 100]
+    converter.post_process_data()
+    return converter.voltage_processed, converter.incremental_capacity
+
+
+def _make_ica_charge_curves(cycles_dfs, cycle_numbers, minimum_v, maximum_v):
+    incremental_charge_list = []
+    for c, n in zip(cycles_dfs, cycle_numbers):
+        if not c.empty:
+            v, dq = _constrained_dq_dv_using_dataframes(
+                c, minimum_v, maximum_v
+            )
+            if not incremental_charge_list:
+                d = pd.DataFrame({"v": v})
+                d.name = "voltage"
+                incremental_charge_list.append(d)
+
+                d = pd.DataFrame({f"dq": dq})
+                d.name = n
+                incremental_charge_list.append(d)
+
+            else:
+                d = pd.DataFrame({f"dq": dq})
+                # d.name = f"{cycle}"
+                d.name = n
+                incremental_charge_list.append(d)
+        else:
+            print(f"{n} is empty")
+    return incremental_charge_list
+
+
+def ica_experimental_frames(cell):
+    print(" ica full frames ".center(80, "-"))
+
+
+def ica_frames(cell, tidy=False):
+    """Returns dqdv data as pandas.DataFrames for all cycles.
+
+        Args:
+            cell (CellpyData-object).
+            tidy (bool): return in wide format if False (default),
+                long (tidy) format if True.
+
+        Returns:
+            (charge_ica_frame, discharge_ica_frame) where the frames are
+            pandas.DataFrames where the first column is voltage ('v') and
+            the following columns are the incremental capcaity for each
+            cycle (multi-indexed, where cycle number is on the top level).
+
+        Example:
+            >>> from cellpy.utils import ica
+            >>> charge_ica_df, dcharge_ica_df = ica.ica_frames(my_cell)
+            >>> charge_ica_df.plot(x=("voltage", "v"))
+
+    """
+    charge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
+        cell,
+        direction="charge"
+    )
+    # charge_df = pd.concat(
+    # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
+
+    ica_charge_dfs = _make_ica_charge_curves(
+        charge_dfs, cycles, minimum_v, maximum_v
+    )
+    ica_charge_df = pd.concat(
+        ica_charge_dfs,
+        axis=1,
+        keys=[k.name for k in ica_charge_dfs]
+    )
+
+    dcharge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
+        cell,
+        direction="discharge"
+    )
+    ica_dcharge_dfs = _make_ica_charge_curves(
+        dcharge_dfs, cycles, minimum_v, maximum_v
+    )
+    ica_discharge_df = pd.concat(
+        ica_dcharge_dfs,
+        axis=1,
+        keys=[k.name for k in ica_dcharge_dfs]
+    )
+    ica_charge_df.columns.names = ["cycle", "value"]
+    ica_discharge_df.columns.names = ["cycle", "value"]
+
+    if tidy:
+        ica_charge_df = ica_charge_df.melt(
+            "voltage",
+            var_name="cycle",
+            value_name="dq",
+            col_level=0
+        )
+        ica_discharge_df = ica_discharge_df.melt(
+            "voltage",
+            var_name="cycle",
+            value_name="dq",
+            col_level=0
+        )
+
+    return ica_charge_df, ica_discharge_df
+
+
 def check_class_ica():
     print(40 * "=")
     print("running check_class_ica")
     print(40 * "-")
-    from cellpy import cellreader
+
     import matplotlib.pyplot as plt
 
-    # -------- defining overall path-names etc ----------
-    current_file_path = os.path.dirname(os.path.realpath(__file__))
-    print(current_file_path)
-    relative_test_data_dir = "../../testdata/hdf5"
-    test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_data_dir))
-    test_data_dir_out = os.path.join(test_data_dir, "out")
-    test_cellpy_file = "20160805_test001_45_cc.h5"
-    test_cellpy_file_full = os.path.join(test_data_dir, test_cellpy_file)
-    mass = 0.078609164
-
-    # ---------- loading test-data ----------------------
-    cell = cellreader.CellpyData()
-    cell.load(test_cellpy_file_full)
-    list_of_cycles = cell.get_cycle_numbers()
-    number_of_cycles = len(list_of_cycles)
-    print("you have %i cycles" % number_of_cycles)
+    cell = get_a_cell_to_play_with()
     cycle = 5
     print("looking at cycle %i" % cycle)
 
@@ -391,5 +497,33 @@ def check_class_ica():
     plt.show()
 
 
+def get_a_cell_to_play_with():
+    # -------- defining overall path-names etc ----------
+    current_file_path = os.path.dirname(os.path.realpath(__file__))
+    print(current_file_path)
+    relative_test_data_dir = "../../testdata/hdf5"
+    test_data_dir = os.path.abspath(
+        os.path.join(current_file_path, relative_test_data_dir))
+    # test_data_dir_out = os.path.join(test_data_dir, "out")
+    test_cellpy_file = "20160805_test001_45_cc.h5"
+    test_cellpy_file_full = os.path.join(test_data_dir, test_cellpy_file)
+    # mass = 0.078609164
+
+    # ---------- loading test-data ----------------------
+    cell = cellreader.CellpyData()
+    cell.load(test_cellpy_file_full)
+    list_of_cycles = cell.get_cycle_numbers()
+    number_of_cycles = len(list_of_cycles)
+    print("you have %i cycles" % number_of_cycles)
+    #cell.save(test_cellpy_file_full)
+    return cell
+
+
 if __name__ == '__main__':
-    check_class_ica()
+    # check_class_ica()¨
+    import pandas as pd
+    from cellpy import cellreader
+    cell = get_a_cell_to_play_with()
+
+    a = ica_experimental_frames(cell)
+    # charge_df, discharge_df = ica_frames(cell)
