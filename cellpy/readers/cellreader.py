@@ -825,6 +825,15 @@ class CellpyData(object):
 
         for attribute in cellpy_attributes:
             value = self._extract_from_dict(infotable, attribute)
+            # some fixes due to errors propagated into the cellpy-files
+            if attribute == "creator":
+                if not isinstance(value, str):
+                    value = "no_name"
+
+            if attribute == "test_no":
+                if not isinstance(value, (int, float)):
+                    value = 0
+
             setattr(data, attribute, value)
 
         if data.mass is None:
@@ -838,11 +847,12 @@ class CellpyData(object):
         try:
             name = self._extract_from_dict_hard(infotable, "name")
             if not isinstance(name, str):
-                raise KeyError("strange format of the 'name' attr")
+                name = "no_name"
             data.name = name
 
         except KeyError:
             self.logger.debug(f"missing key in infotable: name")
+            print(infotable)
             warnings.warn("OLD-TYPE: Recommend to save in new format!")
             try:
                 name = self._extract_from_dict(infotable, "test_name")

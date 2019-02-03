@@ -15,9 +15,13 @@ import pandas as pd
 
 def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
                       number_of_points=5,
+                      relative_voltage=False,  # make this
+                      report_times=False,  # make this
                       direction=None):
 
     """select points"""
+
+    # other_option: fixed intervals
 
     if cycles is None:
         cycles = cellpydata.get_cycle_numbers()
@@ -58,7 +62,7 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
 
     for index, row in ocv_steps.iterrows():
         first, last, delta = (
-            row['voltage_last'],
+            row['voltage_first'],
             row['voltage_last'],
             row['voltage_delta']
         )
@@ -574,16 +578,26 @@ def _main():
 
 def new_function():
     from cellpy import cellreader
+    import matplotlib.pyplot as plt
+
     f = "/Users/jepe/scripting/cellpy/testdata/hdf5/20160805_test001_45_cc.h5"
+    # f = r"C:\ExperimentalData\BatteryTestData\Arbin\HDF5\20181026_cen31_01_cc.h5"
     cell = cellreader.CellpyData().load(f)
-    # cell.load(f)
     cycles = cell.get_cycle_numbers()
-    print(cycles)
-    df = select_ocv_points(cell)
-    print(df.head(30))
+    ocv_curves = cell.get_ocv(ocv_type='ocvrlx_up')
 
     df2 = select_ocv_points(cell, direction="up")
-    print(df2.head(30))
+    df2 = df2.set_index("cycle").loc[:, ["point_00", "point_01", "point_02", "point_03", "point_04"]]
+    fig, (ax1, ax2) = plt.subplots(2)
+
+    for c in ocv_curves:
+        print(c.head())
+        n = c["Cycle_Index"].unique()[0]
+        ax1.plot(c["Step_Time"], c["Voltage"], label=f"cycle {n}")
+    ax1.legend()
+
+    ax2.plot(df2)
+    plt.show()
 
 
 if __name__ == '__main__':
