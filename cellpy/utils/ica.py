@@ -289,7 +289,7 @@ def dqdv_cycle(cycle, splitter=True):
             >>> ...   categorical_column=True,
             >>> ...   method = "forth-and-forth"
             >>> ... )
-            >>> voltage, incremental = ica.dqdv_cycle(cycle)
+            >>> voltage, incremental = ica.dqdv_cycle(cycle_df)
 
     """
 
@@ -324,6 +324,49 @@ def dqdv_cycle(cycle, splitter=True):
                                            incremental_capacity_last))
 
     return voltage, incremental_capacity
+
+
+def dqdv_cycles(cycles):
+    """Convenience functions for creating dq-dv data from given capacity and
+    voltage cycles.
+
+    Returns a DataFrame with a 'voltage' and a 'incremental_capacity'
+    column.
+
+        Args:
+            cycles (pandas.DataFrame): the cycle data ('cycle', 'voltage',
+                 'capacity', 'direction' (1 or -1)).
+
+        Returns:
+            pandas.DataFrame with columns 'cycle', 'voltage', 'dq'.
+
+        Example:
+            >>> cycles_df = my_data.get_cap(
+            >>> ...   categorical_column=True,
+            >>> ...   method = "forth-and-forth",
+            >>> ...   label_cycle_number=True,
+            >>> ... )
+            >>> ica_df = ica.dqdv_cycles(cycles_df)
+
+    """
+
+    ica_dfs = list()
+    cycle_group = cycles.groupby("cycle")
+    for cycle_number, cycle in cycle_group:
+
+        v, dq = dqdv_cycle(cycle, splitter=True)
+        _ica_df = pd.DataFrame(
+            {
+                "voltage": v,
+                "dq": dq,
+            }
+        )
+        _ica_df["cycle"] = cycle_number
+        _ica_df = _ica_df[['cycle', 'voltage', 'dq']]
+        ica_dfs.append(_ica_df)
+
+    ica_df = pd.concat(ica_dfs)
+    return ica_df
 
 
 def dqdv(voltage, capacity):
@@ -376,11 +419,56 @@ def _make_ica_charge_curves(cycles_dfs, cycle_numbers, minimum_v, maximum_v):
     return incremental_charge_list
 
 
-def ica_experimental_frames(cell):
-    print(" ica full frames ".center(80, "-"))
+def _dqdv_combinded_frame(cell):
+    """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
+
+        Args:
+            cell: CellpyData-object
+
+        Returns:
+            pandas.DataFrame with the following columns:
+                cycle: cycle number
+                voltage: voltage
+                dq: the incremental capacity
+    """
+
+    cycles = cell.get_cap(
+        method="forth-and-forth",
+        categorical_column=True,
+        label_cycle_number=True,
+    )
+    ica_df = dqdv_cycles(cycles)
+    assert isinstance(ica_df, pd.DataFrame)
+    return ica_df
 
 
-def ica_frames(cell, tidy=False):
+def dqdv_frames(cell, split=False):
+    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
+
+            Args:
+                cell (CellpyData-object).
+                split (bool): return one frame for charge and one for
+                    discharge if True (defaults to False).
+
+            Returns:
+                pandas.DataFrame(s) with the following columns:
+                    cycle: cycle number (if split is set to True).
+                    voltage: voltage
+                    dq: the incremental capacity
+
+            Example:
+                >>> from cellpy.utils import ica
+                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
+                >>> charge_df.plot(x=("voltage", "v"))
+    """
+
+    if split:
+        return _dqdv_split_frames(cell, tidy=True)
+    else:
+        return _dqdv_combinded_frame(cell)
+
+
+def _dqdv_split_frames(cell, tidy=False):
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
         Args:
@@ -525,5 +613,5 @@ if __name__ == '__main__':
     from cellpy import cellreader
     cell = get_a_cell_to_play_with()
 
-    a = ica_experimental_frames(cell)
+    a = dqdv_frames(cell)
     # charge_df, discharge_df = ica_frames(cell)

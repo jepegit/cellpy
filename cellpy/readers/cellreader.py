@@ -2341,6 +2341,8 @@ class CellpyData(object):
     def get_dcap(self, cycle=None, dataset_number=None):
         """Returns discharge_capacity (in mAh/g), and voltage."""
 
+        #  TODO: should return a DataFrame as default
+
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -2350,6 +2352,8 @@ class CellpyData(object):
 
     def get_ccap(self, cycle=None, dataset_number=None):
         """Returns charge_capacity (in mAh/g), and voltage."""
+
+        #  TODO: should return a DataFrame as default
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2361,7 +2365,8 @@ class CellpyData(object):
     def get_cap(self, cycle=None, dataset_number=None,
                 method="back-and-forth",
                 shift=0.0,
-                categorical_column=False,
+                categorical_column=False,  # should be True as default
+                label_cycle_number=False,  # should be True as default
                 dynamic=False,
                 ):
         """Gets the capacity for the run.
@@ -2381,6 +2386,8 @@ class CellpyData(object):
                 charge or discharge.
             dataset_number (int): test number (default first)
                 (usually not used).
+            label_cycle_number (bool): add column for cycle number
+                (tidy format).
             dynamic: for dynamic retrieving data from cellpy-file.
 
         Returns:
@@ -2514,6 +2521,9 @@ class CellpyData(object):
                 else:
 
                     c = pd.concat([_first_df, _last_df], axis=0)
+                    if label_cycle_number:
+                        c["cycle"] = current_cycle
+                        c = c[["cycle", "voltage", "capacity", "direction"]]
                     if cycle_df.empty:
                         cycle_df = c
                     else:
