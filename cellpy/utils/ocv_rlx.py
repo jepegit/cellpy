@@ -17,8 +17,8 @@ import pandas as pd
 def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
                       number_of_points=5,
                       interval=10,
-                      relative_voltage=False,  # make this
-                      report_times=False,  # make this
+                      relative_voltage=False,
+                      report_times=False,
                       direction=None):
 
     """Select points from the ocvrlx steps.
@@ -170,9 +170,11 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
             voi.append(_v[0])
 
         poi.insert(0, start)
-        poi.append(end)
-        voi.insert(0, first)
-        voi.append(last)
+        voi.insert(0, first - voltage_reference)
+        if selection_method == "martin":
+            poi.append(end)
+            voi.append(last - voltage_reference)
+
         d1 = {"cycle": cycle}
         d2 = {h: [v] for h, v in zip(headers2, voi)}
         d = {**d1, **d2}
