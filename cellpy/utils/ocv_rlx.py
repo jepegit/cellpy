@@ -1,4 +1,5 @@
 import logging
+import datetime
 from lmfit import Parameters, minimize, report_fit, Model, report_ci
 import numpy as np
 import math
@@ -15,13 +16,41 @@ import pandas as pd
 
 def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
                       number_of_points=5,
+                      interval=10,
                       relative_voltage=False,  # make this
                       report_times=False,  # make this
                       direction=None):
 
-    """select points"""
+    """Select points from the ocvrlx steps.
 
-    # other_option: fixed intervals
+        Args:
+            cellpydata: CellpyData-object
+            cycles: list of cycle numbers to process (optional)
+            selection_method: criteria for selecting points
+                martin: select first and last, and then last/2, last/2/2 etc.
+                    until you have reached the wanted number of points.
+                fixed_time: select first, and then
+            number_of_points: number of points you want.
+            interval: interval between each point (in use only for methods
+                where interval makes sense). If it is a list, then
+                number_of_points will be calculated as len(interval) + 1 (and
+                override the set number_of_points).
+            relative_voltage: set to True if you would like the voltage to be
+                relative to the voltage before starting the ocv rlx step.
+                Defaults to False. Remark that for the initial rxl step (when
+                you just have put your cell on the tester) does not have any
+                prior voltage. The relative voltage will then be versus the
+                first measurement point.
+            report_times: also report the ocv rlx total time if True (defaults
+                to False)
+            direction ("up", "down" or "both"): select "up" if you would like
+                to process only the ocv rlx steps where the voltage is relaxing
+                upwards and vize versa. Defaults to "both".
+
+        Returns:
+            pandas.DataFrame
+
+    """
 
     if cycles is None:
         cycles = cellpydata.get_cycle_numbers()
@@ -32,24 +61,24 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
     if direction is None:
         direction = "both"
 
+    if not isinstance(interval, (list, tuple)):
+        interval = [float(interval) for _ in range(number_of_points-1)]
+
     ocv_rlx_id = "ocvrlx"
-    cols_to_keep = ["Cycle_Index", "Step_Index", "Step_Time", "Voltage"]
+
     step_table = cellpydata.dataset.step_table
     dfdata = cellpydata.dataset.dfdata
+
     ocv_steps = step_table.loc[
         step_table["cycle"].isin(cycles), :
     ]
+
     ocv_steps = ocv_steps.loc[
         ocv_steps.type.str.startswith(ocv_rlx_id), :
     ]
 
-    # this df is not used - but I think it should be possible to do something...
-    df = dfdata.loc[dfdata["Cycle_Index"].isin(cycles), cols_to_keep]
-
-    df = df.loc[
-        (df["Cycle_Index"].isin(ocv_steps["cycle"])) &
-        (df["Step_Index"].isin(ocv_steps["step"])), :
-    ]
+    if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
+        number_of_points = len(interval) + 1
 
     headers2 = []
     for j in range(number_of_points):
@@ -59,15 +88,32 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
     # doing an iteration (thought I didnt have to, but...) (fix later)
 
     results_list = list()
+    iter_range = number_of_points - 1
+    if selection_method == "martin":
+        iter_range -= 1
 
     for index, row in ocv_steps.iterrows():
+
+        # voltage
         first, last, delta = (
             row['voltage_first'],
             row['voltage_last'],
             row['voltage_delta']
         )
 
-        start, end, step = (
+        voltage_reference = 0.0
+
+        if relative_voltage:
+            if index > 0:
+                reference_row = step_table.iloc[index-1, :]
+                voltage_reference = reference_row['voltage_last']
+
+            else:
+                voltage_reference = first
+                logging.warning("STEP 0: Using first point as ref voltage")
+
+        # time
+        start, end, duration = (
             row['step_time_first'],
             row['step_time_last'],
             row['step_time_delta']
@@ -76,27 +122,39 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
         cycle, step = (row['cycle'], row['step'])
         info = row['type']
 
-        v_df = df.loc[
-            (df["Cycle_Index"] == cycle) &
-            (df["Step_Index"] == step), ["Step_Time", "Voltage"]
+        v_df = dfdata.loc[
+            (dfdata["Cycle_Index"] == cycle) &
+            (dfdata["Step_Index"] == step), ["Step_Time", "Voltage"]
         ]
 
         poi = []
 
         _end = end
+        _start = start
 
-        for j in range(max(1, number_of_points-2)):
+        if report_times:
+            t = str(datetime.timedelta(seconds=round(end-start, 0)))
+            print(f"Cycle {cycle}:", end=" ")
+            print(f"dt = {t}, dv = {first-last:6.3f}")
+
+        for i, j in enumerate(range(max(1, iter_range))):
             if selection_method == "martin":
                 logging.debug("using the 'martin'-method")
                 _end = _end / 2.0
+                poi.append(_end)
+
+            elif selection_method == "fixed_times":
+                logging.debug(f"using fixed times with interval {interval[i]}")
+                _start = _start + interval[i]
+                logging.debug(f"time: {_start}")
+                poi.append(_start)
             else:
                 # more methods to come?
-                logging.info("only one mehtod is implemented")
-                logging.info("using the 'martin'-method")
-                _end = _end / 2.0
-            poi.append(_end)
+                logging.info("this method is not implemented")
+                return None
 
-        poi.reverse()
+        if selection_method == "martin":
+            poi.reverse()
 
         df_poi = pd.DataFrame({"Step_Time": poi})
         df_poi["Voltage"] = np.nan
@@ -108,6 +166,7 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
         voi = []
         for p in poi:
             _v = v_df.loc[v_df["Step_Time"].isin([p]), "new"].values
+            _v = _v - voltage_reference
             voi.append(_v[0])
 
         poi.insert(0, start)
@@ -586,9 +645,20 @@ def new_function():
     cycles = cell.get_cycle_numbers()
     ocv_curves = cell.get_ocv(ocv_type='ocvrlx_up')
 
-    df2 = select_ocv_points(cell, direction="up")
-    df2 = df2.set_index("cycle").loc[:, ["point_00", "point_01", "point_02", "point_03", "point_04"]]
+    df2 = select_ocv_points(cell, direction="up",
+                            selection_method="fixed_times",
+                            interval=[10,100,200,300, 1000000],
+                            report_times=True,
+                            relative_voltage=True)
     fig, (ax1, ax2) = plt.subplots(2)
+    y_cols = list(df2.columns.values)
+    y_cols.remove("cycle")
+    y_cols.remove("step")
+    y_cols.remove("type")
+    df2.plot(x="cycle", y=y_cols, ax=ax2)
+
+    print(df2.columns)
+    print(y_cols)
 
     for c in ocv_curves:
         print(c.head())
@@ -596,7 +666,6 @@ def new_function():
         ax1.plot(c["Step_Time"], c["Voltage"], label=f"cycle {n}")
     ax1.legend()
 
-    ax2.plot(df2)
     plt.show()
 
 
