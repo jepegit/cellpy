@@ -421,8 +421,8 @@ def test_get_capacity(dataset):
     dc, vdc = dataset.get_dcap(cycle=5)
     assert len(dc) == len(vdc)
     assert len(dc) == 224
-    c, v = dataset.get_cap(cycle=5)
-    assert len(c) == len(v)
+    df = dataset.get_cap(cycle=5)  # new: returns dataframe as default
+    assert len(df) == 438
 
 
 @pytest.mark.parametrize("test_input,expected", [
@@ -432,7 +432,10 @@ def test_get_capacity(dataset):
     pytest.param((1.0, 0.001), 1.0, marks=pytest.mark.xfail),
 ])
 def test_get_converter_to_specific(dataset, test_input, expected):
-    c = dataset.get_converter_to_specific(mass=1.0, to_unit=test_input[0], from_unit=test_input[1])
+    c = dataset.get_converter_to_specific(
+        mass=1.0, to_unit=test_input[0],
+        from_unit=test_input[1]
+    )
     assert c == expected
 
 

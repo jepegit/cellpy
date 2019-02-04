@@ -156,11 +156,10 @@ def test_cycling_experiment_to_file(cycling_experiment):
 
 def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
     name = fdv.run_name
-    capacity, voltage = updated_cycling_experiment.data[name].get_cap(
+    capacity_voltage_df = updated_cycling_experiment.data[name].get_cap(
         cycle=1,
     )
-    assert len(capacity) == len(voltage)
-    assert len(capacity) == 1105
+    assert len(capacity_voltage_df) == 1105
 
 
 def test_cycling_summary_plotter(populated_batch):

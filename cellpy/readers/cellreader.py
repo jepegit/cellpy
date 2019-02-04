@@ -1658,6 +1658,80 @@ class CellpyData(object):
                 if shifted and c is not None:
                     shift = _last
                     # print(f"shifted = {shift}, first={_first}")
+                df = self.get_cap(
+                    list_of_cycles, dataset_number=dataset_number,
+                    method=method,
+                    shift=shift,
+                    )
+                if df.empty:
+                    self.logger.debug("NoneType from get_cap")
+                else:
+                    c = df["capacity"]
+                    v = df["voltage"]
+
+                    _last = c.iat[-1]
+                    _first = c.iat[0]
+
+                    c = c.tolist()
+                    v = v.tolist()
+                    header_x = "cap cycle_no %i" % cycle
+                    header_y = "voltage cycle_no %i" % cycle
+                    c.insert(0, header_x)
+                    v.insert(0, header_y)
+                    out_data.append(c)
+                    out_data.append(v)
+                    # txt = "extracted cycle %i" % cycle
+                    # self.logger.debug(txt)
+            except IndexError as e:
+                txt = "could not extract cycle %i" % cycle
+                self.logger.info(txt)
+                self.logger.debug(e)
+
+        # Saving cycles in one .csv file (x,y,x,y,x,y...)
+        # print "saving the file with delimiter '%s' " % (sep)
+        self.logger.debug("writing cycles to file")
+        with open(outname, "w", newline='') as f:
+            writer = csv.writer(f, delimiter=sep)
+            writer.writerows(itertools.zip_longest(*out_data))
+            # star (or asterix) means transpose (writing cols instead of rows)
+        txt = outname
+        txt += " exported."
+        self.logger.info(txt)
+
+    def _export_cycles_old(self, dataset_number, setname=None,
+                       sep=None, outname=None, shifted=False, method=None,
+                       shift=0.0,
+                       last_cycle=None):
+        # export voltage - capacity curves to .csv file
+
+        self.logger.debug("*** EXPORTING CYCLES ***")
+        lastname = "_cycles.csv"
+        if sep is None:
+            sep = self.sep
+        if outname is None:
+            outname = setname + lastname
+
+        list_of_cycles = self.get_cycle_numbers(dataset_number=dataset_number)
+        self.logger.debug(f"you have {len(list_of_cycles)} cycles")
+        if last_cycle is not None:
+            list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
+            self.logger.debug(f"only processing up to cycle {last_cycle}")
+            self.logger.debug(f"you have {len(list_of_cycles)}"
+                              f"cycles to process")
+        out_data = []
+        c = None
+        if not method:
+            method = "back-and-forth"
+        if shifted:
+            method = "back-and-forth"
+            shift = 0.0
+            _last = 0.0
+
+        for cycle in list_of_cycles:
+            try:
+                if shifted and c is not None:
+                    shift = _last
+                    # print(f"shifted = {shift}, first={_first}")
                 c, v = self.get_cap(cycle, dataset_number=dataset_number,
                                     method=method,
                                     shift=shift,
@@ -1693,6 +1767,7 @@ class CellpyData(object):
         txt = outname
         txt += " exported."
         self.logger.info(txt)
+
 
     def _export_normal(self, data, setname=None, sep=None, outname=None):
         lastname = "_normal.csv"
@@ -2365,8 +2440,9 @@ class CellpyData(object):
     def get_cap(self, cycle=None, dataset_number=None,
                 method="back-and-forth",
                 shift=0.0,
-                categorical_column=False,  # should be True as default
-                label_cycle_number=False,  # should be True as default
+                categorical_column=False,
+                label_cycle_number=False,
+                split=False,
                 dynamic=False,
                 ):
         """Gets the capacity for the run.
@@ -2388,11 +2464,18 @@ class CellpyData(object):
                 (usually not used).
             label_cycle_number (bool): add column for cycle number
                 (tidy format).
+            split (bool): return a list of c and v instead of the defualt
+                that is to return them combined in a DataFrame. This is only
+                possible for some specific combinations of options (neither
+                categorical_colum=True or label_cycle_number=True are
+                allowed).
             dynamic: for dynamic retrieving data from cellpy-file.
+                [NOT IMPLEMNETED YET]
 
         Returns:
-            capacity (mAh/g) and voltage if not categorical_column is True,
-            else pandas.DataFrame (voltage, capacity, direction (-1, 1))
+            pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
+                unless split is explicitly set to True. Then it returns a tuple
+                with capacity (mAh/g) and voltage.
         """
 
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -2402,11 +2485,16 @@ class CellpyData(object):
 
         # if cycle is not given, then this function should
         # iterate through cycles
-        if not cycle:
+        if cycle is None:
             cycle = self.get_cycle_numbers()
 
         if not isinstance(cycle, (collections.Iterable,)):
             cycle = [cycle]
+
+        if split and not (categorical_column or label_cycle_number):
+            return_dataframe = False
+        else:
+            return_dataframe = True
 
         method = method.lower()
         if method not in ["back-and-forth", "forth", "forth-and-forth"]:
@@ -2498,7 +2586,8 @@ class CellpyData(object):
                 else:
                     self.logger.debug("no first charge step found")
 
-            if categorical_column:
+            if return_dataframe:
+
                 try:
                     _first_df = pd.DataFrame(
                             {
@@ -2506,7 +2595,8 @@ class CellpyData(object):
                                 "capacity": _first_step_c.values
                              }
                     )
-                    _first_df["direction"] = -1
+                    if categorical_column:
+                        _first_df["direction"] = -1
 
                     _last_df = pd.DataFrame(
                         {
@@ -2514,7 +2604,8 @@ class CellpyData(object):
                             "capacity": _last_step_c.values
                         }
                     )
-                    _last_df["direction"] = 1
+                    if categorical_column:
+                        _last_df["direction"] = 1
 
                 except AttributeError:
                     self.logger.info(f"could not extract cycle {current_cycle}")
@@ -2522,8 +2613,9 @@ class CellpyData(object):
 
                     c = pd.concat([_first_df, _last_df], axis=0)
                     if label_cycle_number:
-                        c["cycle"] = current_cycle
-                        c = c[["cycle", "voltage", "capacity", "direction"]]
+                        c.insert(0, "cycle", current_cycle)
+                        # c["cycle"] = current_cycle
+                        # c = c[["cycle", "voltage", "capacity", "direction"]]
                     if cycle_df.empty:
                         cycle_df = c
                     else:
@@ -2536,7 +2628,7 @@ class CellpyData(object):
                 capacity = pd.concat([capacity, c], axis=0)
                 voltage = pd.concat([voltage, v], axis=0)
 
-        if categorical_column:
+        if return_dataframe:
             return cycle_df
         else:
             return capacity, voltage
@@ -2590,6 +2682,54 @@ class CellpyData(object):
             # v = d[self.headers_normal.voltage_txt]
             # c = d[column_txt] * 1000000 / mass
         return c, v
+
+    def get_ocv_new(self, cycles=None, direction="up", remove_first=True):
+
+        if cycles is None:
+            cycles = self.get_cycle_numbers()
+        else:
+            if not isinstance(cycles, (list, tuple)):
+                cycles = [cycles, ]
+            else:
+                remove_first = False
+
+        ocv_rlx_id = "ocvrlx"
+        if direction == "up":
+            ocv_rlx_id += "_up"
+        elif direction == "down":
+            ocv_rlx_id += "_down"
+
+        step_table = self.dataset.step_table
+        dfdata = self.dataset.dfdata
+
+        ocv_steps = step_table.loc[
+                    step_table["cycle"].isin(cycles), :
+                    ]
+
+        ocv_steps = ocv_steps.loc[
+                    ocv_steps.type.str.startswith(ocv_rlx_id), :
+                    ]
+
+        if remove_first:
+            ocv_steps = ocv_steps.iloc[1:, :]
+
+        step_time_label = self.headers_normal.step_time_txt
+        voltage_label = self.headers_normal.voltage_txt
+        cycle_label = self.headers_normal.cycle_index_txt
+        step_label = self.headers_normal.step_index_txt
+
+        #dfdata = dfdata.reset_index(drop=True)
+
+        selected_df = dfdata.where(
+            dfdata[cycle_label].isin(ocv_steps.cycle) &
+            dfdata[step_label].isin(ocv_steps.step)
+        )
+
+        selected_df = selected_df.loc[
+            :, [cycle_label, step_label, step_time_label, voltage_label]
+        ]
+
+        return selected_df
 
     def get_ocv(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
         """Find ocv data in DataSet (voltage vs time).
