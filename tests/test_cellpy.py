@@ -91,15 +91,6 @@ def test_logger(clean_dir):
     tmp_logger.error("customdir, default: testing logger (error)")
 
 
-@pytest.mark.smoketest
-def test_extract_ocvrlx(clean_dir):
-    import os
-    from cellpy import cellreader
-    f_in = os.path.join(fdv.data_dir, fdv.res_file_name)
-    f_out = os.path.join(clean_dir, "out_")
-    assert cellreader.extract_ocvrlx(f_in, f_out) == True
-
-
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader

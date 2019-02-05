@@ -1768,7 +1768,6 @@ class CellpyData(object):
         txt += " exported."
         self.logger.info(txt)
 
-
     def _export_normal(self, data, setname=None, sep=None, outname=None):
         lastname = "_normal.csv"
         if sep is None:
@@ -2443,6 +2442,9 @@ class CellpyData(object):
                 categorical_column=False,
                 label_cycle_number=False,
                 split=False,
+                interpolated=False,
+                dx=0.1,
+                number_of_points=None,
                 dynamic=False,
                 ):
         """Gets the capacity for the run.
@@ -2469,6 +2471,12 @@ class CellpyData(object):
                 possible for some specific combinations of options (neither
                 categorical_colum=True or label_cycle_number=True are
                 allowed).
+            interpolated (bool): set to True if you would like to get
+                interpolated data (typically if you want to save disk space
+                or memory). Defaults to False.
+            dx (float): the step used when interpolating.
+            number_of_points (int): number of points to use (over-rides dx)
+                for interpolation (i.e. the length of the interpolated data).
             dynamic: for dynamic retrieving data from cellpy-file.
                 [NOT IMPLEMNETED YET]
 
@@ -2595,6 +2603,12 @@ class CellpyData(object):
                                 "capacity": _first_step_c.values
                              }
                     )
+                    if interpolated:
+                        _first_df = self._interpolate_df_col(
+                            _first_df, y="capacity", x="voltage",
+                            dx=dx, number_of_points=number_of_points,
+                            direction=-1
+                        )
                     if categorical_column:
                         _first_df["direction"] = -1
 
@@ -2604,13 +2618,18 @@ class CellpyData(object):
                             "capacity": _last_step_c.values
                         }
                     )
+                    if interpolated:
+                        _last_df = self._interpolate_df_col(
+                            _last_df, y="capacity", x="voltage",
+                            dx=dx, number_of_points=number_of_points,
+                            direction=1
+                        )
                     if categorical_column:
                         _last_df["direction"] = 1
 
                 except AttributeError:
                     self.logger.info(f"could not extract cycle {current_cycle}")
                 else:
-
                     c = pd.concat([_first_df, _last_df], axis=0)
                     if label_cycle_number:
                         c.insert(0, "cycle", current_cycle)
@@ -2622,6 +2641,7 @@ class CellpyData(object):
                         cycle_df = pd.concat([cycle_df, c], axis=0)
 
             else:
+                logging.warning("returning non-dataframe")
                 c = pd.concat([_first_step_c, _last_step_c], axis=0)
                 v = pd.concat([_first_step_v, _last_step_v], axis=0)
 
@@ -2646,19 +2666,14 @@ class CellpyData(object):
             cap_type = "charge"
         elif cap_type == "discharge_capacity":
             cap_type = "discharge"
-        # cycles = self.find_step_numbers(step_type =cap_type,
-        # dataset_number = dataset_number)
-        # self.logger.debug("in _get_cap: finding step numbers")
-        # if cycle:
-        #     self.logger.debug("for cycle")
-        #     self.logger.debug(cycle)
+
         cycles = self.get_step_numbers(steptype=cap_type, allctypes=False,
                                        cycle_number=cycle,
                                        dataset_number=dataset_number)
 
-        # self.logger.debug(cycles)
         c = pd.Series()
         v = pd.Series()
+
         if cap_type == "charge":
             column_txt = self.headers_normal.charge_capacity_txt
         else:
@@ -2683,7 +2698,33 @@ class CellpyData(object):
             # c = d[column_txt] * 1000000 / mass
         return c, v
 
-    def get_ocv_new(self, cycles=None, direction="up", remove_first=True):
+    def get_ocv(self, cycles=None, direction="up",
+                remove_first=False,
+                interpolated=False,
+                dx=None,
+                number_of_points=None):
+
+        """get the open curcuit voltage relaxation curves.
+
+        Args:
+            cycles (list of ints or None): the cycles to extract from
+                (selects all if not given).
+            direction ("up", "down", or "both"): extract only relaxations that
+                is performed during discharge for "up" (because then the
+                voltage relaxes upwards) etc.
+            remove_first: remove the first relaxation curve (typically,
+                the first curve is from the initial rest period between
+                assembling the cell to the actual testing/cycling starts)
+            interpolated (bool): set to True if you want the data to be
+                interpolated (e.g. for creating smaller files)
+            dx (float): the step used when interpolating.
+            number_of_points (int): number of points to use (over-rides dx)
+                for interpolation (i.e. the length of the interpolated data).
+
+        Returns:
+            A pandas.DataFrame with cycle-number, step-number, step-time, and
+                voltage columns.
+        """
 
         if cycles is None:
             cycles = self.get_cycle_numbers()
@@ -2718,20 +2759,85 @@ class CellpyData(object):
         cycle_label = self.headers_normal.cycle_index_txt
         step_label = self.headers_normal.step_index_txt
 
-        #dfdata = dfdata.reset_index(drop=True)
-
         selected_df = dfdata.where(
             dfdata[cycle_label].isin(ocv_steps.cycle) &
             dfdata[step_label].isin(ocv_steps.step)
-        )
+        ).dropna()
 
         selected_df = selected_df.loc[
             :, [cycle_label, step_label, step_time_label, voltage_label]
         ]
 
+        if interpolated:
+            if dx is None and number_of_points is None:
+                dx = prms.Reader.time_interpolation_step
+            new_dfs = list()
+            groupby_list = [cycle_label, step_label]
+
+            for name, group in selected_df.groupby(groupby_list):
+                new_group = self._interpolate_df_col(
+                    group,
+                    x=step_time_label,
+                    y=voltage_label,
+                    dx=dx,
+                    number_of_points=number_of_points,
+                )
+
+                for i, j in zip(groupby_list, name):
+                    new_group[i] = j
+                new_dfs.append(new_group)
+
+            selected_df = pd.concat(new_dfs)
+
         return selected_df
 
-    def get_ocv(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
+    def _interpolate_df_col(self, df, x=None, y=None,
+                            dx=10.0, number_of_points=None,
+                            direction=1):
+        """Interpolate a column based on another column.
+
+        Args:
+            df: DataFrame with cycle
+            x: Column name for the x-value (defaults to the step-time column)
+            y: Column name for the y-value (defaults to the voltage column)
+            dx: step-value (defaults to 10.0)
+            number_of_points: number of points for interpolated values (use
+                instead of dx)
+            direction (-1,1): if direction is negetive, then invert the
+                values.
+
+        Returns: DataFrame with x-values and y-values.
+
+        """
+
+        if x is None:
+            x = self.headers_normal.step_time_txt
+        if y is None:
+            y = self.headers_normal.voltage_txt
+        xs = df[x].values
+        ys = df[y].values
+        if direction > 0:
+            x_min = xs.min()
+            x_max = xs.max()
+        else:
+            x_max = xs.min()
+            x_min = xs.max()
+            dx = -dx
+
+        f = interpolate.interp1d(xs, ys)
+        if number_of_points:
+            new_x = np.linspace(x_min, x_max, number_of_points)
+        else:
+            new_x = np.arange(x_min, x_max, dx)
+
+        new_y = f(new_x)
+
+        new_df = pd.DataFrame(
+            {x: new_x, y: new_y}
+        )
+        return new_df
+
+    def get_ocv_old(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
         """Find ocv data in DataSet (voltage vs time).
 
         Args:
@@ -2883,7 +2989,6 @@ class CellpyData(object):
 
     def get_ir(self, dataset_number=None):
         """Get the IR data (Deprecated)."""
-
         raise DeprecatedFeature
 
     def get_converter_to_specific(self, dataset=None, mass=None,
@@ -4042,85 +4147,6 @@ def loadcell_check():
     cell_data.save(cellpyfile)
     cell_data.to_csv(datadir=out_dir, cycles=True, raw=True, summary=True)
     print("ok")
-
-
-def extract_ocvrlx(filename, fileout, mass=1.00):
-    """Get the ocvrlx data from dataset.
-
-    Convenience function for extracting ocv relaxation data from runs."""
-    import itertools
-    import csv
-    import matplotlib.pyplot as plt
-    type_of_data = "ocvrlx_up"
-    d_res = setup_cellpy_instance()
-    print(filename)
-    # d_res.from_res(filename)
-    d_res.from_raw(filename)
-    d_res.set_mass(mass)
-    d_res.make_step_table()
-    d_res.print_step_table()
-    out_data = []
-    for cycle in d_res.get_cycle_numbers():
-        try:
-            if type_of_data == 'ocvrlx_up':
-                logging.info("getting ocvrlx up data for cycle %i" % cycle)
-                t, v = d_res.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
-            else:
-                logging.info("getting ocvrlx down data for cycle %i" % cycle)
-                t, v = d_res.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
-            plt.plot(t, v)
-            t = t.tolist()
-            v = v.tolist()
-
-            header_x = "time (s) cycle_no %i" % cycle
-            header_y = "voltage (V) cycle_no %i" % cycle
-            t.insert(0, header_x)
-            v.insert(0, header_y)
-            out_data.append(t)
-            out_data.append(v)
-
-        except Exception as e:
-            logging.info("could not extract cycle %i" % cycle)
-            warnings.warn(f"Unhandled exception raised: {e}")
-
-    save_to_file = False
-    if save_to_file:
-        # Saving cycles in one .csv file (x,y,x,y,x,y...)
-
-        endstring = ".csv"
-        outfile = fileout + endstring
-
-        delimiter = ";"
-        print("saving the file with delimiter '%s' " % delimiter)
-        with open(outfile, "w", newline='') as f:
-            writer = csv.writer(f, delimiter=delimiter)
-            writer.writerows(itertools.zip_longest(*out_data))
-            # star (or asterix) means transpose (writing cols instead of rows)
-
-        print("saved the file", end=' ')
-        print(outfile)
-    plt.show()
-    print("bye!")
-    return True
-
-
-# PROBLEMS:
-# 1. 27.06.2016 new PC with 64bit conda python package:
-#              Error opening connection to "Provider=Microsoft.ACE.OLEDB.12.0
-#
-# FIX:
-# 1. 27.06.2016 installed 2007 Office System Driver: Data Connectivity
-#             Components
-#             (https://www.microsoft.com/en-us/download/confirmation.aspx?id=23734)
-#             DID NOT WORK
-#    27.06.2016 tried Microsoft Access Database Engine 2010 Redistributable
-#             64x DID NOT INSTALL - my computer has 32bit office,
-#             can only be install with 64-bit office
-#    27.06.2016 installed Microsoft Access Database Engine 2010 Redistributable
-#            86x DID NOT WORK
-#    27.06.2016 uninstalled anaconda 64bit - installed 32 bit
-#            WORKED!
-#            LESSON LEARNED: dont use 64bit python with 32bit office installed
 
 
 if __name__ == "__main__":

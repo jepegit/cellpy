@@ -82,7 +82,7 @@ def create_plot_option_dicts(info, marker_types=None, colors=None,
         line_dash = [0, 0]
 
     if size is None:
-        size = 12
+        size = 10
 
     groups = info.groups.unique()
     number_of_groups = len(groups)
@@ -166,12 +166,14 @@ def create_summary_plot(data, info, group_styles, sub_group_styles,
     if discharge_capacity is not None:
         discharge_source = bokeh.models.ColumnDataSource(discharge_capacity)
 
-    p = bokeh.plotting.figure(title=title, width=width, height=height,
-               # tools = tools,
-               x_range=x_range,
-               y_range=y_range,
-               x_axis_label=x_axis_label,
-               y_axis_label=y_axis_label)
+    p = bokeh.plotting.figure(
+        title=title, width=width, height=height,
+        # tools = tools,
+        x_range=x_range,
+        y_range=y_range,
+        x_axis_label=x_axis_label,
+        y_axis_label=y_axis_label
+    )
 
     cols = charge_capacity.columns.get_level_values(0)
     if legend_option is not None:
@@ -191,7 +193,9 @@ def create_summary_plot(data, info, group_styles, sub_group_styles,
         ch_m = p.scatter(
             source=charge_source,
             x="Cycle_Index", y=c,
-            # **legend_option_dict, # Remark! cannot use the same legend name as column name (defaults to a lookup)
+            # **legend_option_dict,
+            #  Remark! cannot use the same legend name as
+            #  column name (defaults to a lookup)
             **group_props["marker"],  # color
             **sub_group_props["marker"],  # marker
         )

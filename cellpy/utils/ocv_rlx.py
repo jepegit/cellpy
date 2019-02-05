@@ -224,11 +224,11 @@ class MultiCycleOcvFit(object):
 
         self.cycles = cycles
 
-    def run_fitting(self, ocv_type='ocvrlx_up', weighted=True):
+    def run_fitting(self, direction='up', weighted=True):
         """
 
         Args:
-            ocv_type:
+            direction:
             weighted:
 
         Returns:
@@ -236,8 +236,10 @@ class MultiCycleOcvFit(object):
         """
         ocv_fitter = OcvFit()
         ocv_fitter.set_circuits(self.circuits)
-        time, voltage = self.data.get_ocv(ocv_type=ocv_type,
-                                          cycle_number=self.cycles[0])
+        time_voltage = self.data.get_ocv(direction=direction,
+                                          cycles=self.cycles[0])
+        time = time_voltage.Step_Time
+        voltage = time_voltage.Voltage
         if voltage is not None and time is not None:
             ocv_fitter.set_data(time, voltage)
         else:
@@ -251,13 +253,15 @@ class MultiCycleOcvFit(object):
 
         for cycle in self.cycles:
             print("Fitting cycle " + str(cycle))
-            time, voltage = self.data.get_ocv(ocv_type=ocv_type,
-                                              cycle_number=cycle)
+            time_voltage = self.data.get_ocv(direction=direction,
+                                              cycles=cycle)
+            time = time_voltage.Step_Time
+            voltage = time_voltage.Voltage
 
             if voltage is not None:
                 step_table = self.data.dataset.step_table
                 hdr = self.data.headers_step_table
-                if ocv_type is 'ocvrlx_up':
+                if direction is 'up':
                     end_voltage = step_table[(step_table['cycle'] == cycle) & (
                         step_table['type'].isin(['discharge']))][
                         hdr.voltage + "_last"].values[0]
@@ -266,7 +270,7 @@ class MultiCycleOcvFit(object):
                         hdr.current + "_last"].values[0]
                     ocv_fitter.set_zero_voltage(end_voltage)
                     ocv_fitter.set_zero_current(end_current)
-                elif ocv_type is 'ocvrlx_down':
+                elif direction is 'down':
                     end_voltage = \
                         step_table[(step_table['cycle'] == cycle) & (
                             step_table['type'].isin(['charge']))][
@@ -432,8 +436,11 @@ class OcvFit(object):
         """
         self.data = cellpydata
         self.step_table = self.data.dataset  # hope it works...
-        time, voltage = self.data.get_ocv(ocv_type='ocvrlx_up',
-                                          cycle_number=cycle)
+        time_voltage = self.data.get_ocv(direction='up',
+                                         cycles=cycle)
+        time = time_voltage.Step_Time
+        voltage = time_voltage.Voltage
+
         self.time = np.array(time)
         self.voltage = np.array(voltage)
 
@@ -627,7 +634,7 @@ def _main():
 
     else:
         ocv_fit = MultiCycleOcvFit(d, cycles, circuits=3)
-        ocv_fit.run_fitting(ocv_type="ocvrlx_up")
+        ocv_fit.run_fitting(direction="up")
         ocv_fit.plot_summary([0])
         ocv_fit.plot_summary_translated()
 
@@ -637,41 +644,7 @@ def _main():
         #     print best_fit_parameters
 
 
-def new_function():
-    from cellpy import cellreader
-    import matplotlib.pyplot as plt
-
-    f = "/Users/jepe/scripting/cellpy/testdata/hdf5/20160805_test001_45_cc.h5"
-    # f = r"C:\ExperimentalData\BatteryTestData\Arbin\HDF5\20181026_cen31_01_cc.h5"
-    cell = cellreader.CellpyData().load(f)
-    cycles = cell.get_cycle_numbers()
-    ocv_curves = cell.get_ocv(ocv_type='ocvrlx_up')
-
-    df2 = select_ocv_points(cell, direction="up",
-                            selection_method="fixed_times",
-                            interval=[10,100,200,300, 1000000],
-                            report_times=True,
-                            relative_voltage=True)
-    fig, (ax1, ax2) = plt.subplots(2)
-    y_cols = list(df2.columns.values)
-    y_cols.remove("cycle")
-    y_cols.remove("step")
-    y_cols.remove("type")
-    df2.plot(x="cycle", y=y_cols, ax=ax2)
-
-    print(df2.columns)
-    print(y_cols)
-
-    for c in ocv_curves:
-        print(c.head())
-        n = c["Cycle_Index"].unique()[0]
-        ax1.plot(c["Step_Time"], c["Voltage"], label=f"cycle {n}")
-    ax1.legend()
-
-    plt.show()
-
-
 if __name__ == '__main__':
     print("ocv-rlx".center(80, "="))
-    new_function()
+    _main()
 

@@ -32,4 +32,4 @@ def test_ocv_rlx_single(dataset, variable, value):
 def test_ocv_rlx_multi(dataset):
     cycles = [1, 2, 5]
     ocv_fit = ocv_rlx.MultiCycleOcvFit(dataset, cycles, circuits=3)
-    ocv_fit.run_fitting(ocv_type="ocvrlx_up")
+    ocv_fit.run_fitting(direction="up")
