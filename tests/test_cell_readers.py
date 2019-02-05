@@ -219,6 +219,7 @@ def test_get_ir(dataset):
     dataset.get_ir()
 
 
+@pytest.mark.xfail(raises=DeprecatedFeature)
 def test_get_diagnostics_plot(dataset):
     dataset.get_diagnostics_plots()
 
