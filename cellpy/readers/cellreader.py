@@ -43,6 +43,9 @@ from cellpy.readers.core import (
     MINIMUM_CELLPY_FILE_VERSION, xldate_as_datetime
 )
 
+HEADERS_NORMAL = get_headers_normal()
+HEADERS_SUMMARY = get_headers_summary()
+HEADERS_STEP_TABLE = get_headers_step_table()
 
 # TODO: @jepe - performance warnings - mixed types within cols (pytables)
 performance_warning_level = "ignore"  # "ignore", "error"
@@ -2416,6 +2419,7 @@ class CellpyData(object):
         """Returns discharge_capacity (in mAh/g), and voltage."""
 
         #  TODO: should return a DataFrame as default
+        #  but remark that we then have to update e.g. batch_helpers.py
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2428,6 +2432,7 @@ class CellpyData(object):
         """Returns charge_capacity (in mAh/g), and voltage."""
 
         #  TODO: should return a DataFrame as default
+        #  but remark that we then have to update e.g. batch_helpers.py
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2604,7 +2609,7 @@ class CellpyData(object):
                              }
                     )
                     if interpolated:
-                        _first_df = self._interpolate_df_col(
+                        _first_df = _interpolate_df_col(
                             _first_df, y="capacity", x="voltage",
                             dx=dx, number_of_points=number_of_points,
                             direction=-1
@@ -2619,7 +2624,7 @@ class CellpyData(object):
                         }
                     )
                     if interpolated:
-                        _last_df = self._interpolate_df_col(
+                        _last_df = _interpolate_df_col(
                             _last_df, y="capacity", x="voltage",
                             dx=dx, number_of_points=number_of_points,
                             direction=1
@@ -2775,7 +2780,7 @@ class CellpyData(object):
             groupby_list = [cycle_label, step_label]
 
             for name, group in selected_df.groupby(groupby_list):
-                new_group = self._interpolate_df_col(
+                new_group = _interpolate_df_col(
                     group,
                     x=step_time_label,
                     y=voltage_label,
@@ -2790,52 +2795,6 @@ class CellpyData(object):
             selected_df = pd.concat(new_dfs)
 
         return selected_df
-
-    def _interpolate_df_col(self, df, x=None, y=None,
-                            dx=10.0, number_of_points=None,
-                            direction=1):
-        """Interpolate a column based on another column.
-
-        Args:
-            df: DataFrame with cycle
-            x: Column name for the x-value (defaults to the step-time column)
-            y: Column name for the y-value (defaults to the voltage column)
-            dx: step-value (defaults to 10.0)
-            number_of_points: number of points for interpolated values (use
-                instead of dx)
-            direction (-1,1): if direction is negetive, then invert the
-                values.
-
-        Returns: DataFrame with x-values and y-values.
-
-        """
-
-        if x is None:
-            x = self.headers_normal.step_time_txt
-        if y is None:
-            y = self.headers_normal.voltage_txt
-        xs = df[x].values
-        ys = df[y].values
-        if direction > 0:
-            x_min = xs.min()
-            x_max = xs.max()
-        else:
-            x_max = xs.min()
-            x_min = xs.max()
-            dx = -dx
-
-        f = interpolate.interp1d(xs, ys)
-        if number_of_points:
-            new_x = np.linspace(x_min, x_max, number_of_points)
-        else:
-            new_x = np.arange(x_min, x_max, dx)
-
-        new_y = f(new_x)
-
-        new_df = pd.DataFrame(
-            {x: new_x, y: new_y}
-        )
-        return new_df
 
     def get_ocv_old(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
         """Find ocv data in DataSet (voltage vs time).
@@ -3898,6 +3857,124 @@ class CellpyData(object):
         dataset.dfsummary = dfsummary
 
 
+def group_by_interpolate(df, x=None, y=None, group_by=None,
+                         number_of_points=100, tidy=False,
+                         individual_x_cols=False, header_name="Unit",
+                         dx=10.0, generate_new_x=True):
+    """Use this for generating wide format from long (tidy) data"""
+
+    if x is None:
+        x = HEADERS_NORMAL.step_time_txt
+    if y is None:
+        y = HEADERS_NORMAL.voltage_txt
+    if group_by is None:
+        group_by = [HEADERS_NORMAL.cycle_index_txt]
+
+    if not isinstance(group_by, (list, tuple)):
+        group_by = [group_by]
+
+    if not generate_new_x:
+        # check if it makes sence
+        if (not tidy) and (not individual_x_cols):
+            logging.warning("Unlogical condition")
+            generate_new_x = True
+
+    new_x = None
+
+    if generate_new_x:
+        x_max = df[x].max()
+        x_min = df[x].min()
+        if number_of_points:
+            new_x = np.linspace(x_max, x_min, number_of_points)
+        else:
+            new_x = np.arange(x_max, x_min, dx)
+
+    new_dfs = []
+    keys = []
+
+    for name, group in df.groupby(group_by):
+        keys.append(name)
+        if not isinstance(name, (list, tuple)):
+            name = [name]
+
+        new_group = _interpolate_df_col(
+            group, x=x, y=y, new_x=new_x,
+            number_of_points=number_of_points,
+            dx=dx,
+        )
+
+        if tidy or (not tidy and not individual_x_cols):
+            for i, j in zip(group_by, name):
+                new_group[i] = j
+        new_dfs.append(new_group)
+
+    if tidy:
+        new_df = pd.concat(new_dfs)
+    else:
+        if individual_x_cols:
+            new_df = pd.concat(new_dfs, axis=1, keys=keys)
+            group_by.append(header_name)
+            new_df.columns.names = group_by
+        else:
+            new_df = pd.concat(new_dfs)
+            new_df = new_df.pivot(index=x, columns=group_by[0], values=y, )
+    return new_df
+
+
+def _interpolate_df_col(df, x=None, y=None, new_x=None, dx=10.0,
+                        number_of_points=None, direction=1, **kwargs):
+        """Interpolate a column based on another column.
+
+        Args:
+            df: DataFrame with the (cycle) data.
+            x: Column name for the x-value (defaults to the step-time column).
+            y: Column name for the y-value (defaults to the voltage column).
+            new_x (numpy array or None): Interpolate using these new x-values
+                instead of generating x-values based on dx or number_of_points.
+            dx: step-value (defaults to 10.0)
+            number_of_points: number of points for interpolated values (use
+                instead of dx and overrides dx if given).
+            direction (-1,1): if direction is negetive, then invert the
+                x-values before interpolating.
+            **kwargs: arguments passed to scipy.interpolate.interp1d
+
+        Returns: DataFrame with interpolated y-values based on given or
+            generated x-values.
+
+        """
+
+        if x is None:
+            x = df.columns[0]
+        if y is None:
+            y = df.columns[1]
+
+        xs = df[x].values
+        ys = df[y].values
+
+        if direction > 0:
+            x_min = xs.min()
+            x_max = xs.max()
+        else:
+            x_max = xs.min()
+            x_min = xs.max()
+            dx = -dx
+
+        bounds_error = kwargs.pop("bounds_error", False)
+        f = interpolate.interp1d(xs, ys, bounds_error=bounds_error, **kwargs)
+        if new_x is None:
+            if number_of_points:
+                new_x = np.linspace(x_min, x_max, number_of_points)
+            else:
+                new_x = np.arange(x_min, x_max, dx)
+
+        new_y = f(new_x)
+
+        new_df = pd.DataFrame(
+            {x: new_x, y: new_y}
+        )
+
+        return new_df
+
 def _collect_capacity_curves(data, direction="charge"):
     """Create a list of pandas.DataFrames, one for each charge step.
 
@@ -3920,7 +3997,7 @@ def _collect_capacity_curves(data, direction="charge"):
                 q, v = data.get_dcap(cycle)
 
         except NullData as e:
-            print(e)
+            logging.warning(e)
             break
 
         else:
