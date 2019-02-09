@@ -5,6 +5,8 @@ import glob
 import fnmatch
 import pathlib
 import warnings
+import time
+
 from cellpy.parameters import prms
 import logging
 
@@ -56,6 +58,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         run-file names (list) and cellpy-file-name (path).
     """
 
+    time_00 = time.time()
     cellpy_file_extension = "h5"
     res_extension = "res"
     version = 0.1
@@ -69,7 +72,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         cellpy_file_extension = cellpy_file_extension
 
     if prm_filename is not None:
-        warnings.warn("reading prm file disabled")
+        logging.debug("reading prm file disabled")
 
     if not all([raw_file_dir, cellpy_file_dir, file_name_format]):
         # import cellpy.parameters.prms as prms
@@ -137,6 +140,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
             else:
                 run_files = []
 
+        logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return run_files, cellpy_file
 
     else:
@@ -144,11 +148,18 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         if os.path.isdir(raw_file_dir):
             if len(cache) == 0:
                 cache = os.listdir(raw_file_dir)
-            run_files = [os.path.join(raw_file_dir, x) for x in cache if fnmatch.fnmatch(x, glob_text_raw)]
+            run_files = [
+                os.path.join(
+                    raw_file_dir, x
+                ) for x in cache if fnmatch.fnmatch(
+                    x, glob_text_raw
+                )
+            ]
             run_files.sort()
         else:
             run_files = []
 
+        logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return run_files, cellpy_file, cache
 
 

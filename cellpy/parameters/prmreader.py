@@ -165,11 +165,10 @@ def _save_current_prms_to_user_dir():
 def info():
     """this function will show only the 'box'-type
     attributes and their content in the cellpy.prms module"""
-    print("running")
-    print("--goal:")
-    print("  convenience function for prms")
+    print("convenience function for listing prms")
     print(type(prms))
     print(prms.__name__)
+    print(f"prm file: {_get_prm_file()}")
 
     for key in prms.__dict__:
         if isinstance(prms.__dict__[key], box.Box):

@@ -10,7 +10,8 @@ from cellpy.exceptions import DeprecatedFeature
 from cellpy import log
 from . import fdv
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level="DEBUG")
+
 
 @pytest.fixture
 def cellpy_data_instance():
@@ -130,6 +131,11 @@ def test_clean_up_normal_table(dataset):
     dataset._clean_up_normal_table()
 
 
+def test_validate_step_table(dataset):
+    validated = dataset._validate_step_table()
+    assert validated
+
+
 def test_print_step_table(dataset):
     dataset.print_step_table()
 
@@ -170,10 +176,34 @@ def test_get_number_of_tests(dataset):
     assert n == 1
 
 
+def test_get_step_numbers(dataset):
+    cycle_steps = dataset.get_step_numbers(
+        steptype='charge', cycle_number=7
+    )
+
+    cycles_steps = dataset.get_step_numbers(
+        steptype='charge', cycle_number=[7, 8],
+    )
+
+    all_cycles_steps = dataset.get_step_numbers("charge")
+
+    frame_steps = dataset.get_step_numbers(
+        steptype='charge', allctypes=True, pdtype=True,
+        cycle_number=None, dataset_number=None,
+        steptable=None
+    )
+
+    assert isinstance(cycle_steps, dict)
+    assert isinstance(cycles_steps, dict)
+    assert len(all_cycles_steps) > 10  # could use get_cycles here to compare
+    assert not frame_steps.empty
+
+
 def test_sget_voltage(dataset):
     steps = dataset.get_step_numbers("charge")
-    print(steps)
-    x = dataset.sget_voltage(3, steps[3][0])
+    cycle = 3
+    step = steps[cycle]
+    x = dataset.sget_voltage(cycle, step)
     assert len(x) == 378
 
 
@@ -234,17 +264,22 @@ def test_set_testnumber(dataset):
 
 
 def test_check64bit():
-    from cellpy import cellreader
-    cellpy.readers.core.check64bit()
-    cellpy.readers.core.check64bit("os")
+    a = cellpy.readers.core.check64bit()
+    b = cellpy.readers.core.check64bit("os")
+    logging.debug(f"Python 64bit? {a}")
+    logging.debug(f"OS 64bit? {b}")
 
 
 def test_search_for_files():
     import os
     from cellpy import filefinder
-    run_files, cellpy_file = filefinder.search_for_files(fdv.run_name,
-                                                         raw_file_dir=fdv.raw_data_dir,
-                                                         cellpy_file_dir=fdv.output_dir)
+
+    run_files, cellpy_file = filefinder.search_for_files(
+        fdv.run_name,
+        raw_file_dir=fdv.raw_data_dir,
+        cellpy_file_dir=fdv.output_dir
+    )
+
     assert fdv.res_file_path in run_files
     assert os.path.basename(cellpy_file) == fdv.cellpy_file_name
 
@@ -413,6 +448,8 @@ def test_get_current_voltage(dataset):
     assert len(v) == 498
     c = dataset.get_current(cycle=5)
     assert len(c) == 498
+    c_all = dataset.get_current()  # pd.Series
+    c_all2 = dataset.get_current(full=False)  #list of pd.Series
 
 
 def test_get_capacity(dataset):
