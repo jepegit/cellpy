@@ -158,6 +158,20 @@ def test_run_journal_debug():
     assert result.exit_code == 0
 
 
+def test_cli_help():
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["--help"])
+    print("\n", result.output)
+    assert result.exit_code == 0
+
+
+def test_cli_setup_help():
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["setup", "--help"])
+    print("\n", result.output)
+    assert result.exit_code == 0
+
+
 def test_cli_setup():
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -167,8 +181,22 @@ def test_cli_setup():
         print(result.output)
         assert result.exit_code == 0
 
-        result = runner.invoke(
-            cli.cli, ["setup", "--dry-run", "--bleeding-edge"]
-        )
-        print(result.output)
-        assert result.exit_code == 0
+
+def test_cli_setup_interactive():
+    runner = CliRunner()
+    inputs = [
+        " ",  # outdatadir
+        " ",  # rawdatadir
+        " ",  # cellpydatadir
+        " ",  # logdir
+        " ",  # db dir
+        " ",  # db filename
+        # "y",  # yes to making parent-dir
+    ]
+    input_str = "\n".join(inputs)
+    # with runner.isolated_filesystem():
+    result = runner.invoke(
+        cli.cli, ["setup", "--dry-run", "--interactive"],
+        input=input_str,
+    )
+    assert result.exit_code == 0
