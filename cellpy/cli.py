@@ -11,6 +11,7 @@ DEFAULT_FILENAME_START = "_cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 VERSION = cellpy._version.__version__
+REPO = "git-repo-name"
 
 
 def save_prm_file(prm_filename):
@@ -65,7 +66,7 @@ def create_cellpy_folders():
     pass
 
 
-@click.group()
+@click.group("cellpy")
 def cli():
     pass
 
@@ -125,23 +126,113 @@ def setup(dry_run, bleeding_edge):
 
 
 @click.command()
-def configloc():
-    click.echo("[cellpy] ->\n")
-    config_file_name = prmreader._get_prm_file()
-    click.echo("[cellpy] ->%s\n" % config_file_name)
-    if not os.path.isfile(config_file_name):
-        click.echo("[cellpy] File does not exist!")
+@click.option(
+    '--version', '-v', is_flag=True, help="Print version information."
+)
+@click.option(
+    '--configloc', '-c', is_flag=True,
+    help='Print full path to the config file.'
+)
+@click.option(
+    '--params', '-p', is_flag=True, help='Dump all parameters to screen.'
+)
+def info(version, configloc, params):
+    complete_info = True
+
+    if version:
+        complete_info = False
+        _version()
+
+    if configloc:
+        complete_info = False
+        _configloc()
+
+    if params:
+        complete_info = False
+        _dump_params()
+
+    if complete_info:
+        _version()
+        _configloc()
 
 
 @click.command()
-def version():
-    txt = "[cellpy] version: " + str(VERSION)
+@click.option(
+    '--tests', '-t', is_flag=True, help="Download test-files from repo."
+)
+@click.option(
+    '--examples', '-e', is_flag=True, help="Download example-files from repo."
+)
+@click.option(
+    '--clone', '-c', is_flag=True, help="Clone the full repo."
+)
+@click.option(
+    '--directory', '-d', default=None, help="Save into custom directory DIR"
+)
+def pull(tests, examples, clone, directory):
+    if directory is not None:
+        click.echo(f"[cellpy] Custom directory: {directory}")
+    if clone:
+        _clone_repo(directory)
+    else:
+        if tests:
+            _pull_tests(directory)
+        if examples:
+            _pull_examples(directory)
+
+
+@click.command()
+@click.option(
+    '--journal', '-j', is_flag=True,
+    help="Run a batch job defined in the given journal-file"
+)
+@click.option(
+    '--debug', '-d', is_flag=True, help="Run in debug mode."
+)
+@click.option(
+    '--silent', '-s', is_flag=True,
+    help="Run in silent (i.e. no-plotting) mode."
+)
+@click.argument('file_name')
+def run(journal, debug, silent, file_name):
+    print("RUNNING".center(80, "*"))
+    if not file_name:
+        click.echo("[cellpy] No filename provided.")
+        return
+    txt = f"[cellpy] The plan is that this cmd will run a batch run\n"
+    txt += f"[cellpy] journal: {journal}\n"
+
+    if debug:
+        txt += "[cellpy] debug mode on"
+
+    if silent:
+        txt += "[cellpy] silent mode on"
+
+    txt += "[cellpy]\n"
     click.echo(txt)
 
+    if journal:
+        _run_journal(file_name, debug, silent)
 
-@click.command()
-def examples():
-    txt = "[cellpy] The plan is that this cmd will download examples.\n"
+    else:
+        _run(file_name, debug, silent)
+
+
+def _run_journal(file_name, debug, silent):
+    print(f"running journal {file_name}")
+    print(f" --debug [{debug}]")
+    print(f" --silent [{silent}]")
+
+
+def _run(file_name, debug, silent):
+    print(f"running {file_name}")
+    print(f" --debug [{debug}]")
+    print(f" --silent [{silent}]")
+
+
+def _clone_repo(directory):
+    txt = "[cellpy] The plan is that this "
+    txt += "[cellpy] cmd will pull (clone) the cellpy repo.\n"
     txt += "[cellpy] For now it only prins the link to the git-hub\n"
     txt += "[cellpy] repository:\n"
     txt += "[cellpy]\n"
@@ -150,8 +241,7 @@ def examples():
     click.echo(txt)
 
 
-@click.command()
-def test():
+def _pull_tests(directory):
     txt = "[cellpy] The plan is that this cmd will run some tests.\n"
     txt += "[cellpy] For now it only prins the link to the git-hub\n"
     txt += "[cellpy] repository:\n"
@@ -161,20 +251,36 @@ def test():
     click.echo(txt)
 
 
-@click.command()
-@click.option('--journal', default=None)
-def run(journal):
-    txt = f"[cellpy] The plan is that this cmd will run a batch run\n"
-    txt += f"[cellpy] journal: {journal}\n"
+def _pull_examples(directory):
+    txt = "[cellpy] The plan is that this cmd will download examples.\n"
+    txt += "[cellpy] For now it only prins the link to the git-hub\n"
+    txt += "[cellpy] repository:\n"
+    txt += "[cellpy]\n"
+    txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
     txt += "[cellpy]\n"
     click.echo(txt)
 
 
+def _version():
+    txt = "[cellpy] version: " + str(VERSION)
+    click.echo(txt)
+
+
+def _configloc():
+    config_file_name = prmreader._get_prm_file()
+    click.echo("[cellpy] ->%s\n" % config_file_name)
+    if not os.path.isfile(config_file_name):
+        click.echo("[cellpy] File does not exist!")
+
+
+def _dump_params():
+    click.echo("[cellpy] Dumping parameters to screen:\n")
+    prmreader.info()
+
+
 cli.add_command(setup)
-cli.add_command(configloc)
-cli.add_command(version)
-cli.add_command(examples)
-cli.add_command(test)
+cli.add_command(info)
+cli.add_command(pull)
 cli.add_command(run)
 
 
