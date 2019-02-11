@@ -76,7 +76,7 @@ setup(name=name,
              },
     entry_points={
         'console_scripts': [
-            'cellpy=cellpy.cellpy_setup:cli',
+            'cellpy=cellpy.cli:cli',
         ],
     },
     #data_files=[userdir, ['cellpy/parameters/_cellpy_prms_default.ini']],
