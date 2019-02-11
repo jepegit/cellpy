@@ -5,13 +5,14 @@ import glob
 import fnmatch
 import pathlib
 import warnings
+import time
+
 from cellpy.parameters import prms
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyUnusedLocal
 def create_full_names(run_name, cellpy_file_extension=None,
                       raw_file_dir=None, cellpy_file_dir=None):
     cellpy_file_extension = "h5"
@@ -57,6 +58,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         run-file names (list) and cellpy-file-name (path).
     """
 
+    time_00 = time.time()
     cellpy_file_extension = "h5"
     res_extension = "res"
     version = 0.1
@@ -70,7 +72,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         cellpy_file_extension = cellpy_file_extension
 
     if prm_filename is not None:
-        warnings.warn("reading prm file disabled")
+        logging.debug("reading prm file disabled")
 
     if not all([raw_file_dir, cellpy_file_dir, file_name_format]):
         # import cellpy.parameters.prms as prms
@@ -122,25 +124,42 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
 
         if use_pathlib_path:
             logger.debug("using pathlib.Path")
-            run_files = pathlib.Path(raw_file_dir).glob(glob_text_raw)
-            if return_as_str_list:
-                run_files = [str(f.resolve()) for f in run_files]
-                run_files.sort()
+            if os.path.isdir(raw_file_dir):
+                run_files = pathlib.Path(raw_file_dir).glob(glob_text_raw)
+                if return_as_str_list:
+                    run_files = [str(f.resolve()) for f in run_files]
+                    run_files.sort()
+            else:
+                run_files = []
 
         else:
-            glob_text_raw_full = os.path.join(raw_file_dir, glob_text_raw)
-            run_files = glob.glob(glob_text_raw_full)
-            run_files.sort()
+            if os.path.isdir(raw_file_dir):
+                glob_text_raw_full = os.path.join(raw_file_dir, glob_text_raw)
+                run_files = glob.glob(glob_text_raw_full)
+                run_files.sort()
+            else:
+                run_files = []
 
+        logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return run_files, cellpy_file
 
     else:
         logger.debug("using cache in filefinder")
-        if len(cache) == 0:
-            cache = os.listdir(raw_file_dir)
-        run_files = [os.path.join(raw_file_dir, x) for x in cache if fnmatch.fnmatch(x, glob_text_raw)]
-        run_files.sort()
+        if os.path.isdir(raw_file_dir):
+            if len(cache) == 0:
+                cache = os.listdir(raw_file_dir)
+            run_files = [
+                os.path.join(
+                    raw_file_dir, x
+                ) for x in cache if fnmatch.fnmatch(
+                    x, glob_text_raw
+                )
+            ]
+            run_files.sort()
+        else:
+            run_files = []
 
+        logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return run_files, cellpy_file, cache
 
 

@@ -48,7 +48,7 @@ def test_ica_converter(dataset):
     converter.post_process_data()
 
 
-@pytest.mark.xfail(raises=NullData)
+@pytest.mark.xfail(raises=TypeError)
 def test_none_data():
     ica.dqdv(None, None)
 

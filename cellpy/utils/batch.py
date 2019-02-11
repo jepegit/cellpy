@@ -14,6 +14,8 @@ from cellpy.utils.batch_tools.dumpers import ram_dumper
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
+COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
+
 
 class Batch:
     def __init__(self, *args, **kwargs):
@@ -41,6 +43,15 @@ class Batch:
 
     def __str__(self):
         return str(self.experiment)
+
+    def show_pages(self):
+        return self.experiment.journal.pages.head()
+
+    @property
+    def view(self):
+        pages = self.experiment.journal.pages
+        pages = pages[COLUMNS_SELECTED_FOR_VIEW]
+        return pages
 
     @property
     def info_file(self):

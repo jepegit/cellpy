@@ -37,7 +37,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
                            f"\nDir: {log_dir}"
                            "\nUsing current directory instead: "
                            f"{os.getcwd()}")
-            warnings.warn(warning_txt)
+            logging.warning(warning_txt)
             log_dir = os.getcwd()
 
         for file_handler in ["error_file_handler", "info_file_handler",
