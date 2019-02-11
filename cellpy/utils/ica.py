@@ -23,6 +23,7 @@ METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 # TODO: @jepe - fitting of o-c curves and differentiation
 # TODO: @jepe - modeling and fitting
 # TODO: @jepe - full-cell
+# TODO: @jepe - binning method (assigned to Asbjoern)
 
 
 class Converter(object):
@@ -231,9 +232,11 @@ class Converter(object):
         if self.post_smoothing:
             points_fwhm = int(self.voltage_fwhm / voltage_step)
             sigma = np.amax([2, points_fwhm / 2])
-            self.incremental_capacity = gaussian_filter1d(incremental_capacity, sigma=sigma, order=self.gaussian_order,
-                                                     output=None, mode=self.gaussian_mode,
-                                                     cval=self.gaussian_cval, truncate=self.gaussian_truncate)
+            self.incremental_capacity = gaussian_filter1d(
+                incremental_capacity, sigma=sigma, order=self.gaussian_order,
+                mode=self.gaussian_mode,
+                cval=self.gaussian_cval, truncate=self.gaussian_truncate
+            )
 
         if self.normalise:
             area = simps(incremental_capacity, voltage)
