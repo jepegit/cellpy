@@ -74,7 +74,7 @@ If this is the first time you install ``cellpy``, it is recommended that you run
 This will install a ``_cellpy_prms_USER.config`` file in your home directory (USER = your user name).
 Edit this file and save it.
 
-You can restore your prms-file by running ``cellpy setup`` if needed (i.e. get a copy of the default file
+You can restore your prms-file by running ``cellpy setup`` if needed (*i.e.* get a copy of the default file
 copied to your user folder).
 
 .. note:: Since Arbin (at least some versions) uses access database files, you

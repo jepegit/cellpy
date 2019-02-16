@@ -1,46 +1,51 @@
 Using the batch utilities
 -------------------------
 
-First a short warning. This version of the batch utility should only be considered as an intermediate solution. A new
-batch utility is currently under development (jippi?).
+The steps given in this tutorial describes how to use the new version of the
+batch utility. The part presented here is chosen such that it resembles how
+the old utility worked. However, under the hood, the new batch utility is very
+different from the old. A more detailed guide will come soon.
 
-So, with that being said, here is a short description of how to use the current utility.
+So, with that being said, here is the promised description.
 
 Starting (setting things up)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Jupyter Notebooks is the recommended "tool" for running the cellpy batch feature. The first step is to import
-the `cellpy.utils.batch.Batch` class from ``cellpy`` and initialize it. The ``Batch`` class is a utility class for pipe-lining
-batch processing of cell cycle data.
+Jupyter Notebooks is the recommended "tool" for running the cellpy batch
+feature. The first step is to import the ``cellpy.utils.batch.Batch`` class from
+``cellpy``.  The ``Batch`` class is a utility class for
+pipe-lining batch processing of cell cycle data.
 
 
 .. code-block:: python
 
     from cellpy.utils import batch
-    b = batch.init()
-    # you can also give the name of the batch, the project name,
-    # the log-level, and the batch column number
-    # as parameters to the batch.init function, e.g.
-    # b = batch.init("batch_name", "project_name",
-    # default_log_level="INFO", batch_col=5)
+    from cellpy import prms
+    from cellpy import prmreader
 
-The next step is to set some parameters that `Batch` needs.
+
+The next step is to initialize it:
 
 .. code-block:: python
 
-    b.name = "experiment_set_01"
-    b.project = "new_exiting_chemistry"
+    project = "experiment_set_01"
+    name = "new_exiting_chemistry"
+    batch_col = "b01"
+    b = batch.init(name, project, batch_col=batch_col)
 
-    # set additional parameters if the defaults are not ok:
-    b.export_raw = True
-    b.export_cycles = True
-    b.export_ica = True
+and set some parameters that `Batch` needs:
+
+.. code-block:: python
+
+    # setting additional parameters if the defaults are not to your liking:
+    b.experiment.export_raw = True
+    b.experiment.export_cycles = True
+    b.experiment.export_ica = True
+    b.experiment.all_in_memory = True  # store all data in memory, defaults to False
     b.save_cellpy_file = True
+
     b.force_raw_file = False
     b.force_cellpy_file = True
-
-    # you also have access to cellpy´s main parameter structure
-    b.prms.Reader.cycle_mode = "cathode"
 
 Extracting meta-data
 ~~~~~~~~~~~~~~~~~~~~
@@ -50,16 +55,10 @@ and create an appropriate folder structure (`outdir/project_name/batch_name/raw_
 
 .. code-block:: python
 
+    # load info from your db and write the journal pages
     b.create_info_df()
-    # or load it from a previous run:
-    # filename = "../out_data/experiment_set_01/cellpy_batch_new_exiting_chemistry.json"
-    # b.load_info_df(filename)
-
     b.create_folder_structure()
 
-    # You can view your information DataFrame by the pandas head function:
-
-    b.info_df.head()
 
 Processing data
 ~~~~~~~~~~~~~~~
