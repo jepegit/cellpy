@@ -629,6 +629,9 @@ class ArbinLoader(Loader):
                 normal_df = pd.read_csv(temp_csv_filename_normal)
                 # filter on test ID
                 normal_df = normal_df[normal_df[self.headers_normal['test_id_txt']] == data.test_ID]
+                # sort on data point
+                if prms._sort_if_subprocess:
+                    normal_df = normal_df.sort_values(self.headers_normal['data_point_txt'])
                 length_of_test = normal_df.shape[0]
                 summary_df = pd.read_csv(temp_csv_filename_stats)
                 # clean up
