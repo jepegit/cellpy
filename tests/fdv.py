@@ -15,7 +15,7 @@ cellpy_data_dir = os.path.join(data_dir, "hdf5")
 db_dir = os.path.join(data_dir, "db")
 log_dir = os.path.join(data_dir, "log")
 default_prm_file = os.path.abspath(os.path.join(
-    current_file_path, "../cellpy/parameters/_cellpy_prms_default.conf"
+    data_dir, "_cellpy_prms_default.conf"
 ))
 
 

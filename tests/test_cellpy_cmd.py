@@ -1,5 +1,6 @@
 import click
 from click.testing import CliRunner
+import pytest
 
 from cellpy import log
 from cellpy import prms
@@ -69,32 +70,46 @@ def test_info_params():
     assert "prms.Paths.outdatadir" in result.output
 
 
-# def test_pull_tests():
-#     runner = CliRunner()
-#     result = runner.invoke(cli.cli, ["pull", "--tests"])
-#     print("\n", result.output)
-#     assert result.exit_code == 0
-#
-#
-# def test_pull_examples():
-#     runner = CliRunner()
-#     result = runner.invoke(cli.cli, ["pull", "--examples"])
-#     print("\n", result.output)
-#     assert result.exit_code == 0
+def test_pull_tests(tmp_path):
+    runner = CliRunner()
+    opts = list()
+    opts.append("pull")
+    opts.append("--tests")
+    opts.append("--directory")
+    opts.append(tmp_path)
+    opts.append("--password")
+    opts.append("env")
+    result = runner.invoke(cli.cli, opts)
+    print("\n", result.output)
+    assert result.exit_code == 0
 
 
-# def test_pull_clone():
-#     runner = CliRunner()
-#     result = runner.invoke(cli.cli, ["pull", "--clone"])
-#     print("\n", result.output)
-#     assert result.exit_code == 0
-# 
-#
-# def test_pull_custom_dir():
-#     runner = CliRunner()
-#     result = runner.invoke(cli.cli, ["pull", "--clone", "--directory", "MyDir"])
-#     print("\n", result.output)
-#     assert result.exit_code == 0
+def test_pull_examples(tmp_path):
+    runner = CliRunner()
+    opts = list()
+    opts.append("pull")
+    opts.append("--examples")
+    opts.append("--directory")
+    opts.append(tmp_path)
+    opts.append("--password")
+    opts.append("env")
+    result = runner.invoke(cli.cli, ["pull", "--examples"])
+    print("\n", result.output)
+    assert result.exit_code == 0
+
+
+def test_pull_clone():
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["pull", "--clone"])
+    print("\n", result.output)
+    assert result.exit_code == 0
+
+
+def test_pull_custom_dir():
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["pull", "--clone", "--directory", "MyDir"])
+    print("\n", result.output)
+    assert result.exit_code == 0
 
 
 def test_pull_help():
@@ -180,23 +195,3 @@ def test_cli_setup():
         )
         print(result.output)
         assert result.exit_code == 0
-
-
-# def test_cli_setup_interactive():
-#     runner = CliRunner()
-#     inputs = [
-#         " ",  # outdatadir
-#         " ",  # rawdatadir
-#         " ",  # cellpydatadir
-#         " ",  # logdir
-#         " ",  # db dir
-#         " ",  # db filename
-#         # "y",  # yes to making parent-dir
-#     ]
-#     input_str = "\n".join(inputs)
-#     # with runner.isolated_filesystem():
-#     result = runner.invoke(
-#         cli.cli, ["setup", "--dry-run", "--interactive"],
-#         input=input_str,
-#     )
-#     assert result.exit_code == 0

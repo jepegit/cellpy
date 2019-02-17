@@ -14,7 +14,8 @@ DEFAULT_FILENAME_END = ".conf"
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
-PASSWORD = "password"
+USER = "jepegit"
+GITHUB_PWD_VAR_NAME = "GD_PWD"
 GITHUB_SIZE_LIMIT = 1_000_000
 
 
@@ -51,14 +52,22 @@ def get_user_dir():
     return user_dir
 
 
+def get_dst_file(user_dir, init_filename):
+    dst_file = os.path.join(user_dir, init_filename)
+    return dst_file
+
+
 def get_user_name():
     """get the user name of the current user (cross platform)"""
     return getpass.getuser()
 
 
-def create_custom_init_filename():
+def create_custom_init_filename(user_name=None):
     """creates a custom prms filename"""
-    return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
+    if user_name is None:
+        return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
+    else:
+        return DEFAULT_FILENAME_START + user_name + DEFAULT_FILENAME_END
 
 
 def check_if_needed_modules_exists():
@@ -113,14 +122,29 @@ def cli():
                        " directly after this option (if used). Example:\n"
                        " $ cellpy setup -d 'MyDir'"
 )
-def setup(interactive, not_relative, dry_run, reset, root_dir):
+@click.option(
+    '--testuser', '-t',
+    default=None, help="Fake name for fake user (for tesing)",
+)
+def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     """This will help you to setup cellpy."""
 
-    click.echo("[cellpy] setup")
+    click.echo("[cellpy] (setup)")
 
     # generate variables
     init_filename = create_custom_init_filename()
     userdir, dst_file = get_user_dir_and_dst(init_filename)
+
+    if testuser:
+        if not root_dir:
+            root_dir = os.getcwd()
+
+        click.echo(f"[cellpy] (setup) DEV-MODE testuser: {testuser}")
+        init_filename = create_custom_init_filename(testuser)
+        userdir = root_dir
+        dst_file = get_dst_file(userdir, init_filename)
+        click.echo(f"[cellpy] (setup) DEV-MODE userdir: {userdir}")
+        click.echo(f"[cellpy] (setup) DEV-MODE dst_file: {dst_file}")
 
     if not pathlib.Path(dst_file).is_file():
         reset = True
@@ -231,16 +255,16 @@ def _update_paths(custom_dir=None, relative_home=True,
 
 
 def _ask_about_path(q, p):
-    click.echo(f"[cellpy] input {q}:\n[cellpy] [{p}]")
-    new_path = input("[cellpy] >>> ").strip()
+    click.echo(f"\n[cellpy] (setup) input {q}:\n[cellpy] (setup) [{p}]")
+    new_path = input("[cellpy] (setup) >>> ").strip()
     if not new_path:
         new_path = p
     return pathlib.Path(new_path)
 
 
 def _ask_about_name(q, n):
-    click.echo(f"[cellpy] input {q}:\n[cellpy] [{n}]")
-    new_name = input("[cellpy] >>> ").strip()
+    click.echo(f"[cellpy] (setup) input {q}:\n[cellpy] (setup) [{n}]")
+    new_name = input("[cellpy] (setup) >>> ").strip()
     if not new_name:
         new_name = n
     return new_name
@@ -254,7 +278,8 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         if confirm:
             if not o_parent.is_dir():
                 create_dir = input(
-                    f"[cellpy] {o_parent} does not exist. Create it [y]/n ?"
+                    f"[cellpy] (setup) {o_parent} does not exist."
+                    f" Create it [y]/n ?"
                 )
                 if not create_dir:
                     create_dir = True
@@ -266,7 +291,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         if create_dir:
             o.mkdir(parents=parents, exist_ok=exist_ok)
         else:
-            click.echo(f"[cellpy] Could not create {o}")
+            click.echo(f"[cellpy] (setup) Could not create {o}")
     return o
 
 
@@ -280,13 +305,13 @@ def _check():
 
 def _write_config_file(userdir, dst_file, init_filename, dry_run):
     click.echo(" update configuration ".center(80, "-"))
-    click.echo("[cellpy] Writing configurations to user directory:")
+    click.echo("[cellpy] (setup) Writing configurations to user directory:")
     click.echo(f"\n         {userdir}\n")
 
     if os.path.isfile(dst_file):
-        click.echo("[cellpy] File already exists!")
+        click.echo("[cellpy] (setup) File already exists!")
         click.echo(
-            "[cellpy] Keeping most of the old configuration parameters"
+            "[cellpy] (setup) Keeping most of the old configuration parameters"
         )
     try:
         if dry_run:
@@ -298,9 +323,10 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
             save_prm_file(dst_file)
 
     except ConfigFileNotWritten:
-        click.echo("[cellpy] Something went wrong! Could not write the file")
+        click.echo("[cellpy] (setup) Something went wrong!"
+                   " Could not write the file")
         click.echo(
-            "[cellpy] Trying to write a file"
+            "[cellpy] (setup) Trying to write a file"
             + f"called {DEFAULT_FILENAME} instead")
 
         try:
@@ -314,14 +340,15 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
                 save_prm_file(dst_file)
 
         except ConfigFileNotWritten:
-            _txt = "[cellpy] No, that did not work either.\n"
-            _txt += "[cellpy] Well, guess you have to talk to the developers."
+            _txt = "[cellpy] (setup) No, that did not work either.\n"
+            _txt += "[cellpy] (setup) Well, guess you have to talk to" \
+                    " the developers."
             click.echo(_txt)
     else:
         click.echo(
-            f"[cellpy] Configuration file written!")
+            f"[cellpy] (setup) Configuration file written!")
         click.echo(
-            f"[cellpy] OK! Now you can edit it. For example by "
+            f"[cellpy] (setup) OK! Now you can edit it. For example by "
             f"issuing \n\n         [your-favourite-editor] {init_filename}\n")
 
 
@@ -362,33 +389,6 @@ def info(version, configloc, params, check):
     if complete_info:
         _version()
         _configloc()
-
-
-@click.command()
-@click.option(
-    '--tests', '-t', is_flag=True, help="Download test-files from repo."
-)
-@click.option(
-    '--examples', '-e', is_flag=True, help="Download example-files from repo."
-)
-@click.option(
-    '--clone', '-c', is_flag=True, help="Clone the full repo."
-)
-@click.option(
-    '--directory', '-d', default=None, help="Save into custom directory DIR"
-)
-def pull(tests, examples, clone, directory):
-    if directory is not None:
-        click.echo(f"[cellpy] (pull) custom directory: {directory}")
-    else:
-        directory = pathlib.Path(prmreader.prms.Paths.examplesdir)
-    if clone:
-        _clone_repo(directory)
-    else:
-        if tests:
-            _pull_tests(directory)
-        if examples:
-            _pull_examples(directory)
 
 
 @click.command()
@@ -440,7 +440,40 @@ def _run(file_name, debug, silent):
     print(f" --silent [{silent}]")
 
 
-def _clone_repo(directory):
+@click.command()
+@click.option(
+    '--tests', '-t', is_flag=True, help="Download test-files from repo."
+)
+@click.option(
+    '--examples', '-e', is_flag=True, help="Download example-files from repo."
+)
+@click.option(
+    '--clone', '-c', is_flag=True, help="Clone the full repo."
+)
+@click.option(
+    '--directory', '-d', default=None, help="Save into custom directory DIR"
+)
+@click.option(
+    '--password', '-p', default=None, help="Password option for the repo"
+)
+def pull(tests, examples, clone, directory, password):
+    if directory is not None:
+        click.echo(f"[cellpy] (pull) custom directory: {directory}")
+    else:
+        directory = pathlib.Path(prmreader.prms.Paths.examplesdir)
+
+    if password is not None:
+        print("DEV MODE: password provided")
+    if clone:
+        _clone_repo(directory, password)
+    else:
+        if tests:
+            _pull_tests(directory, password)
+        if examples:
+            _pull_examples(directory, password)
+
+
+def _clone_repo(directory, password):
     txt = "[cellpy] The plan is that this "
     txt += "[cellpy] cmd will pull (clone) the cellpy repo.\n"
     txt += "[cellpy] For now it only prins the link to the git-hub\n"
@@ -451,19 +484,19 @@ def _clone_repo(directory):
     click.echo(txt)
 
 
-def _pull_tests(directory):
+def _pull_tests(directory, pw=None):
     txt = ("[cellpy] (pull) Pulling tests from",
            " https://github.com/jepegit/cellpy.git")
     click.echo(txt)
-    _pull(gdirpath="tests", rootpath=directory)
-    _pull(gdirpath="testdata", rootpath=directory)
+    _pull(gdirpath="tests", rootpath=directory, pw=pw)
+    _pull(gdirpath="testdata", rootpath=directory, pw=pw)
 
 
-def _pull_examples(directory):
+def _pull_examples(directory, pw):
     txt = ("[cellpy] (pull) Pulling examples from",
            " https://github.com/jepegit/cellpy.git")
     click.echo(txt)
-    _pull(gdirpath="examples", rootpath=directory)
+    _pull(gdirpath="examples", rootpath=directory, pw=pw)
 
 
 def _version():
@@ -529,16 +562,18 @@ def _get_user_name():
     return "jepegit"
 
 
-def _get_pw(i=True):
-    if i:
+def _get_pw(method):
+    if method == "ask":
         return getpass.getpass()
+    elif method == "env":
+        return os.environ.get(GITHUB_PWD_VAR_NAME, None)
+
     else:
-        return PASSWORD
+        return None
 
 
 def _pull(gdirpath="examples", rootpath=None,
           u=None, pw=None):
-
     from github import Github
 
     if rootpath is None:
@@ -546,10 +581,19 @@ def _pull(gdirpath="examples", rootpath=None,
 
     ndirpath = rootpath / gdirpath
 
-    if u == "ask":
+    if pw is not None:
+        print(" DEV MODE ".center(80, "-"))
         u = _get_user_name()
-    if pw == "ask":
-        pw = _get_pw()
+        if pw == "ask":
+            print("   - ask for password")
+            pw = _get_pw(pw)
+        elif pw == "env":
+            print("   - check environ for password ")
+            pw = _get_pw(pw)
+            print("   - got something")
+            if pw is None:
+                print("   - only None")
+                u = None
 
     g = Github(u, pw)
     repo = g.get_repo(REPO)
@@ -591,11 +635,50 @@ def _main():
     save_prm_file(destination_file_name + "_dummy")
 
     print(" Testing setup ".center(80, "="))
-    #setup(["--interactive", "--root-dir", "new_cellpy_data"])
     setup(["--interactive", "--reset"])
+
+
+def cli_setup_interactive():
+    from click.testing import CliRunner
+    root_dir = "/Users/jepe/scripting/tmp/cellpy_test_user"
+    testuser = "tester"
+    init_filename = create_custom_init_filename(testuser)
+    dst_file = get_dst_file(root_dir, init_filename)
+    init_file = pathlib.Path(dst_file)
+    opts = list()
+    opts.append("setup")
+    opts.append("-i")
+    # opts.append("-nr")
+    opts.append("-r")
+    opts.extend(["-d", root_dir])
+    opts.extend(["-t", testuser])
+
+    input_str = "\n"  # out
+    input_str += "\n"  # rawdatadir
+    input_str += "\n"  # cellpyfiles
+    input_str += "\n"  # log
+    input_str += "\n"  # examples
+    input_str += "\n"  # dbfolder
+    input_str += "\n"  # dbfile
+    runner = CliRunner()
+    result = runner.invoke(cli, opts, input=input_str)
+
+    print(" out ".center(80, "."))
+    print(result.output)
+    from pprint import pprint
+    pprint(prmreader.prms.Paths)
+    print(" conf-file ".center(80, "."))
+    print(init_file)
+    print()
+    with init_file.open() as f:
+        for line in f.readlines():
+            print(line.strip())
 
 
 if __name__ == "__main__":
     print("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
-    _main_pull()
+    cli_setup_interactive()
+    print("ok")
+
+
 
