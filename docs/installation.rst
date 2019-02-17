@@ -1,5 +1,3 @@
-.. highlight:: shell
-
 ============
 Installation
 ============
@@ -23,6 +21,8 @@ To install ``cellpy``, run this command in your terminal:
 
     $ pip install cellpy
 
+You can install pre-releases by adding the ``--pre`` flag.
+
 If you are on Windows and plan to work with Arbin files, we recommend that you try
 to install `pyodbc`_ (Python ODBC bridge). Either by using pip or from conda-forge:
 
@@ -37,8 +37,6 @@ or:
     $ conda install -c conda-forge pyodbc
 
 .. _pyodbc: https://github.com/mkleehammer/pyodbc/
-
-This is the preferred method to install ``cellpy``, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.

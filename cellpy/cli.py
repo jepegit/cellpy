@@ -1,4 +1,5 @@
 import os
+import logging
 import getpass
 import click
 import pkg_resources
@@ -12,7 +13,9 @@ DEFAULT_FILENAME_START = "_cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 VERSION = cellpy._version.__version__
-REPO = "git-repo-name"
+REPO = "jepegit/cellpy"
+PASSWORD = "password"
+GITHUB_SIZE_LIMIT = 1_000_000
 
 
 def save_prm_file(prm_filename):
@@ -37,10 +40,15 @@ def get_default_config_file_path(init_filename=None):
 
 def get_user_dir_and_dst(init_filename):
     """gets the name of the user directory and full prm filepath"""
-    user_dir = os.path.abspath(os.path.expanduser("~"))
-    dst_dir = user_dir
-    dst_file = os.path.join(dst_dir, init_filename)
+    user_dir = get_user_dir()
+    dst_file = os.path.join(user_dir, init_filename)
     return user_dir, dst_file
+
+
+def get_user_dir():
+    """gets the name of the user directory"""
+    user_dir = os.path.abspath(os.path.expanduser("~"))
+    return user_dir
 
 
 def get_user_name():
@@ -114,6 +122,9 @@ def setup(interactive, not_relative, dry_run, reset, root_dir):
     init_filename = create_custom_init_filename()
     userdir, dst_file = get_user_dir_and_dst(init_filename)
 
+    if not pathlib.Path(dst_file).is_file():
+        reset = True
+
     if interactive:
         click.echo(" interactive mode ".center(80, "-"))
         _update_paths(root_dir, not not_relative, dry_run=dry_run, reset=reset)
@@ -137,11 +148,13 @@ def _update_paths(custom_dir=None, relative_home=True,
             h = h / custom_dir
         else:
             h = custom_dir
+
     if not reset:
         outdatadir = pathlib.Path(prmreader.prms.Paths.outdatadir)
         rawdatadir = pathlib.Path(prmreader.prms.Paths.rawdatadir)
         cellpydatadir = pathlib.Path(prmreader.prms.Paths.cellpydatadir)
         filelogdir = pathlib.Path(prmreader.prms.Paths.filelogdir)
+        examplesdir = pathlib.Path(prmreader.prms.Paths.examplesdir)
         db_path = pathlib.Path(prmreader.prms.Paths.db_path)
         db_filename = prmreader.prms.Paths.db_filename
     else:
@@ -149,6 +162,7 @@ def _update_paths(custom_dir=None, relative_home=True,
         rawdatadir = "raw"
         cellpydatadir = "cellpyfiles"
         filelogdir = "logs"
+        examplesdir = "examples"
         db_path = "db"
         db_filename = "cellpy_db.xlsx"
         if not custom_dir:
@@ -158,6 +172,7 @@ def _update_paths(custom_dir=None, relative_home=True,
     rawdatadir = h / rawdatadir
     cellpydatadir = h / cellpydatadir
     filelogdir = h / filelogdir
+    examplesdir = h / examplesdir
     db_path = h / db_path
 
     outdatadir = _ask_about_path(
@@ -180,6 +195,11 @@ def _update_paths(custom_dir=None, relative_home=True,
         filelogdir,
     )
 
+    examplesdir = _ask_about_path(
+        "where to download cellpy examples and tests",
+        examplesdir,
+    )
+
     db_path = _ask_about_path(
         "what folder your db file lives in",
         db_path,
@@ -191,7 +211,10 @@ def _update_paths(custom_dir=None, relative_home=True,
     )
 
     # update folders based on suggestions
-    for d in [outdatadir, rawdatadir, cellpydatadir, filelogdir, db_path]:
+    for d in [
+        outdatadir, rawdatadir, cellpydatadir,
+        filelogdir, examplesdir, db_path
+    ]:
         if not dry_run:
             _create_dir(d)
         else:
@@ -202,6 +225,7 @@ def _update_paths(custom_dir=None, relative_home=True,
     prmreader.prms.Paths.rawdatadir = str(rawdatadir)
     prmreader.prms.Paths.cellpydatadir = str(cellpydatadir)
     prmreader.prms.Paths.filelogdir = str(filelogdir)
+    prmreader.prms.Paths.examplesdir = str(examplesdir)
     prmreader.prms.Paths.db_path = str(db_path)
     prmreader.prms.Paths.db_filename = str(db_filename)
 
@@ -355,7 +379,9 @@ def info(version, configloc, params, check):
 )
 def pull(tests, examples, clone, directory):
     if directory is not None:
-        click.echo(f"[cellpy] Custom directory: {directory}")
+        click.echo(f"[cellpy] (pull) custom directory: {directory}")
+    else:
+        directory = pathlib.Path(prmreader.prms.Paths.examplesdir)
     if clone:
         _clone_repo(directory)
     else:
@@ -381,16 +407,16 @@ def pull(tests, examples, clone, directory):
 def run(journal, debug, silent, file_name):
     print("RUNNING".center(80, "*"))
     if not file_name:
-        click.echo("[cellpy] No filename provided.")
+        click.echo("[cellpy] (run) No filename provided.")
         return
     txt = f"[cellpy] The plan is that this cmd will run a batch run\n"
     txt += f"[cellpy] journal: {journal}\n"
 
     if debug:
-        txt += "[cellpy] debug mode on"
+        txt += "[cellpy] (run) debug mode on"
 
     if silent:
-        txt += "[cellpy] silent mode on"
+        txt += "[cellpy] (run) silent mode on"
 
     txt += "[cellpy]\n"
     click.echo(txt)
@@ -426,23 +452,18 @@ def _clone_repo(directory):
 
 
 def _pull_tests(directory):
-    txt = "[cellpy] The plan is that this cmd will run some tests.\n"
-    txt += "[cellpy] For now it only prins the link to the git-hub\n"
-    txt += "[cellpy] repository:\n"
-    txt += "[cellpy]\n"
-    txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
-    txt += "[cellpy]\n"
+    txt = ("[cellpy] (pull) Pulling tests from",
+           " https://github.com/jepegit/cellpy.git")
     click.echo(txt)
+    _pull(gdirpath="tests", rootpath=directory)
+    _pull(gdirpath="testdata", rootpath=directory)
 
 
 def _pull_examples(directory):
-    txt = "[cellpy] The plan is that this cmd will download examples.\n"
-    txt += "[cellpy] For now it only prins the link to the git-hub\n"
-    txt += "[cellpy] repository:\n"
-    txt += "[cellpy]\n"
-    txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
-    txt += "[cellpy]\n"
+    txt = ("[cellpy] (pull) Pulling examples from",
+           " https://github.com/jepegit/cellpy.git")
     click.echo(txt)
+    _pull(gdirpath="examples", rootpath=directory)
 
 
 def _version():
@@ -468,6 +489,98 @@ cli.add_command(pull)
 cli.add_command(run)
 
 
+def _download_g_blob(name, local_path):
+    import urllib.request
+    dirs = local_path.parent
+    if not dirs.is_dir():
+        click.echo(f"[cellpy] (pull) creating dir: {dirs}")
+        dirs.mkdir(parents=True)
+
+    filename, headers = urllib.request.urlretrieve(
+        name.download_url,
+        filename=local_path
+    )
+    click.echo(f"[cellpy] (pull) downloaded blob: {filename}")
+
+
+def _download_g_file(repo, name, local_path):
+    file_content = repo.get_file_contents(name)
+    dirs = local_path.parent
+
+    if not dirs.is_dir():
+        click.echo(f"[cellpy] (pull) creating dir: {dirs}")
+        dirs.mkdir(parents=True)
+    with local_path.open("wb") as ofile:
+        ofile.write(file_content.decoded_content)
+        click.echo(f"[cellpy] (pull) downloaded: {name}")
+
+
+def _parse_g_dir(repo, gdirpath):
+    """parses a repo directory two-levels deep"""
+    for f in repo.get_contents(gdirpath):
+        if f.type == "dir":
+            for sf in repo.get_contents(f.path):
+                yield sf
+        else:
+            yield f
+
+
+def _get_user_name():
+    return "jepegit"
+
+
+def _get_pw(i=True):
+    if i:
+        return getpass.getpass()
+    else:
+        return PASSWORD
+
+
+def _pull(gdirpath="examples", rootpath=None,
+          u=None, pw=None):
+
+    from github import Github
+
+    if rootpath is None:
+        rootpath = prmreader.prms.Paths.examplesdir
+
+    ndirpath = rootpath / gdirpath
+
+    if u == "ask":
+        u = _get_user_name()
+    if pw == "ask":
+        pw = _get_pw()
+
+    g = Github(u, pw)
+    repo = g.get_repo(REPO)
+
+    click.echo(f"[cellpy] (pull) pulling {gdirpath}")
+    click.echo(f"[cellpy] (pull) -> {ndirpath}")
+
+    if not ndirpath.is_dir():
+        click.echo(f"[cellpy] (pull) creating dir: {ndirpath}")
+        ndirpath.mkdir(parents=True)
+
+    for gfile in _parse_g_dir(repo, gdirpath):
+        gfilename = pathlib.Path(gfile.path)
+        nfilename = rootpath / gfilename
+
+        if gfile.size > GITHUB_SIZE_LIMIT:
+            _download_g_blob(gfile, nfilename)
+
+        else:
+            _download_g_file(repo, str(gfilename), nfilename)
+
+
+def _main_pull():
+    rootpath = pathlib.Path("/Users/jepe/scripting/tmp/cellpy_test_user")
+    _pull_examples(rootpath)
+    _pull_tests(rootpath)
+    # _pull(gdirpath="examples", rootpath=rootpath, u="ask", pw="ask")
+    # _pull(gdirpath="tests", rootpath=rootpath, u="ask", pw="ask")
+    # _pull(gdirpath="testdata", rootpath=rootpath, u="ask", pw="ask")
+
+
 def _main():
     file_name = create_custom_init_filename()
     print(file_name)
@@ -483,6 +596,6 @@ def _main():
 
 
 if __name__ == "__main__":
-    print("\n\n", " RUNNING MAIN ".center(80, "*"), "\n")
-    _main()
+    print("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
+    _main_pull()
 
