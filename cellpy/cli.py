@@ -4,6 +4,7 @@ import getpass
 import click
 import pkg_resources
 import pathlib
+from github import Github
 
 from cellpy.parameters import prmreader
 from cellpy.exceptions import ConfigFileNotWritten
@@ -574,7 +575,6 @@ def _get_pw(method):
 
 def _pull(gdirpath="examples", rootpath=None,
           u=None, pw=None):
-    from github import Github
 
     if rootpath is None:
         rootpath = prmreader.prms.Paths.examplesdir

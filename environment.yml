@@ -15,6 +15,7 @@ dependencies:
   - setuptools
   - pyyaml
   - pyodbc
+  - PyGithub
   - pip:
     - lmfit
     - python-box

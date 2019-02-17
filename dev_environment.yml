@@ -19,6 +19,7 @@ dependencies:
   - wheel
   - flake8
   - Sphinx
+  - PyGithub
   - pip:
     - lmfit
     - python-box
