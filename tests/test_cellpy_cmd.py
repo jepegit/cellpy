@@ -81,10 +81,16 @@ def test_pull_tests(tmp_path):
     opts.append("env")
     result = runner.invoke(cli.cli, opts)
     print("\n", result.output)
-    assert result.exit_code == 0
+
+    if result.exception:
+        print(result.exception)
+        assert result.exception.status == 403
+    else:
+        assert result.exit_code == 0
 
 
 def test_pull_examples(tmp_path):
+    import github
     runner = CliRunner()
     opts = list()
     opts.append("pull")
@@ -95,7 +101,12 @@ def test_pull_examples(tmp_path):
     opts.append("env")
     result = runner.invoke(cli.cli, ["pull", "--examples"])
     print("\n", result.output)
-    assert result.exit_code == 0
+
+    if result.exception:
+        print(result.exception)
+        assert result.exception.status == 403
+    else:
+        assert result.exit_code == 0
 
 
 def test_pull_clone():

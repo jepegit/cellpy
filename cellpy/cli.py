@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import getpass
 import click
@@ -613,13 +614,16 @@ def _pull(gdirpath="examples", rootpath=None,
             _download_g_blob(gfile, nfilename)
 
         else:
-            _download_g_file(repo, str(gfilename), nfilename)
+            _download_g_file(repo, gfilename.as_posix(), nfilename)
 
 
 def _main_pull():
-    rootpath = pathlib.Path("/Users/jepe/scripting/tmp/cellpy_test_user")
-    _pull_examples(rootpath)
-    _pull_tests(rootpath)
+    if sys.platform == "win32":
+        rootpath = pathlib.Path(r"C:\Temp\cellpy_user")
+    else:
+        rootpath = pathlib.Path("/Users/jepe/scripting/tmp/cellpy_test_user")
+    _pull_examples(rootpath, pw="env")
+    _pull_tests(rootpath, pw="env")
     # _pull(gdirpath="examples", rootpath=rootpath, u="ask", pw="ask")
     # _pull(gdirpath="tests", rootpath=rootpath, u="ask", pw="ask")
     # _pull(gdirpath="testdata", rootpath=rootpath, u="ask", pw="ask")
@@ -638,9 +642,12 @@ def _main():
     setup(["--interactive", "--reset"])
 
 
-def cli_setup_interactive():
+def _cli_setup_interactive():
     from click.testing import CliRunner
-    root_dir = "/Users/jepe/scripting/tmp/cellpy_test_user"
+    if sys.platform == "win32":
+        root_dir = r"C:\Temp\cellpy_user"
+    else:
+        root_dir = "/Users/jepe/scripting/tmp/cellpy_test_user"
     testuser = "tester"
     init_filename = create_custom_init_filename(testuser)
     dst_file = get_dst_file(root_dir, init_filename)
@@ -677,7 +684,9 @@ def cli_setup_interactive():
 
 if __name__ == "__main__":
     print("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
-    cli_setup_interactive()
+    #_cli_setup_interactive()
+    _main_pull()
+
     print("ok")
 
 
