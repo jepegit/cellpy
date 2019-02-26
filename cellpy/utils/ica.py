@@ -372,16 +372,71 @@ def dqdv_cycles(cycles):
     return ica_df
 
 
-def dqdv(voltage, capacity):
+def dqdv(voltage, capacity, voltage_fwhm=0.01, pre_smoothing=True, post_smoothing=True, post_normalization=True,
+         interpolation_method=None, gaussian_order=None, gaussian_mode=None, gaussian_cval=None,
+         gaussian_truncate=None, points_pr_split=None, savgol_filter_window_divisor_default=None,
+         savgol_filter_window_order=None):
+    """Convenience functions for creating dq-dv data from given capacity and voltage data.
+
+    Args:
+        voltage:
+        capacity:
+        voltage_fwhm:
+        pre_smoothing:
+        post_smoothing:
+        post_normalization:
+        interpolation_method:
+        gaussian_order:
+        gaussian_mode:
+        gaussian_cval:
+        gaussian_truncate:
+        points_pr_split:
+        savgol_filter_window_divisor_default:
+        savgol_filter_window_order:
+
+    Returns: voltage, dqdv
+
+    """
     """Convenience functions for creating dq-dv data from given capacity and
     voltage data"""
 
     converter = Converter()
+
+    converter.pre_smoothing = pre_smoothing
+    converter.post_smoothing = post_smoothing
+    converter.normalise = post_normalization
+    converter.voltage_fwhm = voltage_fwhm
+
+    if savgol_filter_window_divisor_default is not None:
+        converter.savgol_filter_window_divisor_default = savgol_filter_window_divisor_default
+
+    if savgol_filter_window_order is not None:
+        converter.savgol_filter_window_order = savgol_filter_window_order
+
+    if gaussian_mode is not None:
+        converter.gaussian_mode = gaussian_mode
+
+    if gaussian_order is not None:
+        converter.gaussian_order = gaussian_order
+
+    if gaussian_truncate is not None:
+        converter.gaussian_truncate = gaussian_truncate
+
+    if gaussian_cval is not None:
+        converter.gaussian_cval = gaussian_cval
+
+    if interpolation_method is not None:
+        converter.interpolation_method = interpolation_method
+
+    if points_pr_split is not None:
+        converter.points_pr_split = points_pr_split
+
     converter.set_data(capacity, voltage)
     converter.inspect_data()
     converter.pre_process_data()
     converter.increment_data()
     converter.post_process_data()
+
     return converter.voltage_processed, converter.incremental_capacity
 
 
