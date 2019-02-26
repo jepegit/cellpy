@@ -134,3 +134,4 @@ def test_humanize_bytes():
 def teardown_module():
     import shutil
     shutil.rmtree(fdv.output_dir)
+
