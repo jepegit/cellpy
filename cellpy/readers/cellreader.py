@@ -163,7 +163,7 @@ class CellpyData(object):
             prms.Reader.force_step_table_creation
         self.force_all = prms.Reader.force_all
         self.sep = prms.Reader.sep
-        self.cycle_mode = prms.Reader.cycle_mode
+        self._cycle_mode = prms.Reader.cycle_mode
         # self.max_res_filesize = prms.Reader.max_res_filesize
         self.load_only_summary = prms.Reader.load_only_summary
         self.select_minimal = prms.Reader.select_minimal
@@ -310,11 +310,17 @@ class CellpyData(object):
         log.setup_logging(default_level="DEBUG")
 
     def set_cycle_mode(self, cycle_mode):
-        """set the cycle mode.
+        """set the cycle mode"""
+        self._cycle_mode = cycle_mode
 
-        (will be deprecated soon - use prms.Reader.cycle_mode = "anode" etc.)"""
-        # should use proper python 'setting' (decorator etc)
-        self.cycle_mode = cycle_mode
+    @property
+    def cycle_mode(self):
+        return self._cycle_mode
+
+    @cycle_mode.setter
+    def cycle_mode(self, cycle_mode):
+        self.logger.debug(f"-> cycle_mode: {cycle_mode}")
+        self._cycle_mode = cycle_mode
 
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
@@ -2584,7 +2590,7 @@ class CellpyData(object):
                 prev_end = shift
                 initial = False
 
-            if self.cycle_mode == "anode":
+            if self._cycle_mode == "anode":
                 _first_step_c = dc
                 _first_step_v = dv
                 _last_step_c = cc
@@ -3543,11 +3549,12 @@ class CellpyData(object):
         dfsummary[cumcharge_title] = dfsummary[charge_title].cumsum()
 
         if self.cycle_mode == "anode":
-            self.logger.info("assuming cycling anode half-cell (discharge "
-                             "before charge)")
+            self.logger.info("assuming cycling in anode half-cell (discharge "
+                             "before charge) mode")
             _first_step_txt = discharge_title
             _second_step_txt = charge_title
         else:
+            self.logger.info("assuming cycling in full-cell / cathode mode")
             _first_step_txt = charge_title
             _second_step_txt = discharge_title
 
@@ -3689,7 +3696,7 @@ class CellpyData(object):
             ocv1_type = 'ocvrlx_up'
             ocv2_type = 'ocvrlx_down'
 
-            if not self.cycle_mode == 'anode':
+            if not self._cycle_mode == 'anode':
                 ocv2_type = 'ocvrlx_up'
                 ocv1_type = 'ocvrlx_down'
 
