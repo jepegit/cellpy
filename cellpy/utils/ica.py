@@ -162,7 +162,7 @@ class Converter(object):
         """perform some pre-processing of the data (i.e. interpolation)"""
         capacity = self.capacity
         voltage = self.voltage
-        len_capacity = self.len_capacity
+        len_capacity = self.len_capacity  # TODO: include option for changing this as option for more/less points
         # len_voltage = self.len_voltage
 
         f = interp1d(capacity, voltage, kind=self.interpolation_method)
@@ -172,6 +172,7 @@ class Converter(object):
         self.voltage_preprocessed = f(self.capacity_preprocessed)
 
         if self.pre_smoothing:
+            logging.debug("using pre-smoothing")
             savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_capacity / 5))
             savgol_filter_window_length = int(len_capacity / savgol_filter_window_divisor)
 
@@ -230,6 +231,8 @@ class Converter(object):
             voltage_step = self.voltage_inverted_step
 
         if self.post_smoothing:
+            logging.debug("post smoothing")
+            logging.debug(f"using voltage fwhm: {self.voltage_fwhm}")
             points_fwhm = int(self.voltage_fwhm / voltage_step)
             sigma = np.amax([2, points_fwhm / 2])
             self.incremental_capacity = gaussian_filter1d(
@@ -401,17 +404,28 @@ def dqdv(voltage, capacity, voltage_fwhm=0.01, pre_smoothing=True, post_smoothin
     voltage data"""
 
     converter = Converter()
-
+    logging.debug("dqdv - starting")
+    logging.debug("dqdv - created Converter obj")
     converter.pre_smoothing = pre_smoothing
     converter.post_smoothing = post_smoothing
     converter.normalise = post_normalization
     converter.voltage_fwhm = voltage_fwhm
+    logging.debug(f"converter.pre_smoothing: {converter.pre_smoothing}")
+    logging.debug(f"converter.post_smoothing: {converter.post_smoothing}")
+    logging.debug(f"converter.normalise: {converter.normalise}")
+    logging.debug(f"converter.voltage_fwhm: {converter.voltage_fwhm}")
 
     if savgol_filter_window_divisor_default is not None:
         converter.savgol_filter_window_divisor_default = savgol_filter_window_divisor_default
 
+        logging.debug(f"converter.savgol_filter_window_divisor_default: "
+                      f"{converter.savgol_filter_window_divisor_default}")
+
     if savgol_filter_window_order is not None:
         converter.savgol_filter_window_order = savgol_filter_window_order
+
+        logging.debug(f"converter.savgol_filter_window_order: "
+                      f"{converter.savgol_filter_window_order}")
 
     if gaussian_mode is not None:
         converter.gaussian_mode = gaussian_mode
