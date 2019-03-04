@@ -394,6 +394,8 @@ class CellpyData(object):
 
         ids_cellpy_file = self._check_cellpy_file(cellpyfile)
 
+        self.logger.debug(f"cellpyfile ids: {ids_cellpy_file}")
+
         if not ids_cellpy_file:
             # self.logger.debug("hdf5 file does not exist - needs updating")
             return False
@@ -448,8 +450,11 @@ class CellpyData(object):
         if not os.path.isfile(filename):
             self.logger.debug("cellpy-file does not exist")
             return None
-
-        store = pd.HDFStore(filename)
+        try:
+            store = pd.HDFStore(filename)
+        except Exception as e:
+            self.logger.debug(f"could not open cellpy-file ({e})")
+            return None
         try:
             fidtable = store.select("CellpyData/fidtable")
         except KeyError:
@@ -482,10 +487,9 @@ class CellpyData(object):
                     ids[name] = int(fid.last_modified)
                 else:
                     ids[name] = int(fid.last_accessed)
-
+            return ids
         else:
-            ids = dict()
-        return ids
+            return None
 
     @staticmethod
     def _compare_ids(ids_res, ids_cellpy_file):
@@ -603,31 +607,49 @@ class CellpyData(object):
         set_number = 0
         test = None
         counter = 0
+        self.logger.debug("start iterating through file(s)")
         for f in self.file_names:
-            self.logger.debug("loading raw file: {}".format(f))
-            new_tests = raw_file_loader(f, **kwargs)  # this should now work
-            if test is not None:
-                test[set_number] = self._append(test[set_number],
-                                                new_tests[set_number])
-                self.logger.debug("added this test - starting merging")
-                self.logger.debug(new_tests[set_number].raw_data_files)
-                self.logger.debug(new_tests[set_number].raw_data_files_length)
-                for raw_data_file, file_size in zip(new_tests[set_number].raw_data_files,
-                                                    new_tests[set_number].raw_data_files_length):
-                    self.logger.debug(raw_data_file)
-
-                    test[set_number].raw_data_files.append(raw_data_file)
-                    test[set_number].raw_data_files_length.append(file_size)
-                    counter += 1
-                    if counter > 10:
-                        self.logger.debug("ERROR? Too many files to merge")
-                        raise ValueError("Too many files to merge - "
-                                         "could be a p2-p3 zip thing")
+            self.logger.debug("loading raw file:")
+            self.logger.debug(f"{f}")
+            new_tests = raw_file_loader(f, **kwargs)
+            if new_tests:
+                if test is not None:
+                    self.logger.debug("continuing reading files...")
+                    _test = self._append(test[set_number], new_tests[set_number])
+                    if not _test:
+                        self.logger.warning(f"EMPTY TEST: {f}")
+                        continue
+                    test[set_number] = _test
+                    self.logger.debug("added this test - started merging")
+                    for j in range(len(new_tests[set_number].raw_data_files)):
+                        raw_data_file = new_tests[set_number].raw_data_files[j]
+                        file_size = new_tests[set_number].raw_data_files_length[j]
+                        test[set_number].raw_data_files.append(raw_data_file)
+                        test[set_number].raw_data_files_length.append(file_size)
+                        counter += 1
+                        if counter > 10:
+                            self.logger.debug("ERROR? Too many files to merge")
+                            raise ValueError("Too many files to merge - "
+                                             "could be a p2-p3 zip thing")
+                else:
+                    self.logger.debug("getting data from first file")
+                    if new_tests[set_number].no_data:
+                        self.logger.debug("NO DATA")
+                    else:
+                        test = new_tests
             else:
-                test = new_tests
-        self.logger.debug("finished loading the raw-files")
-        if test:
+                self.logger.debug("NOTHING LOADED")
 
+        self.logger.debug("finished loading the raw-files")
+
+        test_exists = False
+        if test:
+            if test[0].no_data:
+                self.logging.debug("the first dataset (or only dataset) loaded from the raw data file is empty")
+            else:
+                test_exists = True
+
+        if test_exists:
             if not prms.Reader.sorted_data:
                 self.logger.debug("sorting data")
                 test[set_number] = self._sort_data(test[set_number])
@@ -667,6 +689,7 @@ class CellpyData(object):
                 # test = self._clean_up_normal_table(test)
                 # check that the test is not empty
                 v.append(self._is_not_empty_dataset(test))
+            self.logger.debug(f"validation array: {v}")
         return v
 
     def check(self):
@@ -1001,6 +1024,17 @@ class CellpyData(object):
         return self
 
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
+        self.logger.debug(f"merging two datasets (merge summary = {merge_summary}) "
+                          f"(merge step table = {merge_step_table})")
+
+        if t1.dfdata.empty:
+            self.logger.debug("OBS! the first dataset is empty")
+
+        if t2.dfdata.empty:
+            t1.merged = True
+            self.logger.debug("the second dataset was empty")
+            self.logger.debug(" -> merged contains only first")
+            return t1
         test = t1
         # finding diff of time
         start_time_1 = t1.start_datetime
@@ -1009,94 +1043,109 @@ class CellpyData(object):
                     xldate_as_datetime(start_time_1)
         diff_time = diff_time.total_seconds()
 
+        if diff_time < 0:
+            self.logger.warning("Wow! your new dataset is older than the old!")
+        self.logger.debug(f"diff time: {diff_time}")
+
         sort_key = self.headers_normal.datetime_txt  # DateTime
         # mod data points for set 2
         data_point_header = self.headers_normal.data_point_txt
-        last_data_point = max(t1.dfdata[data_point_header])
+        try:
+            last_data_point = max(t1.dfdata[data_point_header])
+        except ValueError:
+            last_data_point = 0
+
         t2.dfdata[data_point_header] = t2.dfdata[data_point_header] + \
                                        last_data_point
         # mod cycle index for set 2
         cycle_index_header = self.headers_normal.cycle_index_txt
-        last_cycle = max(t1.dfdata[cycle_index_header])
+        try:
+            last_cycle = max(t1.dfdata[cycle_index_header])
+        except ValueError:
+            last_cycle = 0
         t2.dfdata[cycle_index_header] = t2.dfdata[cycle_index_header] + \
                                         last_cycle
         # mod test time for set 2
         test_time_header = self.headers_normal.test_time_txt
         t2.dfdata[test_time_header] = t2.dfdata[test_time_header] + diff_time
         # merging
-        dfdata2 = pd.concat([t1.dfdata, t2.dfdata], ignore_index=True)
+        if not t1.dfdata.empty:
+            dfdata2 = pd.concat([t1.dfdata, t2.dfdata], ignore_index=True)
 
-        # checking if we already have made a summary file of these datasets
-        # (to be used if merging summaries (but not properly implemented yet))
-        if t1.dfsummary_made and t2.dfsummary_made:
-            dfsummary_made = True
-        else:
-            dfsummary_made = False
-
-        # checking if we already have made step tables for these datasets
-        if t1.step_table_made and t2.step_table_made:
-            step_table_made = True
-        else:
-            step_table_made = False
-
-        if merge_summary:
-            # check if (self-made) summary exists.
-            self_made_summary = True
-            try:
-                test_it = t1.dfsummary[cycle_index_header]
-            except KeyError as e:
-                self_made_summary = False
-            try:
-                test_it = t2.dfsummary[cycle_index_header]
-            except KeyError as e:
-                self_made_summary = False
-
-            if self_made_summary:
-                # mod cycle index for set 2
-                last_cycle = max(t1.dfsummary[cycle_index_header])
-                t2.dfsummary[cycle_index_header] = t2.dfsummary[cycle_index_header] \
-                                                   + last_cycle
-                # mod test time for set 2
-                t2.dfsummary[test_time_header] = t2.dfsummary[test_time_header] \
-                                                 + diff_time
-                # to-do: mod all the cumsum stuff in the summary (best to make
-                # summary after merging) merging
+            # checking if we already have made a summary file of these datasets
+            # (to be used if merging summaries (but not properly implemented yet))
+            if t1.dfsummary_made and t2.dfsummary_made:
+                dfsummary_made = True
             else:
-                t2.dfsummary[
-                    data_point_header
-                ] = t2.dfsummary[data_point_header] + last_data_point
+                dfsummary_made = False
 
-            dfsummary2 = pd.concat(
-                [t1.dfsummary, t2.dfsummary],
-                ignore_index=True
-            )
+            # checking if we already have made step tables for these datasets
+            if t1.step_table_made and t2.step_table_made:
+                step_table_made = True
+            else:
+                step_table_made = False
 
-            test.dfsummary = dfsummary2
+            if merge_summary:
+                # check if (self-made) summary exists.
+                self_made_summary = True
+                try:
+                    test_it = t1.dfsummary[cycle_index_header]
+                except KeyError as e:
+                    self_made_summary = False
+                try:
+                    test_it = t2.dfsummary[cycle_index_header]
+                except KeyError as e:
+                    self_made_summary = False
 
-        if merge_step_table:
-            if step_table_made:
-                cycle_index_header = self.headers_normal.cycle_index_txt
-                t2.step_table[
-                    self.headers_step_table.cycle
-                ] = t2.dfdata[
-                    self.headers_step_table.cycle
-                ] + last_cycle
+                if self_made_summary:
+                    # mod cycle index for set 2
+                    last_cycle = max(t1.dfsummary[cycle_index_header])
+                    t2.dfsummary[cycle_index_header] = t2.dfsummary[cycle_index_header] \
+                                                       + last_cycle
+                    # mod test time for set 2
+                    t2.dfsummary[test_time_header] = t2.dfsummary[test_time_header] \
+                                                     + diff_time
+                    # to-do: mod all the cumsum stuff in the summary (best to make
+                    # summary after merging) merging
+                else:
+                    t2.dfsummary[
+                        data_point_header
+                    ] = t2.dfsummary[data_point_header] + last_data_point
 
-                step_table2 = pd.concat(
-                    [t1.step_table, t2.step_table],
+                dfsummary2 = pd.concat(
+                    [t1.dfsummary, t2.dfsummary],
                     ignore_index=True
                 )
-                test.step_table = step_table2
-            else:
-                self.logger.debug("could not merge step tables "
-                                  "(non-existing) -"
-                                  "create them first!")
 
-        test.no_cycles = max(dfdata2[cycle_index_header])
-        test.dfdata = dfdata2
+                test.dfsummary = dfsummary2
+
+            if merge_step_table:
+                if step_table_made:
+                    cycle_index_header = self.headers_normal.cycle_index_txt
+                    t2.step_table[
+                        self.headers_step_table.cycle
+                    ] = t2.dfdata[
+                        self.headers_step_table.cycle
+                    ] + last_cycle
+
+                    step_table2 = pd.concat(
+                        [t1.step_table, t2.step_table],
+                        ignore_index=True
+                    )
+                    test.step_table = step_table2
+                else:
+                    self.logger.debug("could not merge step tables "
+                                      "(non-existing) -"
+                                      "create them first!")
+
+            test.no_cycles = max(dfdata2[cycle_index_header])
+            test.dfdata = dfdata2
+        else:
+            test.no_cycles = max(t2.dfdata[cycle_index_header])
+            test = t2
         test.merged = True
+        self.logger.debug(" -> merged with new dataset")
         # TODO: @jepe -  update merging for more variables
-
         return test
 
     # --------------iterate-and-find-in-data-----------------------------------
@@ -2024,53 +2073,60 @@ class CellpyData(object):
         self.logger.debug(txt)
 
         warnings.simplefilter("ignore", PerformanceWarning)
-
-        store = pd.HDFStore(
-            outfile_all,
-            complib=prms._cellpyfile_complib,
-            complevel=prms._cellpyfile_complevel,
-        )
-
-        self.logger.debug("trying to put dfdata")
-
-        self.logger.debug(" - lets set Data_Point as index")
-        hdr_data_point = self.headers_normal.data_point_txt
-        test.dfdata = test.dfdata.set_index(hdr_data_point,
-                                            drop=False)
-
-        store.put(root + "/dfdata", test.dfdata,
-                  format=prms._cellpyfile_dfdata_format)
-
-        self.logger.debug("trying to put dfsummary")
-        store.put(root + "/dfsummary", test.dfsummary,
-                  format=prms._cellpyfile_dfsummary_format)
-
-        self.logger.debug("trying to put infotbl")
-        store.put(root + "/info", infotbl,
-                  format=prms._cellpyfile_infotable_format)
-
-        self.logger.debug("trying to put fidtable")
-        store.put(root + "/fidtable", fidtbl,
-                  format=prms._cellpyfile_fidtable_format)
-
-        self.logger.debug("trying to put step_table")
         try:
-            store.put(root + "/step_table", test.step_table,
-                      format=prms._cellpyfile_stepdata_format)
-        except TypeError:
-            test = self._fix_dtype_step_table(test)
-            store.put(root + "/step_table", test.step_table,
-                      format=prms._cellpyfile_stepdata_format)
+            store = pd.HDFStore(
+                outfile_all,
+                complib=prms._cellpyfile_complib,
+                complevel=prms._cellpyfile_complevel,
+            )
 
-        # creating indexes
-        # hdr_data_point = self.headers_normal.data_point_txt
-        # hdr_cycle_steptable = self.headers_step_table.cycle
-        # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+            self.logger.debug("trying to put dfdata")
 
-        # store.create_table_index(root + "/dfdata", columns=[hdr_data_point],
-        #                          optlevel=9, kind='full')
+            self.logger.debug(" - lets set Data_Point as index")
+            hdr_data_point = self.headers_normal.data_point_txt
+            test.dfdata = test.dfdata.set_index(hdr_data_point,
+                                                drop=False)
 
-        store.close()
+            store.put(root + "/dfdata", test.dfdata,
+                      format=prms._cellpyfile_dfdata_format)
+            self.logger.debug(" dfdata -> hdf5 OK")
+
+            self.logger.debug("trying to put dfsummary")
+            store.put(root + "/dfsummary", test.dfsummary,
+                      format=prms._cellpyfile_dfsummary_format)
+            self.logger.debug(" dfsummary -> hdf5 OK")
+
+            self.logger.debug("trying to put infotbl")
+            store.put(root + "/info", infotbl,
+                      format=prms._cellpyfile_infotable_format)
+            self.logger.debug(" infotable -> hdf5 OK")
+
+            self.logger.debug("trying to put fidtable")
+            store.put(root + "/fidtable", fidtbl,
+                      format=prms._cellpyfile_fidtable_format)
+            self.logger.debug(" fidtable -> hdf5 OK")
+
+            self.logger.debug("trying to put step_table")
+            try:
+                store.put(root + "/step_table", test.step_table,
+                          format=prms._cellpyfile_stepdata_format)
+                self.logger.debug(" step_table -> hdf5 OK")
+            except TypeError:
+                test = self._fix_dtype_step_table(test)
+                store.put(root + "/step_table", test.step_table,
+                          format=prms._cellpyfile_stepdata_format)
+                self.logger.debug(" fixed step_table -> hdf5 OK")
+
+            # creating indexes
+            # hdr_data_point = self.headers_normal.data_point_txt
+            # hdr_cycle_steptable = self.headers_step_table.cycle
+            # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+
+            # store.create_table_index(root + "/dfdata", columns=[hdr_data_point],
+            #                          optlevel=9, kind='full')
+        finally:
+            store.close()
+        self.logger.debug(" all -> hdf5 OK")
         warnings.simplefilter("default", PerformanceWarning)
         # del store
 
@@ -3339,7 +3395,7 @@ class CellpyData(object):
     def make_summary(self, find_ocv=False, find_ir=False,
                      find_end_voltage=False,
                      use_cellpy_stat_file=None, all_tests=True,
-                     dataset_number=0, ensure_step_table=None,
+                     dataset_number=0, ensure_step_table=True,
                      convert_date=True):
         """Convenience function that makes a summary of the cycling data."""
 
@@ -3410,7 +3466,7 @@ class CellpyData(object):
                       convert_date=True,
                       sort_my_columns=True,
                       use_cellpy_stat_file=False,
-                      ensure_step_table=False,
+                      ensure_step_table=True,
                       # capacity_modifier = None,
                       # test=None
                       ):
@@ -3431,7 +3487,10 @@ class CellpyData(object):
                 dataset.mass = mass
 
         if ensure_step_table and not self.load_only_summary:
+            self.logger.debug("ensuring existence of step-table")
             if not dataset.step_table_made:
+                self.logger.debug("dataset.step_table_made is not True")
+                self.logger.debug("running make_step_table")
                 self.make_step_table(dataset_number=dataset_number)
 
         # Retrieve the converters etc.

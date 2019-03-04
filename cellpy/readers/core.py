@@ -257,6 +257,14 @@ class DataSet(object):
             empty = True
         return not empty
 
+    @property
+    def no_data(self):
+        try:
+            empty = self.dfdata.empty
+        except AttributeError:
+            empty = True
+        return empty
+
 
 def check64bit(current_system="python"):
     """checks if you are on a 64 bit platform"""

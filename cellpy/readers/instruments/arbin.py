@@ -16,6 +16,7 @@ from cellpy.readers.instruments.mixin import Loader
 from cellpy.parameters import prms
 
 DEBUG_MODE = False
+ALLOW_MULTI_TEST_FILE = False
 
 # Select odbc module
 ODBC = prms._odbc
@@ -240,6 +241,7 @@ class ArbinLoader(Loader):
     def inspect(self, run_data):
         """Inspect the file -> reports to log (debug)"""
 
+        # TODO: type checking
         if DEBUG_MODE:
             checked_rundata = []
             for data in run_data:
@@ -598,7 +600,11 @@ class ArbinLoader(Loader):
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
 
-        for test_no in range(number_of_sets):
+        for counter, test_no in enumerate(range(number_of_sets)):
+            if counter > 0:
+                self.logger.warning("***MULTITEST-FILE (not recommended)")
+                if not ALLOW_MULTI_TEST_FILE:
+                    break
             data = DataSet()
             data.test_no = test_no
             data.loaded_from = file_name
@@ -624,7 +630,8 @@ class ArbinLoader(Loader):
                                                                     data.test_ID,
                                                                     self.headers_normal['data_point_txt'])
                 summary_df = pd.read_sql_query(sql, conn)
-                self._clean_up_loadres(None, conn, temp_filename)
+                if counter > number_of_sets:
+                    self._clean_up_loadres(None, conn, temp_filename)
             else:
                 normal_df = pd.read_csv(temp_csv_filename_normal)
                 # filter on test ID
@@ -664,6 +671,9 @@ class ArbinLoader(Loader):
         # handling generators etc
 
         self.logger.debug("starting loading raw-data")
+        self.logger.debug(f"connection: {conn} test-ID: {test_ID}")
+        self.logger.debug(f"bad steps:  {bad_steps}")
+
         table_name_normal = TABLE_NAMES["normal"]
 
         if prms.Reader["load_only_summary"]:  # SETTING
