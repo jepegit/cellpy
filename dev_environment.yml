@@ -4,7 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.7
-  - numpy
+  - numpy=1.15.4
   - xlrd
   - matplotlib
   - cryptography

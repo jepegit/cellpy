@@ -9,3 +9,4 @@ pyyaml>=3.12
 pyodbc>=4.0.16
 python-box>=3.2.0
 PyGithub>=1.43
+numpy==1.15.4
