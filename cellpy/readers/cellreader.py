@@ -231,6 +231,9 @@ class CellpyData(object):
         elif instrument == "arbin_experimental":
             self._set_arbin_experimental()
 
+        elif instrument in ["pec", "pec_csv"]:
+            self._set_pec()
+
         elif instrument in ["biologics", "biologics_mpr"]:
             self._set_biologic()
 
@@ -252,7 +255,15 @@ class CellpyData(object):
         self.loader = self.loader_class.loader
 
     def _set_pec(self):
-        warnings.warn("not implemented")
+        warnings.warn("Experimental! Not ready for production!")
+        from cellpy.readers.instruments import pec as instr
+
+        self.loader_class = instr.PECLoader()
+        # ----- get information --------------------------
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # ----- create the loader ------------------------
+        self.loader = self.loader_class.loader
 
     def _set_maccor(self):
         warnings.warn("not implemented")

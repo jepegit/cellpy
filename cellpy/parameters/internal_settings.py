@@ -29,6 +29,7 @@ cellpy_units["current"] = 0.001  # mA
 cellpy_units["charge"] = 0.001  # Ah
 cellpy_units["mass"] = 0.001  # mg (used for input of mass)
 cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. spec. capacity)
+cellpy_units["voltage"] = 1.0  # V (not implemented yet)
 
 ################################ cellpy limits #################################
 
