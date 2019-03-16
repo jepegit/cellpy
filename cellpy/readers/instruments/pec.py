@@ -1,20 +1,31 @@
 """pec csv-type data files"""
 import os
 from dateutil.parser import parse
-import tempfile
-import shutil
 import logging
-import platform
 import warnings
 import numpy as np
 
 import pandas as pd
 
-from cellpy.readers.core import FileID, DataSet, \
-    check64bit, humanize_bytes, doc_inherit
+from cellpy.readers.core import FileID, DataSet, humanize_bytes
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
-from cellpy.parameters import prms
+
+pec_headers_normal = dict()
+
+pec_headers_normal["step_index_txt"] = "Step"
+pec_headers_normal["cycle_index_txt"] = "Cycle"
+pec_headers_normal["test_time_txt"] = "Total_Time_Seconds"
+pec_headers_normal["step_time_txt"] = "Step_Time_Seconds"
+pec_headers_normal["datetime_txt"] = "Real_Time"
+pec_headers_normal["voltage_txt"] = "Voltage_mV"
+pec_headers_normal["current_txt"] = "Current_mA"
+pec_headers_normal["charge_capacity_txt"] = "Charge_Capacity_mAh"
+pec_headers_normal["discharge_capacity_txt"] = "Discharge_Capacity_mAh"
+pec_headers_normal["charge_energy_txt"] = "Charge_Capacity_mWh"
+pec_headers_normal["discharge_energy_txt"] = "Discharge_Capacity_mWh"
+pec_headers_normal["internal_resistance_txt"] = "Internal_Resistance_1_mOhm"
+pec_headers_normal["test_id_txt"] = "Test"
 
 
 class PECLoader(Loader):
@@ -30,6 +41,17 @@ class PECLoader(Loader):
         self.cellpy_headers = get_headers_normal()  # should consider to move this to the Loader class
 
     @staticmethod
+    def _get_pec_units():
+        raw_units = dict()
+        raw_units["voltage"] = 0.001  # V
+        raw_units["current"] = 0.001  # A
+        raw_units["charge"] = 0.001  # Ah
+        raw_units["mass"] = 0.001  # g
+        raw_units["energy"] = 0.001  # Wh
+
+        return raw_units
+
+    @staticmethod
     def get_raw_units():
         """Include the settings for the units used by the instrument.
 
@@ -40,11 +62,14 @@ class PECLoader(Loader):
         Returns: dictionary containing the unit-fractions for current, charge, and mass
 
         """
+
         raw_units = dict()
-        raw_units["voltage"] = 0.001  # V  # TODO: not used yet (so the V column is converted during loading)
-        raw_units["current"] = 0.001  # A
-        raw_units["charge"] = 0.001  # Ah
+        raw_units["voltage"] = 1.0  # V
+        raw_units["current"] = 1.0  # A
+        raw_units["charge"] = 1.0  # Ah
         raw_units["mass"] = 0.001  # g
+        raw_units["energy"] = 1.0  # Wh
+
         return raw_units
 
     def get_raw_limits(self):
@@ -109,26 +134,12 @@ class PECLoader(Loader):
 
         logging.debug("renaming columns")
         self._rename_headers()
+        self._convert_units()
 
-        # ---------  stats-data (summary-data) -------------------------
-        summary_df = self._create_summary_data()
-
-        if summary_df.empty:
-            txt = "\nCould not find any summary (stats-file)!"
-            txt += " (summary_df.empty = True)"
-            txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-            warnings.warn(txt)
-
-        data.dfsummary = summary_df
         data.dfdata = self.pec_data
 
         data.raw_data_files_length.append(length_of_test)
         new_tests.append(data)
-
-        print("No I should load a file")
-        print("but I am not ready yet")
-
-        raise NotImplementedError
 
         return new_tests
 
@@ -137,12 +148,25 @@ class PECLoader(Loader):
 
         # ----------------- reading the data ---------------------
         df = pd.read_csv(file_name, skiprows=number_of_header_lines)
+
+        # get rid of unnamed columns
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+
         # get rid of spaces, parenthesis, and the deg-sign
         new_column_headers = {
-            c: c.replace(" ", "_").replace("(", "").replace(")", "").replace("°", "").replace(r"%", "pct")
+            c: c.replace(" ", "_")
+                .replace("(", "")
+                .replace(")", "")
+                .replace("°", "")
+                .replace(r"%", "pct")
             for c in df.columns
         }
         df.rename(columns=new_column_headers, inplace=True)
+
+        # add missing columns
+        df.insert(0, self.headers_normal.data_point_txt, range(len(df)))
+        df[self.headers_normal.sub_step_index_txt] = 0
+        df[self.headers_normal.sub_step_time_txt] = 0
 
         self.pec_data = df
 
@@ -161,7 +185,6 @@ class PECLoader(Loader):
         header_comments = dict()
         comment_loop = False
         for line_number, line in enumerate(lines):
-            # print(line.strip())
 
             if line.startswith("#"):
                 if not comment_loop:
@@ -203,14 +226,45 @@ class PECLoader(Loader):
         logging.debug(self.pec_data.columns)
         logging.debug("Rename to:")
         logging.debug(self.headers_normal)
-        # CONTINUE FROM HERE
 
-        self._rename_header("frequency_txt", "freq")
+        for key in pec_headers_normal:
+            self._rename_header(key, pec_headers_normal[key])
 
-        raise NotImplementedError
+        logging.debug("New cols:")
+        logging.debug(self.pec_data.columns)
 
-    def _create_summary_data(self):
-        raise NotImplementedError
+    def _convert_units(self):
+        logging.debug("Trying to convert all data into correct units")
+        logging.debug("- dtypes")
+        self.pec_data[self.headers_normal.datetime_txt] = pd.to_datetime(
+            self.pec_data[self.headers_normal.datetime_txt]
+        )
+
+        self.pec_data["Position_Start_Time"] = pd.to_datetime(
+            self.pec_data["Position_Start_Time"]
+        )
+
+        self.pec_data["Rack"] = self.pec_data["Rack"].astype("category")
+
+        logging.debug("- cellpy units")
+        pec_units = self._get_pec_units()
+        raw_units = self.get_raw_units()
+
+        _v = pec_units["voltage"] / raw_units["voltage"]
+        _i = pec_units["current"] / raw_units["current"]
+        _c = pec_units["charge"] / raw_units["charge"]
+        _w = pec_units["energy"] / raw_units["energy"]
+
+        v_txt = self.headers_normal.voltage_txt
+        i_txt = self.headers_normal.current_txt
+
+        self.pec_data[v_txt] *= _v
+        self.pec_data[i_txt] *= _i
+
+        self.pec_data[self.headers_normal.charge_capacity_txt] *= _c
+        self.pec_data[self.headers_normal.discharge_capacity_txt] *= _c
+        self.pec_data[self.headers_normal.charge_energy_txt] *= _w
+        self.pec_data[self.headers_normal.discharge_energy_txt] *= _w
 
     def _rename_header(self, h_old, h_new):
         try:
@@ -220,6 +274,3 @@ class PECLoader(Loader):
             logging.info(
                 f"Problem during conversion to cellpy-format ({e})"
             )
-
-    def convert_units(self):
-        pass

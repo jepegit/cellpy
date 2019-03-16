@@ -20,6 +20,9 @@ dependencies:
   - flake8
   - Sphinx
   - PyGithub
+  - watchdog
+  - pytest
+  - twine
   - pip:
     - lmfit
     - python-box

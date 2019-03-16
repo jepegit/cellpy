@@ -224,21 +224,27 @@ class CellpyData(object):
 
         if instrument in ["arbin", "arbin_res"]:
             self._set_arbin()
+            self.tester = "arbin"
 
         elif instrument == "arbin_sql":
             self._set_arbin_sql()
+            self.tester = "arbin"
 
         elif instrument == "arbin_experimental":
             self._set_arbin_experimental()
+            self.tester = "arbin"
 
         elif instrument in ["pec", "pec_csv"]:
             self._set_pec()
+            self.tester = "pec"
 
         elif instrument in ["biologics", "biologics_mpr"]:
             self._set_biologic()
+            self.tester = "biologic"
 
         elif instrument == "custom":
             self._set_custom()
+            self.tester = "custom"
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")
@@ -3082,6 +3088,7 @@ class CellpyData(object):
 
         Returns:
             multiplier (float) from_unit/to_unit * mass
+
         """
 
         if not dataset:
@@ -3102,8 +3109,7 @@ class CellpyData(object):
             from_unit_cap = self.raw_units["charge"]
             from_unit_mass = self.raw_units["mass"]
             from_unit = from_unit_cap / from_unit_mass
-        # Remove this later
-        # assert float(from_unit / to_unit) == 1000000.0
+
         return from_unit / to_unit / mass
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False):
@@ -3407,8 +3413,12 @@ class CellpyData(object):
                      find_end_voltage=False,
                      use_cellpy_stat_file=None, all_tests=True,
                      dataset_number=0, ensure_step_table=True,
-                     convert_date=True):
+                     convert_date=False):
         """Convenience function that makes a summary of the cycling data."""
+
+        # first - check if we need some "instrument-specific" prms
+        if self.tester == "arbin":
+            convert_date = True
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
@@ -3473,16 +3483,17 @@ class CellpyData(object):
                       find_ocv=False,
                       find_ir=False,
                       find_end_voltage=False,
+                      ensure_step_table=True,
                       # TODO: @jepe - this is only needed for arbin-data:
                       convert_date=True,
                       sort_my_columns=True,
                       use_cellpy_stat_file=False,
-                      ensure_step_table=True,
                       # capacity_modifier = None,
                       # test=None
                       ):
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
+
         self.logger.debug("start making summary")
         if dataset_number is None:
             self._report_empty_dataset()
