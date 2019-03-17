@@ -34,9 +34,20 @@ class Converter(object):
     (4) perform the dq-dv transform, and finally (5) post-process the data.
     """
 
-    def __init__(self):
-        self.capacity = None
-        self.voltage = None
+    def __init__(self, capacity=None, voltage=None, points_pr_split=10,
+                 max_points=None, voltage_resolution=None,
+                 capacity_resolution=None, minimum_splits=3,
+                 interpolation_method="linear", increment_method="diff",
+                 pre_smoothing=False, smoothing=False, post_smoothing=True,
+                 normalize=True, normalizing_factor=None,
+                 normalizing_roof=None,
+                 savgol_filter_window_divisor_default=50,
+                 savgol_filter_window_order=3, voltage_fwhm=0.01,
+                 gaussian_order=0, gaussian_mode="reflect",
+                 gaussian_cval=0.0, gaussian_truncate=4.0,
+                 ):
+        self.capacity = capacity
+        self.voltage = voltage
 
         self.capacity_preprocessed = None
         self.voltage_preprocessed = None
@@ -50,26 +61,27 @@ class Converter(object):
 
         self.voltage_inverted_step = None
 
-        self.points_pr_split = 10
-        self.max_points = None
-        self.voltage_resolution = None
-        self.capacity_resolution = None
-        self.minimum_splits = 3
-        self.interpolation_method = 'linear'
-        self.increment_method = 'diff'
-        self.pre_smoothing = False
-        self.smoothing = False
-        self.post_smoothing = True
-        self.savgol_filter_window_divisor_default = 50
-        self.savgol_filter_window_order = 3
-        self.voltage_fwhm = 0.01
-        self.gaussian_order = 0
-        self.gaussian_mode = "reflect"
-        self.gaussian_cval = 0.0
-        self.gaussian_truncate = 4.0
-        self.normalise = True
+        self.points_pr_split = points_pr_split
+        self.max_points = max_points
+        self.voltage_resolution = voltage_resolution
+        self.capacity_resolution = capacity_resolution
+        self.minimum_splits = minimum_splits
+        self.interpolation_method = interpolation_method
+        self.increment_method = increment_method
+        self.pre_smoothing = pre_smoothing
+        self.smoothing = smoothing
+        self.post_smoothing = post_smoothing
+        self.savgol_filter_window_divisor_default = savgol_filter_window_divisor_default
+        self.savgol_filter_window_order = savgol_filter_window_order
+        self.voltage_fwhm = voltage_fwhm
+        self.gaussian_order = gaussian_order
+        self.gaussian_mode = gaussian_mode
+        self.gaussian_cval = gaussian_cval
+        self.gaussian_truncate = gaussian_truncate
+        self.normalize = normalize
+        self.normalizing_factor = normalizing_factor
+        self.normalizing_roof = normalizing_roof
 
-        self.normalising_factor = None
         self.d_capacity_mean = None
         self.d_voltage_mean = None
         self.len_capacity = None
@@ -185,7 +197,12 @@ class Converter(object):
         if not self.end_capacity == self.max_capacity:
             self.errors.append("capacity: end<>max")
 
-        self.normalising_factor = self.end_capacity
+        if self.normalizing_factor is None:
+            self.normalizing_factor = self.end_capacity
+
+        if self.normalizing_roof is not None:
+            self.normalizing_factor = self.normalizing_factor * \
+                                      self.end_capacity / self.normalizing_roof
 
     def pre_process_data(self):
         """perform some pre-processing of the data (i.e. interpolation)"""
@@ -290,6 +307,7 @@ class Converter(object):
 
         elif self.increment_method == "hist":
             logging.debug(" - diff using HIST")
+            # TODO: Asbjoern, maybe you can put your method here?
             raise NotImplementedError
 
     def post_process_data(self, voltage=None, incremental_capacity=None,
@@ -318,10 +336,10 @@ class Converter(object):
                 truncate=self.gaussian_truncate
             )
 
-        if self.normalise:
+        if self.normalize:
             logging.debug(" - normalizing")
             area = simps(incremental_capacity, voltage)
-            self.incremental_capacity = incremental_capacity * self.normalising_factor / abs(area)
+            self.incremental_capacity = incremental_capacity * self.normalizing_factor / abs(area)
 
         fixed_range = False
         if isinstance(self.fixed_voltage_range, np.ndarray):
@@ -354,7 +372,7 @@ def index_bounds(x):
         return x[0], x[-1]
 
 
-def dqdv_cycle(cycle, splitter=True):
+def dqdv_cycle(cycle, splitter=True, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycle.
 
@@ -384,7 +402,7 @@ def dqdv_cycle(cycle, splitter=True):
     c_first = cycle.loc[cycle["direction"] == -1]
     c_last = cycle.loc[cycle["direction"] == 1]
 
-    converter = Converter()
+    converter = Converter(**kwargs)
     converter.set_data(c_first["capacity"], c_first["voltage"])
     converter.inspect_data()
     converter.pre_process_data()
@@ -398,7 +416,7 @@ def dqdv_cycle(cycle, splitter=True):
         incremental_capacity_first = np.append(incremental_capacity_first,
                                                np.NaN)
 
-    converter = Converter()
+    converter = Converter(**kwargs)
     converter.set_data(c_last["capacity"], c_last["voltage"])
     converter.inspect_data()
     converter.pre_process_data()
@@ -414,7 +432,7 @@ def dqdv_cycle(cycle, splitter=True):
     return voltage, incremental_capacity
 
 
-def dqdv_cycles(cycles):
+def dqdv_cycles(cycles, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycles.
 
@@ -438,11 +456,17 @@ def dqdv_cycles(cycles):
 
     """
 
+    # TODO: should add option for normalising based on first cycle capacity
+    # this is e.g. done by first finding the first cycle capacity (nom_cap)
+    # (or use nominal capacity given as input) and then propagating this to
+    # Converter using the key-word arguments
+    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
+
     ica_dfs = list()
     cycle_group = cycles.groupby("cycle")
     for cycle_number, cycle in cycle_group:
 
-        v, dq = dqdv_cycle(cycle, splitter=True)
+        v, dq = dqdv_cycle(cycle, splitter=True, **kwargs)
         _ica_df = pd.DataFrame(
             {
                 "voltage": v,
@@ -462,7 +486,7 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
          post_smoothing=True, post_normalization=True,
          interpolation_method=None, gaussian_order=None, gaussian_mode=None, gaussian_cval=None,
          gaussian_truncate=None, points_pr_split=None, savgol_filter_window_divisor_default=None,
-         savgol_filter_window_order=None, max_points=None):
+         savgol_filter_window_order=None, max_points=None, **kwargs):
 
     """Convenience functions for creating dq-dv data from given capacity
     and voltage data.
@@ -501,18 +525,18 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
             ...
     """
 
-    converter = Converter()
+    converter = Converter(**kwargs)
     logging.debug("dqdv - starting")
     logging.debug("dqdv - created Converter obj")
     converter.pre_smoothing = pre_smoothing
     converter.post_smoothing = post_smoothing
     converter.smoothing = diff_smoothing
-    converter.normalise = post_normalization
+    converter.normalize = post_normalization
     converter.voltage_fwhm = voltage_fwhm
     logging.debug(f"converter.pre_smoothing: {converter.pre_smoothing}")
     logging.debug(f"converter.post_smoothing: {converter.post_smoothing}")
     logging.debug(f"converter.smoothing: {converter.smoothing}")
-    logging.debug(f"converter.normalise: {converter.normalise}")
+    logging.debug(f"converter.normalise: {converter.normalize}")
     logging.debug(f"converter.voltage_fwhm: {converter.voltage_fwhm}")
 
     if voltage_resolution is not None:
@@ -563,8 +587,9 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
     return converter.voltage_processed, converter.incremental_capacity
 
 
-def _constrained_dq_dv_using_dataframes(capacity, minimum_v, maximum_v):
-    converter = Converter()
+def _constrained_dq_dv_using_dataframes(capacity, minimum_v,
+                                        maximum_v, **kwargs):
+    converter = Converter(**kwargs)
     converter.set_data(capacity)
     converter.inspect_data()
     converter.pre_process_data()
@@ -574,12 +599,13 @@ def _constrained_dq_dv_using_dataframes(capacity, minimum_v, maximum_v):
     return converter.voltage_processed, converter.incremental_capacity
 
 
-def _make_ica_charge_curves(cycles_dfs, cycle_numbers, minimum_v, maximum_v):
+def _make_ica_charge_curves(cycles_dfs, cycle_numbers,
+                            minimum_v, maximum_v, **kwargs):
     incremental_charge_list = []
     for c, n in zip(cycles_dfs, cycle_numbers):
         if not c.empty:
             v, dq = _constrained_dq_dv_using_dataframes(
-                c, minimum_v, maximum_v
+                c, minimum_v, maximum_v, **kwargs
             )
             if not incremental_charge_list:
                 d = pd.DataFrame({"v": v})
@@ -600,7 +626,7 @@ def _make_ica_charge_curves(cycles_dfs, cycle_numbers, minimum_v, maximum_v):
     return incremental_charge_list
 
 
-def _dqdv_combinded_frame(cell):
+def _dqdv_combinded_frame(cell, **kwargs):
     """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
 
         Args:
@@ -618,12 +644,12 @@ def _dqdv_combinded_frame(cell):
         categorical_column=True,
         label_cycle_number=True,
     )
-    ica_df = dqdv_cycles(cycles)
+    ica_df = dqdv_cycles(cycles, **kwargs)
     assert isinstance(ica_df, pd.DataFrame)
     return ica_df
 
 
-def dqdv_frames(cell, split=False):
+def dqdv_frames(cell, split=False, **kwargs):
     """Returns dqdv data as pandas.DataFrame(s) for all cycles.
 
             Args:
@@ -642,14 +668,19 @@ def dqdv_frames(cell, split=False):
                 >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
                 >>> charge_df.plot(x=("voltage", "v"))
     """
+    # TODO: should add option for normalising based on first cycle capacity
+    # this is e.g. done by first finding the first cycle capacity (nom_cap)
+    # (or use nominal capacity given as input) and then propagating this to
+    # Converter using the key-word arguments
+    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
 
     if split:
-        return _dqdv_split_frames(cell, tidy=True)
+        return _dqdv_split_frames(cell, tidy=True, **kwargs)
     else:
-        return _dqdv_combinded_frame(cell)
+        return _dqdv_combinded_frame(cell, **kwargs)
 
 
-def _dqdv_split_frames(cell, tidy=False):
+def _dqdv_split_frames(cell, tidy=False, **kwargs):
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
         Args:
@@ -677,7 +708,8 @@ def _dqdv_split_frames(cell, tidy=False):
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
 
     ica_charge_dfs = _make_ica_charge_curves(
-        charge_dfs, cycles, minimum_v, maximum_v
+        charge_dfs, cycles, minimum_v, maximum_v,
+        **kwargs,
     )
     ica_charge_df = pd.concat(
         ica_charge_dfs,
@@ -690,7 +722,8 @@ def _dqdv_split_frames(cell, tidy=False):
         direction="discharge"
     )
     ica_dcharge_dfs = _make_ica_charge_curves(
-        dcharge_dfs, cycles, minimum_v, maximum_v
+        dcharge_dfs, cycles, minimum_v, maximum_v,
+        **kwargs,
     )
     ica_discharge_df = pd.concat(
         ica_dcharge_dfs,
@@ -745,14 +778,14 @@ def check_class_ica():
 
     converter.fixed_voltage_range = False
     converter.post_smoothing = True
-    converter.normalise = False
+    converter.normalize = False
     converter.post_process_data()
     ax2.plot(converter.voltage_processed, converter.incremental_capacity,
              "y-", alpha=0.3, lw=4.0, label="smoothed")
 
     converter.fixed_voltage_range = np.array((0.1, 1.2, 100))
     converter.post_smoothing = False
-    converter.normalise = False
+    converter.normalize = False
     converter.post_process_data()
     ax2.plot(converter.voltage_processed, converter.incremental_capacity,
              "go", alpha=0.7,
