@@ -1,4 +1,5 @@
-"""ica contains routines for creating and working with incremental capacity analysis data"""
+"""ica contains routines for creating and working with
+incremental capacity analysis data"""
 
 import os
 import logging
@@ -45,19 +46,23 @@ class Converter(object):
         self.incremental_capacity = None
         self._incremental_capacity = None  # before smoothing
         self.voltage_processed = None
+        self._voltage_processed = None  # before shifting / centering
 
         self.voltage_inverted_step = None
 
         self.points_pr_split = 10
+        self.max_points = None
+        self.voltage_resolution = None
+        self.capacity_resolution = None
         self.minimum_splits = 3
         self.interpolation_method = 'linear'
         self.increment_method = 'diff'
-        self.pre_smoothing = True
-        self.smoothing = True
+        self.pre_smoothing = False
+        self.smoothing = False
         self.post_smoothing = True
         self.savgol_filter_window_divisor_default = 50
         self.savgol_filter_window_order = 3
-        self.voltage_fwhm = 0.01  # res voltage (peak-width)
+        self.voltage_fwhm = 0.01
         self.gaussian_order = 0
         self.gaussian_mode = "reflect"
         self.gaussian_cval = 0.0
@@ -81,12 +86,27 @@ class Converter(object):
 
         self.errors = []
 
+    def __str__(self):
+        txt = f"[ica.converter] {str(type(self))}\n"
+        attrs = vars(self)
+        for name, att in attrs.items():
+            if isinstance(att, (pd.DataFrame, pd.Series, np.ndarray)):
+                str_att = f"<vector> ({str(type(att))})"
+            else:
+                str_att = str(att)
+            txt += f"{name}: {str_att}\n"
+
+        return txt
+
     def set_data(self, capacity, voltage=None,
                  capacity_label="q", voltage_label="v"
                  ):
         """Set the data"""
 
+        logging.debug("setting data (capacity and voltage)")
+
         if isinstance(capacity, pd.DataFrame):
+            logging.debug("recieved a pandas.DataFrame")
             self.capacity = capacity[capacity_label]
             self.voltage = capacity[voltage_label]
         else:
@@ -94,8 +114,11 @@ class Converter(object):
             self.capacity = capacity
             self.voltage = voltage
 
-    def inspect_data(self, capacity=None, voltage=None):
+    def inspect_data(self, capacity=None, voltage=None,
+                     err_est=False, diff_est=False):
         """check and inspect the data"""
+
+        logging.debug("inspecting the data")
 
         if capacity is None:
             capacity = self.capacity
@@ -113,72 +136,95 @@ class Converter(object):
         if self.len_voltage <= 1:
             raise NullData
 
-        d_capacity = np.diff(capacity)
-        d_voltage = np.diff(voltage)
-        self.d_capacity_mean = np.mean(d_capacity)
-        self.d_voltage_mean = np.mean(d_voltage)
-
         self.min_capacity, self.max_capacity = value_bounds(capacity)
         self.start_capacity, self.end_capacity = index_bounds(capacity)
 
         self.number_of_points = len(capacity)
 
-        splits = int(self.number_of_points / self.points_pr_split)
-        rest = self.number_of_points % self.points_pr_split
+        if diff_est:
+            d_capacity = np.diff(capacity)
+            d_voltage = np.diff(voltage)
 
-        if splits < self.minimum_splits:
-            txt = "no point in splitting, too little data"
-            logging.info(txt)
-            self.errors.append("splitting: to few points")
-        else:
-            if rest > 0:
-                _cap = capacity[:-rest]
-                _vol = voltage[:-rest]
+            self.d_capacity_mean = np.mean(d_capacity)
+            self.d_voltage_mean = np.mean(d_voltage)
+
+        if err_est:
+
+            splits = int(self.number_of_points / self.points_pr_split)
+            rest = self.number_of_points % self.points_pr_split
+
+            if splits < self.minimum_splits:
+                txt = "no point in splitting, too little data"
+                logging.debug(txt)
+                self.errors.append("splitting: to few points")
             else:
-                _cap = capacity
-                _vol = voltage
+                if rest > 0:
+                    _cap = capacity[:-rest]
+                    _vol = voltage[:-rest]
+                else:
+                    _cap = capacity
+                    _vol = voltage
 
-            c_pieces = np.split(_cap, splits)
-            v_pieces = np.split(_vol, splits)
-            # c_middle = int(np.amax(c_pieces) / 2)
+                c_pieces = np.split(_cap, splits)
+                v_pieces = np.split(_vol, splits)
+                # c_middle = int(np.amax(c_pieces) / 2)
 
-            std_err = []
-            c_pieces_avg = []
-            for c, v in zip(c_pieces, v_pieces):
-                _slope, _intercept, _r_value, _p_value, _std_err = stats.linregress(c, v)
-                std_err.append(_std_err)
-                c_pieces_avg.append(np.mean(c))
+                std_err = []
+                c_pieces_avg = []
+                for c, v in zip(c_pieces, v_pieces):
+                    _slope, _intercept, _r_value, _p_value, _std_err = stats.linregress(c, v)
+                    std_err.append(_std_err)
+                    c_pieces_avg.append(np.mean(c))
 
-            self.std_err_median = np.median(std_err)
-            self.std_err_mean = np.mean(std_err)
+                self.std_err_median = np.median(std_err)
+                self.std_err_mean = np.mean(std_err)
 
         if not self.start_capacity == self.min_capacity:
             self.errors.append("capacity: start<>min")
+
         if not self.end_capacity == self.max_capacity:
             self.errors.append("capacity: end<>max")
+
         self.normalising_factor = self.end_capacity
 
     def pre_process_data(self):
         """perform some pre-processing of the data (i.e. interpolation)"""
+
+        logging.debug("pre-processing the data")
+
         capacity = self.capacity
         voltage = self.voltage
-        len_capacity = self.len_capacity  # TODO: include option for changing this as option for more/less points
-        # len_voltage = self.len_voltage
+
+        # performing an interpolation in v(q) space
+        logging.debug(" - interpolating voltage(capacity)")
+        c1, c2 = index_bounds(capacity)
+        if self.max_points is not None:
+            len_capacity = min(self.max_points, self.len_capacity)
+        elif self.capacity_resolution is not None:
+            len_capacity = round(abs(c2-c1) / self.capacity_resolution, 0)
+        else:
+            len_capacity = self.len_capacity
 
         f = interp1d(capacity, voltage, kind=self.interpolation_method)
-        c1, c2 = index_bounds(capacity)
+
+
         self.capacity_preprocessed = np.linspace(c1, c2, len_capacity)
-        # capacity_step = (c2-c1)/(len_capacity-1)
         self.voltage_preprocessed = f(self.capacity_preprocessed)
 
         if self.pre_smoothing:
-            logging.debug("using pre-smoothing")
-            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_capacity / 5))
-            savgol_filter_window_length = int(len_capacity / savgol_filter_window_divisor)
+            logging.debug(" - pre-smoothing (savgol filter window)")
+            savgol_filter_window_divisor = np.amin(
+                (self.savgol_filter_window_divisor_default, len_capacity / 5)
+            )
+            savgol_filter_window_length = int(
+                len_capacity / savgol_filter_window_divisor
+            )
 
             if savgol_filter_window_length % 2 == 0:
                 savgol_filter_window_length -= 1
-            savgol_filter_window_length = np.amax([3, savgol_filter_window_length])
+            savgol_filter_window_length = np.amax(
+                [3, savgol_filter_window_length]
+            )
 
             self.voltage_preprocessed = savgol_filter(
                 self.voltage_preprocessed,
@@ -189,41 +235,69 @@ class Converter(object):
     def increment_data(self):
         """perform the dq-dv transform"""
 
-        # NOTE TO ASBJOERN: Probably insert method for "binning" instead of differentiating here
+        # NOTE TO ASBJOERN: Probably insert method for "binning" instead of
+        # differentiating here
         # (use self.increment_method as the variable for selecting method for)
 
+        logging.debug("incrementing data")
+
         # ---- shifting to y-x ----------------------------------------
-        len_voltage = len(self.voltage_preprocessed)
         v1, v2 = value_bounds(self.voltage_preprocessed)
+        if self.voltage_resolution is not None:
+            len_voltage = round(abs(v2 - v1) / self.voltage_resolution, 0)
+        else:
+            len_voltage = len(self.voltage_preprocessed)
 
         # ---- interpolating ------------------------------------------
-        f = interp1d(self.voltage_preprocessed, self.capacity_preprocessed, kind=self.interpolation_method)
+        logging.debug(" - interpolating capacity(voltage)")
+        f = interp1d(
+            self.voltage_preprocessed,
+            self.capacity_preprocessed,
+            kind=self.interpolation_method
+        )
 
         self.voltage_inverted = np.linspace(v1, v2, len_voltage)
-        self.voltage_inverted_step = (v2 - v1) / (len(self.voltage_inverted, ) - 1)
+        self.voltage_inverted_step = (v2 - v1) / (len_voltage - 1)
         self.capacity_inverted = f(self.voltage_inverted)
 
         if self.smoothing:
-            savgol_filter_window_divisor = np.amin((self.savgol_filter_window_divisor_default, len_voltage / 5))
-            savgol_filter_window_length = int(len(self.voltage_inverted) / savgol_filter_window_divisor)
+            logging.debug(" - smoothing (savgol filter window)")
+            savgol_filter_window_divisor = np.amin(
+                (self.savgol_filter_window_divisor_default, len_voltage / 5)
+            )
+
+            savgol_filter_window_length = int(
+                len(self.voltage_inverted) / savgol_filter_window_divisor
+            )
+
             if savgol_filter_window_length % 2 == 0:
                 savgol_filter_window_length -= 1
 
-            self.capacity_inverted = savgol_filter(self.capacity_inverted,
-                                                   np.amax([3, savgol_filter_window_length]),
-                                                   self.savgol_filter_window_order)
+            self.capacity_inverted = savgol_filter(
+                self.capacity_inverted,
+                np.amax([3, savgol_filter_window_length]),
+                self.savgol_filter_window_order
+            )
 
         # ---  diff --------------------
         if self.increment_method == "diff":
+            logging.debug(" - diff using DIFF")
             self.incremental_capacity = np.ediff1d(self.capacity_inverted) / self.voltage_inverted_step
             self._incremental_capacity = self.incremental_capacity
             # --- need to adjust voltage ---
-            self.voltage_processed = self.voltage_inverted[1:] + 0.5 * self.voltage_inverted_step  # centering
+            self._voltage_processed = self.voltage_inverted[1:]
+            self.voltage_processed = self.voltage_inverted[1:] - 0.5 * self.voltage_inverted_step  # centering
+
+        elif self.increment_method == "hist":
+            logging.debug(" - diff using HIST")
+            raise NotImplementedError
 
     def post_process_data(self, voltage=None, incremental_capacity=None,
                           voltage_step=None):
         """perform post-processing (smoothing, normalisation, interpolation) of
         the data"""
+
+        logging.debug("post-processing data")
 
         if voltage is None:
             voltage = self.voltage_processed
@@ -231,17 +305,21 @@ class Converter(object):
             voltage_step = self.voltage_inverted_step
 
         if self.post_smoothing:
-            logging.debug("post smoothing")
-            logging.debug(f"using voltage fwhm: {self.voltage_fwhm}")
+            logging.debug(" - post smoothing (gaussian)")
+            logging.debug(f"    * using voltage fwhm: {self.voltage_fwhm}")
             points_fwhm = int(self.voltage_fwhm / voltage_step)
-            sigma = np.amax([2, points_fwhm / 2])
+
+            sigma = np.amax([1, points_fwhm / 2])
+
             self.incremental_capacity = gaussian_filter1d(
                 incremental_capacity, sigma=sigma, order=self.gaussian_order,
                 mode=self.gaussian_mode,
-                cval=self.gaussian_cval, truncate=self.gaussian_truncate
+                cval=self.gaussian_cval,
+                truncate=self.gaussian_truncate
             )
 
         if self.normalise:
+            logging.debug(" - normalizing")
             area = simps(incremental_capacity, voltage)
             self.incremental_capacity = incremental_capacity * self.normalising_factor / abs(area)
 
@@ -252,6 +330,7 @@ class Converter(object):
             if self.fixed_voltage_range:
                 fixed_range = True
         if fixed_range:
+            logging.debug(" - using fixed voltage range (interpolating)")
             v1, v2, number_of_points = self.fixed_voltage_range
             v = np.linspace(v1, v2, number_of_points)
             f = interp1d(x=self.voltage_processed, y=self.incremental_capacity,
@@ -268,8 +347,11 @@ def value_bounds(x):
 
 
 def index_bounds(x):
-    """returns tuple with first and last item in pandas Series x"""
-    return x.iloc[0], x.iloc[-1]
+    """returns tuple with first and last item"""
+    if isinstance(x, (pd.DataFrame, pd.Series)):
+        return x.iloc[0], x.iloc[-1]
+    else:
+        return x[0], x[-1]
 
 
 def dqdv_cycle(cycle, splitter=True):
@@ -375,45 +457,69 @@ def dqdv_cycles(cycles):
     return ica_df
 
 
-def dqdv(voltage, capacity, voltage_fwhm=0.01, pre_smoothing=True, post_smoothing=True, post_normalization=True,
+def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
+         voltage_fwhm=0.01, pre_smoothing=True, diff_smoothing=False,
+         post_smoothing=True, post_normalization=True,
          interpolation_method=None, gaussian_order=None, gaussian_mode=None, gaussian_cval=None,
          gaussian_truncate=None, points_pr_split=None, savgol_filter_window_divisor_default=None,
-         savgol_filter_window_order=None):
-    """Convenience functions for creating dq-dv data from given capacity and voltage data.
+         savgol_filter_window_order=None, max_points=None):
+
+    """Convenience functions for creating dq-dv data from given capacity
+    and voltage data.
 
     Args:
-        voltage:
-        capacity:
-        voltage_fwhm:
-        pre_smoothing:
-        post_smoothing:
-        post_normalization:
-        interpolation_method:
-        gaussian_order:
-        gaussian_mode:
+        voltage: nd.array or pd.Series
+        capacity: nd.array or pd.Series
+        voltage_resolution: used for interpolating voltage data (e.g. 0.005)
+        capacity_resolution: used for interpolating capacity data
+        voltage_fwhm: used for setting the post-processing gaussian sigma
+        pre_smoothing: set to True for pre-smoothing (window)
+        diff_smoothing: set to True for smoothing during differentiation (window)
+        post_smoothing: set to True for post-smoothing (gaussian)
+        post_normalization: set to True for normalising to capacity
+        interpolation_method: scipy interpolation method
+        gaussian_order: int
+        gaussian_mode: mode
         gaussian_cval:
         gaussian_truncate:
-        points_pr_split:
-        savgol_filter_window_divisor_default:
-        savgol_filter_window_order:
+        points_pr_split: only used when investigating data using splits
+        savgol_filter_window_divisor_default: used for window smoothing
+        savgol_filter_window_order: used for window smoothing
+        max_points: restricting to max points in vector (capacity-selected)
 
     Returns: voltage, dqdv
 
+    Notes:
+        PEC data (Helge)
+            pre_smoothing = False
+            diff_smoothing = False
+            pos_smoothing = False
+            voltage_resolution = 0.005
+        PEC data (Preben)
+            ...
+        Arbin data (IFE)
+            ...
     """
-    """Convenience functions for creating dq-dv data from given capacity and
-    voltage data"""
 
     converter = Converter()
     logging.debug("dqdv - starting")
     logging.debug("dqdv - created Converter obj")
     converter.pre_smoothing = pre_smoothing
     converter.post_smoothing = post_smoothing
+    converter.smoothing = diff_smoothing
     converter.normalise = post_normalization
     converter.voltage_fwhm = voltage_fwhm
     logging.debug(f"converter.pre_smoothing: {converter.pre_smoothing}")
     logging.debug(f"converter.post_smoothing: {converter.post_smoothing}")
+    logging.debug(f"converter.smoothing: {converter.smoothing}")
     logging.debug(f"converter.normalise: {converter.normalise}")
     logging.debug(f"converter.voltage_fwhm: {converter.voltage_fwhm}")
+
+    if voltage_resolution is not None:
+        converter.voltage_resolution = voltage_resolution
+
+    if capacity_resolution is not None:
+        converter.capacity_resolution = capacity_resolution
 
     if savgol_filter_window_divisor_default is not None:
         converter.savgol_filter_window_divisor_default = savgol_filter_window_divisor_default
@@ -444,6 +550,9 @@ def dqdv(voltage, capacity, voltage_fwhm=0.01, pre_smoothing=True, post_smoothin
 
     if points_pr_split is not None:
         converter.points_pr_split = points_pr_split
+
+    if max_points is not None:
+        converter.max_points = max_points
 
     converter.set_data(capacity, voltage)
     converter.inspect_data()
