@@ -18,7 +18,6 @@ import cellpy._version
 
 __version__ = cellpy._version.__version__
 
-
 __all__ = ["cellreader", "dbreader", "prmreader", "prms", "filefinder"]
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -30,5 +29,5 @@ except FileNotFoundError:
 except UserWarning:
     warnings.warn("Could not read the config-file")
 
-
+cell = cellreader.cell
 

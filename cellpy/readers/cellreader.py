@@ -122,7 +122,7 @@ class CellpyData(object):
             self.tester = tester
         self.loader = None  # this will be set in the function set_instrument
         self.logger = logging.getLogger(__name__)
-        self.logger.info("created CellpyData instance")
+        self.logger.debug("created CellpyData instance")
         self.name = None
         self.profile = profile
         self.minimum_selection = {}
@@ -4112,6 +4112,7 @@ def _interpolate_df_col(df, x=None, y=None, new_x=None, dx=10.0,
 
         return new_df
 
+
 def _collect_capacity_curves(data, direction="charge"):
     """Create a list of pandas.DataFrames, one for each charge step.
 
@@ -4151,6 +4152,43 @@ def _collect_capacity_curves(data, direction="charge"):
     return charge_list, cycles, minimum_v_value, maximum_v_value
 
 
+def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
+         cycle_mode=None, auto_summary=True):
+    """Create a CellpyData object"""
+
+    from cellpy import log
+
+    log.setup_logging(default_level=logging_mode)
+    cellpy_instance = setup_cellpy_instance()
+
+    if instrument is not None:
+        cellpy_instance.set_instrument(instrument=instrument)
+
+    if cycle_mode is not None:
+        cellpy_instance.cycle_mode = cycle_mode
+
+    if filename is not None:
+        filename = Path(filename)
+
+        if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
+            logging.info(f"Loading cellpy-file: {filename}")
+            cellpy_instance.load(filename)
+        else:
+            logging.info(f"Loading raw-file: {filename}")
+            cellpy_instance.from_raw(filename)
+            if mass is not None:
+                logging.info("Setting mass")
+                cellpy_instance.set_mass(mass)
+            if auto_summary:
+                logging.info("Creating step table")
+                cellpy_instance.make_step_table()
+                logging.info("Creating summary data")
+                cellpy_instance.make_summary()
+
+    logging.info("Created CellpyData object")
+    return cellpy_instance
+
+
 def setup_cellpy_instance():
     """Prepares for a cellpy session.
 
@@ -4168,7 +4206,7 @@ def setup_cellpy_instance():
         making class and setting prms
 
     """
-    print("making class and setting prms")
+    logging.info("Making CellpyData class and setting prms")
     cellpy_instance = CellpyData()
     return cellpy_instance
 
