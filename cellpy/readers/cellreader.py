@@ -1479,11 +1479,10 @@ class CellpyData(object):
         def last(x):
             return x.iloc[-1]
 
-        def delta(x, default_other=True):
+        def delta(x):
             if x.iloc[0] == 0.0:
-                difference = x.iloc[-1] - x.iloc[0]
-                if difference != 0.0 and default_other:
-                    difference = difference/x.iloc[-1]
+                # starts from a zero value
+                difference = 100.0 * x.iloc[-1]
             else:
                 difference = (x.iloc[-1] - x.iloc[0]) * 100 / x.iloc[0]
 
@@ -1534,9 +1533,9 @@ class CellpyData(object):
 
         df_steps = df_steps.reset_index()
 
-        df_steps[shdr.type] = ''
-        df_steps[shdr.sub_type] = ''
-        df_steps[shdr.info] = ''
+        df_steps[shdr.type] = np.nan
+        df_steps[shdr.sub_type] = np.nan
+        df_steps[shdr.info] = np.nan
 
         current_limit_value_hard = self.raw_limits["current_hard"]
         current_limit_value_soft = self.raw_limits["current_soft"]
@@ -1656,8 +1655,18 @@ class CellpyData(object):
             # mask_discharge_changed
             # mask_voltage_down
 
+        # check if all the steps got categorizes
+        self.logger.debug("looking for un-categorized steps")
+        empty_rows = df_steps.loc[df_steps[shdr.type].isnull()]
+        if not empty_rows.empty:
+            logging.warning(
+                f"found {len(empty_rows)}"
+                f":{len(df_steps)} non-categorized steps "
+                f"(please, check your raw-limits)")
+
         # flatten (possible remove in the future),
         # (maybe we will implement mulitindexed tables)
+
         self.logger.debug(f"flatten columns")
         flat_cols = []
         for col in df_steps.columns:

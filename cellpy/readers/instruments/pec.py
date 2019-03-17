@@ -85,8 +85,8 @@ class PECLoader(Loader):
         """
         warnings.warn("raw limits have not been subject for testing yet")
         raw_limits = dict()
-        raw_limits["current_hard"] = 0.0000000000001
-        raw_limits["current_soft"] = 0.00001
+        raw_limits["current_hard"] = 0.1  # There is a bug in PEC
+        raw_limits["current_soft"] = 1.0
         raw_limits["stable_current_hard"] = 2.0
         raw_limits["stable_current_soft"] = 4.0
         raw_limits["stable_voltage_hard"] = 2.0
@@ -222,16 +222,16 @@ class PECLoader(Loader):
 
     def _rename_headers(self):
         logging.debug("Trying to rename the columns")
-        logging.debug("Current columns:")
-        logging.debug(self.pec_data.columns)
-        logging.debug("Rename to:")
-        logging.debug(self.headers_normal)
+        # logging.debug("Current columns:")
+        # logging.debug(self.pec_data.columns)
+        # logging.debug("Rename to:")
+        # logging.debug(self.headers_normal)
 
         for key in pec_headers_normal:
             self._rename_header(key, pec_headers_normal[key])
 
-        logging.debug("New cols:")
-        logging.debug(self.pec_data.columns)
+        # logging.debug("New cols:")
+        # logging.debug(self.pec_data.columns)
 
     def _convert_units(self):
         logging.debug("Trying to convert all data into correct units")
