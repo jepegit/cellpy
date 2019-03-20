@@ -40,6 +40,7 @@ Paths = {
     "cellpydatadir": cur_dir,
     "db_path": cur_dir,
     "filelogdir": cur_dir,
+    "examplesdir": cur_dir,
     "db_filename": "cellpy_db.xlsx",
 }
 Paths = box.Box(Paths)
@@ -193,6 +194,7 @@ _search_for_odbc_driver = True
 _use_filename_cache = True
 _sub_process_path = Path(__file__) / "../../../bin/mdbtools-win/mdb-export"
 _sub_process_path = _sub_process_path.resolve()
+_sort_if_subprocess = True
 
 _cellpyfile_root = "CellpyData"
 _cellpyfile_complevel = 1

@@ -48,9 +48,11 @@ class CyclingExperiment(BaseExperiment):
     def __init__(self, *args):
         super().__init__(*args)
         self.journal = LabJournal()
+        self.errors = dict()
 
         self.force_cellpy = False
         self.force_raw_file = False
+        self.force_recalc = False
         self.save_cellpy = True
         self.accept_errors = False
         self.all_in_memory = False
@@ -60,9 +62,8 @@ class CyclingExperiment(BaseExperiment):
         self.export_raw = True
         self.export_ica = False
         self.last_cycle = None
-        self.selected_summaries = None
 
-        self.errors = dict()
+        self.selected_summaries = None
 
     def update(self, all_in_memory=None):
         """Updates the selected datasets.
@@ -102,14 +103,14 @@ class CyclingExperiment(BaseExperiment):
                 logging.info(f"Processing {indx}")
 
             cell_data = cellreader.CellpyData()
-            if not self.force_cellpy:
+            if not self.force_cellpy or self.force_recalc:
                 logging.info(
                     "setting cycle mode (%s)..." % row.cell_type)
-                cell_data.set_cycle_mode(row.cell_type)
+                cell_data.cycle_mode = row.cell_type
 
             logging.info("loading cell")
             if not self.force_cellpy:
-                logging.debug("not forcing")
+                logging.debug("not forcing to load cellpy-file instead of raw file.")
                 try:
                     cell_data.loadcell(
                         raw_files=row.raw_file_names,
@@ -154,16 +155,16 @@ class CyclingExperiment(BaseExperiment):
             summary_tmp = cell_data.dataset.dfsummary
             logging.info("Trying to get summary_data")
 
-            if cell_data.dataset.step_table is None:
+            if cell_data.dataset.step_table is None or self.force_recalc:
                 logging.info(
-                    "No existing steptable made - running make_step_table"
+                    "Running make_step_table"
                 )
 
                 cell_data.make_step_table()
 
-            if summary_tmp is None:
+            if summary_tmp is None or self.force_recalc:
                 logging.info(
-                    "No existing summary made - running make_summary"
+                    "Running make_summary"
                 )
 
                 cell_data.make_summary(find_end_voltage=True,

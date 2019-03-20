@@ -47,8 +47,7 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def loader(self, *args, **kwargs):
+        """Loads data into a DataSet object and returns it"""
         pass
 
-    def convert_units(self):
-        pass
 

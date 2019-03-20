@@ -57,7 +57,9 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
 
         if default_level:
             w_txt = "\nCould not set custom default level for logger"
-            if default_level not in ["INFO", "DEBUG"]:
+            if default_level not in [
+                "INFO", "DEBUG", logging.INFO, logging.DEBUG
+            ]:
                 _txt = "\nonly 'INFO' and 'DEBUG' is supported"
                 _txt += " as default_level"
                 warnings.warn(w_txt + _txt)
@@ -65,7 +67,7 @@ def setup_logging(default_json_path=None, default_level=None, env_key='LOG_CFG',
             else:
                 try:
                     config["handlers"]["console"]["level"] = default_level
-                    if default_level == "DEBUG":
+                    if default_level in ["DEBUG", logging.DEBUG]:
                         config["handlers"]["console"]["formatter"] = "stamped"
 
                 except Exception as e:
