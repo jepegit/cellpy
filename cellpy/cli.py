@@ -350,13 +350,18 @@ def _check_import_pyodbc():
 
     if is_posix:
         print(" checking existence of mdb-export")
-        import subprocess
         sub_process_path = "mdb-export"
+        from subprocess import PIPE, run
+
+        command = ["command", "-v", sub_process_path]
 
         try:
-            x = subprocess.check_output(["command", "-v", sub_process_path])
-            if x:
-                print(f" - location: {x.decode().strip()}")
+            result = run(command, stdout=PIPE, stderr=PIPE,
+                         universal_newlines=True)
+            if result.returncode == 0:
+                print(f" - found it: {result.stdout}")
+            else:
+                print(f" - failed finding it")
 
             if is_macos:
                 driver = "/usr/local/lib/libmdbodbc.dylib"
@@ -375,7 +380,7 @@ def _check_import_pyodbc():
         DRIVER = prms.odbc_driver
     except AttributeError:
         print("FYI: you have not defined any odbc_driver(s) "
-                      "in your prm file! Maybe not too smart of you?")
+              "in your prm file! Maybe not too smart of you?")
         DRIVER = "NO DRIVER"
 
     use_ado = False
@@ -429,7 +434,8 @@ def _check_import_pyodbc():
             "\nCould not find any odbc-drivers suitable for .res-type files. "
             "Check out the homepage of pydobc for info on installing drivers")
         print("One solution that might work is downloading "
-              "the Microsoft Access database engine (in correct bytes (32 or 64)) "
+              "the Microsoft Access database engine "
+              "(in correct bytes (32 or 64)) "
               "from:\n"
               "https://www.microsoft.com/en-us/download/details.aspx?id=13255")
         print("Or install mdbtools and set it up "
@@ -681,12 +687,6 @@ def _dump_params():
     prmreader.info()
 
 
-cli.add_command(setup)
-cli.add_command(info)
-cli.add_command(pull)
-cli.add_command(run)
-
-
 def _download_g_blob(name, local_path):
     import urllib.request
     dirs = local_path.parent
@@ -780,6 +780,12 @@ def _pull(gdirpath="examples", rootpath=None,
             _download_g_file(repo, gfilename.as_posix(), nfilename)
 
 
+cli.add_command(setup)
+cli.add_command(info)
+cli.add_command(pull)
+cli.add_command(run)
+
+
 def _main_pull():
     if sys.platform == "win32":
         rootpath = pathlib.Path(r"C:\Temp\cellpy_user")
@@ -847,9 +853,7 @@ def _cli_setup_interactive():
 
 if __name__ == "__main__":
     print("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
-    #_cli_setup_interactive()
     _main_pull()
-
     print("ok")
 
 
