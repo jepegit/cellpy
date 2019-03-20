@@ -70,6 +70,13 @@ def test_info_params():
     assert "prms.Paths.outdatadir" in result.output
 
 
+def test_info_check():
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["info", "--check"])
+    print("\n", result.output)
+    assert result.exit_code == 0
+
+
 def test_pull_tests(tmp_path):
     runner = CliRunner()
     opts = list()

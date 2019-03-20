@@ -297,12 +297,170 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
     return o
 
 
+def _check_import_cellpy():
+    try:
+        import cellpy
+        from cellpy import log
+        from cellpy.readers import cellreader
+        return True
+    except:
+        return False
+
+
+def _check_import_pyodbc():
+    from cellpy.parameters import prms
+    import platform
+
+    ODBC = prms._odbc
+    SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
+
+    use_subprocess = prms.Instruments.use_subprocess
+    detect_subprocess_need = prms.Instruments.detect_subprocess_need
+    print()
+    print(f" reading prms")
+    print(f" - ODBC: {ODBC}")
+    print(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
+    print(f" - use_subprocess: {use_subprocess}")
+    print(f" - detect_subprocess_need: {detect_subprocess_need}")
+    print(f" - stated office version: {prms.Instruments.office_version}")
+
+    print(" checking system")
+    is_posix = False
+    is_macos = False
+    if os.name == "posix":
+        is_posix = True
+        print(f" - running on posix")
+    current_platform = platform.system()
+    if current_platform == "Darwin":
+        is_macos = True
+        print(f" - running on a mac")
+
+    python_version, os_version = platform.architecture()
+    print(f" - python version: {python_version}")
+    print(f" - os version: {os_version}")
+
+    if not is_posix:
+        if not prms.Instruments.sub_process_path:
+            sub_process_path = str(prms._sub_process_path)
+        else:
+            sub_process_path = str(prms.Instruments.sub_process_path)
+        print(f" stated path to sub-process: {sub_process_path}")
+        if not os.path.isfile(sub_process_path):
+            print(f" - OBS! missing")
+
+    if is_posix:
+        print(" checking existence of mdb-export")
+        import subprocess
+        sub_process_path = "mdb-export"
+        try:
+            x = subprocess.check_output(["command", "-v", sub_process_path])
+            if x:
+                print(f" - location: {x.decode().strip()}")
+
+            if is_macos:
+                driver = "/usr/local/lib/libmdbodbc.dylib"
+                print(f" looks like you are on a mac (driver set to\n {driver})")
+                if not os.path.isfile(driver):
+                    print(" - but cannot find it!")
+                    return False
+            return True
+        except AssertionError:
+            print(" - not found")
+            return False
+
+    # not posix - checking for odbc drivers
+    try:
+        DRIVER = prms.odbc_driver
+    except AttributeError:
+        print("FYI: you have not defined any odbc_driver(s) "
+                      "in your prm file! Maybe not too smart of you?")
+        DRIVER = "NO DRIVER"
+
+    use_ado = False
+
+    if ODBC == "ado":
+        use_ado = True
+        print(" you stated that you prefer the ado loader")
+        print(" checking if adodbapi is installed")
+        try:
+            import adodbapi as dbloader
+        except ImportError:
+            use_ado = False
+            print(" Failed! Try setting pyodbc as your loader or install")
+            print(" adodbapi (http://adodbapi.sourceforge.net/)")
+
+    if not use_ado:
+        if ODBC == "pyodbc":
+            print(" you stated that you prefer the pyodbc loader")
+            try:
+                import pyodbc as dbloader
+            except ImportError:
+                print(" Failed! Could not import it.")
+                print(" Try 'pip install pyodbc'")
+                dbloader = None
+
+        elif ODBC == "pypyodbc":
+            print(" you stated that you prefer the pypyodbc loader")
+            try:
+                import pypyodbc as dbloader
+            except ImportError:
+                print(" Failed! Could not import it.")
+                print(" try 'pip install pypyodbc'")
+                print(" or set pyodbc as your loader in your prm file")
+                print(" (and install it)")
+                dbloader = None
+
+    print(" searching for odbc drivers")
+    try:
+        drivers = [driver for driver in dbloader.drivers() if
+                   'Microsoft Access Driver' in driver]
+        print(f"Found these: {drivers}")
+        driver = drivers[0]
+        print(f"odbc constr: {driver}")
+        return True
+
+    except IndexError as e:
+        logging.debug(
+            "Unfortunately, it seems the list of drivers is emtpy."
+        )
+        print(
+            "\nCould not find any odbc-drivers suitable for .res-type files. "
+            "Check out the homepage of pydobc for info on installing drivers")
+        print("One solution that might work is downloading "
+              "the Microsoft Access database engine (in correct bytes (32 or 64)) "
+              "from:\n"
+              "https://www.microsoft.com/en-us/download/details.aspx?id=13255")
+        print("Or install mdbtools and set it up "
+              "(check the cellpy docs for help)")
+        print("\n")
+        return False
+
+
 def _check():
     click.echo(" checking ".center(80, "-"))
-    click.echo("[cellpy] Checking is not implemented yet!")
-    click.echo("[cellpy] Hint if you run into problems!")
-    click.echo("A typical source of error is that you are"
-               " missing drivers for MS Access.")
+    failed_checks = 0
+    number_of_checks = 0
+
+    def sub_check(check_type, check_func):
+        failed = 0
+        click.echo(f"[cellpy] * - Checking {check_type}")
+        if check_func():
+            click.echo(f"[cellpy] -> succeeded!")
+        else:
+            click.echo("f[cellpy] -> failed!!!!")
+            failed = 1
+        return failed
+
+    check_types = ["cellpy imports", "importing pyodbc"]
+    check_funcs = [_check_import_cellpy, _check_import_pyodbc]
+
+    for ct, cf in zip(check_types, check_funcs):
+        failed_checks += sub_check(ct, cf)
+        number_of_checks += 1
+
+    click.echo(
+        f"[cellpy] Failed {failed_checks} of {number_of_checks} checks."
+    )
 
 
 def _write_config_file(userdir, dst_file, init_filename, dry_run):
