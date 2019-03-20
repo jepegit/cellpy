@@ -105,6 +105,20 @@ def test_su_cellpy_instance():
     cellreader.setup_cellpy_instance()
 
 
+def test_cell():
+    import cellpy
+    cellpy.cell(
+        filename=fdv.pec_file_path,
+        instrument="pec_csv",
+        mass=50_000,
+        cycle_mode="cathode",
+    )
+    cellpy.cell(
+        filename=fdv.cellpy_file_path,
+    )
+    cellpy.cell()
+
+
 @pytest.mark.slowtest
 @pytest.mark.smoketest
 def test_just_load_srno():
@@ -134,3 +148,4 @@ def test_humanize_bytes():
 def teardown_module():
     import shutil
     shutil.rmtree(fdv.output_dir)
+

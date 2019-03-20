@@ -257,6 +257,14 @@ class DataSet(object):
             empty = True
         return not empty
 
+    @property
+    def no_data(self):
+        try:
+            empty = self.dfdata.empty
+        except AttributeError:
+            empty = True
+        return empty
+
 
 def check64bit(current_system="python"):
     """checks if you are on a 64 bit platform"""
@@ -413,7 +421,7 @@ class DocInherit(object):
 
         overridden = getattr(super(cls, obj), self.name, None)
 
-        @wraps(self.mthd, assigned=('__name__','__module__'))
+        @wraps(self.mthd, assigned=('__name__', '__module__'))
         def f(*args, **kwargs):
             return self.mthd(obj, *args, **kwargs)
 

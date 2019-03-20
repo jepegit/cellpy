@@ -279,6 +279,10 @@ class Reader(object):
             insp = self._pick_info(serial_number, column_name)
             return insp
         except KeyError:
+            logger.warning("Could not read the cycle mode (using value from prms instead)")
+            logger.debug(f"cycle mode: {prms.Reader.cycle_mode}")
+            import sys
+            sys.exit()
             return prms.Reader.cycle_mode
 
     def get_loading(self, serial_number):

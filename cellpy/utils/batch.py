@@ -44,8 +44,8 @@ class Batch:
     def __str__(self):
         return str(self.experiment)
 
-    def show_pages(self):
-        return self.experiment.journal.pages.head()
+    def show_pages(self, number_of_rows=5):
+        return self.experiment.journal.pages.head(number_of_rows)
 
     @property
     def view(self):
