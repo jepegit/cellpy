@@ -352,6 +352,7 @@ def _check_import_pyodbc():
         print(" checking existence of mdb-export")
         import subprocess
         sub_process_path = "mdb-export"
+
         try:
             x = subprocess.check_output(["command", "-v", sub_process_path])
             if x:
@@ -364,6 +365,7 @@ def _check_import_pyodbc():
                     print(" - but cannot find it!")
                     return False
             return True
+
         except AssertionError:
             print(" - not found")
             return False
@@ -455,7 +457,10 @@ def _check():
     check_funcs = [_check_import_cellpy, _check_import_pyodbc]
 
     for ct, cf in zip(check_types, check_funcs):
-        failed_checks += sub_check(ct, cf)
+        try:
+            failed_checks += sub_check(ct, cf)
+        except Exception as e:
+            click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
 
     click.echo(
