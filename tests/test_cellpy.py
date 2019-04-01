@@ -99,6 +99,16 @@ def test_load_and_save_resfile(clean_dir):
     assert os.path.isfile(new_file)
 
 
+def test_load_resfile_diagnostics(clean_dir):
+    import os
+    from cellpy import cellreader
+    from cellpy import prms
+    prms.Reader.diagnostics = True
+    f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
+    new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
+    assert os.path.isfile(new_file)
+
+
 def test_su_cellpy_instance():
     # somehow pytest fails to find the test if it is called test_setup_xxx
     from cellpy import cellreader

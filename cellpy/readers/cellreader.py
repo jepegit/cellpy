@@ -1260,7 +1260,7 @@ class CellpyData(object):
         # TODO: @jepe - include sub_steps here
         """Get the step numbers of selected type.
 
-        Returns the selected step_numbers for the  elected type of step(s).
+        Returns the selected step_numbers for the selected type of step(s).
 
         Args:
             steptype (string): string identifying type of step.
@@ -1377,7 +1377,7 @@ class CellpyData(object):
         # if not pdtype, return a dict instead
         # self.logger.debug("out as dict; out[cycle] = [s1,s2,...]")
         # self.logger.debug("(same behaviour as find_step_numbers)")
-        self.logger.debug("return dict of lists")
+        # self.logger.debug("return dict of lists")
         out = dict()
         for cycle in cycle_numbers:
             steplist = []
@@ -1711,7 +1711,7 @@ class CellpyData(object):
             self.logger.info("error - cannot find %s" % s_txt)
             sys.exit(-1)
 
-        self.logger.debug(f"selecting cycle {cycle} step {step}")
+        # self.logger.debug(f"selecting cycle {cycle} step {step}")
         v = test.dfdata[
             (test.dfdata[c_txt] == cycle) & (test.dfdata[s_txt] == step)
         ]
@@ -1733,6 +1733,7 @@ class CellpyData(object):
                        last_cycle=None):
         # export voltage - capacity curves to .csv file
 
+        self.logger.debug("START exporing cycles")
         time_00 = time.time()
         lastname = "_cycles.csv"
         if sep is None:
@@ -1764,7 +1765,7 @@ class CellpyData(object):
                     shift = _last
                     # print(f"shifted = {shift}, first={_first}")
                 df = self.get_cap(
-                    list_of_cycles, dataset_number=dataset_number,
+                    cycle, dataset_number=dataset_number,
                     method=method,
                     shift=shift,
                     )
@@ -1803,6 +1804,7 @@ class CellpyData(object):
         txt += " exported."
         self.logger.info(txt)
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        self.logger.debug("END exporing cycles")
 
     def _export_cycles_old(self, dataset_number, setname=None,
                        sep=None, outname=None, shifted=False, method=None,
@@ -2652,7 +2654,7 @@ class CellpyData(object):
 
         initial = True
         for current_cycle in cycle:
-            # self.logger.debug(f"processing cycle {current_cycle}")
+            self.logger.debug(f"processing cycle {current_cycle}")
             try:
                 cc, cv = self.get_ccap(current_cycle, dataset_number)
                 dc, dv = self.get_dcap(current_cycle, dataset_number)
