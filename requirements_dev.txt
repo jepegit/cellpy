@@ -10,4 +10,5 @@ Sphinx>=1.5.5
 pytest>=3.0.7
 twine>=1.9.1
 numpy==1.15.4
+pytest-benchmark
 
