@@ -55,6 +55,7 @@ FileNames = box.Box(FileNames)
 # Reader
 # --------------------------
 Reader = {
+    "diagnostics": False,
     "filestatuschecker": 'size',
     "force_step_table_creation": True,
     "force_all": False,  # not used yet - should be used when saving
