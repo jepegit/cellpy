@@ -1,6 +1,6 @@
 import os
 from psutil import Process
-
+from pathlib import Path
 
 import pytest
 import tempfile
@@ -13,8 +13,10 @@ from cellpy import log
 from cellpy import prms
 from cellpy.readers.core import humanize_bytes
 
-
-log.setup_logging(default_level="DEBUG")
+f_in = Path("../testdata/data/20160805_test001_45_cc_01.res")
+# /Users/jepe/scripting/cellpy/dev_utils/check_memory.py
+# /Users/jepe/scripting/cellpy/testdata/data/20160805_test001_45_cc_01.res
+log.setup_logging(default_level="INFO")
 
 
 @pytest.fixture()
@@ -39,16 +41,25 @@ def main():
 
     def run_cellpy_command():
         from cellpy import cellreader
-        # TODO: fix this
-        clean_dir = "xxx"
-        f_in = "xxx"
-        # new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
+        clean_dir = tempfile.mkdtemp()
+        return cellreader.load_and_save_resfile(f_in, None, clean_dir)
 
-    g = get_consumed_ram()
-    print(humanize_bytes(g))
-    run_cellpy_command()
-    g = get_consumed_ram()
-    print(humanize_bytes(g))
+    g0 = get_consumed_ram()
+    cum_g = 0
+    print(80 * "=")
+    print(f"Memory usage start: {humanize_bytes(g0)} ({g0} b)")
+    print(80 * "=")
+    for j in range(5):
+        run_cellpy_command()
+        g = get_consumed_ram()
+        cum_g += (g - g0)
+        print(80 * "=")
+        print(f"Memory usage [{j}]: {humanize_bytes(g)} ({g} b) "
+              f"[delta: {humanize_bytes(g - g0)} ({g - g0}) b]")
+        print(80 * "=")
+        g0 = g
+
+    print(f"Total memory leak: {humanize_bytes(cum_g)}")
 
 
 if __name__ == "__main__":
