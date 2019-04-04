@@ -49,7 +49,7 @@ def main():
     print(80 * "=")
     print(f"Memory usage start: {humanize_bytes(g0)} ({g0} b)")
     print(80 * "=")
-    for j in range(5):
+    for j in range(20):
         run_cellpy_command()
         g = get_consumed_ram()
         cum_g += (g - g0)

@@ -665,7 +665,7 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
     return voltage, incremental_capacity
 
 
-def dqdv_cycles(cycles, **kwargs):
+def dqdv_cycles(cycles, not_merged=False, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycles.
 
@@ -675,6 +675,8 @@ def dqdv_cycles(cycles, **kwargs):
         Args:
             cycles (pandas.DataFrame): the cycle data ('cycle', 'voltage',
                  'capacity', 'direction' (1 or -1)).
+            not_merged (bool): return list of frames instead of concatenating (
+                defaults to False).
 
         Returns:
             pandas.DataFrame with columns 'cycle', 'voltage', 'dq'.
@@ -697,6 +699,7 @@ def dqdv_cycles(cycles, **kwargs):
 
     ica_dfs = list()
     cycle_group = cycles.groupby("cycle")
+    keys = list()
     for cycle_number, cycle in cycle_group:
 
         v, dq = dqdv_cycle(cycle, splitter=True, **kwargs)
@@ -706,9 +709,16 @@ def dqdv_cycles(cycles, **kwargs):
                 "dq": dq,
             }
         )
-        _ica_df["cycle"] = cycle_number
-        _ica_df = _ica_df[['cycle', 'voltage', 'dq']]
+        if not not_merged:
+            _ica_df["cycle"] = cycle_number
+            _ica_df = _ica_df[['cycle', 'voltage', 'dq']]
+        else:
+            keys.append(cycle_number)
+            _ica_df = _ica_df[['voltage', 'dq']]
         ica_dfs.append(_ica_df)
+
+    if not_merged:
+        return keys, ica_dfs
 
     ica_df = pd.concat(ica_dfs)
     return ica_df
@@ -733,7 +743,7 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
         pre_smoothing: set to True for pre-smoothing (window)
         diff_smoothing: set to True for smoothing during differentiation (window)
         post_smoothing: set to True for post-smoothing (gaussian)
-        post_normalization: set to True for normalising to capacity
+        post_normalization: set to True for normalizing to capacity
         interpolation_method: scipy interpolation method
         gaussian_order: int
         gaussian_mode: mode
@@ -859,7 +869,7 @@ def _make_ica_charge_curves(cycles_dfs, cycle_numbers,
     return incremental_charge_list
 
 
-def _dqdv_combinded_frame(cell, **kwargs):
+def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
     """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
 
         Args:
@@ -877,18 +887,29 @@ def _dqdv_combinded_frame(cell, **kwargs):
         categorical_column=True,
         label_cycle_number=True,
     )
-    ica_df = dqdv_cycles(cycles, **kwargs)
+    ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
+
+    if not tidy:
+        # dqdv_cycles returns a list of cycle numbers and a list of DataFrames
+        # if not_merged is set to True (or not False)
+        keys, ica_df = ica_df
+        ica_df = pd.concat(ica_df, axis=1, keys=keys)
+        return ica_df
+
     assert isinstance(ica_df, pd.DataFrame)
     return ica_df
 
 
-def dqdv_frames(cell, split=False, **kwargs):
+def dqdv_frames(cell, split=False, tidy=True, **kwargs):
     """Returns dqdv data as pandas.DataFrame(s) for all cycles.
 
             Args:
                 cell (CellpyData-object).
                 split (bool): return one frame for charge and one for
                     discharge if True (defaults to False).
+                tidy (bool): returns the split frames in wide format (defaults
+                    to True. Remark that this option is currently not available
+                    for non-split frames).
 
             Returns:
                 pandas.DataFrame(s) with the following columns:
@@ -901,16 +922,16 @@ def dqdv_frames(cell, split=False, **kwargs):
                 >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
                 >>> charge_df.plot(x=("voltage", "v"))
     """
-    # TODO: should add option for normalising based on first cycle capacity
+    # TODO: should add option for normalizing based on first cycle capacity
     # this is e.g. done by first finding the first cycle capacity (nom_cap)
     # (or use nominal capacity given as input) and then propagating this to
     # Converter using the key-word arguments
     #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
 
     if split:
-        return _dqdv_split_frames(cell, tidy=True, **kwargs)
+        return _dqdv_split_frames(cell, tidy=tidy, **kwargs)
     else:
-        return _dqdv_combinded_frame(cell, **kwargs)
+        return _dqdv_combinded_frame(cell, tidy=tidy, **kwargs)
 
 
 def _dqdv_split_frames(cell, tidy=False, **kwargs):
