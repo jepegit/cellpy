@@ -1,10 +1,12 @@
 """arbin res-type data files"""
 import os
+import sys
 import tempfile
 import shutil
 import logging
 import platform
 import warnings
+import time
 import numpy as np
 
 import pandas as pd
@@ -13,9 +15,10 @@ from cellpy.readers.core import FileID, DataSet, \
     check64bit, humanize_bytes, doc_inherit
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
-from cellpy.parameters import prms
+from cellpy import prms
 
-DEBUG_MODE = False
+DEBUG_MODE = prms.Reader.diagnostics
+
 ALLOW_MULTI_TEST_FILE = False
 
 # Select odbc module
@@ -34,16 +37,26 @@ current_platform = platform.system()
 if current_platform == "Darwin":
     is_macos = True
 
+if DEBUG_MODE:
+    logging.debug("DEBUG_MODE")
+    logging.debug(f"ODBC: {ODBC}")
+    logging.debug(f"SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
+    logging.debug(f"use_subprocess: {use_subprocess}")
+    logging.debug(f"detect_subprocess_need: {detect_subprocess_need}")
+    logging.debug(f"current_platform: {current_platform}")
+
 if detect_subprocess_need:
     logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
     if python_version == "64bit" and prms.Instruments.office_version == "32bit":
-        logging.debug("python 64bit and office 32bit -> setting use_subprocess to True")
+        logging.debug("python 64bit and office 32bit -> "
+                      "setting use_subprocess to True")
         use_subprocess = True
 
 if use_subprocess and not is_posix:
     # The windows users most likely have a strange custom path to mdbtools etc.
-    logging.debug("using subprocess (most lilkely mdbtools) on non-posix (most likely windows)")
+    logging.debug("using subprocess (most lilkely mdbtools) "
+                  "on non-posix (most likely windows)")
     if not prms.Instruments.sub_process_path:
         sub_process_path = str(prms._sub_process_path)
     else:
@@ -53,11 +66,9 @@ if is_posix:
     sub_process_path = "mdb-export"
 
 try:
-    DRIVER = prms.odbc_driver
+    driver_dll = prms.Instruments.odbc_driver
 except AttributeError:
-    logging.debug("FYI: you have not defined any odbc_driver(s) "
-                  "in your prm file! Maybe not too smart of you?")
-    DRIVER = "NO DRIVER"
+    driver_dll = None
 
 use_ado = False
 
@@ -83,6 +94,9 @@ if not use_ado:
         except ImportError:
             warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
             dbloader = None
+
+if DEBUG_MODE:
+    logging.debug(f"dbloader: {dbloader}")
 
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
@@ -183,22 +197,30 @@ class ArbinLoader(Loader):
                 driver = drivers[0]
 
             except IndexError as e:
-                logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
-                driver = DRIVER
+                logging.debug("Unfortunately, it seems the "
+                              "list of drivers is emtpy.")
+                logging.debug("Use driver-name from config (if existing).")
+                driver = driver_dll
                 if is_macos:
                     driver = "/usr/local/lib/libmdbodbc.dylib"
                 else:
-                    self.logger.error(e)
-                    print(e)
-                    print("\nCould not find any odbc-drivers suitable for .res-type files. "
-                          "Check out the homepage of pydobc for info on installing drivers")
-                    print("One solution that might work is downloading "
-                          "the Microsoft Access database engine (in correct bytes (32 or 64)) "
-                          "from:\n"
-                          "https://www.microsoft.com/en-us/download/details.aspx?id=13255")
-                    print("Or install mdbtools and set it up "
-                          "(check the cellpy docs for help)")
-                    print("\n")
+                    if not driver:
+                        print("\nCould not find any odbc-drivers suitable "
+                              "for .res-type files. "
+                              "Check out the homepage of pydobc for info on "
+                              "installing drivers")
+                        print("One solution that might work is downloading "
+                              "the Microsoft Access database engine (in correct"
+                              " bytes (32 or 64)) "
+                              "from:\n"
+                              "https://www.microsoft.com/en-us/download/"
+                              "details.aspx?id=13255")
+                        print("Or install mdbtools and set it up "
+                              "(check the cellpy docs for help)")
+                        print("\n")
+                    else:
+                        logging.debug("Using driver dll from config file")
+                        logging.debug(f"driver dll: {driver}")
 
             self.logger.debug(f"odbc constr: {driver}")
 
@@ -210,6 +232,9 @@ class ArbinLoader(Loader):
                 driver = 'Microsoft Access Driver (*.mdb)'
             self.logger.debug("odbc constr: {}".format(driver))
         constr = 'Driver=%s;Dbq=%s' % (driver, temp_filename)
+
+        logging.debug(f"constr: {constr}")
+
         return constr
 
     def _clean_up_loadres(self, cur, conn, filename):
@@ -515,6 +540,9 @@ class ArbinLoader(Loader):
         """
         # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
 
+        if DEBUG_MODE:
+            time_0 = time.time()
+
         new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
@@ -658,16 +686,26 @@ class ArbinLoader(Loader):
                 logging.debug(txt)
             # normal_df = normal_df.set_index("Data_Point")
             data.dfsummary = summary_df
+            if DEBUG_MODE:
+                mem_usage = normal_df.memory_usage()
+                logging.debug(
+                    f"memory usage for "
+                    f"loaded data: \n{mem_usage}"
+                    f"\ntotal: {humanize_bytes(mem_usage.sum())}")
+                logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
+
             data.dfdata = normal_df
             data.raw_data_files_length.append(length_of_test)
             new_tests.append(data)
+
         return new_tests
 
     def _normal_table_generator(self, **kwargs):
         pass
 
     def _load_res_normal_table(self, conn, test_ID, bad_steps):
-        # Note that this function is run each time you use the loader. This means that it is not ideal for
+        # Note that this function is run each time you use the loader.
+        # This means that it is not ideal for
         # handling generators etc
 
         self.logger.debug("starting loading raw-data")
@@ -711,9 +749,14 @@ class ArbinLoader(Loader):
         self.logger.debug("INFO ABOUT LOAD RES NORMAL")
         self.logger.debug("sql statement: %s" % sql)
 
+        if DEBUG_MODE:
+            current_memory_usage = sys.getsizeof(self)
+
         if not prms.Instruments['chunk_size']:
             self.logger.debug("no chunk-size given")
+            # memory here
             normal_df = pd.read_sql_query(sql, conn)
+            # memory here
             length_of_test = normal_df.shape[0]
             self.logger.debug("loaded to normal_df (length = %i)" % length_of_test)
         else:

@@ -26,4 +26,6 @@ dependencies:
   - pip:
     - lmfit
     - python-box
+    - pytest-benchmark
+    - pytest-timeout
 
