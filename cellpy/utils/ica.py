@@ -830,6 +830,40 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
     return converter.voltage_processed, converter.incremental_capacity
 
 
+def dqdv_frames(cell, split=False, tidy=True, **kwargs):
+    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
+
+            Args:
+                cell (CellpyData-object).
+                split (bool): return one frame for charge and one for
+                    discharge if True (defaults to False).
+                tidy (bool): returns the split frames in wide format (defaults
+                    to True. Remark that this option is currently not available
+                    for non-split frames).
+
+            Returns:
+                pandas.DataFrame(s) with the following columns:
+                    cycle: cycle number (if split is set to True).
+                    voltage: voltage
+                    dq: the incremental capacity
+
+            Example:
+                >>> from cellpy.utils import ica
+                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
+                >>> charge_df.plot(x=("voltage", "v"))
+    """
+    # TODO: should add option for normalizing based on first cycle capacity
+    # this is e.g. done by first finding the first cycle capacity (nom_cap)
+    # (or use nominal capacity given as input) and then propagating this to
+    # Converter using the key-word arguments
+    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
+
+    if split:
+        return _dqdv_split_frames(cell, tidy=tidy, **kwargs)
+    else:
+        return _dqdv_combinded_frame(cell, tidy=tidy, **kwargs)
+
+
 def _constrained_dq_dv_using_dataframes(capacity, minimum_v,
                                         maximum_v, **kwargs):
     converter = Converter(**kwargs)
@@ -898,40 +932,6 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
 
     assert isinstance(ica_df, pd.DataFrame)
     return ica_df
-
-
-def dqdv_frames(cell, split=False, tidy=True, **kwargs):
-    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
-
-            Args:
-                cell (CellpyData-object).
-                split (bool): return one frame for charge and one for
-                    discharge if True (defaults to False).
-                tidy (bool): returns the split frames in wide format (defaults
-                    to True. Remark that this option is currently not available
-                    for non-split frames).
-
-            Returns:
-                pandas.DataFrame(s) with the following columns:
-                    cycle: cycle number (if split is set to True).
-                    voltage: voltage
-                    dq: the incremental capacity
-
-            Example:
-                >>> from cellpy.utils import ica
-                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
-                >>> charge_df.plot(x=("voltage", "v"))
-    """
-    # TODO: should add option for normalizing based on first cycle capacity
-    # this is e.g. done by first finding the first cycle capacity (nom_cap)
-    # (or use nominal capacity given as input) and then propagating this to
-    # Converter using the key-word arguments
-    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
-
-    if split:
-        return _dqdv_split_frames(cell, tidy=tidy, **kwargs)
-    else:
-        return _dqdv_combinded_frame(cell, tidy=tidy, **kwargs)
 
 
 def _dqdv_split_frames(cell, tidy=False, **kwargs):
