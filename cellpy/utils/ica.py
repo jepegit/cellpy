@@ -934,7 +934,11 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
     return ica_df
 
 
-def _dqdv_split_frames(cell, tidy=False, **kwargs):
+def _dqdv_split_frames(cell, tidy=False,
+                       trim_taper_steps=None,
+                       steps_to_skip=None,
+                       steptable=None,
+                       **kwargs):
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
         Args:
@@ -956,7 +960,10 @@ def _dqdv_split_frames(cell, tidy=False, **kwargs):
     """
     charge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
         cell,
-        direction="charge"
+        direction="charge",
+        trim_taper_steps=trim_taper_steps,
+        steps_to_skip=steps_to_skip,
+        steptable=steptable,
     )
     # charge_df = pd.concat(
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
@@ -973,7 +980,10 @@ def _dqdv_split_frames(cell, tidy=False, **kwargs):
 
     dcharge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
         cell,
-        direction="discharge"
+        direction="discharge",
+        trim_taper_steps=trim_taper_steps,
+        steps_to_skip=steps_to_skip,
+        steptable=steptable,
     )
     ica_dcharge_dfs = _make_ica_charge_curves(
         dcharge_dfs, cycles, minimum_v, maximum_v,

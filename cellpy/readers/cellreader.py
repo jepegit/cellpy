@@ -155,6 +155,7 @@ class CellpyData(object):
 
         self.list_of_step_types = ['charge', 'discharge',
                                    'cv_charge', 'cv_discharge',
+                                   'taper_charge', 'taper_discharge',
                                    'charge_cv', 'discharge_cv',
                                    'ocvrlx_up', 'ocvrlx_down', 'ir',
                                    'rest', 'not_known']
@@ -1256,8 +1257,11 @@ class CellpyData(object):
 
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False,
                          cycle_number=None, dataset_number=None,
+                         trim_taper_steps=None,
+                         steps_to_skip=None,
                          steptable=None):
         # TODO: @jepe - include sub_steps here
+        # TODO: @jepe - include option for not selecting taper steps here
         """Get the step numbers of selected type.
 
         Returns the selected step_numbers for the selected type of step(s).
@@ -1269,6 +1273,9 @@ class CellpyData(object):
             cycle_number (int): selected cycle, selects all if not set.
             dataset_number (int): test number (default first)
                 (usually not used).
+            trim_taper_steps (integer): number of taper steps to skip (counted
+                from the end, i.e. 1 means skip last step in each cycle).
+            steps_to_skip (list): step numbers that should not be included.
             steptable (pandas.DataFrame): optional steptable
 
         Returns:
@@ -1288,6 +1295,9 @@ class CellpyData(object):
 
         """
         # self.logger.debug("Trying to get step-types")
+        if steps_to_skip is None:
+            steps_to_skip = []
+
         if steptable is None:
             dataset_number = self._validate_dataset_number(dataset_number)
             if dataset_number is None:
@@ -1368,8 +1378,16 @@ class CellpyData(object):
             else:
                 cycle_numbers = [cycle_number, ]
 
+        if trim_taper_steps is not None:
+            trim_taper_steps = -trim_taper_steps
+            self.logger.debug("taper steps to trim given")
+
         if pdtype:
-            self.logger.debug("return pandas dataframe")
+            self.logger.debug("Return pandas dataframe.")
+            if trim_taper_steps:
+                self.logger.info("Trimming taper steps is currently not"
+                                 "possible when returning pd.DataFrame. "
+                                 "Do it manually insteaD.")
             out = st[st[shdr.type].isin(steptypes) &
                      st[shdr.cycle].isin(cycle_numbers)]
             return out
@@ -1378,19 +1396,25 @@ class CellpyData(object):
         # self.logger.debug("out as dict; out[cycle] = [s1,s2,...]")
         # self.logger.debug("(same behaviour as find_step_numbers)")
         # self.logger.debug("return dict of lists")
+        # self.logger.warning(
+        #     "returning dict will be deprecated",
+        # )
         out = dict()
         for cycle in cycle_numbers:
+
             steplist = []
             for s in steptypes:
                 step = st[(st[shdr.type] == s) &
                           (st[shdr.cycle] == cycle)][shdr.step].tolist()
-                for newstep in step:
-                    steplist.append(int(newstep))
-                    # int(step.iloc[0])
-                    # self.is_empty(steps)
+                for newstep in step[:trim_taper_steps]:
+                    if newstep in steps_to_skip:
+                        self.logger.debug(f"skipping step {newstep}")
+                    else:
+                        steplist.append(int(newstep))
             if not steplist:
                 steplist = [0]
             out[cycle] = steplist
+
         return out
 
     def load_step_specifications(self, file_name, short=False,
@@ -2548,7 +2572,7 @@ class CellpyData(object):
             v /= 60.0
         return v
 
-    def get_dcap(self, cycle=None, dataset_number=None):
+    def get_dcap(self, cycle=None, dataset_number=None, **kwargs):
         """Returns discharge_capacity (in mAh/g), and voltage."""
 
         #  TODO: should return a DataFrame as default
@@ -2558,10 +2582,10 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        dc, v = self._get_cap(cycle, dataset_number, "discharge")
+        dc, v = self._get_cap(cycle, dataset_number, "discharge", **kwargs)
         return dc, v
 
-    def get_ccap(self, cycle=None, dataset_number=None):
+    def get_ccap(self, cycle=None, dataset_number=None, **kwargs):
         """Returns charge_capacity (in mAh/g), and voltage."""
 
         #  TODO: should return a DataFrame as default
@@ -2571,7 +2595,7 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        cc, v = self._get_cap(cycle, dataset_number, "charge")
+        cc, v = self._get_cap(cycle, dataset_number, "charge", **kwargs)
         return cc, v
 
     def get_cap(self, cycle=None, dataset_number=None,
@@ -2584,6 +2608,7 @@ class CellpyData(object):
                 dx=0.1,
                 number_of_points=None,
                 dynamic=False,
+                **kwargs,
                 ):
         """Gets the capacity for the run.
         For cycle=None: not implemented yet, cycle set to 1.
@@ -2656,8 +2681,8 @@ class CellpyData(object):
         for current_cycle in cycle:
             self.logger.debug(f"processing cycle {current_cycle}")
             try:
-                cc, cv = self.get_ccap(current_cycle, dataset_number)
-                dc, dv = self.get_dcap(current_cycle, dataset_number)
+                cc, cv = self.get_ccap(current_cycle, dataset_number, **kwargs)
+                dc, dv = self.get_dcap(current_cycle, dataset_number, **kwargs)
             except NullData as e:
                 self.logger.debug(e)
                 self.logger.debug("breaking out of loop")
@@ -2791,7 +2816,12 @@ class CellpyData(object):
         else:
             return capacity, voltage
 
-    def _get_cap(self, cycle=None, dataset_number=None, cap_type="charge"):
+    def _get_cap(self, cycle=None, dataset_number=None,
+                 cap_type="charge",
+                 trim_taper_steps=None,
+                 steps_to_skip=None,
+                 steptable=None,
+                 ):
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: @jepe - does not allow for constant voltage yet?
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -2807,7 +2837,11 @@ class CellpyData(object):
 
         cycles = self.get_step_numbers(steptype=cap_type, allctypes=False,
                                        cycle_number=cycle,
-                                       dataset_number=dataset_number)
+                                       dataset_number=dataset_number,
+                                       trim_taper_steps=trim_taper_steps,
+                                       steps_to_skip=steps_to_skip,
+                                       steptable=steptable,
+                                       )
 
         c = pd.Series()
         v = pd.Series()
@@ -4125,7 +4159,11 @@ def _interpolate_df_col(df, x=None, y=None, new_x=None, dx=10.0,
         return new_df
 
 
-def _collect_capacity_curves(data, direction="charge"):
+def _collect_capacity_curves(data, direction="charge",
+                             trim_taper_steps=None,
+                             steps_to_skip=None,
+                             steptable=None,
+                             ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
     The DataFrames are named by its cycle number.
@@ -4142,9 +4180,19 @@ def _collect_capacity_curves(data, direction="charge"):
     for cycle in cycles:
         try:
             if direction == "charge":
-                q, v = data.get_ccap(cycle)
+                q, v = data.get_ccap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                )
             else:
-                q, v = data.get_dcap(cycle)
+                q, v = data.get_dcap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                )
 
         except NullData as e:
             logging.warning(e)
