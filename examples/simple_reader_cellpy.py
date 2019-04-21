@@ -9,7 +9,12 @@ import sys
 
 import matplotlib.pyplot as plt
 
-from cellpy import cellreader, prmreader
+from cellpy import cellreader
+
+# from cellpy import prmreader, log
+
+# log.setup_logging(default_level="DEBUG")
+# prmreader.info()
 
 print("still alive so I guess all the needed modules are installed")
 
@@ -33,7 +38,11 @@ rawfiles = [os.path.join(rawdir, f) for f in files]
 print("\n", "your files".center(80, "-"))
 
 for f in rawfiles:
-    print(f)
+    exists = "OK"
+    if not os.path.isfile(f):
+        exists = "NOT FOUND"
+    print(f"{f} {exists}")
+
 print(80*"-")
 
 d = cellreader.CellpyData().from_raw(rawfiles)
