@@ -168,13 +168,13 @@ class ArbinLoader(Loader):
     @staticmethod
     def get_raw_limits():
         raw_limits = dict()
-        raw_limits["current_hard"] = 0.0000000000001
-        raw_limits["current_soft"] = 0.00001
+        raw_limits["current_hard"] = 0.000_000_000_000_1
+        raw_limits["current_soft"] = 0.000_01
         raw_limits["stable_current_hard"] = 2.0
         raw_limits["stable_current_soft"] = 4.0
         raw_limits["stable_voltage_hard"] = 2.0
         raw_limits["stable_voltage_soft"] = 4.0
-        raw_limits["stable_charge_hard"] = 0.9
+        raw_limits["stable_charge_hard"] = 0.1
         raw_limits["stable_charge_soft"] = 5.0
         raw_limits["ir_change"] = 0.00001
         return raw_limits
