@@ -1464,9 +1464,10 @@ class CellpyData(object):
 
         self.logger.debug("_sort_data: no datapoint header to sort by")
 
-    def make_step_table(self, custom_step_definition=False,
+    def make_step_table(self,
                         step_specifications=None,
                         short=False,
+                        profiling=False,
                         dataset_number=None):
 
         """ Create a table (v.4) that contains summary information for each step.
@@ -1483,6 +1484,15 @@ class CellpyData(object):
             Voltage info (average,  stdev, max, min, start, end, delta) -
             Type (from pre-defined list) - SubType -
             Info
+
+         Args:
+            step_specifications (pandas.DataFrame): step specifications
+            short (bool): step specifications in short format
+            profiling (bool): turn on profiling
+            dataset_number: defaults to self.dataset_number
+
+        Returns:
+            None
         """
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -1490,6 +1500,8 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
 
+        if profiling:
+            print("PROFILING MAKE_STEP_TABLE".center(80, "="))
         nhdr = self.headers_normal
         shdr = self.headers_step_table
 
@@ -1549,6 +1561,8 @@ class CellpyData(object):
         by = [shdr.cycle, shdr.step, shdr.sub_step]
 
         self.logger.debug(f"groupby: {by}")
+        if profiling:
+            time_01 = time.time()
 
         gf = df.groupby(by=by)
         df_steps = (gf.agg(
@@ -1556,6 +1570,10 @@ class CellpyData(object):
         ).rename(columns={'amin': 'min', 'amax': 'max', 'mean': 'avr'}))
 
         df_steps = df_steps.reset_index()
+
+        if profiling:
+            print(f"*** groupby-agg: {time.time() - time_01} s")
+            time_01 = time.time()
 
         df_steps[shdr.type] = np.nan
         df_steps[shdr.sub_type] = np.nan
@@ -1611,7 +1629,11 @@ class CellpyData(object):
             (df_steps.loc[:, (shdr.charge, "delta")] == 0) & \
             (df_steps.loc[:, (shdr.charge, "delta")] == 0)
 
-        if custom_step_definition:
+        if profiling:
+            print(f"*** masking: {time.time() - time_01} s")
+            time_01 = time.time()
+
+        if step_specifications is not None:
             self.logger.debug("parsing custom step definition")
             if not short:
                 self.logger.debug("using long format (cycle,step)")
@@ -1679,6 +1701,9 @@ class CellpyData(object):
             # mask_discharge_changed
             # mask_voltage_down
 
+        if profiling:
+            print(f"*** introspect: {time.time() - time_01} s")
+
         # check if all the steps got categorizes
         self.logger.debug("looking for un-categorized steps")
         empty_rows = df_steps.loc[df_steps[shdr.type].isnull()]
@@ -1692,6 +1717,8 @@ class CellpyData(object):
         # (maybe we will implement mulitindexed tables)
 
         self.logger.debug(f"flatten columns")
+        if profiling:
+            time_01 = time.time()
         flat_cols = []
         for col in df_steps.columns:
             if isinstance(col, tuple):
@@ -1702,6 +1729,10 @@ class CellpyData(object):
             flat_cols.append(col)
 
         df_steps.columns = flat_cols
+
+        if profiling:
+            print(f"*** flattening: {time.time() - time_01} s")
+            time_01 = time.time()
 
         self.datasets[dataset_number].step_table = df_steps
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
