@@ -1687,6 +1687,7 @@ class CellpyData(object):
                 f"found {len(empty_rows)}"
                 f":{len(df_steps)} non-categorized steps "
                 f"(please, check your raw-limits)")
+            # logging.debug(empty_rows)
 
         # flatten (possible remove in the future),
         # (maybe we will implement mulitindexed tables)
