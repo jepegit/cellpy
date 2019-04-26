@@ -1712,6 +1712,7 @@ class CellpyData(object):
                 f"found {len(empty_rows)}"
                 f":{len(df_steps)} non-categorized steps "
                 f"(please, check your raw-limits)")
+            # logging.debug(empty_rows)
 
         # flatten (possible remove in the future),
         # (maybe we will implement mulitindexed tables)
@@ -2638,6 +2639,7 @@ class CellpyData(object):
                 interpolated=False,
                 dx=0.1,
                 number_of_points=None,
+                ignore_errors=True,
                 dynamic=False,
                 **kwargs,
                 ):
@@ -2660,7 +2662,7 @@ class CellpyData(object):
                 (usually not used).
             label_cycle_number (bool): add column for cycle number
                 (tidy format).
-            split (bool): return a list of c and v instead of the defualt
+            split (bool): return a list of c and v instead of the default
                 that is to return them combined in a DataFrame. This is only
                 possible for some specific combinations of options (neither
                 categorical_colum=True or label_cycle_number=True are
@@ -2671,8 +2673,9 @@ class CellpyData(object):
             dx (float): the step used when interpolating.
             number_of_points (int): number of points to use (over-rides dx)
                 for interpolation (i.e. the length of the interpolated data).
+            ignore_errors (bool): don't break out of loop if an error occurs.
             dynamic: for dynamic retrieving data from cellpy-file.
-                [NOT IMPLEMNETED YET]
+                [NOT IMPLEMENTED YET]
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -2710,137 +2713,139 @@ class CellpyData(object):
 
         initial = True
         for current_cycle in cycle:
+            error = False
             self.logger.debug(f"processing cycle {current_cycle}")
             try:
                 cc, cv = self.get_ccap(current_cycle, dataset_number, **kwargs)
                 dc, dv = self.get_dcap(current_cycle, dataset_number, **kwargs)
             except NullData as e:
+                error = True
                 self.logger.debug(e)
-                self.logger.debug("breaking out of loop")
-                break
+                if not ignore_errors:
+                    self.logger.debug("breaking out of loop")
+                    break
+            if not error:
+                if cc.empty:
+                    self.logger.debug("get_ccap returns empty cc Series")
 
-            if cc.empty:
-                self.logger.debug("get_ccap returns empty cc Series")
+                if dc.empty:
+                    self.logger.debug("get_ccap returns empty dc Series")
 
-            if dc.empty:
-                self.logger.debug("get_ccap returns empty dc Series")
-
-            if initial:
-                # self.logger.debug("(initial cycle)")
-                prev_end = shift
-                initial = False
-
-            if self._cycle_mode == "anode":
-                _first_step_c = dc
-                _first_step_v = dv
-                _last_step_c = cc
-                _last_step_v = cv
-            else:
-                _first_step_c = cc
-                _first_step_v = cv
-                _last_step_c = dc
-                _last_step_v = dv
-
-            if method == "back-and-forth":
-                _last = np.amax(_first_step_c)
-                # should change amax to last point
-                _first = None
-                _new_first = None
-                if _last_step_c is not None:
-                    _last_step_c = _last - _last_step_c + prev_end
+                if initial:
+                    # self.logger.debug("(initial cycle)")
+                    prev_end = shift
+                    initial = False
+                if self._cycle_mode == "anode":
+                    _first_step_c = dc
+                    _first_step_v = dv
+                    _last_step_c = cc
+                    _last_step_v = cv
                 else:
-                    self.logger.debug("no last charge step found")
-                if _first_step_c is not None:
-                    _first = _first_step_c.iat[0]
-                    _first_step_c += prev_end
-                    _new_first = _first_step_c.iat[0]
-                else:
-                    self.logger.debug("probably empty (_first_step_c is None)")
-                # self.logger.debug(f"current shifts used: prev_end = {prev_end}")
-                # self.logger.debug(f"shifting start from {_first} to "
-                #                   f"{_new_first}")
+                    _first_step_c = cc
+                    _first_step_v = cv
+                    _last_step_c = dc
+                    _last_step_v = dv
 
-                prev_end = np.amin(_last_step_c)
-                # should change amin to last point
-
-            elif method == "forth":
-                _last = np.amax(_first_step_c)
-                # should change amax to last point
-                if _last_step_c is not None:
-                    _last_step_c += _last + prev_end
-                else:
-                    self.logger.debug("no last charge step found")
-                if _first_step_c is not None:
-                    _first_step_c += prev_end
-                else:
-                    self.logger.debug("no first charge step found")
-
-                prev_end = np.amax(_last_step_c)
-                # should change amin to last point
-
-            elif method == "forth-and-forth":
-                if _last_step_c is not None:
-                    _last_step_c += shift
-                else:
-                    self.logger.debug("no last charge step found")
-                if _first_step_c is not None:
-                    _first_step_c += shift
-                else:
-                    self.logger.debug("no first charge step found")
-
-            if return_dataframe:
-
-                try:
-                    _first_df = pd.DataFrame(
-                            {
-                                "voltage": _first_step_v.values,
-                                "capacity": _first_step_c.values
-                             }
-                    )
-                    if interpolated:
-                        _first_df = _interpolate_df_col(
-                            _first_df, y="capacity", x="voltage",
-                            dx=dx, number_of_points=number_of_points,
-                            direction=-1
-                        )
-                    if categorical_column:
-                        _first_df["direction"] = -1
-
-                    _last_df = pd.DataFrame(
-                        {
-                            "voltage": _last_step_v.values,
-                            "capacity": _last_step_c.values
-                        }
-                    )
-                    if interpolated:
-                        _last_df = _interpolate_df_col(
-                            _last_df, y="capacity", x="voltage",
-                            dx=dx, number_of_points=number_of_points,
-                            direction=1
-                        )
-                    if categorical_column:
-                        _last_df["direction"] = 1
-
-                except AttributeError:
-                    self.logger.info(f"could not extract cycle {current_cycle}")
-                else:
-                    c = pd.concat([_first_df, _last_df], axis=0)
-                    if label_cycle_number:
-                        c.insert(0, "cycle", current_cycle)
-                        # c["cycle"] = current_cycle
-                        # c = c[["cycle", "voltage", "capacity", "direction"]]
-                    if cycle_df.empty:
-                        cycle_df = c
+                if method == "back-and-forth":
+                    _last = np.amax(_first_step_c)
+                    # should change amax to last point
+                    _first = None
+                    _new_first = None
+                    if _last_step_c is not None:
+                        _last_step_c = _last - _last_step_c + prev_end
                     else:
-                        cycle_df = pd.concat([cycle_df, c], axis=0)
+                        self.logger.debug("no last charge step found")
+                    if _first_step_c is not None:
+                        _first = _first_step_c.iat[0]
+                        _first_step_c += prev_end
+                        _new_first = _first_step_c.iat[0]
+                    else:
+                        self.logger.debug("probably empty (_first_step_c is None)")
+                    # self.logger.debug(f"current shifts used: prev_end = {prev_end}")
+                    # self.logger.debug(f"shifting start from {_first} to "
+                    #                   f"{_new_first}")
 
-            else:
-                logging.warning("returning non-dataframe")
-                c = pd.concat([_first_step_c, _last_step_c], axis=0)
-                v = pd.concat([_first_step_v, _last_step_v], axis=0)
+                    prev_end = np.amin(_last_step_c)
+                    # should change amin to last point
 
-                capacity = pd.concat([capacity, c], axis=0)
-                voltage = pd.concat([voltage, v], axis=0)
+                elif method == "forth":
+                    _last = np.amax(_first_step_c)
+                    # should change amax to last point
+                    if _last_step_c is not None:
+                        _last_step_c += _last + prev_end
+                    else:
+                        self.logger.debug("no last charge step found")
+                    if _first_step_c is not None:
+                        _first_step_c += prev_end
+                    else:
+                        self.logger.debug("no first charge step found")
+
+                    prev_end = np.amax(_last_step_c)
+                    # should change amin to last point
+
+                elif method == "forth-and-forth":
+                    if _last_step_c is not None:
+                        _last_step_c += shift
+                    else:
+                        self.logger.debug("no last charge step found")
+                    if _first_step_c is not None:
+                        _first_step_c += shift
+                    else:
+                        self.logger.debug("no first charge step found")
+
+                if return_dataframe:
+
+                    try:
+                        _first_df = pd.DataFrame(
+                                {
+                                    "voltage": _first_step_v.values,
+                                    "capacity": _first_step_c.values
+                                 }
+                        )
+                        if interpolated:
+                            _first_df = _interpolate_df_col(
+                                _first_df, y="capacity", x="voltage",
+                                dx=dx, number_of_points=number_of_points,
+                                direction=-1
+                            )
+                        if categorical_column:
+                            _first_df["direction"] = -1
+
+                        _last_df = pd.DataFrame(
+                            {
+                                "voltage": _last_step_v.values,
+                                "capacity": _last_step_c.values
+                            }
+                        )
+                        if interpolated:
+                            _last_df = _interpolate_df_col(
+                                _last_df, y="capacity", x="voltage",
+                                dx=dx, number_of_points=number_of_points,
+                                direction=1
+                            )
+                        if categorical_column:
+                            _last_df["direction"] = 1
+
+                    except AttributeError:
+                        self.logger.info(f"could not extract cycle {current_cycle}")
+                    else:
+                        c = pd.concat([_first_df, _last_df], axis=0)
+                        if label_cycle_number:
+                            c.insert(0, "cycle", current_cycle)
+                            # c["cycle"] = current_cycle
+                            # c = c[["cycle", "voltage", "capacity", "direction"]]
+                        if cycle_df.empty:
+                            cycle_df = c
+                        else:
+                            cycle_df = pd.concat([cycle_df, c], axis=0)
+
+                else:
+                    logging.warning("returning non-dataframe")
+                    c = pd.concat([_first_step_c, _last_step_c], axis=0)
+                    v = pd.concat([_first_step_v, _last_step_v], axis=0)
+
+                    capacity = pd.concat([capacity, c], axis=0)
+                    voltage = pd.concat([voltage, v], axis=0)
 
         if return_dataframe:
             return cycle_df
