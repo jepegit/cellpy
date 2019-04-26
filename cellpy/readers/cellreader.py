@@ -1451,8 +1451,7 @@ class CellpyData(object):
             self.logger.info("cycle col is missing")
             raise IOError
 
-        self.make_step_table(custom_step_definition=True,
-                             step_specifications=step_specs,
+        self.make_step_table(step_specifications=step_specs,
                              short=short)
 
     def _sort_data(self, dataset):
@@ -1733,7 +1732,6 @@ class CellpyData(object):
 
         if profiling:
             print(f"*** flattening: {time.time() - time_01} s")
-            time_01 = time.time()
 
         self.datasets[dataset_number].step_table = df_steps
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
