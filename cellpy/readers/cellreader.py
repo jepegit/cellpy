@@ -90,9 +90,15 @@ class CellpyData(object):
                 txt += "\n"
             txt += "]"
         else:
-            txt = "datasets: []"
+            txt += "datasets: []"
         txt += "\n"
         return txt
+
+    def __bool__(self):
+        if self.datasets:
+            return True
+        else:
+            return False
 
     def __init__(self, filenames=None,
                  selected_scans=None,
@@ -2148,6 +2154,7 @@ class CellpyData(object):
         infotbl, fidtbl = self._create_infotable(
             dataset_number=dataset_number
         )
+
         root = prms._cellpyfile_root
 
         self.logger.debug("trying to save to hdf5")
@@ -4263,6 +4270,10 @@ def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
 
     if filename is not None:
         filename = Path(filename)
+        if not filename.is_file():
+            print(f"Could not find {filename}")
+            print("Returning None")
+            return
 
         if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
             logging.info(f"Loading cellpy-file: {filename}")
@@ -4270,6 +4281,11 @@ def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
         else:
             logging.info(f"Loading raw-file: {filename}")
             cellpy_instance.from_raw(filename)
+            if not cellpy_instance:
+                print("Could not load file: check log!")
+                print("Returning None")
+                return
+
             if mass is not None:
                 logging.info("Setting mass")
                 cellpy_instance.set_mass(mass)
