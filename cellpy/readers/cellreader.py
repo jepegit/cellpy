@@ -1519,7 +1519,7 @@ class CellpyData(object):
                 # starts from a zero value
                 difference = 100.0 * x.iloc[-1]
             else:
-                difference = (x.iloc[-1] - x.iloc[0]) * 100 / x.iloc[0]
+                difference = (x.iloc[-1] - x.iloc[0]) * 100 / abs(x.iloc[0])
 
             return difference
 
@@ -2712,7 +2712,7 @@ class CellpyData(object):
         initial = True
         for current_cycle in cycle:
             error = False
-            self.logger.debug(f"processing cycle {current_cycle}")
+            # self.logger.debug(f"processing cycle {current_cycle}")
             try:
                 cc, cv = self.get_ccap(current_cycle, dataset_number, **kwargs)
                 dc, dv = self.get_dcap(current_cycle, dataset_number, **kwargs)
