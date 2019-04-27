@@ -174,7 +174,7 @@ class ArbinLoader(Loader):
         raw_limits["stable_current_soft"] = 4.0
         raw_limits["stable_voltage_hard"] = 2.0
         raw_limits["stable_voltage_soft"] = 4.0
-        raw_limits["stable_charge_hard"] = 0.01
+        raw_limits["stable_charge_hard"] = 0.001
         raw_limits["stable_charge_soft"] = 5.0
         raw_limits["ir_change"] = 0.00001
         return raw_limits

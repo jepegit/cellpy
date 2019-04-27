@@ -87,7 +87,7 @@ class Batch:
         self.experiment.journal.pages = pd.DataFrame(columns=[
                 "filenames", "masses", "total_masses", "loadings",
                 "fixed", "labels", "cell_type", "raw_file_names",
-                "cellpy_file_names", "groups"
+                "cellpy_file_names", "groups", "sub_groups",
         ])
         self.experiment.journal.pages.set_index("filenames", inplace=True)
 
