@@ -85,3 +85,4 @@ xdist/
 
 
 .pytest_cache/
+cellpy_debug.log.1

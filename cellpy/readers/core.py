@@ -228,20 +228,20 @@ class DataSet(object):
         txt += self._header_str("DATA")
         try:
             txt += str(self.dfdata.describe())
-        except AttributeError:
+        except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
         txt += self._header_str("SUMMARY")
         try:
             txt += str(self.dfsummary.describe())
-        except AttributeError:
+        except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
         txt += self._header_str("STEP TABLE")
         try:
             txt += str(self.step_table.describe())
             txt += str(self.step_table.head())
-        except AttributeError:
+        except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
         txt += self._header_str("RAW UNITS")
