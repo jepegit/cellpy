@@ -7,6 +7,8 @@ from cellpy.utils.batch_tools import batch_helpers as helper
 from cellpy.utils.batch_tools.batch_core import BaseExperiment
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 
+logger = logging.getLogger(__name__)
+
 
 class CyclingExperiment(BaseExperiment):
     """Load experimental data into memory.
@@ -40,14 +42,18 @@ class CyclingExperiment(BaseExperiment):
            summary columns to make joint summaries from (optional).
         errors (dict): contains a dictionary listing all the errors encountered.
 
+    Args:
+        db_reader (str or object): custom db_reader (see doc on db_reader).
+
     Example:
 
 
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
+        db_reader = kwargs.pop("db_reader", "default")
         super().__init__(*args)
-        self.journal = LabJournal()
+        self.journal = LabJournal(db_reader=db_reader)
         self.errors = dict()
 
         self.force_cellpy = False

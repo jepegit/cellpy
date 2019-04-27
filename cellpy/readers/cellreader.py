@@ -2954,7 +2954,7 @@ class CellpyData(object):
                     ]
 
         ocv_steps = ocv_steps.loc[
-                    ocv_steps.type.str.startswith(ocv_rlx_id), :
+                    ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :
                     ]
 
         if remove_first:

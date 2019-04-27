@@ -19,7 +19,9 @@ COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
 
 class Batch:
     def __init__(self, *args, **kwargs):
-        self.experiment = CyclingExperiment()
+        db_reader = kwargs.pop("db_reader", "default")
+        logger.debug("creating CyclingExperiment")
+        self.experiment = CyclingExperiment(db_reader=db_reader)
         if len(args) > 0:
             self.experiment.journal.name = args[0]
 
@@ -76,6 +78,21 @@ class Batch:
     @info_df.setter
     def info_df(self, df):
         self.experiment.journal.pages = df
+
+    def create_empty_info_df(self):
+        logging.info("Creating an empty info dataframe")
+        logging.info(f"name: {self.experiment.journal.name}")
+        logging.info(f"project: {self.experiment.journal.project}")
+
+        self.experiment.journal.pages = pd.DataFrame(columns=[
+                "filenames", "masses", "total_masses", "loadings",
+                "fixed", "labels", "cell_type", "raw_file_names",
+                "cellpy_file_names", "groups"
+        ])
+        self.experiment.journal.pages.set_index("filenames", inplace=True)
+
+        self.experiment.journal.generate_folder_names()
+        self.experiment.journal.paginate()
 
     def create_info_df(self):
         logging.info(f"name: {self.experiment.journal.name}")
@@ -181,6 +198,7 @@ def init(*args, **kwargs):
     import cellpy.log as log
     log.setup_logging(custom_log_dir=prms.Paths["filelogdir"],
                       default_level=default_log_level)
+    logging.debug(f"returning Batch(args: {args}, kwargs: {kwargs})")
     return Batch(*args, **kwargs)
 
 
