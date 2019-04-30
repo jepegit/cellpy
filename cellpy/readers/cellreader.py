@@ -1483,7 +1483,8 @@ class CellpyData(object):
 
         The format of the step_table is:
 
-            index: cycleno - stepno - sub-step-no
+            index: cycleno - stepno - sub-step-no - ustep
+            Time info (average, stdev, max, min, start, end, delta) -
             Logging info (average, stdev, max, min, start, end, delta) -
             Current info (average, stdev, max, min, start, end, delta) -
             Voltage info (average,  stdev, max, min, start, end, delta) -
@@ -1531,6 +1532,7 @@ class CellpyData(object):
 
         keep = [
             nhdr.data_point_txt,
+            nhdr.test_time_txt,
             nhdr.step_time_txt,
             nhdr.step_index_txt,
             nhdr.cycle_index_txt,
@@ -1553,6 +1555,7 @@ class CellpyData(object):
             nhdr.step_index_txt: shdr.step,
             nhdr.sub_step_index_txt: shdr.sub_step,
             nhdr.data_point_txt: shdr.point,
+            nhdr.test_time_txt: shdr.test_time,
             nhdr.step_time_txt: shdr.step_time,
             nhdr.current_txt: shdr.current,
             nhdr.voltage_txt: shdr.voltage,

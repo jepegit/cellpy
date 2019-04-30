@@ -139,6 +139,7 @@ headers_normal = box.Box(headers_normal)
 headers_step_table["test"] = "test"
 headers_step_table["cycle"] = "cycle"
 headers_step_table["step"] = "step"
+headers_step_table["test_time"] = "test_time"
 headers_step_table["step_time"] = "step_time"
 headers_step_table["sub_step"] = "sub_step"
 headers_step_table["type"] = "type"
