@@ -391,7 +391,7 @@ def Convert2mAhg(c, mass=1.0):
     Returns:
         float: 1000000 * c / mass
     """
-    return 1000000 * c / mass
+    return 1_000_000 * c / mass
 
 
 class DocInherit(object):
