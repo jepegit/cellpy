@@ -473,9 +473,9 @@ def _check():
         except Exception as e:
             click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
-
+    succeeded_checks = number_of_checks - failed_checks
     click.echo(
-        f"[cellpy] Failed {failed_checks} of {number_of_checks} checks."
+        f"[cellpy] Succeeded {succeeded_checks} of {number_of_checks} checks."
     )
 
 
