@@ -80,3 +80,8 @@ def test_ica_index_bounds(dataset):
     assert v == pytest.approx((0.15119725465774536, 1.0001134872436523), 0.0001)
 
 
+def test_ica_value_bounds():
+    x = [1, 2, 3, 4]
+    m1, m2 = ica.value_bounds(x)
+    assert m1 == 1
+    assert m2 == 4
