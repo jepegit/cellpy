@@ -1,6 +1,11 @@
 import logging
 import datetime
-from lmfit import Parameters, minimize, report_fit, Model, report_ci
+try:
+    from lmfit import Parameters, minimize, report_fit, Model, report_ci
+except ImportError as e:
+    logging.warning("Could not import lmfit. This is needed for fitting (run pip install lmfit).")
+    logging.debug(e)
+
 import numpy as np
 import math
 import matplotlib.pyplot as plt
