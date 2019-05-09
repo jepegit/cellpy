@@ -85,3 +85,12 @@ def test_ica_value_bounds():
     m1, m2 = ica.value_bounds(x)
     assert m1 == 1
     assert m2 == 4
+
+def test_ica_dqdv_cycles(dataset):
+    cycles = dataset.get_cap(
+        method="forth-and-forth",
+        categorical_column=True,
+        label_cycle_number=True,
+    )
+    dQdV = ica.dqdv_cycles(cycles)
+
