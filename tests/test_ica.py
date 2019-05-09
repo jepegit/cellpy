@@ -86,6 +86,7 @@ def test_ica_value_bounds():
     assert m1 == 1
     assert m2 == 4
 
+
 def test_ica_dqdv_cycles(dataset):
     cycles = dataset.get_cap(
         method="forth-and-forth",
