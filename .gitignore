@@ -80,6 +80,8 @@ cellpy/parametres/_cellpy_prms_devel.ini
 *.py.bak
 .swp
 
+*.rej
+
 sh.exe.stackdump
 xdist/
 
