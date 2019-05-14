@@ -23,6 +23,7 @@ dependencies:
   - watchdog
   - pytest
   - twine
+  - invoke
   - pip:
     - lmfit
     - python-box
