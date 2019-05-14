@@ -401,6 +401,12 @@ def test_make_step_table(cellpy_data_instance):
     cellpy_data_instance.make_step_table()
 
 
+def test_make_new_step_table(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table(profiling=True)
+
+
 def test_make_summary(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)

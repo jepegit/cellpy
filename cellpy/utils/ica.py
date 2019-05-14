@@ -16,247 +16,11 @@ import pandas as pd
 from cellpy.exceptions import NullData
 from cellpy.readers.cellreader import _collect_capacity_curves
 
-try:
-    from lmfit.models import GaussianModel, PseudoVoigtModel, \
-            ExponentialGaussianModel, SkewedGaussianModel, LorentzianModel, \
-            SkewedVoigtModel, ConstantModel
-    from lmfit import CompositeModel
-except ImportError as e:
-    logging.warning("Could not import lmfit")
-
-
-METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
-
-
 # TODO: @jepe - documentation and tests
 # TODO: @jepe - fitting of o-c curves and differentiation
 # TODO: @jepe - modeling and fitting
 # TODO: @jepe - full-cell
 # TODO: @jepe - binning method (assigned to Asbjoern)
-
-
-class PeakEnsamble:
-    """A PeakEnsamble consists of a scale and a set of peaks.
-
-    The PeakEnsamble can be fitted with all the internal parameters fixed while only the scale parameter is
-    varied (jitter=False), or the scale parameter is fixed while the internal parameters (individual peak heights etc)
-    varied.
-    """
-
-    def __init__(self, fixed=False, name=None, max_point=1.0, shift=0.0,
-                 sigma_p1=0.01, scale=1.0,
-                 jitter=True):
-        self._peaks = None
-        self.shift = shift
-        self.name = name
-        self.fixed = fixed
-        self.max_point = max_point
-        self.jitter = jitter
-        self.scale = scale
-        self.sigma_p1 = sigma_p1
-        self.peak_info = dict()
-        self._peak_definitions = None
-        self.peak_var_names = None
-        self._params = None
-
-    @property
-    def peaks(self):
-        """lmfit.CompositeModel"""
-        return self._peaks
-
-    @property
-    def widgets(self):
-        """ipywidgets for controlling peak variables"""
-        raise NotImplementedError
-
-    @property
-    def params(self):
-        """lmfit.Parameters (OrderedDict)"""
-        return self._params
-
-    def _make_params(self):
-        self._params = self._peaks.make_params()
-
-    def _read_peak_definitions(self):
-        raise NotImplementedError(
-            "This method must be implemented when sub-classing")
-
-    @property
-    def peak_definitions(self):
-        return self._peak_definitions
-
-    def _create_ensamble(self):
-        try:
-            self.peak_info[self.prefixes[0]] = self.peak_types[0](
-                prefix=self.prefixes[0])
-            self.peak_info[self.prefixes[1]] = self.peak_types[1](
-                prefix=self.prefixes[1])
-        except AttributeError:
-            print("you are missing peak info")
-            return
-
-        p = self.peak_info[self.prefixes[1]]
-
-        for prfx, ptype in zip(self.prefixes[2:], self.peak_types[2:]):
-            self.peak_info[prfx] = ptype(prefix=prfx)
-            p += self.peak_info[prfx]
-
-        p *= self.peak_info[self.prefixes[0]]
-        return p
-
-    def _set_hints(self):
-
-        if self.jitter:
-            vary = True
-            vary_scale = False
-
-        scale = self.scale
-
-        value_dict = dict()
-        peak_definitions = self.peak_definitions
-        prefix_scale = self.prefixes[0]
-        prefix_peak_1 = self.prefixes[1]
-
-        # iterate through all the peaks (not the scale) and collect
-        # variables in the value_dict
-        for var_stub in peak_definitions:
-            dd = peak_definitions[var_stub]
-            val_1, ((frac_min, shift_min), (frac_max, shift_max)) = dd[0:2]
-
-            v_dict = dict()
-            v_dict[prefix_peak_1] = [val_1, frac_min * (val_1 + shift_min),
-                                     frac_max * (val_1 + shift_max)]
-
-            for prfx, (fact, step) in zip(self.prefixes[2:], dd[2:]):
-                v_dict[prfx] = [fact * (x + step) for x in
-                                v_dict[prefix_peak_1]]
-
-            value_dict[var_stub] = v_dict
-
-        # set parameter hints based on the value_dict
-        for key1 in value_dict:
-            for key2 in value_dict[key1]:
-                _vary = vary
-                _v = value_dict[key1][key2]
-                k = "".join((key2, key1))
-                self._peaks.set_param_hint(k, value=_v[0], min=_v[1], max=_v[2],
-                                           vary=_vary)
-
-        # set parameter hints for scale
-        self._peaks.set_param_hint("".join((prefix_scale, "c")), value=scale,
-                                   min=0.1 * scale, max=10 * scale,
-                                   vary=vary_scale)
-
-    def _fix_full(self, prefix):
-        """fixes all variables (but only for this ensamble)"""
-        for k in self._params:
-            if k.startswith(prefix):
-                self._params[k].vary = False
-
-
-class Silicon(PeakEnsamble):
-    def __init__(self, scale=1.0, crystalline=False, name="Si", max_point=1000,
-                 **kwargs):
-        super().__init__(sigma_p1=0.05, jitter=True, scale=scale,
-                         max_point=max_point, **kwargs)
-        self.name = name
-        self.prefixes = [self.name + x for x in
-                         ["Scale", "01", "02", "03"]]  # Always start with scale
-        self.peak_types = [ConstantModel, SkewedGaussianModel, PseudoVoigtModel,
-                           PseudoVoigtModel]
-        self.crystalline = crystalline
-        self._read_peak_definitions()
-        self._init_peaks()
-
-    def _read_peak_definitions(self):
-        self._peak_definitions = {
-            "center": [
-                0.25 + self.shift,  # value
-                ((1.0, -0.1), (1.0, 0.1)),
-                # (frac-min, shift-min), (frac-max, shift-max)
-                (1.0, 0.21),
-                # (value-frac, value-shift) between peak 1 and peak 2
-                (1.0, 0.20)
-                # (value-frac, value-shift) between peak 1 and peak 3
-            ],
-
-            "sigma": [
-                self.sigma_p1,  # value
-                ((0.1, 0.0), (10.0, 0.0)),
-                # (frac-min, shift-min), (frac-max, shift-max)
-                (1.0, 0.0),
-                (0.3, 0.0)
-            ],
-
-            "amplitude": [
-                self.sigma_p1 * self.max_point / 0.4,  # value
-                ((0.001, 0.0), (100.0, 0.0)),
-                # (frac-min, shift-min), (frac-max, shift-max)
-                (1.0, 0.0),
-                (0.002, 0.0)
-            ],
-        }
-
-    def _init_peaks(self):
-        self._peaks = self._create_ensamble()
-        self._set_hints()
-        self._set_custom_hints()
-        #  self._make_params()
-
-    def _set_custom_hints(self):
-        if not self.crystalline:
-            prefix_p3 = self.prefixes[3]
-            k = "".join([prefix_p3, "amplitude"])
-            self._peaks.set_param_hint(k, value=0.00001, min=0.000001,
-                                       vary=False)
-            for n in ["center", "sigma"]:
-                k = "".join([prefix_p3, n])
-                self._peaks.set_param_hint(k, vary=False)
-
-
-class Graphite(PeakEnsamble):
-    def __init__(self, scale=1.0, name="G", **kwargs):
-        super().__init__(max_point=10000.0, **kwargs)
-        self.name = name
-        self.sigma_p1 = 0.01
-        self.vary = False
-        self.vary_scale = True
-        self.prefixes = [self.name + x for x in
-                         ["Scale", "01"]]  # Always start with scale
-        self.peak_types = [ConstantModel, LorentzianModel]
-        self._read_peak_definitions()
-        self._init_peaks()
-
-    def _read_peak_definitions(self):
-        self._peak_definitions = {
-            "center": [
-                0.16 + self.shift,  # value
-                ((1.0, -0.05), (1.0, 0.05)),
-                # (frac-min, shift-min), (frac-max, shift-max)
-                # (1.0, 0.21),                # (value-frac, value-shift) between peak 1 and peak 2
-                # (1.0, 0.20)                 # (value-frac, value-shift) between peak 1 and peak 3
-            ],
-
-            "sigma": [
-                self.sigma_p1,  # value
-                ((0.4, 0.0), (5.0, 0.0)),
-                # (frac-min, shift-min), (frac-max, shift-max)
-                # (1.0, 0.0),
-                # (0.3, 0.0)
-            ],
-
-            "amplitude": [
-                self.sigma_p1 * self.max_point / 0.4,  # value
-                ((0.2, 0.0), (2.0, 0.0)),
-                # (frac-min, shift-min), (frac-max, shift-max)
-                # (1.0, 0.0),
-                # (0.002, 0.0)
-            ],
-        }
-
-    def _init_peaks(self):
-        self._peaks = self._create_ensamble()
-        self._set_hints()
 
 
 class Converter(object):
@@ -665,7 +429,7 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
     return voltage, incremental_capacity
 
 
-def dqdv_cycles(cycles, **kwargs):
+def dqdv_cycles(cycles, not_merged=False, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycles.
 
@@ -675,6 +439,8 @@ def dqdv_cycles(cycles, **kwargs):
         Args:
             cycles (pandas.DataFrame): the cycle data ('cycle', 'voltage',
                  'capacity', 'direction' (1 or -1)).
+            not_merged (bool): return list of frames instead of concatenating (
+                defaults to False).
 
         Returns:
             pandas.DataFrame with columns 'cycle', 'voltage', 'dq'.
@@ -697,6 +463,7 @@ def dqdv_cycles(cycles, **kwargs):
 
     ica_dfs = list()
     cycle_group = cycles.groupby("cycle")
+    keys = list()
     for cycle_number, cycle in cycle_group:
 
         v, dq = dqdv_cycle(cycle, splitter=True, **kwargs)
@@ -706,9 +473,16 @@ def dqdv_cycles(cycles, **kwargs):
                 "dq": dq,
             }
         )
-        _ica_df["cycle"] = cycle_number
-        _ica_df = _ica_df[['cycle', 'voltage', 'dq']]
+        if not not_merged:
+            _ica_df["cycle"] = cycle_number
+            _ica_df = _ica_df[['cycle', 'voltage', 'dq']]
+        else:
+            keys.append(cycle_number)
+            _ica_df = _ica_df[['voltage', 'dq']]
         ica_dfs.append(_ica_df)
+
+    if not_merged:
+        return keys, ica_dfs
 
     ica_df = pd.concat(ica_dfs)
     return ica_df
@@ -733,7 +507,7 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
         pre_smoothing: set to True for pre-smoothing (window)
         diff_smoothing: set to True for smoothing during differentiation (window)
         post_smoothing: set to True for post-smoothing (gaussian)
-        post_normalization: set to True for normalising to capacity
+        post_normalization: set to True for normalizing to capacity
         interpolation_method: scipy interpolation method
         gaussian_order: int
         gaussian_mode: mode
@@ -820,6 +594,40 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
     return converter.voltage_processed, converter.incremental_capacity
 
 
+def dqdv_frames(cell, split=False, tidy=True, **kwargs):
+    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
+
+            Args:
+                cell (CellpyData-object).
+                split (bool): return one frame for charge and one for
+                    discharge if True (defaults to False).
+                tidy (bool): returns the split frames in wide format (defaults
+                    to True. Remark that this option is currently not available
+                    for non-split frames).
+
+            Returns:
+                pandas.DataFrame(s) with the following columns:
+                    cycle: cycle number (if split is set to True).
+                    voltage: voltage
+                    dq: the incremental capacity
+
+            Example:
+                >>> from cellpy.utils import ica
+                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
+                >>> charge_df.plot(x=("voltage", "v"))
+    """
+    # TODO: should add option for normalizing based on first cycle capacity
+    # this is e.g. done by first finding the first cycle capacity (nom_cap)
+    # (or use nominal capacity given as input) and then propagating this to
+    # Converter using the key-word arguments
+    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
+
+    if split:
+        return _dqdv_split_frames(cell, tidy=tidy, **kwargs)
+    else:
+        return _dqdv_combinded_frame(cell, tidy=tidy, **kwargs)
+
+
 def _constrained_dq_dv_using_dataframes(capacity, minimum_v,
                                         maximum_v, **kwargs):
     converter = Converter(**kwargs)
@@ -859,7 +667,7 @@ def _make_ica_charge_curves(cycles_dfs, cycle_numbers,
     return incremental_charge_list
 
 
-def _dqdv_combinded_frame(cell, **kwargs):
+def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
     """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
 
         Args:
@@ -877,43 +685,24 @@ def _dqdv_combinded_frame(cell, **kwargs):
         categorical_column=True,
         label_cycle_number=True,
     )
-    ica_df = dqdv_cycles(cycles, **kwargs)
+    ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
+
+    if not tidy:
+        # dqdv_cycles returns a list of cycle numbers and a list of DataFrames
+        # if not_merged is set to True (or not False)
+        keys, ica_df = ica_df
+        ica_df = pd.concat(ica_df, axis=1, keys=keys)
+        return ica_df
+
     assert isinstance(ica_df, pd.DataFrame)
     return ica_df
 
 
-def dqdv_frames(cell, split=False, **kwargs):
-    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
-
-            Args:
-                cell (CellpyData-object).
-                split (bool): return one frame for charge and one for
-                    discharge if True (defaults to False).
-
-            Returns:
-                pandas.DataFrame(s) with the following columns:
-                    cycle: cycle number (if split is set to True).
-                    voltage: voltage
-                    dq: the incremental capacity
-
-            Example:
-                >>> from cellpy.utils import ica
-                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
-                >>> charge_df.plot(x=("voltage", "v"))
-    """
-    # TODO: should add option for normalising based on first cycle capacity
-    # this is e.g. done by first finding the first cycle capacity (nom_cap)
-    # (or use nominal capacity given as input) and then propagating this to
-    # Converter using the key-word arguments
-    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
-
-    if split:
-        return _dqdv_split_frames(cell, tidy=True, **kwargs)
-    else:
-        return _dqdv_combinded_frame(cell, **kwargs)
-
-
-def _dqdv_split_frames(cell, tidy=False, **kwargs):
+def _dqdv_split_frames(cell, tidy=False,
+                       trim_taper_steps=None,
+                       steps_to_skip=None,
+                       steptable=None,
+                       **kwargs):
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
         Args:
@@ -935,7 +724,10 @@ def _dqdv_split_frames(cell, tidy=False, **kwargs):
     """
     charge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
         cell,
-        direction="charge"
+        direction="charge",
+        trim_taper_steps=trim_taper_steps,
+        steps_to_skip=steps_to_skip,
+        steptable=steptable,
     )
     # charge_df = pd.concat(
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
@@ -952,7 +744,10 @@ def _dqdv_split_frames(cell, tidy=False, **kwargs):
 
     dcharge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
         cell,
-        direction="discharge"
+        direction="discharge",
+        trim_taper_steps=trim_taper_steps,
+        steps_to_skip=steps_to_skip,
+        steptable=steptable,
     )
     ica_dcharge_dfs = _make_ica_charge_curves(
         dcharge_dfs, cycles, minimum_v, maximum_v,

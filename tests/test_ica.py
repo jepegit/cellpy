@@ -80,3 +80,18 @@ def test_ica_index_bounds(dataset):
     assert v == pytest.approx((0.15119725465774536, 1.0001134872436523), 0.0001)
 
 
+def test_ica_value_bounds():
+    x = [1, 2, 3, 4]
+    m1, m2 = ica.value_bounds(x)
+    assert m1 == 1
+    assert m2 == 4
+
+
+def test_ica_dqdv_cycles(dataset):
+    cycles = dataset.get_cap(
+        method="forth-and-forth",
+        categorical_column=True,
+        label_cycle_number=True,
+    )
+    dQdV = ica.dqdv_cycles(cycles)
+

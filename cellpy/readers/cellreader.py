@@ -90,9 +90,15 @@ class CellpyData(object):
                 txt += "\n"
             txt += "]"
         else:
-            txt = "datasets: []"
+            txt += "datasets: []"
         txt += "\n"
         return txt
+
+    def __bool__(self):
+        if self.datasets:
+            return True
+        else:
+            return False
 
     def __init__(self, filenames=None,
                  selected_scans=None,
@@ -155,6 +161,7 @@ class CellpyData(object):
 
         self.list_of_step_types = ['charge', 'discharge',
                                    'cv_charge', 'cv_discharge',
+                                   'taper_charge', 'taper_discharge',
                                    'charge_cv', 'discharge_cv',
                                    'ocvrlx_up', 'ocvrlx_down', 'ir',
                                    'rest', 'not_known']
@@ -1256,8 +1263,11 @@ class CellpyData(object):
 
     def get_step_numbers(self, steptype='charge', allctypes=True, pdtype=False,
                          cycle_number=None, dataset_number=None,
+                         trim_taper_steps=None,
+                         steps_to_skip=None,
                          steptable=None):
         # TODO: @jepe - include sub_steps here
+        # TODO: @jepe - include option for not selecting taper steps here
         """Get the step numbers of selected type.
 
         Returns the selected step_numbers for the selected type of step(s).
@@ -1269,6 +1279,9 @@ class CellpyData(object):
             cycle_number (int): selected cycle, selects all if not set.
             dataset_number (int): test number (default first)
                 (usually not used).
+            trim_taper_steps (integer): number of taper steps to skip (counted
+                from the end, i.e. 1 means skip last step in each cycle).
+            steps_to_skip (list): step numbers that should not be included.
             steptable (pandas.DataFrame): optional steptable
 
         Returns:
@@ -1288,6 +1301,9 @@ class CellpyData(object):
 
         """
         # self.logger.debug("Trying to get step-types")
+        if steps_to_skip is None:
+            steps_to_skip = []
+
         if steptable is None:
             dataset_number = self._validate_dataset_number(dataset_number)
             if dataset_number is None:
@@ -1368,8 +1384,16 @@ class CellpyData(object):
             else:
                 cycle_numbers = [cycle_number, ]
 
+        if trim_taper_steps is not None:
+            trim_taper_steps = -trim_taper_steps
+            self.logger.debug("taper steps to trim given")
+
         if pdtype:
-            self.logger.debug("return pandas dataframe")
+            self.logger.debug("Return pandas dataframe.")
+            if trim_taper_steps:
+                self.logger.info("Trimming taper steps is currently not"
+                                 "possible when returning pd.DataFrame. "
+                                 "Do it manually insteaD.")
             out = st[st[shdr.type].isin(steptypes) &
                      st[shdr.cycle].isin(cycle_numbers)]
             return out
@@ -1378,19 +1402,25 @@ class CellpyData(object):
         # self.logger.debug("out as dict; out[cycle] = [s1,s2,...]")
         # self.logger.debug("(same behaviour as find_step_numbers)")
         # self.logger.debug("return dict of lists")
+        # self.logger.warning(
+        #     "returning dict will be deprecated",
+        # )
         out = dict()
         for cycle in cycle_numbers:
+
             steplist = []
             for s in steptypes:
                 step = st[(st[shdr.type] == s) &
                           (st[shdr.cycle] == cycle)][shdr.step].tolist()
-                for newstep in step:
-                    steplist.append(int(newstep))
-                    # int(step.iloc[0])
-                    # self.is_empty(steps)
+                for newstep in step[:trim_taper_steps]:
+                    if newstep in steps_to_skip:
+                        self.logger.debug(f"skipping step {newstep}")
+                    else:
+                        steplist.append(int(newstep))
             if not steplist:
                 steplist = [0]
             out[cycle] = steplist
+
         return out
 
     def load_step_specifications(self, file_name, short=False,
@@ -1427,8 +1457,7 @@ class CellpyData(object):
             self.logger.info("cycle col is missing")
             raise IOError
 
-        self.make_step_table(custom_step_definition=True,
-                             step_specifications=step_specs,
+        self.make_step_table(step_specifications=step_specs,
                              short=short)
 
     def _sort_data(self, dataset):
@@ -1440,9 +1469,10 @@ class CellpyData(object):
 
         self.logger.debug("_sort_data: no datapoint header to sort by")
 
-    def make_step_table(self, custom_step_definition=False,
+    def make_step_table(self,
                         step_specifications=None,
                         short=False,
+                        profiling=False,
                         dataset_number=None):
 
         """ Create a table (v.4) that contains summary information for each step.
@@ -1453,12 +1483,22 @@ class CellpyData(object):
 
         The format of the step_table is:
 
-            index: cycleno - stepno - sub-step-no
+            index: cycleno - stepno - sub-step-no - ustep
+            Time info (average, stdev, max, min, start, end, delta) -
             Logging info (average, stdev, max, min, start, end, delta) -
             Current info (average, stdev, max, min, start, end, delta) -
             Voltage info (average,  stdev, max, min, start, end, delta) -
             Type (from pre-defined list) - SubType -
             Info
+
+         Args:
+            step_specifications (pandas.DataFrame): step specifications
+            short (bool): step specifications in short format
+            profiling (bool): turn on profiling
+            dataset_number: defaults to self.dataset_number
+
+        Returns:
+            None
         """
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -1466,6 +1506,8 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
 
+        if profiling:
+            print("PROFILING MAKE_STEP_TABLE".center(80, "="))
         nhdr = self.headers_normal
         shdr = self.headers_step_table
 
@@ -1484,12 +1526,13 @@ class CellpyData(object):
                 # starts from a zero value
                 difference = 100.0 * x.iloc[-1]
             else:
-                difference = (x.iloc[-1] - x.iloc[0]) * 100 / x.iloc[0]
+                difference = (x.iloc[-1] - x.iloc[0]) * 100 / abs(x.iloc[0])
 
             return difference
 
         keep = [
             nhdr.data_point_txt,
+            nhdr.test_time_txt,
             nhdr.step_time_txt,
             nhdr.step_index_txt,
             nhdr.cycle_index_txt,
@@ -1512,6 +1555,7 @@ class CellpyData(object):
             nhdr.step_index_txt: shdr.step,
             nhdr.sub_step_index_txt: shdr.sub_step,
             nhdr.data_point_txt: shdr.point,
+            nhdr.test_time_txt: shdr.test_time,
             nhdr.step_time_txt: shdr.step_time,
             nhdr.current_txt: shdr.current,
             nhdr.voltage_txt: shdr.voltage,
@@ -1525,6 +1569,8 @@ class CellpyData(object):
         by = [shdr.cycle, shdr.step, shdr.sub_step]
 
         self.logger.debug(f"groupby: {by}")
+        if profiling:
+            time_01 = time.time()
 
         gf = df.groupby(by=by)
         df_steps = (gf.agg(
@@ -1532,6 +1578,10 @@ class CellpyData(object):
         ).rename(columns={'amin': 'min', 'amax': 'max', 'mean': 'avr'}))
 
         df_steps = df_steps.reset_index()
+
+        if profiling:
+            print(f"*** groupby-agg: {time.time() - time_01} s")
+            time_01 = time.time()
 
         df_steps[shdr.type] = np.nan
         df_steps[shdr.sub_type] = np.nan
@@ -1587,7 +1637,11 @@ class CellpyData(object):
             (df_steps.loc[:, (shdr.charge, "delta")] == 0) & \
             (df_steps.loc[:, (shdr.charge, "delta")] == 0)
 
-        if custom_step_definition:
+        if profiling:
+            print(f"*** masking: {time.time() - time_01} s")
+            time_01 = time.time()
+
+        if step_specifications is not None:
             self.logger.debug("parsing custom step definition")
             if not short:
                 self.logger.debug("using long format (cycle,step)")
@@ -1655,6 +1709,9 @@ class CellpyData(object):
             # mask_discharge_changed
             # mask_voltage_down
 
+        if profiling:
+            print(f"*** introspect: {time.time() - time_01} s")
+
         # check if all the steps got categorizes
         self.logger.debug("looking for un-categorized steps")
         empty_rows = df_steps.loc[df_steps[shdr.type].isnull()]
@@ -1663,11 +1720,14 @@ class CellpyData(object):
                 f"found {len(empty_rows)}"
                 f":{len(df_steps)} non-categorized steps "
                 f"(please, check your raw-limits)")
+            # logging.debug(empty_rows)
 
         # flatten (possible remove in the future),
         # (maybe we will implement mulitindexed tables)
 
         self.logger.debug(f"flatten columns")
+        if profiling:
+            time_01 = time.time()
         flat_cols = []
         for col in df_steps.columns:
             if isinstance(col, tuple):
@@ -1678,6 +1738,9 @@ class CellpyData(object):
             flat_cols.append(col)
 
         df_steps.columns = flat_cols
+
+        if profiling:
+            print(f"*** flattening: {time.time() - time_01} s")
 
         self.datasets[dataset_number].step_table = df_steps
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
@@ -2094,6 +2157,7 @@ class CellpyData(object):
         infotbl, fidtbl = self._create_infotable(
             dataset_number=dataset_number
         )
+
         root = prms._cellpyfile_root
 
         self.logger.debug("trying to save to hdf5")
@@ -2548,7 +2612,7 @@ class CellpyData(object):
             v /= 60.0
         return v
 
-    def get_dcap(self, cycle=None, dataset_number=None):
+    def get_dcap(self, cycle=None, dataset_number=None, **kwargs):
         """Returns discharge_capacity (in mAh/g), and voltage."""
 
         #  TODO: should return a DataFrame as default
@@ -2558,10 +2622,10 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        dc, v = self._get_cap(cycle, dataset_number, "discharge")
+        dc, v = self._get_cap(cycle, dataset_number, "discharge", **kwargs)
         return dc, v
 
-    def get_ccap(self, cycle=None, dataset_number=None):
+    def get_ccap(self, cycle=None, dataset_number=None, **kwargs):
         """Returns charge_capacity (in mAh/g), and voltage."""
 
         #  TODO: should return a DataFrame as default
@@ -2571,7 +2635,7 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        cc, v = self._get_cap(cycle, dataset_number, "charge")
+        cc, v = self._get_cap(cycle, dataset_number, "charge", **kwargs)
         return cc, v
 
     def get_cap(self, cycle=None, dataset_number=None,
@@ -2583,7 +2647,9 @@ class CellpyData(object):
                 interpolated=False,
                 dx=0.1,
                 number_of_points=None,
+                ignore_errors=True,
                 dynamic=False,
+                **kwargs,
                 ):
         """Gets the capacity for the run.
         For cycle=None: not implemented yet, cycle set to 1.
@@ -2604,7 +2670,7 @@ class CellpyData(object):
                 (usually not used).
             label_cycle_number (bool): add column for cycle number
                 (tidy format).
-            split (bool): return a list of c and v instead of the defualt
+            split (bool): return a list of c and v instead of the default
                 that is to return them combined in a DataFrame. This is only
                 possible for some specific combinations of options (neither
                 categorical_colum=True or label_cycle_number=True are
@@ -2615,8 +2681,9 @@ class CellpyData(object):
             dx (float): the step used when interpolating.
             number_of_points (int): number of points to use (over-rides dx)
                 for interpolation (i.e. the length of the interpolated data).
+            ignore_errors (bool): don't break out of loop if an error occurs.
             dynamic: for dynamic retrieving data from cellpy-file.
-                [NOT IMPLEMNETED YET]
+                [NOT IMPLEMENTED YET]
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -2654,144 +2721,151 @@ class CellpyData(object):
 
         initial = True
         for current_cycle in cycle:
-            self.logger.debug(f"processing cycle {current_cycle}")
+            error = False
+            # self.logger.debug(f"processing cycle {current_cycle}")
             try:
-                cc, cv = self.get_ccap(current_cycle, dataset_number)
-                dc, dv = self.get_dcap(current_cycle, dataset_number)
+                cc, cv = self.get_ccap(current_cycle, dataset_number, **kwargs)
+                dc, dv = self.get_dcap(current_cycle, dataset_number, **kwargs)
             except NullData as e:
+                error = True
                 self.logger.debug(e)
-                self.logger.debug("breaking out of loop")
-                break
+                if not ignore_errors:
+                    self.logger.debug("breaking out of loop")
+                    break
+            if not error:
+                if cc.empty:
+                    self.logger.debug("get_ccap returns empty cc Series")
 
-            if cc.empty:
-                self.logger.debug("get_ccap returns empty cc Series")
+                if dc.empty:
+                    self.logger.debug("get_ccap returns empty dc Series")
 
-            if dc.empty:
-                self.logger.debug("get_ccap returns empty dc Series")
-
-            if initial:
-                # self.logger.debug("(initial cycle)")
-                prev_end = shift
-                initial = False
-
-            if self._cycle_mode == "anode":
-                _first_step_c = dc
-                _first_step_v = dv
-                _last_step_c = cc
-                _last_step_v = cv
-            else:
-                _first_step_c = cc
-                _first_step_v = cv
-                _last_step_c = dc
-                _last_step_v = dv
-
-            if method == "back-and-forth":
-                _last = np.amax(_first_step_c)
-                # should change amax to last point
-                _first = None
-                _new_first = None
-                if _last_step_c is not None:
-                    _last_step_c = _last - _last_step_c + prev_end
+                if initial:
+                    # self.logger.debug("(initial cycle)")
+                    prev_end = shift
+                    initial = False
+                if self._cycle_mode == "anode":
+                    _first_step_c = dc
+                    _first_step_v = dv
+                    _last_step_c = cc
+                    _last_step_v = cv
                 else:
-                    self.logger.debug("no last charge step found")
-                if _first_step_c is not None:
-                    _first = _first_step_c.iat[0]
-                    _first_step_c += prev_end
-                    _new_first = _first_step_c.iat[0]
-                else:
-                    self.logger.debug("probably empty (_first_step_c is None)")
-                # self.logger.debug(f"current shifts used: prev_end = {prev_end}")
-                # self.logger.debug(f"shifting start from {_first} to "
-                #                   f"{_new_first}")
+                    _first_step_c = cc
+                    _first_step_v = cv
+                    _last_step_c = dc
+                    _last_step_v = dv
 
-                prev_end = np.amin(_last_step_c)
-                # should change amin to last point
-
-            elif method == "forth":
-                _last = np.amax(_first_step_c)
-                # should change amax to last point
-                if _last_step_c is not None:
-                    _last_step_c += _last + prev_end
-                else:
-                    self.logger.debug("no last charge step found")
-                if _first_step_c is not None:
-                    _first_step_c += prev_end
-                else:
-                    self.logger.debug("no first charge step found")
-
-                prev_end = np.amax(_last_step_c)
-                # should change amin to last point
-
-            elif method == "forth-and-forth":
-                if _last_step_c is not None:
-                    _last_step_c += shift
-                else:
-                    self.logger.debug("no last charge step found")
-                if _first_step_c is not None:
-                    _first_step_c += shift
-                else:
-                    self.logger.debug("no first charge step found")
-
-            if return_dataframe:
-
-                try:
-                    _first_df = pd.DataFrame(
-                            {
-                                "voltage": _first_step_v.values,
-                                "capacity": _first_step_c.values
-                             }
-                    )
-                    if interpolated:
-                        _first_df = _interpolate_df_col(
-                            _first_df, y="capacity", x="voltage",
-                            dx=dx, number_of_points=number_of_points,
-                            direction=-1
-                        )
-                    if categorical_column:
-                        _first_df["direction"] = -1
-
-                    _last_df = pd.DataFrame(
-                        {
-                            "voltage": _last_step_v.values,
-                            "capacity": _last_step_c.values
-                        }
-                    )
-                    if interpolated:
-                        _last_df = _interpolate_df_col(
-                            _last_df, y="capacity", x="voltage",
-                            dx=dx, number_of_points=number_of_points,
-                            direction=1
-                        )
-                    if categorical_column:
-                        _last_df["direction"] = 1
-
-                except AttributeError:
-                    self.logger.info(f"could not extract cycle {current_cycle}")
-                else:
-                    c = pd.concat([_first_df, _last_df], axis=0)
-                    if label_cycle_number:
-                        c.insert(0, "cycle", current_cycle)
-                        # c["cycle"] = current_cycle
-                        # c = c[["cycle", "voltage", "capacity", "direction"]]
-                    if cycle_df.empty:
-                        cycle_df = c
+                if method == "back-and-forth":
+                    _last = np.amax(_first_step_c)
+                    # should change amax to last point
+                    _first = None
+                    _new_first = None
+                    if _last_step_c is not None:
+                        _last_step_c = _last - _last_step_c + prev_end
                     else:
-                        cycle_df = pd.concat([cycle_df, c], axis=0)
+                        self.logger.debug("no last charge step found")
+                    if _first_step_c is not None:
+                        _first = _first_step_c.iat[0]
+                        _first_step_c += prev_end
+                        _new_first = _first_step_c.iat[0]
+                    else:
+                        self.logger.debug("probably empty (_first_step_c is None)")
+                    # self.logger.debug(f"current shifts used: prev_end = {prev_end}")
+                    # self.logger.debug(f"shifting start from {_first} to "
+                    #                   f"{_new_first}")
 
-            else:
-                logging.warning("returning non-dataframe")
-                c = pd.concat([_first_step_c, _last_step_c], axis=0)
-                v = pd.concat([_first_step_v, _last_step_v], axis=0)
+                    prev_end = np.amin(_last_step_c)
+                    # should change amin to last point
 
-                capacity = pd.concat([capacity, c], axis=0)
-                voltage = pd.concat([voltage, v], axis=0)
+                elif method == "forth":
+                    _last = np.amax(_first_step_c)
+                    # should change amax to last point
+                    if _last_step_c is not None:
+                        _last_step_c += _last + prev_end
+                    else:
+                        self.logger.debug("no last charge step found")
+                    if _first_step_c is not None:
+                        _first_step_c += prev_end
+                    else:
+                        self.logger.debug("no first charge step found")
+
+                    prev_end = np.amax(_last_step_c)
+                    # should change amin to last point
+
+                elif method == "forth-and-forth":
+                    if _last_step_c is not None:
+                        _last_step_c += shift
+                    else:
+                        self.logger.debug("no last charge step found")
+                    if _first_step_c is not None:
+                        _first_step_c += shift
+                    else:
+                        self.logger.debug("no first charge step found")
+
+                if return_dataframe:
+
+                    try:
+                        _first_df = pd.DataFrame(
+                                {
+                                    "voltage": _first_step_v.values,
+                                    "capacity": _first_step_c.values
+                                 }
+                        )
+                        if interpolated:
+                            _first_df = _interpolate_df_col(
+                                _first_df, y="capacity", x="voltage",
+                                dx=dx, number_of_points=number_of_points,
+                                direction=-1
+                            )
+                        if categorical_column:
+                            _first_df["direction"] = -1
+
+                        _last_df = pd.DataFrame(
+                            {
+                                "voltage": _last_step_v.values,
+                                "capacity": _last_step_c.values
+                            }
+                        )
+                        if interpolated:
+                            _last_df = _interpolate_df_col(
+                                _last_df, y="capacity", x="voltage",
+                                dx=dx, number_of_points=number_of_points,
+                                direction=1
+                            )
+                        if categorical_column:
+                            _last_df["direction"] = 1
+
+                    except AttributeError:
+                        self.logger.info(f"could not extract cycle {current_cycle}")
+                    else:
+                        c = pd.concat([_first_df, _last_df], axis=0)
+                        if label_cycle_number:
+                            c.insert(0, "cycle", current_cycle)
+                            # c["cycle"] = current_cycle
+                            # c = c[["cycle", "voltage", "capacity", "direction"]]
+                        if cycle_df.empty:
+                            cycle_df = c
+                        else:
+                            cycle_df = pd.concat([cycle_df, c], axis=0)
+
+                else:
+                    logging.warning("returning non-dataframe")
+                    c = pd.concat([_first_step_c, _last_step_c], axis=0)
+                    v = pd.concat([_first_step_v, _last_step_v], axis=0)
+
+                    capacity = pd.concat([capacity, c], axis=0)
+                    voltage = pd.concat([voltage, v], axis=0)
 
         if return_dataframe:
             return cycle_df
         else:
             return capacity, voltage
 
-    def _get_cap(self, cycle=None, dataset_number=None, cap_type="charge"):
+    def _get_cap(self, cycle=None, dataset_number=None,
+                 cap_type="charge",
+                 trim_taper_steps=None,
+                 steps_to_skip=None,
+                 steptable=None,
+                 ):
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: @jepe - does not allow for constant voltage yet?
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -2807,7 +2881,11 @@ class CellpyData(object):
 
         cycles = self.get_step_numbers(steptype=cap_type, allctypes=False,
                                        cycle_number=cycle,
-                                       dataset_number=dataset_number)
+                                       dataset_number=dataset_number,
+                                       trim_taper_steps=trim_taper_steps,
+                                       steps_to_skip=steps_to_skip,
+                                       steptable=steptable,
+                                       )
 
         c = pd.Series()
         v = pd.Series()
@@ -2886,7 +2964,7 @@ class CellpyData(object):
                     ]
 
         ocv_steps = ocv_steps.loc[
-                    ocv_steps.type.str.startswith(ocv_rlx_id), :
+                    ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :
                     ]
 
         if remove_first:
@@ -4125,7 +4203,11 @@ def _interpolate_df_col(df, x=None, y=None, new_x=None, dx=10.0,
         return new_df
 
 
-def _collect_capacity_curves(data, direction="charge"):
+def _collect_capacity_curves(data, direction="charge",
+                             trim_taper_steps=None,
+                             steps_to_skip=None,
+                             steptable=None,
+                             ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
     The DataFrames are named by its cycle number.
@@ -4142,9 +4224,19 @@ def _collect_capacity_curves(data, direction="charge"):
     for cycle in cycles:
         try:
             if direction == "charge":
-                q, v = data.get_ccap(cycle)
+                q, v = data.get_ccap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                )
             else:
-                q, v = data.get_dcap(cycle)
+                q, v = data.get_dcap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                )
 
         except NullData as e:
             logging.warning(e)
@@ -4181,6 +4273,10 @@ def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
 
     if filename is not None:
         filename = Path(filename)
+        if not filename.is_file():
+            print(f"Could not find {filename}")
+            print("Returning None")
+            return
 
         if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
             logging.info(f"Loading cellpy-file: {filename}")
@@ -4188,6 +4284,11 @@ def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
         else:
             logging.info(f"Loading raw-file: {filename}")
             cellpy_instance.from_raw(filename)
+            if not cellpy_instance:
+                print("Could not load file: check log!")
+                print("Returning None")
+                return
+
             if mass is not None:
                 logging.info("Setting mass")
                 cellpy_instance.set_mass(mass)
