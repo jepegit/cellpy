@@ -177,13 +177,21 @@ class DataSet(object):
         # self.dfsummary_made = False  # Should be removed
         self.step_table = collections.OrderedDict()
         # self.step_table_made = False  # Should be removed
-        self.parameter_table = collections.OrderedDict()
+        # self.parameter_table = collections.OrderedDict()
         self.summary_version = SUMMARY_TABLE_VERSION
         self.step_table_version = STEP_TABLE_VERSION
         self.cellpy_file_version = CELLPY_FILE_VERSION
         self.normal_table_version = NORMAL_TABLE_VERSION
         # ready for use if implementing loading units
         # (will probably never happen).
+
+    @staticmethod
+    def _header_str(hdr):
+        txt = "\n"
+        txt += 80 * "-" + "\n"
+        txt += f" {hdr} ".center(80) + "\n"
+        txt += 80 * "-" + "\n"
+        return txt
 
     def __str__(self):
         txt = "<DataSet>\n"
@@ -217,25 +225,26 @@ class DataSet(object):
 
         txt += f"start-date:         {start_datetime_str}\n"
 
-        txt += "\n* DATA:\n"
+        txt += self._header_str("DATA")
         try:
-            txt += str(self.dfdata.head())
-        except AttributeError:
+            txt += str(self.dfdata.describe())
+        except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
-        txt += "\n* SUMMARY:\n"
+        txt += self._header_str("SUMMARY")
         try:
-            txt += str(self.dfsummary.head())
-        except AttributeError:
+            txt += str(self.dfsummary.describe())
+        except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
-        txt += "\n* PARAMETERS:\n"
+        txt += self._header_str("STEP TABLE")
         try:
-            txt += str(self.parameter_table.head())
-        except AttributeError:
+            txt += str(self.step_table.describe())
+            txt += str(self.step_table.head())
+        except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
-        txt += "raw units:"
+        txt += self._header_str("RAW UNITS")
         txt += "     Currently defined in the CellpyData-object"
         return txt
 
@@ -382,7 +391,7 @@ def Convert2mAhg(c, mass=1.0):
     Returns:
         float: 1000000 * c / mass
     """
-    return 1000000 * c / mass
+    return 1_000_000 * c / mass
 
 
 class DocInherit(object):

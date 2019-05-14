@@ -11,12 +11,18 @@ from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
 from cellpy.readers.core import doc_inherit
 
+logger = logging.getLogger(__name__)
+
 
 class LabJournal(BaseJournal):
 
-    def __init__(self):
+    def __init__(self, db_reader="default"):
         super().__init__()
-        self.db_reader = dbreader.Reader()
+        if db_reader == "default":
+            self.db_reader = dbreader.Reader()
+        else:
+            logger.debug(f"Remark! db_reader: {db_reader}")
+            self.db_reader = db_reader
         self.batch_col = "b01"
 
     def _check_file_name(self, file_name):
@@ -39,8 +45,12 @@ class LabJournal(BaseJournal):
         logging.debug(
             f"batch_name, batch_col: {name}, {batch_col}"
         )
-        srnos = self.db_reader.select_batch(name, batch_col)
-        self.pages = simple_db_engine(self.db_reader, srnos)
+        if self.db_reader is not None:
+            srnos = self.db_reader.select_batch(name, batch_col)
+            self.pages = simple_db_engine(self.db_reader, srnos)
+        else:
+            logging.debug("creating empty journal pages")
+            self.pages = pd.DataFrame()
         self.generate_folder_names()
         self.paginate()
 

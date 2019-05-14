@@ -47,7 +47,7 @@ MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime",
 def _read_modules(fileobj):
     module_magic = fileobj.read(len(b'MODULE'))
     hdr_bytes = fileobj.read(hdr_dtype.itemsize)
-    hdr = np.fromstring(hdr_bytes, dtype=hdr_dtype, count=1)
+    hdr = np.fromstring(hdr_bytes, dtype=hdr_dtype, count=1)  # TODO: change to frombuffer
     hdr_dict = dict(((n, hdr[n][0]) for n in hdr_dtype.names))
     hdr_dict['offset'] = fileobj.tell()
     hdr_dict['data'] = fileobj.read(hdr_dict['length'])

@@ -80,8 +80,12 @@ cellpy/parametres/_cellpy_prms_devel.ini
 *.py.bak
 .swp
 
+*.rej
+
 sh.exe.stackdump
 xdist/
 
 
 .pytest_cache/
+cellpy_debug.log.1
+out/20190403_cen59_04_rateGITT_01.h5

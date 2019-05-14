@@ -16,10 +16,6 @@ import pandas as pd
 from cellpy.exceptions import NullData
 from cellpy.readers.cellreader import _collect_capacity_curves
 
-
-METHODS = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
-
-
 # TODO: @jepe - documentation and tests
 # TODO: @jepe - fitting of o-c curves and differentiation
 # TODO: @jepe - modeling and fitting
@@ -253,6 +249,7 @@ class Converter(object):
         """perform the dq-dv transform"""
 
         # NOTE TO ASBJOERN: Probably insert method for "binning" instead of
+        # TODO: Asbjørn will inster "binning" here
         # differentiating here
         # (use self.increment_method as the variable for selecting method for)
 
@@ -432,7 +429,7 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
     return voltage, incremental_capacity
 
 
-def dqdv_cycles(cycles, **kwargs):
+def dqdv_cycles(cycles, not_merged=False, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycles.
 
@@ -442,6 +439,8 @@ def dqdv_cycles(cycles, **kwargs):
         Args:
             cycles (pandas.DataFrame): the cycle data ('cycle', 'voltage',
                  'capacity', 'direction' (1 or -1)).
+            not_merged (bool): return list of frames instead of concatenating (
+                defaults to False).
 
         Returns:
             pandas.DataFrame with columns 'cycle', 'voltage', 'dq'.
@@ -464,6 +463,7 @@ def dqdv_cycles(cycles, **kwargs):
 
     ica_dfs = list()
     cycle_group = cycles.groupby("cycle")
+    keys = list()
     for cycle_number, cycle in cycle_group:
 
         v, dq = dqdv_cycle(cycle, splitter=True, **kwargs)
@@ -473,9 +473,16 @@ def dqdv_cycles(cycles, **kwargs):
                 "dq": dq,
             }
         )
-        _ica_df["cycle"] = cycle_number
-        _ica_df = _ica_df[['cycle', 'voltage', 'dq']]
+        if not not_merged:
+            _ica_df["cycle"] = cycle_number
+            _ica_df = _ica_df[['cycle', 'voltage', 'dq']]
+        else:
+            keys.append(cycle_number)
+            _ica_df = _ica_df[['voltage', 'dq']]
         ica_dfs.append(_ica_df)
+
+    if not_merged:
+        return keys, ica_dfs
 
     ica_df = pd.concat(ica_dfs)
     return ica_df
@@ -500,7 +507,7 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
         pre_smoothing: set to True for pre-smoothing (window)
         diff_smoothing: set to True for smoothing during differentiation (window)
         post_smoothing: set to True for post-smoothing (gaussian)
-        post_normalization: set to True for normalising to capacity
+        post_normalization: set to True for normalizing to capacity
         interpolation_method: scipy interpolation method
         gaussian_order: int
         gaussian_mode: mode
@@ -587,6 +594,40 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
     return converter.voltage_processed, converter.incremental_capacity
 
 
+def dqdv_frames(cell, split=False, tidy=True, **kwargs):
+    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
+
+            Args:
+                cell (CellpyData-object).
+                split (bool): return one frame for charge and one for
+                    discharge if True (defaults to False).
+                tidy (bool): returns the split frames in wide format (defaults
+                    to True. Remark that this option is currently not available
+                    for non-split frames).
+
+            Returns:
+                pandas.DataFrame(s) with the following columns:
+                    cycle: cycle number (if split is set to True).
+                    voltage: voltage
+                    dq: the incremental capacity
+
+            Example:
+                >>> from cellpy.utils import ica
+                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
+                >>> charge_df.plot(x=("voltage", "v"))
+    """
+    # TODO: should add option for normalizing based on first cycle capacity
+    # this is e.g. done by first finding the first cycle capacity (nom_cap)
+    # (or use nominal capacity given as input) and then propagating this to
+    # Converter using the key-word arguments
+    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
+
+    if split:
+        return _dqdv_split_frames(cell, tidy=tidy, **kwargs)
+    else:
+        return _dqdv_combinded_frame(cell, tidy=tidy, **kwargs)
+
+
 def _constrained_dq_dv_using_dataframes(capacity, minimum_v,
                                         maximum_v, **kwargs):
     converter = Converter(**kwargs)
@@ -626,7 +667,7 @@ def _make_ica_charge_curves(cycles_dfs, cycle_numbers,
     return incremental_charge_list
 
 
-def _dqdv_combinded_frame(cell, **kwargs):
+def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
     """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
 
         Args:
@@ -644,43 +685,24 @@ def _dqdv_combinded_frame(cell, **kwargs):
         categorical_column=True,
         label_cycle_number=True,
     )
-    ica_df = dqdv_cycles(cycles, **kwargs)
+    ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
+
+    if not tidy:
+        # dqdv_cycles returns a list of cycle numbers and a list of DataFrames
+        # if not_merged is set to True (or not False)
+        keys, ica_df = ica_df
+        ica_df = pd.concat(ica_df, axis=1, keys=keys)
+        return ica_df
+
     assert isinstance(ica_df, pd.DataFrame)
     return ica_df
 
 
-def dqdv_frames(cell, split=False, **kwargs):
-    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
-
-            Args:
-                cell (CellpyData-object).
-                split (bool): return one frame for charge and one for
-                    discharge if True (defaults to False).
-
-            Returns:
-                pandas.DataFrame(s) with the following columns:
-                    cycle: cycle number (if split is set to True).
-                    voltage: voltage
-                    dq: the incremental capacity
-
-            Example:
-                >>> from cellpy.utils import ica
-                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
-                >>> charge_df.plot(x=("voltage", "v"))
-    """
-    # TODO: should add option for normalising based on first cycle capacity
-    # this is e.g. done by first finding the first cycle capacity (nom_cap)
-    # (or use nominal capacity given as input) and then propagating this to
-    # Converter using the key-word arguments
-    #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
-
-    if split:
-        return _dqdv_split_frames(cell, tidy=True, **kwargs)
-    else:
-        return _dqdv_combinded_frame(cell, **kwargs)
-
-
-def _dqdv_split_frames(cell, tidy=False, **kwargs):
+def _dqdv_split_frames(cell, tidy=False,
+                       trim_taper_steps=None,
+                       steps_to_skip=None,
+                       steptable=None,
+                       **kwargs):
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
         Args:
@@ -702,7 +724,10 @@ def _dqdv_split_frames(cell, tidy=False, **kwargs):
     """
     charge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
         cell,
-        direction="charge"
+        direction="charge",
+        trim_taper_steps=trim_taper_steps,
+        steps_to_skip=steps_to_skip,
+        steptable=steptable,
     )
     # charge_df = pd.concat(
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
@@ -719,7 +744,10 @@ def _dqdv_split_frames(cell, tidy=False, **kwargs):
 
     dcharge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
         cell,
-        direction="discharge"
+        direction="discharge",
+        trim_taper_steps=trim_taper_steps,
+        steps_to_skip=steps_to_skip,
+        steptable=steptable,
     )
     ica_dcharge_dfs = _make_ica_charge_curves(
         dcharge_dfs, cycles, minimum_v, maximum_v,
@@ -800,6 +828,7 @@ def check_class_ica():
 
 
 def get_a_cell_to_play_with():
+    from cellpy import cellreader
     # -------- defining overall path-names etc ----------
     current_file_path = os.path.dirname(os.path.realpath(__file__))
     print(current_file_path)
@@ -821,11 +850,26 @@ def get_a_cell_to_play_with():
     return cell
 
 
+def main_fitting():
+    import time
+    cell = get_a_cell_to_play_with()
+    p = Silicon().peaks + Graphite().peaks
+    pars = p.make_params()
+    cha, volt = cell.get_ccap(2)
+    v, dq = dqdv(volt, cha)
+    now = time.time()
+    res = p.fit(dq, x=v, params=pars)
+    print(f"It took {(time.time() - now):4.2f} seconds to fit")
+    report = res.fit_report()
+    print(report)
+
+
 if __name__ == '__main__':
     # check_class_ica()¨
-    import pandas as pd
-    from cellpy import cellreader
-    cell = get_a_cell_to_play_with()
+    #import pandas as pd
+    #from cellpy import cellreader
+    #cell = get_a_cell_to_play_with()
 
-    a = dqdv_frames(cell)
+    #a = dqdv_frames(cell)
     # charge_df, discharge_df = ica_frames(cell)
+    main_fitting()

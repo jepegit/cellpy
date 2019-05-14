@@ -1,6 +1,11 @@
 import logging
 import datetime
-from lmfit import Parameters, minimize, report_fit, Model, report_ci
+try:
+    from lmfit import Parameters, minimize, report_fit, Model, report_ci
+except ImportError as e:
+    logging.warning("Could not import lmfit. This is needed for fitting (run pip install lmfit).")
+    logging.debug(e)
+
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -74,7 +79,7 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
     ]
 
     ocv_steps = ocv_steps.loc[
-        ocv_steps.type.str.startswith(ocv_rlx_id), :
+        ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :
     ]
 
     if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
@@ -139,7 +144,7 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
 
         for i, j in enumerate(range(max(1, iter_range))):
             if selection_method == "martin":
-                logging.debug("using the 'martin'-method")
+                # logging.debug("using the 'martin'-method")
                 _end = _end / 2.0
                 poi.append(_end)
 

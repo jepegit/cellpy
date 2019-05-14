@@ -2,6 +2,7 @@ import pytest
 import tempfile
 import os
 import logging
+import time
 
 import cellpy.readers.core
 from cellpy import log
@@ -91,11 +92,36 @@ def test_logger(clean_dir):
     tmp_logger.error("customdir, default: testing logger (error)")
 
 
+@pytest.mark.timeout(2.0)
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
     new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
+    assert os.path.isfile(new_file)
+
+
+@pytest.mark.benchmark(
+    group="group-name",
+    min_time=0.1,
+    max_time=0.5,
+    min_rounds=2,
+    timer=time.time,
+    disable_gc=True,
+    warmup=False
+)
+def test_load_resfile_diagnostics(clean_dir, benchmark):
+    import os
+    from cellpy import cellreader
+    from cellpy import prms
+    prms.Reader.diagnostics = True
+    f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
+    new_file = benchmark(
+        cellreader.load_and_save_resfile,
+        f_in,
+        None,
+        clean_dir
+    )
     assert os.path.isfile(new_file)
 
 

@@ -376,12 +376,17 @@ def _check_import_pyodbc():
             return False
 
     # not posix - checking for odbc drivers
+    # 1) checking if you have defined one
     try:
-        DRIVER = prms.odbc_driver
+        driver = prms.Instruments.odbc_driver
+        if not driver:
+            raise AttributeError
+        print("You have defined an odbc driver in your conifg file")
+        print(f"driver: {driver}")
     except AttributeError:
-        print("FYI: you have not defined any odbc_driver(s) "
-              "in your prm file! Maybe not too smart of you?")
-        DRIVER = "NO DRIVER"
+        print("FYI: you have not defined any odbc_driver(s)")
+        print("(The name of the driver from the configuration file is "
+              "used as a backup when cellpy cannot locate a driver by itself)")
 
     use_ado = False
 
@@ -423,7 +428,7 @@ def _check_import_pyodbc():
                    'Microsoft Access Driver' in driver]
         print(f"Found these: {drivers}")
         driver = drivers[0]
-        print(f"odbc constr: {driver}")
+        print(f"odbc driver: {driver}")
         return True
 
     except IndexError as e:
@@ -468,9 +473,9 @@ def _check():
         except Exception as e:
             click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
-
+    succeeded_checks = number_of_checks - failed_checks
     click.echo(
-        f"[cellpy] Failed {failed_checks} of {number_of_checks} checks."
+        f"[cellpy] Succeeded {succeeded_checks} of {number_of_checks} checks."
     )
 
 
