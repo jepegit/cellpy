@@ -15,6 +15,11 @@ def clean(c, docs=False, bytecode=False, extra=''):
 
 
 @task
+def test(c):
+    c.run("pytest --cov=cellpy tests/")
+
+
+@task
 def build(c, docs=False):
     c.run("python setup.py build")
     if docs:

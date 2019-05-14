@@ -127,8 +127,8 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
 
 def test_su_cellpy_instance():
     # somehow pytest fails to find the test if it is called test_setup_xxx
-    from cellpy import cellreader
-    cellreader.setup_cellpy_instance()
+    import cellpy
+    cellpy.cellreader.setup_cellpy_instance()
 
 
 def test_cell():
