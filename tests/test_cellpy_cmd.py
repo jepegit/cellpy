@@ -77,6 +77,7 @@ def test_info_check():
     assert result.exit_code == 0
 
 
+@pytest.mark.slowtest
 def test_pull_tests(tmp_path):
     runner = CliRunner()
     opts = list()
@@ -96,6 +97,7 @@ def test_pull_tests(tmp_path):
         assert result.exit_code == 0
 
 
+@pytest.mark.slowtest
 def test_pull_examples(tmp_path):
     import github
     runner = CliRunner()
@@ -116,6 +118,7 @@ def test_pull_examples(tmp_path):
         assert result.exit_code == 0
 
 
+@pytest.mark.slowtest
 def test_pull_clone():
     runner = CliRunner()
     result = runner.invoke(cli.cli, ["pull", "--clone"])
@@ -123,6 +126,7 @@ def test_pull_clone():
     assert result.exit_code == 0
 
 
+@pytest.mark.slowtest
 def test_pull_custom_dir():
     runner = CliRunner()
     result = runner.invoke(cli.cli, ["pull", "--clone", "--directory", "MyDir"])
@@ -130,6 +134,7 @@ def test_pull_custom_dir():
     assert result.exit_code == 0
 
 
+@pytest.mark.slowtest
 def test_pull_help():
     runner = CliRunner()
     result = runner.invoke(cli.cli, ["pull", "--help"])
