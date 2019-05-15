@@ -77,9 +77,9 @@ def _read_prm_file(prm_filename):
     logger.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
-            prm_dict = yaml.load(config_file)
-    except yaml.YAMLError:
-        raise ConfigFileNotRead
+            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+    except yaml.YAMLError as e:
+        raise ConfigFileNotRead from e
     else:
         _update_prms(prm_dict)
 
