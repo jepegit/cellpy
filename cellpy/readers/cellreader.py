@@ -2649,6 +2649,7 @@ class CellpyData(object):
                 number_of_points=None,
                 ignore_errors=True,
                 dynamic=False,
+                inter_cycle_shift=True,
                 **kwargs,
                 ):
         """Gets the capacity for the run.
@@ -2673,7 +2674,7 @@ class CellpyData(object):
             split (bool): return a list of c and v instead of the default
                 that is to return them combined in a DataFrame. This is only
                 possible for some specific combinations of options (neither
-                categorical_colum=True or label_cycle_number=True are
+                categorical_column=True or label_cycle_number=True are
                 allowed).
             interpolated (bool): set to True if you would like to get
                 interpolated data (typically if you want to save disk space
@@ -2684,6 +2685,8 @@ class CellpyData(object):
             ignore_errors (bool): don't break out of loop if an error occurs.
             dynamic: for dynamic retrieving data from cellpy-file.
                 [NOT IMPLEMENTED YET]
+            inter_cycle_shift (bool): cummulate shifts between consecutive cycles.
+                Defaults to True.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -2759,6 +2762,8 @@ class CellpyData(object):
                     # should change amax to last point
                     _first = None
                     _new_first = None
+                    if not inter_cycle_shift:
+                        prev_end = 0.0
                     if _last_step_c is not None:
                         _last_step_c = _last - _last_step_c + prev_end
                     else:
@@ -2945,7 +2950,7 @@ class CellpyData(object):
         if cycles is None:
             cycles = self.get_cycle_numbers()
         else:
-            if not isinstance(cycles, (list, tuple)):
+            if not isinstance(cycles, (list, tuple, np.ndarray)):
                 cycles = [cycles, ]
             else:
                 remove_first = False
