@@ -113,8 +113,15 @@ class Batch:
         print("->")
         print(self.experiment.journal.file_name)
 
+    def load(self):
+        # does the same as load_and_save_raw
+        self.experiment.update()
+
     def load_and_save_raw(self):
         self.experiment.update()
+
+    def link(self):
+        self.experiment.link()
 
     def make_summaries(self):
         self.exporter.do()
