@@ -113,10 +113,18 @@ class Batch:
         print("->")
         print(self.experiment.journal.file_name)
 
+    def link(self):
+        self.experiment.link()
+
     def load_and_save_raw(self):
         self.experiment.update()
 
     def make_summaries(self):
+        # TODO: should figure out how to make this work even though the
+        #       load_and_save_raw function has not been run. The best way
+        #       is probably to start with a copy of the relevant part from
+        #       the experiment.update function (where the "summary_frames"
+        #       are made)  as a "fall-back option" (in the .do method).
         self.exporter.do()
 
     def plot_summaries(self):

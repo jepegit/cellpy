@@ -1,6 +1,8 @@
 import logging
 import abc
 
+#  import box
+
 from cellpy import cellreader
 from cellpy.exceptions import UnderDefined
 
@@ -88,8 +90,9 @@ class Data(dict):
         self.experiment = experiment
         self.query_mode = False
 
-    def __getitem__(self, id):
-        cellpy_data_object = self.__look_up__(id)
+    def __getitem__(self, cell_id):
+        cellpy_data_object = self.__look_up__(cell_id)
+        #  return box.BoxObject(cellpy_data_object)
         return cellpy_data_object
 
     def __str__(self):
@@ -105,19 +108,19 @@ class Data(dict):
         t += "\n"
         return t
 
-    def __look_up__(self, identification):
+    def __look_up__(self, cell_id):
         try:
             if not self.experiment.cell_data_frames[
-                identification
+                cell_id
             ].dataset.dfdata.empty:
-                return self.experiment.cell_data_frames[identification]
+                return self.experiment.cell_data_frames[cell_id]
             else:
                 raise AttributeError
 
         except AttributeError:
             logging.debug("looking up from cellpyfile")
             pages = self.experiment.journal.pages
-            info = pages.loc[identification, :]
+            info = pages.loc[cell_id, :]
             cellpy_file = info["cellpy_file_names"]
             # linking not implemented yet - loading whole file in mem instead
             if not self.query_mode:

@@ -127,5 +127,6 @@ def simple_db_engine(reader=None, srnos=None):
     info_df = helper.make_unique_groups(info_df)
 
     info_df["labels"] = info_df["filenames"].apply(helper.create_labels)
-    info_df.set_index("filenames", inplace=True)
+    info_df.set_index("filenames", inplace=True)  # edit this to allow for
+    # non-nummeric index-names (for tab completion and python-box)
     return info_df
