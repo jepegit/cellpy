@@ -47,20 +47,24 @@ class Batch:
         return str(self.experiment)
 
     def show_pages(self, number_of_rows=5):
+        # this should be removed
         return self.experiment.journal.pages.head(number_of_rows)
 
     @property
     def view(self):
+        # rename to: report
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
 
     @property
     def info_file(self):
+        # rename to journal_name
         return self.experiment.journal.file_name
 
     @property
     def summaries(self):
+        # should add link-mode?
         try:
             keys = [df.name for df in self.experiment.memory_dumped["summary_engine"]]
             return pd.concat(self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
@@ -71,15 +75,22 @@ class Batch:
     def summary_columns(self):
         return self.summaries.columns.get_level_values(0)
 
+    # TODO: property: cells (return cell names)
+    # TODO: property: data_columns (return column names for the raw data)
+    # TODO: property: steps_columns
+
     @property
     def info_df(self):
+        # rename to: pages
         return self.experiment.journal.pages
 
     @info_df.setter
     def info_df(self, df):
+        # rename to: pages
         self.experiment.journal.pages = df
 
     def create_empty_info_df(self):
+        # rename to: create_journal
         logging.info("Creating an empty info dataframe")
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
@@ -95,16 +106,19 @@ class Batch:
         self.experiment.journal.paginate()
 
     def create_info_df(self):
+        # rename to: create_journal (combine this with function above)
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
         self.experiment.journal.from_db()
         self.experiment.journal.to_file()
 
     def create_folder_structure(self):
+        # rename to: paginate
         self.experiment.journal.paginate()
         logging.info("created folders")
 
     def save_info_df(self):
+        # rename to: save_journal
         self.experiment.journal.to_file()
         logging.info("saving journal pages")
         print(" journal ".center(80, "-"))
@@ -112,6 +126,9 @@ class Batch:
         print()
         print("->")
         print(self.experiment.journal.file_name)
+
+    # TODO: load_journal
+    # TODO: list_journals?
 
     def link(self):
         self.experiment.link()
@@ -121,9 +138,11 @@ class Batch:
         self.experiment.update()
 
     def load_and_save_raw(self):
+        # remove this? rename to: update
         self.experiment.update()
 
     def make_summaries(self):
+        # rename to: combine_summaries
         # TODO: should figure out how to make this work even though the
         #       load_and_save_raw function has not been run. The best way
         #       is probably to start with a copy of the relevant part from
