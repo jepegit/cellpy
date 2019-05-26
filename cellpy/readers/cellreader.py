@@ -1635,7 +1635,7 @@ class CellpyData(object):
         mask_no_change = (df_steps.loc[:, (shdr.voltage, "delta")] == 0) & \
             (df_steps.loc[:, (shdr.current, "delta")] == 0) & \
             (df_steps.loc[:, (shdr.charge, "delta")] == 0) & \
-            (df_steps.loc[:, (shdr.charge, "delta")] == 0)
+            (df_steps.loc[:, (shdr.discharge, "delta")] == 0)
 
         if profiling:
             print(f"*** masking: {time.time() - time_01} s")
