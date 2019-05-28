@@ -9,7 +9,7 @@ coverage>=4.3.4
 Sphinx>=1.5.5
 pytest>=3.0.7
 twine>=1.9.1
-numpy==1.15.4
+numpy==1.16.3
 pytest-benchmark
 pytest-timeout
 invoke
