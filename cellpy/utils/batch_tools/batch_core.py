@@ -92,7 +92,6 @@ class Data(dict):
 
     def __getitem__(self, cell_id):
         cellpy_data_object = self.__look_up__(cell_id)
-        #  return box.BoxObject(cellpy_data_object)
         return cellpy_data_object
 
     def __str__(self):
@@ -109,6 +108,7 @@ class Data(dict):
         return t
 
     def __look_up__(self, cell_id):
+        logging.debug("running __look_up__")
         try:
             if not self.experiment.cell_data_frames[
                 cell_id
@@ -124,7 +124,9 @@ class Data(dict):
             cellpy_file = info["cellpy_file_names"]
             # linking not implemented yet - loading whole file in mem instead
             if not self.query_mode:
-                return self.experiment._load_cellpy_file(cellpy_file)
+                cell = self.experiment._load_cellpy_file(cellpy_file)
+                self.experiment.cell_data_frames[cell_id] = cell
+                return cell
             else:
                 raise NotImplementedError
 
@@ -138,6 +140,8 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self.memory_dumped = dict()
         self.parent_level = "CellpyData"
         self.log_level = "INFO"
+        self._data = None
+        self._store_data_object = True
 
     def __str__(self):
         return f"[{self.__class__.__name__}]\n" \
@@ -164,9 +168,13 @@ class BaseExperiment(metaclass=abc.ABCMeta):
             >>> cell_data_one = experiment.data["2018_cell_001"]
             >>> capacity, voltage = cell_data_one.get_cap(cycle=1)
         """
-
-        data_object = Data(self)
-        return data_object
+        if self._data is None:
+            data = Data(self)
+            if self._store_data_object:
+                self._data = data
+            return data
+        else:
+            return self._data
 
     @abc.abstractmethod
     def update(self):

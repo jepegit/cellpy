@@ -203,13 +203,15 @@ class CellpyData(object):
             self.initialize()
 
     def initialize(self):
-        self.logger.info("Intializing...")
+        self.logger.debug("Initializing...")
         self.datasets.append(DataSet())
 
     @property
     def dataset(self):
         """returns the DataSet instance"""
-        return self.datasets[self.selected_dataset_number]
+        # could insert a try-except thingy here...
+        dataset = self.datasets[self.selected_dataset_number]
+        return dataset
 
     @property
     def empty(self):
