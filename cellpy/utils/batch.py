@@ -1,6 +1,8 @@
 """Routines for batch processing of cells (v2)."""
 
 import logging
+import pathlib
+import shutil
 
 import pandas as pd
 
@@ -119,6 +121,7 @@ class Batch:
 
     def save_info_df(self):
         # rename to: save_journal
+        # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file()
         logging.info("saving journal pages")
         print(" journal ".center(80, "-"))
@@ -126,6 +129,17 @@ class Batch:
         print()
         print("->")
         print(self.experiment.journal.file_name)
+
+    def duplicate_info_df(self):
+        # rename to: duplicate_journal
+        # or combine this into save_journal?
+        journal_name = self.experiment.journal.file_name
+        journal_name = pathlib.Path(journal_name)
+        if not journal_name.is_file():
+            print("No journal saved")
+            return
+        new_journal_name = journal_name.name
+        shutil.copy(journal_name, new_journal_name)
 
     # TODO: load_journal
     # TODO: list_journals?
@@ -143,11 +157,6 @@ class Batch:
 
     def make_summaries(self):
         # rename to: combine_summaries
-        # TODO: should figure out how to make this work even though the
-        #       load_and_save_raw function has not been run. The best way
-        #       is probably to start with a copy of the relevant part from
-        #       the experiment.update function (where the "summary_frames"
-        #       are made)  as a "fall-back option" (in the .do method).
         self.exporter.do()
 
     def plot_summaries(self):

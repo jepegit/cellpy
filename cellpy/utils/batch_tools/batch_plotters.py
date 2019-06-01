@@ -13,6 +13,8 @@ from cellpy import prms
 
 # print(prms.Batch.backend)
 
+# TODO: add palette to prms.Batch
+
 if prms.Batch.backend == "bokeh":
     try:
         import bokeh
@@ -76,7 +78,9 @@ def create_plot_option_dicts(info, marker_types=None, colors=None,
 
     if palette is None:
         try:
-            palette = bokeh.palettes.brewer['YlGnBu']
+            # palette = bokeh.palettes.brewer['YlGnBu']
+            palette = bokeh.palettes.d3['Category10']
+            # palette = bokeh.palettes.brewer[prms.Batch.bokeh_palette']
         except NameError:
             palette = [
                 ["k"],

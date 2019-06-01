@@ -4214,6 +4214,7 @@ def _collect_capacity_curves(data, direction="charge",
                              trim_taper_steps=None,
                              steps_to_skip=None,
                              steptable=None,
+                             max_cycle_number=None,
                              ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
@@ -4228,7 +4229,12 @@ def _collect_capacity_curves(data, direction="charge",
     maximum_v_value = -np.Inf
     charge_list = []
     cycles = data.get_cycle_numbers()
+    if max_cycle_number is None:
+        max_cycle_number = max(cycles)
+
     for cycle in cycles:
+        if cycle > max_cycle_number:
+            break
         try:
             if direction == "charge":
                 q, v = data.get_ccap(

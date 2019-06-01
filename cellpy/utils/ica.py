@@ -702,6 +702,7 @@ def _dqdv_split_frames(cell, tidy=False,
                        trim_taper_steps=None,
                        steps_to_skip=None,
                        steptable=None,
+                       max_cycle_number=None,
                        **kwargs):
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
@@ -728,6 +729,7 @@ def _dqdv_split_frames(cell, tidy=False,
         trim_taper_steps=trim_taper_steps,
         steps_to_skip=steps_to_skip,
         steptable=steptable,
+        max_cycle_number=max_cycle_number,
     )
     # charge_df = pd.concat(
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
@@ -748,6 +750,7 @@ def _dqdv_split_frames(cell, tidy=False,
         trim_taper_steps=trim_taper_steps,
         steps_to_skip=steps_to_skip,
         steptable=steptable,
+        max_cycle_number=max_cycle_number,
     )
     ica_dcharge_dfs = _make_ica_charge_curves(
         dcharge_dfs, cycles, minimum_v, maximum_v,
@@ -850,26 +853,10 @@ def get_a_cell_to_play_with():
     return cell
 
 
-def main_fitting():
-    import time
-    cell = get_a_cell_to_play_with()
-    p = Silicon().peaks + Graphite().peaks
-    pars = p.make_params()
-    cha, volt = cell.get_ccap(2)
-    v, dq = dqdv(volt, cha)
-    now = time.time()
-    res = p.fit(dq, x=v, params=pars)
-    print(f"It took {(time.time() - now):4.2f} seconds to fit")
-    report = res.fit_report()
-    print(report)
-
-
 if __name__ == '__main__':
     # check_class_ica()¨
-    #import pandas as pd
-    #from cellpy import cellreader
-    #cell = get_a_cell_to_play_with()
+    import pandas as pd
+    from cellpy import cellreader
+    cell = get_a_cell_to_play_with()
 
-    #a = dqdv_frames(cell)
-    # charge_df, discharge_df = ica_frames(cell)
-    main_fitting()
+    a = dqdv_frames(cell)

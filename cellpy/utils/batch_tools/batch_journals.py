@@ -139,5 +139,31 @@ class LabJournal(BaseJournal):
         file_name = "cellpy_batch_%s.json" % self.name
         self.file_name = os.path.join(project_dir, file_name)
 
+    # v.1.0.0:
     def look_for_file(self):
+        pass
+
+    def get_column(self, header):
+        """populate new column from db"""
+        pass
+
+    def get_cell(self, srno):
+        """get additional cell info from db"""
+        pass
+
+    def add_comment(self, comment):
+        """add a comment (will be saved in the journal file)"""
+        pass
+
+    def remove_comment(self, comment_id):
+        pass
+
+    def view_comments(self):
+        pass
+
+    def remove_cell(self, cell_id):
+        pass
+
+    def add_cell(self, cell_id, **kwargs):
+        """Add a cell to the pages"""
         pass
