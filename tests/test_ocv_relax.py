@@ -33,3 +33,27 @@ def test_ocv_rlx_multi(dataset):
     cycles = [1, 2, 5]
     ocv_fit = ocv_rlx.MultiCycleOcvFit(dataset, cycles, circuits=3)
     ocv_fit.run_fitting(direction="up")
+
+
+def test_select_ocv_points(dataset):
+    out = ocv_rlx.select_ocv_points(dataset)
+    # print()
+    # print(" ocv rlx points ".center(80, "="))
+    # print(" all defaults ".center(80, "-"))
+    # print(out.head())
+
+    out = ocv_rlx.select_ocv_points(dataset, relative_voltage=True)
+    # print(" relative voltage ".center(80, "-"))
+    # print(out.head())
+
+    out = ocv_rlx.select_ocv_points(dataset, number_of_points=1)
+    # print(" seven points ".center(80, "-"))
+    # print(out.head())
+
+    out = ocv_rlx.select_ocv_points(dataset, report_times=True)
+    # print(" report times ".center(80, "-"))
+    # print(out.head())
+
+    out = ocv_rlx.select_ocv_points(dataset, selection_method="fixed_times")
+    # print(" fixed time method ".center(80, "-"))
+    # print(out.head())
