@@ -228,6 +228,8 @@ class CellpyData(object):
         Sets the instrument used for obtaining the data (i.e. sets fileformat)
 
         """
+        self.logger.debug(f"Setting instrument: {instrument}")
+
         if instrument is None:
             instrument = self.tester
 
@@ -1180,6 +1182,11 @@ class CellpyData(object):
         # Returns dataset_number (or None if empty)
         # Remark! _is_not_empty_dataset returns True or False
 
+        if not len(self.datasets):
+            self.logger.info("Can't see any datasets! Are you sure you have "
+                             "loaded anything?")
+            return
+
         if n is not None:
             v = n
         else:
@@ -1187,7 +1194,7 @@ class CellpyData(object):
                 v = 0
             else:
                 v = self.selected_dataset_number
-        # check if test is empty
+
         if check_for_empty:
             not_empty = self._is_not_empty_dataset(self.datasets[v])
             if not_empty:
@@ -1502,6 +1509,7 @@ class CellpyData(object):
         Returns:
             None
         """
+        # TODO: @jepe - include option for omitting steps
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -3513,7 +3521,13 @@ class CellpyData(object):
                      convert_date=False):
         """Convenience function that makes a summary of the cycling data."""
 
+        # TODO: @jepe - include option for omitting steps
         # first - check if we need some "instrument-specific" prms
+        dataset_number = self._validate_dataset_number(dataset_number)
+        if dataset_number is None:
+            self._report_empty_dataset()
+            return
+
         if self.tester == "arbin":
             convert_date = True
 
@@ -3581,6 +3595,7 @@ class CellpyData(object):
                       find_ir=False,
                       find_end_voltage=False,
                       ensure_step_table=True,
+                      # TODO: @jepe - include option for omitting steps
                       # TODO: @jepe - this is only needed for arbin-data:
                       convert_date=True,
                       sort_my_columns=True,
@@ -4093,8 +4108,52 @@ def group_by_interpolate(df, x=None, y=None, group_by=None,
                          number_of_points=100, tidy=False,
                          individual_x_cols=False, header_name="Unit",
                          dx=10.0, generate_new_x=True):
-    """Use this for generating wide format from long (tidy) data"""
+    """Do a pandas.DataFrame.group_by and perform interpolation for all groups.
 
+
+    This function is a wrapper around an internal interpolation function in
+    cellpy (that uses scipy.interpolate.interp1d) that combines doing a group-by
+    operation and interpolation.
+
+    Args:
+        df (pandas.DataFrame): the dataframe to morph.
+        x (str): the header for the x-value
+            (defaults to normal header step_time_txt) (remark that the default
+            group_by column is the cycle column, and each cycle normally
+            consist of several steps (so you risk interpolating / merging
+            several curves on top of each other (not good)).
+        y (str): the header for the y-value
+            (defaults to normal header voltage_txt).
+        group_by (str): the header to group by
+            (defaults to normal header cycle_index_txt)
+        number_of_points (int): if generating new x-column, how many values it
+            should contain.
+        tidy (bool): return the result in tidy (i.e. long) format.
+        individual_x_cols (bool): return as xy xy xy ... data.
+        header_name (str): name for the second level of the columns (only
+            applies for xy xy xy ... data) (defaults to "Unit").
+        dx (float): if generating new x-column and number_of_points is None or
+            zero, distance between the generated values.
+        generate_new_x (bool): create a new x-column by
+            using the x-min and x-max values from the original dataframe where
+            the method is set by the number_of_points key-word:
+
+            1)  if number_of_points is not None (default is 100):
+
+                ```
+                new_x = np.linspace(x_max, x_min, number_of_points)
+                ```
+            2)  else:
+                ```
+                new_x = np.arange(x_max, x_min, dx)
+                ```
+
+
+    Returns: pandas.DataFrame with interpolated x- and y-values. The returned
+        dataframe is in tidy (long) format for tidy=True.
+
+    """
+    # TODO: @jepe - create tests
     time_00 = time.time()
     if x is None:
         x = HEADERS_NORMAL.step_time_txt
@@ -4151,7 +4210,9 @@ def group_by_interpolate(df, x=None, y=None, group_by=None,
         else:
             new_df = pd.concat(new_dfs)
             new_df = new_df.pivot(index=x, columns=group_by[0], values=y, )
-    self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+
+    time_01 = time.time() - time_00
+    logging.debug(f"duration: {time_01} seconds")
     return new_df
 
 
@@ -4303,7 +4364,7 @@ def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
                 return
 
             if mass is not None:
-                logging.info("Setting mass")
+                logging.info(f"Setting mass: {mass}")
                 cellpy_instance.set_mass(mass)
             if auto_summary:
                 logging.info("Creating step table")

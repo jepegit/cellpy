@@ -561,3 +561,21 @@ def test_load_custom_default(cellpy_data_instance):
     assert 593.031 == pytest.approx(val, 0.1)
 
 
+def test_group_by_interpolate(dataset):
+    data = dataset.dataset.dfdata
+    interpolated_data1 = cellpy.cellreader.group_by_interpolate(data)
+    interpolated_data2 = cellpy.cellreader.group_by_interpolate(
+        data,
+        tidy=True,
+    )
+    interpolated_data3 = cellpy.cellreader.group_by_interpolate(
+        data,
+        individual_x_cols=True,
+    )
+
+
+def test_cell():
+    c_h5 = cellpy.cell(fdv.cellpy_file_path)
+    c_res = cellpy.cell(fdv.res_file_path, instrument="arbin", mass=0.045)
+
+
