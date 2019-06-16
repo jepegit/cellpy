@@ -32,6 +32,14 @@ def dataset():
     return d
 
 
+@pytest.fixture
+def converter(dataset):
+    q, v = dataset.get_ccap(1)
+    o = ica.Converter()
+    o.set_data(q, v)
+    return o
+
+
 def test_ica_converter(dataset):
     # warnings.simplefilter("error", FutureWarning)
     list_of_cycles = dataset.get_cycle_numbers()
@@ -94,4 +102,75 @@ def test_ica_dqdv_cycles(dataset):
         label_cycle_number=True,
     )
     dQdV = ica.dqdv_cycles(cycles)
+
+
+def test_ica_str(dataset):
+    o = ica.Converter()
+    print(o)
+
+
+def test_set_data(dataset):
+    q, v = dataset.get_ccap(1)
+    data = pd.concat([q, v], axis=1)
+    o = ica.Converter()
+    o.set_data(data, capacity_label="Charge_Capacity", voltage_label="Voltage")
+
+
+def test_inspect_data(converter):
+    converter.inspect_data(
+        err_est=True,
+        diff_est=True,
+    )
+    converter.pre_process_data()
+    converter.increment_data()
+    converter.post_process_data()
+    v = converter.voltage_processed
+    q = converter.incremental_capacity
+    assert len(v) == len(q)
+    assert len(v) > 1
+
+
+def test_pre_process_data_smoothing(converter):
+    converter.inspect_data()
+    converter.pre_smoothing = True
+    converter.pre_process_data()
+    converter.increment_data()
+    converter.post_process_data()
+    v = converter.voltage_processed
+    q = converter.incremental_capacity
+    assert len(v) == len(q)
+    assert len(v) > 1
+
+
+def test_increment_data_smoothing(converter):
+    converter.inspect_data()
+    converter.pre_process_data()
+    converter.smoothing = True
+    converter.increment_data()
+    converter.post_process_data()
+    v = converter.voltage_processed
+    q = converter.incremental_capacity
+    assert len(v) == len(q)
+    assert len(v) > 1
+
+
+# TODO - aulv: this test should be un-commented when hist-method
+#  is implemented
+# def test_increment_data_hist(converter):
+#     converter.inspect_data()
+#     converter.pre_process_data()
+#     converter.smoothing = True
+#     converter.increment_method = "hist"
+#     converter.increment_data()
+#     converter.post_process_data()
+#     v = converter.voltage_processed
+#     q = converter.incremental_capacity
+#     assert len(v) == len(q)
+#     assert len(v) > 1
+
+
+# missing test: fixed_range in post_process_data
+# missing test: dqdv_frames
+
+
 

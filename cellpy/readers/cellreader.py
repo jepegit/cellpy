@@ -2625,26 +2625,32 @@ class CellpyData(object):
     def get_dcap(self, cycle=None, dataset_number=None, **kwargs):
         """Returns discharge_capacity (in mAh/g), and voltage."""
 
-        #  TODO: should return a DataFrame as default
-        #  but remark that we then have to update e.g. batch_helpers.py
+        #  TODO - jepe: should return a DataFrame as default
+        #   but remark that we then have to update e.g. batch_helpers.py
+        #  TODO - jepe: change needed: should not use
+        #   dataset_number as parameter
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
             return
+
         dc, v = self._get_cap(cycle, dataset_number, "discharge", **kwargs)
         return dc, v
 
     def get_ccap(self, cycle=None, dataset_number=None, **kwargs):
         """Returns charge_capacity (in mAh/g), and voltage."""
 
-        #  TODO: should return a DataFrame as default
-        #  but remark that we then have to update e.g. batch_helpers.py
+        #  TODO - jepe: should return a DataFrame as default
+        #   but remark that we then have to update e.g. batch_helpers.py
+        #  TODO - jepe: change needed: should not use
+        #   dataset_number as parameter
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
             return
+
         cc, v = self._get_cap(cycle, dataset_number, "charge", **kwargs)
         return cc, v
 
@@ -2663,7 +2669,6 @@ class CellpyData(object):
                 **kwargs,
                 ):
         """Gets the capacity for the run.
-        For cycle=None: not implemented yet, cycle set to 1.
 
         Args:
             cycle (int): cycle number.
@@ -2883,6 +2888,7 @@ class CellpyData(object):
                  ):
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: @jepe - does not allow for constant voltage yet?
+        # TODO: @jepe - add similar function that returns pd.DataFrame
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
@@ -3984,6 +3990,54 @@ class CellpyData(object):
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
 
+def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
+         cycle_mode=None, auto_summary=True):
+    """Create a CellpyData object"""
+
+    from cellpy import log
+
+    log.setup_logging(default_level=logging_mode)
+    cellpy_instance = setup_cellpy_instance()
+
+    if instrument is not None:
+        cellpy_instance.set_instrument(instrument=instrument)
+
+    if cycle_mode is not None:
+        cellpy_instance.cycle_mode = cycle_mode
+
+    if filename is not None:
+        filename = Path(filename)
+        if not filename.is_file():
+            print(f"Could not find {filename}")
+            print("Returning None")
+            return
+
+        if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
+            logging.info(f"Loading cellpy-file: {filename}")
+            cellpy_instance.load(filename)
+        else:
+            logging.info(f"Loading raw-file: {filename}")
+            cellpy_instance.from_raw(filename)
+            if not cellpy_instance:
+                print("Could not load file: check log!")
+                print("Returning None")
+                return
+
+            if mass is not None:
+                logging.info(f"Setting mass: {mass}")
+                cellpy_instance.set_mass(mass)
+            if auto_summary:
+                logging.info("Creating step table")
+                cellpy_instance.make_step_table()
+                logging.info("Creating summary data")
+                cellpy_instance.make_summary()
+
+    logging.info("Created CellpyData object")
+    return cellpy_instance
+
+
+# utility functions that most likely will be moved to another module
+
 def group_by_interpolate(df, x=None, y=None, group_by=None,
                          number_of_points=100, tidy=False,
                          individual_x_cols=False, header_name="Unit",
@@ -4208,52 +4262,6 @@ def _collect_capacity_curves(data, direction="charge",
             if v_max > maximum_v_value:
                 maximum_v_value = v_max
     return charge_list, cycles, minimum_v_value, maximum_v_value
-
-
-def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
-         cycle_mode=None, auto_summary=True):
-    """Create a CellpyData object"""
-
-    from cellpy import log
-
-    log.setup_logging(default_level=logging_mode)
-    cellpy_instance = setup_cellpy_instance()
-
-    if instrument is not None:
-        cellpy_instance.set_instrument(instrument=instrument)
-
-    if cycle_mode is not None:
-        cellpy_instance.cycle_mode = cycle_mode
-
-    if filename is not None:
-        filename = Path(filename)
-        if not filename.is_file():
-            print(f"Could not find {filename}")
-            print("Returning None")
-            return
-
-        if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
-            logging.info(f"Loading cellpy-file: {filename}")
-            cellpy_instance.load(filename)
-        else:
-            logging.info(f"Loading raw-file: {filename}")
-            cellpy_instance.from_raw(filename)
-            if not cellpy_instance:
-                print("Could not load file: check log!")
-                print("Returning None")
-                return
-
-            if mass is not None:
-                logging.info(f"Setting mass: {mass}")
-                cellpy_instance.set_mass(mass)
-            if auto_summary:
-                logging.info("Creating step table")
-                cellpy_instance.make_step_table()
-                logging.info("Creating summary data")
-                cellpy_instance.make_summary()
-
-    logging.info("Created CellpyData object")
-    return cellpy_instance
 
 
 def setup_cellpy_instance():

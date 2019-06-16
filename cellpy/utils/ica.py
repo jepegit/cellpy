@@ -220,7 +220,6 @@ class Converter(object):
 
         f = interp1d(capacity, voltage, kind=self.interpolation_method)
 
-
         self.capacity_preprocessed = np.linspace(c1, c2, len_capacity)
         self.voltage_preprocessed = f(self.capacity_preprocessed)
 
