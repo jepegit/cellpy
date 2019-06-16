@@ -579,3 +579,40 @@ def test_cell():
     c_res = cellpy.cell(fdv.res_file_path, instrument="arbin", mass=0.045)
 
 
+@pytest.mark.parametrize("val,validated", [
+    (2.3, None),
+    ([2.3], None),
+    ([2.3], [True]),
+])
+def test_set_total_mass(dataset, val, validated):
+    dataset.set_tot_mass(val, validated=validated)
+    assert dataset.dataset.tot_mass == 2.3
+
+
+@pytest.mark.parametrize("val,validated", [
+    (372.3, None),
+    ([372.3], None),
+    ([372.3], [True]),
+    pytest.param(372.5, None, marks=pytest.mark.xfail),
+])
+def test_set_nominal_capacity(dataset, val, validated):
+    dataset.set_nom_cap(val, validated=validated)
+    assert dataset.dataset.nom_cap == 372.3
+
+
+@pytest.mark.parametrize("n,s", [
+    (0, 0),
+    (2, -1),
+    ("first", 0),
+    ("last", -1),
+    pytest.param(-1, -1, marks=pytest.mark.xfail),
+])
+def test_set_testnumber(dataset, n, s):
+    dataset.set_testnumber(n)
+    assert dataset.selected_dataset_number == s
+
+
+@pytest.mark.xfail
+@pytest.mark.filterwarnings("error")
+def test_deprecations(dataset):
+    dataset._check_file_type("my_file.res")

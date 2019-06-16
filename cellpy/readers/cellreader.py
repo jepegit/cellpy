@@ -3296,6 +3296,8 @@ class CellpyData(object):
 
     @staticmethod
     def _check_file_type(filename):
+        warnings.warn(DeprecationWarning("this method will be removed "
+                                         "in v.0.4.0"))
         extension = os.path.splitext(filename)[-1]
         filetype = "res"
         if extension.lower() == ".res":
@@ -3753,6 +3755,8 @@ class CellpyData(object):
                 dfsummary[dt_txt].apply(xldate_as_datetime, option="to_string")
 
         if find_ocv and not self.load_only_summary:
+            warnings.warn(DeprecationWarning("this option will be removed"
+                                             "in v.0.4.0"))
             # should remove this option
             self.logger.info("CONGRATULATIONS")
             self.logger.info("-though this would never be run!")
@@ -4269,6 +4273,8 @@ def setup_cellpy_instance():
         making class and setting prms
 
     """
+    warnings.warn(DeprecationWarning("this option will be removed"
+                                     "in v.0.4.0. Use cellpy.cell instead."))
     logging.info("Making CellpyData class and setting prms")
     cellpy_instance = CellpyData()
     return cellpy_instance
@@ -4294,6 +4300,8 @@ def just_load_srno(srno, prm_filename=None):
 
         """
     from cellpy import dbreader, filefinder
+    warnings.warn(DeprecationWarning("this option will be removed"
+                                     "in v.0.4.0"))
     print("just_load_srno: srno: %i" % srno)
 
     # ------------reading parameters--------------------------------------------
@@ -4356,6 +4364,8 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     Returns:
         out_file_name (str): name of saved file.
     """
+    warnings.warn(DeprecationWarning("this option will be removed"
+                                     "in v.0.4.0"))
     d = CellpyData()
 
     if not outdir:
@@ -4422,6 +4432,10 @@ def load_and_print_resfile(filename, info_dict=None):
     # self.name = None
 
     # NEXT: include nom_cap, tot_mass and  parameters table in save/load hdf5
+
+    warnings.warn(DeprecationWarning("this option will be removed"
+                                     "in v.0.4.0"))
+
     if info_dict is None:
         info_dict = dict()
         info_dict["mass"] = 1.23  # mg
@@ -4447,6 +4461,9 @@ def load_and_print_resfile(filename, info_dict=None):
 
 
 def loadcell_check():
+    warnings.warn(DeprecationWarning("this option will be removed"
+                                     "in v.0.4.0"))
+
     print("running loadcell_check")
     out_dir = r"C:\Cell_data\tmp"
     mass = 0.078609164
@@ -4471,5 +4488,4 @@ if __name__ == "__main__":
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")
-    testfile = "../../testdata/data/20160805_test001_45_cc_01.res"
-    load_and_print_resfile(testfile)
+
