@@ -3022,129 +3022,129 @@ class CellpyData(object):
 
         return selected_df
 
-    def get_ocv_old(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
-        """Find ocv data in DataSet (voltage vs time).
-
-        Args:
-            cycle_number (int): find for all cycles if None.
-            ocv_type ("ocv", "ocvrlx_up", "ocvrlx_down"):
-                     ocv - get up and down (default)
-                     ocvrlx_up - get up
-                     ocvrlx_down - get down
-            dataset_number (int): test number (default first)
-                (usually not used).
-        Returns:
-                if cycle_number is not None
-                    ocv or [ocv_up, ocv_down]
-                    ocv (and ocv_up and ocv_down) are list
-                    containg [time,voltage] (that are Series)
-
-                if cycle_number is None
-                    [ocv1,ocv2,...ocvN,...] N = cycle
-                    ocvN = pandas DataFrame containing the columns
-                    cycle inded, step time, step index, data point, datetime,
-                        voltage
-                    (TODO: check if copy or reference of dfdata is returned)
-        """
-        # function for getting ocv curves
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-        if ocv_type in ['ocvrlx_up', 'ocvrlx_down']:
-            ocv = self._get_ocv(dataset_number=None,
-                                ocv_type=ocv_type,
-                                select_last=True,
-                                select_columns=True,
-                                cycle_number=cycle_number,
-                                )
-            return ocv
-        else:
-            ocv_up = self._get_ocv(dataset_number=None,
-                                   ocv_type='ocvrlx_up',
-                                   select_last=True,
-                                   select_columns=True,
-                                   cycle_number=cycle_number,
-                                   )
-            ocv_down = self._get_ocv(dataset_number=None,
-                                     ocv_type='ocvrlx_down',
-                                     select_last=True,
-                                     select_columns=True,
-                                     cycle_number=cycle_number,
-                                     )
-            return ocv_up, ocv_down
-
-    def _get_ocv(self, ocv_steps=None, dataset_number=None,
-                 ocv_type='ocvrlx_up', select_last=True,
-                 select_columns=True, cycle_number=None):
-        # find ocv data in DataSet
-        # (voltage vs time, no current)
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-
-        if not ocv_steps:
-            if not ocv_type in ['ocvrlx_up', 'ocvrlx_down']:
-                self.logger.debug(" ocv_type must be ocvrlx_up or ocvrlx_down ")
-                sys.exit(-1)
-            else:
-                ocv_steps = self.get_step_numbers(steptype=ocv_type,
-                                                  allctypes=False,
-                                                  pdtype=False,
-                                                  cycle_number=cycle_number,
-                                                  dataset_number=dataset_number)
-
-        if cycle_number:
-            # check ocv_steps
-            ocv_step_exists = True
-            #            self.logger.debug(cycle_number)
-            #            self.logger.debug(ocv_steps)
-            #            self.logger.debug(ocv_steps[cycle_number])
-            if cycle_number not in ocv_steps:
-                ocv_step_exists = False
-            elif ocv_steps[cycle_number][0] == 0:
-                ocv_step_exists = False
-
-            if ocv_step_exists:
-                steps = ocv_steps[cycle_number]
-                index = 0
-                if select_last:
-                    index = -1
-                step = steps[index]
-
-                c = self._select_step(cycle_number, step)
-                t = c[self.headers_normal.step_time_txt]
-                o = c[self.headers_normal.voltage_txt]
-                return [t, o]
-            else:
-                txt = "ERROR! cycle %i not found" % cycle_number  # jepe fix
-                self.logger.debug(txt)
-                return [None, None]
-
-        else:
-            ocv = []
-            for cycle, steps in list(ocv_steps.items()):
-                for step in steps:
-                    c = self._select_step(cycle, step)
-                    # select columns:
-
-                    if select_columns and not self.is_empty(c):
-                        column_names = c.columns
-                        columns_to_keep = [self.headers_normal.cycle_index_txt,
-                                           self.headers_normal.step_time_txt,
-                                           self.headers_normal.step_index_txt,
-                                           self.headers_normal.data_point_txt,
-                                           self.headers_normal.datetime_txt,
-                                           self.headers_normal.voltage_txt,
-                                           ]
-                        for column_name in column_names:
-                            if not columns_to_keep.count(column_name):
-                                c.pop(column_name)
-
-                    if not self.is_empty(c):
-                        ocv.append(c)
-            return ocv
+    # def get_ocv_old(self, cycle_number=None, ocv_type='ocv', dataset_number=None):
+    #     """Find ocv data in DataSet (voltage vs time).
+    #
+    #     Args:
+    #         cycle_number (int): find for all cycles if None.
+    #         ocv_type ("ocv", "ocvrlx_up", "ocvrlx_down"):
+    #                  ocv - get up and down (default)
+    #                  ocvrlx_up - get up
+    #                  ocvrlx_down - get down
+    #         dataset_number (int): test number (default first)
+    #             (usually not used).
+    #     Returns:
+    #             if cycle_number is not None
+    #                 ocv or [ocv_up, ocv_down]
+    #                 ocv (and ocv_up and ocv_down) are list
+    #                 containg [time,voltage] (that are Series)
+    #
+    #             if cycle_number is None
+    #                 [ocv1,ocv2,...ocvN,...] N = cycle
+    #                 ocvN = pandas DataFrame containing the columns
+    #                 cycle inded, step time, step index, data point, datetime,
+    #                     voltage
+    #                 (TODO: check if copy or reference of dfdata is returned)
+    #     """
+    #     # function for getting ocv curves
+    #     dataset_number = self._validate_dataset_number(dataset_number)
+    #     if dataset_number is None:
+    #         self._report_empty_dataset()
+    #         return
+    #     if ocv_type in ['ocvrlx_up', 'ocvrlx_down']:
+    #         ocv = self._get_ocv(dataset_number=None,
+    #                             ocv_type=ocv_type,
+    #                             select_last=True,
+    #                             select_columns=True,
+    #                             cycle_number=cycle_number,
+    #                             )
+    #         return ocv
+    #     else:
+    #         ocv_up = self._get_ocv(dataset_number=None,
+    #                                ocv_type='ocvrlx_up',
+    #                                select_last=True,
+    #                                select_columns=True,
+    #                                cycle_number=cycle_number,
+    #                                )
+    #         ocv_down = self._get_ocv(dataset_number=None,
+    #                                  ocv_type='ocvrlx_down',
+    #                                  select_last=True,
+    #                                  select_columns=True,
+    #                                  cycle_number=cycle_number,
+    #                                  )
+    #         return ocv_up, ocv_down
+    #
+    # def _get_ocv(self, ocv_steps=None, dataset_number=None,
+    #              ocv_type='ocvrlx_up', select_last=True,
+    #              select_columns=True, cycle_number=None):
+    #     # find ocv data in DataSet
+    #     # (voltage vs time, no current)
+    #     dataset_number = self._validate_dataset_number(dataset_number)
+    #     if dataset_number is None:
+    #         self._report_empty_dataset()
+    #         return
+    #
+    #     if not ocv_steps:
+    #         if not ocv_type in ['ocvrlx_up', 'ocvrlx_down']:
+    #             self.logger.debug(" ocv_type must be ocvrlx_up or ocvrlx_down ")
+    #             sys.exit(-1)
+    #         else:
+    #             ocv_steps = self.get_step_numbers(steptype=ocv_type,
+    #                                               allctypes=False,
+    #                                               pdtype=False,
+    #                                               cycle_number=cycle_number,
+    #                                               dataset_number=dataset_number)
+    #
+    #     if cycle_number:
+    #         # check ocv_steps
+    #         ocv_step_exists = True
+    #         #            self.logger.debug(cycle_number)
+    #         #            self.logger.debug(ocv_steps)
+    #         #            self.logger.debug(ocv_steps[cycle_number])
+    #         if cycle_number not in ocv_steps:
+    #             ocv_step_exists = False
+    #         elif ocv_steps[cycle_number][0] == 0:
+    #             ocv_step_exists = False
+    #
+    #         if ocv_step_exists:
+    #             steps = ocv_steps[cycle_number]
+    #             index = 0
+    #             if select_last:
+    #                 index = -1
+    #             step = steps[index]
+    #
+    #             c = self._select_step(cycle_number, step)
+    #             t = c[self.headers_normal.step_time_txt]
+    #             o = c[self.headers_normal.voltage_txt]
+    #             return [t, o]
+    #         else:
+    #             txt = "ERROR! cycle %i not found" % cycle_number  # jepe fix
+    #             self.logger.debug(txt)
+    #             return [None, None]
+    #
+    #     else:
+    #         ocv = []
+    #         for cycle, steps in list(ocv_steps.items()):
+    #             for step in steps:
+    #                 c = self._select_step(cycle, step)
+    #                 # select columns:
+    #
+    #                 if select_columns and not self.is_empty(c):
+    #                     column_names = c.columns
+    #                     columns_to_keep = [self.headers_normal.cycle_index_txt,
+    #                                        self.headers_normal.step_time_txt,
+    #                                        self.headers_normal.step_index_txt,
+    #                                        self.headers_normal.data_point_txt,
+    #                                        self.headers_normal.datetime_txt,
+    #                                        self.headers_normal.voltage_txt,
+    #                                        ]
+    #                     for column_name in column_names:
+    #                         if not columns_to_keep.count(column_name):
+    #                             c.pop(column_name)
+    #
+    #                 if not self.is_empty(c):
+    #                     ocv.append(c)
+    #         return ocv
 
     def get_number_of_cycles(self, dataset_number=None, steptable=None):
         """Get the number of cycles in the test."""
