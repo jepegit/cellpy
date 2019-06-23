@@ -23,13 +23,14 @@ requirements = [
     'scipy', 'numpy', 'pandas', 'python-box', 'setuptools', 'pyyaml',
     'matplotlib', 'xlrd', 'click', 'PyGithub',
     'pyodbc;platform_system=="windows"',
-    'pytables',
+    # 'pytables', # not available by pip
 ]
 
 test_requirements = [
     'scipy', 'numpy', 'pandas', 'python-box', 'setuptools', 'pyyaml'
     'matplotlib', 'lmfit', 'pyodbc', 'xlrd', 'click', 'PyGithub',
-    'pytables', 'pytest',
+    # 'pytables', # not available by pip
+    'pytest',
 ]
 
 extra_req_batch = ['ipython', 'jupyter']

@@ -17,7 +17,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy pytables pytest"
+  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy pytables>=3.5.1 pytest"
   - activate test-environment
   - pip install coverage
   #- conda install --yes --file requirements.txt

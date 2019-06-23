@@ -11,7 +11,7 @@ dependencies:
   - click
   - scipy
   - pandas
-  - pytables
+  - pytables>=3.5.1
   - setuptools
   - pyyaml>=4.2b1
   - pyodbc
