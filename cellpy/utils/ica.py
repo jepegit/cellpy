@@ -248,7 +248,7 @@ class Converter(object):
         """perform the dq-dv transform"""
 
         # NOTE TO ASBJOERN: Probably insert method for "binning" instead of
-        # TODO: Asbjørn will inster "binning" here
+        # TODO: Asbjørn will insert "binning" here
         # differentiating here
         # (use self.increment_method as the variable for selecting method for)
 
