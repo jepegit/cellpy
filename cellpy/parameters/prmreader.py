@@ -79,13 +79,7 @@ def _read_prm_file(prm_filename):
     logger.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
-            try:
-                prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
-            except AttributeError as e:
-                warnings.warn(f"Unsafe loading of yaml-file. Please"
-                              f"update pyyaml to a more recent"
-                              f"version! ({e})")
-                prm_dict = yaml.load(config_file)
+            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
 
     except yaml.YAMLError as e:
         raise ConfigFileNotRead from e
