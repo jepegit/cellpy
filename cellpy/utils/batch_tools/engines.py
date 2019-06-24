@@ -117,7 +117,8 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
 
-    logger.debug("created info-dict")
+    logger.debug(f"created info-dict from {reader.db_file}:")
+    # logger.debug(info_dict)
 
     for key in list(info_dict.keys()):
         logger.debug("%s: %s" % (key, str(info_dict[key])))

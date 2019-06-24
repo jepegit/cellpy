@@ -562,7 +562,7 @@ if __name__ == '__main__':
         os.mkdir(os.path.join(test_data_dir_out, "out"))
     test_data_dir_out = os.path.join(test_data_dir_out, "out")
 
-    test_raw_file = "geis.mpr"
+    test_raw_file = "biol.mpr"
     test_raw_file_full = os.path.join(test_data_dir_raw, test_raw_file)
 
     test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")

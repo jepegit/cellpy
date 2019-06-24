@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from cellpy.readers.core import FileID, DataSet, \
-    check64bit, humanize_bytes, doc_inherit
+    check64bit, humanize_bytes
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy import prms

@@ -9,7 +9,6 @@ from cellpy.parameters import prms
 from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
-from cellpy.readers.core import doc_inherit
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,6 @@ class LabJournal(BaseJournal):
             file_name = self.file_name
         return file_name
 
-    @doc_inherit
     def from_db(self, project=None, name=None, batch_col=None):
         if batch_col is None:
             batch_col = self.batch_col
