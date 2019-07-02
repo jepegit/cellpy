@@ -577,7 +577,7 @@ class CellpyData(object):
         # This is a part of a dramatic API change. It will not be possible to
         # load more than one set of datasets (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
-        self.logger.info("started loadcell")
+        self.logger.info("started cellpy.cellreader.loadcell")
         if cellpy_file is None:
             similar = False
         elif force_raw:
@@ -592,7 +592,8 @@ class CellpyData(object):
             self.load_only_summary = False
 
         if not similar:
-            self.logger.info("cellpy file(s) needs updating - loading raw")
+            self.logger.debug("cellpy file(s) needs updating - loading raw")
+            self.logger.info("loading raw-file")
             self.logger.debug(raw_files)
             self.from_raw(raw_files)
             self.logger.debug("loaded files")
@@ -3356,7 +3357,7 @@ class CellpyData(object):
         max_step = max(dfdata[c_txt])
         for j in range(int(max_step)):
             if j + 1 not in unique_steps:
-                warnings.warn(f"Cycle {j+1} is missing!")
+                self.logger.debug(f"Warning: Cycle {j+1} is missing!")
             else:
                 last_item = max(dfdata.loc[dfdata[c_txt] == j + 1, d_txt])
                 steps.append(last_item)
