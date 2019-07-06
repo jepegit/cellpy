@@ -25,8 +25,8 @@ ALLOW_MULTI_TEST_FILE = False
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 
-use_subprocess = prms.Instruments.use_subprocess
-detect_subprocess_need = prms.Instruments.detect_subprocess_need
+use_subprocess = prms.Instruments.Arbin.use_subprocess
+detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
 
 # Finding out some stuff about the platform
 is_posix = False
@@ -48,7 +48,7 @@ if DEBUG_MODE:
 if detect_subprocess_need:
     logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
-    if python_version == "64bit" and prms.Instruments.office_version == "32bit":
+    if python_version == "64bit" and prms.Instruments.Arbin.office_version == "32bit":
         logging.debug("python 64bit and office 32bit -> "
                       "setting use_subprocess to True")
         use_subprocess = True
@@ -57,16 +57,16 @@ if use_subprocess and not is_posix:
     # The windows users most likely have a strange custom path to mdbtools etc.
     logging.debug("using subprocess (most lilkely mdbtools) "
                   "on non-posix (most likely windows)")
-    if not prms.Instruments.sub_process_path:
+    if not prms.Instruments.Arbin.sub_process_path:
         sub_process_path = str(prms._sub_process_path)
     else:
-        sub_process_path = str(prms.Instruments.sub_process_path)
+        sub_process_path = str(prms.Instruments.Arbin.sub_process_path)
 
 if is_posix:
     sub_process_path = "mdb-export"
 
 try:
-    driver_dll = prms.Instruments.odbc_driver
+    driver_dll = prms.Instruments.Arbin.odbc_driver
 except AttributeError:
     driver_dll = None
 
@@ -555,11 +555,16 @@ class ArbinLoader(Loader):
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
-        if filesize > prms.Instruments["max_res_filesize"] and not prms.Reader["load_only_summary"]:
+        if filesize > prms.Instruments.Arbin.max_res_filesize \
+                and not prms.Reader.load_only_summary:
             error_message = "\nERROR (loader):\n"
             error_message += "%s > %s - File is too big!\n" % (
-                hfilesize, humanize_bytes(prms.Instruments["max_res_filesize"]))
-            error_message += "(edit prms.Instruments['max_res_filesize'])\n"
+                hfilesize,
+                humanize_bytes(
+                    prms.Instruments.Arbin.max_res_filesize
+                ))
+            error_message += "(edit prms.Instruments.Arbin" \
+                             "['max_res_filesize'])\n"
             print(error_message)
             return None
 
@@ -732,16 +737,26 @@ class ArbinLoader(Loader):
             if not isinstance(bad_steps, (list, tuple)):
                 bad_steps = [bad_steps, ]
             for bad_cycle, bad_step in bad_steps:
-                self.logger.debug("bad_step def: [c=%i, s=%i]" % (bad_cycle, bad_step))
-                sql_4 += "AND NOT (%s=%i " % (self.headers_normal['cycle_index_txt'], bad_cycle)
-                sql_4 += "AND %s=%i) " % (self.headers_normal['step_index_txt'], bad_step)
+                self.logger.debug(
+                    f"bad_step def: [c={bad_cycle}, s={bad_step}]",
+                )
+                sql_4 += "AND NOT (%s=%i " % \
+                         (self.headers_normal['cycle_index_txt'], bad_cycle)
+                sql_4 += "AND %s=%i) " % \
+                         (self.headers_normal['step_index_txt'], bad_step)
 
         if prms.Reader["limit_loaded_cycles"]:
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
-                sql_4 += "AND %s>%i " % (self.headers_normal['cycle_index_txt'], prms.Reader["limit_loaded_cycles"][0])
-                sql_4 += "AND %s<%i " % (self.headers_normal['cycle_index_txt'], prms.Reader["limit_loaded_cycles"][-1])
+                sql_4 += "AND %s>%i " % \
+                         (self.headers_normal['cycle_index_txt'], 
+                          prms.Reader["limit_loaded_cycles"][0])
+                sql_4 += "AND %s<%i " % \
+                         (self.headers_normal['cycle_index_txt'], 
+                          prms.Reader["limit_loaded_cycles"][-1])
             else:
-                sql_4 = "AND %s=%i " % (self.headers_normal['cycle_index_txt'], prms.Reader["limit_loaded_cycles"][0])
+                sql_4 = "AND %s=%i " % \
+                        (self.headers_normal['cycle_index_txt'], 
+                         prms.Reader["limit_loaded_cycles"][0])
 
         sql_5 = "order by %s" % self.headers_normal['data_point_txt']
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
@@ -752,42 +767,67 @@ class ArbinLoader(Loader):
         if DEBUG_MODE:
             current_memory_usage = sys.getsizeof(self)
 
-        if not prms.Instruments['chunk_size']:
+        if not prms.Instruments.Abin.chunk_size:
             self.logger.debug("no chunk-size given")
             # memory here
             normal_df = pd.read_sql_query(sql, conn)
             # memory here
             length_of_test = normal_df.shape[0]
-            self.logger.debug("loaded to normal_df (length = %i)" % length_of_test)
+            self.logger.debug(
+                f"loaded to normal_df (length =  {length_of_test})"
+            )
         else:
-            self.logger.debug("chunk-size: %s" % int(prms.Instruments['chunk_size']))
+            self.logger.debug(
+                f"chunk-size: {prms.Instruments.Arbin.chunk_size}",
+            )
             self.logger.debug("creating a pd.read_sql_query generator")
-            normal_df_reader = pd.read_sql_query(sql, conn, chunksize=prms.Instruments['chunk_size'])
+            normal_df_reader = pd.read_sql_query(
+                sql, conn,
+                chunksize=prms.Instruments.Arbin.chunk_size)
             normal_df = None
             chunk_number = 0
             self.logger.debug("created pandas sql reader")
             self.logger.debug("iterating chunk-wise")
             for i, chunk in enumerate(normal_df_reader):
-                self.logger.debug("iteration number %i" % i)
-                if prms.Instruments["max_chunks"]:
-                    self.logger.debug("max number of chunks mode (%i)" % prms.Instruments["max_chunks"])
-                    if chunk_number < prms.Instruments["max_chunks"]:
-                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
-                        self.logger.debug("chunk %i of %i" % (i, prms.Instruments["max_chunks"]))
+                self.logger.debug(f"iteration number {i}")
+                if prms.Instruments.Arbin.max_chunks:
+                    self.logger.debug(
+                        f"max number of chunks mode "
+                        f"({prms.Instruments.Arbin.max_chunks})"
+                    )
+                    if chunk_number < prms.Instruments.Arbin.max_chunks:
+                        normal_df = pd.concat(
+                            [normal_df, chunk], ignore_index=True
+                        )
+                        self.logger.debug(
+                            f"chunk {i} of {prms.Instruments.Arbin.max_chunks}"
+                        )
                     else:
                         break
                 else:
                     try:
-                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
+                        normal_df = pd.concat(
+                            [normal_df, chunk],
+                            ignore_index=True
+                        )
                         self.logger.debug("concatenated new chunk")
                     except MemoryError:
-                        self.logger.error(" - Could not read complete file (MemoryError).")
-                        self.logger.error("Last successfully loaded chunk number:", chunk_number)
-                        self.logger.error("Chunk size:", prms.Instruments['chunk_size'])
+                        self.logger.error(
+                            " - Could not read complete file (MemoryError)."
+                        )
+                        self.logger.error(
+                            f"Last successfully loaded chunk "
+                            f"number: {chunk_number}",
+                        )
+                        self.logger.error(
+                            f"Chunk size: {prms.Instruments.Arbin.chunk_size}"
+                        )
                         break
                 chunk_number += 1
             length_of_test = normal_df.shape[0]
-            self.logger.debug("finished iterating (#rows: %i)", length_of_test)
+            self.logger.debug(
+                f"finished iterating (#rows: {length_of_test})",
+            )
         return length_of_test, normal_df
 
 
