@@ -13,21 +13,6 @@ import yaml
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
-# hotfix x001
-
-default_prms = """
-[Paths]
-outdatadir: ../outdata
-rawdatadir: ../indata
-cellpydatadir: ../indata
-db_path: ../databases
-filelogdir: ../databases
-
-[FileNames]
-db_filename: cellpy_db.xlsx
-dbc_filename: cellpy_dbc.xlsx
-"""
-
 logger = logging.getLogger(__name__)
 
 

@@ -112,15 +112,8 @@ DbCols:
   - float
 FileNames: {}
 Instruments:
-  chunk_size: null
   custom_instrument_definitions_file: null
-  detect_subprocess_need: false
-  max_chunks: null
-  max_res_filesize: 150000000
-  office_version: 64bit
-  sub_process_path: None
   tester: arbin
-  use_subprocess: false
   Arbin:
       chunk_size: null
       detect_subprocess_need: false

@@ -99,10 +99,10 @@ Db = {
 }
 Db = box.Box(Db)
 
-# --------------------------
+# -----------------------------
 # New Excel Reader
 #   attribute = (header, dtype)
-#---------------------------
+# -----------------------------
 
 DbCols = {
     "id": ("id", "int"),
@@ -139,25 +139,14 @@ DbCols = box.Box(DbCols)
 # Instruments
 # --------------------------
 
-# TODO: create sub dicts for specific instruments
-#    Instruments.Arbin.max_res_filesize = 150_000_000
-
 Instruments = {
     "tester": "arbin",
-    "max_res_filesize": 150_000_000,
-    "chunk_size": None,
-    "max_chunks": None,
-    "use_subprocess": False,
-    "detect_subprocess_need": False,
-    "sub_process_path": None,
-    "office_version": "64bit",
     "custom_instrument_definitions_file": None,
 }
 
-
 Instruments = box.Box(Instruments)
 
-# Pre-defined intsruments
+# Pre-defined intsruments:
 
 Arbin = {
     "max_res_filesize": 150_000_000,
@@ -169,7 +158,7 @@ Arbin = {
     "office_version": "64bit",
 }
 
-# Register pre-defined instruments
+# Register pre-defined instruments:
 
 Instruments["Arbin"] = Arbin
 
