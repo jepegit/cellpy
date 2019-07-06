@@ -93,8 +93,8 @@ def create_plot_option_dicts(info, marker_types=None, colors=None,
             ]
 
     if marker_types is None:
-        marker_types = ["circle", "square", "triangle", "invertedtriangle",
-                        "diamond", "cross", "asterix"]
+        marker_types = ["circle", "square", "triangle", "inverted_triangle",
+                        "diamond", "asterisk", "cross"]
 
     if line_dash is None:
         line_dash = [0, 0]
