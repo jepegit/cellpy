@@ -588,7 +588,7 @@ if __name__ == '__main__':
     cellpy_data_instance.make_step_table()
 
     print("---make summary")
-    cellpy_data_instance.make_summary(convert_date=False)
+    cellpy_data_instance.make_summary()
 
     print("---saving to csv")
     try:

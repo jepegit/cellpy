@@ -2186,9 +2186,14 @@ class CellpyData(object):
             self.logger.debug("trying to put dfdata")
 
             self.logger.debug(" - lets set Data_Point as index")
+
             hdr_data_point = self.headers_normal.data_point_txt
-            test.dfdata = test.dfdata.set_index(hdr_data_point,
-                                                drop=False)
+
+            if test.dfdata.index.name != hdr_data_point:
+                test.dfdata = test.dfdata.set_index(
+                    hdr_data_point,
+                    drop=False
+                )
 
             store.put(root + "/dfdata", test.dfdata,
                       format=prms._cellpyfile_dfdata_format)
@@ -3402,8 +3407,7 @@ class CellpyData(object):
     def make_summary(self, find_ocv=False, find_ir=False,
                      find_end_voltage=False,
                      use_cellpy_stat_file=None, all_tests=True,
-                     dataset_number=0, ensure_step_table=True,
-                     convert_date=False):
+                     dataset_number=0, ensure_step_table=True):
         """Convenience function that makes a summary of the cycling data."""
 
         # TODO: @jepe - include option for omitting steps
@@ -3412,9 +3416,6 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-
-        if self.tester == "arbin":
-            convert_date = True
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
@@ -3453,7 +3454,6 @@ class CellpyData(object):
                                    find_end_voltage=find_end_voltage,
                                    use_cellpy_stat_file=use_cellpy_stat_file,
                                    ensure_step_table=ensure_step_table,
-                                   convert_date=convert_date,
                                    )
         else:
             self.logger.debug("creating summary for only one test")
@@ -3467,7 +3467,6 @@ class CellpyData(object):
                                find_end_voltage=find_end_voltage,
                                use_cellpy_stat_file=use_cellpy_stat_file,
                                ensure_step_table=ensure_step_table,
-                               convert_date=convert_date,
                                )
         return self
 
@@ -3481,8 +3480,6 @@ class CellpyData(object):
                       find_end_voltage=False,
                       ensure_step_table=True,
                       # TODO: @jepe - include option for omitting steps
-                      # TODO: @jepe - this is only needed for arbin-data:
-                      convert_date=True,
                       sort_my_columns=True,
                       use_cellpy_stat_file=False,
                       # capacity_modifier = None,
@@ -3547,7 +3544,6 @@ class CellpyData(object):
         closs_cumsum_title = hdr_summary.cumulated_charge_capacity_loss
         endv_charge_title = hdr_summary.end_voltage_charge
         endv_discharge_title = hdr_summary.end_voltage_discharge
-        date_time_txt_title = hdr_summary.date_time_txt
         ocv_1_v_min_title = hdr_summary.ocv_first_min
         ocv_1_v_max_title = hdr_summary.ocv_first_max
         ocv_2_v_min_title = hdr_summary.ocv_second_min
@@ -3756,10 +3752,11 @@ class CellpyData(object):
             dfsummary[shifted_charge_capacity_title] + dfsummary[
             _first_step_txt]
 
-        if convert_date:
-            self.logger.debug("converting date from xls-type")
-            dfsummary[date_time_txt_title] = \
-                dfsummary[dt_txt].apply(xldate_as_datetime, option="to_string")
+        # if convert_date:
+        #     # TODO: should move this to the instrument reader procedure
+        #     self.logger.debug("converting date from xls-type")
+        #     dfsummary[date_time_txt_title] = \
+        #         dfsummary[dt_txt].apply(xldate_as_datetime)  # , option="to_string")
 
         if find_ocv and not self.load_only_summary:
             warnings.warn(DeprecationWarning("this option will be removed"
@@ -3981,10 +3978,7 @@ class CellpyData(object):
 
         if sort_my_columns:
             self.logger.debug("sorting columns")
-            if convert_date:
-                new_first_col_list = [date_time_txt_title, tt_txt, d_txt, c_txt]
-            else:
-                new_first_col_list = [dt_txt, tt_txt, d_txt, c_txt]
+            new_first_col_list = [dt_txt, tt_txt, d_txt, c_txt]
             dfsummary = self.set_col_first(dfsummary, new_first_col_list)
 
         dataset.dfsummary = dfsummary

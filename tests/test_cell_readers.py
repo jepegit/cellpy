@@ -386,7 +386,7 @@ def test_load_res(cellpy_data_instance):
     sum_discharge_time = 362198.12
     my_test = cellpy_data_instance.datasets[run_number]
     assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.dfdata.loc[4, "Step_Time"], 0.1)
+    assert step_time == pytest.approx(my_test.dfdata.loc[5, "Step_Time"], 0.1)
     assert sum_discharge_time == pytest.approx(my_test.dfsummary.loc[:, "Discharge_Time"].sum(), 0.1)
     assert my_test.test_no == run_number
 
