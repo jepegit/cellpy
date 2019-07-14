@@ -80,6 +80,8 @@ headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
 headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
 headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
 headers_summary["cumulated_ric"] = "RIC(none)"
+
+headers_summary["normalized_cycle_index"] = "Normalized_Cycle_Index"
 # Sum of irreversible capacity:
 headers_summary["low_level"] = "Low_Level(percentage)"
 # SEI loss:

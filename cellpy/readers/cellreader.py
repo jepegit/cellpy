@@ -3407,7 +3407,8 @@ class CellpyData(object):
     def make_summary(self, find_ocv=False, find_ir=False,
                      find_end_voltage=False,
                      use_cellpy_stat_file=None, all_tests=True,
-                     dataset_number=0, ensure_step_table=True):
+                     dataset_number=0, ensure_step_table=True,
+                     add_normalized_cycle_index=True):
         """Convenience function that makes a summary of the cycling data."""
 
         # TODO: @jepe - include option for omitting steps
@@ -3419,11 +3420,7 @@ class CellpyData(object):
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
-        # Cycle_Index	Test_Time(s)	Test_Time(h)	Date_Time	Current(A)
-        # Current(mA)	Voltage(V)	Charge_Capacity(Ah)	Discharge_Capacity(Ah)
-        # Charge_Energy(Wh)	Discharge_Energy(Wh)	Internal_Resistance(Ohm)
-        # AC_Impedance(Ohm)	ACI_Phase_Angle(Deg)	Charge_Time(s)
-        # DisCharge_Time(s)	Vmax_On_Cycle(V)	Coulombic_Efficiency
+
         if use_cellpy_stat_file is None:
             use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
             self.logger.debug("using use_cellpy_stat_file from prms")
@@ -3448,26 +3445,30 @@ class CellpyData(object):
                     txt += " setting it to %f mg" % test.mass
                 self.logger.debug(txt)
 
-                self._make_summary(j,
-                                   find_ocv=find_ocv,
-                                   find_ir=find_ir,
-                                   find_end_voltage=find_end_voltage,
-                                   use_cellpy_stat_file=use_cellpy_stat_file,
-                                   ensure_step_table=ensure_step_table,
-                                   )
+                self._make_summary(
+                    j,
+                    find_ocv=find_ocv,
+                    find_ir=find_ir,
+                    find_end_voltage=find_end_voltage,
+                    use_cellpy_stat_file=use_cellpy_stat_file,
+                    ensure_step_table=ensure_step_table,
+                    add_normalized_cycle_index=add_normalized_cycle_index,
+                )
         else:
             self.logger.debug("creating summary for only one test")
             dataset_number = self._validate_dataset_number(dataset_number)
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
-            self._make_summary(dataset_number,
-                               find_ocv=find_ocv,
-                               find_ir=find_ir,
-                               find_end_voltage=find_end_voltage,
-                               use_cellpy_stat_file=use_cellpy_stat_file,
-                               ensure_step_table=ensure_step_table,
-                               )
+            self._make_summary(
+                dataset_number,
+                find_ocv=find_ocv,
+                find_ir=find_ir,
+                find_end_voltage=find_end_voltage,
+                use_cellpy_stat_file=use_cellpy_stat_file,
+                ensure_step_table=ensure_step_table,
+                add_normalized_cycle_index=add_normalized_cycle_index,
+            )
         return self
 
     def _make_summary(self,
@@ -3482,10 +3483,12 @@ class CellpyData(object):
                       # TODO: @jepe - include option for omitting steps
                       sort_my_columns=True,
                       use_cellpy_stat_file=False,
+                      add_normalized_cycle_index=True,
                       # capacity_modifier = None,
                       # test=None
                       ):
         time_00 = time.time()
+
         dataset_number = self._validate_dataset_number(dataset_number)
 
         self.logger.debug("start making summary")
@@ -3561,6 +3564,8 @@ class CellpyData(object):
         shifted_discharge_capacity_title = \
             hdr_summary.shifted_discharge_capacity
 
+        h_normalized_cycle = hdr_summary.normalized_cycle_index
+
         # Here are the two main DataFrames for the test
         # (raw-data and summary-data)
         summary_df = dataset.dfsummary
@@ -3596,9 +3601,9 @@ class CellpyData(object):
             columns_to_keep = [charge_txt, c_txt, d_txt, dt_txt,
                                discharge_txt, tt_txt,
                                ]
-            for column_name in column_names:
-                if not columns_to_keep.count(column_name):
-                    dfsummary.pop(column_name)
+            for h_normalized_cycle in column_names:
+                if not columns_to_keep.count(h_normalized_cycle):
+                    dfsummary.pop(h_normalized_cycle)
 
         if not use_cellpy_stat_file:
             self.logger.debug("not using cellpy statfile")
@@ -3975,6 +3980,10 @@ class CellpyData(object):
             ir_frame2 = only_zeros + ir_values2
             dfsummary.insert(0, column=ir_discharge_title, value=ir_frame)
             dfsummary.insert(0, column=ir_charge_title, value=ir_frame2)
+
+        if add_normalized_cycle_index:
+            nom_cap = self.dataset.nom_cap
+            dfsummary[h_normalized_cycle] = dfsummary[cumcharge_title] / nom_cap
 
         if sort_my_columns:
             self.logger.debug("sorting columns")
