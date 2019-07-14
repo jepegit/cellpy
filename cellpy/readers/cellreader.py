@@ -1611,7 +1611,7 @@ class CellpyData(object):
         mask_no_current_hard = (
             df_steps.loc[:, (shdr.current, "max")].abs()
             + df_steps.loc[:, (shdr.current, "min")].abs()
-        ) < current_limit_value_hard
+        ) < current_limit_value_hard / 2
 
         mask_voltage_down = df_steps.loc[:, (shdr.voltage, "delta")] < \
             - stable_voltage_limit_hard

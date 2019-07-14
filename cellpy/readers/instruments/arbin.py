@@ -870,7 +870,7 @@ class ArbinLoader(Loader):
         if DEBUG_MODE:
             current_memory_usage = sys.getsizeof(self)
 
-        if not prms.Instruments.Abin.chunk_size:
+        if not prms.Instruments.Arbin.chunk_size:
             self.logger.debug("no chunk-size given")
             # memory here
             normal_df = pd.read_sql_query(sql, conn)
