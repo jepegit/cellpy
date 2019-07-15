@@ -38,7 +38,7 @@ from cellpy.parameters import prms
 from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
 from cellpy.parameters.internal_settings import (
     get_headers_summary, get_cellpy_units,
-    get_headers_normal, get_headers_step_table, cellpy_attributes
+    get_headers_normal, get_headers_step_table, ATTRS_CELLPYFILE
 )
 from cellpy.readers.core import (
     FileID, DataSet, CELLPY_FILE_VERSION,
@@ -886,7 +886,7 @@ class CellpyData(object):
     def _load_infotable(self, data, infotable, filename):
         # get attributes from infotable
 
-        for attribute in cellpy_attributes:
+        for attribute in ATTRS_CELLPYFILE:
             value = self._extract_from_dict(infotable, attribute)
             # some fixes due to errors propagated into the cellpy-files
             if attribute == "creator":
@@ -964,7 +964,7 @@ class CellpyData(object):
 
         infotable = collections.OrderedDict()
 
-        for attribute in cellpy_attributes:
+        for attribute in ATTRS_CELLPYFILE:
             value = getattr(test, attribute)
             infotable[attribute] = [value, ]
 

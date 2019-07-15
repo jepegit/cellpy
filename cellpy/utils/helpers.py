@@ -6,18 +6,36 @@ import pathlib
 import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
-    get_headers_summary, get_cellpy_units,
-    get_headers_normal, get_headers_step_table, cellpy_attributes
+    get_headers_summary, get_headers_step_table,
+    ATTRS_CELLPYDATA, ATTRS_DATASET,
 )
+
 from cellpy import prmreader
 from cellpy.utils import batch, ica
 
 
 hdr_summary = get_headers_summary()
+hdr_steps = get_headers_step_table()
 
 
 def update_journal_cellpy_data_dir(pages, new_path=None,
-                                   from_path="PureWindowsPath", to_path="Path"):
+                                   from_path="PureWindowsPath",
+                                   to_path="Path"):
+    """Update the path in the pages (batch) from one type of OS to another.
+
+    I use this function when I switch from my work PC (windows) to my home
+    computer (mac).
+
+    Args:
+        pages: the (batch.experiment.)journal.pages object (pandas.DataFrame)
+        new_path: the base path (uses prms.Paths.cellpydatadir if not given)
+        from_path: type of path to convert from.
+        to_path: type of path to convert to.
+
+    Returns:
+        journal.pages (pandas.DataFrame)
+
+    """
     if new_path is None:
         new_path = prms.Paths.cellpydatadir
 
@@ -30,32 +48,9 @@ def update_journal_cellpy_data_dir(pages, new_path=None,
     return pages
 
 
-cellpydata_attr_that_should_be_copied = [
-    'auto_dirs', 'capacity_modifiers', 'cellpy_datadir', 'cycle_mode',
-    'daniel_number', 'ensure_step_table',
-    'file_names', 'filestatuschecker', 'force_all', 'force_step_table_creation',
-    'forced_errors', 'limit_loaded_cycles',
-    'load_only_summary', 'minimum_selection', 'name', 'number_of_datasets',
-    'profile', 'raw_datadir', 'raw_limits',
-    'raw_units', 'select_minimal', 'selected_dataset_number', 'selected_scans',
-    'sep', 'status_datasets', 'summary_exists',
-    'table_names', 'tester'
-]
-
-dataset_attr_that_should_be_copied = [
-    'cellpy_file_version', 'channel_index', 'channel_number', 'charge_steps',
-    'creator', 'data',
-    'discharge_steps', 'file_errors', 'ir_steps', 'item_ID', 'loaded_from',
-    'mass', 'mass_given', 'material',
-    'merged', 'name', 'no_cycles', 'nom_cap', 'normal_table_version',
-    'ocv_steps', 'raw_data_files', 'raw_data_files_length',
-    'raw_limits', 'raw_units', 'schedule_file_name', 'start_datetime',
-    'step_table_version', 'summary',
-    'summary_version', 'test_ID', 'test_no', 'tot_mass'
-]
-
-
 def make_new_cell():
+    """create an empty CellpyData object."""
+
     new_cell = cellpy.cellreader.CellpyData()
     data = cellpy.cellreader.DataSet()
     new_cell.datasets.append(data)
@@ -63,7 +58,24 @@ def make_new_cell():
 
 
 def split_experiment(cell, base_cycles=None):
-    """Split experiment (CellpyData object) into several sub-experiments."""
+    """Split experiment (CellpyData object) into several sub-experiments.
+
+    Args:
+        cell (CellpyData): original cell
+        base_cycles (int or list of ints): cycle(s) to do the split on.
+
+    Returns:
+        List of CellpyData objects
+    """
+
+    # TODO: implement similar functionality as method for CellpyData
+    #       examples:
+    #           cell.split(cycle=28)
+    #           cell.drop_from(cycle=28)
+    #           cell.drop_to(cycle=28)
+    #           cell.pop(from=22, to=28)
+    #           cell.copy()
+    #           cell.copy(from=22, to=28)
 
     if base_cycles is None:
         all_cycles = cell.get_cycle_numbers()
@@ -101,12 +113,12 @@ def split_experiment(cell, base_cycles=None):
         old_cell.dataset.dfdata = data
         old_cell.dataset.dfsummary = summary
 
-        for attr in dataset_attr_that_should_be_copied:
+        for attr in ATTRS_DATASET:
             value = getattr(cell.dataset, attr)
             setattr(new_cell.dataset, attr, value)
             setattr(old_cell.dataset, attr, value)
 
-        for attr in cellpydata_attr_that_should_be_copied:
+        for attr in ATTRS_CELLPYDATA:
             value = getattr(cell, attr)
             setattr(new_cell, attr, value)
             setattr(old_cell, attr, value)
@@ -119,7 +131,25 @@ def split_experiment(cell, base_cycles=None):
 
 
 def add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
-    """Adds normalized cycles to the summary data frame."""
+    """Adds normalized cycles to the summary data frame.
+
+    This functionality is now also implemented as default when creating
+    the summary (make_summary). However it is kept here if you would like to
+    redo the normalization, for example if you want to use another nominal
+    capacity or if you would like to have more than one normalized cycle index.
+
+    Args:
+        cell (CellpyData): cell object
+        nom_cap (float): nominal capacity to use when normalizing. Defaults to
+            the nominal capacity defined in the cell object (this is typically
+            set during creation of the CellpyData object based on the value
+            given in the parameter file).
+        column_name (str): name of the new column. Uses the name defined in
+            cellpy.parameters.internal_settings as default.
+
+    Returns:
+        cell object now with normalized cycle index in its summary.
+    """
 
     # now also included in dfsummary
     if column_name is None:
@@ -134,11 +164,15 @@ def add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
     return cell
 
 
-def add_c_rate(cell, column_name="rate_avr"):
-    """Adds c-rates to the step table data frame."""
+def add_c_rate(cell, nom_cap=None, column_name=None):
+    """Adds C-rates to the step table data frame."""
 
-    # obs! hard-coded col-names (please fix)
-    nom_cap = cell.dataset.nom_cap
+    # TODO: implement this into make_step_table as default
+    if column_name is None:
+        column_name = hdr_summary["rate_avr"]
+    if nom_cap is None:
+        nom_cap = cell.dataset.nom_cap
+
     spec_conv_factor = cell.get_converter_to_specific()
     cell.dataset.step_table[column_name] = abs(
         round(
@@ -150,17 +184,21 @@ def add_c_rate(cell, column_name="rate_avr"):
 
 
 def add_areal_capacity(cell, cell_id, journal):
+    """Adds areal capacity to the summary."""
 
     # obs! hard-coded col-names (please fix)
-    loading = journal.pages.loc[cell_id, "loadings"]
+    loading = journal.pages.loc[cell_id, "loadings"]  # header 2 be changed
+
     cell.dataset.dfsummary["Areal_Charge_Capacity(mAh/cm2)"] = \
-    cell.dataset.dfsummary["Charge_Capacity(mAh/g)"] * loading / 1000
+        cell.dataset.dfsummary["Charge_Capacity(mAh/g)"] * loading / 1000
     cell.dataset.dfsummary["Areal_Discharge_Capacity(mAh/cm2)"] = \
-    cell.dataset.dfsummary["Discharge_Capacity(mAh/g)"] * loading / 1000
+        cell.dataset.dfsummary["Discharge_Capacity(mAh/g)"] * loading / 1000
     return cell
 
 
 def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
+    """Adds a rate column to the dataframe (step_table)."""
+
     # obs! hard-coded col-names (please fix)
     col = abs(
         round(df[column] / (nom_cap / spec_conv_factor), 2)
@@ -169,7 +207,7 @@ def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
 
 
 def select_summary_based_on_rate(cell, rate=None, rate_std=None,
-                                 rate_column="rate_avr", inverse=False,
+                                 rate_column=None, inverse=False,
                                  inverted=False):
     """Select only cycles charged or discharged with a given rate.
 
@@ -180,7 +218,7 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
             the actual nummeric value. For example, use rate=0.05 if you want
             to filter on cycles that has a C/20 rate.
         rate_std (float): fix me.
-        rate_column (str): column header name to use for the rate column,
+        rate_column (str): column header name of the rate column,
         inverse (bool): fix me.
         inverted (bool): fix me.
 
@@ -188,7 +226,9 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
         filtered summary (Pandas.DataFrame).
     """
 
-    # obs! hard-coded col-names (please fix)
+    if rate_column is None:
+        rate_column = hdr_summary["rate_avr"]
+
     if rate is None:
         rate = 0.05
     if rate_std is None:
@@ -216,6 +256,20 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
 
 def add_normalized_capacity(cell, norm_cycles=None,
                             individual_normalization=False):
+    """Add normalized capacity to the summary.
+
+    Args:
+        cell (CellpyData): cell to add normalized capacity to.
+        norm_cycles (list of ints): the cycles that will be used to find
+            the normalization factor from (averaging their capacity)
+        individual_normalization (bool): find normalization factor for both
+            the charge and the discharge if true, else use normalization factor
+            from charge on both charge and discharge.
+
+    Returns:
+        cell (CellpyData) with added normalization capacity columns in
+        the summary.
+    """
 
     # obs! hard-coded col-names (please fix)
     if norm_cycles is None:
@@ -232,14 +286,12 @@ def add_normalized_capacity(cell, norm_cycles=None,
     else:
         norm_val_discharge = norm_val_charge
 
-    norm_val = norm_val_charge
-
     for col_name, norm_value in zip(
         [col_name_charge, col_name_discharge],
         [norm_val_charge, norm_val_discharge]
     ):
         norm_col_name = "_".join(["Normalized", col_name])
         cell.dataset.dfsummary[norm_col_name] = cell.dataset.dfsummary[
-                                                    col_name] / norm_val
+                                                    col_name] / norm_value
 
     return cell

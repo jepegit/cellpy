@@ -10,7 +10,7 @@ import pandas as pd
 
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
-    cellpy_attributes,
+    ATTRS_CELLPYFILE,
     cellpy_limits, cellpy_units,
 )
 

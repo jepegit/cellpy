@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 from cellpy.parameters.internal_settings import get_headers_normal, \
-    cellpy_attributes
+    ATTRS_CELLPYFILE
 
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.readers.core import (FileID, DataSet,
@@ -240,7 +240,7 @@ class CustomLoader(Loader):
         fid = self._generate_fid(file_name, var_dict)
 
         # parsing cellpydata attributes
-        for attribute in cellpy_attributes:
+        for attribute in ATTRS_CELLPYFILE:
             key = self.variables.get(attribute, None)
             # print(f"{attribute} -> {key}")
             if key:
