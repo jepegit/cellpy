@@ -1511,6 +1511,9 @@ class CellpyData(object):
             None
         """
         # TODO: @jepe - include option for omitting steps
+        add_c_rate = True
+        all_steps = False
+
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -1519,12 +1522,6 @@ class CellpyData(object):
 
         if profiling:
             print("PROFILING MAKE_STEP_TABLE".center(80, "="))
-        nhdr = self.headers_normal
-        shdr = self.headers_step_table
-
-        df = self.datasets[dataset_number].dfdata
-        # df[shdr.internal_resistance_change] = \
-        #     df[nhdr.internal_resistance_txt].pct_change()
 
         def first(x):
             return x.iloc[0]
@@ -1541,6 +1538,14 @@ class CellpyData(object):
 
             return difference
 
+        nhdr = self.headers_normal
+        shdr = self.headers_step_table
+
+        df = self.datasets[dataset_number].dfdata
+        # df[shdr.internal_resistance_change] = \
+        #     df[nhdr.internal_resistance_txt].pct_change()
+
+        # selecting only the most important columns from dfdata:
         keep = [
             nhdr.data_point_txt,
             nhdr.test_time_txt,
@@ -1558,9 +1563,12 @@ class CellpyData(object):
 
         # only use col-names that exist:
         keep = [col for col in keep if col in df.columns]
-
         df = df[keep]
+
+        # preparing for implementation of sub_steps (will come in the future):
         df[nhdr.sub_step_index_txt] = 1
+
+        # using headers as defined in the internal_settings.py file
         rename_dict = {
             nhdr.cycle_index_txt: shdr.cycle,
             nhdr.step_index_txt: shdr.step,
@@ -1573,13 +1581,23 @@ class CellpyData(object):
             nhdr.charge_capacity_txt: shdr.charge,
             nhdr.discharge_capacity_txt: shdr.discharge,
             nhdr.internal_resistance_txt: shdr.internal_resistance,
+            nhdr.sub_step_index_txt: shdr.sub_step,
         }
 
         df = df.rename(columns=rename_dict)
 
         by = [shdr.cycle, shdr.step, shdr.sub_step]
 
+        # prepareing for column with uniqe identifyer for each step (will
+        # be implemented soon; needed for GITT etc):
+
+        if all_steps:
+            by.append(shdr.ustep)
+            # TODO: implement routine for numerating all steps
+            df[shdr.ustep] = 1  # set uniqe id for each consequtive step
+
         self.logger.debug(f"groupby: {by}")
+
         if profiling:
             time_01 = time.time()
 
@@ -1594,9 +1612,24 @@ class CellpyData(object):
             print(f"*** groupby-agg: {time.time() - time_01} s")
             time_01 = time.time()
 
+        # new cols
+
+        # column with C-rates:
+        if add_c_rate:
+            nom_cap = self.datasets[dataset_number].nom_cap
+            spec_conv_factor = self.get_converter_to_specific()
+
+            df_steps[shdr.rate_avr] = abs(
+                    round(
+                        df_steps.loc[:, (shdr.current, "avr")] /
+                        (nom_cap / spec_conv_factor), 2)
+                )
+
         df_steps[shdr.type] = np.nan
         df_steps[shdr.sub_type] = np.nan
         df_steps[shdr.info] = np.nan
+
+        # create masks
 
         current_limit_value_hard = self.raw_limits["current_hard"]
         current_limit_value_soft = self.raw_limits["current_soft"]
@@ -1678,6 +1711,10 @@ class CellpyData(object):
                                  "info"] = row.info
 
         else:
+            # TODO: make an option for only checking unique steps
+            #     e.g.
+            #     df_x = df_steps.where.steps.are.unique
+
             self.logger.debug("masking and labelling steps")
             df_steps.loc[mask_no_current_hard & mask_voltage_stable,
                          shdr.type] = 'rest'
@@ -1949,7 +1986,6 @@ class CellpyData(object):
         txt = outname
         txt += " exported."
         self.logger.info(txt)
-        self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def _export_normal(self, data, setname=None, sep=None, outname=None):
         time_00 = time.time()
@@ -2580,6 +2616,37 @@ class CellpyData(object):
         else:
             return pd.Series()
 
+    def get_datetime(self, cycle=None, dataset_number=None, full=True):
+
+        dataset_number = self._validate_dataset_number(dataset_number)
+        if dataset_number is None:
+            self._report_empty_dataset()
+            return
+        cycle_index_header = self.headers_normal.cycle_index_txt
+        datetime_header = self.headers_normal.datetime_txt
+
+        v = pd.Series()
+        test = self.datasets[dataset_number].dfdata
+        if cycle:
+            c = test[(test[cycle_index_header] == cycle)]
+            if not self.is_empty(c):
+                v = c[datetime_header]
+
+        else:
+            if not full:
+                self.logger.debug("getting datetime for all cycles")
+                v = []
+                cycles = self.get_cycle_numbers()
+                for j in cycles:
+                    txt = "Cycle  %i:  " % j
+                    self.logger.debug(txt)
+                    c = test[(test[cycle_index_header] == j)]
+                    v.append(c[datetime_header])
+            else:
+                self.logger.debug("returning full datetime col")
+                v = test[datetime_header]
+        return v
+
     def get_timestamp(self, cycle=None, dataset_number=None,
                       in_minutes=False, full=True):
         """Returns timestamps (in sec or minutes (if in_minutes==True)).
@@ -2613,8 +2680,8 @@ class CellpyData(object):
             if not full:
                 self.logger.debug("getting timestapm for all cycles")
                 v = []
-                no_cycles = np.amax(test[cycle_index_header])
-                for j in range(1, no_cycles + 1):
+                cycles = self.get_cycle_numbers()
+                for j in cycles:
                     txt = "Cycle  %i:  " % j
                     self.logger.debug(txt)
                     c = test[(test[cycle_index_header] == j)]
@@ -2660,20 +2727,21 @@ class CellpyData(object):
         cc, v = self._get_cap(cycle, dataset_number, "charge", **kwargs)
         return cc, v
 
-    def get_cap(self, cycle=None, dataset_number=None,
-                method="back-and-forth",
-                shift=0.0,
-                categorical_column=False,
-                label_cycle_number=False,
-                split=False,
-                interpolated=False,
-                dx=0.1,
-                number_of_points=None,
-                ignore_errors=True,
-                dynamic=False,
-                inter_cycle_shift=True,
-                **kwargs,
-                ):
+    def get_cap(
+        self, cycle=None, dataset_number=None,
+        method="back-and-forth",
+        shift=0.0,
+        categorical_column=False,
+        label_cycle_number=False,
+        split=False,
+        interpolated=False,
+        dx=0.1,
+        number_of_points=None,
+        ignore_errors=True,
+        dynamic=False,
+        inter_cycle_shift=True,
+        **kwargs,
+    ):
         """Gets the capacity for the run.
 
         Args:
@@ -3601,9 +3669,9 @@ class CellpyData(object):
             columns_to_keep = [charge_txt, c_txt, d_txt, dt_txt,
                                discharge_txt, tt_txt,
                                ]
-            for h_normalized_cycle in column_names:
-                if not columns_to_keep.count(h_normalized_cycle):
-                    dfsummary.pop(h_normalized_cycle)
+            for cn in column_names:
+                if not columns_to_keep.count(cn):
+                    dfsummary.pop(cn)
 
         if not use_cellpy_stat_file:
             self.logger.debug("not using cellpy statfile")

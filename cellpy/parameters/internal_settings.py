@@ -167,6 +167,7 @@ headers_normal = box.Box(headers_normal)
 # 08.12.2016: added sub_step, sub_type, and pre_time
 
 headers_step_table["test"] = "test"
+headers_step_table["ustep"] = "ustep"
 headers_step_table["cycle"] = "cycle"
 headers_step_table["step"] = "step"
 headers_step_table["test_time"] = "test_time"

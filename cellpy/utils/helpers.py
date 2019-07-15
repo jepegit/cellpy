@@ -165,11 +165,30 @@ def add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
 
 
 def add_c_rate(cell, nom_cap=None, column_name=None):
-    """Adds C-rates to the step table data frame."""
+    """Adds C-rates to the step table data frame.
 
-    # TODO: implement this into make_step_table as default
+    This functionality is now also implemented as default when creating
+    the step_table (make_step_table). However it is kept here if you would
+    like to recalculate the C-rates, for example if you want to use another
+    nominal capacity or if you would like to have more than one column with
+    C-rates.
+
+    Args:
+        cell (CellpyData): cell object
+        nom_cap (float): nominal capacity to use for estimating C-rates.
+            Defaults to the nominal capacity defined in the cell object
+            (this is typically set during creation of the CellpyData object
+            based on the value given in the parameter file).
+        column_name (str): name of the new column. Uses the name defined in
+            cellpy.parameters.internal_settings as default.
+
+    Returns:
+        cell object.
+    """
+
+    # now also included in step_table
     if column_name is None:
-        column_name = hdr_summary["rate_avr"]
+        column_name = hdr_steps["rate_avr"]
     if nom_cap is None:
         nom_cap = cell.dataset.nom_cap
 
@@ -199,7 +218,6 @@ def add_areal_capacity(cell, cell_id, journal):
 def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
     """Adds a rate column to the dataframe (step_table)."""
 
-    # obs! hard-coded col-names (please fix)
     col = abs(
         round(df[column] / (nom_cap / spec_conv_factor), 2)
     )
@@ -227,7 +245,7 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
     """
 
     if rate_column is None:
-        rate_column = hdr_summary["rate_avr"]
+        rate_column = hdr_steps["rate_avr"]
 
     if rate is None:
         rate = 0.05
@@ -271,12 +289,11 @@ def add_normalized_capacity(cell, norm_cycles=None,
         the summary.
     """
 
-    # obs! hard-coded col-names (please fix)
     if norm_cycles is None:
         norm_cycles = [1, 2, 3, 4, 5]
 
-    col_name_charge = "Charge_Capacity(mAh/g)"
-    col_name_discharge = "Discharge_Capacity(mAh/g)"
+    col_name_charge = hdr_summary.charge_capacity
+    col_name_discharge = hdr_summary.discharge_capacity
 
     norm_val_charge = cell.dataset.dfsummary.loc[
         norm_cycles, col_name_charge].mean()
