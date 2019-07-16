@@ -140,6 +140,11 @@ def test_print_step_table(dataset):
     dataset.print_step_table()
 
 
+def test_c_rate_calc(dataset):
+    table = dataset.dataset.step_table
+    assert 0.04 in table["rate_avr"].unique()
+
+
 @pytest.mark.xfail(raises=DeprecatedFeature)
 def test_select_steps(dataset):
     step_dict = dict()

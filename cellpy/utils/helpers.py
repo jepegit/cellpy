@@ -7,6 +7,7 @@ import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
     get_headers_summary, get_headers_step_table,
+    get_headers_normal,
     ATTRS_CELLPYDATA, ATTRS_DATASET,
 )
 
@@ -16,6 +17,7 @@ from cellpy.utils import batch, ica
 
 hdr_summary = get_headers_summary()
 hdr_steps = get_headers_step_table()
+hdr_normal = get_headers_normal()
 
 
 def update_journal_cellpy_data_dir(pages, new_path=None,
@@ -252,6 +254,8 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
     if rate_std is None:
         rate_std = 0.1 * rate
 
+    cycle_number_header = hdr_normal.cycle_index_txt
+
     step_table = cell.dataset.step_table
     summary = cell.dataset.dfsummary
 
@@ -265,9 +269,13 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
     filtered_cycles = filtered_step_table.cycle.unique()
 
     if inverted:
-        filtered_summary = summary[~summary.index.isin(filtered_cycles)]
+        filtered_summary = summary[
+            ~summary[cycle_number_header].isin(filtered_cycles)
+        ]
     else:
-        filtered_summary = summary[summary.index.isin(filtered_cycles)]
+        filtered_summary = summary[
+            summary[cycle_number_header].isin(filtered_cycles)
+        ]
 
     return filtered_summary
 
