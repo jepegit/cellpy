@@ -1479,10 +1479,24 @@ class CellpyData(object):
 
         self.logger.debug("_sort_data: no datapoint header to sort by")
 
+    def _ustep(self, n):
+        un = []
+        c = 0
+        n = n.diff()
+        for i in n:
+            if i != 0:
+                c += 1
+            un.append(c)
+        self.logger.debug("created u-steps")
+        return un
+
     def make_step_table(self,
                         step_specifications=None,
                         short=False,
                         profiling=False,
+                        all_steps=False,
+                        add_c_rate=True,
+                        skip_steps=None,
                         dataset_number=None):
 
         """ Create a table (v.4) that contains summary information for each step.
@@ -1505,14 +1519,18 @@ class CellpyData(object):
             step_specifications (pandas.DataFrame): step specifications
             short (bool): step specifications in short format
             profiling (bool): turn on profiling
+
+            all_steps (bool): investigate all steps including same steps within
+                one cycle (this is useful for e.g. GITT).
+            add_c_rate (bool): include a C-rate estimate in the step_table
+            skip_steps (list of integers): list of step numbers that should not
+                be processed (future feature - not used yet).
             dataset_number: defaults to self.dataset_number
 
         Returns:
             None
         """
         # TODO: @jepe - include option for omitting steps
-        add_c_rate = True
-        all_steps = False
 
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -1588,13 +1606,13 @@ class CellpyData(object):
 
         by = [shdr.cycle, shdr.step, shdr.sub_step]
 
-        # prepareing for column with uniqe identifyer for each step (will
-        # be implemented soon; needed for GITT etc):
+        if skip_steps is not None:
+            self.logger.debug(f"omitting steps {skip_steps}")
+            df = df.loc[~df[shdr.step].isin(skip_steps)]
 
         if all_steps:
             by.append(shdr.ustep)
-            # TODO: implement routine for numerating all steps
-            df[shdr.ustep] = 1  # set uniqe id for each consequtive step
+            df[shdr.ustep] = self._ustep(df[shdr.step])
 
         self.logger.debug(f"groupby: {by}")
 
@@ -1629,88 +1647,57 @@ class CellpyData(object):
         df_steps[shdr.sub_type] = np.nan
         df_steps[shdr.info] = np.nan
 
-        # create masks
+        if step_specifications is None:
+            current_limit_value_hard = self.raw_limits["current_hard"]
+            current_limit_value_soft = self.raw_limits["current_soft"]
+            stable_current_limit_hard = self.raw_limits["stable_current_hard"]
+            stable_current_limit_soft = self.raw_limits["stable_current_soft"]
+            stable_voltage_limit_hard = self.raw_limits["stable_voltage_hard"]
+            stable_voltage_limit_soft = self.raw_limits["stable_voltage_soft"]
+            stable_charge_limit_hard = self.raw_limits["stable_charge_hard"]
+            stable_charge_limit_soft = self.raw_limits["stable_charge_soft"]
+            ir_change_limit = self.raw_limits["ir_change"]
 
-        current_limit_value_hard = self.raw_limits["current_hard"]
-        current_limit_value_soft = self.raw_limits["current_soft"]
-        stable_current_limit_hard = self.raw_limits["stable_current_hard"]
-        stable_current_limit_soft = self.raw_limits["stable_current_soft"]
-        stable_voltage_limit_hard = self.raw_limits["stable_voltage_hard"]
-        stable_voltage_limit_soft = self.raw_limits["stable_voltage_soft"]
-        stable_charge_limit_hard = self.raw_limits["stable_charge_hard"]
-        stable_charge_limit_soft = self.raw_limits["stable_charge_soft"]
-        ir_change_limit = self.raw_limits["ir_change"]
+            mask_no_current_hard = (
+                df_steps.loc[:, (shdr.current, "max")].abs()
+                + df_steps.loc[:, (shdr.current, "min")].abs()
+            ) < current_limit_value_hard / 2
 
-        mask_no_current_hard = (
-            df_steps.loc[:, (shdr.current, "max")].abs()
-            + df_steps.loc[:, (shdr.current, "min")].abs()
-        ) < current_limit_value_hard / 2
+            mask_voltage_down = df_steps.loc[:, (shdr.voltage, "delta")] < \
+                - stable_voltage_limit_hard
 
-        mask_voltage_down = df_steps.loc[:, (shdr.voltage, "delta")] < \
-            - stable_voltage_limit_hard
+            mask_voltage_up = df_steps.loc[:, (shdr.voltage, "delta")] > \
+                stable_voltage_limit_hard
 
-        mask_voltage_up = df_steps.loc[:, (shdr.voltage, "delta")] > \
-            stable_voltage_limit_hard
+            mask_voltage_stable = df_steps.loc[:, (shdr.voltage, "delta")].abs() < \
+                stable_voltage_limit_hard
 
-        mask_voltage_stable = df_steps.loc[:, (shdr.voltage, "delta")].abs() < \
-            stable_voltage_limit_hard
+            mask_current_down = df_steps.loc[:, (shdr.current, "delta")] < \
+                - stable_current_limit_soft
 
-        mask_current_down = df_steps.loc[:, (shdr.current, "delta")] < \
-            - stable_current_limit_soft
+            mask_current_up = df_steps.loc[:, (shdr.current, "delta")] > \
+                stable_current_limit_soft
 
-        mask_current_up = df_steps.loc[:, (shdr.current, "delta")] > \
-            stable_current_limit_soft
+            mask_current_negative = df_steps.loc[:, (shdr.current, "avr")] < \
+                - current_limit_value_hard
 
-        mask_current_negative = df_steps.loc[:, (shdr.current, "avr")] < \
-            - current_limit_value_hard
+            mask_current_positive = df_steps.loc[:, (shdr.current, "avr")] > \
+                current_limit_value_hard
 
-        mask_current_positive = df_steps.loc[:, (shdr.current, "avr")] > \
-            current_limit_value_hard
+            mask_galvanostatic = df_steps.loc[:, (shdr.current, "delta")].abs() < \
+                stable_current_limit_soft
 
-        mask_galvanostatic = df_steps.loc[:, (shdr.current, "delta")].abs() < \
-            stable_current_limit_soft
+            mask_charge_changed = df_steps.loc[:, (shdr.charge, "delta")].abs() > \
+                stable_charge_limit_hard
 
-        mask_charge_changed = df_steps.loc[:, (shdr.charge, "delta")].abs() > \
-            stable_charge_limit_hard
+            mask_discharge_changed = df_steps.loc[:, (shdr.discharge, "delta")].abs() > \
+                stable_charge_limit_hard
 
-        mask_discharge_changed = df_steps.loc[:, (shdr.discharge, "delta")].abs() > \
-            stable_charge_limit_hard
+            mask_no_change = (df_steps.loc[:, (shdr.voltage, "delta")] == 0) & \
+                (df_steps.loc[:, (shdr.current, "delta")] == 0) & \
+                (df_steps.loc[:, (shdr.charge, "delta")] == 0) & \
+                (df_steps.loc[:, (shdr.discharge, "delta")] == 0)
 
-        mask_no_change = (df_steps.loc[:, (shdr.voltage, "delta")] == 0) & \
-            (df_steps.loc[:, (shdr.current, "delta")] == 0) & \
-            (df_steps.loc[:, (shdr.charge, "delta")] == 0) & \
-            (df_steps.loc[:, (shdr.discharge, "delta")] == 0)
-
-        if profiling:
-            print(f"*** masking: {time.time() - time_01} s")
-            time_01 = time.time()
-
-        if step_specifications is not None:
-            self.logger.debug("parsing custom step definition")
-            if not short:
-                self.logger.debug("using long format (cycle,step)")
-                for row in step_specifications.itertuples():
-                    # self.logger.debug(f"cycle: {row.cycle} step: {row.step}"
-                    #                   f" type: {row.type}")
-                    df_steps.loc[(df_steps[shdr.step] == row.step) &
-                                 (df_steps[shdr.cycle] == row.cycle),
-                                 "type"] = row.type
-                    df_steps.loc[(df_steps[shdr.step] == row.step) &
-                                 (df_steps[shdr.cycle] == row.cycle),
-                                 "info"] = row.info
-            else:
-                self.logger.debug("using short format (step)")
-                for row in step_specifications.itertuples():
-                    # self.logger.debug(f"step: {row.step} "
-                    #                   f"type: {row.type}"
-                    #                   f"info: {row.info}")
-
-                    df_steps.loc[df_steps[shdr.step] == row.step,
-                                 "type"] = row.type
-                    df_steps.loc[df_steps[shdr.step] == row.step,
-                                 "info"] = row.info
-
-        else:
             # TODO: make an option for only checking unique steps
             #     e.g.
             #     df_x = df_steps.where.steps.are.unique
@@ -1756,6 +1743,29 @@ class CellpyData(object):
             # "voltametry_discharge"
             # mask_discharge_changed
             # mask_voltage_down
+
+            if profiling:
+                print(f"*** masking: {time.time() - time_01} s")
+                time_01 = time.time()
+
+        else:
+            self.logger.debug("parsing custom step definition")
+            if not short:
+                self.logger.debug("using long format (cycle,step)")
+                for row in step_specifications.itertuples():
+                    df_steps.loc[(df_steps[shdr.step] == row.step) &
+                                 (df_steps[shdr.cycle] == row.cycle),
+                                 "type"] = row.type
+                    df_steps.loc[(df_steps[shdr.step] == row.step) &
+                                 (df_steps[shdr.cycle] == row.cycle),
+                                 "info"] = row.info
+            else:
+                self.logger.debug("using short format (step)")
+                for row in step_specifications.itertuples():
+                    df_steps.loc[df_steps[shdr.step] == row.step,
+                                 "type"] = row.type
+                    df_steps.loc[df_steps[shdr.step] == row.step,
+                                 "info"] = row.info
 
         if profiling:
             print(f"*** introspect: {time.time() - time_01} s")

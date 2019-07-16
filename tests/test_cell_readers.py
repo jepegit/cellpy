@@ -410,6 +410,39 @@ def test_make_new_step_table(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True)
+    assert len(cellpy_data_instance.dataset.step_table) == 103
+
+
+def test_make_step_table_all_steps(cellpy_data_instance):
+    # need a new test data-file for GITT
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table(
+        profiling=True,
+        all_steps=True,
+    )
+    assert len(cellpy_data_instance.dataset.step_table) == 103
+
+
+def test_make_step_table_no_rate(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table(
+        profiling=True,
+        add_c_rate=False,
+    )
+    assert "rate_avr" not in cellpy_data_instance.dataset.step_table.columns
+
+
+def test_make_step_table_skip_steps(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table(
+        profiling=True,
+        skip_steps=[1, 10],
+    )
+    print(cellpy_data_instance.dataset.step_table)
+    assert len(cellpy_data_instance.dataset.step_table) == 87
 
 
 def test_make_summary(cellpy_data_instance):
