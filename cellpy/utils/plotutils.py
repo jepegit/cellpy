@@ -5,6 +5,7 @@ Utilities for helping to plot cellpy-data.
 
 import os
 import warnings
+import importlib
 import logging
 import itertools
 
@@ -21,6 +22,8 @@ try:
     hv_available = True
 except ImportError:
     hv_available = False
+
+bokeh_available = importlib.util.find_spec("bokeh") is not None
 
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -47,6 +50,16 @@ COLOR_DICT = {'classic': [u'b', u'g', u'r', u'c', u'm', u'y', u'k'],
               }
 
 
+def _hv_bokeh_available():
+    if not hv_available:
+        print("You need holoviews. But I cannot load it. Aborting...")
+        return False
+    if not bokeh_available:
+        print("You need Bokeh. But I cannot find it. Aborting...")
+        return False
+    return True
+
+
 def create_colormarkerlist_for_info_df(info_df, symbol_label="all", color_style_label="seaborn-colorblind"):
     logger.debug("symbol_label: " + symbol_label)
     logger.debug("color_style_label: " + color_style_label)
@@ -71,7 +84,7 @@ def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_l
     return _color_list, _symbol_list
 
 
-def _rawplot(raw_curve, title="Voltage versus time"):
+def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
 
     tgt = raw_curve.relabel(title).opts(
         width=800, height=300, labelled=['y'],
@@ -87,15 +100,28 @@ def _rawplot(raw_curve, title="Voltage versus time"):
     return layout
 
 
-def rawplot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"),
-            title="Voltage versus time"):
+def raw_plot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"), title=None,
+             **kwargs):
     # TODO: missing doc-string
+
+    if title is None:
+        if isinstance(y, (list, tuple)):
+            pre_title = str(y[0])
+        else:
+            pre_title = str(y)
+        title = " ".join([pre_title, "versus", "time"])
+
+    if not _hv_bokeh_available():
+        return
+
+    hv.extension('bokeh', logo=False)
+
     # obs! col-names hard-coded. fix me.
     raw = cell.dataset.dfdata
     raw["Test_Time_Hrs"] = raw["Test_Time"]/3600
     x = ("Test_Time_Hrs", "Time (hours)")
-    raw_curve = hv.Curve(raw, x, y, )
-    layout = _rawplot(raw_curve, title=title)
+    raw_curve = hv.Curve(raw, x, y)
+    layout = _raw_plot(raw_curve, title=title, **kwargs)
     return layout
 
 
@@ -157,12 +183,12 @@ def _get_info(table, cycle, step):
     d_voltage, d_current  = table.loc[m_table, ['voltage_delta', 'current_delta']].values[0]
     d_discharge, d_charge  = table.loc[m_table, ['discharge_delta', 'charge_delta']].values[0]
     current_max = (c1 + c2)/2
-    rate = 66  # TODO
+    rate = table.loc[m_table, "rate_avr"].values[0]
     step_type = table.loc[m_table, 'type'].values[0]
     return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 
 
-def plot_raw_cycle(cell, cycle):
+def cycle_info_plot(cell, cycle, get_axes=False):
 
     # obs! hard-coded col-names. Please fix me.
     if not plt_available:
@@ -242,7 +268,8 @@ def plot_raw_cycle(cell, cycle):
         ax.axes.get_yaxis().set_visible(False)
         ax.axes.get_xaxis().set_visible(False)
 
-    return ax1, ax2, ax2, ax4
+    if get_axes:
+        return ax1, ax2, ax2, ax4
 
 
 if __name__ == "__main__":

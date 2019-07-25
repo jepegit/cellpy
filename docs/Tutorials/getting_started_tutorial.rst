@@ -41,43 +41,30 @@ Also remark that the driver needs to be of the same bit as your Python
 (so, if you are using 32 bit Python, you will need the 32 bit driver).
 
 For POSIX systems, I have not found any suitable drivers. Instead,
-``cellpy`` will try to use ``mdbtools`` to first export the data to
+``cellpy`` will try to use ``mdbtools``\ to first export the data to
 temporary csv-files, and then import from those csv-file (using the
 ``pandas`` library). You can install ``mdbtools`` using your systems
-preferred package manager (*e.g.* ``apt-get install mdbtools``).
+prefered package manager (*e.g.* ``apt-get install mdbtools``).
 
 1.2 The tea spoon explanation
 -----------------------------
 
 If you are used to installing stuff from the command line (or shell),
-then this should be an easy task for you. However, a considerable
+then things might very well run smoothly. However, a considerable
 percentage of us don’t feel exceedingly comfortable installing things by
-writing commands inside a small black window (or white window).
-Let’s face it; we belong to the *point-and-click* (or *double-click*)
-generation, not the *write-cryptic-commands* generation. So, hopefully without
-insulting the savvy, here is a “tea-spoon explanation”
+writing commands inside a small black window. Let’s face it; we belong
+to the *point-and-click* (or *double-click*) generation, not the
+*write-cryptic-commands* generation. So, hopefully without insulting the
+savvy, here is a “tea-spoon explanation”
 
-Install a scientific stack of python 3.6 or 3.7
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Install a scientific stack of python 3.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If the words “virtual environment” or “miniconda” don’t ring any bells,
 you should install the Anaconda scientific Python distribution. Go to
 `www.anaconda.com <https://www.anaconda.com/>`__ and select the
 Anaconda distribution (press the ``Download Now`` button). Download it
 and let it install.
-
-.. warning::
-
-    You can install either 32 bit or 64 bit Python. If you install the
-    64 bit, you will be able to utilize more of your computers memory.
-    However, for the 64 bit version to work properly, you will need to
-    have a 64 bit Microsoft Access compatible driver (an OCDB driver,
-    see below). If you have an Office 365 installation, I believe this should
-    not be a problem (you can install the driver you want later on).
-    However, for older Office versions, it is very hard to install the 64 bit
-    version of the driver. If nothing of this makes sense to you, you
-    probably need to install the 32 bit version of Python.
-
 
 Install ``cellpy``
 ~~~~~~~~~~~~~~~~~~
@@ -109,7 +96,7 @@ those, you will need to install ``pyodbc``
 
 You most likely also want to install the Microsoft Access odbc driver
 which can be downloaded from `this
-page. <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__
+page <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__
 
 Install a couple of other dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,7 +144,7 @@ of an ``install``
 
 It could also be that you want to install a pre-release (a version that
 is so bleeding edge that it ends with a alpha or beta release
-identification, *e.g.* ends with ``.b2``). Then you will need to add the
+identification, *e.g.* ends with .b2). Then you will need to add the
 –pre modifier
 
 .. code:: bash
@@ -165,24 +152,21 @@ identification, *e.g.* ends with ``.b2``). Then you will need to add the
    $ pip install --pre cellpy
 
 To run a more complete check of your installation, there exist a
-``cellpy`` sub-command than can become helpful
+``cellpy`` sub-command than can be helpful
 
 .. code:: bash
 
    $ cellpy info --check
 
-However, the authors of this package have not had time to implement
-any checks yet, so at the moment nothing will happen (sorry).
+(at least when we have finalized it).
 
 2. The ``cellpy`` command to your rescue
 ----------------------------------------
 
 To help installing and controlling your ``cellpy`` installation, a CLI
-(a command line interface; basically its a small program you can run
-from your command line / shell) is provided with four main commands,
-including ``info`` for getting information about your installation, and
-``setup`` for helping you to set up your installation and writing a
-configuration file.
+is provided with four main commands, including ``info`` for getting
+information about your installation, and ``setup`` for helping you to
+set up your installation and writing a configuration file.
 
 To get more information, you can issue
 
@@ -225,7 +209,7 @@ gives
      -c, --check      Do a sanity check to see if things works as they should.
      --help           Show this message and exit.
 
-Using the ``cellpy`` command for your first-time setup
+Using the ``cellpy`` command for your first time setup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After you have installed ``cellpy`` it is highly recommended that you
@@ -244,10 +228,10 @@ located. If the folders don’t exist, ``cellpy`` will try to create them.
 
 .. note::
 
-    If you don't choose the ``-i`` option, you can edit your configurations
+    If you dont choose the ``-i`` option, you can edit your configurations
     directly in the cellpy configuration file inside your home directory.
 
-When you have answered all the questions, a configuration file will be
+When you have answered all your questions, a configuration file will be
 made and saved to your home directory. You can always issue
 ``cellpy info -l`` to find out where your configuration file is located
 (it’s written in YAML format and it should be relatively easy to edit it
@@ -311,7 +295,9 @@ raw files (``prms.Paths.rawdatadir``).
 Try scrolling to find your own ``prms.Paths.rawdatadir``. Does it look
 right? These settings can be changed by either re-running the
 ``cellpy setup -i`` command (not in Python, but in the command window /
-terminal window). You probably need to use the --reset flag this time
+terminal window). You probably need to use the ``--reset`` flag this time
 since it is not your first time running it).
+
+
 
 

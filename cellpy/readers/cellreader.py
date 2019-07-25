@@ -611,6 +611,9 @@ class CellpyData(object):
 
         else:
             self.load(cellpy_file)
+            if mass:
+                self.set_mass(mass)
+
         return self
 
     def from_raw(self, file_names=None, **kwargs):
@@ -1635,7 +1638,11 @@ class CellpyData(object):
         # column with C-rates:
         if add_c_rate:
             nom_cap = self.datasets[dataset_number].nom_cap
+            mass = self.datasets[dataset_number].mass
             spec_conv_factor = self.get_converter_to_specific()
+            self.logger.debug(
+                f"c-rate: nom_cap={nom_cap} spec_conv={spec_conv_factor}"
+            )
 
             df_steps[shdr.rate_avr] = abs(
                     round(
@@ -4097,6 +4104,14 @@ def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
         if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
             logging.info(f"Loading cellpy-file: {filename}")
             cellpy_instance.load(filename)
+            if mass is not None:
+                logging.info(f"Setting mass: {mass}")
+                cellpy_instance.set_mass(mass)
+                if auto_summary:
+                    logging.info("Creating step table")
+                    cellpy_instance.make_step_table()
+                    logging.info("Creating summary data")
+                    cellpy_instance.make_summary()
         else:
             logging.info(f"Loading raw-file: {filename}")
             cellpy_instance.from_raw(filename)
