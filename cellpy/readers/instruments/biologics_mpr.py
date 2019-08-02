@@ -562,7 +562,7 @@ if __name__ == '__main__':
         os.mkdir(os.path.join(test_data_dir_out, "out"))
     test_data_dir_out = os.path.join(test_data_dir_out, "out")
 
-    test_raw_file = "geis.mpr"
+    test_raw_file = "biol.mpr"
     test_raw_file_full = os.path.join(test_data_dir_raw, test_raw_file)
 
     test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
@@ -588,7 +588,7 @@ if __name__ == '__main__':
     cellpy_data_instance.make_step_table()
 
     print("---make summary")
-    cellpy_data_instance.make_summary(convert_date=False)
+    cellpy_data_instance.make_summary()
 
     print("---saving to csv")
     try:

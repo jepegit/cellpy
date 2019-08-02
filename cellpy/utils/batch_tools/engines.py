@@ -67,6 +67,13 @@ def summary_engine(**kwargs):
             ]
         else:
             selected_summaries = experiment.selected_summaries
+
+        if experiment.summary_frames is None:
+            logger.debug("No summary frames found")
+            logger.debug("Re-loading")
+
+            experiment.summary_frames = _load_summaries(experiment)
+
         farm = helper.join_summaries(
             experiment.summary_frames,
             selected_summaries
@@ -75,6 +82,14 @@ def summary_engine(**kwargs):
     barn = "batch_dir"
 
     return farms, barn
+
+
+def _load_summaries(experiment):
+    summary_frames = {}
+    for label in experiment.cell_names:
+        # TODO: replace this with direct lookup from hdf5?
+        summary_frames[label] = experiment.data[label].dataset.dfsummary
+    return summary_frames
 
 
 def dq_dv_engine(**kwargs):
@@ -102,7 +117,8 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
 
-    logger.debug("created info-dict")
+    logger.debug(f"created info-dict from {reader.db_file}:")
+    # logger.debug(info_dict)
 
     for key in list(info_dict.keys()):
         logger.debug("%s: %s" % (key, str(info_dict[key])))
@@ -127,5 +143,6 @@ def simple_db_engine(reader=None, srnos=None):
     info_df = helper.make_unique_groups(info_df)
 
     info_df["labels"] = info_df["filenames"].apply(helper.create_labels)
-    info_df.set_index("filenames", inplace=True)
+    info_df.set_index("filenames", inplace=True)  # edit this to allow for
+    # non-nummeric index-names (for tab completion and python-box)
     return info_df

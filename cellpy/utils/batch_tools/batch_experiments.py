@@ -210,6 +210,8 @@ class CyclingExperiment(BaseExperiment):
                 else:
                     logging.debug(
                         "saving cell skipped (set to 'fixed' in info_df)")
+            else:
+                logging.debug("you opted to not save to cellpy-format")
 
             if self.export_raw or self.export_cycles:
                 export_text = "exporting"

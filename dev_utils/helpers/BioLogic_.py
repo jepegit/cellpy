@@ -426,5 +426,5 @@ def main(filename):
 
 if __name__ == '__main__':
 
-    test_file = "/Users/jepe/scripting/cellpy/testdata/data/geis.mpr"
+    test_file = "/Users/jepe/scripting/cellpy/testdata/data/biol.mpr"
     main(test_file)

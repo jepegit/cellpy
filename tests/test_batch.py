@@ -77,6 +77,7 @@ def test_csv_exporter(updated_cycling_experiment):
     exporter.assign(updated_cycling_experiment)
     exporter.do()
 
+
 # TODO: fix me
 @pytest.mark.slowtest
 def test_update_time(cycling_experiment):

@@ -18,7 +18,7 @@ converts the .res-file to .csv-files, then loading and deleting the
     from cellpy import prms
 
     # use mdbtools even though you are on windows
-    prms.Instruments.use_subprocess = True
+    prms.Instruments.Arbin.use_subprocess = True
 
 Another typical value you might want to change (but not permanently by setting
 its value in the config file) is the cell-type ("anode" or something else) and

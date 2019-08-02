@@ -4,16 +4,17 @@ channels:
   - conda-forge
 dependencies:
   - python>=3.6
-  - numpy=1.15.4
+  - pip
+  - numpy
   - xlrd
   - matplotlib
   - cryptography
   - click
   - scipy
   - pandas
-  - pytables
+  - pytables>=3.5.1
   - setuptools
-  - pyyaml
+  - pyyaml>=4.2b1
   - pyodbc
   - PyGithub
   - pip:

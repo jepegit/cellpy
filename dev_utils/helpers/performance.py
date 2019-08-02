@@ -58,9 +58,10 @@ def report_time(t1,t2):
 
 def time_routine():
     d = cellreader.CellpyData()
-
-    prms.Instruments["chunk_size"] = 10000  # size pr chunk used by pandas when loading
-    prms.Instruments["max_chunks"] = 1  # stops loading when reaching this
+    # size pr chunk used by pandas when loading:
+    prms.Instruments.Arbin.chunk_size = 10000
+    # stops loading when reaching this:
+    prms.Instruments.Arbin.max_chunks = 1
     t1 = time.time()
 
     load_it(d)

@@ -4,11 +4,11 @@ import os
 import pandas as pd
 
 from cellpy.parameters.internal_settings import get_headers_normal, \
-    cellpy_attributes
+    ATTRS_CELLPYFILE
 
 from cellpy.readers.instruments.mixin import Loader
-from cellpy.readers.core import FileID, DataSet, \
-    check64bit, humanize_bytes, doc_inherit
+from cellpy.readers.core import (FileID, DataSet,
+                                 check64bit, humanize_bytes)
 from cellpy.parameters import prms
 
 DEFAULT_CONFIG = {
@@ -149,11 +149,9 @@ class CustomLoader(Loader):
         self.variables = settings["variables"]
         self.structure = settings["structure"]
 
-    @doc_inherit
     def get_raw_units(self):
         return self.units
 
-    @doc_inherit
     def get_raw_limits(self):
         return self.limits
 
@@ -242,7 +240,7 @@ class CustomLoader(Loader):
         fid = self._generate_fid(file_name, var_dict)
 
         # parsing cellpydata attributes
-        for attribute in cellpy_attributes:
+        for attribute in ATTRS_CELLPYFILE:
             key = self.variables.get(attribute, None)
             # print(f"{attribute} -> {key}")
             if key:

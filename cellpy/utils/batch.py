@@ -1,6 +1,8 @@
 """Routines for batch processing of cells (v2)."""
 
 import logging
+import pathlib
+import shutil
 
 import pandas as pd
 
@@ -47,20 +49,24 @@ class Batch:
         return str(self.experiment)
 
     def show_pages(self, number_of_rows=5):
+        # this should be removed
         return self.experiment.journal.pages.head(number_of_rows)
 
     @property
     def view(self):
+        # rename to: report
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
 
     @property
     def info_file(self):
+        # rename to journal_name
         return self.experiment.journal.file_name
 
     @property
     def summaries(self):
+        # should add link-mode?
         try:
             keys = [df.name for df in self.experiment.memory_dumped["summary_engine"]]
             return pd.concat(self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
@@ -71,15 +77,22 @@ class Batch:
     def summary_columns(self):
         return self.summaries.columns.get_level_values(0)
 
+    # TODO: property: cells (return cell names)
+    # TODO: property: data_columns (return column names for the raw data)
+    # TODO: property: steps_columns
+
     @property
     def info_df(self):
+        # rename to: pages
         return self.experiment.journal.pages
 
     @info_df.setter
     def info_df(self, df):
+        # rename to: pages
         self.experiment.journal.pages = df
 
     def create_empty_info_df(self):
+        # rename to: create_journal
         logging.info("Creating an empty info dataframe")
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
@@ -95,16 +108,20 @@ class Batch:
         self.experiment.journal.paginate()
 
     def create_info_df(self):
+        # rename to: create_journal (combine this with function above)
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
         self.experiment.journal.from_db()
         self.experiment.journal.to_file()
 
     def create_folder_structure(self):
+        # rename to: paginate
         self.experiment.journal.paginate()
         logging.info("created folders")
 
     def save_info_df(self):
+        # rename to: save_journal
+        # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file()
         logging.info("saving journal pages")
         print(" journal ".center(80, "-"))
@@ -113,10 +130,33 @@ class Batch:
         print("->")
         print(self.experiment.journal.file_name)
 
+    def duplicate_info_df(self):
+        # rename to: duplicate_journal
+        # or combine this into save_journal?
+        journal_name = self.experiment.journal.file_name
+        journal_name = pathlib.Path(journal_name)
+        if not journal_name.is_file():
+            print("No journal saved")
+            return
+        new_journal_name = journal_name.name
+        shutil.copy(journal_name, new_journal_name)
+
+    # TODO: load_journal
+    # TODO: list_journals?
+
+    def link(self):
+        self.experiment.link()
+
+    def load(self):
+        # does the same as load_and_save_raw
+        self.experiment.update()
+
     def load_and_save_raw(self):
+        # remove this? rename to: update
         self.experiment.update()
 
     def make_summaries(self):
+        # rename to: combine_summaries
         self.exporter.do()
 
     def plot_summaries(self):

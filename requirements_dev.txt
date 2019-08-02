@@ -1,7 +1,7 @@
 watchdog>=0.8.3
 Sphinx>=1.5.5
 cryptography>=1.8.1
-PyYAML>=3.12
+pyyaml>=4.2b1
 pip>=9.0.1
 wheel>=0.29.0
 flake8>=3.3.0
@@ -9,7 +9,7 @@ coverage>=4.3.4
 Sphinx>=1.5.5
 pytest>=3.0.7
 twine>=1.9.1
-numpy==1.15.4
+numpy>=1.16.4
 pytest-benchmark
 pytest-timeout
 invoke
