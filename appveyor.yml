@@ -13,7 +13,7 @@ init:
   - "ECHO %PYTHON_VERSION% %MINICONDA% %PYTHON_ARC%"
 
 install:
-  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+#  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
