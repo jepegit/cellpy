@@ -1,5 +1,6 @@
 import logging
 import abc
+import collections
 
 #  import box
 
@@ -71,7 +72,7 @@ class Doer(metaclass=abc.ABCMeta):
         pass
 
 
-class Data(dict):
+class Data(collections.UserDict):
     """Class that is used to access the experiment.journal.pages DataFrame.
 
     The Data class loads the complete cellpy-file if dfdata is not already
@@ -93,6 +94,10 @@ class Data(dict):
     def __getitem__(self, cell_id):
         cellpy_data_object = self.__look_up__(cell_id)
         return cellpy_data_object
+
+    # def __getitem__(self, key):
+    #     value = super().__getitem__(key)
+    #     return f"[{self.__class__.__name__}]: {value}"
 
     def __str__(self):
         t = ""

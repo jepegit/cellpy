@@ -311,7 +311,7 @@ class ArbinLoader(Loader):
             data.dfdata.rename(index=str, columns=columns)
 
         if fix_datetime:
-            h_datetime = self.headers_normal['datetime_txt']
+            h_datetime = self.headers_normal.datetime_txt
             logging.debug("converting to datetime format")
             data.dfdata[h_datetime] = data.dfdata[h_datetime].apply(
                 xldate_as_datetime, option="to_datetime"
@@ -368,9 +368,9 @@ class ArbinLoader(Loader):
         if headers is None:
             headers = ["Discharge_Capacity", "Charge_Capacity"]
 
-        step_txt = self.headers_normal['step_index_txt']
-        point_txt = self.headers_normal['data_point_txt']
-        cycle_txt = self.headers_normal['cycle_index_txt']
+        step_txt = self.headers_normal.step_index_txt
+        point_txt = self.headers_normal.data_point_txt
+        cycle_txt = self.headers_normal.cycle_index_txt
 
         self.logger.debug("iterating through file: %s" % file_name)
         if not os.path.isfile(file_name):
@@ -407,7 +407,7 @@ class ArbinLoader(Loader):
         # col_names = list(global_data_df.columns.values)
         self.logger.debug("sql statement: %s" % sql)
 
-        tests = global_data_df[self.headers_normal['test_id_txt']]
+        tests = global_data_df[self.headers_normal.test_id_txt]
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
         self.logger.debug("only selecting first test")
@@ -419,7 +419,7 @@ class ArbinLoader(Loader):
             self.headers_global['start_datetime_txt']
         ][test_no]
         test_ID = int(
-            global_data_df[self.headers_normal['test_id_txt']][test_no]
+            global_data_df[self.headers_normal.test_id_txt][test_no]
         )  # OBS
         test_name = global_data_df[
             self.headers_global['test_name_txt']
@@ -434,8 +434,8 @@ class ArbinLoader(Loader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.headers_normal['test_id_txt'], test_ID)
-        sql_5 = "order by %s" % self.headers_normal['data_point_txt']
+        sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
+        sql_5 = "order by %s" % self.headers_normal.data_point_txt
         import time
         info_list = []
         info_header = ["cycle", "row_count", "start_point", "end_point"]
@@ -478,9 +478,9 @@ class ArbinLoader(Loader):
         Returns: dictionary with div. stats and info.
 
         """
-        step_txt = self.headers_normal['step_index_txt']
-        point_txt = self.headers_normal['data_point_txt']
-        cycle_txt = self.headers_normal['cycle_index_txt']
+        step_txt = self.headers_normal.step_index_txt
+        point_txt = self.headers_normal.data_point_txt
+        cycle_txt = self.headers_normal.cycle_index_txt
 
         self.logger.debug("investigating file: %s" % file_name)
         if not os.path.isfile(file_name):
@@ -517,7 +517,7 @@ class ArbinLoader(Loader):
         # col_names = list(global_data_df.columns.values)
         self.logger.debug("sql statement: %s" % sql)
 
-        tests = global_data_df[self.headers_normal['test_id_txt']]
+        tests = global_data_df[self.headers_normal.test_id_txt]
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
         self.logger.debug("only selecting first test")
@@ -529,7 +529,7 @@ class ArbinLoader(Loader):
             self.headers_global['start_datetime_txt']
         ][test_no]
         test_ID = int(
-            global_data_df[self.headers_normal['test_id_txt']][test_no]
+            global_data_df[self.headers_normal.test_id_txt][test_no]
         )  # OBS
         test_name = global_data_df[
             self.headers_global['test_name_txt']
@@ -543,8 +543,8 @@ class ArbinLoader(Loader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.headers_normal['test_id_txt'], test_ID)
-        sql_5 = "order by %s" % self.headers_normal['data_point_txt']
+        sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
+        sql_5 = "order by %s" % self.headers_normal.data_point_txt
         import time
         info_list = []
         info_header = ["cycle", "step", "row_count", "start_point", "end_point"]
@@ -564,7 +564,7 @@ class ArbinLoader(Loader):
                 self.logger.debug("reached the end")
                 break
             row_count, _ = normal_df.shape
-            steps = normal_df[self.headers_normal['step_index_txt']].unique()
+            steps = normal_df[self.headers_normal.step_index_txt].unique()
             txt = "cycle %i: %i [" % (cycle_number, row_count)
             for step in steps:
                 self.logger.debug(" step: %i" % step)
@@ -717,7 +717,7 @@ class ArbinLoader(Loader):
             # use pandas to load in the data
             global_data_df = pd.read_csv(temp_csv_filename_global)
 
-        tests = global_data_df[self.headers_normal['test_id_txt']]  # OBS
+        tests = global_data_df[self.headers_normal.test_id_txt]
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
 
@@ -730,14 +730,15 @@ class ArbinLoader(Loader):
             data.test_no = test_no
             data.loaded_from = file_name
             fid = FileID(file_name)
-            # data.parent_filename = os.path.basename(file_name)# name of the .res file it is loaded from
+            # name of the .res file it is loaded from:
+            # data.parent_filename = os.path.basename(file_name)
             data.channel_index = int(global_data_df[self.headers_global['channel_index_txt']][test_no])
             data.channel_number = int(global_data_df[self.headers_global['channel_number_txt']][test_no])
             data.creator = global_data_df[self.headers_global['creator_txt']][test_no]
             data.item_ID = global_data_df[self.headers_global['item_id_txt']][test_no]
             data.schedule_file_name = global_data_df[self.headers_global['schedule_file_name_txt']][test_no]
             data.start_datetime = global_data_df[self.headers_global['start_datetime_txt']][test_no]
-            data.test_ID = int(global_data_df[self.headers_normal['test_id_txt']][test_no])  # OBS
+            data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
             data.test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
             data.raw_data_files.append(fid)
 
@@ -749,8 +750,8 @@ class ArbinLoader(Loader):
                 )
                 # --------- read stats-data (summary-data) ---------------------
                 sql = "select * from %s where %s=%s order by %s" % (
-                    table_name_stats, self.headers_normal['test_id_txt'],
-                    data.test_ID, self.headers_normal['data_point_txt']
+                    table_name_stats, self.headers_normal.test_id_txt,
+                    data.test_ID, self.headers_normal.data_point_txt
                 )
                 summary_df = pd.read_sql_query(sql, conn)
                 if counter > number_of_sets:
@@ -760,12 +761,12 @@ class ArbinLoader(Loader):
                 # filter on test ID
                 normal_df = normal_df[
                     normal_df[
-                        self.headers_normal['test_id_txt']] == data.test_ID
+                        self.headers_normal.test_id_txt] == data.test_ID
                 ]
                 # sort on data point
                 if prms._sort_if_subprocess:
                     normal_df = normal_df.sort_values(
-                        self.headers_normal['data_point_txt']
+                        self.headers_normal.data_point_txt
                     )
                 length_of_test = normal_df.shape[0]
                 summary_df = pd.read_csv(temp_csv_filename_stats)
@@ -833,7 +834,7 @@ class ArbinLoader(Loader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.headers_normal['test_id_txt'], test_ID)
+        sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
         sql_4 = ""
 
         if bad_steps is not None:
@@ -844,24 +845,24 @@ class ArbinLoader(Loader):
                     f"bad_step def: [c={bad_cycle}, s={bad_step}]",
                 )
                 sql_4 += "AND NOT (%s=%i " % \
-                         (self.headers_normal['cycle_index_txt'], bad_cycle)
+                         (self.headers_normal.cycle_index_txt, bad_cycle)
                 sql_4 += "AND %s=%i) " % \
-                         (self.headers_normal['step_index_txt'], bad_step)
+                         (self.headers_normal.step_index_txt, bad_step)
 
         if prms.Reader["limit_loaded_cycles"]:
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
                 sql_4 += "AND %s>%i " % \
-                         (self.headers_normal['cycle_index_txt'], 
+                         (self.headers_normal.cycle_index_txt,
                           prms.Reader["limit_loaded_cycles"][0])
                 sql_4 += "AND %s<%i " % \
-                         (self.headers_normal['cycle_index_txt'], 
+                         (self.headers_normal.cycle_index_txt,
                           prms.Reader["limit_loaded_cycles"][-1])
             else:
                 sql_4 = "AND %s=%i " % \
-                        (self.headers_normal['cycle_index_txt'], 
+                        (self.headers_normal.cycle_index_txt,
                          prms.Reader["limit_loaded_cycles"][0])
 
-        sql_5 = "order by %s" % self.headers_normal['data_point_txt']
+        sql_5 = "order by %s" % self.headers_normal.data_point_txt
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         self.logger.debug("INFO ABOUT LOAD RES NORMAL")
