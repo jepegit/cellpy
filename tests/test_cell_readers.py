@@ -140,6 +140,11 @@ def test_print_step_table(dataset):
     dataset.print_step_table()
 
 
+def test_c_rate_calc(dataset):
+    table = dataset.dataset.step_table
+    assert 0.04 in table["rate_avr"].unique()
+
+
 @pytest.mark.xfail(raises=DeprecatedFeature)
 def test_select_steps(dataset):
     step_dict = dict()
@@ -386,7 +391,7 @@ def test_load_res(cellpy_data_instance):
     sum_discharge_time = 362198.12
     my_test = cellpy_data_instance.datasets[run_number]
     assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.dfdata.loc[4, "Step_Time"], 0.1)
+    assert step_time == pytest.approx(my_test.dfdata.loc[5, "Step_Time"], 0.1)
     assert sum_discharge_time == pytest.approx(my_test.dfsummary.loc[:, "Discharge_Time"].sum(), 0.1)
     assert my_test.test_no == run_number
 
@@ -405,6 +410,39 @@ def test_make_new_step_table(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True)
+    assert len(cellpy_data_instance.dataset.step_table) == 103
+
+
+def test_make_step_table_all_steps(cellpy_data_instance):
+    # need a new test data-file for GITT
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table(
+        profiling=True,
+        all_steps=True,
+    )
+    assert len(cellpy_data_instance.dataset.step_table) == 103
+
+
+def test_make_step_table_no_rate(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table(
+        profiling=True,
+        add_c_rate=False,
+    )
+    assert "rate_avr" not in cellpy_data_instance.dataset.step_table.columns
+
+
+def test_make_step_table_skip_steps(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_step_table(
+        profiling=True,
+        skip_steps=[1, 10],
+    )
+    print(cellpy_data_instance.dataset.step_table)
+    assert len(cellpy_data_instance.dataset.step_table) == 87
 
 
 def test_make_summary(cellpy_data_instance):
@@ -561,3 +599,58 @@ def test_load_custom_default(cellpy_data_instance):
     assert 593.031 == pytest.approx(val, 0.1)
 
 
+def test_group_by_interpolate(dataset):
+    data = dataset.dataset.dfdata
+    interpolated_data1 = cellpy.cellreader.group_by_interpolate(data)
+    interpolated_data2 = cellpy.cellreader.group_by_interpolate(
+        data,
+        tidy=True,
+    )
+    interpolated_data3 = cellpy.cellreader.group_by_interpolate(
+        data,
+        individual_x_cols=True,
+    )
+
+
+def test_cell():
+    c_h5 = cellpy.cell(fdv.cellpy_file_path)
+    c_res = cellpy.cell(fdv.res_file_path, instrument="arbin", mass=0.045)
+
+
+@pytest.mark.parametrize("val,validated", [
+    (2.3, None),
+    ([2.3], None),
+    ([2.3], [True]),
+])
+def test_set_total_mass(dataset, val, validated):
+    dataset.set_tot_mass(val, validated=validated)
+    assert dataset.dataset.tot_mass == 2.3
+
+
+@pytest.mark.parametrize("val,validated", [
+    (372.3, None),
+    ([372.3], None),
+    ([372.3], [True]),
+    pytest.param(372.5, None, marks=pytest.mark.xfail),
+])
+def test_set_nominal_capacity(dataset, val, validated):
+    dataset.set_nom_cap(val, validated=validated)
+    assert dataset.dataset.nom_cap == 372.3
+
+
+@pytest.mark.parametrize("n,s", [
+    (0, 0),
+    (2, -1),
+    ("first", 0),
+    ("last", -1),
+    pytest.param(-1, -1, marks=pytest.mark.xfail),
+])
+def test_set_testnumber(dataset, n, s):
+    dataset.set_testnumber(n)
+    assert dataset.selected_dataset_number == s
+
+
+@pytest.mark.xfail
+@pytest.mark.filterwarnings("error")
+def test_deprecations(dataset):
+    dataset._check_file_type("my_file.res")

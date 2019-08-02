@@ -3,7 +3,10 @@ import datetime
 try:
     from lmfit import Parameters, minimize, report_fit, Model, report_ci
 except ImportError as e:
-    logging.warning("Could not import lmfit. This is needed for fitting (run pip install lmfit).")
+    logging.warning(
+        "Could not import lmfit. This is needed "
+        "for fitting (run pip install lmfit)."
+    )
     logging.debug(e)
 
 import numpy as np
@@ -12,8 +15,6 @@ import matplotlib.pyplot as plt
 from cellpy import cellreader
 import pandas as pd
 
-
-# TODO: (28.05.2017 jepe) Tests are missing!!!!!!!! - AU: fix!
 # TODO: (28.05.2017 jepe) Docstrings are missing!!!!!!!! - AU: fix!
 
 
@@ -34,7 +35,7 @@ def select_ocv_points(cellpydata, cycles=None, selection_method="martin",
             selection_method: criteria for selecting points
                 martin: select first and last, and then last/2, last/2/2 etc.
                     until you have reached the wanted number of points.
-                fixed_time: select first, and then
+                fixed_times: select first, and then
             number_of_points: number of points you want.
             interval: interval between each point (in use only for methods
                 where interval makes sense). If it is a list, then
@@ -328,7 +329,8 @@ class MultiCycleOcvFit(object):
         return result_dict
 
     def get_best_fit_parameters_translated_grouped(self):
-        """Returns the parameters as a dictionary of the 'real units' for the best fit."""
+        """Returns the parameters as a dictionary of the 'real units'
+        for the best fit."""
         result_dict = dict()
         result_dict['ocv'] = [parameters['ocv'] for parameters in
                               self.best_fit_parameters_translated]
@@ -528,7 +530,8 @@ class OcvFit(object):
         c is found from using tau / r --> err(c) = err(r) + err(tau)
 
         Returns:
-            None: Resulting best fit parameters are stored in self.result for the given cycles
+            None: Resulting best fit parameters are
+                  stored in self.result for the given cycles
 
         """
 

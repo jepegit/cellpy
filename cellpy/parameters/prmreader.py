@@ -5,27 +5,13 @@ import os
 import sys
 from collections import OrderedDict
 import logging
+import warnings
 
 import box
 import yaml
 
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
-
-# hotfix x001
-
-default_prms = """
-[Paths]
-outdatadir: ../outdata
-rawdatadir: ../indata
-cellpydatadir: ../indata
-db_path: ../databases
-filelogdir: ../databases
-
-[FileNames]
-db_filename: cellpy_db.xlsx
-dbc_filename: cellpy_dbc.xlsx
-"""
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +65,7 @@ def _read_prm_file(prm_filename):
     try:
         with open(prm_filename, "r") as config_file:
             prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+
     except yaml.YAMLError as e:
         raise ConfigFileNotRead from e
     else:

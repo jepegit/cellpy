@@ -1,5 +1,8 @@
 import logging
 import abc
+import collections
+
+#  import box
 
 from cellpy import cellreader
 from cellpy.exceptions import UnderDefined
@@ -69,7 +72,7 @@ class Doer(metaclass=abc.ABCMeta):
         pass
 
 
-class Data(dict):
+class Data(collections.UserDict):
     """Class that is used to access the experiment.journal.pages DataFrame.
 
     The Data class loads the complete cellpy-file if dfdata is not already
@@ -88,9 +91,13 @@ class Data(dict):
         self.experiment = experiment
         self.query_mode = False
 
-    def __getitem__(self, id):
-        cellpy_data_object = self.__look_up__(id)
+    def __getitem__(self, cell_id):
+        cellpy_data_object = self.__look_up__(cell_id)
         return cellpy_data_object
+
+    # def __getitem__(self, key):
+    #     value = super().__getitem__(key)
+    #     return f"[{self.__class__.__name__}]: {value}"
 
     def __str__(self):
         t = ""
@@ -105,23 +112,26 @@ class Data(dict):
         t += "\n"
         return t
 
-    def __look_up__(self, identification):
+    def __look_up__(self, cell_id):
+        logging.debug("running __look_up__")
         try:
             if not self.experiment.cell_data_frames[
-                identification
+                cell_id
             ].dataset.dfdata.empty:
-                return self.experiment.cell_data_frames[identification]
+                return self.experiment.cell_data_frames[cell_id]
             else:
                 raise AttributeError
 
         except AttributeError:
             logging.debug("looking up from cellpyfile")
             pages = self.experiment.journal.pages
-            info = pages.loc[identification, :]
+            info = pages.loc[cell_id, :]
             cellpy_file = info["cellpy_file_names"]
             # linking not implemented yet - loading whole file in mem instead
             if not self.query_mode:
-                return self.experiment._load_cellpy_file(cellpy_file)
+                cell = self.experiment._load_cellpy_file(cellpy_file)
+                self.experiment.cell_data_frames[cell_id] = cell
+                return cell
             else:
                 raise NotImplementedError
 
@@ -135,6 +145,8 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self.memory_dumped = dict()
         self.parent_level = "CellpyData"
         self.log_level = "INFO"
+        self._data = None
+        self._store_data_object = True
 
     def __str__(self):
         return f"[{self.__class__.__name__}]\n" \
@@ -161,9 +173,13 @@ class BaseExperiment(metaclass=abc.ABCMeta):
             >>> cell_data_one = experiment.data["2018_cell_001"]
             >>> capacity, voltage = cell_data_one.get_cap(cycle=1)
         """
-
-        data_object = Data(self)
-        return data_object
+        if self._data is None:
+            data = Data(self)
+            if self._store_data_object:
+                self._data = data
+            return data
+        else:
+            return self._data
 
     @abc.abstractmethod
     def update(self):

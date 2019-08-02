@@ -1,8 +1,21 @@
 """Files, Directories, and Variables to be used in the tests.
 
-This works only for the running pytest on the test-files!"""
+Notes:
+    This only works for running the test-runner (pytest) on the test-files!
+
+"""
 
 import os
+from pathlib import Path
+
+
+def get_cellpy_file_path(raw_path):
+    cellpy_extension = ".h5"
+    raw_path = Path(raw_path)
+    raw_name = raw_path.stem + cellpy_extension
+    p = os.path.join(cellpy_data_dir, raw_name)
+    return p
+
 
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))
@@ -18,11 +31,14 @@ default_prm_file = os.path.abspath(os.path.join(
     data_dir, "_cellpy_prms_default.conf"
 ))
 
-
 # -------- common files -----------------------------
 
 cellpy_file_name = "20160805_test001_45_cc.h5"
 cellpy_file_path = os.path.join(cellpy_data_dir, cellpy_file_name)
+
+# old format (to check compatibility when upgrading cellpy format)
+cellpy_file_name_v0 = "20160805_test001_45_cc_v0.h5"
+cellpy_file_path_v0 = os.path.join(cellpy_data_dir, cellpy_file_name)
 
 temporary_cellpy_file_name = "tmpfile.h5"
 temporary_cellpy_file_path = os.path.join(cellpy_data_dir, temporary_cellpy_file_name)
@@ -38,6 +54,20 @@ short_step_table_file_path = os.path.join(raw_data_dir, short_step_table_file_na
 
 run_name = "20160805_test001_45_cc"
 
+# -------- experiment specific files ----------------
+
+full_cell_name = "full_cell.res"
+full_cell_path = os.path.join(raw_data_dir, full_cell_name)
+
+constant_voltage_cell_name = "constant_voltage_cell.res"
+constant_voltage_cell_path = os.path.join(raw_data_dir, constant_voltage_cell_name)
+
+taper_cell_name = "taper_cell.res"
+taper_cell_path = os.path.join(raw_data_dir, taper_cell_name)
+
+gitt_cell_name = "gitt_cell.res"
+gitt_cell_path = os.path.join(raw_data_dir, gitt_cell_name)
+
 # -------- arbin specific files ---------------------
 
 res_file_name = "20160805_test001_45_cc_01.res"
@@ -47,10 +77,10 @@ res_file_name2 = "20160805_test001_45_cc_02.res"
 res_file_path2 = os.path.join(raw_data_dir, res_file_name)
 
 # -------- biologics specific files -----------------
-mpr_file_name = "geis.mpr"
+mpr_file_name = "biol.mpr"
 mpr_file_path = os.path.join(raw_data_dir, mpr_file_name)
 
-mpr_cellpy_file_name = "geis.h5"
+mpr_cellpy_file_name = "biol.h5"
 mpr_cellpy_file_path = os.path.join(cellpy_data_dir, mpr_cellpy_file_name)
 
 # -------- pec specific files -----------------------
@@ -71,3 +101,16 @@ pages = os.path.join(db_dir, pages)
 # -------- custom file format -----------------------
 custom_file_name = "custom_data_001.csv"
 custom_file_paths = os.path.join(raw_data_dir, custom_file_name)
+
+if __name__ == "__main__":
+    files = [
+        cellpy_file_path,
+        cellpy_file_path_v0,
+        res_file_path,
+        res_file_path2,
+        temporary_cellpy_file_path,
+    ]
+    print(" Checking existence of test files ".center(80, "-"))
+    for file in files:
+        print(file, end=": ")
+        print(Path(file).is_file())

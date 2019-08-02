@@ -314,15 +314,15 @@ def _check_import_pyodbc():
     ODBC = prms._odbc
     SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 
-    use_subprocess = prms.Instruments.use_subprocess
-    detect_subprocess_need = prms.Instruments.detect_subprocess_need
+    use_subprocess = prms.Instruments.Arbin.use_subprocess
+    detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
     print()
     print(f" reading prms")
     print(f" - ODBC: {ODBC}")
     print(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
     print(f" - use_subprocess: {use_subprocess}")
     print(f" - detect_subprocess_need: {detect_subprocess_need}")
-    print(f" - stated office version: {prms.Instruments.office_version}")
+    print(f" - stated office version: {prms.Instruments.Arbin.office_version}")
 
     print(" checking system")
     is_posix = False
@@ -340,10 +340,10 @@ def _check_import_pyodbc():
     print(f" - os version: {os_version}")
 
     if not is_posix:
-        if not prms.Instruments.sub_process_path:
+        if not prms.Instruments.Arbin.sub_process_path:
             sub_process_path = str(prms._sub_process_path)
         else:
-            sub_process_path = str(prms.Instruments.sub_process_path)
+            sub_process_path = str(prms.Instruments.Arbin.sub_process_path)
         print(f" stated path to sub-process: {sub_process_path}")
         if not os.path.isfile(sub_process_path):
             print(f" - OBS! missing")
@@ -378,7 +378,7 @@ def _check_import_pyodbc():
     # not posix - checking for odbc drivers
     # 1) checking if you have defined one
     try:
-        driver = prms.Instruments.odbc_driver
+        driver = prms.Instruments.Arbin.odbc_driver
         if not driver:
             raise AttributeError
         print("You have defined an odbc driver in your conifg file")
