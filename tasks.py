@@ -10,8 +10,7 @@ This is some text. Not sure where it is shown.
 def clean(c, docs=False, bytecode=False, extra=''):
     """Clean up stuff from previous builds"""
     print(" Cleaning ".center(80, "="))
-    patterns = ['dist', 'build']
-    patterns.append('cellpy.egg-info')
+    patterns = ['dist', 'build', 'cellpy.egg-info']
     if docs:
         patterns.append('docs/_build')
     if bytecode:
