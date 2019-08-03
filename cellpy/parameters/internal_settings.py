@@ -1,12 +1,22 @@
 """Internal settings and definitions and functions for getting them."""
 
-import box
+import collections
 
-cellpy_units = dict()
-cellpy_limits = dict()
-headers_normal = dict()
-headers_summary = dict()
-headers_step_table = dict()
+
+class HeaderDict(collections.UserDict):
+    """Sub-classing dict to allow for tab-completion."""
+    def __setitem__(self, key, value):
+        if key == "data":
+            raise KeyError("protected key")
+        super().__setitem__(key, value)
+        self.__dict__[key] = value
+
+
+cellpy_units = HeaderDict()
+cellpy_limits = HeaderDict()
+headers_normal = HeaderDict()
+headers_summary = HeaderDict()
+headers_step_table = HeaderDict()
 
 # cellpy attributes that should be loaded from cellpy-files:
 
@@ -123,8 +133,6 @@ headers_summary["temperature_last"] = "Last_Temperature(C)"
 headers_summary["temperature_mean"] = "Average_Temperature(C)"
 headers_summary["pre_aux"] = "Aux_"
 
-headers_summary = box.Box(headers_summary)
-
 # - normal (data) -
 
 headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
@@ -160,8 +168,6 @@ headers_normal['dv_dt_txt'] = 'dV/dt'
 headers_normal['frequency_txt'] = 'Frequency'  # new
 headers_normal['amplitude_txt'] = 'Amplitude'  # new
 
-headers_normal = box.Box(headers_normal)
-
 # - step table -
 
 # 08.12.2016: added sub_step, sub_type, and pre_time
@@ -184,8 +190,6 @@ headers_step_table["point"] = "point"
 headers_step_table["internal_resistance"] = "ir"
 headers_step_table["internal_resistance_change"] = "ir_pct_change"
 headers_step_table["rate_avr"] = "rate_avr"
-
-headers_step_table = box.Box(headers_step_table)
 
 
 def get_headers_summary():

@@ -9,6 +9,11 @@ import importlib
 import logging
 import itertools
 
+from cellpy.parameters.internal_settings import (
+    get_headers_summary,
+    get_headers_normal, get_headers_step_table
+)
+
 try:
     import matplotlib.pyplot as plt
     plt_available = True
@@ -48,6 +53,10 @@ COLOR_DICT = {'classic': [u'b', u'g', u'r', u'c', u'm', u'y', u'k'],
               'seaborn-pastel': [u'#92C6FF', u'#97F0AA', u'#FF9F9A', u'#D0BBFF', u'#FFFEA3', u'#B0E0E6'],
               'seaborn-dark-palette': [u'#001C7F', u'#017517', u'#8C0900', u'#7600A1', u'#B8860B', u'#006374'],
               }
+
+headers_summary = get_headers_summary()
+headers_data = get_headers_normal()
+headers_steps = get_headers_step_table()
 
 
 def _hv_bokeh_available():
@@ -131,6 +140,8 @@ def concatenated_summary_curve_factory(cdf, kdims="Cycle_Index",
                                        fill_alpha=0.8, size=12,
                                        width=800, legend_position="right",
                                        colors=None, markers=None):
+    # TODO: missing doc-string
+
     if not hv_available:
         print("This function uses holoviews. But could not import it."
               "So I am aborting...")
@@ -188,7 +199,276 @@ def _get_info(table, cycle, step):
     return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 
 
-def cycle_info_plot(cell, cycle, get_axes=False):
+def _add_step_info_cols(df, table, cycles=None, steps=None, h_cycle=None,
+                        h_step=None):
+    if h_cycle is None:
+        h_cycle = "Cycle_Index"  # edit
+    if h_step is None:
+        h_step = "Step_Index"  # edit
+
+    col_name_mapper = {
+        "cycle": h_cycle,
+        "step": h_step,
+    }
+
+    df = df.merge(
+        table.rename(columns=col_name_mapper),
+        on=('Cycle_Index', 'Step_Index'),
+        how='left'
+    )
+
+    return df
+
+
+def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False, x=None,
+                           y=None,
+                           info_level=0,
+                           h_cycle=None, h_step=None,
+                           show_it=False, label_cycles=True, label_steps=False, **kwargs):
+    """Plot raw data with annotations.
+
+    This function uses Bokeh for plotting and is intended for use in
+    Jupyter Notebooks.
+    """
+
+    from bokeh.io import output_notebook, show
+    from bokeh.layouts import row, column
+    from bokeh.models import ColumnDataSource, LabelSet
+    from bokeh.models import HoverTool
+    from bokeh.models.annotations import Span
+    from bokeh.models.widgets import Slider, TextInput
+    from bokeh.plotting import figure
+
+    output_notebook(hide_banner=True)
+
+    if points:
+        if cycle is None or (len(cycle) > 1):
+            print(
+                "Plotting points only allowed when plotting one single cycle.")
+            print("Turning points off.")
+            points = False
+
+    if h_cycle is None:
+        h_cycle = "Cycle_Index"  # edit
+    if h_step is None:
+        h_step = "Step_Index"  # edit
+
+    if x is None:
+        x = "Test_Time"  # edit
+    if y is None:
+        y = "Voltage"  # edit
+
+    if isinstance(x, tuple):
+        x, x_label = x
+    else:
+        x_label = x
+
+    if isinstance(y, tuple):
+        y, y_label = y
+    else:
+        y_label = y
+
+    t_x = x  # used in generating title - replace with a selector
+    t_y = y  # used in generating title - replace with a selector
+
+    if title is None:
+        title = f"{t_y} vs. {t_x}"
+
+    cols = [x, y]
+    cols.extend([h_cycle, h_step])
+
+    df = cell.dataset.dfdata.loc[:, cols]
+
+    if cycle is not None:
+        if not isinstance(cycle, (list, tuple)):
+            cycle = [cycle]
+
+        _df = df.loc[df[h_cycle].isin(cycle), :]
+        if len(cycle) < 5:
+            title += f" [c:{cycle}]"
+        else:
+            title += f" [c:{cycle[0]}..{cycle[-1]}]"
+        if _df.empty:
+            print(f"EMPTY (available cycles: {df[h_step].unique()})")
+            return
+        else:
+            df = _df
+
+    cycle = df[h_cycle].unique()
+
+    if step is not None:
+        if not isinstance(step, (list, tuple)):
+            step = [step]
+
+        _df = df.loc[df[h_step].isin(step), :]
+        if len(step) < 5:
+            title += f" (s:{step})"
+        else:
+            title += f" [s:{step[0]}..{step[-1]}]"
+        if _df.empty:
+            print(f"EMPTY (available steps: {df[h_step].unique()})")
+            return
+        else:
+            df = _df
+
+    x_min, x_max = df[x].min(), df[x].max()
+    y_min, y_max = df[y].min(), df[y].max()
+
+    if info_level > 0:
+        table = cell.dataset.step_table
+        df = _add_step_info_cols(df, table, cycle, step)
+
+    source = ColumnDataSource(df)
+
+    plot = figure(
+        title=title,
+        tools="pan,reset,save,wheel_zoom,box_zoom,undo,redo",
+        x_range=[x_min, x_max], y_range=[y_min, y_max],
+        **kwargs,
+    )
+
+    plot.line(
+        x, y, source=source,
+        line_width=3, line_alpha=0.6
+    )
+
+    # labelling cycles
+    if label_cycles:
+        cycle_line_positions = [df.loc[df[h_cycle] == c, x].min() for c in
+                                cycle]
+        cycle_line_positions.append(df.loc[df[h_cycle] == cycle[-1], x].max())
+        for m in cycle_line_positions:
+            _s = Span(location=m, dimension='height', line_color="red",
+                      line_width=3,
+                      line_alpha=0.5)
+            plot.add_layout(_s)
+
+        s_y_pos = y_min + 0.9 * (y_max - y_min)
+        s_x = []
+        s_y = []
+        s_l = []
+
+        for s in cycle:
+            s_x_min = df.loc[df[h_cycle] == s, x].min()
+            s_x_max = df.loc[df[h_cycle] == s, x].max()
+            s_x_pos = (s_x_min + s_x_max) / 2
+            s_x.append(s_x_pos)
+            s_y.append(s_y_pos)
+            s_l.append(f"c{s}")
+
+        c_labels = ColumnDataSource(data={
+            x: s_x,
+            y: s_y,
+            'names': s_l
+
+        })
+
+        c_labels = LabelSet(x=x, y=y, text='names', level='glyph',
+                            source=c_labels, render_mode='canvas',
+                            text_color="red", text_alpha=0.7)
+
+        plot.add_layout(c_labels)
+
+        # labelling steps
+    if label_steps:
+        for c in cycle:
+            step = df.loc[df[h_cycle] == c, h_step].unique()
+            step_line_positions = [
+                df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].min() for s in
+                step[0:]]
+            for m in step_line_positions:
+                _s = Span(location=m, dimension='height', line_color="olive",
+                          line_width=3,
+                          line_alpha=0.1)
+                plot.add_layout(_s)
+
+            # s_y_pos = y_min + 0.8 * (y_max - y_min)
+            s_x = []
+            s_y = []
+            s_l = []
+
+            for s in step:
+                s_x_min = df.loc[
+                    (df[h_step] == s) & (df[h_cycle] == c), x].min()
+                s_x_max = df.loc[
+                    (df[h_step] == s) & (df[h_cycle] == c), x].max()
+                s_x_pos = s_x_min
+
+                s_y_min = df.loc[
+                    (df[h_step] == s) & (df[h_cycle] == c), y].min()
+                s_y_max = df.loc[
+                    (df[h_step] == s) & (df[h_cycle] == c), y].max()
+                s_y_pos = (s_y_max + s_y_min) / 2
+
+                s_x.append(s_x_pos)
+                s_y.append(s_y_pos)
+                s_l.append(f"s{s}")
+
+            s_labels = ColumnDataSource(data={
+                x: s_x,
+                y: s_y,
+                'names': s_l
+
+            })
+
+            s_labels = LabelSet(x=x, y=y, text='names', level='glyph',
+                                source=s_labels, render_mode='canvas',
+                                text_color="olive", text_alpha=0.3)
+
+            plot.add_layout(s_labels)
+
+    hover = HoverTool()
+    if info_level == 0:
+        hover.tooltips = [
+            (x, "$x{0.2f}"),
+            (y, "$y"),
+            ("cycle", f"@{h_cycle}"),
+            ("step", f"@{h_step}"),
+        ]
+    elif info_level == 1:
+        # insert C-rates etc here
+        hover.tooltips = [
+            (f"(x,y)", "($x{0.2f} $y"),
+            ("cycle", f"@{h_cycle}"),
+            ("step", f"@{h_step}"),
+            ("step_type", "@type"),
+            ("rate", "@rate_avr{0.2f}")
+        ]
+
+    elif info_level == 2:
+        hover.tooltips = [
+            (x, "$x{0.2f}"),
+            (y, "$y"),
+            ("cycle", f"@{h_cycle}"),
+            ("step", f"@{h_step}"),
+            ("step_type", "@type"),
+            ("rate (C)", "@rate_avr{0.2f}"),
+            ("dv (%)", "@voltage_delta{0.2f}"),
+            ("I-max (A)", "@current_max"),
+            ("I-min (A)", "@current_min"),
+            ("dCharge (%)", "@charge_delta{0.2f}"),
+            ("dDischarge (%)", "@discharge_delta{0.2f}"),
+        ]
+
+    hover.mode = 'vline'
+    plot.add_tools(hover)
+
+    plot.xaxis.axis_label = x_label
+    plot.yaxis.axis_label = y_label
+
+    if points:
+        plot.scatter(
+            x, y, source=source,
+            alpha=0.3
+        )
+
+    if show_it:
+        show(plot)
+
+    return plot
+
+
+def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
 
     # obs! hard-coded col-names. Please fix me.
     if not plt_available:
@@ -270,6 +550,40 @@ def cycle_info_plot(cell, cycle, get_axes=False):
 
     if get_axes:
         return ax1, ax2, ax2, ax4
+
+
+def cycle_info_plot(cell, cycle=None,
+                    step=None, title=None,
+                    points=False, x=None,y=None, info_level=0, h_cycle=None,
+                    h_step=None, show_it=False, label_cycles=True,
+                    label_steps=False,
+                    get_axes=False, use_bokeh=True,
+                    **kwargs):
+    # TODO: missing doc-string
+    if use_bokeh and not bokeh_available:
+        print("OBS! bokeh is not available -"
+              " using matplotlib instead")
+        use_bokeh = False
+
+    if use_bokeh:
+        axes = _cycle_info_plot_bokeh(
+            cell, cycle=cycle, step=step, title=title,
+            points=points, x=x, y=y, info_level=info_level,
+            h_cycle=h_cycle,
+            h_step=h_step,
+            show_it=show_it, label_cycles=label_cycles,
+            label_steps=label_steps, **kwargs,
+        )
+    else:
+        if isinstance(cycle, (list, tuple)):
+            if len(cycle) > 1:
+                print("OBS! The matplotlib-plotter only accepts single "
+                      "cycles.")
+                print(f"Selecting first cycle ({cycle[0]})")
+            cycle = cycle[0]
+        axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes)
+    if get_axes:
+        return axes
 
 
 if __name__ == "__main__":
