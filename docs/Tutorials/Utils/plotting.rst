@@ -63,5 +63,5 @@ cycle and step. This can be done using the ``cycle_info_plot`` method:
 
     If you chose to work within a Jupyter Notebook, you are advised to
     try some of the web-based plotting tools. For example, you might consider
-    installing `holoviz suite. <https://holoviz.org>`_.
+    installing `holoviz suite. <https://holoviz.org>`_
 
