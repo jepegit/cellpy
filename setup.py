@@ -46,7 +46,7 @@ name = 'cellpy'
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-userdir = os.path.expanduser("~")
+user_dir = os.path.expanduser("~")
 
 version_ns = {}
 with open(os.path.join(here, name, '_version.py')) as f:
@@ -79,6 +79,7 @@ setup(name=name,
           'Natural Language :: English',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
       ],
       test_suite='tests',
       tests_require=test_requirements,

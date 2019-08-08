@@ -7,6 +7,7 @@ import shutil
 import pandas as pd
 
 from cellpy import prms
+from cellpy import log
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
@@ -21,9 +22,14 @@ COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
 
 class Batch:
     def __init__(self, *args, **kwargs):
+        default_log_level = kwargs.pop("log_level", None)
+        log.setup_logging(custom_log_dir=prms.Paths.filelogdir,
+                          default_level=default_log_level)
+
         db_reader = kwargs.pop("db_reader", "default")
         logger.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
+
         if len(args) > 0:
             self.experiment.journal.name = args[0]
 

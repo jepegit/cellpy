@@ -4,9 +4,10 @@ Basic interaction with your data
 Read cell data
 --------------
 
-We assume that we have cycled a cell and that we have two files with results (we had
-to stop the experiment and re-start for some reason). The files are in
-the .res format (Arbin).
+We assume that we have cycled a cell and that we have two files
+with results (we hadto stop the experiment and re-start for some
+reason).
+The files are inthe .res format (Arbin).
 
 First, import modules, including the cellreader-object from ``cellpy``:
 
@@ -57,11 +58,16 @@ And save it:
     cellpy_file = os.path.join(cellpy_data_dir, "20170101_ife01_cc2.h5")
     cell_data.save(cellpy_file)
 
-For convenience, ``cellpy`` also has a method that simplifies this process a little bit.
-Using the ``loadcell`` method, you can specify both the raw file name(s) and the cellpy file name, and
-``cellpy`` will check if the raw file(s) is/are updated since the last time you saved the cellpy file - if not,
-then it will load the cellpy file instead (this is usually much faster than loading the raw file(s)).
-You can also input the masses and enforce that it creates a summary automatically.
+For convenience, ``cellpy`` also has a method that simplifies
+this process a little bit.
+Using the ``loadcell`` method, you can specify both the raw
+file name(s) and the cellpy file name, and
+``cellpy`` will check if the raw file(s) is/are updated since
+the last time you saved the cellpy file - if not,
+then it will load the cellpy file instead (this is usually much faster
+than loading the raw file(s)).
+You can also input the masses and enforce that it creates a
+summary automatically.
 
 .. code-block:: python
 
@@ -75,8 +81,10 @@ You can also input the masses and enforce that it creates a summary automaticall
 Extract current-voltage graphs
 ------------------------------
 
-If you have loaded your data into a CellpyData-object, let's now consider how to extract current-voltage graphs
-from your data. We assume that the name of your CellpyData-object is ``cell_data``:
+If you have loaded your data into a CellpyData-object,
+let's now consider how to extract current-voltage graphs
+from your data. We assume that the name of your
+CellpyData-object is ``cell_data``:
 
 
 .. code-block:: python
@@ -94,24 +102,29 @@ You can also get the capacity-voltage curves with both charge and discharge:
     # the second capacity (charge (delithiation) for typical anode half-cell experiments)
     # will be given "in reverse".
 
-The ``CellpyData`` object has several get-methods, including getting current, timestamps, etc.
+The ``CellpyData`` object has several get-methods, including getting current,
+timestamps, etc.
 
 Extract summaries of runs
 -------------------------
 
-Summaries of runs includes data pr. cycle for your data set. Examples of summary data is charge- and
-discharge-values, coulombic efficiencies and internal resistances. These are calculated by the
+Summaries of runs includes data pr. cycle for your data set. Examples of
+summary data is charge- and
+discharge-values, coulombic efficiencies and internal resistances.
+These are calculated by the
 ``make_summary`` method.
 
 Create dQ/dV plots
 ------------------
 
-The methods for creating incremental capacity curves is located in the ``cellpy.utils.ica`` module.
+The methods for creating incremental capacity curves is located in
+the ``cellpy.utils.ica`` module.
 
 Save / export data
 ------------------
 
-Saving data to cellpy format is done by the ``CellpyData.save`` method. To export data to csv format,
+Saving data to cellpy format is done by the ``CellpyData.save`` method.
+To export data to csv format,
 ``CellpyData`` has a method called ``to_csv``.
 
 .. code-block:: python

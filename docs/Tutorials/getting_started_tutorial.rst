@@ -76,7 +76,7 @@ Open up a command window (you can find a command window on Windows by
 
    $ pip install cellpy
 
-If you get an error message, then it could be that you Python version is
+If you get an error message, then it could be that your Python version is
 not available for you (maybe you installed as root?). What usually works
 is to try to locate the “anaconda prompt” program and run that instead
 of the command window. Note that the bin version matters some times (for
@@ -158,7 +158,6 @@ To run a more complete check of your installation, there exist a
 
    $ cellpy info --check
 
-(at least when we have finalized it).
 
 2. The ``cellpy`` command to your rescue
 ----------------------------------------

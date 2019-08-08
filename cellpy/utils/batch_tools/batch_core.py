@@ -95,10 +95,6 @@ class Data(collections.UserDict):
         cellpy_data_object = self.__look_up__(cell_id)
         return cellpy_data_object
 
-    # def __getitem__(self, key):
-    #     value = super().__getitem__(key)
-    #     return f"[{self.__class__.__name__}]: {value}"
-
     def __str__(self):
         t = ""
         if not self.experiment.cell_data_frames:
@@ -131,6 +127,11 @@ class Data(collections.UserDict):
             if not self.query_mode:
                 cell = self.experiment._load_cellpy_file(cellpy_file)
                 self.experiment.cell_data_frames[cell_id] = cell
+                # trick for making tab-completion work (only works after
+                # initial look-up):
+                self.__dict__[
+                    "x_" + cell_id
+                ] = self.experiment.cell_data_frames[cell_id]
                 return cell
             else:
                 raise NotImplementedError

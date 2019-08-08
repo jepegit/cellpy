@@ -4,6 +4,11 @@
 File Formats and Data Structures
 ================================
 
+.. warning::
+   This part of the documentation needs to be updated.
+   We hope that will happend soon.
+
+
 The most important file formats and data structures for cellpy is
 summarized here.
 It is also possible to look into the source-code at the
@@ -15,10 +20,11 @@ Data Structures
 CellpyData - main structure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This class is the main work-horse for cellpy where all the functions for reading, selecting, and
-tweaking your data is located. It also contains the header definitions, both for the cellpy hdf5
-format, and for the various cell-tester file-formats that can be read. The class can contain
-several tests and each test is stored in a list.
+This class is the main work-horse for cellpy where all the functions
+for reading, selecting, and tweaking your data is located.
+It also contains the header definitions, both for the cellpy hdf5
+format, and for the various cell-tester file-formats that can be read.
+The class can contain several tests and each test is stored in a list.
 
 The class contains several attributes that can be assigned directly:
 
@@ -26,16 +32,18 @@ The class contains several attributes that can be assigned directly:
 
     CellpyData.tester = "arbin"
     CellpyData.auto_dir = True
-    print CellpyData.cellpy_datadir
+    print(CellpyData.cellpy_datadir)
 
 
-The data for the run(s) are stored in the class attribute `CellpyData.tests` (this will most likely change
-in future versions).
-This attribute is just a list of runs (each run is a `cellpy.cellreader.DataSet` instance).
-This implies that you can store many runs in one `CellpyData` instance. Sometimes this can be
-necessary, but it is recommended to only store one run in one instance. Most of the
-functions (the class methods) automatically selects the 0-th item in
-`CellpyData.tests` if the test_number is not explicitly given.
+The data for the run(s) are stored in the class attribute
+``CellpyData.datasets``
+This attribute is just a list of runs (each run is a
+``cellpy.cellreader.DataSet`` instance).
+This implies that you can store many runs in one ``CellpyData`` instance.
+Sometimes this can be necessary, but it is recommended to only store one
+run in one instance. Most of the functions (the class methods) automatically
+selects the 0-th item in ``CellpyData.datasets`` if the `test_number` is not
+explicitly given.
 
 You may already have figured it out: in cellpy, data for a given cell
 is usually named a run. And each run is a `cellpy.cellreader.DataSet` instance.
@@ -135,8 +143,8 @@ column headings - step table
 step types
 ..........
 
-Identifiers for the different steps have pre-defined names given in the class attribute list
-`list_of_step_types` and is written to the "step" column.
+Identifiers for the different steps have pre-defined names given in the
+class attribute list `list_of_step_types` and is written to the "step" column.
 
 .. code-block:: python
 
@@ -147,7 +155,8 @@ Identifiers for the different steps have pre-defined names given in the class at
                           'rest', 'not_known']
 
 
-For each type of testers that are supported by cellpy, a set of column headings and
+For each type of testers that are supported by ``cellpy``,
+a set of column headings and
 other different settings/attributes must be provided. These definitions are now put
 inside the CellpyData class, but will be moved out later.
 
@@ -155,10 +164,13 @@ Supported testers are:
 
 * arbin
 
-Testers that is planned supported:
+Testers that are partly supported (but not tested very well) are:
 
 * biologic
 * pec
+
+Testers that is planned supported:
+
 * maccor
 
 
@@ -249,8 +261,10 @@ Todo
 DataSet
 ~~~~~~~
 
-Each run is a `cellpy.cellreader.DataSet` instance. The instance contain general information about
-the run-settings (such as mass etc.). The measurement data, information, and summary is stored
+Each run is a `cellpy.cellreader.DataSet` instance.
+The instance contain general information about
+the run-settings (such as mass etc.).
+The measurement data, information, and summary is stored
 in three pandas.DataFrames:
 
 * normal data
