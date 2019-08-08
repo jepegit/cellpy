@@ -31,6 +31,10 @@ values:
 The configuration file
 ----------------------
 
+.. warning::
+   This part of the documentation needs to be updated.
+   Let us all hope that it will happen soon.
+
 ``cellpy`` tries to read your .conf-file when imported the first time, and looks in your user directory
 (*e.g.* C:\\Users\\USERNAME on not-too-old versions of windows) after files named ``_cellpy_prms_SOMENAME.conf``.
 If you have run ``cellpy -setup`` in the cmd window or in the shell, a file named

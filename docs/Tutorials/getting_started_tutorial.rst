@@ -245,9 +245,8 @@ the `examples
 folder <https://github.com/jepegit/cellpy/tree/master/examples>`__).
 
 .. note::
-    The plan is that the ``cellpy pull`` command can assist in downloading
-    both examples and tests. However, we have not had time to implement it
-    yet.
+    The ``cellpy pull`` command can assist in downloading
+    both examples and tests.
 
 Let's start by a trying to import ``cellpy`` in an interactive Python session.
 If you have an icon to press to start up the Python in interactive mode,
