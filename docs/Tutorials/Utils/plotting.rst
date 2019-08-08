@@ -1,6 +1,5 @@
-
 Have a look at the data
-=======================
+-----------------------
 
 Here are some examples how to get a peak at the data. If we need an
 interactive plot of the raw-data, we can use the ``plotutils.raw_plot``
@@ -58,6 +57,6 @@ cycle and step. This can be done using the ``cycle_info_plot`` method:
 
 
 
-.. image:: figures/tutorials_utils_plotting_fig2.png
+.. image:: Tutorials/Utils/figures/tutorials_utils_plotting_fig2.png
 
 
