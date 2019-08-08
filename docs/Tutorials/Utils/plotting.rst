@@ -59,4 +59,9 @@ cycle and step. This can be done using the ``cycle_info_plot`` method:
 
 .. image:: Tutorials/Utils/figures/tutorials_utils_plotting_fig2.png
 
+.. note::
+
+    If you chose to work within a Jupyter Notebook, you are advised to
+    try some of the web-based plotting tools. For example, you might consider
+    installing `holoviz suite. <https://holoviz.org>`_.
 
