@@ -2,6 +2,15 @@
 History
 =======
 
+0.3.0 (2019)
+------------
+
+* New batch-feature
+* Improved make-steps and make-summary functionality
+* Improved cmd-line interface for setup
+* More helper functions and tools
+* Experimental support for other instruments
+
 
 0.2.1 (2018)
 ------------
