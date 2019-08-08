@@ -2,7 +2,20 @@ from invoke import task
 
 """Tasks for cellpy development.
 
-This is some text. Not sure where it is shown.
+You need to have invoke installed in your
+python environment for this to work.
+
+Examples:
+
+    # build and upload to pypi:
+    > invoke build --upload
+    
+    # build only the docs
+    > invoke build --docs
+    
+    # clean up
+    > invoke clean
+    
 """
 
 
@@ -21,7 +34,10 @@ def clean(c, docs=False, bytecode=False, extra=''):
         print(f" - cleaning {extra}")
         patterns.append(extra)
     for pattern in patterns:
+        print(".", end="")
         c.run("rm -rf {}".format(pattern))
+    print()
+    print(f"Cleaned {patterns}")
 
 
 @task
