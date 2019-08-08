@@ -1157,8 +1157,8 @@ class CellpyData(object):
                     t2.step_table[
                         self.headers_step_table.cycle
                     ] = t2.dfdata[
-                        self.headers_step_table.cycle
-                    ] + last_cycle
+                            self.headers_step_table.cycle
+                        ] + last_cycle
 
                     step_table2 = pd.concat(
                         [t1.step_table, t2.step_table],
@@ -1645,10 +1645,10 @@ class CellpyData(object):
             )
 
             df_steps[shdr.rate_avr] = abs(
-                    round(
-                        df_steps.loc[:, (shdr.current, "avr")] /
-                        (nom_cap / spec_conv_factor), 2)
-                )
+                round(
+                    df_steps.loc[:, (shdr.current, "avr")] /
+                    (nom_cap / spec_conv_factor), 2)
+            )
 
         df_steps[shdr.type] = np.nan
         df_steps[shdr.sub_type] = np.nan
@@ -1666,44 +1666,44 @@ class CellpyData(object):
             ir_change_limit = self.raw_limits["ir_change"]
 
             mask_no_current_hard = (
-                df_steps.loc[:, (shdr.current, "max")].abs()
-                + df_steps.loc[:, (shdr.current, "min")].abs()
-            ) < current_limit_value_hard / 2
+                                       df_steps.loc[:, (shdr.current, "max")].abs()
+                                       + df_steps.loc[:, (shdr.current, "min")].abs()
+                                   ) < current_limit_value_hard / 2
 
             mask_voltage_down = df_steps.loc[:, (shdr.voltage, "delta")] < \
-                - stable_voltage_limit_hard
+                                - stable_voltage_limit_hard
 
             mask_voltage_up = df_steps.loc[:, (shdr.voltage, "delta")] > \
-                stable_voltage_limit_hard
+                              stable_voltage_limit_hard
 
             mask_voltage_stable = df_steps.loc[:, (shdr.voltage, "delta")].abs() < \
-                stable_voltage_limit_hard
+                                  stable_voltage_limit_hard
 
             mask_current_down = df_steps.loc[:, (shdr.current, "delta")] < \
-                - stable_current_limit_soft
+                                - stable_current_limit_soft
 
             mask_current_up = df_steps.loc[:, (shdr.current, "delta")] > \
-                stable_current_limit_soft
+                              stable_current_limit_soft
 
             mask_current_negative = df_steps.loc[:, (shdr.current, "avr")] < \
-                - current_limit_value_hard
+                                    - current_limit_value_hard
 
             mask_current_positive = df_steps.loc[:, (shdr.current, "avr")] > \
-                current_limit_value_hard
+                                    current_limit_value_hard
 
             mask_galvanostatic = df_steps.loc[:, (shdr.current, "delta")].abs() < \
-                stable_current_limit_soft
+                                 stable_current_limit_soft
 
             mask_charge_changed = df_steps.loc[:, (shdr.charge, "delta")].abs() > \
-                stable_charge_limit_hard
+                                  stable_charge_limit_hard
 
             mask_discharge_changed = df_steps.loc[:, (shdr.discharge, "delta")].abs() > \
-                stable_charge_limit_hard
+                                     stable_charge_limit_hard
 
             mask_no_change = (df_steps.loc[:, (shdr.voltage, "delta")] == 0) & \
-                (df_steps.loc[:, (shdr.current, "delta")] == 0) & \
-                (df_steps.loc[:, (shdr.charge, "delta")] == 0) & \
-                (df_steps.loc[:, (shdr.discharge, "delta")] == 0)
+                             (df_steps.loc[:, (shdr.current, "delta")] == 0) & \
+                             (df_steps.loc[:, (shdr.charge, "delta")] == 0) & \
+                             (df_steps.loc[:, (shdr.discharge, "delta")] == 0)
 
             # TODO: make an option for only checking unique steps
             #     e.g.
@@ -1842,7 +1842,7 @@ class CellpyData(object):
         # self.logger.debug(f"selecting cycle {cycle} step {step}")
         v = test.dfdata[
             (test.dfdata[c_txt] == cycle) & (test.dfdata[s_txt] == step)
-        ]
+            ]
 
         if self.is_empty(v):
             self.logger.debug("empty dataframe")
@@ -1896,7 +1896,7 @@ class CellpyData(object):
                     cycle, dataset_number=dataset_number,
                     method=method,
                     shift=shift,
-                    )
+                )
                 if df.empty:
                     self.logger.debug("NoneType from get_cap")
                 else:
@@ -1935,9 +1935,9 @@ class CellpyData(object):
         self.logger.debug("END exporing cycles")
 
     def _export_cycles_old(self, dataset_number, setname=None,
-                       sep=None, outname=None, shifted=False, method=None,
-                       shift=0.0,
-                       last_cycle=None):
+                           sep=None, outname=None, shifted=False, method=None,
+                           shift=0.0,
+                           last_cycle=None):
         # export voltage - capacity curves to .csv file
 
         self.logger.debug("*** OLD EXPORT-CYCLES METHOD***")
@@ -2305,7 +2305,7 @@ class CellpyData(object):
                 hst.sub_step,
                 hst.info,
             ]:
-                dataset.step_table[col] = dataset.step_table[col].\
+                dataset.step_table[col] = dataset.step_table[col]. \
                     apply(pd.to_numeric)
             else:
                 dataset.step_table[col] = dataset.step_table[col].astype('str')
@@ -2381,7 +2381,7 @@ class CellpyData(object):
                             (dfdata[step_index_header].isin(steps))
                 c0 = dfdata[selection].iloc[0][cap_header]
                 e0 = dfdata[selection].iloc[0][e_header]
-                dfdata.loc[selection, cap_header] = (dfdata.loc[selection, cap_header]- c0)
+                dfdata.loc[selection, cap_header] = (dfdata.loc[selection, cap_header] - c0)
                 dfdata.loc[selection, e_header] = (dfdata.loc[selection, e_header] - e0)
 
                 cap_type = "charge"
@@ -2586,7 +2586,7 @@ class CellpyData(object):
         c = test.loc[
             (test[cycle_index_header] == cycle) &
             (test[step_index_header] == step), :
-        ]
+            ]
 
         if not self.is_empty(c):
             t = c[step_time_header]
@@ -2916,10 +2916,10 @@ class CellpyData(object):
 
                     try:
                         _first_df = pd.DataFrame(
-                                {
-                                    "voltage": _first_step_v.values,
-                                    "capacity": _first_step_c.values
-                                 }
+                            {
+                                "voltage": _first_step_v.values,
+                                "capacity": _first_step_c.values
+                            }
                         )
                         if interpolated:
                             _first_df = _interpolate_df_col(
@@ -3093,8 +3093,8 @@ class CellpyData(object):
         ).dropna()
 
         selected_df = selected_df.loc[
-            :, [cycle_label, step_label, step_time_label, voltage_label]
-        ]
+                      :, [cycle_label, step_label, step_time_label, voltage_label]
+                      ]
 
         if interpolated:
             if dx is None and number_of_points is None:
@@ -3447,7 +3447,7 @@ class CellpyData(object):
         max_step = max(dfdata[c_txt])
         for j in range(int(max_step)):
             if j + 1 not in unique_steps:
-                self.logger.debug(f"Warning: Cycle {j+1} is missing!")
+                self.logger.debug(f"Warning: Cycle {j + 1} is missing!")
             else:
                 last_item = max(dfdata.loc[dfdata[c_txt] == j + 1, d_txt])
                 steps.append(last_item)
@@ -3493,7 +3493,10 @@ class CellpyData(object):
                      find_end_voltage=False,
                      use_cellpy_stat_file=None, all_tests=True,
                      dataset_number=0, ensure_step_table=True,
-                     add_normalized_cycle_index=True):
+                     add_normalized_cycle_index=True,
+                     normalization_cycles=None,
+                     nom_cap=None,
+                     ):
         """Convenience function that makes a summary of the cycling data."""
 
         # TODO: @jepe - include option for omitting steps
@@ -3538,6 +3541,8 @@ class CellpyData(object):
                     use_cellpy_stat_file=use_cellpy_stat_file,
                     ensure_step_table=ensure_step_table,
                     add_normalized_cycle_index=add_normalized_cycle_index,
+                    normalization_cycles=normalization_cycles,
+                    nom_cap=nom_cap,
                 )
         else:
             self.logger.debug("creating summary for only one test")
@@ -3553,6 +3558,8 @@ class CellpyData(object):
                 use_cellpy_stat_file=use_cellpy_stat_file,
                 ensure_step_table=ensure_step_table,
                 add_normalized_cycle_index=add_normalized_cycle_index,
+                normalization_cycles=normalization_cycles,
+                nom_cap=nom_cap,
             )
         return self
 
@@ -3569,6 +3576,8 @@ class CellpyData(object):
                       sort_my_columns=True,
                       use_cellpy_stat_file=False,
                       add_normalized_cycle_index=True,
+                      normalization_cycles=None,
+                      nom_cap=None,
                       # capacity_modifier = None,
                       # test=None
                       ):
@@ -3727,7 +3736,7 @@ class CellpyData(object):
         # self.logger.debug("100 * ('%s')/('%s)" % (_second_step_txt,
         #                                           _first_step_txt))
         dfsummary[coulomb_title] = 100.0 * dfsummary[_second_step_txt] / \
-            dfsummary[_first_step_txt]
+                                   dfsummary[_first_step_txt]
 
         # self.logger.debug("Creates summary: coulombic difference ('%s')" %
         #                   coulomb_diff_title)
@@ -3740,7 +3749,7 @@ class CellpyData(object):
         dfsummary[cumcoulomb_title] = dfsummary[coulomb_title].cumsum()
         # self.logger.debug("Creates summary: cumulated coulombic difference "
         #                   "f('{cumcoulomb_diff_title}')")
-        dfsummary[cumcoulomb_diff_title] = dfsummary[coulomb_diff_title]\
+        dfsummary[cumcoulomb_diff_title] = dfsummary[coulomb_diff_title] \
             .cumsum()
 
         # ---------------- discharge loss ---------------------
@@ -3759,8 +3768,8 @@ class CellpyData(object):
         # ---------------- charge loss ------------------------
         # charge loss = charge_cap[n-1] - charge_cap[n]
         dfsummary[col_charge_loss_title] = dfsummary[
-            charge_title
-        ].shift(1) - dfsummary[charge_title]
+                                               charge_title
+                                           ].shift(1) - dfsummary[charge_title]
 
         dfsummary[closs_cumsum_title] = dfsummary[
             col_charge_loss_title
@@ -3783,17 +3792,14 @@ class CellpyData(object):
         if not cap_ref.empty:
             cap_ref = cap_ref.values[0]
 
-            ref = dfsummary.loc[
-                dfsummary[c_txt] < n,
-                _second_step_txt
-            ].sum() + dfsummary.loc[
-                dfsummary[c_txt] < n,
-                _first_step_txt
-            ].sum() + cap_ref
+            ref = dfsummary.loc[dfsummary[c_txt] < n, _second_step_txt].sum() \
+                  + dfsummary.loc[dfsummary[c_txt] < n, _first_step_txt].sum() \
+                  + cap_ref
 
             dfsummary[low_level_at_cycle_n_txt] = \
                 (100 / ref) * (dfsummary[_first_step_txt].cumsum()
                                - dfsummary[_second_step_txt].cumsum())
+
             dfsummary[high_level_at_cycle_n_txt] = \
                 (100 / ref) * (dfsummary[_first_step_txt]
                                + dfsummary[_first_step_txt].cumsum()
@@ -3810,23 +3816,23 @@ class CellpyData(object):
         #  as defined by Gauthier et al.---
         # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
         RIC = (
-            dfsummary[_first_step_txt].shift(1) -
-            dfsummary[_second_step_txt]
-        ) / dfsummary[_second_step_txt].shift(1)
+                  dfsummary[_first_step_txt].shift(1) -
+                  dfsummary[_second_step_txt]
+              ) / dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_title] = RIC.cumsum()
 
         # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
         RIC_SEI = (
-            dfsummary[_first_step_txt] -
-            dfsummary[_second_step_txt].shift(1)
-        ) / dfsummary[_second_step_txt].shift(1)
+                      dfsummary[_first_step_txt] -
+                      dfsummary[_second_step_txt].shift(1)
+                  ) / dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_sei_title] = RIC_SEI.cumsum()
 
         # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
         RIC_disconnect = (
-            dfsummary[_second_step_txt].shift(1) -
-            dfsummary[_second_step_txt]
-        ) / dfsummary[ _second_step_txt].shift(1)
+                             dfsummary[_second_step_txt].shift(1) -
+                             dfsummary[_second_step_txt]
+                         ) / dfsummary[_second_step_txt].shift(1)
         dfsummary[ric_disconnect_title] = RIC_disconnect.cumsum()
 
         # -------------- shifted capacities as defined by J. Dahn et al. -----
@@ -3840,7 +3846,7 @@ class CellpyData(object):
             individual_edge_movement.cumsum()
         dfsummary[shifted_discharge_capacity_title] = \
             dfsummary[shifted_charge_capacity_title] + dfsummary[
-            _first_step_txt]
+                _first_step_txt]
 
         # if convert_date:
         #     # TODO: should move this to the instrument reader procedure
@@ -3969,7 +3975,7 @@ class CellpyData(object):
                     end_voltage_dc = dfdata[
                         (dfdata[c_txt] == cycle) &
                         (dataset.dfdata[s_txt] == step[-1])
-                    ][
+                        ][
                         voltage_header
                     ]
                     # This will not work if there are more than one item in step
@@ -4067,7 +4073,20 @@ class CellpyData(object):
             dfsummary.insert(0, column=ir_charge_title, value=ir_frame2)
 
         if add_normalized_cycle_index:
-            nom_cap = self.dataset.nom_cap
+            if normalization_cycles is not None:
+                self.logger.info(f"using these cycles for finding the nominal capacity: {normalization_cycles}")
+                if not isinstance(normalization_cycles, (list, tuple)):
+                    normalization_cycles = [normalization_cycles]
+
+                cap_ref = dfsummary.loc[dfsummary[c_txt].isin(normalization_cycles), _first_step_txt]
+                if not cap_ref.empty:
+                    nom_cap = cap_ref.mean()
+                else:
+                    self.logger.info(f"Empty reference cycle(s)")
+
+            if nom_cap is None:
+                nom_cap = self.dataset.nom_cap
+            self.logger.info(f"using the following nominal capacity: {nom_cap}")
             dfsummary[h_normalized_cycle] = dfsummary[cumcharge_title] / nom_cap
 
         if sort_my_columns:
@@ -4249,7 +4268,7 @@ def group_by_interpolate(df, x=None, y=None, group_by=None,
 
 def _interpolate_df_col(df, x=None, y=None, new_x=None, dx=10.0,
                         number_of_points=None, direction=1, **kwargs):
-        """Interpolate a column based on another column.
+    """Interpolate a column based on another column.
 
         Args:
             df: DataFrame with the (cycle) data.
@@ -4269,37 +4288,37 @@ def _interpolate_df_col(df, x=None, y=None, new_x=None, dx=10.0,
 
         """
 
-        if x is None:
-            x = df.columns[0]
-        if y is None:
-            y = df.columns[1]
+    if x is None:
+        x = df.columns[0]
+    if y is None:
+        y = df.columns[1]
 
-        xs = df[x].values
-        ys = df[y].values
+    xs = df[x].values
+    ys = df[y].values
 
-        if direction > 0:
-            x_min = xs.min()
-            x_max = xs.max()
+    if direction > 0:
+        x_min = xs.min()
+        x_max = xs.max()
+    else:
+        x_max = xs.min()
+        x_min = xs.max()
+        dx = -dx
+
+    bounds_error = kwargs.pop("bounds_error", False)
+    f = interpolate.interp1d(xs, ys, bounds_error=bounds_error, **kwargs)
+    if new_x is None:
+        if number_of_points:
+            new_x = np.linspace(x_min, x_max, number_of_points)
         else:
-            x_max = xs.min()
-            x_min = xs.max()
-            dx = -dx
+            new_x = np.arange(x_min, x_max, dx)
 
-        bounds_error = kwargs.pop("bounds_error", False)
-        f = interpolate.interp1d(xs, ys, bounds_error=bounds_error, **kwargs)
-        if new_x is None:
-            if number_of_points:
-                new_x = np.linspace(x_min, x_max, number_of_points)
-            else:
-                new_x = np.arange(x_min, x_max, dx)
+    new_y = f(new_x)
 
-        new_y = f(new_x)
+    new_df = pd.DataFrame(
+        {x: new_x, y: new_y}
+    )
 
-        new_df = pd.DataFrame(
-            {x: new_x, y: new_y}
-        )
-
-        return new_df
+    return new_df
 
 
 def _collect_capacity_curves(data, direction="charge",
@@ -4593,4 +4612,3 @@ if __name__ == "__main__":
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")
-

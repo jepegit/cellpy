@@ -10,13 +10,15 @@ This is some text. Not sure where it is shown.
 def clean(c, docs=False, bytecode=False, extra=''):
     """Clean up stuff from previous builds"""
     print(" Cleaning ".center(80, "="))
-    patterns = ['dist', 'build']
-    patterns.append('cellpy.egg-info')
+    patterns = ['dist', 'build', 'cellpy.egg-info']
     if docs:
+        print(" - cleaning doc builds")
         patterns.append('docs/_build')
     if bytecode:
+        print(" - cleaning bytecode (i.e. pyc-files)")
         patterns.append('**/*.pyc')
     if extra:
+        print(f" - cleaning {extra}")
         patterns.append(extra)
     for pattern in patterns:
         c.run("rm -rf {}".format(pattern))
@@ -40,3 +42,4 @@ def build(c, docs=False, upload=False):
     if upload:
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
+        c.run("twine upload dist/*")

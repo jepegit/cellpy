@@ -12,8 +12,8 @@ Starting (setting things up)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Jupyter Notebooks is the recommended "tool" for running the cellpy batch
-feature. The first step is to import the ``cellpy.utils.batch.Batch`` class from
-``cellpy``.  The ``Batch`` class is a utility class for
+feature. The first step is to import the ``cellpy.utils.batch.Batch``
+class from ``cellpy``.  The ``Batch`` class is a utility class for
 pipe-lining batch processing of cell cycle data.
 
 

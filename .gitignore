@@ -8,6 +8,8 @@ __pycache__/
 
 .idea/
 old/
+bin/
+bin/mdbtools-win
 
 # testdata/hdf5/20160805_test001_45_cc.h5
 testdata/hdf5/20160805_test001_47_cc.h5
