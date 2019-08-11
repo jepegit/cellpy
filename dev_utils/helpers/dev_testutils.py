@@ -35,6 +35,18 @@ test_res_file_full = os.path.join(test_data_dir,test_res_file)
 test_cellpy_file = "20160805_test001_45_cc.h5"
 test_cellpy_file_full = os.path.join(test_data_dir,test_cellpy_file)
 
+# creating conda build
+# --------------------
+
+#   First - edit the recipe/metal.yaml file
+CONDA_BUILD = "conda build recipe"
+ANACONDA_UPLOAD = "anaconda upload file-path"
+# e.g. anaconda upload win-32/cellpy-0.3.0-py37_0.tar.bz2
+CONVERT_CONDA_BUILDS = "conda convert --platform all PATH"
+# e.g. conda convert --platform  all /Users/jepe/miniconda3/envs/cellpy_dev/
+#                               conda-bld/osx-64/cellpy-0.3.0-py37_0.tar.bz2
+# and then upload each created version individually using anaconda upload
+
 
 def create_cellpyfile_in_example_dir(force=False):
     print(79 * "=")
