@@ -37,9 +37,16 @@ test_cellpy_file_full = os.path.join(test_data_dir,test_cellpy_file)
 
 # creating conda build
 # --------------------
-
-#   First - edit the recipe/metal.yaml file
+# You should update your development environment first
+CONDA_UPDATE_DEV = "conda env update -f dev_environment.yml"
+# Or, if you have not set up a development environment
+CONDA_CREATE_DEV = "conda env create -f dev_environment.yml"
+# and then install development version of cellpy (PIP_DEVELOPMENT_MODE)
+# and its probably also best to run the test
+# Then edit the recipe/metal.yaml file
+# Next you run the build
 CONDA_BUILD = "conda build recipe"
+# Optionally: upload to anaconda
 ANACONDA_UPLOAD = "anaconda upload file-path"
 # e.g. anaconda upload win-32/cellpy-0.3.0-py37_0.tar.bz2
 CONVERT_CONDA_BUILDS = "conda convert --platform all PATH"
