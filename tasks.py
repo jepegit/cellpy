@@ -16,6 +16,9 @@ Examples:
     # clean up
     > invoke clean
     
+    # clean up and build
+    > invoke clean build
+    
 """
 
 
@@ -41,7 +44,7 @@ def clean(c, docs=False, bytecode=False, extra=''):
 
 
 @task
-def info(c):
+def info(c, full=False):
     """Get info about the cellpy (version at PyPI etc)"""
     import cellpy
     from pathlib import Path
@@ -58,20 +61,21 @@ def info(c):
     print(f"version (in _version.py):   cellpy {version_ns['__version__']}")
     print("version on PyPI:            ", end="")
     c.run("yolk -V cellpy")
-    print(" info from dev_testutils.py ".center(80, "-"))
 
-    with open(dev_help_file_path) as f:
-        while True:
-            line = f.readline()
-            parts = line.split()
-            if parts:
-                if parts[0].isupper():
-                    print(line.strip())
+    if full:
+        print(" info from dev_testutils.py ".center(80, "-"))
+        with open(dev_help_file_path) as f:
+            while True:
+                line = f.readline()
+                parts = line.split()
+                if parts:
+                    if parts[0].isupper():
+                        print(line.strip())
 
-            if not line:
-                break
-    print(" invoke tasks ".center(80, "-"))
-    c.run("invoke -l")
+                if not line:
+                    break
+        print(" invoke tasks ".center(80, "-"))
+        c.run("invoke -l")
 
     print(" the end ".center(80, "-"))
 
