@@ -6,7 +6,7 @@ File Formats and Data Structures
 
 .. warning::
    This part of the documentation needs to be updated.
-   We hope that will happend soon.
+   We hope that will happen soon.
 
 
 The most important file formats and data structures for cellpy is

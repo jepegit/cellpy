@@ -15,7 +15,7 @@ issuing a simple
 
 .. code:: bash
 
-   $ pip install cellpy
+   pip install cellpy
 
 It is recommended that you use a Python environment (or conda
 environment) and give it a easy to remember name *e.g.* ``cellpy``.
@@ -74,7 +74,7 @@ Open up a command window (you can find a command window on Windows by
 
 .. code:: bash
 
-   $ pip install cellpy
+   pip install cellpy
 
 If you get an error message, then it could be that your Python version is
 not available for you (maybe you installed as root?). What usually works
@@ -92,7 +92,7 @@ those, you will need to install ``pyodbc``
 
 .. code:: bash
 
-   $ pip install pyodbc
+   pip install pyodbc
 
 You most likely also want to install the Microsoft Access odbc driver
 which can be downloaded from `this
@@ -107,15 +107,15 @@ dependencies
 
 .. code:: bash
 
-   $ pip install pytables
+   conda install pytables
 
 .. code:: bash
 
-   $ pip install lmfit
+   pip install lmfit
 
 .. code:: bash
 
-   $ pip install python-box
+   pip install python-box
 
 (the packages (``lmfit``, ``pytables``, ``pyodbc``) are also installable
 from conda forge using ``conda`` *e.g.* by issuing
@@ -129,7 +129,7 @@ the command for printing the version number to the screen
 
 .. code:: bash
 
-   $ cellpy info --version
+   cellpy info --version
 
 If the program prints the expected version number, you probably
 succeeded. If it crashes, then you will have to retrace your steps, redo
@@ -140,7 +140,7 @@ of an ``install``
 
 .. code:: bash
 
-   $ pip install --upgrade cellpy
+   pip install --upgrade cellpy
 
 It could also be that you want to install a pre-release (a version that
 is so bleeding edge that it ends with a alpha or beta release
@@ -149,14 +149,14 @@ identification, *e.g.* ends with .b2). Then you will need to add the
 
 .. code:: bash
 
-   $ pip install --pre cellpy
+   pip install --pre cellpy
 
 To run a more complete check of your installation, there exist a
 ``cellpy`` sub-command than can be helpful
 
 .. code:: bash
 
-   $ cellpy info --check
+   cellpy info --check
 
 
 2. The ``cellpy`` command to your rescue
@@ -171,7 +171,7 @@ To get more information, you can issue
 
 .. code:: bash
 
-   $ cellpy --help
+   cellpy --help
 
 This will out-put some (hopefully) helpful text
 
@@ -193,7 +193,7 @@ them also. For example, issuing
 
 .. code:: bash
 
-   $ cellpy info --help
+   cellpy info --help
 
 gives
 
@@ -218,7 +218,7 @@ data, cellpy-files, logs, databases and output data (and inform
 
 .. code:: bash
 
-   $ cellpy setup -i
+   cellpy setup -i
 
 The ``-i`` option makes sure that the setup is done interactively.
 The program will ask you about where specific folders are, e.g. where
@@ -245,9 +245,8 @@ the `examples
 folder <https://github.com/jepegit/cellpy/tree/master/examples>`__).
 
 .. note::
-    The plan is that the ``cellpy pull`` command can assist in downloading
-    both examples and tests. However, we have not had time to implement it
-    yet.
+    The ``cellpy pull`` command can assist in downloading
+    both examples and tests.
 
 Let's start by a trying to import ``cellpy`` in an interactive Python session.
 If you have an icon to press to start up the Python in interactive mode,
@@ -275,7 +274,7 @@ started it in your command window, or open another command window and write
 
 .. code:: bash
 
-    $ pip install python-box
+    pip install python-box
 
 and try again.
 

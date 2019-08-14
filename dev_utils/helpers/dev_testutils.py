@@ -1,6 +1,4 @@
 """Tools used for simplifying the development process"""
-from __future__ import print_function
-
 import os
 
 print(79*"=")
@@ -14,15 +12,32 @@ print(79*"=")
 PIP_DEVELOPMENT_MODE = "pip install -e ."  # will install in development mode for current virtualenv
 MAKE_DIST = "python setup.py sdist"  # creates a build with version number name
 UPLOAD_PYPI = "twine upload dist/*"  # uploads to pypi (note! remove old tar-files first if using *)
-
+# use yolk to find out latest cellpy version
+FIND_CELLPY_VERSION_ON_PYPI = "yolk -V cellpy" # First you might have to install yolk: pip install yolk3k
 FIND_ALL_REQS = "pipreqs --savepath pipreqs_requirements.txt cellpy"
-
 RUN_COVERAGE = "pytest -cov=cellpy tests/"
 
 # some sphinx commands
 # BUILD = "sphinx-build -b html sourcedir builddir" # not used
 EASY_BUILD = "make html"  # inside the docs directory to make html docs
-CREATE_APIDOC = "sphinx-apidoc -o source ..\cellpy" # inside the docs directory to make .rst files for docstrings etc.
+CREATE_APIDOC = "sphinx-apidoc -o source ../cellpy"  # inside the docs directory to make .rst files for docstrings etc.
+
+# creating conda build
+# --------------------
+CONDA_UPDATE_DEV = "conda env update -f dev_environment.yml"  # update your development environment first
+CONDA_CREATE_DEV = "conda env create -f dev_environment.yml"  # or create a development environment
+# and then install development version of cellpy (PIP_DEVELOPMENT_MODE)
+# and its probably also best to run the test
+# Then edit the recipe/metal.yaml file
+# Next you run the build
+CONDA_BUILD = "conda build recipe"  # build conda package
+# Optionally: upload to anaconda
+ANACONDA_UPLOAD = "anaconda upload PATH"  # upload to conda package
+# e.g. anaconda upload win-32/cellpy-0.3.0-py37_0.tar.bz2
+CONVERT_CONDA_BUILDS = "conda convert --platform all PATH"  # convert to different platforms
+# e.g. conda convert --platform  all /Users/jepe/miniconda3/envs/cellpy_dev/
+#                               conda-bld/osx-64/cellpy-0.3.0-py37_0.tar.bz2
+# and then upload each created version individually using anaconda upload
 
 current_file_path = os.path.dirname(os.path.realpath(__file__))
 relative_test_dir = "../tests"

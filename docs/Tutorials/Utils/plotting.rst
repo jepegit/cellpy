@@ -1,6 +1,5 @@
-
 Have a look at the data
-=======================
+-----------------------
 
 Here are some examples how to get a peak at the data. If we need an
 interactive plot of the raw-data, we can use the ``plotutils.raw_plot``
@@ -42,7 +41,7 @@ interactive figure:
     plotutils.raw_plot(cell)
 
 
-.. image:: figures/tutorials_utils_plotting_fig1.png
+.. image:: Tutorials/Utils/figures/tutorials_utils_plotting_fig1.png
 
 
 Sometimes it is necessary to have a look at some statistics for each
@@ -58,6 +57,11 @@ cycle and step. This can be done using the ``cycle_info_plot`` method:
 
 
 
-.. image:: figures/tutorials_utils_plotting_fig2.png
+.. image:: Tutorials/Utils/figures/tutorials_utils_plotting_fig2.png
 
+.. note::
+
+    If you chose to work within a Jupyter Notebook, you are advised to
+    try some of the web-based plotting tools. For example, you might consider
+    installing `holoviz suite. <https://holoviz.org>`_
 

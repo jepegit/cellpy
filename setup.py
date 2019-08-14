@@ -20,14 +20,16 @@ with open('HISTORY.rst') as history_file:
 included_packages = find_packages(exclude=['build', 'docs', 'templates'])
 
 requirements = [
-    'scipy', 'numpy', 'pandas', 'python-box', 'setuptools', 'pyyaml',
+    'scipy', 'numpy>=1.16.4', 'pandas', 'python-box', 'setuptools',
+    'pyyaml>=4.2b1',
     'matplotlib', 'xlrd', 'click', 'PyGithub',
     'pyodbc;platform_system=="windows"',
     # 'pytables', # not available by pip
 ]
 
 test_requirements = [
-    'scipy', 'numpy', 'pandas', 'python-box', 'setuptools', 'pyyaml'
+    'scipy', 'numpy>=1.16.4', 'pandas',
+    'python-box', 'setuptools', 'pyyaml>=4.2b1'
     'matplotlib', 'lmfit', 'pyodbc', 'xlrd', 'click', 'PyGithub',
     # 'pytables', # not available by pip
     'pytest',

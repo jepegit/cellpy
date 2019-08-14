@@ -2,7 +2,7 @@ The cellpy command
 ==================
 
 At the moment, only a very limited set of things can be achieved by running
-the ``cellpy`` command at the shell (or inthe cmd window).
+the ``cellpy`` command at the shell (or in the cmd window).
 
 .. code-block:: shell
 
@@ -19,7 +19,8 @@ the ``cellpy`` command at the shell (or inthe cmd window).
      setup  This will help you to setup cellpy.
 
 
-A couple of commands are implemented to get some information about your cellpy environment (currently getting your
+A couple of commands are implemented to get some information about your
+cellpy environment (currently getting your
 cellpy version and the location of your configuration file):
 
 .. code-block:: shell
