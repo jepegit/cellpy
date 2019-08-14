@@ -93,7 +93,7 @@ def cli():
 @click.option(
     '--interactive', '-i',
     is_flag=True,
-    default=False, help="Use the newest of the newest (a bit risky)."
+    default=False, help="Allows you to specify div. folders and setting."
 )
 @click.option(
     '--not-relative', '-nr',

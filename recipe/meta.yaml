@@ -1,5 +1,5 @@
 {% set name = "cellpy" %}
-{% set version = "0.3.0" %}
+{% set version = "0.3.0.post1" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: e4013ecdf589e7c731e41f123ce3fe7748d43a468d5e86af35466c18ef74aea5
+  sha256: ae8f40bad8e209d13ec437c176d7f201f1e29cc7a7ce043929317ca03ab3fd90
 
 build:
   number: 0
@@ -32,7 +32,7 @@ requirements:
     - scipy
     - setuptools
     - xlrd
-    - lmfit
+#    - lmfit
     - PyGithub >=1.43.0
 
 test:

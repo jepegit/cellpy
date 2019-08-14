@@ -223,7 +223,11 @@ data, cellpy-files, logs, databases and output data (and inform
 The ``-i`` option makes sure that the setup is done interactively.
 The program will ask you about where specific folders are, e.g. where
 you would like to put your outputs and where your cell data files are
-located. If the folders don’t exist, ``cellpy`` will try to create them.
+located. If the folders don’t exist, ``cellpy`` will try to create them.a
+
+If you want to specify a root folder different from the default (your HOME
+folder), you can use the ``-d`` option *e.g.*
+``cellpy setup -i -d /Users/kingkong/cellpydir``
 
 .. note::
 
