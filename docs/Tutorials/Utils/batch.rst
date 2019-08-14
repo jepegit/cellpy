@@ -11,6 +11,22 @@ So, with that being said, here is the promised description.
 Starting (setting things up)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+A database
+..........
+Currently, the only supported "database" is Excel (yes, I am not kidding). So,
+there is definitely room for improvements if you would like to contribute to
+the code-base.
+
+The Excel work-book must contain a page called ``db_table``. And the top row
+of this page should consist of the correct headers as defined in your cellpy
+config file. You then have to give an identification name for the cells you
+would like to investigate in one of the columns labelled as batch columns (
+typically "b01", "b02", ..., "b07"). You can find an example of such an Excel
+work-book in the test-data.
+
+A tool for running the job
+..........................
+
 Jupyter Notebooks is the recommended "tool" for running the cellpy batch
 feature. The first step is to import the ``cellpy.utils.batch.Batch``
 class from ``cellpy``.  The ``Batch`` class is a utility class for
@@ -19,7 +35,7 @@ pipe-lining batch processing of cell cycle data.
 
 .. code-block:: python
 
-    from cellpy.utils import batch
+    from cellpy.utils import batch, plotutils
     from cellpy import prms
     from cellpy import prmreader
 
@@ -29,7 +45,7 @@ The next step is to initialize it:
 .. code-block:: python
 
     project = "experiment_set_01"
-    name = "new_exiting_chemistry"
+    name = "new_exiting_chemistry"  # the name you set in the database
     batch_col = "b01"
     b = batch.init(name, project, batch_col=batch_col)
 
@@ -79,3 +95,33 @@ all your data-files) and plot the results.
     b.plot_summaries()
 
 Now it is time to relax and maybe drink a cup of coffee.
+
+Further investigations and analyses
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are several paths to go from here. I recommend looking at the raw data
+for the different cells briefly to check if everything looks sensible.
+You can get the names of the different datasets (cells) by issuing:
+
+.. code-block:: python
+
+    b.experiment.cell_names
+
+You can get the CellpyData-object for a given cell by writing:
+
+.. code-block:: python
+
+    cell = b.experiment.data[name_of_cell]
+    plotutils.raw_plot(my_cell)
+
+If you want to investigate further, you can either use one of the available
+analysis-engines (they work on batch objects processing all the cells at once)
+or you can continue on a single cell basis (latter is currently recommended).
+
+Another tip is to make new Notebooks for each type of "investigation" you would
+like to perform. You can load the info-df-file you created in the initial steps,
+or you could load the individual cellpy-files (if you did not turn off
+automatic saving to cellpy-format).
+
+You should be able to find examples of processing either by downloading the
+examples or by looking in the `repo. <https://github.com/jepegit/cellpy>`_

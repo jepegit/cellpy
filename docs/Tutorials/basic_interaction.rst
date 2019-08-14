@@ -5,9 +5,9 @@ Read cell data
 --------------
 
 We assume that we have cycled a cell and that we have two files
-with results (we hadto stop the experiment and re-start for some
+with results (we had to stop the experiment and re-start for some
 reason).
-The files are inthe .res format (Arbin).
+The files are in the .res format (Arbin).
 
 First, import modules, including the cellreader-object from ``cellpy``:
 
@@ -113,6 +113,27 @@ summary data is charge- and
 discharge-values, coulombic efficiencies and internal resistances.
 These are calculated by the
 ``make_summary`` method.
+
+Remark that note all the possible summary statistics are calculated as
+default. This means that you might have to re-run the ``make_summary`` method
+with appropriate parameters as input (e.g. ``normalization_cycle``,
+to give the appropriate cycle numbers to use for finding nominal capacity).
+
+Another method is responsible for investigating the individual steps in the
+data (``make_step_table``). It is typically run automatically before creating
+the summaries (since the summary creation depends on the step_table). This
+table is interesting in itself since it contains delta, minimum, maximum and
+average values for the measured values pr. step. This is used to find out
+what type of step it is, *e.g.* a charge-step or maybe a ocv-step. It is
+possible to provide information to this function if you already knows what
+kind of step each step is. This saves ``Cellpy`` for a lot of work.
+
+Remark that the default is to calculate values for each unique (step-number -
+cycle-number) pair. For some experiments, a step can be repeated many times
+pr. cycle. And if you need for example average values of the voltage for each
+step (for example if you are doing GITT experiments), you would need to
+tell ``make_step_table`` that it should calculate for all the steps
+(``all_steps=True``).
 
 Create dQ/dV plots
 ------------------

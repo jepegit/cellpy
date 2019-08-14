@@ -25,9 +25,14 @@ dependencies:
   - pytest
   - twine
   - invoke
+  - conda-build
+  - ripgrep
+  - conda-verify
+  - anaconda-client
+  - lmfit
   - pip:
-    - lmfit
     - python-box
     - pytest-benchmark
     - pytest-timeout
+    - yolk3k
 

@@ -1,5 +1,5 @@
 {% set name = "cellpy" %}
-{% set version = "0.2.1" %}
+{% set version = "0.3.0" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,41 +7,40 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: e852ea6ab326d8a5f24f979bb86a8b46c668e3cf69f84140e24ac3910ef61076
+  sha256: e4013ecdf589e7c731e41f123ce3fe7748d43a468d5e86af35466c18ef74aea5
 
 build:
   number: 0
   entry_points:
-    - cellpy=cellpy.cellpy_setup:cli
-#  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv "
+    - cellpy=cellpy.cli:cli
 
 requirements:
   host:
-    - click
-    - matplotlib
-    - numpy
-    - pandas
     - pip
     - python
-    - python-box
-    - pyyaml
-    - scipy
-    - setuptools
-    - xlrd
+    - setuptools >=38.6.0
   run:
+    - python >=3.6
+    - pytables >=3.5.1
+    - pyodbc >=4.0.16  # [win]
     - click
     - matplotlib
-    - numpy
+    - numpy >=1.16.4
     - pandas
-    - python
     - python-box
-    - pyyaml
+    - pyyaml >=4.2b1
     - scipy
     - setuptools
     - xlrd
     - lmfit
+    - PyGithub >=1.43.0
 
 test:
+  requires:
+    - pytest
+    - matplotlib
+    - pytest-benchmark
+    - pytest-timeout
   imports:
     - cellpy
     - cellpy.parameters
@@ -51,20 +50,6 @@ test:
     - tests
   commands:
     - cellpy --help
-  requires:
-    - click
-    - lmfit
-    - numpy
-    - pandas
-    - pyodbc
-    - pytables
-    - pytest
-    - python-box
-    - pyyaml
-    - matplotlib
-    - scipy
-    - setuptools
-    - xlrd
 
 about:
   home: https://github.com/jepegit/cellpy
