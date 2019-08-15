@@ -87,7 +87,7 @@ def test(c):
 
 
 @task
-def build(c, docs=False, upload=False):
+def build(c, docs=False, upload=True):
     """Create distribution (and optionally upload to PyPI)"""
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")
@@ -99,3 +99,24 @@ def build(c, docs=False, upload=False):
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
         c.run("twine upload dist/*")
+
+
+@task
+def conda_build(c):
+    """Create conda distribution"""
+    print(" Creating conda distribution ".center(80, "="))
+    print("Running conda build")
+    c.run("conda build recipe")
+    print("\nTo upload: anaconda upload PATH")
+    print("e.g.")
+    print(r"anaconda upload C:\miniconda\envs\cellpy_dev\conda-bld\win-64\cellpy-0.3.0.post1-py37_0.tar.bz2")
+    print("\nTo convert to different OS-es: conda convert --platform all PATH")
+    print("e.g.")
+    print("cd builds")
+    print(r"conda convert --platform all "
+          r"C:\miniconda\envs\cellpy_dev\conda-bld\win-64\cellpy-0.3.0.post1-py37_0.tar.bz2")
+
+
+@task
+def pypi(c):
+    c.run("yolk -M cellpy")
