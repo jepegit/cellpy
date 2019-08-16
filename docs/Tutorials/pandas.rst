@@ -1,6 +1,12 @@
 Working with the pandas.DataFrame objects directly
 ==================================================
 
+.. warning::
+    The package authors are seriously considering re-naming several of the
+    classes and DataFrames. The methodology presented below will be the same
+    in spirit, but the actual names will change. Soon. Very soon.
+
+
 The ``CellpyData`` object stores the data in several pandas.DataFrame objects.
 The easies way to get to the DataFrames is by the following procedure:
 

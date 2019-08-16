@@ -44,7 +44,7 @@ For POSIX systems, I have not found any suitable drivers. Instead,
 ``cellpy`` will try to use ``mdbtools``\ to first export the data to
 temporary csv-files, and then import from those csv-file (using the
 ``pandas`` library). You can install ``mdbtools`` using your systems
-prefered package manager (*e.g.* ``apt-get install mdbtools``).
+preferred package manager (*e.g.* ``apt-get install mdbtools``).
 
 1.2 The tea spoon explanation
 -----------------------------
