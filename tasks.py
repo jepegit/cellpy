@@ -39,7 +39,7 @@ def get_platform():
 
 
 @task
-def commit(c, comment="automatic commit"):
+def commit(c, push=True, comment="automatic commit"):
     cos = get_platform()
     print(f"Running on platform: {cos}")
     print(" status ".center(80, "-"))
@@ -48,6 +48,9 @@ def commit(c, comment="automatic commit"):
     c.run("git add .")
     print(" committing ".center(80, "-"))
     c.run(f'git commit . -m "{comment}"')
+    if push:
+        print(" pushing ".center(80, "-"))
+        c.run('git push')
     print(" finished ".center(80, "-"))
 
 
