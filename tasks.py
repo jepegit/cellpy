@@ -120,6 +120,10 @@ def commit(c, push=True, comment="automatic commit"):
         c.run("git status", out_stream=o)
         status_lines = o.getvalue()
 
+    # it seems it is also possible to do
+    # out = c.run(command)
+    # status_lines = out.stdout
+
     new_files_regex = re.compile(r"modified:[\s]+([\S]+)")
     new_files = new_files_regex.search(status_lines)
     if new_files:
