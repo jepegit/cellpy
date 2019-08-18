@@ -71,7 +71,7 @@ def commit(c, push=True, comment="automatic commit"):
         if push:
             print(" pushing ".center(80, "-"))
             c.run('git push')
-        print(" finished ".center(80, "-"))
+    print(" finished ".center(80, "-"))
 
 
 
