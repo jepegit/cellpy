@@ -64,15 +64,14 @@ def commit(c, push=True, comment="automatic commit"):
     new_files = new_files_regex.search(status_lines)
     if new_files:
         print(new_files.groups())
-
-    print(" staging ".center(80, "-"))
-    c.run("git add .")
-    print(" committing ".center(80, "-"))
-    c.run(f'git commit . -m "{comment}"')
-    if push:
-        print(" pushing ".center(80, "-"))
-        c.run('git push')
-    print(" finished ".center(80, "-"))
+        print(" staging ".center(80, "-"))
+        c.run("git add .")
+        print(" committing ".center(80, "-"))
+        c.run(f'git commit . -m "{comment}"')
+        if push:
+            print(" pushing ".center(80, "-"))
+            c.run('git push')
+        print(" finished ".center(80, "-"))
 
 
 
