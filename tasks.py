@@ -1,4 +1,6 @@
+import sys
 from invoke import task
+
 
 """Tasks for cellpy development.
 
@@ -20,6 +22,30 @@ Examples:
     > invoke clean build
     
 """
+
+
+def get_platform():
+    platforms = {
+        'linux1': 'Linux',
+        'linux2': 'Linux',
+        'darwin': 'OS X',
+        'win32': 'Windows',
+        'win64': 'Windows',
+    }
+    if sys.platform not in platforms:
+        return sys.platform
+
+    return platforms[sys.platform]
+
+
+@task
+def m(c, comment="automatic commit"):
+    cos = get_platform()
+    print(f"Running on platform: {cos}")
+    c.run("git status")
+    c.run("git add .")
+    c.run(f"git commit -m {comment}")
+    print()
 
 
 @task
