@@ -42,10 +42,13 @@ def get_platform():
 def m(c, comment="automatic commit"):
     cos = get_platform()
     print(f"Running on platform: {cos}")
+    print(" status ".center(80, "-"))
     c.run("git status")
+    print(" staging ".center(80, "-"))
     c.run("git add .")
+    print(" committing ".center(80, "-"))
     c.run(f'git commit . -m "{comment}"')
-    print()
+    print(" finished ".center(80, "-"))
 
 
 @task
