@@ -1,5 +1,7 @@
 import sys
-from invoke import task
+import io
+
+from invoke import task, watchers
 
 
 """Tasks for cellpy development.
@@ -40,10 +42,13 @@ def get_platform():
 
 @task
 def commit(c, push=True, comment="automatic commit"):
+    ostream = io.StringIO()
     cos = get_platform()
     print(f"Running on platform: {cos}")
     print(" status ".center(80, "-"))
-    c.run("git status")
+    c.run("git status", out_stream=ostream)
+
+
     print(" staging ".center(80, "-"))
     c.run("git add .")
     print(" committing ".center(80, "-"))
@@ -52,6 +57,9 @@ def commit(c, push=True, comment="automatic commit"):
         print(" pushing ".center(80, "-"))
         c.run('git push')
     print(" finished ".center(80, "-"))
+
+    lines = ostream.readlines()
+    print(lines)
 
 
 @task
