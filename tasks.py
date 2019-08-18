@@ -1,7 +1,9 @@
 import sys
 import io
+import re
+from contextlib import contextmanager
 
-from invoke import task, watchers
+from invoke import task
 
 
 """Tasks for cellpy development.
@@ -40,17 +42,11 @@ def get_platform():
     return platforms[sys.platform]
 
 
-def io_string():
-    return
-
-
-from contextlib import contextmanager
-
-
 @contextmanager
 def capture():
     o_stream = io.StringIO()
     yield o_stream
+    print(o_stream.getvalue())
     o_stream.close()
 
 
@@ -60,11 +56,15 @@ def commit(c, push=True, comment="automatic commit"):
     print(f"Running on platform: {cos}")
     print(" status ".center(80, "-"))
 
-    with capture() as o_stream:
-        c.run("git status", out_stream=o_stream)
-        status_lines = o_stream.getvalue()
-    print(status_lines)
+    with capture() as o:
+        c.run("git status", out_stream=o)
+        status_lines = o.getvalue()
+    #print(status_lines)
 
+    new_files_regex = re.compile("modified:[\s]+([\S]+)")
+    new_files = new_files_regex.search(status_lines)
+    if new_files:
+        print(new_files.groups())
 
     print(" staging ".center(80, "-"))
     c.run("git add .")
