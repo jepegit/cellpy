@@ -53,6 +53,7 @@ def capture():
 @task
 def commit(c, push=True, comment="automatic commit"):
     cos = get_platform()
+    print(" Running commit task ".center(80, "="))
     print(f"Running on platform: {cos}")
     print(" status ".center(80, "-"))
 

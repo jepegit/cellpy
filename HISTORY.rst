@@ -10,7 +10,7 @@ History
 * Improved cmd-line interface for setup
 * More helper functions and tools
 * Experimental support for other instruments
-
+* invoke tasks for developers
 
 0.2.1 (2018)
 ------------
