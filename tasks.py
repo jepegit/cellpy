@@ -75,8 +75,6 @@ def commit(c, push=True, comment="automatic commit"):
     print(" finished ".center(80, "-"))
 
 
-
-
 @task
 def clean(c, docs=False, bytecode=False, extra=''):
     """Clean up stuff from previous builds"""
