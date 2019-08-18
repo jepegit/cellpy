@@ -40,13 +40,30 @@ def get_platform():
     return platforms[sys.platform]
 
 
+def io_string():
+    return
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def capture():
+    o_stream = io.StringIO()
+    yield o_stream
+    o_stream.close()
+
+
 @task
 def commit(c, push=True, comment="automatic commit"):
-    ostream = io.StringIO()
     cos = get_platform()
     print(f"Running on platform: {cos}")
     print(" status ".center(80, "-"))
-    c.run("git status", out_stream=ostream)
+
+    with capture() as o_stream:
+        c.run("git status", out_stream=o_stream)
+        status_lines = o_stream.getvalue()
+    print(status_lines)
 
 
     print(" staging ".center(80, "-"))
@@ -58,8 +75,7 @@ def commit(c, push=True, comment="automatic commit"):
         c.run('git push')
     print(" finished ".center(80, "-"))
 
-    lines = ostream.readlines()
-    print(lines)
+
 
 
 @task
