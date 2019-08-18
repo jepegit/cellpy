@@ -59,9 +59,8 @@ def commit(c, push=True, comment="automatic commit"):
     with capture() as o:
         c.run("git status", out_stream=o)
         status_lines = o.getvalue()
-    #print(status_lines)
 
-    new_files_regex = re.compile("modified:[\s]+([\S]+)")
+    new_files_regex = re.compile(r"modified:[\s]+([\S]+)")
     new_files = new_files_regex.search(status_lines)
     if new_files:
         print(new_files.groups())
