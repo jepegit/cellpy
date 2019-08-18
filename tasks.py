@@ -44,7 +44,7 @@ def m(c, comment="automatic commit"):
     print(f"Running on platform: {cos}")
     c.run("git status")
     c.run("git add .")
-    c.run(f"git commit -m {comment}")
+    c.run(f'git commit . -m "{comment}"')
     print()
 
 
