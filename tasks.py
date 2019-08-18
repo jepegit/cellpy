@@ -176,8 +176,6 @@ def info(c, full=False):
         print(f"version on PyPI:            cellpy {version}")
 
 
-
-
 @task
 def test(c):
     """Run tests with coverage"""
