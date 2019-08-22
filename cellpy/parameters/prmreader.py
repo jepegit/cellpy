@@ -9,7 +9,6 @@ import warnings
 from pathlib import Path
 
 import box
-# import yaml
 from ruamel.yaml import YAML
 
 from cellpy.parameters import prms
@@ -196,11 +195,10 @@ def main():
     print(" Testing ")
 
     f = _get_prm_file()
-    print(f)
+    print(f"reading {f}")
+    print("writing parameters")
     _write_prm_file(f)
-
-    print(f)
-
+    print("reading parameters")
     _read_prm_file(f)
 
     print(prms.Reader)
