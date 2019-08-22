@@ -193,12 +193,10 @@ def info():
 
 
 def main():
-    print("Testing")
-    # out = r"C:\Users\jepe\_cellpy_prms_jepe.conf"
-    # _write_prm_file(out)
-    print(prms.Reader)
+    print(" Testing ")
 
     f = _get_prm_file()
+    print(f)
     _write_prm_file(f)
 
     print(f)

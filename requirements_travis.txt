@@ -5,7 +5,7 @@ click>=6.6
 lmfit>=0.9.7
 setuptools>=35.0.1
 pandas>=0.23.0
-pyyaml>=4.2b1
+ruamel.yaml
 python-box>=3.2.0
 PyGithub>=1.43
 numpy>=1.16.4
