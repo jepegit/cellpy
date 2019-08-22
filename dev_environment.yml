@@ -14,7 +14,7 @@ dependencies:
   - pandas
   - pytables>=3.5.1
   - setuptools
-  - ruamel.yaml
+  - pyyaml>=4.2b1
   - pyodbc
   - coverage
   - wheel
