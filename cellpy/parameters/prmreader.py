@@ -12,28 +12,17 @@ import box
 from ruamel.yaml import YAML
 
 from cellpy.parameters import prms
-from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 logger = logging.getLogger(__name__)
-
-using_ruamel = True
 
 
 def _write_prm_file(file_name=None):
     logger.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
-    if using_ruamel:
-        yaml = YAML(typ='safe')
-        yaml.default_flow_style = False
-        config_file = Path(file_name)
-        yaml.dump(config_dict, config_file)
-    else:
-        try:
-            with open(file_name, "w") as config_file:
-                yaml.dump(config_dict, config_file, default_flow_style=False,
-                          explicit_start=True, explicit_end=True)
-        except yaml.YAMLError:
-            raise ConfigFileNotWritten
+    yaml = YAML(typ='safe')
+    yaml.default_flow_style = False
+    config_file = Path(file_name)
+    yaml.dump(config_dict, config_file)
 
 
 def _update_prms(config_dict):
@@ -41,6 +30,7 @@ def _update_prms(config_dict):
     logger.debug("new prms:" + str(config_dict))
 
     for key in config_dict:
+        logger.debug(f"looking up key: {key}")
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
             for k in config_dict[key]:
@@ -54,8 +44,6 @@ def _pack_prms():
     to include them here"""
 
     config_dict = {
-        "Paths": prms.Paths.to_dict(),
-        "FileNames": prms.FileNames.to_dict(),
         "Db": prms.Db.to_dict(),
         "DbCols": prms.DbCols.to_dict(),
         "DataSet": prms.DataSet.to_dict(),
@@ -63,7 +51,9 @@ def _pack_prms():
         "Instruments": prms.Instruments.to_dict(),
         # "excel_db_cols": prms.excel_db_cols.to_dict(),
         # "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
+        "FileNames": prms.FileNames.to_dict(),
         "Batch": prms.Batch.to_dict(),
+        "Paths": prms.Paths.to_dict(),
     }
     return config_dict
 
@@ -71,30 +61,15 @@ def _pack_prms():
 def _read_prm_file(prm_filename):
     """read the prm file"""
     logger.debug("Reading config-file: %s" % prm_filename)
-    if using_ruamel:
-        yaml = YAML(typ='safe')
-        prm_dict = yaml.load(prm_filename)
-        _update_prms(prm_dict)
-
-    else:
-        try:
-            with open(prm_filename, "r") as config_file:
-                prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
-
-        except yaml.YAMLError as e:
-            raise ConfigFileNotRead from e
-        else:
-            _update_prms(prm_dict)
+    yaml = YAML(typ='safe')
+    prm_dict = yaml.load(prm_filename)
+    _update_prms(prm_dict)
 
 
 def __look_at(file_name):
-    if using_ruamel:
-        yaml = YAML(typ='safe')
-        t = yaml.load(file_name)
-    else:
-        with open(file_name, "r") as config_file:
-            t = yaml.load(config_file)
-    print(t)
+    yaml = YAML(typ='safe')
+    t = yaml.load(file_name)
+    yaml.dump(t, sys.stdout)
 
 
 def _get_prm_file(file_name=None, search_order=None):
@@ -160,7 +135,7 @@ def _get_prm_file(file_name=None, search_order=None):
     else:
         prm_filename = prm_default
 
-    return prm_filename
+    return Path(prm_filename)
 
 
 def _save_current_prms_to_user_dir():
@@ -192,16 +167,22 @@ def info():
 
 
 def main():
+    from pprint import pprint
+    from cellpy import log
+    log.setup_logging(default_level='DEBUG')
     print(" Testing ")
-
     f = _get_prm_file()
+    print(" looking at the config file")
+    __look_at(f)
+    print(" reading config dict")
+    config_dict = _pack_prms()
+    pprint(config_dict)
+
     print(f"reading {f}")
-    print("writing parameters")
-    _write_prm_file(f)
     print("reading parameters")
     _read_prm_file(f)
-
-    print(prms.Reader)
+    print("writing parameters")
+    _write_prm_file(f)
 
 
 if __name__ == "__main__":
