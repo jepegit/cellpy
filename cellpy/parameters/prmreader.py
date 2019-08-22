@@ -6,25 +6,35 @@ import sys
 from collections import OrderedDict
 import logging
 import warnings
+from pathlib import Path
 
 import box
-import yaml
+# import yaml
+from ruamel.yaml import YAML
 
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 logger = logging.getLogger(__name__)
 
+using_ruamel = True
+
 
 def _write_prm_file(file_name=None):
     logger.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
-    try:
-        with open(file_name, "w") as config_file:
-            yaml.dump(config_dict, config_file, default_flow_style=False,
-                      explicit_start=True, explicit_end=True)
-    except yaml.YAMLError:
-        raise ConfigFileNotWritten
+    if using_ruamel:
+        yaml = YAML(typ='safe')
+        yaml.default_flow_style = False
+        config_file = Path(file_name)
+        yaml.dump(config_dict, config_file)
+    else:
+        try:
+            with open(file_name, "w") as config_file:
+                yaml.dump(config_dict, config_file, default_flow_style=False,
+                          explicit_start=True, explicit_end=True)
+        except yaml.YAMLError:
+            raise ConfigFileNotWritten
 
 
 def _update_prms(config_dict):
@@ -62,19 +72,29 @@ def _pack_prms():
 def _read_prm_file(prm_filename):
     """read the prm file"""
     logger.debug("Reading config-file: %s" % prm_filename)
-    try:
-        with open(prm_filename, "r") as config_file:
-            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
-
-    except yaml.YAMLError as e:
-        raise ConfigFileNotRead from e
-    else:
+    if using_ruamel:
+        yaml = YAML(typ='safe')
+        prm_dict = yaml.load(prm_filename)
         _update_prms(prm_dict)
+
+    else:
+        try:
+            with open(prm_filename, "r") as config_file:
+                prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+
+        except yaml.YAMLError as e:
+            raise ConfigFileNotRead from e
+        else:
+            _update_prms(prm_dict)
 
 
 def __look_at(file_name):
-    with open(file_name, "r") as config_file:
-        t = yaml.load(config_file)
+    if using_ruamel:
+        yaml = YAML(typ='safe')
+        t = yaml.load(file_name)
+    else:
+        with open(file_name, "r") as config_file:
+            t = yaml.load(config_file)
     print(t)
 
 
