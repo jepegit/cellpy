@@ -4467,11 +4467,6 @@ def just_load_srno(srno, prm_filename=None):
     v = d.get_step_numbers("charge")
     print(v)
 
-    print()
-    print("just_load_srno: finding C-rates")
-    d.find_C_rates(v, silent=False)
-
-    print()
     print("just_load_srno: OK")
     return True
 

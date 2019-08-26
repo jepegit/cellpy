@@ -2,6 +2,9 @@
 Installation
 ============
 
+If you are (relatively) new to installing python packages, please jump to the
+getting started tutorial (:doc:`Tutorials/getting_started_tutorial`)
+for an opinionated step-by-step procedure.
 
 Stable release
 --------------

@@ -145,13 +145,6 @@ def test_cell():
     cellpy.cell()
 
 
-@pytest.mark.slowtest
-@pytest.mark.smoketest
-def test_just_load_srno():
-    from cellpy import cellreader
-    assert cellreader.just_load_srno(614) is True
-
-
 @pytest.mark.smoketest
 def test_setup_cellpy_instance():
     from cellpy import cellreader

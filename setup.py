@@ -29,7 +29,7 @@ requirements = [
 
 test_requirements = [
     'scipy', 'numpy>=1.16.4', 'pandas',
-    'python-box', 'setuptools', 'pyyaml>=4.2b1'
+    'python-box', 'setuptools', 'ruamel.yaml'
     'matplotlib', 'lmfit', 'pyodbc', 'xlrd', 'click', 'PyGithub',
     # 'pytables', # not available by pip
     'pytest',

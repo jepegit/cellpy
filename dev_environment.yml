@@ -34,5 +34,5 @@ dependencies:
     - python-box
     - pytest-benchmark
     - pytest-timeout
-    - yolk3k
+    - requests
 

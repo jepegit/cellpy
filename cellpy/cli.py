@@ -93,7 +93,7 @@ def cli():
 @click.option(
     '--interactive', '-i',
     is_flag=True,
-    default=False, help="Use the newest of the newest (a bit risky)."
+    default=False, help="Allows you to specify div. folders and setting."
 )
 @click.option(
     '--not-relative', '-nr',
@@ -544,6 +544,7 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
                                         ' works as they should.'
 )
 def info(version, configloc, params, check):
+    """This will give you some valuable information about your cellpy."""
     complete_info = True
 
     if check:
@@ -581,6 +582,8 @@ def info(version, configloc, params, check):
 )
 @click.argument('file_name')
 def run(journal, debug, silent, file_name):
+    """Will in the future be used for running a cellpy process."""
+
     print("RUNNING".center(80, "*"))
     if not file_name:
         click.echo("[cellpy] (run) No filename provided.")
@@ -633,6 +636,7 @@ def _run(file_name, debug, silent):
     '--password', '-p', default=None, help="Password option for the repo"
 )
 def pull(tests, examples, clone, directory, password):
+    """Download examples or tests from the big internet."""
     if directory is not None:
         click.echo(f"[cellpy] (pull) custom directory: {directory}")
     else:
