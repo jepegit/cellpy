@@ -141,7 +141,7 @@ def test_print_step_table(dataset):
 
 
 def test_c_rate_calc(dataset):
-    table = dataset.dataset.step_table
+    table = dataset.cell.step_table
     assert 0.04 in table["rate_avr"].unique()
 
 
@@ -162,13 +162,13 @@ def test_from_res(dataset):
 
 
 def test_cap_mod_summary(dataset):
-    summary = dataset.dataset.dfsummary
+    summary = dataset.cell.dfsummary
     dataset._cap_mod_summary(summary, "reset")
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_cap_mod_summary_fail(dataset):
-    summary = dataset.dataset.dfsummary
+    summary = dataset.cell.dfsummary
     dataset._cap_mod_summary(summary, "fix")
 
 
@@ -325,7 +325,7 @@ def test_merge(dataset):
 
 def test_fid(cellpy_data_instance):
     cellpy_data_instance.loadcell(fdv.res_file_path)
-    my_test = cellpy_data_instance.dataset
+    my_test = cellpy_data_instance.cell
     assert len(my_test.raw_data_files) == 1
     fid_object = my_test.raw_data_files[0]
     print(fid_object)
@@ -361,7 +361,7 @@ def test_load_step_specs_short(cellpy_data_instance, cycle, step,
     file_name = fdv.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
-    step_table = cellpy_data_instance.dataset.step_table
+    step_table = cellpy_data_instance.cell.step_table
     t = step_table.loc[(step_table.cycle == cycle) &
                        (step_table.step == step), "type"].values[0]
     assert t == expected_type
@@ -377,7 +377,7 @@ def test_load_step_specs(cellpy_data_instance):
     file_name = fdv.step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name)
-    step_table = cellpy_data_instance.dataset.step_table
+    step_table = cellpy_data_instance.cell.step_table
     t = step_table.loc[(step_table.cycle == 1) &
                        (step_table.step == 8), "type"].values[0]
     assert t == "ocvrlx_down"
@@ -410,7 +410,7 @@ def test_make_new_step_table(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True)
-    assert len(cellpy_data_instance.dataset.step_table) == 103
+    assert len(cellpy_data_instance.cell.step_table) == 103
 
 
 def test_make_step_table_all_steps(cellpy_data_instance):
@@ -421,7 +421,7 @@ def test_make_step_table_all_steps(cellpy_data_instance):
         profiling=True,
         all_steps=True,
     )
-    assert len(cellpy_data_instance.dataset.step_table) == 103
+    assert len(cellpy_data_instance.cell.step_table) == 103
 
 
 def test_make_step_table_no_rate(cellpy_data_instance):
@@ -431,7 +431,7 @@ def test_make_step_table_no_rate(cellpy_data_instance):
         profiling=True,
         add_c_rate=False,
     )
-    assert "rate_avr" not in cellpy_data_instance.dataset.step_table.columns
+    assert "rate_avr" not in cellpy_data_instance.cell.step_table.columns
 
 
 def test_make_step_table_skip_steps(cellpy_data_instance):
@@ -441,8 +441,8 @@ def test_make_step_table_skip_steps(cellpy_data_instance):
         profiling=True,
         skip_steps=[1, 10],
     )
-    print(cellpy_data_instance.dataset.step_table)
-    assert len(cellpy_data_instance.dataset.step_table) == 87
+    print(cellpy_data_instance.cell.step_table)
+    assert len(cellpy_data_instance.cell.step_table) == 87
 
 
 def test_make_summary(cellpy_data_instance):
@@ -557,8 +557,8 @@ def test_save_cvs(cellpy_data_instance):
 
 
 def test_str_cellpy_data_object(dataset):
-    assert str(dataset.dataset).find("silicon") >= 0
-    assert str(dataset.dataset).find("rosenborg") < 0
+    assert str(dataset.cell).find("silicon") >= 0
+    assert str(dataset.cell).find("rosenborg") < 0
 
 
 def test_check_cellpy_file(cellpy_data_instance):
@@ -591,7 +591,7 @@ def test_load_custom_default(cellpy_data_instance):
     cellpy_data_instance.from_raw(file_name)
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
-    summary = cellpy_data_instance.dataset.dfsummary
+    summary = cellpy_data_instance.cell.dfsummary
     val = summary.loc[
               summary["Cycle_Index"] == 2,
               ["Cycle_Index", "Discharge_Endpoint_Slippage(mAh/g)"]
@@ -600,7 +600,7 @@ def test_load_custom_default(cellpy_data_instance):
 
 
 def test_group_by_interpolate(dataset):
-    data = dataset.dataset.dfdata
+    data = dataset.cell.dfdata
     interpolated_data1 = cellpy.cellreader.group_by_interpolate(data)
     interpolated_data2 = cellpy.cellreader.group_by_interpolate(
         data,
@@ -624,7 +624,7 @@ def test_cell():
 ])
 def test_set_total_mass(dataset, val, validated):
     dataset.set_tot_mass(val, validated=validated)
-    assert dataset.dataset.tot_mass == 2.3
+    assert dataset.cell.tot_mass == 2.3
 
 
 @pytest.mark.parametrize("val,validated", [
@@ -635,7 +635,7 @@ def test_set_total_mass(dataset, val, validated):
 ])
 def test_set_nominal_capacity(dataset, val, validated):
     dataset.set_nom_cap(val, validated=validated)
-    assert dataset.dataset.nom_cap == 372.3
+    assert dataset.cell.nom_cap == 372.3
 
 
 @pytest.mark.parametrize("n,s", [

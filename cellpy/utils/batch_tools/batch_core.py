@@ -113,7 +113,7 @@ class Data(collections.UserDict):
         try:
             if not self.experiment.cell_data_frames[
                 cell_id
-            ].dataset.dfdata.empty:
+            ].cell.dfdata.empty:
                 return self.experiment.cell_data_frames[cell_id]
             else:
                 raise AttributeError

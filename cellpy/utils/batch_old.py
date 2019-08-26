@@ -1049,7 +1049,7 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         logger.info("...loaded successfully...")
         keys.append(indx)
 
-        summary_tmp = cell_data.dataset.dfsummary
+        summary_tmp = cell_data.cell.dfsummary
         logger.info("Trying to get summary_data")
         if summary_tmp is None:
             logger.info("No existing summary made - running make_summary")
@@ -1376,7 +1376,7 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
         last_cycle: only export up to this cycle (if not None)
     """
     logger.debug("exporting dqdv")
-    filename = cell_data.dataset.loaded_from
+    filename = cell_data.cell.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
     firstname += no_merged_sets

@@ -207,11 +207,19 @@ class CellpyData(object):
         self.datasets.append(DataSet())
 
     @property
+    def cell(self):
+        """returns the DataSet instance"""
+        # could insert a try-except thingy here...
+        cell = self.datasets[self.selected_dataset_number]
+        return cell
+
+    @property
     def dataset(self):
         """returns the DataSet instance"""
         # could insert a try-except thingy here...
-        dataset = self.datasets[self.selected_dataset_number]
-        return dataset
+        warnings.warn("The .dataset property is deprecated, please use .cell instead.")
+        cell = self.datasets[self.selected_dataset_number]
+        return cell
 
     @property
     def empty(self):
@@ -805,9 +813,13 @@ class CellpyData(object):
             loaded datasets (DataSet-object)
         """
 
+        # TODO: option for reading version and relabelling dfsummary etc
+        #     if the version is older
+
         if not os.path.isfile(filename):
             self.logger.info(f"file does not exist: {filename}")
             raise IOError
+
         store = pd.HDFStore(filename)
 
         # required_keys = ['dfdata', 'dfsummary', 'fidtable', 'info']
@@ -3068,8 +3080,8 @@ class CellpyData(object):
         elif direction == "down":
             ocv_rlx_id += "_down"
 
-        step_table = self.dataset.step_table
-        dfdata = self.dataset.dfdata
+        step_table = self.cell.step_table
+        dfdata = self.cell.dfdata
 
         ocv_steps = step_table.loc[
                     step_table["cycle"].isin(cycles), :
@@ -4085,7 +4097,7 @@ class CellpyData(object):
                     self.logger.info(f"Empty reference cycle(s)")
 
             if nom_cap is None:
-                nom_cap = self.dataset.nom_cap
+                nom_cap = self.cell.nom_cap
             self.logger.info(f"using the following nominal capacity: {nom_cap}")
             dfsummary[h_normalized_cycle] = dfsummary[cumcharge_title] / nom_cap
 
@@ -4098,8 +4110,8 @@ class CellpyData(object):
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
 
-def cell(filename=None, mass=None, instrument=None, logging_mode="INFO",
-         cycle_mode=None, auto_summary=True):
+def get(filename=None, mass=None, instrument=None, logging_mode="INFO",
+        cycle_mode=None, auto_summary=True):
     """Create a CellpyData object"""
 
     from cellpy import log

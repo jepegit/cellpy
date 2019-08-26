@@ -29,5 +29,5 @@ except FileNotFoundError:
 except UserWarning:
     warnings.warn("Could not read the config-file")
 
-cell = cellreader.cell
+cell = cellreader.get
 
