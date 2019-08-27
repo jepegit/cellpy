@@ -16,9 +16,9 @@ Let´s load some data first:
 
 .. code:: ipython3
 
-    cell = cellpy.cell("../testdata/hdf5/20160805_test001_45_cc.h5", mass=0.8)
+    cell = cellpy.get("../testdata/hdf5/20160805_test001_45_cc.h5", mass=0.8)
 
-Here we used the convinience method ``cellpy.cell`` to load some
+Here we used the convinience method ``cellpy.get`` to load some
 example data. If eveything went well, you will see an output approximately
 like this:
 

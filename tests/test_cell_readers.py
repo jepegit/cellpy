@@ -612,9 +612,9 @@ def test_group_by_interpolate(dataset):
     )
 
 
-def test_cell():
-    c_h5 = cellpy.cell(fdv.cellpy_file_path)
-    c_res = cellpy.cell(fdv.res_file_path, instrument="arbin", mass=0.045)
+def test_get():
+    c_h5 = cellpy.get(fdv.cellpy_file_path)
+    c_res = cellpy.get(fdv.res_file_path, instrument="arbin", mass=0.045)
 
 
 @pytest.mark.parametrize("val,validated", [
