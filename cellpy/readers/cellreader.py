@@ -769,7 +769,7 @@ class CellpyData(object):
         path = Path(filename)
         self.name = path.with_suffix("").name
 
-    def load(self, cellpy_file, parent_level="CellpyData"):
+    def load(self, cellpy_file, parent_level=None):
         """Loads a cellpy file.
 
         Args:
@@ -801,7 +801,7 @@ class CellpyData(object):
         self._invent_a_name(cellpy_file)
         return self
 
-    def _load_hdf5(self, filename, parent_level="CellpyData"):
+    def _load_hdf5(self, filename, parent_level=None):
         """Load a cellpy-file.
 
         Args:
@@ -816,16 +816,59 @@ class CellpyData(object):
         # TODO: option for reading version and relabelling dfsummary etc
         #     if the version is older
 
+        if parent_level is None:
+            parent_level = prms._cellpyfile_root
+
+        new_version = False
+
+        if new_version:
+            raw_dir = prms._cellpyfile_raw
+            step_dir = prms._cellpyfile_step
+            summary_dir = prms._cellpyfile_summary
+            meta_dir = prms._cellpyfile_meta
+            fid_dir = prms._cellpyfile_fid
+
+        else:
+            raw_dir = "/dfdata"
+            step_dir = "/step_table"
+            summary_dir = "/dfsummary"
+            meta_dir = "/info"
+            fid_dir = "/fidtable"
+
         if not os.path.isfile(filename):
             self.logger.info(f"file does not exist: {filename}")
             raise IOError
 
         store = pd.HDFStore(filename)
 
-        # required_keys = ['dfdata', 'dfsummary', 'fidtable', 'info']
-        required_keys = ['dfdata', 'dfsummary', 'info']
-        required_keys = ["/" + parent_level + "/" + _ for _ in required_keys]
+        # checking file version
+        infotable = store.select(parent_level + meta_dir)
+        data = DataSet()
+        try:
+            data.cellpy_file_version = \
+                self._extract_from_dict(infotable, "cellpy_file_version")
+        except Exception as e:
+            data.cellpy_file_version = 0
+            warnings.warn(f"Unhandled exception raised: {e}")
 
+        self.logger.debug(f"cellpy file version. {data.cellpy_file_version}")
+
+        if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
+            raise WrongFileVersion
+
+        if data.cellpy_file_version > CELLPY_FILE_VERSION:
+            raise WrongFileVersion
+
+        if data.cellpy_file_version < CELLPY_FILE_VERSION:
+            # need something that handles not-to-old files here
+            # remember to increase cellpy file version number from 4 to 5
+            # also remember to set new_version to True (or remove it)
+            # from both the load and the save function
+            pass
+
+        # checking if all required keys are present
+        required_keys = [raw_dir, summary_dir, meta_dir]
+        required_keys = ["/" + parent_level + _ for _ in required_keys]
         for key in required_keys:
             if key not in store.keys():
                 self.logger.info(f"This hdf-file is not good enough - "
@@ -834,46 +877,29 @@ class CellpyData(object):
                                 f"is missing {key}!")
 
         self.logger.debug(f"Keys in current hdf5-file: {store.keys()}")
-        data = DataSet()
 
-        if parent_level != "CellpyData":
+        if parent_level != prms._cellpyfile_root:
             self.logger.debug("Using non-default parent label for the "
                               "hdf-store: {}".format(parent_level))
 
-        # checking file version
-        infotable = store.select(parent_level + "/info")
-        try:
-            data.cellpy_file_version = \
-                self._extract_from_dict(infotable, "cellpy_file_version")
-        except Exception as e:
-            data.cellpy_file_version = 0
-            warnings.warn(f"Unhandled exception raised: {e}")
-
-        if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
-            raise WrongFileVersion
-
-        if data.cellpy_file_version > CELLPY_FILE_VERSION:
-            raise WrongFileVersion
-
-        data.dfsummary = store.select(parent_level + "/dfsummary")
-        data.dfdata = store.select(parent_level + "/dfdata")
+        data.dfsummary = store.select(parent_level + summary_dir)
+        data.dfdata = store.select(parent_level + raw_dir)
 
         try:
-            data.step_table = store.select(parent_level + "/step_table")
+            data.step_table = store.select(parent_level + step_dir)
         except Exception as e:
-            self.logging.debug("could not get step_table from cellpy-file")
+            self.logging.debug("could not get steps from cellpy-file")
             data.step_table = pd.DataFrame()
             warnings.warn(f"Unhandled exception raised: {e}")
 
         try:
             fidtable = store.select(
-                parent_level + "/fidtable")  # remark! changed spelling from
+                parent_level + fid_dir)  # remark! changed spelling from
             # lower letter to camel-case!
             fidtable_selected = True
         except Exception as e:
-            self.logging.debug("could not get fid-table from cellpy-file")
+            self.logging.debug("could not get fid from cellpy-file")
             fidtable = []
-
             warnings.warn("no fidtable - you should update your hdf5-file")
             fidtable_selected = False
         self.logger.debug("  h5")
