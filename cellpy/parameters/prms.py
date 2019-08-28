@@ -209,6 +209,12 @@ _sub_process_path = _sub_process_path.resolve()
 _sort_if_subprocess = True
 
 _cellpyfile_root = "CellpyData"
+_cellpyfile_raw = "/raw"
+_cellpyfile_step = "/step"
+_cellpyfile_summary = "/summary"
+_cellpyfile_meta = "/meta"
+_cellpyfile_fid = "/fid"
+
 _cellpyfile_complevel = 1
 _cellpyfile_complib = None  # currentlty defaults to "zlib"
 _cellpyfile_dfdata_format = "table"

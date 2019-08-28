@@ -2167,6 +2167,8 @@ class CellpyData(object):
 
         Returns: Nothing at all.
         """
+        new_version = False
+
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
 
@@ -2236,6 +2238,20 @@ class CellpyData(object):
 
         root = prms._cellpyfile_root
 
+        if new_version:
+            raw_dir = prms._cellpyfile_raw
+            step_dir = prms._cellpyfile_step
+            summary_dir = prms._cellpyfile_summary
+            meta_dir = prms._cellpyfile_meta
+            fid_dir = prms._cellpyfile_fid
+
+        else:
+            raw_dir = "/dfdata"
+            step_dir = "/step_table"
+            summary_dir = "/dfsummary"
+            meta_dir = "/info"
+            fid_dir = "/fidtable"
+
         self.logger.debug("trying to save to hdf5")
         txt = "\nHDF5 file: %s" % outfile_all
         self.logger.debug(txt)
@@ -2260,35 +2276,35 @@ class CellpyData(object):
                     drop=False
                 )
 
-            store.put(root + "/dfdata", test.dfdata,
+            store.put(root + raw_dir, test.dfdata,
                       format=prms._cellpyfile_dfdata_format)
-            self.logger.debug(" dfdata -> hdf5 OK")
+            self.logger.debug(" raw -> hdf5 OK")
 
-            self.logger.debug("trying to put dfsummary")
-            store.put(root + "/dfsummary", test.dfsummary,
+            self.logger.debug("trying to put summary")
+            store.put(root + summary_dir, test.dfsummary,
                       format=prms._cellpyfile_dfsummary_format)
-            self.logger.debug(" dfsummary -> hdf5 OK")
+            self.logger.debug(" summary -> hdf5 OK")
 
-            self.logger.debug("trying to put infotbl")
-            store.put(root + "/info", infotbl,
+            self.logger.debug("trying to put meta data")
+            store.put(root + meta_dir, infotbl,
                       format=prms._cellpyfile_infotable_format)
-            self.logger.debug(" infotable -> hdf5 OK")
+            self.logger.debug(" meta -> hdf5 OK")
 
             self.logger.debug("trying to put fidtable")
-            store.put(root + "/fidtable", fidtbl,
+            store.put(root + fid_dir, fidtbl,
                       format=prms._cellpyfile_fidtable_format)
-            self.logger.debug(" fidtable -> hdf5 OK")
+            self.logger.debug(" fid -> hdf5 OK")
 
-            self.logger.debug("trying to put step_table")
+            self.logger.debug("trying to put step")
             try:
-                store.put(root + "/step_table", test.step_table,
+                store.put(root + step_dir, test.step_table,
                           format=prms._cellpyfile_stepdata_format)
-                self.logger.debug(" step_table -> hdf5 OK")
+                self.logger.debug(" step -> hdf5 OK")
             except TypeError:
                 test = self._fix_dtype_step_table(test)
-                store.put(root + "/step_table", test.step_table,
+                store.put(root + step_dir, test.step_table,
                           format=prms._cellpyfile_stepdata_format)
-                self.logger.debug(" fixed step_table -> hdf5 OK")
+                self.logger.debug(" fixed step -> hdf5 OK")
 
             # creating indexes
             # hdr_data_point = self.headers_normal.data_point_txt
