@@ -212,7 +212,6 @@ _cellpyfile_root = "CellpyData"
 _cellpyfile_raw = "/raw"
 _cellpyfile_step = "/step"
 _cellpyfile_summary = "/summary"
-_cellpyfile_meta = "/meta"
 _cellpyfile_fid = "/fid"
 
 _cellpyfile_complevel = 1

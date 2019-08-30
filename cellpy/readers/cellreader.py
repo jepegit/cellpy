@@ -816,16 +816,20 @@ class CellpyData(object):
         # TODO: option for reading version and relabelling dfsummary etc
         #     if the version is older
 
+        data = None
+
         if parent_level is None:
             parent_level = prms._cellpyfile_root
 
-        new_version = False
+        if parent_level != prms._cellpyfile_root:
+            self.logger.debug("Using non-default parent label for the "
+                              "hdf-store: {}".format(parent_level))
 
-        if new_version:
+        if CELLPY_FILE_VERSION > 4:
             raw_dir = prms._cellpyfile_raw
             step_dir = prms._cellpyfile_step
             summary_dir = prms._cellpyfile_summary
-            meta_dir = prms._cellpyfile_meta
+            meta_dir = "/info"  # hard-coded
             fid_dir = prms._cellpyfile_fid
 
         else:
@@ -839,52 +843,94 @@ class CellpyData(object):
             self.logger.info(f"file does not exist: {filename}")
             raise IOError
 
-        store = pd.HDFStore(filename)
+        with pd.HDFStore(filename) as store:
+            data, meta_table = self._create_initial_data_set_from_cellpy_file(meta_dir, parent_level, store)
 
-        # checking file version
-        infotable = store.select(parent_level + meta_dir)
+            if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
+                raise WrongFileVersion
+
+            if data.cellpy_file_version > CELLPY_FILE_VERSION:
+                raise WrongFileVersion
+
+            if data.cellpy_file_version < CELLPY_FILE_VERSION:
+                if data.cellpy_file_version < 5:
+                    _raw_dir = "/dfdata"
+                    _step_dir = "/step_table"
+                    _summary_dir = "/dfsummary"
+                    _fid_dir = "/fidtable"
+                    self._check_keys_in_cellpy_file(meta_dir, parent_level, _raw_dir, store, _summary_dir)
+                    self._extract_summary_from_cellpy_file(data, parent_level, store, _summary_dir)
+                    self._extract_raw_from_cellpy_file(data, parent_level, _raw_dir, store)
+                    self._extract_steps_from_cellpy_file(data, parent_level, _step_dir, store)
+                    fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(fid_dir, parent_level, store)
+                    self._extract_meta_from_cellpy_file(data, meta_table, filename)
+                    warnings.warn("Loaded old cellpy-file version (<5). Please update and save again.")
+            else:
+                self._check_keys_in_cellpy_file(meta_dir, parent_level, raw_dir, store, summary_dir)
+                self._extract_summary_from_cellpy_file(data, parent_level, store, summary_dir)
+                self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store)
+                self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store)
+                fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(fid_dir, parent_level, store)
+                self._extract_meta_from_cellpy_file(data, meta_table, filename)
+
+            if fid_table_selected:
+                data.raw_data_files, data.raw_data_files_length = \
+                    self._convert2fid_list(fid_table)
+            else:
+                data.raw_data_files = None
+                data.raw_data_files_length = None
+
+        # this does not yet allow multiple sets
+        new_tests = [data]  # but cellpy is ready when that time comes (if it ever happens)
+        return new_tests
+
+    def _create_initial_data_set_from_cellpy_file(self, meta_dir, parent_level, store):
+        # Remark that this function is run before selecting loading method
+        # based on version. If you change the meta_dir prm to something else than
+        # "/info" it will most likely fail.
+        meta_table = store.select(parent_level + meta_dir)
         data = DataSet()
         try:
             data.cellpy_file_version = \
-                self._extract_from_dict(infotable, "cellpy_file_version")
+                self._extract_from_dict(meta_table, "cellpy_file_version")
         except Exception as e:
             data.cellpy_file_version = 0
             warnings.warn(f"Unhandled exception raised: {e}")
-
         self.logger.debug(f"cellpy file version. {data.cellpy_file_version}")
+        return data, meta_table
 
-        if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
-            raise WrongFileVersion
-
-        if data.cellpy_file_version > CELLPY_FILE_VERSION:
-            raise WrongFileVersion
-
-        if data.cellpy_file_version < CELLPY_FILE_VERSION:
-            # need something that handles not-to-old files here
-            # remember to increase cellpy file version number from 4 to 5
-            # also remember to set new_version to True (or remove it)
-            # from both the load and the save function
-            pass
-
-        # checking if all required keys are present
+    def _check_keys_in_cellpy_file(self, meta_dir, parent_level, raw_dir, store, summary_dir):
         required_keys = [raw_dir, summary_dir, meta_dir]
         required_keys = ["/" + parent_level + _ for _ in required_keys]
         for key in required_keys:
             if key not in store.keys():
-                self.logger.info(f"This hdf-file is not good enough - "
+                self.logger.info(f"This cellpy-file is not good enough - "
                                  f"at least one key is missing: {key}")
                 raise Exception(f"OH MY GOD! At least one crucial key"
                                 f"is missing {key}!")
+        self.logger.debug(f"Keys in current cellpy-file: {store.keys()}")
 
-        self.logger.debug(f"Keys in current hdf5-file: {store.keys()}")
-
-        if parent_level != prms._cellpyfile_root:
-            self.logger.debug("Using non-default parent label for the "
-                              "hdf-store: {}".format(parent_level))
-
-        data.dfsummary = store.select(parent_level + summary_dir)
+    def _extract_raw_from_cellpy_file(self, data, parent_level, raw_dir, store):
         data.dfdata = store.select(parent_level + raw_dir)
 
+    def _extract_summary_from_cellpy_file(self, data, parent_level, store, summary_dir):
+        data.dfsummary = store.select(parent_level + summary_dir)
+
+    def _extract_fids_from_cellpy_file(self, fid_dir, parent_level, store):
+        try:
+            fid_table = store.select(
+                parent_level + fid_dir)  # remark! changed spelling from
+            # lower letter to camel-case!
+            fid_table_selected = True
+        except Exception as e:
+            self.logger.debug(e)
+            self.logger.debug("could not get fid from cellpy-file")
+            fid_table = []
+            warnings.warn("no fid_table - you should update your cellpy-file")
+            fid_table_selected = False
+        return fid_table, fid_table_selected
+
+    def _extract_steps_from_cellpy_file(self, data, parent_level, step_dir, store):
         try:
             data.step_table = store.select(parent_level + step_dir)
         except Exception as e:
@@ -892,43 +938,11 @@ class CellpyData(object):
             data.step_table = pd.DataFrame()
             warnings.warn(f"Unhandled exception raised: {e}")
 
-        try:
-            fidtable = store.select(
-                parent_level + fid_dir)  # remark! changed spelling from
-            # lower letter to camel-case!
-            fidtable_selected = True
-        except Exception as e:
-            self.logging.debug("could not get fid from cellpy-file")
-            fidtable = []
-            warnings.warn("no fidtable - you should update your hdf5-file")
-            fidtable_selected = False
-        self.logger.debug("  h5")
-        # this does not yet allow multiple sets
-
-        newtests = []  # but this is ready when that time comes
-
-        # The infotable stores "meta-data". The follwing statements loads the
-        # content of infotable and updates div. DataSet attributes.
-        # Maybe better use it as dict?
-
-        data = self._load_infotable(data, infotable, filename)
-
-        if fidtable_selected:
-            data.raw_data_files, data.raw_data_files_length = \
-                self._convert2fid_list(fidtable)
-        else:
-            data.raw_data_files = None
-            data.raw_data_files_length = None
-        newtests.append(data)
-        store.close()
-        # self.datasets.append(data)
-        return newtests
-
-    def _load_infotable(self, data, infotable, filename):
-        # get attributes from infotable
+    def _extract_meta_from_cellpy_file(self, data, meta_table, filename):
+        # get attributes from meta table
 
         for attribute in ATTRS_CELLPYFILE:
-            value = self._extract_from_dict(infotable, attribute)
+            value = self._extract_from_dict(meta_table, attribute)
             # some fixes due to errors propagated into the cellpy-files
             if attribute == "creator":
                 if not isinstance(value, str):
@@ -949,32 +963,30 @@ class CellpyData(object):
 
         # hack to allow the renaming of tests to datasets
         try:
-            name = self._extract_from_dict_hard(infotable, "name")
+            name = self._extract_from_dict_hard(meta_table, "name")
             if not isinstance(name, str):
                 name = "no_name"
             data.name = name
 
         except KeyError:
-            self.logger.debug(f"missing key in infotable: name")
-            print(infotable)
+            self.logger.debug(f"missing key in meta table: name")
+            print(meta_table)
             warnings.warn("OLD-TYPE: Recommend to save in new format!")
             try:
-                name = self._extract_from_dict(infotable, "test_name")
+                name = self._extract_from_dict(meta_table, "test_name")
             except Exception as e:
                 name = "no_name"
                 self.logger.debug("name set to 'no_name")
                 warnings.warn(f"Unhandled exception raised: {e}")
             data.name = name
 
-        # unpcaking the raw data limits
+        # unpacking the raw data limits
         for key in data.raw_limits:
             try:
-                data.raw_limits[key] = self._extract_from_dict_hard(infotable, key)
+                data.raw_limits[key] = self._extract_from_dict_hard(meta_table, key)
             except KeyError:
-                self.logger.debug(f"missing key in infotable: {key}")
+                self.logger.debug(f"missing key in meta_table: {key}")
                 warnings.warn("OLD-TYPE: Recommend to save in new format!")
-
-        return data
 
     @staticmethod
     def _extract_from_dict(t, x, default_value=None):
@@ -2193,7 +2205,6 @@ class CellpyData(object):
 
         Returns: Nothing at all.
         """
-        new_version = False
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
@@ -2264,11 +2275,11 @@ class CellpyData(object):
 
         root = prms._cellpyfile_root
 
-        if new_version:
+        if CELLPY_FILE_VERSION > 4:
             raw_dir = prms._cellpyfile_raw
             step_dir = prms._cellpyfile_step
             summary_dir = prms._cellpyfile_summary
-            meta_dir = prms._cellpyfile_meta
+            meta_dir = "/info"
             fid_dir = prms._cellpyfile_fid
 
         else:
@@ -2290,7 +2301,7 @@ class CellpyData(object):
                 complevel=prms._cellpyfile_complevel,
             )
 
-            self.logger.debug("trying to put dfdata")
+            self.logger.debug("trying to put raw data")
 
             self.logger.debug(" - lets set Data_Point as index")
 
