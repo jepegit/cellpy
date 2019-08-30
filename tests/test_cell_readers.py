@@ -65,6 +65,14 @@ def test_validate_dataset_number(dataset, number):
     dataset._validate_dataset_number(number)
 
 
+def test_new_cellpy_version(cellpy_data_instance):
+    f_old = fdv.cellpy_file_path_v4
+    d = cellpy_data_instance.load(f_old)
+    v = d.cell.cellpy_file_version
+    print(f"\nfile name: {f_old}")
+    print(f"cellpy version: {v}")
+
+
 def test_merge(cellpy_data_instance):
     f1 = fdv.res_file_path
     f2 = fdv.res_file_path2
@@ -612,9 +620,9 @@ def test_group_by_interpolate(dataset):
     )
 
 
-def test_cell():
-    c_h5 = cellpy.cell(fdv.cellpy_file_path)
-    c_res = cellpy.cell(fdv.res_file_path, instrument="arbin", mass=0.045)
+def test_get():
+    c_h5 = cellpy.get(fdv.cellpy_file_path)
+    c_res = cellpy.get(fdv.res_file_path, instrument="arbin", mass=0.045)
 
 
 @pytest.mark.parametrize("val,validated", [

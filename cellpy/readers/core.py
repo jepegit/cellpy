@@ -17,7 +17,7 @@ from cellpy.parameters.internal_settings import (
 CELLPY_FILE_VERSION = 4
 MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 3
-NORMAL_TABLE_VERSION = 3
+RAW_TABLE_VERSION = 3
 SUMMARY_TABLE_VERSION = 3
 
 
@@ -178,10 +178,10 @@ class DataSet(object):
         self.step_table = collections.OrderedDict()
         # self.step_table_made = False  # Should be removed
         # self.parameter_table = collections.OrderedDict()
-        self.summary_version = SUMMARY_TABLE_VERSION
+        self.summary_table_version = SUMMARY_TABLE_VERSION
         self.step_table_version = STEP_TABLE_VERSION
         self.cellpy_file_version = CELLPY_FILE_VERSION
-        self.normal_table_version = NORMAL_TABLE_VERSION
+        self.raw_table_version = RAW_TABLE_VERSION
         # ready for use if implementing loading units
         # (will probably never happen).
 

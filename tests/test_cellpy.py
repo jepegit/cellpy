@@ -131,18 +131,18 @@ def test_su_cellpy_instance():
     cellpy.cellreader.setup_cellpy_instance()
 
 
-def test_cell():
+def get():
     import cellpy
-    cellpy.cell(
+    cellpy.get(
         filename=fdv.pec_file_path,
         instrument="pec_csv",
         mass=50_000,
         cycle_mode="cathode",
     )
-    cellpy.cell(
+    cellpy.get(
         filename=fdv.cellpy_file_path,
     )
-    cellpy.cell()
+    cellpy.get()
 
 
 @pytest.mark.smoketest
