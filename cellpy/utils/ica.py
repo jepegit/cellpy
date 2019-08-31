@@ -26,7 +26,8 @@ from cellpy.readers.cellreader import _collect_capacity_curves
 class Converter(object):
     """Class for dq-dv handling.
 
-    Typical usage is to  (1) set the data,  (2) inspect the data, (3) pre-process the data,
+    Typical usage is to  (1) set the data,  (2) inspect the data,
+    (3) pre-process the data,
     (4) perform the dq-dv transform, and finally (5) post-process the data.
     """
 
@@ -42,6 +43,7 @@ class Converter(object):
                  gaussian_order=0, gaussian_mode="reflect",
                  gaussian_cval=0.0, gaussian_truncate=4.0,
                  ):
+
         self.capacity = capacity
         self.voltage = voltage
 
@@ -67,7 +69,8 @@ class Converter(object):
         self.pre_smoothing = pre_smoothing
         self.smoothing = smoothing
         self.post_smoothing = post_smoothing
-        self.savgol_filter_window_divisor_default = savgol_filter_window_divisor_default
+        self.savgol_filter_window_divisor_default = \
+            savgol_filter_window_divisor_default
         self.savgol_filter_window_order = savgol_filter_window_order
         self.voltage_fwhm = voltage_fwhm
         self.gaussian_order = gaussian_order
@@ -180,7 +183,8 @@ class Converter(object):
                 std_err = []
                 c_pieces_avg = []
                 for c, v in zip(c_pieces, v_pieces):
-                    _slope, _intercept, _r_value, _p_value, _std_err = stats.linregress(c, v)
+                    _slope, _intercept, _r_value, _p_value, _std_err = \
+                        stats.linregress(c, v)
                     std_err.append(_std_err)
                     c_pieces_avg.append(np.mean(c))
 
@@ -295,11 +299,14 @@ class Converter(object):
         # ---  diff --------------------
         if self.increment_method == "diff":
             logging.debug(" - diff using DIFF")
-            self.incremental_capacity = np.ediff1d(self.capacity_inverted) / self.voltage_inverted_step
+            self.incremental_capacity = np.ediff1d(
+                self.capacity_inverted
+            ) / self.voltage_inverted_step
             self._incremental_capacity = self.incremental_capacity
             # --- need to adjust voltage ---
             self._voltage_processed = self.voltage_inverted[1:]
-            self.voltage_processed = self.voltage_inverted[1:] - 0.5 * self.voltage_inverted_step  # centering
+            self.voltage_processed = self.voltage_inverted[1:] \
+                                     - 0.5 * self.voltage_inverted_step
 
         elif self.increment_method == "hist":
             logging.debug(" - diff using HIST")
@@ -335,7 +342,8 @@ class Converter(object):
         if self.normalize:
             logging.debug(" - normalizing")
             area = simps(incremental_capacity, voltage)
-            self.incremental_capacity = incremental_capacity * self.normalizing_factor / abs(area)
+            self.incremental_capacity = \
+                incremental_capacity * self.normalizing_factor / abs(area)
 
         fixed_range = False
         if isinstance(self.fixed_voltage_range, np.ndarray):
@@ -377,8 +385,35 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
 
         Args:
             cycle (pandas.DataFrame): the cycle data ('voltage', 'capacity',
-                 'direction' (1 or -1)).
+                'direction' (1 or -1)).
             splitter (bool): insert a np.NaN row between charge and discharge.
+
+            **kwargs: key-word arguments to Converter:
+                points_pr_split (int): only used when investigating data using
+                    splits, defaults to 10.
+                max_points: None
+                voltage_resolution (float): used for interpolating voltage data
+                    (e.g. 0.005)
+                capacity_resolution: used for interpolating capacity data
+                minimum_splits (int): defaults to 3.
+                interpolation_method: scipy interpolation method
+                increment_method (str): defaults to "diff"
+                pre_smoothing (bool): set to True for pre-smoothing (window)
+                smoothing (bool): set to True for smoothing during
+                    differentiation (window)
+                post_smoothing (bool): set to True for post-smoothing (gaussian)
+                normalize (bool): set to True for normalizing to capacity
+                normalizing_factor (float):
+                normalizing_roof  (float):
+                savgol_filter_window_divisor_default (int): used for window
+                    smoothing, defaults to 50
+                savgol_filter_window_order: used for window smoothing
+                voltage_fwhm (float): used for setting the post-processing
+                    gaussian sigma, defaults to 0.01
+                gaussian_order (int): defaults to 0
+                gaussian_mode (str): defaults to "reflect"
+                gaussian_cval (float): defaults to 0.0
+                gaussian_truncate (float): defaults to 4.0
 
         Returns:
             List of step numbers corresponding to the selected steptype.
@@ -441,6 +476,33 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
             not_merged (bool): return list of frames instead of concatenating (
                 defaults to False).
 
+            **kwargs: key-word arguments to Converter:
+                points_pr_split (int): only used when investigating data using
+                    splits, defaults to 10.
+                max_points: None
+                voltage_resolution (float): used for interpolating voltage data
+                    (e.g. 0.005)
+                capacity_resolution: used for interpolating capacity data
+                minimum_splits (int): defaults to 3.
+                interpolation_method: scipy interpolation method
+                increment_method (str): defaults to "diff"
+                pre_smoothing (bool): set to True for pre-smoothing (window)
+                smoothing (bool): set to True for smoothing during
+                    differentiation (window)
+                post_smoothing (bool): set to True for post-smoothing (gaussian)
+                normalize (bool): set to True for normalizing to capacity
+                normalizing_factor (float):
+                normalizing_roof  (float):
+                savgol_filter_window_divisor_default (int): used for window
+                    smoothing, defaults to 50
+                savgol_filter_window_order: used for window smoothing
+                voltage_fwhm (float): used for setting the post-processing
+                    gaussian sigma, defaults to 0.01
+                gaussian_order (int): defaults to 0
+                gaussian_mode (str): defaults to "reflect"
+                gaussian_cval (float): defaults to 0.0
+                gaussian_truncate (float): defaults to 4.0
+
         Returns:
             pandas.DataFrame with columns 'cycle', 'voltage', 'dq'.
 
@@ -490,8 +552,10 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
 def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
          voltage_fwhm=0.01, pre_smoothing=True, diff_smoothing=False,
          post_smoothing=True, post_normalization=True,
-         interpolation_method=None, gaussian_order=None, gaussian_mode=None, gaussian_cval=None,
-         gaussian_truncate=None, points_pr_split=None, savgol_filter_window_divisor_default=None,
+         interpolation_method=None, gaussian_order=None, gaussian_mode=None,
+         gaussian_cval=None,
+         gaussian_truncate=None, points_pr_split=None,
+         savgol_filter_window_divisor_default=None,
          savgol_filter_window_order=None, max_points=None, **kwargs):
 
     """Convenience functions for creating dq-dv data from given capacity
@@ -504,7 +568,8 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
         capacity_resolution: used for interpolating capacity data
         voltage_fwhm: used for setting the post-processing gaussian sigma
         pre_smoothing: set to True for pre-smoothing (window)
-        diff_smoothing: set to True for smoothing during differentiation (window)
+        diff_smoothing: set to True for smoothing during differentiation
+            (window)
         post_smoothing: set to True for post-smoothing (gaussian)
         post_normalization: set to True for normalizing to capacity
         interpolation_method: scipy interpolation method
@@ -552,7 +617,8 @@ def dqdv(voltage, capacity, voltage_resolution=None, capacity_resolution=None,
         converter.capacity_resolution = capacity_resolution
 
     if savgol_filter_window_divisor_default is not None:
-        converter.savgol_filter_window_divisor_default = savgol_filter_window_divisor_default
+        converter.savgol_filter_window_divisor_default = \
+            savgol_filter_window_divisor_default
 
         logging.debug(f"converter.savgol_filter_window_divisor_default: "
                       f"{converter.savgol_filter_window_divisor_default}")
@@ -603,6 +669,34 @@ def dqdv_frames(cell, split=False, tidy=True, **kwargs):
                 tidy (bool): returns the split frames in wide format (defaults
                     to True. Remark that this option is currently not available
                     for non-split frames).
+
+                **kwargs: key-word arguments to Converter:
+                    points_pr_split (int): only used when investigating data
+                        using splits, defaults to 10.
+                    max_points: None
+                    voltage_resolution (float): used for interpolating voltage
+                        data (e.g. 0.005)
+                    capacity_resolution: used for interpolating capacity data
+                    minimum_splits (int): defaults to 3.
+                    interpolation_method: scipy interpolation method
+                    increment_method (str): defaults to "diff"
+                    pre_smoothing (bool): set to True for pre-smoothing (window)
+                    smoothing (bool): set to True for smoothing during
+                        differentiation (window)
+                    post_smoothing (bool): set to True for post-smoothing
+                        (gaussian)
+                    normalize (bool): set to True for normalizing to capacity
+                    normalizing_factor (float):
+                    normalizing_roof  (float):
+                    savgol_filter_window_divisor_default (int): used for window
+                        smoothing, defaults to 50
+                    savgol_filter_window_order: used for window smoothing
+                    voltage_fwhm (float): used for setting the post-processing
+                        gaussian sigma, defaults to 0.01
+                    gaussian_order (int): defaults to 0
+                    gaussian_mode (str): defaults to "reflect"
+                    gaussian_cval (float): defaults to 0.0
+                    gaussian_truncate (float): defaults to 4.0
 
             Returns:
                 pandas.DataFrame(s) with the following columns:
