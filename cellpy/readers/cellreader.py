@@ -1363,12 +1363,15 @@ class CellpyData(object):
             {3: [5,8]}
 
         """
-        # self.logger.debug("Trying to get step-types")
+        t0 = time.time()
+        self.logger.debug("Trying to get step-types")
         if steps_to_skip is None:
             steps_to_skip = []
 
         if steptable is None:
+            self.logger.debug("steptable=None")
             dataset_number = self._validate_dataset_number(dataset_number)
+            self.logger.debug(f"dt 1: {time.time() - t0}")
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
@@ -1395,6 +1398,7 @@ class CellpyData(object):
         steptypes = []
         helper_step_types = ['ocv', 'charge_discharge']
         valid_step_type = True
+        self.logger.debug(f"dt 2: {time.time() - t0}")
         if steptype in self.list_of_step_types:
             steptypes.append(steptype)
         else:
@@ -1435,6 +1439,7 @@ class CellpyData(object):
         shdr = self.headers_step_table
 
         # retrieving cycle numbers
+        self.logger.debug(f"dt 3: {time.time() - t0}")
         if cycle_number is None:
             cycle_numbers = self.get_cycle_numbers(
                 dataset_number,
@@ -1469,8 +1474,9 @@ class CellpyData(object):
         #     "returning dict will be deprecated",
         # )
         out = dict()
+        self.logger.debug(f"return a dict")
+        self.logger.debug(f"dt 4: {time.time() - t0}")
         for cycle in cycle_numbers:
-
             steplist = []
             for s in steptypes:
                 step = st[(st[shdr.type] == s) &
@@ -1480,9 +1486,11 @@ class CellpyData(object):
                         self.logger.debug(f"skipping step {newstep}")
                     else:
                         steplist.append(int(newstep))
+
             if not steplist:
                 steplist = [0]
             out[cycle] = steplist
+        self.logger.debug(f"dt tot: {time.time() - t0}")
 
         return out
 
@@ -3199,15 +3207,18 @@ class CellpyData(object):
 
     def get_cycle_numbers(self, dataset_number=None, steptable=None):
         """Get a list containing all the cycle numbers in the test."""
+        self.logger.debug("getting cycle numbers")
         if steptable is None:
             dataset_number = self._validate_dataset_number(dataset_number)
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
             d = self.datasets[dataset_number].dfdata
-            cycles = np.unique(d[self.headers_normal.cycle_index_txt])
+            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
         else:
-            cycles = np.unique(steptable[self.headers_step_table.cycle])
+            self.logger.debug("steptable is not none")
+            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
+        self.logger.debug(f"got {len(cycles)} cycle numbers")
         return cycles
 
     def get_ir(self, dataset_number=None):
@@ -3555,7 +3566,7 @@ class CellpyData(object):
 
     # ----------making-summary------------------------------------------------------
     def make_summary(self, find_ocv=False, find_ir=False,
-                     find_end_voltage=False,
+                     find_end_voltage=True,
                      use_cellpy_stat_file=None, all_tests=True,
                      dataset_number=0, ensure_step_table=True,
                      add_normalized_cycle_index=True,
@@ -3992,24 +4003,30 @@ class CellpyData(object):
         if find_end_voltage and not self.load_only_summary:
             # needs to be fixed so that end-voltage also can be extracted
             # from the summary
+            ev_t0 = time.time()
             self.logger.debug("finding end-voltage")
+            self.logger.debug(f"dt: {time.time() - ev_t0}")
             only_zeros_discharge = dfsummary[discharge_txt] * 0.0
             only_zeros_charge = dfsummary[charge_txt] * 0.0
             if not dataset.discharge_steps:
+                self.logger.debug("need to collect discharge steps")
                 discharge_steps = self.get_step_numbers(
                     steptype='discharge',
                     allctypes=False,
                     dataset_number=dataset_number
                 )
+                self.logger.debug(f"dt: {time.time() - ev_t0}")
             else:
                 discharge_steps = dataset.discharge_steps
-                self.logger.debug("  alrady have discharge_steps")
+                self.logger.debug("  already have discharge_steps")
             if not dataset.charge_steps:
+                self.logger.debug("need to collect charge steps")
                 charge_steps = self.get_step_numbers(
                     steptype='charge',
                     allctypes=False,
                     dataset_number=dataset_number
                 )
+                self.logger.debug(f"dt: {time.time() - ev_t0}")
             else:
                 charge_steps = dataset.charge_steps
                 self.logger.debug("  already have charge_steps")
@@ -4023,7 +4040,7 @@ class CellpyData(object):
             # self.logger.debug(charge_steps)
             # self.logger.debug("Using the following dischargesteps")
             # self.logger.debug(discharge_steps)
-
+            self.logger.debug("starting iterating through the index")
             for i in dfsummary.index:
                 # txt = "index in dfsummary.index: %i" % i
                 # self.logger.debug(txt)
@@ -4062,7 +4079,8 @@ class CellpyData(object):
                 endv_indexes.append(i)
                 endv_values_dc.append(end_voltage_dc)
                 endv_values_c.append(end_voltage_c)
-
+            self.logger.debug("finished iterating")
+            self.logger.debug(f"find end V took: {time.time() - ev_t0} s")
             ir_frame_dc = only_zeros_discharge + endv_values_dc
             ir_frame_c = only_zeros_charge + endv_values_c
             dfsummary.insert(0, column=endv_discharge_title, value=ir_frame_dc)
