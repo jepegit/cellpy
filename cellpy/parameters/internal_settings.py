@@ -52,11 +52,10 @@ ATTRS_DATASET = [
     'creator', 'data',
     'discharge_steps', 'file_errors', 'ir_steps', 'item_ID', 'loaded_from',
     'mass', 'mass_given', 'material',
-    'merged', 'name', 'no_cycles', 'nom_cap', 'normal_table_version',
+    'merged', 'name', 'no_cycles', 'nom_cap',
     'ocv_steps', 'raw_data_files', 'raw_data_files_length',
     'raw_limits', 'raw_units', 'schedule_file_name', 'start_datetime',
-    'step_table_version', 'summary',
-    'summary_version', 'test_ID', 'test_no', 'tot_mass'
+    'summary', 'test_ID', 'test_no', 'tot_mass'
 ]
 
 
