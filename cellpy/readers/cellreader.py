@@ -2864,14 +2864,15 @@ class CellpyData(object):
             ignore_errors (bool): don't break out of loop if an error occurs.
             dynamic: for dynamic retrieving data from cellpy-file.
                 [NOT IMPLEMENTED YET]
-            inter_cycle_shift (bool): cummulate shifts between consecutive cycles.
-                Defaults to True.
+            inter_cycle_shift (bool): cumulative shifts between consecutive
+                cycles. Defaults to True.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
                 unless split is explicitly set to True. Then it returns a tuple
                 with capacity (mAh/g) and voltage.
         """
+        # TODO: add option for adding a nan between charge and discharge
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
