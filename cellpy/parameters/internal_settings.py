@@ -195,6 +195,8 @@ headers_step_table["rate_avr"] = "rate_avr"
 def get_headers_summary():
     """Returns a dictionary containing the header-strings for the summary
     (used as column headers for the summary pandas DataFrames)"""
+    # maybe I can do some tricks in here so that tab completion works?
+    # ctrl + space works
     return headers_summary
 
 
