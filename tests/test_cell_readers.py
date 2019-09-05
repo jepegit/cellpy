@@ -625,6 +625,10 @@ def test_get():
     c_res = cellpy.get(fdv.res_file_path, instrument="arbin", mass=0.045)
 
 
+def test_get_empty():
+    c_empty = cellpy.get()
+
+
 @pytest.mark.parametrize("val,validated", [
     (2.3, None),
     ([2.3], None),
