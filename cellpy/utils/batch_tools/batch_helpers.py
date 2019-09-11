@@ -14,7 +14,7 @@ import cellpy.parameters.internal_settings
 logger = logging.getLogger(__name__)
 
 
-def look_up_and_get(cellpy_file_name, table_name):
+def look_up_and_get(cellpy_file_name, table_name, root=None):
     """Extracts table from cellpy hdf5-file."""
 
     # infoname = '/CellpyData/info'
@@ -23,7 +23,8 @@ def look_up_and_get(cellpy_file_name, table_name):
     # fidname = '/CellpyData/fidtable'
     # stepname = '/CellpyData/step_table'
 
-    root = '/CellpyData'
+    if root is None:
+        root = '/CellpyData'
     table_path = '/'.join([root, table_name])
 
     logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")

@@ -285,6 +285,8 @@ class CyclingExperiment(BaseExperiment):
         This might be considered "a strange and unexpected behaviour". Sorry
         for that (but the authors of this package is also a bit strange...).
 
+        (OK, I will change it. Soon.)
+
         """
         logging.info("[estblishing links]")
         logging.debug("checking and establishing link to data")
@@ -295,7 +297,7 @@ class CyclingExperiment(BaseExperiment):
             for indx, row in self.journal.pages.iterrows():
 
                 counter += 1
-                l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
+                l_txt = f"starting to process file # {counter} (index={indx})"
                 logging.debug(l_txt)
                 logging.info(f"linking cellpy-file: {row.cellpy_file_names}")
 

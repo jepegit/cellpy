@@ -789,10 +789,29 @@ def _pull(gdirpath="examples", rootpath=None,
             _download_g_file(repo, gfilename.as_posix(), nfilename)
 
 
+@click.command()
+@click.option(
+    '--debug', '-d', is_flag=True, help="Run in debug mode."
+)
+@click.option(
+    '--silent', '-s', is_flag=True,
+    help="Run in silent mode."
+)
+@click.argument('name')
+def new(debug, silent, name):
+    """Will in the future be used for setting up a batch experiment."""
+
+    print(" RUNNING ".center(80, "*"))
+    print(f"silent: {silent}")
+    print(f"debug: {debug}")
+    print(f'name: {name}')
+
+
 cli.add_command(setup)
 cli.add_command(info)
 cli.add_command(pull)
 cli.add_command(run)
+cli.add_command(new)
 
 
 def _main_pull():
