@@ -797,14 +797,63 @@ def _pull(gdirpath="examples", rootpath=None,
     '--silent', '-s', is_flag=True,
     help="Run in silent mode."
 )
-@click.argument('name')
-def new(debug, silent, name):
+@click.option(
+    '--directory', '-d', default=None, help="Create in custom directory DIR"
+)
+def new(debug, silent, directory):
     """Will in the future be used for setting up a batch experiment."""
+
+    from pathlib import Path
+
+    import cookiecutter.main
+    import cookiecutter.exceptions
+    import cookiecutter.prompt
+
+    from cellpy.parameters import prms
 
     print(" RUNNING ".center(80, "*"))
     print(f"silent: {silent}")
     print(f"debug: {debug}")
-    print(f'name: {name}')
+    print(f'directory: {directory}')
+
+    if directory is None:
+        logging.debug("no dir given")
+        directory = prms.Paths.notebookdir
+
+    if not os.path.isdir(directory):
+        print("Sorry. This did not work as expected!")
+        print(f" - {directory} does not exist")
+        return
+
+    directory = Path(directory)
+
+    project_dirs = [
+        d.name for d in directory.iterdir()
+        if d.is_dir() and not d.name.startswith(".")
+    ]
+    project_dirs.append("new dir")
+
+    project_dir = cookiecutter.prompt.read_user_choice("what?", project_dirs)
+    print(project_dir)
+    if project_dir == "new dir":
+        default_name = "cellpy_project"
+        # check if it exists, if yes, append a number
+        project_dir = cookiecutter.prompt.read_user_variable("name", default_name)
+        print(project_dir)
+    # continue from here
+
+    return
+
+    os.chdir(directory)
+
+    try:
+        cookiecutter.main.cookiecutter(
+            "https://github.com/jepegit/cookie_cellpy.git"
+        )
+    except cookiecutter.exceptions.OutputDirExistsException as e:
+        print("Sorry. This did not work as expected!")
+        print(" - cookiecutter refused to create the project")
+        print(e)
 
 
 cli.add_command(setup)
