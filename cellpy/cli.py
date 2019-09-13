@@ -92,42 +92,50 @@ def cli():
 
 @click.command()
 @click.option(
-    '--interactive', '-i',
+    "--interactive",
+    "-i",
     is_flag=True,
-    default=False, help="Allows you to specify div. folders and setting."
+    default=False,
+    help="Allows you to specify div. folders and setting.",
 )
 @click.option(
-    '--not-relative', '-nr',
+    "--not-relative",
+    "-nr",
     is_flag=True,
     default=False,
     help="If root-dir is given, put it directly in the root (/) folder"
-         " i.e. don't put it in your home directory. Defaults to False. Remark"
-         " that if you specifically write a path name instead of selecting the"
-         " suggested default, the path you write will be used as is."
+    " i.e. don't put it in your home directory. Defaults to False. Remark"
+    " that if you specifically write a path name instead of selecting the"
+    " suggested default, the path you write will be used as is.",
 )
 @click.option(
-    '--dry-run', '-dr',
-    is_flag=True, default=False,
+    "--dry-run",
+    "-dr",
+    is_flag=True,
+    default=False,
     help="Run setup in dry mode (only print - do not execute). This is"
-         " typically used when developing and testing cellpy. Defaults to"
-         " False."
+    " typically used when developing and testing cellpy. Defaults to"
+    " False.",
 )
 @click.option(
-    '--reset', '-r',
-    is_flag=True, default=False,
-    help="Do not suggest path defaults based on your current configuration-file"
+    "--reset",
+    "-r",
+    is_flag=True,
+    default=False,
+    help="Do not suggest path defaults based on your current configuration-file",
 )
 @click.option(
-    '--root-dir', '-d',
-    default=None, help="Use custom root dir. If not given, your home directory"
-                       " will be used as the top level where cellpy-folders"
-                       " will be put. The folder path must follow"
-                       " directly after this option (if used). Example:\n"
-                       " $ cellpy setup -d 'MyDir'"
+    "--root-dir",
+    "-d",
+    default=None,
+    help="Use custom root dir. If not given, your home directory"
+    " will be used as the top level where cellpy-folders"
+    " will be put. The folder path must follow"
+    " directly after this option (if used). Example:\n"
+    " $ cellpy setup -d 'MyDir'",
 )
 @click.option(
-    '--testuser', '-t',
-    default=None, help="Fake name for fake user (for tesing)",
+    "--testuser", "-t", default=None, help="Fake name for fake user (for tesing)"
 )
 def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     """This will help you to setup cellpy."""
@@ -155,10 +163,7 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     if interactive:
         click.echo(" interactive mode ".center(80, "-"))
         _update_paths(root_dir, not not_relative, dry_run=dry_run, reset=reset)
-        _write_config_file(
-            userdir, dst_file,
-            init_filename, dry_run,
-        )
+        _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check()
 
     else:
@@ -166,8 +171,13 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         _check()
 
 
-def _update_paths(custom_dir=None, relative_home=True,
-                  reset=False, dry_run=False, default_dir="cellpy_data"):
+def _update_paths(
+    custom_dir=None,
+    relative_home=True,
+    reset=False,
+    dry_run=False,
+    default_dir="cellpy_data",
+):
 
     h = pathlib.Path.home()
     if custom_dir:
@@ -206,50 +216,27 @@ def _update_paths(custom_dir=None, relative_home=True,
     notebookdir = h / notebookdir
 
     outdatadir = _ask_about_path(
-        "where to output processed data and results",
-        outdatadir,
+        "where to output processed data and results", outdatadir
     )
 
-    rawdatadir = _ask_about_path(
-        "where your raw data are located",
-        rawdatadir,
-    )
+    rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
 
-    cellpydatadir = _ask_about_path(
-        "where to put cellpy-files",
-        cellpydatadir,
-    )
+    cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
 
-    filelogdir = _ask_about_path(
-        "where to dump the log-files",
-        filelogdir,
-    )
+    filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
 
     examplesdir = _ask_about_path(
-        "where to download cellpy examples and tests",
-        examplesdir,
+        "where to download cellpy examples and tests", examplesdir
     )
 
-    db_path = _ask_about_path(
-        "what folder your db file lives in",
-        db_path,
-    )
+    db_path = _ask_about_path("what folder your db file lives in", db_path)
 
-    db_filename = _ask_about_name(
-        "the name of your db-file",
-        db_filename,
-    )
+    db_filename = _ask_about_name("the name of your db-file", db_filename)
 
-    notebookdir = _ask_about_path(
-        "where to put your jupyter notebooks",
-        notebookdir,
-    )
+    notebookdir = _ask_about_path("where to put your jupyter notebooks", notebookdir)
 
     # update folders based on suggestions
-    for d in [
-        outdatadir, rawdatadir, cellpydatadir,
-        filelogdir, examplesdir, db_path
-    ]:
+    for d in [outdatadir, rawdatadir, cellpydatadir, filelogdir, examplesdir, db_path]:
         if not dry_run:
             _create_dir(d)
         else:
@@ -290,8 +277,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         if confirm:
             if not o_parent.is_dir():
                 create_dir = input(
-                    f"[cellpy] (setup) {o_parent} does not exist."
-                    f" Create it [y]/n ?"
+                    f"[cellpy] (setup) {o_parent} does not exist." f" Create it [y]/n ?"
                 )
                 if not create_dir:
                     create_dir = True
@@ -312,6 +298,7 @@ def _check_import_cellpy():
         import cellpy
         from cellpy import log
         from cellpy.readers import cellreader
+
         return True
     except:
         return False
@@ -366,8 +353,7 @@ def _check_import_pyodbc():
         command = ["command", "-v", sub_process_path]
 
         try:
-            result = run(command, stdout=PIPE, stderr=PIPE,
-                         universal_newlines=True)
+            result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
             if result.returncode == 0:
                 click.echo(f" - found it: {result.stdout}")
             else:
@@ -395,8 +381,10 @@ def _check_import_pyodbc():
         click.echo(f"driver: {driver}")
     except AttributeError:
         click.echo("FYI: you have not defined any odbc_driver(s)")
-        click.echo("(The name of the driver from the configuration file is "
-              "used as a backup when cellpy cannot locate a driver by itself)")
+        click.echo(
+            "(The name of the driver from the configuration file is "
+            "used as a backup when cellpy cannot locate a driver by itself)"
+        )
 
     use_ado = False
 
@@ -434,27 +422,32 @@ def _check_import_pyodbc():
 
     click.echo(" searching for odbc drivers")
     try:
-        drivers = [driver for driver in dbloader.drivers() if
-                   'Microsoft Access Driver' in driver]
+        drivers = [
+            driver
+            for driver in dbloader.drivers()
+            if "Microsoft Access Driver" in driver
+        ]
         click.echo(f"Found these: {drivers}")
         driver = drivers[0]
         click.echo(f"odbc driver: {driver}")
         return True
 
     except IndexError as e:
-        logging.debug(
-            "Unfortunately, it seems the list of drivers is emtpy."
-        )
+        logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
         click.echo(
             "\nCould not find any odbc-drivers suitable for .res-type files. "
-            "Check out the homepage of pydobc for info on installing drivers")
-        click.echo("One solution that might work is downloading "
-              "the Microsoft Access database engine "
-              "(in correct bytes (32 or 64)) "
-              "from:\n"
-              "https://www.microsoft.com/en-us/download/details.aspx?id=13255")
-        click.echo("Or install mdbtools and set it up "
-              "(check the cellpy docs for help)")
+            "Check out the homepage of pydobc for info on installing drivers"
+        )
+        click.echo(
+            "One solution that might work is downloading "
+            "the Microsoft Access database engine "
+            "(in correct bytes (32 or 64)) "
+            "from:\n"
+            "https://www.microsoft.com/en-us/download/details.aspx?id=13255"
+        )
+        click.echo(
+            "Or install mdbtools and set it up " "(check the cellpy docs for help)"
+        )
         click.echo("\n")
         return False
 
@@ -484,9 +477,7 @@ def _check():
             click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
     succeeded_checks = number_of_checks - failed_checks
-    click.echo(
-        f"[cellpy] Succeeded {succeeded_checks} of {number_of_checks} checks."
-    )
+    click.echo(f"[cellpy] Succeeded {succeeded_checks} of {number_of_checks} checks.")
 
 
 def _write_config_file(userdir, dst_file, init_filename, dry_run):
@@ -496,24 +487,21 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
 
     if os.path.isfile(dst_file):
         click.echo("[cellpy] (setup) File already exists!")
-        click.echo(
-            "[cellpy] (setup) Keeping most of the old configuration parameters"
-        )
+        click.echo("[cellpy] (setup) Keeping most of the old configuration parameters")
     try:
         if dry_run:
             click.echo(
-                f"*** dry-run: skipping actual saving of {dst_file} ***",
-                color="red",
+                f"*** dry-run: skipping actual saving of {dst_file} ***", color="red"
             )
         else:
             save_prm_file(dst_file)
 
     except ConfigFileNotWritten:
-        click.echo("[cellpy] (setup) Something went wrong!"
-                   " Could not write the file")
+        click.echo("[cellpy] (setup) Something went wrong!" " Could not write the file")
         click.echo(
             "[cellpy] (setup) Trying to write a file"
-            + f"called {DEFAULT_FILENAME} instead")
+            + f"called {DEFAULT_FILENAME} instead"
+        )
 
         try:
             userdir, dst_file = get_user_dir_and_dst(init_filename)
@@ -527,31 +515,29 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
 
         except ConfigFileNotWritten:
             _txt = "[cellpy] (setup) No, that did not work either.\n"
-            _txt += "[cellpy] (setup) Well, guess you have to talk to" \
-                    " the developers."
+            _txt += (
+                "[cellpy] (setup) Well, guess you have to talk to" " the developers."
+            )
             click.echo(_txt)
     else:
-        click.echo(
-            f"[cellpy] (setup) Configuration file written!")
+        click.echo(f"[cellpy] (setup) Configuration file written!")
         click.echo(
             f"[cellpy] (setup) OK! Now you can edit it. For example by "
-            f"issuing \n\n         [your-favourite-editor] {init_filename}\n")
+            f"issuing \n\n         [your-favourite-editor] {init_filename}\n"
+        )
 
 
 @click.command()
+@click.option("--version", "-v", is_flag=True, help="Print version information.")
 @click.option(
-    '--version', '-v', is_flag=True, help="Print version information."
+    "--configloc", "-l", is_flag=True, help="Print full path to the config file."
 )
+@click.option("--params", "-p", is_flag=True, help="Dump all parameters to screen.")
 @click.option(
-    '--configloc', '-l', is_flag=True,
-    help='Print full path to the config file.'
-)
-@click.option(
-    '--params', '-p', is_flag=True, help='Dump all parameters to screen.'
-)
-@click.option(
-    '--check', '-c', is_flag=True, help='Do a sanity check to see if things'
-                                        ' works as they should.'
+    "--check",
+    "-c",
+    is_flag=True,
+    help="Do a sanity check to see if things" " works as they should.",
 )
 def info(version, configloc, params, check):
     """This will give you some valuable information about your cellpy."""
@@ -580,17 +566,16 @@ def info(version, configloc, params, check):
 
 @click.command()
 @click.option(
-    '--journal', '-j', is_flag=True,
-    help="Run a batch job defined in the given journal-file"
+    "--journal",
+    "-j",
+    is_flag=True,
+    help="Run a batch job defined in the given journal-file",
 )
+@click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
 @click.option(
-    '--debug', '-d', is_flag=True, help="Run in debug mode."
+    "--silent", "-s", is_flag=True, help="Run in silent (i.e. no-plotting) mode."
 )
-@click.option(
-    '--silent', '-s', is_flag=True,
-    help="Run in silent (i.e. no-plotting) mode."
-)
-@click.argument('file_name')
+@click.argument("file_name")
 def run(journal, debug, silent, file_name):
     """Will in the future be used for running a cellpy process."""
 
@@ -630,21 +615,13 @@ def _run(file_name, debug, silent):
 
 
 @click.command()
+@click.option("--tests", "-t", is_flag=True, help="Download test-files from repo.")
 @click.option(
-    '--tests', '-t', is_flag=True, help="Download test-files from repo."
+    "--examples", "-e", is_flag=True, help="Download example-files from repo."
 )
-@click.option(
-    '--examples', '-e', is_flag=True, help="Download example-files from repo."
-)
-@click.option(
-    '--clone', '-c', is_flag=True, help="Clone the full repo."
-)
-@click.option(
-    '--directory', '-d', default=None, help="Save into custom directory DIR"
-)
-@click.option(
-    '--password', '-p', default=None, help="Password option for the repo"
-)
+@click.option("--clone", "-c", is_flag=True, help="Clone the full repo.")
+@click.option("--directory", "-d", default=None, help="Save into custom directory DIR")
+@click.option("--password", "-p", default=None, help="Password option for the repo")
 def pull(tests, examples, clone, directory, password):
     """Download examples or tests from the big internet."""
     if directory is not None:
@@ -675,16 +652,20 @@ def _clone_repo(directory, password):
 
 
 def _pull_tests(directory, pw=None):
-    txt = ("[cellpy] (pull) Pulling tests from",
-           " https://github.com/jepegit/cellpy.git")
+    txt = (
+        "[cellpy] (pull) Pulling tests from",
+        " https://github.com/jepegit/cellpy.git",
+    )
     click.echo(txt)
     _pull(gdirpath="tests", rootpath=directory, pw=pw)
     _pull(gdirpath="testdata", rootpath=directory, pw=pw)
 
 
 def _pull_examples(directory, pw):
-    txt = ("[cellpy] (pull) Pulling examples from",
-           " https://github.com/jepegit/cellpy.git")
+    txt = (
+        "[cellpy] (pull) Pulling examples from",
+        " https://github.com/jepegit/cellpy.git",
+    )
     click.echo(txt)
     _pull(gdirpath="examples", rootpath=directory, pw=pw)
 
@@ -708,14 +689,14 @@ def _dump_params():
 
 def _download_g_blob(name, local_path):
     import urllib.request
+
     dirs = local_path.parent
     if not dirs.is_dir():
         click.echo(f"[cellpy] (pull) creating dir: {dirs}")
         dirs.mkdir(parents=True)
 
     filename, headers = urllib.request.urlretrieve(
-        name.download_url,
-        filename=local_path
+        name.download_url, filename=local_path
     )
     click.echo(f"[cellpy] (pull) downloaded blob: {filename}")
 
@@ -756,8 +737,7 @@ def _get_pw(method):
         return None
 
 
-def _pull(gdirpath="examples", rootpath=None,
-          u=None, pw=None):
+def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
 
     if rootpath is None:
         rootpath = prmreader.prms.Paths.examplesdir
@@ -801,12 +781,12 @@ def _pull(gdirpath="examples", rootpath=None,
 
 @click.command()
 @click.option(
-    '--template', '-t', default='standard',
-    help="what template to use ('standard', 'gitt', or 'single')."
+    "--template",
+    "-t",
+    default="standard",
+    help="what template to use ('standard', 'gitt', or 'single').",
 )
-@click.option(
-    '--directory', '-d', default=None, help="Create in custom directory DIR"
-)
+@click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
 def new(template, directory):
     """Will in the future be used for setting up a batch experiment."""
 
@@ -816,9 +796,7 @@ def new(template, directory):
 
     from cellpy.parameters import prms
 
-    templates = {
-        "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
-    }
+    templates = {"standard": "https://github.com/jepegit/cellpy_cookie_standard.git"}
 
     click.echo(f"Template: {template}")
     if not template.lower() in templates.keys():
@@ -836,14 +814,12 @@ def new(template, directory):
     directory = Path(directory)
 
     project_dirs = [
-        d.name for d in directory.iterdir()
-        if d.is_dir() and not d.name.startswith(".")
+        d.name for d in directory.iterdir() if d.is_dir() and not d.name.startswith(".")
     ]
     project_dirs.insert(0, "[create new dir]")
 
     project_dir = cookiecutter.prompt.read_user_choice(
-        "Select project folder?",
-        project_dirs
+        "Select project folder?", project_dirs
     )
 
     if project_dir == "[create new dir]":
@@ -851,15 +827,12 @@ def new(template, directory):
         temp_default_name = default_name
         for j in range(999):
             if temp_default_name in project_dirs:
-                temp_default_name = default_name + str(j+1).zfill(3)
+                temp_default_name = default_name + str(j + 1).zfill(3)
             else:
                 default_name = temp_default_name
                 break
 
-        project_dir = cookiecutter.prompt.read_user_variable(
-            "New name",
-            default_name
-        )
+        project_dir = cookiecutter.prompt.read_user_variable("New name", default_name)
         try:
             os.mkdir(directory / project_dir)
             click.echo(f"created {project_dir}")
@@ -870,8 +843,7 @@ def new(template, directory):
 
     try:
         cookiecutter.main.cookiecutter(
-            templates[template.lower()],
-            extra_context={"project_name": project_dir},
+            templates[template.lower()], extra_context={"project_name": project_dir}
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")
@@ -914,6 +886,7 @@ def _main():
 
 def _cli_setup_interactive():
     from click.testing import CliRunner
+
     if sys.platform == "win32":
         root_dir = r"C:\Temp\cellpy_user"
     else:
@@ -943,6 +916,7 @@ def _cli_setup_interactive():
     click.echo(" out ".center(80, "."))
     click.echo(result.output)
     from pprint import pprint
+
     pprint(prmreader.prms.Paths)
     click.echo(" conf-file ".center(80, "."))
     click.echo(init_file)
@@ -956,6 +930,3 @@ if __name__ == "__main__":
     click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
     _main_pull()
     click.echo("ok")
-
-
-
