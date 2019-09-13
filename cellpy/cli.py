@@ -184,6 +184,7 @@ def _update_paths(custom_dir=None, relative_home=True,
         examplesdir = pathlib.Path(prmreader.prms.Paths.examplesdir)
         db_path = pathlib.Path(prmreader.prms.Paths.db_path)
         db_filename = prmreader.prms.Paths.db_filename
+        notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -192,6 +193,7 @@ def _update_paths(custom_dir=None, relative_home=True,
         examplesdir = "examples"
         db_path = "db"
         db_filename = "cellpy_db.xlsx"
+        notebookdir = "notebooks"
         if not custom_dir:
             h = h / default_dir
 
@@ -201,6 +203,7 @@ def _update_paths(custom_dir=None, relative_home=True,
     filelogdir = h / filelogdir
     examplesdir = h / examplesdir
     db_path = h / db_path
+    notebookdir = h / notebookdir
 
     outdatadir = _ask_about_path(
         "where to output processed data and results",
@@ -237,6 +240,11 @@ def _update_paths(custom_dir=None, relative_home=True,
         db_filename,
     )
 
+    notebookdir = _ask_about_path(
+        "where to put your jupyter notebooks",
+        notebookdir,
+    )
+
     # update folders based on suggestions
     for d in [
         outdatadir, rawdatadir, cellpydatadir,
@@ -255,6 +263,7 @@ def _update_paths(custom_dir=None, relative_home=True,
     prmreader.prms.Paths.examplesdir = str(examplesdir)
     prmreader.prms.Paths.db_path = str(db_path)
     prmreader.prms.Paths.db_filename = str(db_filename)
+    prmreader.prms.Paths.notebookdir = str(notebookdir)
 
 
 def _ask_about_path(q, p):
@@ -317,40 +326,40 @@ def _check_import_pyodbc():
 
     use_subprocess = prms.Instruments.Arbin.use_subprocess
     detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
-    print()
-    print(f" reading prms")
-    print(f" - ODBC: {ODBC}")
-    print(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
-    print(f" - use_subprocess: {use_subprocess}")
-    print(f" - detect_subprocess_need: {detect_subprocess_need}")
-    print(f" - stated office version: {prms.Instruments.Arbin.office_version}")
+    click.echo()
+    click.echo(f" reading prms")
+    click.echo(f" - ODBC: {ODBC}")
+    click.echo(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
+    click.echo(f" - use_subprocess: {use_subprocess}")
+    click.echo(f" - detect_subprocess_need: {detect_subprocess_need}")
+    click.echo(f" - stated office version: {prms.Instruments.Arbin.office_version}")
 
-    print(" checking system")
+    click.echo(" checking system")
     is_posix = False
     is_macos = False
     if os.name == "posix":
         is_posix = True
-        print(f" - running on posix")
+        click.echo(f" - running on posix")
     current_platform = platform.system()
     if current_platform == "Darwin":
         is_macos = True
-        print(f" - running on a mac")
+        click.echo(f" - running on a mac")
 
     python_version, os_version = platform.architecture()
-    print(f" - python version: {python_version}")
-    print(f" - os version: {os_version}")
+    click.echo(f" - python version: {python_version}")
+    click.echo(f" - os version: {os_version}")
 
     if not is_posix:
         if not prms.Instruments.Arbin.sub_process_path:
             sub_process_path = str(prms._sub_process_path)
         else:
             sub_process_path = str(prms.Instruments.Arbin.sub_process_path)
-        print(f" stated path to sub-process: {sub_process_path}")
+        click.echo(f" stated path to sub-process: {sub_process_path}")
         if not os.path.isfile(sub_process_path):
-            print(f" - OBS! missing")
+            click.echo(f" - OBS! missing")
 
     if is_posix:
-        print(" checking existence of mdb-export")
+        click.echo(" checking existence of mdb-export")
         sub_process_path = "mdb-export"
         from subprocess import PIPE, run
 
@@ -360,20 +369,20 @@ def _check_import_pyodbc():
             result = run(command, stdout=PIPE, stderr=PIPE,
                          universal_newlines=True)
             if result.returncode == 0:
-                print(f" - found it: {result.stdout}")
+                click.echo(f" - found it: {result.stdout}")
             else:
-                print(f" - failed finding it")
+                click.echo(f" - failed finding it")
 
             if is_macos:
                 driver = "/usr/local/lib/libmdbodbc.dylib"
-                print(f" looks like you are on a mac (driver set to\n {driver})")
+                click.echo(f" looks like you are on a mac (driver set to\n {driver})")
                 if not os.path.isfile(driver):
-                    print(" - but cannot find it!")
+                    click.echo(" - but cannot find it!")
                     return False
             return True
 
         except AssertionError:
-            print(" - not found")
+            click.echo(" - not found")
             return False
 
     # not posix - checking for odbc drivers
@@ -382,71 +391,71 @@ def _check_import_pyodbc():
         driver = prms.Instruments.Arbin.odbc_driver
         if not driver:
             raise AttributeError
-        print("You have defined an odbc driver in your conifg file")
-        print(f"driver: {driver}")
+        click.echo("You have defined an odbc driver in your conifg file")
+        click.echo(f"driver: {driver}")
     except AttributeError:
-        print("FYI: you have not defined any odbc_driver(s)")
-        print("(The name of the driver from the configuration file is "
+        click.echo("FYI: you have not defined any odbc_driver(s)")
+        click.echo("(The name of the driver from the configuration file is "
               "used as a backup when cellpy cannot locate a driver by itself)")
 
     use_ado = False
 
     if ODBC == "ado":
         use_ado = True
-        print(" you stated that you prefer the ado loader")
-        print(" checking if adodbapi is installed")
+        click.echo(" you stated that you prefer the ado loader")
+        click.echo(" checking if adodbapi is installed")
         try:
             import adodbapi as dbloader
         except ImportError:
             use_ado = False
-            print(" Failed! Try setting pyodbc as your loader or install")
-            print(" adodbapi (http://adodbapi.sourceforge.net/)")
+            click.echo(" Failed! Try setting pyodbc as your loader or install")
+            click.echo(" adodbapi (http://adodbapi.sourceforge.net/)")
 
     if not use_ado:
         if ODBC == "pyodbc":
-            print(" you stated that you prefer the pyodbc loader")
+            click.echo(" you stated that you prefer the pyodbc loader")
             try:
                 import pyodbc as dbloader
             except ImportError:
-                print(" Failed! Could not import it.")
-                print(" Try 'pip install pyodbc'")
+                click.echo(" Failed! Could not import it.")
+                click.echo(" Try 'pip install pyodbc'")
                 dbloader = None
 
         elif ODBC == "pypyodbc":
-            print(" you stated that you prefer the pypyodbc loader")
+            click.echo(" you stated that you prefer the pypyodbc loader")
             try:
                 import pypyodbc as dbloader
             except ImportError:
-                print(" Failed! Could not import it.")
-                print(" try 'pip install pypyodbc'")
-                print(" or set pyodbc as your loader in your prm file")
-                print(" (and install it)")
+                click.echo(" Failed! Could not import it.")
+                click.echo(" try 'pip install pypyodbc'")
+                click.echo(" or set pyodbc as your loader in your prm file")
+                click.echo(" (and install it)")
                 dbloader = None
 
-    print(" searching for odbc drivers")
+    click.echo(" searching for odbc drivers")
     try:
         drivers = [driver for driver in dbloader.drivers() if
                    'Microsoft Access Driver' in driver]
-        print(f"Found these: {drivers}")
+        click.echo(f"Found these: {drivers}")
         driver = drivers[0]
-        print(f"odbc driver: {driver}")
+        click.echo(f"odbc driver: {driver}")
         return True
 
     except IndexError as e:
         logging.debug(
             "Unfortunately, it seems the list of drivers is emtpy."
         )
-        print(
+        click.echo(
             "\nCould not find any odbc-drivers suitable for .res-type files. "
             "Check out the homepage of pydobc for info on installing drivers")
-        print("One solution that might work is downloading "
+        click.echo("One solution that might work is downloading "
               "the Microsoft Access database engine "
               "(in correct bytes (32 or 64)) "
               "from:\n"
               "https://www.microsoft.com/en-us/download/details.aspx?id=13255")
-        print("Or install mdbtools and set it up "
+        click.echo("Or install mdbtools and set it up "
               "(check the cellpy docs for help)")
-        print("\n")
+        click.echo("\n")
         return False
 
 
@@ -585,7 +594,7 @@ def info(version, configloc, params, check):
 def run(journal, debug, silent, file_name):
     """Will in the future be used for running a cellpy process."""
 
-    print("RUNNING".center(80, "*"))
+    click.echo("RUNNING".center(80, "*"))
     if not file_name:
         click.echo("[cellpy] (run) No filename provided.")
         return
@@ -609,15 +618,15 @@ def run(journal, debug, silent, file_name):
 
 
 def _run_journal(file_name, debug, silent):
-    print(f"running journal {file_name}")
-    print(f" --debug [{debug}]")
-    print(f" --silent [{silent}]")
+    click.echo(f"running journal {file_name}")
+    click.echo(f" --debug [{debug}]")
+    click.echo(f" --silent [{silent}]")
 
 
 def _run(file_name, debug, silent):
-    print(f"running {file_name}")
-    print(f" --debug [{debug}]")
-    print(f" --silent [{silent}]")
+    click.echo(f"running {file_name}")
+    click.echo(f" --debug [{debug}]")
+    click.echo(f" --silent [{silent}]")
 
 
 @click.command()
@@ -644,7 +653,7 @@ def pull(tests, examples, clone, directory, password):
         directory = pathlib.Path(prmreader.prms.Paths.examplesdir)
 
     if password is not None:
-        print("DEV MODE: password provided")
+        click.echo("DEV MODE: password provided")
     if clone:
         _clone_repo(directory, password)
     else:
@@ -756,17 +765,17 @@ def _pull(gdirpath="examples", rootpath=None,
     ndirpath = rootpath / gdirpath
 
     if pw is not None:
-        print(" DEV MODE ".center(80, "-"))
+        click.echo(" DEV MODE ".center(80, "-"))
         u = _get_user_name()
         if pw == "ask":
-            print("   - ask for password")
+            click.echo("   - ask for password")
             pw = _get_pw(pw)
         elif pw == "env":
-            print("   - check environ for password ")
+            click.echo("   - check environ for password ")
             pw = _get_pw(pw)
-            print("   - got something")
+            click.echo("   - got something")
             if pw is None:
-                print("   - only None")
+                click.echo("   - only None")
                 u = None
 
     g = Github(u, pw)
@@ -806,9 +815,11 @@ def new(template, directory):
     import cookiecutter.prompt
 
     from cellpy.parameters import prms
+
     templates = {
-        "standard": "https://github.com/jepegit/cookie_cellpy.git",
+        "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
     }
+
     click.echo(f"Template: {template}")
     if not template.lower() in templates.keys():
         click.echo("This template does not exist. Aborting.")
@@ -875,6 +886,7 @@ cli.add_command(run)
 cli.add_command(new)
 
 
+# tests etc
 def _main_pull():
     if sys.platform == "win32":
         rootpath = pathlib.Path(r"C:\Temp\cellpy_user")
@@ -889,14 +901,14 @@ def _main_pull():
 
 def _main():
     file_name = create_custom_init_filename()
-    print(file_name)
+    click.echo(file_name)
     user_directory, destination_file_name = get_user_dir_and_dst(file_name)
-    print(user_directory)
-    print(destination_file_name)
-    print("trying to save it")
+    click.echo(user_directory)
+    click.echo(destination_file_name)
+    click.echo("trying to save it")
     save_prm_file(destination_file_name + "_dummy")
 
-    print(" Testing setup ".center(80, "="))
+    click.echo(" Testing setup ".center(80, "="))
     setup(["--interactive", "--reset"])
 
 
@@ -928,22 +940,22 @@ def _cli_setup_interactive():
     runner = CliRunner()
     result = runner.invoke(cli, opts, input=input_str)
 
-    print(" out ".center(80, "."))
-    print(result.output)
+    click.echo(" out ".center(80, "."))
+    click.echo(result.output)
     from pprint import pprint
     pprint(prmreader.prms.Paths)
-    print(" conf-file ".center(80, "."))
-    print(init_file)
-    print()
+    click.echo(" conf-file ".center(80, "."))
+    click.echo(init_file)
+    click.echo()
     with init_file.open() as f:
         for line in f.readlines():
-            print(line.strip())
+            click.echo(line.strip())
 
 
 if __name__ == "__main__":
-    print("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
+    click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
     _main_pull()
-    print("ok")
+    click.echo("ok")
 
 
 
