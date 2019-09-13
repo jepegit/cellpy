@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 import logging
 import getpass
@@ -791,38 +792,34 @@ def _pull(gdirpath="examples", rootpath=None,
 
 @click.command()
 @click.option(
-    '--debug', '-d', is_flag=True, help="Run in debug mode."
-)
-@click.option(
-    '--silent', '-s', is_flag=True,
-    help="Run in silent mode."
+    '--template', '-t', default='standard',
+    help="what template to use ('standard', 'gitt', or 'single')."
 )
 @click.option(
     '--directory', '-d', default=None, help="Create in custom directory DIR"
 )
-def new(debug, silent, directory):
+def new(template, directory):
     """Will in the future be used for setting up a batch experiment."""
-
-    from pathlib import Path
 
     import cookiecutter.main
     import cookiecutter.exceptions
     import cookiecutter.prompt
 
     from cellpy.parameters import prms
-
-    print(" RUNNING ".center(80, "*"))
-    print(f"silent: {silent}")
-    print(f"debug: {debug}")
-    print(f'directory: {directory}')
+    templates = {
+        "standard": "https://github.com/jepegit/cookie_cellpy.git",
+    }
+    click.echo(f"Template: {template}")
+    if not template.lower() in templates.keys():
+        click.echo("This template does not exist. Aborting.")
 
     if directory is None:
         logging.debug("no dir given")
         directory = prms.Paths.notebookdir
 
     if not os.path.isdir(directory):
-        print("Sorry. This did not work as expected!")
-        print(f" - {directory} does not exist")
+        click.echo("Sorry. This did not work as expected!")
+        click.echo(f" - {directory} does not exist")
         return
 
     directory = Path(directory)
@@ -833,27 +830,42 @@ def new(debug, silent, directory):
     ]
     project_dirs.insert(0, "[create new dir]")
 
-    project_dir = cookiecutter.prompt.read_user_choice("what?", project_dirs)
-    print(project_dir)
+    project_dir = cookiecutter.prompt.read_user_choice(
+        "Select project folder?",
+        project_dirs
+    )
+
     if project_dir == "[create new dir]":
         default_name = "cellpy_project"
-        # check if it exists, if yes, append a number
-        project_dir = cookiecutter.prompt.read_user_variable("name", default_name)
-        print(project_dir)
-    # continue from here
+        temp_default_name = default_name
+        for j in range(999):
+            if temp_default_name in project_dirs:
+                temp_default_name = default_name + str(j+1).zfill(3)
+            else:
+                default_name = temp_default_name
+                break
 
-    return
+        project_dir = cookiecutter.prompt.read_user_variable(
+            "New name",
+            default_name
+        )
+        try:
+            os.mkdir(directory / project_dir)
+            click.echo(f"created {project_dir}")
+        except FileExistsError:
+            click.echo("OK - but this directory already exists!")
 
-    os.chdir(directory)
+    os.chdir(directory / project_dir)
 
     try:
         cookiecutter.main.cookiecutter(
-            "https://github.com/jepegit/cookie_cellpy.git"
+            templates[template.lower()],
+            extra_context={"project_name": project_dir},
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
-        print("Sorry. This did not work as expected!")
-        print(" - cookiecutter refused to create the project")
-        print(e)
+        click.echo("Sorry. This did not work as expected!")
+        click.echo(" - cookiecutter refused to create the project")
+        click.echo(e)
 
 
 cli.add_command(setup)
