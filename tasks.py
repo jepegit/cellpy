@@ -34,11 +34,11 @@ Examples:
 
 def get_platform():
     platforms = {
-        'linux1': 'Linux',
-        'linux2': 'Linux',
-        'darwin': 'OS X',
-        'win32': 'Windows',
-        'win64': 'Windows',
+        "linux1": "Linux",
+        "linux2": "Linux",
+        "darwin": "OS X",
+        "win32": "Windows",
+        "win64": "Windows",
     }
     if sys.platform not in platforms:
         return sys.platform
@@ -54,31 +54,31 @@ def capture():
     o_stream.close()
 
 
-def get_pypi_info(package='cellpy'):
+def get_pypi_info(package="cellpy"):
     url = f"https://pypi.org/pypi/{package}/json"
     response = requests.get(url)
     if not response:
-        print(f'url {url} not responding')
+        print(f"url {url} not responding")
         return None, None
 
     response = response.json()
-    version = response['info']['version']
-    release = response['releases'][version][-1]
-    sha = release['digests']['sha256']
+    version = response["info"]["version"]
+    release = response["releases"][version][-1]
+    sha = release["digests"]["sha256"]
     return version, sha
 
 
 def update_meta_yaml_line(line, update_dict):
     if line.find("set name") >= 0:
-        v = update_dict['name']
+        v = update_dict["name"]
         line = f'{{% set name = "{v}" %}}\n'
 
     if line.find("set version") >= 0:
-        v = update_dict['version']
+        v = update_dict["version"]
         line = f'{{% set version = "{v}" %}}\n'
 
     if line.find("set sha256") >= 0:
-        v = update_dict['sha']
+        v = update_dict["sha"]
         line = f'{{% set sha256 = "{v}" %}}\n'
     return line
 
@@ -91,7 +91,7 @@ def update_meta_yaml(meta_filename, update_dict):
             if not line:
                 break
 
-            if line.find('{%') >= 0:
+            if line.find("{%") >= 0:
                 line = update_meta_yaml_line(line, update_dict)
             lines.append(line)
     with open(meta_filename, "w") as ofile:
@@ -100,7 +100,7 @@ def update_meta_yaml(meta_filename, update_dict):
 
 
 @task
-def pypi(c, package='cellpy'):
+def pypi(c, package="cellpy"):
     """Query pypi"""
     version, sha = get_pypi_info(package=package)
     if version:
@@ -134,21 +134,21 @@ def commit(c, push=True, comment="automatic commit"):
         c.run(f'git commit . -m "{comment}"')
         if push:
             print(" pushing ".center(80, "-"))
-            c.run('git push')
+            c.run("git push")
     print(" finished ".center(80, "-"))
 
 
 @task
-def clean(c, docs=False, bytecode=False, extra=''):
+def clean(c, docs=False, bytecode=False, extra=""):
     """Clean up stuff from previous builds"""
     print(" Cleaning ".center(80, "="))
-    patterns = ['dist', 'build', 'cellpy.egg-info']
+    patterns = ["dist", "build", "cellpy.egg-info"]
     if docs:
         print(" - cleaning doc builds")
-        patterns.append('docs/_build')
+        patterns.append("docs/_build")
     if bytecode:
         print(" - cleaning bytecode (i.e. pyc-files)")
-        patterns.append('**/*.pyc')
+        patterns.append("**/*.pyc")
     if extra:
         print(f" - cleaning {extra}")
         patterns.append(extra)
@@ -212,11 +212,7 @@ def conda_build(c, upload=False):
         return
 
     version, sha = get_pypi_info(package="cellpy")
-    update_dict = {
-        "name": "cellpy",
-        "version": version,
-        "sha": sha
-    }
+    update_dict = {"name": "cellpy", "version": version, "sha": sha}
 
     print("Updating meta.yml")
     update_meta_yaml(recipe_path, update_dict)
@@ -239,9 +235,11 @@ def conda_build(c, upload=False):
     print("\nTo convert to different OS-es: conda convert --platform all PATH")
     print("e.g.")
     print("cd builds")
-    print(r"conda convert --platform all "
-          r"C:\miniconda\envs\cellpy_dev\conda-bld\win-"
-          r"64\cellpy-0.3.0.post1-py37_0.tar.bz2")
+    print(
+        r"conda convert --platform all "
+        r"C:\miniconda\envs\cellpy_dev\conda-bld\win-"
+        r"64\cellpy-0.3.0.post1-py37_0.tar.bz2"
+    )
 
 
 @task

@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class LabJournal(BaseJournal):
-
     def __init__(self, db_reader="default"):
         super().__init__()
         if db_reader == "default":
@@ -40,9 +39,7 @@ class LabJournal(BaseJournal):
             name = self.name
         else:
             self.name = name
-        logging.debug(
-            f"batch_name, batch_col: {name}, {batch_col}"
-        )
+        logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
         if self.db_reader is not None:
             srnos = self.db_reader.select_batch(name, batch_col)
             self.pages = simple_db_engine(self.db_reader, srnos)
@@ -57,14 +54,14 @@ class LabJournal(BaseJournal):
 
         file_name = self._check_file_name(file_name)
 
-        with open(file_name, 'r') as infile:
+        with open(file_name, "r") as infile:
             top_level_dict = json.load(infile)
 
-        pages_dict = top_level_dict['info_df']
+        pages_dict = top_level_dict["info_df"]
         pages = pd.DataFrame(pages_dict)
         self.pages = pages
         self.file_name = file_name
-        self._prm_packer(top_level_dict['metadata'])
+        self._prm_packer(top_level_dict["metadata"])
         self.generate_folder_names()
         self.paginate()
 
@@ -74,21 +71,15 @@ class LabJournal(BaseJournal):
         file_name = self._check_file_name(file_name)
         pages = self.pages
 
-        top_level_dict = {
-            'info_df': pages,
-            'metadata': self._prm_packer()
-        }
+        top_level_dict = {"info_df": pages, "metadata": self._prm_packer()}
 
         jason_string = json.dumps(
-            top_level_dict,
-            default=lambda info_df: json.loads(
-                info_df.to_json()
-            )
+            top_level_dict, default=lambda info_df: json.loads(info_df.to_json())
         )
 
         self.paginate()
 
-        with open(file_name, 'w') as outfile:
+        with open(file_name, "w") as outfile:
             outfile.write(jason_string)
 
         self.file_name = file_name

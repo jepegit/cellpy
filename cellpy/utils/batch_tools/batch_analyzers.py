@@ -94,10 +94,7 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
 
         self.current_engine = engine
 
-        self.farms, self.barn = engine(
-            experiments=self.experiments,
-            farms=self.farms
-        )
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
         logging.debug("::engine ended")
 
     def run_dumper(self, dumper):
@@ -112,8 +109,7 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
 
     def do(self):
         if not self.experiments:
-            raise UnderDefined("cannot run until "
-                               "you have assigned an experiment")
+            raise UnderDefined("cannot run until " "you have assigned an experiment")
 
         for engine in self.engines:
             self.empty_the_farms()
@@ -181,6 +177,3 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
                 )
                 farm.append(df)
         return self.farms
-
-
-

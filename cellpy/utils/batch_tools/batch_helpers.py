@@ -24,8 +24,8 @@ def look_up_and_get(cellpy_file_name, table_name, root=None):
     # stepname = '/CellpyData/step_table'
 
     if root is None:
-        root = '/CellpyData'
-    table_path = '/'.join([root, table_name])
+        root = "/CellpyData"
+    table_path = "/".join([root, table_name])
 
     logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
     store = pd.HDFStore(cellpy_file_name)
@@ -75,7 +75,9 @@ def find_files(info_dict, filename_cache=None):
     for run_name in info_dict["filenames"]:
         logger.debug(f"checking for {run_name}")
         if prms._use_filename_cache:
-            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(run_name, cache=filename_cache)
+            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(
+                run_name, cache=filename_cache
+            )
         else:
             raw_files, cellpyfile = filefinder.search_for_files(run_name)
         if not raw_files:
@@ -106,7 +108,7 @@ def fix_groups(groups):
 def save_multi(data, file_name, sep=";"):
     """Convenience function for storing data column-wise in a csv-file."""
     logger.debug("saving multi")
-    with open(file_name, "w", newline='') as f:
+    with open(file_name, "w", newline="") as f:
         logger.debug(f"{file_name} opened")
         writer = csv.writer(f, delimiter=sep)
         try:
@@ -131,7 +133,7 @@ def make_unique_groups(info_df):
             info_df.at[indx, "sub_groups"] = counter
             # info_df.set_value(indx, "sub_groups", counter)
             counter += 1
-        info_df.loc[info_df.groups == i, 'groups'] = j + 1
+        info_df.loc[info_df.groups == i, "groups"] = j + 1
     return info_df
 
 
@@ -196,8 +198,8 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     summary_df = pd.concat(frames, keys=keys, axis=1)
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[
-                      :, summary_df.columns.get_level_values(1) == value
-                      ]
+            :, summary_df.columns.get_level_values(1) == value
+        ]
         _summary_df.name = key
 
         if not keep_old_header:
@@ -227,6 +229,7 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
     from cellpy.utils.ica import dqdv
+
     list_of_cycles = cell_data.get_cycle_numbers()
     if last_cycle is not None:
         list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]

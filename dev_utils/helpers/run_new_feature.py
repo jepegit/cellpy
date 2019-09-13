@@ -30,12 +30,9 @@ def print_prms():
             print(f"prms.{key}:")
             print(80 * "-")
             for subkey in prms.__dict__[key]:
-                print(
-                    f"prms.{key}.{subkey} = ",
-                    f"{prms.__dict__[key][subkey]}"
-                )
+                print(f"prms.{key}.{subkey} = ", f"{prms.__dict__[key][subkey]}")
             print(80 * "=")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print_prms()

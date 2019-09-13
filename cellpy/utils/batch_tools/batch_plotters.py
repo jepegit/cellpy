@@ -62,9 +62,9 @@ def look_up_group(info, c):
     return int(g), int(sg)
 
 
-def create_plot_option_dicts(info, marker_types=None, colors=None,
-                             line_dash=None, size=None,
-                             palette=None):
+def create_plot_option_dicts(
+    info, marker_types=None, colors=None, line_dash=None, size=None, palette=None
+):
 
     """Create two dictionaries with plot-options.
 
@@ -79,7 +79,7 @@ def create_plot_option_dicts(info, marker_types=None, colors=None,
     if palette is None:
         try:
             # palette = bokeh.palettes.brewer['YlGnBu']
-            palette = bokeh.palettes.d3['Category10']
+            palette = bokeh.palettes.d3["Category10"]
             # palette = bokeh.palettes.brewer[prms.Batch.bokeh_palette']
         except NameError:
             palette = [
@@ -93,8 +93,15 @@ def create_plot_option_dicts(info, marker_types=None, colors=None,
             ]
 
     if marker_types is None:
-        marker_types = ["circle", "square", "triangle", "inverted_triangle",
-                        "diamond", "asterisk", "cross"]
+        marker_types = [
+            "circle",
+            "square",
+            "triangle",
+            "inverted_triangle",
+            "diamond",
+            "asterisk",
+            "cross",
+        ]
 
     if line_dash is None:
         line_dash = [0, 0]
@@ -120,47 +127,37 @@ def create_plot_option_dicts(info, marker_types=None, colors=None,
 
     for j in groups:
         color = next(colors_it)
-        marker_options = {
-            "line_color": color,
-            "fill_color": color,
-        }
+        marker_options = {"line_color": color, "fill_color": color}
 
-        line_options = {
-            "line_color": color,
-        }
-        group_styles[j] = {
-            "marker": marker_options,
-            "line": line_options,
-        }
+        line_options = {"line_color": color}
+        group_styles[j] = {"marker": marker_options, "line": line_options}
 
     for j in sub_groups:
         marker_type = next(marker_it)
-        marker_options = {
-            "marker": marker_type,
-            "size": size,
-        }
+        marker_options = {"marker": marker_type, "size": size}
 
-        line_options = {
-            "line_dash": line_dash,
-        }
-        sub_group_styles[j] = {
-            "marker": marker_options,
-            "line": line_options,
-        }
+        line_options = {"line_dash": line_dash}
+        sub_group_styles[j] = {"marker": marker_options, "line": line_options}
     return group_styles, sub_group_styles
 
 
-def create_summary_plot_bokeh(data, info, group_styles, sub_group_styles,
-                              label = None,
-                              title="Capacity", x_axis_label="Cycle number",
-                              y_axis_label="Capacity (mAh/g)",
-                              width=900, height=400,
-                              legend_option="clean",
-                              legend_location="bottom_right",
-                              x_range=None,
-                              y_range=None,
-                              tools=["hover", ]
-                              ):
+def create_summary_plot_bokeh(
+    data,
+    info,
+    group_styles,
+    sub_group_styles,
+    label=None,
+    title="Capacity",
+    x_axis_label="Cycle number",
+    y_axis_label="Capacity (mAh/g)",
+    width=900,
+    height=400,
+    legend_option="clean",
+    legend_location="bottom_right",
+    x_range=None,
+    y_range=None,
+    tools=["hover"],
+):
 
     logging.debug(f"    - creating summary (bokeh) plot for {label}")
 
@@ -177,12 +174,14 @@ def create_summary_plot_bokeh(data, info, group_styles, sub_group_styles,
         discharge_source = bokeh.models.ColumnDataSource(discharge_capacity)
 
     p = bokeh.plotting.figure(
-        title=title, width=width, height=height,
+        title=title,
+        width=width,
+        height=height,
         # tools = tools,
         x_range=x_range,
         y_range=y_range,
         x_axis_label=x_axis_label,
-        y_axis_label=y_axis_label
+        y_axis_label=y_axis_label,
     )
 
     cols = charge_capacity.columns.get_level_values(0)
@@ -202,7 +201,8 @@ def create_summary_plot_bokeh(data, info, group_styles, sub_group_styles,
 
         ch_m = p.scatter(
             source=charge_source,
-            x="Cycle_Index", y=c,
+            x="Cycle_Index",
+            y=c,
             # **legend_option_dict,
             #  Remark! cannot use the same legend name as
             #  column name (defaults to a lookup)
@@ -212,7 +212,8 @@ def create_summary_plot_bokeh(data, info, group_styles, sub_group_styles,
 
         ch_l = p.line(
             source=charge_source,
-            x="Cycle_Index", y=c,
+            x="Cycle_Index",
+            y=c,
             **group_props["line"],
             **sub_group_props["line"],
         )
@@ -226,14 +227,16 @@ def create_summary_plot_bokeh(data, info, group_styles, sub_group_styles,
             group_props_marker_charge["fill_color"] = None
             dch_m = p.scatter(
                 source=discharge_source,
-                x="Cycle_Index", y=c,
+                x="Cycle_Index",
+                y=c,
                 **group_props_marker_charge,
                 **sub_group_props["marker"],
             )
 
             dch_l = p.line(
                 source=discharge_source,
-                x="Cycle_Index", y=c,
+                x="Cycle_Index",
+                y=c,
                 **group_props["line"],
                 **sub_group_props["line"],
             )
@@ -249,8 +252,7 @@ def create_summary_plot_bokeh(data, info, group_styles, sub_group_styles,
 
     if legend_option is not None:
         legend = bokeh.models.annotations.Legend(
-            items=legend_collection,
-            location=(10, 0)
+            items=legend_collection, location=(10, 0)
         )
         p.add_layout(legend)
         p.legend.location = legend_location
@@ -258,8 +260,9 @@ def create_summary_plot_bokeh(data, info, group_styles, sub_group_styles,
     return p
 
 
-def plot_cycle_life_summary_bokeh(info, summaries, width=900, height=800,
-                                  height_fractions=[0.2, 0.5, 0.3]):
+def plot_cycle_life_summary_bokeh(
+    info, summaries, width=900, height=800, height_fractions=[0.2, 0.5, 0.3]
+):
 
     # reloading bokeh (in case we change backend during a session)
     import bokeh
@@ -284,27 +287,44 @@ def plot_cycle_life_summary_bokeh(info, summaries, width=900, height=800,
     group_styles, sub_group_styles = create_plot_option_dicts(info)
 
     p_eff = create_summary_plot_bokeh(
-        coulombic_efficiency, info, group_styles, sub_group_styles,
+        coulombic_efficiency,
+        info,
+        group_styles,
+        sub_group_styles,
         label="c.e.",
-        legend_option=None, title=None, x_axis_label=None,
+        legend_option=None,
+        title=None,
+        x_axis_label=None,
         y_axis_label="Coulombic efficiency (%)",
-        width=width, height=h_eff,
+        width=width,
+        height=h_eff,
     )
 
     p_cap = create_summary_plot_bokeh(
-        (charge_capacity, discharge_capacity), info, group_styles,
+        (charge_capacity, discharge_capacity),
+        info,
+        group_styles,
         sub_group_styles,
         label="charge and discharge cap.",
-        title=None, x_axis_label=None, height=h_cap, width=width,
+        title=None,
+        x_axis_label=None,
+        height=h_cap,
+        width=width,
         x_range=p_eff.x_range,
     )
 
     p_ir = create_summary_plot_bokeh(
-        ir_charge, info, group_styles, sub_group_styles,
+        ir_charge,
+        info,
+        group_styles,
+        sub_group_styles,
         label="ir charge",
-        legend_option=None, title=None, x_axis_label="Cycle number",
+        legend_option=None,
+        title=None,
+        x_axis_label="Cycle number",
         y_axis_label="IR Charge (Ohm)",
-        width=width, height=h_ir,
+        width=width,
+        height=h_ir,
         x_range=p_eff.x_range,
     )
 
@@ -312,22 +332,20 @@ def plot_cycle_life_summary_bokeh(info, summaries, width=900, height=800,
     p_eff.xaxis.visible = False
     p_cap.xaxis.visible = False
 
-    hover = bokeh.models.HoverTool(tooltips=[
-        ("cycle", "@Cycle_Index"),
-        ("value", "$y"),
-    ])
+    hover = bokeh.models.HoverTool(
+        tooltips=[("cycle", "@Cycle_Index"), ("value", "$y")]
+    )
 
     p_eff.add_tools(hover)
     p_cap.add_tools(hover)
     p_ir.add_tools(hover)
 
-    return bokeh.plotting.show(
-        bokeh.layouts.column(p_eff, p_cap, p_ir)
-    )
+    return bokeh.plotting.show(bokeh.layouts.column(p_eff, p_cap, p_ir))
 
 
-def plot_cycle_life_summary_matplotlib(info, summaries, width=900, height=800,
-                                       height_fractions=[0.2, 0.5, 0.3]):
+def plot_cycle_life_summary_matplotlib(
+    info, summaries, width=900, height=800, height_fractions=[0.2, 0.5, 0.3]
+):
 
     import matplotlib.pyplot as plt
 
@@ -364,8 +382,7 @@ def plot_cycle_life_summary_matplotlib(info, summaries, width=900, height=800,
     ]
 
     group_styles, sub_group_styles = create_plot_option_dicts(
-        info,
-        marker_types=marker_types,
+        info, marker_types=marker_types
     )
 
     canvas, (ax_ce, ax_cap, ax_ir) = plt.subplots(3, 1)
@@ -382,32 +399,12 @@ def plot_cycle_life_summary_matplotlib(info, summaries, width=900, height=800,
         m = marker["marker"]
         f = "white"
 
-        ax_ce.plot(
-            coulombic_efficiency[label],
-            color=c,
-            marker=m,
-            markerfacecolor=c,
-        )
+        ax_ce.plot(coulombic_efficiency[label], color=c, marker=m, markerfacecolor=c)
 
-        ax_cap.plot(
-            charge_capacity[label],
-            color=c,
-            marker=m,
-            markerfacecolor=c,
-        )
+        ax_cap.plot(charge_capacity[label], color=c, marker=m, markerfacecolor=c)
 
-        ax_cap.plot(
-            discharge_capacity[label],
-            color=c,
-            marker=m,
-            markerfacecolor=f,
-        )
-        ax_ir.plot(
-            ir_charge[label],
-            color=c,
-            marker=m,
-            markerfacecolor=c,
-        )
+        ax_cap.plot(discharge_capacity[label], color=c, marker=m, markerfacecolor=f)
+        ax_ir.plot(ir_charge[label], color=c, marker=m, markerfacecolor=c)
 
     ax_ce.set_ylabel("Coulombic Efficiency (%)")
     ax_ce.set_ylim((0, 110))
@@ -420,7 +417,7 @@ def plot_cycle_life_summary_matplotlib(info, summaries, width=900, height=800,
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     # Put a legend to the right of the current axis
-    ax_ce.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax_ce.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 
     return canvas
 
@@ -434,10 +431,7 @@ def summary_plotting_engine(**kwargs):
     barn = None
 
     logging.debug("    - summary_plot_engine")
-    farms = _preparing_data_and_plotting(
-        experiments=experiments,
-        farms=farms
-    )
+    farms = _preparing_data_and_plotting(experiments=experiments, farms=farms)
 
     return farms, barn
 
@@ -447,22 +441,15 @@ def _plotting_data(pages, summaries, width, height, height_fractions):
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
-            pages, summaries, width,
-            height,
-            height_fractions
+            pages, summaries, width, height, height_fractions
         )
     elif prms.Batch.backend == "matplotlib":
         print("[obs! experimental]")
         canvas = plot_cycle_life_summary_matplotlib(
-            pages, summaries, width,
-            height,
-            height_fractions
+            pages, summaries, width, height, height_fractions
         )
     else:
-        logging.info(
-            f"the {prms.Batch.backend} "
-            f"back-end is not implemented yet."
-        )
+        logging.info(f"the {prms.Batch.backend} " f"back-end is not implemented yet.")
 
     return canvas
 
@@ -480,24 +467,19 @@ def _preparing_data_and_plotting(**kwargs):
     for experiment in experiments:
         if not isinstance(experiment, CyclingExperiment):
             print(
-                "No! This engine is only really good at"
-                "processing CyclingExperiments"
+                "No! This engine is only really good at" "processing CyclingExperiments"
             )
             print(experiment)
         else:
             pages = experiment.journal.pages
             try:
-                keys = [df.name for df in
-                        experiment.memory_dumped["summary_engine"]]
+                keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
 
                 summaries = pd.concat(
-                    experiment.memory_dumped["summary_engine"],
-                    keys=keys, axis=1
+                    experiment.memory_dumped["summary_engine"], keys=keys, axis=1
                 )
                 canvas = _plotting_data(
-                    pages, summaries, width,
-                    height,
-                    height_fractions
+                    pages, summaries, width, height, height_fractions
                 )
                 farms.append(canvas)
 
@@ -574,10 +556,7 @@ class CyclingSummaryPlotter(BasePlotter):
 
         self.current_engine = engine
 
-        self.farms, self.barn = engine(
-            experiments=self.experiments,
-            farms=self.farms
-        )
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
         logging.debug("::engine ended")
 
     def run_dumper(self, dumper):
@@ -603,8 +582,7 @@ class CyclingSummaryPlotter(BasePlotter):
 
     def do(self):
         if not self.experiments:
-            raise UnderDefined("cannot run until "
-                               "you have assigned an experiment")
+            raise UnderDefined("cannot run until " "you have assigned an experiment")
 
         for engine in self.engines:
             self.empty_the_farms()
@@ -624,9 +602,8 @@ class EISPlotter(BasePlotter):
         warnings.warn("not implemented yet")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("batch_plotters".center(80, "="))
     csp = CyclingSummaryPlotter()
     eisp = EISPlotter()
     print("\n --> OK")
-

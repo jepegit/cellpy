@@ -35,10 +35,15 @@ class FigureType(object):
 
     """
 
-    def __init__(self, number_of_rows=1, number_of_cols=1,
-                 capacity_selector=None, ir_selector=None,
-                 end_voltage_selector=None,
-                 axes=None):
+    def __init__(
+        self,
+        number_of_rows=1,
+        number_of_cols=1,
+        capacity_selector=None,
+        ir_selector=None,
+        end_voltage_selector=None,
+        axes=None,
+    ):
         self.number_of_rows_and_cols = (number_of_rows, number_of_cols)
 
         self.capacity_selector = capacity_selector
@@ -82,22 +87,38 @@ class FigureType(object):
 
 
 figure_types = dict()
-figure_types["summaries"] = FigureType(3, 1, [True, True], [True, True],
-                                       [True, True],
-                                       {"ce_ax": 0, "cap_ax": 1,
-                                        "ir_ax": 2, }, )
-figure_types["unlimited"] = FigureType(3, 1, [True, True], [True, True],
-                                       [True, True],
-                                       {"ce_ax": 0, "cap_ax": 1,
-                                        "ir_ax": 2, }, )
-figure_types["charge_limited"] = FigureType(4, 1, [True, True], [True, False],
-                                            [False, True],
-                                            {"ce_ax": 0, "cap_ax": 1,
-                                             "ev_ax": 2, "ir_ax": 3, }, )
-figure_types["discharge_limited"] = FigureType(4, 1, [True, True],
-                                               [False, True], [True, False],
-                                               {"ce_ax": 0, "cap_ax": 1,
-                                                "ev_ax": 2, "ir_ax": 3, }, )
+figure_types["summaries"] = FigureType(
+    3,
+    1,
+    [True, True],
+    [True, True],
+    [True, True],
+    {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2},
+)
+figure_types["unlimited"] = FigureType(
+    3,
+    1,
+    [True, True],
+    [True, True],
+    [True, True],
+    {"ce_ax": 0, "cap_ax": 1, "ir_ax": 2},
+)
+figure_types["charge_limited"] = FigureType(
+    4,
+    1,
+    [True, True],
+    [True, False],
+    [False, True],
+    {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3},
+)
+figure_types["discharge_limited"] = FigureType(
+    4,
+    1,
+    [True, True],
+    [False, True],
+    [True, False],
+    {"ce_ax": 0, "cap_ax": 1, "ev_ax": 2, "ir_ax": 3},
+)
 
 
 def _create_info_dict(reader, srnos):
@@ -138,7 +159,9 @@ def _find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
     for run_name in info_dict["filenames"]:
         if prms._use_filename_cache:
-            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(run_name, cache=filename_cache)
+            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(
+                run_name, cache=filename_cache
+            )
         else:
             raw_files, cellpyfile = filefinder.search_for_files(run_name)
         if not raw_files:
@@ -152,7 +175,7 @@ def _find_files(info_dict, filename_cache=None):
 def _save_multi(data, file_name, sep=";"):
     """convenience function for storing data column-wise in a csv-file."""
     logger.debug("saving multi")
-    with open(file_name, "w", newline='') as f:
+    with open(file_name, "w", newline="") as f:
         logger.debug(f"{file_name} opened")
         writer = csv.writer(f, delimiter=sep)
         try:
@@ -175,7 +198,7 @@ def _make_unique_groups(info_df):
             info_df.at[indx, "sub_groups"] = counter
             # info_df.set_value(indx, "sub_groups", counter)
             counter += 1
-        info_df.loc[info_df.groups == i, 'groups'] = j + 1
+        info_df.loc[info_df.groups == i, "groups"] = j + 1
     return info_df
 
 
@@ -198,6 +221,7 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
     from cellpy.utils.ica import dqdv
+
     list_of_cycles = cell_data.get_cycle_numbers()
     if last_cycle is not None:
         list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
@@ -318,14 +342,16 @@ class Batch(object):
         self.time_stamp = None
         self.default_figure_types = list(figure_types.keys())
         self.default_figure_type = prms.Batch["figure_type"]
-        self.selected_summaries = ["discharge_capacity", "charge_capacity",
-                                   "coulombic_efficiency",
-                                   "cumulated_coulombic_efficiency",
-                                   "ir_discharge", "ir_charge",
-                                   "end_voltage_discharge",
-                                   "end_voltage_charge",
-
-                                   ]
+        self.selected_summaries = [
+            "discharge_capacity",
+            "charge_capacity",
+            "coulombic_efficiency",
+            "cumulated_coulombic_efficiency",
+            "ir_discharge",
+            "ir_charge",
+            "end_voltage_discharge",
+            "end_voltage_charge",
+        ]
         self.output_format = None
         self.batch_col = "b01"
 
@@ -359,9 +385,17 @@ class Batch(object):
         self.use_cellpy_stat_file = None
         self.last_cycle = None
 
-        self._packable = ['name', 'project', 'batch_col', 'selected_summaries',
-                          'output_format', 'time_stamp', 'project_dir',
-                          'batch_dir', 'raw_dir']
+        self._packable = [
+            "name",
+            "project",
+            "batch_col",
+            "selected_summaries",
+            "output_format",
+            "time_stamp",
+            "project_dir",
+            "batch_dir",
+            "raw_dir",
+        ]
 
         # Not afraid to walk down un-known territory...
         self._kwargs = kwargs
@@ -417,8 +451,10 @@ class Batch(object):
             attrs = self._kwargs
         for key in attrs:
             if key.startswith("_"):
-                w_txt = "Cannot set attribute starting with '_' " \
-                        "('Not allowed', says the King)"
+                w_txt = (
+                    "Cannot set attribute starting with '_' "
+                    "('Not allowed', says the King)"
+                )
                 warnings.warn(w_txt)
 
             if hasattr(self, key):
@@ -433,10 +469,11 @@ class Batch(object):
 
     def _create_colors_markers_list(self):
         from cellpy.utils import plotutils
+
         return plotutils.create_colormarkerlist_for_info_df(
             self.info_df,
             symbol_label=self.symbol_label,
-            color_style_label=self.color_style_label
+            color_style_label=self.color_style_label,
         )
 
     def create_info_df(self):
@@ -444,8 +481,9 @@ class Batch(object):
         logger.debug("running create_info_df")
         # initializing the reader
         reader = self.reader()
-        self.info_df = make_df_from_batch(self.name, batch_col=self.batch_col,
-                                          reader=reader)
+        self.info_df = make_df_from_batch(
+            self.name, batch_col=self.batch_col, reader=reader
+        )
         logger.debug(str(self.info_df.head(5)))
 
     def save_info_df(self):
@@ -453,14 +491,14 @@ class Batch(object):
         logger.debug("running save_info_df")
 
         info_df = self.info_df
-        top_level_dict = {'info_df': info_df, 'metadata': self._prm_packer()}
+        top_level_dict = {"info_df": info_df, "metadata": self._prm_packer()}
 
         # packing prms
 
-        jason_string = json.dumps(top_level_dict,
-                                  default=lambda info_df: json.loads(
-                                      info_df.to_json()))
-        with open(self.info_file, 'w') as outfile:
+        jason_string = json.dumps(
+            top_level_dict, default=lambda info_df: json.loads(info_df.to_json())
+        )
+        with open(self.info_file, "w") as outfile:
             outfile.write(jason_string)
         logger.info("Saved file to {}".format(self.info_file))
 
@@ -471,14 +509,14 @@ class Batch(object):
         if file_name is None:
             file_name = self.info_file
 
-        with open(file_name, 'r') as infile:
+        with open(file_name, "r") as infile:
             top_level_dict = json.load(infile)
 
-        new_info_df_dict = top_level_dict['info_df']
+        new_info_df_dict = top_level_dict["info_df"]
         new_info_df = pd.DataFrame(new_info_df_dict)
         self.info_df = new_info_df
 
-        self._prm_packer(top_level_dict['metadata'])
+        self._prm_packer(top_level_dict["metadata"])
         self.info_file = file_name
         logger.debug("loaded info_df")
         logger.debug(" info_file: %s" % self.info_file)
@@ -494,8 +532,7 @@ class Batch(object):
         the Raw-data-dir.
 
         """
-        self.info_file, directories = create_folder_structure(self.project,
-                                                              self.name)
+        self.info_file, directories = create_folder_structure(self.project, self.name)
         self.project_dir, self.batch_dir, self.raw_dir = directories
         logger.debug("create folders:" + str(directories))
 
@@ -506,8 +543,9 @@ class Batch(object):
             use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
         else:
             use_cellpy_stat_file = self.use_cellpy_stat_file
-        logger.debug(f"b.load_and_save_raw: "
-                     f"use_cellpy_stat_file = {use_cellpy_stat_file}")
+        logger.debug(
+            f"b.load_and_save_raw: " f"use_cellpy_stat_file = {use_cellpy_stat_file}"
+        )
         self.frames, self.keys, errors = read_and_save_data(
             self.info_df,
             self.raw_dir,
@@ -521,16 +559,16 @@ class Batch(object):
             save=self.save_cellpy_file,
             use_cellpy_stat_file=use_cellpy_stat_file,
             parent_level=parent_level,
-            last_cycle=self.last_cycle
+            last_cycle=self.last_cycle,
         )
         logger.debug("loaded and saved data. errors:" + str(errors))
 
     def make_summaries(self):
         """Make and save summary csv files,
         each containing values from all cells"""
-        self.summary_df = save_summaries(self.frames, self.keys,
-                                         self.selected_summaries,
-                                         self.batch_dir, self.name)
+        self.summary_df = save_summaries(
+            self.frames, self.keys, self.selected_summaries, self.batch_dir, self.name
+        )
         logger.debug("made and saved summaries")
 
     def make_stats(self):
@@ -549,24 +587,30 @@ class Batch(object):
 
         # need to get the df
         try:
-            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df,
-                                     self.selected_summaries)
-            df_d = pick_summary_data("shifted_discharge_capacity",
-                                     self.summary_df, self.selected_summaries)
+            df_c = pick_summary_data(
+                "shifted_charge_capacity", self.summary_df, self.selected_summaries
+            )
+            df_d = pick_summary_data(
+                "shifted_discharge_capacity", self.summary_df, self.selected_summaries
+            )
         except AttributeError:
-            logger.debug("shifted capacities not part of summary data "
-                         "(selected_summaries)")
+            logger.debug(
+                "shifted capacities not part of summary data " "(selected_summaries)"
+            )
             return None
 
         # generate labels
-        labels = [self.info_df.get_value(filename, "labels") for filename in
-                  df_c.columns.get_level_values(0)]
+        labels = [
+            self.info_df.get_value(filename, "labels")
+            for filename in df_c.columns.get_level_values(0)
+        ]
 
         # adding charge/discharge label
         labels.extend(["", "discharge", "charge"])
 
         list_of_lines, plot_style = plot_summary_data(
-            ax, df_d,
+            ax,
+            df_d,
             info_df=self.info_df,
             color_list=color_list,
             symbol_list=symbol_list,
@@ -579,39 +623,37 @@ class Batch(object):
         markersize = plot_style["markersize"]
 
         open_label = mpl.lines.Line2D(
-            [], [],
+            [],
+            [],
             color=color,
-            marker='s',
+            marker="s",
             markeredgecolor=color,
-            markerfacecolor='none',
-            markersize=markersize
+            markerfacecolor="none",
+            markersize=markersize,
         )
 
         closed_label = mpl.lines.Line2D(
-            [], [],
+            [],
+            [],
             color=color,
-            marker='s',
+            marker="s",
             markeredgecolor=color,
             markerfacecolor=color,
-            markersize=markersize
+            markersize=markersize,
         )
 
-        no_label = mpl.lines.Line2D(
-            [], [],
-            color='none',
-            marker='s',
-            markersize=0
-        )
+        no_label = mpl.lines.Line2D([], [], color="none", marker="s", markersize=0)
 
         list_of_lines.extend([no_label, closed_label, open_label])
 
         plot_summary_data(
-            ax, df_c,
+            ax,
+            df_c,
             info_df=self.info_df,
             color_list=color_list,
             symbol_list=symbol_list,
             is_charge=True,
-            plot_style=plot_style
+            plot_style=plot_style,
         )
 
         # setting axes labels
@@ -627,16 +669,18 @@ class Batch(object):
             # bbox_transform=plt.gcf().transFigure,
             bbox_transform=ax.transAxes,
             numpoints=1,
-            ncol=1, labelspacing=0.,
-            prop={"size": 10}
+            ncol=1,
+            labelspacing=0.0,
+            prop={"size": 10},
         )
 
         if save:
             extension = prms.Batch["fig_extension"]
             dpi = prms.Batch["dpi"]
-            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
-            figure_type, batch_name, extension))
-            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+            figure_file_name = os.path.join(
+                batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension)
+            )
+            fig.savefig(figure_file_name, dpi=dpi, bbox_inches="tight")
             plt.savefig()
 
         if show:
@@ -657,68 +701,97 @@ class Batch(object):
 
         # need to get the df
         try:
-            df_c = pick_summary_data("shifted_charge_capacity", self.summary_df,
-                                     self.selected_summaries)
-            df_d = pick_summary_data("shifted_discharge_capacity",
-                                     self.summary_df, self.selected_summaries)
+            df_c = pick_summary_data(
+                "shifted_charge_capacity", self.summary_df, self.selected_summaries
+            )
+            df_d = pick_summary_data(
+                "shifted_discharge_capacity", self.summary_df, self.selected_summaries
+            )
         except AttributeError:
-            logger.debug("shifted capacities not part of summary data "
-                         "(selected_summaries)")
+            logger.debug(
+                "shifted capacities not part of summary data " "(selected_summaries)"
+            )
             return None
 
         # generate labels
-        labels = [self.info_df.get_value(filename, "labels") for filename in
-                  df_c.columns.get_level_values(0)]
+        labels = [
+            self.info_df.get_value(filename, "labels")
+            for filename in df_c.columns.get_level_values(0)
+        ]
 
         # adding charge/discharge label
         labels.extend(["", "discharge", "charge"])
 
-        list_of_lines, plot_style = plot_summary_data(ax, df_d,
-                                                      info_df=self.info_df,
-                                                      color_list=color_list,
-                                                      symbol_list=symbol_list,
-                                                      is_charge=False,
-                                                      plot_style=plot_style)
+        list_of_lines, plot_style = plot_summary_data(
+            ax,
+            df_d,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=False,
+            plot_style=plot_style,
+        )
 
         # adding charge/discharge legend signs
         color = plot_style["color"]
         markersize = plot_style["markersize"]
 
-        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                      markeredgecolor=color,
-                                      markerfacecolor='none',
-                                      markersize=markersize)
-        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                        markeredgecolor=color,
-                                        markerfacecolor=color,
-                                        markersize=markersize)
-        no_label = mpl.lines.Line2D([], [], color='none', marker='s',
-                                    markersize=0)
+        open_label = mpl.lines.Line2D(
+            [],
+            [],
+            color=color,
+            marker="s",
+            markeredgecolor=color,
+            markerfacecolor="none",
+            markersize=markersize,
+        )
+        closed_label = mpl.lines.Line2D(
+            [],
+            [],
+            color=color,
+            marker="s",
+            markeredgecolor=color,
+            markerfacecolor=color,
+            markersize=markersize,
+        )
+        no_label = mpl.lines.Line2D([], [], color="none", marker="s", markersize=0)
         list_of_lines.extend([no_label, closed_label, open_label])
 
-        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
-                          symbol_list=symbol_list, is_charge=True,
-                          plot_style=plot_style)
+        plot_summary_data(
+            ax,
+            df_c,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=True,
+            plot_style=plot_style,
+        )
 
         # setting axes labels
         ax.set_xlabel("cycle")
         ax.set_ylabel("capacity")
         # adding legend
         logger.debug("trying to add legends " + str(labels))
-        fig.legend(handles=list_of_lines, labels=labels,
-                   bbox_to_anchor=(1.02, 1.1), loc=2,
-                   # bbox_transform=plt.gcf().transFigure,
-                   bbox_transform=ax.transAxes,
-                   numpoints=1,
-                   ncol=1, labelspacing=0.,
-                   prop={"size": 10})
+        fig.legend(
+            handles=list_of_lines,
+            labels=labels,
+            bbox_to_anchor=(1.02, 1.1),
+            loc=2,
+            # bbox_transform=plt.gcf().transFigure,
+            bbox_transform=ax.transAxes,
+            numpoints=1,
+            ncol=1,
+            labelspacing=0.0,
+            prop={"size": 10},
+        )
 
         if save:
             extension = prms.Batch["fig_extension"]
             dpi = prms.Batch["dpi"]
-            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
-            figure_type, batch_name, extension))
-            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+            figure_file_name = os.path.join(
+                batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension)
+            )
+            fig.savefig(figure_file_name, dpi=dpi, bbox_inches="tight")
             plt.savefig()
 
         if show:
@@ -741,68 +814,95 @@ class Batch(object):
 
         # need to get the df
         try:
-            df_c = pick_summary_data("low_level", self.summary_df,
-                                     self.selected_summaries)
-            df_d = pick_summary_data("high_level", self.summary_df,
-                                     self.selected_summaries)
+            df_c = pick_summary_data(
+                "low_level", self.summary_df, self.selected_summaries
+            )
+            df_d = pick_summary_data(
+                "high_level", self.summary_df, self.selected_summaries
+            )
         except AttributeError:
-            logger.debug(
-                "low_level not part of summary data (selected_summaries)")
+            logger.debug("low_level not part of summary data (selected_summaries)")
             return None
 
         # generate labels
-        labels = [self.info_df.get_value(filename, "labels") for filename in
-                  df_c.columns.get_level_values(0)]
+        labels = [
+            self.info_df.get_value(filename, "labels")
+            for filename in df_c.columns.get_level_values(0)
+        ]
 
         # adding charge/discharge label
         labels.extend(["", "low_level", "high_level"])
 
-        list_of_lines, plot_style = plot_summary_data(ax, df_d,
-                                                      info_df=self.info_df,
-                                                      color_list=color_list,
-                                                      symbol_list=symbol_list,
-                                                      is_charge=False,
-                                                      plot_style=plot_style)
+        list_of_lines, plot_style = plot_summary_data(
+            ax,
+            df_d,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=False,
+            plot_style=plot_style,
+        )
 
         # adding charge/discharge legend signs
         color = plot_style["color"]
         markersize = plot_style["markersize"]
 
-        open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                      markeredgecolor=color,
-                                      markerfacecolor='none',
-                                      markersize=markersize)
-        closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                        markeredgecolor=color,
-                                        markerfacecolor=color,
-                                        markersize=markersize)
-        no_label = mpl.lines.Line2D([], [], color='none', marker='s',
-                                    markersize=0)
+        open_label = mpl.lines.Line2D(
+            [],
+            [],
+            color=color,
+            marker="s",
+            markeredgecolor=color,
+            markerfacecolor="none",
+            markersize=markersize,
+        )
+        closed_label = mpl.lines.Line2D(
+            [],
+            [],
+            color=color,
+            marker="s",
+            markeredgecolor=color,
+            markerfacecolor=color,
+            markersize=markersize,
+        )
+        no_label = mpl.lines.Line2D([], [], color="none", marker="s", markersize=0)
         list_of_lines.extend([no_label, closed_label, open_label])
 
-        plot_summary_data(ax, df_c, info_df=self.info_df, color_list=color_list,
-                          symbol_list=symbol_list, is_charge=True,
-                          plot_style=plot_style)
+        plot_summary_data(
+            ax,
+            df_c,
+            info_df=self.info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            is_charge=True,
+            plot_style=plot_style,
+        )
 
         # setting axes labels
         ax.set_xlabel("cycle")
         ax.set_ylabel("percentage")
         # adding legend
         logger.debug("trying to add legends " + str(labels))
-        fig.legend(handles=list_of_lines, labels=labels,
-                   bbox_to_anchor=(1.02, 1.1), loc=2,
-                   # bbox_transform=plt.gcf().transFigure,
-                   bbox_transform=ax.transAxes,
-                   numpoints=1,
-                   ncol=1, labelspacing=0.,
-                   prop={"size": 10})
+        fig.legend(
+            handles=list_of_lines,
+            labels=labels,
+            bbox_to_anchor=(1.02, 1.1),
+            loc=2,
+            # bbox_transform=plt.gcf().transFigure,
+            bbox_transform=ax.transAxes,
+            numpoints=1,
+            ncol=1,
+            labelspacing=0.0,
+            prop={"size": 10},
+        )
 
         if save:
             extension = prms.Batch["fig_extension"]
             dpi = prms.Batch["dpi"]
-            figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
-            figure_type, batch_name, extension))
-            fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+            figure_file_name = os.path.join(
+                batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension)
+            )
+            fig.savefig(figure_file_name, dpi=dpi, bbox_inches="tight")
             plt.savefig()
 
         if show:
@@ -831,10 +931,18 @@ class Batch(object):
         selected_summaries = self.selected_summaries
         batch_dir = self.batch_dir
         batch_name = self.name
-        fig, ax = plot_summary_figure(self.info_df, summary_df, color_list,
-                                      symbol_list, selected_summaries,
-                                      batch_dir, batch_name, show=show,
-                                      save=save, figure_type=figure_type)
+        fig, ax = plot_summary_figure(
+            self.info_df,
+            summary_df,
+            color_list,
+            symbol_list,
+            selected_summaries,
+            batch_dir,
+            batch_name,
+            show=show,
+            save=save,
+            figure_type=figure_type,
+        )
         self.figure[figure_type] = fig
         self.axes[figure_type] = ax
 
@@ -953,14 +1061,21 @@ def create_folder_structure(project_name, batch_name):
     return info_file, (project_dir, batch_dir, raw_dir)
 
 
-def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
-                       force_cellpy=False,
-                       export_cycles=False, shifted_cycles=False,
-                       export_raw=True,
-                       export_ica=False, save=True, use_cellpy_stat_file=False,
-                       parent_level="CellpyData",
-                       last_cycle=None,
-                       ):
+def read_and_save_data(
+    info_df,
+    raw_dir,
+    sep=";",
+    force_raw=False,
+    force_cellpy=False,
+    export_cycles=False,
+    shifted_cycles=False,
+    export_raw=True,
+    export_ica=False,
+    save=True,
+    use_cellpy_stat_file=False,
+    parent_level="CellpyData",
+    last_cycle=None,
+):
     """Reads and saves cell data defined by the info-DataFrame.
 
     The function iterates through the ``info_df`` and loads data from the runs.
@@ -1020,13 +1135,16 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
         if not force_cellpy:
             logger.info("not forcing")
             try:
-                cell_data.loadcell(raw_files=row.raw_file_names,
-                                   cellpy_file=row.cellpy_file_names,
-                                   mass=row.masses, summary_on_raw=True,
-                                   force_raw=force_raw,
-                                   use_cellpy_stat_file=use_cellpy_stat_file)
+                cell_data.loadcell(
+                    raw_files=row.raw_file_names,
+                    cellpy_file=row.cellpy_file_names,
+                    mass=row.masses,
+                    summary_on_raw=True,
+                    force_raw=force_raw,
+                    use_cellpy_stat_file=use_cellpy_stat_file,
+                )
             except Exception as e:
-                logger.debug('Failed to load: ' + str(e))
+                logger.debug("Failed to load: " + str(e))
                 errors.append("loadcell:" + str(indx))
                 continue
         else:
@@ -1034,9 +1152,10 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
             try:
                 cell_data.load(row.cellpy_file_names, parent_level=parent_level)
             except Exception as e:
-                logger.info(f"Critical exception encountered {type(e)} "
-                            "- skipping this file")
-                logger.debug('Failed to load. Error-message: ' + str(e))
+                logger.info(
+                    f"Critical exception encountered {type(e)} " "- skipping this file"
+                )
+                logger.debug("Failed to load. Error-message: " + str(e))
                 errors.append("load:" + str(indx))
                 continue
 
@@ -1057,15 +1176,16 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
 
         if summary_tmp.index.name == b"Cycle_Index":
             logger.debug("Strange: 'Cycle_Index' is a byte-string")
-            summary_tmp.index.name = 'Cycle_Index'
+            summary_tmp.index.name = "Cycle_Index"
 
         if not summary_tmp.index.name == "Cycle_Index":
             logger.debug("Setting index to Cycle_Index")
             # check if it is a byte-string
             if b"Cycle_Index" in summary_tmp.columns:
                 logger.debug("Seems to be a byte-string in the column-headers")
-                summary_tmp.rename(columns={b"Cycle_Index": 'Cycle_Index'},
-                                   inplace=True)
+                summary_tmp.rename(
+                    columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
+                )
             summary_tmp.set_index("Cycle_Index", inplace=True)
 
         frames.append(summary_tmp)
@@ -1083,19 +1203,24 @@ def read_and_save_data(info_df, raw_dir, sep=";", force_raw=False,
 
         if export_raw:
             logger.info("exporting csv")
-            cell_data.to_csv(raw_dir, sep=sep, cycles=export_cycles,
-                             shifted=shifted_cycles, raw=export_raw,
-                             last_cycle=last_cycle)
+            cell_data.to_csv(
+                raw_dir,
+                sep=sep,
+                cycles=export_cycles,
+                shifted=shifted_cycles,
+                raw=export_raw,
+                last_cycle=last_cycle,
+            )
 
         if do_export_dqdv:
             logger.info("exporting dqdv")
             try:
-                export_dqdv(cell_data, savedir=raw_dir, sep=sep,
-                            last_cycle=last_cycle)
+                export_dqdv(cell_data, savedir=raw_dir, sep=sep, last_cycle=last_cycle)
             except Exception as e:
                 logging.error("Could not make/export dq/dv data")
-                logger.debug("Failed to make/export "
-                             "dq/dv data (%s): %s" % (indx, str(e)))
+                logger.debug(
+                    "Failed to make/export " "dq/dv data (%s): %s" % (indx, str(e))
+                )
                 errors.append("ica:" + str(indx))
 
     if len(errors) > 0:
@@ -1133,15 +1258,16 @@ def save_summaries(frames, keys, selected_summaries, batch_dir, batch_name):
     summary_df = pd.concat(frames, keys=keys, axis=1)
     # saving the selected summaries
     for key, value in selected_summaries_dict.items():
-        _summary_file_name = os.path.join(batch_dir, "summary_%s_%s.csv" % (
-        key, batch_name))
-        _summary_df = summary_df.iloc[:,
-                      summary_df.columns.get_level_values(1) == value]
+        _summary_file_name = os.path.join(
+            batch_dir, "summary_%s_%s.csv" % (key, batch_name)
+        )
+        _summary_df = summary_df.iloc[
+            :, summary_df.columns.get_level_values(1) == value
+        ]
         # include function to tweak headers here (need to learn MultiIndex)
         _header = _summary_df.columns
         _summary_df.to_csv(_summary_file_name, sep=";")
-        logger.info(
-            "saved summary (%s) to:\n       %s" % (key, _summary_file_name))
+        logger.info("saved summary (%s) to:\n       %s" % (key, _summary_file_name))
     logger.info("finished saving summaries")
     return summary_df
 
@@ -1154,8 +1280,9 @@ def pick_summary_data(key, summary_df, selected_summaries):
     return summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
 
 
-def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False,
-                      plot_style=None):
+def plot_summary_data(
+    ax, df, info_df, color_list, symbol_list, is_charge=False, plot_style=None
+):
     """creates a plot of the selected df-data in the given axes.
 
     Typical usage:
@@ -1204,7 +1331,7 @@ def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False,
         plot_style["marker"] = marker
         plot_style["markeredgecolor"] = color
         plot_style["color"] = color
-        plot_style["markerfacecolor"] = 'none'
+        plot_style["markerfacecolor"] = "none"
         logger.debug("selecting color for group: " + str(color))
 
         if not is_charge:
@@ -1215,11 +1342,19 @@ def plot_summary_data(ax, df, info_df, color_list, symbol_list, is_charge=False,
     return list_of_lines, plot_style
 
 
-def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
-                        selected_summaries,
-                        batch_dir, batch_name, plot_style=None, show=False,
-                        save=True,
-                        figure_type=None):
+def plot_summary_figure(
+    info_df,
+    summary_df,
+    color_list,
+    symbol_list,
+    selected_summaries,
+    batch_dir,
+    batch_name,
+    plot_style=None,
+    show=False,
+    save=True,
+    figure_type=None,
+):
     """Create a figure with summary graphs.
     Args:
         info_df: the pandas DataFrame with info about the runs.
@@ -1237,9 +1372,9 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
     figure_type_object = figure_types[figure_type]
 
     logger.debug("creating figure ({})".format(figure_type))
-    standard_fig, ax = plt.subplots(nrows=figure_type_object.rows,
-                                    ncols=figure_type_object.columns,
-                                    sharex=True)
+    standard_fig, ax = plt.subplots(
+        nrows=figure_type_object.rows, ncols=figure_type_object.columns, sharex=True
+    )
 
     ce_ax = figure_type_object.retrieve_axis("ce_ax", ax)
     cap_ax = figure_type_object.retrieve_axis("cap_ax", ax)
@@ -1248,25 +1383,29 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
 
     # pick data (common for all plot types)
     # could include a if cd_ax: pick_summary_data...
-    ce_df = pick_summary_data("coulombic_efficiency", summary_df,
-                              selected_summaries)
+    ce_df = pick_summary_data("coulombic_efficiency", summary_df, selected_summaries)
     cc_df = pick_summary_data("charge_capacity", summary_df, selected_summaries)
-    dc_df = pick_summary_data("discharge_capacity", summary_df,
-                              selected_summaries)
+    dc_df = pick_summary_data("discharge_capacity", summary_df, selected_summaries)
 
     # generate labels
-    ce_labels = [info_df.get_value(filename, "labels") for filename in
-                 ce_df.columns.get_level_values(0)]
+    ce_labels = [
+        info_df.get_value(filename, "labels")
+        for filename in ce_df.columns.get_level_values(0)
+    ]
 
     # adding charge/discharge label
     ce_labels.extend(["", "discharge", "charge"])
 
     # plot ce
-    list_of_lines, plot_style = plot_summary_data(ce_ax, ce_df, info_df=info_df,
-                                                  color_list=color_list,
-                                                  symbol_list=symbol_list,
-                                                  is_charge=False,
-                                                  plot_style=plot_style)
+    list_of_lines, plot_style = plot_summary_data(
+        ce_ax,
+        ce_df,
+        info_df=info_df,
+        color_list=color_list,
+        symbol_list=symbol_list,
+        is_charge=False,
+        plot_style=plot_style,
+    )
     ce_ax.set_ylabel("Coulombic\nefficiency\n(%)")
     ce_ax.locator_params(nbins=5)
 
@@ -1274,23 +1413,46 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
     color = plot_style["color"]
     markersize = plot_style["markersize"]
 
-    open_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                  markeredgecolor=color, markerfacecolor='none',
-                                  markersize=markersize)
-    closed_label = mpl.lines.Line2D([], [], color=color, marker='s',
-                                    markeredgecolor=color,
-                                    markerfacecolor=color,
-                                    markersize=markersize)
-    no_label = mpl.lines.Line2D([], [], color='none', marker='s', markersize=0)
+    open_label = mpl.lines.Line2D(
+        [],
+        [],
+        color=color,
+        marker="s",
+        markeredgecolor=color,
+        markerfacecolor="none",
+        markersize=markersize,
+    )
+    closed_label = mpl.lines.Line2D(
+        [],
+        [],
+        color=color,
+        marker="s",
+        markeredgecolor=color,
+        markerfacecolor=color,
+        markersize=markersize,
+    )
+    no_label = mpl.lines.Line2D([], [], color="none", marker="s", markersize=0)
     list_of_lines.extend([no_label, closed_label, open_label])
 
     # plotting capacity (common)
-    plot_summary_data(cap_ax, cc_df, is_charge=True, info_df=info_df,
-                      color_list=color_list,
-                      symbol_list=symbol_list, plot_style=plot_style)
-    plot_summary_data(cap_ax, dc_df, is_charge=False, info_df=info_df,
-                      color_list=color_list,
-                      symbol_list=symbol_list, plot_style=plot_style)
+    plot_summary_data(
+        cap_ax,
+        cc_df,
+        is_charge=True,
+        info_df=info_df,
+        color_list=color_list,
+        symbol_list=symbol_list,
+        plot_style=plot_style,
+    )
+    plot_summary_data(
+        cap_ax,
+        dc_df,
+        is_charge=False,
+        info_df=info_df,
+        color_list=color_list,
+        symbol_list=symbol_list,
+        plot_style=plot_style,
+    )
     cap_ax.set_ylabel("Capacity\n(mAh/g)")
     cap_ax.locator_params(nbins=4)
 
@@ -1298,15 +1460,26 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
     plot_ir_charge, plot_ir_discharge = figure_type_object.ir_selector
     if plot_ir_charge:
         irc_df = pick_summary_data("ir_charge", summary_df, selected_summaries)
-        plot_summary_data(ir_ax, irc_df, is_charge=True, info_df=info_df,
-                          color_list=color_list,
-                          symbol_list=symbol_list, plot_style=plot_style)
+        plot_summary_data(
+            ir_ax,
+            irc_df,
+            is_charge=True,
+            info_df=info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            plot_style=plot_style,
+        )
     if plot_ir_discharge:
-        ird_df = pick_summary_data("ir_discharge", summary_df,
-                                   selected_summaries)
-        plot_summary_data(ir_ax, ird_df, is_charge=False, info_df=info_df,
-                          color_list=color_list,
-                          symbol_list=symbol_list, plot_style=plot_style)
+        ird_df = pick_summary_data("ir_discharge", summary_df, selected_summaries)
+        plot_summary_data(
+            ir_ax,
+            ird_df,
+            is_charge=False,
+            info_df=info_df,
+            color_list=color_list,
+            symbol_list=symbol_list,
+            plot_style=plot_style,
+        )
 
     ir_ax.set_ylabel("Internal\nresistance\n(Ohms)")
     ir_ax.set_xlabel("Cycle number")
@@ -1316,45 +1489,63 @@ def plot_summary_figure(info_df, summary_df, color_list, symbol_list,
 
     # pick data (not common for all plot types)
     if ev_ax is not None:
-        plot_ev_charge, plot_ev_discharge = figure_type_object\
-            .end_voltage_selector
+        plot_ev_charge, plot_ev_discharge = figure_type_object.end_voltage_selector
         if plot_ev_charge:
-            evc_df = pick_summary_data("end_voltage_charge", summary_df,
-                                       selected_summaries)
-            plot_summary_data(ev_ax, evc_df, is_charge=True, info_df=info_df,
-                              color_list=color_list,
-                              symbol_list=symbol_list, plot_style=plot_style)
+            evc_df = pick_summary_data(
+                "end_voltage_charge", summary_df, selected_summaries
+            )
+            plot_summary_data(
+                ev_ax,
+                evc_df,
+                is_charge=True,
+                info_df=info_df,
+                color_list=color_list,
+                symbol_list=symbol_list,
+                plot_style=plot_style,
+            )
         if plot_ev_discharge:
-            evd_df = pick_summary_data("end_voltage_discharge", summary_df,
-                                       selected_summaries)
-            plot_summary_data(ev_ax, evd_df, is_charge=False, info_df=info_df,
-                              color_list=color_list,
-                              symbol_list=symbol_list, plot_style=plot_style)
+            evd_df = pick_summary_data(
+                "end_voltage_discharge", summary_df, selected_summaries
+            )
+            plot_summary_data(
+                ev_ax,
+                evd_df,
+                is_charge=False,
+                info_df=info_df,
+                color_list=color_list,
+                symbol_list=symbol_list,
+                plot_style=plot_style,
+            )
 
         ev_ax.set_ylabel("End\nvoltage\n(V)")
         ev_ax.locator_params(axis="y", nbins=4)
 
     # tweaking
-    plt.subplots_adjust(left=0.07, right=0.93, top=0.9, wspace=0.25,
-                        hspace=0.15)
+    plt.subplots_adjust(left=0.07, right=0.93, top=0.9, wspace=0.25, hspace=0.15)
 
     # adding legend
     logger.debug("trying to add legends " + str(ce_labels))
-    standard_fig.legend(handles=list_of_lines, labels=ce_labels,
-                        bbox_to_anchor=(1.02, 1.1), loc=2,
-                        # bbox_transform=plt.gcf().transFigure,
-                        bbox_transform=ce_ax.transAxes,
-                        numpoints=1,
-                        ncol=1, labelspacing=0.,
-                        prop={"size": 10})
+    standard_fig.legend(
+        handles=list_of_lines,
+        labels=ce_labels,
+        bbox_to_anchor=(1.02, 1.1),
+        loc=2,
+        # bbox_transform=plt.gcf().transFigure,
+        bbox_transform=ce_ax.transAxes,
+        numpoints=1,
+        ncol=1,
+        labelspacing=0.0,
+        prop={"size": 10},
+    )
 
     # plt.tight_layout()
     if save:
         extension = prms.Batch["fig_extension"]
         dpi = prms.Batch["dpi"]
-        figure_file_name = os.path.join(batch_dir, "%splot_%s.%s" % (
-        figure_type, batch_name, extension))
-        standard_fig.savefig(figure_file_name, dpi=dpi, bbox_inches='tight')
+        figure_file_name = os.path.join(
+            batch_dir, "%splot_%s.%s" % (figure_type, batch_name, extension)
+        )
+        standard_fig.savefig(figure_file_name, dpi=dpi, bbox_inches="tight")
     if show:
         plt.show()
     return standard_fig, (ce_ax, cap_ax, ir_ax)
@@ -1417,8 +1608,10 @@ def init(*args, **kwargs):
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
     import cellpy.log as log
-    log.setup_logging(custom_log_dir=prms.Paths["filelogdir"],
-                      default_level=default_log_level)
+
+    log.setup_logging(
+        custom_log_dir=prms.Paths["filelogdir"], default_level=default_log_level
+    )
     b = Batch(*args, **kwargs)
     return b
 
@@ -1426,8 +1619,8 @@ def init(*args, **kwargs):
 def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
     number_of_stars_to_print = (79 - len(name)) // 2
     print()
-    print(number_of_stars_to_print * "*", end='')
-    print(name, end='')
+    print(number_of_stars_to_print * "*", end="")
+    print(name, end="")
     print(number_of_stars_to_print * "*")
     for item in dir_items:
         if not item.startswith("_"):
@@ -1437,8 +1630,10 @@ def _print_dict_keys(dir_items, name="KEYS", bullet=" -> "):
 def debugging():
     """This one I use for debugging..."""
     print("In debugging")
-    json_file = r"C:\Scripting\Processing\Cell" \
-                r"data\outdata\SiBEC\cellpy_batch_bec_exp02.json"
+    json_file = (
+        r"C:\Scripting\Processing\Cell"
+        r"data\outdata\SiBEC\cellpy_batch_bec_exp02.json"
+    )
 
     b = init(default_log_level="DEBUG")
     b.load_info_df(json_file)
@@ -1459,11 +1654,21 @@ def main():
     load_json = False
     if not load_json:
         print("Running batch_old.py (loading from db)")
-        b = init("bec_exp06", "CellpyTest", default_log_level="DEBUG",
-                 reader="excel", me="Jan Petter")
+        b = init(
+            "bec_exp06",
+            "CellpyTest",
+            default_log_level="DEBUG",
+            reader="excel",
+            me="Jan Petter",
+        )
         b.selected_summaries.extend(
-            ["shifted_charge_capacity", "shifted_discharge_capacity",
-             "low_level", "high_level", ])
+            [
+                "shifted_charge_capacity",
+                "shifted_discharge_capacity",
+                "low_level",
+                "high_level",
+            ]
+        )
         b.create_info_df()
         b.create_folder_structure()
         b.save_info_df()
@@ -1495,6 +1700,6 @@ def main():
     print("Finished!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # debugging()
     main()

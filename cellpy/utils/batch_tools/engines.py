@@ -59,11 +59,14 @@ def summary_engine(**kwargs):
     for experiment in experiments:
         if experiment.selected_summaries is None:
             selected_summaries = [
-                "discharge_capacity", "charge_capacity",
+                "discharge_capacity",
+                "charge_capacity",
                 "coulombic_efficiency",
                 "cumulated_coulombic_efficiency",
-                "ir_discharge", "ir_charge",
-                "end_voltage_discharge", "end_voltage_charge",
+                "ir_discharge",
+                "ir_charge",
+                "end_voltage_discharge",
+                "end_voltage_charge",
             ]
         else:
             selected_summaries = experiment.selected_summaries
@@ -74,10 +77,7 @@ def summary_engine(**kwargs):
 
             experiment.summary_frames = _load_summaries(experiment)
 
-        farm = helper.join_summaries(
-            experiment.summary_frames,
-            selected_summaries
-        )
+        farm = helper.join_summaries(experiment.summary_frames, selected_summaries)
         farms.append(farm)
     barn = "batch_dir"
 

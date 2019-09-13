@@ -21,12 +21,14 @@ log.setup_logging(default_level=logging.DEBUG)
 @pytest.fixture
 def cellpy_data_instance():
     from cellpy import cellreader
+
     return cellreader.CellpyData()
 
 
 @pytest.fixture
 def dataset():
     from cellpy import cellreader
+
     d = cellreader.CellpyData()
     d.load(fdv.cellpy_file_path)
     return d
@@ -97,9 +99,7 @@ def test_ica_value_bounds():
 
 def test_ica_dqdv_cycles(dataset):
     cycles = dataset.get_cap(
-        method="forth-and-forth",
-        categorical_column=True,
-        label_cycle_number=True,
+        method="forth-and-forth", categorical_column=True, label_cycle_number=True
     )
     dQdV = ica.dqdv_cycles(cycles)
 
@@ -117,10 +117,7 @@ def test_set_data(dataset):
 
 
 def test_inspect_data(converter):
-    converter.inspect_data(
-        err_est=True,
-        diff_est=True,
-    )
+    converter.inspect_data(err_est=True, diff_est=True)
     converter.pre_process_data()
     converter.increment_data()
     converter.post_process_data()
@@ -171,6 +168,3 @@ def test_increment_data_smoothing(converter):
 
 # missing test: fixed_range in post_process_data
 # missing test: dqdv_frames
-
-
-

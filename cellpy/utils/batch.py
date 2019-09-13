@@ -24,8 +24,9 @@ class Batch:
     def __init__(self, *args, **kwargs):
         default_log_level = kwargs.pop("log_level", None)
         if default_log_level is not None:
-            log.setup_logging(custom_log_dir=prms.Paths.filelogdir,
-                              default_level=default_log_level)
+            log.setup_logging(
+                custom_log_dir=prms.Paths.filelogdir, default_level=default_log_level
+            )
 
         db_reader = kwargs.pop("db_reader", "default")
 
@@ -83,7 +84,9 @@ class Batch:
         # should add link-mode?
         try:
             keys = [df.name for df in self.experiment.memory_dumped["summary_engine"]]
-            return pd.concat(self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
+            return pd.concat(
+                self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1
+            )
         except KeyError:
             logging.info("no summary exists")
 
@@ -114,11 +117,21 @@ class Batch:
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
 
-        self.experiment.journal.pages = pd.DataFrame(columns=[
-                "filenames", "masses", "total_masses", "loadings",
-                "fixed", "labels", "cell_type", "raw_file_names",
-                "cellpy_file_names", "groups", "sub_groups",
-        ])
+        self.experiment.journal.pages = pd.DataFrame(
+            columns=[
+                "filenames",
+                "masses",
+                "total_masses",
+                "loadings",
+                "fixed",
+                "labels",
+                "cell_type",
+                "raw_file_names",
+                "cellpy_file_names",
+                "groups",
+                "sub_groups",
+            ]
+        )
         self.experiment.journal.pages.set_index("filenames", inplace=True)
 
         self.experiment.journal.generate_folder_names()
@@ -176,14 +189,14 @@ class Batch:
 
             try:
                 import bokeh.plotting
+
                 if prms.Batch.notebook:
                     bokeh.plotting.output_notebook()
 
             except ModuleNotFoundError:
                 prms.Batch.backend = "matplotlib"
                 logging.warning(
-                    "could not find the bokeh "
-                    "module -> using matplotlib instead"
+                    "could not find the bokeh " "module -> using matplotlib instead"
                 )
 
         self.plotter.do()
@@ -265,8 +278,9 @@ def init(*args, **kwargs):
     default_log_level = kwargs.pop("default_log_level", None)
     file_name = kwargs.pop("file_name", None)
 
-    log.setup_logging(custom_log_dir=prms.Paths["filelogdir"],
-                      default_level=default_log_level)
+    log.setup_logging(
+        custom_log_dir=prms.Paths["filelogdir"], default_level=default_log_level
+    )
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:
         kwargs.pop("db_reader", None)

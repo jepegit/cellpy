@@ -12,8 +12,10 @@ import numpy as np
 import pandas as pd
 
 from cellpy.readers.core import (
-    FileID, DataSet,
-    check64bit, humanize_bytes,
+    FileID,
+    DataSet,
+    check64bit,
+    humanize_bytes,
     xldate_as_datetime,
 )
 from cellpy.parameters.internal_settings import get_headers_normal
@@ -51,14 +53,16 @@ if detect_subprocess_need:
     logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
     if python_version == "64bit" and prms.Instruments.Arbin.office_version == "32bit":
-        logging.debug("python 64bit and office 32bit -> "
-                      "setting use_subprocess to True")
+        logging.debug(
+            "python 64bit and office 32bit -> " "setting use_subprocess to True"
+        )
         use_subprocess = True
 
 if use_subprocess and not is_posix:
     # The windows users most likely have a strange custom path to mdbtools etc.
-    logging.debug("using subprocess (most lilkely mdbtools) "
-                  "on non-posix (most likely windows)")
+    logging.debug(
+        "using subprocess (most lilkely mdbtools) " "on non-posix (most likely windows)"
+    )
     if not prms.Instruments.Arbin.sub_process_path:
         sub_process_path = str(prms._sub_process_path)
     else:
@@ -101,8 +105,19 @@ if DEBUG_MODE:
     logging.debug(f"dbloader: {dbloader}")
 
 # The columns to choose if minimum selection is selected
-MINIMUM_SELECTION = ["Data_Point", "Test_Time", "Step_Time", "DateTime", "Step_Index", "Cycle_Index",
-                     "Current", "Voltage", "Charge_Capacity", "Discharge_Capacity", "Internal_Resistance"]
+MINIMUM_SELECTION = [
+    "Data_Point",
+    "Test_Time",
+    "Step_Time",
+    "DateTime",
+    "Step_Index",
+    "Cycle_Index",
+    "Current",
+    "Voltage",
+    "Charge_Capacity",
+    "Discharge_Capacity",
+    "Internal_Resistance",
+]
 
 # Names of the tables in the .res db that is used by cellpy
 TABLE_NAMES = {
@@ -113,39 +128,31 @@ TABLE_NAMES = {
 
 
 normal_headers_renaming_dict = {
-    'aci_phase_angle_txt': 'ACI_Phase_Angle',
-    'ref_aci_phase_angle_txt': 'Reference_ACI_Phase_Angle',
-
-    'ac_impedance_txt': 'AC_Impedance',
-    'ref_ac_impedance_txt': 'Reference_AC_Impedance',
-
-    'charge_capacity_txt': 'Charge_Capacity',
-    'charge_energy_txt': 'Charge_Energy',
-    'current_txt': 'Current',
-    'cycle_index_txt': 'Cycle_Index',
-    'data_point_txt': 'Data_Point',
-    'datetime_txt': 'DateTime',
-    'discharge_capacity_txt': 'Discharge_Capacity',
-    'discharge_energy_txt': 'Discharge_Energy',
-    'internal_resistance_txt': 'Internal_Resistance',
-
-    'is_fc_data_txt': 'Is_FC_Data',
-    'step_index_txt': 'Step_Index',
-    'sub_step_index_txt': 'Sub_Step_Index',  # new
-
-    'step_time_txt': 'Step_Time',
-    'sub_step_time_txt': 'Sub_Step_Time',  # new
-
-    'test_id_txt': 'Test_ID',
-    'test_time_txt': 'Test_Time',
-
-    'voltage_txt': 'Voltage',
-    'ref_voltage_txt': 'Reference_Voltage',  # new
-
-    'dv_dt_txt': 'dV/dt',
-    'frequency_txt': 'Frequency',  # new
-    'amplitude_txt': 'Amplitude',  # new
-
+    "aci_phase_angle_txt": "ACI_Phase_Angle",
+    "ref_aci_phase_angle_txt": "Reference_ACI_Phase_Angle",
+    "ac_impedance_txt": "AC_Impedance",
+    "ref_ac_impedance_txt": "Reference_AC_Impedance",
+    "charge_capacity_txt": "Charge_Capacity",
+    "charge_energy_txt": "Charge_Energy",
+    "current_txt": "Current",
+    "cycle_index_txt": "Cycle_Index",
+    "data_point_txt": "Data_Point",
+    "datetime_txt": "DateTime",
+    "discharge_capacity_txt": "Discharge_Capacity",
+    "discharge_energy_txt": "Discharge_Energy",
+    "internal_resistance_txt": "Internal_Resistance",
+    "is_fc_data_txt": "Is_FC_Data",
+    "step_index_txt": "Step_Index",
+    "sub_step_index_txt": "Sub_Step_Index",  # new
+    "step_time_txt": "Step_Time",
+    "sub_step_time_txt": "Sub_Step_Time",  # new
+    "test_id_txt": "Test_ID",
+    "test_time_txt": "Test_Time",
+    "voltage_txt": "Voltage",
+    "ref_voltage_txt": "Reference_Voltage",  # new
+    "dv_dt_txt": "dV/dt",
+    "frequency_txt": "Frequency",  # new
+    "amplitude_txt": "Amplitude",  # new
 }
 
 
@@ -178,30 +185,32 @@ class ArbinLoader(Loader):
         """Defines the so-called global column headings for Arbin .res-files"""
         headers = dict()
         # - global column headings (specific for Arbin)
-        headers["applications_path_txt"] = 'Applications_Path'
-        headers["channel_index_txt"] = 'Channel_Index'
-        headers["channel_number_txt"] = 'Channel_Number'
-        headers["channel_type_txt"] = 'Channel_Type'
-        headers["comments_txt"] = 'Comments'
-        headers["creator_txt"] = 'Creator'
-        headers["daq_index_txt"] = 'DAQ_Index'
-        headers["item_id_txt"] = 'Item_ID'
-        headers["log_aux_data_flag_txt"] = 'Log_Aux_Data_Flag'
-        headers["log_chanstat_data_flag_txt"] = 'Log_ChanStat_Data_Flag'
-        headers["log_event_data_flag_txt"] = 'Log_Event_Data_Flag'
-        headers["log_smart_battery_data_flag_txt"] = 'Log_Smart_Battery_Data_Flag'
-        headers["mapped_aux_conc_cnumber_txt"] = 'Mapped_Aux_Conc_CNumber'
-        headers["mapped_aux_di_cnumber_txt"] = 'Mapped_Aux_DI_CNumber'
-        headers["mapped_aux_do_cnumber_txt"] = 'Mapped_Aux_DO_CNumber'
-        headers["mapped_aux_flow_rate_cnumber_txt"] = 'Mapped_Aux_Flow_Rate_CNumber'
-        headers["mapped_aux_ph_number_txt"] = 'Mapped_Aux_PH_Number'
-        headers["mapped_aux_pressure_number_txt"] = 'Mapped_Aux_Pressure_Number'
-        headers["mapped_aux_temperature_number_txt"] = 'Mapped_Aux_Temperature_Number'
-        headers["mapped_aux_voltage_number_txt"] = 'Mapped_Aux_Voltage_Number'
-        headers["schedule_file_name_txt"] = 'Schedule_File_Name'  # KEEP FOR CELLPY FILE FORMAT
-        headers["start_datetime_txt"] = 'Start_DateTime'
-        headers["test_id_txt"] = 'Test_ID'  # KEEP FOR CELLPY FILE FORMAT
-        headers["test_name_txt"] = 'Test_Name'  # KEEP FOR CELLPY FILE FORMAT
+        headers["applications_path_txt"] = "Applications_Path"
+        headers["channel_index_txt"] = "Channel_Index"
+        headers["channel_number_txt"] = "Channel_Number"
+        headers["channel_type_txt"] = "Channel_Type"
+        headers["comments_txt"] = "Comments"
+        headers["creator_txt"] = "Creator"
+        headers["daq_index_txt"] = "DAQ_Index"
+        headers["item_id_txt"] = "Item_ID"
+        headers["log_aux_data_flag_txt"] = "Log_Aux_Data_Flag"
+        headers["log_chanstat_data_flag_txt"] = "Log_ChanStat_Data_Flag"
+        headers["log_event_data_flag_txt"] = "Log_Event_Data_Flag"
+        headers["log_smart_battery_data_flag_txt"] = "Log_Smart_Battery_Data_Flag"
+        headers["mapped_aux_conc_cnumber_txt"] = "Mapped_Aux_Conc_CNumber"
+        headers["mapped_aux_di_cnumber_txt"] = "Mapped_Aux_DI_CNumber"
+        headers["mapped_aux_do_cnumber_txt"] = "Mapped_Aux_DO_CNumber"
+        headers["mapped_aux_flow_rate_cnumber_txt"] = "Mapped_Aux_Flow_Rate_CNumber"
+        headers["mapped_aux_ph_number_txt"] = "Mapped_Aux_PH_Number"
+        headers["mapped_aux_pressure_number_txt"] = "Mapped_Aux_Pressure_Number"
+        headers["mapped_aux_temperature_number_txt"] = "Mapped_Aux_Temperature_Number"
+        headers["mapped_aux_voltage_number_txt"] = "Mapped_Aux_Voltage_Number"
+        headers[
+            "schedule_file_name_txt"
+        ] = "Schedule_File_Name"  # KEEP FOR CELLPY FILE FORMAT
+        headers["start_datetime_txt"] = "Start_DateTime"
+        headers["test_id_txt"] = "Test_ID"  # KEEP FOR CELLPY FILE FORMAT
+        headers["test_name_txt"] = "Test_Name"  # KEEP FOR CELLPY FILE FORMAT
         return headers
 
     @staticmethod
@@ -223,40 +232,54 @@ class ArbinLoader(Loader):
         if use_ado:
             is64bit_python = check64bit(current_system="python")
             if is64bit_python:
-                constr = 'Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s' % temp_filename
+                constr = (
+                    "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s" % temp_filename
+                )
             else:
-                constr = 'Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s' % temp_filename
+                constr = (
+                    "Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s" % temp_filename
+                )
             return constr
 
         if SEARCH_FOR_ODBC_DRIVERS:
             logging.debug("Searching for odbc drivers")
             try:
-                drivers = [driver for driver in dbloader.drivers() if
-                           'Microsoft Access Driver' in driver]
+                drivers = [
+                    driver
+                    for driver in dbloader.drivers()
+                    if "Microsoft Access Driver" in driver
+                ]
                 logging.debug(f"Found these: {drivers}")
                 driver = drivers[0]
 
             except IndexError as e:
-                logging.debug("Unfortunately, it seems the "
-                              "list of drivers is emtpy.")
+                logging.debug(
+                    "Unfortunately, it seems the " "list of drivers is emtpy."
+                )
                 logging.debug("Use driver-name from config (if existing).")
                 driver = driver_dll
                 if is_macos:
                     driver = "/usr/local/lib/libmdbodbc.dylib"
                 else:
                     if not driver:
-                        print("\nCould not find any odbc-drivers suitable "
-                              "for .res-type files. "
-                              "Check out the homepage of pydobc for info on "
-                              "installing drivers")
-                        print("One solution that might work is downloading "
-                              "the Microsoft Access database engine (in correct"
-                              " bytes (32 or 64)) "
-                              "from:\n"
-                              "https://www.microsoft.com/en-us/download/"
-                              "details.aspx?id=13255")
-                        print("Or install mdbtools and set it up "
-                              "(check the cellpy docs for help)")
+                        print(
+                            "\nCould not find any odbc-drivers suitable "
+                            "for .res-type files. "
+                            "Check out the homepage of pydobc for info on "
+                            "installing drivers"
+                        )
+                        print(
+                            "One solution that might work is downloading "
+                            "the Microsoft Access database engine (in correct"
+                            " bytes (32 or 64)) "
+                            "from:\n"
+                            "https://www.microsoft.com/en-us/download/"
+                            "details.aspx?id=13255"
+                        )
+                        print(
+                            "Or install mdbtools and set it up "
+                            "(check the cellpy docs for help)"
+                        )
                         print("\n")
                     else:
                         logging.debug("Using driver dll from config file")
@@ -267,11 +290,11 @@ class ArbinLoader(Loader):
         else:
             is64bit_python = check64bit(current_system="python")
             if is64bit_python:
-                driver = '{Microsoft Access Driver (*.mdb, *.accdb)}'
+                driver = "{Microsoft Access Driver (*.mdb, *.accdb)}"
             else:
-                driver = 'Microsoft Access Driver (*.mdb)'
+                driver = "Microsoft Access Driver (*.mdb)"
             self.logger.debug("odbc constr: {}".format(driver))
-        constr = 'Driver=%s;Dbq=%s' % (driver, temp_filename)
+        constr = "Driver=%s;Dbq=%s" % (driver, temp_filename)
 
         logging.debug(f"constr: {constr}")
 
@@ -286,9 +309,7 @@ class ArbinLoader(Loader):
             try:
                 os.remove(filename)
             except WindowsError as e:
-                self.logger.warning(
-                    "could not remove tmp-file\n%s %s" % (filename, e)
-                )
+                self.logger.warning("could not remove tmp-file\n%s %s" % (filename, e))
 
     def _post_process(self, data):
         fix_datetime = True
@@ -326,10 +347,7 @@ class ArbinLoader(Loader):
         if set_index:
             hdr_data_point = self.headers_normal.data_point_txt
             if data.dfdata.index.name != hdr_data_point:
-                data.dfdata = data.dfdata.set_index(
-                    hdr_data_point,
-                    drop=False
-                )
+                data.dfdata = data.dfdata.set_index(hdr_data_point, drop=False)
 
         return data
 
@@ -415,15 +433,11 @@ class ArbinLoader(Loader):
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
         # fid = FileID(file_name)
-        start_datetime = global_data_df[
-            self.headers_global['start_datetime_txt']
-        ][test_no]
-        test_ID = int(
-            global_data_df[self.headers_normal.test_id_txt][test_no]
-        )  # OBS
-        test_name = global_data_df[
-            self.headers_global['test_name_txt']
-        ][test_no]
+        start_datetime = global_data_df[self.headers_global["start_datetime_txt"]][
+            test_no
+        ]
+        test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])  # OBS
+        test_name = global_data_df[self.headers_global["test_name_txt"]][test_no]
 
         # --------- read raw-data (normal-data) -------------------------
         self.logger.debug("reading raw-data")
@@ -437,6 +451,7 @@ class ArbinLoader(Loader):
         sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
         sql_5 = "order by %s" % self.headers_normal.data_point_txt
         import time
+
         info_list = []
         info_header = ["cycle", "row_count", "start_point", "end_point"]
         info_header.extend(headers)
@@ -525,15 +540,11 @@ class ArbinLoader(Loader):
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
         # fid = FileID(file_name)
-        start_datetime = global_data_df[
-            self.headers_global['start_datetime_txt']
-        ][test_no]
-        test_ID = int(
-            global_data_df[self.headers_normal.test_id_txt][test_no]
-        )  # OBS
-        test_name = global_data_df[
-            self.headers_global['test_name_txt']
-        ][test_no]
+        start_datetime = global_data_df[self.headers_global["start_datetime_txt"]][
+            test_no
+        ]
+        test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])  # OBS
+        test_name = global_data_df[self.headers_global["test_name_txt"]][test_no]
 
         # --------- read raw-data (normal-data) -------------------------
         self.logger.debug("reading raw-data")
@@ -546,6 +557,7 @@ class ArbinLoader(Loader):
         sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
         sql_5 = "order by %s" % self.headers_normal.data_point_txt
         import time
+
         info_list = []
         info_header = ["cycle", "step", "row_count", "start_point", "end_point"]
         self.logger.info(" ".join(info_header))
@@ -573,8 +585,7 @@ class ArbinLoader(Loader):
                 start_point = step_df[point_txt].min()
                 end_point = step_df[point_txt].max()
                 txt += " %i-(%i)" % (step, step_row_count)
-                step_list = [cycle_number, step, step_row_count,
-                             start_point, end_point]
+                step_list = [cycle_number, step, step_row_count, start_point, end_point]
                 info_list.append(step_list)
 
             txt += "]"
@@ -640,16 +651,16 @@ class ArbinLoader(Loader):
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
-        if filesize > prms.Instruments.Arbin.max_res_filesize \
-                and not prms.Reader.load_only_summary:
+        if (
+            filesize > prms.Instruments.Arbin.max_res_filesize
+            and not prms.Reader.load_only_summary
+        ):
             error_message = "\nERROR (loader):\n"
             error_message += "%s > %s - File is too big!\n" % (
                 hfilesize,
-                humanize_bytes(
-                    prms.Instruments.Arbin.max_res_filesize
-                ))
-            error_message += "(edit prms.Instruments.Arbin" \
-                             "['max_res_filesize'])\n"
+                humanize_bytes(prms.Instruments.Arbin.max_res_filesize),
+            )
+            error_message += "(edit prms.Instruments.Arbin" "['max_res_filesize'])\n"
             print(error_message)
             return None
 
@@ -688,6 +699,7 @@ class ArbinLoader(Loader):
 
         else:
             import subprocess
+
             if is_posix:
                 if is_macos:
                     self.logger.debug("\nMAC OSX USING MDBTOOLS")
@@ -702,9 +714,11 @@ class ArbinLoader(Loader):
             temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
 
             # making the cmds
-            mdb_prms = [(table_name_global, temp_csv_filename_global),
-                        (table_name_normal, temp_csv_filename_normal),
-                        (table_name_stats, temp_csv_filename_stats)]
+            mdb_prms = [
+                (table_name_global, temp_csv_filename_global),
+                (table_name_normal, temp_csv_filename_normal),
+                (table_name_stats, temp_csv_filename_stats),
+            ]
 
             # executing cmds
             for table_name, tmp_file in mdb_prms:
@@ -732,14 +746,24 @@ class ArbinLoader(Loader):
             fid = FileID(file_name)
             # name of the .res file it is loaded from:
             # data.parent_filename = os.path.basename(file_name)
-            data.channel_index = int(global_data_df[self.headers_global['channel_index_txt']][test_no])
-            data.channel_number = int(global_data_df[self.headers_global['channel_number_txt']][test_no])
-            data.creator = global_data_df[self.headers_global['creator_txt']][test_no]
-            data.item_ID = global_data_df[self.headers_global['item_id_txt']][test_no]
-            data.schedule_file_name = global_data_df[self.headers_global['schedule_file_name_txt']][test_no]
-            data.start_datetime = global_data_df[self.headers_global['start_datetime_txt']][test_no]
+            data.channel_index = int(
+                global_data_df[self.headers_global["channel_index_txt"]][test_no]
+            )
+            data.channel_number = int(
+                global_data_df[self.headers_global["channel_number_txt"]][test_no]
+            )
+            data.creator = global_data_df[self.headers_global["creator_txt"]][test_no]
+            data.item_ID = global_data_df[self.headers_global["item_id_txt"]][test_no]
+            data.schedule_file_name = global_data_df[
+                self.headers_global["schedule_file_name_txt"]
+            ][test_no]
+            data.start_datetime = global_data_df[
+                self.headers_global["start_datetime_txt"]
+            ][test_no]
             data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
-            data.test_name = global_data_df[self.headers_global['test_name_txt']][test_no]
+            data.test_name = global_data_df[self.headers_global["test_name_txt"]][
+                test_no
+            ]
             data.raw_data_files.append(fid)
 
             self.logger.debug("reading raw-data")
@@ -750,8 +774,10 @@ class ArbinLoader(Loader):
                 )
                 # --------- read stats-data (summary-data) ---------------------
                 sql = "select * from %s where %s=%s order by %s" % (
-                    table_name_stats, self.headers_normal.test_id_txt,
-                    data.test_ID, self.headers_normal.data_point_txt
+                    table_name_stats,
+                    self.headers_normal.test_id_txt,
+                    data.test_ID,
+                    self.headers_normal.data_point_txt,
                 )
                 summary_df = pd.read_sql_query(sql, conn)
                 if counter > number_of_sets:
@@ -760,8 +786,7 @@ class ArbinLoader(Loader):
                 normal_df = pd.read_csv(temp_csv_filename_normal)
                 # filter on test ID
                 normal_df = normal_df[
-                    normal_df[
-                        self.headers_normal.test_id_txt] == data.test_ID
+                    normal_df[self.headers_normal.test_id_txt] == data.test_ID
                 ]
                 # sort on data point
                 if prms._sort_if_subprocess:
@@ -772,16 +797,16 @@ class ArbinLoader(Loader):
                 summary_df = pd.read_csv(temp_csv_filename_stats)
                 # clean up
                 for f in [
-                    temp_filename, temp_csv_filename_stats,
-                    temp_csv_filename_normal, temp_csv_filename_global
+                    temp_filename,
+                    temp_csv_filename_stats,
+                    temp_csv_filename_normal,
+                    temp_csv_filename_global,
                 ]:
                     if os.path.isfile(f):
                         try:
                             os.remove(f)
                         except WindowsError as e:
-                            self.logger.warning(
-                                f"could not remove tmp-file\n{f} {e}"
-                            )
+                            self.logger.warning(f"could not remove tmp-file\n{f} {e}")
 
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
@@ -795,7 +820,8 @@ class ArbinLoader(Loader):
                 logging.debug(
                     f"memory usage for "
                     f"loaded data: \n{mem_usage}"
-                    f"\ntotal: {humanize_bytes(mem_usage.sum())}")
+                    f"\ntotal: {humanize_bytes(mem_usage.sum())}"
+                )
                 logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
 
             data.dfdata = normal_df
@@ -839,28 +865,30 @@ class ArbinLoader(Loader):
 
         if bad_steps is not None:
             if not isinstance(bad_steps, (list, tuple)):
-                bad_steps = [bad_steps, ]
+                bad_steps = [bad_steps]
             for bad_cycle, bad_step in bad_steps:
-                self.logger.debug(
-                    f"bad_step def: [c={bad_cycle}, s={bad_step}]",
+                self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
+                sql_4 += "AND NOT (%s=%i " % (
+                    self.headers_normal.cycle_index_txt,
+                    bad_cycle,
                 )
-                sql_4 += "AND NOT (%s=%i " % \
-                         (self.headers_normal.cycle_index_txt, bad_cycle)
-                sql_4 += "AND %s=%i) " % \
-                         (self.headers_normal.step_index_txt, bad_step)
+                sql_4 += "AND %s=%i) " % (self.headers_normal.step_index_txt, bad_step)
 
         if prms.Reader["limit_loaded_cycles"]:
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
-                sql_4 += "AND %s>%i " % \
-                         (self.headers_normal.cycle_index_txt,
-                          prms.Reader["limit_loaded_cycles"][0])
-                sql_4 += "AND %s<%i " % \
-                         (self.headers_normal.cycle_index_txt,
-                          prms.Reader["limit_loaded_cycles"][-1])
+                sql_4 += "AND %s>%i " % (
+                    self.headers_normal.cycle_index_txt,
+                    prms.Reader["limit_loaded_cycles"][0],
+                )
+                sql_4 += "AND %s<%i " % (
+                    self.headers_normal.cycle_index_txt,
+                    prms.Reader["limit_loaded_cycles"][-1],
+                )
             else:
-                sql_4 = "AND %s=%i " % \
-                        (self.headers_normal.cycle_index_txt,
-                         prms.Reader["limit_loaded_cycles"][0])
+                sql_4 = "AND %s=%i " % (
+                    self.headers_normal.cycle_index_txt,
+                    prms.Reader["limit_loaded_cycles"][0],
+                )
 
         sql_5 = "order by %s" % self.headers_normal.data_point_txt
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
@@ -877,17 +905,13 @@ class ArbinLoader(Loader):
             normal_df = pd.read_sql_query(sql, conn)
             # memory here
             length_of_test = normal_df.shape[0]
-            self.logger.debug(
-                f"loaded to normal_df (length =  {length_of_test})"
-            )
+            self.logger.debug(f"loaded to normal_df (length =  {length_of_test})")
         else:
-            self.logger.debug(
-                f"chunk-size: {prms.Instruments.Arbin.chunk_size}",
-            )
+            self.logger.debug(f"chunk-size: {prms.Instruments.Arbin.chunk_size}")
             self.logger.debug("creating a pd.read_sql_query generator")
             normal_df_reader = pd.read_sql_query(
-                sql, conn,
-                chunksize=prms.Instruments.Arbin.chunk_size)
+                sql, conn, chunksize=prms.Instruments.Arbin.chunk_size
+            )
             normal_df = None
             chunk_number = 0
             self.logger.debug("created pandas sql reader")
@@ -900,9 +924,7 @@ class ArbinLoader(Loader):
                         f"({prms.Instruments.Arbin.max_chunks})"
                     )
                     if chunk_number < prms.Instruments.Arbin.max_chunks:
-                        normal_df = pd.concat(
-                            [normal_df, chunk], ignore_index=True
-                        )
+                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
                         self.logger.debug(
                             f"chunk {i} of {prms.Instruments.Arbin.max_chunks}"
                         )
@@ -910,18 +932,14 @@ class ArbinLoader(Loader):
                         break
                 else:
                     try:
-                        normal_df = pd.concat(
-                            [normal_df, chunk],
-                            ignore_index=True
-                        )
+                        normal_df = pd.concat([normal_df, chunk], ignore_index=True)
                         self.logger.debug("concatenated new chunk")
                     except MemoryError:
                         self.logger.error(
                             " - Could not read complete file (MemoryError)."
                         )
                         self.logger.error(
-                            f"Last successfully loaded chunk "
-                            f"number: {chunk_number}",
+                            f"Last successfully loaded chunk " f"number: {chunk_number}"
                         )
                         self.logger.error(
                             f"Chunk size: {prms.Instruments.Arbin.chunk_size}"
@@ -929,13 +947,11 @@ class ArbinLoader(Loader):
                         break
                 chunk_number += 1
             length_of_test = normal_df.shape[0]
-            self.logger.debug(
-                f"finished iterating (#rows: {length_of_test})",
-            )
+            self.logger.debug(f"finished iterating (#rows: {length_of_test})")
         return length_of_test, normal_df
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import logging
     from cellpy import log
 

@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+
 print(f"running {sys.argv[0]}")
 
 import cellpy
@@ -15,20 +16,22 @@ test_data_dir = os.path.abspath(os.path.join(current_file_path, relative_test_da
 test_data_dir_raw = os.path.join(test_data_dir, "data")
 
 test_res_file = "20160805_test001_45_cc_01.res"
-test_res_file_full = os.path.join(test_data_dir_raw,test_res_file)
+test_res_file_full = os.path.join(test_data_dir_raw, test_res_file)
 
 test_data_dir_out = os.path.join(test_data_dir, "out")
 test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
 test_cellpy_file = "20160805_test001_45_cc.h5"
 test_cellpy_file_tmp = "tmpfile.h5"
-test_cellpy_file_full = os.path.join(test_data_dir_cellpy,test_cellpy_file)
-test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy,test_cellpy_file_tmp)
+test_cellpy_file_full = os.path.join(test_data_dir_cellpy, test_cellpy_file)
+test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy, test_cellpy_file_tmp)
 
 test_run_name = "20160805_test001_45_cc"
 log.setup_logging(default_level="DEBUG")
 
 
-new_arbin_file = r"C:\Scripting\Processing\Celldata\indata\NewArbin\20170907_sic024_01_cc_01.res"
+new_arbin_file = (
+    r"C:\Scripting\Processing\Celldata\indata\NewArbin\20170907_sic024_01_cc_01.res"
+)
 new_arbin_mass = 0.824098422
 
 
@@ -51,7 +54,7 @@ def info(cellpy_data_instance):
         print(dataset)
 
 
-def report_time(t1,t2):
+def report_time(t1, t2):
     txt = f"used: {t2-t1} seconds"
     print(txt)
 

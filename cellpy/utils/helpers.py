@@ -6,9 +6,11 @@ import pathlib
 import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
-    get_headers_summary, get_headers_step_table,
+    get_headers_summary,
+    get_headers_step_table,
     get_headers_normal,
-    ATTRS_CELLPYDATA, ATTRS_DATASET,
+    ATTRS_CELLPYDATA,
+    ATTRS_DATASET,
 )
 
 from cellpy import prmreader
@@ -20,9 +22,9 @@ hdr_steps = get_headers_step_table()
 hdr_normal = get_headers_normal()
 
 
-def update_journal_cellpy_data_dir(pages, new_path=None,
-                                   from_path="PureWindowsPath",
-                                   to_path="Path"):
+def update_journal_cellpy_data_dir(
+    pages, new_path=None, from_path="PureWindowsPath", to_path="Path"
+):
     """Update the path in the pages (batch) from one type of OS to another.
 
     I use this function when I switch from my work PC (windows) to my home
@@ -46,7 +48,8 @@ def update_journal_cellpy_data_dir(pages, new_path=None,
 
     pages.cellpy_file_names = pages.cellpy_file_names.apply(from_path)
     pages.cellpy_file_names = pages.cellpy_file_names.apply(
-        lambda x: to_path(new_path) / x.name)
+        lambda x: to_path(new_path) / x.name
+    )
     return pages
 
 
@@ -93,12 +96,18 @@ def split_experiment(cell, base_cycles=None):
     summary = dataset.dfsummary
 
     for b_cycle in base_cycles:
-        steptable0, steptable = [steptable[steptable.cycle < b_cycle],
-                                 steptable[steptable.cycle >= b_cycle]]
-        data0, data = [data[data.Cycle_Index < b_cycle],
-                       data[data.Cycle_Index >= b_cycle]]
-        summary0, summary = [summary[summary.index < b_cycle],
-                             summary[summary.index >= b_cycle]]
+        steptable0, steptable = [
+            steptable[steptable.cycle < b_cycle],
+            steptable[steptable.cycle >= b_cycle],
+        ]
+        data0, data = [
+            data[data.Cycle_Index < b_cycle],
+            data[data.Cycle_Index >= b_cycle],
+        ]
+        summary0, summary = [
+            summary[summary.index < b_cycle],
+            summary[summary.index >= b_cycle],
+        ]
 
         new_cell = make_new_cell()
 
@@ -160,9 +169,7 @@ def add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
 
     if nom_cap is None:
         nom_cap = cell.cell.nom_cap
-    cell.cell.dfsummary[column_name] = cell.cell.dfsummary[
-        h_cum_charge
-    ] / nom_cap
+    cell.cell.dfsummary[column_name] = cell.cell.dfsummary[h_cum_charge] / nom_cap
     return cell
 
 
@@ -196,9 +203,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
 
     spec_conv_factor = cell.get_converter_to_specific()
     cell.cell.step_table[column_name] = abs(
-        round(
-            cell.cell.step_table.current_avr / (nom_cap / spec_conv_factor),
-            2)
+        round(cell.cell.step_table.current_avr / (nom_cap / spec_conv_factor), 2)
     )
 
     return cell
@@ -210,25 +215,25 @@ def add_areal_capacity(cell, cell_id, journal):
     # obs! hard-coded col-names (please fix)
     loading = journal.pages.loc[cell_id, "loadings"]  # header 2 be changed
 
-    cell.cell.dfsummary["Areal_Charge_Capacity(mAh/cm2)"] = \
+    cell.cell.dfsummary["Areal_Charge_Capacity(mAh/cm2)"] = (
         cell.cell.dfsummary["Charge_Capacity(mAh/g)"] * loading / 1000
-    cell.cell.dfsummary["Areal_Discharge_Capacity(mAh/cm2)"] = \
+    )
+    cell.cell.dfsummary["Areal_Discharge_Capacity(mAh/cm2)"] = (
         cell.cell.dfsummary["Discharge_Capacity(mAh/g)"] * loading / 1000
+    )
     return cell
 
 
 def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
     """Adds a rate column to the dataframe (step_table)."""
 
-    col = abs(
-        round(df[column] / (nom_cap / spec_conv_factor), 2)
-    )
+    col = abs(round(df[column] / (nom_cap / spec_conv_factor), 2))
     return col
 
 
-def select_summary_based_on_rate(cell, rate=None, rate_std=None,
-                                 rate_column=None, inverse=False,
-                                 inverted=False):
+def select_summary_based_on_rate(
+    cell, rate=None, rate_std=None, rate_column=None, inverse=False, inverted=False
+):
     """Select only cycles charged or discharged with a given rate.
 
     Parameters:
@@ -260,7 +265,8 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
     summary = cell.cell.dfsummary
 
     cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
-        step_table[rate_column] > (rate - rate_std))
+        step_table[rate_column] > (rate - rate_std)
+    )
     if inverse:
         cycles_mask = ~cycles_mask
 
@@ -269,19 +275,14 @@ def select_summary_based_on_rate(cell, rate=None, rate_std=None,
     filtered_cycles = filtered_step_table.cycle.unique()
 
     if inverted:
-        filtered_summary = summary[
-            ~summary[cycle_number_header].isin(filtered_cycles)
-        ]
+        filtered_summary = summary[~summary[cycle_number_header].isin(filtered_cycles)]
     else:
-        filtered_summary = summary[
-            summary[cycle_number_header].isin(filtered_cycles)
-        ]
+        filtered_summary = summary[summary[cycle_number_header].isin(filtered_cycles)]
 
     return filtered_summary
 
 
-def add_normalized_capacity(cell, norm_cycles=None,
-                            individual_normalization=False):
+def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False):
     """Add normalized capacity to the summary.
 
     Args:
@@ -303,20 +304,18 @@ def add_normalized_capacity(cell, norm_cycles=None,
     col_name_charge = hdr_summary.charge_capacity
     col_name_discharge = hdr_summary.discharge_capacity
 
-    norm_val_charge = cell.cell.dfsummary.loc[
-        norm_cycles, col_name_charge].mean()
+    norm_val_charge = cell.cell.dfsummary.loc[norm_cycles, col_name_charge].mean()
     if individual_normalization:
         norm_val_discharge = cell.cell.dfsummary.loc[
-            norm_cycles, col_name_discharge].mean()
+            norm_cycles, col_name_discharge
+        ].mean()
     else:
         norm_val_discharge = norm_val_charge
 
     for col_name, norm_value in zip(
-        [col_name_charge, col_name_discharge],
-        [norm_val_charge, norm_val_discharge]
+        [col_name_charge, col_name_discharge], [norm_val_charge, norm_val_discharge]
     ):
         norm_col_name = "_".join(["Normalized", col_name])
-        cell.cell.dfsummary[norm_col_name] = cell.cell.dfsummary[
-                                                    col_name] / norm_value
+        cell.cell.dfsummary[norm_col_name] = cell.cell.dfsummary[col_name] / norm_value
 
     return cell

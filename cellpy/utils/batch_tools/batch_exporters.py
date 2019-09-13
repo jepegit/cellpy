@@ -26,6 +26,7 @@ class CSVExporter(BaseExporter):
 
 
     """
+
     def __init__(self, use_screen_dumper=False):
         super().__init__()
         self._assign_engine(summary_engine)
@@ -57,10 +58,7 @@ class CSVExporter(BaseExporter):
         logging.debug("running engine")
         self.current_engine = engine
 
-        self.farms, self.barn = engine(
-            experiments=self.experiments,
-            farms=self.farms
-        )
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
 
     def run_dumper(self, dumper):
         """run dumber (once pr. engine)
@@ -89,5 +87,6 @@ class OriginLabExporter(BaseExporter):
 
 class ExcelExporter(BaseExporter):
     """Exporter that saves the file in a format that Excel likes."""
+
     def __init__(self):
         super().__init__()
