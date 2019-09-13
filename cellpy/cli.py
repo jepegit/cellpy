@@ -831,11 +831,11 @@ def new(debug, silent, directory):
         d.name for d in directory.iterdir()
         if d.is_dir() and not d.name.startswith(".")
     ]
-    project_dirs.append("new dir")
+    project_dirs.insert(0, "[create new dir]")
 
     project_dir = cookiecutter.prompt.read_user_choice("what?", project_dirs)
     print(project_dir)
-    if project_dir == "new dir":
+    if project_dir == "[create new dir]":
         default_name = "cellpy_project"
         # check if it exists, if yes, append a number
         project_dir = cookiecutter.prompt.read_user_variable("name", default_name)
