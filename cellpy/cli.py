@@ -516,7 +516,7 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
         except ConfigFileNotWritten:
             _txt = "[cellpy] (setup) No, that did not work either.\n"
             _txt += (
-                "[cellpy] (setup) Well, guess you have to talk to" " the developers."
+                "[cellpy] (setup) Well, guess you have to talk to the developers."
             )
             click.echo(_txt)
     else:
