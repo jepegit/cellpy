@@ -1168,7 +1168,7 @@ def read_and_save_data(
         logger.info("...loaded successfully...")
         keys.append(indx)
 
-        summary_tmp = cell_data.cell.dfsummary
+        summary_tmp = cell_data.cell.summary
         logger.info("Trying to get summary_data")
         if summary_tmp is None:
             logger.info("No existing summary made - running make_summary")

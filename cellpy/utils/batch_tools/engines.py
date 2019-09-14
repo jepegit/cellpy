@@ -88,7 +88,7 @@ def _load_summaries(experiment):
     summary_frames = {}
     for label in experiment.cell_names:
         # TODO: replace this with direct lookup from hdf5?
-        summary_frames[label] = experiment.data[label].cell.dfsummary
+        summary_frames[label] = experiment.data[label].cell.summary
     return summary_frames
 
 

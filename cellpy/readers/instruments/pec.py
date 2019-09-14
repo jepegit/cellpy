@@ -7,7 +7,7 @@ import numpy as np
 
 import pandas as pd
 
-from cellpy.readers.core import FileID, DataSet, humanize_bytes
+from cellpy.readers.core import FileID, Cell, humanize_bytes
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 
@@ -111,12 +111,12 @@ class PECLoader(Loader):
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         logging.debug(txt)
 
-        data = DataSet()
+        data = Cell()
         fid = FileID(file_name)
 
         # div parameters and information (probably load this last)
         test_no = 1
-        data.test_no = test_no
+        data.cell_no = test_no
         data.loaded_from = file_name
 
         # some overall prms
@@ -140,7 +140,7 @@ class PECLoader(Loader):
         self._rename_headers()
         self._convert_units()
 
-        data.dfdata = self.pec_data
+        data.raw = self.pec_data
 
         data.raw_data_files_length.append(length_of_test)
         new_tests.append(data)

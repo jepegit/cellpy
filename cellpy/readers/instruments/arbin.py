@@ -13,7 +13,7 @@ import pandas as pd
 
 from cellpy.readers.core import (
     FileID,
-    DataSet,
+    Cell,
     check64bit,
     humanize_bytes,
     xldate_as_datetime,
@@ -329,25 +329,25 @@ class ArbinLoader(Loader):
                 new_header = self.headers_normal[key]
                 columns[old_header] = new_header
 
-            data.dfdata.rename(index=str, columns=columns)
+            data.raw.rename(index=str, columns=columns)
 
         if fix_datetime:
             h_datetime = self.headers_normal.datetime_txt
             logging.debug("converting to datetime format")
-            data.dfdata[h_datetime] = data.dfdata[h_datetime].apply(
+            data.raw[h_datetime] = data.raw[h_datetime].apply(
                 xldate_as_datetime, option="to_datetime"
             )
 
             h_datetime = h_datetime
-            if h_datetime in data.dfsummary:
-                data.dfsummary[h_datetime] = data.dfsummary[h_datetime].apply(
+            if h_datetime in data.summary:
+                data.summary[h_datetime] = data.summary[h_datetime].apply(
                     xldate_as_datetime, option="to_datetime"
                 )
 
         if set_index:
             hdr_data_point = self.headers_normal.data_point_txt
-            if data.dfdata.index.name != hdr_data_point:
-                data.dfdata = data.dfdata.set_index(hdr_data_point, drop=False)
+            if data.raw.index.name != hdr_data_point:
+                data.raw = data.raw.set_index(hdr_data_point, drop=False)
 
         return data
 
@@ -360,11 +360,11 @@ class ArbinLoader(Loader):
         if DEBUG_MODE:
             checked_rundata = []
             for data in run_data:
-                new_cols = data.dfdata.columns
+                new_cols = data.raw.columns
                 for col in self.headers_normal:
                     if col not in new_cols:
                         logging.debug(f"Missing col: {col}")
-                        # data.dfdata[col] = np.nan
+                        # data.raw[col] = np.nan
                 checked_rundata.append(data)
             return checked_rundata
 
@@ -740,8 +740,8 @@ class ArbinLoader(Loader):
                 self.logger.warning("***MULTITEST-FILE (not recommended)")
                 if not ALLOW_MULTI_TEST_FILE:
                     break
-            data = DataSet()
-            data.test_no = test_no
+            data = Cell()
+            data.cell_no = test_no
             data.loaded_from = file_name
             fid = FileID(file_name)
             # name of the .res file it is loaded from:
@@ -814,7 +814,7 @@ class ArbinLoader(Loader):
                 logging.debug(txt)
             # normal_df = normal_df.set_index("Data_Point")
 
-            data.dfsummary = summary_df
+            data.summary = summary_df
             if DEBUG_MODE:
                 mem_usage = normal_df.memory_usage()
                 logging.debug(
@@ -824,7 +824,7 @@ class ArbinLoader(Loader):
                 )
                 logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
 
-            data.dfdata = normal_df
+            data.raw = normal_df
             data.raw_data_files_length.append(length_of_test)
 
             data = self._post_process(data)
