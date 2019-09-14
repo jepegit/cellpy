@@ -56,9 +56,7 @@ def update_journal_cellpy_data_dir(
 def make_new_cell():
     """create an empty CellpyData object."""
 
-    new_cell = cellpy.cellreader.CellpyData()
-    data = cellpy.cellreader.Cell()
-    new_cell.cells.append(data)
+    new_cell = cellpy.cellreader.CellpyData(initialize=True)
     return new_cell
 
 
@@ -225,7 +223,7 @@ def add_areal_capacity(cell, cell_id, journal):
 
 
 def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
-    """Adds a rate column to the dataframe (step_table)."""
+    """Adds a rate column to the dataframe (steps)."""
 
     col = abs(round(df[column] / (nom_cap / spec_conv_factor), 2))
     return col
@@ -240,7 +238,7 @@ def select_summary_based_on_rate(
         cell (cellpy.CellpyData)
         rate (float): the rate to filter on. Remark that it should be given
             as a float, i.e. you will have to convert from C-rate to
-            the actual nummeric value. For example, use rate=0.05 if you want
+            the actual numeric value. For example, use rate=0.05 if you want
             to filter on cycles that has a C/20 rate.
         rate_std (float): fix me.
         rate_column (str): column header name of the rate column,

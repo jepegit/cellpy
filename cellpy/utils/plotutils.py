@@ -281,6 +281,57 @@ def concatenated_summary_curve_factory(
     return curves_overlay
 
 
+def cycle_info_plot(
+    cell,
+    cycle=None,
+    step=None,
+    title=None,
+    points=False,
+    x=None,
+    y=None,
+    info_level=0,
+    h_cycle=None,
+    h_step=None,
+    show_it=False,
+    label_cycles=True,
+    label_steps=False,
+    get_axes=False,
+    use_bokeh=True,
+    **kwargs,
+):
+    # TODO: missing doc-string
+    if use_bokeh and not bokeh_available:
+        print("OBS! bokeh is not available -" " using matplotlib instead")
+        use_bokeh = False
+
+    if use_bokeh:
+        axes = _cycle_info_plot_bokeh(
+            cell,
+            cycle=cycle,
+            step=step,
+            title=title,
+            points=points,
+            x=x,
+            y=y,
+            info_level=info_level,
+            h_cycle=h_cycle,
+            h_step=h_step,
+            show_it=show_it,
+            label_cycles=label_cycles,
+            label_steps=label_steps,
+            **kwargs,
+        )
+    else:
+        if isinstance(cycle, (list, tuple)):
+            if len(cycle) > 1:
+                print("OBS! The matplotlib-plotter only accepts single " "cycles.")
+                print(f"Selecting first cycle ({cycle[0]})")
+            cycle = cycle[0]
+        axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes)
+    if get_axes:
+        return axes
+
+
 def _plot_step(ax, x, y, color):
     ax.plot(x, y, color=color, linewidth=3)
 
@@ -661,57 +712,6 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
 
     if get_axes:
         return ax1, ax2, ax2, ax4
-
-
-def cycle_info_plot(
-    cell,
-    cycle=None,
-    step=None,
-    title=None,
-    points=False,
-    x=None,
-    y=None,
-    info_level=0,
-    h_cycle=None,
-    h_step=None,
-    show_it=False,
-    label_cycles=True,
-    label_steps=False,
-    get_axes=False,
-    use_bokeh=True,
-    **kwargs,
-):
-    # TODO: missing doc-string
-    if use_bokeh and not bokeh_available:
-        print("OBS! bokeh is not available -" " using matplotlib instead")
-        use_bokeh = False
-
-    if use_bokeh:
-        axes = _cycle_info_plot_bokeh(
-            cell,
-            cycle=cycle,
-            step=step,
-            title=title,
-            points=points,
-            x=x,
-            y=y,
-            info_level=info_level,
-            h_cycle=h_cycle,
-            h_step=h_step,
-            show_it=show_it,
-            label_cycles=label_cycles,
-            label_steps=label_steps,
-            **kwargs,
-        )
-    else:
-        if isinstance(cycle, (list, tuple)):
-            if len(cycle) > 1:
-                print("OBS! The matplotlib-plotter only accepts single " "cycles.")
-                print(f"Selecting first cycle ({cycle[0]})")
-            cycle = cycle[0]
-        axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes)
-    if get_axes:
-        return axes
 
 
 if __name__ == "__main__":
