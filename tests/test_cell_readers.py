@@ -89,16 +89,16 @@ def test_merge(cellpy_data_instance):
 
     assert len(cellpy_data_instance.datasets) == 2
 
-    table_first = cellpy_data_instance.datasets[0].dfdata.describe()
+    table_first = cellpy_data_instance.datasets[0].raw.describe()
     count_first = table_first.loc["count", "Data_Point"]
 
-    table_second = cellpy_data_instance.datasets[1].dfdata.describe()
+    table_second = cellpy_data_instance.datasets[1].raw.describe()
     count_second = table_second.loc["count", "Data_Point"]
 
     cellpy_data_instance.merge()
     assert len(cellpy_data_instance.datasets) == 2
 
-    table_all = cellpy_data_instance.datasets[0].dfdata.describe()
+    table_all = cellpy_data_instance.datasets[0].raw.describe()
     count_all = table_all.loc["count", "Data_Point"]
     assert len(cellpy_data_instance.datasets) == 1
 
@@ -123,15 +123,15 @@ def test_merge_auto_from_list():
     cdi3.from_raw(files)
 
     len_first = len(cdi1.cells)
-    table_first = cdi1.cells[0].dfdata.describe()
+    table_first = cdi1.cells[0].raw.describe()
     count_first = table_first.loc["count", "Data_Point"]
 
     len_second = len(cdi2.cells)
-    table_second = cdi2.cells[0].dfdata.describe()
+    table_second = cdi2.cells[0].raw.describe()
     count_second = table_second.loc["count", "Data_Point"]
 
     len_all = len(cdi3.cells)
-    table_all = cdi3.cells[0].dfdata.describe()
+    table_all = cdi3.cells[0].raw.describe()
     count_all = table_all.loc["count", "Data_Point"]
 
     assert len_first == 1
@@ -152,11 +152,11 @@ def test_validate_step_table(dataset):
 
 
 def test_print_step_table(dataset):
-    dataset.print_step_table()
+    dataset.print_steps()
 
 
 def test_c_rate_calc(dataset):
-    table = dataset.cell.step_table
+    table = dataset.cell.steps
     assert 0.04 in table["rate_avr"].unique()
 
 
@@ -177,13 +177,13 @@ def test_from_res(dataset):
 
 
 def test_cap_mod_summary(dataset):
-    summary = dataset.cell.dfsummary
+    summary = dataset.cell.summary
     dataset._cap_mod_summary(summary, "reset")
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_cap_mod_summary_fail(dataset):
-    summary = dataset.cell.dfsummary
+    summary = dataset.cell.summary
     dataset._cap_mod_summary(summary, "fix")
 
 
@@ -378,7 +378,7 @@ def test_load_step_specs_short(
     file_name = fdv.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
-    step_table = cellpy_data_instance.cell.step_table
+    step_table = cellpy_data_instance.cell.steps
     t = step_table.loc[
         (step_table.cycle == cycle) & (step_table.step == step), "type"
     ].values[0]
@@ -396,7 +396,7 @@ def test_load_step_specs(cellpy_data_instance):
     file_name = fdv.step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name)
-    step_table = cellpy_data_instance.cell.step_table
+    step_table = cellpy_data_instance.cell.steps
     t = step_table.loc[(step_table.cycle == 1) & (step_table.step == 8), "type"].values[
         0
     ]
@@ -410,12 +410,12 @@ def test_load_res(cellpy_data_instance):
     step_time = 1500.05
     sum_discharge_time = 362198.12
     my_test = cellpy_data_instance.cells[run_number]
-    assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.dfdata.loc[5, "Step_Time"], 0.1)
+    assert my_test.summary.loc[1, "Data_Point"] == data_point
+    assert step_time == pytest.approx(my_test.raw.loc[5, "Step_Time"], 0.1)
     assert sum_discharge_time == pytest.approx(
-        my_test.dfsummary.loc[:, "Discharge_Time"].sum(), 0.1
+        my_test.summary.loc[:, "Discharge_Time"].sum(), 0.1
     )
-    assert my_test.test_no == run_number
+    assert my_test.cell_no == run_number
 
     # cellpy_data_instance.make_summary(find_ir=True)
     # cellpy_data_instance.make_step_table()
@@ -432,7 +432,7 @@ def test_make_new_step_table(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True)
-    assert len(cellpy_data_instance.cell.step_table) == 103
+    assert len(cellpy_data_instance.cell.steps) == 103
 
 
 def test_make_step_table_all_steps(cellpy_data_instance):
@@ -440,30 +440,30 @@ def test_make_step_table_all_steps(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, all_steps=True)
-    assert len(cellpy_data_instance.cell.step_table) == 103
+    assert len(cellpy_data_instance.cell.steps) == 103
 
 
 def test_make_step_table_no_rate(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, add_c_rate=False)
-    assert "rate_avr" not in cellpy_data_instance.cell.step_table.columns
+    assert "rate_avr" not in cellpy_data_instance.cell.steps.columns
 
 
 def test_make_step_table_skip_steps(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, skip_steps=[1, 10])
-    print(cellpy_data_instance.cell.step_table)
-    assert len(cellpy_data_instance.cell.step_table) == 87
+    print(cellpy_data_instance.cell.steps)
+    assert len(cellpy_data_instance.cell.steps) == 87
 
 
 def test_make_summary(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
-    s1 = cellpy_data_instance.cells[0].dfsummary
-    s2 = cellpy_data_instance.get_cell().dfsummary
+    s1 = cellpy_data_instance.cells[0].summary
+    s2 = cellpy_data_instance.get_cell().summary
     s3 = cellpy_data_instance.get_summary()
     assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()
@@ -493,14 +493,14 @@ def test_load_cellpyfile(cellpy_data_instance):
     sum_test_time = 9301719.457
     my_test = cellpy_data_instance.cells[run_number]
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-    unique_cycles_read = my_test.step_table.loc[:, "cycle"].unique()
+    unique_cycles_read = my_test.steps.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
-    assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.dfdata.loc[5, "Step_Time"], 0.1)
+    assert my_test.summary.loc[1, "Data_Point"] == data_point
+    assert step_time == pytest.approx(my_test.raw.loc[5, "Step_Time"], 0.1)
     assert sum_test_time == pytest.approx(
-        my_test.dfsummary.loc[:, "Test_Time"].sum(), 0.1
+        my_test.summary.loc[:, "Test_Time"].sum(), 0.1
     )
-    assert my_test.test_no == run_number
+    assert my_test.cell_no == run_number
 
 
 def test_get_current_voltage(dataset):
@@ -611,7 +611,7 @@ def test_load_custom_default(cellpy_data_instance):
     cellpy_data_instance.from_raw(file_name)
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
-    summary = cellpy_data_instance.cell.dfsummary
+    summary = cellpy_data_instance.cell.summary
     val = summary.loc[
         summary["Cycle_Index"] == 2,
         ["Cycle_Index", "Discharge_Endpoint_Slippage(mAh/g)"],
@@ -620,7 +620,7 @@ def test_load_custom_default(cellpy_data_instance):
 
 
 def test_group_by_interpolate(dataset):
-    data = dataset.cell.dfdata
+    data = dataset.cell.raw
     interpolated_data1 = cellpy.cellreader.group_by_interpolate(data)
     interpolated_data2 = cellpy.cellreader.group_by_interpolate(data, tidy=True)
     interpolated_data3 = cellpy.cellreader.group_by_interpolate(

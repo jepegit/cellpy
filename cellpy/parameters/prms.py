@@ -201,14 +201,14 @@ _sort_if_subprocess = True
 
 _cellpyfile_root = "CellpyData"
 _cellpyfile_raw = "/raw"
-_cellpyfile_step = "/step"
+_cellpyfile_step = "/steps"
 _cellpyfile_summary = "/summary"
 _cellpyfile_fid = "/fid"
 
 _cellpyfile_complevel = 1
 _cellpyfile_complib = None  # currentlty defaults to "zlib"
-_cellpyfile_dfdata_format = "table"
-_cellpyfile_dfsummary_format = "table"
+_cellpyfile_raw_format = "table"
+_cellpyfile_summary_format = "table"
 _cellpyfile_stepdata_format = "table"
 _cellpyfile_infotable_format = "fixed"
 _cellpyfile_fidtable_format = "fixed"

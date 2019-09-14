@@ -19,7 +19,7 @@ from cellpy.readers.instruments.biologic_file_format import (
     bl_log_pos_dtype,
     bl_flags,
 )
-from cellpy.readers.core import FileID, DataSet, check64bit, humanize_bytes
+from cellpy.readers.core import FileID, Cell, check64bit, humanize_bytes
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.parameters import prms
@@ -206,12 +206,12 @@ class MprLoader(Loader):
         self.logger.debug("tmp file: %s" % temp_filename)
         self.logger.debug("HERE WE LOAD THE DATA")
 
-        data = DataSet()
+        data = Cell()
         fid = FileID(file_name)
 
         # div parameters and information (probably load this last)
         test_no = 1
-        data.test_no = test_no
+        data.cell_no = test_no
         data.loaded_from = file_name
 
         # some overall prms
@@ -246,8 +246,8 @@ class MprLoader(Loader):
             txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
             warnings.warn(txt)
 
-        data.dfsummary = summary_df
-        data.dfdata = self.mpr_data
+        data.summary = summary_df
+        data.raw = self.mpr_data
 
         data.raw_data_files_length.append(length_of_test)
         new_tests.append(data)

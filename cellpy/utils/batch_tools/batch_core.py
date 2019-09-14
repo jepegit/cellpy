@@ -111,7 +111,7 @@ class Data(collections.UserDict):
     def __look_up__(self, cell_id):
         logging.debug("running __look_up__")
         try:
-            if not self.experiment.cell_data_frames[cell_id].cell.dfdata.empty:
+            if not self.experiment.cell_data_frames[cell_id].cell.raw.empty:
                 return self.experiment.cell_data_frames[cell_id]
             else:
                 raise AttributeError

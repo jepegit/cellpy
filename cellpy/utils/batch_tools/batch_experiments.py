@@ -156,10 +156,10 @@ class CyclingExperiment(BaseExperiment):
 
             logging.info("...loaded successfully...")
 
-            summary_tmp = cell_data.cell.dfsummary
+            summary_tmp = cell_data.cell.summary
             logging.info("Trying to get summary_data")
 
-            if cell_data.cell.step_table is None or self.force_recalc:
+            if cell_data.cell.steps is None or self.force_recalc:
                 logging.info("Running make_step_table")
 
                 cell_data.make_step_table()
@@ -189,8 +189,8 @@ class CyclingExperiment(BaseExperiment):
                 cell_data_frames[indx] = cell_data
             else:
                 cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
-                cell_data_frames[indx].cell.step_table = cell_data.cell.step_table
-                # cell_data_frames[indx].dataset.step_table_made = True
+                cell_data_frames[indx].cell.steps = cell_data.cell.steps
+                # cell_data_frames[indx].dataset.steps_made = True
 
             if self.save_cellpy:
                 logging.info("saving to cellpy-format")
@@ -294,9 +294,11 @@ class CyclingExperiment(BaseExperiment):
 
                 cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
 
-                step_table = helper.look_up_and_get(row.cellpy_file_names, "step_table")
+                step_table = helper.look_up_and_get(
+                    row.cellpy_file_names, prms._cellpyfile_step
+                )
 
-                cell_data_frames[indx].cell.step_table = step_table
+                cell_data_frames[indx].cell.steps = step_table
 
             self.cell_data_frames = cell_data_frames
 

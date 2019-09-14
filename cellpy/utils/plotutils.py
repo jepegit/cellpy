@@ -217,7 +217,7 @@ def raw_plot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs)
     hv.extension("bokeh", logo=False)
 
     # obs! col-names hard-coded. fix me.
-    raw = cell.cell.dfdata
+    raw = cell.cell.raw
     raw["Test_Time_Hrs"] = raw["Test_Time"] / 3600
     x = ("Test_Time_Hrs", "Time (hours)")
     raw_curve = hv.Curve(raw, x, y)
@@ -386,7 +386,7 @@ def _cycle_info_plot_bokeh(
     cols = [x, y]
     cols.extend([h_cycle, h_step])
 
-    df = cell.cell.dfdata.loc[:, cols]
+    df = cell.cell.raw.loc[:, cols]
 
     if cycle is not None:
         if not isinstance(cycle, (list, tuple)):
@@ -424,7 +424,7 @@ def _cycle_info_plot_bokeh(
     y_min, y_max = df[y].min(), df[y].max()
 
     if info_level > 0:
-        table = cell.cell.step_table
+        table = cell.cell.steps
         df = _add_step_info_cols(df, table, cycle, step)
 
     source = ColumnDataSource(df)
@@ -590,8 +590,8 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
         )
         return
 
-    data = cell.cell.dfdata
-    table = cell.cell.step_table
+    data = cell.cell.raw
+    table = cell.cell.steps
 
     span_colors = ["#4682B4", "#FFA07A"]
 

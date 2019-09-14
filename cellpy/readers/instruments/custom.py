@@ -6,7 +6,7 @@ import pandas as pd
 from cellpy.parameters.internal_settings import get_headers_normal, ATTRS_CELLPYFILE
 
 from cellpy.readers.instruments.mixin import Loader
-from cellpy.readers.core import FileID, DataSet, check64bit, humanize_bytes
+from cellpy.readers.core import FileID, Cell, check64bit, humanize_bytes
 from cellpy.parameters import prms
 
 DEFAULT_CONFIG = {
@@ -224,7 +224,7 @@ class CustomLoader(Loader):
         else:
             raise NotImplementedError
 
-        data = DataSet()
+        data = Cell()
         data.loaded_from = file_name
         fid = self._generate_fid(file_name, var_dict)
 
@@ -253,8 +253,8 @@ class CustomLoader(Loader):
         raw = self._rename_cols(raw)
         raw = self._check_cycleno_stepno(raw)
         data.raw_data_files_length.append(raw.shape[0])
-        data.dfsummary = None
-        data.dfdata = raw
+        data.summary = None
+        data.raw = raw
         new_tests.append(data)
         return new_tests
 

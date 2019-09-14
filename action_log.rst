@@ -40,7 +40,7 @@ Create property for picking dataset
 Make pickers for getting the DataFrames
 .......................................
 
-pick_normal_data : self.tests[0].dfdata, self.dataset.dfdata (check)
+pick_normal_data : self.tests[0].raw, self.dataset.raw (check)
 pick_summary_data: dfsummary
 pick_xxx : get the dataframe
 

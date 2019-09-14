@@ -57,7 +57,7 @@ def make_new_cell():
     """create an empty CellpyData object."""
 
     new_cell = cellpy.cellreader.CellpyData()
-    data = cellpy.cellreader.DataSet()
+    data = cellpy.cellreader.Cell()
     new_cell.cells.append(data)
     return new_cell
 
@@ -91,9 +91,9 @@ def split_experiment(cell, base_cycles=None):
         base_cycles = [base_cycles]
 
     dataset = cell.cell
-    steptable = dataset.step_table
-    data = dataset.dfdata
-    summary = dataset.dfsummary
+    steptable = dataset.steps
+    data = dataset.raw
+    summary = dataset.summary
 
     for b_cycle in base_cycles:
         steptable0, steptable = [
@@ -111,18 +111,18 @@ def split_experiment(cell, base_cycles=None):
 
         new_cell = make_new_cell()
 
-        new_cell.cell.step_table = steptable0
+        new_cell.cell.steps = steptable0
         # new_cell.dataset.step_table_made = True
 
-        new_cell.cell.dfdata = data0
-        new_cell.cell.dfsummary = summary0
+        new_cell.cell.raw = data0
+        new_cell.cell.summary = summary0
 
         old_cell = make_new_cell()
-        old_cell.cell.step_table = steptable
+        old_cell.cell.steps = steptable
         # old_cell.dataset.step_table_made = True
 
-        old_cell.cell.dfdata = data
-        old_cell.cell.dfsummary = summary
+        old_cell.cell.raw = data
+        old_cell.cell.summary = summary
 
         for attr in ATTRS_DATASET:
             value = getattr(cell.cell, attr)
@@ -169,7 +169,7 @@ def add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
 
     if nom_cap is None:
         nom_cap = cell.cell.nom_cap
-    cell.cell.dfsummary[column_name] = cell.cell.dfsummary[h_cum_charge] / nom_cap
+    cell.cell.summary[column_name] = cell.cell.summary[h_cum_charge] / nom_cap
     return cell
 
 
@@ -202,8 +202,8 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
         nom_cap = cell.cell.nom_cap
 
     spec_conv_factor = cell.get_converter_to_specific()
-    cell.cell.step_table[column_name] = abs(
-        round(cell.cell.step_table.current_avr / (nom_cap / spec_conv_factor), 2)
+    cell.cell.steps[column_name] = abs(
+        round(cell.cell.steps.current_avr / (nom_cap / spec_conv_factor), 2)
     )
 
     return cell
@@ -215,11 +215,11 @@ def add_areal_capacity(cell, cell_id, journal):
     # obs! hard-coded col-names (please fix)
     loading = journal.pages.loc[cell_id, "loadings"]  # header 2 be changed
 
-    cell.cell.dfsummary["Areal_Charge_Capacity(mAh/cm2)"] = (
-        cell.cell.dfsummary["Charge_Capacity(mAh/g)"] * loading / 1000
+    cell.cell.summary["Areal_Charge_Capacity(mAh/cm2)"] = (
+        cell.cell.summary["Charge_Capacity(mAh/g)"] * loading / 1000
     )
-    cell.cell.dfsummary["Areal_Discharge_Capacity(mAh/cm2)"] = (
-        cell.cell.dfsummary["Discharge_Capacity(mAh/g)"] * loading / 1000
+    cell.cell.summary["Areal_Discharge_Capacity(mAh/cm2)"] = (
+        cell.cell.summary["Discharge_Capacity(mAh/g)"] * loading / 1000
     )
     return cell
 
@@ -261,8 +261,8 @@ def select_summary_based_on_rate(
 
     cycle_number_header = hdr_normal.cycle_index_txt
 
-    step_table = cell.cell.step_table
-    summary = cell.cell.dfsummary
+    step_table = cell.cell.steps
+    summary = cell.cell.summary
 
     cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
         step_table[rate_column] > (rate - rate_std)
@@ -304,9 +304,9 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
     col_name_charge = hdr_summary.charge_capacity
     col_name_discharge = hdr_summary.discharge_capacity
 
-    norm_val_charge = cell.cell.dfsummary.loc[norm_cycles, col_name_charge].mean()
+    norm_val_charge = cell.cell.summary.loc[norm_cycles, col_name_charge].mean()
     if individual_normalization:
-        norm_val_discharge = cell.cell.dfsummary.loc[
+        norm_val_discharge = cell.cell.summary.loc[
             norm_cycles, col_name_discharge
         ].mean()
     else:
@@ -316,6 +316,6 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
         [col_name_charge, col_name_discharge], [norm_val_charge, norm_val_discharge]
     ):
         norm_col_name = "_".join(["Normalized", col_name])
-        cell.cell.dfsummary[norm_col_name] = cell.cell.dfsummary[col_name] / norm_value
+        cell.cell.summary[norm_col_name] = cell.cell.summary[col_name] / norm_value
 
     return cell

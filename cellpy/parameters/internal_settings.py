@@ -29,7 +29,7 @@ ATTRS_CELLPYFILE = [
     "schedule_file_name",
     "start_datetime",
     "test_ID",
-    "test_no",
+    "cell_no",
     "name",
     "nom_cap",
 ]
