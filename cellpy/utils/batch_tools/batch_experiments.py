@@ -14,10 +14,10 @@ class CyclingExperiment(BaseExperiment):
     """Load experimental data into memory.
 
     This is a re-implementation of the old batch behaviour where
-    all the data-files are processed secuentially (and optionally exported)
+    all the data-files are processed sequentially (and optionally exported)
     while the summary tables are kept and processed. This implementation
     also saves the step tables (for later use when using look-up
-    functionallity).
+    functionality).
 
 
     Attributes:

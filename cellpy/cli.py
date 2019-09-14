@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import sys
+import subprocess
 import logging
 import getpass
 import click
@@ -785,12 +786,22 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
     help="what template to use ('standard', 'gitt', or 'single').",
 )
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
-def new(template, directory):
+@click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
+@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
+def new(template, directory, serve, lab):
     """Will in the future be used for setting up a batch experiment."""
-
-    import cookiecutter.main
-    import cookiecutter.exceptions
-    import cookiecutter.prompt
+    if lab:
+        server = "lab"
+    else:
+        server = "notebook"
+    try:
+        import cookiecutter.main
+        import cookiecutter.exceptions
+        import cookiecutter.prompt
+    except ModuleNotFoundError:
+        click.echo("Could not import cookiecutter.")
+        click.echo("Try installing it with. For example by writing:")
+        click.echo("\npip install cookiecutter\n")
 
     from cellpy.parameters import prms
 
@@ -848,12 +859,52 @@ def new(template, directory):
         click.echo(" - cookiecutter refused to create the project")
         click.echo(e)
 
+    if serve:
+        os.chdir(directory)
+        _serve(server)
+
+
+def _serve(server):
+    click.echo(f"serving with jupyter {server}")
+    subprocess.run(["jupyter", server], check=True)
+    click.echo("Finished serving.")
+
+
+@click.command()
+@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
+@click.option("--directory", "-d", default=None, help="Start in custom directory DIR")
+def serve(lab, directory):
+    """Start a Jupyter server."""
+
+    from cellpy.parameters import prms
+
+    if directory is None:
+        directory = prms.Paths.notebookdir
+    elif directory == "home":
+        directory = Path().home()
+    elif directory == "here":
+        directory = Path(os.getcwd())
+
+    if not os.path.isdir(directory):
+        click.echo("Sorry. This did not work as expected!")
+        click.echo(f" - {directory} does not exist")
+        return
+
+    if lab:
+        server = "lab"
+    else:
+        server = "notebook"
+
+    os.chdir(directory)
+    _serve(server)
+
 
 cli.add_command(setup)
 cli.add_command(info)
 cli.add_command(pull)
 cli.add_command(run)
 cli.add_command(new)
+cli.add_command(serve)
 
 
 # tests etc
