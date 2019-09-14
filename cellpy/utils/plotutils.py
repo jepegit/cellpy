@@ -11,11 +11,13 @@ import itertools
 
 from cellpy.parameters.internal_settings import (
     get_headers_summary,
-    get_headers_normal, get_headers_step_table
+    get_headers_normal,
+    get_headers_step_table,
 )
 
 try:
     import matplotlib.pyplot as plt
+
     plt_available = True
 except ImportError:
     plt_available = False
@@ -24,6 +26,7 @@ try:
     from holoviews import opts
     import holoviews as hv
     from holoviews.plotting.links import RangeToolLink
+
     hv_available = True
 except ImportError:
     hv_available = False
@@ -33,26 +36,109 @@ bokeh_available = importlib.util.find_spec("bokeh") is not None
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
-SYMBOL_DICT = {"all": ['s', 'o', 'v', '^', '<', '>', 'D', 'p', '*', '1', '2', '.', ',',
-                       '3', '4', '8', 'p', 'd', 'h', 'H', '+', 'x', 'X', '|', '_'],
-               "simple": ['s', 'o', 'v', '^', '<', '>', '*', 'd'],
-               }
+SYMBOL_DICT = {
+    "all": [
+        "s",
+        "o",
+        "v",
+        "^",
+        "<",
+        ">",
+        "D",
+        "p",
+        "*",
+        "1",
+        "2",
+        ".",
+        ",",
+        "3",
+        "4",
+        "8",
+        "p",
+        "d",
+        "h",
+        "H",
+        "+",
+        "x",
+        "X",
+        "|",
+        "_",
+    ],
+    "simple": ["s", "o", "v", "^", "<", ">", "*", "d"],
+}
 
-COLOR_DICT = {'classic': [u'b', u'g', u'r', u'c', u'm', u'y', u'k'],
-              'grayscale': [u'0.00', u'0.40', u'0.60', u'0.70'],
-              'bmh': [u'#348ABD', u'#A60628', u'#7A68A6', u'#467821', u'#D55E00', u'#CC79A7', u'#56B4E9',
-                      u'#009E73', u'#F0E442', u'#0072B2'],
-              'dark_background': [u'#8dd3c7', u'#feffb3', u'#bfbbd9', u'#fa8174', u'#81b1d2', u'#fdb462',
-                                  u'#b3de69', u'#bc82bd', u'#ccebc4', u'#ffed6f'],
-              'ggplot': [u'#E24A33', u'#348ABD', u'#988ED5', u'#777777', u'#FBC15E', u'#8EBA42', u'#FFB5B8'],
-              'fivethirtyeight': [u'#30a2da', u'#fc4f30', u'#e5ae38', u'#6d904f', u'#8b8b8b'],
-              'seaborn-colorblind': [u'#0072B2', u'#009E73', u'#D55E00', u'#CC79A7', u'#F0E442', u'#56B4E9'],
-              'seaborn-deep': [u'#4C72B0', u'#55A868', u'#C44E52', u'#8172B2', u'#CCB974', u'#64B5CD'],
-              'seaborn-bright': [u'#003FFF', u'#03ED3A', u'#E8000B', u'#8A2BE2', u'#FFC400', u'#00D7FF'],
-              'seaborn-muted': [u'#4878CF', u'#6ACC65', u'#D65F5F', u'#B47CC7', u'#C4AD66', u'#77BEDB'],
-              'seaborn-pastel': [u'#92C6FF', u'#97F0AA', u'#FF9F9A', u'#D0BBFF', u'#FFFEA3', u'#B0E0E6'],
-              'seaborn-dark-palette': [u'#001C7F', u'#017517', u'#8C0900', u'#7600A1', u'#B8860B', u'#006374'],
-              }
+COLOR_DICT = {
+    "classic": ["b", "g", "r", "c", "m", "y", "k"],
+    "grayscale": ["0.00", "0.40", "0.60", "0.70"],
+    "bmh": [
+        "#348ABD",
+        "#A60628",
+        "#7A68A6",
+        "#467821",
+        "#D55E00",
+        "#CC79A7",
+        "#56B4E9",
+        "#009E73",
+        "#F0E442",
+        "#0072B2",
+    ],
+    "dark_background": [
+        "#8dd3c7",
+        "#feffb3",
+        "#bfbbd9",
+        "#fa8174",
+        "#81b1d2",
+        "#fdb462",
+        "#b3de69",
+        "#bc82bd",
+        "#ccebc4",
+        "#ffed6f",
+    ],
+    "ggplot": [
+        "#E24A33",
+        "#348ABD",
+        "#988ED5",
+        "#777777",
+        "#FBC15E",
+        "#8EBA42",
+        "#FFB5B8",
+    ],
+    "fivethirtyeight": ["#30a2da", "#fc4f30", "#e5ae38", "#6d904f", "#8b8b8b"],
+    "seaborn-colorblind": [
+        "#0072B2",
+        "#009E73",
+        "#D55E00",
+        "#CC79A7",
+        "#F0E442",
+        "#56B4E9",
+    ],
+    "seaborn-deep": ["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974", "#64B5CD"],
+    "seaborn-bright": [
+        "#003FFF",
+        "#03ED3A",
+        "#E8000B",
+        "#8A2BE2",
+        "#FFC400",
+        "#00D7FF",
+    ],
+    "seaborn-muted": ["#4878CF", "#6ACC65", "#D65F5F", "#B47CC7", "#C4AD66", "#77BEDB"],
+    "seaborn-pastel": [
+        "#92C6FF",
+        "#97F0AA",
+        "#FF9F9A",
+        "#D0BBFF",
+        "#FFFEA3",
+        "#B0E0E6",
+    ],
+    "seaborn-dark-palette": [
+        "#001C7F",
+        "#017517",
+        "#8C0900",
+        "#7600A1",
+        "#B8860B",
+        "#006374",
+    ],
+}
 
 headers_summary = get_headers_summary()
 headers_data = get_headers_normal()
@@ -69,7 +155,9 @@ def _hv_bokeh_available():
     return True
 
 
-def create_colormarkerlist_for_info_df(info_df, symbol_label="all", color_style_label="seaborn-colorblind"):
+def create_colormarkerlist_for_info_df(
+    info_df, symbol_label="all", color_style_label="seaborn-colorblind"
+):
     logger.debug("symbol_label: " + symbol_label)
     logger.debug("color_style_label: " + color_style_label)
     groups = info_df.groups.unique()
@@ -77,7 +165,9 @@ def create_colormarkerlist_for_info_df(info_df, symbol_label="all", color_style_
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
-def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"):
+def create_colormarkerlist(
+    groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"
+):
     symbol_list = SYMBOL_DICT[symbol_label]
     color_list = COLOR_DICT[color_style_label]
 
@@ -96,9 +186,11 @@ def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_l
 def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
 
     tgt = raw_curve.relabel(title).opts(
-        width=800, height=300, labelled=['y'],
-        #tools=["pan","box_zoom", "reset"],
-        active_tools=['pan'],
+        width=800,
+        height=300,
+        labelled=["y"],
+        # tools=["pan","box_zoom", "reset"],
+        active_tools=["pan"],
     )
     src = raw_curve.opts(width=800, height=100, yaxis=None, default_tools=[])
 
@@ -109,8 +201,7 @@ def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
     return layout
 
 
-def raw_plot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"), title=None,
-             **kwargs):
+def raw_plot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs):
     # TODO: missing doc-string
 
     if title is None:
@@ -123,35 +214,43 @@ def raw_plot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"), title=None,
     if not _hv_bokeh_available():
         return
 
-    hv.extension('bokeh', logo=False)
+    hv.extension("bokeh", logo=False)
 
     # obs! col-names hard-coded. fix me.
     raw = cell.cell.dfdata
-    raw["Test_Time_Hrs"] = raw["Test_Time"]/3600
+    raw["Test_Time_Hrs"] = raw["Test_Time"] / 3600
     x = ("Test_Time_Hrs", "Time (hours)")
     raw_curve = hv.Curve(raw, x, y)
     layout = _raw_plot(raw_curve, title=title, **kwargs)
     return layout
 
 
-def concatenated_summary_curve_factory(cdf, kdims="Cycle_Index",
-                                       vdims="Charge_Capacity(mAh/g)",
-                                       title="Summary Curves",
-                                       fill_alpha=0.8, size=12,
-                                       width=800, legend_position="right",
-                                       colors=None, markers=None):
+def concatenated_summary_curve_factory(
+    cdf,
+    kdims="Cycle_Index",
+    vdims="Charge_Capacity(mAh/g)",
+    title="Summary Curves",
+    fill_alpha=0.8,
+    size=12,
+    width=800,
+    legend_position="right",
+    colors=None,
+    markers=None,
+):
     # TODO: missing doc-string
 
     if not hv_available:
-        print("This function uses holoviews. But could not import it."
-              "So I am aborting...")
+        print(
+            "This function uses holoviews. But could not import it."
+            "So I am aborting..."
+        )
         return
 
     if colors is None:
-        colors = hv.Cycle('Category10')
+        colors = hv.Cycle("Category10")
 
     if markers is None:
-        markers = hv.Cycle(['circle', 'square', 'triangle', 'diamond'])
+        markers = hv.Cycle(["circle", "square", "triangle", "diamond"])
 
     groups = []
     curves_opts = []
@@ -162,7 +261,7 @@ def concatenated_summary_curve_factory(cdf, kdims="Cycle_Index",
         groups.append(g)
 
         n = hv.Scatter(
-            data=new_df[indx], kdims=kdims, vdims=vdims, group=g, label=indx,
+            data=new_df[indx], kdims=kdims, vdims=vdims, group=g, label=indx
         ).opts(fill_alpha=fill_alpha, size=size)
         curves[indx] = n
 
@@ -174,9 +273,9 @@ def concatenated_summary_curve_factory(cdf, kdims="Cycle_Index",
     for g, c in zip(ugroups, colors.values):
         curves_opts.append(opts.Scatter(g, color=c, marker=markers))
 
-    curves_overlay = hv.NdOverlay(curves, kdims='cell id').opts(
+    curves_overlay = hv.NdOverlay(curves, kdims="cell id").opts(
         opts.NdOverlay(width=800, legend_position=legend_position, title=title),
-        *curves_opts
+        *curves_opts,
     )
 
     return curves_overlay
@@ -188,43 +287,54 @@ def _plot_step(ax, x, y, color):
 
 def _get_info(table, cycle, step):
     # obs! hard-coded col-names. Please fix me.
-    m_table = (table.cycle==cycle) & (table.step==step)
-    p1, p2 = table.loc[m_table, ['point_min', 'point_max']].values[0]
-    c1, c2 = table.loc[m_table, ['current_min', 'current_max']].abs().values[0]
-    d_voltage, d_current  = table.loc[m_table, ['voltage_delta', 'current_delta']].values[0]
-    d_discharge, d_charge  = table.loc[m_table, ['discharge_delta', 'charge_delta']].values[0]
-    current_max = (c1 + c2)/2
+    m_table = (table.cycle == cycle) & (table.step == step)
+    p1, p2 = table.loc[m_table, ["point_min", "point_max"]].values[0]
+    c1, c2 = table.loc[m_table, ["current_min", "current_max"]].abs().values[0]
+    d_voltage, d_current = table.loc[
+        m_table, ["voltage_delta", "current_delta"]
+    ].values[0]
+    d_discharge, d_charge = table.loc[
+        m_table, ["discharge_delta", "charge_delta"]
+    ].values[0]
+    current_max = (c1 + c2) / 2
     rate = table.loc[m_table, "rate_avr"].values[0]
-    step_type = table.loc[m_table, 'type'].values[0]
+    step_type = table.loc[m_table, "type"].values[0]
     return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 
 
-def _add_step_info_cols(df, table, cycles=None, steps=None, h_cycle=None,
-                        h_step=None):
+def _add_step_info_cols(df, table, cycles=None, steps=None, h_cycle=None, h_step=None):
     if h_cycle is None:
         h_cycle = "Cycle_Index"  # edit
     if h_step is None:
         h_step = "Step_Index"  # edit
 
-    col_name_mapper = {
-        "cycle": h_cycle,
-        "step": h_step,
-    }
+    col_name_mapper = {"cycle": h_cycle, "step": h_step}
 
     df = df.merge(
         table.rename(columns=col_name_mapper),
-        on=('Cycle_Index', 'Step_Index'),
-        how='left'
+        on=("Cycle_Index", "Step_Index"),
+        how="left",
     )
 
     return df
 
 
-def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False, x=None,
-                           y=None,
-                           info_level=0,
-                           h_cycle=None, h_step=None,
-                           show_it=False, label_cycles=True, label_steps=False, **kwargs):
+def _cycle_info_plot_bokeh(
+    cell,
+    cycle=None,
+    step=None,
+    title=None,
+    points=False,
+    x=None,
+    y=None,
+    info_level=0,
+    h_cycle=None,
+    h_step=None,
+    show_it=False,
+    label_cycles=True,
+    label_steps=False,
+    **kwargs,
+):
     """Plot raw data with annotations.
 
     This function uses Bokeh for plotting and is intended for use in
@@ -243,8 +353,7 @@ def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False
 
     if points:
         if cycle is None or (len(cycle) > 1):
-            print(
-                "Plotting points only allowed when plotting one single cycle.")
+            print("Plotting points only allowed when plotting one single cycle.")
             print("Turning points off.")
             points = False
 
@@ -323,24 +432,25 @@ def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False
     plot = figure(
         title=title,
         tools="pan,reset,save,wheel_zoom,box_zoom,undo,redo",
-        x_range=[x_min, x_max], y_range=[y_min, y_max],
+        x_range=[x_min, x_max],
+        y_range=[y_min, y_max],
         **kwargs,
     )
 
-    plot.line(
-        x, y, source=source,
-        line_width=3, line_alpha=0.6
-    )
+    plot.line(x, y, source=source, line_width=3, line_alpha=0.6)
 
     # labelling cycles
     if label_cycles:
-        cycle_line_positions = [df.loc[df[h_cycle] == c, x].min() for c in
-                                cycle]
+        cycle_line_positions = [df.loc[df[h_cycle] == c, x].min() for c in cycle]
         cycle_line_positions.append(df.loc[df[h_cycle] == cycle[-1], x].max())
         for m in cycle_line_positions:
-            _s = Span(location=m, dimension='height', line_color="red",
-                      line_width=3,
-                      line_alpha=0.5)
+            _s = Span(
+                location=m,
+                dimension="height",
+                line_color="red",
+                line_width=3,
+                line_alpha=0.5,
+            )
             plot.add_layout(_s)
 
         s_y_pos = y_min + 0.9 * (y_max - y_min)
@@ -356,16 +466,18 @@ def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False
             s_y.append(s_y_pos)
             s_l.append(f"c{s}")
 
-        c_labels = ColumnDataSource(data={
-            x: s_x,
-            y: s_y,
-            'names': s_l
+        c_labels = ColumnDataSource(data={x: s_x, y: s_y, "names": s_l})
 
-        })
-
-        c_labels = LabelSet(x=x, y=y, text='names', level='glyph',
-                            source=c_labels, render_mode='canvas',
-                            text_color="red", text_alpha=0.7)
+        c_labels = LabelSet(
+            x=x,
+            y=y,
+            text="names",
+            level="glyph",
+            source=c_labels,
+            render_mode="canvas",
+            text_color="red",
+            text_alpha=0.7,
+        )
 
         plot.add_layout(c_labels)
 
@@ -374,12 +486,17 @@ def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False
         for c in cycle:
             step = df.loc[df[h_cycle] == c, h_step].unique()
             step_line_positions = [
-                df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].min() for s in
-                step[0:]]
+                df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].min()
+                for s in step[0:]
+            ]
             for m in step_line_positions:
-                _s = Span(location=m, dimension='height', line_color="olive",
-                          line_width=3,
-                          line_alpha=0.1)
+                _s = Span(
+                    location=m,
+                    dimension="height",
+                    line_color="olive",
+                    line_width=3,
+                    line_alpha=0.1,
+                )
                 plot.add_layout(_s)
 
             # s_y_pos = y_min + 0.8 * (y_max - y_min)
@@ -388,32 +505,30 @@ def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False
             s_l = []
 
             for s in step:
-                s_x_min = df.loc[
-                    (df[h_step] == s) & (df[h_cycle] == c), x].min()
-                s_x_max = df.loc[
-                    (df[h_step] == s) & (df[h_cycle] == c), x].max()
+                s_x_min = df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].min()
+                s_x_max = df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].max()
                 s_x_pos = s_x_min
 
-                s_y_min = df.loc[
-                    (df[h_step] == s) & (df[h_cycle] == c), y].min()
-                s_y_max = df.loc[
-                    (df[h_step] == s) & (df[h_cycle] == c), y].max()
+                s_y_min = df.loc[(df[h_step] == s) & (df[h_cycle] == c), y].min()
+                s_y_max = df.loc[(df[h_step] == s) & (df[h_cycle] == c), y].max()
                 s_y_pos = (s_y_max + s_y_min) / 2
 
                 s_x.append(s_x_pos)
                 s_y.append(s_y_pos)
                 s_l.append(f"s{s}")
 
-            s_labels = ColumnDataSource(data={
-                x: s_x,
-                y: s_y,
-                'names': s_l
+            s_labels = ColumnDataSource(data={x: s_x, y: s_y, "names": s_l})
 
-            })
-
-            s_labels = LabelSet(x=x, y=y, text='names', level='glyph',
-                                source=s_labels, render_mode='canvas',
-                                text_color="olive", text_alpha=0.3)
+            s_labels = LabelSet(
+                x=x,
+                y=y,
+                text="names",
+                level="glyph",
+                source=s_labels,
+                render_mode="canvas",
+                text_color="olive",
+                text_alpha=0.3,
+            )
 
             plot.add_layout(s_labels)
 
@@ -432,7 +547,7 @@ def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False
             ("cycle", f"@{h_cycle}"),
             ("step", f"@{h_step}"),
             ("step_type", "@type"),
-            ("rate", "@rate_avr{0.2f}")
+            ("rate", "@rate_avr{0.2f}"),
         ]
 
     elif info_level == 2:
@@ -450,17 +565,14 @@ def _cycle_info_plot_bokeh(cell, cycle=None, step=None, title=None, points=False
             ("dDischarge (%)", "@discharge_delta{0.2f}"),
         ]
 
-    hover.mode = 'vline'
+    hover.mode = "vline"
     plot.add_tools(hover)
 
     plot.xaxis.axis_label = x_label
     plot.yaxis.axis_label = y_label
 
     if points:
-        plot.scatter(
-            x, y, source=source,
-            alpha=0.3
-        )
+        plot.scatter(x, y, source=source, alpha=0.3)
 
     if show_it:
         show(plot)
@@ -472,22 +584,21 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
 
     # obs! hard-coded col-names. Please fix me.
     if not plt_available:
-        print("This function uses matplotlib. But I could not import it. "
-              "So I decided to abort...")
+        print(
+            "This function uses matplotlib. But I could not import it. "
+            "So I decided to abort..."
+        )
         return
 
     data = cell.cell.dfdata
     table = cell.cell.step_table
 
-    span_colors = [
-        "#4682B4",
-        "#FFA07A"
-    ]
+    span_colors = ["#4682B4", "#FFA07A"]
 
     voltage_color = "#008B8B"
     current_color = "#CD5C5C"
 
-    m_cycle_data = (data.Cycle_Index == cycle)
+    m_cycle_data = data.Cycle_Index == cycle
     all_steps = data[m_cycle_data]["Step_Index"].unique()
 
     color = itertools.cycle(span_colors)
@@ -495,12 +606,9 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
     fig = plt.figure(figsize=(20, 8))
     fig.suptitle(f"Cycle: {cycle}")
 
-    ax3 = plt.subplot2grid((8, 3), (0, 0), colspan=3, rowspan=1,
-                           fig=fig)  # steps
-    ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2,
-                           fig=fig)  # rate
-    ax1 = plt.subplot2grid((8, 3), (3, 0), colspan=3, rowspan=5,
-                           fig=fig)  # data
+    ax3 = plt.subplot2grid((8, 3), (0, 0), colspan=3, rowspan=1, fig=fig)  # steps
+    ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2, fig=fig)  # rate
+    ax1 = plt.subplot2grid((8, 3), (3, 0), colspan=3, rowspan=5, fig=fig)  # data
 
     ax2 = ax1.twinx()
     ax1.set_xlabel("time (minutes)")
@@ -517,11 +625,14 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
         v = data.loc[m, "Voltage"]
         t = data.loc[m, "Test_Time"] / 60
         step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
-            table, cycle, s)
+            table, cycle, s
+        )
         if len(t) > 1:
             fcolor = next(color)
 
-            info_txt = f"{step_type}\nc-rate = {rate}\ni = |{1000 * current_max:0.2f}| mA\n"
+            info_txt = (
+                f"{step_type}\nc-rate = {rate}\ni = |{1000 * current_max:0.2f}| mA\n"
+            )
             info_txt += f"delta V = {dv:0.2f} %\ndelta i = {dc:0.2f} %\n"
             info_txt += f"delta C = {d_charge:0.2} %\ndelta DC = {d_discharge:0.2} %\n"
 
@@ -536,13 +647,13 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
             annotations_2.append([info_txt, t.mean()])
     ax3.set_ylim(0, 1)
     for s in annotations_1:
-        ax3.annotate(f"{s[0]}", (s[1], 0.2), ha='center')
+        ax3.annotate(f"{s[0]}", (s[1], 0.2), ha="center")
 
     for s in annotations_2:
-        ax3.annotate(f"{s[0]}", (s[1], 0.6), ha='center')
+        ax3.annotate(f"{s[0]}", (s[1], 0.6), ha="center")
 
     for s in annotations_4:
-        ax4.annotate(f"{s[0]}", (s[1], 0.0), ha='center')
+        ax4.annotate(f"{s[0]}", (s[1], 0.0), ha="center")
 
     for ax in [ax3, ax4]:
         ax.axes.get_yaxis().set_visible(False)
@@ -552,33 +663,50 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
         return ax1, ax2, ax2, ax4
 
 
-def cycle_info_plot(cell, cycle=None,
-                    step=None, title=None,
-                    points=False, x=None,y=None, info_level=0, h_cycle=None,
-                    h_step=None, show_it=False, label_cycles=True,
-                    label_steps=False,
-                    get_axes=False, use_bokeh=True,
-                    **kwargs):
+def cycle_info_plot(
+    cell,
+    cycle=None,
+    step=None,
+    title=None,
+    points=False,
+    x=None,
+    y=None,
+    info_level=0,
+    h_cycle=None,
+    h_step=None,
+    show_it=False,
+    label_cycles=True,
+    label_steps=False,
+    get_axes=False,
+    use_bokeh=True,
+    **kwargs,
+):
     # TODO: missing doc-string
     if use_bokeh and not bokeh_available:
-        print("OBS! bokeh is not available -"
-              " using matplotlib instead")
+        print("OBS! bokeh is not available -" " using matplotlib instead")
         use_bokeh = False
 
     if use_bokeh:
         axes = _cycle_info_plot_bokeh(
-            cell, cycle=cycle, step=step, title=title,
-            points=points, x=x, y=y, info_level=info_level,
+            cell,
+            cycle=cycle,
+            step=step,
+            title=title,
+            points=points,
+            x=x,
+            y=y,
+            info_level=info_level,
             h_cycle=h_cycle,
             h_step=h_step,
-            show_it=show_it, label_cycles=label_cycles,
-            label_steps=label_steps, **kwargs,
+            show_it=show_it,
+            label_cycles=label_cycles,
+            label_steps=label_steps,
+            **kwargs,
         )
     else:
         if isinstance(cycle, (list, tuple)):
             if len(cycle) > 1:
-                print("OBS! The matplotlib-plotter only accepts single "
-                      "cycles.")
+                print("OBS! The matplotlib-plotter only accepts single " "cycles.")
                 print(f"Selecting first cycle ({cycle[0]})")
             cycle = cycle[0]
         axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes)

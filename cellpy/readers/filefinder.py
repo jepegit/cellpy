@@ -13,8 +13,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def create_full_names(run_name, cellpy_file_extension=None,
-                      raw_file_dir=None, cellpy_file_dir=None):
+def create_full_names(
+    run_name, cellpy_file_extension=None, raw_file_dir=None, cellpy_file_dir=None
+):
     cellpy_file_extension = "h5"
 
     if cellpy_file_extension is None:
@@ -34,9 +35,16 @@ def create_full_names(run_name, cellpy_file_extension=None,
     return raw_file, cellpy_file
 
 
-def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
-                     raw_file_dir=None, cellpy_file_dir=None, prm_filename=None,
-                     file_name_format=None, cache=None):
+def search_for_files(
+    run_name,
+    raw_extension=None,
+    cellpy_file_extension=None,
+    raw_file_dir=None,
+    cellpy_file_dir=None,
+    prm_filename=None,
+    file_name_format=None,
+    cache=None,
+):
     """Searches for files (raw-data files and cellpy-files).
 
 
@@ -92,8 +100,7 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
             if version >= 0.5:
-                print("Could not read file_name_format "
-                      "from _cellpy_prms_xxx.conf.")
+                print("Could not read file_name_format " "from _cellpy_prms_xxx.conf.")
                 print("Using:")
                 print("file_name_format:", file_name_format)
                 file_format_explanation = "YYYYMMDD is date,"
@@ -149,11 +156,9 @@ def search_for_files(run_name, raw_extension=None, cellpy_file_extension=None,
             if len(cache) == 0:
                 cache = os.listdir(raw_file_dir)
             run_files = [
-                os.path.join(
-                    raw_file_dir, x
-                ) for x in cache if fnmatch.fnmatch(
-                    x, glob_text_raw
-                )
+                os.path.join(raw_file_dir, x)
+                for x in cache
+                if fnmatch.fnmatch(x, glob_text_raw)
             ]
             run_files.sort()
         else:
@@ -176,9 +181,12 @@ def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
     cellpyfile = os.path.basename(cellpyfile)
     cellpyfile = os.path.splitext(cellpyfile)[0]
     for j in range(counter_min, counter_max + 1):
-        look_for = "%s%s%s%s" % (cellpyfile, counter_sep,
-                                 str(j).zfill(counter_digits),
-                                 res_extension)
+        look_for = "%s%s%s%s" % (
+            cellpyfile,
+            counter_sep,
+            str(j).zfill(counter_digits),
+            res_extension,
+        )
 
         look_for = os.path.join(res_dir, look_for)
         if os.path.isfile(look_for):
@@ -187,10 +195,11 @@ def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
     return res_files
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("searching for files")
     my_run_name = "20160805_test001_45_cc"
     my_raw_file_dir = os.path.abspath("../data_ex")
     my_cellpy_file_dir = os.path.abspath("../data_ex")
-    search_for_files(my_run_name, raw_file_dir=my_raw_file_dir,
-                     cellpy_file_dir=my_cellpy_file_dir)
+    search_for_files(
+        my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir
+    )

@@ -100,6 +100,7 @@ def test_pull_tests(tmp_path):
 @pytest.mark.slowtest
 def test_pull_examples(tmp_path):
     import github
+
     runner = CliRunner()
     opts = list()
     opts.append("pull")
@@ -213,8 +214,6 @@ def test_cli_setup_help():
 def test_cli_setup():
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(
-            cli.cli, ["setup", "--dry-run"]
-        )
+        result = runner.invoke(cli.cli, ["setup", "--dry-run"])
         print(result.output)
         assert result.exit_code == 0

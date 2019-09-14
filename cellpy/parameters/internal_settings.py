@@ -5,6 +5,7 @@ import collections
 
 class HeaderDict(collections.UserDict):
     """Sub-classing dict to allow for tab-completion."""
+
     def __setitem__(self, key, value):
         if key == "data":
             raise KeyError("protected key")
@@ -36,27 +37,66 @@ ATTRS_CELLPYFILE = [
 # Attributes that should be copied when duplicating cellpy objects:
 
 ATTRS_CELLPYDATA = [
-    'auto_dirs', 'capacity_modifiers', 'cellpy_datadir', 'cycle_mode',
-    'daniel_number', 'ensure_step_table',
-    'file_names', 'filestatuschecker', 'force_all', 'force_step_table_creation',
-    'forced_errors', 'limit_loaded_cycles',
-    'load_only_summary', 'minimum_selection', 'name', 'number_of_datasets',
-    'profile', 'raw_datadir', 'raw_limits',
-    'raw_units', 'select_minimal', 'selected_dataset_number', 'selected_scans',
-    'sep', 'status_datasets', 'summary_exists',
-    'table_names', 'tester'
+    "auto_dirs",
+    "capacity_modifiers",
+    "cellpy_datadir",
+    "cycle_mode",
+    "daniel_number",
+    "ensure_step_table",
+    "file_names",
+    "filestatuschecker",
+    "force_all",
+    "force_step_table_creation",
+    "forced_errors",
+    "limit_loaded_cycles",
+    "load_only_summary",
+    "minimum_selection",
+    "name",
+    "number_of_datasets",
+    "profile",
+    "raw_datadir",
+    "raw_limits",
+    "raw_units",
+    "select_minimal",
+    "selected_dataset_number",
+    "selected_scans",
+    "sep",
+    "status_datasets",
+    "summary_exists",
+    "table_names",
+    "tester",
 ]
 
 ATTRS_DATASET = [
-    'cellpy_file_version', 'channel_index', 'channel_number', 'charge_steps',
-    'creator', 'data',
-    'discharge_steps', 'file_errors', 'ir_steps', 'item_ID', 'loaded_from',
-    'mass', 'mass_given', 'material',
-    'merged', 'name', 'no_cycles', 'nom_cap', 'normal_table_version',
-    'ocv_steps', 'raw_data_files', 'raw_data_files_length',
-    'raw_limits', 'raw_units', 'schedule_file_name', 'start_datetime',
-    'step_table_version', 'summary',
-    'summary_version', 'test_ID', 'test_no', 'tot_mass'
+    "cellpy_file_version",
+    "channel_index",
+    "channel_number",
+    "charge_steps",
+    "creator",
+    "data",
+    "discharge_steps",
+    "file_errors",
+    "ir_steps",
+    "item_ID",
+    "loaded_from",
+    "mass",
+    "mass_given",
+    "material",
+    "merged",
+    "name",
+    "no_cycles",
+    "nom_cap",
+    "ocv_steps",
+    "raw_data_files",
+    "raw_data_files_length",
+    "raw_limits",
+    "raw_units",
+    "schedule_file_name",
+    "start_datetime",
+    "summary",
+    "test_ID",
+    "test_no",
+    "tot_mass",
 ]
 
 
@@ -90,24 +130,24 @@ cellpy_limits["ir_change"] = 0.00001
 
 headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
 headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
-headers_summary["cumulated_charge_capacity"] = \
-    "Cumulated_Charge_Capacity(mAh/g)"
-headers_summary["cumulated_discharge_capacity"] = \
-    "Cumulated_Discharge_Capacity(mAh/g)"
-headers_summary["coulombic_efficiency"] = \
-    "Coulombic_Efficiency(percentage)"
-headers_summary["cumulated_coulombic_efficiency"] = \
-    "Cumulated_Coulombic_Efficiency(percentage)"
+headers_summary["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
+headers_summary["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
+headers_summary["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
+headers_summary[
+    "cumulated_coulombic_efficiency"
+] = "Cumulated_Coulombic_Efficiency(percentage)"
 headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
-headers_summary["cumulated_coulombic_difference"] = \
-    "Cumulated_Coulombic_Difference(mAh/g)"
-headers_summary["discharge_capacity_loss"] = \
-    "Discharge_Capacity_Loss(mAh/g)"
+headers_summary[
+    "cumulated_coulombic_difference"
+] = "Cumulated_Coulombic_Difference(mAh/g)"
+headers_summary["discharge_capacity_loss"] = "Discharge_Capacity_Loss(mAh/g)"
 headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
-headers_summary["cumulated_discharge_capacity_loss"] = \
-    "Cumulated_Discharge_Capacity_Loss(mAh/g)"
-headers_summary["cumulated_charge_capacity_loss"] = \
-    "Cumulated_Charge_Capacity_Loss(mAh/g)"
+headers_summary[
+    "cumulated_discharge_capacity_loss"
+] = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
+headers_summary[
+    "cumulated_charge_capacity_loss"
+] = "Cumulated_Charge_Capacity_Loss(mAh/g)"
 headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
 headers_summary["ir_charge"] = "IR_Charge(Ohms)"
 headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
@@ -125,48 +165,46 @@ headers_summary["normalized_cycle_index"] = "Normalized_Cycle_Index"
 headers_summary["low_level"] = "Low_Level(percentage)"
 # SEI loss:
 headers_summary["high_level"] = "High_Level(percentage)"
-headers_summary["shifted_charge_capacity"] = \
-    "Charge_Endpoint_Slippage(mAh/g)"
-headers_summary["shifted_discharge_capacity"] = \
-    "Discharge_Endpoint_Slippage(mAh/g)"
+headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
+headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
 headers_summary["temperature_last"] = "Last_Temperature(C)"
 headers_summary["temperature_mean"] = "Average_Temperature(C)"
 headers_summary["pre_aux"] = "Aux_"
 
 # - normal (data) -
 
-headers_normal['aci_phase_angle_txt'] = 'ACI_Phase_Angle'
-headers_normal['ref_aci_phase_angle_txt'] = 'Reference_ACI_Phase_Angle'
+headers_normal["aci_phase_angle_txt"] = "ACI_Phase_Angle"
+headers_normal["ref_aci_phase_angle_txt"] = "Reference_ACI_Phase_Angle"
 
-headers_normal['ac_impedance_txt'] = 'AC_Impedance'
-headers_normal['ref_ac_impedance_txt'] = 'Reference_AC_Impedance'  # new
+headers_normal["ac_impedance_txt"] = "AC_Impedance"
+headers_normal["ref_ac_impedance_txt"] = "Reference_AC_Impedance"  # new
 
-headers_normal['charge_capacity_txt'] = 'Charge_Capacity'
-headers_normal['charge_energy_txt'] = 'Charge_Energy'
-headers_normal['current_txt'] = 'Current'
-headers_normal['cycle_index_txt'] = 'Cycle_Index'
-headers_normal['data_point_txt'] = 'Data_Point'
-headers_normal['datetime_txt'] = 'DateTime'
-headers_normal['discharge_capacity_txt'] = 'Discharge_Capacity'
-headers_normal['discharge_energy_txt'] = 'Discharge_Energy'
-headers_normal['internal_resistance_txt'] = 'Internal_Resistance'
+headers_normal["charge_capacity_txt"] = "Charge_Capacity"
+headers_normal["charge_energy_txt"] = "Charge_Energy"
+headers_normal["current_txt"] = "Current"
+headers_normal["cycle_index_txt"] = "Cycle_Index"
+headers_normal["data_point_txt"] = "Data_Point"
+headers_normal["datetime_txt"] = "DateTime"
+headers_normal["discharge_capacity_txt"] = "Discharge_Capacity"
+headers_normal["discharge_energy_txt"] = "Discharge_Energy"
+headers_normal["internal_resistance_txt"] = "Internal_Resistance"
 
-headers_normal['is_fc_data_txt'] = 'Is_FC_Data'
-headers_normal['step_index_txt'] = 'Step_Index'
-headers_normal['sub_step_index_txt'] = 'Sub_Step_Index'  # new
+headers_normal["is_fc_data_txt"] = "Is_FC_Data"
+headers_normal["step_index_txt"] = "Step_Index"
+headers_normal["sub_step_index_txt"] = "Sub_Step_Index"  # new
 
-headers_normal['step_time_txt'] = 'Step_Time'
-headers_normal['sub_step_time_txt'] = 'Sub_Step_Time'  # new
+headers_normal["step_time_txt"] = "Step_Time"
+headers_normal["sub_step_time_txt"] = "Sub_Step_Time"  # new
 
-headers_normal['test_id_txt'] = 'Test_ID'
-headers_normal['test_time_txt'] = 'Test_Time'
+headers_normal["test_id_txt"] = "Test_ID"
+headers_normal["test_time_txt"] = "Test_Time"
 
-headers_normal['voltage_txt'] = 'Voltage'
-headers_normal['ref_voltage_txt'] = 'Reference_Voltage'  # new
+headers_normal["voltage_txt"] = "Voltage"
+headers_normal["ref_voltage_txt"] = "Reference_Voltage"  # new
 
-headers_normal['dv_dt_txt'] = 'dV/dt'
-headers_normal['frequency_txt'] = 'Frequency'  # new
-headers_normal['amplitude_txt'] = 'Amplitude'  # new
+headers_normal["dv_dt_txt"] = "dV/dt"
+headers_normal["frequency_txt"] = "Frequency"  # new
+headers_normal["amplitude_txt"] = "Amplitude"  # new
 
 # - step table -
 

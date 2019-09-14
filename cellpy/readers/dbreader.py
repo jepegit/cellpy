@@ -23,10 +23,7 @@ class DbSheetCols(object):
 
 
 class Reader(object):
-    def __init__(self,
-                 db_file=None,
-                 db_datadir=None,
-                 db_datadir_processed=None):
+    def __init__(self, db_file=None, db_datadir=None, db_datadir_processed=None):
 
         if not db_file:
             self.db_path = prms.Paths["db_path"]
@@ -69,7 +66,7 @@ class Reader(object):
         txt += str(self.table.head())
         return txt
 
- # --------not fixed from here -------------------------------
+    # --------not fixed from here -------------------------------
 
     def _find_out_what_rows_to_skip(self):
         if self.db_search_start_row >= self.db_data_start_row:
@@ -82,8 +79,10 @@ class Reader(object):
         try:
             skiprows.remove(self.db_header_row)
         except KeyError:
-            logging.debug("Trying to remove header row number"
-                          " from skiprow, but it is not in skiprow")
+            logging.debug(
+                "Trying to remove header row number"
+                " from skiprow, but it is not in skiprow"
+            )
         skiprows.union((self.db_unit_row,))
         if self.db_search_end_row <= 0 or self.db_search_end_row is None:
             nrows = None
@@ -136,16 +135,20 @@ class Reader(object):
         work_book = pd.ExcelFile(self.db_file)
         try:
             sheet = work_book.parse(
-                table_name, header=header_row, skiprows=rows_to_skip,
-                dtype=dtypes_dict, nrows=nrows,
+                table_name,
+                header=header_row,
+                skiprows=rows_to_skip,
+                dtype=dtypes_dict,
+                nrows=nrows,
             )
         except ValueError as e:
-            logging.debug("Could not parse all the columns (ValueError) "
-                          "using given dtypes. Trying without dtypes.")
+            logging.debug(
+                "Could not parse all the columns (ValueError) "
+                "using given dtypes. Trying without dtypes."
+            )
             logging.debug(str(e))
             sheet = work_book.parse(
-                table_name, header=header_row, skiprows=rows_to_skip,
-                nrows=nrows,
+                table_name, header=header_row, skiprows=rows_to_skip, nrows=nrows
             )
 
         return sheet
@@ -164,10 +167,9 @@ class Reader(object):
         id_col = sheet.loc[:, identity]
         if any(id_col.duplicated()):
             warnings.warn(
-                "your database is corrupt: duplicates"
-                " encountered in the srno-column")
-            logger.debug("srno duplicates:\n" + str(
-                id_col.duplicated()))
+                "your database is corrupt: duplicates" " encountered in the srno-column"
+            )
+            logger.debug("srno duplicates:\n" + str(id_col.duplicated()))
             probably_good_to_go = False
         return probably_good_to_go
 
@@ -279,9 +281,12 @@ class Reader(object):
             insp = self._pick_info(serial_number, column_name)
             return insp
         except KeyError:
-            logger.warning("Could not read the cycle mode (using value from prms instead)")
+            logger.warning(
+                "Could not read the cycle mode (using value from prms instead)"
+            )
             logger.debug(f"cycle mode: {prms.Reader.cycle_mode}")
             import sys
+
             sys.exit()
             return prms.Reader.cycle_mode
 
@@ -304,17 +309,16 @@ class Reader(object):
         return total_mass
 
     def get_all(self):
-        return self.filter_by_col([self.db_sheet_cols.id,
-                                   self.db_sheet_cols.exists])
+        return self.filter_by_col([self.db_sheet_cols.id, self.db_sheet_cols.exists])
 
     def get_fileid(self, serialno, full_path=True):
         column_name = self.db_sheet_cols.file_name_indicator
         if not full_path:
             filename = self._pick_info(serialno, column_name)
         else:
-            filename = os.path.join(self.db_datadir_processed,
-                                    self._pick_info(serialno,
-                                                    column_name))
+            filename = os.path.join(
+                self.db_datadir_processed, self._pick_info(serialno, column_name)
+            )
         return filename
 
     @staticmethod
@@ -322,7 +326,7 @@ class Reader(object):
         # find serial_numbers that to belong to all snro-lists in lists
         # where lists = [serial_numberlist1, snrolist2, ....]
         if not isinstance(lists[0], (list, tuple)):
-            lists = [lists, ]
+            lists = [lists]
         serial_numbers = [set(a) for a in lists]
         serial_numbers = set.intersection(*serial_numbers)
         return serial_numbers
@@ -349,7 +353,7 @@ class Reader(object):
 
     def filter_selected(self, serial_numbers):
         if isinstance(serial_numbers, (int, float)):
-            serial_numbers = [serial_numbers, ]
+            serial_numbers = [serial_numbers]
         new_serial_numbers = []
         column_name = self.db_sheet_cols.selected
         for serial_number in serial_numbers:
@@ -379,7 +383,7 @@ class Reader(object):
         search_string = ""
 
         if not isinstance(slurry, (list, tuple)):
-            slurry = [slurry, ]
+            slurry = [slurry]
 
         first = True
         for slur in slurry:
@@ -391,9 +395,7 @@ class Reader(object):
                 search_string += "|"
                 search_string += s_s
 
-        criterion = sheet.loc[:, cellname].str.contains(
-            search_string
-        )
+        criterion = sheet.loc[:, cellname].str.contains(search_string)
         exists = sheet.loc[:, exists] > 0
         sheet = sheet[criterion & exists]
 
@@ -413,7 +415,7 @@ class Reader(object):
         """
 
         if not isinstance(column_names, (list, tuple)):
-            column_names = [column_names, ]
+            column_names = [column_names]
 
         sheet = self.table
         identity = self.db_sheet_cols.id
@@ -427,8 +429,7 @@ class Reader(object):
 
         return sheet.loc[criterion, identity].values.astype(int)
 
-    def filter_by_col_value(self, column_name,
-                            min_val=None, max_val=None):
+    def filter_by_col_value(self, column_name, min_val=None, max_val=None):
         """filters sheet/table by column.
 
         The routine returns the serial-numbers with min_val <= values >= max_val
@@ -517,5 +518,3 @@ if __name__ == "__main__":
     r.print_serial_number_info(615)
     tm = r.get_total_mass(615)
     print(tm)
-
-

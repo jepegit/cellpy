@@ -32,13 +32,17 @@ class PECLoader(Loader):
     """Main loading class"""
 
     def __init__(self):
-        self.headers_normal = get_headers_normal()  # should consider to move this to the Loader class
+        self.headers_normal = (
+            get_headers_normal()
+        )  # should consider to move this to the Loader class
         self.current_chunk = 0  # use this to set chunks to load
         self.pec_data = None
         self.pec_log = None
         self.pec_settings = None
         self.number_of_header_lines = 32
-        self.cellpy_headers = get_headers_normal()  # should consider to move this to the Loader class
+        self.cellpy_headers = (
+            get_headers_normal()
+        )  # should consider to move this to the Loader class
 
     @staticmethod
     def _get_pec_units():
@@ -150,15 +154,15 @@ class PECLoader(Loader):
         df = pd.read_csv(file_name, skiprows=number_of_header_lines)
 
         # get rid of unnamed columns
-        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+        df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
 
         # get rid of spaces, parenthesis, and the deg-sign
         new_column_headers = {
             c: c.replace(" ", "_")
-                .replace("(", "")
-                .replace(")", "")
-                .replace("°", "")
-                .replace(r"%", "pct")
+            .replace("(", "")
+            .replace(")", "")
+            .replace("°", "")
+            .replace(r"%", "pct")
             for c in df.columns
         }
         df.rename(columns=new_column_headers, inplace=True)
@@ -268,9 +272,8 @@ class PECLoader(Loader):
 
     def _rename_header(self, h_old, h_new):
         try:
-            self.pec_data.rename(columns={h_new: self.cellpy_headers[h_old]},
-                                 inplace=True)
-        except KeyError as e:
-            logging.info(
-                f"Problem during conversion to cellpy-format ({e})"
+            self.pec_data.rename(
+                columns={h_new: self.cellpy_headers[h_old]}, inplace=True
             )
+        except KeyError as e:
+            logging.info(f"Problem during conversion to cellpy-format ({e})")

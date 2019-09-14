@@ -29,8 +29,13 @@ def _write(file_name=None):
     logging.debug("saving configuration to %s" % file_name)
     try:
         with open(file_name, "w") as config_file:
-            yaml.dump(default_config, config_file, default_flow_style=False,
-                      explicit_start=True, explicit_end=True)
+            yaml.dump(
+                default_config,
+                config_file,
+                default_flow_style=False,
+                explicit_start=True,
+                explicit_end=True,
+            )
     except yaml.YAMLError:
         raise Exception("Could not save file")
 
@@ -48,5 +53,5 @@ def main():
     pprint(d)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -23,26 +23,35 @@ COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
 class Batch:
     def __init__(self, *args, **kwargs):
         default_log_level = kwargs.pop("log_level", None)
-        log.setup_logging(custom_log_dir=prms.Paths.filelogdir,
-                          default_level=default_log_level)
+        if default_log_level is not None:
+            log.setup_logging(
+                custom_log_dir=prms.Paths.filelogdir, default_level=default_log_level
+            )
 
         db_reader = kwargs.pop("db_reader", "default")
+
+        file_name = kwargs.pop("file_name", None)
+
         logger.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
 
-        if len(args) > 0:
-            self.experiment.journal.name = args[0]
+        if not file_name:
+            if len(args) > 0:
+                self.experiment.journal.name = args[0]
 
-        if len(args) > 1:
-            self.experiment.journal.project = args[1]
+            if len(args) > 1:
+                self.experiment.journal.project = args[1]
 
-        for key in kwargs:
-            if key == "name":
-                self.experiment.journal.name = kwargs[key]
-            elif key == "project":
-                self.experiment.journal.project = kwargs[key]
-            elif key == "batch_col":
-                self.experiment.journal.batch_col = kwargs[key]
+            for key in kwargs:
+                if key == "name":
+                    self.experiment.journal.name = kwargs[key]
+                elif key == "project":
+                    self.experiment.journal.project = kwargs[key]
+                elif key == "batch_col":
+                    self.experiment.journal.batch_col = kwargs[key]
+
+        else:
+            self.experiment.journal.from_file(file_name=file_name)
 
         self.exporter = CSVExporter()
         self.exporter._assign_dumper(ram_dumper)
@@ -75,13 +84,18 @@ class Batch:
         # should add link-mode?
         try:
             keys = [df.name for df in self.experiment.memory_dumped["summary_engine"]]
-            return pd.concat(self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
+            return pd.concat(
+                self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1
+            )
         except KeyError:
             logging.info("no summary exists")
 
     @property
     def summary_columns(self):
-        return self.summaries.columns.get_level_values(0)
+        try:
+            return self.summaries.columns.get_level_values(0)
+        except AttributeError:
+            logging.info("can't get any columns")
 
     # TODO: property: cells (return cell names)
     # TODO: property: data_columns (return column names for the raw data)
@@ -103,11 +117,21 @@ class Batch:
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
 
-        self.experiment.journal.pages = pd.DataFrame(columns=[
-                "filenames", "masses", "total_masses", "loadings",
-                "fixed", "labels", "cell_type", "raw_file_names",
-                "cellpy_file_names", "groups", "sub_groups",
-        ])
+        self.experiment.journal.pages = pd.DataFrame(
+            columns=[
+                "filenames",
+                "masses",
+                "total_masses",
+                "loadings",
+                "fixed",
+                "labels",
+                "cell_type",
+                "raw_file_names",
+                "cellpy_file_names",
+                "groups",
+                "sub_groups",
+            ]
+        )
         self.experiment.journal.pages.set_index("filenames", inplace=True)
 
         self.experiment.journal.generate_folder_names()
@@ -119,26 +143,20 @@ class Batch:
         logging.info(f"project: {self.experiment.journal.project}")
         self.experiment.journal.from_db()
         self.experiment.journal.to_file()
+        self.duplicate_journal()
 
     def create_folder_structure(self):
         # rename to: paginate
         self.experiment.journal.paginate()
         logging.info("created folders")
 
-    def save_info_df(self):
+    def save_journal(self):
         # rename to: save_journal
         # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file()
         logging.info("saving journal pages")
-        print(" journal ".center(80, "-"))
-        print(self.experiment.journal.pages.head(10))
-        print()
-        print("->")
-        print(self.experiment.journal.file_name)
 
-    def duplicate_info_df(self):
-        # rename to: duplicate_journal
-        # or combine this into save_journal?
+    def duplicate_journal(self):
         journal_name = self.experiment.journal.file_name
         journal_name = pathlib.Path(journal_name)
         if not journal_name.is_file():
@@ -163,6 +181,7 @@ class Batch:
 
     def make_summaries(self):
         # rename to: combine_summaries
+        # also: need a similar function that does not save to csv
         self.exporter.do()
 
     def plot_summaries(self):
@@ -170,14 +189,14 @@ class Batch:
 
             try:
                 import bokeh.plotting
+
                 if prms.Batch.notebook:
                     bokeh.plotting.output_notebook()
 
             except ModuleNotFoundError:
                 prms.Batch.backend = "matplotlib"
                 logging.warning(
-                    "could not find the bokeh "
-                    "module -> using matplotlib instead"
+                    "could not find the bokeh " "module -> using matplotlib instead"
                 )
 
         self.plotter.do()
@@ -238,13 +257,34 @@ def main():
 
 
 def init(*args, **kwargs):
-    """Returns an initialized instance of the Batch class"""
+    """Returns an initialized instance of the Batch class.
+
+    Args:
+        *args: passed directly to Batch()
+            name: name of batch
+            project: name of project
+            batch_col: batch column identifier
+        **kwargs:
+            file_name: json file if loading from pages
+            default_log_level: "INFO" or "DEBUG"
+            The rest is passed directly to Batch()
+
+    Usage:
+        >>> empty_batch = Batch.init(db_reader=None)
+        >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
+        >>> normal_init_of_batch = Batch.init()
+    """
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
-    import cellpy.log as log
-    log.setup_logging(custom_log_dir=prms.Paths["filelogdir"],
-                      default_level=default_log_level)
-    logging.debug(f"returning Batch(args: {args}, kwargs: {kwargs})")
+    file_name = kwargs.pop("file_name", None)
+
+    log.setup_logging(
+        custom_log_dir=prms.Paths["filelogdir"], default_level=default_log_level
+    )
+    logging.debug(f"returning Batch(kwargs: {kwargs})")
+    if file_name is not None:
+        kwargs.pop("db_reader", None)
+        return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
     return Batch(*args, **kwargs)
 
 

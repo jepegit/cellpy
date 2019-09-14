@@ -41,14 +41,14 @@ Paths = {
     "db_path": cur_dir,
     "filelogdir": cur_dir,
     "examplesdir": cur_dir,
+    "notebookdir": cur_dir,
     "db_filename": "cellpy_db.xlsx",
 }
 Paths = box.Box(Paths)
 # --------------------------
 # FileNames
 # --------------------------
-FileNames = {
-}
+FileNames = {}
 FileNames = box.Box(FileNames)
 
 # --------------------------
@@ -56,11 +56,11 @@ FileNames = box.Box(FileNames)
 # --------------------------
 Reader = {
     "diagnostics": False,
-    "filestatuschecker": 'size',
+    "filestatuschecker": "size",
     "force_step_table_creation": True,
     "force_all": False,  # not used yet - should be used when saving
     "sep": ";",
-    "cycle_mode": 'anode',  # used in cellreader (593)
+    "cycle_mode": "anode",  # used in cellreader (593)
     "sorted_data": True,  # finding step-types assumes sorted data
     "load_only_summary": False,
     "select_minimal": False,
@@ -80,9 +80,7 @@ Reader = box.Box(Reader)
 # --------------------------
 # DataSet
 # --------------------------
-DataSet = {
-    "nom_cap": 3579,  # mAh/g (used for finding c-rates)
-}
+DataSet = {"nom_cap": 3579}  # mAh/g (used for finding c-rates)
 DataSet = box.Box(DataSet)
 
 # --------------------------
@@ -139,10 +137,7 @@ DbCols = box.Box(DbCols)
 # Instruments
 # --------------------------
 
-Instruments = {
-    "tester": "arbin",
-    "custom_instrument_definitions_file": None,
-}
+Instruments = {"tester": "arbin", "custom_instrument_definitions_file": None}
 
 Instruments = box.Box(Instruments)
 
@@ -166,11 +161,7 @@ Instruments["Arbin"] = Arbin
 # Materials
 # --------------------------
 
-Materials = {
-    "cell_class": "Li-Ion",
-    "default_material": "silicon",
-    "default_mass": 1.0,
-}
+Materials = {"cell_class": "Li-Ion", "default_material": "silicon", "default_mass": 1.0}
 Materials = box.Box(Materials)
 
 # --------------------------
@@ -225,5 +216,3 @@ _cellpyfile_fidtable_format = "fixed"
 # used during development for testing new features
 
 _res_chunk = 0
-
-

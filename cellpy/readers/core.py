@@ -11,7 +11,8 @@ import pandas as pd
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYFILE,
-    cellpy_limits, cellpy_units,
+    cellpy_limits,
+    cellpy_units,
 )
 
 CELLPY_FILE_VERSION = 4
@@ -281,20 +282,21 @@ def check64bit(current_system="python"):
         return sys.maxsize > 2147483647
     elif current_system == "os":
         import platform
+
         pm = platform.machine()
-        if pm != ".." and pm.endswith('64'):  # recent Python (not Iron)
+        if pm != ".." and pm.endswith("64"):  # recent Python (not Iron)
             return True
         else:
-            if 'PROCESSOR_ARCHITEW6432' in os.environ:
+            if "PROCESSOR_ARCHITEW6432" in os.environ:
                 return True  # 32 bit program running on 64 bit Windows
             try:
                 # 64 bit Windows 64 bit program
-                return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')
+                return os.environ["PROCESSOR_ARCHITECTURE"].endswith("64")
             except IndexError:
                 pass  # not Windows
             try:
                 # this often works in Linux
-                return '64' in platform.architecture()[0]
+                return "64" in platform.architecture()[0]
             except Exception:
                 # is an older version of Python, assume also an older os@
                 # (best we can guess)
@@ -332,20 +334,20 @@ def humanize_bytes(b, precision=1):
     #     (1, 'b')
     # )
     abbrevs = (
-        (1 << 50, 'PB'),
-        (1 << 40, 'TB'),
-        (1 << 30, 'GB'),
-        (1 << 20, 'MB'),
-        (1 << 10, 'kB'),
-        (1, 'b')
+        (1 << 50, "PB"),
+        (1 << 40, "TB"),
+        (1 << 30, "GB"),
+        (1 << 20, "MB"),
+        (1 << 10, "kB"),
+        (1, "b"),
     )
     if b == 1:
-        return '1 byte'
+        return "1 byte"
     for factor, suffix in abbrevs:
         if b >= factor:
             break
     # return '%.*f %s' % (precision, old_div(b, factor), suffix)
-    return '%.*f %s' % (precision, b // factor, suffix)
+    return "%.*f %s" % (precision, b // factor, suffix)
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
@@ -368,15 +370,16 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
         d = (xldate - 25589) * 86400.0
     else:
         try:
-            d = datetime.datetime(1899, 12, 30) + \
-                datetime.timedelta(days=xldate + 1462 * datemode)
+            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(
+                days=xldate + 1462 * datemode
+            )
             # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds,
             # excel cannot cope with this!
             if option == "to_string":
                 date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
                 d = d.strftime(date_format)
         except TypeError:
-            logging.info(f'The date is not of correct type [{xldate}]')
+            logging.info(f"The date is not of correct type [{xldate}]")
             d = xldate
     return d
 

@@ -41,6 +41,7 @@ def main():
 
     def run_cellpy_command():
         from cellpy import cellreader
+
         clean_dir = tempfile.mkdtemp()
         return cellreader.load_and_save_resfile(f_in, None, clean_dir)
 
@@ -52,10 +53,12 @@ def main():
     for j in range(20):
         run_cellpy_command()
         g = get_consumed_ram()
-        cum_g += (g - g0)
+        cum_g += g - g0
         print(80 * "=")
-        print(f"Memory usage [{j}]: {humanize_bytes(g)} ({g} b) "
-              f"[delta: {humanize_bytes(g - g0)} ({g - g0}) b]")
+        print(
+            f"Memory usage [{j}]: {humanize_bytes(g)} ({g} b) "
+            f"[delta: {humanize_bytes(g - g0)} ({g - g0}) b]"
+        )
         print(80 * "=")
         g0 = g
 

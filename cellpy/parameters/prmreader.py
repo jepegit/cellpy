@@ -21,8 +21,13 @@ def _write_prm_file(file_name=None):
     config_dict = _pack_prms()
     try:
         with open(file_name, "w") as config_file:
-            yaml.dump(config_dict, config_file, default_flow_style=False,
-                      explicit_start=True, explicit_end=True)
+            yaml.dump(
+                config_dict,
+                config_file,
+                default_flow_style=False,
+                explicit_start=True,
+                explicit_end=True,
+            )
     except yaml.YAMLError:
         raise ConfigFileNotWritten
 
@@ -97,7 +102,7 @@ def _get_prm_file(file_name=None, search_order=None):
     search_path["userdir"] = os.path.expanduser("~")
 
     if search_order is None:
-        search_order = ["userdir", ]  # ["curdir","filedir", "userdir",]
+        search_order = ["userdir"]  # ["curdir","filedir", "userdir",]
     else:
         search_order = search_order
 
@@ -165,10 +170,7 @@ def info():
             print(f"prms.{key}:")
             print(80 * "-")
             for subkey in prms.__dict__[key]:
-                print(
-                    f"prms.{key}.{subkey} = ",
-                    f"{prms.__dict__[key][subkey]}"
-                )
+                print(f"prms.{key}.{subkey} = ", f"{prms.__dict__[key][subkey]}")
             print(80 * "=")
 
 

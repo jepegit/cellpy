@@ -14,12 +14,12 @@ def csv_dumper(**kwargs):
     for experiment, farm in zip(experiments, farms):
         name = experiment.journal.name
         project = experiment.journal.project
-        project_dir, batch_dir, raw_dir = \
-            experiment.journal.paginate()
+        project_dir, batch_dir, raw_dir = experiment.journal.paginate()
         if batch_dir is None:
             logging.info("have to generate folder-name on the fly")
-            out_data_dir, project_dir, batch_dir, raw_dir = \
-                generate_folder_names(name, project)
+            out_data_dir, project_dir, batch_dir, raw_dir = generate_folder_names(
+                name, project
+            )
 
         if barn == "batch_dir":
             out_dir = batch_dir
@@ -31,12 +31,7 @@ def csv_dumper(**kwargs):
             out_dir = barn
 
         for animal in farm:
-            file_name = os.path.join(
-                out_dir, "summary_%s_%s.csv" % (
-                    animal.name,
-                    name
-                )
-            )
+            file_name = os.path.join(out_dir, "summary_%s_%s.csv" % (animal.name, name))
             logging.info(f"> {file_name}")
             animal.to_csv(file_name, sep=prms.Reader.sep)
 
@@ -63,10 +58,11 @@ def ram_dumper(**kwargs):
     except AttributeError:
         engine_name = engine.__dict__.__name__
 
-    accepted_engines = ["summary_engine",]
+    accepted_engines = ["summary_engine"]
     if engine_name in accepted_engines:
-        logging.debug("found the engine that I will try to dump from: "
-                      f"{engine_name}")
+        logging.debug(
+            "found the engine that I will try to dump from: " f"{engine_name}"
+        )
 
         for experiment, farm in zip(experiments, farms):
             name = experiment.journal.name
@@ -92,15 +88,13 @@ def screen_dumper(**kwargs):
         print(" - your farm has burned to the ground.")
     else:
         for number, farm in enumerate(farms):
-            print(f"[#{number+1}]You have {len(farm)} "
-                  f"little pandas in this farm.")
+            print(f"[#{number+1}]You have {len(farm)} " f"little pandas in this farm.")
             for animal in farm:
-                print(80*"=")
+                print(80 * "=")
                 try:
                     print(animal.name)
                 except AttributeError:
                     print("no-name")
-                print(80*"-")
+                print(80 * "-")
                 print(animal.head(5))
                 print()
-

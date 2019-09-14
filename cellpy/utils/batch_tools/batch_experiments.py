@@ -92,8 +92,7 @@ class CyclingExperiment(BaseExperiment):
 
         for indx, row in pages.iterrows():
             counter += 1
-            h_txt = "[" + counter * "|" + (
-                    number_of_runs - counter) * "." + "]"
+            h_txt = "[" + counter * "|" + (number_of_runs - counter) * "." + "]"
             l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
             logging.debug(l_txt)
             print(h_txt)
@@ -110,8 +109,7 @@ class CyclingExperiment(BaseExperiment):
 
             cell_data = cellreader.CellpyData()
             if not self.force_cellpy or self.force_recalc:
-                logging.info(
-                    "setting cycle mode (%s)..." % row.cell_type)
+                logging.info("setting cycle mode (%s)..." % row.cell_type)
                 cell_data.cycle_mode = row.cell_type
 
             logging.info("loading cell")
@@ -124,10 +122,10 @@ class CyclingExperiment(BaseExperiment):
                         mass=row.masses,
                         summary_on_raw=True,
                         force_raw=self.force_raw_file,
-                        use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file
+                        use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
                     )
                 except Exception as e:
-                    logging.info('Failed to load: ' + str(e))
+                    logging.info("Failed to load: " + str(e))
                     errors.append("loadcell:" + str(indx))
                     if not self.accept_errors:
                         raise e
@@ -136,14 +134,15 @@ class CyclingExperiment(BaseExperiment):
             else:
                 logging.info("forcing")
                 try:
-                    cell_data.load(row.cellpy_file_names,
-                                   parent_level=self.parent_level)
+                    cell_data.load(
+                        row.cellpy_file_names, parent_level=self.parent_level
+                    )
                 except Exception as e:
                     logging.info(
                         f"Critical exception encountered {type(e)} "
-                        "- skipping this file")
-                    logging.debug(
-                        'Failed to load. Error-message: ' + str(e))
+                        "- skipping this file"
+                    )
+                    logging.debug("Failed to load. Error-message: " + str(e))
                     errors.append("load:" + str(indx))
                     if not self.accept_errors:
                         raise e
@@ -151,8 +150,7 @@ class CyclingExperiment(BaseExperiment):
 
             if not cell_data.check():
                 logging.info("...not loaded...")
-                logging.debug(
-                    "Did not pass check(). Could not load cell!")
+                logging.debug("Did not pass check(). Could not load cell!")
                 errors.append("check:" + str(indx))
                 continue
 
@@ -162,33 +160,27 @@ class CyclingExperiment(BaseExperiment):
             logging.info("Trying to get summary_data")
 
             if cell_data.cell.step_table is None or self.force_recalc:
-                logging.info(
-                    "Running make_step_table"
-                )
+                logging.info("Running make_step_table")
 
                 cell_data.make_step_table()
 
             if summary_tmp is None or self.force_recalc:
-                logging.info(
-                    "Running make_summary"
-                )
+                logging.info("Running make_summary")
 
-                cell_data.make_summary(find_end_voltage=True,
-                                       find_ir=True)
+                cell_data.make_summary(find_end_voltage=True, find_ir=True)
 
             if summary_tmp.index.name == b"Cycle_Index":
                 logging.debug("Strange: 'Cycle_Index' is a byte-string")
-                summary_tmp.index.name = 'Cycle_Index'
+                summary_tmp.index.name = "Cycle_Index"
 
             if not summary_tmp.index.name == "Cycle_Index":
                 logging.debug("Setting index to Cycle_Index")
                 # check if it is a byte-string
                 if b"Cycle_Index" in summary_tmp.columns:
-                    logging.debug(
-                        "Seems to be a byte-string in the column-headers")
+                    logging.debug("Seems to be a byte-string in the column-headers")
                     summary_tmp.rename(
-                        columns={b"Cycle_Index": 'Cycle_Index'},
-                        inplace=True)
+                        columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
+                    )
                 summary_tmp.set_index("Cycle_Index", inplace=True)
 
             summary_frames[indx] = summary_tmp
@@ -197,8 +189,7 @@ class CyclingExperiment(BaseExperiment):
                 cell_data_frames[indx] = cell_data
             else:
                 cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
-                cell_data_frames[indx].cell.step_table = \
-                    cell_data.cell.step_table
+                cell_data_frames[indx].cell.step_table = cell_data.cell.step_table
                 # cell_data_frames[indx].dataset.step_table_made = True
 
             if self.save_cellpy:
@@ -208,8 +199,7 @@ class CyclingExperiment(BaseExperiment):
                     cell_data.ensure_step_table = True
                     cell_data.save(row.cellpy_file_names)
                 else:
-                    logging.debug(
-                        "saving cell skipped (set to 'fixed' in info_df)")
+                    logging.debug("saving cell skipped (set to 'fixed' in info_df)")
             else:
                 logging.debug("you opted to not save to cellpy-format")
 
@@ -226,7 +216,7 @@ class CyclingExperiment(BaseExperiment):
                     cycles=self.export_cycles,
                     shifted=self.shifted_cycles,
                     raw=self.export_raw,
-                    last_cycle=self.last_cycle
+                    last_cycle=self.last_cycle,
                 )
 
             if self.export_ica:
@@ -236,15 +226,12 @@ class CyclingExperiment(BaseExperiment):
                         cell_data,
                         savedir=self.journal.raw_dir,
                         sep=prms.Reader.sep,
-                        last_cycle=self.last_cycle
+                        last_cycle=self.last_cycle,
                     )
                 except Exception as e:
-                    logging.error(
-                        "Could not make/export dq/dv data"
-                    )
+                    logging.error("Could not make/export dq/dv data")
                     logging.debug(
-                        "Failed to make/export "
-                        "dq/dv data (%s): %s" % (indx, str(e))
+                        "Failed to make/export " "dq/dv data (%s): %s" % (indx, str(e))
                     )
                     errors.append("ica:" + str(indx))
 
@@ -285,6 +272,8 @@ class CyclingExperiment(BaseExperiment):
         This might be considered "a strange and unexpected behaviour". Sorry
         for that (but the authors of this package is also a bit strange...).
 
+        (OK, I will change it. Soon.)
+
         """
         logging.info("[estblishing links]")
         logging.debug("checking and establishing link to data")
@@ -295,7 +284,7 @@ class CyclingExperiment(BaseExperiment):
             for indx, row in self.journal.pages.iterrows():
 
                 counter += 1
-                l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
+                l_txt = f"starting to process file # {counter} (index={indx})"
                 logging.debug(l_txt)
                 logging.info(f"linking cellpy-file: {row.cellpy_file_names}")
 
@@ -305,10 +294,7 @@ class CyclingExperiment(BaseExperiment):
 
                 cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
 
-                step_table = helper.look_up_and_get(
-                    row.cellpy_file_names,
-                    "step_table"
-                )
+                step_table = helper.look_up_and_get(row.cellpy_file_names, "step_table")
 
                 cell_data_frames[indx].cell.step_table = step_table
 
@@ -331,4 +317,3 @@ class ImpedanceExperiment(BaseExperiment):
 class LifeTimeExperiment(BaseExperiment):
     def __init__(self):
         super().__init__()
-

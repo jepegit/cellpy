@@ -4,8 +4,8 @@
 
 """
 
-__author__ = 'Jan Petter Maehlen', 'Asbjoern Ulvestad'
-__email__ = 'jepe@ife.no', 'Asbjorn.Ulvestad@ife.no'
+__author__ = "Jan Petter Maehlen", "Asbjoern Ulvestad"
+__email__ = "jepe@ife.no", "Asbjorn.Ulvestad@ife.no"
 
 import logging
 import warnings
@@ -30,4 +30,3 @@ except UserWarning:
     warnings.warn("Could not read the config-file")
 
 get = cellreader.get
-
