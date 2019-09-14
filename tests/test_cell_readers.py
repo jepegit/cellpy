@@ -631,19 +631,11 @@ def test_get():
     c_res = cellpy.get(fdv.res_file_path, instrument="arbin", mass=0.045)
 
 
-<<<<<<< HEAD
 def test_get_empty():
     c_empty = cellpy.get()
 
 
-@pytest.mark.parametrize("val,validated", [
-    (2.3, None),
-    ([2.3], None),
-    ([2.3], [True]),
-])
-=======
 @pytest.mark.parametrize("val,validated", [(2.3, None), ([2.3], None), ([2.3], [True])])
->>>>>>> feature/refactoring_table_names
 def test_set_total_mass(dataset, val, validated):
     dataset.set_tot_mass(val, validated=validated)
     assert dataset.cell.tot_mass == 2.3
