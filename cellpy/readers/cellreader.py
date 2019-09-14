@@ -75,7 +75,7 @@ class CellpyData(object):
     several tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
-        datasets (list): list of DataSet objects.
+        cells (list): list of DataSet objects.
     """
 
     def __str__(self):
@@ -86,9 +86,9 @@ class CellpyData(object):
             txt += f"table_names: {self.table_names}\n"
         if self.tester:
             txt += f"tester: {self.tester}\n"
-        if self.datasets:
+        if self.cells:
             txt += "datasets: [ ->\n"
-            for i, d in enumerate(self.datasets):
+            for i, d in enumerate(self.cells):
                 txt += f"   ({i})\n"
                 for t in str(d).split("\n"):
                     txt += "     "
@@ -102,7 +102,7 @@ class CellpyData(object):
         return txt
 
     def __bool__(self):
-        if self.datasets:
+        if self.cells:
             return True
         else:
             return False
@@ -161,9 +161,9 @@ class CellpyData(object):
             if not self._is_listtype(self.selected_scans):
                 self.selected_scans = [self.selected_scans]
 
-        self.datasets = []
+        self.cells = []
         self.status_datasets = []
-        self.selected_dataset_number = 0
+        self.selected_cell_number = 0
         self.number_of_datasets = 0
 
         self.capacity_modifiers = ["reset"]
@@ -221,13 +221,13 @@ class CellpyData(object):
 
     def initialize(self):
         self.logger.debug("Initializing...")
-        self.datasets.append(DataSet())
+        self.cells.append(DataSet())
 
     @property
     def cell(self):
         """returns the DataSet instance"""
         # could insert a try-except thingy here...
-        cell = self.datasets[self.selected_dataset_number]
+        cell = self.cells[self.selected_cell_number]
         return cell
 
     @property
@@ -235,7 +235,7 @@ class CellpyData(object):
         """returns the DataSet instance"""
         # could insert a try-except thingy here...
         warnings.warn("The .dataset property is deprecated, please use .cell instead.")
-        cell = self.datasets[self.selected_dataset_number]
+        cell = self.cells[self.selected_cell_number]
         return cell
 
     @property
@@ -728,10 +728,10 @@ class CellpyData(object):
                 self.logger.debug("sorting data")
                 test[set_number] = self._sort_data(test[set_number])
 
-            self.datasets.append(test[set_number])
+            self.cells.append(test[set_number])
         else:
             self.logger.warning("No new datasets added!")
-        self.number_of_datasets = len(self.datasets)
+        self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
         self._invent_a_name()
         return self
@@ -757,7 +757,7 @@ class CellpyData(object):
         # find not-complete datasets, datasets with missing prms etc
         v = []
         if level == 0:
-            for test in self.datasets:
+            for test in self.cells:
                 # check that it contains all the necessary headers
                 # (and add missing ones)
                 # test = self._clean_up_normal_table(test)
@@ -826,13 +826,13 @@ class CellpyData(object):
 
         if new_datasets:
             for dataset in new_datasets:
-                self.datasets.append(dataset)
+                self.cells.append(dataset)
         else:
             # raise LoadError
             self.logger.warning("Could not load")
             self.logger.warning(str(cellpy_file))
 
-        self.number_of_datasets = len(self.datasets)
+        self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
         self._invent_a_name(cellpy_file)
         return self
@@ -1083,7 +1083,7 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
 
-        test = self.get_dataset(dataset_number)
+        test = self.get_cell(dataset_number)
 
         infotable = collections.OrderedDict()
 
@@ -1159,21 +1159,21 @@ class CellpyData(object):
             )
         else:
             if datasets is None:
-                datasets = list(range(len(self.datasets)))
+                datasets = list(range(len(self.cells)))
             first = True
             for dataset_number in datasets:
                 if first:
-                    dataset = self.datasets[dataset_number]
+                    dataset = self.cells[dataset_number]
                     first = False
                 else:
-                    dataset = self._append(dataset, self.datasets[dataset_number])
+                    dataset = self._append(dataset, self.cells[dataset_number])
                     for raw_data_file, file_size in zip(
-                        self.datasets[dataset_number].raw_data_files,
-                        self.datasets[dataset_number].raw_data_files_length,
+                        self.cells[dataset_number].raw_data_files,
+                        self.cells[dataset_number].raw_data_files_length,
                     ):
                         dataset.raw_data_files.append(raw_data_file)
                         dataset.raw_data_files_length.append(file_size)
-            self.datasets = [dataset]
+            self.cells = [dataset]
             self.number_of_datasets = 1
         return self
 
@@ -1305,7 +1305,7 @@ class CellpyData(object):
         # Returns dataset_number (or None if empty)
         # Remark! _is_not_empty_dataset returns True or False
 
-        if not len(self.datasets):
+        if not len(self.cells):
             self.logger.info(
                 "Can't see any datasets! Are you sure you have " "loaded anything?"
             )
@@ -1314,13 +1314,13 @@ class CellpyData(object):
         if n is not None:
             v = n
         else:
-            if self.selected_dataset_number is None:
+            if self.selected_cell_number is None:
                 v = 0
             else:
-                v = self.selected_dataset_number
+                v = self.selected_cell_number
 
         if check_for_empty:
-            not_empty = self._is_not_empty_dataset(self.datasets[v])
+            not_empty = self._is_not_empty_dataset(self.cells[v])
             if not_empty:
                 return v
             else:
@@ -1336,10 +1336,10 @@ class CellpyData(object):
 
         step_index_header = self.headers_normal.step_index_txt
         self.logger.debug("-validating step table")
-        d = self.datasets[dataset_number].dfdata
-        s = self.datasets[dataset_number].step_table
+        d = self.cells[dataset_number].dfdata
+        s = self.cells[dataset_number].step_table
 
-        if not self.datasets[dataset_number].step_table_made:
+        if not self.cells[dataset_number].step_table_made:
             return False
 
         no_cycles_dfdata = np.amax(d[self.headers_normal.cycle_index_txt])
@@ -1394,7 +1394,7 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        st = self.datasets[dataset_number].step_table
+        st = self.cells[dataset_number].step_table
         print(st)
 
     def get_step_numbers(
@@ -1455,12 +1455,12 @@ class CellpyData(object):
                 self._report_empty_dataset()
                 return
 
-            if not self.datasets[dataset_number].step_table_made:
+            if not self.cells[dataset_number].step_table_made:
                 self.logger.debug("step_table is not made")
 
                 if self.force_step_table_creation or self.force_all:
                     self.logger.debug("creating step_table for")
-                    self.logger.debug(self.datasets[dataset_number].loaded_from)
+                    self.logger.debug(self.cells[dataset_number].loaded_from)
                     # print "CREAING STEP-TABLE"
                     self.make_step_table(dataset_number=dataset_number)
 
@@ -1514,7 +1514,7 @@ class CellpyData(object):
         # self.logger.debug(steptypes)
 
         if steptable is None:
-            st = self.datasets[dataset_number].step_table
+            st = self.cells[dataset_number].step_table
         else:
             st = steptable
         shdr = self.headers_step_table
@@ -1700,7 +1700,7 @@ class CellpyData(object):
         nhdr = self.headers_normal
         shdr = self.headers_step_table
 
-        df = self.datasets[dataset_number].dfdata
+        df = self.cells[dataset_number].dfdata
         # df[shdr.internal_resistance_change] = \
         #     df[nhdr.internal_resistance_txt].pct_change()
 
@@ -1775,8 +1775,8 @@ class CellpyData(object):
 
         # column with C-rates:
         if add_c_rate:
-            nom_cap = self.datasets[dataset_number].nom_cap
-            mass = self.datasets[dataset_number].mass
+            nom_cap = self.cells[dataset_number].nom_cap
+            mass = self.cells[dataset_number].mass
             spec_conv_factor = self.get_converter_to_specific()
             self.logger.debug(f"c-rate: nom_cap={nom_cap} spec_conv={spec_conv_factor}")
 
@@ -1968,7 +1968,7 @@ class CellpyData(object):
         if profiling:
             print(f"*** flattening: {time.time() - time_01} s")
 
-        self.datasets[dataset_number].step_table = df_steps
+        self.cells[dataset_number].step_table = df_steps
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return self
 
@@ -1982,7 +1982,7 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        test = self.datasets[dataset_number]
+        test = self.cells[dataset_number]
 
         # check if columns exist
         c_txt = self.headers_normal.cycle_index_txt
@@ -2269,7 +2269,7 @@ class CellpyData(object):
         self.logger.debug("saving to csv")
 
         dataset_number = -1
-        for data in self.datasets:
+        for data in self.cells:
             dataset_number += 1
             if not self._is_not_empty_dataset(data):
                 self.logger.info("to_csv -")
@@ -2350,7 +2350,7 @@ class CellpyData(object):
             self._report_empty_dataset()
             return
 
-        test = self.get_dataset(dataset_number)
+        test = self.get_cell(dataset_number)
 
         dfsummary_made = test.dfsummary_made
 
@@ -2542,7 +2542,7 @@ class CellpyData(object):
         charge_index_header = self.headers_normal.charge_capacity_txt
         charge_energy_index_header = self.headers_normal.charge_energy_txt
 
-        dfdata = self.datasets[dataset_number].dfdata
+        dfdata = self.cells[dataset_number].dfdata
 
         chargecap = 0.0
         dischargecap = 0.0
@@ -2612,17 +2612,17 @@ class CellpyData(object):
         if set_number is None:
             self._report_empty_dataset()
             return
-        if not self.datasets[set_number].mass_given:
+        if not self.cells[set_number].mass_given:
             self.logger.info("no mass")
-        return self.datasets[set_number].mass
+        return self.cells[set_number].mass
 
-    def get_dataset(self, n=0):
-        return self.datasets[n]
+    def get_cell(self, n=0):
+        return self.cells[n]
 
     def sget_voltage(self, cycle, step, set_number=None):
         """Returns voltage for cycle, step.
 
-        Convinience function; same as issuing
+        Convenience function; same as issuing
            dfdata[(dfdata[cycle_index_header] == cycle) &
                  (dfdata[step_index_header] == step)][voltage_header]
 
@@ -2643,7 +2643,7 @@ class CellpyData(object):
         cycle_index_header = self.headers_normal.cycle_index_txt
         voltage_header = self.headers_normal.voltage_txt
         step_index_header = self.headers_normal.step_index_txt
-        test = self.datasets[set_number].dfdata
+        test = self.cells[set_number].dfdata
 
         if isinstance(step, (list, tuple)):
             warnings.warn(
@@ -2683,7 +2683,7 @@ class CellpyData(object):
         voltage_header = self.headers_normal.voltage_txt
         # step_index_header  = self.headers_normal.step_index_txt
 
-        test = self.datasets[dataset_number].dfdata
+        test = self.cells[dataset_number].dfdata
         if cycle:
             self.logger.debug("getting voltage curve for cycle")
             c = test[(test[cycle_index_header] == cycle)]
@@ -2726,7 +2726,7 @@ class CellpyData(object):
         current_header = self.headers_normal.current_txt
         # step_index_header  = self.headers_normal.step_index_txt
 
-        test = self.datasets[dataset_number].dfdata
+        test = self.cells[dataset_number].dfdata
         if cycle:
             self.logger.debug(f"getting current for cycle {cycle}")
             c = test[(test[cycle_index_header] == cycle)]
@@ -2771,7 +2771,7 @@ class CellpyData(object):
         cycle_index_header = self.headers_normal.cycle_index_txt
         step_time_header = self.headers_normal.step_time_txt
         step_index_header = self.headers_normal.step_index_txt
-        test = self.datasets[dataset_number].dfdata
+        test = self.cells[dataset_number].dfdata
 
         if isinstance(step, (list, tuple)):
             warnings.warn(
@@ -2812,7 +2812,7 @@ class CellpyData(object):
         cycle_index_header = self.headers_normal.cycle_index_txt
         timestamp_header = self.headers_normal.test_time_txt
         step_index_header = self.headers_normal.step_index_txt
-        test = self.datasets[dataset_number].dfdata
+        test = self.cells[dataset_number].dfdata
 
         if isinstance(step, (list, tuple)):
             warnings.warn(
@@ -2839,7 +2839,7 @@ class CellpyData(object):
         datetime_header = self.headers_normal.datetime_txt
 
         v = pd.Series()
-        test = self.datasets[dataset_number].dfdata
+        test = self.cells[dataset_number].dfdata
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
@@ -2884,7 +2884,7 @@ class CellpyData(object):
         timestamp_header = self.headers_normal.test_time_txt
 
         v = pd.Series()
-        test = self.datasets[dataset_number].dfdata
+        test = self.cells[dataset_number].dfdata
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
@@ -3195,7 +3195,7 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        test = self.datasets[dataset_number]
+        test = self.cells[dataset_number]
         mass = self.get_mass(dataset_number)
         if cap_type == "charge_capacity":
             cap_type = "charge"
@@ -3341,7 +3341,7 @@ class CellpyData(object):
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
-            d = self.datasets[dataset_number].dfdata
+            d = self.cells[dataset_number].dfdata
             no_cycles = np.amax(d[self.headers_normal.cycle_index_txt])
         else:
             no_cycles = np.amax(steptable[self.headers_step_table.cycle])
@@ -3355,7 +3355,7 @@ class CellpyData(object):
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
-            d = self.datasets[dataset_number].dfdata
+            d = self.cells[dataset_number].dfdata
             cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
         else:
             self.logger.debug("steptable is not none")
@@ -3392,7 +3392,7 @@ class CellpyData(object):
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
-            dataset = self.datasets[dataset_number]
+            dataset = self.cells[dataset_number]
 
         if not mass:
             mass = dataset.mass
@@ -3416,22 +3416,22 @@ class CellpyData(object):
 
     def _set_mass(self, dataset_number, value):
         try:
-            self.datasets[dataset_number].mass = value
-            self.datasets[dataset_number].mass_given = True
+            self.cells[dataset_number].mass = value
+            self.cells[dataset_number].mass_given = True
         except AttributeError as e:
             self.logger.info("This test is empty")
             self.logger.info(e)
 
     def _set_tot_mass(self, dataset_number, value):
         try:
-            self.datasets[dataset_number].tot_mass = value
+            self.cells[dataset_number].tot_mass = value
         except AttributeError as e:
             self.logger.info("This test is empty")
             self.logger.info(e)
 
     def _set_nom_cap(self, dataset_number, value):
         try:
-            self.datasets[dataset_number].nom_cap = value
+            self.cells[dataset_number].nom_cap = value
         except AttributeError as e:
             self.logger.info("This test is empty")
             self.logger.info(e)
@@ -3445,14 +3445,14 @@ class CellpyData(object):
         elif attr == "nom_cap":
             setter = self._set_nom_cap
 
-        number_of_tests = len(self.datasets)
+        number_of_tests = len(self.cells)
         if not number_of_tests:
             self.logger.info("no datasets have been loaded yet")
             self.logger.info("cannot set mass before loading datasets")
             sys.exit(-1)
 
         if not dataset_number:
-            dataset_number = list(range(len(self.datasets)))
+            dataset_number = list(range(len(self.cells)))
 
         if not self._is_listtype(dataset_number):
             dataset_number = [dataset_number]
@@ -3516,9 +3516,9 @@ class CellpyData(object):
         Sets the DataSet number default (all functions with prm dataset_number
         will then be run assuming the default set dataset_number)
         """
-        self.selected_dataset_number = dataset_number
+        self.selected_cell_number = dataset_number
 
-    def set_testnumber(self, dataset_number):
+    def set_cellnumber(self, dataset_number):
         """Set the DataSet number.
 
         Set the dataset_number that will be used
@@ -3550,7 +3550,7 @@ class CellpyData(object):
                 self.logger.debug("assuming numeric")
                 warnings.warn(f"Unhandled exception raised: {e}")
 
-        number_of_tests = len(self.datasets)
+        number_of_tests = len(self.cells)
         if dataset_number >= number_of_tests:
             dataset_number = -1
             self.logger.debug(
@@ -3559,7 +3559,7 @@ class CellpyData(object):
         elif dataset_number < -1:
             self.logger.debug("not a valid option, setting to first test")
             dataset_number = 0
-        self.selected_dataset_number = dataset_number
+        self.selected_cell_number = dataset_number
 
     def get_summary(self, dataset_number=None, use_dfsummary_made=False):
         """Retrieve summary returned as a pandas DataFrame."""
@@ -3568,7 +3568,7 @@ class CellpyData(object):
             self._report_empty_dataset()
             return None
 
-        test = self.get_dataset(dataset_number)
+        test = self.get_cell(dataset_number)
 
         # This is a bit convoluted; in the old days, we used an attribute
         # called dfsummary_made,
@@ -3700,13 +3700,13 @@ class CellpyData(object):
         step_table_txt_step = self.headers_step_table.step
 
         # modifying step_table
-        st = self.datasets[dataset_number].step_table
+        st = self.cells[dataset_number].step_table
         st[step_table_txt_cycle][
             (st[step_table_txt_cycle] == from_tuple[0])
             & (st[step_table_txt_step] == from_tuple[1])
         ] = to_cycle
         # modifying normal_table
-        nt = self.datasets[dataset_number].dfdata
+        nt = self.cells[dataset_number].dfdata
         nt[cycle_index_header][
             (nt[cycle_index_header] == from_tuple[0])
             & (nt[step_index_header] == from_tuple[1])
@@ -3746,9 +3746,9 @@ class CellpyData(object):
             self.logger.debug(f"use_cellpy_stat_file: {use_cellpy_stat_file}")
 
         if all_tests is True:
-            for j in range(len(self.datasets)):
+            for j in range(len(self.cells)):
                 txt = "creating summary for file "
-                test = self.datasets[j]
+                test = self.cells[j]
                 if not self._is_not_empty_dataset(test):
                     self.logger.info("empty test %i" % j)
                     return
@@ -3821,7 +3821,7 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        dataset = self.datasets[dataset_number]
+        dataset = self.cells[dataset_number]
         #        if test.merged == True:
         #            use_cellpy_stat_file=False
 
@@ -4825,7 +4825,7 @@ def load_and_print_resfile(filename, info_dict=None):
     d.make_step_table()
     d.make_summary()
 
-    for test in d.datasets:
+    for test in d.cells:
         print("newtest")
         print(test)
 

@@ -58,7 +58,7 @@ def make_new_cell():
 
     new_cell = cellpy.cellreader.CellpyData()
     data = cellpy.cellreader.DataSet()
-    new_cell.datasets.append(data)
+    new_cell.cells.append(data)
     return new_cell
 
 

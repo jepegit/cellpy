@@ -85,7 +85,7 @@ def missing_stats_file():
     d = cellreader.CellpyData()
     raw_file_loader = d.loader
     test = raw_file_loader(new_arbin_file)
-    d.datasets.append(test[0])
+    d.cells.append(test[0])
     d.set_mass(new_arbin_mass)
     d.make_summary(use_cellpy_stat_file=False)
 

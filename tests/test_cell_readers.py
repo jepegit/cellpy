@@ -12,6 +12,8 @@ from . import fdv
 
 log.setup_logging(default_level="DEBUG")
 
+# TODO: refactor from 'dataset' to 'cell' manually (PyCharm cannot handle pytest)
+
 
 @pytest.fixture
 def cellpy_data_instance():
@@ -120,16 +122,16 @@ def test_merge_auto_from_list():
     cdi2.from_raw(f2)
     cdi3.from_raw(files)
 
-    len_first = len(cdi1.datasets)
-    table_first = cdi1.datasets[0].dfdata.describe()
+    len_first = len(cdi1.cells)
+    table_first = cdi1.cells[0].dfdata.describe()
     count_first = table_first.loc["count", "Data_Point"]
 
-    len_second = len(cdi2.datasets)
-    table_second = cdi2.datasets[0].dfdata.describe()
+    len_second = len(cdi2.cells)
+    table_second = cdi2.cells[0].dfdata.describe()
     count_second = table_second.loc["count", "Data_Point"]
 
-    len_all = len(cdi3.datasets)
-    table_all = cdi3.datasets[0].dfdata.describe()
+    len_all = len(cdi3.cells)
+    table_all = cdi3.cells[0].dfdata.describe()
     count_all = table_all.loc["count", "Data_Point"]
 
     assert len_first == 1
@@ -275,10 +277,10 @@ def test_get_diagnostics_plot(dataset):
 
 
 def test_set_testnumber(dataset):
-    dataset.set_testnumber(0)
+    dataset.set_cellnumber(0)
     n1 = dataset.selected_dataset_number
     assert n1 == 0
-    dataset.set_testnumber(1)
+    dataset.set_cellnumber(1)
     n2 = dataset.selected_dataset_number
     assert n2 == -1
 
@@ -407,7 +409,7 @@ def test_load_res(cellpy_data_instance):
     data_point = 2283
     step_time = 1500.05
     sum_discharge_time = 362198.12
-    my_test = cellpy_data_instance.datasets[run_number]
+    my_test = cellpy_data_instance.cells[run_number]
     assert my_test.dfsummary.loc[1, "Data_Point"] == data_point
     assert step_time == pytest.approx(my_test.dfdata.loc[5, "Step_Time"], 0.1)
     assert sum_discharge_time == pytest.approx(
@@ -460,8 +462,8 @@ def test_make_summary(cellpy_data_instance):
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
-    s1 = cellpy_data_instance.datasets[0].dfsummary
-    s2 = cellpy_data_instance.get_dataset().dfsummary
+    s1 = cellpy_data_instance.cells[0].dfsummary
+    s2 = cellpy_data_instance.get_cell().dfsummary
     s3 = cellpy_data_instance.get_summary()
     assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()
@@ -489,7 +491,7 @@ def test_load_cellpyfile(cellpy_data_instance):
     data_point = 2283
     step_time = 1500.05
     sum_test_time = 9301719.457
-    my_test = cellpy_data_instance.datasets[run_number]
+    my_test = cellpy_data_instance.cells[run_number]
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     unique_cycles_read = my_test.step_table.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
@@ -666,8 +668,8 @@ def test_set_nominal_capacity(dataset, val, validated):
     ],
 )
 def test_set_testnumber(dataset, n, s):
-    dataset.set_testnumber(n)
-    assert dataset.selected_dataset_number == s
+    dataset.set_cellnumber(n)
+    assert dataset.selected_cell_number == s
 
 
 @pytest.mark.xfail
