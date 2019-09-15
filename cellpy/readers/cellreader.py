@@ -894,7 +894,7 @@ class CellpyData(object):
 
             if data.cellpy_file_version < CELLPY_FILE_VERSION:
                 if data.cellpy_file_version < 5:
-                    self.logger.debug(f'version: {data.cellpy_file_version}')
+                    self.logger.debug(f"version: {data.cellpy_file_version}")
                     _raw_dir = "/dfdata"
                     _step_dir = "/step_table"
                     _summary_dir = "/dfsummary"
@@ -1289,9 +1289,7 @@ class CellpyData(object):
                         t2.raw[self.headers_step_table.cycle] + last_cycle
                     )
 
-                    steps2 = pd.concat(
-                        [t1.steps, t2.steps], ignore_index=True
-                    )
+                    steps2 = pd.concat([t1.steps, t2.steps], ignore_index=True)
                     test.steps = steps2
                 else:
                     self.logger.debug(
@@ -2443,16 +2441,12 @@ class CellpyData(object):
             if test.raw.index.name != hdr_data_point:
                 test.raw = test.raw.set_index(hdr_data_point, drop=False)
 
-            store.put(
-                root + raw_dir, test.raw, format=prms._cellpyfile_raw_format
-            )
+            store.put(root + raw_dir, test.raw, format=prms._cellpyfile_raw_format)
             self.logger.debug(" raw -> hdf5 OK")
 
             self.logger.debug("trying to put summary")
             store.put(
-                root + summary_dir,
-                test.summary,
-                format=prms._cellpyfile_summary_format,
+                root + summary_dir, test.summary, format=prms._cellpyfile_summary_format
             )
             self.logger.debug(" summary -> hdf5 OK")
 
@@ -2469,17 +2463,13 @@ class CellpyData(object):
             self.logger.debug("trying to put step")
             try:
                 store.put(
-                    root + step_dir,
-                    test.steps,
-                    format=prms._cellpyfile_stepdata_format,
+                    root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
                 )
                 self.logger.debug(" step -> hdf5 OK")
             except TypeError:
                 test = self._fix_dtype_step_table(test)
                 store.put(
-                    root + step_dir,
-                    test.steps,
-                    format=prms._cellpyfile_stepdata_format,
+                    root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
                 )
                 self.logger.debug(" fixed step -> hdf5 OK")
 
@@ -2582,9 +2572,7 @@ class CellpyData(object):
                 )
                 c0 = raw[selection].iloc[0][cap_header]
                 e0 = raw[selection].iloc[0][e_header]
-                raw.loc[selection, cap_header] = (
-                    raw.loc[selection, cap_header] - c0
-                )
+                raw.loc[selection, cap_header] = raw.loc[selection, cap_header] - c0
                 raw.loc[selection, e_header] = raw.loc[selection, e_header] - e0
 
                 cap_type = "charge"
@@ -2607,12 +2595,8 @@ class CellpyData(object):
                 if any(selection):
                     c0 = raw[selection].iloc[0][cap_header]
                     e0 = raw[selection].iloc[0][e_header]
-                    raw.loc[selection, cap_header] = (
-                        raw.loc[selection, cap_header] - c0
-                    )
-                    raw.loc[selection, e_header] = (
-                        raw.loc[selection, e_header] - e0
-                    )
+                    raw.loc[selection, cap_header] = raw.loc[selection, cap_header] - c0
+                    raw.loc[selection, e_header] = raw.loc[selection, e_header] - e0
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def get_number_of_tests(self):
@@ -4032,8 +4016,7 @@ class CellpyData(object):
             )
 
             summary[low_level_at_cycle_n_txt] = (100 / ref) * (
-                summary[_first_step_txt].cumsum()
-                - summary[_second_step_txt].cumsum()
+                summary[_first_step_txt].cumsum() - summary[_second_step_txt].cumsum()
             )
 
             summary[high_level_at_cycle_n_txt] = (100 / ref) * (
@@ -4053,9 +4036,9 @@ class CellpyData(object):
         # --------------relative irreversible capacities
         #  as defined by Gauthier et al.---
         # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
-        RIC = (
-            summary[_first_step_txt].shift(1) - summary[_second_step_txt]
-        ) / summary[_second_step_txt].shift(1)
+        RIC = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[
+            _second_step_txt
+        ].shift(1)
         summary[ric_title] = RIC.cumsum()
 
         # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
@@ -4073,9 +4056,7 @@ class CellpyData(object):
         # -------------- shifted capacities as defined by J. Dahn et al. -----
         # need to double check this (including checking
         # if it is valid in cathode mode).
-        individual_edge_movement = (
-            summary[_first_step_txt] - summary[_second_step_txt]
-        )
+        individual_edge_movement = summary[_first_step_txt] - summary[_second_step_txt]
 
         summary[shifted_charge_capacity_title] = individual_edge_movement.cumsum()
         summary[shifted_discharge_capacity_title] = (
@@ -4286,8 +4267,7 @@ class CellpyData(object):
                 step = discharge_steps[cycle]
                 if step[0]:
                     ir = raw.loc[
-                        (raw[c_txt] == cycle) & (dataset.raw[s_txt] == step[0]),
-                        ir_txt,
+                        (raw[c_txt] == cycle) & (dataset.raw[s_txt] == step[0]), ir_txt
                     ]
                     # This will not work if there are more than one item in step
                     ir = ir.values[0]
@@ -4296,9 +4276,9 @@ class CellpyData(object):
                 step2 = charge_steps[cycle]
                 if step2[0]:
 
-                    ir2 = raw[
-                        (raw[c_txt] == cycle) & (dataset.raw[s_txt] == step2[0])
-                    ][ir_txt].values[0]
+                    ir2 = raw[(raw[c_txt] == cycle) & (dataset.raw[s_txt] == step2[0])][
+                        ir_txt
+                    ].values[0]
                 else:
                     ir2 = 0
                 ir_indexes.append(i)
@@ -4875,10 +4855,9 @@ if __name__ == "__main__":
     print(sys.argv[0])
     import logging
     from cellpy import log
+
     log.setup_logging(default_level="DEBUG")
 
     from cellpy.utils import example_data
 
     c = example_data.arbin_file()
-
-

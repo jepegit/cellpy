@@ -576,26 +576,40 @@ def info(version, configloc, params, check):
 )
 @click.argument("file_name")
 def run(journal, debug, silent, file_name):
-    """Will in the future be used for running a cellpy process."""
+    """Will in the future be used for running a cellpy process.
 
-    click.echo("RUNNING".center(80, "*"))
+    You can use this to launch specific applications.
+
+    Examples:
+
+        edit your cellpy database
+
+           cellpy run db
+
+        run a batch job described in a journal file (not implemented yet)
+
+           cellpy run -j my_experiment.json
+
+    """
+
+    click.echo(f" RUNNING {file_name} ".center(80, "*"))
     if not file_name:
         click.echo("[cellpy] (run) No filename provided.")
         return
-    txt = f"[cellpy] The plan is that this cmd will run a batch run\n"
-    txt += f"[cellpy] journal: {journal}\n"
 
     if debug:
-        txt += "[cellpy] (run) debug mode on"
+        click.echo("[cellpy] (run) debug mode on")
 
     if silent:
-        txt += "[cellpy] (run) silent mode on"
+        click.echo("[cellpy] (run) silent mode on")
 
-    txt += "[cellpy]\n"
-    click.echo(txt)
+    click.echo("[cellpy]\n")
 
     if journal:
         _run_journal(file_name, debug, silent)
+
+    elif file_name.lower() == "db":
+        _run_db(debug, silent)
 
     else:
         _run(file_name, debug, silent)
@@ -611,6 +625,19 @@ def _run(file_name, debug, silent):
     click.echo(f"running {file_name}")
     click.echo(f" --debug [{debug}]")
     click.echo(f" --silent [{silent}]")
+
+
+def _run_db(debug, silent):
+    from cellpy import prms
+
+    if not silent:
+        click.echo(f"running database editor")
+    if debug:
+        click.echo("running in debug-mode, but nothing to tell")
+
+    db_path = Path(prms.Paths.db_path) / prms.Paths.db_filename
+    # this works on my mac:
+    subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
 
 
 @click.command()
@@ -874,7 +901,7 @@ def _serve(server):
 @click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
 @click.option("--directory", "-d", default=None, help="Start in custom directory DIR")
 def serve(lab, directory):
-    """Start a Jupyter server."""
+    """Start a Jupyter server"""
 
     from cellpy.parameters import prms
 

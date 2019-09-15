@@ -48,9 +48,7 @@ Paths = box.Box(Paths)
 # --------------------------
 # FileNames
 # --------------------------
-FileNames = {
-    "file_name_format": "YYYYMMDD_[NAME]EEE_CC_TT_RR",
-}
+FileNames = {"file_name_format": "YYYYMMDD_[NAME]EEE_CC_TT_RR"}
 FileNames = box.Box(FileNames)
 
 # --------------------------
