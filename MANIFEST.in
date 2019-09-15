@@ -6,6 +6,8 @@ include HISTORY.rst
 include LICENSE
 include README.rst
 recursive-include cellpy/parameters *_default.conf
+recursive-include cellpy/utils/data/raw  *.res
+recursive-include cellpy/utils/data *.h5
 
 recursive-include tests *
 recursive-exclude * __pycache__

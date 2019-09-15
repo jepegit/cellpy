@@ -4339,6 +4339,13 @@ class CellpyData(object):
         dataset.summary = summary
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
+    def inspect_nominal_capacity(self, cycles=None):
+        self.logger.debug("inspecting: nominal capacity")
+        if cycles is None:
+            cycles = [1, 2, 3]
+        summary = self.cell.summary
+        steps = self.cell.steps
+
 
 def get(
     filename=None,
@@ -4353,7 +4360,7 @@ def get(
     from cellpy import log
 
     log.setup_logging(default_level=logging_mode)
-    cellpy_instance = setup_cellpy_instance()
+    cellpy_instance = CellpyData()
 
     if instrument is not None:
         cellpy_instance.set_instrument(instrument=instrument)
@@ -4868,5 +4875,10 @@ if __name__ == "__main__":
     print(sys.argv[0])
     import logging
     from cellpy import log
-
     log.setup_logging(default_level="DEBUG")
+
+    from cellpy.utils import example_data
+
+    c = example_data.arbin_file()
+
+
