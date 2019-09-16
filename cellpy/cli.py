@@ -629,6 +629,7 @@ def _run(file_name, debug, silent):
 
 def _run_db(debug, silent):
     from cellpy import prms
+    import platform
 
     if not silent:
         click.echo(f"running database editor")
@@ -636,8 +637,30 @@ def _run_db(debug, silent):
         click.echo("running in debug-mode, but nothing to tell")
 
     db_path = Path(prms.Paths.db_path) / prms.Paths.db_filename
-    # this works on my mac:
-    subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
+
+    if platform.system() == "Windows":
+        try:
+            os.system(f'start excel "{str(db_path)}"')
+        except Exception as e:
+            click.echo("Something went wrong trying to open")
+            click.echo(db_path)
+            print()
+            print(e)
+
+    elif platform.system() == "Linux":
+        print("RUNNING LINUX")
+        # not tested
+        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
+
+    elif platform.system() == "Darwin":
+        click.echo(f" - running on a mac")
+        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
+
+    else:
+        print("RUNNING SOMETHING ELSE")
+        print(platform.system())
+        # not tested
+        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
 
 
 @click.command()

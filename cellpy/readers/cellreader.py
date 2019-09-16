@@ -2362,18 +2362,18 @@ class CellpyData(object):
 
         if not summary_made and not force:
             self.logger.info(
-                "You should not save datasets " "without making a summary first!"
+                "You should not save datasets without making a summary first!"
             )
-            self.logger.info("If you really want to do it, " "use save with force=True")
+            self.logger.info("If you really want to do it, use save with force=True")
             return
 
         step_table_made = test.steps_made
 
         if not step_table_made and not force and not ensure_step_table:
             self.logger.info(
-                "You should not save datasets " "without making a step-table first!"
+                "You should not save datasets without making a step-table first!"
             )
-            self.logger.info("If you really want to do it, " "use save with force=True")
+            self.logger.info("If you really want to do it, use save with force=True")
             return
 
         if not os.path.splitext(filename)[-1]:
@@ -2385,7 +2385,12 @@ class CellpyData(object):
             self.logger.debug("Outfile exists")
             if overwrite:
                 self.logger.debug("overwrite = True")
-                os.remove(outfile_all)
+                try:
+                    os.remove(outfile_all)
+                except PermissionError as e:
+                    self.logger.info("Could not over write old file")
+                    self.logger.info(e)
+                    return
             else:
                 self.logger.info("Save (hdf5): file exist - did not save", end=" ")
                 self.logger.info(outfile_all)

@@ -3,6 +3,7 @@
 import logging
 import pathlib
 import shutil
+import os
 
 import pandas as pd
 
@@ -164,6 +165,25 @@ class Batch:
             return
         new_journal_name = journal_name.name
         shutil.copy(journal_name, new_journal_name)
+
+    def duplicate_cellpy_files(self, location="standard"):
+        pages = self.experiment.journal.pages
+        cellpy_file_names = pages.cellpy_file_names
+        cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
+
+        if location == "standard":
+            batch_data_dir = pathlib.Path("data") / "interim"
+
+        else:
+            batch_data_dir = location
+
+        def _new_file_path(x):
+            return str(batch_data_dir / pathlib.Path(x).name)
+
+        print(f"copying cellpy files from {cellpy_file_dir} to {batch_data_dir}")
+        pages["another_name"] = pages.cellpy_file_names.apply(_new_file_path)
+
+        return pages
 
     # TODO: load_journal
     # TODO: list_journals?
