@@ -144,6 +144,8 @@ class Batch:
         logging.info(f"project: {self.experiment.journal.project}")
         self.experiment.journal.from_db()
         self.experiment.journal.to_file()
+        # TODO: move duplicate journal out of this function
+        #    and add to template as its own statement
         self.duplicate_journal()
 
     def create_folder_structure(self):
@@ -158,8 +160,7 @@ class Batch:
         logging.info("saving journal pages")
 
     def duplicate_journal(self):
-        journal_name = self.experiment.journal.file_name
-        journal_name = pathlib.Path(journal_name)
+        journal_name = pathlib.Path(self.experiment.journal.file_name)
         if not journal_name.is_file():
             print("No journal saved")
             return
@@ -167,12 +168,32 @@ class Batch:
         shutil.copy(journal_name, new_journal_name)
 
     def duplicate_cellpy_files(self, location="standard"):
+        """Copy the cellpy files and make a journal with the new names available in
+        the current folder.
+
+        Args:
+            location: where to copy the files. Either choose among the following
+                options:
+                "standard": data/interim folder
+                "here": current directory
+                "cellpydatadir": the stated cellpy data dir in your settings (prms)
+            or if the location is not one of the above, use the actual value of the
+                location argument.
+
+        Returns:
+            The updated journal pages.
+        """
         pages = self.experiment.journal.pages
-        cellpy_file_names = pages.cellpy_file_names
         cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
 
         if location == "standard":
             batch_data_dir = pathlib.Path("data") / "interim"
+
+        elif location == "here":
+            batch_data_dir = pathlib.Path(".")
+
+        elif location == "cellpydatadir":
+            batch_data_dir = cellpy_file_dir
 
         else:
             batch_data_dir = location
@@ -180,8 +201,22 @@ class Batch:
         def _new_file_path(x):
             return str(batch_data_dir / pathlib.Path(x).name)
 
-        print(f"copying cellpy files from {cellpy_file_dir} to {batch_data_dir}")
-        pages["another_name"] = pages.cellpy_file_names.apply(_new_file_path)
+        # update the journal pages
+        columns = pages.columns
+        pages["new_cellpy_file_names"] = pages.cellpy_file_names.apply(_new_file_path)
+
+        # copy the cellpy files
+        for n, row in pages.iterrows():
+            print(f"{row.cellpy_file_names} -> {row.new_cellpy_file_names}")
+            from_file = row.cellpy_file_names
+            to_file = row.new_cellpy_file_names
+            shutil.copy(from_file, to_file)
+
+        # save the journal pages
+        pages.columns = columns
+        journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
+        print(f"saving journal to {journal_file_name}")
+        self.journal.to_file(journal_file_name)
 
         return pages
 
