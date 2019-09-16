@@ -74,7 +74,6 @@ def summary_engine(**kwargs):
         if experiment.summary_frames is None:
             logger.debug("No summary frames found")
             logger.debug("Re-loading")
-
             experiment.summary_frames = _load_summaries(experiment)
 
         farm = helper.join_summaries(experiment.summary_frames, selected_summaries)

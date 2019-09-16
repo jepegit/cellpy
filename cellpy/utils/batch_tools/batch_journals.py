@@ -31,6 +31,7 @@ class LabJournal(BaseJournal):
         return file_name
 
     def from_db(self, project=None, name=None, batch_col=None):
+        logging.debug("creating journal from db")
         if batch_col is None:
             batch_col = self.batch_col
         if project is not None:

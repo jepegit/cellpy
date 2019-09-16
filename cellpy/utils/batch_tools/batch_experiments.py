@@ -84,6 +84,10 @@ class CyclingExperiment(BaseExperiment):
             self.all_in_memory = all_in_memory
 
         pages = self.journal.pages
+
+        if pages.empty:
+            raise Exception("your journal is empty")
+
         summary_frames = dict()
         cell_data_frames = dict()
         number_of_runs = len(pages)

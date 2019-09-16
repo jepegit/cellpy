@@ -44,9 +44,9 @@ def populated_batch(batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01"
     )
-    b.create_info_df()
+    b.create_journal()
     b.create_folder_structure()
-    b.load_and_save_raw()
+    b.update()
     return b
 
 
