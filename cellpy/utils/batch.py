@@ -216,17 +216,22 @@ class Batch:
         # copy the cellpy files
         for n, row in pages.iterrows():
             print(f"{row.cellpy_file_names} -> {row.new_cellpy_file_names}")
-            from_file = row.cellpy_file_names
-            to_file = row.new_cellpy_file_names
-            shutil.copy(from_file, to_file)
+            try:
+                from_file = row.cellpy_file_names
+                to_file = row.new_cellpy_file_names
+                os.makedirs(os.path.dirname(to_file), exist_ok=True)
+                shutil.copy(from_file, to_file)
+            except shutil.SameFileError:
+                print("Same file! No point in copying")
 
         # save the journal pages
-        pages.columns = columns
+        pages["cellpy_file_names"] = pages["new_cellpy_file_names"]
+        self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
         print(f"saving journal to {journal_file_name}")
-        self.journal.to_file(journal_file_name)
+        self.experiment.journal.to_file(journal_file_name)
 
-        return pages
+        # return pages
 
     # TODO: load_journal
     # TODO: list_journals?
