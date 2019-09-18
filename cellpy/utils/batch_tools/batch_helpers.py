@@ -8,7 +8,7 @@ import csv
 import itertools
 
 from cellpy import filefinder, prms
-from cellpy.exceptions import ExportFailed, NullData
+from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
 import cellpy.parameters.internal_settings
 
 logger = logging.getLogger(__name__)
@@ -29,8 +29,12 @@ def look_up_and_get(cellpy_file_name, table_name, root=None):
 
     logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
     store = pd.HDFStore(cellpy_file_name)
-    table = store.select(table_path)
-    store.close()
+    try:
+        table = store.select(table_path)
+    except KeyError as e:
+        logger.warning("Could not read the table")
+        store.close()
+        raise WrongFileVersion(e)
     return table
 
 

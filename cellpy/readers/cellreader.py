@@ -803,12 +803,13 @@ class CellpyData(object):
         path = Path(filename)
         self.name = path.with_suffix("").name
 
-    def load(self, cellpy_file, parent_level=None):
+    def load(self, cellpy_file, parent_level=None, return_cls=True):
         """Loads a cellpy file.
 
         Args:
             cellpy_file (path, str): Full path to the cellpy file.
-            parent_level (str, optional): Parent level
+            parent_level (str, optional): Parent level.
+            return_cls (bool): Return the class.
 
         """
 
@@ -835,7 +836,8 @@ class CellpyData(object):
         self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
         self._invent_a_name(cellpy_file)
-        return self
+        if return_cls:
+            return self
 
     def _load_hdf5(self, filename, parent_level=None):
         """Load a cellpy-file.
@@ -912,11 +914,12 @@ class CellpyData(object):
                         data, parent_level, _step_dir, store
                     )
                     fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
-                        fid_dir, parent_level, store
+                        _fid_dir, parent_level, store
                     )
                     self._extract_meta_from_cellpy_file(data, meta_table, filename)
                     warnings.warn(
-                        "Loaded old cellpy-file version (<5). Please update and save again."
+                        "Loaded old cellpy-file version (<5). "
+                        "Please update and save again."
                     )
             else:
                 self._check_keys_in_cellpy_file(
