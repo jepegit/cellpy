@@ -16,10 +16,8 @@ logger = logging.getLogger(__name__)
 def create_full_names(
     run_name, cellpy_file_extension=None, raw_file_dir=None, cellpy_file_dir=None
 ):
-    cellpy_file_extension = "h5"
-
     if cellpy_file_extension is None:
-        cellpy_file_extension = cellpy_file_extension
+        cellpy_file_extension = "h5"
 
     if raw_file_dir is None:
         raw_file_dir = prms.Paths["rawdatadir"]
@@ -43,6 +41,7 @@ def search_for_files(
     cellpy_file_dir=None,
     prm_filename=None,
     file_name_format=None,
+    reg_exp=None,
     cache=None,
 ):
     """Searches for files (raw-data files and cellpy-files).
@@ -60,6 +59,7 @@ def search_for_files(
         prm_filename(path): optional parameter file can be given.
         file_name_format(str): format of raw-file names or a glob pattern
             (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+        reg_exp(str): use regular expression instead (defaults to None).
         cache(list): list of cached file names to search through
 
     Returns:
@@ -67,25 +67,23 @@ def search_for_files(
     """
 
     time_00 = time.time()
-    cellpy_file_extension = "h5"
     res_extension = "res"
     version = 0.1
     # might include searching and removing "." in extensions
     # should include extension definitions in prm file (version 0.6)
     logger.debug(f"searching for {run_name}")
+
+    if reg_exp is not None:
+        logging.warning("Sorry, but using reg exp is not implemented yet.")
+
     if raw_extension is None:
         raw_extension = res_extension
 
     if cellpy_file_extension is None:
-        cellpy_file_extension = cellpy_file_extension
+        cellpy_file_extension = "h5"
 
     if prm_filename is not None:
         logging.debug("reading prm file disabled")
-
-    if not all([raw_file_dir, cellpy_file_dir, file_name_format]):
-        # import cellpy.parameters.prms as prms
-        # prms = prmreader.read()
-        logger.debug("using prms already set")
 
     if raw_file_dir is None:
         raw_file_dir = prms.Paths["rawdatadir"]
@@ -93,14 +91,14 @@ def search_for_files(
     if cellpy_file_dir is None:
         cellpy_file_dir = prms.Paths["cellpydatadir"]
 
-    if file_name_format is None:
+    if file_name_format is None and reg_exp is None:
         try:
             # To be implemented in version 0.5:
-            file_name_format = prms.file_name_format
+            file_name_format = prms.FileNames.file_name_format
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
             if version >= 0.5:
-                print("Could not read file_name_format " "from _cellpy_prms_xxx.conf.")
+                print("Could not read file_name_format from _cellpy_prms_xxx.conf.")
                 print("Using:")
                 print("file_name_format:", file_name_format)
                 file_format_explanation = "YYYYMMDD is date,"
@@ -115,7 +113,6 @@ def search_for_files(
 
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
         glob_text_raw = "%s_*.%s" % (os.path.basename(run_name), raw_extension)
-        reg_exp_raw = "xxx"
     else:
         glob_text_raw = file_name_format
 
@@ -123,6 +120,7 @@ def search_for_files(
     cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
     # TODO: @jepe - use pathlib
+    # TODO: @jepe - use reg_exp
 
     if cache is None:
 

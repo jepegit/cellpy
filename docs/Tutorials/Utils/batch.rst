@@ -72,19 +72,19 @@ and create an appropriate folder structure (`outdir/project_name/batch_name/raw_
 .. code-block:: python
 
     # load info from your db and write the journal pages
-    b.create_info_df()
+    b.create_journal()
     b.create_folder_structure()
 
 
 Processing data
 ~~~~~~~~~~~~~~~
 
-To run the processing, you should then use the convenience function ``load_and_save_raw``. This function
+To run the processing, you should then use the convenience function ``update``. This function
 loads all your data-files and saves csv-files of the results.
 
 .. code-block:: python
 
-    b.load_and_save_raw()
+    b.update()
 
 The next step is to create some summary csv-files (*e.g.* containing charge capacities *vs.* cycle number for
 all your data-files) and plot the results.

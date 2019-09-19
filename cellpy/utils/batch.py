@@ -3,6 +3,7 @@
 import logging
 import pathlib
 import shutil
+import os
 
 import pandas as pd
 
@@ -111,39 +112,49 @@ class Batch:
         # rename to: pages
         self.experiment.journal.pages = df
 
-    def create_empty_info_df(self):
-        # rename to: create_journal
-        logging.info("Creating an empty info dataframe")
-        logging.info(f"name: {self.experiment.journal.name}")
-        logging.info(f"project: {self.experiment.journal.project}")
-
-        self.experiment.journal.pages = pd.DataFrame(
-            columns=[
-                "filenames",
-                "masses",
-                "total_masses",
-                "loadings",
-                "fixed",
-                "labels",
-                "cell_type",
-                "raw_file_names",
-                "cellpy_file_names",
-                "groups",
-                "sub_groups",
-            ]
-        )
-        self.experiment.journal.pages.set_index("filenames", inplace=True)
-
-        self.experiment.journal.generate_folder_names()
-        self.experiment.journal.paginate()
-
-    def create_info_df(self):
+    def create_journal(self, description=None, from_db=True):
+        logging.debug("Creating a journal")
+        logging.debug(f"description: {description}")
+        logging.debug(f"from_db: {from_db}")
         # rename to: create_journal (combine this with function above)
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
-        self.experiment.journal.from_db()
-        self.experiment.journal.to_file()
-        self.duplicate_journal()
+        if description is not None:
+            from_db = False
+        if from_db:
+            self.experiment.journal.from_db()
+            self.experiment.journal.to_file()
+            # TODO: move duplicate journal out of this function
+            #    and add to template as its own statement
+            self.duplicate_journal()
+
+        else:
+            # TODO: move this into the bacth journal class
+            if description is not None:
+                print(f"Creating from {type(description)} is not implemented yet")
+
+            logging.info("Creating an empty journal")
+            logging.info(f"name: {self.experiment.journal.name}")
+            logging.info(f"project: {self.experiment.journal.project}")
+
+            self.experiment.journal.pages = pd.DataFrame(
+                columns=[
+                    "filenames",
+                    "masses",
+                    "total_masses",
+                    "loadings",
+                    "fixed",
+                    "labels",
+                    "cell_type",
+                    "raw_file_names",
+                    "cellpy_file_names",
+                    "groups",
+                    "sub_groups",
+                ]
+            )
+            self.experiment.journal.pages.set_index("filenames", inplace=True)
+            self.experiment.journal.generate_folder_names()
+            self.experiment.journal.paginate()
 
     def create_folder_structure(self):
         # rename to: paginate
@@ -157,13 +168,70 @@ class Batch:
         logging.info("saving journal pages")
 
     def duplicate_journal(self):
-        journal_name = self.experiment.journal.file_name
-        journal_name = pathlib.Path(journal_name)
+        journal_name = pathlib.Path(self.experiment.journal.file_name)
         if not journal_name.is_file():
             print("No journal saved")
             return
         new_journal_name = journal_name.name
         shutil.copy(journal_name, new_journal_name)
+
+    def duplicate_cellpy_files(self, location="standard"):
+        """Copy the cellpy files and make a journal with the new names available in
+        the current folder.
+
+        Args:
+            location: where to copy the files. Either choose among the following
+                options:
+                "standard": data/interim folder
+                "here": current directory
+                "cellpydatadir": the stated cellpy data dir in your settings (prms)
+            or if the location is not one of the above, use the actual value of the
+                location argument.
+
+        Returns:
+            The updated journal pages.
+        """
+        pages = self.experiment.journal.pages
+        cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
+
+        if location == "standard":
+            batch_data_dir = pathlib.Path("data") / "interim"
+
+        elif location == "here":
+            batch_data_dir = pathlib.Path(".")
+
+        elif location == "cellpydatadir":
+            batch_data_dir = cellpy_file_dir
+
+        else:
+            batch_data_dir = location
+
+        def _new_file_path(x):
+            return str(batch_data_dir / pathlib.Path(x).name)
+
+        # update the journal pages
+        columns = pages.columns
+        pages["new_cellpy_file_names"] = pages.cellpy_file_names.apply(_new_file_path)
+
+        # copy the cellpy files
+        for n, row in pages.iterrows():
+            print(f"{row.cellpy_file_names} -> {row.new_cellpy_file_names}")
+            try:
+                from_file = row.cellpy_file_names
+                to_file = row.new_cellpy_file_names
+                os.makedirs(os.path.dirname(to_file), exist_ok=True)
+                shutil.copy(from_file, to_file)
+            except shutil.SameFileError:
+                print("Same file! No point in copying")
+
+        # save the journal pages
+        pages["cellpy_file_names"] = pages["new_cellpy_file_names"]
+        self.experiment.journal.pages = pages[columns]
+        journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
+        print(f"saving journal to {journal_file_name}")
+        self.experiment.journal.to_file(journal_file_name)
+
+        # return pages
 
     # TODO: load_journal
     # TODO: list_journals?
@@ -172,11 +240,10 @@ class Batch:
         self.experiment.link()
 
     def load(self):
-        # does the same as load_and_save_raw
+        # does the same as update
         self.experiment.update()
 
-    def load_and_save_raw(self):
-        # remove this? rename to: update
+    def update(self):
         self.experiment.update()
 
     def make_summaries(self):
@@ -233,11 +300,11 @@ def main():
     b.experiment.export_raw = True
     b.experiment.export_cycles = True
     print("*creating info df*")
-    b.create_info_df()
+    b.create_journal()
     print("*creating folder structure*")
     b.create_folder_structure()
     print("*load and save*")
-    b.load_and_save_raw()
+    b.update()
     print("*make summaries*")
     b.make_summaries()
     summaries = b.experiment.memory_dumped

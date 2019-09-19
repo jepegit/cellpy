@@ -14,10 +14,10 @@ class CyclingExperiment(BaseExperiment):
     """Load experimental data into memory.
 
     This is a re-implementation of the old batch behaviour where
-    all the data-files are processed secuentially (and optionally exported)
+    all the data-files are processed sequentially (and optionally exported)
     while the summary tables are kept and processed. This implementation
     also saves the step tables (for later use when using look-up
-    functionallity).
+    functionality).
 
 
     Attributes:
@@ -84,6 +84,10 @@ class CyclingExperiment(BaseExperiment):
             self.all_in_memory = all_in_memory
 
         pages = self.journal.pages
+
+        if pages.empty:
+            raise Exception("your journal is empty")
+
         summary_frames = dict()
         cell_data_frames = dict()
         number_of_runs = len(pages)

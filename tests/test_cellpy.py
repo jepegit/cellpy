@@ -126,12 +126,13 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
 
 def test_su_cellpy_instance():
     # somehow pytest fails to find the test if it is called test_setup_xxx
+    # Should be removed in v.0.4.0
     import cellpy
 
     cellpy.cellreader.setup_cellpy_instance()
 
 
-def get():
+def test_get():
     import cellpy
 
     cellpy.get(
@@ -144,16 +145,8 @@ def get():
     cellpy.get()
 
 
-@pytest.mark.smoketest
-def test_setup_cellpy_instance():
-    from cellpy import cellreader
-
-    d = cellreader.setup_cellpy_instance()
-
-
 # @pytest.mark.unimportant
 def test_humanize_bytes():
-    from cellpy import cellreader
 
     assert cellpy.readers.core.humanize_bytes(1) == "1 byte"
     assert cellpy.readers.core.humanize_bytes(1024) == "1.0 kB"
@@ -163,6 +156,14 @@ def test_humanize_bytes():
     assert cellpy.readers.core.humanize_bytes(1024 * 1234, 2) == "1.00 MB"
     assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 2) == "1.00 GB"
     assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 1) == "1.0 GB"
+
+
+def test_example_data():
+    from cellpy.utils import example_data
+    a = example_data.arbin_file()
+    c = example_data.cellpy_file()
+    assert a.cell.summary.size == 504
+    assert c.cell.summary.size == 540
 
 
 def teardown_module():

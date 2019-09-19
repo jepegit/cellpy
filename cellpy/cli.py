@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import sys
+import subprocess
 import logging
 import getpass
 import click
@@ -575,26 +576,40 @@ def info(version, configloc, params, check):
 )
 @click.argument("file_name")
 def run(journal, debug, silent, file_name):
-    """Will in the future be used for running a cellpy process."""
+    """Will in the future be used for running a cellpy process.
 
-    click.echo("RUNNING".center(80, "*"))
+    You can use this to launch specific applications.
+
+    Examples:
+
+        edit your cellpy database
+
+           cellpy run db
+
+        run a batch job described in a journal file (not implemented yet)
+
+           cellpy run -j my_experiment.json
+
+    """
+
+    click.echo(f" RUNNING {file_name} ".center(80, "*"))
     if not file_name:
         click.echo("[cellpy] (run) No filename provided.")
         return
-    txt = f"[cellpy] The plan is that this cmd will run a batch run\n"
-    txt += f"[cellpy] journal: {journal}\n"
 
     if debug:
-        txt += "[cellpy] (run) debug mode on"
+        click.echo("[cellpy] (run) debug mode on")
 
     if silent:
-        txt += "[cellpy] (run) silent mode on"
+        click.echo("[cellpy] (run) silent mode on")
 
-    txt += "[cellpy]\n"
-    click.echo(txt)
+    click.echo("[cellpy]\n")
 
     if journal:
         _run_journal(file_name, debug, silent)
+
+    elif file_name.lower() == "db":
+        _run_db(debug, silent)
 
     else:
         _run(file_name, debug, silent)
@@ -610,6 +625,42 @@ def _run(file_name, debug, silent):
     click.echo(f"running {file_name}")
     click.echo(f" --debug [{debug}]")
     click.echo(f" --silent [{silent}]")
+
+
+def _run_db(debug, silent):
+    from cellpy import prms
+    import platform
+
+    if not silent:
+        click.echo(f"running database editor")
+    if debug:
+        click.echo("running in debug-mode, but nothing to tell")
+
+    db_path = Path(prms.Paths.db_path) / prms.Paths.db_filename
+
+    if platform.system() == "Windows":
+        try:
+            os.system(f'start excel "{str(db_path)}"')
+        except Exception as e:
+            click.echo("Something went wrong trying to open")
+            click.echo(db_path)
+            print()
+            print(e)
+
+    elif platform.system() == "Linux":
+        print("RUNNING LINUX")
+        # not tested
+        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
+
+    elif platform.system() == "Darwin":
+        click.echo(f" - running on a mac")
+        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
+
+    else:
+        print("RUNNING SOMETHING ELSE")
+        print(platform.system())
+        # not tested
+        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
 
 
 @click.command()
@@ -785,12 +836,22 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
     help="what template to use ('standard', 'gitt', or 'single').",
 )
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
-def new(template, directory):
+@click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
+@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
+def new(template, directory, serve, lab):
     """Will in the future be used for setting up a batch experiment."""
-
-    import cookiecutter.main
-    import cookiecutter.exceptions
-    import cookiecutter.prompt
+    if lab:
+        server = "lab"
+    else:
+        server = "notebook"
+    try:
+        import cookiecutter.main
+        import cookiecutter.exceptions
+        import cookiecutter.prompt
+    except ModuleNotFoundError:
+        click.echo("Could not import cookiecutter.")
+        click.echo("Try installing it with. For example by writing:")
+        click.echo("\npip install cookiecutter\n")
 
     from cellpy.parameters import prms
 
@@ -848,12 +909,52 @@ def new(template, directory):
         click.echo(" - cookiecutter refused to create the project")
         click.echo(e)
 
+    if serve:
+        os.chdir(directory)
+        _serve(server)
+
+
+def _serve(server):
+    click.echo(f"serving with jupyter {server}")
+    subprocess.run(["jupyter", server], check=True)
+    click.echo("Finished serving.")
+
+
+@click.command()
+@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
+@click.option("--directory", "-d", default=None, help="Start in custom directory DIR")
+def serve(lab, directory):
+    """Start a Jupyter server"""
+
+    from cellpy.parameters import prms
+
+    if directory is None:
+        directory = prms.Paths.notebookdir
+    elif directory == "home":
+        directory = Path().home()
+    elif directory == "here":
+        directory = Path(os.getcwd())
+
+    if not os.path.isdir(directory):
+        click.echo("Sorry. This did not work as expected!")
+        click.echo(f" - {directory} does not exist")
+        return
+
+    if lab:
+        server = "lab"
+    else:
+        server = "notebook"
+
+    os.chdir(directory)
+    _serve(server)
+
 
 cli.add_command(setup)
 cli.add_command(info)
 cli.add_command(pull)
 cli.add_command(run)
 cli.add_command(new)
+cli.add_command(serve)
 
 
 # tests etc
