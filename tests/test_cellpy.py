@@ -94,7 +94,7 @@ def test_logger(clean_dir):
     tmp_logger.error("customdir, default: testing logger (error)")
 
 
-@pytest.mark.timeout(2.0)
+@pytest.mark.timeout(5.0)
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader
