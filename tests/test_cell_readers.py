@@ -676,3 +676,4 @@ def test_set_testnumber(dataset, n, s):
 @pytest.mark.filterwarnings("error")
 def test_deprecations(dataset):
     dataset._check_file_type("my_file.res")
+
