@@ -2617,6 +2617,7 @@ class CellpyData(object):
         return self.cells[set_number].mass
 
     def get_cell(self, n=0):
+        # TODO: remove me
         return self.cells[n]
 
     def sget_voltage(self, cycle, step, set_number=None):
@@ -4325,6 +4326,7 @@ class CellpyData(object):
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def inspect_nominal_capacity(self, cycles=None):
+
         self.logger.debug("inspecting: nominal capacity")
         print("Sorry! This method is still under development.")
         print("Maybe you can plot your data and find the nominal capacity yourself?")
