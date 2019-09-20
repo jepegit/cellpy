@@ -3,6 +3,7 @@
 import logging
 import pathlib
 import shutil
+import warnings
 import os
 
 import pandas as pd
@@ -103,13 +104,11 @@ class Batch:
     # TODO: property: steps_columns
 
     @property
-    def info_df(self):
-        # rename to: pages
+    def pages(self):
         return self.experiment.journal.pages
 
-    @info_df.setter
-    def info_df(self, df):
-        # rename to: pages
+    @pages.setter
+    def pages(self, df):
         self.experiment.journal.pages = df
 
     def create_journal(self, description=None, from_db=True):
@@ -126,7 +125,7 @@ class Batch:
             self.experiment.journal.to_file()
             # TODO: move duplicate journal out of this function
             #    and add to template as its own statement
-            self.duplicate_journal()
+            # self.duplicate_journal()
 
         else:
             # TODO: move this into the bacth journal class
@@ -241,6 +240,7 @@ class Batch:
 
     def load(self):
         # does the same as update
+        warnings.warn("Use update instead.", DeprecationWarning)
         self.experiment.update()
 
     def update(self):
