@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import pathlib
+import platform
 
 import pandas as pd
 
@@ -50,6 +52,18 @@ class LabJournal(BaseJournal):
         self.generate_folder_names()
         self.paginate()
 
+    @staticmethod
+    def _fix_cellpy_paths(p):
+        if platform.system() != "Windows":
+            if p.find("\\") >= 0:
+                # convert from win to posix
+                p = pathlib.PureWindowsPath(p)
+        else:
+            if p.find("/") >= 0:
+                # convert from posix to win
+                p = pathlib.PurePosixPath(p)
+        return pathlib.Path(p)
+
     def from_file(self, file_name=None):
         """Loads a DataFrame with all the needed info about the experiment"""
 
@@ -60,6 +74,7 @@ class LabJournal(BaseJournal):
 
         pages_dict = top_level_dict["info_df"]
         pages = pd.DataFrame(pages_dict)
+        pages.cellpy_file_names = pages.cellpy_file_names.apply(self._fix_cellpy_paths)
         self.pages = pages
         self.file_name = file_name
         self._prm_packer(top_level_dict["metadata"])
