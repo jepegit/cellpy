@@ -59,11 +59,14 @@ def summary_engine(**kwargs):
     for experiment in experiments:
         if experiment.selected_summaries is None:
             selected_summaries = [
-                "discharge_capacity", "charge_capacity",
+                "discharge_capacity",
+                "charge_capacity",
                 "coulombic_efficiency",
                 "cumulated_coulombic_efficiency",
-                "ir_discharge", "ir_charge",
-                "end_voltage_discharge", "end_voltage_charge",
+                "ir_discharge",
+                "ir_charge",
+                "end_voltage_discharge",
+                "end_voltage_charge",
             ]
         else:
             selected_summaries = experiment.selected_summaries
@@ -71,13 +74,9 @@ def summary_engine(**kwargs):
         if experiment.summary_frames is None:
             logger.debug("No summary frames found")
             logger.debug("Re-loading")
-
             experiment.summary_frames = _load_summaries(experiment)
 
-        farm = helper.join_summaries(
-            experiment.summary_frames,
-            selected_summaries
-        )
+        farm = helper.join_summaries(experiment.summary_frames, selected_summaries)
         farms.append(farm)
     barn = "batch_dir"
 
@@ -88,7 +87,7 @@ def _load_summaries(experiment):
     summary_frames = {}
     for label in experiment.cell_names:
         # TODO: replace this with direct lookup from hdf5?
-        summary_frames[label] = experiment.data[label].dataset.dfsummary
+        summary_frames[label] = experiment.data[label].cell.summary
     return summary_frames
 
 

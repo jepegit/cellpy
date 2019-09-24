@@ -42,13 +42,11 @@ def batch_instance(clean_dir):
 @pytest.fixture(scope="module")
 def populated_batch(batch_instance):
     b = batch_instance.init(
-        "test", "ProjectOfRun",
-        default_log_level="DEBUG",
-        batch_col="b01"
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01"
     )
-    b.create_info_df()
+    b.create_journal()
     b.create_folder_structure()
-    b.load_and_save_raw()
+    b.update()
     return b
 
 
@@ -91,15 +89,13 @@ def test_update_time(cycling_experiment):
         cycles = cell.get_cycle_numbers()
 
         for cycle in cycles:
-            capacity, voltage = cell.get_cap(
-                cycle=cycle,
-            )
+            capacity, voltage = cell.get_cap(cycle=cycle)
             try:
                 l = len(capacity)
             except TypeError as e:
                 print(e)
     t1 = time.time()
-    dt = t1-t0
+    dt = t1 - t0
     print(f"This took {dt} seconds")
 
 
@@ -114,15 +110,13 @@ def test_link_time(cycling_experiment):
         cycles = cell.get_cycle_numbers()
 
         for cycle in cycles:
-            capacity, voltage = cell.get_cap(
-                cycle=cycle,
-            )
+            capacity, voltage = cell.get_cap(cycle=cycle)
             try:
                 l = len(capacity)
             except TypeError as e:
                 print(e)
     t1 = time.time()
-    dt = t1-t0
+    dt = t1 - t0
     print(f"This took {dt} seconds")
 
 
@@ -157,9 +151,7 @@ def test_cycling_experiment_to_file(cycling_experiment):
 
 def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
     name = fdv.run_name
-    capacity_voltage_df = updated_cycling_experiment.data[name].get_cap(
-        cycle=1,
-    )
+    capacity_voltage_df = updated_cycling_experiment.data[name].get_cap(cycle=1)
     assert len(capacity_voltage_df) == 1105
 
 

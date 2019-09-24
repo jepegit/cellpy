@@ -44,7 +44,7 @@ For POSIX systems, I have not found any suitable drivers. Instead,
 ``cellpy`` will try to use ``mdbtools``\ to first export the data to
 temporary csv-files, and then import from those csv-file (using the
 ``pandas`` library). You can install ``mdbtools`` using your systems
-prefered package manager (*e.g.* ``apt-get install mdbtools``).
+preferred package manager (*e.g.* ``apt-get install mdbtools``).
 
 1.2 The tea spoon explanation
 -----------------------------
@@ -63,13 +63,16 @@ Install a scientific stack of python 3.x
 If the words “virtual environment” or “miniconda” don’t ring any bells,
 you should install the Anaconda scientific Python distribution. Go to
 `www.anaconda.com <https://www.anaconda.com/>`__ and select the
-Anaconda distribution (press the ``Download Now`` button). Download it
-and let it install.
+Anaconda distribution (press the ``Download Now`` button). And no, don´t
+select python 2.7. Use at least python 3.6. And select the 64 bit version
+(if you fail at installing the 64 bit version, then you can try the
+weaker 32 bit version). Download it and let it install.
 
 Install ``cellpy``
 ~~~~~~~~~~~~~~~~~~
 
-Open up a command window (you can find a command window on Windows by
+Open up a command window
+(you can find a command window on Windows by
 *e.g* pressing the Windows button + r and typing ``cmd.exe``). Then type
 
 .. code:: bash
@@ -79,7 +82,8 @@ Open up a command window (you can find a command window on Windows by
 If you get an error message, then it could be that your Python version is
 not available for you (maybe you installed as root?). What usually works
 is to try to locate the “anaconda prompt” program and run that instead
-of the command window. Note that the bin version matters some times (for
+of the command window. Note that the bin version matters some times, so try
+to make a mental note of what you selected (for
 example, if you plan to use the Microsoft Access odbc driver, and it is
 32-bit, you probably should chose to install an 32-bit python version
 (see next sub-chapter)).
@@ -92,7 +96,7 @@ those, you will need to install ``pyodbc``
 
 .. code:: bash
 
-   pip install pyodbc
+   conda install -c conda-forge pyodbc
 
 You most likely also want to install the Microsoft Access odbc driver
 which can be downloaded from `this
@@ -107,19 +111,20 @@ dependencies
 
 .. code:: bash
 
-   conda install pytables
+   conda install -c conda-forge pytables
 
 .. code:: bash
 
-   pip install lmfit
+   conda install -c conda-forge lmfit
 
 .. code:: bash
 
-   pip install python-box
+   conda install -c conda-forge python-box
 
-(the packages (``lmfit``, ``pytables``, ``pyodbc``) are also installable
-from conda forge using ``conda`` *e.g.* by issuing
-``conda install -c conda-forge pytables`` for installing ``pytables``)
+Another tool that is really handy is Jupyter. And the plotting library
+bundle holoviz. You might already have them installed. If not, I recommend
+that you look at their documentation (google it) and install them. You can most
+likely use the same method as for pytables etc. (``pyodbc``
 
 Check your installation
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -183,12 +188,13 @@ This will out-put some (hopefully) helpful text
      --help  Show this message and exit.
 
    Commands:
-     info
-     pull
-     run
-     setup  This will help you to setup cellpy.
+      info   This will give you some valuable information about your cellpy.
+      pull   Download examples or tests from the big internet.
+      run    Will in the future be used for running a cellpy process.
+      setup  This will help you to setup cellpy.
 
-You can get information about the sub-commands by issuing –help after
+
+You can get information about the sub-commands by issuing –-help after
 them also. For example, issuing
 
 .. code:: bash
@@ -221,9 +227,13 @@ data, cellpy-files, logs, databases and output data (and inform
    cellpy setup -i
 
 The ``-i`` option makes sure that the setup is done interactively.
-The program will ask you about where specific folders are, e.g. where
+The program will ask you about where specific folders are, *e.g.* where
 you would like to put your outputs and where your cell data files are
-located. If the folders don’t exist, ``cellpy`` will try to create them.
+located. If the folders don’t exist, ``cellpy`` will try to create them.a
+
+If you want to specify a root folder different from the default (your HOME
+folder), you can use the ``-d`` option *e.g.*
+``cellpy setup -i -d /Users/kingkong/cellpydir``
 
 .. note::
 
@@ -297,5 +307,21 @@ terminal window). You probably need to use the ``--reset`` flag this time
 since it is not your first time running it).
 
 
+4. What next?
+-------------
 
+For example: If you want to use the highly popular ``cellpy.utils.batch``
+utility, you
+need to make (or copy from a friend) the "database" (an excel-file with
+appropriate headers in the first row) and make sure that all the paths
+are set up correctly in you cellpy configuration file.
 
+Or, for example: If you would like to do some interactive plotting of your
+data, try to install holoviz and use Jupyter Lab to make some fancy plots
+and dash-boards.
+
+And why not: make a script that goes through all your thousands of measured
+cells, extracts the life-time (e.g. number of cycles until the capacity
+has dropped below 80% of the average of the three first cycles), and plot
+this versus time the cell was put. And maybe color the data-points based
+on who was doing the experiment?

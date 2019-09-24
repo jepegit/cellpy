@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import pathlib
+import platform
 
 import pandas as pd
 
@@ -14,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class LabJournal(BaseJournal):
-
     def __init__(self, db_reader="default"):
         super().__init__()
         if db_reader == "default":
@@ -32,6 +33,7 @@ class LabJournal(BaseJournal):
         return file_name
 
     def from_db(self, project=None, name=None, batch_col=None):
+        logging.debug("creating journal from db")
         if batch_col is None:
             batch_col = self.batch_col
         if project is not None:
@@ -40,9 +42,7 @@ class LabJournal(BaseJournal):
             name = self.name
         else:
             self.name = name
-        logging.debug(
-            f"batch_name, batch_col: {name}, {batch_col}"
-        )
+        logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
         if self.db_reader is not None:
             srnos = self.db_reader.select_batch(name, batch_col)
             self.pages = simple_db_engine(self.db_reader, srnos)
@@ -52,19 +52,32 @@ class LabJournal(BaseJournal):
         self.generate_folder_names()
         self.paginate()
 
+    @staticmethod
+    def _fix_cellpy_paths(p):
+        if platform.system() != "Windows":
+            if p.find("\\") >= 0:
+                # convert from win to posix
+                p = pathlib.PureWindowsPath(p)
+        else:
+            if p.find("/") >= 0:
+                # convert from posix to win
+                p = pathlib.PurePosixPath(p)
+        return pathlib.Path(p)
+
     def from_file(self, file_name=None):
         """Loads a DataFrame with all the needed info about the experiment"""
 
         file_name = self._check_file_name(file_name)
 
-        with open(file_name, 'r') as infile:
+        with open(file_name, "r") as infile:
             top_level_dict = json.load(infile)
 
-        pages_dict = top_level_dict['info_df']
+        pages_dict = top_level_dict["info_df"]
         pages = pd.DataFrame(pages_dict)
+        pages.cellpy_file_names = pages.cellpy_file_names.apply(self._fix_cellpy_paths)
         self.pages = pages
         self.file_name = file_name
-        self._prm_packer(top_level_dict['metadata'])
+        self._prm_packer(top_level_dict["metadata"])
         self.generate_folder_names()
         self.paginate()
 
@@ -74,21 +87,15 @@ class LabJournal(BaseJournal):
         file_name = self._check_file_name(file_name)
         pages = self.pages
 
-        top_level_dict = {
-            'info_df': pages,
-            'metadata': self._prm_packer()
-        }
+        top_level_dict = {"info_df": pages, "metadata": self._prm_packer()}
 
         jason_string = json.dumps(
-            top_level_dict,
-            default=lambda info_df: json.loads(
-                info_df.to_json()
-            )
+            top_level_dict, default=lambda info_df: json.loads(info_df.to_json())
         )
 
         self.paginate()
 
-        with open(file_name, 'w') as outfile:
+        with open(file_name, "w") as outfile:
             outfile.write(jason_string)
 
         self.file_name = file_name

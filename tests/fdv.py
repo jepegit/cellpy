@@ -27,9 +27,7 @@ output_dir = os.path.join(data_dir, "out")
 cellpy_data_dir = os.path.join(data_dir, "hdf5")
 db_dir = os.path.join(data_dir, "db")
 log_dir = os.path.join(data_dir, "log")
-default_prm_file = os.path.abspath(os.path.join(
-    data_dir, "_cellpy_prms_default.conf"
-))
+default_prm_file = os.path.abspath(os.path.join(data_dir, "_cellpy_prms_default.conf"))
 
 # -------- common files -----------------------------
 
@@ -37,8 +35,8 @@ cellpy_file_name = "20160805_test001_45_cc.h5"
 cellpy_file_path = os.path.join(cellpy_data_dir, cellpy_file_name)
 
 # old format (to check compatibility when upgrading cellpy format)
-cellpy_file_name_v0 = "20160805_test001_45_cc_v0.h5"
-cellpy_file_path_v0 = os.path.join(cellpy_data_dir, cellpy_file_name)
+cellpy_file_name_v4 = "20160805_test001_45_cc_v0.h5"
+cellpy_file_path_v4 = os.path.join(cellpy_data_dir, cellpy_file_name)
 
 temporary_cellpy_file_name = "tmpfile.h5"
 temporary_cellpy_file_path = os.path.join(cellpy_data_dir, temporary_cellpy_file_name)
@@ -105,7 +103,7 @@ custom_file_paths = os.path.join(raw_data_dir, custom_file_name)
 if __name__ == "__main__":
     files = [
         cellpy_file_path,
-        cellpy_file_path_v0,
+        cellpy_file_path_v4,
         res_file_path,
         res_file_path2,
         temporary_cellpy_file_path,

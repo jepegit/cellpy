@@ -4,18 +4,21 @@ import pytest
 import logging
 from cellpy import log
 from . import fdv
+
 log.setup_logging(default_level=logging.DEBUG)
 
 
 @pytest.fixture
 def cellpy_data_instance():
     from cellpy import cellreader
+
     return cellreader.CellpyData()
 
 
 @pytest.fixture
 def dataset():
     from cellpy import cellreader
+
     d = cellreader.CellpyData()
     d.load(fdv.mpr_cellpy_file_path)
     return d

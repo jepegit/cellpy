@@ -111,9 +111,7 @@ class Data(collections.UserDict):
     def __look_up__(self, cell_id):
         logging.debug("running __look_up__")
         try:
-            if not self.experiment.cell_data_frames[
-                cell_id
-            ].dataset.dfdata.empty:
+            if not self.experiment.cell_data_frames[cell_id].cell.raw.empty:
                 return self.experiment.cell_data_frames[cell_id]
             else:
                 raise AttributeError
@@ -129,9 +127,9 @@ class Data(collections.UserDict):
                 self.experiment.cell_data_frames[cell_id] = cell
                 # trick for making tab-completion work (only works after
                 # initial look-up):
-                self.__dict__[
-                    "x_" + cell_id
-                ] = self.experiment.cell_data_frames[cell_id]
+                self.__dict__["x_" + cell_id] = self.experiment.cell_data_frames[
+                    cell_id
+                ]
                 return cell
             else:
                 raise NotImplementedError
@@ -139,6 +137,7 @@ class Data(collections.UserDict):
 
 class BaseExperiment(metaclass=abc.ABCMeta):
     """An experiment contains experimental data and meta-data."""
+
     def __init__(self, *args):
         self.journal = None
         self.summary_frames = None
@@ -150,9 +149,11 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self._store_data_object = True
 
     def __str__(self):
-        return f"[{self.__class__.__name__}]\n" \
-               f"journal: \n{str(self.journal)}\n" \
-               f"data: \n{str(self.data)}"
+        return (
+            f"[{self.__class__.__name__}]\n"
+            f"journal: \n{str(self.journal)}\n"
+            f"data: \n{str(self.data)}"
+        )
 
     def __repr__(self):
         return self.__class__.__name__
@@ -217,11 +218,7 @@ class BaseJournal:
 
     """
 
-    packable = [
-        'name', 'project',
-        'time_stamp', 'project_dir',
-        'batch_dir', 'raw_dir'
-    ]
+    packable = ["name", "project", "time_stamp", "project_dir", "batch_dir", "raw_dir"]
 
     def __init__(self):
         self.pages = None  # pandas.DataFrame
@@ -234,12 +231,14 @@ class BaseJournal:
         self.raw_dir = None
 
     def __str__(self):
-        return f"({self.__class__.__name__})\n" \
-               f"  - name: {str(self.name)}\n" \
-               f"  - project: {str(self.project)}\n"\
-               f"  - file_name: {str(self.file_name)}\n" \
-               f"  - pages: ->\n{str(self.pages)}\n" \
-               f"           <-\n"
+        return (
+            f"({self.__class__.__name__})\n"
+            f"  - name: {str(self.name)}\n"
+            f"  - project: {str(self.project)}\n"
+            f"  - file_name: {str(self.file_name)}\n"
+            f"  - pages: ->\n{str(self.pages)}\n"
+            f"           <-\n"
+        )
 
     def __repr__(self):
         return self.__class__.__name__
@@ -296,6 +295,7 @@ class BaseJournal:
 # Do-ers
 class BaseExporter(Doer, metaclass=abc.ABCMeta):
     """An exporter exports your data to a given format."""
+
     def __init__(self, *args):
         super().__init__(*args)
         self.engines = list()
@@ -318,8 +318,7 @@ class BaseExporter(Doer, metaclass=abc.ABCMeta):
 
     def do(self):
         if not self.experiments:
-            raise UnderDefined("cannot run until "
-                               "you have assigned an experiment")
+            raise UnderDefined("cannot run until you have assigned an experiment")
         for engine in self.engines:
             self.empty_the_farms()
             logging.debug(f"running - {str(engine)}")
@@ -343,5 +342,3 @@ class BaseReporter(Doer):
 class BaseAnalyzer(Doer):
     def __init__(self, *args):
         super().__init__(*args)
-
-

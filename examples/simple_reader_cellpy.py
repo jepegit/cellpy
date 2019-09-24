@@ -50,7 +50,7 @@ d.set_mass(mass)
 d.make_step_table()
 d.make_summary()
 
-summary = d.dataset.dfsummary
+summary = d.cell.summary
 print(summary.head())
 
 fig, ax = plt.subplots(1, 1)

@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from pathlib import Path
+
 print(f"running {sys.argv[0]}")
 
 import cellpy

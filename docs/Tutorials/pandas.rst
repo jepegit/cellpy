@@ -1,6 +1,12 @@
 Working with the pandas.DataFrame objects directly
 ==================================================
 
+.. warning::
+    The package authors are seriously considering re-naming several of the
+    classes and DataFrames. The methodology presented below will be the same
+    in spirit, but the actual names will change. Soon. Very soon.
+
+
 The ``CellpyData`` object stores the data in several pandas.DataFrame objects.
 The easies way to get to the DataFrames is by the following procedure:
 
@@ -13,17 +19,17 @@ The easies way to get to the DataFrames is by the following procedure:
     # cellpy_test is now a cellpy DataSet object (cellpy.readers.cellreader.DataSet)
 
     # pandas.DataFrame with data vs cycle number (e.g. coulombic efficiency):
-    summary = cellpy_test.dfsummary
+    summary = cellpy_test.summary
     # or
     summary = cell_data.dataset_summary
 
     # pandas.DataFrame with the raw data:
-    rawdata = cellpy_test.dfdata
+    rawdata = cellpy_test.raw
     # or
     raw_data = cellpy_data.dataset_normal
 
     # pandas.DataFrame with statistics on each step and info about step type:
-    step_table = cellpy_test.step_table
+    step_table = cellpy_test.steps
 
     # run_summary = cellpy_test.run_summary
     # This is not implemented yet (overall information like cycle life-time)

@@ -16,10 +16,9 @@ log.setup_logging(default_level="DEBUG")
 
 def test_search_for_files_with_dirs():
     import os
+
     raw_files, cellpy_file = filefinder.search_for_files(
-        fdv.run_name,
-        raw_file_dir=fdv.raw_data_dir,
-        cellpy_file_dir=fdv.output_dir
+        fdv.run_name, raw_file_dir=fdv.raw_data_dir, cellpy_file_dir=fdv.output_dir
     )
 
     assert fdv.res_file_path in raw_files
@@ -27,9 +26,7 @@ def test_search_for_files_with_dirs():
 
 
 def test_search_for_files_default_dirs():
-    raw_files, cellpy_file = filefinder.search_for_files(
-        fdv.run_name,
-    )
+    raw_files, cellpy_file = filefinder.search_for_files(fdv.run_name)
 
     assert fdv.res_file_path in raw_files
 
@@ -66,8 +63,5 @@ def test_search_for_strange_files():
 def test_search_for_files_using_custom_prms_file():
     # this is not enabled
     raw_files, cellpy_file = filefinder.search_for_files(
-        fdv.run_name,
-        prm_filename=fdv.default_prm_file,
+        fdv.run_name, prm_filename=fdv.default_prm_file
     )
-
-

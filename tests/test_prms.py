@@ -157,6 +157,7 @@ config_file = io.StringIO(config_file_txt)
 @pytest.fixture(scope="module")
 def cellpy_data_instance():
     from cellpy import cellreader
+
     return cellreader.CellpyData()
 
 

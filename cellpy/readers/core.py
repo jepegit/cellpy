@@ -11,14 +11,15 @@ import pandas as pd
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYFILE,
-    cellpy_limits, cellpy_units,
+    cellpy_limits,
+    cellpy_units,
 )
 
-CELLPY_FILE_VERSION = 4
+CELLPY_FILE_VERSION = 5
 MINIMUM_CELLPY_FILE_VERSION = 1
-STEP_TABLE_VERSION = 3
-NORMAL_TABLE_VERSION = 3
-SUMMARY_TABLE_VERSION = 3
+STEP_TABLE_VERSION = 5
+RAW_TABLE_VERSION = 5
+SUMMARY_TABLE_VERSION = 5
 
 
 class FileID(object):
@@ -115,7 +116,7 @@ class FileID(object):
         return self.last_modified
 
 
-class DataSet(object):
+class Cell(object):
     """Object to store data for a test.
 
     This class is used for storing all the relevant data for a 'run', i.e. all
@@ -135,7 +136,7 @@ class DataSet(object):
         self.logger = logging.getLogger(__name__)
         self.logger.debug("created DataSet instance")
 
-        self.test_no = None
+        self.cell_no = None
         self.mass = prms.Materials["default_mass"]  # active material (in mg)
         self.tot_mass = prms.Materials["default_mass"]  # total material (in mg)
         self.no_cycles = 0.0
@@ -172,16 +173,16 @@ class DataSet(object):
         self.data = collections.OrderedDict()  # not used
         self.summary = collections.OrderedDict()  # not used
 
-        self.dfdata = pd.DataFrame()
-        self.dfsummary = pd.DataFrame()
-        # self.dfsummary_made = False  # Should be removed
-        self.step_table = collections.OrderedDict()
+        self.raw = pd.DataFrame()
+        self.summary = pd.DataFrame()
+        # self.summary_made = False  # Should be removed
+        self.steps = collections.OrderedDict()
         # self.step_table_made = False  # Should be removed
         # self.parameter_table = collections.OrderedDict()
-        self.summary_version = SUMMARY_TABLE_VERSION
+        self.summary_table_version = SUMMARY_TABLE_VERSION
         self.step_table_version = STEP_TABLE_VERSION
         self.cellpy_file_version = CELLPY_FILE_VERSION
-        self.normal_table_version = NORMAL_TABLE_VERSION
+        self.raw_table_version = RAW_TABLE_VERSION
         # ready for use if implementing loading units
         # (will probably never happen).
 
@@ -227,20 +228,20 @@ class DataSet(object):
 
         txt += self._header_str("DATA")
         try:
-            txt += str(self.dfdata.describe())
+            txt += str(self.raw.describe())
         except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
         txt += self._header_str("SUMMARY")
         try:
-            txt += str(self.dfsummary.describe())
+            txt += str(self.summary.describe())
         except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
         txt += self._header_str("STEP TABLE")
         try:
-            txt += str(self.step_table.describe())
-            txt += str(self.step_table.head())
+            txt += str(self.steps.describe())
+            txt += str(self.steps.head())
         except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
 
@@ -249,19 +250,19 @@ class DataSet(object):
         return txt
 
     @property
-    def dfsummary_made(self):
+    def summary_made(self):
         """check if the summary table exists"""
         try:
-            empty = self.dfsummary.empty
+            empty = self.summary.empty
         except AttributeError:
             empty = True
         return not empty
 
     @property
-    def step_table_made(self):
+    def steps_made(self):
         """check if the step table exists"""
         try:
-            empty = self.step_table.empty
+            empty = self.steps.empty
         except AttributeError:
             empty = True
         return not empty
@@ -269,7 +270,7 @@ class DataSet(object):
     @property
     def no_data(self):
         try:
-            empty = self.dfdata.empty
+            empty = self.raw.empty
         except AttributeError:
             empty = True
         return empty
@@ -281,20 +282,21 @@ def check64bit(current_system="python"):
         return sys.maxsize > 2147483647
     elif current_system == "os":
         import platform
+
         pm = platform.machine()
-        if pm != ".." and pm.endswith('64'):  # recent Python (not Iron)
+        if pm != ".." and pm.endswith("64"):  # recent Python (not Iron)
             return True
         else:
-            if 'PROCESSOR_ARCHITEW6432' in os.environ:
+            if "PROCESSOR_ARCHITEW6432" in os.environ:
                 return True  # 32 bit program running on 64 bit Windows
             try:
                 # 64 bit Windows 64 bit program
-                return os.environ['PROCESSOR_ARCHITECTURE'].endswith('64')
+                return os.environ["PROCESSOR_ARCHITECTURE"].endswith("64")
             except IndexError:
                 pass  # not Windows
             try:
                 # this often works in Linux
-                return '64' in platform.architecture()[0]
+                return "64" in platform.architecture()[0]
             except Exception:
                 # is an older version of Python, assume also an older os@
                 # (best we can guess)
@@ -332,20 +334,20 @@ def humanize_bytes(b, precision=1):
     #     (1, 'b')
     # )
     abbrevs = (
-        (1 << 50, 'PB'),
-        (1 << 40, 'TB'),
-        (1 << 30, 'GB'),
-        (1 << 20, 'MB'),
-        (1 << 10, 'kB'),
-        (1, 'b')
+        (1 << 50, "PB"),
+        (1 << 40, "TB"),
+        (1 << 30, "GB"),
+        (1 << 20, "MB"),
+        (1 << 10, "kB"),
+        (1, "b"),
     )
     if b == 1:
-        return '1 byte'
+        return "1 byte"
     for factor, suffix in abbrevs:
         if b >= factor:
             break
     # return '%.*f %s' % (precision, old_div(b, factor), suffix)
-    return '%.*f %s' % (precision, b // factor, suffix)
+    return "%.*f %s" % (precision, b // factor, suffix)
 
 
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
@@ -368,15 +370,16 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
         d = (xldate - 25589) * 86400.0
     else:
         try:
-            d = datetime.datetime(1899, 12, 30) + \
-                datetime.timedelta(days=xldate + 1462 * datemode)
+            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(
+                days=xldate + 1462 * datemode
+            )
             # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds,
             # excel cannot cope with this!
             if option == "to_string":
                 date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
                 d = d.strftime(date_format)
         except TypeError:
-            logging.info(f'The date is not of correct type [{xldate}]')
+            logging.info(f"The date is not of correct type [{xldate}]")
             d = xldate
     return d
 

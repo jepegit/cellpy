@@ -19,6 +19,7 @@ test_areal_loading = 0.0
 def db_reader():
     from cellpy.readers import dbreader
     from cellpy.parameters import prms
+
     prms.Paths["outdatadir"] = fdv.output_dir
     prms.Paths["rawdatadir"] = fdv.raw_data_dir
     prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
@@ -30,6 +31,7 @@ def db_reader():
 @pytest.fixture
 def clean_db_reader():  # remove this?
     from cellpy.readers import dbreader
+
     return dbreader.Reader()
 
 
@@ -54,7 +56,7 @@ def test_filter_select_col_numbers_true_true(db_reader):
 
 def test_select_serial_number_row(db_reader):
     row = db_reader.select_serial_number_row(test_serial_number_one)
-    assert row.iloc[:,1].values[0] == 45
+    assert row.iloc[:, 1].values[0] == 45
 
 
 def test_print_serial_number_info(db_reader):
@@ -72,15 +74,14 @@ def test_filter_by_slurry(db_reader):
 
 def test_filter_by_col_value(db_reader):
     output = db_reader.filter_by_col_value(
-        db_reader.db_sheet_cols.active_material,
-        min_val=0.5, max_val=0.6
+        db_reader.db_sheet_cols.active_material, min_val=0.5, max_val=0.6
     )
     assert test_serial_number_one in output
     assert test_serial_number_two not in output
 
 
 def test_select_batch(db_reader):
-    output = db_reader.select_batch(test_batch_name,db_reader.db_sheet_cols.batch)
+    output = db_reader.select_batch(test_batch_name, db_reader.db_sheet_cols.batch)
     print(test_batch_name)
     assert test_serial_number_not_in_batch not in output
     assert test_serial_number_one in output
@@ -89,8 +90,7 @@ def test_select_batch(db_reader):
 
 def test_select_batch_extra(db_reader):
     output = db_reader.select_batch(
-        test_batch_name,
-        db_reader.db_sheet_cols.sub_batch_01
+        test_batch_name, db_reader.db_sheet_cols.sub_batch_01
     )
     assert test_serial_number_one not in output
     assert test_serial_number_two in output
@@ -122,6 +122,8 @@ def test_filter_selected(db_reader):
     selected = [test_serial_number_one, test_serial_number_two]
     output = db_reader.filter_selected(selected)
     assert test_serial_number_two in output
+
+
 #    assert test_serial_number_one not in output
 
 
@@ -177,6 +179,7 @@ def test_get_mass(db_reader):
 def test_get_total_mass(db_reader):
     output = db_reader.get_total_mass(test_serial_number_one)
     assert pytest.approx(output, 0.1) == test_total_mass
+
 
 #
 # def test_get_all(db_reader):

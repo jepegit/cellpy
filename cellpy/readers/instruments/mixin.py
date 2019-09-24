@@ -11,6 +11,7 @@ import abc
 
 class AtomicLoad(object):
     """Atomic loading class"""
+
     pass
 
 
@@ -49,5 +50,3 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     def loader(self, *args, **kwargs):
         """Loads data into a DataSet object and returns it"""
         pass
-
-

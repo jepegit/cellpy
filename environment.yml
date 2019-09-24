@@ -17,6 +17,7 @@ dependencies:
   - pyyaml>=4.2b1
   - pyodbc
   - PyGithub
+  - cookiecutter
   - pip:
     - lmfit
     - python-box

@@ -15,6 +15,7 @@ log.setup_logging(default_level="DEBUG")
 @pytest.fixture(scope="module")
 def cellpy_data_instance():
     from cellpy import cellreader
+
     return cellreader.CellpyData()
 
 
@@ -26,6 +27,7 @@ def clean_dir():
 
 def setup_module():
     import os
+
     try:
         os.mkdir(fdv.output_dir)
     except:
@@ -92,10 +94,11 @@ def test_logger(clean_dir):
     tmp_logger.error("customdir, default: testing logger (error)")
 
 
-@pytest.mark.timeout(2.0)
+@pytest.mark.timeout(5.0)
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader
+
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
     new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
     assert os.path.isfile(new_file)
@@ -108,70 +111,62 @@ def test_load_and_save_resfile(clean_dir):
     min_rounds=2,
     timer=time.time,
     disable_gc=True,
-    warmup=False
+    warmup=False,
 )
 def test_load_resfile_diagnostics(clean_dir, benchmark):
     import os
     from cellpy import cellreader
     from cellpy import prms
+
     prms.Reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
-    new_file = benchmark(
-        cellreader.load_and_save_resfile,
-        f_in,
-        None,
-        clean_dir
-    )
+    new_file = benchmark(cellreader.load_and_save_resfile, f_in, None, clean_dir)
     assert os.path.isfile(new_file)
 
 
 def test_su_cellpy_instance():
     # somehow pytest fails to find the test if it is called test_setup_xxx
+    # Should be removed in v.0.4.0
     import cellpy
+
     cellpy.cellreader.setup_cellpy_instance()
 
 
-def test_cell():
+def test_get():
     import cellpy
-    cellpy.cell(
+
+    cellpy.get(
         filename=fdv.pec_file_path,
         instrument="pec_csv",
         mass=50_000,
         cycle_mode="cathode",
     )
-    cellpy.cell(
-        filename=fdv.cellpy_file_path,
-    )
-    cellpy.cell()
-
-
-@pytest.mark.slowtest
-@pytest.mark.smoketest
-def test_just_load_srno():
-    from cellpy import cellreader
-    assert cellreader.just_load_srno(614) is True
-
-
-@pytest.mark.smoketest
-def test_setup_cellpy_instance():
-    from cellpy import cellreader
-    d = cellreader.setup_cellpy_instance()
+    cellpy.get(filename=fdv.cellpy_file_path)
+    cellpy.get()
 
 
 # @pytest.mark.unimportant
 def test_humanize_bytes():
-    from cellpy import cellreader
-    assert cellpy.readers.core.humanize_bytes(1) == '1 byte'
-    assert cellpy.readers.core.humanize_bytes(1024) == '1.0 kB'
-    assert cellpy.readers.core.humanize_bytes(1024 * 123) == '123.0 kB'
-    assert cellpy.readers.core.humanize_bytes(1024 * 12342) == '12.0 MB'
-    assert cellpy.readers.core.humanize_bytes(1024 * 12342, 2) == '12.00 MB'
-    assert cellpy.readers.core.humanize_bytes(1024 * 1234, 2) == '1.00 MB'
-    assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 2) == '1.00 GB'
-    assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 1) == '1.0 GB'
+
+    assert cellpy.readers.core.humanize_bytes(1) == "1 byte"
+    assert cellpy.readers.core.humanize_bytes(1024) == "1.0 kB"
+    assert cellpy.readers.core.humanize_bytes(1024 * 123) == "123.0 kB"
+    assert cellpy.readers.core.humanize_bytes(1024 * 12342) == "12.0 MB"
+    assert cellpy.readers.core.humanize_bytes(1024 * 12342, 2) == "12.00 MB"
+    assert cellpy.readers.core.humanize_bytes(1024 * 1234, 2) == "1.00 MB"
+    assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 2) == "1.00 GB"
+    assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 1) == "1.0 GB"
+
+
+def test_example_data():
+    from cellpy.utils import example_data
+    a = example_data.arbin_file()
+    c = example_data.cellpy_file()
+    assert a.cell.summary.size == 504
+    assert c.cell.summary.size == 540
 
 
 def teardown_module():
     import shutil
-    shutil.rmtree(fdv.output_dir)
 
+    shutil.rmtree(fdv.output_dir)

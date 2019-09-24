@@ -8,13 +8,13 @@ import csv
 import itertools
 
 from cellpy import filefinder, prms
-from cellpy.exceptions import ExportFailed, NullData
+from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
 import cellpy.parameters.internal_settings
 
 logger = logging.getLogger(__name__)
 
 
-def look_up_and_get(cellpy_file_name, table_name):
+def look_up_and_get(cellpy_file_name, table_name, root=None):
     """Extracts table from cellpy hdf5-file."""
 
     # infoname = '/CellpyData/info'
@@ -23,13 +23,18 @@ def look_up_and_get(cellpy_file_name, table_name):
     # fidname = '/CellpyData/fidtable'
     # stepname = '/CellpyData/step_table'
 
-    root = '/CellpyData'
-    table_path = '/'.join([root, table_name])
+    if root is None:
+        root = "/CellpyData"
+    table_path = "/".join([root, table_name])
 
     logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
     store = pd.HDFStore(cellpy_file_name)
-    table = store.select(table_path)
-    store.close()
+    try:
+        table = store.select(table_path)
+    except KeyError as e:
+        logger.warning("Could not read the table")
+        store.close()
+        raise WrongFileVersion(e)
     return table
 
 
@@ -74,7 +79,9 @@ def find_files(info_dict, filename_cache=None):
     for run_name in info_dict["filenames"]:
         logger.debug(f"checking for {run_name}")
         if prms._use_filename_cache:
-            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(run_name, cache=filename_cache)
+            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(
+                run_name, cache=filename_cache
+            )
         else:
             raw_files, cellpyfile = filefinder.search_for_files(run_name)
         if not raw_files:
@@ -105,7 +112,7 @@ def fix_groups(groups):
 def save_multi(data, file_name, sep=";"):
     """Convenience function for storing data column-wise in a csv-file."""
     logger.debug("saving multi")
-    with open(file_name, "w", newline='') as f:
+    with open(file_name, "w", newline="") as f:
         logger.debug(f"{file_name} opened")
         writer = csv.writer(f, delimiter=sep)
         try:
@@ -130,7 +137,7 @@ def make_unique_groups(info_df):
             info_df.at[indx, "sub_groups"] = counter
             # info_df.set_value(indx, "sub_groups", counter)
             counter += 1
-        info_df.loc[info_df.groups == i, 'groups'] = j + 1
+        info_df.loc[info_df.groups == i, "groups"] = j + 1
     return info_df
 
 
@@ -181,7 +188,6 @@ def pick_summary_data(key, summary_df, selected_summaries):
 
 def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     """parse the summaries and combine based on column (selected_summaries)"""
-
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     frames = []
     keys = []
@@ -195,8 +201,8 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     summary_df = pd.concat(frames, keys=keys, axis=1)
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[
-                      :, summary_df.columns.get_level_values(1) == value
-                      ]
+            :, summary_df.columns.get_level_values(1) == value
+        ]
         _summary_df.name = key
 
         if not keep_old_header:
@@ -226,6 +232,7 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
     from cellpy.utils.ica import dqdv
+
     list_of_cycles = cell_data.get_cycle_numbers()
     if last_cycle is not None:
         list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
@@ -264,7 +271,7 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
         last_cycle: only export up to this cycle (if not None)
     """
     logger.debug("exporting dqdv")
-    filename = cell_data.dataset.loaded_from
+    filename = cell_data.cell.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
     firstname += no_merged_sets
