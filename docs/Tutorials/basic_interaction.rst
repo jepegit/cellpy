@@ -78,6 +78,13 @@ summary automatically.
     if not cell_data.check():
         print("Could not load the data")
 
+Another method has recently appeared in the ``cellpy`` universe: the
+``cellpy.get`` method.
+
+.. code-block:: python
+
+    cell_data = cellpy.get(raw_file, mass=0.23)
+
 Extract current-voltage graphs
 ------------------------------
 

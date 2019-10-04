@@ -5,7 +5,7 @@ Here are some examples how to get a peak at the data. If we need an
 interactive plot of the raw-data, we can use the ``plotutils.raw_plot``
 function. If we would like to see some statistics for some of the
 cycles, the ``plotutils.cycle_info_plot`` is your friend. Let´s start by
-importing cellpy and the plotutils utility:
+importing cellpy and the ``plotutils`` utility:
 
 .. code:: ipython3
 
@@ -18,8 +18,8 @@ Let´s load some data first:
 
     cell = cellpy.get("../testdata/hdf5/20160805_test001_45_cc.h5", mass=0.8)
 
-Here we used the convinience method ``cellpy.get`` to load some
-example data. If eveything went well, you will see an output approximately
+Here we used the convenience method ``cellpy.get`` to load some
+example data. If everything went well, you will see an output approximately
 like this:
 
 .. parsed-literal::

@@ -2,6 +2,25 @@
 History
 =======
 
+0.3.2 (2019)
+------------
+
+* Starting fixing documentation
+* TODO: create conda package
+* TODO: extensive tests
+
+
+0.3.1 (2019)
+------------
+
+* Refactoring - renaming from dfsummary to summary
+* Refactoring - renaming from step_table to steps
+* Refactoring - renaming from dfdata to raw
+* Refactoring - renaming cellpy.cell to cellpy.get
+* Updated save and load cellpy files allowing for new naming
+* Implemented cellpy new and cellpy serve cli functionality
+
+
 0.3.0 (2019)
 ------------
 

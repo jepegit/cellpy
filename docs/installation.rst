@@ -13,7 +13,7 @@ Stable release
 windows. It is therefore recommended to install one of the ``anaconda``
 python packages (python 3.6 or above) before installing ``cellpy``.
 If you chose ``miniconda``, you should install
-`scipy``, ``numpy`` and ``pytables`` using ``conda``:
+``scipy``, ``numpy`` and ``pytables`` using ``conda``:
 
 .. code-block:: console
 
