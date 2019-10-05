@@ -93,15 +93,23 @@ class Batch:
             logging.info("no summary exists")
 
     @property
-    def summary_columns(self):
+    def summary_headers(self):
         try:
             return self.summaries.columns.get_level_values(0)
         except AttributeError:
             logging.info("can't get any columns")
 
-    # TODO: property: cells (return cell names)
-    # TODO: property: data_columns (return column names for the raw data)
-    # TODO: property: steps_columns
+    @property
+    def cell_names(self):
+        return self.experiment.cell_names
+
+    @property
+    def raw_headers(self):
+        return self.experiment.data[0].cell.raw.columns
+
+    @property
+    def step_headers(self):
+        return self.experiment.data[0].cell.steps.columns
 
     @property
     def pages(self):
@@ -123,9 +131,6 @@ class Batch:
         if from_db:
             self.experiment.journal.from_db()
             self.experiment.journal.to_file()
-            # TODO: move duplicate journal out of this function
-            #    and add to template as its own statement
-            # self.duplicate_journal()
 
         else:
             # TODO: move this into the bacth journal class
@@ -156,7 +161,11 @@ class Batch:
             self.experiment.journal.paginate()
 
     def create_folder_structure(self):
-        # rename to: paginate
+        warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
+        self.experiment.journal.paginate()
+        logging.info("created folders")
+
+    def paginate(self):
         self.experiment.journal.paginate()
         logging.info("created folders")
 
@@ -240,7 +249,7 @@ class Batch:
 
     def load(self):
         # does the same as update
-        warnings.warn("Use update instead.", DeprecationWarning)
+        warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
 
     def update(self):
@@ -342,7 +351,7 @@ def init(*args, **kwargs):
         >>> normal_init_of_batch = Batch.init()
     """
     # set up cellpy logger
-    default_log_level = kwargs.pop("default_log_level", None)
+    default_log_level = kwargs.pop("default_log_level", "INFO")
     file_name = kwargs.pop("file_name", None)
 
     log.setup_logging(

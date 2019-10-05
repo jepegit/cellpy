@@ -3520,9 +3520,9 @@ class CellpyData(object):
         self.selected_cell_number = dataset_number
 
     def set_cellnumber(self, dataset_number):
-        """Set the DataSet number.
+        """Set the cell number.
 
-        Set the dataset_number that will be used
+        Set the cell number that will be used
         (CellpyData.selected_dataset_number).
         The class can save several datasets (but its not a frequently used
         feature), the datasets are stored in a list and dataset_number is the
@@ -3532,8 +3532,9 @@ class CellpyData(object):
               n - int in range 0..(len-1) (python uses offset as index, i.e.
                   starts with 0)
               last, end, newest - last (index set to -1)
-              first, zero, beinning, default - first (index set to 0)
+              first, zero, beginning, default - first (index set to 0)
         """
+        warnings.warn("Deprecated", DeprecationWarning)
         self.logger.debug("***set_testnumber(n)")
         if not isinstance(dataset_number, int):
             dataset_number_txt = dataset_number
@@ -3555,7 +3556,7 @@ class CellpyData(object):
         if dataset_number >= number_of_tests:
             dataset_number = -1
             self.logger.debug(
-                "you dont have that many datasets, setting to " "last test"
+                "you dont have that many datasets, setting to last test"
             )
         elif dataset_number < -1:
             self.logger.debug("not a valid option, setting to first test")
