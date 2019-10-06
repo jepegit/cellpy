@@ -81,6 +81,32 @@ class LabJournal(BaseJournal):
         self.generate_folder_names()
         self.paginate()
 
+    def _create_empty_pages(self, description=None):
+        if description is not None:
+            print(f"Creating from {type(description)} is not implemented yet")
+
+        logging.debug("Creating an empty journal")
+        logging.debug(f"name: {self.name}")
+        logging.debug(f"project: {self.project}")
+
+        pages = pd.DataFrame(
+            columns=[
+                "filenames",
+                "masses",
+                "total_masses",
+                "loadings",
+                "fixed",
+                "labels",
+                "cell_type",
+                "raw_file_names",
+                "cellpy_file_names",
+                "groups",
+                "sub_groups",
+            ]
+        )
+        pages.set_index("filenames", inplace=True)
+        return pages
+
     def to_file(self, file_name=None):
         """Saves a DataFrame with all the needed info about the experiment"""
 
@@ -103,9 +129,15 @@ class LabJournal(BaseJournal):
 
     def generate_folder_names(self):
         """Set appropriate folder names."""
-        self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
-        self.batch_dir = os.path.join(self.project_dir, self.name)
-        self.raw_dir = os.path.join(self.batch_dir, "raw_data")
+        if self.project:
+            self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
+        else:
+            print("Could not create project dir (missing project definition)")
+        if self.name:
+            self.batch_dir = os.path.join(self.project_dir, self.name)
+            self.raw_dir = os.path.join(self.batch_dir, "raw_data")
+        else:
+            print("Could not create batch_dir and raw_dir", "(missing batch name)")
 
     def paginate(self):
         """Make folders where we would like to put results etc."""

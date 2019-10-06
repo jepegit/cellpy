@@ -82,7 +82,7 @@ def select_ocv_points(
 
     ocv_steps = ocv_steps.loc[ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :]
 
-    t1 = time.time()-t0
+    t1 = time.time() - t0
 
     if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
         number_of_points = len(interval) + 1
@@ -92,7 +92,7 @@ def select_ocv_points(
         n = str(j).zfill(2)
         headers2.append(f"point_{n}")
 
-    t2 = time.time()-t0
+    t2 = time.time() - t0
     # doing an iteration (thought I didnt have to, but...) (fix later)
 
     results_list = list()
@@ -192,11 +192,11 @@ def select_ocv_points(
         result["type"] = info
         results_list.append(result)
 
-    t3 = time.time()-t0
+    t3 = time.time() - t0
 
     final = pd.concat(results_list)  # pretty slow
 
-    t4 = time.time()-t0
+    t4 = time.time() - t0
 
     if direction == "down":
         final = final.loc[final["type"] == "ocvrlx_down", :]

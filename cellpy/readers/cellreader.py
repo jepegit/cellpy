@@ -1480,9 +1480,7 @@ class CellpyData(object):
                     self.logger.info(
                         "ERROR! Cannot use get_steps: create step_table first"
                     )
-                    self.logger.info(
-                        "You could use find_step_numbers method instead"
-                    )
+                    self.logger.info("You could use find_step_numbers method instead")
                     self.logger.info("(but I don't recommend it)")
                     return None
 
@@ -3555,9 +3553,7 @@ class CellpyData(object):
         number_of_tests = len(self.cells)
         if dataset_number >= number_of_tests:
             dataset_number = -1
-            self.logger.debug(
-                "you dont have that many datasets, setting to last test"
-            )
+            self.logger.debug("you dont have that many datasets, setting to last test")
         elif dataset_number < -1:
             self.logger.debug("not a valid option, setting to first test")
             dataset_number = 0
@@ -4077,9 +4073,7 @@ class CellpyData(object):
         #         summary[dt_txt].apply(xldate_as_datetime)  # , option="to_string")
 
         if find_ocv and not self.load_only_summary:
-            warnings.warn(
-                DeprecationWarning("this option will be removed in v.0.4.0")
-            )
+            warnings.warn(DeprecationWarning("this option will be removed in v.0.4.0"))
             # should remove this option
             self.logger.info("CONGRATULATIONS")
             self.logger.info("-thought this would never be run!")
@@ -4339,7 +4333,7 @@ class CellpyData(object):
         try:
             nc = summary.loc[
                 summary[self.headers_normal.cycle_index_txt].isin(cycles),
-                self.headers_summary.discharge_capacity
+                self.headers_summary.discharge_capacity,
             ].mean()
             print("All I can say for now is that the average discharge capacity")
             print(f"for the cycles {cycles} is {nc:0.2f}")

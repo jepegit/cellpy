@@ -60,25 +60,36 @@ class Batch:
         self.exporter.assign(self.experiment)
         self.plotter = CyclingSummaryPlotter()
         self.plotter.assign(self.experiment)
-        self._info_df = self.info_file
+        self._journal_name = self.journal_name
 
     def __str__(self):
         return str(self.experiment)
 
     def show_pages(self, number_of_rows=5):
-        # this should be removed
+        warnings.warn("Deprecated - use pages.head() instead", DeprecationWarning)
         return self.experiment.journal.pages.head(number_of_rows)
 
     @property
     def view(self):
-        # rename to: report
+        warnings.warn("Deprecated - use report instead", DeprecationWarning)
+        pages = self.experiment.journal.pages
+        pages = pages[COLUMNS_SELECTED_FOR_VIEW]
+        return pages
+
+    @property
+    def report(self):
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
 
     @property
     def info_file(self):
-        # rename to journal_name
+        # renamed to journal_name
+        warnings.warn("Deprecated - use journal_name instead", DeprecationWarning)
+        return self.experiment.journal.file_name
+
+    @property
+    def journal_name(self):
         return self.experiment.journal.file_name
 
     @property
@@ -120,43 +131,78 @@ class Batch:
         self.experiment.journal.pages = df
 
     def create_journal(self, description=None, from_db=True):
+        """Create journal pages.
+
+        This method is a wrapper for the different Journal methods for making
+        journal pages (Batch.experiment.journal.xxx).
+
+        Args:
+            description: the information and meta-data needed to generate the journal
+                pages.
+                "empty": create an empty journal
+                dictionary: create journal pages from a dictionary (not implemented yet)
+                pd.DataFrame: create  journal pages from a pandas DataFrame
+                    (not implemented yet)
+                filename.xlxs: create journal pages from an excel file
+                    (not implemented yet)
+                filename.json: load cellpy batch file
+                    (not implemented yet, use .experiment.journal.from_file() instead).
+            from_db (bool): Deprecation Warning: this parameter will be removed as it is
+                the default anyway. Generate the pages from a db (the default option).
+                This will be over-ridden if description is given.
+        """
+
         logging.debug("Creating a journal")
         logging.debug(f"description: {description}")
         logging.debug(f"from_db: {from_db}")
-        # rename to: create_journal (combine this with function above)
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
+
         if description is not None:
             from_db = False
+
         if from_db:
             self.experiment.journal.from_db()
             self.experiment.journal.to_file()
 
         else:
-            # TODO: move this into the bacth journal class
-            if description is not None:
-                print(f"Creating from {type(description)} is not implemented yet")
+            is_file = False
+            if isinstance(description, str):
+                if description.lower() == "empty":
+                    logging.debug("creating empty journal pages")
 
-            logging.info("Creating an empty journal")
-            logging.info(f"name: {self.experiment.journal.name}")
-            logging.info(f"project: {self.experiment.journal.project}")
+                if pathlib.Path(description).is_file():
+                    is_file = True
 
-            self.experiment.journal.pages = pd.DataFrame(
-                columns=[
-                    "filenames",
-                    "masses",
-                    "total_masses",
-                    "loadings",
-                    "fixed",
-                    "labels",
-                    "cell_type",
-                    "raw_file_names",
-                    "cellpy_file_names",
-                    "groups",
-                    "sub_groups",
-                ]
+            elif isinstance(description, pathlib.Path):
+                logging.debug("pathlib.Path object given")
+                is_file = True
+
+            elif isinstance(description, pd.DataFrame):
+                logging.debug("pandas DataFrame given")
+
+            elif isinstance(description, dict):
+                logging.debug("dictionary given")
+
+            else:
+                logging.debug(
+                    "the option you provided seems to be either of "
+                    "an unknown type or a file not found"
+                )
+                logging.info(
+                    "did not understand the option - creating empty journal pages"
+                )
+
+            if is_file:
+                logging.info(f"loading file {description}")
+                logging.debug("not implemented yet")
+
+            # empty journal pages (this might go further up)
+            self.experiment.journal.pages = (
+                self.experiment.journal._create_empty_pages()
             )
-            self.experiment.journal.pages.set_index("filenames", inplace=True)
+
+            # finally
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
 
