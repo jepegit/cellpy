@@ -1649,6 +1649,7 @@ class CellpyData(object):
         all_steps=False,
         add_c_rate=True,
         skip_steps=None,
+        sort_rows=True,
         dataset_number=None,
     ):
 
@@ -1678,6 +1679,7 @@ class CellpyData(object):
             add_c_rate (bool): include a C-rate estimate in the steps
             skip_steps (list of integers): list of step numbers that should not
                 be processed (future feature - not used yet).
+            sort_rows (bool): sort the rows after processing.
             dataset_number: defaults to self.dataset_number
 
         Returns:
@@ -1976,6 +1978,9 @@ class CellpyData(object):
             flat_cols.append(col)
 
         df_steps.columns = flat_cols
+        if sort_rows:
+            self.logger.debug("sorting the step rows")
+            df_steps = df_steps.sort_values(by=shdr.test_time + "_first").reset_index()
 
         if profiling:
             print(f"*** flattening: {time.time() - time_01} s")
