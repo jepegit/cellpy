@@ -142,9 +142,8 @@ class Batch:
             description: the information and meta-data needed to generate the journal
                 pages.
                 "empty": create an empty journal
-                dictionary: create journal pages from a dictionary (not implemented yet)
+                dictionary: create journal pages from a dictionary
                 pd.DataFrame: create  journal pages from a pandas DataFrame
-                    (not implemented yet)
                 filename.xlxs: create journal pages from an excel file
                     (not implemented yet)
                 filename.json: load cellpy batch file
@@ -168,41 +167,101 @@ class Batch:
             self.experiment.journal.to_file()
 
         else:
+            is_str = isinstance(description, str)
             is_file = False
-            if isinstance(description, str):
-                if description.lower() == "empty":
-                    logging.debug("creating empty journal pages")
 
-                if pathlib.Path(description).is_file():
-                    is_file = True
+            if is_str and pathlib.Path(description).is_file():
+                description = pathlib.Path(description)
+                is_file = True
 
-            elif isinstance(description, pathlib.Path):
+            if isinstance(description, pathlib.Path):
                 logging.debug("pathlib.Path object given")
                 is_file = True
 
-            elif isinstance(description, pd.DataFrame):
-                logging.debug("pandas DataFrame given")
-
-            elif isinstance(description, dict):
-                logging.debug("dictionary given")
-
-            else:
-                logging.debug(
-                    "the option you provided seems to be either of "
-                    "an unknown type or a file not found"
-                )
-                logging.info(
-                    "did not understand the option - creating empty journal pages"
-                )
-
             if is_file:
                 logging.info(f"loading file {description}")
-                logging.debug("not implemented yet")
+                if description.suffix == ".json":
+                    logging.debug("loading batch json file")
+                    self.experiment.journal.from_file(description)
+                elif description.suffix == ".xlxs":
+                    logging.debug("loading excel file")
+                    warnings.warn("not implemented yet")
+                else:
+                    warnings.warn("unknown file extension")
 
-            # empty journal pages (this might go further up)
-            self.experiment.journal.pages = (
-                self.experiment.journal.create_empty_pages()
-            )
+            else:
+
+                if is_str and description.lower() == "empty":
+                    logging.debug("creating empty journal pages")
+
+                    self.experiment.journal.pages = (
+                        self.experiment.journal.create_empty_pages()
+                    )
+
+                elif isinstance(description, pd.DataFrame):
+                    logging.debug("pandas DataFrame given")
+
+                    p = self.experiment.journal.create_empty_pages()
+                    columns = p.columns
+
+                    for column in columns:
+                        try:
+                            p[column] = description[column]
+                        except KeyError:
+                            logging.debug(f"missing key: {column}")
+
+                    # checking if filenames is a column
+                    if "filenames" in description.columns:
+                        indexes = description["filenames"]
+                    else:
+                        indexes = description.index
+
+                    p.index = indexes
+                    self.experiment.journal.pages = p
+
+                elif isinstance(description, dict):
+                    logging.debug("dictionary given")
+                    self.experiment.journal.pages = (
+                        self.experiment.journal.create_empty_pages()
+                    )
+                    for k in self.experiment.journal.pages.columns:
+                        try:
+                            value = description[k]
+                        except KeyError:
+                            warnings.warn(f"missing key: {k}")
+                        else:
+
+                            if not isinstance(value, list):
+                                warnings.warn("encountered item that is not a list")
+                                logging.debug(f"converting '{k}' to list-type")
+                                value = [value]
+                            if k == "raw_file_names":
+                                if not isinstance(value[0], list):
+                                    warnings.warn("encountered raw file description"
+                                                  "that is not of list-type")
+                                    logging.debug("converting raw file description to a"
+                                                  "list of lists")
+                                    value = [value]
+                            self.experiment.journal.pages[k] = value
+
+                    try:
+                        value = description["filenames"]
+                        if not isinstance(value, list):
+                            warnings.warn("encountered item that is not a list")
+                            logging.debug(f"converting '{k}' to list-type")
+                            value = [value]
+                        self.experiment.journal.pages.index = value
+                    except KeyError:
+                        logging.debug("could not interpret the index")
+
+                else:
+                    logging.debug(
+                        "the option you provided seems to be either of "
+                        "an unknown type or a file not found"
+                    )
+                    logging.info(
+                        "did not understand the option - creating empty journal pages"
+                    )
 
             # finally
             self.experiment.journal.generate_folder_names()
