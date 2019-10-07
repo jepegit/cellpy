@@ -81,7 +81,7 @@ class LabJournal(BaseJournal):
         self.generate_folder_names()
         self.paginate()
 
-    def _create_empty_pages(self, description=None):
+    def create_empty_pages(self, description=None):
         if description is not None:
             print(f"Creating from {type(description)} is not implemented yet")
 
