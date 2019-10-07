@@ -134,7 +134,9 @@ class Batch:
         """Create journal pages.
 
         This method is a wrapper for the different Journal methods for making
-        journal pages (Batch.experiment.journal.xxx).
+        journal pages (Batch.experiment.journal.xxx). It is under development. If you
+        want to use 'advanced' options (i.e. not loading from a db), please consider
+        using the methods available in Journal for now.
 
         Args:
             description: the information and meta-data needed to generate the journal
