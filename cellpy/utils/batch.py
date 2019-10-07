@@ -201,7 +201,7 @@ class Batch:
 
             # empty journal pages (this might go further up)
             self.experiment.journal.pages = (
-                self.experiment.journal._create_empty_pages()
+                self.experiment.journal.create_empty_pages()
             )
 
             # finally
