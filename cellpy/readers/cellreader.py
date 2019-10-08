@@ -12,12 +12,6 @@ Example:
     >>> voltage_curves = d.get_cap()
     >>> d.save("mytest.hdf")
 
-
-Todo:
-    * Remove mass dependency in summary data
-    * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or
-        pd.loc[(pd.["step"]==1),"x"]
-
 """
 
 import os
@@ -72,7 +66,7 @@ class CellpyData(object):
     reading, selecting, and tweaking your data is located. It also contains the
     header definitions, both for the cellpy hdf5 format, and for the various
     cell-tester file-formats that can be read. The class can contain
-    several tests and each test is stored in a list. If you see what I mean...
+    several cell-tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
         cells (list): list of DataSet objects.
@@ -234,7 +228,7 @@ class CellpyData(object):
     def dataset(self):
         """returns the DataSet instance"""
         # could insert a try-except thingy here...
-        warnings.warn("The .dataset property is deprecated, please use .cell instead.")
+        warnings.warn("The .dataset property is deprecated, please use .cell instead.", DeprecationWarning)
         cell = self.cells[self.selected_cell_number]
         return cell
 
