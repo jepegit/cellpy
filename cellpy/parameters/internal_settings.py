@@ -36,6 +36,7 @@ ATTRS_CELLPYFILE = [
 
 # Attributes that should be copied when duplicating cellpy objects:
 
+# current attributes for the cellpy.cellpydata objects
 ATTRS_CELLPYDATA = [
     "auto_dirs",
     "capacity_modifiers",
@@ -58,7 +59,7 @@ ATTRS_CELLPYDATA = [
     "raw_limits",
     "raw_units",
     "select_minimal",
-    "selected_dataset_number",
+    "selected_cell_number",
     "selected_scans",
     "sep",
     "status_datasets",
@@ -67,6 +68,7 @@ ATTRS_CELLPYDATA = [
     "tester",
 ]
 
+# current attributes used for the cellpy.cell objects
 ATTRS_DATASET = [
     "cellpy_file_version",
     "channel_index",
@@ -95,7 +97,7 @@ ATTRS_DATASET = [
     "start_datetime",
     "summary",
     "test_ID",
-    "test_no",
+    "cell_no",
     "tot_mass",
 ]
 

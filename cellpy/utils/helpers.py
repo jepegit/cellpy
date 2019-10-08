@@ -40,6 +40,8 @@ def update_journal_cellpy_data_dir(
         journal.pages (pandas.DataFrame)
 
     """
+    # TODO: move this to batch?
+
     if new_path is None:
         new_path = prms.Paths.cellpydatadir
 
@@ -159,7 +161,7 @@ def add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
     Returns:
         cell object now with normalized cycle index in its summary.
     """
-
+    # TODO: remove this function
     # now also included in dfsummary
     if column_name is None:
         column_name = hdr_summary.normalized_cycle_index
@@ -194,6 +196,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
     """
 
     # now also included in step_table
+    # TODO: remove this function
     if column_name is None:
         column_name = hdr_steps["rate_avr"]
     if nom_cap is None:
