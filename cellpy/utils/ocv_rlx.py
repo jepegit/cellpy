@@ -1,5 +1,6 @@
 import logging
 import datetime
+import time
 
 try:
     from lmfit import Parameters, minimize, report_fit, Model, report_ci
@@ -20,7 +21,7 @@ import pandas as pd
 
 # some utility functions
 
-
+# TODO: (05.10.2019 jepe) This function is slow due to use of loops. Should fix it.
 def select_ocv_points(
     cellpydata,
     cycles=None,
@@ -29,7 +30,7 @@ def select_ocv_points(
     interval=10,
     relative_voltage=False,
     report_times=False,
-    direction=None,
+    direction="both",
 ):
 
     """Select points from the ocvrlx steps.
@@ -62,15 +63,12 @@ def select_ocv_points(
             pandas.DataFrame
 
     """
-
+    t0 = time.time()
     if cycles is None:
         cycles = cellpydata.get_cycle_numbers()
     else:
         if not isinstance(cycles, (list, tuple)):
             cycles = [cycles]
-
-    if direction is None:
-        direction = "both"
 
     if not isinstance(interval, (list, tuple)):
         interval = [float(interval) for _ in range(number_of_points - 1)]
@@ -84,6 +82,8 @@ def select_ocv_points(
 
     ocv_steps = ocv_steps.loc[ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :]
 
+    t1 = time.time() - t0
+
     if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
         number_of_points = len(interval) + 1
 
@@ -92,6 +92,7 @@ def select_ocv_points(
         n = str(j).zfill(2)
         headers2.append(f"point_{n}")
 
+    t2 = time.time() - t0
     # doing an iteration (thought I didnt have to, but...) (fix later)
 
     results_list = list()
@@ -99,6 +100,7 @@ def select_ocv_points(
     if selection_method == "martin":
         iter_range -= 1
 
+    # very slow:
     for index, row in ocv_steps.iterrows():
 
         # voltage
@@ -190,7 +192,11 @@ def select_ocv_points(
         result["type"] = info
         results_list.append(result)
 
-    final = pd.concat(results_list)
+    t3 = time.time() - t0
+
+    final = pd.concat(results_list)  # pretty slow
+
+    t4 = time.time() - t0
 
     if direction == "down":
         final = final.loc[final["type"] == "ocvrlx_down", :]
@@ -198,6 +204,8 @@ def select_ocv_points(
         final = final.loc[final["type"] == "ocvrlx_up", :]
 
     final = final.reset_index(drop=True)
+
+    # print(f"t1: {t1}\nt2: {t2-t1}\nt3: {t3-t2-t1}\nt4: {t4-t3-t2-t1}\n")
 
     return final
 

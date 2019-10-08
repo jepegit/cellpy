@@ -276,12 +276,12 @@ def test_get_diagnostics_plot(dataset):
     dataset.get_diagnostics_plots()
 
 
-def test_set_testnumber(dataset):
+def test_set_cellnumber(dataset):
     dataset.set_cellnumber(0)
-    n1 = dataset.selected_dataset_number
+    n1 = dataset.selected_cell_number
     assert n1 == 0
     dataset.set_cellnumber(1)
-    n2 = dataset.selected_dataset_number
+    n2 = dataset.selected_cell_number
     assert n2 == -1
 
 
@@ -667,7 +667,7 @@ def test_set_nominal_capacity(dataset, val, validated):
         pytest.param(-1, -1, marks=pytest.mark.xfail),
     ],
 )
-def test_set_testnumber(dataset, n, s):
+def test_set_testnumbers(dataset, n, s):
     dataset.set_cellnumber(n)
     assert dataset.selected_cell_number == s
 

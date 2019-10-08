@@ -289,19 +289,46 @@ def cycle_info_plot(
     points=False,
     x=None,
     y=None,
-    info_level=0,
+    info_level=1,
     h_cycle=None,
     h_step=None,
-    show_it=False,
+    show_it=True,
     label_cycles=True,
     label_steps=False,
     get_axes=False,
     use_bokeh=True,
     **kwargs,
 ):
+    """Show raw data together with step and cycle information.
+
+    Args:
+        cell: cellpy object
+        cycle: cycles to select (optional, default is all)
+        step: steps to select (optional, defaults is all)
+        title: a title to give the plot
+        points: overlay a scatter plot
+        x (str): column header for the x-value (defaults to "Test_Time")
+        y (str): column header for the y-value (defaults to "Voltage")
+        info_level (int): how much information to display (defaults to 1)
+            0 - almost nothing
+            1 - pretty much
+            2 - something else
+            3 - not implemented yet
+        h_cycle: column header for the cycle number (defaults to "Cycle_Index")
+        h_step: column header for the step number (defaults to "Step_Index")
+        show_it (bool): show the figure (defaults to True). If not, return the figure.
+        label_cycles (bool): add labels with cycle numbers.
+        label_steps (bool): add labels with step numbers
+        get_axes (bool): return axes (for matplotlib)
+        use_bokeh (bool): use bokeh to plot (defaults to True). If not, use matplotlib.
+        **kwargs: parameters specific to either matplotlib or bokeh.
+
+    Returns:
+
+    """
     # TODO: missing doc-string
     if use_bokeh and not bokeh_available:
-        print("OBS! bokeh is not available -" " using matplotlib instead")
+        print("OBS! bokeh is not available - using matplotlib instead")
         use_bokeh = False
 
     if use_bokeh:
@@ -324,7 +351,7 @@ def cycle_info_plot(
     else:
         if isinstance(cycle, (list, tuple)):
             if len(cycle) > 1:
-                print("OBS! The matplotlib-plotter only accepts single " "cycles.")
+                print("OBS! The matplotlib-plotter only accepts single cycles.")
                 print(f"Selecting first cycle ({cycle[0]})")
             cycle = cycle[0]
         axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes)

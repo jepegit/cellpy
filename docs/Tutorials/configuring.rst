@@ -39,7 +39,7 @@ The configuration file
 and looks in your user directory
 (*e.g.* C:\\Users\\USERNAME on not-too-old versions of windows) after
 files named ``_cellpy_prms_SOMENAME.conf``.
-If you have run ``cellpy -setup`` in the cmd window or in the shell, a
+If you have run ``cellpy setup`` in the cmd window or in the shell, a
 file named
 ``_cellpy_prms_USERNAME.conf`` (where USERNAME is
 your username) should exist in your home directory. This is a YAML-file and

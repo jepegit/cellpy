@@ -60,25 +60,36 @@ class Batch:
         self.exporter.assign(self.experiment)
         self.plotter = CyclingSummaryPlotter()
         self.plotter.assign(self.experiment)
-        self._info_df = self.info_file
+        self._journal_name = self.journal_name
 
     def __str__(self):
         return str(self.experiment)
 
     def show_pages(self, number_of_rows=5):
-        # this should be removed
+        warnings.warn("Deprecated - use pages.head() instead", DeprecationWarning)
         return self.experiment.journal.pages.head(number_of_rows)
 
     @property
     def view(self):
-        # rename to: report
+        warnings.warn("Deprecated - use report instead", DeprecationWarning)
+        pages = self.experiment.journal.pages
+        pages = pages[COLUMNS_SELECTED_FOR_VIEW]
+        return pages
+
+    @property
+    def report(self):
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
 
     @property
     def info_file(self):
-        # rename to journal_name
+        # renamed to journal_name
+        warnings.warn("Deprecated - use journal_name instead", DeprecationWarning)
+        return self.experiment.journal.file_name
+
+    @property
+    def journal_name(self):
         return self.experiment.journal.file_name
 
     @property
@@ -93,15 +104,23 @@ class Batch:
             logging.info("no summary exists")
 
     @property
-    def summary_columns(self):
+    def summary_headers(self):
         try:
             return self.summaries.columns.get_level_values(0)
         except AttributeError:
             logging.info("can't get any columns")
 
-    # TODO: property: cells (return cell names)
-    # TODO: property: data_columns (return column names for the raw data)
-    # TODO: property: steps_columns
+    @property
+    def cell_names(self):
+        return self.experiment.cell_names
+
+    @property
+    def raw_headers(self):
+        return self.experiment.data[0].cell.raw.columns
+
+    @property
+    def step_headers(self):
+        return self.experiment.data[0].cell.steps.columns
 
     @property
     def pages(self):
@@ -112,51 +131,148 @@ class Batch:
         self.experiment.journal.pages = df
 
     def create_journal(self, description=None, from_db=True):
+        """Create journal pages.
+
+        This method is a wrapper for the different Journal methods for making
+        journal pages (Batch.experiment.journal.xxx). It is under development. If you
+        want to use 'advanced' options (i.e. not loading from a db), please consider
+        using the methods available in Journal for now.
+
+        Args:
+            description: the information and meta-data needed to generate the journal
+                pages.
+                "empty": create an empty journal
+                dictionary: create journal pages from a dictionary
+                pd.DataFrame: create  journal pages from a pandas DataFrame
+                filename.xlxs: create journal pages from an excel file
+                    (not implemented yet)
+                filename.json: load cellpy batch file
+                    (not implemented yet, use .experiment.journal.from_file() instead).
+            from_db (bool): Deprecation Warning: this parameter will be removed as it is
+                the default anyway. Generate the pages from a db (the default option).
+                This will be over-ridden if description is given.
+        """
+
         logging.debug("Creating a journal")
         logging.debug(f"description: {description}")
         logging.debug(f"from_db: {from_db}")
-        # rename to: create_journal (combine this with function above)
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
+
         if description is not None:
             from_db = False
+
         if from_db:
             self.experiment.journal.from_db()
             self.experiment.journal.to_file()
-            # TODO: move duplicate journal out of this function
-            #    and add to template as its own statement
-            # self.duplicate_journal()
 
         else:
-            # TODO: move this into the bacth journal class
-            if description is not None:
-                print(f"Creating from {type(description)} is not implemented yet")
+            is_str = isinstance(description, str)
+            is_file = False
 
-            logging.info("Creating an empty journal")
-            logging.info(f"name: {self.experiment.journal.name}")
-            logging.info(f"project: {self.experiment.journal.project}")
+            if is_str and pathlib.Path(description).is_file():
+                description = pathlib.Path(description)
+                is_file = True
 
-            self.experiment.journal.pages = pd.DataFrame(
-                columns=[
-                    "filenames",
-                    "masses",
-                    "total_masses",
-                    "loadings",
-                    "fixed",
-                    "labels",
-                    "cell_type",
-                    "raw_file_names",
-                    "cellpy_file_names",
-                    "groups",
-                    "sub_groups",
-                ]
-            )
-            self.experiment.journal.pages.set_index("filenames", inplace=True)
+            if isinstance(description, pathlib.Path):
+                logging.debug("pathlib.Path object given")
+                is_file = True
+
+            if is_file:
+                logging.info(f"loading file {description}")
+                if description.suffix == ".json":
+                    logging.debug("loading batch json file")
+                    self.experiment.journal.from_file(description)
+                elif description.suffix == ".xlxs":
+                    logging.debug("loading excel file")
+                    warnings.warn("not implemented yet")
+                else:
+                    warnings.warn("unknown file extension")
+
+            else:
+
+                if is_str and description.lower() == "empty":
+                    logging.debug("creating empty journal pages")
+
+                    self.experiment.journal.pages = (
+                        self.experiment.journal.create_empty_pages()
+                    )
+
+                elif isinstance(description, pd.DataFrame):
+                    logging.debug("pandas DataFrame given")
+
+                    p = self.experiment.journal.create_empty_pages()
+                    columns = p.columns
+
+                    for column in columns:
+                        try:
+                            p[column] = description[column]
+                        except KeyError:
+                            logging.debug(f"missing key: {column}")
+
+                    # checking if filenames is a column
+                    if "filenames" in description.columns:
+                        indexes = description["filenames"]
+                    else:
+                        indexes = description.index
+
+                    p.index = indexes
+                    self.experiment.journal.pages = p
+
+                elif isinstance(description, dict):
+                    logging.debug("dictionary given")
+                    self.experiment.journal.pages = (
+                        self.experiment.journal.create_empty_pages()
+                    )
+                    for k in self.experiment.journal.pages.columns:
+                        try:
+                            value = description[k]
+                        except KeyError:
+                            warnings.warn(f"missing key: {k}")
+                        else:
+
+                            if not isinstance(value, list):
+                                warnings.warn("encountered item that is not a list")
+                                logging.debug(f"converting '{k}' to list-type")
+                                value = [value]
+                            if k == "raw_file_names":
+                                if not isinstance(value[0], list):
+                                    warnings.warn("encountered raw file description"
+                                                  "that is not of list-type")
+                                    logging.debug("converting raw file description to a"
+                                                  "list of lists")
+                                    value = [value]
+                            self.experiment.journal.pages[k] = value
+
+                    try:
+                        value = description["filenames"]
+                        if not isinstance(value, list):
+                            warnings.warn("encountered item that is not a list")
+                            logging.debug(f"converting '{k}' to list-type")
+                            value = [value]
+                        self.experiment.journal.pages.index = value
+                    except KeyError:
+                        logging.debug("could not interpret the index")
+
+                else:
+                    logging.debug(
+                        "the option you provided seems to be either of "
+                        "an unknown type or a file not found"
+                    )
+                    logging.info(
+                        "did not understand the option - creating empty journal pages"
+                    )
+
+            # finally
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
 
     def create_folder_structure(self):
-        # rename to: paginate
+        warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
+        self.experiment.journal.paginate()
+        logging.info("created folders")
+
+    def paginate(self):
         self.experiment.journal.paginate()
         logging.info("created folders")
 
@@ -240,7 +356,7 @@ class Batch:
 
     def load(self):
         # does the same as update
-        warnings.warn("Use update instead.", DeprecationWarning)
+        warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
 
     def update(self):
@@ -342,7 +458,7 @@ def init(*args, **kwargs):
         >>> normal_init_of_batch = Batch.init()
     """
     # set up cellpy logger
-    default_log_level = kwargs.pop("default_log_level", None)
+    default_log_level = kwargs.pop("default_log_level", "INFO")
     file_name = kwargs.pop("file_name", None)
 
     log.setup_logging(
