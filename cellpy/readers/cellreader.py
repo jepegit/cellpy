@@ -4353,7 +4353,20 @@ def get(
     cycle_mode=None,
     auto_summary=True,
 ):
-    """Create a CellpyData object"""
+    """Create a CellpyData object
+
+    Args:
+        filename (str, os.PathLike, or list of raw-file names): path to file(s)
+        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file)
+        logging_mode (str): "INFO" or "DEBUG"
+        cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
+        auto_summary (bool): (re-) create summary.
+
+    Returns:
+        CellpyData object (if successful, None if not)
+
+    """
 
     from cellpy import log
 
@@ -4367,42 +4380,48 @@ def get(
         cellpy_instance.cycle_mode = cycle_mode
 
     if filename is not None:
-        filename = Path(filename)
-        if not filename.is_file():
-            print(f"Could not find {filename}")
-            print("Returning None")
-            return
+        # cellpy file
+        if not isinstance(filename, (list, tuple)):
+            filename = Path(filename)
 
-        if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
-            logging.info(f"Loading cellpy-file: {filename}")
-            cellpy_instance.load(filename)
-            if mass is not None:
-                logging.info(f"Setting mass: {mass}")
-                cellpy_instance.set_mass(mass)
-                if auto_summary:
-                    logging.info("Creating step table")
-                    cellpy_instance.make_step_table()
-                    logging.info("Creating summary data")
-                    cellpy_instance.make_summary()
-        else:
-            logging.info(f"Loading raw-file: {filename}")
-            cellpy_instance.from_raw(filename)
-            if not cellpy_instance:
-                print("Could not load file: check log!")
+            if not filename.is_file():
+                print(f"Could not find {filename}")
                 print("Returning None")
                 return
 
-            if mass is not None:
-                logging.info(f"Setting mass: {mass}")
-                cellpy_instance.set_mass(mass)
-            if auto_summary:
-                logging.info("Creating step table")
-                cellpy_instance.make_step_table()
-                logging.info("Creating summary data")
-                cellpy_instance.make_summary()
+            if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
+                logging.info(f"Loading cellpy-file: {filename}")
+                cellpy_instance.load(filename)
+                if mass is not None:
+                    logging.info(f"Setting mass: {mass}")
+                    cellpy_instance.set_mass(mass)
+                    if auto_summary:
+                        logging.info("Creating step table")
+                        cellpy_instance.make_step_table()
+                        logging.info("Creating summary data")
+                        cellpy_instance.make_summary()
+                logging.info("Created CellpyData object")
+                return cellpy_instance
 
-    logging.info("Created CellpyData object")
-    return cellpy_instance
+        # raw file
+        logging.info(f"Loading raw-file: {filename}")
+        cellpy_instance.from_raw(filename)
+        if not cellpy_instance:
+            print("Could not load file: check log!")
+            print("Returning None")
+            return
+
+        if mass is not None:
+            logging.info(f"Setting mass: {mass}")
+            cellpy_instance.set_mass(mass)
+        if auto_summary:
+            logging.info("Creating step table")
+            cellpy_instance.make_step_table()
+            logging.info("Creating summary data")
+            cellpy_instance.make_summary()
+
+        logging.info("Created CellpyData object")
+        return cellpy_instance
 
 
 # utility functions that most likely will be moved to another module

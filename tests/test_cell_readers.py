@@ -633,6 +633,10 @@ def test_get():
     c_res = cellpy.get(fdv.res_file_path, instrument="arbin", mass=0.045)
 
 
+def test_get_advanced():
+    c_many = cellpy.get([fdv.res_file_path, fdv.res_file_path2], logging_mode="DEBUG", mass=0.035)
+
+
 def test_get_empty():
     c_empty = cellpy.get()
 
