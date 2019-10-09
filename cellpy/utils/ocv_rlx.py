@@ -31,6 +31,7 @@ def select_ocv_points(
     relative_voltage=False,
     report_times=False,
     direction="both",
+    return_times=False,
 ):
 
     """Select points from the ocvrlx steps.
@@ -57,10 +58,11 @@ def select_ocv_points(
                 to False)
             direction ("up", "down" or "both"): select "up" if you would like
                 to process only the ocv rlx steps where the voltage is relaxing
-                upwards and vize versa. Defaults to "both".
+                upwards and vice versa. Defaults to "both".
+            return_times (bool): return a DataFrame with information about times.
 
         Returns:
-            pandas.DataFrame
+            pandas.DataFrame (and another pandas.DataFrame if return_times is True)
 
     """
     t0 = time.time()
@@ -96,6 +98,15 @@ def select_ocv_points(
     # doing an iteration (thought I didnt have to, but...) (fix later)
 
     results_list = list()
+    info_dict = {
+        "cycle": [],
+        "dt": [],
+        "dv": [],
+        "step": [],
+        "type": [],
+        "method": [],
+    }
+
     iter_range = number_of_points - 1
     if selection_method == "martin":
         iter_range -= 1
@@ -141,10 +152,18 @@ def select_ocv_points(
         _end = end
         _start = start
 
+        t = datetime.timedelta(seconds=round(end - start, 0))
+
+        info_dict["method"].append(selection_method)
+        info_dict["cycle"].append(cycle)
+        info_dict["step"].append(step)
+        info_dict["type"].append(info)
+        info_dict["dt"].append(t)
+        info_dict["dv"].append(first-last)
+
         if report_times:
-            t = str(datetime.timedelta(seconds=round(end - start, 0)))
             print(f"Cycle {cycle}:", end=" ")
-            print(f"dt = {t}, dv = {first-last:6.3f}")
+            print(f"dt = {str(t)}, dv = {first-last:6.3f}")
 
         for i, j in enumerate(range(max(1, iter_range))):
             if selection_method == "martin":
@@ -192,6 +211,13 @@ def select_ocv_points(
         result["type"] = info
         results_list.append(result)
 
+        if "t0" not in info_dict:
+            for i, p in enumerate(poi):
+                info_dict[f"t{i}"] = [p,]
+        else:
+            for i, p in enumerate(poi):
+                info_dict[f"t{i}"].append(p)
+
     t3 = time.time() - t0
 
     final = pd.concat(results_list)  # pretty slow
@@ -207,7 +233,17 @@ def select_ocv_points(
 
     # print(f"t1: {t1}\nt2: {t2-t1}\nt3: {t3-t2-t1}\nt4: {t4-t3-t2-t1}\n")
 
-    return final
+    if not return_times:
+        return final
+
+    else:
+        try:
+            info_pd = pd.DataFrame(info_dict)
+        except Exception as e:
+            logging.info("could not create dataframe with time information")
+            logging.info(e)
+            info_pd = None
+        return final, info_pd
 
 
 class MultiCycleOcvFit(object):
