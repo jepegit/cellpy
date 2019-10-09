@@ -2346,7 +2346,7 @@ class CellpyData(object):
 
         Returns: Nothing at all.
         """
-
+        self.logger.debug(f"Trying to save cellpy-file to {filename}")
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
 
@@ -2402,7 +2402,7 @@ class CellpyData(object):
                 self.logger.debug("save: creating step table")
                 self.make_step_table(dataset_number=dataset_number)
 
-        # This method can probalby be updated using pandas transpose trick
+        # This method can probably be updated using pandas transpose trick
         self.logger.debug("trying to make infotable")
         infotbl, fidtbl = self._create_infotable(dataset_number=dataset_number)
 

@@ -25,9 +25,10 @@ COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
 class Batch:
     def __init__(self, *args, **kwargs):
         default_log_level = kwargs.pop("log_level", None)
-        if default_log_level is not None:
+        custom_log_dir = kwargs.pop("custom_log_dir", None)
+        if default_log_level is not None or custom_log_dir is not None:
             log.setup_logging(
-                custom_log_dir=prms.Paths.filelogdir, default_level=default_log_level
+                custom_log_dir=custom_log_dir, default_level=default_log_level
             )
 
         db_reader = kwargs.pop("db_reader", "default")
@@ -277,7 +278,6 @@ class Batch:
         logging.info("created folders")
 
     def save_journal(self):
-        # rename to: save_journal
         # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file()
         logging.info("saving journal pages")
@@ -461,9 +461,8 @@ def init(*args, **kwargs):
     default_log_level = kwargs.pop("default_log_level", "INFO")
     file_name = kwargs.pop("file_name", None)
 
-    log.setup_logging(
-        custom_log_dir=prms.Paths["filelogdir"], default_level=default_log_level
-    )
+    log.setup_logging(default_level=default_log_level)
+
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:
         kwargs.pop("db_reader", None)

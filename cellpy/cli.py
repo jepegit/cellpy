@@ -278,7 +278,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         if confirm:
             if not o_parent.is_dir():
                 create_dir = input(
-                    f"[cellpy] (setup) {o_parent} does not exist." f" Create it [y]/n ?"
+                    f"[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
                 )
                 if not create_dir:
                     create_dir = True
@@ -446,7 +446,7 @@ def _check_import_pyodbc():
             "https://www.microsoft.com/en-us/download/details.aspx?id=13255"
         )
         click.echo(
-            "Or install mdbtools and set it up " "(check the cellpy docs for help)"
+            "Or install mdbtools and set it up (check the cellpy docs for help)"
         )
         click.echo("\n")
         return False
