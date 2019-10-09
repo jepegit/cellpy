@@ -314,7 +314,6 @@ def _check_import_pyodbc():
 
     use_subprocess = prms.Instruments.Arbin.use_subprocess
     detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
-    click.echo()
     click.echo(f" reading prms")
     click.echo(f" - ODBC: {ODBC}")
     click.echo(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
@@ -453,8 +452,50 @@ def _check_import_pyodbc():
         return False
 
 
+def _check_config_file():
+    prm_file_name = _configloc()
+    prm_dict = prmreader._read_prm_file_without_updating(prm_file_name)
+    try:
+        prm_paths = prm_dict["Paths"]
+        required_dirs = [
+            "cellpydatadir",
+            "db_path",
+            "examplesdir",
+            "filelogdir",
+            "notebookdir",
+            "outdatadir",
+            "rawdatadir",
+        ]
+        missing = 0
+        for k in required_dirs:
+            value = prm_paths.get(k, None)
+            click.echo(f"{k}: {value}")
+            if value and not pathlib.Path(value).is_dir():
+                missing += 1
+                click.echo("COULD NOT CONNECT!")
+            if not value:
+                missing += 1
+                click.echo("MISSING")
+
+        value = prm_paths.get("db_filename", None)
+        click.echo(f"{k}: {value}")
+        if not value:
+            missing += 1
+            click.echo("MISSING")
+
+        if missing:
+            return False
+        else:
+            return True
+
+    except Exception as e:
+        click.echo("Following error occurred:")
+        click.echo(e)
+        return False
+
+
 def _check():
-    click.echo(" checking ".center(80, "-"))
+    click.echo(" checking ".center(80, "="))
     failed_checks = 0
     number_of_checks = 0
 
@@ -466,10 +507,11 @@ def _check():
         else:
             click.echo("f[cellpy] -> failed!!!!")
             failed = 1
+        click.echo(80 * "-")
         return failed
 
-    check_types = ["cellpy imports", "importing pyodbc"]
-    check_funcs = [_check_import_cellpy, _check_import_pyodbc]
+    check_types = ["cellpy imports", "importing pyodbc", "configuration (prm) file"]
+    check_funcs = [_check_import_cellpy, _check_import_pyodbc, _check_config_file]
 
     for ct, cf in zip(check_types, check_funcs):
         try:
@@ -478,7 +520,12 @@ def _check():
             click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
     succeeded_checks = number_of_checks - failed_checks
-    click.echo(f"[cellpy] Succeeded {succeeded_checks} of {number_of_checks} checks.")
+    if failed_checks > 0:
+        click.echo(f"[cellpy] OH NO!!! You (or I) failed!")
+        click.echo(f"[cellpy] Failed {failed_checks} out of {number_of_checks} checks.")
+    else:
+        click.echo(f"[cellpy] Succeeded {succeeded_checks} out of {number_of_checks} checks.")
+    click.echo(80 * "=")
 
 
 def _write_config_file(userdir, dst_file, init_filename, dry_run):
@@ -726,9 +773,11 @@ def _version():
 
 def _configloc():
     config_file_name = prmreader._get_prm_file()
-    click.echo("[cellpy] ->%s\n" % config_file_name)
+    click.echo("[cellpy] ->%s" % config_file_name)
     if not os.path.isfile(config_file_name):
         click.echo("[cellpy] File does not exist!")
+    else:
+        return config_file_name
 
 
 def _dump_params():
