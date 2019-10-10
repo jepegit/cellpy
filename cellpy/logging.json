@@ -23,7 +23,7 @@
             "level": "INFO",
             "formatter": "simple",
             "filename": "cellpy_info.log",
-            "maxBytes": 10485760,
+            "maxBytes": 52428800,
             "backupCount": 20,
             "encoding": "utf8"
         },

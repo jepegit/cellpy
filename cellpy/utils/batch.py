@@ -28,7 +28,8 @@ class Batch:
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
             log.setup_logging(
-                custom_log_dir=custom_log_dir, default_level=default_log_level
+                custom_log_dir=custom_log_dir, default_level=default_log_level,
+                reset_big_log=True,
             )
 
         db_reader = kwargs.pop("db_reader", "default")
@@ -461,7 +462,7 @@ def init(*args, **kwargs):
     default_log_level = kwargs.pop("default_log_level", "INFO")
     file_name = kwargs.pop("file_name", None)
 
-    log.setup_logging(default_level=default_log_level)
+    log.setup_logging(default_level=default_log_level, reset_big_log=True)
 
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:
