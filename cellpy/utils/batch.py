@@ -353,6 +353,7 @@ class Batch:
     # TODO: list_journals?
 
     def link(self):
+        """Link journal content to the cellpy-files and load the step information."""
         self.experiment.link()
 
     def load(self):
@@ -361,14 +362,19 @@ class Batch:
         self.experiment.update()
 
     def update(self):
+        """Load cells as defined in the journal"""
         self.experiment.update()
 
     def make_summaries(self):
-        # rename to: combine_summaries
-        # also: need a similar function that does not save to csv
+        warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
+        self.exporter.do()
+
+    def combine_summaries(self, export_to_csv=True):
+        """Combine selected columns from each of the cells into single frames"""
         self.exporter.do()
 
     def plot_summaries(self):
+        """Plot the summaries (should be run after running combine_summaries)"""
         if prms.Batch.backend == "bokeh":
 
             try:

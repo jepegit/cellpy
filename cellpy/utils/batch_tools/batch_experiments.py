@@ -284,20 +284,20 @@ class CyclingExperiment(BaseExperiment):
         (OK, I will change it. Soon.)
 
         """
-        logging.info("[estblishing links]")
+        logging.info("[establishing links]")
         logging.debug("checking and establishing link to data")
         cell_data_frames = dict()
         counter = 0
         errors = []
         try:
             for indx, row in self.journal.pages.iterrows():
-
                 counter += 1
                 l_txt = f"starting to process file # {counter} (index={indx})"
                 logging.debug(l_txt)
-                logging.info(f"linking cellpy-file: {row.cellpy_file_names}")
+                logging.debug(f"linking cellpy-file: {row.cellpy_file_names}")
 
                 if not os.path.isfile(row.cellpy_file_names):
+                    logging.error(row.cellpy_file_names)
                     logging.error("File does not exist")
                     raise IOError
 
@@ -313,7 +313,7 @@ class CyclingExperiment(BaseExperiment):
 
         except IOError as e:
             logging.warning(e)
-            e_txt = "links not established - try update"
+            e_txt = "links not established - try update instead"
             logging.warning(e_txt)
             errors.append(e_txt)
 

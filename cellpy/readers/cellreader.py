@@ -770,17 +770,20 @@ class CellpyData(object):
             return True
         return False
 
+    # TODO: maybe consider being a bit more concice (re-implement)
     def _is_not_empty_dataset(self, dataset):
         if dataset is self._empty_dataset():
             return False
         else:
             return True
 
+    # TODO: check if this is useful and if it is rename, if not delete
     def _clean_up_normal_table(self, test=None, dataset_number=None):
         # check that test contains all the necessary headers
         # (and add missing ones)
         raise NotImplementedError
 
+    # TODO: this is used for the check-datasetnr-thing. Will soon be obsolete?
     def _report_empty_dataset(self):
         self.logger.info("Empty set")
 
@@ -1306,7 +1309,7 @@ class CellpyData(object):
         return test
 
     # --------------iterate-and-find-in-data-----------------------------------
-
+    # TODO: make this obsolete (somehow)
     def _validate_dataset_number(self, n, check_for_empty=True):
         # Returns dataset_number (or None if empty)
         # Remark! _is_not_empty_dataset returns True or False
@@ -1334,6 +1337,7 @@ class CellpyData(object):
         else:
             return v
 
+    # TODO: check if this can be moved to helpers
     def _validate_step_table(self, dataset_number=None, simple=False):
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -2105,6 +2109,7 @@ class CellpyData(object):
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         self.logger.debug("END exporting cycles")
 
+    # TODO: remove this
     def _export_cycles_old(
         self,
         dataset_number,
@@ -2503,6 +2508,7 @@ class CellpyData(object):
                 dataset.steps[col] = dataset.steps[col].astype("str")
         return dataset
 
+    # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
         # modifies the summary table
         time_00 = time.time()
@@ -2528,6 +2534,7 @@ class CellpyData(object):
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return summary
 
+    # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_normal(
         self, dataset_number=None, capacity_modifier="reset", allctypes=True
     ):
@@ -2660,6 +2667,10 @@ class CellpyData(object):
         else:
             return None
 
+    # TODO: make this
+    def sget_current(self, cycle, step, set_number=None):
+        raise NotImplementedError
+
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
         """Returns voltage (in V).
 
@@ -2749,7 +2760,7 @@ class CellpyData(object):
     def sget_steptime(self, cycle, step, dataset_number=None):
         """Returns step time for cycle, step.
 
-        Convinience function; same as issuing
+        Convenience function; same as issuing
            raw[(raw[cycle_index_header] == cycle) &
                  (raw[step_index_header] == step)][step_time_header]
 
@@ -2773,7 +2784,7 @@ class CellpyData(object):
 
         if isinstance(step, (list, tuple)):
             warnings.warn(
-                f"The varialbe step is a list." f"Should be an integer." f"{step}"
+                f"The variable step is a list. Should be an integer. {step}"
             )
             step = step[0]
 
@@ -2790,7 +2801,7 @@ class CellpyData(object):
     def sget_timestamp(self, cycle, step, dataset_number=None):
         """Returns timestamp for cycle, step.
 
-        Convinience function; same as issuing
+        Convenience function; same as issuing
            raw[(raw[cycle_index_header] == cycle) &
                  (raw[step_index_header] == step)][timestamp_header]
 
@@ -3558,6 +3569,7 @@ class CellpyData(object):
             dataset_number = 0
         self.selected_cell_number = dataset_number
 
+    # TODO: deprecate this
     def get_summary(self, dataset_number=None, use_summary_made=False):
         """Retrieve summary returned as a pandas DataFrame."""
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -3586,6 +3598,7 @@ class CellpyData(object):
 
     # -----------internal-helpers-----------------------------------------------
 
+    # TODO: clean it up a bit
     @staticmethod
     def is_empty(v):
         try:
@@ -3675,6 +3688,7 @@ class CellpyData(object):
         last_items = raw[d_txt].isin(steps)
         return last_items
 
+    # TODO: find out what this is for and probably delete it
     def _modify_cycle_number_using_cycle_step(
         self, from_tuple=None, to_cycle=44, dataset_number=None
     ):
@@ -4426,7 +4440,7 @@ def get(
 
 # utility functions that most likely will be moved to another module
 
-
+# TODO: rename and move this to helpers
 def group_by_interpolate(
     df,
     x=None,
@@ -4545,6 +4559,7 @@ def group_by_interpolate(
     return new_df
 
 
+# TODO: rename this
 def _interpolate_df_col(
     df,
     x=None,
@@ -4606,6 +4621,7 @@ def _interpolate_df_col(
     return new_df
 
 
+# TODO: rename this
 def _collect_capacity_curves(
     data,
     direction="charge",
@@ -4667,6 +4683,7 @@ def _collect_capacity_curves(
     return charge_list, cycles, minimum_v_value, maximum_v_value
 
 
+# TODO: remove this
 def setup_cellpy_instance():
     """Prepares for a cellpy session.
 
@@ -4694,6 +4711,7 @@ def setup_cellpy_instance():
     return cellpy_instance
 
 
+# TODO: remove this
 def just_load_srno(srno, prm_filename=None):
     """Simply load an dataset based on serial number (srno).
 
@@ -4761,6 +4779,7 @@ def just_load_srno(srno, prm_filename=None):
     return True
 
 
+# TODO: rename and move this to helpers
 def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     """Load a raw data file and save it as cellpy-file.
 
@@ -4797,6 +4816,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     return outfile
 
 
+# TODO: move this to helpers
 def load_and_print_resfile(filename, info_dict=None):
     """Load a raw data file and print information.
 
@@ -4867,6 +4887,7 @@ def load_and_print_resfile(filename, info_dict=None):
     return info_dict
 
 
+# TODO: remove this
 def loadcell_check():
     warnings.warn(DeprecationWarning("this option will be removed" "in v.0.4.0"))
 

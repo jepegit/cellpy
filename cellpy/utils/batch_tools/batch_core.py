@@ -164,7 +164,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def _load_cellpy_file(self, file_name):
         cellpy_data = cellreader.CellpyData()
         cellpy_data.load(file_name, self.parent_level)
-        logging.info(f" <- {file_name}")
+        logging.info(f" <- grabbing ( {file_name} )")
         return cellpy_data
 
     @property
