@@ -109,14 +109,11 @@ class LabJournal(BaseJournal):
 
     def to_file(self, file_name=None):
         """Saves a DataFrame with all the needed info about the experiment"""
-
         file_name = self._check_file_name(file_name)
         pages = self.pages
-
         top_level_dict = {"info_df": pages, "metadata": self._prm_packer()}
-
         jason_string = json.dumps(
-            top_level_dict, default=lambda info_df: json.loads(info_df.to_json())
+            top_level_dict, default=lambda info_df: json.loads(info_df.to_json(default_handler=str))
         )
 
         self.paginate()

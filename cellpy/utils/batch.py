@@ -266,6 +266,7 @@ class Batch:
                     )
 
             # finally
+            self.experiment.journal.to_file()
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
 
