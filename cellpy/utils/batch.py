@@ -14,6 +14,7 @@ from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
 from cellpy.utils.batch_tools.batch_analyzers import OCVRelaxationAnalyzer
+from cellpy.utils.batch_tools.batch_journals import LabJournal
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 
 logger = logging.getLogger(__name__)
@@ -146,10 +147,10 @@ class Batch:
                 "empty": create an empty journal
                 dictionary: create journal pages from a dictionary
                 pd.DataFrame: create  journal pages from a pandas DataFrame
+                filename.json: load cellpy batch file
+
                 filename.xlxs: create journal pages from an excel file
                     (not implemented yet)
-                filename.json: load cellpy batch file
-                    (not implemented yet, use .experiment.journal.from_file() instead).
             from_db (bool): Deprecation Warning: this parameter will be removed as it is
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
@@ -476,6 +477,26 @@ def init(*args, **kwargs):
         kwargs.pop("db_reader", None)
         return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
     return Batch(*args, **kwargs)
+
+
+def load_pages(file_name):
+    """Retrieve pages from a Journal file.
+
+    This function is here to let you easily inspect a Journal file without
+    starting up the full batch-functionality.
+
+    Examples:
+        >>> from cellpy.utils import batch
+        >>> journal_file_name = 'cellpy_journal_one.json'
+        >>> pages = batch.load_pages(journal_file_name)
+
+    Returns:
+        pandas.DataFrame
+
+    """
+    print(f"Loading pages from {file_name}")
+    pages, _ = LabJournal.read_journal_jason_file(file_name)
+    return pages
 
 
 if __name__ == "__main__":
