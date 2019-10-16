@@ -179,6 +179,14 @@ class CyclingExperiment(BaseExperiment):
                 summary_tmp.index.name = "Cycle_Index"
 
             if not summary_tmp.index.name == "Cycle_Index":
+                # TODO: Why did I do this? Does not make any sense. It seems like
+                #    batch forces Summary to have "Cycle_Index" as index, but
+                #    files not processed by batch will not have.
+                #    I think I should choose what should and what should not have
+                #    a measurement col as index. Current:
+                #    steps - not sure
+                #    raw - data_point (already implemented I think)
+                #    summary - not sure
                 logging.debug("Setting index to Cycle_Index")
                 # check if it is a byte-string
                 if b"Cycle_Index" in summary_tmp.columns:
