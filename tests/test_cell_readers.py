@@ -403,7 +403,7 @@ def test_load_step_specs(cellpy_data_instance):
     assert t == "ocvrlx_down"
 
 
-def test_load_res(cellpy_data_instance):
+def test_loadcell_raw(cellpy_data_instance):
     cellpy_data_instance.loadcell(fdv.res_file_path)
     run_number = 0
     data_point = 2283

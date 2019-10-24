@@ -363,9 +363,9 @@ class Batch:
         warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
 
-    def update(self):
+    def update(self, **kwargs):
         """Load cells as defined in the journal"""
-        self.experiment.update()
+        self.experiment.update(**kwargs)
 
     def make_summaries(self):
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)

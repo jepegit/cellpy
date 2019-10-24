@@ -72,12 +72,12 @@ class CyclingExperiment(BaseExperiment):
 
         self.selected_summaries = None
 
-    def update(self, all_in_memory=None):
+    def update(self, all_in_memory=None, **kwargs):
         """Updates the selected datasets.
 
         Args:
             all_in_memory (bool): store the cellpydata in memory (default
-            False)
+                False)
 
         """
         logging.info("[update experiment]")
@@ -128,6 +128,7 @@ class CyclingExperiment(BaseExperiment):
                         summary_on_raw=True,
                         force_raw=self.force_raw_file,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
+                        **kwargs,
                     )
                 except Exception as e:
                     logging.info("Failed to load: " + str(e))

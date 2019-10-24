@@ -227,7 +227,7 @@ class ArbinLoader(Loader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    def __get_res_connector(self, temp_filename):
+    def _get_res_connector(self, temp_filename):
 
         if use_ado:
             is64bit_python = check64bit(current_system="python")
@@ -408,7 +408,7 @@ class ArbinLoader(Loader):
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
-        constr = self.__get_res_connector(temp_filename)
+        constr = self._get_res_connector(temp_filename)
 
         if use_ado:
             conn = dbloader.connect(constr)
@@ -515,7 +515,7 @@ class ArbinLoader(Loader):
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
-        constr = self.__get_res_connector(temp_filename)
+        constr = self._get_res_connector(temp_filename)
 
         if use_ado:
             conn = dbloader.connect(constr)
@@ -623,13 +623,15 @@ class ArbinLoader(Loader):
         # return full_path, information
         raise NotImplemented
 
-    def loader(self, file_name, bad_steps=None, **kwargs):
+    def loader(self, file_name, bad_steps=None, dataset_number=None):
         """Loads data from arbin .res files.
 
         Args:
             file_name (str): path to .res file.
             bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
-            to skip loading.
+                to skip loading.
+            dataset_number (int): the data set number to select if you are dealing
+                with arbin files with more than one data-set.
 
         Returns:
             new_tests (list of data objects)
@@ -640,6 +642,8 @@ class ArbinLoader(Loader):
             time_0 = time.time()
 
         new_tests = []
+        conn = None
+
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
@@ -669,6 +673,9 @@ class ArbinLoader(Loader):
         table_name_normal = TABLE_NAMES["normal"]
 
         # creating temporary file and connection
+        tmp_name_global = None
+        tmp_name_raw = None
+        tmp_name_stats = None
 
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
@@ -683,7 +690,7 @@ class ArbinLoader(Loader):
 
         # windows with same python bit as windows bit (the ideal case)
         if not use_mdbtools:
-            constr = self.__get_res_connector(temp_filename)
+            constr = self._get_res_connector(temp_filename)
 
             if use_ado:
                 conn = dbloader.connect(constr)
@@ -698,8 +705,6 @@ class ArbinLoader(Loader):
             # col_names = list(global_data_df.columns.values)
 
         else:
-            import subprocess
-
             if is_posix:
                 if is_macos:
                     self.logger.debug("\nMAC OSX USING MDBTOOLS")
@@ -708,63 +713,32 @@ class ArbinLoader(Loader):
             else:
                 self.logger.debug("\nWINDOWS USING MDBTOOLS-WIN")
 
-            # creating tmp-filenames
-            temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
-            temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
-            temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
-
-            # making the cmds
-            mdb_prms = [
-                (table_name_global, temp_csv_filename_global),
-                (table_name_normal, temp_csv_filename_normal),
-                (table_name_stats, temp_csv_filename_stats),
-            ]
-
-            # executing cmds
-            for table_name, tmp_file in mdb_prms:
-                with open(tmp_file, "w") as f:
-                    subprocess.call(
-                        [sub_process_path, temp_filename, table_name], stdout=f
-                    )
-                    self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
+            tmp_name_global, tmp_name_raw, tmp_name_stats = self._create_tmp_files(
+                table_name_global, table_name_normal, table_name_stats, temp_dir,
+                temp_filename)
 
             # use pandas to load in the data
-            global_data_df = pd.read_csv(temp_csv_filename_global)
+            global_data_df = pd.read_csv(tmp_name_global)
 
         tests = global_data_df[self.headers_normal.test_id_txt]
+
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
+        self.logger.debug(f"datasets: {tests}")
 
-        for counter, test_no in enumerate(range(number_of_sets)):
+        if dataset_number is not None:
+            self.logger.info(f"Dataset number given: {dataset_number}")
+            self.logger.info(f"Available dataset numbers: {tests}")
+            test_nos = [dataset_number]
+        else:
+            test_nos = range(number_of_sets)
+
+        for counter, test_no in enumerate(test_nos):
             if counter > 0:
-                self.logger.warning("***MULTITEST-FILE (not recommended)")
+                self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
                 if not ALLOW_MULTI_TEST_FILE:
                     break
-            data = Cell()
-            data.cell_no = test_no
-            data.loaded_from = file_name
-            fid = FileID(file_name)
-            # name of the .res file it is loaded from:
-            # data.parent_filename = os.path.basename(file_name)
-            data.channel_index = int(
-                global_data_df[self.headers_global["channel_index_txt"]][test_no]
-            )
-            data.channel_number = int(
-                global_data_df[self.headers_global["channel_number_txt"]][test_no]
-            )
-            data.creator = global_data_df[self.headers_global["creator_txt"]][test_no]
-            data.item_ID = global_data_df[self.headers_global["item_id_txt"]][test_no]
-            data.schedule_file_name = global_data_df[
-                self.headers_global["schedule_file_name_txt"]
-            ][test_no]
-            data.start_datetime = global_data_df[
-                self.headers_global["start_datetime_txt"]
-            ][test_no]
-            data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
-            data.test_name = global_data_df[self.headers_global["test_name_txt"]][
-                test_no
-            ]
-            data.raw_data_files.append(fid)
+            data = self._init_data(file_name, global_data_df, test_no)
 
             self.logger.debug("reading raw-data")
             if not use_mdbtools:
@@ -780,33 +754,11 @@ class ArbinLoader(Loader):
                     self.headers_normal.data_point_txt,
                 )
                 summary_df = pd.read_sql_query(sql, conn)
-                if counter > number_of_sets:
-                    self._clean_up_loadres(None, conn, temp_filename)
+
             else:
-                normal_df = pd.read_csv(temp_csv_filename_normal)
-                # filter on test ID
-                normal_df = normal_df[
-                    normal_df[self.headers_normal.test_id_txt] == data.test_ID
-                ]
-                # sort on data point
-                if prms._sort_if_subprocess:
-                    normal_df = normal_df.sort_values(
-                        self.headers_normal.data_point_txt
-                    )
-                length_of_test = normal_df.shape[0]
-                summary_df = pd.read_csv(temp_csv_filename_stats)
-                # clean up
-                for f in [
-                    temp_filename,
-                    temp_csv_filename_stats,
-                    temp_csv_filename_normal,
-                    temp_csv_filename_global,
-                ]:
-                    if os.path.isfile(f):
-                        try:
-                            os.remove(f)
-                        except WindowsError as e:
-                            self.logger.warning(f"could not remove tmp-file\n{f} {e}")
+                length_of_test, normal_df, summary_df = self._load_from_tmp_files(
+                    data, tmp_name_global,
+                    tmp_name_raw, tmp_name_stats, temp_filename)
 
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
@@ -834,6 +786,86 @@ class ArbinLoader(Loader):
         new_tests = self._inspect(new_tests)
 
         return new_tests
+
+    def _create_tmp_files(self, table_name_global, table_name_normal,
+                          table_name_stats, temp_dir, temp_filename):
+        import subprocess
+
+        # creating tmp-filenames
+        temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
+        temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
+        temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
+        # making the cmds
+        mdb_prms = [
+            (table_name_global, temp_csv_filename_global),
+            (table_name_normal, temp_csv_filename_normal),
+            (table_name_stats, temp_csv_filename_stats),
+        ]
+        # executing cmds
+        for table_name, tmp_file in mdb_prms:
+            with open(tmp_file, "w") as f:
+                subprocess.call(
+                    [sub_process_path, temp_filename, table_name], stdout=f
+                )
+                self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
+        return temp_csv_filename_global, temp_csv_filename_normal, temp_csv_filename_stats
+
+    def _load_from_tmp_files(self, data,
+                             temp_csv_filename_global, temp_csv_filename_normal,
+                             temp_csv_filename_stats, temp_filename):
+        normal_df = pd.read_csv(temp_csv_filename_normal)
+        # filter on test ID
+        normal_df = normal_df[
+            normal_df[self.headers_normal.test_id_txt] == data.test_ID
+            ]
+        # sort on data point
+        if prms._sort_if_subprocess:
+            normal_df = normal_df.sort_values(
+                self.headers_normal.data_point_txt
+            )
+        length_of_test = normal_df.shape[0]
+        summary_df = pd.read_csv(temp_csv_filename_stats)
+        # clean up
+        for f in [
+            temp_filename,
+            temp_csv_filename_stats,
+            temp_csv_filename_normal,
+            temp_csv_filename_global,
+        ]:
+            if os.path.isfile(f):
+                try:
+                    os.remove(f)
+                except WindowsError as e:
+                    self.logger.warning(f"could not remove tmp-file\n{f} {e}")
+        return length_of_test, normal_df, summary_df
+
+    def _init_data(self, file_name, global_data_df, test_no):
+        data = Cell()
+        data.cell_no = test_no
+        data.loaded_from = file_name
+        fid = FileID(file_name)
+        # name of the .res file it is loaded from:
+        # data.parent_filename = os.path.basename(file_name)
+        data.channel_index = int(
+            global_data_df[self.headers_global["channel_index_txt"]][test_no]
+        )
+        data.channel_number = int(
+            global_data_df[self.headers_global["channel_number_txt"]][test_no]
+        )
+        data.creator = global_data_df[self.headers_global["creator_txt"]][test_no]
+        data.item_ID = global_data_df[self.headers_global["item_id_txt"]][test_no]
+        data.schedule_file_name = global_data_df[
+            self.headers_global["schedule_file_name_txt"]
+        ][test_no]
+        data.start_datetime = global_data_df[
+            self.headers_global["start_datetime_txt"]
+        ][test_no]
+        data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
+        data.test_name = global_data_df[self.headers_global["test_name_txt"]][
+            test_no
+        ]
+        data.raw_data_files.append(fid)
+        return data
 
     def _normal_table_generator(self, **kwargs):
         pass

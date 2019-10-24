@@ -247,39 +247,52 @@ class CellpyData(object):
         Sets the instrument used for obtaining the data (i.e. sets fileformat)
 
         """
-        self.logger.debug(f"Setting instrument: {instrument}")
 
         if instrument is None:
             instrument = self.tester
 
+        self.logger.debug(f"Setting instrument: {instrument}")
+
         if instrument in ["arbin", "arbin_res"]:
-            self._set_arbin()
+            from cellpy.readers.instruments.arbin import ArbinLoader as RawLoader
+            self._set_instrument(RawLoader)
             self.tester = "arbin"
 
         elif instrument == "arbin_sql":
-            self._set_arbin_sql()
-            self.tester = "arbin"
-
-        elif instrument == "arbin_experimental":
-            self._set_arbin_experimental()
+            warnings.warn(f"{instrument} not implemented yet")
             self.tester = "arbin"
 
         elif instrument in ["pec", "pec_csv"]:
-            self._set_pec()
+            warnings.warn("Experimental! Not ready for production!")
+            from cellpy.readers.instruments.pec import PECLoader as RawLoader
+            self._set_instrument(RawLoader)
             self.tester = "pec"
 
         elif instrument in ["biologics", "biologics_mpr"]:
-            self._set_biologic()
+            from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
+            warnings.warn("Experimental! Not ready for production!")
+            self._set_instrument(RawLoader)
             self.tester = "biologic"
 
         elif instrument == "custom":
-            self._set_custom()
+            from cellpy.readers.instruments.custom import CustomLoader as RawLoader
+            self._set_instrument(RawLoader)
             self.tester = "custom"
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")
 
+    def _set_instrument(self, loader_class):
+        self.loader_class = loader_class()
+        # ----- get information --------------------------
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # ----- create the loader ------------------------
+        self.loader = self.loader_class.loader
+
     def _set_biologic(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         warnings.warn("Experimental! Not ready for production!")
         from cellpy.readers.instruments import biologics_mpr as instr
 
@@ -291,6 +304,8 @@ class CellpyData(object):
         self.loader = self.loader_class.loader
 
     def _set_pec(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         warnings.warn("Experimental! Not ready for production!")
         from cellpy.readers.instruments import pec as instr
 
@@ -301,10 +316,9 @@ class CellpyData(object):
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
-    def _set_maccor(self):
-        warnings.warn("not implemented")
-
     def _set_custom(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         # use a custom format (csv with information lines on top)
         from cellpy.readers.instruments import custom as instr
 
@@ -317,9 +331,13 @@ class CellpyData(object):
         self.loader = self.loader_class.loader
 
     def _set_arbin_sql(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         warnings.warn("not implemented")
 
     def _set_arbin(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         from cellpy.readers.instruments import arbin as instr
 
         self.loader_class = instr.ArbinLoader()
@@ -330,29 +348,6 @@ class CellpyData(object):
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
-    # def _set_arbin_experimental(self):
-    #     # Note! All these _set_instrument methods can be generalized to one
-    #     # method. At the moment, I find it
-    #     # more transparent to separate them into respective methods pr
-    #     # instrument.
-    #     from .instruments import arbin_experimental as instr
-    #     self.loader_class = instr.ArbinLoader()
-    #     # get information
-    #     self.raw_units = self.loader_class.get_raw_units()
-    #     self.raw_limits = self.loader_class.get_raw_limits()
-    #     # send information (should improve this later)
-    #     # loader_class.load_only_summary = self.load_only_summary
-    #     # loader_class.select_minimal = self.select_minimal
-    #     # loader_class.max_res_filesize = self.max_res_filesize
-    #     # loader_class.chunk_size = self.chunk_size
-    #     # loader_class.max_chunks = self.max_chunks
-    #     # loader_class.last_chunk = self.last_chunk
-    #     # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
-    #     # loader_class.load_until_error = self.load_until_error
-    #
-    #     # create loader
-    #     self.loader = self.loader_class.loader
-
     def _create_logger(self):
         from cellpy import log
 
@@ -361,6 +356,10 @@ class CellpyData(object):
 
     def set_cycle_mode(self, cycle_mode):
         """set the cycle mode"""
+        # TODO: remove this
+        warnings.warn("deprecated - use it as a property "
+                      "instead, e.g.: cycle_mode = 'anode'",
+                      DeprecationWarning)
         self._cycle_mode = cycle_mode
 
     @property
@@ -566,6 +565,7 @@ class CellpyData(object):
         only_first=False,
         force_raw=False,
         use_cellpy_stat_file=None,
+        **kwargs,
     ):
 
         """Loads data for given cells.
@@ -655,6 +655,14 @@ class CellpyData(object):
             file_names (list of raw-file names): uses CellpyData.file_names if
                 None. If the list contains more than one file name, then the
                 runs will be merged together.
+
+        Other keywords depending on loader:
+            [ArbinLoader]:
+                bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
+                    to skip loading.
+                dataset_number (int): the data set number to select if you are dealing
+                    with arbin files with more than one data-set.
+
         """
         # This function only loads one test at a time (but could contain several
         # files). The function from_res() also implements loading several
