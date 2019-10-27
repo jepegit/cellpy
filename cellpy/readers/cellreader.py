@@ -562,7 +562,6 @@ class CellpyData(object):
         summary_ocv=False,
         summary_end_v=True,
         only_summary=False,
-        only_first=False,
         force_raw=False,
         use_cellpy_stat_file=None,
         **kwargs,
@@ -579,10 +578,10 @@ class CellpyData(object):
             summary_ocv (bool): summarize ocv steps
             summary_end_v (bool): summarize end voltage
             only_summary (bool): get only the summary of the runs
-            only_first (bool): only use the first file fitting search criteria
             force_raw (bool): only use raw-files
             use_cellpy_stat_file (bool): use stat file if creating summary
                 from raw
+            **kwargs: passed to from_raw
 
         Example:
 
@@ -624,7 +623,7 @@ class CellpyData(object):
             self.logger.debug("cellpy file(s) needs updating - loading raw")
             self.logger.info("Loading raw-file")
             self.logger.debug(raw_files)
-            self.from_raw(raw_files)
+            self.from_raw(raw_files, **kwargs)
             self.logger.debug("loaded files")
             # Check if the run was loaded ([] if empty)
             if self.status_datasets:
@@ -671,7 +670,7 @@ class CellpyData(object):
         if file_names:
             self.file_names = file_names
 
-        if not isinstance(file_names, (list, tuple)):
+        if not isinstance(self.file_names, (list, tuple)):
             self.file_names = [file_names]
 
         # file_type = self.tester
