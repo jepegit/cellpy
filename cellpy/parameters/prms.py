@@ -80,7 +80,9 @@ Reader = box.Box(Reader)
 # --------------------------
 # DataSet
 # --------------------------
-DataSet = {"nom_cap": 3579}  # mAh/g (used for finding c-rates) [should be moved to Materials]
+DataSet = {
+    "nom_cap": 3579
+}  # mAh/g (used for finding c-rates) [should be moved to Materials]
 DataSet = box.Box(DataSet)
 
 # --------------------------

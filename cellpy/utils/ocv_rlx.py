@@ -98,14 +98,7 @@ def select_ocv_points(
     # doing an iteration (thought I didnt have to, but...) (fix later)
 
     results_list = list()
-    info_dict = {
-        "cycle": [],
-        "dt": [],
-        "dv": [],
-        "step": [],
-        "type": [],
-        "method": [],
-    }
+    info_dict = {"cycle": [], "dt": [], "dv": [], "step": [], "type": [], "method": []}
 
     iter_range = number_of_points - 1
     if selection_method == "martin":
@@ -159,7 +152,7 @@ def select_ocv_points(
         info_dict["step"].append(step)
         info_dict["type"].append(info)
         info_dict["dt"].append(t)
-        info_dict["dv"].append(first-last)
+        info_dict["dv"].append(first - last)
 
         if report_times:
             print(f"Cycle {cycle}:", end=" ")
@@ -213,7 +206,7 @@ def select_ocv_points(
 
         if "t0" not in info_dict:
             for i, p in enumerate(poi):
-                info_dict[f"t{i}"] = [p,]
+                info_dict[f"t{i}"] = [p]
         else:
             for i, p in enumerate(poi):
                 info_dict[f"t{i}"].append(p)

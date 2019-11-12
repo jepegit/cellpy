@@ -228,7 +228,10 @@ class CellpyData(object):
     def dataset(self):
         """returns the DataSet instance"""
         # could insert a try-except thingy here...
-        warnings.warn("The .dataset property is deprecated, please use .cell instead.", DeprecationWarning)
+        warnings.warn(
+            "The .dataset property is deprecated, please use .cell instead.",
+            DeprecationWarning,
+        )
         cell = self.cells[self.selected_cell_number]
         return cell
 
@@ -255,6 +258,7 @@ class CellpyData(object):
 
         if instrument in ["arbin", "arbin_res"]:
             from cellpy.readers.instruments.arbin import ArbinLoader as RawLoader
+
             self._set_instrument(RawLoader)
             self.tester = "arbin"
 
@@ -265,17 +269,20 @@ class CellpyData(object):
         elif instrument in ["pec", "pec_csv"]:
             warnings.warn("Experimental! Not ready for production!")
             from cellpy.readers.instruments.pec import PECLoader as RawLoader
+
             self._set_instrument(RawLoader)
             self.tester = "pec"
 
         elif instrument in ["biologics", "biologics_mpr"]:
             from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
+
             warnings.warn("Experimental! Not ready for production!")
             self._set_instrument(RawLoader)
             self.tester = "biologic"
 
         elif instrument == "custom":
             from cellpy.readers.instruments.custom import CustomLoader as RawLoader
+
             self._set_instrument(RawLoader)
             self.tester = "custom"
 
@@ -357,9 +364,10 @@ class CellpyData(object):
     def set_cycle_mode(self, cycle_mode):
         """set the cycle mode"""
         # TODO: remove this
-        warnings.warn("deprecated - use it as a property "
-                      "instead, e.g.: cycle_mode = 'anode'",
-                      DeprecationWarning)
+        warnings.warn(
+            "deprecated - use it as a property " "instead, e.g.: cycle_mode = 'anode'",
+            DeprecationWarning,
+        )
         self._cycle_mode = cycle_mode
 
     @property
@@ -2790,9 +2798,7 @@ class CellpyData(object):
         test = self.cells[dataset_number].raw
 
         if isinstance(step, (list, tuple)):
-            warnings.warn(
-                f"The variable step is a list. Should be an integer. {step}"
-            )
+            warnings.warn(f"The variable step is a list. Should be an integer. {step}")
             step = step[0]
 
         c = test.loc[

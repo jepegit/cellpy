@@ -714,8 +714,12 @@ class ArbinLoader(Loader):
                 self.logger.debug("\nWINDOWS USING MDBTOOLS-WIN")
 
             tmp_name_global, tmp_name_raw, tmp_name_stats = self._create_tmp_files(
-                table_name_global, table_name_normal, table_name_stats, temp_dir,
-                temp_filename)
+                table_name_global,
+                table_name_normal,
+                table_name_stats,
+                temp_dir,
+                temp_filename,
+            )
 
             # use pandas to load in the data
             global_data_df = pd.read_csv(tmp_name_global)
@@ -757,8 +761,8 @@ class ArbinLoader(Loader):
 
             else:
                 length_of_test, normal_df, summary_df = self._load_from_tmp_files(
-                    data, tmp_name_global,
-                    tmp_name_raw, tmp_name_stats, temp_filename)
+                    data, tmp_name_global, tmp_name_raw, tmp_name_stats, temp_filename
+                )
 
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
@@ -787,8 +791,14 @@ class ArbinLoader(Loader):
 
         return new_tests
 
-    def _create_tmp_files(self, table_name_global, table_name_normal,
-                          table_name_stats, temp_dir, temp_filename):
+    def _create_tmp_files(
+        self,
+        table_name_global,
+        table_name_normal,
+        table_name_stats,
+        temp_dir,
+        temp_filename,
+    ):
         import subprocess
 
         # creating tmp-filenames
@@ -804,25 +814,30 @@ class ArbinLoader(Loader):
         # executing cmds
         for table_name, tmp_file in mdb_prms:
             with open(tmp_file, "w") as f:
-                subprocess.call(
-                    [sub_process_path, temp_filename, table_name], stdout=f
-                )
+                subprocess.call([sub_process_path, temp_filename, table_name], stdout=f)
                 self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
-        return temp_csv_filename_global, temp_csv_filename_normal, temp_csv_filename_stats
+        return (
+            temp_csv_filename_global,
+            temp_csv_filename_normal,
+            temp_csv_filename_stats,
+        )
 
-    def _load_from_tmp_files(self, data,
-                             temp_csv_filename_global, temp_csv_filename_normal,
-                             temp_csv_filename_stats, temp_filename):
+    def _load_from_tmp_files(
+        self,
+        data,
+        temp_csv_filename_global,
+        temp_csv_filename_normal,
+        temp_csv_filename_stats,
+        temp_filename,
+    ):
         normal_df = pd.read_csv(temp_csv_filename_normal)
         # filter on test ID
         normal_df = normal_df[
             normal_df[self.headers_normal.test_id_txt] == data.test_ID
-            ]
+        ]
         # sort on data point
         if prms._sort_if_subprocess:
-            normal_df = normal_df.sort_values(
-                self.headers_normal.data_point_txt
-            )
+            normal_df = normal_df.sort_values(self.headers_normal.data_point_txt)
         length_of_test = normal_df.shape[0]
         summary_df = pd.read_csv(temp_csv_filename_stats)
         # clean up
@@ -857,13 +872,11 @@ class ArbinLoader(Loader):
         data.schedule_file_name = global_data_df[
             self.headers_global["schedule_file_name_txt"]
         ][test_no]
-        data.start_datetime = global_data_df[
-            self.headers_global["start_datetime_txt"]
-        ][test_no]
-        data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
-        data.test_name = global_data_df[self.headers_global["test_name_txt"]][
+        data.start_datetime = global_data_df[self.headers_global["start_datetime_txt"]][
             test_no
         ]
+        data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
+        data.test_name = global_data_df[self.headers_global["test_name_txt"]][test_no]
         data.raw_data_files.append(fid)
         return data
 

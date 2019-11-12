@@ -138,7 +138,8 @@ class LabJournal(BaseJournal):
         pages = self.pages
         top_level_dict = {"info_df": pages, "metadata": self._prm_packer()}
         jason_string = json.dumps(
-            top_level_dict, default=lambda info_df: json.loads(info_df.to_json(default_handler=str))
+            top_level_dict,
+            default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
         )
 
         self.paginate()

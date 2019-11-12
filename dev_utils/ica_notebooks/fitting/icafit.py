@@ -8,10 +8,24 @@ import pandas as pd
 from cellpy import cellreader, log
 from cellpy.utils import ica
 
-from lmfit.models import (GaussianModel, PseudoVoigtModel, ExponentialGaussianModel,
-                          SkewedGaussianModel, LorentzianModel, SkewedVoigtModel,
-                          ConstantModel)
+from lmfit.models import (
+    GaussianModel,
+    PseudoVoigtModel,
+    ExponentialGaussianModel,
+    SkewedGaussianModel,
+    LorentzianModel,
+    SkewedVoigtModel,
+    ConstantModel,
+)
 from lmfit import CompositeModel
+
+# TODO: move to utils
+# TODO: backprop for CompositeEnsemble
+# TODO: make tests
+# TODO: methods for collecting results from multiple fits
+# TODO: method for reading yaml files (or similar) with peak definitions
+# TODO: method for saving peak fits and definitions (picle?)
+# TODO: check if updating and reseting parameters after fitting is sensible
 
 
 class PeakEnsemble:
@@ -49,13 +63,17 @@ class PeakEnsemble:
     Attributes:
         shift (float): A common shift for all peaks in the ensemble. Should be able to
            fit this if jitter is False. TODO: check this up.
-        name (str): Identification label that will be put in front of all peak parameter names.
+        name (str): Identification label that will be put in front of all peak parameter
+           names.
         fixed (bool):
-        jitter (bool): Allow for individual fitting of the peaks in the ensemble (defaults to True).
+        jitter (bool): Allow for individual fitting of the peaks in the ensemble
+            (defaults to True).
         max_point (float): The max point of the principal peak.
         scale (float): An overall scaling parameter (fitted if jitter=False).
-        sigma_p1 (float): Sigma value for the principal peak (usually the first peak). When creating the peak
-            ensemble, parameters for the principal peak is set based on absolute values, while the other
+        sigma_p1 (float): Sigma value for the principal peak (usually the first peak).
+            When creating the peak
+            ensemble, parameters for the principal peak is set based on absolute values,
+            while the other
             peak parameters are set based on relative values to the principal peak.
         prefixes (list): Must be set in the subclass.
 
@@ -63,9 +81,12 @@ class PeakEnsemble:
         The function ``_read_peak_definitions`` should store the peak definitions in the
         attribute ``_peak_definitions``.
 
-        The ``_peak_definitions`` should be a dictionary with peak properties as keys (e.g. "amplitude", "sigma").
-        Each dictionary value is a (nested) list where the first item is the value for the principal peak, the
-        second item is a tuple describing how to set the limits (min, max) for the peak. Later items corresponds
+        The ``_peak_definitions`` should be a dictionary with peak properties as keys
+        (e.g. "amplitude", "sigma").
+        Each dictionary value is a (nested) list where the first item is the value for
+        the principal peak, the
+        second item is a tuple describing how to set the limits (min, max) for the peak.
+        Later items corresponds
         to new peaks where the values are given relative to the principal peak:
 
         "key": [
@@ -83,16 +104,28 @@ class PeakEnsemble:
         for subsequent peaks, replace v with the f_v * (v + s_v)
 
     Edits:
-        1. It seems now more clear to me that one should use the parameter class directly to tweak the actual
-           individual parameters. Currently, I have been using the Model class and used parameter hints to
-           change limits and values etc. I don't think I will have to remove this option yet, but use parameter in addition.
+        1. It seems now more clear to me that one should use the parameter class
+        directly to tweak the actual
+           individual parameters. Currently, I have been using the Model class and used
+           parameter hints to
+           change limits and values etc. I don't think I will have to remove this option
+           yet, but use parameter in addition.
 
     """
-    def __init__(self, fixed=False, name=None, max_point=1.0,
-                 shift=0.0, sigma_p1=0.01, scale=1.0, jitter=True,
-                 debug=False, sync_model_hints=False,
-                 auto_update_from_fit=True,
-                 ):
+
+    def __init__(
+        self,
+        fixed=False,
+        name=None,
+        max_point=1.0,
+        shift=0.0,
+        sigma_p1=0.01,
+        scale=1.0,
+        jitter=True,
+        debug=False,
+        sync_model_hints=False,
+        auto_update_from_fit=True,
+    ):
         logging.debug("-init-")
         self.shift = shift
         self.name = name
@@ -101,6 +134,14 @@ class PeakEnsemble:
         self.jitter = jitter
         self.scale = scale
         self.sigma_p1 = sigma_p1
+        self._meta_param_names = [
+            "fixed",
+            "jitter",
+            "shift",
+            "max_point",
+            "scale",
+            "sigma_p1",
+        ]
         self.debug = debug
         self.auto_update_from_fit = auto_update_from_fit
 
@@ -123,14 +164,16 @@ class PeakEnsemble:
         self._peak_definition_dict = None
 
     def __str__(self):
-        return "\n".join([
-            f"name:      {self.name}",
-            f"shift:     {self.shift}",
-            f"max_point: {self.max_point}",
-            f"jitter:    {self.jitter}",
-            f"scale:     {self.scale}",
-            f"sigma_p1:  {self.sigma_p1}",
-        ])
+        return "\n".join(
+            [
+                f"name:      {self.name}",
+                f"shift:     {self.shift}",
+                f"max_point: {self.max_point}",
+                f"jitter:    {self.jitter}",
+                f"scale:     {self.scale}",
+                f"sigma_p1:  {self.sigma_p1}",
+            ]
+        )
 
     def _back_propagation_from_params(self):
         # Currently only implemented in the sub-classes
@@ -141,18 +184,49 @@ class PeakEnsemble:
         #      most likely an attribute with custom_meta_params
         #      could also be good to have an attribute with common_meta_params
         #          so that the back-prop can be done using setattr and getattr
-        raise NotImplementedError("This should be implemented in sub-class")
+
+        principal_prefix = self.prefixes[1]
+
+        # shift
+        old_center = self._peak_definitions["center"][0]
+        old_center_b = self.shift
+        old_center_a = old_center - old_center_b
+        new_center = self.params[principal_prefix + "center"].value
+        new_shift = new_center - old_center_a
+
+        # sigma_p1
+        old_sigma_p1 = self.sigma_p1
+        new_sigma_p1 = self.params[principal_prefix + "sigma"].value
+
+        # max_point
+        old_amplitude_a = self._peak_definitions["amplitude"][0]
+        old_amplitude_b = (self.sigma_p1 * self.max_point) / old_amplitude_a
+
+        new_amplitude = self.params[principal_prefix + "amplitude"].value
+        new_max_point = new_amplitude * old_amplitude_b / old_sigma_p1
+
+        self.shift = new_shift
+        self.sigma_p1 = new_sigma_p1
+        self.max_point = new_max_point
+        self._custom_back_propagation_from_params()
+
+    def _custom_back_propagation_from_params(self):
+        pass
 
     def create_hints_from_parameters(self, prm=None):
-        logging.debug("   *PeakEnsemble: create_hints_from_parameters "
-                      "SHOULD ONLY BE A CONVENIENCE FUNC")
-        logging.debug("  ->creating param_hints so that "
-                      "they are in-line with the current params")
+        logging.debug(
+            "   *PeakEnsemble: create_hints_from_parameters "
+            "SHOULD ONLY BE A CONVENIENCE FUNC"
+        )
+        logging.debug(
+            "  ->creating param_hints so that "
+            "they are in-line with the current params"
+        )
 
         if prm is not None:
             p = self.params[prm]
             self._peaks.set_param_hint(
-                prm, min=p.min, max=p.max, value=p.value, vary=p.vary,
+                prm, min=p.min, max=p.max, value=p.value, vary=p.vary
             )
             return
 
@@ -160,7 +234,7 @@ class PeakEnsemble:
             logging.debug(f"prm: {prm}")
             p = self.params[prm]
             self._peaks.set_param_hint(
-                prm, min=p.min, max=p.max, value=p.value, vary=p.vary,
+                prm, min=p.min, max=p.max, value=p.value, vary=p.vary
             )
 
     def reset_peaks(self):
@@ -205,7 +279,41 @@ class PeakEnsemble:
         return self._peaks.make_params()
 
     def _read_peak_definitions(self, *args, **kwargs):
-        """Load peak definitions."""
+        """Load peak definitions.
+        The method must assign a peak definition dictionary to the
+        self._peak_definitions attribute. The dictionary must have the keys
+        'center', 'sigma', 'amplitude', 'gamma', with value of
+           [value_P1,  bounds_P1, (fraction, distance) wrt P1 for P2, ...
+            (fraction, distance) wrt P1 for Pn]
+
+        Examples
+            self._peak_definitions = {
+            "center": [ 0.25 + self.shift,
+                ((1.0, -0.1), (1.0, 0.1)),
+                (1.0, 0.21 + self._custom_shift_p2),
+            ],
+            "sigma": [
+                self.sigma_p1,
+                ((0.5 * self._expand, 0.0), (2.0 * self._compress, 0.0)),
+                (1.0, 0.0),
+            ],
+            "amplitude": [
+                self.sigma_p1 * self.max_point / 0.4,
+                ((0.001, 0.0), (100.0, 0.0)),
+                (1.0, 0.0),
+            ],
+            "gamma": [
+                1.0,  # value
+                ((0.001, 0.0), (2.0, 0.0)),
+                (1.0, 0.0),
+            ],
+        }
+
+        Notes
+           If you implement custom meta parameters (e.g. like self._custom_shift_p2 in
+           the example above) you will have to implement a method for back-propagation
+           if you need that in the _custom_back_propagation_from_params method.
+        """
         raise NotImplementedError("This method must be implemented when sub-classing")
 
     @property
@@ -233,9 +341,13 @@ class PeakEnsemble:
         try:
             logging.debug(f"  - prefixes: {self.prefixes}")
             # scale
-            self.peak_info[self.prefixes[0]] = self.peak_types[0](prefix=self.prefixes[0])
+            self.peak_info[self.prefixes[0]] = self.peak_types[0](
+                prefix=self.prefixes[0]
+            )
             # first peak
-            self.peak_info[self.prefixes[1]] = self.peak_types[1](prefix=self.prefixes[1])
+            self.peak_info[self.prefixes[1]] = self.peak_types[1](
+                prefix=self.prefixes[1]
+            )
             logging.debug(f"  - peak_info (scale and principal peak): {self.peak_info}")
         except AttributeError:
             logging.warning("you are missing peak info")
@@ -267,7 +379,9 @@ class PeakEnsemble:
 
             v_dict = dict()
             v_dict[prefix_peak_1] = [
-                val_1, frac_min * (val_1+shift_min), frac_max * (val_1+shift_max)
+                val_1,
+                frac_min * (val_1 + shift_min),
+                frac_max * (val_1 + shift_max),
             ]
 
             for prfx, (fact, step) in zip(self.prefixes[2:], dd[2:]):
@@ -304,7 +418,8 @@ class PeakEnsemble:
         self.params[scale_key].vary = vary_scale
         if self.sync_model_hints:
             self._peaks.set_param_hint(
-                scale_key, value=scale, min=0.1*scale, max=10*scale, vary=vary_scale)
+                scale_key, value=scale, min=0.1 * scale, max=10 * scale, vary=vary_scale
+            )
 
     def _set_one_param(self, key1, key2):
         logging.debug(f"setting one param ({key1}:{key2})")
@@ -330,7 +445,8 @@ class PeakEnsemble:
 
             if self.sync_model_hints:
                 self._peaks.set_param_hint(
-                    k, value=_value, min=_min, max=_max, vary=_vary)
+                    k, value=_value, min=_min, max=_max, vary=_vary
+                )
 
     def set_param(self, key, value=None, minimum=None, maximum=None, vary=None):
         if key not in self.params.keys():
@@ -340,7 +456,8 @@ class PeakEnsemble:
 
         if self.sync_model_hints:
             self._peaks.set_param_hint(
-                key, value=value, min=minimum, max=maximum, vary=vary)
+                key, value=value, min=minimum, max=maximum, vary=vary
+            )
         if value is not None:
             self.params[key].value = value
 
@@ -360,7 +477,7 @@ class PeakEnsemble:
                 self.params[k].vary = False
 
     def fit(self, y, **kwargs):
-        params = kwargs.pop('params', self.params)
+        params = kwargs.pop("params", self.params)
         res = self.peaks.fit(y, params=params, **kwargs)
         self.result = res
         if self.auto_update_from_fit:
@@ -376,18 +493,31 @@ class Silicon(PeakEnsemble):
     (in addition to the inherited attributes).
 
     Attributes:
-        prefixes (list): A list of peak names used as the prefix when creating the peaks. The firs prefix
-            should always be for the scale parameter. It is recommended not to play with this attribute.
+        prefixes (list): A list of peak names used as the prefix when creating
+            the peaks. The firs prefix
+            should always be for the scale parameter. It is recommended not to play
+            with this attribute.
             This attribute is required when subclassing PeakEnsemble
-        peak_types (list of lmfit peak models): The length of this list must be the same as the length of the
-            prefixes. It should start with a ConstantModel. This attribute is required when subclassing
-            PeakEnsemble.
+        peak_types (list of lmfit peak models): The length of this list must be the
+            same as the length of the
+            prefixes. It should start with a ConstantModel. This attribute is required
+            when subclassing PeakEnsemble.
         crystalline (bool): Set to true if the Li3.75Si phase exists.
 
     """
-    def __init__(self, scale=1.0, crystalline=False, name="Si", max_point=1000, jitter=True,
-                 crystalline_hysteresis=0.0, compress=1.0, expand=1.0,
-                 **kwargs):
+
+    def __init__(
+        self,
+        scale=1.0,
+        crystalline=False,
+        name="Si",
+        max_point=1000,
+        jitter=True,
+        crystalline_hysteresis=0.0,
+        compress=1.0,
+        expand=1.0,
+        **kwargs,
+    ):
         """
         Parameters:
             scale (float): overall scaling of the peak ensemble
@@ -398,13 +528,27 @@ class Silicon(PeakEnsemble):
                 all individual inter-peak prms if False.
             crystalline_hysteresis (float): additional hysteresis for crystalline peak
         """
-        sigma_p1 = kwargs.pop('sigma_p1', 0.01)
-        shift = kwargs.pop('shift', 0.0)
-        super().__init__(sigma_p1=sigma_p1, jitter=jitter, scale=scale, max_point=max_point, shift=shift, **kwargs)
+        sigma_p1 = kwargs.pop("sigma_p1", 0.01)
+        shift = kwargs.pop("shift", 0.0)
+        super().__init__(
+            sigma_p1=sigma_p1,
+            jitter=jitter,
+            scale=scale,
+            max_point=max_point,
+            shift=shift,
+            **kwargs,
+        )
         logging.debug("-[silicon -init-]->")
         self.name = name
-        self.prefixes = [self.name + x for x in ["Scale", "01", "02", "03"]]  # Always start with scale
-        self.peak_types = [ConstantModel, SkewedGaussianModel, PseudoVoigtModel, PseudoVoigtModel]
+        self.prefixes = [
+            self.name + x for x in ["Scale", "01", "02", "03"]
+        ]  # Always start with scale
+        self.peak_types = [
+            ConstantModel,
+            SkewedGaussianModel,
+            PseudoVoigtModel,
+            PseudoVoigtModel,
+        ]
         self._crystalline = crystalline
         self._crystalline_hysteresis = crystalline_hysteresis
         self._compress = compress
@@ -425,62 +569,46 @@ class Silicon(PeakEnsemble):
         logging.debug("-reading peak definitions for Si")
         self._peak_definitions = {
             "center": [
-                0.25 + self.shift,          # value
-                ((1.0, -0.1), (1.0, 0.1)),  # (frac-min, shift-min), (frac-max, shift-max)
-                (1.0, 0.21),                # (value-frac, value-shift) between peak 1 and peak 2
-                (1.0, 0.20 + self._crystalline_hysteresis)                 # (value-frac, value-shift) between peak 1 and peak 3
+                # value
+                0.25 + self.shift,
+                # bounds (frac-min, shift-min), (frac-max, shift-max)
+                ((1.0, -0.1), (1.0, 0.1)),
+                # value (fraction, distance) between peak 1 and peak 2
+                #   i.e. value_P2 = f * (value_P1 + d)
+                (1.0, 0.21),
+                # value (fraction, distance) between peak 1 and peak  3
+                (1.0, 0.20 + self._crystalline_hysteresis),
             ],
-
             "sigma": [
-                self.sigma_p1,              # value
-                ((0.5*self._expand, 0.0), (2.0*self._compress, 0.0)),  # (frac-min, shift-min), (frac-max, shift-max)
-                (1.0, 0.0),                 # (value-frac, value-shift) between peak 1 and peak 2
-                (0.3, 0.0)
-            ],
-
-            "amplitude": [
-                self.sigma_p1 * self.max_point / 0.4,   # value
-                ((0.001, 0.0), (100.0, 0.0)),      # (frac-min, shift-min), (frac-max, shift-max)
+                self.sigma_p1,
+                ((0.5 * self._expand, 0.0), (2.0 * self._compress, 0.0)),
                 (1.0, 0.0),
-                (1.0, 0.0)
+                (0.3, 0.0),
+            ],
+            "amplitude": [
+                self.sigma_p1 * self.max_point / 0.4,
+                ((0.001, 0.0), (100.0, 0.0)),
+                (1.0, 0.0),
+                (1.0, 0.0),
             ],
             "gamma": [
-                1.0,   # value
-                ((0.001, 0.0), (2.0, 0.0)),      # (frac min, shift min), (frac max, shift max)
-                (1.0, 0.0),   # does not matter (gamma is not defined for Si02)
-                (1.0, 0.0)    # does not matter (gamma is not defined for Si03)
-            ]
+                1.0,  # value
+                ((0.001, 0.0), (2.0, 0.0)),
+                (1.0, 0.0),  # does not matter (gamma is not defined for Si02)
+                (1.0, 0.0),  # does not matter (gamma is not defined for Si03)
+            ],
         }
 
-    def _back_propagation_from_params(self):
-        principal_prefix = self.prefixes[1]
-        # shift
-        old_center = self._peak_definitions['center'][0]
-        old_center_b = self.shift
-        old_center_a = old_center - old_center_b
-        new_center = self.params[principal_prefix + 'center'].value
-        new_shift = new_center - old_center_a
-
-        # sigma_p1
-        old_sigma_p1 = self.sigma_p1
-        new_sigma_p1 = self.params[principal_prefix + 'sigma'].value
-
-        # max_point
-        old_amplitude_b = (self.sigma_p1 * self.max_point) / \
-                          self._peak_definitions['amplitude'][0]
-        new_amplitude = self.params[principal_prefix + 'amplitude'].value
-        new_max_point = new_amplitude * old_amplitude_b / old_sigma_p1
-
+    def _custom_back_propagation_from_params(self):
         # _crystalline_hysterersis
+        old_center = self._peak_definitions["center"][0]
         old_crystalline_hysteresis = self._crystalline_hysteresis
-        old_center_crystalline = self._peak_definitions['center'][3][1]
+        old_center_crystalline = self._peak_definitions["center"][3][1]
         old_center_crystalline_b = old_center_crystalline - old_crystalline_hysteresis
-        new_center_crystalline = self.params[self.prefixes[3] + 'center'].value
-        new_crystalline_hysteresis = new_center_crystalline - old_center_crystalline_b - old_center
-
-        self.shift = new_shift
-        self.sigma_p1 = new_sigma_p1
-        self.max_point = new_max_point
+        new_center_crystalline = self.params[self.prefixes[3] + "center"].value
+        new_crystalline_hysteresis = (
+            new_center_crystalline - old_center_crystalline_b - old_center
+        )
         self._crystalline_hysteresis = new_crystalline_hysteresis
 
     def _custom_init_peaks(self):
@@ -529,7 +657,10 @@ class Silicon(PeakEnsemble):
     @property
     def widgets(self):
         print("overrides PeakEnsemble.widgets property")
-        print("because it is easier to develop this here and then copy it back to the subclass")
+        print(
+            "because it is easier to develop this here and "
+            "then copy it back to the subclass"
+        )
 
 
 class Graphite(PeakEnsemble):
@@ -539,59 +670,30 @@ class Graphite(PeakEnsemble):
         self.sigma_p1 = 0.01
         self.vary = False
         self.vary_scale = True
-        self.prefixes = [self.name + x for x in ["Scale", "01"]]  # Always start with scale
+        self.prefixes = [
+            self.name + x for x in ["Scale", "01"]
+        ]  # Always start with scale
         self.peak_types = [ConstantModel, LorentzianModel]
         self.init()
 
     def _read_peak_definitions(self):
+        # This is a very simplified version including only one single peak.
         self._peak_definitions = {
             "center": [
-                0.16 + self.shift,          # value
-                ((1.0, -0.05), (1.0, 0.05)),  # (frac-min, shift-min), (frac-max, shift-max)
-                # (1.0, 0.21),                # (value-frac, value-shift) between peak 1 and peak 2
-                # (1.0, 0.20)                 # (value-frac, value-shift) between peak 1 and peak 3
+                # value
+                0.16 + self.shift,
+                # bounds (frac-min, shift-min), (frac-max, shift-max)
+                ((1.0, -0.05), (1.0, 0.05)),
             ],
-
-            "sigma": [
-                self.sigma_p1,                   # value
-                ((0.4, 0.0), (5.0, 0.0)),  # (frac-min, shift-min), (frac-max, shift-max)
-                # (1.0, 0.0),
-                # (0.3, 0.0)
-            ],
-
+            "sigma": [self.sigma_p1, ((0.4, 0.0), (5.0, 0.0))],
             "amplitude": [
-                self.sigma_p1 * self.max_point / 0.4,   # value
-                ((0.2, 0.0), (2.0, 0.0)),      # (frac-min, shift-min), (frac-max, shift-max)
-                # (1.0, 0.0),
-                # (0.002, 0.0)
+                self.sigma_p1 * self.max_point / 0.4,
+                ((0.2, 0.0), (2.0, 0.0)),
             ],
         }
 
-    def _back_propagation_from_params(self):
-        principal_prefix = self.prefixes[1]
-        # shift
-        old_center = self._peak_definitions['center'][0]
-        old_center_b = self.shift
-        old_center_a = old_center - old_center_b
-        new_center = self.params[principal_prefix + 'center'].value
-        new_shift = new_center - old_center_a
 
-        # sigma_p1
-        old_sigma_p1 = self.sigma_p1
-        new_sigma_p1 = self.params[principal_prefix + 'sigma'].value
-
-        # max_point
-        old_amplitude_b = (self.sigma_p1 * self.max_point) / \
-                          self._peak_definitions['amplitude'][0]
-        new_amplitude = self.params[principal_prefix + 'amplitude'].value
-        new_max_point = new_amplitude * old_amplitude_b / old_sigma_p1
-
-        self.shift = new_shift
-        self.sigma_p1 = new_sigma_p1
-        self.max_point = new_max_point
-
-
-class CompositeEnsemble():
+class CompositeEnsemble:
     def __init__(self, *ensembles, **kwargs):
         self.ensemble = list(ensembles)
         self._peaks = None
@@ -650,19 +752,20 @@ class CompositeEnsemble():
         self._join()
 
     def create_hints_from_parameters(self, prm=None):
-        logging.debug("creating param_hints so that they are "
-                      "in-line with the current params")
+        logging.debug(
+            "creating param_hints so that they are in-line with the current params"
+        )
         if prm is not None:
             p = self.params[prm]
             self._peaks.set_param_hint(
-                prm, min=p.min, max=p.max, value=p.value, vary=p.vary,
+                prm, min=p.min, max=p.max, value=p.value, vary=p.vary
             )
             return
 
         for prm in self.params:
             p = self.params[prm]
             self._peaks.set_param_hint(
-                prm, min=p.min, max=p.max, value=p.value, vary=p.vary,
+                prm, min=p.min, max=p.max, value=p.value, vary=p.vary
             )
 
     def reset_peaks(self):
@@ -671,7 +774,7 @@ class CompositeEnsemble():
         self._join()
 
     def fit(self, y, **kwargs):
-        params = kwargs.pop('params', self.params)
+        params = kwargs.pop("params", self.params)
         res = self.peaks.fit(y, params=params, **kwargs)
         self.result = res
         return res
@@ -710,45 +813,62 @@ def check_silicon():
     # log.setup_logging(default_level=logging.DEBUG)
     print("* creating a silicon peak ensemble:")
     silicon = Silicon(shift=-0.1, max_point=dq.max(), sigma_p1=0.06)
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* syncing hints:")
     silicon.create_hints_from_parameters()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* updating the Si02sigma parameter:")
-    silicon.set_param('Si02sigma', minimum=0.02, vary=False)
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    silicon.set_param("Si02sigma", minimum=0.02, vary=False)
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* reset peaks:")
     silicon.reset_peaks()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("WITH AUTO SYNC")
     print("* creating a silicon peak ensemble:")
-    silicon = Silicon(shift=-0.1, max_point=dq.max(),
-                      sigma_p1=0.06, sync_model_hints=True)
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    silicon = Silicon(
+        shift=-0.1, max_point=dq.max(), sigma_p1=0.06, sync_model_hints=True
+    )
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* syncing hints:")
     silicon.create_hints_from_parameters()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* updating the Si02sigma parameter:")
-    silicon.set_param('Si02sigma', minimum=0.02, vary=False)
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    silicon.set_param("Si02sigma", minimum=0.02, vary=False)
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* reset peaks:")
     silicon.reset_peaks()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print()
     print(" Fitting ".center(80, "-"))
@@ -774,46 +894,62 @@ def check_composite():
     # log.setup_logging(default_level=logging.DEBUG)
     print("* creating a silicon peak ensemble:")
     silicon = CompositeEnsemble(Silicon(shift=-0.1), Graphite(shift=-0.03))
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* syncing hints:")
     silicon.create_hints_from_parameters()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* updating the Si02sigma parameter:")
-    silicon.set_param('Si02sigma', minimum=0.02, vary=False)
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    silicon.set_param("Si02sigma", minimum=0.02, vary=False)
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* reset peaks:")
     silicon.reset_peaks()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("WITH AUTO SYNC")
     print("* creating a silicon peak ensemble:")
     silicon = CompositeEnsemble(
-        Silicon(shift=-0.1, sync_model_hints=True),
-        Graphite(shift=-0.03))
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+        Silicon(shift=-0.1, sync_model_hints=True), Graphite(shift=-0.03)
+    )
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* syncing hints:")
     silicon.create_hints_from_parameters()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* updating the Si02sigma parameter:")
-    silicon.set_param('Si02sigma', minimum=0.02, vary=False)
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    silicon.set_param("Si02sigma", minimum=0.02, vary=False)
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print("* reset peaks:")
     silicon.reset_peaks()
-    print(f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
-          f"val: {silicon.params['Si02sigma']}")
+    print(
+        f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
+        f"val: {silicon.params['Si02sigma']}"
+    )
 
     print(" Set crystalline ".center(80, "-"))
     peaks = CompositeEnsemble(Silicon(shift=-0.1), Graphite(shift=-0.03))
@@ -858,7 +994,7 @@ def check_backprop():
 
     print("- setting some new values -")
 
-    silicon.set_param('Si01center', value=0.18)
+    silicon.set_param("Si01center", value=0.18)
     print(f"val: {silicon.params['Si01sigma']}")
     print(f"val: {silicon.params['Si01center']}")
 
@@ -866,35 +1002,39 @@ def check_backprop():
     # f * x + a + b
 
     principal_prefix = silicon.prefixes[1]
-    old_center = silicon._peak_definitions['center'][0]
+    old_center = silicon._peak_definitions["center"][0]
     old_center_b = silicon.shift
     old_center_a = old_center - old_center_b
 
-    new_center = silicon.params[principal_prefix + 'center'].value
+    new_center = silicon.params[principal_prefix + "center"].value
     new_shift = new_center - old_center_a
 
     # -- sigma_p1 ----
     # "sigma": self.sigma_p1
     old_sigma_p1 = silicon.sigma_p1
-    new_sigma_p1 = silicon.params[principal_prefix + 'sigma'].value
+    new_sigma_p1 = silicon.params[principal_prefix + "sigma"].value
 
     # -- max_point ---
     # "amplitude":  self.sigma_p1 * self.max_point / 0.4
-    old_amplitude_b = (silicon.sigma_p1 * silicon.max_point) / silicon._peak_definitions['amplitude'][0]
-    new_amplitude = silicon.params[principal_prefix + 'amplitude'].value
+    old_amplitude_b = (
+        silicon.sigma_p1 * silicon.max_point
+    ) / silicon._peak_definitions["amplitude"][0]
+    new_amplitude = silicon.params[principal_prefix + "amplitude"].value
     new_max_point = new_amplitude * old_amplitude_b / old_sigma_p1
 
     # -- cryst ---
     # "center": [2]
     #     (1.0, 0.20 + self._crystalline_hysteresis)
     old_crystalline_hysteresis = silicon._crystalline_hysteresis
-    old_center_crystalline = silicon._peak_definitions['center'][3][1]
+    old_center_crystalline = silicon._peak_definitions["center"][3][1]
 
     old_center_crystalline_b = old_center_crystalline - old_crystalline_hysteresis
 
-    new_center_crystalline = silicon.params[silicon.prefixes[3] + 'center'].value
+    new_center_crystalline = silicon.params[silicon.prefixes[3] + "center"].value
 
-    new_crystalline_hysteresis = new_center_crystalline - old_center_crystalline_b - old_center
+    new_crystalline_hysteresis = (
+        new_center_crystalline - old_center_crystalline_b - old_center
+    )
 
     silicon.shift = new_shift
     silicon.sigma_p1 = new_sigma_p1
@@ -902,18 +1042,20 @@ def check_backprop():
     silicon._crystalline_hysteresis = new_crystalline_hysteresis
 
     print("- calculated back prop gives the following updated values")
-
     print(silicon)
 
     print("- setting the values to a new object")
     another_silicon = Silicon(
-        shift=new_shift, max_point=new_max_point, sigma_p1=new_sigma_p1,
-        compress=1.0, expand=1.0,
+        shift=new_shift,
+        max_point=new_max_point,
+        sigma_p1=new_sigma_p1,
+        compress=1.0,
+        expand=1.0,
     )
     print(another_silicon)
     print(f"val: {another_silicon.params['Si01sigma']}")
     print(f"val: {another_silicon.params['Si01center']}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     check_silicon()

@@ -445,9 +445,7 @@ def _check_import_pyodbc():
             "from:\n"
             "https://www.microsoft.com/en-us/download/details.aspx?id=13255"
         )
-        click.echo(
-            "Or install mdbtools and set it up (check the cellpy docs for help)"
-        )
+        click.echo("Or install mdbtools and set it up (check the cellpy docs for help)")
         click.echo("\n")
         return False
 
@@ -524,7 +522,9 @@ def _check():
         click.echo(f"[cellpy] OH NO!!! You (or I) failed!")
         click.echo(f"[cellpy] Failed {failed_checks} out of {number_of_checks} checks.")
     else:
-        click.echo(f"[cellpy] Succeeded {succeeded_checks} out of {number_of_checks} checks.")
+        click.echo(
+            f"[cellpy] Succeeded {succeeded_checks} out of {number_of_checks} checks."
+        )
     click.echo(80 * "=")
 
 

@@ -218,8 +218,10 @@ class CyclingExperiment(BaseExperiment):
                 warnings.warn("you opted to not save to cellpy-format")
                 logging.info("I strongly recommend you to save to cellpy-format:")
                 logging.info(" >>> b.save_cellpy = True")
-                logging.info("Without the cellpy-files, you cannot select specific cells"
-                             " if you did not opt to store all in memory")
+                logging.info(
+                    "Without the cellpy-files, you cannot select specific cells"
+                    " if you did not opt to store all in memory"
+                )
 
             if self.export_raw or self.export_cycles:
                 export_text = "exporting"

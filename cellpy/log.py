@@ -13,8 +13,12 @@ from cellpy import prms
 
 
 def setup_logging(
-    default_json_path=None, default_level=None, env_key="LOG_CFG", custom_log_dir=None,
-    reset_big_log=False, max_size=5_000_000,
+    default_json_path=None,
+    default_level=None,
+    env_key="LOG_CFG",
+    custom_log_dir=None,
+    reset_big_log=False,
+    max_size=5_000_000,
 ):
     """Setup logging configuration
 
@@ -72,12 +76,14 @@ def setup_logging(
                         if file_size > max_size:
                             d_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
                             new_file_name = "_".join([d_str, file_name])
-                            new_full_log_file_path = pathlib.Path(
-                                log_dir) / new_file_name
+                            new_full_log_file_path = (
+                                pathlib.Path(log_dir) / new_file_name
+                            )
                             shutil.copy(full_log_file_path, new_full_log_file_path)
                     else:
                         logging.debug(
-                            "Could not reset big log: could not find the file")
+                            "Could not reset big log: could not find the file"
+                        )
 
             except Exception as e:
                 warnings.warn("\nCould not set custom log-dir" + str(e))

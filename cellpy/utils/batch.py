@@ -29,7 +29,8 @@ class Batch:
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
             log.setup_logging(
-                custom_log_dir=custom_log_dir, default_level=default_log_level,
+                custom_log_dir=custom_log_dir,
+                default_level=default_log_level,
                 reset_big_log=True,
             )
 
@@ -240,10 +241,14 @@ class Batch:
                                 value = [value]
                             if k == "raw_file_names":
                                 if not isinstance(value[0], list):
-                                    warnings.warn("encountered raw file description"
-                                                  "that is not of list-type")
-                                    logging.debug("converting raw file description to a"
-                                                  "list of lists")
+                                    warnings.warn(
+                                        "encountered raw file description"
+                                        "that is not of list-type"
+                                    )
+                                    logging.debug(
+                                        "converting raw file description to a"
+                                        "list of lists"
+                                    )
                                     value = [value]
                             self.experiment.journal.pages[k] = value
 
