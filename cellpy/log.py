@@ -10,6 +10,7 @@ import logging
 import warnings
 
 from cellpy import prms
+logging.raiseExceptions = False
 
 
 def setup_logging(

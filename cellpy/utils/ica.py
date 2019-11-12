@@ -701,6 +701,8 @@ def dqdv_frames(cell, split=False, tidy=True, **kwargs):
                     for non-split frames).
 
                 **kwargs: key-word arguments to Converter:
+                    cycle = int or list of ints (cycle numbers), will process all (or up to max_cycle_number)
+                        if not given or equal to None.
                     points_pr_split (int): only used when investigating data
                         using splits, defaults to 10.
                     max_points: None
@@ -800,9 +802,8 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
                 voltage: voltage
                 dq: the incremental capacity
     """
-
-    cycles = cell.get_cap(
-        method="forth-and-forth", categorical_column=True, label_cycle_number=True
+    cycle = kwargs.pop("cycle", None)
+    cycles = cell.get_cap(cycle=cycle, method="forth-and-forth", categorical_column=True, label_cycle_number=True
     )
     ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
 

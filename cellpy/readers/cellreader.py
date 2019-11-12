@@ -4642,6 +4642,7 @@ def _collect_capacity_curves(
     steps_to_skip=None,
     steptable=None,
     max_cycle_number=None,
+    **kwargs,
 ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
@@ -4652,10 +4653,15 @@ def _collect_capacity_curves(
         minimum voltage value,
         maximum voltage value"""
 
+    # TODO: should allow for giving cycle numbers as input (e.g. cycle=[1, 2, 10] or cycle=2), not only max_cycle_number
     minimum_v_value = np.Inf
     maximum_v_value = -np.Inf
     charge_list = []
-    cycles = data.get_cycle_numbers()
+    cycles = kwargs.pop("cycle", None)
+
+    if cycles is not None:
+        cycles = data.get_cycle_numbers()
+
     if max_cycle_number is None:
         max_cycle_number = max(cycles)
 
