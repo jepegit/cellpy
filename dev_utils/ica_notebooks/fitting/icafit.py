@@ -800,6 +800,29 @@ class CompositeEnsemble:
         return self._peaks.param_hints
 
 
+class FitCollection:
+    """Collection / iterable of Ensembles for controlling a set of fits.
+
+    This object is used to interact with several fits facilitating easy extraction
+    of key values from the fits. Typically, an experiment consists of several
+    subsequent measurement series (i.e. cycles). xxx
+
+    Objectives:
+
+        Create a DataFrame with cycle number as one of the columns or as the index and
+           the fit values as columns.
+
+        Make it easy to use the results from fit of cycle n as starting point for
+           cycle n+1.
+
+        Save the fit(s) and load previously saved fits / collections
+
+    """
+
+    def __init__(self):
+        self.name = None
+
+
 def check_silicon():
     log.setup_logging(default_level=logging.INFO)
     my_data = cellreader.CellpyData()
