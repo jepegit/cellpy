@@ -21,6 +21,7 @@ from lmfit import CompositeModel
 
 # TODO: move to utils
 # TODO: backprop for CompositeEnsemble [x]
+# TODO: implement shift as a ConstantModel or expression
 # TODO: make tests
 # TODO: methods for collecting results from multiple fits
 # TODO: method for reading yaml files (or similar) with peak definitions
@@ -67,7 +68,7 @@ class PeakEnsemble:
            names.
         fixed (bool):
         jitter (bool): Allow for individual fitting of the peaks in the ensemble
-            (defaults to True).
+            (defaults to False).
         max_point (float): The max point of the principal peak.
         scale (float): An overall scaling parameter (fitted if jitter=False).
         sigma_p1 (float): Sigma value for the principal peak (usually the first peak).
@@ -121,7 +122,7 @@ class PeakEnsemble:
         shift=0.0,
         sigma_p1=0.01,
         scale=1.0,
-        jitter=True,
+        jitter=False,
         debug=False,
         sync_model_hints=False,
         auto_update_from_fit=True,
@@ -163,6 +164,9 @@ class PeakEnsemble:
         # from the peak_definitions
         self._peak_definition_dict = None
 
+        # parameter name as defined by LMFIT for ConstantModel
+        self._scale_variable_name = "c"
+
     def __str__(self):
         return "\n".join(
             [
@@ -176,15 +180,6 @@ class PeakEnsemble:
         )
 
     def _back_propagation_from_params(self):
-        # Currently only implemented in the sub-classes
-        # Plan:
-        #   1) perform the common back-propagation here
-        #   2) then run custom back-propagation (from sub-class)
-        # Needed:
-        #      most likely an attribute with custom_meta_params
-        #      could also be good to have an attribute with common_meta_params
-        #          so that the back-prop can be done using setattr and getattr
-
         principal_prefix = self.prefixes[1]
 
         # shift
@@ -193,6 +188,9 @@ class PeakEnsemble:
         old_center_a = old_center - old_center_b
         new_center = self.params[principal_prefix + "center"].value
         new_shift = new_center - old_center_a
+
+        # scale
+        new_scale = self.params[self.name + "Scale" + self._scale_variable_name].value
 
         # sigma_p1
         old_sigma_p1 = self.sigma_p1
@@ -205,6 +203,7 @@ class PeakEnsemble:
         new_amplitude = self.params[principal_prefix + "amplitude"].value
         new_max_point = new_amplitude * old_amplitude_b / old_sigma_p1
 
+        self.scale = new_scale
         self.shift = new_shift
         self.sigma_p1 = new_sigma_p1
         self.max_point = new_max_point
@@ -480,9 +479,13 @@ class PeakEnsemble:
         params = kwargs.pop("params", self.params)
         res = self.peaks.fit(y, params=params, **kwargs)
         self.result = res
+
         if self.auto_update_from_fit:
+            logging.debug("updating params from fit")
             self.params = self.result.params
             self._back_propagation_from_params()
+        else:
+            logging.debug("not updating params from fit")
         return res
 
 
@@ -512,7 +515,7 @@ class Silicon(PeakEnsemble):
         crystalline=False,
         name="Si",
         max_point=1000,
-        jitter=True,
+        jitter=False,
         crystalline_hysteresis=0.0,
         compress=1.0,
         expand=1.0,
@@ -541,10 +544,11 @@ class Silicon(PeakEnsemble):
         logging.debug("-[silicon -init-]->")
         self.name = name
         self.prefixes = [
-            self.name + x for x in ["Scale", "01", "02", "03"]
+            self.name + x for x in ["Scale", "01", "02", "03"]  # ["Scale", "Shift", "01", "02", "03"]
         ]  # Always start with scale
         self.peak_types = [
-            ConstantModel,
+            ConstantModel,  # for scaling
+            # ConstantModel,  # for overall peak shift (to be implemented)
             SkewedGaussianModel,
             PseudoVoigtModel,
             PseudoVoigtModel,
@@ -1104,8 +1108,11 @@ def check_backprop_composite():
     print(f"val: {another_si_g_composite.params['G01center']}")
 
     print(another_si_g_composite.prefixes)
+    print("PARAM NAMES")
     print(another_si_g_composite.param_names)
+    print("NAMES")
     print(another_si_g_composite.names)
+    print("SELECTED Si")
     print(another_si_g_composite.selector["Si"])
 
 
