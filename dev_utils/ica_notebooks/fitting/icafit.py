@@ -20,7 +20,7 @@ from lmfit.models import (
 from lmfit import CompositeModel
 
 # TODO: move to utils
-# TODO: backprop for CompositeEnsemble
+# TODO: backprop for CompositeEnsemble [x]
 # TODO: make tests
 # TODO: methods for collecting results from multiple fits
 # TODO: method for reading yaml files (or similar) with peak definitions
@@ -694,12 +694,30 @@ class Graphite(PeakEnsemble):
 
 
 class CompositeEnsemble:
+    """ A collection of PeakEnsembles.
+
+    Note! All ensembles must have unique names.
+
+    """
     def __init__(self, *ensembles, **kwargs):
         self.ensemble = list(ensembles)
         self._peaks = None
         self._params = None
         self._result = None
+        self.prefixes = None
+        self.auto_update_from_fit = True
         self._join()
+
+    def __str__(self):
+        txt = " CompositeEnsemble ".center(80, "=")
+        txt += "\n"
+        for i, pe in enumerate(self.ensemble):
+            txt += f" PeakEnsemble {i} ".center(80, "-")
+            txt += "\n"
+            txt += str(pe)
+        txt += "\n"
+        txt += 80 * "="
+        return txt
 
     def _join(self):
         if len(self.ensemble) > 0:
@@ -777,7 +795,14 @@ class CompositeEnsemble:
         params = kwargs.pop("params", self.params)
         res = self.peaks.fit(y, params=params, **kwargs)
         self.result = res
+        if self.auto_update_from_fit:
+            self.params = self.result.params
+            self.back_propagation()
         return res
+
+    def back_propagation(self):
+        for ens in self.ensemble:
+            ens._back_propagation_from_params()
 
     @property
     def result(self):
@@ -798,6 +823,20 @@ class CompositeEnsemble:
     @property
     def param_hints(self):
         return self._peaks.param_hints
+
+    @property
+    def names(self):
+        n = None
+        if self.ensemble:
+            n = [x.name for x in self.ensemble]
+        return n
+
+    @property
+    def selector(self):
+        n = None
+        if self.ensemble:
+            n = {x.name: x for x in self.ensemble}
+        return n
 
 
 class FitCollection:
@@ -994,6 +1033,82 @@ def check_composite():
     print(silicon)
 
 
+def check_backprop_composite():
+    print("Checking back prop for composite ensamble")
+    log.setup_logging(default_level=logging.INFO)
+    my_data = cellreader.CellpyData()
+    filename = "../../../testdata/hdf5/20160805_test001_45_cc.h5"
+    assert os.path.isfile(filename)
+    my_data.load(filename)
+    my_data.set_mass(0.1)
+    cha, volt = my_data.get_ccap(2)
+    v, dq = ica.dqdv(volt, cha)
+
+    # log.setup_logging(default_level=logging.DEBUG)
+    print("* creating a silicon peak ensemble:")
+    si_g_composite = CompositeEnsemble(
+        Silicon(shift=-0.1, max_point=dq.max(), sigma_p1=0.06),
+        Graphite(shift=-0.03)
+    )
+
+    print(si_g_composite)
+
+    print("peak values:")
+
+    print(f"val: {si_g_composite.params['Si01sigma']}")  # sigma_p1
+    print(f"val: {si_g_composite.params['Si01center']}")  # center - b
+    print(f"val: {si_g_composite.params['G01center']}")  # center - graphite
+
+    print("\nsetting some new values:")
+
+    si_g_composite.set_param("Si01center", value=0.18)
+    si_g_composite.set_param("G01center", value=0.14)
+    print(f"val: {si_g_composite.params['Si01sigma']}")
+    print(f"val: {si_g_composite.params['Si01center']}")
+    print(f"val: {si_g_composite.params['G01center']}")  # center - graphite
+
+    print("BACK PROPAGATION")
+    si_g_composite.back_propagation()
+
+    # select by order
+    si_ensemble = si_g_composite.ensemble[0]
+    g_ensemble = si_g_composite.ensemble[1]
+
+    # select by name
+    si_ensemble = si_g_composite.selector["Si"]
+    g_ensemble = si_g_composite.selector["G"]
+
+    si_new_shift = si_ensemble.shift
+    si_new_max_point = si_ensemble.max_point
+    si_new_sigma_p1 = si_ensemble.sigma_p1
+    g_new_shift = g_ensemble.shift
+
+    print("- calculated back prop gives the following updated values")
+    print(si_g_composite)
+
+    print("- setting the values to a new object")
+    another_si_g_composite = CompositeEnsemble(
+        Silicon(
+            shift=si_new_shift,
+            max_point=si_new_max_point,
+            sigma_p1=si_new_sigma_p1,
+            compress=1.0,
+            expand=1.0,
+        ),
+        Graphite(shift=g_new_shift),
+    )
+
+    print(another_si_g_composite)
+    print(f"val: {another_si_g_composite.params['Si01sigma']}")
+    print(f"val: {another_si_g_composite.params['Si01center']}")
+    print(f"val: {another_si_g_composite.params['G01center']}")
+
+    print(another_si_g_composite.prefixes)
+    print(another_si_g_composite.param_names)
+    print(another_si_g_composite.names)
+    print(another_si_g_composite.selector["Si"])
+
+
 def check_backprop():
     print("Checking back prop")
     log.setup_logging(default_level=logging.INFO)
@@ -1021,48 +1136,10 @@ def check_backprop():
     print(f"val: {silicon.params['Si01sigma']}")
     print(f"val: {silicon.params['Si01center']}")
 
-    # -- shift --
-    # f * x + a + b
-
-    principal_prefix = silicon.prefixes[1]
-    old_center = silicon._peak_definitions["center"][0]
-    old_center_b = silicon.shift
-    old_center_a = old_center - old_center_b
-
-    new_center = silicon.params[principal_prefix + "center"].value
-    new_shift = new_center - old_center_a
-
-    # -- sigma_p1 ----
-    # "sigma": self.sigma_p1
-    old_sigma_p1 = silicon.sigma_p1
-    new_sigma_p1 = silicon.params[principal_prefix + "sigma"].value
-
-    # -- max_point ---
-    # "amplitude":  self.sigma_p1 * self.max_point / 0.4
-    old_amplitude_b = (
-        silicon.sigma_p1 * silicon.max_point
-    ) / silicon._peak_definitions["amplitude"][0]
-    new_amplitude = silicon.params[principal_prefix + "amplitude"].value
-    new_max_point = new_amplitude * old_amplitude_b / old_sigma_p1
-
-    # -- cryst ---
-    # "center": [2]
-    #     (1.0, 0.20 + self._crystalline_hysteresis)
-    old_crystalline_hysteresis = silicon._crystalline_hysteresis
-    old_center_crystalline = silicon._peak_definitions["center"][3][1]
-
-    old_center_crystalline_b = old_center_crystalline - old_crystalline_hysteresis
-
-    new_center_crystalline = silicon.params[silicon.prefixes[3] + "center"].value
-
-    new_crystalline_hysteresis = (
-        new_center_crystalline - old_center_crystalline_b - old_center
-    )
-
-    silicon.shift = new_shift
-    silicon.sigma_p1 = new_sigma_p1
-    silicon.max_point = new_max_point
-    silicon._crystalline_hysteresis = new_crystalline_hysteresis
+    silicon._back_propagation_from_params()
+    new_shift = silicon.shift
+    new_max_point = silicon.max_point
+    new_sigma_p1 = silicon.sigma_p1
 
     print("- calculated back prop gives the following updated values")
     print(silicon)
@@ -1081,4 +1158,4 @@ def check_backprop():
 
 
 if __name__ == "__main__":
-    check_silicon()
+    check_backprop_composite()
