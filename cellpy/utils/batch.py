@@ -10,6 +10,7 @@ import pandas as pd
 
 from cellpy import prms
 from cellpy import log
+from cellpy.parameters.internal_settings import get_headers_step_table
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
@@ -65,6 +66,7 @@ class Batch:
         self.plotter = CyclingSummaryPlotter()
         self.plotter.assign(self.experiment)
         self._journal_name = self.journal_name
+        self.headers_step_table = get_headers_step_table()
 
     def __str__(self):
         return str(self.experiment)
@@ -80,10 +82,47 @@ class Batch:
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
 
+    def _check_cell_raw(self, cell_id):
+        try:
+            return len(self.experiment.cell_data_frames[cell_id].cell.raw)
+        except Exception:
+            return None
+
+    def _check_cell_steps(self, cell_id):
+        try:
+            return len(self.experiment.cell_data_frames[cell_id].cell.steps)
+        except Exception:
+            return None
+
+    def _check_cell_summary(self, cell_id):
+        try:
+            return len(self.experiment.cell_data_frames[cell_id].cell.summary)
+        except Exception:
+            return None
+
+    def _check_cell_empty(self, cell_id):
+        try:
+            return self.experiment.cell_data_frames[cell_id].empty
+        except Exception:
+            return None
+
+    def _check_cell_cycles(self, cell_id):
+        try:
+            return self.experiment.cell_data_frames[cell_id].cell.steps[
+                self.headers_step_table.cycle
+            ].max()
+        except Exception:
+            return None
+
     @property
     def report(self):
         pages = self.experiment.journal.pages
-        pages = pages[COLUMNS_SELECTED_FOR_VIEW]
+        pages = pages[COLUMNS_SELECTED_FOR_VIEW].copy()
+        pages["empty"] = pages.index.map(self._check_cell_empty)
+        pages["raw_rows"] = pages.index.map(self._check_cell_raw)
+        pages["steps_rows"] = pages.index.map(self._check_cell_steps)
+        pages["summary_rows"] = pages.index.map(self._check_cell_summary)
+        pages["last_cycle"] = pages.index.map(self._check_cell_cycles)
         return pages
 
     @property
