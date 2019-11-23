@@ -30,12 +30,6 @@ from lmfit import CompositeModel
 # TODO: check if updating and reseting parameters after fitting is sensible
 
 
-def dprint(something):
-    print(80*"-")
-    print(something)
-    print(80*"-")
-
-
 class PeakEnsemble:
     """A PeakEnsemble consists of a scale , an offset, and a set of peaks.
 
@@ -185,7 +179,6 @@ class PeakEnsemble:
                 f"jitter:    {self.jitter}",
                 f"scale:     {self.scale}",
                 f"sigma_p1:  {self.sigma_p1}",
-                f"\n{self.params}"
             ]
         )
 
@@ -502,11 +495,13 @@ class PeakEnsemble:
                 if self.debug:
                     warnings.warn(f"{k} MISSING!")
             else:
-                #self.params[k].value = _value + shift
                 self.params[k].min = _min + shift
                 self.params[k].max = _max + shift
                 self.params[k].vary = _vary
-                self.params[k].expr = expression
+                if _vary:
+                    self.params[k].expr = None
+                else:
+                    self.params[k].expr = expression
 
                 if self.sync_model_hints:
                     self._peaks.set_param_hint(
@@ -699,6 +694,12 @@ class Silicon(PeakEnsemble):
                 (1.0, 0.0),  # does not matter (gamma is not defined for Si02)
                 (1.0, 0.0),  # does not matter (gamma is not defined for Si03)
             ],
+            "fraction": [
+                0.5,  # value
+                ((0.001, 0.0), (2.0, 0.0)),
+                (1.0, 0.0),  # does not matter (fraction is not defined for Si02)
+                (1.0, 0.0),  # does not matter (fraction is not defined for Si03)
+            ],
         }
 
     def _custom_back_propagation_from_params(self):
@@ -823,8 +824,6 @@ class CompositeEnsemble:
         return txt
 
     def _join(self):
-        # OH NO, THIS DOES NOT WORK ANY MORE
-        # ERROR IN LMFIT - I SHOULD TRY COMPOSITE MODEL INSTEAD
         if len(self.ensemble) > 0:
             peaks_left = self.ensemble[0].peaks
             prefixes_left = self.ensemble[0].prefixes
@@ -835,8 +834,6 @@ class CompositeEnsemble:
                 for ens in self.ensemble[1:]:
                     peaks_left += ens.peaks
                     prefixes_left += ens.prefixes
-                    params_left.pretty_print()
-                    ens.params.pretty_print()
                     params_left += ens.params
                     if (result_left is not None) and (ens.result is not None):
                         result_left += ens.result
