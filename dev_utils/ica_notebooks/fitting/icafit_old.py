@@ -1,14 +1,13 @@
 import os
 import logging
 import warnings
-from pprint import pprint
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from cellpy import cellreader, log
 from cellpy.utils import ica
 
-from lmfit import Parameters
 from lmfit.models import (
     GaussianModel,
     PseudoVoigtModel,
@@ -28,12 +27,6 @@ from lmfit import CompositeModel
 # TODO: method for reading yaml files (or similar) with peak definitions
 # TODO: method for saving peak fits and definitions (picle?)
 # TODO: check if updating and reseting parameters after fitting is sensible
-
-
-def dprint(something):
-    print(80*"-")
-    print(something)
-    print(80*"-")
 
 
 class PeakEnsemble:
@@ -123,7 +116,7 @@ class PeakEnsemble:
 
     def __init__(
         self,
-        fixed=True,
+        fixed=False,
         name=None,
         max_point=1.0,
         shift=0.0,
@@ -139,18 +132,27 @@ class PeakEnsemble:
         self.shift = shift
         self.offset = offset
         self.name = name
-        self.fixed = fixed  # not in use at the moment
+        self.fixed = fixed
         self.max_point = max_point
-        self.jitter = jitter  # vary only shift, scale and offset if True
+        self.jitter = jitter
         self.scale = scale
         self.sigma_p1 = sigma_p1
-
+        self._meta_param_names = [
+            "fixed",
+            "jitter",
+            "shift",
+            "offset",
+            "max_point",
+            "scale",
+            "sigma_p1",
+        ]
         self.debug = debug
         self.auto_update_from_fit = auto_update_from_fit
 
         self.sync_model_hints = sync_model_hints
         self.peak_info = dict()
-        self.peak_types = None  # this needs to defined in the child-class
+
+        # self.peak_var_names = None  # Not used
         self.prefixes = None  # this needs to defined in the child-class
 
         self._peaks = None  # this is the Model object
@@ -162,20 +164,13 @@ class PeakEnsemble:
         self._peak_definitions = None
 
         # this will be populated in the initialisation process
-        # from the peak_definitions:
+        # from the peak_definitions
         self._peak_definition_dict = None
 
         # parameter name as defined by LMFIT for ConstantModel
-        self._var_name_scale = "c"
-        self._var_name_offset = "c"
-        self._var_name_shift = "Shift"
-
-        self._index_scale = 0
-        self._index_offset = 1
-        self._index_primary_peak = 2
+        self._scale_variable_name = "c"
 
     def __str__(self):
-
         return "\n".join(
             [
                 f"name:      {self.name}",
@@ -185,7 +180,6 @@ class PeakEnsemble:
                 f"jitter:    {self.jitter}",
                 f"scale:     {self.scale}",
                 f"sigma_p1:  {self.sigma_p1}",
-                f"\n{self.params}"
             ]
         )
 
@@ -200,10 +194,10 @@ class PeakEnsemble:
         new_shift = new_center - old_center_a
 
         # scale
-        new_scale = self.params[self.name + "Scale" + self._var_name_scale].value
+        new_scale = self.params[self.name + "Scale" + self._scale_variable_name].value
 
         # offset
-        new_offset = self.params[self.name + "Offset" + self._var_name_offset].value
+        new_offset = self.params[self.name + "Offset" + self._scale_variable_name].value
 
         # sigma_p1
         old_sigma_p1 = self.sigma_p1
@@ -342,56 +336,48 @@ class PeakEnsemble:
         return self._peak_definitions
 
     def _init_peaks(self):
-        self._peaks = self._create_initial_ensemble()
-        self._create_initial_params()
+        self._peaks = self._create_ensemble()
+        self._create_params()
 
     def _custom_init_peaks(self):
         pass
 
-    def _create_initial_ensemble(self):
+    def _create_ensemble(self):
         # create an ensemble of LMFIT models (scale, offset and peaks)
         logging.debug("   *PeakEnsemble: _create_ensemble")
-
         try:
             logging.debug(f"  - prefixes: {self.prefixes}")
-
             # scale
-            self.peak_info[self.prefixes[self._index_scale]] = self.peak_types[
-                self._index_scale
-            ](prefix=self.prefixes[self._index_scale])
-
+            self.peak_info[self.prefixes[0]] = self.peak_types[0](
+                prefix=self.prefixes[0]
+            )
             # offset
-            self.peak_info[self.prefixes[self._index_offset]] = self.peak_types[
-                self._index_offset
-            ](prefix=self.prefixes[self._index_offset])
-
+            self.peak_info[self.prefixes[1]] = self.peak_types[1](
+                prefix=self.prefixes[1]
+            )
             # first peak
-            self.peak_info[self.prefixes[self._index_primary_peak]] = self.peak_types[
-                self._index_primary_peak
-            ](prefix=self.prefixes[self._index_primary_peak])
+            self.peak_info[self.prefixes[2]] = self.peak_types[2](
+                prefix=self.prefixes[2]
+            )
             logging.debug(f"  - peak_info (scale and principal peak): {self.peak_info}")
-
         except AttributeError:
             logging.warning("you are missing peak info")
             return
 
         # first peak
-        p = self.peak_info[self.prefixes[self._index_primary_peak]]
+        p = self.peak_info[self.prefixes[2]]
 
         # additional peaks
-        for prfx, ptype in zip(
-            self.prefixes[self._index_primary_peak + 1 :],
-            self.peak_types[self._index_primary_peak + 1 :],
-        ):
+        for prfx, ptype in zip(self.prefixes[3:], self.peak_types[3:]):
             logging.debug(f"   peak gen: {prfx} of type {ptype}")
             self.peak_info[prfx] = ptype(prefix=prfx)
             p += self.peak_info[prfx]
 
         # scale
-        p *= self.peak_info[self.prefixes[self._index_scale]]
+        p *= self.peak_info[self.prefixes[0]]
 
         # offset
-        p += self.peak_info[self.prefixes[self._index_offset]]
+        p += self.peak_info[self.prefixes[1]]
 
         logging.debug(f"  - created the following ensemble:")
         logging.debug(f"    {p}")
@@ -401,7 +387,7 @@ class PeakEnsemble:
         logging.debug("   *PeakEnsemble: _create_default_peak_definition_dict")
         value_dict = dict()
         peak_definitions = self.peak_definitions
-        prefix_peak_1 = self.prefixes[self._index_primary_peak]
+        prefix_peak_1 = self.prefixes[2]
         for var_stub in peak_definitions:
             dd = peak_definitions[var_stub]
             val_1, ((frac_min, shift_min), (frac_max, shift_max)) = dd[0:2]
@@ -412,9 +398,7 @@ class PeakEnsemble:
                 frac_min * (val_1 + shift_min),
                 frac_max * (val_1 + shift_max),
             ]
-            for prfx, (fact, step) in zip(
-                self.prefixes[self._index_primary_peak + 1 :], dd[2:]
-            ):
+            for prfx, (fact, step) in zip(self.prefixes[3:], dd[2:]):
                 v_dict[prfx] = [fact * (x + step) for x in v_dict[prefix_peak_1]]
 
             value_dict[var_stub] = v_dict
@@ -422,42 +406,32 @@ class PeakEnsemble:
         logging.debug("created default peak definitions")
         self._peak_definition_dict = value_dict
 
-    def _create_initial_params(self):
+    def _create_params(self):
         logging.debug("   *PeakEnsemble: _set_params")
         self._create_default_peak_definition_dict()
         value_dict = self._peak_definition_dict
 
-        if self.jitter:
-            vary_scale = False
-            vary_offset = False
-            vary_shift = False
-        else:
-            vary_scale = True
-            vary_offset = True
-            vary_shift = True
-
-        scale = self.scale
-        offset = self.offset
-        shift = self.shift
-
-        # need to add the shift variable
-        shift_key = self.name + self._var_name_shift
-        self.params.add(shift_key, value=shift, vary=vary_shift)
-        self.params.move_to_end(shift_key, last=False)
-
-        # setting all vars except the center of the peaks
         for prm in value_dict:
-            if prm != "center":
+            logging.debug(f" {prm}: {value_dict[prm]}")
+            if prm == "center":
+                self._set_center(prm, value_dict[prm])
+            else:
                 for peak_label in value_dict[prm]:
                     self._set_one_param(prm, peak_label)
 
-        # setting the centers of the peaks
-        self._set_center()
+        if self.jitter:
+            vary_scale = False
+            vary_offset = False
+        else:
+            vary_scale = True
+            vary_offset = True
 
-        prefix_scale = self.prefixes[self._index_scale]
-        prefix_offset = self.prefixes[self._index_offset]
+        scale = self.scale
+        offset = self.offset
+        prefix_scale = self.prefixes[0]
+        prefix_shift = self.prefixes[1]
         scale_key = "".join((prefix_scale, "c"))
-        offset_key = "".join((prefix_offset, "c"))
+        offset_key = "".join((prefix_shift, "c"))
 
         self.params[scale_key].value = scale
         self.params[scale_key].min = 0.1 * scale
@@ -481,36 +455,37 @@ class PeakEnsemble:
                 vary=vary_offset,
             )
 
-    def _set_center(self):
-        d = self._peak_definition_dict["center"]
-        shift = self.shift
-        for key in d:
+    def _set_center(self, key1, d):
+        # TODO: modify this function so that we can have an overall shift
+        #   for example by setting an expr="v + Si01center"
+        #   (expr = f"{value} +{first_name}{center})"
+        #   (val = value + peak0val)
+        #   (if not jitter: vary = False) etc
+        for key2 in d:
+            logging.debug(f"setting one param ({key1}:{key2})")
             if self.jitter:
                 vary = True
             else:
                 vary = False
 
+            value_dict = self._peak_definition_dict
             _vary = vary
-            _value, _min, _max = d[key]
-            _v = d[key]
-            k = "".join((key, "center"))
-
-            shift_key = self.name + self._var_name_shift
-            expression = f"{_value} + {shift_key}"
+            _value, _min, _max = value_dict[key1][key2]
+            _v = value_dict[key1][key2]
+            k = "".join((key2, key1))
 
             if k not in self.params.keys():
                 if self.debug:
                     warnings.warn(f"{k} MISSING!")
             else:
-                #self.params[k].value = _value + shift
-                self.params[k].min = _min + shift
-                self.params[k].max = _max + shift
+                self.params[k].value = _value
+                self.params[k].min = _min
+                self.params[k].max = _max
                 self.params[k].vary = _vary
-                self.params[k].expr = expression
 
                 if self.sync_model_hints:
                     self._peaks.set_param_hint(
-                        k, value=_value, min=_min, max=_max, vary=_vary, expr=expression
+                        k, value=_value, min=_min, max=_max, vary=_vary
                     )
 
     def _set_one_param(self, key1, key2):
@@ -619,10 +594,9 @@ class Silicon(PeakEnsemble):
         Parameters:
             scale (float): overall scaling of the peak ensemble
             offset (float): overall offset of the peak ensemble
-            shift (float): overall shift of the peak ensemble
             crystalline (bool): set to True if the crystalline peak should be included
-            name (str): pre-name that will all parameter names will start with
-            max_point (float): max point of intensity
+            name (str): pre-name that will start all parameters
+            max_point (float): max point
             jitter (bool): allow for individual changes between the peaks if True, fix
                 all individual inter-peak prms if False.
             crystalline_hysteresis (float): additional hysteresis for crystalline peak
@@ -650,7 +624,6 @@ class Silicon(PeakEnsemble):
             PseudoVoigtModel,
             PseudoVoigtModel,
         ]
-        self._crystalline_prefix = self.prefixes[4]
         self._crystalline = crystalline
         self._crystalline_hysteresis = crystalline_hysteresis
         self._compress = compress
@@ -672,7 +645,7 @@ class Silicon(PeakEnsemble):
         self._peak_definitions = {
             "center": [
                 # value
-                0.25,
+                0.25 + self.shift,
                 # bounds (frac-min, shift-min), (frac-max, shift-max)
                 ((1.0, -0.1), (1.0, 0.1)),
                 # value (fraction, distance) between peak 1 and peak 2
@@ -707,7 +680,7 @@ class Silicon(PeakEnsemble):
         old_crystalline_hysteresis = self._crystalline_hysteresis
         old_center_crystalline = self._peak_definitions["center"][3][1]
         old_center_crystalline_b = old_center_crystalline - old_crystalline_hysteresis
-        new_center_crystalline = self.params[self.prefixes[-1] + "center"].value
+        new_center_crystalline = self.params[self.prefixes[4] + "center"].value
         new_crystalline_hysteresis = (
             new_center_crystalline - old_center_crystalline_b - old_center
         )
@@ -725,7 +698,7 @@ class Silicon(PeakEnsemble):
     def _unset_crystalline(self):
         logging.debug("-removing crystalline peak from fit")
 
-        prefix_p3 = self._crystalline_prefix
+        prefix_p3 = self.prefixes[4]
         k = "".join([prefix_p3, "amplitude"])
         self.set_param(k, value=0.00001, minimum=0.000001, vary=False)
         k = "".join([prefix_p3, "fraction"])
@@ -736,7 +709,7 @@ class Silicon(PeakEnsemble):
 
     def _set_crystalline(self):
         logging.debug("-including crystalline peak for fit")
-        prefix_p3 = self._crystalline_prefix
+        prefix_p3 = self.prefixes[4]
         self._set_one_param("amplitude", prefix_p3)
         self._set_one_param("center", prefix_p3)
         self._set_one_param("sigma", prefix_p3)
@@ -773,8 +746,8 @@ class Graphite(PeakEnsemble):
         self.vary = False
         self.vary_scale = True
         self.prefixes = [
-            self.name + x for x in ["Scale", "Offset", "01",]
-        ]  # Always start with scale, offset and shift
+            self.name + x for x in ["Scale", "Offset", "01"]
+        ]  # Always start with scale and shift
         self.peak_types = [ConstantModel, ConstantModel, LorentzianModel]
         self.init()
 
@@ -783,7 +756,7 @@ class Graphite(PeakEnsemble):
         self._peak_definitions = {
             "center": [
                 # value
-                0.16,
+                0.16 + self.shift,
                 # bounds (frac-min, shift-min), (frac-max, shift-max)
                 ((1.0, -0.05), (1.0, 0.05)),
             ],
@@ -823,8 +796,6 @@ class CompositeEnsemble:
         return txt
 
     def _join(self):
-        # OH NO, THIS DOES NOT WORK ANY MORE
-        # ERROR IN LMFIT - I SHOULD TRY COMPOSITE MODEL INSTEAD
         if len(self.ensemble) > 0:
             peaks_left = self.ensemble[0].peaks
             prefixes_left = self.ensemble[0].prefixes
@@ -835,8 +806,6 @@ class CompositeEnsemble:
                 for ens in self.ensemble[1:]:
                     peaks_left += ens.peaks
                     prefixes_left += ens.prefixes
-                    params_left.pretty_print()
-                    ens.params.pretty_print()
                     params_left += ens.params
                     if (result_left is not None) and (ens.result is not None):
                         result_left += ens.result
@@ -903,7 +872,7 @@ class CompositeEnsemble:
         res = self.peaks.fit(y, params=params, **kwargs)
         self.result = res
         if self.auto_update_from_fit:
-            self._params = self.result.params
+            self.params = self.result.params
             self.back_propagation()
         return res
 
@@ -1073,36 +1042,6 @@ def check_silicon_2():
 
     print("Setting crystalline")
     silicon.crystalline = True
-    print("Is jitter?", end=" ")
-    print(silicon.jitter)
-    print(silicon)
-
-    res1 = silicon.fit(-dq, x=v)
-    print(silicon)
-    print(res1.fit_report())
-
-
-def check_graphite():
-    log.setup_logging(default_level=logging.INFO)
-    my_data = cellreader.CellpyData()
-    filename = "../../../testdata/hdf5/20160805_test001_45_cc.h5"
-    assert os.path.isfile(filename)
-    my_data.load(filename)
-    my_data.set_mass(0.1)
-    cha, volt = my_data.get_ccap(2)
-    v, dq = ica.dqdv(volt, cha)
-
-    # log.setup_logging(default_level=logging.DEBUG)
-    print("* creating a silicon peak ensemble:")
-    graphite = Graphite(shift=-0.1)
-
-    print("Is jitter?", end=" ")
-    print(graphite.jitter)
-    print(graphite)
-
-    res1 = graphite.fit(-dq, x=v)
-    print(graphite)
-    print(res1.fit_report())
 
 
 def check_composite():
@@ -1117,7 +1056,7 @@ def check_composite():
 
     # log.setup_logging(default_level=logging.DEBUG)
     print("* creating a silicon peak ensemble:")
-    silicon = CompositeEnsemble(Silicon(shift=-0.1), Graphite())
+    silicon = CompositeEnsemble(Silicon(shift=-0.1), Graphite(shift=-0.03))
     print(
         f"hint: {silicon.peaks.param_hints['Si02sigma']}\n"
         f"val: {silicon.params['Si02sigma']}"
@@ -1179,9 +1118,8 @@ def check_composite():
     peaks = CompositeEnsemble(Silicon(shift=-0.1), Graphite(shift=-0.03))
     print(peaks.ensemble[0])
     log.setup_logging(default_level=logging.DEBUG)
-    print(peaks.ensemble[0])
     peaks.ensemble[0].crystalline = True
-
+    print(peaks.ensemble[0])
     peaks.ensemble[0].crystalline = False
     print(peaks.ensemble[0])
 
@@ -1323,5 +1261,4 @@ def check_backprop():
 
 
 if __name__ == "__main__":
-    print()
-    check_composite()
+    check_silicon_2()
