@@ -846,6 +846,10 @@ def _dqdv_split_frames(
             >>> charge_ica_df.plot(x=("voltage", "v"))
 
     """
+    cycle = kwargs.pop('cycle', None)
+    if cycle and not isinstance(cycle, (list, tuple)):
+        cycle = [cycle]
+
     charge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
         cell,
         direction="charge",
@@ -853,6 +857,7 @@ def _dqdv_split_frames(
         steps_to_skip=steps_to_skip,
         steptable=steptable,
         max_cycle_number=max_cycle_number,
+        cycle=cycle,
     )
     # charge_df = pd.concat(
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
@@ -871,6 +876,7 @@ def _dqdv_split_frames(
         steps_to_skip=steps_to_skip,
         steptable=steptable,
         max_cycle_number=max_cycle_number,
+        cycle=cycle,
     )
     ica_dcharge_dfs = _make_ica_charge_curves(
         dcharge_dfs, cycles, minimum_v, maximum_v, **kwargs
