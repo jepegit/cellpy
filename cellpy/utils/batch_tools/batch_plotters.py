@@ -261,7 +261,7 @@ def create_summary_plot_bokeh(
 
 
 def plot_cycle_life_summary_bokeh(
-    info, summaries, width=900, height=800, height_fractions=[0.2, 0.5, 0.3]
+    info, summaries, width=900, height=900, height_fractions=[0.3, 0.4, 0.3]
 ):
 
     # reloading bokeh (in case we change backend during a session)

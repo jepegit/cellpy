@@ -1765,7 +1765,6 @@ class CellpyData(object):
             nhdr.charge_capacity_txt: shdr.charge,
             nhdr.discharge_capacity_txt: shdr.discharge,
             nhdr.internal_resistance_txt: shdr.internal_resistance,
-            nhdr.sub_step_index_txt: shdr.sub_step,
         }
 
         df = df.rename(columns=rename_dict)
