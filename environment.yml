@@ -20,5 +20,5 @@ dependencies:
   - cookiecutter
   - pip:
     - lmfit
-    - python-box
+    - python-box<4
 

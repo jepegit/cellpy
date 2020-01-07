@@ -32,7 +32,7 @@ dependencies:
   - lmfit
   - cookiecutter
   - pip:
-    - python-box
+    - python-box<4
     - pytest-benchmark
     - pytest-timeout
     - requests
