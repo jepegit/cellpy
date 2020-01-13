@@ -448,6 +448,9 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
 
     """
 
+    if cycle.empty:
+        raise NullData(f"The cycle (type={type(cycle)}) is empty.")
+
     c_first = cycle.loc[cycle["direction"] == -1]
     c_last = cycle.loc[cycle["direction"] == 1]
 
