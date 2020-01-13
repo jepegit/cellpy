@@ -12,12 +12,6 @@ Example:
     >>> voltage_curves = d.get_cap()
     >>> d.save("mytest.hdf")
 
-
-Todo:
-    * Remove mass dependency in summary data
-    * use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"] for col or
-        pd.loc[(pd.["step"]==1),"x"]
-
 """
 
 import os
@@ -72,7 +66,7 @@ class CellpyData(object):
     reading, selecting, and tweaking your data is located. It also contains the
     header definitions, both for the cellpy hdf5 format, and for the various
     cell-tester file-formats that can be read. The class can contain
-    several tests and each test is stored in a list. If you see what I mean...
+    several cell-tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
         cells (list): list of DataSet objects.
@@ -234,7 +228,10 @@ class CellpyData(object):
     def dataset(self):
         """returns the DataSet instance"""
         # could insert a try-except thingy here...
-        warnings.warn("The .dataset property is deprecated, please use .cell instead.")
+        warnings.warn(
+            "The .dataset property is deprecated, please use .cell instead.",
+            DeprecationWarning,
+        )
         cell = self.cells[self.selected_cell_number]
         return cell
 
@@ -253,39 +250,56 @@ class CellpyData(object):
         Sets the instrument used for obtaining the data (i.e. sets fileformat)
 
         """
-        self.logger.debug(f"Setting instrument: {instrument}")
 
         if instrument is None:
             instrument = self.tester
 
+        self.logger.debug(f"Setting instrument: {instrument}")
+
         if instrument in ["arbin", "arbin_res"]:
-            self._set_arbin()
+            from cellpy.readers.instruments.arbin import ArbinLoader as RawLoader
+
+            self._set_instrument(RawLoader)
             self.tester = "arbin"
 
         elif instrument == "arbin_sql":
-            self._set_arbin_sql()
-            self.tester = "arbin"
-
-        elif instrument == "arbin_experimental":
-            self._set_arbin_experimental()
+            warnings.warn(f"{instrument} not implemented yet")
             self.tester = "arbin"
 
         elif instrument in ["pec", "pec_csv"]:
-            self._set_pec()
+            warnings.warn("Experimental! Not ready for production!")
+            from cellpy.readers.instruments.pec import PECLoader as RawLoader
+
+            self._set_instrument(RawLoader)
             self.tester = "pec"
 
         elif instrument in ["biologics", "biologics_mpr"]:
-            self._set_biologic()
+            from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
+
+            warnings.warn("Experimental! Not ready for production!")
+            self._set_instrument(RawLoader)
             self.tester = "biologic"
 
         elif instrument == "custom":
-            self._set_custom()
+            from cellpy.readers.instruments.custom import CustomLoader as RawLoader
+
+            self._set_instrument(RawLoader)
             self.tester = "custom"
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")
 
+    def _set_instrument(self, loader_class):
+        self.loader_class = loader_class()
+        # ----- get information --------------------------
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # ----- create the loader ------------------------
+        self.loader = self.loader_class.loader
+
     def _set_biologic(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         warnings.warn("Experimental! Not ready for production!")
         from cellpy.readers.instruments import biologics_mpr as instr
 
@@ -297,6 +311,8 @@ class CellpyData(object):
         self.loader = self.loader_class.loader
 
     def _set_pec(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         warnings.warn("Experimental! Not ready for production!")
         from cellpy.readers.instruments import pec as instr
 
@@ -307,10 +323,9 @@ class CellpyData(object):
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
-    def _set_maccor(self):
-        warnings.warn("not implemented")
-
     def _set_custom(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         # use a custom format (csv with information lines on top)
         from cellpy.readers.instruments import custom as instr
 
@@ -323,9 +338,13 @@ class CellpyData(object):
         self.loader = self.loader_class.loader
 
     def _set_arbin_sql(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         warnings.warn("not implemented")
 
     def _set_arbin(self):
+        # TODO: remove this
+        warnings.warn("deprecated", DeprecationWarning)
         from cellpy.readers.instruments import arbin as instr
 
         self.loader_class = instr.ArbinLoader()
@@ -336,29 +355,6 @@ class CellpyData(object):
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
-    # def _set_arbin_experimental(self):
-    #     # Note! All these _set_instrument methods can be generalized to one
-    #     # method. At the moment, I find it
-    #     # more transparent to separate them into respective methods pr
-    #     # instrument.
-    #     from .instruments import arbin_experimental as instr
-    #     self.loader_class = instr.ArbinLoader()
-    #     # get information
-    #     self.raw_units = self.loader_class.get_raw_units()
-    #     self.raw_limits = self.loader_class.get_raw_limits()
-    #     # send information (should improve this later)
-    #     # loader_class.load_only_summary = self.load_only_summary
-    #     # loader_class.select_minimal = self.select_minimal
-    #     # loader_class.max_res_filesize = self.max_res_filesize
-    #     # loader_class.chunk_size = self.chunk_size
-    #     # loader_class.max_chunks = self.max_chunks
-    #     # loader_class.last_chunk = self.last_chunk
-    #     # loader_class.limit_loaded_cycles = self.limit_loaded_cycles
-    #     # loader_class.load_until_error = self.load_until_error
-    #
-    #     # create loader
-    #     self.loader = self.loader_class.loader
-
     def _create_logger(self):
         from cellpy import log
 
@@ -367,6 +363,11 @@ class CellpyData(object):
 
     def set_cycle_mode(self, cycle_mode):
         """set the cycle mode"""
+        # TODO: remove this
+        warnings.warn(
+            "deprecated - use it as a property " "instead, e.g.: cycle_mode = 'anode'",
+            DeprecationWarning,
+        )
         self._cycle_mode = cycle_mode
 
     @property
@@ -569,9 +570,9 @@ class CellpyData(object):
         summary_ocv=False,
         summary_end_v=True,
         only_summary=False,
-        only_first=False,
         force_raw=False,
         use_cellpy_stat_file=None,
+        **kwargs,
     ):
 
         """Loads data for given cells.
@@ -585,10 +586,10 @@ class CellpyData(object):
             summary_ocv (bool): summarize ocv steps
             summary_end_v (bool): summarize end voltage
             only_summary (bool): get only the summary of the runs
-            only_first (bool): only use the first file fitting search criteria
             force_raw (bool): only use raw-files
             use_cellpy_stat_file (bool): use stat file if creating summary
                 from raw
+            **kwargs: passed to from_raw
 
         Example:
 
@@ -630,7 +631,7 @@ class CellpyData(object):
             self.logger.debug("cellpy file(s) needs updating - loading raw")
             self.logger.info("Loading raw-file")
             self.logger.debug(raw_files)
-            self.from_raw(raw_files)
+            self.from_raw(raw_files, **kwargs)
             self.logger.debug("loaded files")
             # Check if the run was loaded ([] if empty)
             if self.status_datasets:
@@ -661,6 +662,14 @@ class CellpyData(object):
             file_names (list of raw-file names): uses CellpyData.file_names if
                 None. If the list contains more than one file name, then the
                 runs will be merged together.
+
+        Other keywords depending on loader:
+            [ArbinLoader]:
+                bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
+                    to skip loading.
+                dataset_number (int): the data set number to select if you are dealing
+                    with arbin files with more than one data-set.
+
         """
         # This function only loads one test at a time (but could contain several
         # files). The function from_res() also implements loading several
@@ -669,7 +678,7 @@ class CellpyData(object):
         if file_names:
             self.file_names = file_names
 
-        if not isinstance(file_names, (list, tuple)):
+        if not isinstance(self.file_names, (list, tuple)):
             self.file_names = [file_names]
 
         # file_type = self.tester
@@ -776,17 +785,20 @@ class CellpyData(object):
             return True
         return False
 
+    # TODO: maybe consider being a bit more concice (re-implement)
     def _is_not_empty_dataset(self, dataset):
         if dataset is self._empty_dataset():
             return False
         else:
             return True
 
+    # TODO: check if this is useful and if it is rename, if not delete
     def _clean_up_normal_table(self, test=None, dataset_number=None):
         # check that test contains all the necessary headers
         # (and add missing ones)
         raise NotImplementedError
 
+    # TODO: this is used for the check-datasetnr-thing. Will soon be obsolete?
     def _report_empty_dataset(self):
         self.logger.info("Empty set")
 
@@ -1312,7 +1324,7 @@ class CellpyData(object):
         return test
 
     # --------------iterate-and-find-in-data-----------------------------------
-
+    # TODO: make this obsolete (somehow)
     def _validate_dataset_number(self, n, check_for_empty=True):
         # Returns dataset_number (or None if empty)
         # Remark! _is_not_empty_dataset returns True or False
@@ -1340,6 +1352,7 @@ class CellpyData(object):
         else:
             return v
 
+    # TODO: check if this can be moved to helpers
     def _validate_step_table(self, dataset_number=None, simple=False):
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -1752,7 +1765,6 @@ class CellpyData(object):
             nhdr.charge_capacity_txt: shdr.charge,
             nhdr.discharge_capacity_txt: shdr.discharge,
             nhdr.internal_resistance_txt: shdr.internal_resistance,
-            nhdr.sub_step_index_txt: shdr.sub_step,
         }
 
         df = df.rename(columns=rename_dict)
@@ -2111,6 +2123,7 @@ class CellpyData(object):
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         self.logger.debug("END exporting cycles")
 
+    # TODO: remove this
     def _export_cycles_old(
         self,
         dataset_number,
@@ -2352,7 +2365,7 @@ class CellpyData(object):
 
         Returns: Nothing at all.
         """
-
+        self.logger.debug(f"Trying to save cellpy-file to {filename}")
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
 
@@ -2408,7 +2421,7 @@ class CellpyData(object):
                 self.logger.debug("save: creating step table")
                 self.make_step_table(dataset_number=dataset_number)
 
-        # This method can probalby be updated using pandas transpose trick
+        # This method can probably be updated using pandas transpose trick
         self.logger.debug("trying to make infotable")
         infotbl, fidtbl = self._create_infotable(dataset_number=dataset_number)
 
@@ -2509,6 +2522,7 @@ class CellpyData(object):
                 dataset.steps[col] = dataset.steps[col].astype("str")
         return dataset
 
+    # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
         # modifies the summary table
         time_00 = time.time()
@@ -2534,6 +2548,7 @@ class CellpyData(object):
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return summary
 
+    # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_normal(
         self, dataset_number=None, capacity_modifier="reset", allctypes=True
     ):
@@ -2666,6 +2681,10 @@ class CellpyData(object):
         else:
             return None
 
+    # TODO: make this
+    def sget_current(self, cycle, step, set_number=None):
+        raise NotImplementedError
+
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
         """Returns voltage (in V).
 
@@ -2755,7 +2774,7 @@ class CellpyData(object):
     def sget_steptime(self, cycle, step, dataset_number=None):
         """Returns step time for cycle, step.
 
-        Convinience function; same as issuing
+        Convenience function; same as issuing
            raw[(raw[cycle_index_header] == cycle) &
                  (raw[step_index_header] == step)][step_time_header]
 
@@ -2778,9 +2797,7 @@ class CellpyData(object):
         test = self.cells[dataset_number].raw
 
         if isinstance(step, (list, tuple)):
-            warnings.warn(
-                f"The varialbe step is a list." f"Should be an integer." f"{step}"
-            )
+            warnings.warn(f"The variable step is a list. Should be an integer. {step}")
             step = step[0]
 
         c = test.loc[
@@ -2796,7 +2813,7 @@ class CellpyData(object):
     def sget_timestamp(self, cycle, step, dataset_number=None):
         """Returns timestamp for cycle, step.
 
-        Convinience function; same as issuing
+        Convenience function; same as issuing
            raw[(raw[cycle_index_header] == cycle) &
                  (raw[step_index_header] == step)][timestamp_header]
 
@@ -3564,6 +3581,7 @@ class CellpyData(object):
             dataset_number = 0
         self.selected_cell_number = dataset_number
 
+    # TODO: deprecate this
     def get_summary(self, dataset_number=None, use_summary_made=False):
         """Retrieve summary returned as a pandas DataFrame."""
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -3592,6 +3610,7 @@ class CellpyData(object):
 
     # -----------internal-helpers-----------------------------------------------
 
+    # TODO: clean it up a bit
     @staticmethod
     def is_empty(v):
         try:
@@ -3681,6 +3700,7 @@ class CellpyData(object):
         last_items = raw[d_txt].isin(steps)
         return last_items
 
+    # TODO: find out what this is for and probably delete it
     def _modify_cycle_number_using_cycle_step(
         self, from_tuple=None, to_cycle=44, dataset_number=None
     ):
@@ -4359,7 +4379,20 @@ def get(
     cycle_mode=None,
     auto_summary=True,
 ):
-    """Create a CellpyData object"""
+    """Create a CellpyData object
+
+    Args:
+        filename (str, os.PathLike, or list of raw-file names): path to file(s)
+        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file)
+        logging_mode (str): "INFO" or "DEBUG"
+        cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
+        auto_summary (bool): (re-) create summary.
+
+    Returns:
+        CellpyData object (if successful, None if not)
+
+    """
 
     from cellpy import log
 
@@ -4373,47 +4406,53 @@ def get(
         cellpy_instance.cycle_mode = cycle_mode
 
     if filename is not None:
-        filename = Path(filename)
-        if not filename.is_file():
-            print(f"Could not find {filename}")
-            print("Returning None")
-            return
+        # cellpy file
+        if not isinstance(filename, (list, tuple)):
+            filename = Path(filename)
 
-        if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
-            logging.info(f"Loading cellpy-file: {filename}")
-            cellpy_instance.load(filename)
-            if mass is not None:
-                logging.info(f"Setting mass: {mass}")
-                cellpy_instance.set_mass(mass)
-                if auto_summary:
-                    logging.info("Creating step table")
-                    cellpy_instance.make_step_table()
-                    logging.info("Creating summary data")
-                    cellpy_instance.make_summary()
-        else:
-            logging.info(f"Loading raw-file: {filename}")
-            cellpy_instance.from_raw(filename)
-            if not cellpy_instance:
-                print("Could not load file: check log!")
+            if not filename.is_file():
+                print(f"Could not find {filename}")
                 print("Returning None")
                 return
 
-            if mass is not None:
-                logging.info(f"Setting mass: {mass}")
-                cellpy_instance.set_mass(mass)
-            if auto_summary:
-                logging.info("Creating step table")
-                cellpy_instance.make_step_table()
-                logging.info("Creating summary data")
-                cellpy_instance.make_summary()
+            if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
+                logging.info(f"Loading cellpy-file: {filename}")
+                cellpy_instance.load(filename)
+                if mass is not None:
+                    logging.info(f"Setting mass: {mass}")
+                    cellpy_instance.set_mass(mass)
+                    if auto_summary:
+                        logging.info("Creating step table")
+                        cellpy_instance.make_step_table()
+                        logging.info("Creating summary data")
+                        cellpy_instance.make_summary()
+                logging.info("Created CellpyData object")
+                return cellpy_instance
 
-    logging.info("Created CellpyData object")
-    return cellpy_instance
+        # raw file
+        logging.info(f"Loading raw-file: {filename}")
+        cellpy_instance.from_raw(filename)
+        if not cellpy_instance:
+            print("Could not load file: check log!")
+            print("Returning None")
+            return
+
+        if mass is not None:
+            logging.info(f"Setting mass: {mass}")
+            cellpy_instance.set_mass(mass)
+        if auto_summary:
+            logging.info("Creating step table")
+            cellpy_instance.make_step_table()
+            logging.info("Creating summary data")
+            cellpy_instance.make_summary()
+
+        logging.info("Created CellpyData object")
+        return cellpy_instance
 
 
 # utility functions that most likely will be moved to another module
 
-
+# TODO: rename and move this to helpers
 def group_by_interpolate(
     df,
     x=None,
@@ -4532,6 +4571,7 @@ def group_by_interpolate(
     return new_df
 
 
+# TODO: rename this
 def _interpolate_df_col(
     df,
     x=None,
@@ -4593,6 +4633,7 @@ def _interpolate_df_col(
     return new_df
 
 
+# TODO: rename this
 def _collect_capacity_curves(
     data,
     direction="charge",
@@ -4600,6 +4641,7 @@ def _collect_capacity_curves(
     steps_to_skip=None,
     steptable=None,
     max_cycle_number=None,
+    **kwargs,
 ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
@@ -4610,10 +4652,20 @@ def _collect_capacity_curves(
         minimum voltage value,
         maximum voltage value"""
 
+    # TODO: should allow for giving cycle numbers as input (e.g. cycle=[1, 2, 10]
+    #  or cycle=2), not only max_cycle_number
+
     minimum_v_value = np.Inf
     maximum_v_value = -np.Inf
     charge_list = []
-    cycles = data.get_cycle_numbers()
+    cycles = kwargs.pop("cycle", None)
+
+    print(80 * "=")
+    print(cycles)
+
+    if cycles is None:
+        cycles = data.get_cycle_numbers()
+
     if max_cycle_number is None:
         max_cycle_number = max(cycles)
 
@@ -4654,6 +4706,7 @@ def _collect_capacity_curves(
     return charge_list, cycles, minimum_v_value, maximum_v_value
 
 
+# TODO: remove this
 def setup_cellpy_instance():
     """Prepares for a cellpy session.
 
@@ -4681,6 +4734,7 @@ def setup_cellpy_instance():
     return cellpy_instance
 
 
+# TODO: remove this
 def just_load_srno(srno, prm_filename=None):
     """Simply load an dataset based on serial number (srno).
 
@@ -4748,6 +4802,7 @@ def just_load_srno(srno, prm_filename=None):
     return True
 
 
+# TODO: rename and move this to helpers
 def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     """Load a raw data file and save it as cellpy-file.
 
@@ -4784,6 +4839,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     return outfile
 
 
+# TODO: move this to helpers
 def load_and_print_resfile(filename, info_dict=None):
     """Load a raw data file and print information.
 
@@ -4854,6 +4910,7 @@ def load_and_print_resfile(filename, info_dict=None):
     return info_dict
 
 
+# TODO: remove this
 def loadcell_check():
     warnings.warn(DeprecationWarning("this option will be removed" "in v.0.4.0"))
 

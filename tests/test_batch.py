@@ -158,3 +158,7 @@ def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
 def test_cycling_summary_plotter(populated_batch):
     populated_batch.make_summaries()
     populated_batch.plot_summaries()
+
+
+def test_report(populated_batch):
+    print(populated_batch.report)

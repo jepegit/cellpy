@@ -77,6 +77,18 @@ def _read_prm_file(prm_filename):
         _update_prms(prm_dict)
 
 
+def _read_prm_file_without_updating(prm_filename):
+    """read the prm file but do not update the params"""
+    logger.debug("Reading config-file: %s" % prm_filename)
+    try:
+        with open(prm_filename, "r") as config_file:
+            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+
+    except yaml.YAMLError as e:
+        raise ConfigFileNotRead from e
+    return prm_dict
+
+
 def __look_at(file_name):
     with open(file_name, "r") as config_file:
         t = yaml.load(config_file)

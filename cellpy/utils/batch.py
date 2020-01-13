@@ -10,10 +10,12 @@ import pandas as pd
 
 from cellpy import prms
 from cellpy import log
+from cellpy.parameters.internal_settings import get_headers_step_table
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
 from cellpy.utils.batch_tools.batch_analyzers import OCVRelaxationAnalyzer
+from cellpy.utils.batch_tools.batch_journals import LabJournal
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 
 logger = logging.getLogger(__name__)
@@ -25,9 +27,12 @@ COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
 class Batch:
     def __init__(self, *args, **kwargs):
         default_log_level = kwargs.pop("log_level", None)
-        if default_log_level is not None:
+        custom_log_dir = kwargs.pop("custom_log_dir", None)
+        if default_log_level is not None or custom_log_dir is not None:
             log.setup_logging(
-                custom_log_dir=prms.Paths.filelogdir, default_level=default_log_level
+                custom_log_dir=custom_log_dir,
+                default_level=default_log_level,
+                reset_big_log=True,
             )
 
         db_reader = kwargs.pop("db_reader", "default")
@@ -61,6 +66,7 @@ class Batch:
         self.plotter = CyclingSummaryPlotter()
         self.plotter.assign(self.experiment)
         self._journal_name = self.journal_name
+        self.headers_step_table = get_headers_step_table()
 
     def __str__(self):
         return str(self.experiment)
@@ -76,10 +82,47 @@ class Batch:
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
 
+    def _check_cell_raw(self, cell_id):
+        try:
+            return len(self.experiment.cell_data_frames[cell_id].cell.raw)
+        except Exception:
+            return None
+
+    def _check_cell_steps(self, cell_id):
+        try:
+            return len(self.experiment.cell_data_frames[cell_id].cell.steps)
+        except Exception:
+            return None
+
+    def _check_cell_summary(self, cell_id):
+        try:
+            return len(self.experiment.cell_data_frames[cell_id].cell.summary)
+        except Exception:
+            return None
+
+    def _check_cell_empty(self, cell_id):
+        try:
+            return self.experiment.cell_data_frames[cell_id].empty
+        except Exception:
+            return None
+
+    def _check_cell_cycles(self, cell_id):
+        try:
+            return self.experiment.cell_data_frames[cell_id].cell.steps[
+                self.headers_step_table.cycle
+            ].max()
+        except Exception:
+            return None
+
     @property
     def report(self):
         pages = self.experiment.journal.pages
-        pages = pages[COLUMNS_SELECTED_FOR_VIEW]
+        pages = pages[COLUMNS_SELECTED_FOR_VIEW].copy()
+        pages["empty"] = pages.index.map(self._check_cell_empty)
+        pages["raw_rows"] = pages.index.map(self._check_cell_raw)
+        pages["steps_rows"] = pages.index.map(self._check_cell_steps)
+        pages["summary_rows"] = pages.index.map(self._check_cell_summary)
+        pages["last_cycle"] = pages.index.map(self._check_cell_cycles)
         return pages
 
     @property
@@ -144,10 +187,10 @@ class Batch:
                 "empty": create an empty journal
                 dictionary: create journal pages from a dictionary
                 pd.DataFrame: create  journal pages from a pandas DataFrame
+                filename.json: load cellpy batch file
+
                 filename.xlxs: create journal pages from an excel file
                     (not implemented yet)
-                filename.json: load cellpy batch file
-                    (not implemented yet, use .experiment.journal.from_file() instead).
             from_db (bool): Deprecation Warning: this parameter will be removed as it is
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
@@ -237,10 +280,14 @@ class Batch:
                                 value = [value]
                             if k == "raw_file_names":
                                 if not isinstance(value[0], list):
-                                    warnings.warn("encountered raw file description"
-                                                  "that is not of list-type")
-                                    logging.debug("converting raw file description to a"
-                                                  "list of lists")
+                                    warnings.warn(
+                                        "encountered raw file description"
+                                        "that is not of list-type"
+                                    )
+                                    logging.debug(
+                                        "converting raw file description to a"
+                                        "list of lists"
+                                    )
                                     value = [value]
                             self.experiment.journal.pages[k] = value
 
@@ -264,6 +311,7 @@ class Batch:
                     )
 
             # finally
+            self.experiment.journal.to_file()
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
 
@@ -277,7 +325,6 @@ class Batch:
         logging.info("created folders")
 
     def save_journal(self):
-        # rename to: save_journal
         # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file()
         logging.info("saving journal pages")
@@ -352,6 +399,7 @@ class Batch:
     # TODO: list_journals?
 
     def link(self):
+        """Link journal content to the cellpy-files and load the step information."""
         self.experiment.link()
 
     def load(self):
@@ -359,15 +407,20 @@ class Batch:
         warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
 
-    def update(self):
-        self.experiment.update()
+    def update(self, **kwargs):
+        """Load cells as defined in the journal"""
+        self.experiment.update(**kwargs)
 
     def make_summaries(self):
-        # rename to: combine_summaries
-        # also: need a similar function that does not save to csv
+        warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
+        self.exporter.do()
+
+    def combine_summaries(self, export_to_csv=True):
+        """Combine selected columns from each of the cells into single frames"""
         self.exporter.do()
 
     def plot_summaries(self):
+        """Plot the summaries (should be run after running combine_summaries)"""
         if prms.Batch.backend == "bokeh":
 
             try:
@@ -461,14 +514,33 @@ def init(*args, **kwargs):
     default_log_level = kwargs.pop("default_log_level", "INFO")
     file_name = kwargs.pop("file_name", None)
 
-    log.setup_logging(
-        custom_log_dir=prms.Paths["filelogdir"], default_level=default_log_level
-    )
+    log.setup_logging(default_level=default_log_level, reset_big_log=True)
+
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:
         kwargs.pop("db_reader", None)
         return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
     return Batch(*args, **kwargs)
+
+
+def load_pages(file_name):
+    """Retrieve pages from a Journal file.
+
+    This function is here to let you easily inspect a Journal file without
+    starting up the full batch-functionality.
+
+    Examples:
+        >>> from cellpy.utils import batch
+        >>> journal_file_name = 'cellpy_journal_one.json'
+        >>> pages = batch.load_pages(journal_file_name)
+
+    Returns:
+        pandas.DataFrame
+
+    """
+    print(f"Loading pages from {file_name}")
+    pages, _ = LabJournal.read_journal_jason_file(file_name)
+    return pages
 
 
 if __name__ == "__main__":

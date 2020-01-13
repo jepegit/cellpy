@@ -94,6 +94,23 @@ def test_logger(clean_dir):
     tmp_logger.error("customdir, default: testing logger (error)")
 
 
+def test_logger_advanced(clean_dir):
+    log.setup_logging(reset_big_log=True)
+    tmp_logger = logging.getLogger()
+    tmp_logger.info("customdir, default: testing logger (info)")
+    tmp_logger.debug("customdir, default: testing logger (debug)")
+    tmp_logger.error("customdir, default: testing logger (error)")
+    for handler in logging.getLogger().handlers:
+        if handler.name == "console":
+            assert handler.level == logging.INFO
+        if handler.name == "info_file_handler":
+            assert handler.level == logging.INFO
+        elif handler.name == "error_file_handler":
+            assert handler.level == logging.ERROR
+        elif handler.name == "debug_file_handler":
+            assert handler.level == logging.DEBUG
+
+
 @pytest.mark.timeout(5.0)
 def test_load_and_save_resfile(clean_dir):
     import os

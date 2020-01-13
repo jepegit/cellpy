@@ -403,7 +403,7 @@ def test_load_step_specs(cellpy_data_instance):
     assert t == "ocvrlx_down"
 
 
-def test_load_res(cellpy_data_instance):
+def test_loadcell_raw(cellpy_data_instance):
     cellpy_data_instance.loadcell(fdv.res_file_path)
     run_number = 0
     data_point = 2283
@@ -631,6 +631,10 @@ def test_group_by_interpolate(dataset):
 def test_get():
     c_h5 = cellpy.get(fdv.cellpy_file_path)
     c_res = cellpy.get(fdv.res_file_path, instrument="arbin", mass=0.045)
+
+
+def test_get_advanced():
+    c_many = cellpy.get([fdv.res_file_path, fdv.res_file_path2], logging_mode="DEBUG", mass=0.035)
 
 
 def test_get_empty():

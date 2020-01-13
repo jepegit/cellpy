@@ -64,7 +64,32 @@ class LabJournal(BaseJournal):
                 p = pathlib.PurePosixPath(p)
         return pathlib.Path(p)
 
+    @classmethod
+    def read_journal_jason_file(cls, file_name):
+        logging.debug(f"json loader starting on {file_name}")
+        with open(file_name, "r") as infile:
+            top_level_dict = json.load(infile)
+        pages_dict = top_level_dict["info_df"]
+        meta_dict = top_level_dict["metadata"]
+        pages = pd.DataFrame(pages_dict)
+        logging.debug("checking path-names")
+        pages.cellpy_file_names = pages.cellpy_file_names.apply(cls._fix_cellpy_paths)
+        return pages, meta_dict
+
     def from_file(self, file_name=None):
+        """Loads a DataFrame with all the needed info about the experiment"""
+
+        file_name = self._check_file_name(file_name)
+        logging.debug(f"reading {file_name}")
+        pages, meta_dict = self.read_journal_jason_file(file_name)
+        logging.debug(f"got pages and meta_dict")
+        self.pages = pages
+        self.file_name = file_name
+        self._prm_packer(meta_dict)
+        self.generate_folder_names()
+        self.paginate()
+
+    def from_file_old(self, file_name=None):
         """Loads a DataFrame with all the needed info about the experiment"""
 
         file_name = self._check_file_name(file_name)
@@ -109,14 +134,12 @@ class LabJournal(BaseJournal):
 
     def to_file(self, file_name=None):
         """Saves a DataFrame with all the needed info about the experiment"""
-
         file_name = self._check_file_name(file_name)
         pages = self.pages
-
         top_level_dict = {"info_df": pages, "metadata": self._prm_packer()}
-
         jason_string = json.dumps(
-            top_level_dict, default=lambda info_df: json.loads(info_df.to_json())
+            top_level_dict,
+            default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
         )
 
         self.paginate()

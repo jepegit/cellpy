@@ -1,15 +1,25 @@
 """Set up logger instance"""
 
 import os
+import shutil
+import datetime
+import pathlib
 import json
 import logging.config
 import logging
 import warnings
+
 from cellpy import prms
+logging.raiseExceptions = False
 
 
 def setup_logging(
-    default_json_path=None, default_level=None, env_key="LOG_CFG", custom_log_dir=None
+    default_json_path=None,
+    default_level=None,
+    env_key="LOG_CFG",
+    custom_log_dir=None,
+    reset_big_log=False,
+    max_size=5_000_000,
 ):
     """Setup logging configuration
 
@@ -59,6 +69,23 @@ def setup_logging(
                 config["handlers"][file_handler]["filename"] = os.path.join(
                     log_dir, file_name
                 )
+
+                if reset_big_log:
+                    full_log_file_path = pathlib.Path(log_dir) / file_name
+                    if full_log_file_path.is_file():
+                        file_size = full_log_file_path.lstat().st_size
+                        if file_size > max_size:
+                            d_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
+                            new_file_name = "_".join([d_str, file_name])
+                            new_full_log_file_path = (
+                                pathlib.Path(log_dir) / new_file_name
+                            )
+                            shutil.copy(full_log_file_path, new_full_log_file_path)
+                    else:
+                        logging.debug(
+                            "Could not reset big log: could not find the file"
+                        )
+
             except Exception as e:
                 warnings.warn("\nCould not set custom log-dir" + str(e))
 

@@ -5,6 +5,7 @@ include CONTRIBUTING.rst
 include HISTORY.rst
 include LICENSE
 include README.rst
+include cellpy/logging.json
 recursive-include cellpy/parameters *_default.conf
 recursive-include cellpy/utils/data/raw  *.res
 recursive-include cellpy/utils/data *.h5
