@@ -58,7 +58,7 @@ def get_user_dir():
         _user_dir = user_dir / "documents"
         if _user_dir.is_dir():
             user_dir = _user_dir
-    return pathlib.Path(user_dir)
+    return user_dir
 
 
 def get_dst_file(user_dir, init_filename):
