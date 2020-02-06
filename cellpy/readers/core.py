@@ -54,6 +54,7 @@ class FileID(object):
                 self.last_accessed = fid_st.st_atime
                 self.last_info_changed = fid_st.st_ctime
                 self.location = os.path.dirname(filename)
+                self.last_data_point = 0  # used later when updating is implemented
                 make_defaults = False
 
         if make_defaults:
@@ -64,11 +65,12 @@ class FileID(object):
             self.last_accessed = None
             self.last_info_changed = None
             self.location = None
+            self.last_data_point = 0  # to be used later when updating is implemented
 
     def __str__(self):
         txt = "\n<fileID>\n"
-        txt += "full name: %s\n" % self.full_name
-        txt += "name: %s\n" % self.name
+        txt += f"full name: {self.full_name}\n"
+        txt += f"name: {self.name}"
         if self.last_modified is not None:
             txt += f"modified: {self.last_modified}\n"
         else:
