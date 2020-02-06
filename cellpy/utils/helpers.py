@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import pathlib
+import warnings
 
 import cellpy
 from cellpy import prms
@@ -264,6 +265,11 @@ def select_summary_based_on_rate(
 
     step_table = cell.cell.steps
     summary = cell.cell.summary
+
+    if cycle_number_header not in summary.columns:
+        warnings.warn(f"Could not find the column {cycle_number_header}\n"
+                      f"The index = {summary.index}")
+        summary = summary.reset_index(level=0)
 
     cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
         step_table[rate_column] > (rate - rate_std)
