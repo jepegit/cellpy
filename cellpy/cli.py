@@ -31,7 +31,7 @@ def save_prm_file(prm_filename):
 def get_package_prm_dir():
     """gets the folder where the cellpy package lives"""
     prm_dir = pkg_resources.resource_filename("cellpy", "parameters")
-    return prm_dir
+    return pathlib.Path(prm_dir)
 
 
 def get_default_config_file_path(init_filename=None):
@@ -39,25 +39,31 @@ def get_default_config_file_path(init_filename=None):
     prm_dir = get_package_prm_dir()
     if not init_filename:
         init_filename = DEFAULT_FILENAME
-    src = os.path.join(prm_dir, init_filename)
+    src = prm_dir / init_filename
     return src
 
 
 def get_user_dir_and_dst(init_filename):
     """gets the name of the user directory and full prm filepath"""
     user_dir = get_user_dir()
-    dst_file = os.path.join(user_dir, init_filename)
+    dst_file = user_dir / init_filename
     return user_dir, dst_file
 
 
 def get_user_dir():
     """gets the name of the user directory"""
-    user_dir = os.path.abspath(os.path.expanduser("~"))
-    return user_dir
+    # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
+    user_dir = pathlib.Path().home().resolve()
+    if os.name == 'nt':
+        _user_dir = user_dir / "documents"
+        if _user_dir.is_dir():
+            user_dir = _user_dir
+    return pathlib.Path(user_dir)
 
 
 def get_dst_file(user_dir, init_filename):
-    dst_file = os.path.join(user_dir, init_filename)
+    user_dir = pathlib.Path(user_dir)
+    dst_file = user_dir / init_filename
     return dst_file
 
 
@@ -146,11 +152,11 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     # generate variables
     init_filename = create_custom_init_filename()
     userdir, dst_file = get_user_dir_and_dst(init_filename)
+    if not root_dir:
+        root_dir = pathlib.Path(os.getcwd())
+    root_dir = pathlib.Path(root_dir)
 
     if testuser:
-        if not root_dir:
-            root_dir = os.getcwd()
-
         click.echo(f"[cellpy] (setup) DEV-MODE testuser: {testuser}")
         init_filename = create_custom_init_filename(testuser)
         userdir = root_dir
@@ -180,8 +186,10 @@ def _update_paths(
     default_dir="cellpy_data",
 ):
 
-    h = pathlib.Path.home()
+    h = get_user_dir()
+
     if custom_dir:
+        reset = True
         if relative_home:
             h = h / custom_dir
         else:
@@ -216,6 +224,9 @@ def _update_paths(
     db_path = h / db_path
     notebookdir = h / notebookdir
 
+    print(outdatadir)
+    print(custom_dir)
+
     outdatadir = _ask_about_path(
         "where to output processed data and results", outdatadir
     )
@@ -241,7 +252,7 @@ def _update_paths(
         if not dry_run:
             _create_dir(d)
         else:
-            click.echo(f" -> creating {d}")
+            click.echo(f"dry run (so I did not create {d})")
 
     # update config-file based on suggestions
     prmreader.prms.Paths.outdatadir = str(outdatadir)
@@ -289,6 +300,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
 
         if create_dir:
             o.mkdir(parents=parents, exist_ok=exist_ok)
+            click.echo(f"[cellpy] (setup) Created {o}")
         else:
             click.echo(f"[cellpy] (setup) Could not create {o}")
     return o
@@ -696,7 +708,7 @@ def _run_db(debug, silent):
             print(e)
 
     elif platform.system() == "Linux":
-        print("RUNNING LINUX")
+        click.echo("RUNNING LINUX")
         # not tested
         subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
 
@@ -735,12 +747,16 @@ def pull(tests, examples, clone, directory, password):
             _pull_tests(directory, password)
         if examples:
             _pull_examples(directory, password)
+        else:
+            click.echo(f"[cellpy] (pull) Nothing selected for pulling. "
+                       f"Please select an option (--tests,--examples, -clone, ...) ")
 
 
 def _clone_repo(directory, password):
+    directory = pathlib.Path(directory)
     txt = "[cellpy] The plan is that this "
     txt += "[cellpy] cmd will pull (clone) the cellpy repo.\n"
-    txt += "[cellpy] For now it only prins the link to the git-hub\n"
+    txt += "[cellpy] For now it only prints the link to the git-hub\n"
     txt += "[cellpy] repository:\n"
     txt += "[cellpy]\n"
     txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
@@ -840,6 +856,8 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
 
     if rootpath is None:
         rootpath = prmreader.prms.Paths.examplesdir
+
+    rootpath = pathlib.Path(rootpath)
 
     ndirpath = rootpath / gdirpath
 
