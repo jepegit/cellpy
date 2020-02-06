@@ -471,6 +471,7 @@ def _check_config_file():
             if value and not pathlib.Path(value).is_dir():
                 missing += 1
                 click.echo("COULD NOT CONNECT!")
+                click.echo(f"({value} is not a directory)")
             if not value:
                 missing += 1
                 click.echo("MISSING")
