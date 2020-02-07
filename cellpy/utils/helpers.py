@@ -58,7 +58,10 @@ def update_journal_cellpy_data_dir(
 
 def make_new_cell():
     """create an empty CellpyData object."""
-
+    warnings.warn(
+        "make_new_cell is deprecated, CellpyData.vacant instead",
+        DeprecationWarning
+    )
     new_cell = cellpy.cellreader.CellpyData(initialize=True)
     return new_cell
 
@@ -73,15 +76,10 @@ def split_experiment(cell, base_cycles=None):
     Returns:
         List of CellpyData objects
     """
-
-    # TODO: implement similar functionality as method for CellpyData
-    #       examples:
-    #           cell.split(cycle=28)
-    #           cell.drop_from(cycle=28)
-    #           cell.drop_to(cycle=28)
-    #           cell.pop(from=22, to=28)
-    #           cell.copy()
-    #           cell.copy(from=22, to=28)
+    warnings.warn(
+        "split_experiment is deprecated, CellpyData.split_many instead",
+        DeprecationWarning
+    )
 
     if base_cycles is None:
         all_cycles = cell.get_cycle_numbers()

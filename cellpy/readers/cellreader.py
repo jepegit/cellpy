@@ -36,6 +36,8 @@ from cellpy.parameters.internal_settings import (
     get_headers_normal,
     get_headers_step_table,
     ATTRS_CELLPYFILE,
+    ATTRS_DATASET,
+    ATTRS_CELLPYDATA,
 )
 from cellpy.readers.core import (
     FileID,
@@ -239,6 +241,116 @@ class CellpyData(object):
     def empty(self):
         """gives False if the CellpyData object is empty (or un-functional)"""
         return not self.check()
+
+    @classmethod
+    def vacant(cls, cell=None):
+        """Create a CellpyData instance.
+        Args:
+            cell (CellpyData instance): the attributes from the cell will be copied
+                to the new Cellpydata instance.
+
+         Returns:
+            CellpyData instance.
+        """
+
+        new_cell = cls(initialize=True)
+        if cell is not None:
+            for attr in ATTRS_DATASET:
+                value = getattr(cell.cell, attr)
+                setattr(new_cell.cell, attr, value)
+
+            for attr in ATTRS_CELLPYDATA:
+                value = getattr(cell, attr)
+                setattr(new_cell, attr, value)
+
+        return new_cell
+
+    def split(self, cycle=None):
+        """Split experiment (CellpyData object) into two sub-experiments. if cycle
+        is not give, it will split on the median cycle number"""
+
+        if isinstance(cycle, int) or cycle is None:
+            return self.split_many(base_cycles=cycle)
+
+    def drop_from(self, cycle=None):
+        """Select last part of experiment (CellpyData object) from cycle number
+         'cycle'"""
+        if isinstance(cycle, int):
+            c1, c2 = self.split_many(base_cycles=cycle)
+            return c2
+
+    def drop_to(self, cycle=None):
+        """Select first part of experiment (CellpyData object) to cycle number
+        'cycle'"""
+        if isinstance(cycle, int):
+            c1, c2 = self.split_many(base_cycles=cycle)
+            return c1
+
+    def drop(self, start, end):
+        """Select middle part of experiment (CellpyData object) from cycle
+        number 'start' to 'end"""
+
+        if end > start:
+            raise ValueError("end cannot be larger than start")
+        if end == start:
+            raise ValueError("end cannot be the same as start")
+        return self.split_many([start, end])[1]
+
+    def split_many(self, base_cycles=None):
+        """Split experiment (CellpyData object) into several sub-experiments.
+
+        Args:
+            base_cycles (int or list of ints): cycle(s) to do the split on.
+
+        Returns:
+            List of CellpyData objects
+        """
+        h_summary_index = HEADERS_SUMMARY.cycle_index
+        h_raw_index = HEADERS_NORMAL.cycle_index_txt
+        h_step_cycle = HEADERS_STEP_TABLE.cycle
+
+        if base_cycles is None:
+            all_cycles = self.get_cycle_numbers()
+            base_cycles = int(np.median(all_cycles))
+
+        cells = list()
+        if not isinstance(base_cycles, (list, tuple)):
+            base_cycles = [base_cycles]
+
+        dataset = self.cell
+        steptable = dataset.steps
+        data = dataset.raw
+        summary = dataset.summary
+
+        for b_cycle in base_cycles:
+            steptable0, steptable = [
+                steptable[steptable[h_step_cycle] < b_cycle],
+                steptable[steptable[h_step_cycle] >= b_cycle],
+            ]
+            data0, data = [
+                data[data[h_raw_index] < b_cycle],
+                data[data[h_raw_index] >= b_cycle],
+            ]
+            summary0, summary = [
+                summary[summary[h_summary_index] < b_cycle],
+                summary[summary[h_summary_index] >= b_cycle],
+            ]
+
+            new_cell = CellpyData.vacant(cell=self)
+            old_cell = CellpyData.vacant(cell=self)
+
+            new_cell.cell.steps = steptable0
+            new_cell.cell.raw = data0
+            new_cell.cell.summary = summary0
+
+            old_cell.cell.steps = steptable
+            old_cell.cell.raw = data
+            old_cell.cell.summary = summary
+
+            cells.append(new_cell)
+
+        cells.append(old_cell)
+        return cells
 
     # TODO: @jepe - merge the _set_xxinstrument methods into one method
     def set_instrument(self, instrument=None):
