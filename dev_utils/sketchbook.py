@@ -28,27 +28,17 @@ def get_cellpy_cell():
     return d
 
 
-def check_split(cell):
-    list_of_all_cycles = cell.get_cycle_numbers()
-    c1, c2 = cell.split(10)
-    list_of_first_cycles = c1.get_cycle_numbers()
-    list_of_last_cycles = c2.get_cycle_numbers()
-    assert all(list_of_first_cycles == range(1, 10))
-    assert list_of_all_cycles[-1] == list_of_last_cycles[-1]
-
-
 def from_res_to_h5():
     d = get_res_cell()
     d.save(h5)
 
 
-def main():
+def check_splitting():
     d = get_cellpy_cell()
     list_of_all_cycles = d.get_cycle_numbers()
     c1, c2 = d.split(10)
-    list_of_first_cycles = c1.get_cycle_numbers()
-    list_of_last_cycles = c2.get_cycle_numbers()
 
+    print(list_of_all_cycles)
     print(" split ".center(80, "="))
     print("c1".center(80, "-"))
     print(c1.get_cycle_numbers())
@@ -72,6 +62,44 @@ def main():
     c1 = d.drop_from(10)
     print("c1".center(80, "-"))
     print(c1.get_cycle_numbers())
+
+    print(" drop_edges ".center(80, "="))
+    c1 = d.drop_edges(8,12)
+    print("c1".center(80, "-"))
+    print(c1.get_cycle_numbers())
+
+    print("empty split".center(80, "="))
+    print(d.split())
+
+
+def investigate_cols(d):
+    summary = d.cell.summary
+    steps = d.cell.steps
+    raw = d.cell.raw
+
+    for n, s in zip(['summary', 'steps', 'raw'], [summary, steps, raw]):
+        print(n.center(80, "-"))
+        print(s.index.name)
+        print(s.columns[0:3])
+
+
+def main():
+    d = get_cellpy_cell()
+    r = get_res_cell()
+
+    print("\n", "FROM CELLPY FILE".center(80, "="))
+    investigate_cols(d)
+
+    print("\n", "FROM RAW FILE".center(80, "="))
+    investigate_cols(r)
+
+    print("\n", "FROM RAW FILE AFTER MAKE STP".center(80, "="))
+    r.make_step_table()
+    investigate_cols(r)
+
+    print("\n", "FROM RAW FILE AFTER MAKE SUMMARY".center(80, "="))
+    r.make_summary()
+    investigate_cols(r)
 
 
 if __name__ == '__main__':

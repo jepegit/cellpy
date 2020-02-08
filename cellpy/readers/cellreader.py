@@ -290,7 +290,7 @@ class CellpyData(object):
         """Select middle part of experiment (CellpyData object) from cycle
         number 'start' to 'end"""
 
-        if end > start:
+        if end < start:
             raise ValueError("end cannot be larger than start")
         if end == start:
             raise ValueError("end cannot be the same as start")
