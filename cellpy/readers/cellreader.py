@@ -4917,40 +4917,6 @@ def just_load_srno(srno, prm_filename=None):
 
 
 # TODO: rename and move this to helpers
-def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
-    """Load a raw data file and save it as cellpy-file.
-
-    Args:
-        mass (float): active material mass [mg].
-        outdir (path): optional, path to directory for saving the hdf5-file.
-        outfile (str): optional, name of hdf5-file.
-        filename (str): name of the resfile.
-
-    Returns:
-        out_file_name (str): name of saved file.
-    """
-    warnings.warn(DeprecationWarning("This option will be removed in v.0.4.0"))
-    d = CellpyData()
-
-    if not outdir:
-        outdir = prms.Paths["cellpydatadir"]
-
-    if not outfile:
-        outfile = os.path.basename(filename).split(".")[0] + ".h5"
-        outfile = os.path.join(outdir, outfile)
-
-    print("filename:", filename)
-    print("outfile:", outfile)
-    print("outdir:", outdir)
-    print("mass:", mass, "mg")
-
-    d.from_raw(filename)
-    d.set_mass(mass)
-    d.make_step_table()
-    d.make_summary()
-    d.save(filename=outfile)
-    d.to_csv(datadir=outdir, cycles=True, raw=True, summary=True)
-    return outfile
 
 
 # TODO: move this to helpers

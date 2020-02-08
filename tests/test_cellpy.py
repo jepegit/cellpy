@@ -5,6 +5,7 @@ import logging
 import time
 
 import cellpy.readers.core
+import cellpy.utils.helpers
 from cellpy import log
 from cellpy import prms
 from . import fdv
@@ -117,7 +118,7 @@ def test_load_and_save_resfile(clean_dir):
     from cellpy import cellreader
 
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
-    new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
+    new_file = cellpy.utils.helpers.load_and_save_resfile(f_in, None, clean_dir)
     assert os.path.isfile(new_file)
 
 
@@ -137,7 +138,7 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
 
     prms.Reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
-    new_file = benchmark(cellreader.load_and_save_resfile, f_in, None, clean_dir)
+    new_file = benchmark(cellpy.utils.helpers.load_and_save_resfile, f_in, None, clean_dir)
     assert os.path.isfile(new_file)
 
 
