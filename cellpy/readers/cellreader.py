@@ -273,20 +273,20 @@ class CellpyData(object):
             return self.split_many(base_cycles=cycle)
 
     def drop_from(self, cycle=None):
-        """Select last part of experiment (CellpyData object) from cycle number
+        """Select first part of experiment (CellpyData object) up to cycle number
          'cycle'"""
-        if isinstance(cycle, int):
-            c1, c2 = self.split_many(base_cycles=cycle)
-            return c2
-
-    def drop_to(self, cycle=None):
-        """Select first part of experiment (CellpyData object) to cycle number
-        'cycle'"""
         if isinstance(cycle, int):
             c1, c2 = self.split_many(base_cycles=cycle)
             return c1
 
-    def drop(self, start, end):
+    def drop_to(self, cycle=None):
+        """Select last part of experiment (CellpyData object) from cycle number
+        'cycle'"""
+        if isinstance(cycle, int):
+            c1, c2 = self.split_many(base_cycles=cycle)
+            return c2
+
+    def drop_edges(self, start, end):
         """Select middle part of experiment (CellpyData object) from cycle
         number 'start' to 'end"""
 
@@ -2465,7 +2465,7 @@ class CellpyData(object):
         """Save the data structure to cellpy-format.
 
         Args:
-            filename: (str) the name you want to give the file
+            filename: (str or pathlib.Path) the name you want to give the file
             dataset_number: (int) if you have several datasets, chose the one
                 you want (probably leave this untouched)
             force: (bool) save a file even if the summary is not made yet
@@ -2478,6 +2478,8 @@ class CellpyData(object):
         Returns: Nothing at all.
         """
         self.logger.debug(f"Trying to save cellpy-file to {filename}")
+        self.logger.info(f" -> {filename}")
+
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
 
