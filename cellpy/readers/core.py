@@ -539,7 +539,6 @@ def group_by_interpolate(
 ):
     """Do a pandas.DataFrame.group_by and perform interpolation for all groups.
 
-
     This function is a wrapper around an internal interpolation function in
     cellpy (that uses scipy.interpolate.interp1d) that combines doing a group-by
     operation and interpolation.

@@ -24,7 +24,6 @@ import csv
 import itertools
 import time
 
-from scipy import interpolate
 import numpy as np
 import pandas as pd
 from pandas.errors import PerformanceWarning
@@ -3384,7 +3383,7 @@ class CellpyData(object):
         number_of_points=None,
     ):
 
-        """get the open curcuit voltage relaxation curves.
+        """get the open circuit voltage relaxation curves.
 
         Args:
             cycles (list of ints or None): the cycles to extract from
@@ -4562,14 +4561,6 @@ def get(
 
         logging.info("Created CellpyData object")
         return cellpy_instance
-
-
-# utility functions that most likely will be moved to another module
-
-# TODO: rename and move this to helpers
-
-
-# TODO: rename this
 
 
 if __name__ == "__main__":
