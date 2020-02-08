@@ -621,9 +621,9 @@ def test_load_custom_default(cellpy_data_instance):
 
 def test_group_by_interpolate(dataset):
     data = dataset.cell.raw
-    interpolated_data1 = cellpy.cellreader.group_by_interpolate(data)
-    interpolated_data2 = cellpy.cellreader.group_by_interpolate(data, tidy=True)
-    interpolated_data3 = cellpy.cellreader.group_by_interpolate(
+    interpolated_data1 = cellpy.readers.core.group_by_interpolate(data)
+    interpolated_data2 = cellpy.readers.core.group_by_interpolate(data, tidy=True)
+    interpolated_data3 = cellpy.readers.core.group_by_interpolate(
         data, individual_x_cols=True
     )
 

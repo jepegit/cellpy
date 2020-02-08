@@ -142,14 +142,6 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
     assert os.path.isfile(new_file)
 
 
-def test_su_cellpy_instance():
-    # somehow pytest fails to find the test if it is called test_setup_xxx
-    # Should be removed in v.0.4.0
-    import cellpy
-
-    cellpy.cellreader.setup_cellpy_instance()
-
-
 def test_get():
     import cellpy
 
