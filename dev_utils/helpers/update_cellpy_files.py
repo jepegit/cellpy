@@ -4,7 +4,7 @@ import cellpy
 
 files = [
     "/Users/jepe/scripting/cellpy/testdata/hdf5/20160805_test001_45_cc.h5",
-    "/Users/jepe/scripting/cellpy/testdata/hdf5/20160805_test001_47_cc.h5"
+    "/Users/jepe/scripting/cellpy/testdata/hdf5/20160805_test001_47_cc.h5",
 ]
 
 
@@ -17,5 +17,5 @@ def main():
         # c.save(f)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -50,3 +50,17 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     def loader(self, *args, **kwargs):
         """Loads data into a DataSet object and returns it"""
         pass
+
+    def identify_last_data_point(self, data):
+        hdr_data_point = self.headers_normal.data_point_txt
+        try:
+            if hdr_data_point in data.columns:
+                last_data_point = data.raw[hdr_data_point].max()
+            else:
+                last_data_point = data.raw.index.max()
+        except AttributeError:
+            last_data_point = 0
+        if not last_data_point > 0:
+            last_data_point = 0
+        data.raw_data_files[0].last_data_point = last_data_point
+        return data

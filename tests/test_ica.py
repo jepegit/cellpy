@@ -158,24 +158,24 @@ def test_dqdv_frames_split(dataset):
     df_ica_charge, df_ica_discharge = ica.dqdv_frames(dataset, split=True)
     assert df_ica_charge.size == 5100
     assert df_ica_discharge.size == 5400
-    assert 'voltage' in df_ica_charge.columns
-    assert 'cycle' in df_ica_charge.columns
-    assert 'dq' in df_ica_charge.columns
+    assert "voltage" in df_ica_charge.columns
+    assert "cycle" in df_ica_charge.columns
+    assert "dq" in df_ica_charge.columns
 
 
 def test_dqdv_frames_one_cycle_tidy(dataset):
     df_ica = ica.dqdv_frames(dataset, cycle=2)
-    assert 'voltage' in df_ica.columns
-    assert 'cycle' in df_ica.columns
-    assert 'dq' in df_ica.columns
+    assert "voltage" in df_ica.columns
+    assert "cycle" in df_ica.columns
+    assert "dq" in df_ica.columns
     assert df_ica.size == 2280
 
 
 def test_dqdv_frames_multi_cycles_tidy(dataset):
     df_ica = ica.dqdv_frames(dataset)
-    assert 'voltage' in df_ica.columns
-    assert 'cycle' in df_ica.columns
-    assert 'dq' in df_ica.columns
+    assert "voltage" in df_ica.columns
+    assert "cycle" in df_ica.columns
+    assert "dq" in df_ica.columns
     assert df_ica.size == 26379
 
 
@@ -184,8 +184,8 @@ def test_dqdv_frames_multi_cycles_wide(dataset):
     cycles_available = set(dataset.get_cycle_numbers())
     cycles_processed = set(df_ica.columns.get_level_values(0))
     assert cycles_available.issuperset(cycles_processed)
-    assert 'voltage' in df_ica.columns.get_level_values(1)
-    assert 'dq' in df_ica.columns.get_level_values(1)
+    assert "voltage" in df_ica.columns.get_level_values(1)
+    assert "dq" in df_ica.columns.get_level_values(1)
     assert df_ica.size == 37536
 
 

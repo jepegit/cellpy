@@ -621,9 +621,9 @@ def test_load_custom_default(cellpy_data_instance):
 
 def test_group_by_interpolate(dataset):
     data = dataset.cell.raw
-    interpolated_data1 = cellpy.cellreader.group_by_interpolate(data)
-    interpolated_data2 = cellpy.cellreader.group_by_interpolate(data, tidy=True)
-    interpolated_data3 = cellpy.cellreader.group_by_interpolate(
+    interpolated_data1 = cellpy.readers.core.group_by_interpolate(data)
+    interpolated_data2 = cellpy.readers.core.group_by_interpolate(data, tidy=True)
+    interpolated_data3 = cellpy.readers.core.group_by_interpolate(
         data, individual_x_cols=True
     )
 
@@ -634,7 +634,9 @@ def test_get():
 
 
 def test_get_advanced():
-    c_many = cellpy.get([fdv.res_file_path, fdv.res_file_path2], logging_mode="DEBUG", mass=0.035)
+    c_many = cellpy.get(
+        [fdv.res_file_path, fdv.res_file_path2], logging_mode="DEBUG", mass=0.035
+    )
 
 
 def test_get_empty():
@@ -680,4 +682,3 @@ def test_set_testnumbers(dataset, n, s):
 @pytest.mark.filterwarnings("error")
 def test_deprecations(dataset):
     dataset._check_file_type("my_file.res")
-

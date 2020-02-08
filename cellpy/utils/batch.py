@@ -108,9 +108,11 @@ class Batch:
 
     def _check_cell_cycles(self, cell_id):
         try:
-            return self.experiment.cell_data_frames[cell_id].cell.steps[
-                self.headers_step_table.cycle
-            ].max()
+            return (
+                self.experiment.cell_data_frames[cell_id]
+                .cell.steps[self.headers_step_table.cycle]
+                .max()
+            )
         except Exception:
             return None
 

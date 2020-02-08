@@ -161,11 +161,13 @@ class ArbinLoader(Loader):
 
     def __init__(self):
         """initiates the ArbinLoader class"""
-        # could use __init__(self, cellpydata_object) and set self.logger = cellpydata_object.logger etc.
+        # could use __init__(self, cellpydata_object) and
+        # set self.logger = cellpydata_object.logger etc.
         # then remember to include that as prm in "out of class" functions
         # self.prms = prms
         self.logger = logging.getLogger(__name__)
-        # use the following prm to limit to loading only one cycle or from cycle>x to cycle<x+n
+        # use the following prm to limit to loading only
+        # one cycle or from cycle>x to cycle<x+n
         # prms.Reader["limit_loaded_cycles"] = [cycle from, cycle to]
 
         self.headers_normal = get_headers_normal()
@@ -784,6 +786,7 @@ class ArbinLoader(Loader):
             data.raw_data_files_length.append(length_of_test)
 
             data = self._post_process(data)
+            data = self.identify_last_data_point(data)
 
             new_tests.append(data)
 

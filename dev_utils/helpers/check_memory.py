@@ -9,6 +9,7 @@ import logging
 import time
 
 import cellpy.readers.core
+import cellpy.utils.helpers
 from cellpy import log
 from cellpy import prms
 from cellpy.readers.core import humanize_bytes
@@ -43,7 +44,7 @@ def main():
         from cellpy import cellreader
 
         clean_dir = tempfile.mkdtemp()
-        return cellreader.load_and_save_resfile(f_in, None, clean_dir)
+        return cellpy.utils.helpers.load_and_save_resfile(f_in, None, clean_dir)
 
     g0 = get_consumed_ram()
     cum_g = 0

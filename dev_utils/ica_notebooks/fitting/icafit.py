@@ -774,7 +774,7 @@ class Graphite(PeakEnsemble):
         self.vary = False
         self.vary_scale = True
         self.prefixes = [
-            self.name + x for x in ["Scale", "Offset", "01",]
+            self.name + x for x in ["Scale", "Offset", "01"]
         ]  # Always start with scale, offset and shift
         self.peak_types = [ConstantModel, ConstantModel, LorentzianModel]
         self.init()

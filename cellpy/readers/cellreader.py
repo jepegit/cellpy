@@ -24,7 +24,6 @@ import csv
 import itertools
 import time
 
-from scipy import interpolate
 import numpy as np
 import pandas as pd
 from pandas.errors import PerformanceWarning
@@ -36,6 +35,8 @@ from cellpy.parameters.internal_settings import (
     get_headers_normal,
     get_headers_step_table,
     ATTRS_CELLPYFILE,
+    ATTRS_DATASET,
+    ATTRS_CELLPYDATA,
 )
 from cellpy.readers.core import (
     FileID,
@@ -43,6 +44,7 @@ from cellpy.readers.core import (
     CELLPY_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
     xldate_as_datetime,
+    interpolate_y_on_x,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -239,6 +241,116 @@ class CellpyData(object):
     def empty(self):
         """gives False if the CellpyData object is empty (or un-functional)"""
         return not self.check()
+
+    @classmethod
+    def vacant(cls, cell=None):
+        """Create a CellpyData instance.
+        Args:
+            cell (CellpyData instance): the attributes from the cell will be copied
+                to the new Cellpydata instance.
+
+         Returns:
+            CellpyData instance.
+        """
+
+        new_cell = cls(initialize=True)
+        if cell is not None:
+            for attr in ATTRS_DATASET:
+                value = getattr(cell.cell, attr)
+                setattr(new_cell.cell, attr, value)
+
+            for attr in ATTRS_CELLPYDATA:
+                value = getattr(cell, attr)
+                setattr(new_cell, attr, value)
+
+        return new_cell
+
+    def split(self, cycle=None):
+        """Split experiment (CellpyData object) into two sub-experiments. if cycle
+        is not give, it will split on the median cycle number"""
+
+        if isinstance(cycle, int) or cycle is None:
+            return self.split_many(base_cycles=cycle)
+
+    def drop_from(self, cycle=None):
+        """Select first part of experiment (CellpyData object) up to cycle number
+         'cycle'"""
+        if isinstance(cycle, int):
+            c1, c2 = self.split_many(base_cycles=cycle)
+            return c1
+
+    def drop_to(self, cycle=None):
+        """Select last part of experiment (CellpyData object) from cycle number
+        'cycle'"""
+        if isinstance(cycle, int):
+            c1, c2 = self.split_many(base_cycles=cycle)
+            return c2
+
+    def drop_edges(self, start, end):
+        """Select middle part of experiment (CellpyData object) from cycle
+        number 'start' to 'end"""
+
+        if end < start:
+            raise ValueError("end cannot be larger than start")
+        if end == start:
+            raise ValueError("end cannot be the same as start")
+        return self.split_many([start, end])[1]
+
+    def split_many(self, base_cycles=None):
+        """Split experiment (CellpyData object) into several sub-experiments.
+
+        Args:
+            base_cycles (int or list of ints): cycle(s) to do the split on.
+
+        Returns:
+            List of CellpyData objects
+        """
+        h_summary_index = HEADERS_SUMMARY.cycle_index
+        h_raw_index = HEADERS_NORMAL.cycle_index_txt
+        h_step_cycle = HEADERS_STEP_TABLE.cycle
+
+        if base_cycles is None:
+            all_cycles = self.get_cycle_numbers()
+            base_cycles = int(np.median(all_cycles))
+
+        cells = list()
+        if not isinstance(base_cycles, (list, tuple)):
+            base_cycles = [base_cycles]
+
+        dataset = self.cell
+        steptable = dataset.steps
+        data = dataset.raw
+        summary = dataset.summary
+
+        for b_cycle in base_cycles:
+            steptable0, steptable = [
+                steptable[steptable[h_step_cycle] < b_cycle],
+                steptable[steptable[h_step_cycle] >= b_cycle],
+            ]
+            data0, data = [
+                data[data[h_raw_index] < b_cycle],
+                data[data[h_raw_index] >= b_cycle],
+            ]
+            summary0, summary = [
+                summary[summary[h_summary_index] < b_cycle],
+                summary[summary[h_summary_index] >= b_cycle],
+            ]
+
+            new_cell = CellpyData.vacant(cell=self)
+            old_cell = CellpyData.vacant(cell=self)
+
+            new_cell.cell.steps = steptable0
+            new_cell.cell.raw = data0
+            new_cell.cell.summary = summary0
+
+            old_cell.cell.steps = steptable
+            old_cell.cell.raw = data
+            old_cell.cell.summary = summary
+
+            cells.append(new_cell)
+
+        cells.append(old_cell)
+        return cells
 
     # TODO: @jepe - merge the _set_xxinstrument methods into one method
     def set_instrument(self, instrument=None):
@@ -2353,7 +2465,7 @@ class CellpyData(object):
         """Save the data structure to cellpy-format.
 
         Args:
-            filename: (str) the name you want to give the file
+            filename: (str or pathlib.Path) the name you want to give the file
             dataset_number: (int) if you have several datasets, chose the one
                 you want (probably leave this untouched)
             force: (bool) save a file even if the summary is not made yet
@@ -2366,6 +2478,8 @@ class CellpyData(object):
         Returns: Nothing at all.
         """
         self.logger.debug(f"Trying to save cellpy-file to {filename}")
+        self.logger.info(f" -> {filename}")
+
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
 
@@ -3145,7 +3259,7 @@ class CellpyData(object):
                             }
                         )
                         if interpolated:
-                            _first_df = _interpolate_df_col(
+                            _first_df = interpolate_y_on_x(
                                 _first_df,
                                 y="capacity",
                                 x="voltage",
@@ -3163,7 +3277,7 @@ class CellpyData(object):
                             }
                         )
                         if interpolated:
-                            _last_df = _interpolate_df_col(
+                            _last_df = interpolate_y_on_x(
                                 _last_df,
                                 y="capacity",
                                 x="voltage",
@@ -3270,7 +3384,7 @@ class CellpyData(object):
         number_of_points=None,
     ):
 
-        """get the open curcuit voltage relaxation curves.
+        """get the open circuit voltage relaxation curves.
 
         Args:
             cycles (list of ints or None): the cycles to extract from
@@ -3339,7 +3453,7 @@ class CellpyData(object):
             groupby_list = [cycle_label, step_label]
 
             for name, group in selected_df.groupby(groupby_list):
-                new_group = _interpolate_df_col(
+                new_group = interpolate_y_on_x(
                     group,
                     x=step_time_label,
                     y=voltage_label,
@@ -4448,487 +4562,6 @@ def get(
 
         logging.info("Created CellpyData object")
         return cellpy_instance
-
-
-# utility functions that most likely will be moved to another module
-
-# TODO: rename and move this to helpers
-def group_by_interpolate(
-    df,
-    x=None,
-    y=None,
-    group_by=None,
-    number_of_points=100,
-    tidy=False,
-    individual_x_cols=False,
-    header_name="Unit",
-    dx=10.0,
-    generate_new_x=True,
-):
-    """Do a pandas.DataFrame.group_by and perform interpolation for all groups.
-
-
-    This function is a wrapper around an internal interpolation function in
-    cellpy (that uses scipy.interpolate.interp1d) that combines doing a group-by
-    operation and interpolation.
-
-    Args:
-        df (pandas.DataFrame): the dataframe to morph.
-        x (str): the header for the x-value
-            (defaults to normal header step_time_txt) (remark that the default
-            group_by column is the cycle column, and each cycle normally
-            consist of several steps (so you risk interpolating / merging
-            several curves on top of each other (not good)).
-        y (str): the header for the y-value
-            (defaults to normal header voltage_txt).
-        group_by (str): the header to group by
-            (defaults to normal header cycle_index_txt)
-        number_of_points (int): if generating new x-column, how many values it
-            should contain.
-        tidy (bool): return the result in tidy (i.e. long) format.
-        individual_x_cols (bool): return as xy xy xy ... data.
-        header_name (str): name for the second level of the columns (only
-            applies for xy xy xy ... data) (defaults to "Unit").
-        dx (float): if generating new x-column and number_of_points is None or
-            zero, distance between the generated values.
-        generate_new_x (bool): create a new x-column by
-            using the x-min and x-max values from the original dataframe where
-            the method is set by the number_of_points key-word:
-
-            1)  if number_of_points is not None (default is 100):
-
-                ```
-                new_x = np.linspace(x_max, x_min, number_of_points)
-                ```
-            2)  else:
-                ```
-                new_x = np.arange(x_max, x_min, dx)
-                ```
-
-
-    Returns: pandas.DataFrame with interpolated x- and y-values. The returned
-        dataframe is in tidy (long) format for tidy=True.
-
-    """
-    # TODO: @jepe - create tests
-    time_00 = time.time()
-    if x is None:
-        x = HEADERS_NORMAL.step_time_txt
-    if y is None:
-        y = HEADERS_NORMAL.voltage_txt
-    if group_by is None:
-        group_by = [HEADERS_NORMAL.cycle_index_txt]
-
-    if not isinstance(group_by, (list, tuple)):
-        group_by = [group_by]
-
-    if not generate_new_x:
-        # check if it makes sence
-        if (not tidy) and (not individual_x_cols):
-            logging.warning("Unlogical condition")
-            generate_new_x = True
-
-    new_x = None
-
-    if generate_new_x:
-        x_max = df[x].max()
-        x_min = df[x].min()
-        if number_of_points:
-            new_x = np.linspace(x_max, x_min, number_of_points)
-        else:
-            new_x = np.arange(x_max, x_min, dx)
-
-    new_dfs = []
-    keys = []
-
-    for name, group in df.groupby(group_by):
-        keys.append(name)
-        if not isinstance(name, (list, tuple)):
-            name = [name]
-
-        new_group = _interpolate_df_col(
-            group, x=x, y=y, new_x=new_x, number_of_points=number_of_points, dx=dx
-        )
-
-        if tidy or (not tidy and not individual_x_cols):
-            for i, j in zip(group_by, name):
-                new_group[i] = j
-        new_dfs.append(new_group)
-
-    if tidy:
-        new_df = pd.concat(new_dfs)
-    else:
-        if individual_x_cols:
-            new_df = pd.concat(new_dfs, axis=1, keys=keys)
-            group_by.append(header_name)
-            new_df.columns.names = group_by
-        else:
-            new_df = pd.concat(new_dfs)
-            new_df = new_df.pivot(index=x, columns=group_by[0], values=y)
-
-    time_01 = time.time() - time_00
-    logging.debug(f"duration: {time_01} seconds")
-    return new_df
-
-
-# TODO: rename this
-def _interpolate_df_col(
-    df,
-    x=None,
-    y=None,
-    new_x=None,
-    dx=10.0,
-    number_of_points=None,
-    direction=1,
-    **kwargs,
-):
-    """Interpolate a column based on another column.
-
-        Args:
-            df: DataFrame with the (cycle) data.
-            x: Column name for the x-value (defaults to the step-time column).
-            y: Column name for the y-value (defaults to the voltage column).
-            new_x (numpy array or None): Interpolate using these new x-values
-                instead of generating x-values based on dx or number_of_points.
-            dx: step-value (defaults to 10.0)
-            number_of_points: number of points for interpolated values (use
-                instead of dx and overrides dx if given).
-            direction (-1,1): if direction is negetive, then invert the
-                x-values before interpolating.
-            **kwargs: arguments passed to scipy.interpolate.interp1d
-
-        Returns: DataFrame with interpolated y-values based on given or
-            generated x-values.
-
-        """
-
-    if x is None:
-        x = df.columns[0]
-    if y is None:
-        y = df.columns[1]
-
-    xs = df[x].values
-    ys = df[y].values
-
-    if direction > 0:
-        x_min = xs.min()
-        x_max = xs.max()
-    else:
-        x_max = xs.min()
-        x_min = xs.max()
-        dx = -dx
-
-    bounds_error = kwargs.pop("bounds_error", False)
-    f = interpolate.interp1d(xs, ys, bounds_error=bounds_error, **kwargs)
-    if new_x is None:
-        if number_of_points:
-            new_x = np.linspace(x_min, x_max, number_of_points)
-        else:
-            new_x = np.arange(x_min, x_max, dx)
-
-    new_y = f(new_x)
-
-    new_df = pd.DataFrame({x: new_x, y: new_y})
-
-    return new_df
-
-
-# TODO: rename this
-def _collect_capacity_curves(
-    data,
-    direction="charge",
-    trim_taper_steps=None,
-    steps_to_skip=None,
-    steptable=None,
-    max_cycle_number=None,
-    **kwargs,
-):
-    """Create a list of pandas.DataFrames, one for each charge step.
-
-    The DataFrames are named by its cycle number.
-
-    Input: CellpyData
-    Returns: list of pandas.DataFrames
-        minimum voltage value,
-        maximum voltage value"""
-
-    # TODO: should allow for giving cycle numbers as input (e.g. cycle=[1, 2, 10]
-    #  or cycle=2), not only max_cycle_number
-
-    minimum_v_value = np.Inf
-    maximum_v_value = -np.Inf
-    charge_list = []
-    cycles = kwargs.pop("cycle", None)
-
-    print(80 * "=")
-    print(cycles)
-
-    if cycles is None:
-        cycles = data.get_cycle_numbers()
-
-    if max_cycle_number is None:
-        max_cycle_number = max(cycles)
-
-    for cycle in cycles:
-        if cycle > max_cycle_number:
-            break
-        try:
-            if direction == "charge":
-                q, v = data.get_ccap(
-                    cycle,
-                    trim_taper_steps=trim_taper_steps,
-                    steps_to_skip=steps_to_skip,
-                    steptable=steptable,
-                )
-            else:
-                q, v = data.get_dcap(
-                    cycle,
-                    trim_taper_steps=trim_taper_steps,
-                    steps_to_skip=steps_to_skip,
-                    steptable=steptable,
-                )
-
-        except NullData as e:
-            logging.warning(e)
-            break
-
-        else:
-            d = pd.DataFrame({"q": q, "v": v})
-            # d.name = f"{cycle}"
-            d.name = cycle
-            charge_list.append(d)
-            v_min = v.min()
-            v_max = v.max()
-            if v_min < minimum_v_value:
-                minimum_v_value = v_min
-            if v_max > maximum_v_value:
-                maximum_v_value = v_max
-    return charge_list, cycles, minimum_v_value, maximum_v_value
-
-
-# TODO: remove this
-def setup_cellpy_instance():
-    """Prepares for a cellpy session.
-
-    This convenience function creates a cellpy class and sets the parameters
-    from your parameters file (using prmreader.read()
-
-    Returns:
-        an CellpyData object
-
-    Example:
-
-        >>> celldata = setup_cellpy_instance()
-        read prms
-        ...
-        making class and setting prms
-
-    """
-    warnings.warn(
-        DeprecationWarning(
-            "this option will be removed" "in v.0.4.0. Use cellpy.cell instead."
-        )
-    )
-    logging.info("Making CellpyData class and setting prms")
-    cellpy_instance = CellpyData()
-    return cellpy_instance
-
-
-# TODO: remove this
-def just_load_srno(srno, prm_filename=None):
-    """Simply load an dataset based on serial number (srno).
-
-    This convenience function reads a dataset based on a serial number. This
-    serial number (srno) must then be defined in your database. It is mainly
-    used to check that things are set up correctly.
-
-    Args:
-        prm_filename: name of parameter file (optional).
-        srno (int): serial number
-
-    Example:
-        >>> srno = 918
-        >>> just_load_srno(srno)
-        srno: 918
-        read prms
-        ....
-
-        """
-    from cellpy import dbreader, filefinder
-
-    warnings.warn(DeprecationWarning("this option will be removed" "in v.0.4.0"))
-    print("just_load_srno: srno: %i" % srno)
-
-    # ------------reading parameters--------------------------------------------
-    # print "just_load_srno: read prms"
-    # prm = prmreader.read(prm_filename)
-    #
-    # print prm
-
-    print("just_load_srno: making class and setting prms")
-    d = CellpyData()
-
-    # ------------reading db----------------------------------------------------
-    print()
-    print("just_load_srno: starting to load reader")
-    # reader = dbreader.reader(prm_filename)
-    reader = dbreader.Reader()
-    print("------ok------")
-
-    run_name = reader.get_cell_name(srno)
-    print("just_load_srno: run_name:")
-    print(run_name)
-
-    m = reader.get_mass(srno)
-    print("just_load_srno: mass: %f" % m)
-    print()
-
-    # ------------loadcell------------------------------------------------------
-    print("just_load_srno: getting file_names")
-    raw_files, cellpy_file = filefinder.search_for_files(run_name)
-    print("raw_files:", raw_files)
-    print("cellpy_file:", cellpy_file)
-
-    print("just_load_srno: running loadcell")
-    d.loadcell(raw_files, cellpy_file, mass=m)
-    print("------ok------")
-
-    # ------------do stuff------------------------------------------------------
-    print("just_load_srno: getting step_numbers for charge")
-    v = d.get_step_numbers("charge")
-    print(v)
-
-    print("just_load_srno: OK")
-    return True
-
-
-# TODO: rename and move this to helpers
-def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
-    """Load a raw data file and save it as cellpy-file.
-
-    Args:
-        mass (float): active material mass [mg].
-        outdir (path): optional, path to directory for saving the hdf5-file.
-        outfile (str): optional, name of hdf5-file.
-        filename (str): name of the resfile.
-
-    Returns:
-        out_file_name (str): name of saved file.
-    """
-    warnings.warn(DeprecationWarning("This option will be removed in v.0.4.0"))
-    d = CellpyData()
-
-    if not outdir:
-        outdir = prms.Paths["cellpydatadir"]
-
-    if not outfile:
-        outfile = os.path.basename(filename).split(".")[0] + ".h5"
-        outfile = os.path.join(outdir, outfile)
-
-    print("filename:", filename)
-    print("outfile:", outfile)
-    print("outdir:", outdir)
-    print("mass:", mass, "mg")
-
-    d.from_raw(filename)
-    d.set_mass(mass)
-    d.make_step_table()
-    d.make_summary()
-    d.save(filename=outfile)
-    d.to_csv(datadir=outdir, cycles=True, raw=True, summary=True)
-    return outfile
-
-
-# TODO: move this to helpers
-def load_and_print_resfile(filename, info_dict=None):
-    """Load a raw data file and print information.
-
-    Args:
-        filename (str): name of the resfile.
-        info_dict (dict):
-
-    Returns:
-        info (str): string describing something.
-    """
-
-    # self.cell_no = None
-    # self.mass = 1.0  # mass of (active) material (in mg)
-    # self.no_cycles = 0.0
-    # self.charge_steps = None  # not in use at the moment
-    # self.discharge_steps = None  # not in use at the moment
-    # self.ir_steps = None  # dict # not in use at the moment
-    # self.ocv_steps = None  # dict # not in use at the moment
-    # self.nom_cap = 3579  # mAh/g (used for finding c-rates)
-    # self.mass_given = False
-    # self.c_mode = True
-    # self.starts_with = "discharge"
-    # self.material = "noname"
-    # self.merged = False
-    # self.file_errors = None  # not in use at the moment
-    # self.loaded_from = None  # name of the .res file it is loaded from
-    # (can be list if merged)
-    # self.raw_data_files = []
-    # self.raw_data_files_length = []
-    # # self.parent_filename = None # name of the .res file it is loaded from
-    # (basename) (can be list if merded)
-    # # self.parent_filename = if listtype, for file in etc,,,
-    # os.path.basename(self.loaded_from)
-    # self.channel_index = None
-    # self.channel_number = None
-    # self.creator = None
-    # self.item_ID = None
-    # self.schedule_file_name = None
-    # self.start_datetime = None
-    # self.test_ID = None
-    # self.name = None
-
-    # NEXT: include nom_cap, tot_mass and  parameters table in save/load hdf5
-
-    warnings.warn(DeprecationWarning("This option will be removed in v.0.4.0"))
-
-    if info_dict is None:
-        info_dict = dict()
-        info_dict["mass"] = 1.23  # mg
-        info_dict["nom_cap"] = 3600  # mAh/g (active material)
-        info_dict["tot_mass"] = 2.33  # mAh/g (total mass of material)
-
-    d = CellpyData()
-
-    print("filename:", filename)
-    print("info_dict in:", end=" ")
-    print(info_dict)
-
-    d.from_raw(filename)
-    d.set_mass(info_dict["mass"])
-    d.make_step_table()
-    d.make_summary()
-
-    for test in d.cells:
-        print("newtest")
-        print(test)
-
-    return info_dict
-
-
-# TODO: remove this
-def loadcell_check():
-    warnings.warn(DeprecationWarning("this option will be removed" "in v.0.4.0"))
-
-    print("running loadcell_check")
-    out_dir = r"C:\Cell_data\tmp"
-    mass = 0.078609164
-    rawfile = r"C:\Cell_data\tmp\large_file_01.res"
-    cellpyfile = r"C:\Cell_data\tmp\out\large_file_01.h5"
-    cell_data = CellpyData()
-    cell_data.select_minimal = True
-    # cell_data.load_until_error = True
-    cell_data.loadcell(raw_files=rawfile, cellpy_file=None, only_summary=False)
-    cell_data.set_mass(mass)
-    if not cell_data.summary_exists:
-        cell_data.make_summary()
-    cell_data.save(cellpyfile)
-    cell_data.to_csv(datadir=out_dir, cycles=True, raw=True, summary=True)
-    print("ok")
 
 
 if __name__ == "__main__":
