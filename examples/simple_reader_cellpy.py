@@ -27,10 +27,7 @@ if not os.path.isdir(rawdir):
     print(rawdir)
     sys.exit(-1)
 
-files = [
-    "20160805_test001_45_cc_01.res",
-    "20160805_test001_45_cc_02.res",
-]
+files = ["20160805_test001_45_cc_01.res", "20160805_test001_45_cc_02.res"]
 
 mass = 0.3
 
@@ -43,7 +40,7 @@ for f in rawfiles:
         exists = "NOT FOUND"
     print(f"{f} {exists}")
 
-print(80*"-")
+print(80 * "-")
 
 d = cellreader.CellpyData().from_raw(rawfiles)
 d.set_mass(mass)
@@ -54,9 +51,5 @@ summary = d.cell.summary
 print(summary.head())
 
 fig, ax = plt.subplots(1, 1)
-ax.plot(
-    summary['Cycle_Index'],
-    summary['Cumulated_Coulombic_Difference(mAh/g)']
-)
+ax.plot(summary["Cycle_Index"], summary["Cumulated_Coulombic_Difference(mAh/g)"])
 plt.show()
-

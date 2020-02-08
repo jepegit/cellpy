@@ -60,8 +60,7 @@ def update_journal_cellpy_data_dir(
 def make_new_cell():
     """create an empty CellpyData object."""
     warnings.warn(
-        "make_new_cell is deprecated, CellpyData.vacant instead",
-        DeprecationWarning
+        "make_new_cell is deprecated, CellpyData.vacant instead", DeprecationWarning
     )
     new_cell = cellpy.cellreader.CellpyData(initialize=True)
     return new_cell
@@ -79,7 +78,7 @@ def split_experiment(cell, base_cycles=None):
     """
     warnings.warn(
         "split_experiment is deprecated, CellpyData.split_many instead",
-        DeprecationWarning
+        DeprecationWarning,
     )
 
     if base_cycles is None:
@@ -266,8 +265,10 @@ def select_summary_based_on_rate(
     summary = cell.cell.summary
 
     if cycle_number_header not in summary.columns:
-        warnings.warn(f"Could not find the column {cycle_number_header}\n"
-                      f"The index = {summary.index}")
+        warnings.warn(
+            f"Could not find the column {cycle_number_header}\n"
+            f"The index = {summary.index}"
+        )
         summary = summary.reset_index(level=0)
 
     cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (

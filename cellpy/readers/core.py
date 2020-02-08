@@ -1,3 +1,9 @@
+""" This module contains several of the most important classes used in cellpy.
+
+It also contains functions that are used by readers and utils. And it has the file-
+version definitions.
+"""
+
 import datetime
 import logging
 import os
@@ -21,10 +27,6 @@ from cellpy.parameters.internal_settings import (
     get_headers_normal,
     get_headers_step_table,
 )
-""" This module contains several of the most important classes used in cellpy. It also
-contains functions that are used by readers and utils.
-"""
-
 
 CELLPY_FILE_VERSION = 5
 MINIMUM_CELLPY_FILE_VERSION = 1

@@ -634,7 +634,9 @@ def test_get():
 
 
 def test_get_advanced():
-    c_many = cellpy.get([fdv.res_file_path, fdv.res_file_path2], logging_mode="DEBUG", mass=0.035)
+    c_many = cellpy.get(
+        [fdv.res_file_path, fdv.res_file_path2], logging_mode="DEBUG", mass=0.035
+    )
 
 
 def test_get_empty():
@@ -680,4 +682,3 @@ def test_set_testnumbers(dataset, n, s):
 @pytest.mark.filterwarnings("error")
 def test_deprecations(dataset):
     dataset._check_file_type("my_file.res")
-

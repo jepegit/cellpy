@@ -10,8 +10,8 @@ from cellpy.parameters import prms
 
 print(f"running {sys.argv[0]}")
 
-h5 = pathlib.Path('../testdata/hdf5/20160805_test001_45_cc_01.h5')
-res = pathlib.Path('../testdata/data/20160805_test001_45_cc_01.res')
+h5 = pathlib.Path("../testdata/hdf5/20160805_test001_45_cc_01.h5")
+res = pathlib.Path("../testdata/data/20160805_test001_45_cc_01.res")
 
 
 def get_res_cell():
@@ -64,7 +64,7 @@ def check_splitting():
     print(c1.get_cycle_numbers())
 
     print(" drop_edges ".center(80, "="))
-    c1 = d.drop_edges(8,12)
+    c1 = d.drop_edges(8, 12)
     print("c1".center(80, "-"))
     print(c1.get_cycle_numbers())
 
@@ -77,7 +77,7 @@ def investigate_cols(d):
     steps = d.cell.steps
     raw = d.cell.raw
 
-    for n, s in zip(['summary', 'steps', 'raw'], [summary, steps, raw]):
+    for n, s in zip(["summary", "steps", "raw"], [summary, steps, raw]):
         print(n.center(80, "-"))
         print(s.index.name)
         print(s.columns[0:3])
@@ -102,5 +102,5 @@ def main():
     investigate_cols(r)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

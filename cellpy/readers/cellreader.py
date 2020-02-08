@@ -44,7 +44,8 @@ from cellpy.readers.core import (
     CELLPY_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
     xldate_as_datetime,
-    interpolate_y_on_x)
+    interpolate_y_on_x,
+)
 
 HEADERS_NORMAL = get_headers_normal()
 HEADERS_SUMMARY = get_headers_summary()

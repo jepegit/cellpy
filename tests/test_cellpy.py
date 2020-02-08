@@ -138,7 +138,9 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
 
     prms.Reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
-    new_file = benchmark(cellpy.utils.helpers.load_and_save_resfile, f_in, None, clean_dir)
+    new_file = benchmark(
+        cellpy.utils.helpers.load_and_save_resfile, f_in, None, clean_dir
+    )
     assert os.path.isfile(new_file)
 
 
@@ -170,6 +172,7 @@ def test_humanize_bytes():
 
 def test_example_data():
     from cellpy.utils import example_data
+
     a = example_data.arbin_file()
     c = example_data.cellpy_file()
     assert a.cell.summary.size == 504

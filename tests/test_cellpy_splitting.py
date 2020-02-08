@@ -13,6 +13,7 @@ log.setup_logging(default_level=logging.DEBUG)
 @pytest.fixture
 def cell():
     from cellpy import cellreader
+
     d = cellreader.CellpyData()
     d.load(fdv.cellpy_file_path)
     return d

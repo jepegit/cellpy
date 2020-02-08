@@ -807,7 +807,11 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
                 dq: the incremental capacity
     """
     cycle = kwargs.pop("cycle", None)
-    cycles = cell.get_cap(cycle=cycle, method="forth-and-forth", categorical_column=True, label_cycle_number=True
+    cycles = cell.get_cap(
+        cycle=cycle,
+        method="forth-and-forth",
+        categorical_column=True,
+        label_cycle_number=True,
     )
     ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
 
@@ -850,7 +854,7 @@ def _dqdv_split_frames(
             >>> charge_ica_df.plot(x=("voltage", "v"))
 
     """
-    cycle = kwargs.pop('cycle', None)
+    cycle = kwargs.pop("cycle", None)
     if cycle and not isinstance(cycle, (list, tuple)):
         cycle = [cycle]
 

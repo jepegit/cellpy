@@ -54,7 +54,7 @@ def get_user_dir():
     """gets the name of the user directory"""
     # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
     user_dir = pathlib.Path().home().resolve()
-    if os.name == 'nt':
+    if os.name == "nt":
         _user_dir = user_dir / "documents"
         if _user_dir.is_dir():
             user_dir = _user_dir
@@ -748,8 +748,10 @@ def pull(tests, examples, clone, directory, password):
         if examples:
             _pull_examples(directory, password)
         else:
-            click.echo(f"[cellpy] (pull) Nothing selected for pulling. "
-                       f"Please select an option (--tests,--examples, -clone, ...) ")
+            click.echo(
+                f"[cellpy] (pull) Nothing selected for pulling. "
+                f"Please select an option (--tests,--examples, -clone, ...) "
+            )
 
 
 def _clone_repo(directory, password):
