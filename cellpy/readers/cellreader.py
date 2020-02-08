@@ -725,6 +725,9 @@ class CellpyData(object):
         # This is a part of a dramatic API change. It will not be possible to
         # load more than one set of datasets (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
+
+        # TODO @jepe Make setting or prm so that it is possible to update only new data
+
         self.logger.info("Started cellpy.cellreader.loadcell")
         if cellpy_file is None:
             similar = False
@@ -786,6 +789,8 @@ class CellpyData(object):
         # This function only loads one test at a time (but could contain several
         # files). The function from_res() also implements loading several
         # datasets (using list of lists as input).
+
+        # TODO @jepe Make setting or prm so that it is possible to update only new data
 
         if file_names:
             self.file_names = file_names
@@ -926,6 +931,24 @@ class CellpyData(object):
             return
         path = Path(filename)
         self.name = path.with_suffix("").name
+
+    def partial_load(self, **kwargs):
+        """Load only a selected part of the cellpy file."""
+        raise NotImplementedError
+
+    def link(self, **kwargs):
+        """Create a link to a cellpy file.
+
+        If the file is very big, it is sometimes better to work with the data
+        out of memory (i.e. on disk). A CellpyData object with a linked file
+        will in most cases work as a normal object. However, some of the methods
+        might be disabled. And it will be slower.
+
+        Notes:
+            2020.02.08 - maybe this functionality is not needed and can be replaced
+                by using dask or similar?
+        """
+        raise NotImplementedError
 
     def load(self, cellpy_file, parent_level=None, return_cls=True):
         """Loads a cellpy file.
@@ -1809,6 +1832,7 @@ class CellpyData(object):
             None
         """
         # TODO: @jepe - include option for omitting steps
+        # TODO: @jepe  - make it is possible to update only new data
 
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -3868,6 +3892,8 @@ class CellpyData(object):
         """Convenience function that makes a summary of the cycling data."""
 
         # TODO: @jepe - include option for omitting steps
+        # TODO: @jepe  - make it is possible to update only new data
+
         # first - check if we need some "instrument-specific" prms
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
