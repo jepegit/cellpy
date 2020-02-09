@@ -126,7 +126,6 @@ TABLE_NAMES = {
     "statistic": "Channel_Statistic_Table",
 }
 
-
 normal_headers_renaming_dict = {
     "aci_phase_angle_txt": "ACI_Phase_Angle",
     "ref_aci_phase_angle_txt": "Reference_ACI_Phase_Angle",
@@ -626,8 +625,8 @@ class ArbinLoader(Loader):
         raise NotImplemented
 
     def _loader_win(self, file_name, temp_filename, *args,
-                   bad_steps=None, dataset_number=None,
-                   data_points=None, **kwargs):
+                    bad_steps=None, dataset_number=None,
+                    data_points=None, **kwargs):
 
         new_tests = []
         conn = None
@@ -713,8 +712,8 @@ class ArbinLoader(Loader):
         return new_tests
 
     def _loader_posix(self, file_name, temp_filename, temp_dir, *args,
-                     bad_steps=None, dataset_number=None,
-                     data_points=None, **kwargs):
+                      bad_steps=None, dataset_number=None,
+                      data_points=None, **kwargs):
 
         table_name_global = TABLE_NAMES["global"]
         table_name_stats = TABLE_NAMES["statistic"]
@@ -918,35 +917,8 @@ class ArbinLoader(Loader):
                 )
                 sql_4 += "AND %s=%i) " % (self.headers_normal.step_index_txt, bad_step)
 
-        if prms.Reader["limit_loaded_cycles"]:
-            if len(prms.Reader["limit_loaded_cycles"]) > 1:
-                sql_4 += "AND %s>%i " % (
-                    self.headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][0],
-                )
-                sql_4 += "AND %s<%i " % (
-                    self.headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][-1],
-                )
-            else:
-                sql_4 = "AND %s=%i " % (
-                    self.headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][0],
-                )
 
-        if data_points is not None:
-            d1, d2 = data_points
-            if d1 is not None:
-                sql_4 += "AND %s>=%i " % (
-                    self.headers_normal.data_point_txt,
-                    d1,
-                )
-            if d2 is not None:
-                sql_4 += "AND %s<=%i " % (
-                    self.headers_normal.data_point_txt,
-                    d2,
-                )
-            pass
+
         """
         # should include a more efficient to load the csv (maybe a loop where
         #   we load only chuncks and only keep the parts that fullfill the
@@ -955,19 +927,57 @@ class ArbinLoader(Loader):
         # filter on test ID
         normal_df = normal_df[
             normal_df[self.headers_normal.test_id_txt] == data.test_ID
-        ]
+            ]
         # sort on data point
         if prms._sort_if_subprocess:
             normal_df = normal_df.sort_values(self.headers_normal.data_point_txt)
 
-        if bad_steps:
+        if bad_steps is not None:
             logging.debug("removing bad steps")
+            if not isinstance(bad_steps, (list, tuple)):
+                bad_steps = [bad_steps]
+            if not isinstance(bad_steps[0], (list, tuple)):
+                bad_steps = [bad_steps]
+            for bad_cycle, bad_step in bad_steps:
+                self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
+
+                selector = (
+                               normal_df[
+                                   self.headers_normal.cycle_index_txt] == bad_cycle
+                           ) & (
+                               normal_df[
+                                   self.headers_normal.step_index_txt] == bad_step
+                           )
+
+                normal_df = normal_df.loc[~selector, :]
+
+        if prms.Reader["limit_loaded_cycles"]:
+            if len(prms.Reader["limit_loaded_cycles"]) > 1:
+                c1, c2 = prms.Reader["limit_loaded_cycles"]
+                selector = (normal_df[self.headers_normal.cycle_index_txt] > c1) & (
+                    normal_df[self.headers_normal.cycle_index_txt] < c2)
+
+            else:
+                c1 = prms.Reader["limit_loaded_cycles"][0]
+                selector = (normal_df[self.headers_normal.cycle_index_txt] == c1)
+
+            normal_df = normal_df.loc[selector, :]
 
         if data_points is not None:
             logging.debug("selecting data-point range")
+            d1, d2 = data_points
+
+            if d1 is not None:
+                selector = (normal_df[self.headers_normal.data_point_txt] >= d1)
+                normal_df = normal_df.loc[selector, :]
+
+            if d2 is not None:
+                selector = (normal_df[self.headers_normal.data_point_txt] <= d2)
+                normal_df = normal_df.loc[selector, :]
 
         length_of_test = normal_df.shape[0]
         summary_df = pd.read_csv(temp_csv_filename_stats)
+
         # clean up
         for f in [
             temp_filename,
@@ -1035,6 +1045,8 @@ class ArbinLoader(Loader):
         if bad_steps is not None:
             if not isinstance(bad_steps, (list, tuple)):
                 bad_steps = [bad_steps]
+            if not isinstance(bad_steps[0], (list, tuple)):
+                bad_steps = [bad_steps]
             for bad_cycle, bad_step in bad_steps:
                 self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
                 sql_4 += "AND NOT (%s=%i " % (
@@ -1071,7 +1083,6 @@ class ArbinLoader(Loader):
                     self.headers_normal.data_point_txt,
                     d2,
                 )
-            pass
 
         sql_5 = "order by %s" % self.headers_normal.data_point_txt
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5

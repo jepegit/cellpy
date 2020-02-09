@@ -64,6 +64,9 @@ def cycling_experiment(batch_instance):
 
 @pytest.fixture(scope="module")
 def updated_cycling_experiment(cycling_experiment):
+    # warning: this test uses the same cellpy file that some of the other
+    # tests updates from time to time. so if one of those tests fails and corrupts
+    # the cellpy file, this test might also fail
     logging.info(f"using pandas {pandas.__version__}")
     cycling_experiment.update()
     return cycling_experiment

@@ -7,7 +7,7 @@ import logging
 
 import cellpy.readers.core
 from cellpy.exceptions import DeprecatedFeature
-from cellpy import log
+from cellpy import log, prms
 from . import fdv
 
 log.setup_logging(default_level="DEBUG")
@@ -60,10 +60,66 @@ def test_create_cellpyfile(cellpy_data_instance):
     ],
 )
 def test_xldate_as_datetime(xldate, datemode, option, expected):
-    from cellpy import cellreader
 
     result = cellpy.readers.core.xldate_as_datetime(xldate, datemode, option)
     assert result == expected
+
+
+def test_raw_bad_data_cycle_and_step(cellpy_data_instance):
+    cycle = 5
+    step = 10
+    step_left = 11
+    step_header = "Step_Index"
+    cycle_header = "Cycle_Index"
+
+    cellpy_data_instance.from_raw(
+        fdv.res_file_path,
+        bad_steps=(
+            (cycle, step),
+        )
+    )
+
+    r = cellpy_data_instance.cell.raw
+    steps = r.loc[r[cycle_header] == cycle, step_header].unique()
+    assert step not in steps
+    assert step_left in steps
+
+
+def test_raw_data_from_data_point(cellpy_data_instance):
+    data_point_header = "Data_Point"
+    cellpy_data_instance.from_raw(
+        fdv.res_file_path,
+        data_points=(10_000, None),
+    )
+
+    p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
+    assert p1 == 10_000
+
+
+def test_raw_data_data_point(cellpy_data_instance):
+    data_point_header = "Data_Point"
+    cellpy_data_instance.from_raw(
+        fdv.res_file_path,
+        data_points=(10_000, 10_200),
+    )
+
+    p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
+    p2 = cellpy_data_instance.cell.raw[data_point_header].iloc[-1]
+    assert p1 == 10_000
+    assert p2 == 10_200
+
+
+def test_raw_limited_loaded_cycles_prm(cellpy_data_instance):
+    try:
+        prms.Reader["limit_loaded_cycles"] = [2, 6]
+        cellpy_data_instance.from_raw(
+            fdv.res_file_path,
+        )
+        cycles = cellpy_data_instance.get_cycle_numbers()
+    finally:
+        prms.Reader["limit_loaded_cycles"] = None
+
+    assert all(cycles == [3, 4, 5])
 
 
 @pytest.mark.parametrize("number", [0, pytest.param(2, marks=pytest.mark.xfail)])
