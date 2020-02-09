@@ -726,13 +726,20 @@ class CellpyData(object):
                     to skip loading.
                 dataset_number (int): the data set number to select if you are dealing
                     with arbin files with more than one data-set.
+                data_points (tuple of ints): load only data from data_point[0] to
+                    data_point[1] (use None for infinite). NOT IMPLEMEMTED YET.
 
         """
         # This function only loads one test at a time (but could contain several
-        # files). The function from_res() also implements loading several
-        # datasets (using list of lists as input).
+        # files). The function from_res() used to implement loading several
+        # datasets (using list of lists as input), however it is now deprecated.
 
         # TODO @jepe Make setting or prm so that it is possible to update only new data
+        #    Comment1: Seems feasible to do the partial loading here and that the
+        #         overal "book-keeping" must be done in a wrapper function (e.g. in the
+        #         loadcell method.
+        #    Comment2: Will include a "state" prm or class
+        #         (datapoint, cycle(?), step(?), ...)
 
         if file_names:
             self.file_names = file_names
@@ -742,6 +749,8 @@ class CellpyData(object):
 
         # file_type = self.tester
         raw_file_loader = self.loader
+        # test is currently a list of tests - this option will be removed in the future
+        # so set_number is hard-coded to 0, i.e. actual-test is always test[0]
         set_number = 0
         test = None
         counter = 0
@@ -754,7 +763,7 @@ class CellpyData(object):
 
             if new_tests:
 
-                # retrieving the first cell data (file)
+                # retrieving the first cell data (e.g. first file)
                 if test is None:
                     self.logger.debug("getting data from first file")
                     if new_tests[set_number].no_data:
@@ -766,11 +775,20 @@ class CellpyData(object):
                 else:
                     self.logger.debug("continuing reading files...")
                     _test = self._append(test[set_number], new_tests[set_number])
+
                     if not _test:
                         self.logger.warning(f"EMPTY TEST: {f}")
                         continue
+
                     test[set_number] = _test
-                    self.logger.debug("added this test - started merging")
+
+                    # retrieving file info in a for-loop in case of multiple files
+                    # Remark!
+                    #    - the raw_data_files attribute is a list
+                    #    - the raw_data_files_length attribute is a list
+                    # The reason for this choice is not clear anymore, but
+                    # let us keep it like this for now
+                    self.logger.debug("added the data set - merging file info")
                     for j in range(len(new_tests[set_number].raw_data_files)):
                         raw_data_file = new_tests[set_number].raw_data_files[j]
                         file_size = new_tests[set_number].raw_data_files_length[j]
@@ -783,7 +801,6 @@ class CellpyData(object):
                                 "Too many files to merge - "
                                 "could be a p2-p3 zip thing"
                             )
-
 
             else:
                 self.logger.debug("NOTHING LOADED")
