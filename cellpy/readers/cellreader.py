@@ -409,64 +409,6 @@ class CellpyData(object):
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
-    def _set_biologic(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        warnings.warn("Experimental! Not ready for production!")
-        from cellpy.readers.instruments import biologics_mpr as instr
-
-        self.loader_class = instr.MprLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
-
-    def _set_pec(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        warnings.warn("Experimental! Not ready for production!")
-        from cellpy.readers.instruments import pec as instr
-
-        self.loader_class = instr.PECLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
-
-    def _set_custom(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        # use a custom format (csv with information lines on top)
-        from cellpy.readers.instruments import custom as instr
-
-        self.loader_class = instr.CustomLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # ----- create the loader ------------------------
-        logging.debug("setting custom file-type (will be used when loading raw")
-        self.loader = self.loader_class.loader
-
-    def _set_arbin_sql(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        warnings.warn("not implemented")
-
-    def _set_arbin(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        from cellpy.readers.instruments import arbin as instr
-
-        self.loader_class = instr.ArbinLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-
-        # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
-
     def _create_logger(self):
         from cellpy import log
 
@@ -477,7 +419,7 @@ class CellpyData(object):
         """set the cycle mode"""
         # TODO: remove this
         warnings.warn(
-            "deprecated - use it as a property " "instead, e.g.: cycle_mode = 'anode'",
+            "deprecated - use it as a property instead, e.g.: cycle_mode = 'anode'",
             DeprecationWarning,
         )
         self._cycle_mode = cycle_mode
@@ -804,12 +746,24 @@ class CellpyData(object):
         test = None
         counter = 0
         self.logger.debug("start iterating through file(s)")
+
         for f in self.file_names:
             self.logger.debug("loading raw file:")
             self.logger.debug(f"{f}")
             new_tests = raw_file_loader(f, **kwargs)
+
             if new_tests:
-                if test is not None:
+
+                # retrieving the first cell data (file)
+                if test is None:
+                    self.logger.debug("getting data from first file")
+                    if new_tests[set_number].no_data:
+                        self.logger.debug("NO DATA")
+                    else:
+                        test = new_tests
+
+                # appending cell data file to existing
+                else:
                     self.logger.debug("continuing reading files...")
                     _test = self._append(test[set_number], new_tests[set_number])
                     if not _test:
@@ -829,12 +783,8 @@ class CellpyData(object):
                                 "Too many files to merge - "
                                 "could be a p2-p3 zip thing"
                             )
-                else:
-                    self.logger.debug("getting data from first file")
-                    if new_tests[set_number].no_data:
-                        self.logger.debug("NO DATA")
-                    else:
-                        test = new_tests
+
+
             else:
                 self.logger.debug("NOTHING LOADED")
 
