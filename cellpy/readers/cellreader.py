@@ -322,6 +322,10 @@ class CellpyData(object):
         data = dataset.raw
         summary = dataset.summary
 
+        # In case Cycle_Index has been promoted to index
+        if h_summary_index not in summary.columns:
+            summary = summary.reset_index(drop=False)
+
         for b_cycle in base_cycles:
             steptable0, steptable = [
                 steptable[steptable[h_step_cycle] < b_cycle],
