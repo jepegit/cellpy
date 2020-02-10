@@ -641,7 +641,7 @@ class Silicon(PeakEnsemble):
         self.peak_types = [
             ConstantModel,  # for scaling
             ConstantModel,  # for offset
-            SkewedGaussianModel,
+            GaussianModel,
             PseudoVoigtModel,
             PseudoVoigtModel,
         ]
