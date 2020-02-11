@@ -322,7 +322,7 @@ class CellpyData(object):
         data = dataset.raw
         summary = dataset.summary
 
-        # In case Cycle_Index has been promoted to index
+        # In case Cycle_Index has been promoted to index [#index]
         if h_summary_index not in summary.columns:
             summary = summary.reset_index(drop=False)
 
@@ -1739,6 +1739,7 @@ class CellpyData(object):
         self.make_step_table(step_specifications=step_specs, short=short)
 
     def _sort_data(self, dataset):
+        # TODO: [# index]
         if self.headers_normal.data_point_txt in dataset.raw.columns:
             dataset.raw = dataset.raw.sort_values(
                 self.headers_normal.data_point_txt
@@ -1896,6 +1897,7 @@ class CellpyData(object):
             [np.mean, np.std, np.amin, np.amax, first, last, delta]
         ).rename(columns={"amin": "min", "amax": "max", "mean": "avr"})
 
+        # TODO: [#index]
         df_steps = df_steps.reset_index()
 
         if profiling:
@@ -2097,6 +2099,7 @@ class CellpyData(object):
         df_steps.columns = flat_cols
         if sort_rows:
             self.logger.debug("sorting the step rows")
+            # TODO: [#index]
             df_steps = df_steps.sort_values(by=shdr.test_time + "_first").reset_index()
 
         if profiling:

@@ -269,6 +269,7 @@ def select_summary_based_on_rate(
             f"Could not find the column {cycle_number_header}\n"
             f"The index = {summary.index}"
         )
+        # TODO: [#index]
         summary = summary.reset_index(level=0)
 
     cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (

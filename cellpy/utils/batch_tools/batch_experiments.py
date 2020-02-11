@@ -69,6 +69,7 @@ class CyclingExperiment(BaseExperiment):
         self.export_raw = True
         self.export_ica = False
         self.last_cycle = None
+        self.nom_cap = None
 
         self.selected_summaries = None
 
@@ -116,6 +117,9 @@ class CyclingExperiment(BaseExperiment):
             if not self.force_cellpy or self.force_recalc:
                 logging.info("setting cycle mode (%s)..." % row.cell_type)
                 cell_data.cycle_mode = row.cell_type
+
+            if self.nom_cap is not None:
+                cell_data.set_nom_cap(self.nom_cap)
 
             logging.info("loading cell")
             if not self.force_cellpy:
@@ -195,6 +199,7 @@ class CyclingExperiment(BaseExperiment):
                     summary_tmp.rename(
                         columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
                     )
+                # TODO: check if drop=False works [#index]
                 summary_tmp.set_index("Cycle_Index", inplace=True)
 
             summary_frames[indx] = summary_tmp
