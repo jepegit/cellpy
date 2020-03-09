@@ -527,6 +527,12 @@ def test_make_summary(cellpy_data_instance):
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
+def test_make_summary_with_c_rate(cellpy_data_instance):
+    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.make_summary(add_c_rate=True)
+
+
 def test_summary_from_cellpyfile(cellpy_data_instance):
     cellpy_data_instance.load(fdv.cellpy_file_path)
     s1 = cellpy_data_instance.get_summary()

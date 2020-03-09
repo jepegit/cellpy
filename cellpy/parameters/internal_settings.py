@@ -171,6 +171,8 @@ headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
 headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
 headers_summary["temperature_last"] = "Last_Temperature(C)"
 headers_summary["temperature_mean"] = "Average_Temperature(C)"
+headers_summary["charge_c_rate"] = "Charge_C_rate"
+headers_summary["discharge_c_rate"] = "Discharge_C_rate"
 headers_summary["pre_aux"] = "Aux_"
 
 # - normal (data) -

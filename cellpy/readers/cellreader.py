@@ -3860,6 +3860,7 @@ class CellpyData(object):
         dataset_number=0,
         ensure_step_table=True,
         add_normalized_cycle_index=True,
+        add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
     ):
@@ -3909,6 +3910,7 @@ class CellpyData(object):
                     use_cellpy_stat_file=use_cellpy_stat_file,
                     ensure_step_table=ensure_step_table,
                     add_normalized_cycle_index=add_normalized_cycle_index,
+                    add_c_rate=add_c_rate,
                     normalization_cycles=normalization_cycles,
                     nom_cap=nom_cap,
                 )
@@ -3926,6 +3928,7 @@ class CellpyData(object):
                 use_cellpy_stat_file=use_cellpy_stat_file,
                 ensure_step_table=ensure_step_table,
                 add_normalized_cycle_index=add_normalized_cycle_index,
+                add_c_rate=add_c_rate,
                 normalization_cycles=normalization_cycles,
                 nom_cap=nom_cap,
             )
@@ -3945,6 +3948,7 @@ class CellpyData(object):
         sort_my_columns=True,
         use_cellpy_stat_file=False,
         add_normalized_cycle_index=True,
+        add_c_rate=False,
         normalization_cycles=None,
         nom_cap=None,
         # capacity_modifier = None,
@@ -4023,6 +4027,8 @@ class CellpyData(object):
         shifted_discharge_capacity_title = hdr_summary.shifted_discharge_capacity
 
         h_normalized_cycle = hdr_summary.normalized_cycle_index
+
+        hdr_steps = self.headers_step_table
 
         # Here are the two main DataFrames for the test
         # (raw-data and summary-data)
@@ -4450,6 +4456,23 @@ class CellpyData(object):
                 nom_cap = self.cell.nom_cap
             self.logger.info(f"Using the following nominal capacity: {nom_cap}")
             summary[h_normalized_cycle] = summary[cumcharge_title] / nom_cap
+
+        if add_c_rate:
+
+            self.logger.debug("Extracting C-rates")
+            steps = self.cell.steps
+
+            charge_steps = steps.loc[
+                steps.type == "charge", [hdr_steps.cycle, "rate_avr"]
+            ].rename(columns={"rate_avr": hdr_summary.charge_c_rate})
+
+            summary = summary.merge(charge_steps, left_on=hdr_summary.cycle_index,  right_on=hdr_steps.cycle, how="outer").drop(columns=hdr_steps.cycle)
+
+            discharge_steps = steps.loc[
+                steps.type == "discharge", [hdr_steps.cycle, "rate_avr"]
+            ].rename(columns={"rate_avr": hdr_summary.discharge_c_rate})
+
+            summary = summary.merge(discharge_steps, left_on=hdr_summary.cycle_index, right_on=hdr_steps.cycle, how="outer").drop(columns=hdr_steps.cycle)
 
         if sort_my_columns:
             self.logger.debug("sorting columns")

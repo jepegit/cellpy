@@ -285,14 +285,14 @@ def plot_cycle_life_summary_bokeh(
     h_ir = int(height_fractions[2] * height)
 
     group_styles, sub_group_styles = create_plot_option_dicts(info)
-
+    legend_option = "all"
     p_eff = create_summary_plot_bokeh(
         coulombic_efficiency,
         info,
         group_styles,
         sub_group_styles,
         label="c.e.",
-        legend_option=None,
+        legend_option=legend_option,
         title=None,
         x_axis_label=None,
         y_axis_label="Coulombic efficiency (%)",
@@ -305,6 +305,7 @@ def plot_cycle_life_summary_bokeh(
         info,
         group_styles,
         sub_group_styles,
+        legend_option=legend_option,
         label="charge and discharge cap.",
         title=None,
         x_axis_label=None,
@@ -319,7 +320,7 @@ def plot_cycle_life_summary_bokeh(
         group_styles,
         sub_group_styles,
         label="ir charge",
-        legend_option=None,
+        legend_option=legend_option,
         title=None,
         x_axis_label="Cycle number",
         y_axis_label="IR Charge (Ohm)",
@@ -343,7 +344,7 @@ def plot_cycle_life_summary_bokeh(
     return bokeh.plotting.show(
         bokeh.layouts.gridplot(
             [p_eff, p_cap, p_ir],
-            ncols=1)
+            ncols=1, sizing_mode="stretch_width")
     )
 
 
@@ -430,22 +431,22 @@ def summary_plotting_engine(**kwargs):
     """creates plots of summary data."""
 
     logging.debug(f"Using {prms.Batch.backend} for plotting")
-    experiments = kwargs["experiments"]
-    farms = kwargs["farms"]
+    experiments = kwargs.pop("experiments")
+    farms = kwargs.pop("farms")
     barn = None
 
     logging.debug("    - summary_plot_engine")
-    farms = _preparing_data_and_plotting(experiments=experiments, farms=farms)
+    farms = _preparing_data_and_plotting(experiments=experiments, farms=farms, **kwargs)
 
     return farms, barn
 
 
-def _plotting_data(pages, summaries, width, height, height_fractions):
+def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
-            pages, summaries, width, height, height_fractions
+            pages, summaries, width, height, height_fractions, **kwargs,
         )
     elif prms.Batch.backend == "matplotlib":
         print("[obs! experimental]")
@@ -461,8 +462,8 @@ def _plotting_data(pages, summaries, width, height, height_fractions):
 def _preparing_data_and_plotting(**kwargs):
     # sub-engine
     logging.debug("    - _preparing_data_and_plotting")
-    experiments = kwargs["experiments"]
-    farms = kwargs["farms"]
+    experiments = kwargs.pop("experiments")
+    farms = kwargs.pop("farms")
 
     width = prms.Batch.summary_plot_width
     height = prms.Batch.summary_plot_height
@@ -478,12 +479,11 @@ def _preparing_data_and_plotting(**kwargs):
             pages = experiment.journal.pages
             try:
                 keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
-
                 summaries = pd.concat(
                     experiment.memory_dumped["summary_engine"], keys=keys, axis=1
                 )
                 canvas = _plotting_data(
-                    pages, summaries, width, height, height_fractions
+                    pages, summaries, width, height, height_fractions, **kwargs,
                 )
                 farms.append(canvas)
 

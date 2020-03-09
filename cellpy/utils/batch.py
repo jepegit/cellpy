@@ -421,20 +421,25 @@ class Batch:
         """Combine selected columns from each of the cells into single frames"""
         self.exporter.do()
 
-    def plot_summaries(self):
+    def plot_summaries(self, output_filename=None, backend=None):
         """Plot the summaries (should be run after running combine_summaries)"""
-        if prms.Batch.backend == "bokeh":
+        if backend is None:
+            backend = prms.Batch.backend
+
+        if backend == "bokeh":
 
             try:
                 import bokeh.plotting
-
-                if prms.Batch.notebook:
-                    bokeh.plotting.output_notebook()
+                if output_filename is not None:
+                    bokeh.plotting.output_file(output_filename)
+                else:
+                    if prms.Batch.notebook:
+                        bokeh.plotting.output_notebook()
 
             except ModuleNotFoundError:
                 prms.Batch.backend = "matplotlib"
                 logging.warning(
-                    "could not find the bokeh " "module -> using matplotlib instead"
+                    "could not find the bokeh module -> using matplotlib instead"
                 )
 
         self.plotter.do()
@@ -473,24 +478,26 @@ def main():
     print("*creating info df*")
     b.create_journal()
     print("*creating folder structure*")
-    b.create_folder_structure()
+    b.paginate()
     print("*load and save*")
     b.update()
     print("*make summaries*")
-    b.make_summaries()
+    b.combine_summaries()
     summaries = b.experiment.memory_dumped
     print("*plotting summaries*")
-    b.plot_summaries()
-    print("*using special features*")
-    print(" - select_ocv_points")
-    analyzer = OCVRelaxationAnalyzer()
-    analyzer.assign(b.experiment)
-    analyzer.do()
-    ocv_df_list = analyzer.farms[0]
-    for df in ocv_df_list:
-        df_up = df.loc[df.type == "ocvrlx_up", :]
-        df_down = df.loc[df.type == "ocvrlx_down", :]
-        print(df_up)
+    b.plot_summaries("tmp_bokeh_plot.html")
+
+
+    # print("*using special features*")
+    # print(" - select_ocv_points")
+    # analyzer = OCVRelaxationAnalyzer()
+    # analyzer.assign(b.experiment)
+    # analyzer.do()
+    # ocv_df_list = analyzer.farms[0]
+    # for df in ocv_df_list:
+    #     df_up = df.loc[df.type == "ocvrlx_up", :]
+    #     df_down = df.loc[df.type == "ocvrlx_down", :]
+    #     print(df_up)
     print("---FINISHED---")
 
 
