@@ -340,7 +340,11 @@ def plot_cycle_life_summary_bokeh(
     p_cap.add_tools(hover)
     p_ir.add_tools(hover)
 
-    return bokeh.plotting.show(bokeh.layouts.column(p_eff, p_cap, p_ir))
+    return bokeh.plotting.show(
+        bokeh.layouts.gridplot(
+            [p_eff, p_cap, p_ir],
+            ncols=1)
+    )
 
 
 def plot_cycle_life_summary_matplotlib(
