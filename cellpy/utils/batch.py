@@ -430,6 +430,7 @@ class Batch:
 
             try:
                 import bokeh.plotting
+
                 if output_filename is not None:
                     bokeh.plotting.output_file(output_filename)
                 else:
@@ -453,8 +454,8 @@ def main():
     out_data_path = r"C:\Scripting\Processing\Test\out"
 
     # Use these when working on my MacBook:
-    #test_data_path = "/Users/jepe/scripting/cellpy/testdata"
-    #out_data_path = "/Users/jepe/cellpy_data"
+    # test_data_path = "/Users/jepe/scripting/cellpy/testdata"
+    # out_data_path = "/Users/jepe/cellpy_data"
 
     test_data_path = Path(test_data_path)
     out_data_path = Path(out_data_path)
@@ -486,7 +487,6 @@ def main():
     summaries = b.experiment.memory_dumped
     print("*plotting summaries*")
     b.plot_summaries("tmp_bokeh_plot.html")
-
 
     # print("*using special features*")
     # print(" - select_ocv_points")

@@ -179,7 +179,6 @@ def create_summary_plot_bokeh(
         y_axis_label=y_axis_label,
     )
 
-
     sub_cols_charge = None
     sub_cols_discharge = None
     legend_collection = []
@@ -192,11 +191,15 @@ def create_summary_plot_bokeh(
     else:
         cols = charge_capacity.columns.get_level_values(1)
         sub_cols_charge = charge_capacity.columns.get_level_values(0).unique()
-        charge_capacity.columns = [f"{col[0]}_{col[1]}" for col in charge_capacity.columns.values]
+        charge_capacity.columns = [
+            f"{col[0]}_{col[1]}" for col in charge_capacity.columns.values
+        ]
         charge_source = bokeh.models.ColumnDataSource(charge_capacity)
         if discharge_capacity is not None:
             sub_cols_discharge = discharge_capacity.columns.get_level_values(0).unique()
-            discharge_capacity.columns = [f"{col[0]}_{col[1]}" for col in discharge_capacity.columns.values]
+            discharge_capacity.columns = [
+                f"{col[0]}_{col[1]}" for col in discharge_capacity.columns.values
+            ]
             discharge_source = bokeh.models.ColumnDataSource(discharge_capacity)
 
     for cc in cols:
@@ -270,7 +273,13 @@ def create_summary_plot_bokeh(
 
 
 def plot_cycle_life_summary_bokeh(
-    info, summaries, width=900, height=800, height_fractions=[0.3, 0.4, 0.3], legend_option="all", add_rate=False
+    info,
+    summaries,
+    width=900,
+    height=800,
+    height_fractions=[0.3, 0.4, 0.3],
+    legend_option="all",
+    add_rate=False,
 ):
 
     # reloading bokeh (in case we change backend during a session)
@@ -290,15 +299,23 @@ def plot_cycle_life_summary_bokeh(
     if add_rate:
 
         try:
-            discharge_capacity = summaries.loc[:, idx[["discharge_capacity", "discharge_c_rate"], :]]
+            discharge_capacity = summaries.loc[
+                :, idx[["discharge_capacity", "discharge_c_rate"], :]
+            ]
         except AttributeError:
-            warnings.warn("No discharge rate columns available - consider re-creating summary!")
+            warnings.warn(
+                "No discharge rate columns available - consider re-creating summary!"
+            )
             discharge_capacity = summaries.discharge_capacity
 
         try:
-            charge_capacity = summaries.loc[:, idx[["charge_capacity", "charge_c_rate"], :]]
+            charge_capacity = summaries.loc[
+                :, idx[["charge_capacity", "charge_c_rate"], :]
+            ]
         except AttributeError:
-            warnings.warn("No charge rate columns available - consider re-creating summary!")
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
             charge_capacity = summaries.charge_capacity
     else:
         discharge_capacity = summaries.discharge_capacity
@@ -323,7 +340,7 @@ def plot_cycle_life_summary_bokeh(
         x_axis_label=None,
         y_axis_label="Coulombic efficiency (%)",
         width=width,
-        height=h_eff
+        height=h_eff,
     )
     all_legend_items.extend(legends_eff)
 
@@ -383,37 +400,50 @@ def plot_cycle_life_summary_bokeh(
     renderer_list = []
     for legend in legend_items_dict:
         legend_items.append(
-            LegendItem(label=legend,
-                       renderers=legend_items_dict[legend])
+            LegendItem(label=legend, renderers=legend_items_dict[legend])
         )
         renderer_list.extend(legend_items_dict[legend])
 
     dum_fig = bokeh.plotting.figure(
-        plot_width=300, plot_height=height, outline_line_alpha=0, toolbar_location=None,
-        width_policy="min", min_width=300,
+        plot_width=300,
+        plot_height=height,
+        outline_line_alpha=0,
+        toolbar_location=None,
+        width_policy="min",
+        min_width=300,
     )
     # set the components of the figure invisible
-    for fig_component in [dum_fig.grid[0], dum_fig.ygrid[0], dum_fig.xaxis[0], dum_fig.yaxis[0]]:
+    for fig_component in [
+        dum_fig.grid[0],
+        dum_fig.ygrid[0],
+        dum_fig.xaxis[0],
+        dum_fig.yaxis[0],
+    ]:
         fig_component.visible = False
 
     dum_fig.renderers += renderer_list
 
-    # set the figure range outside of the range of all glyphs (need to double check this)
+    # set the figure range outside of the range of all
+    # glyphs (need to double check this)
     dum_fig.x_range.end = width + 5
     dum_fig.x_range.start = width
-    dum_fig.add_layout(Legend(click_policy='hide', location='top_left', border_line_alpha=0, items=legend_items))
+    dum_fig.add_layout(
+        Legend(
+            click_policy="hide",
+            location="top_left",
+            border_line_alpha=0,
+            items=legend_items,
+        )
+    )
 
-    fig_grid = bokeh.layouts.gridplot([p_eff, p_cap, p_ir], ncols=1, sizing_mode="stretch_width")
+    fig_grid = bokeh.layouts.gridplot(
+        [p_eff, p_cap, p_ir], ncols=1, sizing_mode="stretch_width"
+    )
 
     final_figure = bokeh.layouts.row(
-        children=[
-            fig_grid,
-            dum_fig],
-        sizing_mode="stretch_width",
+        children=[fig_grid, dum_fig], sizing_mode="stretch_width"
     )
-    return bokeh.plotting.show(
-        final_figure
-    )
+    return bokeh.plotting.show(final_figure)
 
 
 def plot_cycle_life_summary_matplotlib(
@@ -514,7 +544,7 @@ def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
-            pages, summaries, width, height, height_fractions, **kwargs,
+            pages, summaries, width, height, height_fractions, **kwargs
         )
     elif prms.Batch.backend == "matplotlib":
         print("[obs! experimental]")
@@ -551,7 +581,7 @@ def _preparing_data_and_plotting(**kwargs):
                     experiment.memory_dumped["summary_engine"], keys=keys, axis=1
                 )
                 canvas = _plotting_data(
-                    pages, summaries, width, height, height_fractions, **kwargs,
+                    pages, summaries, width, height, height_fractions, **kwargs
                 )
                 farms.append(canvas)
 

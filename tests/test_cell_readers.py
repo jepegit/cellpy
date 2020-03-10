@@ -72,12 +72,7 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance):
     step_header = "Step_Index"
     cycle_header = "Cycle_Index"
 
-    cellpy_data_instance.from_raw(
-        fdv.res_file_path,
-        bad_steps=(
-            (cycle, step),
-        )
-    )
+    cellpy_data_instance.from_raw(fdv.res_file_path, bad_steps=((cycle, step),))
 
     r = cellpy_data_instance.cell.raw
     steps = r.loc[r[cycle_header] == cycle, step_header].unique()
@@ -87,10 +82,7 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance):
 
 def test_raw_data_from_data_point(cellpy_data_instance):
     data_point_header = "Data_Point"
-    cellpy_data_instance.from_raw(
-        fdv.res_file_path,
-        data_points=(10_000, None),
-    )
+    cellpy_data_instance.from_raw(fdv.res_file_path, data_points=(10_000, None))
 
     p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
     assert p1 == 10_000
@@ -98,10 +90,7 @@ def test_raw_data_from_data_point(cellpy_data_instance):
 
 def test_raw_data_data_point(cellpy_data_instance):
     data_point_header = "Data_Point"
-    cellpy_data_instance.from_raw(
-        fdv.res_file_path,
-        data_points=(10_000, 10_200),
-    )
+    cellpy_data_instance.from_raw(fdv.res_file_path, data_points=(10_000, 10_200))
 
     p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
     p2 = cellpy_data_instance.cell.raw[data_point_header].iloc[-1]
@@ -112,9 +101,7 @@ def test_raw_data_data_point(cellpy_data_instance):
 def test_raw_limited_loaded_cycles_prm(cellpy_data_instance):
     try:
         prms.Reader["limit_loaded_cycles"] = [2, 6]
-        cellpy_data_instance.from_raw(
-            fdv.res_file_path,
-        )
+        cellpy_data_instance.from_raw(fdv.res_file_path)
         cycles = cellpy_data_instance.get_cycle_numbers()
     finally:
         prms.Reader["limit_loaded_cycles"] = None

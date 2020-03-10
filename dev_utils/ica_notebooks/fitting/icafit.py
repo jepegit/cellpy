@@ -669,14 +669,11 @@ class Silicon(PeakEnsemble):
             "center": [
                 # value
                 0.25,
-                
                 # bounds (frac-min, shift-min), (frac-max, shift-max):
                 ((1.0, -0.1), (1.0, 0.1)),
-                
                 # value (fraction, distance) between peak 1 and peak 2:
                 #   i.e. value_P2 = f * (value_P1 + d)
                 (1.0, 0.21),
-                
                 # value (fraction, distance) between peak 1 and peak 3:
                 (1.0, 0.20 + self._crystalline_hysteresis),
             ],

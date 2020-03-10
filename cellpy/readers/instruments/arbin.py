@@ -624,9 +624,16 @@ class ArbinLoader(Loader):
         # return full_path, information
         raise NotImplemented
 
-    def _loader_win(self, file_name, temp_filename, *args,
-                    bad_steps=None, dataset_number=None,
-                    data_points=None, **kwargs):
+    def _loader_win(
+        self,
+        file_name,
+        temp_filename,
+        *args,
+        bad_steps=None,
+        dataset_number=None,
+        data_points=None,
+        **kwargs,
+    ):
 
         new_tests = []
         conn = None
@@ -674,7 +681,7 @@ class ArbinLoader(Loader):
             self.logger.debug("reading raw-data")
             # --------- read raw-data (normal-data) ------------------------
             length_of_test, normal_df = self._load_res_normal_table(
-                conn, data.test_ID, bad_steps, data_points,
+                conn, data.test_ID, bad_steps, data_points
             )
             # --------- read stats-data (summary-data) ---------------------
             sql = "select * from %s where %s=%s order by %s" % (
@@ -711,9 +718,17 @@ class ArbinLoader(Loader):
 
         return new_tests
 
-    def _loader_posix(self, file_name, temp_filename, temp_dir, *args,
-                      bad_steps=None, dataset_number=None,
-                      data_points=None, **kwargs):
+    def _loader_posix(
+        self,
+        file_name,
+        temp_filename,
+        temp_dir,
+        *args,
+        bad_steps=None,
+        dataset_number=None,
+        data_points=None,
+        **kwargs,
+    ):
 
         table_name_global = TABLE_NAMES["global"]
         table_name_stats = TABLE_NAMES["statistic"]
@@ -765,8 +780,13 @@ class ArbinLoader(Loader):
             self.logger.debug("reading raw-data")
 
             length_of_test, normal_df, summary_df = self._load_from_tmp_files(
-                data, tmp_name_global, tmp_name_raw, tmp_name_stats, temp_filename,
-                bad_steps, data_points,
+                data,
+                tmp_name_global,
+                tmp_name_raw,
+                tmp_name_stats,
+                temp_filename,
+                bad_steps,
+                data_points,
             )
 
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
@@ -794,9 +814,15 @@ class ArbinLoader(Loader):
 
         return new_tests
 
-    def loader(self, file_name, *args,
-               bad_steps=None, dataset_number=None,
-               data_points=None, **kwargs):
+    def loader(
+        self,
+        file_name,
+        *args,
+        bad_steps=None,
+        dataset_number=None,
+        data_points=None,
+        **kwargs,
+    ):
         """Loads data from arbin .res files.
 
         Args:
@@ -849,15 +875,26 @@ class ArbinLoader(Loader):
             use_mdbtools = True
 
         if use_mdbtools:
-            new_tests = self._loader_posix(file_name, temp_filename, temp_dir, *args,
-                                           bad_steps=bad_steps,
-                                           dataset_number=dataset_number,
-                                           data_points=data_points, **kwargs)
+            new_tests = self._loader_posix(
+                file_name,
+                temp_filename,
+                temp_dir,
+                *args,
+                bad_steps=bad_steps,
+                dataset_number=dataset_number,
+                data_points=data_points,
+                **kwargs,
+            )
         else:
-            new_tests = self._loader_win(file_name, temp_filename, *args,
-                                         bad_steps=bad_steps,
-                                         dataset_number=dataset_number,
-                                         data_points=data_points, **kwargs)
+            new_tests = self._loader_win(
+                file_name,
+                temp_filename,
+                *args,
+                bad_steps=bad_steps,
+                dataset_number=dataset_number,
+                data_points=data_points,
+                **kwargs,
+            )
 
         new_tests = self._inspect(new_tests)
 
@@ -927,7 +964,7 @@ class ArbinLoader(Loader):
         # filter on test ID
         normal_df = normal_df[
             normal_df[self.headers_normal.test_id_txt] == data.test_ID
-            ]
+        ]
         # sort on data point
         if prms._sort_if_subprocess:
             normal_df = normal_df.sort_values(self.headers_normal.data_point_txt)
@@ -942,12 +979,8 @@ class ArbinLoader(Loader):
                 self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
 
                 selector = (
-                               normal_df[
-                                   self.headers_normal.cycle_index_txt] == bad_cycle
-                           ) & (
-                               normal_df[
-                                   self.headers_normal.step_index_txt] == bad_step
-                           )
+                    normal_df[self.headers_normal.cycle_index_txt] == bad_cycle
+                ) & (normal_df[self.headers_normal.step_index_txt] == bad_step)
 
                 normal_df = normal_df.loc[~selector, :]
 
@@ -955,11 +988,12 @@ class ArbinLoader(Loader):
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
                 c1, c2 = prms.Reader["limit_loaded_cycles"]
                 selector = (normal_df[self.headers_normal.cycle_index_txt] > c1) & (
-                    normal_df[self.headers_normal.cycle_index_txt] < c2)
+                    normal_df[self.headers_normal.cycle_index_txt] < c2
+                )
 
             else:
                 c1 = prms.Reader["limit_loaded_cycles"][0]
-                selector = (normal_df[self.headers_normal.cycle_index_txt] == c1)
+                selector = normal_df[self.headers_normal.cycle_index_txt] == c1
 
             normal_df = normal_df.loc[selector, :]
 
@@ -968,11 +1002,11 @@ class ArbinLoader(Loader):
             d1, d2 = data_points
 
             if d1 is not None:
-                selector = (normal_df[self.headers_normal.data_point_txt] >= d1)
+                selector = normal_df[self.headers_normal.data_point_txt] >= d1
                 normal_df = normal_df.loc[selector, :]
 
             if d2 is not None:
-                selector = (normal_df[self.headers_normal.data_point_txt] <= d2)
+                selector = normal_df[self.headers_normal.data_point_txt] <= d2
                 normal_df = normal_df.loc[selector, :]
 
         length_of_test = normal_df.shape[0]
@@ -1074,15 +1108,9 @@ class ArbinLoader(Loader):
         if data_points is not None:
             d1, d2 = data_points
             if d1 is not None:
-                sql_4 += "AND %s>=%i " % (
-                    self.headers_normal.data_point_txt,
-                    d1,
-                )
+                sql_4 += "AND %s>=%i " % (self.headers_normal.data_point_txt, d1)
             if d2 is not None:
-                sql_4 += "AND %s<=%i " % (
-                    self.headers_normal.data_point_txt,
-                    d2,
-                )
+                sql_4 += "AND %s<=%i " % (self.headers_normal.data_point_txt, d2)
 
         sql_5 = "order by %s" % self.headers_normal.data_point_txt
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5

@@ -4470,10 +4470,10 @@ class CellpyData(object):
             ].rename(columns={"rate_avr": hdr_summary.charge_c_rate})
 
             summary = summary.merge(
-                charge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep='first'),
+                charge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep="first"),
                 left_on=hdr_summary.cycle_index,
                 right_on=hdr_steps.cycle,
-                how="left"
+                how="left",
             ).drop(columns=hdr_steps.cycle)
 
             discharge_steps = steps.loc[
@@ -4481,9 +4481,10 @@ class CellpyData(object):
             ].rename(columns={"rate_avr": hdr_summary.discharge_c_rate})
 
             summary = summary.merge(
-                discharge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep='first'),
-                left_on=hdr_summary.cycle_index, right_on=hdr_steps.cycle,
-                how="left"
+                discharge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep="first"),
+                left_on=hdr_summary.cycle_index,
+                right_on=hdr_steps.cycle,
+                how="left",
             ).drop(columns=hdr_steps.cycle)
 
         if sort_my_columns:

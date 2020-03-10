@@ -25,6 +25,7 @@ except ImportError:
 # fix headers etc
 # check
 
+
 def load_nda(*args, **kwargs):
     print("dummy function (mock)")
     print(args)
@@ -125,6 +126,3 @@ class NdaLoader(Loader):
         new_tests.append(data)
 
         return new_tests
-
-
-

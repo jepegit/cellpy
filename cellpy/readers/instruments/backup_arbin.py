@@ -625,10 +625,15 @@ class ArbinLoader(Loader):
         # return full_path, information
         raise NotImplemented
 
-    def loader_win(self, temp_filename,
-                   table_name_global,
-                   file_name, bad_steps=None, dataset_number=None,
-                   data_points=None):
+    def loader_win(
+        self,
+        temp_filename,
+        table_name_global,
+        file_name,
+        bad_steps=None,
+        dataset_number=None,
+        data_points=None,
+    ):
 
         constr = self._get_res_connector(temp_filename)
 
@@ -707,12 +712,11 @@ class ArbinLoader(Loader):
 
             new_tests.append(data)
 
-
-
         pass
 
-    def loader_posix(self, file_name, bad_steps=None, dataset_number=None,
-                     data_points=None):
+    def loader_posix(
+        self, file_name, bad_steps=None, dataset_number=None, data_points=None
+    ):
         if is_posix:
             if is_macos:
                 self.logger.debug("\nMAC OSX USING MDBTOOLS")
@@ -797,8 +801,7 @@ class ArbinLoader(Loader):
 
         pass
 
-    def loader(self, file_name, bad_steps=None, dataset_number=None,
-               data_points=None):
+    def loader(self, file_name, bad_steps=None, dataset_number=None, data_points=None):
         """Loads data from arbin .res files.
 
         Args:
@@ -902,7 +905,6 @@ class ArbinLoader(Loader):
 
             # use pandas to load in the data
             global_data_df = pd.read_csv(tmp_name_global)
-
 
         tests = global_data_df[self.headers_normal.test_id_txt]
 
