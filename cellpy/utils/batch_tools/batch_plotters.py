@@ -389,7 +389,8 @@ def plot_cycle_life_summary_bokeh(
         renderer_list.extend(legend_items_dict[legend])
 
     dum_fig = bokeh.plotting.figure(
-        plot_width=int(width/6), plot_height=height, outline_line_alpha=0, toolbar_location=None
+        plot_width=300, plot_height=height, outline_line_alpha=0, toolbar_location=None,
+        width_policy="min", min_width=300,
     )
     # set the components of the figure invisible
     for fig_component in [dum_fig.grid[0], dum_fig.ygrid[0], dum_fig.xaxis[0], dum_fig.yaxis[0]]:
