@@ -183,24 +183,20 @@ def create_summary_plot_bokeh(
     sub_cols_discharge = None
     legend_collection = []
 
-    if not isinstance(charge_capacity.columns, pd.MultiIndex):
-        cols = charge_capacity.columns.get_level_values(0)
-        charge_source = bokeh.models.ColumnDataSource(charge_capacity)
-        if discharge_capacity is not None:
-            discharge_source = bokeh.models.ColumnDataSource(discharge_capacity)
-    else:
+    if isinstance(charge_capacity.columns, pd.MultiIndex):
         cols = charge_capacity.columns.get_level_values(1)
         sub_cols_charge = charge_capacity.columns.get_level_values(0).unique()
         charge_capacity.columns = [
             f"{col[0]}_{col[1]}" for col in charge_capacity.columns.values
         ]
-        charge_source = bokeh.models.ColumnDataSource(charge_capacity)
+
         if discharge_capacity is not None:
             sub_cols_discharge = discharge_capacity.columns.get_level_values(0).unique()
             discharge_capacity.columns = [
                 f"{col[0]}_{col[1]}" for col in discharge_capacity.columns.values
             ]
-            discharge_source = bokeh.models.ColumnDataSource(discharge_capacity)
+    else:
+        cols = charge_capacity.columns
 
     for cc in cols:
         g, sg = look_up_group(info, cc)
@@ -213,8 +209,15 @@ def create_summary_plot_bokeh(
 
         if sub_cols_charge is not None:
             c = f"{sub_cols_charge[0]}_{cc}"
+            r = f"{sub_cols_charge[1]}_{cc}"
+            charge_capacity_sub = charge_capacity.loc[:, [c, r]]
+            charge_capacity_sub.columns = [c, "rate"]
+            charge_source = bokeh.models.ColumnDataSource(charge_capacity_sub)
+
         else:
             c = cc
+            charge_capacity_sub = charge_capacity.loc[:, [c]]
+            charge_source = bokeh.models.ColumnDataSource(charge_capacity_sub)
 
         ch_m = p.scatter(
             source=charge_source,
@@ -241,10 +244,18 @@ def create_summary_plot_bokeh(
             # creating a local copy so that I can do local changes
             group_props_marker_charge = group_props["marker"].copy()
             group_props_marker_charge["fill_color"] = None
+
             if sub_cols_discharge is not None:
                 c = f"{sub_cols_discharge[0]}_{cc}"
+                r = f"{sub_cols_discharge[1]}_{cc}"
+                discharge_capacity_sub = discharge_capacity.loc[:, [c, r]]
+                discharge_capacity_sub.columns = [c, "rate"]
+                discharge_source = bokeh.models.ColumnDataSource(discharge_capacity_sub)
+
             else:
                 c = cc
+                discharge_capacity_sub = discharge_capacity.loc[:, [c]]
+                discharge_source = bokeh.models.ColumnDataSource(discharge_capacity_sub)
 
             dch_m = p.scatter(
                 source=discharge_source,
@@ -276,7 +287,7 @@ def plot_cycle_life_summary_bokeh(
     height=800,
     height_fractions=[0.3, 0.4, 0.3],
     legend_option="all",
-    add_rate=False,
+    add_rate=True,
 ):
 
     # reloading bokeh (in case we change backend during a session)
@@ -286,6 +297,8 @@ def plot_cycle_life_summary_bokeh(
     import bokeh.models
     import bokeh.layouts
     import bokeh.models.annotations
+    from bokeh.models import LegendItem, Legend
+    from collections import defaultdict
 
     logging.debug(f"   * stacking and plotting")
     logging.debug(f"      backend: {prms.Batch.backend}")
@@ -314,12 +327,29 @@ def plot_cycle_life_summary_bokeh(
                 "No charge rate columns available - consider re-creating summary!"
             )
             charge_capacity = summaries.charge_capacity
+
+        try:
+            coulombic_efficiency = summaries.loc[
+                :, idx[["coulombic_efficiency", "charge_c_rate"], :]
+            ]
+        except AttributeError:
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
+            coulombic_efficiency = summaries.coulombic_efficiency
+
+        try:
+            ir_charge = summaries.loc[:, idx[["ir_charge", "charge_c_rate"], :]]
+        except AttributeError:
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
+            ir_charge = summaries.ir_charge
     else:
         discharge_capacity = summaries.discharge_capacity
         charge_capacity = summaries.charge_capacity
-
-    coulombic_efficiency = summaries.coulombic_efficiency
-    ir_charge = summaries.ir_charge
+        coulombic_efficiency = summaries.coulombic_efficiency
+        ir_charge = summaries.ir_charge
 
     h_eff = int(height_fractions[0] * height)
     h_cap = int(height_fractions[1] * height)
@@ -376,18 +406,17 @@ def plot_cycle_life_summary_bokeh(
     p_eff.xaxis.visible = False
     p_cap.xaxis.visible = False
 
-    hover = bokeh.models.HoverTool(
-        tooltips=[("cycle", "@Cycle_Index"), ("value", "$y")]
-    )
+    tooltips = [("cycle", "@Cycle_Index"), ("value", "$y{0.}")]
+    if add_rate:
+        tooltips.append(("rate", "@rate{0.000}"))
+
+    hover = bokeh.models.HoverTool(tooltips=tooltips)
 
     p_eff.add_tools(hover)
     p_cap.add_tools(hover)
     p_ir.add_tools(hover)
 
     renderer_list = p_eff.renderers + p_cap.renderers + p_ir.renderers
-
-    from bokeh.models import LegendItem, Legend
-    from collections import defaultdict
 
     legend_items_dict = defaultdict(list)
     for label, r in all_legend_items:
@@ -441,7 +470,7 @@ def plot_cycle_life_summary_bokeh(
         [p_eff, p_cap, p_ir], ncols=1, sizing_mode="stretch_width"
     )
 
-    info_text =  "(filled:charge) (open:discharge)"
+    info_text = "(filled:charge) (open:discharge)"
     p_ir.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
 
     final_figure = bokeh.layouts.row(
