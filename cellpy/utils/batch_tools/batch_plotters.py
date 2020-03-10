@@ -182,8 +182,7 @@ def create_summary_plot_bokeh(
 
     sub_cols_charge = None
     sub_cols_discharge = None
-    if legend_option is not None:
-        legend_collection = []
+    legend_collection = []
 
     if not isinstance(charge_capacity.columns, pd.MultiIndex):
         cols = charge_capacity.columns.get_level_values(0)
@@ -203,10 +202,8 @@ def create_summary_plot_bokeh(
     for cc in cols:
         g, sg = look_up_group(info, cc)
 
-        if legend_option is not None:
-            legend_items = []
-            l = create_legend(info, cc, option=legend_option)
-            # legend_option_dict = {"legend": f"{l}"}
+        legend_items = []
+        l = create_legend(info, cc, option=legend_option)
 
         group_props = group_styles[g]
         sub_group_props = sub_group_styles[sg]
@@ -235,8 +232,7 @@ def create_summary_plot_bokeh(
             **sub_group_props["line"],
         )
 
-        if legend_option is not None:
-            legend_items.extend([ch_m, ch_l])
+        legend_items.extend([ch_m, ch_l])
 
         if discharge_capacity is not None:
             # creating a local copy so that I can do local changes
@@ -263,27 +259,18 @@ def create_summary_plot_bokeh(
                 **sub_group_props["line"],
             )
 
-            if legend_option is not None:
-                legend_items.extend([dch_m, dch_l])
+            legend_items.extend([dch_m, dch_l])
 
-        if legend_option is not None:
-            legend_collection.append((l, legend_items))
+        legend_collection.append((l, legend_items))
 
     if discharge_capacity is not None:
         print("(filled:charge) (open:discharge)")
 
-    if legend_option is not None:
-        legend = bokeh.models.annotations.Legend(
-            items=legend_collection, location=(10, 0)
-        )
-        p.add_layout(legend)
-        p.legend.location = legend_location
-        p.legend.click_policy = "hide"
-    return p
+    return p, legend_collection
 
 
 def plot_cycle_life_summary_bokeh(
-    info, summaries, width=900, height=900, height_fractions=[0.3, 0.4, 0.3]
+    info, summaries, width=900, height=800, height_fractions=[0.3, 0.4, 0.3], legend_option="all", add_rate=False
 ):
 
     # reloading bokeh (in case we change backend during a session)
@@ -298,9 +285,7 @@ def plot_cycle_life_summary_bokeh(
     logging.debug(f"      backend: {prms.Batch.backend}")
 
     idx = pd.IndexSlice
-
-    legend_option = "all"
-    add_rate = False
+    all_legend_items = []
 
     if add_rate:
 
@@ -327,7 +312,7 @@ def plot_cycle_life_summary_bokeh(
     h_ir = int(height_fractions[2] * height)
 
     group_styles, sub_group_styles = create_plot_option_dicts(info)
-    p_eff = create_summary_plot_bokeh(
+    p_eff, legends_eff = create_summary_plot_bokeh(
         coulombic_efficiency,
         info,
         group_styles,
@@ -340,8 +325,9 @@ def plot_cycle_life_summary_bokeh(
         width=width,
         height=h_eff
     )
+    all_legend_items.extend(legends_eff)
 
-    p_cap = create_summary_plot_bokeh(
+    p_cap, legends_cap = create_summary_plot_bokeh(
         (charge_capacity, discharge_capacity),
         info,
         group_styles,
@@ -354,8 +340,9 @@ def plot_cycle_life_summary_bokeh(
         width=width,
         x_range=p_eff.x_range,
     )
+    all_legend_items.extend(legends_cap)
 
-    p_ir = create_summary_plot_bokeh(
+    p_ir, legends_ir = create_summary_plot_bokeh(
         ir_charge,
         info,
         group_styles,
@@ -369,6 +356,7 @@ def plot_cycle_life_summary_bokeh(
         height=h_ir,
         x_range=p_eff.x_range,
     )
+    all_legend_items.extend(legends_ir)
 
     p_eff.y_range.start, p_eff.y_range.end = 20, 120
     p_eff.xaxis.visible = False
@@ -382,10 +370,48 @@ def plot_cycle_life_summary_bokeh(
     p_cap.add_tools(hover)
     p_ir.add_tools(hover)
 
+    renderer_list = p_eff.renderers + p_cap.renderers + p_ir.renderers
+
+    from bokeh.models import LegendItem, Legend
+    from collections import defaultdict
+
+    legend_items_dict = defaultdict(list)
+    for label, r in all_legend_items:
+        legend_items_dict[label].extend(r)
+
+    legend_items = []
+    renderer_list = []
+    for legend in legend_items_dict:
+        legend_items.append(
+            LegendItem(label=legend,
+                       renderers=legend_items_dict[legend])
+        )
+        renderer_list.extend(legend_items_dict[legend])
+
+    dum_fig = bokeh.plotting.figure(
+        plot_width=int(width/6), plot_height=height, outline_line_alpha=0, toolbar_location=None
+    )
+    # set the components of the figure invisible
+    for fig_component in [dum_fig.grid[0], dum_fig.ygrid[0], dum_fig.xaxis[0], dum_fig.yaxis[0]]:
+        fig_component.visible = False
+
+    dum_fig.renderers += renderer_list
+
+    # set the figure range outside of the range of all glyphs (need to double check this)
+    dum_fig.x_range.end = width + 5
+    dum_fig.x_range.start = width
+    dum_fig.add_layout(Legend(click_policy='hide', location='top_left', border_line_alpha=0, items=legend_items))
+
+    fig_grid = bokeh.layouts.gridplot([p_eff, p_cap, p_ir], ncols=1, sizing_mode="stretch_width")
+
+    final_figure = bokeh.layouts.row(
+        children=[
+            fig_grid,
+            dum_fig],
+        sizing_mode="stretch_width",
+    )
     return bokeh.plotting.show(
-        bokeh.layouts.gridplot(
-            [p_eff, p_cap, p_ir],
-            ncols=1, sizing_mode="stretch_width")
+        final_figure
     )
 
 

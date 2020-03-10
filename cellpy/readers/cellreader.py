@@ -4456,7 +4456,7 @@ class CellpyData(object):
                 nom_cap = self.cell.nom_cap
             self.logger.info(f"Using the following nominal capacity: {nom_cap}")
             summary[h_normalized_cycle] = summary[cumcharge_title] / nom_cap
-
+        add_c_rate = False  # FIX THIS LATER
         if add_c_rate:
 
             self.logger.debug("Extracting C-rates")
@@ -4466,13 +4466,13 @@ class CellpyData(object):
                 steps.type == "charge", [hdr_steps.cycle, "rate_avr"]
             ].rename(columns={"rate_avr": hdr_summary.charge_c_rate})
 
-            summary = summary.merge(charge_steps, left_on=hdr_summary.cycle_index,  right_on=hdr_steps.cycle, how="outer").drop(columns=hdr_steps.cycle)
+            summary = summary.merge(charge_steps, left_on=hdr_summary.cycle_index,  right_on=hdr_steps.cycle, how="left").drop(columns=hdr_steps.cycle)
 
             discharge_steps = steps.loc[
                 steps.type == "discharge", [hdr_steps.cycle, "rate_avr"]
             ].rename(columns={"rate_avr": hdr_summary.discharge_c_rate})
 
-            summary = summary.merge(discharge_steps, left_on=hdr_summary.cycle_index, right_on=hdr_steps.cycle, how="outer").drop(columns=hdr_steps.cycle)
+            summary = summary.merge(discharge_steps, left_on=hdr_summary.cycle_index, right_on=hdr_steps.cycle, how="left").drop(columns=hdr_steps.cycle)
 
         if sort_my_columns:
             self.logger.debug("sorting columns")
