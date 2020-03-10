@@ -266,9 +266,6 @@ def create_summary_plot_bokeh(
 
         legend_collection.append((l, legend_items))
 
-    if discharge_capacity is not None:
-        print("(filled:charge) (open:discharge)")
-
     return p, legend_collection
 
 
@@ -404,6 +401,8 @@ def plot_cycle_life_summary_bokeh(
         )
         renderer_list.extend(legend_items_dict[legend])
 
+    comment = "Legends"
+
     dum_fig = bokeh.plotting.figure(
         plot_width=300,
         plot_height=height,
@@ -411,6 +410,7 @@ def plot_cycle_life_summary_bokeh(
         toolbar_location=None,
         width_policy="min",
         min_width=300,
+        title=comment,
     )
     # set the components of the figure invisible
     for fig_component in [
@@ -435,10 +435,14 @@ def plot_cycle_life_summary_bokeh(
             items=legend_items,
         )
     )
+    dum_fig.title.align = "center"
 
     fig_grid = bokeh.layouts.gridplot(
         [p_eff, p_cap, p_ir], ncols=1, sizing_mode="stretch_width"
     )
+
+    info_text =  "(filled:charge) (open:discharge)"
+    p_ir.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
 
     final_figure = bokeh.layouts.row(
         children=[fig_grid, dum_fig], sizing_mode="stretch_width"
