@@ -67,6 +67,8 @@ def summary_engine(**kwargs):
                 "ir_charge",
                 "end_voltage_discharge",
                 "end_voltage_charge",
+                "charge_c_rate",
+                "discharge_c_rate",
             ]
         else:
             selected_summaries = experiment.selected_summaries
