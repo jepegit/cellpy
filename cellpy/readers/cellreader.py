@@ -1083,6 +1083,7 @@ class CellpyData(object):
             self.logger.info("This file is VERY old - no info given here")
             self.logger.info("You should convert the files to a newer version!")
             self.logger.debug(e)
+            return data, meta_table
 
         try:
             data.cellpy_file_version = self._extract_from_dict(
@@ -1091,6 +1092,7 @@ class CellpyData(object):
         except Exception as e:
             data.cellpy_file_version = 0
             warnings.warn(f"Unhandled exception raised: {e}")
+            return data, meta_table
 
         self.logger.debug(f"cellpy file version. {data.cellpy_file_version}")
         return data, meta_table
@@ -1107,7 +1109,7 @@ class CellpyData(object):
                     f"at least one key is missing: {key}"
                 )
                 raise Exception(
-                    f"OH MY GOD! At least one crucial key" f"is missing {key}!"
+                    f"OH MY GOD! At least one crucial key is missing {key}!"
                 )
         self.logger.debug(f"Keys in current cellpy-file: {store.keys()}")
 
@@ -1118,6 +1120,7 @@ class CellpyData(object):
         data.summary = store.select(parent_level + summary_dir)
 
     def _extract_fids_from_cellpy_file(self, fid_dir, parent_level, store):
+        self.logger.debug(f"Extracting fid table from {fid_dir} in hdf5 store")
         try:
             fid_table = store.select(
                 parent_level + fid_dir
@@ -1142,6 +1145,10 @@ class CellpyData(object):
 
     def _extract_meta_from_cellpy_file(self, data, meta_table, filename):
         # get attributes from meta table
+        # remark! could also utilise the pandas to dictionary method directly
+        # for example: meta_table.T.to_dict()
+        # Maybe a good task for someone who would like to learn more about
+        # how cellpy works..
 
         for attribute in ATTRS_CELLPYFILE:
             value = self._extract_from_dict(meta_table, attribute)
@@ -1171,7 +1178,7 @@ class CellpyData(object):
             data.name = name
 
         except KeyError:
-            self.logger.debug(f"missing key in meta table: name")
+            self.logger.debug(f"missing key in meta table: {name}")
             print(meta_table)
             warnings.warn("OLD-TYPE: Recommend to save in new format!")
             try:
@@ -1241,6 +1248,7 @@ class CellpyData(object):
         fidtable["raw_data_last_info_changed"] = []
         fidtable["raw_data_location"] = []
         fidtable["raw_data_files_length"] = []
+        fidtable["last_data_point"] = []
         fids = test.raw_data_files
         fidtable["raw_data_fid"] = fids
         if fids:
@@ -1253,8 +1261,9 @@ class CellpyData(object):
                 fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
                 fidtable["raw_data_location"].append(fid.location)
                 fidtable["raw_data_files_length"].append(length)
+                fidtable["last_data_point"].append(fid.last_data_point)
         else:
-            warnings.warn("seems you lost info about your raw-data")
+            warnings.warn("seems you lost info about your raw-data (missing fids)")
         fidtable = pd.DataFrame(fidtable)
         return infotable, fidtable
 
@@ -1262,8 +1271,8 @@ class CellpyData(object):
         self.logger.debug("converting loaded fidtable to FileID object")
         fids = []
         lengths = []
-        counter = 0
-        for item in tbl["raw_data_name"]:
+        min_amount = 0
+        for counter, item in enumerate(tbl["raw_data_name"]):
             fid = FileID()
             fid.name = item
             fid.full_name = tbl["raw_data_full_name"][counter]
@@ -1273,10 +1282,14 @@ class CellpyData(object):
             fid.last_info_changed = tbl["raw_data_last_info_changed"][counter]
             fid.location = tbl["raw_data_location"][counter]
             length = tbl["raw_data_files_length"][counter]
-            counter += 1
+            if "last_data_point" in tbl.columns:
+                fid.last_data_point = tbl["last_data_point"][counter]
+            else:
+                fid.last_data_point = 0
             fids.append(fid)
             lengths.append(length)
-        if counter < 1:
+            min_amount = 1
+        if min_amount < 1:
             self.logger.debug("info about raw files missing")
         return fids, lengths
 
