@@ -248,7 +248,16 @@ def _update_paths(
     notebookdir = _ask_about_path("where to put your jupyter notebooks", notebookdir)
 
     # update folders based on suggestions
-    for d in [outdatadir, rawdatadir, cellpydatadir, filelogdir, examplesdir, db_path]:
+    for d in [
+        outdatadir,
+        rawdatadir,
+        cellpydatadir,
+        filelogdir,
+        examplesdir,
+        notebookdir,
+        db_path,
+    ]:
+
         if not dry_run:
             _create_dir(d)
         else:

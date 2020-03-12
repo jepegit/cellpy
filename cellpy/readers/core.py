@@ -82,7 +82,7 @@ class FileID(object):
             self.last_accessed = None
             self.last_info_changed = None
             self.location = None
-            self.last_data_point = 0  # to be used later when updating is implemented
+            self._last_data_point = 0  # to be used later when updating is implemented
 
     def __str__(self):
         txt = "\n<fileID>\n"
@@ -97,6 +97,17 @@ class FileID(object):
         else:
             txt += "size: NAN\n"
         return txt
+
+    @property
+    def last_data_point(self):
+        # TODO: consider including a method here to find the last data point (raw data)
+        # ideally, this value should be set when loading the raw data before
+        # merging files (if it consists of several files)
+        return self._last_data_point
+
+    @last_data_point.setter
+    def last_data_point(self, value):
+        self._last_data_point = value
 
     def populate(self, filename):
         """Finds the file-stats and populates the class with stat values.

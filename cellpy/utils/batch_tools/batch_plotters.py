@@ -160,7 +160,6 @@ def create_summary_plot_bokeh(
 ):
 
     logging.debug(f"    - creating summary (bokeh) plot for {label}")
-
     discharge_capacity = None
     if isinstance(data, (list, tuple)):
         charge_capacity = data[0]
@@ -168,10 +167,6 @@ def create_summary_plot_bokeh(
             discharge_capacity = data[1]
     else:
         charge_capacity = data
-
-    charge_source = bokeh.models.ColumnDataSource(charge_capacity)
-    if discharge_capacity is not None:
-        discharge_source = bokeh.models.ColumnDataSource(discharge_capacity)
 
     p = bokeh.plotting.figure(
         title=title,
@@ -184,20 +179,45 @@ def create_summary_plot_bokeh(
         y_axis_label=y_axis_label,
     )
 
-    cols = charge_capacity.columns.get_level_values(0)
-    if legend_option is not None:
-        legend_collection = []
+    sub_cols_charge = None
+    sub_cols_discharge = None
+    legend_collection = []
 
-    for c in cols:
-        g, sg = look_up_group(info, c)
+    if isinstance(charge_capacity.columns, pd.MultiIndex):
+        cols = charge_capacity.columns.get_level_values(1)
+        sub_cols_charge = charge_capacity.columns.get_level_values(0).unique()
+        charge_capacity.columns = [
+            f"{col[0]}_{col[1]}" for col in charge_capacity.columns.values
+        ]
 
-        if legend_option is not None:
-            legend_items = []
-            l = create_legend(info, c, option=legend_option)
-            # legend_option_dict = {"legend": f"{l}"}
+        if discharge_capacity is not None:
+            sub_cols_discharge = discharge_capacity.columns.get_level_values(0).unique()
+            discharge_capacity.columns = [
+                f"{col[0]}_{col[1]}" for col in discharge_capacity.columns.values
+            ]
+    else:
+        cols = charge_capacity.columns
+
+    for cc in cols:
+        g, sg = look_up_group(info, cc)
+
+        legend_items = []
+        l = create_legend(info, cc, option=legend_option)
 
         group_props = group_styles[g]
         sub_group_props = sub_group_styles[sg]
+
+        if sub_cols_charge is not None:
+            c = f"{sub_cols_charge[0]}_{cc}"
+            r = f"{sub_cols_charge[1]}_{cc}"
+            charge_capacity_sub = charge_capacity.loc[:, [c, r]]
+            charge_capacity_sub.columns = [c, "rate"]
+            charge_source = bokeh.models.ColumnDataSource(charge_capacity_sub)
+
+        else:
+            c = cc
+            charge_capacity_sub = charge_capacity.loc[:, [c]]
+            charge_source = bokeh.models.ColumnDataSource(charge_capacity_sub)
 
         ch_m = p.scatter(
             source=charge_source,
@@ -218,13 +238,25 @@ def create_summary_plot_bokeh(
             **sub_group_props["line"],
         )
 
-        if legend_option is not None:
-            legend_items.extend([ch_m, ch_l])
+        legend_items.extend([ch_m, ch_l])
 
         if discharge_capacity is not None:
             # creating a local copy so that I can do local changes
             group_props_marker_charge = group_props["marker"].copy()
             group_props_marker_charge["fill_color"] = None
+
+            if sub_cols_discharge is not None:
+                c = f"{sub_cols_discharge[0]}_{cc}"
+                r = f"{sub_cols_discharge[1]}_{cc}"
+                discharge_capacity_sub = discharge_capacity.loc[:, [c, r]]
+                discharge_capacity_sub.columns = [c, "rate"]
+                discharge_source = bokeh.models.ColumnDataSource(discharge_capacity_sub)
+
+            else:
+                c = cc
+                discharge_capacity_sub = discharge_capacity.loc[:, [c]]
+                discharge_source = bokeh.models.ColumnDataSource(discharge_capacity_sub)
+
             dch_m = p.scatter(
                 source=discharge_source,
                 x="Cycle_Index",
@@ -241,27 +273,21 @@ def create_summary_plot_bokeh(
                 **sub_group_props["line"],
             )
 
-            if legend_option is not None:
-                legend_items.extend([dch_m, dch_l])
+            legend_items.extend([dch_m, dch_l])
 
-        if legend_option is not None:
-            legend_collection.append((l, legend_items))
+        legend_collection.append((l, legend_items))
 
-    if discharge_capacity is not None:
-        print("(filled:charge) (open:discharge)")
-
-    if legend_option is not None:
-        legend = bokeh.models.annotations.Legend(
-            items=legend_collection, location=(10, 0)
-        )
-        p.add_layout(legend)
-        p.legend.location = legend_location
-        p.legend.click_policy = "hide"
-    return p
+    return p, legend_collection
 
 
 def plot_cycle_life_summary_bokeh(
-    info, summaries, width=900, height=900, height_fractions=[0.3, 0.4, 0.3]
+    info,
+    summaries,
+    width=900,
+    height=800,
+    height_fractions=[0.3, 0.4, 0.3],
+    legend_option="all",
+    add_rate=True,
 ):
 
     # reloading bokeh (in case we change backend during a session)
@@ -271,40 +297,86 @@ def plot_cycle_life_summary_bokeh(
     import bokeh.models
     import bokeh.layouts
     import bokeh.models.annotations
+    from bokeh.models import LegendItem, Legend
+    from collections import defaultdict
 
     logging.debug(f"   * stacking and plotting")
     logging.debug(f"      backend: {prms.Batch.backend}")
 
-    discharge_capacity = summaries.discharge_capacity
-    charge_capacity = summaries.charge_capacity
-    coulombic_efficiency = summaries.coulombic_efficiency
-    ir_charge = summaries.ir_charge
+    idx = pd.IndexSlice
+    all_legend_items = []
+
+    if add_rate:
+
+        try:
+            discharge_capacity = summaries.loc[
+                :, idx[["discharge_capacity", "discharge_c_rate"], :]
+            ]
+        except AttributeError:
+            warnings.warn(
+                "No discharge rate columns available - consider re-creating summary!"
+            )
+            discharge_capacity = summaries.discharge_capacity
+
+        try:
+            charge_capacity = summaries.loc[
+                :, idx[["charge_capacity", "charge_c_rate"], :]
+            ]
+        except AttributeError:
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
+            charge_capacity = summaries.charge_capacity
+
+        try:
+            coulombic_efficiency = summaries.loc[
+                :, idx[["coulombic_efficiency", "charge_c_rate"], :]
+            ]
+        except AttributeError:
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
+            coulombic_efficiency = summaries.coulombic_efficiency
+
+        try:
+            ir_charge = summaries.loc[:, idx[["ir_charge", "charge_c_rate"], :]]
+        except AttributeError:
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
+            ir_charge = summaries.ir_charge
+    else:
+        discharge_capacity = summaries.discharge_capacity
+        charge_capacity = summaries.charge_capacity
+        coulombic_efficiency = summaries.coulombic_efficiency
+        ir_charge = summaries.ir_charge
 
     h_eff = int(height_fractions[0] * height)
     h_cap = int(height_fractions[1] * height)
     h_ir = int(height_fractions[2] * height)
 
     group_styles, sub_group_styles = create_plot_option_dicts(info)
-
-    p_eff = create_summary_plot_bokeh(
+    p_eff, legends_eff = create_summary_plot_bokeh(
         coulombic_efficiency,
         info,
         group_styles,
         sub_group_styles,
         label="c.e.",
-        legend_option=None,
+        legend_option=legend_option,
         title=None,
         x_axis_label=None,
         y_axis_label="Coulombic efficiency (%)",
         width=width,
         height=h_eff,
     )
+    all_legend_items.extend(legends_eff)
 
-    p_cap = create_summary_plot_bokeh(
+    p_cap, legends_cap = create_summary_plot_bokeh(
         (charge_capacity, discharge_capacity),
         info,
         group_styles,
         sub_group_styles,
+        legend_option=legend_option,
         label="charge and discharge cap.",
         title=None,
         x_axis_label=None,
@@ -312,14 +384,15 @@ def plot_cycle_life_summary_bokeh(
         width=width,
         x_range=p_eff.x_range,
     )
+    all_legend_items.extend(legends_cap)
 
-    p_ir = create_summary_plot_bokeh(
+    p_ir, legends_ir = create_summary_plot_bokeh(
         ir_charge,
         info,
         group_styles,
         sub_group_styles,
         label="ir charge",
-        legend_option=None,
+        legend_option=legend_option,
         title=None,
         x_axis_label="Cycle number",
         y_axis_label="IR Charge (Ohm)",
@@ -327,20 +400,83 @@ def plot_cycle_life_summary_bokeh(
         height=h_ir,
         x_range=p_eff.x_range,
     )
+    all_legend_items.extend(legends_ir)
 
     p_eff.y_range.start, p_eff.y_range.end = 20, 120
     p_eff.xaxis.visible = False
     p_cap.xaxis.visible = False
 
-    hover = bokeh.models.HoverTool(
-        tooltips=[("cycle", "@Cycle_Index"), ("value", "$y")]
-    )
+    tooltips = [("cycle", "@Cycle_Index"), ("value", "$y{0.}")]
+    if add_rate:
+        tooltips.append(("rate", "@rate{0.000}"))
+
+    hover = bokeh.models.HoverTool(tooltips=tooltips)
 
     p_eff.add_tools(hover)
     p_cap.add_tools(hover)
     p_ir.add_tools(hover)
 
-    return bokeh.plotting.show(bokeh.layouts.column(p_eff, p_cap, p_ir))
+    renderer_list = p_eff.renderers + p_cap.renderers + p_ir.renderers
+
+    legend_items_dict = defaultdict(list)
+    for label, r in all_legend_items:
+        legend_items_dict[label].extend(r)
+
+    legend_items = []
+    renderer_list = []
+    for legend in legend_items_dict:
+        legend_items.append(
+            LegendItem(label=legend, renderers=legend_items_dict[legend])
+        )
+        renderer_list.extend(legend_items_dict[legend])
+
+    comment = "Legends"
+
+    dum_fig = bokeh.plotting.figure(
+        plot_width=300,
+        plot_height=height,
+        outline_line_alpha=0,
+        toolbar_location=None,
+        width_policy="min",
+        min_width=300,
+        title=comment,
+    )
+    # set the components of the figure invisible
+    for fig_component in [
+        dum_fig.grid[0],
+        dum_fig.ygrid[0],
+        dum_fig.xaxis[0],
+        dum_fig.yaxis[0],
+    ]:
+        fig_component.visible = False
+
+    dum_fig.renderers += renderer_list
+
+    # set the figure range outside of the range of all
+    # glyphs (need to double check this)
+    dum_fig.x_range.end = width + 5
+    dum_fig.x_range.start = width
+    dum_fig.add_layout(
+        Legend(
+            click_policy="hide",
+            location="top_left",
+            border_line_alpha=0,
+            items=legend_items,
+        )
+    )
+    dum_fig.title.align = "center"
+
+    fig_grid = bokeh.layouts.gridplot(
+        [p_eff, p_cap, p_ir], ncols=1, sizing_mode="stretch_width"
+    )
+
+    info_text = "(filled:charge) (open:discharge)"
+    p_ir.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
+
+    final_figure = bokeh.layouts.row(
+        children=[fig_grid, dum_fig], sizing_mode="stretch_width"
+    )
+    return bokeh.plotting.show(final_figure)
 
 
 def plot_cycle_life_summary_matplotlib(
@@ -426,22 +562,22 @@ def summary_plotting_engine(**kwargs):
     """creates plots of summary data."""
 
     logging.debug(f"Using {prms.Batch.backend} for plotting")
-    experiments = kwargs["experiments"]
-    farms = kwargs["farms"]
+    experiments = kwargs.pop("experiments")
+    farms = kwargs.pop("farms")
     barn = None
 
     logging.debug("    - summary_plot_engine")
-    farms = _preparing_data_and_plotting(experiments=experiments, farms=farms)
+    farms = _preparing_data_and_plotting(experiments=experiments, farms=farms, **kwargs)
 
     return farms, barn
 
 
-def _plotting_data(pages, summaries, width, height, height_fractions):
+def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
-            pages, summaries, width, height, height_fractions
+            pages, summaries, width, height, height_fractions, **kwargs
         )
     elif prms.Batch.backend == "matplotlib":
         print("[obs! experimental]")
@@ -457,8 +593,8 @@ def _plotting_data(pages, summaries, width, height, height_fractions):
 def _preparing_data_and_plotting(**kwargs):
     # sub-engine
     logging.debug("    - _preparing_data_and_plotting")
-    experiments = kwargs["experiments"]
-    farms = kwargs["farms"]
+    experiments = kwargs.pop("experiments")
+    farms = kwargs.pop("farms")
 
     width = prms.Batch.summary_plot_width
     height = prms.Batch.summary_plot_height
@@ -474,12 +610,11 @@ def _preparing_data_and_plotting(**kwargs):
             pages = experiment.journal.pages
             try:
                 keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
-
                 summaries = pd.concat(
                     experiment.memory_dumped["summary_engine"], keys=keys, axis=1
                 )
                 canvas = _plotting_data(
-                    pages, summaries, width, height, height_fractions
+                    pages, summaries, width, height, height_fractions, **kwargs
                 )
                 farms.append(canvas)
 

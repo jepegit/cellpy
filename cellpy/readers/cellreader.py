@@ -322,6 +322,10 @@ class CellpyData(object):
         data = dataset.raw
         summary = dataset.summary
 
+        # In case Cycle_Index has been promoted to index [#index]
+        if h_summary_index not in summary.columns:
+            summary = summary.reset_index(drop=False)
+
         for b_cycle in base_cycles:
             steptable0, steptable = [
                 steptable[steptable[h_step_cycle] < b_cycle],
@@ -409,64 +413,6 @@ class CellpyData(object):
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
 
-    def _set_biologic(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        warnings.warn("Experimental! Not ready for production!")
-        from cellpy.readers.instruments import biologics_mpr as instr
-
-        self.loader_class = instr.MprLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
-
-    def _set_pec(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        warnings.warn("Experimental! Not ready for production!")
-        from cellpy.readers.instruments import pec as instr
-
-        self.loader_class = instr.PECLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
-
-    def _set_custom(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        # use a custom format (csv with information lines on top)
-        from cellpy.readers.instruments import custom as instr
-
-        self.loader_class = instr.CustomLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # ----- create the loader ------------------------
-        logging.debug("setting custom file-type (will be used when loading raw")
-        self.loader = self.loader_class.loader
-
-    def _set_arbin_sql(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        warnings.warn("not implemented")
-
-    def _set_arbin(self):
-        # TODO: remove this
-        warnings.warn("deprecated", DeprecationWarning)
-        from cellpy.readers.instruments import arbin as instr
-
-        self.loader_class = instr.ArbinLoader()
-        # ----- get information --------------------------
-        self.raw_units = self.loader_class.get_raw_units()
-        self.raw_limits = self.loader_class.get_raw_limits()
-
-        # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
-
     def _create_logger(self):
         from cellpy import log
 
@@ -477,7 +423,7 @@ class CellpyData(object):
         """set the cycle mode"""
         # TODO: remove this
         warnings.warn(
-            "deprecated - use it as a property " "instead, e.g.: cycle_mode = 'anode'",
+            "deprecated - use it as a property instead, e.g.: cycle_mode = 'anode'",
             DeprecationWarning,
         )
         self._cycle_mode = cycle_mode
@@ -725,6 +671,9 @@ class CellpyData(object):
         # This is a part of a dramatic API change. It will not be possible to
         # load more than one set of datasets (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
+
+        # TODO @jepe Make setting or prm so that it is possible to update only new data
+
         self.logger.info("Started cellpy.cellreader.loadcell")
         if cellpy_file is None:
             similar = False
@@ -781,11 +730,20 @@ class CellpyData(object):
                     to skip loading.
                 dataset_number (int): the data set number to select if you are dealing
                     with arbin files with more than one data-set.
+                data_points (tuple of ints): load only data from data_point[0] to
+                    data_point[1] (use None for infinite). NOT IMPLEMEMTED YET.
 
         """
         # This function only loads one test at a time (but could contain several
-        # files). The function from_res() also implements loading several
-        # datasets (using list of lists as input).
+        # files). The function from_res() used to implement loading several
+        # datasets (using list of lists as input), however it is now deprecated.
+
+        # TODO @jepe Make setting or prm so that it is possible to update only new data
+        #    Comment1: Seems feasible to do the partial loading here and that the
+        #         overal "book-keeping" must be done in a wrapper function (e.g. in the
+        #         loadcell method.
+        #    Comment2: Will include a "state" prm or class
+        #         (datapoint, cycle(?), step(?), ...)
 
         if file_names:
             self.file_names = file_names
@@ -795,23 +753,46 @@ class CellpyData(object):
 
         # file_type = self.tester
         raw_file_loader = self.loader
+        # test is currently a list of tests - this option will be removed in the future
+        # so set_number is hard-coded to 0, i.e. actual-test is always test[0]
         set_number = 0
         test = None
         counter = 0
         self.logger.debug("start iterating through file(s)")
+
         for f in self.file_names:
             self.logger.debug("loading raw file:")
             self.logger.debug(f"{f}")
             new_tests = raw_file_loader(f, **kwargs)
+
             if new_tests:
-                if test is not None:
+
+                # retrieving the first cell data (e.g. first file)
+                if test is None:
+                    self.logger.debug("getting data from first file")
+                    if new_tests[set_number].no_data:
+                        self.logger.debug("NO DATA")
+                    else:
+                        test = new_tests
+
+                # appending cell data file to existing
+                else:
                     self.logger.debug("continuing reading files...")
                     _test = self._append(test[set_number], new_tests[set_number])
+
                     if not _test:
                         self.logger.warning(f"EMPTY TEST: {f}")
                         continue
+
                     test[set_number] = _test
-                    self.logger.debug("added this test - started merging")
+
+                    # retrieving file info in a for-loop in case of multiple files
+                    # Remark!
+                    #    - the raw_data_files attribute is a list
+                    #    - the raw_data_files_length attribute is a list
+                    # The reason for this choice is not clear anymore, but
+                    # let us keep it like this for now
+                    self.logger.debug("added the data set - merging file info")
                     for j in range(len(new_tests[set_number].raw_data_files)):
                         raw_data_file = new_tests[set_number].raw_data_files[j]
                         file_size = new_tests[set_number].raw_data_files_length[j]
@@ -824,12 +805,7 @@ class CellpyData(object):
                                 "Too many files to merge - "
                                 "could be a p2-p3 zip thing"
                             )
-                else:
-                    self.logger.debug("getting data from first file")
-                    if new_tests[set_number].no_data:
-                        self.logger.debug("NO DATA")
-                    else:
-                        test = new_tests
+
             else:
                 self.logger.debug("NOTHING LOADED")
 
@@ -926,6 +902,24 @@ class CellpyData(object):
             return
         path = Path(filename)
         self.name = path.with_suffix("").name
+
+    def partial_load(self, **kwargs):
+        """Load only a selected part of the cellpy file."""
+        raise NotImplementedError
+
+    def link(self, **kwargs):
+        """Create a link to a cellpy file.
+
+        If the file is very big, it is sometimes better to work with the data
+        out of memory (i.e. on disk). A CellpyData object with a linked file
+        will in most cases work as a normal object. However, some of the methods
+        might be disabled. And it will be slower.
+
+        Notes:
+            2020.02.08 - maybe this functionality is not needed and can be replaced
+                by using dask or similar?
+        """
+        raise NotImplementedError
 
     def load(self, cellpy_file, parent_level=None, return_cls=True):
         """Loads a cellpy file.
@@ -1089,6 +1083,7 @@ class CellpyData(object):
             self.logger.info("This file is VERY old - no info given here")
             self.logger.info("You should convert the files to a newer version!")
             self.logger.debug(e)
+            return data, meta_table
 
         try:
             data.cellpy_file_version = self._extract_from_dict(
@@ -1097,6 +1092,7 @@ class CellpyData(object):
         except Exception as e:
             data.cellpy_file_version = 0
             warnings.warn(f"Unhandled exception raised: {e}")
+            return data, meta_table
 
         self.logger.debug(f"cellpy file version. {data.cellpy_file_version}")
         return data, meta_table
@@ -1113,7 +1109,7 @@ class CellpyData(object):
                     f"at least one key is missing: {key}"
                 )
                 raise Exception(
-                    f"OH MY GOD! At least one crucial key" f"is missing {key}!"
+                    f"OH MY GOD! At least one crucial key is missing {key}!"
                 )
         self.logger.debug(f"Keys in current cellpy-file: {store.keys()}")
 
@@ -1124,6 +1120,7 @@ class CellpyData(object):
         data.summary = store.select(parent_level + summary_dir)
 
     def _extract_fids_from_cellpy_file(self, fid_dir, parent_level, store):
+        self.logger.debug(f"Extracting fid table from {fid_dir} in hdf5 store")
         try:
             fid_table = store.select(
                 parent_level + fid_dir
@@ -1148,6 +1145,10 @@ class CellpyData(object):
 
     def _extract_meta_from_cellpy_file(self, data, meta_table, filename):
         # get attributes from meta table
+        # remark! could also utilise the pandas to dictionary method directly
+        # for example: meta_table.T.to_dict()
+        # Maybe a good task for someone who would like to learn more about
+        # how cellpy works..
 
         for attribute in ATTRS_CELLPYFILE:
             value = self._extract_from_dict(meta_table, attribute)
@@ -1177,7 +1178,7 @@ class CellpyData(object):
             data.name = name
 
         except KeyError:
-            self.logger.debug(f"missing key in meta table: name")
+            self.logger.debug(f"missing key in meta table: {name}")
             print(meta_table)
             warnings.warn("OLD-TYPE: Recommend to save in new format!")
             try:
@@ -1247,6 +1248,7 @@ class CellpyData(object):
         fidtable["raw_data_last_info_changed"] = []
         fidtable["raw_data_location"] = []
         fidtable["raw_data_files_length"] = []
+        fidtable["last_data_point"] = []
         fids = test.raw_data_files
         fidtable["raw_data_fid"] = fids
         if fids:
@@ -1259,8 +1261,9 @@ class CellpyData(object):
                 fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
                 fidtable["raw_data_location"].append(fid.location)
                 fidtable["raw_data_files_length"].append(length)
+                fidtable["last_data_point"].append(fid.last_data_point)
         else:
-            warnings.warn("seems you lost info about your raw-data")
+            warnings.warn("seems you lost info about your raw-data (missing fids)")
         fidtable = pd.DataFrame(fidtable)
         return infotable, fidtable
 
@@ -1268,8 +1271,8 @@ class CellpyData(object):
         self.logger.debug("converting loaded fidtable to FileID object")
         fids = []
         lengths = []
-        counter = 0
-        for item in tbl["raw_data_name"]:
+        min_amount = 0
+        for counter, item in enumerate(tbl["raw_data_name"]):
             fid = FileID()
             fid.name = item
             fid.full_name = tbl["raw_data_full_name"][counter]
@@ -1279,10 +1282,14 @@ class CellpyData(object):
             fid.last_info_changed = tbl["raw_data_last_info_changed"][counter]
             fid.location = tbl["raw_data_location"][counter]
             length = tbl["raw_data_files_length"][counter]
-            counter += 1
+            if "last_data_point" in tbl.columns:
+                fid.last_data_point = tbl["last_data_point"][counter]
+            else:
+                fid.last_data_point = 0
             fids.append(fid)
             lengths.append(length)
-        if counter < 1:
+            min_amount = 1
+        if min_amount < 1:
             self.logger.debug("info about raw files missing")
         return fids, lengths
 
@@ -1745,6 +1752,7 @@ class CellpyData(object):
         self.make_step_table(step_specifications=step_specs, short=short)
 
     def _sort_data(self, dataset):
+        # TODO: [# index]
         if self.headers_normal.data_point_txt in dataset.raw.columns:
             dataset.raw = dataset.raw.sort_values(
                 self.headers_normal.data_point_txt
@@ -1809,6 +1817,7 @@ class CellpyData(object):
             None
         """
         # TODO: @jepe - include option for omitting steps
+        # TODO: @jepe  - make it is possible to update only new data
 
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -1901,6 +1910,7 @@ class CellpyData(object):
             [np.mean, np.std, np.amin, np.amax, first, last, delta]
         ).rename(columns={"amin": "min", "amax": "max", "mean": "avr"})
 
+        # TODO: [#index]
         df_steps = df_steps.reset_index()
 
         if profiling:
@@ -2102,6 +2112,7 @@ class CellpyData(object):
         df_steps.columns = flat_cols
         if sort_rows:
             self.logger.debug("sorting the step rows")
+            # TODO: [#index]
             df_steps = df_steps.sort_values(by=shdr.test_time + "_first").reset_index()
 
         if profiling:
@@ -3862,12 +3873,15 @@ class CellpyData(object):
         dataset_number=0,
         ensure_step_table=True,
         add_normalized_cycle_index=True,
+        add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
 
         # TODO: @jepe - include option for omitting steps
+        # TODO: @jepe  - make it is possible to update only new data
+
         # first - check if we need some "instrument-specific" prms
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
@@ -3909,6 +3923,7 @@ class CellpyData(object):
                     use_cellpy_stat_file=use_cellpy_stat_file,
                     ensure_step_table=ensure_step_table,
                     add_normalized_cycle_index=add_normalized_cycle_index,
+                    add_c_rate=add_c_rate,
                     normalization_cycles=normalization_cycles,
                     nom_cap=nom_cap,
                 )
@@ -3926,6 +3941,7 @@ class CellpyData(object):
                 use_cellpy_stat_file=use_cellpy_stat_file,
                 ensure_step_table=ensure_step_table,
                 add_normalized_cycle_index=add_normalized_cycle_index,
+                add_c_rate=add_c_rate,
                 normalization_cycles=normalization_cycles,
                 nom_cap=nom_cap,
             )
@@ -3945,6 +3961,7 @@ class CellpyData(object):
         sort_my_columns=True,
         use_cellpy_stat_file=False,
         add_normalized_cycle_index=True,
+        add_c_rate=False,
         normalization_cycles=None,
         nom_cap=None,
         # capacity_modifier = None,
@@ -4023,6 +4040,8 @@ class CellpyData(object):
         shifted_discharge_capacity_title = hdr_summary.shifted_discharge_capacity
 
         h_normalized_cycle = hdr_summary.normalized_cycle_index
+
+        hdr_steps = self.headers_step_table
 
         # Here are the two main DataFrames for the test
         # (raw-data and summary-data)
@@ -4450,6 +4469,36 @@ class CellpyData(object):
                 nom_cap = self.cell.nom_cap
             self.logger.info(f"Using the following nominal capacity: {nom_cap}")
             summary[h_normalized_cycle] = summary[cumcharge_title] / nom_cap
+
+        if add_c_rate:
+
+            self.logger.debug("Extracting C-rates")
+            steps = self.cell.steps
+
+            # if hdr_summary.cycle_index not in summary.columns:
+            #     summary = summary.reset_index()
+
+            charge_steps = steps.loc[
+                steps.type == "charge", [hdr_steps.cycle, "rate_avr"]
+            ].rename(columns={"rate_avr": hdr_summary.charge_c_rate})
+
+            summary = summary.merge(
+                charge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep="first"),
+                left_on=hdr_summary.cycle_index,
+                right_on=hdr_steps.cycle,
+                how="left",
+            ).drop(columns=hdr_steps.cycle)
+
+            discharge_steps = steps.loc[
+                steps.type == "discharge", [hdr_steps.cycle, "rate_avr"]
+            ].rename(columns={"rate_avr": hdr_summary.discharge_c_rate})
+
+            summary = summary.merge(
+                discharge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep="first"),
+                left_on=hdr_summary.cycle_index,
+                right_on=hdr_steps.cycle,
+                how="left",
+            ).drop(columns=hdr_steps.cycle)
 
         if sort_my_columns:
             self.logger.debug("sorting columns")
