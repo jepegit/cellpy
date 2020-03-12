@@ -71,8 +71,9 @@ def main():
     shutil.copy2(filename, temp_dir)
     print("Finished to tmp-file")
 
-    constructor = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' \
-                  + temp_filename
+    constructor = (
+        "Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=" + temp_filename
+    )
     conn = dbloader.connect(constructor, autocommit=True)
     cur = conn.cursor()
     sql = "select * from %s ORDER BY Test_Time" % tablename_normal
@@ -106,7 +107,7 @@ def main():
     d = 0.0
     c = 0.0
 
-    ofile = open(outfile, 'w')
+    ofile = open(outfile, "w")
     header = "time;cycle;step;voltage;discharge_cap;charge_cap\n"
     ofile.write(header)
 
@@ -185,19 +186,21 @@ def main():
     I = np.array(I)
     D = convert2mAhg(D, mass)
     C = convert2mAhg(C, mass)
-    df = pd.DataFrame({'Cycle': I,
-                       'Discharge_Capacity': D,
-                       'Charge_Capacity': C})
+    df = pd.DataFrame({"Cycle": I, "Discharge_Capacity": D, "Charge_Capacity": C})
 
     selection = (df.Charge_Capacity > lim_low) & (df.Charge_Capacity < lim_high)
     df_filtered = df[selection]
-    df_filtered.to_csv(outfile2, sep=";", index=False,
-                       columns=["Cycle", "Discharge_Capacity",
-                                "Charge_Capacity"])
+    df_filtered.to_csv(
+        outfile2,
+        sep=";",
+        index=False,
+        columns=["Cycle", "Discharge_Capacity", "Charge_Capacity"],
+    )
 
-    plt.plot(I, C, '-', label="charge")
-    plt.plot(df_filtered.Cycle, df_filtered.Charge_Capacity, 'o',
-             label="filtered-charge")
+    plt.plot(I, C, "-", label="charge")
+    plt.plot(
+        df_filtered.Cycle, df_filtered.Charge_Capacity, "o", label="filtered-charge"
+    )
     plt.xlabel("cycle")
     plt.ylabel("mAh/g")
     plt.legend()

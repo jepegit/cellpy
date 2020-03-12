@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 
 from cellpy.readers import cellreader
@@ -68,15 +69,16 @@ class CyclingExperiment(BaseExperiment):
         self.export_raw = True
         self.export_ica = False
         self.last_cycle = None
+        self.nom_cap = None
 
         self.selected_summaries = None
 
-    def update(self, all_in_memory=None):
+    def update(self, all_in_memory=None, **kwargs):
         """Updates the selected datasets.
 
         Args:
             all_in_memory (bool): store the cellpydata in memory (default
-            False)
+                False)
 
         """
         logging.info("[update experiment]")
@@ -116,6 +118,9 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("setting cycle mode (%s)..." % row.cell_type)
                 cell_data.cycle_mode = row.cell_type
 
+            if self.nom_cap is not None:
+                cell_data.set_nom_cap(self.nom_cap)
+
             logging.info("loading cell")
             if not self.force_cellpy:
                 logging.debug("not forcing to load cellpy-file instead of raw file.")
@@ -127,6 +132,7 @@ class CyclingExperiment(BaseExperiment):
                         summary_on_raw=True,
                         force_raw=self.force_raw_file,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
+                        **kwargs,
                     )
                 except Exception as e:
                     logging.info("Failed to load: " + str(e))
@@ -178,6 +184,14 @@ class CyclingExperiment(BaseExperiment):
                 summary_tmp.index.name = "Cycle_Index"
 
             if not summary_tmp.index.name == "Cycle_Index":
+                # TODO: Why did I do this? Does not make any sense. It seems like
+                #    batch forces Summary to have "Cycle_Index" as index, but
+                #    files not processed by batch will not have.
+                #    I think I should choose what should and what should not have
+                #    a measurement col as index. Current:
+                #    steps - not sure
+                #    raw - data_point (already implemented I think)
+                #    summary - not sure
                 logging.debug("Setting index to Cycle_Index")
                 # check if it is a byte-string
                 if b"Cycle_Index" in summary_tmp.columns:
@@ -185,6 +199,7 @@ class CyclingExperiment(BaseExperiment):
                     summary_tmp.rename(
                         columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
                     )
+                # TODO: check if drop=False works [#index]
                 summary_tmp.set_index("Cycle_Index", inplace=True)
 
             summary_frames[indx] = summary_tmp
@@ -201,11 +216,22 @@ class CyclingExperiment(BaseExperiment):
                 if not row.fixed:
                     logging.info("saving cell to %s" % row.cellpy_file_names)
                     cell_data.ensure_step_table = True
-                    cell_data.save(row.cellpy_file_names)
+                    try:
+                        cell_data.save(row.cellpy_file_names)
+                    except Exception as e:
+                        logging.error("saving file failed")
+                        logging.error(e)
+
                 else:
                     logging.debug("saving cell skipped (set to 'fixed' in info_df)")
             else:
-                logging.debug("you opted to not save to cellpy-format")
+                warnings.warn("you opted to not save to cellpy-format")
+                logging.info("I strongly recommend you to save to cellpy-format:")
+                logging.info(" >>> b.save_cellpy = True")
+                logging.info(
+                    "Without the cellpy-files, you cannot select specific cells"
+                    " if you did not opt to store all in memory"
+                )
 
             if self.export_raw or self.export_cycles:
                 export_text = "exporting"
@@ -279,20 +305,20 @@ class CyclingExperiment(BaseExperiment):
         (OK, I will change it. Soon.)
 
         """
-        logging.info("[estblishing links]")
+        logging.info("[establishing links]")
         logging.debug("checking and establishing link to data")
         cell_data_frames = dict()
         counter = 0
         errors = []
         try:
             for indx, row in self.journal.pages.iterrows():
-
                 counter += 1
                 l_txt = f"starting to process file # {counter} (index={indx})"
                 logging.debug(l_txt)
-                logging.info(f"linking cellpy-file: {row.cellpy_file_names}")
+                logging.debug(f"linking cellpy-file: {row.cellpy_file_names}")
 
                 if not os.path.isfile(row.cellpy_file_names):
+                    logging.error(row.cellpy_file_names)
                     logging.error("File does not exist")
                     raise IOError
 
@@ -308,7 +334,7 @@ class CyclingExperiment(BaseExperiment):
 
         except IOError as e:
             logging.warning(e)
-            e_txt = "links not established - try update"
+            e_txt = "links not established - try update instead"
             logging.warning(e_txt)
             errors.append(e_txt)
 

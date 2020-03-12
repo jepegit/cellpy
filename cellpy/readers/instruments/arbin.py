@@ -126,7 +126,6 @@ TABLE_NAMES = {
     "statistic": "Channel_Statistic_Table",
 }
 
-
 normal_headers_renaming_dict = {
     "aci_phase_angle_txt": "ACI_Phase_Angle",
     "ref_aci_phase_angle_txt": "Reference_ACI_Phase_Angle",
@@ -161,11 +160,13 @@ class ArbinLoader(Loader):
 
     def __init__(self):
         """initiates the ArbinLoader class"""
-        # could use __init__(self, cellpydata_object) and set self.logger = cellpydata_object.logger etc.
+        # could use __init__(self, cellpydata_object) and
+        # set self.logger = cellpydata_object.logger etc.
         # then remember to include that as prm in "out of class" functions
         # self.prms = prms
         self.logger = logging.getLogger(__name__)
-        # use the following prm to limit to loading only one cycle or from cycle>x to cycle<x+n
+        # use the following prm to limit to loading only
+        # one cycle or from cycle>x to cycle<x+n
         # prms.Reader["limit_loaded_cycles"] = [cycle from, cycle to]
 
         self.headers_normal = get_headers_normal()
@@ -227,7 +228,7 @@ class ArbinLoader(Loader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    def __get_res_connector(self, temp_filename):
+    def _get_res_connector(self, temp_filename):
 
         if use_ado:
             is64bit_python = check64bit(current_system="python")
@@ -408,7 +409,7 @@ class ArbinLoader(Loader):
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
-        constr = self.__get_res_connector(temp_filename)
+        constr = self._get_res_connector(temp_filename)
 
         if use_ado:
             conn = dbloader.connect(constr)
@@ -515,7 +516,7 @@ class ArbinLoader(Loader):
         temp_dir = tempfile.gettempdir()
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
-        constr = self.__get_res_connector(temp_filename)
+        constr = self._get_res_connector(temp_filename)
 
         if use_ado:
             conn = dbloader.connect(constr)
@@ -623,190 +624,73 @@ class ArbinLoader(Loader):
         # return full_path, information
         raise NotImplemented
 
-    def loader(self, file_name, bad_steps=None, **kwargs):
-        """Loads data from arbin .res files.
-
-        Args:
-            file_name (str): path to .res file.
-            bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
-            to skip loading.
-
-        Returns:
-            new_tests (list of data objects)
-        """
-        # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
-
-        if DEBUG_MODE:
-            time_0 = time.time()
+    def _loader_win(
+        self,
+        file_name,
+        temp_filename,
+        *args,
+        bad_steps=None,
+        dataset_number=None,
+        data_points=None,
+        **kwargs,
+    ):
 
         new_tests = []
-        if not os.path.isfile(file_name):
-            self.logger.info("Missing file_\n   %s" % file_name)
-            return None
-
-        self.logger.debug("in loader")
-        self.logger.debug("filename: %s" % file_name)
-
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.logger.debug(txt)
-        if (
-            filesize > prms.Instruments.Arbin.max_res_filesize
-            and not prms.Reader.load_only_summary
-        ):
-            error_message = "\nERROR (loader):\n"
-            error_message += "%s > %s - File is too big!\n" % (
-                hfilesize,
-                humanize_bytes(prms.Instruments.Arbin.max_res_filesize),
-            )
-            error_message += "(edit prms.Instruments.Arbin" "['max_res_filesize'])\n"
-            print(error_message)
-            return None
+        conn = None
 
         table_name_global = TABLE_NAMES["global"]
         table_name_stats = TABLE_NAMES["statistic"]
         table_name_normal = TABLE_NAMES["normal"]
 
-        # creating temporary file and connection
+        if DEBUG_MODE:
+            time_0 = time.time()
 
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        shutil.copy2(file_name, temp_dir)
-        self.logger.debug("tmp file: %s" % temp_filename)
+        constr = self._get_res_connector(temp_filename)
 
-        use_mdbtools = False
-        if use_subprocess:
-            use_mdbtools = True
-        if is_posix:
-            use_mdbtools = True
-
-        # windows with same python bit as windows bit (the ideal case)
-        if not use_mdbtools:
-            constr = self.__get_res_connector(temp_filename)
-
-            if use_ado:
-                conn = dbloader.connect(constr)
-            else:
-                conn = dbloader.connect(constr, autocommit=True)
-            self.logger.debug("constr str: %s" % constr)
-
-            self.logger.debug("reading global data table")
-            sql = "select * from %s" % table_name_global
-            self.logger.debug("sql statement: %s" % sql)
-            global_data_df = pd.read_sql_query(sql, conn)
-            # col_names = list(global_data_df.columns.values)
-
+        if use_ado:
+            conn = dbloader.connect(constr)
         else:
-            import subprocess
+            conn = dbloader.connect(constr, autocommit=True)
+        self.logger.debug("constr str: %s" % constr)
 
-            if is_posix:
-                if is_macos:
-                    self.logger.debug("\nMAC OSX USING MDBTOOLS")
-                else:
-                    self.logger.debug("\nPOSIX USING MDBTOOLS")
-            else:
-                self.logger.debug("\nWINDOWS USING MDBTOOLS-WIN")
-
-            # creating tmp-filenames
-            temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
-            temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
-            temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
-
-            # making the cmds
-            mdb_prms = [
-                (table_name_global, temp_csv_filename_global),
-                (table_name_normal, temp_csv_filename_normal),
-                (table_name_stats, temp_csv_filename_stats),
-            ]
-
-            # executing cmds
-            for table_name, tmp_file in mdb_prms:
-                with open(tmp_file, "w") as f:
-                    subprocess.call(
-                        [sub_process_path, temp_filename, table_name], stdout=f
-                    )
-                    self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
-
-            # use pandas to load in the data
-            global_data_df = pd.read_csv(temp_csv_filename_global)
-
+        self.logger.debug("reading global data table")
+        sql = "select * from %s" % table_name_global
+        self.logger.debug("sql statement: %s" % sql)
+        global_data_df = pd.read_sql_query(sql, conn)
+        # col_names = list(global_data_df.columns.values)
         tests = global_data_df[self.headers_normal.test_id_txt]
+
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
+        self.logger.debug(f"datasets: {tests}")
 
-        for counter, test_no in enumerate(range(number_of_sets)):
+        if dataset_number is not None:
+            self.logger.info(f"Dataset number given: {dataset_number}")
+            self.logger.info(f"Available dataset numbers: {tests}")
+            test_nos = [dataset_number]
+        else:
+            test_nos = range(number_of_sets)
+
+        for counter, test_no in enumerate(test_nos):
             if counter > 0:
-                self.logger.warning("***MULTITEST-FILE (not recommended)")
+                self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
                 if not ALLOW_MULTI_TEST_FILE:
                     break
-            data = Cell()
-            data.cell_no = test_no
-            data.loaded_from = file_name
-            fid = FileID(file_name)
-            # name of the .res file it is loaded from:
-            # data.parent_filename = os.path.basename(file_name)
-            data.channel_index = int(
-                global_data_df[self.headers_global["channel_index_txt"]][test_no]
-            )
-            data.channel_number = int(
-                global_data_df[self.headers_global["channel_number_txt"]][test_no]
-            )
-            data.creator = global_data_df[self.headers_global["creator_txt"]][test_no]
-            data.item_ID = global_data_df[self.headers_global["item_id_txt"]][test_no]
-            data.schedule_file_name = global_data_df[
-                self.headers_global["schedule_file_name_txt"]
-            ][test_no]
-            data.start_datetime = global_data_df[
-                self.headers_global["start_datetime_txt"]
-            ][test_no]
-            data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
-            data.test_name = global_data_df[self.headers_global["test_name_txt"]][
-                test_no
-            ]
-            data.raw_data_files.append(fid)
+            data = self._init_data(file_name, global_data_df, test_no)
 
             self.logger.debug("reading raw-data")
-            if not use_mdbtools:
-                # --------- read raw-data (normal-data) ------------------------
-                length_of_test, normal_df = self._load_res_normal_table(
-                    conn, data.test_ID, bad_steps
-                )
-                # --------- read stats-data (summary-data) ---------------------
-                sql = "select * from %s where %s=%s order by %s" % (
-                    table_name_stats,
-                    self.headers_normal.test_id_txt,
-                    data.test_ID,
-                    self.headers_normal.data_point_txt,
-                )
-                summary_df = pd.read_sql_query(sql, conn)
-                if counter > number_of_sets:
-                    self._clean_up_loadres(None, conn, temp_filename)
-            else:
-                normal_df = pd.read_csv(temp_csv_filename_normal)
-                # filter on test ID
-                normal_df = normal_df[
-                    normal_df[self.headers_normal.test_id_txt] == data.test_ID
-                ]
-                # sort on data point
-                if prms._sort_if_subprocess:
-                    normal_df = normal_df.sort_values(
-                        self.headers_normal.data_point_txt
-                    )
-                length_of_test = normal_df.shape[0]
-                summary_df = pd.read_csv(temp_csv_filename_stats)
-                # clean up
-                for f in [
-                    temp_filename,
-                    temp_csv_filename_stats,
-                    temp_csv_filename_normal,
-                    temp_csv_filename_global,
-                ]:
-                    if os.path.isfile(f):
-                        try:
-                            os.remove(f)
-                        except WindowsError as e:
-                            self.logger.warning(f"could not remove tmp-file\n{f} {e}")
+            # --------- read raw-data (normal-data) ------------------------
+            length_of_test, normal_df = self._load_res_normal_table(
+                conn, data.test_ID, bad_steps, data_points
+            )
+            # --------- read stats-data (summary-data) ---------------------
+            sql = "select * from %s where %s=%s order by %s" % (
+                table_name_stats,
+                self.headers_normal.test_id_txt,
+                data.test_ID,
+                self.headers_normal.data_point_txt,
+            )
+            summary_df = pd.read_sql_query(sql, conn)
 
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
@@ -828,21 +712,350 @@ class ArbinLoader(Loader):
             data.raw_data_files_length.append(length_of_test)
 
             data = self._post_process(data)
+            data = self.identify_last_data_point(data)
 
             new_tests.append(data)
+
+        return new_tests
+
+    def _loader_posix(
+        self,
+        file_name,
+        temp_filename,
+        temp_dir,
+        *args,
+        bad_steps=None,
+        dataset_number=None,
+        data_points=None,
+        **kwargs,
+    ):
+
+        table_name_global = TABLE_NAMES["global"]
+        table_name_stats = TABLE_NAMES["statistic"]
+        table_name_normal = TABLE_NAMES["normal"]
+
+        new_tests = []
+
+        if is_posix:
+            if is_macos:
+                self.logger.debug("\nMAC OSX USING MDBTOOLS")
+            else:
+                self.logger.debug("\nPOSIX USING MDBTOOLS")
+        else:
+            self.logger.debug("\nWINDOWS USING MDBTOOLS-WIN")
+
+        if DEBUG_MODE:
+            time_0 = time.time()
+
+        tmp_name_global, tmp_name_raw, tmp_name_stats = self._create_tmp_files(
+            table_name_global,
+            table_name_normal,
+            table_name_stats,
+            temp_dir,
+            temp_filename,
+        )
+
+        # use pandas to load in the data
+        global_data_df = pd.read_csv(tmp_name_global)
+        tests = global_data_df[self.headers_normal.test_id_txt]
+
+        number_of_sets = len(tests)
+        self.logger.debug("number of datasets: %i" % number_of_sets)
+        self.logger.debug(f"datasets: {tests}")
+
+        if dataset_number is not None:
+            self.logger.info(f"Dataset number given: {dataset_number}")
+            self.logger.info(f"Available dataset numbers: {tests}")
+            test_nos = [dataset_number]
+        else:
+            test_nos = range(number_of_sets)
+
+        for counter, test_no in enumerate(test_nos):
+            if counter > 0:
+                self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
+                if not ALLOW_MULTI_TEST_FILE:
+                    break
+            data = self._init_data(file_name, global_data_df, test_no)
+
+            self.logger.debug("reading raw-data")
+
+            length_of_test, normal_df, summary_df = self._load_from_tmp_files(
+                data,
+                tmp_name_global,
+                tmp_name_raw,
+                tmp_name_stats,
+                temp_filename,
+                bad_steps,
+                data_points,
+            )
+
+            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+                txt = "\nCould not find any summary (stats-file)!"
+                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+                logging.debug(txt)
+            # normal_df = normal_df.set_index("Data_Point")
+
+            data.summary = summary_df
+            if DEBUG_MODE:
+                mem_usage = normal_df.memory_usage()
+                logging.debug(
+                    f"memory usage for "
+                    f"loaded data: \n{mem_usage}"
+                    f"\ntotal: {humanize_bytes(mem_usage.sum())}"
+                )
+                logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
+
+            data.raw = normal_df
+            data.raw_data_files_length.append(length_of_test)
+
+            data = self._post_process(data)
+            data = self.identify_last_data_point(data)
+            new_tests.append(data)
+
+        return new_tests
+
+    def loader(
+        self,
+        file_name,
+        *args,
+        bad_steps=None,
+        dataset_number=None,
+        data_points=None,
+        **kwargs,
+    ):
+        """Loads data from arbin .res files.
+
+        Args:
+            file_name (str): path to .res file.
+            bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
+                to skip loading.
+            dataset_number (int): the data set number to select if you are dealing
+                with arbin files with more than one data-set.
+            data_points (tuple of ints): load only data from data_point[0] to
+                    data_point[1] (use None for infinite).
+
+        Returns:
+            new_tests (list of data objects)
+        """
+        # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
+
+        if not os.path.isfile(file_name):
+            self.logger.info("Missing file_\n   %s" % file_name)
+            return None
+
+        self.logger.debug("in loader")
+        self.logger.debug("filename: %s" % file_name)
+
+        filesize = os.path.getsize(file_name)
+        hfilesize = humanize_bytes(filesize)
+        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
+        self.logger.debug(txt)
+        if (
+            filesize > prms.Instruments.Arbin.max_res_filesize
+            and not prms.Reader.load_only_summary
+        ):
+            error_message = "\nERROR (loader):\n"
+            error_message += "%s > %s - File is too big!\n" % (
+                hfilesize,
+                humanize_bytes(prms.Instruments.Arbin.max_res_filesize),
+            )
+            error_message += "(edit prms.Instruments.Arbin ['max_res_filesize'])\n"
+            print(error_message)
+            return None
+
+        temp_dir = tempfile.gettempdir()
+        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
+        shutil.copy2(file_name, temp_dir)
+        self.logger.debug("tmp file: %s" % temp_filename)
+
+        use_mdbtools = False
+        if use_subprocess:
+            use_mdbtools = True
+        if is_posix:
+            use_mdbtools = True
+
+        if use_mdbtools:
+            new_tests = self._loader_posix(
+                file_name,
+                temp_filename,
+                temp_dir,
+                *args,
+                bad_steps=bad_steps,
+                dataset_number=dataset_number,
+                data_points=data_points,
+                **kwargs,
+            )
+        else:
+            new_tests = self._loader_win(
+                file_name,
+                temp_filename,
+                *args,
+                bad_steps=bad_steps,
+                dataset_number=dataset_number,
+                data_points=data_points,
+                **kwargs,
+            )
 
         new_tests = self._inspect(new_tests)
 
         return new_tests
 
+    def _create_tmp_files(
+        self,
+        table_name_global,
+        table_name_normal,
+        table_name_stats,
+        temp_dir,
+        temp_filename,
+    ):
+        import subprocess
+
+        # creating tmp-filenames
+        temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
+        temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
+        temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
+        # making the cmds
+        mdb_prms = [
+            (table_name_global, temp_csv_filename_global),
+            (table_name_normal, temp_csv_filename_normal),
+            (table_name_stats, temp_csv_filename_stats),
+        ]
+        # executing cmds
+        for table_name, tmp_file in mdb_prms:
+            with open(tmp_file, "w") as f:
+                subprocess.call([sub_process_path, temp_filename, table_name], stdout=f)
+                self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
+        return (
+            temp_csv_filename_global,
+            temp_csv_filename_normal,
+            temp_csv_filename_stats,
+        )
+
+    def _load_from_tmp_files(
+        self,
+        data,
+        temp_csv_filename_global,
+        temp_csv_filename_normal,
+        temp_csv_filename_stats,
+        temp_filename,
+        bad_steps,
+        data_points,
+    ):
+
+        """
+        if bad_steps is not None:
+            if not isinstance(bad_steps, (list, tuple)):
+                bad_steps = [bad_steps]
+            for bad_cycle, bad_step in bad_steps:
+                self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
+                sql_4 += "AND NOT (%s=%i " % (
+                    self.headers_normal.cycle_index_txt,
+                    bad_cycle,
+                )
+                sql_4 += "AND %s=%i) " % (self.headers_normal.step_index_txt, bad_step)
+
+
+
+        """
+        # should include a more efficient to load the csv (maybe a loop where
+        #   we load only chuncks and only keep the parts that fullfill the
+        #   filters (e.g. bad_steps, data_points,...)
+        normal_df = pd.read_csv(temp_csv_filename_normal)
+        # filter on test ID
+        normal_df = normal_df[
+            normal_df[self.headers_normal.test_id_txt] == data.test_ID
+        ]
+        # sort on data point
+        if prms._sort_if_subprocess:
+            normal_df = normal_df.sort_values(self.headers_normal.data_point_txt)
+
+        if bad_steps is not None:
+            logging.debug("removing bad steps")
+            if not isinstance(bad_steps, (list, tuple)):
+                bad_steps = [bad_steps]
+            if not isinstance(bad_steps[0], (list, tuple)):
+                bad_steps = [bad_steps]
+            for bad_cycle, bad_step in bad_steps:
+                self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
+
+                selector = (
+                    normal_df[self.headers_normal.cycle_index_txt] == bad_cycle
+                ) & (normal_df[self.headers_normal.step_index_txt] == bad_step)
+
+                normal_df = normal_df.loc[~selector, :]
+
+        if prms.Reader["limit_loaded_cycles"]:
+            if len(prms.Reader["limit_loaded_cycles"]) > 1:
+                c1, c2 = prms.Reader["limit_loaded_cycles"]
+                selector = (normal_df[self.headers_normal.cycle_index_txt] > c1) & (
+                    normal_df[self.headers_normal.cycle_index_txt] < c2
+                )
+
+            else:
+                c1 = prms.Reader["limit_loaded_cycles"][0]
+                selector = normal_df[self.headers_normal.cycle_index_txt] == c1
+
+            normal_df = normal_df.loc[selector, :]
+
+        if data_points is not None:
+            logging.debug("selecting data-point range")
+            d1, d2 = data_points
+
+            if d1 is not None:
+                selector = normal_df[self.headers_normal.data_point_txt] >= d1
+                normal_df = normal_df.loc[selector, :]
+
+            if d2 is not None:
+                selector = normal_df[self.headers_normal.data_point_txt] <= d2
+                normal_df = normal_df.loc[selector, :]
+
+        length_of_test = normal_df.shape[0]
+        summary_df = pd.read_csv(temp_csv_filename_stats)
+
+        # clean up
+        for f in [
+            temp_filename,
+            temp_csv_filename_stats,
+            temp_csv_filename_normal,
+            temp_csv_filename_global,
+        ]:
+            if os.path.isfile(f):
+                try:
+                    os.remove(f)
+                except WindowsError as e:
+                    self.logger.warning(f"could not remove tmp-file\n{f} {e}")
+        return length_of_test, normal_df, summary_df
+
+    def _init_data(self, file_name, global_data_df, test_no):
+        data = Cell()
+        data.cell_no = test_no
+        data.loaded_from = file_name
+        fid = FileID(file_name)
+        # name of the .res file it is loaded from:
+        # data.parent_filename = os.path.basename(file_name)
+        data.channel_index = int(
+            global_data_df[self.headers_global["channel_index_txt"]][test_no]
+        )
+        data.channel_number = int(
+            global_data_df[self.headers_global["channel_number_txt"]][test_no]
+        )
+        data.creator = global_data_df[self.headers_global["creator_txt"]][test_no]
+        data.item_ID = global_data_df[self.headers_global["item_id_txt"]][test_no]
+        data.schedule_file_name = global_data_df[
+            self.headers_global["schedule_file_name_txt"]
+        ][test_no]
+        data.start_datetime = global_data_df[self.headers_global["start_datetime_txt"]][
+            test_no
+        ]
+        data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
+        data.test_name = global_data_df[self.headers_global["test_name_txt"]][test_no]
+        data.raw_data_files.append(fid)
+        return data
+
     def _normal_table_generator(self, **kwargs):
         pass
 
-    def _load_res_normal_table(self, conn, test_ID, bad_steps):
-        # Note that this function is run each time you use the loader.
-        # This means that it is not ideal for
-        # handling generators etc
-
+    def _load_res_normal_table(self, conn, test_ID, bad_steps, data_points):
         self.logger.debug("starting loading raw-data")
         self.logger.debug(f"connection: {conn} test-ID: {test_ID}")
         self.logger.debug(f"bad steps:  {bad_steps}")
@@ -865,6 +1078,8 @@ class ArbinLoader(Loader):
 
         if bad_steps is not None:
             if not isinstance(bad_steps, (list, tuple)):
+                bad_steps = [bad_steps]
+            if not isinstance(bad_steps[0], (list, tuple)):
                 bad_steps = [bad_steps]
             for bad_cycle, bad_step in bad_steps:
                 self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
@@ -889,6 +1104,13 @@ class ArbinLoader(Loader):
                     self.headers_normal.cycle_index_txt,
                     prms.Reader["limit_loaded_cycles"][0],
                 )
+
+        if data_points is not None:
+            d1, d2 = data_points
+            if d1 is not None:
+                sql_4 += "AND %s>=%i " % (self.headers_normal.data_point_txt, d1)
+            if d2 is not None:
+                sql_4 += "AND %s<=%i " % (self.headers_normal.data_point_txt, d2)
 
         sql_5 = "order by %s" % self.headers_normal.data_point_txt
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5

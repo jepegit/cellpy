@@ -14,7 +14,8 @@ from scipy.ndimage.filters import gaussian_filter1d
 import pandas as pd
 
 from cellpy.exceptions import NullData
-from cellpy.readers.cellreader import _collect_capacity_curves
+from cellpy.readers.core import collect_capacity_curves
+
 
 # TODO: @jepe - documentation and tests
 # TODO: @jepe - fitting of o-c curves and differentiation
@@ -448,6 +449,9 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
 
     """
 
+    if cycle.empty:
+        raise NullData(f"The cycle (type={type(cycle)}) is empty.")
+
     c_first = cycle.loc[cycle["direction"] == -1]
     c_last = cycle.loc[cycle["direction"] == 1]
 
@@ -701,6 +705,8 @@ def dqdv_frames(cell, split=False, tidy=True, **kwargs):
                     for non-split frames).
 
                 **kwargs: key-word arguments to Converter:
+                    cycle = int or list of ints (cycle numbers), will process all (or up to max_cycle_number)
+                        if not given or equal to None.
                     points_pr_split (int): only used when investigating data
                         using splits, defaults to 10.
                     max_points: None
@@ -800,9 +806,12 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
                 voltage: voltage
                 dq: the incremental capacity
     """
-
+    cycle = kwargs.pop("cycle", None)
     cycles = cell.get_cap(
-        method="forth-and-forth", categorical_column=True, label_cycle_number=True
+        cycle=cycle,
+        method="forth-and-forth",
+        categorical_column=True,
+        label_cycle_number=True,
     )
     ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
 
@@ -845,13 +854,18 @@ def _dqdv_split_frames(
             >>> charge_ica_df.plot(x=("voltage", "v"))
 
     """
-    charge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
+    cycle = kwargs.pop("cycle", None)
+    if cycle and not isinstance(cycle, (list, tuple)):
+        cycle = [cycle]
+
+    charge_dfs, cycles, minimum_v, maximum_v = collect_capacity_curves(
         cell,
         direction="charge",
         trim_taper_steps=trim_taper_steps,
         steps_to_skip=steps_to_skip,
         steptable=steptable,
         max_cycle_number=max_cycle_number,
+        cycle=cycle,
     )
     # charge_df = pd.concat(
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
@@ -863,13 +877,14 @@ def _dqdv_split_frames(
         ica_charge_dfs, axis=1, keys=[k.name for k in ica_charge_dfs]
     )
 
-    dcharge_dfs, cycles, minimum_v, maximum_v = _collect_capacity_curves(
+    dcharge_dfs, cycles, minimum_v, maximum_v = collect_capacity_curves(
         cell,
         direction="discharge",
         trim_taper_steps=trim_taper_steps,
         steps_to_skip=steps_to_skip,
         steptable=steptable,
         max_cycle_number=max_cycle_number,
+        cycle=cycle,
     )
     ica_dcharge_dfs = _make_ica_charge_curves(
         dcharge_dfs, cycles, minimum_v, maximum_v, **kwargs

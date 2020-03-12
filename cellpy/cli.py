@@ -31,7 +31,7 @@ def save_prm_file(prm_filename):
 def get_package_prm_dir():
     """gets the folder where the cellpy package lives"""
     prm_dir = pkg_resources.resource_filename("cellpy", "parameters")
-    return prm_dir
+    return pathlib.Path(prm_dir)
 
 
 def get_default_config_file_path(init_filename=None):
@@ -39,25 +39,31 @@ def get_default_config_file_path(init_filename=None):
     prm_dir = get_package_prm_dir()
     if not init_filename:
         init_filename = DEFAULT_FILENAME
-    src = os.path.join(prm_dir, init_filename)
+    src = prm_dir / init_filename
     return src
 
 
 def get_user_dir_and_dst(init_filename):
     """gets the name of the user directory and full prm filepath"""
     user_dir = get_user_dir()
-    dst_file = os.path.join(user_dir, init_filename)
+    dst_file = user_dir / init_filename
     return user_dir, dst_file
 
 
 def get_user_dir():
     """gets the name of the user directory"""
-    user_dir = os.path.abspath(os.path.expanduser("~"))
+    # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
+    user_dir = pathlib.Path().home().resolve()
+    if os.name == "nt":
+        _user_dir = user_dir / "documents"
+        if _user_dir.is_dir():
+            user_dir = _user_dir
     return user_dir
 
 
 def get_dst_file(user_dir, init_filename):
-    dst_file = os.path.join(user_dir, init_filename)
+    user_dir = pathlib.Path(user_dir)
+    dst_file = user_dir / init_filename
     return dst_file
 
 
@@ -146,11 +152,11 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     # generate variables
     init_filename = create_custom_init_filename()
     userdir, dst_file = get_user_dir_and_dst(init_filename)
+    if not root_dir:
+        root_dir = pathlib.Path(os.getcwd())
+    root_dir = pathlib.Path(root_dir)
 
     if testuser:
-        if not root_dir:
-            root_dir = os.getcwd()
-
         click.echo(f"[cellpy] (setup) DEV-MODE testuser: {testuser}")
         init_filename = create_custom_init_filename(testuser)
         userdir = root_dir
@@ -180,8 +186,10 @@ def _update_paths(
     default_dir="cellpy_data",
 ):
 
-    h = pathlib.Path.home()
+    h = get_user_dir()
+
     if custom_dir:
+        reset = True
         if relative_home:
             h = h / custom_dir
         else:
@@ -216,6 +224,9 @@ def _update_paths(
     db_path = h / db_path
     notebookdir = h / notebookdir
 
+    print(outdatadir)
+    print(custom_dir)
+
     outdatadir = _ask_about_path(
         "where to output processed data and results", outdatadir
     )
@@ -237,11 +248,20 @@ def _update_paths(
     notebookdir = _ask_about_path("where to put your jupyter notebooks", notebookdir)
 
     # update folders based on suggestions
-    for d in [outdatadir, rawdatadir, cellpydatadir, filelogdir, examplesdir, db_path]:
+    for d in [
+        outdatadir,
+        rawdatadir,
+        cellpydatadir,
+        filelogdir,
+        examplesdir,
+        notebookdir,
+        db_path,
+    ]:
+
         if not dry_run:
             _create_dir(d)
         else:
-            click.echo(f" -> creating {d}")
+            click.echo(f"dry run (so I did not create {d})")
 
     # update config-file based on suggestions
     prmreader.prms.Paths.outdatadir = str(outdatadir)
@@ -278,7 +298,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         if confirm:
             if not o_parent.is_dir():
                 create_dir = input(
-                    f"[cellpy] (setup) {o_parent} does not exist." f" Create it [y]/n ?"
+                    f"[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
                 )
                 if not create_dir:
                     create_dir = True
@@ -289,6 +309,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
 
         if create_dir:
             o.mkdir(parents=parents, exist_ok=exist_ok)
+            click.echo(f"[cellpy] (setup) Created {o}")
         else:
             click.echo(f"[cellpy] (setup) Could not create {o}")
     return o
@@ -314,7 +335,6 @@ def _check_import_pyodbc():
 
     use_subprocess = prms.Instruments.Arbin.use_subprocess
     detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
-    click.echo()
     click.echo(f" reading prms")
     click.echo(f" - ODBC: {ODBC}")
     click.echo(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
@@ -446,15 +466,56 @@ def _check_import_pyodbc():
             "from:\n"
             "https://www.microsoft.com/en-us/download/details.aspx?id=13255"
         )
-        click.echo(
-            "Or install mdbtools and set it up " "(check the cellpy docs for help)"
-        )
+        click.echo("Or install mdbtools and set it up (check the cellpy docs for help)")
         click.echo("\n")
         return False
 
 
+def _check_config_file():
+    prm_file_name = _configloc()
+    prm_dict = prmreader._read_prm_file_without_updating(prm_file_name)
+    try:
+        prm_paths = prm_dict["Paths"]
+        required_dirs = [
+            "cellpydatadir",
+            "db_path",
+            "examplesdir",
+            "filelogdir",
+            "notebookdir",
+            "outdatadir",
+            "rawdatadir",
+        ]
+        missing = 0
+        for k in required_dirs:
+            value = prm_paths.get(k, None)
+            click.echo(f"{k}: {value}")
+            if value and not pathlib.Path(value).is_dir():
+                missing += 1
+                click.echo("COULD NOT CONNECT!")
+                click.echo(f"({value} is not a directory)")
+            if not value:
+                missing += 1
+                click.echo("MISSING")
+
+        value = prm_paths.get("db_filename", None)
+        click.echo(f"{k}: {value}")
+        if not value:
+            missing += 1
+            click.echo("MISSING")
+
+        if missing:
+            return False
+        else:
+            return True
+
+    except Exception as e:
+        click.echo("Following error occurred:")
+        click.echo(e)
+        return False
+
+
 def _check():
-    click.echo(" checking ".center(80, "-"))
+    click.echo(" checking ".center(80, "="))
     failed_checks = 0
     number_of_checks = 0
 
@@ -466,10 +527,11 @@ def _check():
         else:
             click.echo("f[cellpy] -> failed!!!!")
             failed = 1
+        click.echo(80 * "-")
         return failed
 
-    check_types = ["cellpy imports", "importing pyodbc"]
-    check_funcs = [_check_import_cellpy, _check_import_pyodbc]
+    check_types = ["cellpy imports", "importing pyodbc", "configuration (prm) file"]
+    check_funcs = [_check_import_cellpy, _check_import_pyodbc, _check_config_file]
 
     for ct, cf in zip(check_types, check_funcs):
         try:
@@ -478,7 +540,14 @@ def _check():
             click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
     succeeded_checks = number_of_checks - failed_checks
-    click.echo(f"[cellpy] Succeeded {succeeded_checks} of {number_of_checks} checks.")
+    if failed_checks > 0:
+        click.echo(f"[cellpy] OH NO!!! You (or I) failed!")
+        click.echo(f"[cellpy] Failed {failed_checks} out of {number_of_checks} checks.")
+    else:
+        click.echo(
+            f"[cellpy] Succeeded {succeeded_checks} out of {number_of_checks} checks."
+        )
+    click.echo(80 * "=")
 
 
 def _write_config_file(userdir, dst_file, init_filename, dry_run):
@@ -648,7 +717,7 @@ def _run_db(debug, silent):
             print(e)
 
     elif platform.system() == "Linux":
-        print("RUNNING LINUX")
+        click.echo("RUNNING LINUX")
         # not tested
         subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
 
@@ -687,12 +756,18 @@ def pull(tests, examples, clone, directory, password):
             _pull_tests(directory, password)
         if examples:
             _pull_examples(directory, password)
+        else:
+            click.echo(
+                f"[cellpy] (pull) Nothing selected for pulling. "
+                f"Please select an option (--tests,--examples, -clone, ...) "
+            )
 
 
 def _clone_repo(directory, password):
+    directory = pathlib.Path(directory)
     txt = "[cellpy] The plan is that this "
     txt += "[cellpy] cmd will pull (clone) the cellpy repo.\n"
-    txt += "[cellpy] For now it only prins the link to the git-hub\n"
+    txt += "[cellpy] For now it only prints the link to the git-hub\n"
     txt += "[cellpy] repository:\n"
     txt += "[cellpy]\n"
     txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
@@ -726,9 +801,11 @@ def _version():
 
 def _configloc():
     config_file_name = prmreader._get_prm_file()
-    click.echo("[cellpy] ->%s\n" % config_file_name)
+    click.echo("[cellpy] ->%s" % config_file_name)
     if not os.path.isfile(config_file_name):
         click.echo("[cellpy] File does not exist!")
+    else:
+        return config_file_name
 
 
 def _dump_params():
@@ -790,6 +867,8 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
 
     if rootpath is None:
         rootpath = prmreader.prms.Paths.examplesdir
+
+    rootpath = pathlib.Path(rootpath)
 
     ndirpath = rootpath / gdirpath
 

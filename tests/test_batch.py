@@ -64,6 +64,9 @@ def cycling_experiment(batch_instance):
 
 @pytest.fixture(scope="module")
 def updated_cycling_experiment(cycling_experiment):
+    # warning: this test uses the same cellpy file that some of the other
+    # tests updates from time to time. so if one of those tests fails and corrupts
+    # the cellpy file, this test might also fail
     logging.info(f"using pandas {pandas.__version__}")
     cycling_experiment.update()
     return cycling_experiment
@@ -158,3 +161,7 @@ def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
 def test_cycling_summary_plotter(populated_batch):
     populated_batch.make_summaries()
     populated_batch.plot_summaries()
+
+
+def test_report(populated_batch):
+    print(populated_batch.report)

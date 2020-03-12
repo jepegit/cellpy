@@ -74,6 +74,13 @@ def test_ica_dqdv(dataset, cycle):
     ica.dqdv(voltage, capacity)
 
 
+def test_ica_value_bounds_simple():
+    x = [1, 2, 3, 4]
+    m1, m2 = ica.value_bounds(x)
+    assert m1 == 1
+    assert m2 == 4
+
+
 def test_ica_value_bounds(dataset):
     capacity, voltage = dataset.get_ccap(5)
     c = ica.value_bounds(capacity)
@@ -88,13 +95,6 @@ def test_ica_index_bounds(dataset):
     v = ica.index_bounds(voltage)
     assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)
     assert v == pytest.approx((0.15119725465774536, 1.0001134872436523), 0.0001)
-
-
-def test_ica_value_bounds():
-    x = [1, 2, 3, 4]
-    m1, m2 = ica.value_bounds(x)
-    assert m1 == 1
-    assert m2 == 4
 
 
 def test_ica_dqdv_cycles(dataset):
@@ -151,6 +151,44 @@ def test_increment_data_smoothing(converter):
     assert len(v) > 1
 
 
+def test_dqdv_frames_split(dataset):
+    df_ica_charge, df_ica_discharge = ica.dqdv_frames(dataset, split=True, cycle=2)
+    assert df_ica_charge.size == 300
+    assert df_ica_discharge.size == 300
+    df_ica_charge, df_ica_discharge = ica.dqdv_frames(dataset, split=True)
+    assert df_ica_charge.size == 5100
+    assert df_ica_discharge.size == 5400
+    assert "voltage" in df_ica_charge.columns
+    assert "cycle" in df_ica_charge.columns
+    assert "dq" in df_ica_charge.columns
+
+
+def test_dqdv_frames_one_cycle_tidy(dataset):
+    df_ica = ica.dqdv_frames(dataset, cycle=2)
+    assert "voltage" in df_ica.columns
+    assert "cycle" in df_ica.columns
+    assert "dq" in df_ica.columns
+    assert df_ica.size == 2280
+
+
+def test_dqdv_frames_multi_cycles_tidy(dataset):
+    df_ica = ica.dqdv_frames(dataset)
+    assert "voltage" in df_ica.columns
+    assert "cycle" in df_ica.columns
+    assert "dq" in df_ica.columns
+    assert df_ica.size == 26379
+
+
+def test_dqdv_frames_multi_cycles_wide(dataset):
+    df_ica = ica.dqdv_frames(dataset, tidy=False)
+    cycles_available = set(dataset.get_cycle_numbers())
+    cycles_processed = set(df_ica.columns.get_level_values(0))
+    assert cycles_available.issuperset(cycles_processed)
+    assert "voltage" in df_ica.columns.get_level_values(1)
+    assert "dq" in df_ica.columns.get_level_values(1)
+    assert df_ica.size == 37536
+
+
 # TODO - aulv: this test should be un-commented when hist-method
 #  is implemented
 # def test_increment_data_hist(converter):
@@ -167,4 +205,3 @@ def test_increment_data_smoothing(converter):
 
 
 # missing test: fixed_range in post_process_data
-# missing test: dqdv_frames

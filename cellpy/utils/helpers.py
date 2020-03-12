@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import pathlib
+import warnings
 
 import cellpy
 from cellpy import prms
@@ -14,6 +15,7 @@ from cellpy.parameters.internal_settings import (
 )
 
 from cellpy import prmreader
+from cellpy.readers.cellreader import CellpyData
 from cellpy.utils import batch, ica
 
 
@@ -57,7 +59,9 @@ def update_journal_cellpy_data_dir(
 
 def make_new_cell():
     """create an empty CellpyData object."""
-
+    warnings.warn(
+        "make_new_cell is deprecated, CellpyData.vacant instead", DeprecationWarning
+    )
     new_cell = cellpy.cellreader.CellpyData(initialize=True)
     return new_cell
 
@@ -72,15 +76,10 @@ def split_experiment(cell, base_cycles=None):
     Returns:
         List of CellpyData objects
     """
-
-    # TODO: implement similar functionality as method for CellpyData
-    #       examples:
-    #           cell.split(cycle=28)
-    #           cell.drop_from(cycle=28)
-    #           cell.drop_to(cycle=28)
-    #           cell.pop(from=22, to=28)
-    #           cell.copy()
-    #           cell.copy(from=22, to=28)
+    warnings.warn(
+        "split_experiment is deprecated, CellpyData.split_many instead",
+        DeprecationWarning,
+    )
 
     if base_cycles is None:
         all_cycles = cell.get_cycle_numbers()
@@ -265,6 +264,14 @@ def select_summary_based_on_rate(
     step_table = cell.cell.steps
     summary = cell.cell.summary
 
+    if cycle_number_header not in summary.columns:
+        warnings.warn(
+            f"Could not find the column {cycle_number_header}\n"
+            f"The index = {summary.index}"
+        )
+        # TODO: [#index]
+        summary = summary.reset_index(level=0)
+
     cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
         step_table[rate_column] > (rate - rate_std)
     )
@@ -320,3 +327,39 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
         cell.cell.summary[norm_col_name] = cell.cell.summary[col_name] / norm_value
 
     return cell
+
+
+def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
+    """Load a raw data file and save it as cellpy-file.
+
+    Args:
+        mass (float): active material mass [mg].
+        outdir (path): optional, path to directory for saving the hdf5-file.
+        outfile (str): optional, name of hdf5-file.
+        filename (str): name of the resfile.
+
+    Returns:
+        out_file_name (str): name of saved file.
+    """
+    warnings.warn(DeprecationWarning("This option will be removed in v.0.4.0"))
+    d = CellpyData()
+
+    if not outdir:
+        outdir = prms.Paths["cellpydatadir"]
+
+    if not outfile:
+        outfile = os.path.basename(filename).split(".")[0] + ".h5"
+        outfile = os.path.join(outdir, outfile)
+
+    print("filename:", filename)
+    print("outfile:", outfile)
+    print("outdir:", outdir)
+    print("mass:", mass, "mg")
+
+    d.from_raw(filename)
+    d.set_mass(mass)
+    d.make_step_table()
+    d.make_summary()
+    d.save(filename=outfile)
+    d.to_csv(datadir=outdir, cycles=True, raw=True, summary=True)
+    return outfile

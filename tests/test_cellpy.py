@@ -5,6 +5,7 @@ import logging
 import time
 
 import cellpy.readers.core
+import cellpy.utils.helpers
 from cellpy import log
 from cellpy import prms
 from . import fdv
@@ -94,13 +95,30 @@ def test_logger(clean_dir):
     tmp_logger.error("customdir, default: testing logger (error)")
 
 
+def test_logger_advanced(clean_dir):
+    log.setup_logging(reset_big_log=True)
+    tmp_logger = logging.getLogger()
+    tmp_logger.info("customdir, default: testing logger (info)")
+    tmp_logger.debug("customdir, default: testing logger (debug)")
+    tmp_logger.error("customdir, default: testing logger (error)")
+    for handler in logging.getLogger().handlers:
+        if handler.name == "console":
+            assert handler.level == logging.INFO
+        if handler.name == "info_file_handler":
+            assert handler.level == logging.INFO
+        elif handler.name == "error_file_handler":
+            assert handler.level == logging.ERROR
+        elif handler.name == "debug_file_handler":
+            assert handler.level == logging.DEBUG
+
+
 @pytest.mark.timeout(5.0)
 def test_load_and_save_resfile(clean_dir):
     import os
     from cellpy import cellreader
 
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
-    new_file = cellreader.load_and_save_resfile(f_in, None, clean_dir)
+    new_file = cellpy.utils.helpers.load_and_save_resfile(f_in, None, clean_dir)
     assert os.path.isfile(new_file)
 
 
@@ -120,16 +138,10 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
 
     prms.Reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
-    new_file = benchmark(cellreader.load_and_save_resfile, f_in, None, clean_dir)
+    new_file = benchmark(
+        cellpy.utils.helpers.load_and_save_resfile, f_in, None, clean_dir
+    )
     assert os.path.isfile(new_file)
-
-
-def test_su_cellpy_instance():
-    # somehow pytest fails to find the test if it is called test_setup_xxx
-    # Should be removed in v.0.4.0
-    import cellpy
-
-    cellpy.cellreader.setup_cellpy_instance()
 
 
 def test_get():
@@ -160,9 +172,11 @@ def test_humanize_bytes():
 
 def test_example_data():
     from cellpy.utils import example_data
+
     a = example_data.arbin_file()
     c = example_data.cellpy_file()
-    assert a.cell.summary.size == 504
+
+    assert a.cell.summary.size == 540
     assert c.cell.summary.size == 540
 
 

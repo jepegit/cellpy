@@ -1,18 +1,31 @@
+""" This module contains several of the most important classes used in cellpy.
+
+It also contains functions that are used by readers and utils. And it has the file-
+version definitions.
+"""
+
 import datetime
 import logging
 import os
 import collections
 import sys
+import time
 import warnings
 from functools import wraps
 
+import numpy as np
 import pandas as pd
+from scipy import interpolate
 
+from cellpy.exceptions import NullData
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYFILE,
     cellpy_limits,
     cellpy_units,
+    get_headers_summary,
+    get_headers_normal,
+    get_headers_step_table,
 )
 
 CELLPY_FILE_VERSION = 5
@@ -20,6 +33,10 @@ MINIMUM_CELLPY_FILE_VERSION = 1
 STEP_TABLE_VERSION = 5
 RAW_TABLE_VERSION = 5
 SUMMARY_TABLE_VERSION = 5
+
+HEADERS_NORMAL = get_headers_normal()
+HEADERS_SUMMARY = get_headers_summary()
+HEADERS_STEP_TABLE = get_headers_step_table()
 
 
 class FileID(object):
@@ -54,6 +71,7 @@ class FileID(object):
                 self.last_accessed = fid_st.st_atime
                 self.last_info_changed = fid_st.st_ctime
                 self.location = os.path.dirname(filename)
+                self.last_data_point = 0  # used later when updating is implemented
                 make_defaults = False
 
         if make_defaults:
@@ -64,11 +82,12 @@ class FileID(object):
             self.last_accessed = None
             self.last_info_changed = None
             self.location = None
+            self._last_data_point = 0  # to be used later when updating is implemented
 
     def __str__(self):
         txt = "\n<fileID>\n"
-        txt += "full name: %s\n" % self.full_name
-        txt += "name: %s\n" % self.name
+        txt += f"full name: {self.full_name}\n"
+        txt += f"name: {self.name}"
         if self.last_modified is not None:
             txt += f"modified: {self.last_modified}\n"
         else:
@@ -78,6 +97,17 @@ class FileID(object):
         else:
             txt += "size: NAN\n"
         return txt
+
+    @property
+    def last_data_point(self):
+        # TODO: consider including a method here to find the last data point (raw data)
+        # ideally, this value should be set when loading the raw data before
+        # merging files (if it consists of several files)
+        return self._last_data_point
+
+    @last_data_point.setter
+    def last_data_point(self, value):
+        self._last_data_point = value
 
     def populate(self, filename):
         """Finds the file-stats and populates the class with stat values.
@@ -304,35 +334,8 @@ def check64bit(current_system="python"):
 
 
 def humanize_bytes(b, precision=1):
-    """Return a humanized string representation of a number of b.
+    """Return a humanized string representation of a number of b."""
 
-    Assumes `from __future__ import division`.
-
-    >>> humanize_bytes(1)
-    '1 byte'
-    >>> humanize_bytes(1024)
-    '1.0 kB'
-    >>> humanize_bytes(1024*123)
-    '123.0 kB'
-    >>> humanize_bytes(1024*12342)
-    '12.1 MB'
-    >>> humanize_bytes(1024*12342,2)
-    '12.05 MB'
-    >>> humanize_bytes(1024*1234,2)
-    '1.21 MB'
-    >>> humanize_bytes(1024*1234*1111,2)
-    '1.31 GB'
-    >>> humanize_bytes(1024*1234*1111,1)
-    '1.3 GB'
-    """
-    # abbrevs = (
-    #     (1 << 50L, 'PB'),
-    #     (1 << 40L, 'TB'),
-    #     (1 << 30L, 'GB'),
-    #     (1 << 20L, 'MB'),
-    #     (1 << 10L, 'kB'),
-    #     (1, 'b')
-    # )
     abbrevs = (
         (1 << 50, "PB"),
         (1 << 40, "TB"),
@@ -384,7 +387,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     return d
 
 
-def Convert2mAhg(c, mass=1.0):
+def convert_to_mAhg(c, mass=1.0):
     """Converts capacity in Ah to capacity in mAh/g.
 
     Args:
@@ -395,3 +398,258 @@ def Convert2mAhg(c, mass=1.0):
         float: 1000000 * c / mass
     """
     return 1_000_000 * c / mass
+
+
+def collect_ocv_curves():
+    raise NotImplementedError
+
+
+def collect_capacity_curves(
+    data,
+    direction="charge",
+    trim_taper_steps=None,
+    steps_to_skip=None,
+    steptable=None,
+    max_cycle_number=None,
+    **kwargs,
+):
+    """Create a list of pandas.DataFrames, one for each charge step.
+
+    The DataFrames are named by its cycle number.
+
+    Input: CellpyData
+    Returns: list of pandas.DataFrames,
+        list of cycle numbers,
+        minimum voltage value,
+        maximum voltage value"""
+
+    # TODO: should allow for giving cycle numbers as input (e.g. cycle=[1, 2, 10]
+    #  or cycle=2), not only max_cycle_number
+
+    minimum_v_value = np.Inf
+    maximum_v_value = -np.Inf
+    charge_list = []
+    cycles = kwargs.pop("cycle", None)
+
+    print(80 * "=")
+    print(cycles)
+
+    if cycles is None:
+        cycles = data.get_cycle_numbers()
+
+    if max_cycle_number is None:
+        max_cycle_number = max(cycles)
+
+    for cycle in cycles:
+        if cycle > max_cycle_number:
+            break
+        try:
+            if direction == "charge":
+                q, v = data.get_ccap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                )
+            else:
+                q, v = data.get_dcap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                )
+
+        except NullData as e:
+            logging.warning(e)
+            break
+
+        else:
+            d = pd.DataFrame({"q": q, "v": v})
+            # d.name = f"{cycle}"
+            d.name = cycle
+            charge_list.append(d)
+            v_min = v.min()
+            v_max = v.max()
+            if v_min < minimum_v_value:
+                minimum_v_value = v_min
+            if v_max > maximum_v_value:
+                maximum_v_value = v_max
+    return charge_list, cycles, minimum_v_value, maximum_v_value
+
+
+def interpolate_y_on_x(
+    df,
+    x=None,
+    y=None,
+    new_x=None,
+    dx=10.0,
+    number_of_points=None,
+    direction=1,
+    **kwargs,
+):
+    """Interpolate a column based on another column.
+
+        Args:
+            df: DataFrame with the (cycle) data.
+            x: Column name for the x-value (defaults to the step-time column).
+            y: Column name for the y-value (defaults to the voltage column).
+            new_x (numpy array or None): Interpolate using these new x-values
+                instead of generating x-values based on dx or number_of_points.
+            dx: step-value (defaults to 10.0)
+            number_of_points: number of points for interpolated values (use
+                instead of dx and overrides dx if given).
+            direction (-1,1): if direction is negetive, then invert the
+                x-values before interpolating.
+            **kwargs: arguments passed to scipy.interpolate.interp1d
+
+        Returns: DataFrame with interpolated y-values based on given or
+            generated x-values.
+
+        """
+
+    if x is None:
+        x = df.columns[0]
+    if y is None:
+        y = df.columns[1]
+
+    xs = df[x].values
+    ys = df[y].values
+
+    if direction > 0:
+        x_min = xs.min()
+        x_max = xs.max()
+    else:
+        x_max = xs.min()
+        x_min = xs.max()
+        dx = -dx
+
+    bounds_error = kwargs.pop("bounds_error", False)
+    f = interpolate.interp1d(xs, ys, bounds_error=bounds_error, **kwargs)
+    if new_x is None:
+        if number_of_points:
+            new_x = np.linspace(x_min, x_max, number_of_points)
+        else:
+            new_x = np.arange(x_min, x_max, dx)
+
+    new_y = f(new_x)
+
+    new_df = pd.DataFrame({x: new_x, y: new_y})
+
+    return new_df
+
+
+def group_by_interpolate(
+    df,
+    x=None,
+    y=None,
+    group_by=None,
+    number_of_points=100,
+    tidy=False,
+    individual_x_cols=False,
+    header_name="Unit",
+    dx=10.0,
+    generate_new_x=True,
+):
+    """Do a pandas.DataFrame.group_by and perform interpolation for all groups.
+
+    This function is a wrapper around an internal interpolation function in
+    cellpy (that uses scipy.interpolate.interp1d) that combines doing a group-by
+    operation and interpolation.
+
+    Args:
+        df (pandas.DataFrame): the dataframe to morph.
+        x (str): the header for the x-value
+            (defaults to normal header step_time_txt) (remark that the default
+            group_by column is the cycle column, and each cycle normally
+            consist of several steps (so you risk interpolating / merging
+            several curves on top of each other (not good)).
+        y (str): the header for the y-value
+            (defaults to normal header voltage_txt).
+        group_by (str): the header to group by
+            (defaults to normal header cycle_index_txt)
+        number_of_points (int): if generating new x-column, how many values it
+            should contain.
+        tidy (bool): return the result in tidy (i.e. long) format.
+        individual_x_cols (bool): return as xy xy xy ... data.
+        header_name (str): name for the second level of the columns (only
+            applies for xy xy xy ... data) (defaults to "Unit").
+        dx (float): if generating new x-column and number_of_points is None or
+            zero, distance between the generated values.
+        generate_new_x (bool): create a new x-column by
+            using the x-min and x-max values from the original dataframe where
+            the method is set by the number_of_points key-word:
+
+            1)  if number_of_points is not None (default is 100):
+
+                ```
+                new_x = np.linspace(x_max, x_min, number_of_points)
+                ```
+            2)  else:
+                ```
+                new_x = np.arange(x_max, x_min, dx)
+                ```
+
+
+    Returns: pandas.DataFrame with interpolated x- and y-values. The returned
+        dataframe is in tidy (long) format for tidy=True.
+
+    """
+    # TODO: @jepe - create more tests
+    time_00 = time.time()
+    if x is None:
+        x = HEADERS_NORMAL.step_time_txt
+    if y is None:
+        y = HEADERS_NORMAL.voltage_txt
+    if group_by is None:
+        group_by = [HEADERS_NORMAL.cycle_index_txt]
+
+    if not isinstance(group_by, (list, tuple)):
+        group_by = [group_by]
+
+    if not generate_new_x:
+        # check if it makes sence
+        if (not tidy) and (not individual_x_cols):
+            logging.warning("Unlogical condition")
+            generate_new_x = True
+
+    new_x = None
+
+    if generate_new_x:
+        x_max = df[x].max()
+        x_min = df[x].min()
+        if number_of_points:
+            new_x = np.linspace(x_max, x_min, number_of_points)
+        else:
+            new_x = np.arange(x_max, x_min, dx)
+
+    new_dfs = []
+    keys = []
+
+    for name, group in df.groupby(group_by):
+        keys.append(name)
+        if not isinstance(name, (list, tuple)):
+            name = [name]
+
+        new_group = interpolate_y_on_x(
+            group, x=x, y=y, new_x=new_x, number_of_points=number_of_points, dx=dx
+        )
+
+        if tidy or (not tidy and not individual_x_cols):
+            for i, j in zip(group_by, name):
+                new_group[i] = j
+        new_dfs.append(new_group)
+
+    if tidy:
+        new_df = pd.concat(new_dfs)
+    else:
+        if individual_x_cols:
+            new_df = pd.concat(new_dfs, axis=1, keys=keys)
+            group_by.append(header_name)
+            new_df.columns.names = group_by
+        else:
+            new_df = pd.concat(new_dfs)
+            new_df = new_df.pivot(index=x, columns=group_by[0], values=y)
+
+    time_01 = time.time() - time_00
+    logging.debug(f"duration: {time_01} seconds")
+    return new_df
