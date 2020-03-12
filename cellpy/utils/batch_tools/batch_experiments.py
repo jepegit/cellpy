@@ -216,7 +216,12 @@ class CyclingExperiment(BaseExperiment):
                 if not row.fixed:
                     logging.info("saving cell to %s" % row.cellpy_file_names)
                     cell_data.ensure_step_table = True
-                    cell_data.save(row.cellpy_file_names)
+                    try:
+                        cell_data.save(row.cellpy_file_names)
+                    except Exception as e:
+                        logging.error("saving file failed")
+                        logging.error(e)
+
                 else:
                     logging.debug("saving cell skipped (set to 'fixed' in info_df)")
             else:
