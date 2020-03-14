@@ -23,10 +23,13 @@ import warnings
 import csv
 import itertools
 import time
+import copy
 
 import numpy as np
 import pandas as pd
 from pandas.errors import PerformanceWarning
+from scipy import interpolate
+
 from cellpy.parameters import prms
 from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
 from cellpy.parameters.internal_settings import (
@@ -36,6 +39,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_step_table,
     ATTRS_CELLPYFILE,
     ATTRS_DATASET,
+    ATTRS_DATASET_DEEP,
     ATTRS_CELLPYDATA,
 )
 from cellpy.readers.core import (
@@ -45,6 +49,7 @@ from cellpy.readers.core import (
     MINIMUM_CELLPY_FILE_VERSION,
     xldate_as_datetime,
     interpolate_y_on_x,
+    identify_last_data_point,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -226,6 +231,10 @@ class CellpyData(object):
         cell = self.cells[self.selected_cell_number]
         return cell
 
+    @cell.setter
+    def cell(self, new_cell):
+        self.cells[self.selected_cell_number] = new_cell
+
     @property
     def dataset(self):
         """returns the DataSet instance"""
@@ -258,6 +267,10 @@ class CellpyData(object):
             for attr in ATTRS_DATASET:
                 value = getattr(cell.cell, attr)
                 setattr(new_cell.cell, attr, value)
+
+            for attr in ATTRS_DATASET_DEEP:
+                value = getattr(cell.cell, attr)
+                setattr(new_cell.cell, attr, copy.deepcopy(value))
 
             for attr in ATTRS_CELLPYDATA:
                 value = getattr(cell, attr)
@@ -346,10 +359,12 @@ class CellpyData(object):
             new_cell.cell.steps = steptable0
             new_cell.cell.raw = data0
             new_cell.cell.summary = summary0
+            new_cell.cell = identify_last_data_point(new_cell.cell)
 
             old_cell.cell.steps = steptable
             old_cell.cell.raw = data
             old_cell.cell.summary = summary
+            old_cell.cell = identify_last_data_point(old_cell.cell)
 
             cells.append(new_cell)
 
@@ -714,6 +729,126 @@ class CellpyData(object):
             if mass:
                 self.set_mass(mass)
 
+        return self
+
+    def dev_update(self, file_name=None, **kwargs):
+        print("NOT FINISHED YET - but close")
+        if len(self.cell.raw_data_files) != 1:
+            self.logger.warning("Merged cell. But can only update based on the last file")
+            print(self.cell.raw_data_files)
+            for fid in self.cell.raw_data_files:
+                print(fid)
+        last = self.cell.raw_data_files[0].last_data_point
+
+        self.dev_update_from_raw(file_names=file_name, data_points=[last, None], **kwargs)
+        print("lets try to merge")
+        self.cell = self.dev_update_merge()
+        print("now it is time to update the step table")
+        self.dev_update_make_steps()
+        print("and finally, lets update the summary")
+        self.dev_update_make_summary()
+
+    def dev_update_merge(self):
+        print("NOT FINISHED YET - but very close")
+        number_of_tests = len(self.cells)
+        if number_of_tests != 2:
+            self.logger.warning("Cannot merge if you do not have exactly two cell-objects")
+            return
+        t1, t2 = self.cells
+
+        if t1.raw.empty:
+            self.logger.debug("OBS! the first dataset is empty")
+
+        if t2.raw.empty:
+            t1.merged = True
+            self.logger.debug("the second dataset was empty")
+            self.logger.debug(" -> merged contains only first")
+            return t1
+        test = t1
+
+        cycle_index_header = self.headers_normal.cycle_index_txt
+
+        if not t1.raw.empty:
+            t1.raw = t1.raw.iloc[:-1]
+            raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
+            test.no_cycles = max(raw2[cycle_index_header])
+            test.raw = raw2
+        else:
+            test.no_cycles = max(t2.raw[cycle_index_header])
+            test = t2
+        self.logger.debug(" -> merged with new dataset")
+
+        return test
+
+    def dev_update_make_steps(self):
+        old_steps = self.cell.steps.iloc[:-1]
+        # Note! hard-coding header name (might fail if changing default headers)
+        from_data_point = self.cell.steps.iloc[-1].point_first
+        new_steps = self.make_step_table(from_data_point=from_data_point)
+        merged_steps = pd.concat([old_steps, new_steps]).reset_index(drop=True)
+        self.cell.steps = merged_steps
+
+    def dev_update_make_summary(self):
+        print("NOT FINISHED YET - but not critical")
+        # Update not implemented yet, running full summary calculations for now.
+        # For later:
+        # old_summary = self.cell.summary.iloc[:-1]
+        cycle_index_header = self.headers_summary.cycle_index
+        from_cycle = self.cell.summary.iloc[-1][cycle_index_header]
+        self.make_summary(from_cycle=from_cycle)
+        # For later:
+        # (Remark! need to solve how to merge culumated columns)
+        # new_summary = self.make_summary(from_cycle=from_cycle)
+        # merged_summary = pd.concat([old_summary, new_summary]).reset_index(drop=True)
+        # self.cell.summary = merged_summary
+
+    def dev_update_from_raw(self, file_names=None, data_points=None, **kwargs):
+        """This method is under development. Using this to develop updating files
+        with only new data.
+        """
+        print("NOT FINISHED YET - but very close")
+        if file_names:
+            self.file_names = file_names
+
+        if file_names is None:
+            self.logger.info("No filename given and no stored in the file_names "
+                             "attribute. Returning None")
+            return None
+
+        if not isinstance(self.file_names, (list, tuple)):
+            self.file_names = [file_names]
+
+        raw_file_loader = self.loader
+
+        set_number = 0
+        test = None
+
+        self.logger.debug("start iterating through file(s)")
+        print(self.file_names)
+
+        for f in self.file_names:
+            self.logger.debug("loading raw file:")
+            self.logger.debug(f"{f}")
+
+            # get a list of cellpy.readers.core.Cell objects
+            test = raw_file_loader(f, data_points=data_points, **kwargs)
+            # remark that the bounds are included (i.e. the first datapoint
+            # is 5000.
+
+            self.logger.debug("added the data set - merging file info")
+
+            # raw_data_file = copy.deepcopy(test[set_number].raw_data_files[0])
+            # file_size = test[set_number].raw_data_files_length[0]
+
+            # test[set_number].raw_data_files.append(raw_data_file)
+            # test[set_number].raw_data_files_length.append(file_size)
+            # return test
+
+        self.cells.append(test[set_number])
+
+        self.number_of_datasets = len(self.cells)
+        self.status_datasets = self._validate_datasets()
+        self._invent_a_name()
         return self
 
     def from_raw(self, file_names=None, **kwargs):
@@ -1295,10 +1430,11 @@ class CellpyData(object):
 
     def merge(self, datasets=None, separate_datasets=False):
         """This function merges datasets into one set."""
+
         self.logger.info("Merging")
         if separate_datasets:
             warnings.warn(
-                "The option seperate_datasets=True is"
+                "The option separate_datasets=True is"
                 "not implemented yet. Performing merging, but"
                 "neglecting the option."
             )
@@ -1782,6 +1918,7 @@ class CellpyData(object):
         skip_steps=None,
         sort_rows=True,
         dataset_number=None,
+        from_data_point=None,
     ):
 
         """ Create a table (v.4) that contains summary information for each step.
@@ -1812,6 +1949,7 @@ class CellpyData(object):
                 be processed (future feature - not used yet).
             sort_rows (bool): sort the rows after processing.
             dataset_number: defaults to self.dataset_number
+            from_data_point (int): first data point to use
 
         Returns:
             None
@@ -1846,7 +1984,12 @@ class CellpyData(object):
         nhdr = self.headers_normal
         shdr = self.headers_step_table
 
-        df = self.cells[dataset_number].raw
+        if from_data_point is not None:
+            df = self.cells[dataset_number].raw.loc[
+                self.cells[dataset_number].raw[nhdr.data_point_txt] >= from_data_point
+            ]
+        else:
+            df = self.cells[dataset_number].raw
         # df[shdr.internal_resistance_change] = \
         #     df[nhdr.internal_resistance_txt].pct_change()
 
@@ -2118,9 +2261,13 @@ class CellpyData(object):
         if profiling:
             print(f"*** flattening: {time.time() - time_01} s")
 
-        self.cells[dataset_number].steps = df_steps
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
-        return self
+
+        if from_data_point is not None:
+            return df_steps
+        else:
+            self.cells[dataset_number].steps = df_steps
+            return self
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
         """Select steps (not documented yet)."""
@@ -3876,11 +4023,16 @@ class CellpyData(object):
         add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
+        from_cycle=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
 
         # TODO: @jepe - include option for omitting steps
-        # TODO: @jepe  - make it is possible to update only new data
+        # TODO: @jepe  - make it is possible to update only new data by implementing
+        #  from_cycle (only calculate summary from a given cycle number).
+        #  Probably best to keep the old summary and make
+        #  a new one for the rest, then use pandas.concat to merge them.
+        #  Might have to create the culumative cols etc after merging?
 
         # first - check if we need some "instrument-specific" prms
         dataset_number = self._validate_dataset_number(dataset_number)
