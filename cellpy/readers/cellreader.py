@@ -501,7 +501,7 @@ class CellpyData(object):
             return
         self.cellpy_datadir = directory
 
-    def check_file_ids(self, rawfiles, cellpyfile):
+    def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
         This function checks if the hdf5 file and the res-files have the same
@@ -510,13 +510,16 @@ class CellpyData(object):
         Args:
             cellpyfile (str): filename of the cellpy hdf5-file.
             rawfiles (list of str): name(s) of raw-data file(s).
-
+            detailed (bool): return a dict containing True or False for each
+                individual raw-file
 
         Returns:
-            False if the raw files are newer than the cellpy hdf5-file
-                (update needed).
-            If return_res is True it also returns list of raw-file_names as
-                second argument.
+            If detailed is False:
+                False if the raw files are newer than the cellpy hdf5-file
+                    (update needed).
+                True if update is not needed.
+             If detailed is True it returns a dict containing True or False for each
+                individual raw-file.
             """
 
         txt = "Checking file ids - using '%s'" % self.filestatuschecker
@@ -531,14 +534,19 @@ class CellpyData(object):
             return False
 
         ids_raw = self._check_raw(rawfiles)
-        similar = self._compare_ids(ids_raw, ids_cellpy_file)
 
-        if not similar:
-            # self.logger.debug("hdf5 file needs updating")
-            return False
+        if detailed:
+            similar = self._parse_ids(ids_raw, ids_cellpy_file)
+            return similar
+
         else:
-            # self.logger.debug("hdf5 file is updated")
-            return True
+            similar = self._compare_ids(ids_raw, ids_cellpy_file)
+            if not similar:
+                # self.logger.debug("hdf5 file needs updating")
+                return False
+            else:
+                # self.logger.debug("hdf5 file is updated")
+                return True
 
     def _check_raw(self, file_names, abort_on_missing=False):
         """Get the file-ids for the res_files."""
@@ -574,6 +582,8 @@ class CellpyData(object):
         """Get the file-ids for the cellpy_file."""
 
         strip_filenames = True
+        parent_level = prms._cellpyfile_root
+        fid_dir = prms._cellpyfile_fid
         check_on = self.filestatuschecker
         self.logger.debug("checking cellpy-file")
         self.logger.debug(filename)
@@ -586,7 +596,7 @@ class CellpyData(object):
             self.logger.debug(f"could not open cellpy-file ({e})")
             return None
         try:
-            fidtable = store.select("CellpyData/fidtable")
+            fidtable = store.select(parent_level + fid_dir)
         except KeyError:
             self.logger.warning("no fidtable -" " you should update your hdf5-file")
             fidtable = None
@@ -631,6 +641,18 @@ class CellpyData(object):
         else:
             similar = False
 
+        return similar
+
+    @staticmethod
+    def _parse_ids(ids_raw, ids_cellpy_file):
+        similar = dict()
+        for name in ids_raw:
+            v_cellpy = ids_cellpy_file.get(name, None)
+            v_raw = ids_raw[name]
+            similar[name] = False
+            if v_raw is not None:
+                if v_raw == v_cellpy:
+                    similar[name] = True
         return similar
 
     def loadcell(
@@ -731,16 +753,105 @@ class CellpyData(object):
 
         return self
 
-    def dev_update(self, file_name=None, **kwargs):
+    def dev_update_loadcell(
+        self,
+        raw_files,
+        cellpy_file=None,
+        mass=None,
+        summary_on_raw=False,
+        summary_ir=True,
+        summary_ocv=False,
+        summary_end_v=True,
+        force_raw=False,
+        use_cellpy_stat_file=None,
+    ):
+
+        self.logger.info("Started cellpy.cellreader.loadcell")
+
+        if cellpy_file is None or force_raw:
+            similar = None
+        else:
+            similar = self.check_file_ids(raw_files, cellpy_file, detailed=True)
+
+        self.logger.debug("checked if the files were similar")
+
+        if similar is None:
+            # forcing to load only raw_files
+            self.from_raw(raw_files)
+            if self.status_datasets:
+                if mass:
+                    self.set_mass(mass)
+                if summary_on_raw:
+                    self.make_summary(
+                        all_tests=False,
+                        find_ocv=summary_ocv,
+                        find_ir=summary_ir,
+                        find_end_voltage=summary_end_v,
+                        use_cellpy_stat_file=use_cellpy_stat_file,
+                    )
+            else:
+                self.logger.warning("Empty run!")
+            return self
+
+        self.load(cellpy_file)
+        if mass:
+            self.set_mass(mass)
+
+        if all(similar.values()):
+            self.logger.info("Everything is up to date")
+            return
+
+        start_file = True
+        for i, f in enumerate(raw_files):
+            f = Path(f)
+            if not similar[f.name] and start_file:
+                try:
+                    last_data_point = self.cell.raw_data_files[i].last_data_point
+                except IndexError:
+                    last_data_point = 0
+
+                self.dev_update_from_raw(
+                    file_names=f, data_points=[last_data_point, None]
+                )
+                self.cell = self.dev_update_merge()
+
+            elif not similar[f.name]:
+                try:
+                    last_data_point = self.cell.raw_data_files[i].last_data_point
+                except IndexError:
+                    last_data_point = 0
+
+                self.dev_update_from_raw(
+                    file_names=f, data_points=[last_data_point, None]
+                )
+                self.merge()
+
+            start_file = False
+
+        self.dev_update_make_steps()
+        self.dev_update_make_summary(
+            all_tests=False,
+            find_ocv=summary_ocv,
+            find_ir=summary_ir,
+            find_end_voltage=summary_end_v,
+            use_cellpy_stat_file=use_cellpy_stat_file,
+        )
+        return self
+
+    def dev_update(self, file_names=None, **kwargs):
         print("NOT FINISHED YET - but close")
         if len(self.cell.raw_data_files) != 1:
-            self.logger.warning("Merged cell. But can only update based on the last file")
+            self.logger.warning(
+                "Merged cell. But can only update based on the last file"
+            )
             print(self.cell.raw_data_files)
             for fid in self.cell.raw_data_files:
                 print(fid)
         last = self.cell.raw_data_files[0].last_data_point
 
-        self.dev_update_from_raw(file_names=file_name, data_points=[last, None], **kwargs)
+        self.dev_update_from_raw(
+            file_names=file_names, data_points=[last, None], **kwargs
+        )
         print("lets try to merge")
         self.cell = self.dev_update_merge()
         print("now it is time to update the step table")
@@ -752,7 +863,9 @@ class CellpyData(object):
         print("NOT FINISHED YET - but very close")
         number_of_tests = len(self.cells)
         if number_of_tests != 2:
-            self.logger.warning("Cannot merge if you do not have exactly two cell-objects")
+            self.logger.warning(
+                "Cannot merge if you do not have exactly two cell-objects"
+            )
             return
         t1, t2 = self.cells
 
@@ -780,22 +893,22 @@ class CellpyData(object):
 
         return test
 
-    def dev_update_make_steps(self):
+    def dev_update_make_steps(self, **kwargs):
         old_steps = self.cell.steps.iloc[:-1]
         # Note! hard-coding header name (might fail if changing default headers)
         from_data_point = self.cell.steps.iloc[-1].point_first
-        new_steps = self.make_step_table(from_data_point=from_data_point)
+        new_steps = self.make_step_table(from_data_point=from_data_point, **kwargs)
         merged_steps = pd.concat([old_steps, new_steps]).reset_index(drop=True)
         self.cell.steps = merged_steps
 
-    def dev_update_make_summary(self):
+    def dev_update_make_summary(self, **kwargs):
         print("NOT FINISHED YET - but not critical")
         # Update not implemented yet, running full summary calculations for now.
         # For later:
         # old_summary = self.cell.summary.iloc[:-1]
         cycle_index_header = self.headers_summary.cycle_index
         from_cycle = self.cell.summary.iloc[-1][cycle_index_header]
-        self.make_summary(from_cycle=from_cycle)
+        self.make_summary(from_cycle=from_cycle, **kwargs)
         # For later:
         # (Remark! need to solve how to merge culumated columns)
         # new_summary = self.make_summary(from_cycle=from_cycle)
@@ -811,8 +924,10 @@ class CellpyData(object):
             self.file_names = file_names
 
         if file_names is None:
-            self.logger.info("No filename given and no stored in the file_names "
-                             "attribute. Returning None")
+            self.logger.info(
+                "No filename given and no stored in the file_names "
+                "attribute. Returning None"
+            )
             return None
 
         if not isinstance(self.file_names, (list, tuple)):
@@ -872,13 +987,6 @@ class CellpyData(object):
         # This function only loads one test at a time (but could contain several
         # files). The function from_res() used to implement loading several
         # datasets (using list of lists as input), however it is now deprecated.
-
-        # TODO @jepe Make setting or prm so that it is possible to update only new data
-        #    Comment1: Seems feasible to do the partial loading here and that the
-        #         overal "book-keeping" must be done in a wrapper function (e.g. in the
-        #         loadcell method.
-        #    Comment2: Will include a "state" prm or class
-        #         (datapoint, cycle(?), step(?), ...)
 
         if file_names:
             self.file_names = file_names

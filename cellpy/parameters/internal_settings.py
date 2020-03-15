@@ -100,9 +100,7 @@ ATTRS_DATASET = [
     "tot_mass",
 ]
 
-ATTRS_DATASET_DEEP = [
-    "raw_data_files",
-]
+ATTRS_DATASET_DEEP = ["raw_data_files"]
 
 # cellpy units:
 
