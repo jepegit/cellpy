@@ -501,6 +501,34 @@ def main():
     print("---FINISHED---")
 
 
+def process_batch(*args, **kwargs):
+    default_log_level = kwargs.pop("default_log_level", "INFO")
+    if len(args) == 1:
+        file_name = args.pop(0)
+    else:
+        file_name = kwargs.pop("file_name", None)
+
+    log.setup_logging(default_level=default_log_level, reset_big_log=True)
+    logging.debug(f"creating Batch(kwargs: {kwargs})")
+
+    if file_name is not None:
+        kwargs.pop("db_reader", None)
+        b = Batch(*args, file_name=file_name, db_reader=None, **kwargs)
+        b.create_journal(file_name)
+    else:
+        b = Batch(*args, **kwargs)
+        b.create_journal()
+
+    b.paginate()
+    b.update()
+    b.combine_summaries()
+    b.plot_summaries(output_filename="x", backend="x")
+
+    # and other stuff
+
+
+
+
 def init(*args, **kwargs):
     """Returns an initialized instance of the Batch class.
 
