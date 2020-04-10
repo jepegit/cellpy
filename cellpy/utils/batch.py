@@ -42,6 +42,17 @@ class Batch:
         logger.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
 
+        self.experiment.force_cellpy = kwargs.pop("force_cellpy", False)
+        self.experiment.force_raw_file = kwargs.pop("force_raw_file", False)
+        self.experiment.force_recalc = kwargs.pop("force_recalc", False)
+        self.experiment.export_cycles = kwargs.pop("export_cycles", True)
+        self.experiment.export_raw = kwargs.pop("export_raw", True)
+        self.experiment.export_ica = kwargs.pop("export_ica", False)
+        self.experiment.accept_errors = kwargs.pop("accept_errors", False)
+        nom_cap = kwargs.pop("nom_cap", None)
+        if nom_cap is not None:
+            self.experiment.nom_cap = nom_cap
+
         if not file_name:
             if len(args) > 0:
                 self.experiment.journal.name = args[0]
@@ -502,9 +513,17 @@ def main():
 
 
 def process_batch(*args, **kwargs):
+    backend = kwargs.pop("backend", None)
+    if backend is not None:
+        prms.Batch.backend = backend
+    else:
+        prms.Batch.backend = "matplotlib"
+
+    dpi = kwargs.pop("dpi", 300)
+
     default_log_level = kwargs.pop("default_log_level", "INFO")
     if len(args) == 1:
-        file_name = args.pop(0)
+        file_name = args[0]
     else:
         file_name = kwargs.pop("file_name", None)
 
@@ -519,14 +538,26 @@ def process_batch(*args, **kwargs):
         b = Batch(*args, **kwargs)
         b.create_journal()
 
+    b.experiment.force_cellpy = True
+
     b.paginate()
     b.update()
     b.combine_summaries()
-    b.plot_summaries(output_filename="x", backend="x")
+    b.plot_summaries()
+
+    name = b.experiment.journal.name
+    out_dir = pathlib.Path(b.experiment.journal.batch_dir)
+
+    for n, farm in enumerate(b.plotter.farms):
+        if len(b.plotter.farms) > 1:
+            file_name = f"summary_plot_{name}_{str(n + 1).zfill(3)}.png"
+        else:
+            file_name = f"summary_plot_{name}.png"
+        out = out_dir / file_name
+        print(f"saving file {file_name} in\n{out}")
+        farm.savefig(out, dpi=dpi)
 
     # and other stuff
-
-
 
 
 def init(*args, **kwargs):
@@ -580,6 +611,27 @@ def load_pages(file_name):
     return pages
 
 
+def check_new():
+    use_db = False
+    f = r"C:\Scripting\Processing\Celldata\outdata\cellpy_test\cellpy_batch_embla_test.json"
+    # f = r"C:\Scripting\Processing\Celldata\outdata\SilcRoad\cellpy_batch_uio66.json"
+    # f = r"C:\Scripting\Processing\Celldata\outdata\MoZEES\cellpy_batch_round_robin_001.json"
+    name = "embla_test"
+    project = "cellpy_test"
+    batch_col = "b02"
+    if use_db:
+        process_batch(name, project, batch_col=batch_col, force_cellpy=True)
+    else:
+        process_batch(f, force_cellpy=True)
+
+# TODO: add folder to prms for storing batch journals
+# TODO: make a function that reads batch journals from folder and processes them
+# TODO: create automatically a copy of the journal when it is saved to the batch journal folder
+# TODO: implement a cli command that runs batch
+# TODO: implement a cli command that runs all batch jobs from a given folder
+# TODO: allow exporting html when processing batch instead of just png
+
+
 if __name__ == "__main__":
     print("---IN BATCH 2 MAIN---")
-    main()
+    check_new()

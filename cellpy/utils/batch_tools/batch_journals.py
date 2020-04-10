@@ -174,7 +174,7 @@ class LabJournal(BaseJournal):
         if raw_dir is None:
             raise UnderDefined("no raw directory defined")
         if batch_dir is None:
-            raise UnderDefined("no batcb directory defined")
+            raise UnderDefined("no batch directory defined")
 
         # create the folders
         if not os.path.isdir(project_dir):
@@ -186,6 +186,10 @@ class LabJournal(BaseJournal):
         if not os.path.isdir(raw_dir):
             os.mkdir(raw_dir)
             logging.info(f"created folder {raw_dir}")
+
+        self.project_dir = project_dir
+        self.batch_dir = batch_dir
+        self.raw_dir = raw_dir
 
         return project_dir, batch_dir, raw_dir
 
