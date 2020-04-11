@@ -167,6 +167,6 @@ def test_report(populated_batch):
     print(populated_batch.report)
 
 
-def test_iterate_folder():
-    folder_name = r"C:\Scripting\Processing\Celldata\live"
-    batch.iterate_batches(folder_name)
+# def test_iterate_folder():
+#     folder_name = r"C:\Scripting\Processing\Celldata\live"
+#     batch.iterate_batches(folder_name)
