@@ -13,3 +13,4 @@ numpy>=1.16.4
 pytest-benchmark
 pytest-timeout
 cookiecutter
+tqdm

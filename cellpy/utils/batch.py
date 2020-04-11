@@ -354,7 +354,10 @@ class Batch:
         new_journal_name = journal_name.name
         if folder is not None:
             new_journal_name = pathlib.Path(folder) / new_journal_name
-        shutil.copy(journal_name, new_journal_name)
+        try:
+            shutil.copy(journal_name, new_journal_name)
+        except shutil.SameFileError:
+            logging.debug("same file exception encountered")
 
     def duplicate_cellpy_files(self, location="standard"):
         """Copy the cellpy files and make a journal with the new names available in
@@ -594,8 +597,6 @@ def process_batch(*args, **kwargs):
     else:
         b = Batch(*args, **kwargs)
         b.create_journal()
-
-    b.experiment.force_cellpy = True
 
     b.paginate()
     b.update()

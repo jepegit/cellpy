@@ -198,6 +198,7 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
         frames.append(summary_frames[key])
 
     out = []
+
     summary_df = pd.concat(frames, keys=keys, axis=1)
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[

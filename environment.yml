@@ -18,6 +18,7 @@ dependencies:
   - pyodbc
   - PyGithub
   - cookiecutter
+  - tqdm
   - pip:
     - lmfit
     - python-box<4

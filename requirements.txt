@@ -12,3 +12,4 @@ pyyaml>=4.2b1
 pyodbc>=4.0.16
 python-box<4
 PyGithub>=1.43.0
+tqdm

@@ -15,4 +15,5 @@ pytest-timeout
 invoke
 requests
 cookiecutter
+tqdm
 

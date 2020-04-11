@@ -30,6 +30,7 @@ requirements = [
     "xlrd",
     "click",
     "PyGithub",
+    "tqdm",
     'pyodbc;platform_system=="windows"',
     # 'pytables', # not available by pip
 ]
@@ -48,6 +49,7 @@ test_requirements = [
     "PyGithub",
     # 'pytables', # not available by pip
     "pytest",
+    "tqdm",
 ]
 
 extra_req_batch = ["ipython", "jupyter"]
