@@ -583,7 +583,7 @@ def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
             pages, summaries, width, height, height_fractions, **kwargs
         )
     elif prms.Batch.backend == "matplotlib":
-        print("[obs! experimental]")
+        logging.info("[obs! experimental]")
         canvas = plot_cycle_life_summary_matplotlib(
             pages, summaries, width, height, height_fractions
         )
@@ -605,10 +605,10 @@ def _preparing_data_and_plotting(**kwargs):
 
     for experiment in experiments:
         if not isinstance(experiment, CyclingExperiment):
-            print(
+            logging.info(
                 "No! This engine is only really good at" "processing CyclingExperiments"
             )
-            print(experiment)
+            logging.info(experiment)
         else:
             pages = experiment.journal.pages
             try:

@@ -1,6 +1,9 @@
 import logging
 import warnings
 import os
+import sys
+
+from tqdm.auto import tqdm
 
 from cellpy.readers import cellreader
 from cellpy import prms
@@ -95,13 +98,14 @@ class CyclingExperiment(BaseExperiment):
         number_of_runs = len(pages)
         counter = 0
         errors = []
-
-        for indx, row in pages.iterrows():
+        pbar = tqdm(list(pages.iterrows()),
+                    file=sys.stdout, leave=False)
+        for indx, row in pbar:
             counter += 1
-            h_txt = "[" + counter * "|" + (number_of_runs - counter) * "." + "]"
-            l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
+            h_txt = f"{indx}"
+            l_txt = f"starting to process file # {counter} ({indx})"
             logging.debug(l_txt)
-            print(h_txt)
+            pbar.set_description(h_txt)
 
             if not row.raw_file_names and not self.force_cellpy:
                 logging.info("File(s) not found!")

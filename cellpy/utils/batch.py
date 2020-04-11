@@ -5,8 +5,10 @@ import pathlib
 import shutil
 import warnings
 import os
+import sys
 
 import pandas as pd
+from tqdm.auto import tqdm
 
 from cellpy import prms
 from cellpy import log
@@ -349,7 +351,7 @@ class Batch:
         logging.debug(f"duplicating journal to folder {folder}")
         journal_name = pathlib.Path(self.experiment.journal.file_name)
         if not journal_name.is_file():
-            print("No journal saved")
+            logging.info("No journal saved")
             return
         new_journal_name = journal_name.name
         if folder is not None:
@@ -399,20 +401,20 @@ class Batch:
 
         # copy the cellpy files
         for n, row in pages.iterrows():
-            print(f"{row.cellpy_file_names} -> {row.new_cellpy_file_names}")
+            logging.info(f"{row.cellpy_file_names} -> {row.new_cellpy_file_names}")
             try:
                 from_file = row.cellpy_file_names
                 to_file = row.new_cellpy_file_names
                 os.makedirs(os.path.dirname(to_file), exist_ok=True)
                 shutil.copy(from_file, to_file)
             except shutil.SameFileError:
-                print("Same file! No point in copying")
+                logging.info("Same file! No point in copying")
 
         # save the journal pages
         pages["cellpy_file_names"] = pages["new_cellpy_file_names"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
-        print(f"saving journal to {journal_file_name}")
+        logging.info(f"saving journal to {journal_file_name}")
         self.experiment.journal.to_file(journal_file_name)
 
         # return pages
@@ -480,7 +482,7 @@ def main():
     test_data_path = Path(test_data_path)
     out_data_path = Path(out_data_path)
 
-    print("---SETTING SOME PRMS---")
+    logging.info("---SETTING SOME PRMS---")
     prms.Paths["db_filename"] = "cellpy_db.xlsx"
     prms.Paths["cellpydatadir"] = test_data_path / "hdf5"
     prms.Paths["outdatadir"] = out_data_path
@@ -492,24 +494,24 @@ def main():
     name = "test"
     batch_col = "b01"
 
-    print("---INITIALISATION OF BATCH---")
+    logging.info("---INITIALISATION OF BATCH---")
     b = init(name, project, batch_col=batch_col)
     b.experiment.export_raw = True
     b.experiment.export_cycles = True
-    print("*creating info df*")
+    logging.info("*creating info df*")
     b.create_journal()
-    print("*creating folder structure*")
+    logging.info("*creating folder structure*")
     b.paginate()
-    print("*load and save*")
+    logging.info("*load and save*")
     b.update()
-    print("*make summaries*")
+    logging.info("*make summaries*")
     b.combine_summaries()
     summaries = b.experiment.memory_dumped
-    print("*plotting summaries*")
+    logging.info("*plotting summaries*")
     b.plot_summaries("tmp_bokeh_plot.html")
 
-    # print("*using special features*")
-    # print(" - select_ocv_points")
+    # logging.info("*using special features*")
+    # logging.info(" - select_ocv_points")
     # analyzer = OCVRelaxationAnalyzer()
     # analyzer.assign(b.experiment)
     # analyzer.do()
@@ -517,8 +519,8 @@ def main():
     # for df in ocv_df_list:
     #     df_up = df.loc[df.type == "ocvrlx_up", :]
     #     df_down = df.loc[df.type == "ocvrlx_down", :]
-    #     print(df_up)
-    print("---FINISHED---")
+    #     logging.info(df_up)
+    logging.info("---FINISHED---")
 
 
 def init(*args, **kwargs):
@@ -567,7 +569,7 @@ def load_pages(file_name):
         pandas.DataFrame
 
     """
-    print(f"Loading pages from {file_name}")
+    logging.info(f"Loading pages from {file_name}")
     pages, _ = LabJournal.read_journal_jason_file(file_name)
     return pages
 
@@ -612,7 +614,7 @@ def process_batch(*args, **kwargs):
         else:
             file_name = f"summary_plot_{name}.png"
         out = out_dir / file_name
-        print(f"saving file {file_name} in\n{out}")
+        logging.info(f"saving file {file_name} in\n{out}")
         farm.savefig(out, dpi=dpi)
 
     # and other stuff
@@ -620,6 +622,7 @@ def process_batch(*args, **kwargs):
 
 
 def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
+
     folder = pathlib.Path(folder)
     if not folder.is_dir():
         print(f"Could not find the folder ({folder})")
@@ -636,13 +639,14 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
         return
     print("Found the following files:")
     for n, file in enumerate(files):
-        print(f"{str(n).zfill(4)} - {file}")
+        print(f"  {str(n).zfill(4)} - {file}")
 
-    for file in files:
-        print(f" Processing {file.name} ".center(80, "-"))
+    print(" Processing ".center(80, "-"))
+    pbar = tqdm(files, file=sys.stdout)
+    for n, file in enumerate(pbar):
+        pbar.set_description(f"{str(n).zfill(4)} [{file.name}]")
         process_batch(file, **kwargs)
-
-    print(" Bye ".center(80, "="))
+    print(" Finished ".center(80, "="))
 
 
 def check_new():
@@ -666,7 +670,7 @@ def check_new():
 
 def check_iterate():
     folder_name = r"C:\Scripting\Processing\Celldata\live"
-    iterate_batches(folder_name)
+    iterate_batches(folder_name, force_cellpy=True, export_cycles=False, export_raw=False)
 
 
 if __name__ == "__main__":

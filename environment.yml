@@ -12,14 +12,16 @@ dependencies:
   - click
   - scipy
   - pandas
-  - pytables>=3.5.1
+  - pytables>=3.6.1
   - setuptools
   - pyyaml>=4.2b1
   - pyodbc
   - PyGithub
   - cookiecutter
   - tqdm
+  - ipywidgets
+  - lmfit
+  - ipykernel
   - pip:
-    - lmfit
     - python-box<4
 
