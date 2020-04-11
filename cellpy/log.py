@@ -92,8 +92,8 @@ def setup_logging(
 
         if default_level:
             w_txt = "\nCould not set custom default level for logger"
-            if default_level not in ["INFO", "DEBUG", logging.INFO, logging.DEBUG]:
-                _txt = "\nonly 'INFO' and 'DEBUG' is supported"
+            if default_level not in ["INFO", "DEBUG", "CRITICAL", logging.INFO, logging.DEBUG, logging.CRITICAL]:
+                _txt = "\nonly 'INFO', 'DEBUG' and 'CRITICAL' is supported"
                 _txt += " as default_level"
                 warnings.warn(w_txt + _txt)
 
@@ -109,7 +109,7 @@ def setup_logging(
         logging.config.dictConfig(config)
     else:
         if not default_level:
-            default_level = logging.INFO
+            default_level = logging.CRITICAL
         logging.basicConfig(level=default_level)
 
 

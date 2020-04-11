@@ -5,21 +5,23 @@ import pytest
 from cellpy import log
 from cellpy import prms
 import cellpy
-from cellpy import cli
+from cellpy import cli, prmreader
+
+NUMBER_OF_DIRS = 9
 
 
 def test_get_user_name():
-    u = cli.get_user_name()
+    u = prmreader.get_user_name()
     print(f"\ncurrent username: {u}")
 
 
 def test_get_user_dir_and_dst():
-    user_dir, dst_file = cli.get_user_dir_and_dst("filename.conf")
+    user_dir, dst_file = prmreader.get_user_dir_and_dst("filename.conf")
     print(f"\nuserdir: {user_dir}")
 
 
 def test_create_custom_init_filename():
-    u = cli.create_custom_init_filename()
+    u = prmreader.create_custom_init_filename()
     print(f"\ncustom config-file-name: {u}")
 
 
@@ -223,7 +225,7 @@ def test_cli_setup_interactive():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
-        result = runner.invoke(cli.cli, ["setup", "-i", "--dry-run"], input=8 * "\n")
+        result = runner.invoke(cli.cli, ["setup", "-i", "--dry-run"], input=NUMBER_OF_DIRS * "\n")
         print(result.output)
         assert result.exit_code == 0
 
@@ -233,7 +235,7 @@ def test_cli_setup_custom_dir():
 
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli.cli, ["setup", "-i", "--dry-run", "-d", "just_a_dir"], input=8 * "\n"
+            cli.cli, ["setup", "-i", "--dry-run", "-d", "just_a_dir"], input=NUMBER_OF_DIRS * "\n"
         )
         print(result.output)
         assert result.exit_code == 0

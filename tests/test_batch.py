@@ -165,3 +165,8 @@ def test_cycling_summary_plotter(populated_batch):
 
 def test_report(populated_batch):
     print(populated_batch.report)
+
+
+def test_iterate_folder():
+    folder_name = r"C:\Scripting\Processing\Celldata\live"
+    batch.iterate_batches(folder_name)

@@ -42,6 +42,7 @@ Paths = {
     "filelogdir": cur_dir,
     "examplesdir": cur_dir,
     "notebookdir": cur_dir,
+    "batchfiledir": cur_dir,
     "db_filename": "cellpy_db.xlsx",
 }
 Paths = box.Box(Paths)

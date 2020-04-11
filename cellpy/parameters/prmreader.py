@@ -2,8 +2,10 @@
 
 import glob
 import os
+import pathlib
 import sys
 from collections import OrderedDict
+import getpass
 import logging
 import warnings
 
@@ -13,7 +15,44 @@ import yaml
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
+DEFAULT_FILENAME_START = "_cellpy_prms_"
+DEFAULT_FILENAME_END = ".conf"
+DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
+
 logger = logging.getLogger(__name__)
+
+
+def get_user_name():
+    """get the user name of the current user (cross platform)"""
+    return getpass.getuser()
+
+
+def create_custom_init_filename(user_name=None):
+    """creates a custom prms filename"""
+    if user_name is None:
+        return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
+    else:
+        return DEFAULT_FILENAME_START + user_name + DEFAULT_FILENAME_END
+
+
+def get_user_dir_and_dst(init_filename=None):
+    """gets the name of the user directory and full prm filepath"""
+    if init_filename is None:
+        init_filename = create_custom_init_filename()
+    user_dir = get_user_dir()
+    dst_file = user_dir / init_filename
+    return user_dir, dst_file
+
+
+def get_user_dir():
+    """gets the name of the user directory"""
+    # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
+    user_dir = pathlib.Path().home().resolve()
+    if os.name == "nt":
+        _user_dir = user_dir / "documents"
+        if _user_dir.is_dir():
+            user_dir = _user_dir
+    return user_dir
 
 
 def _write_prm_file(file_name=None):
@@ -111,7 +150,7 @@ def _get_prm_file(file_name=None, search_order=None):
     search_path = dict()
     search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
     search_path["filedir"] = script_dir
-    search_path["userdir"] = os.path.expanduser("~")
+    search_path["userdir"] = get_user_dir()
 
     if search_order is None:
         search_order = ["userdir"]  # ["curdir","filedir", "userdir",]

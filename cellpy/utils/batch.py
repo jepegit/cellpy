@@ -221,6 +221,7 @@ class Batch:
         if from_db:
             self.experiment.journal.from_db()
             self.experiment.journal.to_file()
+            self.duplicate_journal(prms.Paths.batchfiledir)
 
         else:
             is_str = isinstance(description, str)
@@ -327,6 +328,7 @@ class Batch:
             self.experiment.journal.to_file()
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
+            self.duplicate_journal(prms.Paths.batchfiledir)
 
     def create_folder_structure(self):
         warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
@@ -340,14 +342,18 @@ class Batch:
     def save_journal(self):
         # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file()
+        self.duplicate_journal(prms.Paths.batchfiledir)
         logging.info("saving journal pages")
 
-    def duplicate_journal(self):
+    def duplicate_journal(self, folder=None):
+        logging.debug(f"duplicating journal to folder {folder}")
         journal_name = pathlib.Path(self.experiment.journal.file_name)
         if not journal_name.is_file():
             print("No journal saved")
             return
         new_journal_name = journal_name.name
+        if folder is not None:
+            new_journal_name = pathlib.Path(folder) / new_journal_name
         shutil.copy(journal_name, new_journal_name)
 
     def duplicate_cellpy_files(self, location="standard"):
@@ -512,6 +518,57 @@ def main():
     print("---FINISHED---")
 
 
+def init(*args, **kwargs):
+    """Returns an initialized instance of the Batch class.
+
+    Args:
+        *args: passed directly to Batch()
+            name: name of batch
+            project: name of project
+            batch_col: batch column identifier
+        **kwargs:
+            file_name: json file if loading from pages
+            default_log_level: "INFO" or "DEBUG"
+            The rest is passed directly to Batch()
+
+    Usage:
+        >>> empty_batch = Batch.init(db_reader=None)
+        >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
+        >>> normal_init_of_batch = Batch.init()
+    """
+    # set up cellpy logger
+    default_log_level = kwargs.pop("default_log_level", None)
+    file_name = kwargs.pop("file_name", None)
+
+    log.setup_logging(default_level=default_log_level, reset_big_log=True)
+
+    logging.debug(f"returning Batch(kwargs: {kwargs})")
+    if file_name is not None:
+        kwargs.pop("db_reader", None)
+        return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
+    return Batch(*args, **kwargs)
+
+
+def load_pages(file_name):
+    """Retrieve pages from a Journal file.
+
+    This function is here to let you easily inspect a Journal file without
+    starting up the full batch-functionality.
+
+    Examples:
+        >>> from cellpy.utils import batch
+        >>> journal_file_name = 'cellpy_journal_one.json'
+        >>> pages = batch.load_pages(journal_file_name)
+
+    Returns:
+        pandas.DataFrame
+
+    """
+    print(f"Loading pages from {file_name}")
+    pages, _ = LabJournal.read_journal_jason_file(file_name)
+    return pages
+
+
 def process_batch(*args, **kwargs):
     backend = kwargs.pop("backend", None)
     if backend is not None:
@@ -521,7 +578,7 @@ def process_batch(*args, **kwargs):
 
     dpi = kwargs.pop("dpi", 300)
 
-    default_log_level = kwargs.pop("default_log_level", "INFO")
+    default_log_level = kwargs.pop("default_log_level", "CRITICAL")
     if len(args) == 1:
         file_name = args[0]
     else:
@@ -558,57 +615,33 @@ def process_batch(*args, **kwargs):
         farm.savefig(out, dpi=dpi)
 
     # and other stuff
+    return b
 
 
-def init(*args, **kwargs):
-    """Returns an initialized instance of the Batch class.
+def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
+    folder = pathlib.Path(folder)
+    if not folder.is_dir():
+        print(f"Could not find the folder ({folder})")
+        print("Aborting...")
+        return
+    print(" Iterating through the folder ".center(80, "="))
+    print(f"Folder name: {folder}")
+    if not glob_pattern:
+        glob_pattern = f"*{extension}"
+    print(f"Glob pattern: {glob_pattern}")
+    files = sorted(folder.glob(glob_pattern))
+    if not files:
+        print("No files found! Aborting...")
+        return
+    print("Found the following files:")
+    for n, file in enumerate(files):
+        print(f"{str(n).zfill(4)} - {file}")
 
-    Args:
-        *args: passed directly to Batch()
-            name: name of batch
-            project: name of project
-            batch_col: batch column identifier
-        **kwargs:
-            file_name: json file if loading from pages
-            default_log_level: "INFO" or "DEBUG"
-            The rest is passed directly to Batch()
+    for file in files:
+        print(f" Processing {file.name} ".center(80, "-"))
+        process_batch(file, **kwargs)
 
-    Usage:
-        >>> empty_batch = Batch.init(db_reader=None)
-        >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
-        >>> normal_init_of_batch = Batch.init()
-    """
-    # set up cellpy logger
-    default_log_level = kwargs.pop("default_log_level", "INFO")
-    file_name = kwargs.pop("file_name", None)
-
-    log.setup_logging(default_level=default_log_level, reset_big_log=True)
-
-    logging.debug(f"returning Batch(kwargs: {kwargs})")
-    if file_name is not None:
-        kwargs.pop("db_reader", None)
-        return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
-    return Batch(*args, **kwargs)
-
-
-def load_pages(file_name):
-    """Retrieve pages from a Journal file.
-
-    This function is here to let you easily inspect a Journal file without
-    starting up the full batch-functionality.
-
-    Examples:
-        >>> from cellpy.utils import batch
-        >>> journal_file_name = 'cellpy_journal_one.json'
-        >>> pages = batch.load_pages(journal_file_name)
-
-    Returns:
-        pandas.DataFrame
-
-    """
-    print(f"Loading pages from {file_name}")
-    pages, _ = LabJournal.read_journal_jason_file(file_name)
-    return pages
+    print(" Bye ".center(80, "="))
 
 
 def check_new():
@@ -624,14 +657,17 @@ def check_new():
     else:
         process_batch(f, force_cellpy=True)
 
-# TODO: add folder to prms for storing batch journals
 # TODO: make a function that reads batch journals from folder and processes them
-# TODO: create automatically a copy of the journal when it is saved to the batch journal folder
 # TODO: implement a cli command that runs batch
 # TODO: implement a cli command that runs all batch jobs from a given folder
 # TODO: allow exporting html when processing batch instead of just png
 
 
+def check_iterate():
+    folder_name = r"C:\Scripting\Processing\Celldata\live"
+    iterate_batches(folder_name)
+
+
 if __name__ == "__main__":
     print("---IN BATCH 2 MAIN---")
-    check_new()
+    check_iterate()
