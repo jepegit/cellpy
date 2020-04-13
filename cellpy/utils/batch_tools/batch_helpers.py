@@ -188,6 +188,8 @@ def pick_summary_data(key, summary_df, selected_summaries):
 
 def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     """parse the summaries and combine based on column (selected_summaries)"""
+    if not summary_frames:
+        raise NullData("No summaries available to join")
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     frames = []
     keys = []  # test-name

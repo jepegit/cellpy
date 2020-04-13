@@ -665,7 +665,7 @@ def run(
     if journal:
         _run_journal(name, debug, silent, raw, cellpyfile, minimal, nom_cap)
 
-    if batch:
+    elif batch:
         _run_journals(name, debug, silent, raw, cellpyfile, minimal)
 
     elif name.lower() == "db":
@@ -677,14 +677,16 @@ def run(
 
 def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
     click.echo(f"running journal {file_name}")
-    click.echo(f" --debug [{debug}]")
-    click.echo(f" --silent [{silent}]")
-    click.echo(f" --raw [{raw}]")
-    click.echo(f" --cellpyfile [{cellpyfile}]")
-    click.echo(f" --minimal [{minimal}]")
-    click.echo(f" --nom_cap [{nom_cap}] {type(nom_cap)}")
+    # click.echo(f" --debug [{debug}]")
+    # click.echo(f" --silent [{silent}]")
+    # click.echo(f" --raw [{raw}]")
+    # click.echo(f" --cellpyfile [{cellpyfile}]")
+    # click.echo(f" --minimal [{minimal}]")
+    # click.echo(f" --nom_cap [{nom_cap}] {type(nom_cap)}")
 
     kwargs = dict()
+    if debug:
+        kwargs["default_log_level"] = "DEBUG"
     if not minimal:
         kwargs["export_raw"] = False
         kwargs["export_cycles"] = False
@@ -705,19 +707,23 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
         click.echo(f"{file} not found - aborting")
         return
 
-    batch.process_batch(file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs)
-    click.echo("...finished.")
+    b = batch.process_batch(file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs)
+    if b is not None and not silent:
+        print(b)
+    click.echo("---")
 
 
 def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
     click.echo(f"running journals in {folder_name}")
-    click.echo(f" --debug [{debug}]")
-    click.echo(f" --silent [{silent}]")
-    click.echo(f" --raw [{raw}]")
-    click.echo(f" --cellpyfile [{cellpyfile}]")
-    click.echo(f" --minimal [{minimal}]")
+    # click.echo(f" --debug [{debug}]")
+    # click.echo(f" --silent [{silent}]")
+    # click.echo(f" --raw [{raw}]")
+    # click.echo(f" --cellpyfile [{cellpyfile}]")
+    # click.echo(f" --minimal [{minimal}]")
 
     kwargs = dict()
+    if debug:
+        kwargs["default_log_level"] = "DEBUG"
     if not minimal:
         kwargs["export_raw"] = False
         kwargs["export_cycles"] = False
@@ -731,9 +737,8 @@ def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
         click.echo(f"{folder_name} not found - aborting")
         return
 
-    batch.iterate_batches(folder_name, force_raw_file=raw, force_cellpy=cellpyfile, **kwargs)
-
-    click.echo("...finished.")
+    batch.iterate_batches(folder_name, force_raw_file=raw, force_cellpy=cellpyfile, silent=True, **kwargs)
+    click.echo("---")
 
 
 def _run(name, debug, silent):

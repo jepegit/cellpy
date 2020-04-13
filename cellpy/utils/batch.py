@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 
 from cellpy import prms
 from cellpy import log
+import cellpy.exceptions
 from cellpy.parameters.internal_settings import get_headers_step_table
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
@@ -574,6 +575,25 @@ def load_pages(file_name):
 
 
 def process_batch(*args, **kwargs):
+    """Execute a batch run, either from a given file_name or by giving the name and project as input.
+
+    Usage:
+        process_batch(file_name | (name, project), **kwargs)
+
+    Args:
+        *args: file_name or name and project (both string)
+
+    Optional keyword arguments:
+        backend (str): what backend to use when plotting ('bokeh' or 'matplotlib').
+            Defaults to 'matplotlib'.
+        dpi (int): resolution used when saving matplotlib plot(s). Defaults to 300 dpi.
+        default_log_level (str): What log-level to use for console output. Chose between
+            'CRITICAL', 'DEBUG', or 'INFO'. The default is 'CRITICAL' (i.e. usually no log output to console).
+
+    Returns:
+        cellpy.batch.Batch object
+    """
+    silent = kwargs.pop("silent", False)
     backend = kwargs.pop("backend", None)
     if backend is not None:
         prms.Batch.backend = backend
@@ -591,48 +611,37 @@ def process_batch(*args, **kwargs):
     log.setup_logging(default_level=default_log_level, reset_big_log=True)
     logging.debug(f"creating Batch(kwargs: {kwargs})")
 
-    with tqdm(total=70, leave=False, file=sys.stdout) as pbar:
-        pbar.set_description(f"journal")
+    if file_name is not None:
+        kwargs.pop("db_reader", None)
+        b = Batch(*args, file_name=file_name, db_reader=None, **kwargs)
+        b.create_journal(file_name)
+    else:
+        b = Batch(*args, **kwargs)
+        b.create_journal()
+
+    steps = {
+        "paginate": (b.paginate, ),
+        "update": (b.update, ),
+        "combine": (b.combine_summaries, ),
+        "plot": (b.plot_summaries, ),
+        "save": (_pb_save_plot, b, dpi),
+    }
+
+    with tqdm(total=(100 * len(steps) + 20), leave=False, file=sys.stdout) as pbar:
         pbar.update(10)
-        if file_name is not None:
-            kwargs.pop("db_reader", None)
-            b = Batch(*args, file_name=file_name, db_reader=None, **kwargs)
-            b.create_journal(file_name)
-        else:
-            b = Batch(*args, **kwargs)
-            b.create_journal()
-
-        pbar.set_description(f"paginate")
-        pbar.update(10)
-        b.paginate()
-
-        pbar.set_description(f"update")
-        pbar.update(10)
-        b.update()
-
-        pbar.set_description(f"combine")
-        pbar.update(10)
-        b.combine_summaries()
-
-        pbar.set_description(f"plot")
-        pbar.update(10)
-        b.plot_summaries()
-
-        pbar.set_description(f"save")
-        pbar.update(10)
-
-        name = b.experiment.journal.name
-        out_dir = pathlib.Path(b.experiment.journal.batch_dir)
-
-        for n, farm in enumerate(b.plotter.farms):
-            if len(b.plotter.farms) > 1:
-                file_name = f"summary_plot_{name}_{str(n + 1).zfill(3)}.png"
-            else:
-                file_name = f"summary_plot_{name}.png"
-            out = out_dir / file_name
-            logging.info(f"saving file {file_name} in\n{out}")
-            farm.savefig(out, dpi=dpi)
-        # and other stuff
+        for description in steps:
+            func, *args = steps[description]
+            pbar.set_description(description)
+            pbar.update(10)
+            try:
+                func(*args)
+            except cellpy.exceptions.NullData as e:
+                if not silent:
+                    tqdm.write(f"\nEXCEPTION (NullData): {str(e)}")
+                    tqdm.write("...aborting")
+                    return
+                else:
+                    raise e
 
         pbar.set_description(f"final")
         pbar.update(10)
@@ -640,7 +649,30 @@ def process_batch(*args, **kwargs):
     return b
 
 
+def _pb_save_plot(b, dpi):
+    name = b.experiment.journal.name
+    out_dir = pathlib.Path(b.experiment.journal.batch_dir)
+
+    for n, farm in enumerate(b.plotter.farms):
+        if len(b.plotter.farms) > 1:
+            file_name = f"summary_plot_{name}_{str(n + 1).zfill(3)}.png"
+        else:
+            file_name = f"summary_plot_{name}.png"
+        out = out_dir / file_name
+        logging.info(f"saving file {file_name} in\n{out}")
+        farm.savefig(out, dpi=dpi)
+    # and other stuff
+
+
 def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
+    """Iterate through all journals in given folder.
+
+    Args:
+        folder (str or pathlib.Path): folder containing the journal files.
+        extension (str): extension for the journal files (used when creating a default glob-pattern).
+        glob_pattern (str): optional glob pattern.
+        **kwargs: keyword arguments passed to ´batch.process_batch´.
+    """
 
     folder = pathlib.Path(folder)
     logging.info(f"Folder for batches to be iterated: {folder}")
@@ -679,7 +711,7 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
                 logging.debug(f"No errors detected.")
             except Exception as e:
                 output_str += " [FAILED!]"
-                failed.append(file)
+                failed.append(str(file))
                 logging.debug("Error detected.")
                 logging.debug(e)
 
@@ -689,7 +721,7 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
     print("\n".join(output))
     if failed:
         print("\nFailed:")
-        failed_txt = "\n  ".join(failed)
+        failed_txt = "\n".join(failed)
         print(failed_txt)
         logging.info(failed_txt)
     print("\n...Finished ")
@@ -732,8 +764,16 @@ def main():
     logging.info("*load and save*")
     b.update()
     logging.info("*make summaries*")
-    b.combine_summaries()
-    summaries = b.experiment.memory_dumped
+    try:
+        b.combine_summaries()
+        summaries = b.experiment.memory_dumped
+    except cellpy.exeptions.NullData:
+        print("NO DATA")
+        return
+    # except cellpy.exceptions.NullData:
+    #     print("NOTHING")
+    #     return
+
     logging.info("*plotting summaries*")
     b.plot_summaries("tmp_bokeh_plot.html")
 
@@ -761,7 +801,8 @@ def check_new():
     if use_db:
         process_batch(name, project, batch_col=batch_col, nom_cap=372)
     else:
-        process_batch(f, force_raw_file=True, nom_cap=372)
+        # process_batch(f, nom_cap=372)
+        process_batch(f, force_raw_file=False, force_cellpy=True, nom_cap=372)
 
 # TODO: implement a cli command that runs batch
 # TODO: implement a cli command that runs all batch jobs from a given folder
@@ -770,7 +811,7 @@ def check_new():
 
 def check_iterate():
     folder_name = r"C:\Scripting\Processing\Celldata\live"
-    iterate_batches(folder_name, force_cellpy=True, export_cycles=False, export_raw=False)
+    iterate_batches(folder_name, export_cycles=False, export_raw=False)
 
 
 if __name__ == "__main__":

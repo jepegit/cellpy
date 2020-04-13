@@ -8,6 +8,20 @@ from cellpy.utils.batch_tools import batch_helpers as helper
 # logger = logging.getLogger(__name__)
 
 
+SELECTED_SUMMARIES = [
+                "discharge_capacity",
+                "charge_capacity",
+                "coulombic_efficiency",
+                "cumulated_coulombic_efficiency",
+                "ir_discharge",
+                "ir_charge",
+                "end_voltage_discharge",
+                "end_voltage_charge",
+                "charge_c_rate",
+                "discharge_c_rate",
+            ]
+
+
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
     logging.info("cycles_engine:")
@@ -58,18 +72,7 @@ def summary_engine(**kwargs):
 
     for experiment in experiments:
         if experiment.selected_summaries is None:
-            selected_summaries = [
-                "discharge_capacity",
-                "charge_capacity",
-                "coulombic_efficiency",
-                "cumulated_coulombic_efficiency",
-                "ir_discharge",
-                "ir_charge",
-                "end_voltage_discharge",
-                "end_voltage_charge",
-                "charge_c_rate",
-                "discharge_c_rate",
-            ]
+            selected_summaries = SELECTED_SUMMARIES
         else:
             selected_summaries = experiment.selected_summaries
 
