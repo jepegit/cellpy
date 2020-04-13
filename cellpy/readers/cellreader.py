@@ -736,12 +736,16 @@ class CellpyData(object):
                 if mass:
                     self.set_mass(mass)
                 if summary_on_raw:
+                    nom_cap = kwargs.pop("nom_cap", None)
+                    if nom_cap is not None:
+                        self.set_nom_cap(nom_cap)
                     self.make_summary(
                         all_tests=False,
                         find_ocv=summary_ocv,
                         find_ir=summary_ir,
                         find_end_voltage=summary_end_v,
                         use_cellpy_stat_file=use_cellpy_stat_file,
+                        #nom_cap=nom_cap,
                     )
             else:
                 self.logger.warning("Empty run!")
@@ -764,6 +768,7 @@ class CellpyData(object):
         summary_end_v=True,
         force_raw=False,
         use_cellpy_stat_file=None,
+        nom_cap=None,
     ):
 
         self.logger.info("Started cellpy.cellreader.loadcell")
@@ -788,6 +793,7 @@ class CellpyData(object):
                         find_ir=summary_ir,
                         find_end_voltage=summary_end_v,
                         use_cellpy_stat_file=use_cellpy_stat_file,
+                        nom_cap=nom_cap,
                     )
             else:
                 self.logger.warning("Empty run!")
@@ -3849,7 +3855,7 @@ class CellpyData(object):
         number_of_tests = len(self.cells)
         if not number_of_tests:
             self.logger.info("No datasets have been loaded yet")
-            self.logger.info("Cannot set mass before loading datasets")
+            self.logger.info(f"Cannot set {attr} before loading datasets")
             sys.exit(-1)
 
         if not dataset_number:
@@ -4249,7 +4255,9 @@ class CellpyData(object):
             self.logger.debug("ensuring existence of step-table")
             if not dataset.steps_made:
                 self.logger.debug("dataset.step_table_made is not True")
-                self.logger.debug("running make_step_table")
+                self.logger.info("running make_step_table")
+                if nom_cap is not None:
+                    dataset.nom_cap = nom_cap
                 self.make_step_table(dataset_number=dataset_number)
 
         # Retrieve the converters etc.
@@ -4726,6 +4734,7 @@ class CellpyData(object):
                     self.logger.info(f"Empty reference cycle(s)")
 
             if nom_cap is None:
+                self.logger.debug(f"No nom_cap given")
                 nom_cap = self.cell.nom_cap
             self.logger.info(f"Using the following nominal capacity: {nom_cap}")
             summary[h_normalized_cycle] = summary[cumcharge_title] / nom_cap
@@ -4798,7 +4807,7 @@ def get(
     filename=None,
     mass=None,
     instrument=None,
-    logging_mode="INFO",
+    logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
 ):

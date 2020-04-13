@@ -19,7 +19,7 @@ DEFAULT_FILENAME_START = "_cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 def get_user_name():
@@ -56,7 +56,7 @@ def get_user_dir():
 
 
 def _write_prm_file(file_name=None):
-    logger.debug("saving configuration to %s" % file_name)
+    logging.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
     try:
         with open(file_name, "w") as config_file:
@@ -72,8 +72,8 @@ def _write_prm_file(file_name=None):
 
 
 def _update_prms(config_dict):
-    logger.debug("updating parameters")
-    logger.debug("new prms:" + str(config_dict))
+    logging.debug("updating parameters")
+    logging.debug("new prms:" + str(config_dict))
 
     for key in config_dict:
         if hasattr(prms, key):
@@ -81,7 +81,7 @@ def _update_prms(config_dict):
             for k in config_dict[key]:
                 _config_attr[k] = config_dict[key][k]
         else:
-            logger.info("\n  not-supported prm: %s" % key)
+            logging.info("\n  not-supported prm: %s" % key)
 
 
 def _pack_prms():
@@ -105,7 +105,7 @@ def _pack_prms():
 
 def _read_prm_file(prm_filename):
     """read the prm file"""
-    logger.debug("Reading config-file: %s" % prm_filename)
+    logging.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
             prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -118,7 +118,7 @@ def _read_prm_file(prm_filename):
 
 def _read_prm_file_without_updating(prm_filename):
     """read the prm file but do not update the params"""
-    logger.debug("Reading config-file: %s" % prm_filename)
+    logging.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
             prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -140,7 +140,7 @@ def _get_prm_file(file_name=None, search_order=None):
         if os.path.isfile(file_name):
             return file_name
         else:
-            logger.info("Could not find the prm-file")
+            logging.info("Could not find the prm-file")
 
     default_name = prms._prm_default_name
     prm_globtxt = prms._prm_globtxt

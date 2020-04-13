@@ -20,14 +20,50 @@ from cellpy.utils.batch_tools.batch_analyzers import OCVRelaxationAnalyzer
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
 COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
 
 
 class Batch:
+    """A convenient class for running batch procedures."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the Batch class.
+
+        The initialization accepts arbitrary arguments and keyword arguments.
+        It first looks for the file_name and db_reader keyword arguments.
+
+        Usage:
+            b = Batch((name, (project)), **kwargs)
+
+        Examples:
+            >>> b = Batch("experiment001", "main_project")
+            >>> b = Batch("experiment001", "main_project", batch_col="b02")
+            >>> b = Batch(name="experiment001", project="main_project", batch_col="b02")
+            >>> b = Batch(file_name="cellpydata/batchfiles/cellpy_batch_experiment001.json")
+
+        Keyword Args (priority):
+            file_name (str or pathlib.Path): journal file name to load.
+            db_reader (str): data-base reader to use (defaults to "default" as given
+                in the config-file or prm-class).
+        Args:
+            *args: name (str) (project (str))
+
+        Keyword Args (other):
+            default_log_level (str): custom log-level (defaults to None (i.e. default log-level in cellpy)).
+            custom_log_dir (str or pathlib.Path): custom folder for putting the log-files.
+            force_raw_file (bool): load from raw regardless (defaults to False).
+            force_cellpy (bool): load cellpy-files regardless (defaults to False).
+            force_recalc (bool): Always recalculate (defaults to False).
+            export_cycles (bool): Extract and export individual cycles to csv (defaults to True).
+            export_raw (bool): Extract and export raw-data to csv (defaults to True).
+            export_ica (bool): Extract and export individual dQ/dV data to csv (defaults to True).
+            accept_errors (bool): Continue automatically to next file if error is raised (defaults to False).
+            nom_cap (float): give a nominal capacity if you want to use another value than
+                the one given in the config-file or prm-class.
+        """
         default_log_level = kwargs.pop("log_level", None)
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
@@ -41,8 +77,9 @@ class Batch:
 
         file_name = kwargs.pop("file_name", None)
 
-        logger.debug("creating CyclingExperiment")
+        logging.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
+        logging.info("created CyclingExperiment")
 
         self.experiment.force_cellpy = kwargs.pop("force_cellpy", False)
         self.experiment.force_raw_file = kwargs.pop("force_raw_file", False)
@@ -51,9 +88,7 @@ class Batch:
         self.experiment.export_raw = kwargs.pop("export_raw", True)
         self.experiment.export_ica = kwargs.pop("export_ica", False)
         self.experiment.accept_errors = kwargs.pop("accept_errors", False)
-        nom_cap = kwargs.pop("nom_cap", None)
-        if nom_cap is not None:
-            self.experiment.nom_cap = nom_cap
+        self.experiment.nom_cap = kwargs.pop("nom_cap", None)
 
         if not file_name:
             if len(args) > 0:
@@ -338,16 +373,32 @@ class Batch:
         logging.info("created folders")
 
     def paginate(self):
+        """Create the folders where cellpy will put its output."""
+
         self.experiment.journal.paginate()
         logging.info("created folders")
 
     def save_journal(self):
+        """Save the journal (json-format).
+
+        The journal file will be saved in the project directory and in the
+        batch-file-directory (prms.Paths.batchfiledir). The latter is useful
+        for processing several batches using the iterate_batches functionality.
+        """
+
         # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file()
         self.duplicate_journal(prms.Paths.batchfiledir)
         logging.info("saving journal pages")
 
     def duplicate_journal(self, folder=None):
+        """Copy the journal to folder.
+
+        Args:
+            folder (str or pathlib.Path): folder to copy to (defaults to the
+            current folder).
+        """
+
         logging.debug(f"duplicating journal to folder {folder}")
         journal_name = pathlib.Path(self.experiment.journal.file_name)
         if not journal_name.is_file():
@@ -448,10 +499,13 @@ class Batch:
         if backend is None:
             backend = prms.Batch.backend
 
-        if backend == "bokeh":
+        if backend in ["bokeh", "matplotlib"]:
+            prms.Batch.backend = backend
 
+        if backend == "bokeh":
             try:
                 import bokeh.plotting
+                prms.Batch.backend = "bokeh"
 
                 if output_filename is not None:
                     bokeh.plotting.output_file(output_filename)
@@ -466,61 +520,6 @@ class Batch:
                 )
 
         self.plotter.do()
-
-
-def main():
-    from pathlib import Path
-
-    # Use these when working on my work PC:
-    test_data_path = r"C:\Scripting\MyFiles\development_cellpy\testdata"
-    out_data_path = r"C:\Scripting\Processing\Test\out"
-
-    # Use these when working on my MacBook:
-    # test_data_path = "/Users/jepe/scripting/cellpy/testdata"
-    # out_data_path = "/Users/jepe/cellpy_data"
-
-    test_data_path = Path(test_data_path)
-    out_data_path = Path(out_data_path)
-
-    logging.info("---SETTING SOME PRMS---")
-    prms.Paths["db_filename"] = "cellpy_db.xlsx"
-    prms.Paths["cellpydatadir"] = test_data_path / "hdf5"
-    prms.Paths["outdatadir"] = out_data_path
-    prms.Paths["rawdatadir"] = test_data_path / "data"
-    prms.Paths["db_path"] = test_data_path / "db"
-    prms.Paths["filelogdir"] = test_data_path / "log"
-
-    project = "prebens_experiment"
-    name = "test"
-    batch_col = "b01"
-
-    logging.info("---INITIALISATION OF BATCH---")
-    b = init(name, project, batch_col=batch_col)
-    b.experiment.export_raw = True
-    b.experiment.export_cycles = True
-    logging.info("*creating info df*")
-    b.create_journal()
-    logging.info("*creating folder structure*")
-    b.paginate()
-    logging.info("*load and save*")
-    b.update()
-    logging.info("*make summaries*")
-    b.combine_summaries()
-    summaries = b.experiment.memory_dumped
-    logging.info("*plotting summaries*")
-    b.plot_summaries("tmp_bokeh_plot.html")
-
-    # logging.info("*using special features*")
-    # logging.info(" - select_ocv_points")
-    # analyzer = OCVRelaxationAnalyzer()
-    # analyzer.assign(b.experiment)
-    # analyzer.do()
-    # ocv_df_list = analyzer.farms[0]
-    # for df in ocv_df_list:
-    #     df_up = df.loc[df.type == "ocvrlx_up", :]
-    #     df_down = df.loc[df.type == "ocvrlx_down", :]
-    #     logging.info(df_up)
-    logging.info("---FINISHED---")
 
 
 def init(*args, **kwargs):
@@ -592,41 +591,63 @@ def process_batch(*args, **kwargs):
     log.setup_logging(default_level=default_log_level, reset_big_log=True)
     logging.debug(f"creating Batch(kwargs: {kwargs})")
 
-    if file_name is not None:
-        kwargs.pop("db_reader", None)
-        b = Batch(*args, file_name=file_name, db_reader=None, **kwargs)
-        b.create_journal(file_name)
-    else:
-        b = Batch(*args, **kwargs)
-        b.create_journal()
-
-    b.paginate()
-    b.update()
-    b.combine_summaries()
-    b.plot_summaries()
-
-    name = b.experiment.journal.name
-    out_dir = pathlib.Path(b.experiment.journal.batch_dir)
-
-    for n, farm in enumerate(b.plotter.farms):
-        if len(b.plotter.farms) > 1:
-            file_name = f"summary_plot_{name}_{str(n + 1).zfill(3)}.png"
+    with tqdm(total=70, leave=False, file=sys.stdout) as pbar:
+        pbar.set_description(f"journal")
+        pbar.update(10)
+        if file_name is not None:
+            kwargs.pop("db_reader", None)
+            b = Batch(*args, file_name=file_name, db_reader=None, **kwargs)
+            b.create_journal(file_name)
         else:
-            file_name = f"summary_plot_{name}.png"
-        out = out_dir / file_name
-        logging.info(f"saving file {file_name} in\n{out}")
-        farm.savefig(out, dpi=dpi)
+            b = Batch(*args, **kwargs)
+            b.create_journal()
 
-    # and other stuff
+        pbar.set_description(f"paginate")
+        pbar.update(10)
+        b.paginate()
+
+        pbar.set_description(f"update")
+        pbar.update(10)
+        b.update()
+
+        pbar.set_description(f"combine")
+        pbar.update(10)
+        b.combine_summaries()
+
+        pbar.set_description(f"plot")
+        pbar.update(10)
+        b.plot_summaries()
+
+        pbar.set_description(f"save")
+        pbar.update(10)
+
+        name = b.experiment.journal.name
+        out_dir = pathlib.Path(b.experiment.journal.batch_dir)
+
+        for n, farm in enumerate(b.plotter.farms):
+            if len(b.plotter.farms) > 1:
+                file_name = f"summary_plot_{name}_{str(n + 1).zfill(3)}.png"
+            else:
+                file_name = f"summary_plot_{name}.png"
+            out = out_dir / file_name
+            logging.info(f"saving file {file_name} in\n{out}")
+            farm.savefig(out, dpi=dpi)
+        # and other stuff
+
+        pbar.set_description(f"final")
+        pbar.update(10)
+
     return b
 
 
 def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
 
     folder = pathlib.Path(folder)
+    logging.info(f"Folder for batches to be iterated: {folder}")
     if not folder.is_dir():
         print(f"Could not find the folder ({folder})")
         print("Aborting...")
+        logging.info("ABORTING - folder not found.")
         return
     print(" Iterating through the folder ".center(80, "="))
     print(f"Folder name: {folder}")
@@ -636,17 +657,97 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
     files = sorted(folder.glob(glob_pattern))
     if not files:
         print("No files found! Aborting...")
+        logging.info("ABORTING - no files detected.")
         return
     print("Found the following files:")
     for n, file in enumerate(files):
+        logging.debug(f"file: {file}")
         print(f"  {str(n).zfill(4)} - {file}")
 
     print(" Processing ".center(80, "-"))
-    pbar = tqdm(files, file=sys.stdout)
-    for n, file in enumerate(pbar):
-        pbar.set_description(f"{str(n).zfill(4)} [{file.name}]")
-        process_batch(file, **kwargs)
-    print(" Finished ".center(80, "="))
+    output = []
+    failed = []
+    with tqdm(files, file=sys.stdout) as pbar:
+        for n, file in enumerate(pbar):
+            output_str = f"[{str(n).zfill(4)}]"
+            pbar.set_description(output_str)
+            output_str += f"({file.name})"
+            logging.debug(f"processing file: {file.name}")
+            try:
+                process_batch(file, **kwargs)
+                output_str += " [OK]"
+                logging.debug(f"No errors detected.")
+            except Exception as e:
+                output_str += " [FAILED!]"
+                failed.append(file)
+                logging.debug("Error detected.")
+                logging.debug(e)
+
+            output.append(output_str)
+
+    print(" Result ".center(80, "-"))
+    print("\n".join(output))
+    if failed:
+        print("\nFailed:")
+        failed_txt = "\n  ".join(failed)
+        print(failed_txt)
+        logging.info(failed_txt)
+    print("\n...Finished ")
+
+
+def main():
+    from pathlib import Path
+
+    # Use these when working on my work PC:
+    test_data_path = r"C:\Scripting\MyFiles\development_cellpy\testdata"
+    out_data_path = r"C:\Scripting\Processing\Test\out"
+
+    # Use these when working on my MacBook:
+    # test_data_path = "/Users/jepe/scripting/cellpy/testdata"
+    # out_data_path = "/Users/jepe/cellpy_data"
+
+    test_data_path = Path(test_data_path)
+    out_data_path = Path(out_data_path)
+
+    logging.info("---SETTING SOME PRMS---")
+    prms.Paths["db_filename"] = "cellpy_db.xlsx"
+    prms.Paths["cellpydatadir"] = test_data_path / "hdf5"
+    prms.Paths["outdatadir"] = out_data_path
+    prms.Paths["rawdatadir"] = test_data_path / "data"
+    prms.Paths["db_path"] = test_data_path / "db"
+    prms.Paths["filelogdir"] = test_data_path / "log"
+
+    project = "prebens_experiment"
+    name = "test"
+    batch_col = "b01"
+
+    logging.info("---INITIALISATION OF BATCH---")
+    b = init(name, project, batch_col=batch_col)
+    b.experiment.export_raw = True
+    b.experiment.export_cycles = True
+    logging.info("*creating info df*")
+    b.create_journal()
+    logging.info("*creating folder structure*")
+    b.paginate()
+    logging.info("*load and save*")
+    b.update()
+    logging.info("*make summaries*")
+    b.combine_summaries()
+    summaries = b.experiment.memory_dumped
+    logging.info("*plotting summaries*")
+    b.plot_summaries("tmp_bokeh_plot.html")
+
+    # logging.info("*using special features*")
+    # logging.info(" - select_ocv_points")
+    # analyzer = OCVRelaxationAnalyzer()
+    # analyzer.assign(b.experiment)
+    # analyzer.do()
+    # ocv_df_list = analyzer.farms[0]
+    # for df in ocv_df_list:
+    #     df_up = df.loc[df.type == "ocvrlx_up", :]
+    #     df_down = df.loc[df.type == "ocvrlx_down", :]
+    #     logging.info(df_up)
+    logging.info("---FINISHED---")
 
 
 def check_new():
@@ -658,11 +759,10 @@ def check_new():
     project = "cellpy_test"
     batch_col = "b02"
     if use_db:
-        process_batch(name, project, batch_col=batch_col, force_cellpy=True)
+        process_batch(name, project, batch_col=batch_col, nom_cap=372)
     else:
-        process_batch(f, force_cellpy=True)
+        process_batch(f, force_raw_file=True, nom_cap=372)
 
-# TODO: make a function that reads batch journals from folder and processes them
 # TODO: implement a cli command that runs batch
 # TODO: implement a cli command that runs all batch jobs from a given folder
 # TODO: allow exporting html when processing batch instead of just png
@@ -676,3 +776,4 @@ def check_iterate():
 if __name__ == "__main__":
     print("---IN BATCH 2 MAIN---")
     check_iterate()
+    #check_new()

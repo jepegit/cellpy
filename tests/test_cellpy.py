@@ -49,7 +49,7 @@ def test_logger(clean_dir):
 
     for handler in tmp_logger.handlers:
         if handler.name == "console":
-            assert handler.level == logging.INFO
+            assert handler.level == logging.CRITICAL
         if handler.name == "info_file_handler":
             assert handler.level == logging.INFO
         elif handler.name == "error_file_handler":
@@ -103,7 +103,7 @@ def test_logger_advanced(clean_dir):
     tmp_logger.error("customdir, default: testing logger (error)")
     for handler in logging.getLogger().handlers:
         if handler.name == "console":
-            assert handler.level == logging.INFO
+            assert handler.level == logging.CRITICAL
         if handler.name == "info_file_handler":
             assert handler.level == logging.INFO
         elif handler.name == "error_file_handler":

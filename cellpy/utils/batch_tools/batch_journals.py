@@ -12,8 +12,6 @@ from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
 
-logger = logging.getLogger(__name__)
-
 
 class LabJournal(BaseJournal):
     def __init__(self, db_reader="default"):
@@ -21,7 +19,7 @@ class LabJournal(BaseJournal):
         if db_reader == "default":
             self.db_reader = dbreader.Reader()
         else:
-            logger.debug(f"Remark! db_reader: {db_reader}")
+            logging.debug(f"Remark! db_reader: {db_reader}")
             self.db_reader = db_reader
         self.batch_col = "b01"
 

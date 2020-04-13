@@ -22,7 +22,15 @@ def setup_logging(
     reset_big_log=False,
     max_size=5_000_000,
 ):
-    """Setup logging configuration
+    """Setup logging configuration.
+
+    Args:
+        default_level: default log-level to screen (std.out).
+        default_json_path: path to config file for setting up logging.
+        env_key (str): use this environment prm to try to get default_json_path.
+        custom_log_dir: path for saving logs.
+        reset_big_log (bool): reset log if too big (max_size).
+        max_size (int): if reset_log, this is the max limit.
 
     """
 
@@ -35,6 +43,10 @@ def setup_logging(
     if value:
         path = value
 
+    if default_level is None:
+        default_level = "CRITICAL"
+
+    # loading logging configs
     if os.path.exists(path):
         with open(path, "rt") as f:
             config = json.load(f)

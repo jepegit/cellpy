@@ -577,6 +577,7 @@ def summary_plotting_engine(**kwargs):
 
 def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
+
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(

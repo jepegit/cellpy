@@ -11,7 +11,7 @@ from cellpy import filefinder, prms
 from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
 import cellpy.parameters.internal_settings
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 def look_up_and_get(cellpy_file_name, table_name, root=None):
@@ -32,7 +32,7 @@ def look_up_and_get(cellpy_file_name, table_name, root=None):
     try:
         table = store.select(table_path)
     except KeyError as e:
-        logger.warning("Could not read the table")
+        logging.warning("Could not read the table")
         store.close()
         raise WrongFileVersion(e)
     return table
@@ -77,7 +77,7 @@ def create_folder_structure(project_name, batch_name):
 def find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
     for run_name in info_dict["filenames"]:
-        logger.debug(f"checking for {run_name}")
+        logging.debug(f"checking for {run_name}")
         if prms._use_filename_cache:
             raw_files, cellpyfile, filename_cache = filefinder.search_for_files(
                 run_name, cache=filename_cache
@@ -111,17 +111,17 @@ def fix_groups(groups):
 
 def save_multi(data, file_name, sep=";"):
     """Convenience function for storing data column-wise in a csv-file."""
-    logger.debug("saving multi")
+    logging.debug("saving multi")
     with open(file_name, "w", newline="") as f:
-        logger.debug(f"{file_name} opened")
+        logging.debug(f"{file_name} opened")
         writer = csv.writer(f, delimiter=sep)
         try:
             writer.writerows(itertools.zip_longest(*data))
-            logger.info(f"{file_name} OK")
+            logging.info(f"{file_name} OK")
         except Exception as e:
-            logger.info(f"Exception encountered in batch._save_multi: {e}")
+            logging.info(f"Exception encountered in batch._save_multi: {e}")
             raise ExportFailed
-        logger.debug("wrote rows using itertools in _save_multi")
+        logging.debug("wrote rows using itertools in _save_multi")
 
 
 def make_unique_groups(info_df):
@@ -214,7 +214,7 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
                 logging.debug(e)
 
         out.append(_summary_df)
-    logger.debug("finished joining summaries")
+    logging.debug("finished joining summaries")
 
     return out
 
@@ -237,8 +237,8 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     list_of_cycles = cell_data.get_cycle_numbers()
     if last_cycle is not None:
         list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
-        logger.debug(f"only processing up to cycle {last_cycle}")
-        logger.debug(f"you have {len(list_of_cycles)} cycles to process")
+        logging.debug(f"only processing up to cycle {last_cycle}")
+        logging.debug(f"you have {len(list_of_cycles)} cycles to process")
     out_data = []
     for cycle in list_of_cycles:
         try:
@@ -249,8 +249,8 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
         except NullData as e:
             v = list()
             dq = list()
-            logger.info(" Ups! Could not process this (cycle %i)" % cycle)
-            logger.info(" %s" % e)
+            logging.info(" Ups! Could not process this (cycle %i)" % cycle)
+            logging.info(" %s" % e)
 
         header_x = "dQ cycle_no %i" % cycle
         header_y = "voltage cycle_no %i" % cycle
@@ -271,40 +271,40 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
         sep: separator for the .csv-files.
         last_cycle: only export up to this cycle (if not None)
     """
-    logger.debug("exporting dqdv")
+    logging.debug("exporting dqdv")
     filename = cell_data.cell.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
     firstname += no_merged_sets
     if savedir:
         firstname = os.path.join(savedir, os.path.basename(firstname))
-        logger.debug(f"savedir is true: {firstname}")
+        logging.debug(f"savedir is true: {firstname}")
 
     outname_charge = firstname + "_dqdv_charge.csv"
     outname_discharge = firstname + "_dqdv_discharge.csv"
 
     list_of_cycles = cell_data.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)
-    logger.debug("%s: you have %i cycles" % (filename, number_of_cycles))
+    logging.debug("%s: you have %i cycles" % (filename, number_of_cycles))
 
     # extracting charge
     out_data = _extract_dqdv(cell_data, cell_data.get_ccap, last_cycle)
-    logger.debug("extracted ica for charge")
+    logging.debug("extracted ica for charge")
     try:
         save_multi(data=out_data, file_name=outname_charge, sep=sep)
     except ExportFailed as e:
-        logger.info("could not export ica for charge")
+        logging.info("could not export ica for charge")
         warnings.warn(f"ExportFailed exception raised: {e}")
     else:
-        logger.debug("saved ica for charge")
+        logging.debug("saved ica for charge")
 
     # extracting discharge
     out_data = _extract_dqdv(cell_data, cell_data.get_dcap, last_cycle)
-    logger.debug("extracxted ica for discharge")
+    logging.debug("extracxted ica for discharge")
     try:
         save_multi(data=out_data, file_name=outname_discharge, sep=sep)
     except ExportFailed as e:
-        logger.info("could not export ica for discharge")
+        logging.info("could not export ica for discharge")
         warnings.warn(f"ExportFailed exception raised: {e}")
     else:
-        logger.debug("saved ica for discharge")
+        logging.debug("saved ica for discharge")

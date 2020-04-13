@@ -144,7 +144,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self.cell_data_frames = None
         self.memory_dumped = dict()
         self.parent_level = "CellpyData"
-        self.log_level = "INFO"
+        self.log_level = "CRITICAL"
         self._data = None
         self._store_data_object = True
 

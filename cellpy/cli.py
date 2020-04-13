@@ -616,12 +616,28 @@ def info(version, configloc, params, check):
     is_flag=True,
     help="Run a batch job defined in the given journal-file",
 )
+@click.option(
+    "--batch",
+    "-b",
+    is_flag=True,
+    help="Run all batch jobs iteratively in a given folder",
+)
 @click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
 @click.option(
-    "--silent", "-s", is_flag=True, help="Run in silent (i.e. no-plotting) mode."
+    "--silent", "-s", is_flag=True, help="Run in silent mode."
 )
-@click.argument("file_name")
-def run(journal, debug, silent, file_name):
+@click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
+@click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
+@click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
+@click.option("--nom-cap", default=None, type=float)
+@click.argument("name")
+def run(
+    journal, batch,
+    debug, silent,
+    raw, cellpyfile, minimal,
+    nom_cap,
+    name
+):
     """Will in the future be used for running a cellpy process.
 
     You can use this to launch specific applications.
@@ -638,11 +654,6 @@ def run(journal, debug, silent, file_name):
 
     """
 
-    click.echo(f" RUNNING {file_name} ".center(80, "*"))
-    if not file_name:
-        click.echo("[cellpy] (run) No filename provided.")
-        return
-
     if debug:
         click.echo("[cellpy] (run) debug mode on")
 
@@ -652,23 +663,81 @@ def run(journal, debug, silent, file_name):
     click.echo("[cellpy]\n")
 
     if journal:
-        _run_journal(file_name, debug, silent)
+        _run_journal(name, debug, silent, raw, cellpyfile, minimal, nom_cap)
 
-    elif file_name.lower() == "db":
+    if batch:
+        _run_journals(name, debug, silent, raw, cellpyfile, minimal)
+
+    elif name.lower() == "db":
         _run_db(debug, silent)
 
     else:
-        _run(file_name, debug, silent)
+        _run(name, debug, silent)
 
 
-def _run_journal(file_name, debug, silent):
+def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
     click.echo(f"running journal {file_name}")
     click.echo(f" --debug [{debug}]")
     click.echo(f" --silent [{silent}]")
+    click.echo(f" --raw [{raw}]")
+    click.echo(f" --cellpyfile [{cellpyfile}]")
+    click.echo(f" --minimal [{minimal}]")
+    click.echo(f" --nom_cap [{nom_cap}] {type(nom_cap)}")
+
+    kwargs = dict()
+    if not minimal:
+        kwargs["export_raw"] = False
+        kwargs["export_cycles"] = False
+        kwargs["export_ica"] = False
+
+    from cellpy.utils import batch
+    from cellpy import prms
+    batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
+    file = pathlib.Path(file_name)
+    if not file.is_file():
+        click.echo(f"file_name={file_name} not found - looking into batchfiledir")
+        if not batchfiledir.is_dir():
+            click.echo("batchfiledir not found - aborting")
+            return
+        file = batchfiledir / file.name
+
+    if not file.is_file():
+        click.echo(f"{file} not found - aborting")
+        return
+
+    batch.process_batch(file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs)
+    click.echo("...finished.")
 
 
-def _run(file_name, debug, silent):
-    click.echo(f"running {file_name}")
+def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
+    click.echo(f"running journals in {folder_name}")
+    click.echo(f" --debug [{debug}]")
+    click.echo(f" --silent [{silent}]")
+    click.echo(f" --raw [{raw}]")
+    click.echo(f" --cellpyfile [{cellpyfile}]")
+    click.echo(f" --minimal [{minimal}]")
+
+    kwargs = dict()
+    if not minimal:
+        kwargs["export_raw"] = False
+        kwargs["export_cycles"] = False
+        kwargs["export_ica"] = False
+
+    from cellpy.utils import batch
+
+    folder_name = pathlib.Path(folder_name).resolve()
+
+    if not folder_name.is_dir():
+        click.echo(f"{folder_name} not found - aborting")
+        return
+
+    batch.iterate_batches(folder_name, force_raw_file=raw, force_cellpy=cellpyfile, **kwargs)
+
+    click.echo("...finished.")
+
+
+def _run(name, debug, silent):
+    click.echo(f"running {name}")
     click.echo(f" --debug [{debug}]")
     click.echo(f" --silent [{silent}]")
 

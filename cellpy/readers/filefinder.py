@@ -10,7 +10,7 @@ import time
 from cellpy.parameters import prms
 import logging
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 def create_full_names(
@@ -71,7 +71,7 @@ def search_for_files(
     version = 0.1
     # might include searching and removing "." in extensions
     # should include extension definitions in prm file (version 0.6)
-    logger.debug(f"searching for {run_name}")
+    logging.debug(f"searching for {run_name}")
 
     if reg_exp is not None:
         logging.warning("Sorry, but using reg exp is not implemented yet.")
@@ -128,7 +128,7 @@ def search_for_files(
         return_as_str_list = True
 
         if use_pathlib_path:
-            logger.debug("using pathlib.Path")
+            logging.debug("using pathlib.Path")
             if os.path.isdir(raw_file_dir):
                 run_files = pathlib.Path(raw_file_dir).glob(glob_text_raw)
                 if return_as_str_list:
@@ -145,11 +145,11 @@ def search_for_files(
             else:
                 run_files = []
 
-        logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return run_files, cellpy_file
 
     else:
-        logger.debug("using cache in filefinder")
+        logging.debug("using cache in filefinder")
         if os.path.isdir(raw_file_dir):
             if len(cache) == 0:
                 cache = os.listdir(raw_file_dir)
@@ -162,7 +162,7 @@ def search_for_files(
         else:
             run_files = []
 
-        logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return run_files, cellpy_file, cache
 
 
