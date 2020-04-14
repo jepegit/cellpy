@@ -1248,7 +1248,7 @@ class CellpyData(object):
 
         if not os.path.isfile(filename):
             self.logger.info(f"File does not exist: {filename}")
-            raise IOError
+            raise IOError(f"File does not exist: {filename}")
 
         with pd.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
