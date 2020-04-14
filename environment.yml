@@ -2,6 +2,7 @@ name: cellpy
 channels:
   - defaults
   - conda-forge
+  - pyviz
 dependencies:
   - python>=3.6
   - pip
@@ -22,6 +23,9 @@ dependencies:
   - ipywidgets
   - lmfit
   - ipykernel
+  - holoviz
+  - hdf5
+  - pytables
   - pip:
     - python-box<4
 

@@ -142,6 +142,9 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         _check()
 
     else:
+        if reset:
+            _update_paths(
+                root_dir, not not_relative, dry_run=dry_run, reset=True, silent=True)
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check()
 
@@ -152,6 +155,7 @@ def _update_paths(
     reset=False,
     dry_run=False,
     default_dir="cellpy_data",
+    silent=False,
 ):
 
     h = prmreader.get_user_dir()
@@ -195,30 +199,29 @@ def _update_paths(
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
 
-    print(outdatadir)
-    print(custom_dir)
 
-    outdatadir = _ask_about_path(
-        "where to output processed data and results", outdatadir
-    )
+    if not silent:
+        outdatadir = _ask_about_path(
+            "where to output processed data and results", outdatadir
+        )
 
-    rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
+        rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
 
-    cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
+        cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
 
-    filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
+        filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
 
-    examplesdir = _ask_about_path(
-        "where to download cellpy examples and tests", examplesdir
-    )
+        examplesdir = _ask_about_path(
+            "where to download cellpy examples and tests", examplesdir
+        )
 
-    db_path = _ask_about_path("what folder your db file lives in", db_path)
+        db_path = _ask_about_path("what folder your db file lives in", db_path)
 
-    db_filename = _ask_about_name("the name of your db-file", db_filename)
+        db_filename = _ask_about_name("the name of your db-file", db_filename)
 
-    notebookdir = _ask_about_path("where to put your jupyter notebooks", notebookdir)
+        notebookdir = _ask_about_path("where to put your jupyter notebooks", notebookdir)
 
-    batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
+        batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
 
     # update folders based on suggestions
     for d in [
