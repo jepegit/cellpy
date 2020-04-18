@@ -12,4 +12,7 @@ pyyaml>=4.2b1
 pyodbc>=4.0.16
 python-box<4
 PyGithub>=1.43.0
-tqdm
+tqdm~=4.44.1
+cookiecutter
+yaml~=0.1.7
+
