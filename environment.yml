@@ -26,6 +26,5 @@ dependencies:
   - holoviz
   - hdf5
   - pytables
-  - pip:
-    - python-box<4
+  - python-box
 

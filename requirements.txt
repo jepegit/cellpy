@@ -10,7 +10,7 @@ pytables>=3.5.1
 setuptools>=35.0.1
 ruamel.yaml
 pyodbc>=4.0.16
-python-box<4
+python-box
 PyGithub>=1.43.0
 tqdm~=4.44.1
 cookiecutter
