@@ -15,7 +15,7 @@ dependencies:
   - pandas
   - pytables>=3.6.1
   - setuptools
-  - pyyaml>=4.2b1
+  - ruamel.yaml
   - pyodbc
   - PyGithub
   - cookiecutter

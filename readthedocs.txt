@@ -7,5 +7,5 @@ lmfit>=0.9.7
 scipy>=0.19.0
 pandas>=0.19.0
 setuptools>=35.0.1
-pyyaml>=3.12
+ruamel.yaml
 python-box>=3.2.0

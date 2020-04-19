@@ -10,16 +10,19 @@ import logging
 import warnings
 
 import box
-import yaml
+from ruamel.yaml import YAML
 
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 DEFAULT_FILENAME_START = "_cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
+
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 
 # logger = logging.getLogger(__name__)
+
+yaml = YAML()
 
 
 def get_user_name():
@@ -60,12 +63,13 @@ def _write_prm_file(file_name=None):
     config_dict = _pack_prms()
     try:
         with open(file_name, "w") as config_file:
+            yaml.allow_unicode = True
+            yaml.default_flow_style = False
+            yaml.explicit_start = True
+            yaml.explicit_end = True
             yaml.dump(
                 config_dict,
                 config_file,
-                default_flow_style=False,
-                explicit_start=True,
-                explicit_end=True,
             )
     except yaml.YAMLError:
         raise ConfigFileNotWritten
@@ -96,8 +100,6 @@ def _pack_prms():
         "DataSet": prms.DataSet.to_dict(),
         "Reader": prms.Reader.to_dict(),
         "Instruments": prms.Instruments.to_dict(),
-        # "excel_db_cols": prms.excel_db_cols.to_dict(),
-        # "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
         "Batch": prms.Batch.to_dict(),
     }
     return config_dict
@@ -108,7 +110,7 @@ def _read_prm_file(prm_filename):
     logging.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
-            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+            prm_dict = yaml.load(config_file)
 
     except yaml.YAMLError as e:
         raise ConfigFileNotRead from e
@@ -121,7 +123,7 @@ def _read_prm_file_without_updating(prm_filename):
     logging.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
-            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+            prm_dict = yaml.load(config_file)
 
     except yaml.YAMLError as e:
         raise ConfigFileNotRead from e

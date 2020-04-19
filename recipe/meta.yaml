@@ -29,7 +29,7 @@ requirements:
     - numpy >=1.16.4
     - pandas
     - python-box
-    - pyyaml >=4.2b1
+    - ruamel.yaml
     - scipy
     - setuptools
     - xlrd

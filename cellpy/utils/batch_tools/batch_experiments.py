@@ -96,8 +96,7 @@ class CyclingExperiment(BaseExperiment):
         number_of_runs = len(pages)
         counter = 0
         errors = []
-        pbar = tqdm(list(pages.iterrows()),
-                    file=sys.stdout, leave=False)
+        pbar = tqdm(list(pages.iterrows()), file=sys.stdout, leave=False)
         for indx, row in pbar:
             counter += 1
             h_txt = f"{indx}"

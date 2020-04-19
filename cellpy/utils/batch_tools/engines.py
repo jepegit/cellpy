@@ -9,17 +9,17 @@ from cellpy.utils.batch_tools import batch_helpers as helper
 
 
 SELECTED_SUMMARIES = [
-                "discharge_capacity",
-                "charge_capacity",
-                "coulombic_efficiency",
-                "cumulated_coulombic_efficiency",
-                "ir_discharge",
-                "ir_charge",
-                "end_voltage_discharge",
-                "end_voltage_charge",
-                "charge_c_rate",
-                "discharge_c_rate",
-            ]
+    "discharge_capacity",
+    "charge_capacity",
+    "coulombic_efficiency",
+    "cumulated_coulombic_efficiency",
+    "ir_discharge",
+    "ir_charge",
+    "end_voltage_discharge",
+    "end_voltage_charge",
+    "charge_c_rate",
+    "discharge_c_rate",
+]
 
 
 def cycles_engine(**kwargs):

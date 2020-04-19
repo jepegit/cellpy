@@ -144,7 +144,8 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     else:
         if reset:
             _update_paths(
-                root_dir, not not_relative, dry_run=dry_run, reset=True, silent=True)
+                root_dir, not not_relative, dry_run=dry_run, reset=True, silent=True
+            )
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check()
 
@@ -199,7 +200,6 @@ def _update_paths(
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
 
-
     if not silent:
         outdatadir = _ask_about_path(
             "where to output processed data and results", outdatadir
@@ -219,7 +219,9 @@ def _update_paths(
 
         db_filename = _ask_about_name("the name of your db-file", db_filename)
 
-        notebookdir = _ask_about_path("where to put your jupyter notebooks", notebookdir)
+        notebookdir = _ask_about_path(
+            "where to put your jupyter notebooks", notebookdir
+        )
 
         batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
 
@@ -626,21 +628,13 @@ def info(version, configloc, params, check):
     help="Run all batch jobs iteratively in a given folder",
 )
 @click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
-@click.option(
-    "--silent", "-s", is_flag=True, help="Run in silent mode."
-)
+@click.option("--silent", "-s", is_flag=True, help="Run in silent mode.")
 @click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
 @click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
 @click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
 @click.option("--nom-cap", default=None, type=float)
 @click.argument("name")
-def run(
-    journal, batch,
-    debug, silent,
-    raw, cellpyfile, minimal,
-    nom_cap,
-    name
-):
+def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name):
     """Will in the future be used for running a cellpy process.
 
     You can use this to launch specific applications.
@@ -697,6 +691,7 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
 
     from cellpy.utils import batch
     from cellpy import prms
+
     batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
     file = pathlib.Path(file_name)
     if not file.is_file():
@@ -710,7 +705,9 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
         click.echo(f"{file} not found - aborting")
         return
 
-    b = batch.process_batch(file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs)
+    b = batch.process_batch(
+        file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs
+    )
     if b is not None and not silent:
         print(b)
     click.echo("---")
@@ -740,7 +737,9 @@ def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
         click.echo(f"{folder_name} not found - aborting")
         return
 
-    batch.iterate_batches(folder_name, force_raw_file=raw, force_cellpy=cellpyfile, silent=True, **kwargs)
+    batch.iterate_batches(
+        folder_name, force_raw_file=raw, force_cellpy=cellpyfile, silent=True, **kwargs
+    )
     click.echo("---")
 
 

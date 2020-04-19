@@ -745,7 +745,7 @@ class CellpyData(object):
                         find_ir=summary_ir,
                         find_end_voltage=summary_end_v,
                         use_cellpy_stat_file=use_cellpy_stat_file,
-                        #nom_cap=nom_cap,
+                        # nom_cap=nom_cap,
                     )
             else:
                 self.logger.warning("Empty run!")
@@ -1305,9 +1305,10 @@ class CellpyData(object):
                 self._extract_meta_from_cellpy_file(data, meta_table, filename)
 
             if fid_table_selected:
-                data.raw_data_files, data.raw_data_files_length = self._convert2fid_list(
-                    fid_table
-                )
+                (
+                    data.raw_data_files,
+                    data.raw_data_files_length,
+                ) = self._convert2fid_list(fid_table)
             else:
                 data.raw_data_files = None
                 data.raw_data_files_length = None

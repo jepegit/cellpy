@@ -480,7 +480,12 @@ def plot_cycle_life_summary_bokeh(
 
 
 def plot_cycle_life_summary_matplotlib(
-    info, summaries, width=900, height=800, height_fractions=[0.2, 0.5, 0.3], legend_option="all",
+    info,
+    summaries,
+    width=900,
+    height=800,
+    height_fractions=[0.2, 0.5, 0.3],
+    legend_option="all",
 ):
 
     import matplotlib.pyplot as plt
@@ -538,11 +543,21 @@ def plot_cycle_life_summary_matplotlib(
         m = marker["marker"]
         f = "white"
 
-        ax_ce.plot(coulombic_efficiency[label], label=name, color=c, marker=m, markerfacecolor=c)
+        ax_ce.plot(
+            coulombic_efficiency[label],
+            label=name,
+            color=c,
+            marker=m,
+            markerfacecolor=c,
+        )
 
-        ax_cap.plot(charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c)
+        ax_cap.plot(
+            charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c
+        )
 
-        ax_cap.plot(discharge_capacity[label], label=name, color=c, marker=m, markerfacecolor=f)
+        ax_cap.plot(
+            discharge_capacity[label], label=name, color=c, marker=m, markerfacecolor=f
+        )
         ax_ir.plot(ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c)
 
     ax_ce.set_ylabel("Coulombic Efficiency (%)")
