@@ -7,6 +7,7 @@ import getpass
 import click
 import pkg_resources
 import pathlib
+
 from github import Github
 
 from cellpy.parameters import prmreader
@@ -578,6 +579,41 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
 
 
 @click.command()
+@click.option("--default-editor", "-e", default=None,
+              type=str, help="try to use this editor instead (e.g. notepad.exe)")
+def edit(default_editor):
+    """Edit your cellpy config file."""
+
+    config_file = _configloc()
+    if config_file:
+        config_file_str = str(config_file.resolve())
+
+        if default_editor is not None:
+            args = [default_editor, config_file_str]
+            click.echo(f"[cellpy] (edit) Calling '{default_editor}'")
+            try:
+                subprocess.call(args)
+            except:
+                click.echo(f"[cellpy] (edit) Failed!")
+                click.echo("[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows")
+
+        if default_editor is None:
+            try:
+                import editor
+                editor.edit(filename=config_file_str)
+            except ImportError:
+                click.echo(f"[cellpy] (edit) Failed!")
+                click.echo(f"[cellpy] (edit) Searching for editors uses the python-editor package")
+                click.echo(f"[cellpy] (edit) Possible fixes:")
+                click.echo(
+                    f"[cellpy] (edit) - provide a default editor "
+                    f"using the -e option (e.g. cellpy edit -e notepad.exe)")
+                click.echo(
+                    f"[cellpy] (edit) - install teh python-editor package "
+                    f"(pip install python-editor)")
+
+
+@click.command()
 @click.option("--version", "-v", is_flag=True, help="Print version information.")
 @click.option(
     "--configloc", "-l", is_flag=True, help="Print full path to the config file."
@@ -635,7 +671,7 @@ def info(version, configloc, params, check):
 @click.option("--nom-cap", default=None, type=float)
 @click.argument("name")
 def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name):
-    """Will in the future be used for running a cellpy process.
+    """Run a cellpy process.
 
     You can use this to launch specific applications.
 
@@ -1083,6 +1119,7 @@ def serve(lab, directory):
 
 cli.add_command(setup)
 cli.add_command(info)
+cli.add_command(edit)
 cli.add_command(pull)
 cli.add_command(run)
 cli.add_command(new)
