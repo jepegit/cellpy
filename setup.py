@@ -84,7 +84,7 @@ setup(
     url="https://github.com/jepegit/cellpy",
     packages=included_packages,
     package_dir={"cellpy": "cellpy"},
-    package_data={"parameters": ["_cellpy_prms_default.conf"]},
+    package_data={"parameters": [".cellpy_prms_default.conf"]},
     entry_points={"console_scripts": ["cellpy=cellpy.cli:cli"]},
     include_package_data=True,
     install_requires=requirements,

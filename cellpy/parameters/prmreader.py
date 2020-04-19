@@ -15,7 +15,7 @@ from ruamel.yaml import YAML
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
-DEFAULT_FILENAME_START = "_cellpy_prms_"
+DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
 
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
