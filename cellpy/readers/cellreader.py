@@ -1173,13 +1173,13 @@ class CellpyData(object):
     def load(self, cellpy_file, parent_level=None, return_cls=True):
         """Loads a cellpy file.
 
-        TODO: This method shall be improved very soon
-
         Args:
             cellpy_file (path, str): Full path to the cellpy file.
             parent_level (str, optional): Parent level.
             return_cls (bool): Return the class.
 
+        Returns:
+            cellpy.CellPyData class if return_cls is True
         """
 
         try:
@@ -1207,6 +1207,9 @@ class CellpyData(object):
         self._invent_a_name(cellpy_file)
         if return_cls:
             return self
+
+    def _get_cellpy_file_version(self, filename, parent_level):
+        return 1
 
     def _load_hdf5(self, filename, parent_level=None):
         """Load a cellpy-file.
@@ -1251,6 +1254,12 @@ class CellpyData(object):
         if not os.path.isfile(filename):
             self.logger.info(f"File does not exist: {filename}")
             raise IOError(f"File does not exist: {filename}")
+
+        # TODO: edit from here
+        cellpy_file_version = self._get_cellpy_file_version(filename, parent_level)
+        if cellpy_file_version > CELLPY_FILE_VERSION:
+            self.logger.info(f"This file is of newer version than this cellpy version can load. "
+                             f"Pleas update cellpy and try again!")
 
         with pd.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
