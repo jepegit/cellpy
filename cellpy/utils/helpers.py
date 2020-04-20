@@ -1,8 +1,10 @@
-import numpy as np
-import pandas as pd
 import os
+import logging
 import pathlib
 import warnings
+
+import numpy as np
+import pandas as pd
 
 import cellpy
 from cellpy import prms
@@ -222,6 +224,39 @@ def add_areal_capacity(cell, cell_id, journal):
         cell.cell.summary["Discharge_Capacity(mAh/g)"] * loading / 1000
     )
     return cell
+
+
+def concatenate_summaries(b):
+    """Merge all summaries in a batch into a gigantic summary data frame.
+
+    TODO: Allow also dictionaries of cell objects.
+    TODO: Allow iterating through batch-objects (for id, name in b.iteritems() or similar)
+
+    Arguments:
+        b (cellpy.batch object): the batch with the cells.
+
+    Returns:
+        Multi-index pandas.DataFrame
+            top-level columns: cell-names (cell_name)
+            second-level columns: summary headers (summary_headers)
+            row-index: cycle number (Cycle_Index)
+
+    """
+    frames = []
+    keys = []
+    for cell_id in b.experiment.cell_names:
+        logging.debug(f"Processing [{cell_id}]")
+        c = b.experiment.data[cell_id]
+        if not c.empty:
+            frames.append(c.cell.summary)
+            keys.append(cell_id)
+    if frames:
+        cdf = pd.concat(frames, keys=keys, axis=1)
+        cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
+        return cdf
+    else:
+        logging.info("Empty - nothing to concatenate!")
+        return pd.DataFrame()
 
 
 def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):

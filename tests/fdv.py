@@ -26,8 +26,9 @@ raw_data_dir = os.path.join(data_dir, "data")
 output_dir = os.path.join(data_dir, "out")
 cellpy_data_dir = os.path.join(data_dir, "hdf5")
 db_dir = os.path.join(data_dir, "db")
+batch_file_dir = os.path.join(data_dir, "batchfiles")
 log_dir = os.path.join(data_dir, "log")
-default_prm_file = os.path.abspath(os.path.join(data_dir, "_cellpy_prms_default.conf"))
+default_prm_file = os.path.abspath(os.path.join(data_dir, ".cellpy_prms_default.conf"))
 
 # -------- common files -----------------------------
 

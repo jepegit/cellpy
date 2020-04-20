@@ -7,7 +7,6 @@ from contextlib import contextmanager
 
 from invoke import task
 import requests
-import yaml
 
 
 """Tasks for cellpy development.
@@ -19,16 +18,16 @@ Examples:
 
     # build and upload to pypi:
     > invoke build --upload
-    
+
     # build only the docs
     > invoke build --docs
-    
+
     # clean up
     > invoke clean
-    
+
     # clean up and build
     > invoke clean build
-    
+
 """
 
 

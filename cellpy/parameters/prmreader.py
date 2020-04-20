@@ -2,39 +2,82 @@
 
 import glob
 import os
+import pathlib
 import sys
 from collections import OrderedDict
+import getpass
 import logging
 import warnings
 
 import box
-import yaml
+from ruamel.yaml import YAML
 
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
-logger = logging.getLogger(__name__)
+DEFAULT_FILENAME_START = ".cellpy_prms_"
+DEFAULT_FILENAME_END = ".conf"
+
+DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
+
+# logger = logging.getLogger(__name__)
+
+yaml = YAML()
+
+
+def get_user_name():
+    """get the user name of the current user (cross platform)"""
+    return getpass.getuser()
+
+
+def create_custom_init_filename(user_name=None):
+    """creates a custom prms filename"""
+    if user_name is None:
+        return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
+    else:
+        return DEFAULT_FILENAME_START + user_name + DEFAULT_FILENAME_END
+
+
+def get_user_dir_and_dst(init_filename=None):
+    """gets the name of the user directory and full prm filepath"""
+    if init_filename is None:
+        init_filename = create_custom_init_filename()
+    user_dir = get_user_dir()
+    dst_file = user_dir / init_filename
+    return user_dir, dst_file
+
+
+def get_user_dir():
+    """gets the name of the user directory"""
+    # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
+    user_dir = pathlib.Path().home().resolve()
+    if os.name == "nt":
+        _user_dir = user_dir / "documents"
+        if _user_dir.is_dir():
+            user_dir = _user_dir
+    return user_dir
 
 
 def _write_prm_file(file_name=None):
-    logger.debug("saving configuration to %s" % file_name)
+    logging.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
     try:
         with open(file_name, "w") as config_file:
+            yaml.allow_unicode = True
+            yaml.default_flow_style = False
+            yaml.explicit_start = True
+            yaml.explicit_end = True
             yaml.dump(
                 config_dict,
                 config_file,
-                default_flow_style=False,
-                explicit_start=True,
-                explicit_end=True,
             )
     except yaml.YAMLError:
         raise ConfigFileNotWritten
 
 
 def _update_prms(config_dict):
-    logger.debug("updating parameters")
-    logger.debug("new prms:" + str(config_dict))
+    logging.debug("updating parameters")
+    logging.debug("new prms:" + str(config_dict))
 
     for key in config_dict:
         if hasattr(prms, key):
@@ -42,7 +85,7 @@ def _update_prms(config_dict):
             for k in config_dict[key]:
                 _config_attr[k] = config_dict[key][k]
         else:
-            logger.info("\n  not-supported prm: %s" % key)
+            logging.info("\n  not-supported prm: %s" % key)
 
 
 def _pack_prms():
@@ -57,8 +100,6 @@ def _pack_prms():
         "DataSet": prms.DataSet.to_dict(),
         "Reader": prms.Reader.to_dict(),
         "Instruments": prms.Instruments.to_dict(),
-        # "excel_db_cols": prms.excel_db_cols.to_dict(),
-        # "excel_db_filename_cols": prms.excel_db_filename_cols.to_dict(),
         "Batch": prms.Batch.to_dict(),
     }
     return config_dict
@@ -66,10 +107,10 @@ def _pack_prms():
 
 def _read_prm_file(prm_filename):
     """read the prm file"""
-    logger.debug("Reading config-file: %s" % prm_filename)
+    logging.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
-            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+            prm_dict = yaml.load(config_file)
 
     except yaml.YAMLError as e:
         raise ConfigFileNotRead from e
@@ -79,10 +120,10 @@ def _read_prm_file(prm_filename):
 
 def _read_prm_file_without_updating(prm_filename):
     """read the prm file but do not update the params"""
-    logger.debug("Reading config-file: %s" % prm_filename)
+    logging.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
-            prm_dict = yaml.load(config_file, Loader=yaml.FullLoader)
+            prm_dict = yaml.load(config_file)
 
     except yaml.YAMLError as e:
         raise ConfigFileNotRead from e
@@ -101,7 +142,7 @@ def _get_prm_file(file_name=None, search_order=None):
         if os.path.isfile(file_name):
             return file_name
         else:
-            logger.info("Could not find the prm-file")
+            logging.info("Could not find the prm-file")
 
     default_name = prms._prm_default_name
     prm_globtxt = prms._prm_globtxt
@@ -111,7 +152,7 @@ def _get_prm_file(file_name=None, search_order=None):
     search_path = dict()
     search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
     search_path["filedir"] = script_dir
-    search_path["userdir"] = os.path.expanduser("~")
+    search_path["userdir"] = get_user_dir()
 
     if search_order is None:
         search_order = ["userdir"]  # ["curdir","filedir", "userdir",]

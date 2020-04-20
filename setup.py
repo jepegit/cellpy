@@ -23,13 +23,14 @@ requirements = [
     "scipy",
     "numpy>=1.16.4",
     "pandas",
-    "python-box<4",
+    "python-box",
     "setuptools",
-    "pyyaml>=4.2b1",
+    "ruamel.yaml",
     "matplotlib",
     "xlrd",
     "click",
     "PyGithub",
+    "tqdm",
     'pyodbc;platform_system=="windows"',
     # 'pytables', # not available by pip
 ]
@@ -38,9 +39,10 @@ test_requirements = [
     "scipy",
     "numpy>=1.16.4",
     "pandas",
-    "python-box<4",
+    "python-box",
     "setuptools",
-    "ruamel.yaml" "matplotlib",
+    "ruamel.yaml",
+    "matplotlib",
     "lmfit",
     "pyodbc",
     "xlrd",
@@ -48,6 +50,7 @@ test_requirements = [
     "PyGithub",
     # 'pytables', # not available by pip
     "pytest",
+    "tqdm",
 ]
 
 extra_req_batch = ["ipython", "jupyter"]
@@ -81,7 +84,7 @@ setup(
     url="https://github.com/jepegit/cellpy",
     packages=included_packages,
     package_dir={"cellpy": "cellpy"},
-    package_data={"parameters": ["_cellpy_prms_default.conf"]},
+    package_data={"parameters": [".cellpy_prms_default.conf"]},
     entry_points={"console_scripts": ["cellpy=cellpy.cli:cli"]},
     include_package_data=True,
     install_requires=requirements,

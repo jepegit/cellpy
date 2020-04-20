@@ -42,6 +42,7 @@ Paths = {
     "filelogdir": cur_dir,
     "examplesdir": cur_dir,
     "notebookdir": cur_dir,
+    "batchfiledir": cur_dir,
     "db_filename": "cellpy_db.xlsx",
 }
 Paths = box.Box(Paths)
@@ -191,8 +192,8 @@ Batch = box.Box(Batch)
 # --------------------------
 
 _variable_that_is_not_saved_to_config = "Hei"
-_prm_default_name = "_cellpy_prms_default.conf"
-_prm_globtxt = "_cellpy_prms*.conf"
+_prm_default_name = ".cellpy_prms_default.conf"
+_prm_globtxt = ".cellpy_prms*.conf"
 _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
 _search_for_odbc_driver = True

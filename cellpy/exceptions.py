@@ -38,7 +38,7 @@ class ExportFailed(Error):
 
 
 class NullData(Error):
-    """Raised when required data is missing (e.g. voltage = None)"""
+    """Raised when required data is missing (e.g. voltage = None or summary_frames are missing)"""
 
     pass
 

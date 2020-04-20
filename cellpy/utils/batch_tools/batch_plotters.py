@@ -26,11 +26,11 @@ if prms.Batch.backend == "bokeh":
 
     except ImportError:
         prms.Batch.backend = "matplotlib"
-        logging.warning("could not import bokeh -> using matplotlib instead")
+        logging.debug("could not import bokeh -> using matplotlib instead")
 
     except ModuleNotFoundError:
         prms.Batch.backend = "matplotlib"
-        logging.warning("could not import bokeh -> using matplotlib instead")
+        logging.debug("could not import bokeh -> using matplotlib instead")
 
 
 def create_legend(info, c, option="clean", use_index=False):
@@ -116,7 +116,7 @@ def create_plot_option_dicts(
             colors = palette[3]
 
         else:
-            colors = palette[min(7, number_of_groups)]
+            colors = palette[min(6, number_of_groups)]
 
     sub_groups = info.sub_groups.unique()
     marker_it = itertools.cycle(marker_types)
@@ -480,10 +480,17 @@ def plot_cycle_life_summary_bokeh(
 
 
 def plot_cycle_life_summary_matplotlib(
-    info, summaries, width=900, height=800, height_fractions=[0.2, 0.5, 0.3]
+    info,
+    summaries,
+    width=900,
+    height=800,
+    height_fractions=[0.2, 0.5, 0.3],
+    legend_option="all",
 ):
 
     import matplotlib.pyplot as plt
+
+    # print(" running matplotlib plotter ".center(80,"="))
 
     discharge_capacity = summaries.discharge_capacity
     charge_capacity = summaries.charge_capacity
@@ -521,8 +528,9 @@ def plot_cycle_life_summary_matplotlib(
         info, marker_types=marker_types
     )
 
-    canvas, (ax_ce, ax_cap, ax_ir) = plt.subplots(3, 1)
+    canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1)
     for label in charge_capacity.columns.get_level_values(0):
+        name = create_legend(info, label, option=legend_option)
         g, sg = look_up_group(info, label)
 
         group_style = group_styles[g]
@@ -535,12 +543,22 @@ def plot_cycle_life_summary_matplotlib(
         m = marker["marker"]
         f = "white"
 
-        ax_ce.plot(coulombic_efficiency[label], color=c, marker=m, markerfacecolor=c)
+        ax_ce.plot(
+            coulombic_efficiency[label],
+            label=name,
+            color=c,
+            marker=m,
+            markerfacecolor=c,
+        )
 
-        ax_cap.plot(charge_capacity[label], color=c, marker=m, markerfacecolor=c)
+        ax_cap.plot(
+            charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c
+        )
 
-        ax_cap.plot(discharge_capacity[label], color=c, marker=m, markerfacecolor=f)
-        ax_ir.plot(ir_charge[label], color=c, marker=m, markerfacecolor=c)
+        ax_cap.plot(
+            discharge_capacity[label], label=name, color=c, marker=m, markerfacecolor=f
+        )
+        ax_ir.plot(ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c)
 
     ax_ce.set_ylabel("Coulombic Efficiency (%)")
     ax_ce.set_ylim((0, 110))
@@ -548,9 +566,9 @@ def plot_cycle_life_summary_matplotlib(
     ax_ir.set_ylabel("IR (charge)")
     ax_ir.set_xlabel("Cycle")
 
-    for ax in [ax_ce, ax_cap, ax_ir]:
+    for ax in [ax_cap, ax_ce, ax_ir]:
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.set_position([box.x0, box.y0, box.width * 0.6, box.height])
 
     # Put a legend to the right of the current axis
     ax_ce.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -574,13 +592,14 @@ def summary_plotting_engine(**kwargs):
 
 def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
+
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
             pages, summaries, width, height, height_fractions, **kwargs
         )
     elif prms.Batch.backend == "matplotlib":
-        print("[obs! experimental]")
+        logging.info("[obs! experimental]")
         canvas = plot_cycle_life_summary_matplotlib(
             pages, summaries, width, height, height_fractions
         )
@@ -602,10 +621,10 @@ def _preparing_data_and_plotting(**kwargs):
 
     for experiment in experiments:
         if not isinstance(experiment, CyclingExperiment):
-            print(
+            logging.info(
                 "No! This engine is only really good at" "processing CyclingExperiments"
             )
-            print(experiment)
+            logging.info(experiment)
         else:
             pages = experiment.journal.pages
             try:
@@ -633,17 +652,19 @@ def exporting_plots(**kwargs):
 
 
 class CyclingSummaryPlotter(BasePlotter):
-    def __init__(self, *args):
+    def __init__(self, *args, reset_farms=True):
         """
         Attributes (inherited):
             experiments: list of experiments.
             farms: list of farms (containing pandas DataFrames or figs).
             barn (str): identifier for where to place the output-files.
+            reset_farms (bool): empty the farms before running the engine.
         """
 
         super().__init__(*args)
         self.engines = list()
         self.dumpers = list()
+        self.reset_farms = reset_farms
         self._use_dir = None
         self.current_engine = None
         self._assign_engine(summary_plotting_engine)
@@ -690,7 +711,8 @@ class CyclingSummaryPlotter(BasePlotter):
         logging.debug("start engine::")
 
         self.current_engine = engine
-
+        if self.reset_farms:
+            self.farms = []
         self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
         logging.debug("::engine ended")
 

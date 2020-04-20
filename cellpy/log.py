@@ -22,7 +22,15 @@ def setup_logging(
     reset_big_log=False,
     max_size=5_000_000,
 ):
-    """Setup logging configuration
+    """Setup logging configuration.
+
+    Args:
+        default_level: default log-level to screen (std.out).
+        default_json_path: path to config file for setting up logging.
+        env_key (str): use this environment prm to try to get default_json_path.
+        custom_log_dir: path for saving logs.
+        reset_big_log (bool): reset log if too big (max_size).
+        max_size (int): if reset_log, this is the max limit.
 
     """
 
@@ -35,6 +43,10 @@ def setup_logging(
     if value:
         path = value
 
+    if default_level is None:
+        default_level = "CRITICAL"
+
+    # loading logging configs
     if os.path.exists(path):
         with open(path, "rt") as f:
             config = json.load(f)
@@ -92,8 +104,15 @@ def setup_logging(
 
         if default_level:
             w_txt = "\nCould not set custom default level for logger"
-            if default_level not in ["INFO", "DEBUG", logging.INFO, logging.DEBUG]:
-                _txt = "\nonly 'INFO' and 'DEBUG' is supported"
+            if default_level not in [
+                "INFO",
+                "DEBUG",
+                "CRITICAL",
+                logging.INFO,
+                logging.DEBUG,
+                logging.CRITICAL,
+            ]:
+                _txt = "\nonly 'INFO', 'DEBUG' and 'CRITICAL' is supported"
                 _txt += " as default_level"
                 warnings.warn(w_txt + _txt)
 
@@ -109,7 +128,7 @@ def setup_logging(
         logging.config.dictConfig(config)
     else:
         if not default_level:
-            default_level = logging.INFO
+            default_level = logging.CRITICAL
         logging.basicConfig(level=default_level)
 
 

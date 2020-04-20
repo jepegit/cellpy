@@ -7,15 +7,14 @@ import getpass
 import click
 import pkg_resources
 import pathlib
+
 from github import Github
 
 from cellpy.parameters import prmreader
 from cellpy.exceptions import ConfigFileNotWritten
 import cellpy._version
 
-DEFAULT_FILENAME_START = "_cellpy_prms_"
-DEFAULT_FILENAME_END = ".conf"
-DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
+
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
 USER = "jepegit"
@@ -38,46 +37,15 @@ def get_default_config_file_path(init_filename=None):
     """gets the path to the default config-file"""
     prm_dir = get_package_prm_dir()
     if not init_filename:
-        init_filename = DEFAULT_FILENAME
+        init_filename = prmreader.DEFAULT_FILENAME
     src = prm_dir / init_filename
     return src
-
-
-def get_user_dir_and_dst(init_filename):
-    """gets the name of the user directory and full prm filepath"""
-    user_dir = get_user_dir()
-    dst_file = user_dir / init_filename
-    return user_dir, dst_file
-
-
-def get_user_dir():
-    """gets the name of the user directory"""
-    # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
-    user_dir = pathlib.Path().home().resolve()
-    if os.name == "nt":
-        _user_dir = user_dir / "documents"
-        if _user_dir.is_dir():
-            user_dir = _user_dir
-    return user_dir
 
 
 def get_dst_file(user_dir, init_filename):
     user_dir = pathlib.Path(user_dir)
     dst_file = user_dir / init_filename
     return dst_file
-
-
-def get_user_name():
-    """get the user name of the current user (cross platform)"""
-    return getpass.getuser()
-
-
-def create_custom_init_filename(user_name=None):
-    """creates a custom prms filename"""
-    if user_name is None:
-        return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
-    else:
-        return DEFAULT_FILENAME_START + user_name + DEFAULT_FILENAME_END
 
 
 def check_if_needed_modules_exists():
@@ -150,15 +118,16 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     click.echo("[cellpy] (setup)")
 
     # generate variables
-    init_filename = create_custom_init_filename()
-    userdir, dst_file = get_user_dir_and_dst(init_filename)
+    init_filename = prmreader.create_custom_init_filename()
+    userdir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
+
     if not root_dir:
         root_dir = pathlib.Path(os.getcwd())
     root_dir = pathlib.Path(root_dir)
 
     if testuser:
         click.echo(f"[cellpy] (setup) DEV-MODE testuser: {testuser}")
-        init_filename = create_custom_init_filename(testuser)
+        init_filename = prmreader.create_custom_init_filename(testuser)
         userdir = root_dir
         dst_file = get_dst_file(userdir, init_filename)
         click.echo(f"[cellpy] (setup) DEV-MODE userdir: {userdir}")
@@ -174,6 +143,10 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         _check()
 
     else:
+        if reset:
+            _update_paths(
+                root_dir, not not_relative, dry_run=dry_run, reset=True, silent=True
+            )
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check()
 
@@ -184,9 +157,10 @@ def _update_paths(
     reset=False,
     dry_run=False,
     default_dir="cellpy_data",
+    silent=False,
 ):
 
-    h = get_user_dir()
+    h = prmreader.get_user_dir()
 
     if custom_dir:
         reset = True
@@ -204,6 +178,7 @@ def _update_paths(
         db_path = pathlib.Path(prmreader.prms.Paths.db_path)
         db_filename = prmreader.prms.Paths.db_filename
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
+        batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -213,6 +188,7 @@ def _update_paths(
         db_path = "db"
         db_filename = "cellpy_db.xlsx"
         notebookdir = "notebooks"
+        batchfiledir = "batchfiles"
         if not custom_dir:
             h = h / default_dir
 
@@ -223,29 +199,32 @@ def _update_paths(
     examplesdir = h / examplesdir
     db_path = h / db_path
     notebookdir = h / notebookdir
+    batchfiledir = h / batchfiledir
 
-    print(outdatadir)
-    print(custom_dir)
+    if not silent:
+        outdatadir = _ask_about_path(
+            "where to output processed data and results", outdatadir
+        )
 
-    outdatadir = _ask_about_path(
-        "where to output processed data and results", outdatadir
-    )
+        rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
 
-    rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
+        cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
 
-    cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
+        filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
 
-    filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
+        examplesdir = _ask_about_path(
+            "where to download cellpy examples and tests", examplesdir
+        )
 
-    examplesdir = _ask_about_path(
-        "where to download cellpy examples and tests", examplesdir
-    )
+        db_path = _ask_about_path("what folder your db file lives in", db_path)
 
-    db_path = _ask_about_path("what folder your db file lives in", db_path)
+        db_filename = _ask_about_name("the name of your db-file", db_filename)
 
-    db_filename = _ask_about_name("the name of your db-file", db_filename)
+        notebookdir = _ask_about_path(
+            "where to put your jupyter notebooks", notebookdir
+        )
 
-    notebookdir = _ask_about_path("where to put your jupyter notebooks", notebookdir)
+        batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
 
     # update folders based on suggestions
     for d in [
@@ -256,6 +235,7 @@ def _update_paths(
         examplesdir,
         notebookdir,
         db_path,
+        batchfiledir,
     ]:
 
         if not dry_run:
@@ -272,6 +252,7 @@ def _update_paths(
     prmreader.prms.Paths.db_path = str(db_path)
     prmreader.prms.Paths.db_filename = str(db_filename)
     prmreader.prms.Paths.notebookdir = str(notebookdir)
+    prmreader.prms.Paths.batchfiledir = str(batchfiledir)
 
 
 def _ask_about_path(q, p):
@@ -478,12 +459,13 @@ def _check_config_file():
         prm_paths = prm_dict["Paths"]
         required_dirs = [
             "cellpydatadir",
-            "db_path",
             "examplesdir",
             "filelogdir",
             "notebookdir",
             "outdatadir",
             "rawdatadir",
+            "batchfiledir",
+            "db_path",
         ]
         missing = 0
         for k in required_dirs:
@@ -498,7 +480,7 @@ def _check_config_file():
                 click.echo("MISSING")
 
         value = prm_paths.get("db_filename", None)
-        click.echo(f"{k}: {value}")
+        click.echo(f"db_filename: {value}")
         if not value:
             missing += 1
             click.echo("MISSING")
@@ -564,17 +546,18 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
                 f"*** dry-run: skipping actual saving of {dst_file} ***", color="red"
             )
         else:
+            click.echo(f"[cellpy] (setup) Saving file ({dst_file})")
             save_prm_file(dst_file)
 
     except ConfigFileNotWritten:
-        click.echo("[cellpy] (setup) Something went wrong!" " Could not write the file")
+        click.echo("[cellpy] (setup) Something went wrong! Could not write the file")
         click.echo(
             "[cellpy] (setup) Trying to write a file"
-            + f"called {DEFAULT_FILENAME} instead"
+            + f"called {prmreader.DEFAULT_FILENAME} instead"
         )
 
         try:
-            userdir, dst_file = get_user_dir_and_dst(init_filename)
+            userdir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
             if dry_run:
                 click.echo(
                     f"*** dry-run: skipping actual saving of {dst_file} ***",
@@ -593,6 +576,41 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
             f"[cellpy] (setup) OK! Now you can edit it. For example by "
             f"issuing \n\n         [your-favourite-editor] {init_filename}\n"
         )
+
+
+@click.command()
+@click.option("--default-editor", "-e", default=None,
+              type=str, help="try to use this editor instead (e.g. notepad.exe)")
+def edit(default_editor):
+    """Edit your cellpy config file."""
+
+    config_file = _configloc()
+    if config_file:
+        config_file_str = str(config_file.resolve())
+
+        if default_editor is not None:
+            args = [default_editor, config_file_str]
+            click.echo(f"[cellpy] (edit) Calling '{default_editor}'")
+            try:
+                subprocess.call(args)
+            except:
+                click.echo(f"[cellpy] (edit) Failed!")
+                click.echo("[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows")
+
+        if default_editor is None:
+            try:
+                import editor
+                editor.edit(filename=config_file_str)
+            except ImportError:
+                click.echo(f"[cellpy] (edit) Failed!")
+                click.echo(f"[cellpy] (edit) Searching for editors uses the python-editor package")
+                click.echo(f"[cellpy] (edit) Possible fixes:")
+                click.echo(
+                    f"[cellpy] (edit) - provide a default editor "
+                    f"using the -e option (e.g. cellpy edit -e notepad.exe)")
+                click.echo(
+                    f"[cellpy] (edit) - install teh python-editor package "
+                    f"(pip install python-editor)")
 
 
 @click.command()
@@ -639,13 +657,21 @@ def info(version, configloc, params, check):
     is_flag=True,
     help="Run a batch job defined in the given journal-file",
 )
-@click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
 @click.option(
-    "--silent", "-s", is_flag=True, help="Run in silent (i.e. no-plotting) mode."
+    "--batch",
+    "-b",
+    is_flag=True,
+    help="Run all batch jobs iteratively in a given folder",
 )
-@click.argument("file_name")
-def run(journal, debug, silent, file_name):
-    """Will in the future be used for running a cellpy process.
+@click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
+@click.option("--silent", "-s", is_flag=True, help="Run in silent mode.")
+@click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
+@click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
+@click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
+@click.option("--nom-cap", default=None, type=float)
+@click.argument("name")
+def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name):
+    """Run a cellpy process.
 
     You can use this to launch specific applications.
 
@@ -661,11 +687,6 @@ def run(journal, debug, silent, file_name):
 
     """
 
-    click.echo(f" RUNNING {file_name} ".center(80, "*"))
-    if not file_name:
-        click.echo("[cellpy] (run) No filename provided.")
-        return
-
     if debug:
         click.echo("[cellpy] (run) debug mode on")
 
@@ -675,23 +696,91 @@ def run(journal, debug, silent, file_name):
     click.echo("[cellpy]\n")
 
     if journal:
-        _run_journal(file_name, debug, silent)
+        _run_journal(name, debug, silent, raw, cellpyfile, minimal, nom_cap)
 
-    elif file_name.lower() == "db":
+    elif batch:
+        _run_journals(name, debug, silent, raw, cellpyfile, minimal)
+
+    elif name.lower() == "db":
         _run_db(debug, silent)
 
     else:
-        _run(file_name, debug, silent)
+        _run(name, debug, silent)
 
 
-def _run_journal(file_name, debug, silent):
+def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
     click.echo(f"running journal {file_name}")
-    click.echo(f" --debug [{debug}]")
-    click.echo(f" --silent [{silent}]")
+    # click.echo(f" --debug [{debug}]")
+    # click.echo(f" --silent [{silent}]")
+    # click.echo(f" --raw [{raw}]")
+    # click.echo(f" --cellpyfile [{cellpyfile}]")
+    # click.echo(f" --minimal [{minimal}]")
+    # click.echo(f" --nom_cap [{nom_cap}] {type(nom_cap)}")
+
+    kwargs = dict()
+    if debug:
+        kwargs["default_log_level"] = "DEBUG"
+    if not minimal:
+        kwargs["export_raw"] = False
+        kwargs["export_cycles"] = False
+        kwargs["export_ica"] = False
+
+    from cellpy.utils import batch
+    from cellpy import prms
+
+    batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
+    file = pathlib.Path(file_name)
+    if not file.is_file():
+        click.echo(f"file_name={file_name} not found - looking into batchfiledir")
+        if not batchfiledir.is_dir():
+            click.echo("batchfiledir not found - aborting")
+            return
+        file = batchfiledir / file.name
+
+    if not file.is_file():
+        click.echo(f"{file} not found - aborting")
+        return
+
+    b = batch.process_batch(
+        file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs
+    )
+    if b is not None and not silent:
+        print(b)
+    click.echo("---")
 
 
-def _run(file_name, debug, silent):
-    click.echo(f"running {file_name}")
+def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
+    click.echo(f"running journals in {folder_name}")
+    # click.echo(f" --debug [{debug}]")
+    # click.echo(f" --silent [{silent}]")
+    # click.echo(f" --raw [{raw}]")
+    # click.echo(f" --cellpyfile [{cellpyfile}]")
+    # click.echo(f" --minimal [{minimal}]")
+
+    kwargs = dict()
+    if debug:
+        kwargs["default_log_level"] = "DEBUG"
+    if not minimal:
+        kwargs["export_raw"] = False
+        kwargs["export_cycles"] = False
+        kwargs["export_ica"] = False
+
+    from cellpy.utils import batch
+
+    folder_name = pathlib.Path(folder_name).resolve()
+
+    if not folder_name.is_dir():
+        click.echo(f"{folder_name} not found - aborting")
+        return
+
+    batch.iterate_batches(
+        folder_name, force_raw_file=raw, force_cellpy=cellpyfile, silent=True, **kwargs
+    )
+    click.echo("---")
+
+
+def _run(name, debug, silent):
+    click.echo(f"running {name}")
     click.echo(f" --debug [{debug}]")
     click.echo(f" --silent [{silent}]")
 
@@ -800,7 +889,7 @@ def _version():
 
 
 def _configloc():
-    config_file_name = prmreader._get_prm_file()
+    _, config_file_name = prmreader.get_user_dir_and_dst()
     click.echo("[cellpy] ->%s" % config_file_name)
     if not os.path.isfile(config_file_name):
         click.echo("[cellpy] File does not exist!")
@@ -1030,6 +1119,7 @@ def serve(lab, directory):
 
 cli.add_command(setup)
 cli.add_command(info)
+cli.add_command(edit)
 cli.add_command(pull)
 cli.add_command(run)
 cli.add_command(new)
@@ -1050,9 +1140,9 @@ def _main_pull():
 
 
 def _main():
-    file_name = create_custom_init_filename()
+    file_name = prmreader.create_custom_init_filename()
     click.echo(file_name)
-    user_directory, destination_file_name = get_user_dir_and_dst(file_name)
+    user_directory, destination_file_name = prmreader.get_user_dir_and_dst(file_name)
     click.echo(user_directory)
     click.echo(destination_file_name)
     click.echo("trying to save it")
@@ -1070,7 +1160,7 @@ def _cli_setup_interactive():
     else:
         root_dir = "/Users/jepe/scripting/tmp/cellpy_test_user"
     testuser = "tester"
-    init_filename = create_custom_init_filename(testuser)
+    init_filename = prmreader.create_custom_init_filename(testuser)
     dst_file = get_dst_file(root_dir, init_filename)
     init_file = pathlib.Path(dst_file)
     opts = list()

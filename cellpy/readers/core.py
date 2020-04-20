@@ -87,7 +87,8 @@ class FileID(object):
     def __str__(self):
         txt = "\n<fileID>\n"
         txt += f"full name: {self.full_name}\n"
-        txt += f"name: {self.name}"
+        txt += f"name: {self.name}\n"
+        txt += f"location: {self.location}\n"
         if self.last_modified is not None:
             txt += f"modified: {self.last_modified}\n"
         else:
@@ -96,6 +97,8 @@ class FileID(object):
             txt += f"size: {self.size}\n"
         else:
             txt += "size: NAN\n"
+
+        txt += f"last data point: {self.last_data_point}\n"
         return txt
 
     @property
@@ -304,6 +307,27 @@ class Cell(object):
         except AttributeError:
             empty = True
         return empty
+
+
+def identify_last_data_point(data):
+    """Find the last data point and store it in the fid instance"""
+
+    logging.debug("searching for last data point")
+    hdr_data_point = HEADERS_NORMAL.data_point_txt
+    try:
+        if hdr_data_point in data.raw.columns:
+
+            last_data_point = data.raw[hdr_data_point].max()
+        else:
+            last_data_point = data.raw.index.max()
+    except AttributeError:
+        logging.debug("AttributeError - setting last data point to 0")
+        last_data_point = 0
+    if not last_data_point > 0:
+        last_data_point = 0
+    data.raw_data_files[0].last_data_point = last_data_point
+    logging.debug(f"last data point: {last_data_point}")
+    return data
 
 
 def check64bit(current_system="python"):

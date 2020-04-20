@@ -1,14 +1,15 @@
 import logging
 import warnings
 import os
+import sys
+
+from tqdm.auto import tqdm
 
 from cellpy.readers import cellreader
 from cellpy import prms
 from cellpy.utils.batch_tools import batch_helpers as helper
 from cellpy.utils.batch_tools.batch_core import BaseExperiment
 from cellpy.utils.batch_tools.batch_journals import LabJournal
-
-logger = logging.getLogger(__name__)
 
 
 class CyclingExperiment(BaseExperiment):
@@ -95,13 +96,15 @@ class CyclingExperiment(BaseExperiment):
         number_of_runs = len(pages)
         counter = 0
         errors = []
-
-        for indx, row in pages.iterrows():
+        pbar = tqdm(list(pages.iterrows()), file=sys.stdout, leave=False)
+        for indx, row in pbar:
             counter += 1
-            h_txt = "[" + counter * "|" + (number_of_runs - counter) * "." + "]"
-            l_txt = "starting to process file # %i (index=%s)" % (counter, indx)
+            h_txt = f"{indx}"
+            n_txt = f"loading {counter}"
+            l_txt = f"starting to process file # {counter} ({indx})"
             logging.debug(l_txt)
-            print(h_txt)
+            pbar.set_description(n_txt)
+            pbar.set_postfix_str(s=h_txt, refresh=True)
 
             if not row.raw_file_names and not self.force_cellpy:
                 logging.info("File(s) not found!")
@@ -118,9 +121,6 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("setting cycle mode (%s)..." % row.cell_type)
                 cell_data.cycle_mode = row.cell_type
 
-            if self.nom_cap is not None:
-                cell_data.set_nom_cap(self.nom_cap)
-
             logging.info("loading cell")
             if not self.force_cellpy:
                 logging.debug("not forcing to load cellpy-file instead of raw file.")
@@ -132,6 +132,7 @@ class CyclingExperiment(BaseExperiment):
                         summary_on_raw=True,
                         force_raw=self.force_raw_file,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
+                        nom_cap=self.nom_cap,
                         **kwargs,
                     )
                 except Exception as e:

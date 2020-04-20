@@ -710,12 +710,9 @@ class ArbinLoader(Loader):
 
             data.raw = normal_df
             data.raw_data_files_length.append(length_of_test)
-
             data = self._post_process(data)
             data = self.identify_last_data_point(data)
-
             new_tests.append(data)
-
         return new_tests
 
     def _loader_posix(
@@ -807,11 +804,9 @@ class ArbinLoader(Loader):
 
             data.raw = normal_df
             data.raw_data_files_length.append(length_of_test)
-
             data = self._post_process(data)
             data = self.identify_last_data_point(data)
             new_tests.append(data)
-
         return new_tests
 
     def loader(

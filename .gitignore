@@ -11,9 +11,13 @@ old/
 bin/
 bin/mdbtools-win
 
+# testdata that changes when running tests
+# Remark! You might need to comment out this the first time you run tests
+
 # testdata/hdf5/20160805_test001_45_cc.h5
 testdata/hdf5/20160805_test001_47_cc.h5
 testdata/hdf5/20160306_snx001_10_cc_01.h5
+# testdata/batchfiles/cellpy_batch_test.json
 
 dev_data/
 dev_data/tmp
@@ -93,3 +97,6 @@ cellpy_debug.log.1
 out/20190403_cen59_04_rateGITT_01.h5
 builds/
 cellpy_debug.log.2
+test.nda
+test.csv
+dev_utils/batch_notebooks/out.png

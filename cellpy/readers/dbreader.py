@@ -10,7 +10,7 @@ import numpy as np
 
 from cellpy.parameters import prms
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 class DbSheetCols(object):
@@ -169,7 +169,7 @@ class Reader(object):
             warnings.warn(
                 "your database is corrupt: duplicates" " encountered in the srno-column"
             )
-            logger.debug("srno duplicates:\n" + str(id_col.duplicated()))
+            logging.debug("srno duplicates:\n" + str(id_col.duplicated()))
             probably_good_to_go = False
         return probably_good_to_go
 
@@ -281,10 +281,10 @@ class Reader(object):
             insp = self._pick_info(serial_number, column_name)
             return insp
         except KeyError:
-            logger.warning(
+            logging.warning(
                 "Could not read the cycle mode (using value from prms instead)"
             )
-            logger.debug(f"cycle mode: {prms.Reader.cycle_mode}")
+            logging.debug(f"cycle mode: {prms.Reader.cycle_mode}")
             import sys
 
             sys.exit()
@@ -476,7 +476,7 @@ class Reader(object):
 
         if not batch_col_name:
             batch_col_name = self.db_sheet_cols.batch
-        logger.debug("selecting batch - %s" % batch)
+        logging.debug("selecting batch - %s" % batch)
         sheet = self.table
         identity = self.db_sheet_cols.id
         exists_col_number = self.db_sheet_cols.exists
