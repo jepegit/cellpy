@@ -1173,6 +1173,8 @@ class CellpyData(object):
     def load(self, cellpy_file, parent_level=None, return_cls=True):
         """Loads a cellpy file.
 
+        TODO: This method shall be improved very soon
+
         Args:
             cellpy_file (path, str): Full path to the cellpy file.
             parent_level (str, optional): Parent level.
