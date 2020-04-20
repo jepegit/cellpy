@@ -2,6 +2,17 @@
 History
 =======
 
+0.3.3 (2020)
+------------
+
+* Switching from git-flow to github-flow
+* New cli options for running batches
+* cli option for creating template notebooks
+* Using ruamel.yaml instead of pyyaml
+* Using python-box > 4
+* Several bug-fixes
+
+
 0.3.2 (2019)
 ------------
 
