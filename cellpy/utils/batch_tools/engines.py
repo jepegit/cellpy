@@ -5,7 +5,21 @@ import pandas as pd
 from cellpy import dbreader
 from cellpy.utils.batch_tools import batch_helpers as helper
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
+
+
+SELECTED_SUMMARIES = [
+    "discharge_capacity",
+    "charge_capacity",
+    "coulombic_efficiency",
+    "cumulated_coulombic_efficiency",
+    "ir_discharge",
+    "ir_charge",
+    "end_voltage_discharge",
+    "end_voltage_charge",
+    "charge_c_rate",
+    "discharge_c_rate",
+]
 
 
 def cycles_engine(**kwargs):
@@ -35,7 +49,7 @@ def cycles_engine(**kwargs):
 
 def raw_data_engine(**kwargs):
     """engine to extract raw data"""
-    logger.debug("cycles_engine")
+    logging.debug("cycles_engine")
     raise NotImplementedError
 
     experiments = kwargs["experiments"]
@@ -50,7 +64,7 @@ def raw_data_engine(**kwargs):
 
 def summary_engine(**kwargs):
     """engine to extract summary data"""
-    logger.debug("summary_engine")
+    logging.debug("summary_engine")
     # farms = kwargs["farms"]
 
     farms = []
@@ -58,24 +72,13 @@ def summary_engine(**kwargs):
 
     for experiment in experiments:
         if experiment.selected_summaries is None:
-            selected_summaries = [
-                "discharge_capacity",
-                "charge_capacity",
-                "coulombic_efficiency",
-                "cumulated_coulombic_efficiency",
-                "ir_discharge",
-                "ir_charge",
-                "end_voltage_discharge",
-                "end_voltage_charge",
-                "charge_c_rate",
-                "discharge_c_rate",
-            ]
+            selected_summaries = SELECTED_SUMMARIES
         else:
             selected_summaries = experiment.selected_summaries
 
         if experiment.summary_frames is None:
-            logger.debug("No summary frames found")
-            logger.debug("Re-loading")
+            logging.debug("No summary frames found")
+            logging.debug("Re-loading")
             experiment.summary_frames = _load_summaries(experiment)
 
         farm = helper.join_summaries(experiment.summary_frames, selected_summaries)
@@ -105,7 +108,7 @@ def simple_db_engine(reader=None, srnos=None):
 
     if reader is None:
         reader = dbreader.Reader()
-        logger.debug("No reader provided. Creating one myself.")
+        logging.debug("No reader provided. Creating one myself.")
 
     info_dict = dict()
     info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
@@ -118,14 +121,14 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict["raw_file_names"] = []
     info_dict["cellpy_file_names"] = []
 
-    logger.debug(f"created info-dict from {reader.db_file}:")
-    # logger.debug(info_dict)
+    logging.debug(f"created info-dict from {reader.db_file}:")
+    # logging.debug(info_dict)
 
     for key in list(info_dict.keys()):
-        logger.debug("%s: %s" % (key, str(info_dict[key])))
+        logging.debug("%s: %s" % (key, str(info_dict[key])))
 
     _groups = [reader.get_group(srno) for srno in srnos]
-    logger.debug(">\ngroups: %s" % str(_groups))
+    logging.debug(">\ngroups: %s" % str(_groups))
     groups = helper.fix_groups(_groups)
     info_dict["groups"] = groups
 
@@ -134,7 +137,7 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict = helper.find_files(info_dict, filename_cache)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
-        logger.info(
+        logging.info(
             "The function _find_files was very slow. "
             "Save your info_df so you don't have to run it again!"
         )

@@ -19,7 +19,7 @@ from cellpy import prms
 from cellpy.utils import batch as batch
 from . import fdv
 
-log.setup_logging(default_level="INFO")
+log.setup_logging(default_level="DEBUG")
 
 
 @pytest.fixture(scope="module")
@@ -36,6 +36,8 @@ def batch_instance(clean_dir):
     prms.Paths["rawdatadir"] = fdv.raw_data_dir
     prms.Paths["db_path"] = fdv.db_dir
     prms.Paths["filelogdir"] = clean_dir
+    prms.Paths["batchfiledir"] = fdv.batch_file_dir
+    prms.Paths["notebookdir"] = clean_dir
     return batch
 
 
@@ -165,3 +167,9 @@ def test_cycling_summary_plotter(populated_batch):
 
 def test_report(populated_batch):
     print(populated_batch.report)
+
+
+# def test_iterate_folder(batch_instance):
+# # Since the batch-files contains full paths I need to figure out how to make a custom json-file for the test.
+#     folder_name = prms.Paths.batchfiledir
+#     batch.iterate_batches(folder_name, default_log_level="CRITICAL")

@@ -303,7 +303,7 @@ class MultiCycleOcvFit(object):
             if voltage is not None:
                 step_table = self.data.cell.steps
                 hdr = self.data.headers_step_table
-                if direction is "up":
+                if direction == "up":
                     end_voltage = step_table[
                         (step_table["cycle"] == cycle)
                         & (step_table["type"].isin(["discharge"]))
@@ -314,7 +314,7 @@ class MultiCycleOcvFit(object):
                     ][hdr.current + "_last"].values[0]
                     ocv_fitter.set_zero_voltage(end_voltage)
                     ocv_fitter.set_zero_current(end_current)
-                elif direction is "down":
+                elif direction == "down":
                     end_voltage = step_table[
                         (step_table["cycle"] == cycle)
                         & (step_table["type"].isin(["charge"]))

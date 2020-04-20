@@ -12,8 +12,6 @@ from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
 
-logger = logging.getLogger(__name__)
-
 
 class LabJournal(BaseJournal):
     def __init__(self, db_reader="default"):
@@ -21,7 +19,7 @@ class LabJournal(BaseJournal):
         if db_reader == "default":
             self.db_reader = dbreader.Reader()
         else:
-            logger.debug(f"Remark! db_reader: {db_reader}")
+            logging.debug(f"Remark! db_reader: {db_reader}")
             self.db_reader = db_reader
         self.batch_col = "b01"
 
@@ -174,7 +172,7 @@ class LabJournal(BaseJournal):
         if raw_dir is None:
             raise UnderDefined("no raw directory defined")
         if batch_dir is None:
-            raise UnderDefined("no batcb directory defined")
+            raise UnderDefined("no batch directory defined")
 
         # create the folders
         if not os.path.isdir(project_dir):
@@ -186,6 +184,10 @@ class LabJournal(BaseJournal):
         if not os.path.isdir(raw_dir):
             os.mkdir(raw_dir)
             logging.info(f"created folder {raw_dir}")
+
+        self.project_dir = project_dir
+        self.batch_dir = batch_dir
+        self.raw_dir = raw_dir
 
         return project_dir, batch_dir, raw_dir
 

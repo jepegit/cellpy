@@ -2,6 +2,7 @@ name: cellpy
 channels:
   - defaults
   - conda-forge
+  - pyviz
 dependencies:
   - python>=3.6
   - pip
@@ -12,13 +13,18 @@ dependencies:
   - click
   - scipy
   - pandas
-  - pytables>=3.5.1
+  - pytables>=3.6.1
   - setuptools
-  - pyyaml>=4.2b1
+  - ruamel.yaml
   - pyodbc
   - PyGithub
   - cookiecutter
-  - pip:
-    - lmfit
-    - python-box<4
+  - tqdm
+  - ipywidgets
+  - lmfit
+  - ipykernel
+  - holoviz
+  - hdf5
+  - pytables
+  - python-box
 

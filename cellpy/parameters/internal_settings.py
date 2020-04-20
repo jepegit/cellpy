@@ -89,7 +89,6 @@ ATTRS_DATASET = [
     "no_cycles",
     "nom_cap",
     "ocv_steps",
-    "raw_data_files",
     "raw_data_files_length",
     "raw_limits",
     "raw_units",
@@ -101,6 +100,7 @@ ATTRS_DATASET = [
     "tot_mass",
 ]
 
+ATTRS_DATASET_DEEP = ["raw_data_files"]
 
 # cellpy units:
 

@@ -33,7 +33,7 @@ except ImportError:
 
 bokeh_available = importlib.util.find_spec("bokeh") is not None
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
 SYMBOL_DICT = {
@@ -158,8 +158,8 @@ def _hv_bokeh_available():
 def create_colormarkerlist_for_info_df(
     info_df, symbol_label="all", color_style_label="seaborn-colorblind"
 ):
-    logger.debug("symbol_label: " + symbol_label)
-    logger.debug("color_style_label: " + color_style_label)
+    logging.debug("symbol_label: " + symbol_label)
+    logging.debug("color_style_label: " + color_style_label)
     groups = info_df.groups.unique()
     sub_groups = info_df.sub_groups.unique()
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
