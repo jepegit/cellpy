@@ -1257,9 +1257,20 @@ class CellpyData(object):
 
         # TODO: edit from here
         cellpy_file_version = self._get_cellpy_file_version(filename, parent_level)
+
         if cellpy_file_version > CELLPY_FILE_VERSION:
             self.logger.info(f"This file is of newer version than this cellpy version can load. "
                              f"Pleas update cellpy and try again!")
+            raise IOError(f"File format too new: {filename} :: version: {cellpy_file_version}")
+
+        elif cellpy_file_version < CELLPY_FILE_VERSION:
+            self.logger.debug(f"old cellpy file version {cellpy_file_version}")
+            self.logger.debug(f"filename: {filename}")
+            # TODO: run old cellpy file format loader
+
+        else:
+            self.logger.debug(f"Loading {filename} :: v{cellpy_file_version}")
+            # TODO: run current cellpy file format loader
 
         with pd.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
