@@ -1216,7 +1216,9 @@ class CellpyData(object):
             try:
                 meta_table = store.select(parent_level + meta_dir)
             except KeyError:
-                raise WrongFileVersion("This file is VERY old - cannot read file version number")
+                raise WrongFileVersion(
+                    "This file is VERY old - cannot read file version number"
+                )
         try:
             cellpy_file_version = self._extract_from_dict(
                 meta_table, "cellpy_file_version"
@@ -1244,8 +1246,7 @@ class CellpyData(object):
 
         if parent_level != prms._cellpyfile_root:
             self.logger.debug(
-                f"Using non-default parent label for the "
-                f"hdf-store: {parent_level}"
+                f"Using non-default parent label for the " f"hdf-store: {parent_level}"
             )
 
         if not os.path.isfile(filename):
@@ -1297,9 +1298,7 @@ class CellpyData(object):
                 data, parent_level, store, summary_dir
             )
             self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store)
-            self._extract_steps_from_cellpy_file(
-                data, parent_level, step_dir, store
-            )
+            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store)
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
             )
@@ -1307,10 +1306,9 @@ class CellpyData(object):
         self._extract_meta_from_cellpy_file(data, meta_table, filename)
 
         if fid_table_selected:
-            (
-                data.raw_data_files,
-                data.raw_data_files_length,
-            ) = self._convert2fid_list(fid_table)
+            (data.raw_data_files, data.raw_data_files_length,) = self._convert2fid_list(
+                fid_table
+            )
         else:
             data.raw_data_files = None
             data.raw_data_files_length = None
@@ -1344,28 +1342,20 @@ class CellpyData(object):
         self._check_keys_in_cellpy_file(
             meta_dir, parent_level, _raw_dir, store, _summary_dir
         )
-        self._extract_summary_from_cellpy_file(
-            data, parent_level, store, _summary_dir
-        )
-        self._extract_raw_from_cellpy_file(
-            data, parent_level, _raw_dir, store
-        )
-        self._extract_steps_from_cellpy_file(
-            data, parent_level, _step_dir, store
-        )
+        self._extract_summary_from_cellpy_file(data, parent_level, store, _summary_dir)
+        self._extract_raw_from_cellpy_file(data, parent_level, _raw_dir, store)
+        self._extract_steps_from_cellpy_file(data, parent_level, _step_dir, store)
         fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
             _fid_dir, parent_level, store
         )
         self._extract_meta_from_cellpy_file(data, meta_table, filename)
         warnings.warn(
-            "Loaded old cellpy-file version (<5). "
-            "Please update and save again."
+            "Loaded old cellpy-file version (<5). " "Please update and save again."
         )
         if fid_table_selected:
-            (
-                data.raw_data_files,
-                data.raw_data_files_length,
-            ) = self._convert2fid_list(fid_table)
+            (data.raw_data_files, data.raw_data_files_length,) = self._convert2fid_list(
+                fid_table
+            )
         else:
             data.raw_data_files = None
             data.raw_data_files_length = None
