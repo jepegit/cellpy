@@ -579,8 +579,13 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
 
 
 @click.command()
-@click.option("--default-editor", "-e", default=None,
-              type=str, help="try to use this editor instead (e.g. notepad.exe)")
+@click.option(
+    "--default-editor",
+    "-e",
+    default=None,
+    type=str,
+    help="try to use this editor instead (e.g. notepad.exe)",
+)
 def edit(default_editor):
     """Edit your cellpy config file."""
 
@@ -595,22 +600,29 @@ def edit(default_editor):
                 subprocess.call(args)
             except:
                 click.echo(f"[cellpy] (edit) Failed!")
-                click.echo("[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows")
+                click.echo(
+                    "[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows"
+                )
 
         if default_editor is None:
             try:
                 import editor
+
                 editor.edit(filename=config_file_str)
             except ImportError:
                 click.echo(f"[cellpy] (edit) Failed!")
-                click.echo(f"[cellpy] (edit) Searching for editors uses the python-editor package")
+                click.echo(
+                    f"[cellpy] (edit) Searching for editors uses the python-editor package"
+                )
                 click.echo(f"[cellpy] (edit) Possible fixes:")
                 click.echo(
                     f"[cellpy] (edit) - provide a default editor "
-                    f"using the -e option (e.g. cellpy edit -e notepad.exe)")
+                    f"using the -e option (e.g. cellpy edit -e notepad.exe)"
+                )
                 click.echo(
                     f"[cellpy] (edit) - install teh python-editor package "
-                    f"(pip install python-editor)")
+                    f"(pip install python-editor)"
+                )
 
 
 @click.command()

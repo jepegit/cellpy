@@ -68,8 +68,7 @@ def _write_prm_file(file_name=None):
             yaml.explicit_start = True
             yaml.explicit_end = True
             yaml.dump(
-                config_dict,
-                config_file,
+                config_dict, config_file,
             )
     except yaml.YAMLError:
         raise ConfigFileNotWritten

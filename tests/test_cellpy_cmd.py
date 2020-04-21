@@ -225,7 +225,9 @@ def test_cli_setup_interactive():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
-        result = runner.invoke(cli.cli, ["setup", "-i", "--dry-run"], input=NUMBER_OF_DIRS * "\n")
+        result = runner.invoke(
+            cli.cli, ["setup", "-i", "--dry-run"], input=NUMBER_OF_DIRS * "\n"
+        )
         print(result.output)
         assert result.exit_code == 0
 
@@ -235,7 +237,9 @@ def test_cli_setup_custom_dir():
 
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli.cli, ["setup", "-i", "--dry-run", "-d", "just_a_dir"], input=NUMBER_OF_DIRS * "\n"
+            cli.cli,
+            ["setup", "-i", "--dry-run", "-d", "just_a_dir"],
+            input=NUMBER_OF_DIRS * "\n",
         )
         print(result.output)
         assert result.exit_code == 0

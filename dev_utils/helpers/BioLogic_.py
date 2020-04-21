@@ -384,8 +384,8 @@ class MPRfile:
         print("-- got modules")
         self.modules = modules
 
-        settings_mod, = (m for m in modules if m["shortname"] == b"VMP Set   ")
-        data_module, = (m for m in modules if m["shortname"] == b"VMP data  ")
+        (settings_mod,) = (m for m in modules if m["shortname"] == b"VMP Set   ")
+        (data_module,) = (m for m in modules if m["shortname"] == b"VMP data  ")
         maybe_log_module = [m for m in modules if m["shortname"] == b"VMP LOG   "]
         print("---checking data module---")
         n_data_points = np.fromstring(data_module["data"][:4], dtype="<u4")
@@ -447,7 +447,7 @@ class MPRfile:
         self.startdate = date(tm.tm_year, tm.tm_mon, tm.tm_mday)
 
         if maybe_log_module:
-            log_module, = maybe_log_module
+            (log_module,) = maybe_log_module
             tm = time.strptime(str3(log_module["date"]), "%m/%d/%y")
             self.enddate = date(tm.tm_year, tm.tm_mon, tm.tm_mday)
 
