@@ -129,6 +129,8 @@ cellpy_limits["ir_change"] = 0.00001
 # - summary -
 
 # 08.12.2016: added temperature_last, temperature_mean, aux_
+# TODO (maybe): create a legacy settings module with old headers
+# TODO: rename the column names to the form cycle_index, discharge_capacity_mAh_g, etc.
 headers_summary["cycle_index"] = "Cycle_Index"
 headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
 headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
@@ -234,6 +236,7 @@ headers_step_table["internal_resistance_change"] = "ir_pct_change"
 headers_step_table["rate_avr"] = "rate_avr"
 
 
+# TODO: (maybe) option to give cellpy-file version number for legacy headings
 def get_headers_summary():
     """Returns a dictionary containing the header-strings for the summary
     (used as column headers for the summary pandas DataFrames)"""

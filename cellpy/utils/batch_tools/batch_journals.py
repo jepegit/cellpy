@@ -112,6 +112,7 @@ class LabJournal(BaseJournal):
         logging.debug(f"name: {self.name}")
         logging.debug(f"project: {self.project}")
 
+        # TODO: rename the column names to singular form (e.g. masses should be mass)
         pages = pd.DataFrame(
             columns=[
                 "filenames",
