@@ -1175,7 +1175,7 @@ class CellpyData(object):
 
         Args:
             cellpy_file (path, str): Full path to the cellpy file.
-            parent_level (str, optional): Parent level.
+            parent_level (str, optional): Parent level. Warning! Deprecating this soon!
             return_cls (bool): Return the class.
 
         Returns:
@@ -1208,8 +1208,24 @@ class CellpyData(object):
         if return_cls:
             return self
 
-    def _get_cellpy_file_version(self, filename, parent_level):
-        return 1
+    def _get_cellpy_file_version(self, filename, meta_dir="/info", parent_level=None):
+        if parent_level is None:
+            parent_level = prms._cellpyfile_root
+
+        with pd.HDFStore(filename) as store:
+            try:
+                meta_table = store.select(parent_level + meta_dir)
+            except KeyError:
+                raise WrongFileVersion("This file is VERY old - cannot read file version number")
+        try:
+            cellpy_file_version = self._extract_from_dict(
+                meta_table, "cellpy_file_version"
+            )
+        except Exception as e:
+            warnings.warn(f"Unhandled exception raised: {e}")
+            return 0
+
+        return cellpy_file_version
 
     def _load_hdf5(self, filename, parent_level=None):
         """Load a cellpy-file.
@@ -1217,127 +1233,87 @@ class CellpyData(object):
         Args:
             filename (str): Name of the cellpy file.
             parent_level (str) (optional): name of the parent level
-                (defaults to "CellpyData")
+                (defaults to "CellpyData"). DeprecationWarning!
 
         Returns:
             loaded datasets (DataSet-object)
         """
-
-        # TODO: option for reading version and relabelling dfsummary etc
-        #     if the version is older
-
-        data = None
 
         if parent_level is None:
             parent_level = prms._cellpyfile_root
 
         if parent_level != prms._cellpyfile_root:
             self.logger.debug(
-                "Using non-default parent label for the "
-                "hdf-store: {}".format(parent_level)
+                f"Using non-default parent label for the "
+                f"hdf-store: {parent_level}"
             )
-
-        if CELLPY_FILE_VERSION > 4:
-            raw_dir = prms._cellpyfile_raw
-            step_dir = prms._cellpyfile_step
-            summary_dir = prms._cellpyfile_summary
-            meta_dir = "/info"  # hard-coded
-            fid_dir = prms._cellpyfile_fid
-
-        else:
-            raw_dir = "/raw"
-            step_dir = "/step_table"
-            summary_dir = "/dfsummary"
-            meta_dir = "/info"
-            fid_dir = "/fidtable"
 
         if not os.path.isfile(filename):
             self.logger.info(f"File does not exist: {filename}")
             raise IOError(f"File does not exist: {filename}")
 
-        # TODO: edit from here
-        cellpy_file_version = self._get_cellpy_file_version(filename, parent_level)
+        cellpy_file_version = self._get_cellpy_file_version(filename)
 
         if cellpy_file_version > CELLPY_FILE_VERSION:
-            self.logger.info(
-                f"This file is of newer version than this cellpy version can load. "
-                f"Pleas update cellpy and try again!"
-            )
-            raise IOError(
+            raise WrongFileVersion(
                 f"File format too new: {filename} :: version: {cellpy_file_version}"
+                f"Reload from raw or upgrade your cellpy!"
+            )
+
+        elif cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
+            raise WrongFileVersion(
+                f"File format too old: {filename} :: version: {cellpy_file_version}"
+                f"Reload from raw or downgrade your cellpy!"
             )
 
         elif cellpy_file_version < CELLPY_FILE_VERSION:
             self.logger.debug(f"old cellpy file version {cellpy_file_version}")
             self.logger.debug(f"filename: {filename}")
-            # TODO: run old cellpy file format loader
+            new_data = self._load_old_hdf5(filename, cellpy_file_version)
 
         else:
             self.logger.debug(f"Loading {filename} :: v{cellpy_file_version}")
-            # TODO: run current cellpy file format loader
+            new_data = self._load_hdf5_current_version(filename)
+
+        return new_data
+
+    def _load_hdf5_current_version(self, filename, meta_dir="/info", parent_level=None):
+        if parent_level is None:
+            parent_level = prms._cellpyfile_root
+
+        raw_dir = prms._cellpyfile_raw
+        step_dir = prms._cellpyfile_step
+        summary_dir = prms._cellpyfile_summary
+        fid_dir = prms._cellpyfile_fid
 
         with pd.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
                 meta_dir, parent_level, store
             )
+            self._check_keys_in_cellpy_file(
+                meta_dir, parent_level, raw_dir, store, summary_dir
+            )
+            self._extract_summary_from_cellpy_file(
+                data, parent_level, store, summary_dir
+            )
+            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store)
+            self._extract_steps_from_cellpy_file(
+                data, parent_level, step_dir, store
+            )
+            fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
+                fid_dir, parent_level, store
+            )
 
-            if data.cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
-                raise WrongFileVersion
+        self._extract_meta_from_cellpy_file(data, meta_table, filename)
 
-            if data.cellpy_file_version > CELLPY_FILE_VERSION:
-                raise WrongFileVersion
-
-            if data.cellpy_file_version < CELLPY_FILE_VERSION:
-                if data.cellpy_file_version < 5:
-                    self.logger.debug(f"version: {data.cellpy_file_version}")
-                    _raw_dir = "/dfdata"
-                    _step_dir = "/step_table"
-                    _summary_dir = "/dfsummary"
-                    _fid_dir = "/fidtable"
-                    self._check_keys_in_cellpy_file(
-                        meta_dir, parent_level, _raw_dir, store, _summary_dir
-                    )
-                    self._extract_summary_from_cellpy_file(
-                        data, parent_level, store, _summary_dir
-                    )
-                    self._extract_raw_from_cellpy_file(
-                        data, parent_level, _raw_dir, store
-                    )
-                    self._extract_steps_from_cellpy_file(
-                        data, parent_level, _step_dir, store
-                    )
-                    fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
-                        _fid_dir, parent_level, store
-                    )
-                    self._extract_meta_from_cellpy_file(data, meta_table, filename)
-                    warnings.warn(
-                        "Loaded old cellpy-file version (<5). "
-                        "Please update and save again."
-                    )
-            else:
-                self._check_keys_in_cellpy_file(
-                    meta_dir, parent_level, raw_dir, store, summary_dir
-                )
-                self._extract_summary_from_cellpy_file(
-                    data, parent_level, store, summary_dir
-                )
-                self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store)
-                self._extract_steps_from_cellpy_file(
-                    data, parent_level, step_dir, store
-                )
-                fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
-                    fid_dir, parent_level, store
-                )
-                self._extract_meta_from_cellpy_file(data, meta_table, filename)
-
-            if fid_table_selected:
-                (
-                    data.raw_data_files,
-                    data.raw_data_files_length,
-                ) = self._convert2fid_list(fid_table)
-            else:
-                data.raw_data_files = None
-                data.raw_data_files_length = None
+        if fid_table_selected:
+            (
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ) = self._convert2fid_list(fid_table)
+        else:
+            data.raw_data_files = None
+            data.raw_data_files_length = None
 
         # this does not yet allow multiple sets
         new_tests = [
@@ -1345,10 +1321,63 @@ class CellpyData(object):
         ]  # but cellpy is ready when that time comes (if it ever happens)
         return new_tests
 
+    def _load_old_hdf5(self, filename, cellpy_file_version):
+        if cellpy_file_version < 5:
+            new_data = self._load_old_hdf5_v3_to_v4(filename)
+        else:
+            raise WrongFileVersion(f"version {cellpy_file_version} is not supported")
+        return new_data
+
+    def _load_old_hdf5_v3_to_v4(self, filename):
+        parent_level = "CellpyData"
+        meta_dir = "/info"
+        _raw_dir = "/dfdata"
+        _step_dir = "/step_table"
+        _summary_dir = "/dfsummary"
+        _fid_dir = "/fidtable"
+
+        with pd.HDFStore(filename) as store:
+            data, meta_table = self._create_initial_data_set_from_cellpy_file(
+                meta_dir, parent_level, store
+            )
+
+        self._check_keys_in_cellpy_file(
+            meta_dir, parent_level, _raw_dir, store, _summary_dir
+        )
+        self._extract_summary_from_cellpy_file(
+            data, parent_level, store, _summary_dir
+        )
+        self._extract_raw_from_cellpy_file(
+            data, parent_level, _raw_dir, store
+        )
+        self._extract_steps_from_cellpy_file(
+            data, parent_level, _step_dir, store
+        )
+        fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
+            _fid_dir, parent_level, store
+        )
+        self._extract_meta_from_cellpy_file(data, meta_table, filename)
+        warnings.warn(
+            "Loaded old cellpy-file version (<5). "
+            "Please update and save again."
+        )
+        if fid_table_selected:
+            (
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ) = self._convert2fid_list(fid_table)
+        else:
+            data.raw_data_files = None
+            data.raw_data_files_length = None
+
+        new_tests = [data]
+        return new_tests
+
     def _create_initial_data_set_from_cellpy_file(self, meta_dir, parent_level, store):
         # Remark that this function is run before selecting loading method
         # based on version. If you change the meta_dir prm to something else than
         # "/info" it will most likely fail.
+        # Remark! Used for versions 3, 4, 5
 
         data = Cell()
         meta_table = None
@@ -1389,10 +1418,12 @@ class CellpyData(object):
                 )
         self.logger.debug(f"Keys in current cellpy-file: {store.keys()}")
 
-    def _extract_raw_from_cellpy_file(self, data, parent_level, raw_dir, store):
+    @staticmethod
+    def _extract_raw_from_cellpy_file(data, parent_level, raw_dir, store):
         data.raw = store.select(parent_level + raw_dir)
 
-    def _extract_summary_from_cellpy_file(self, data, parent_level, store, summary_dir):
+    @staticmethod
+    def _extract_summary_from_cellpy_file(data, parent_level, store, summary_dir):
         data.summary = store.select(parent_level + summary_dir)
 
     def _extract_fids_from_cellpy_file(self, fid_dir, parent_level, store):
