@@ -141,15 +141,18 @@ def make_unique_groups(info_df):
     return info_df
 
 
-def _remove_date(label):
-    _ = label.split("_")
-    return _[1] + "_" + _[2]
+def _remove_date_and_celltype(label,):
+    parts = label.split("_")
+    parts.pop(0)
+    if parts[-1] in ["cc", "ec", "eth"]:
+        parts.pop(-1)
+    return "_".join(parts)
 
 
 def create_labels(label, *args):
     """Returns a re-formatted label (currently it only removes the dates
     from the run-name)"""
-    return _remove_date(label)
+    return _remove_date_and_celltype(label)
 
 
 def create_selected_summaries_dict(summaries_list):
