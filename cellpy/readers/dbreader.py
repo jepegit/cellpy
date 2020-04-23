@@ -57,7 +57,10 @@ class Reader(object):
         self.skiprows, self.nrows = self._find_out_what_rows_to_skip()
         self.dtypes_dict = self._create_dtypes_dict()
         self.headers = self.dtypes_dict.keys()
+        logging.debug("opening sheet")
         self.table = self._open_sheet()
+        logging.debug("got table")
+        logging.debug(self.table)
 
     def __str__(self):
         newline = "\n  - "
@@ -129,7 +132,7 @@ class Reader(object):
         rows_to_skip = self.skiprows
 
         logging.debug(f"Trying to open the file {self.db_file}")
-        logging.debug(f"Number of rows: {nrows}")
+        logging.debug(f"Number of rows (no means all): {nrows}")
         logging.debug(f"Skipping the following rows: {rows_to_skip}")
         logging.debug(f"Declaring the following dtyps: {dtypes_dict}")
         work_book = pd.ExcelFile(self.db_file)
