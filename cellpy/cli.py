@@ -123,9 +123,20 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
     init_filename = prmreader.create_custom_init_filename()
     userdir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
 
+    if dry_run:
+        click.echo("Create custom init filename and get userdir and destination")
+        click.echo(f"Got the following parameters:")
+        click.echo(f" - init_filename: {init_filename}")
+        click.echo(f" - userdir: {userdir}")
+        click.echo(f" - dst_file: {dst_file}")
+        click.echo(f" - not_relative: {not_relative}")
+
     if not root_dir:
-        root_dir = pathlib.Path(os.getcwd())
+        root_dir = userdir
+        # root_dir = pathlib.Path(os.getcwd())
     root_dir = pathlib.Path(root_dir)
+    if dry_run:
+        click.echo(f" - root_dir: {root_dir}")
 
     if testuser:
         click.echo(f"[cellpy] (setup) DEV-MODE testuser: {testuser}")
@@ -142,15 +153,15 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         click.echo(" interactive mode ".center(80, "-"))
         _update_paths(root_dir, not not_relative, dry_run=dry_run, reset=reset)
         _write_config_file(userdir, dst_file, init_filename, dry_run)
-        _check()
+        _check(dry_run=dry_run)
 
     else:
         if reset:
             _update_paths(
-                root_dir, not not_relative, dry_run=dry_run, reset=True, silent=True
+                userdir, False, dry_run=dry_run, reset=True, silent=True
             )
         _write_config_file(userdir, dst_file, init_filename, dry_run)
-        _check()
+        _check(dry_run=dry_run)
 
 
 def _update_paths(
@@ -164,12 +175,17 @@ def _update_paths(
 
     h = prmreader.get_user_dir()
 
+    if dry_run:
+        click.echo(f" - default_dir: {default_dir}")
+        click.echo(f" - custom_dir: {custom_dir}")
+        click.echo(f" - retalive_home: {relative_home}")
+
     if custom_dir:
         reset = True
         if relative_home:
             h = h / custom_dir
-        else:
-            h = custom_dir
+        if not custom_dir.parts[-1] == default_dir:
+                h = h / default_dir
 
     if not reset:
         outdatadir = pathlib.Path(prmreader.prms.Paths.outdatadir)
@@ -191,8 +207,6 @@ def _update_paths(
         db_filename = "cellpy_db.xlsx"
         notebookdir = "notebooks"
         batchfiledir = "batchfiles"
-        if not custom_dir:
-            h = h / default_dir
 
     outdatadir = h / outdatadir
     rawdatadir = h / rawdatadir
@@ -202,6 +216,9 @@ def _update_paths(
     db_path = h / db_path
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
+
+    if dry_run:
+        click.echo(f" - base (h): {h}")
 
     if not silent:
         outdatadir = _ask_about_path(
@@ -498,8 +515,11 @@ def _check_config_file():
         return False
 
 
-def _check():
+def _check(dry_run=False):
     click.echo(" checking ".center(80, "="))
+    if dry_run:
+        click.echo("*** dry-run: skipping the test")
+        return
     failed_checks = 0
     number_of_checks = 0
 
