@@ -25,7 +25,7 @@ class CyclingExperiment(BaseExperiment):
     Attributes:
         journal (:obj: LabJournal): information about the experiment.
         force_cellpy (bool): tries only to load the cellpy-file if True.
-        force_raw_file (bool): loads raw-file(s) even though appropriate cellpy-file
+        force_raw (bool): loads raw-file(s) even though appropriate cellpy-file
            exists if True.
         save_cellpy (bool): saves a cellpy-file for each cell if True.
         accept_errors (bool): in case of error, dont raise an exception, but
@@ -59,7 +59,7 @@ class CyclingExperiment(BaseExperiment):
         self.errors = dict()
 
         self.force_cellpy = False
-        self.force_raw_file = False
+        self.force_raw = False
         self.force_recalc = False
         self.save_cellpy = True
         self.accept_errors = False
@@ -111,6 +111,8 @@ class CyclingExperiment(BaseExperiment):
                 logging.info(indx)
                 logging.debug("File(s) not found for index=%s" % indx)
                 errors.append(indx)
+                h_txt += " [-]"
+                pbar.set_postfix_str(s=h_txt, refresh=True)
                 continue
 
             else:
@@ -123,6 +125,9 @@ class CyclingExperiment(BaseExperiment):
 
             logging.info("loading cell")
             if not self.force_cellpy:
+                if self.force_raw:
+                    h_txt += " (r)"
+                    pbar.set_postfix_str(s=h_txt, refresh=True)
                 logging.debug("not forcing to load cellpy-file instead of raw file.")
                 try:
                     cell_data.loadcell(
@@ -130,7 +135,7 @@ class CyclingExperiment(BaseExperiment):
                         cellpy_file=row.cellpy_file_names,
                         mass=row.masses,
                         summary_on_raw=True,
-                        force_raw=self.force_raw_file,
+                        force_raw=self.force_raw,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
                         nom_cap=self.nom_cap,
                         **kwargs,
@@ -138,12 +143,16 @@ class CyclingExperiment(BaseExperiment):
                 except Exception as e:
                     logging.info("Failed to load: " + str(e))
                     errors.append("loadcell:" + str(indx))
+                    h_txt += " [-]"
+                    pbar.set_postfix_str(s=h_txt, refresh=True)
                     if not self.accept_errors:
                         raise e
                     continue
 
             else:
                 logging.info("forcing")
+                h_txt += " (f)"
+                pbar.set_postfix_str(s=h_txt, refresh=True)
                 try:
                     cell_data.load(
                         row.cellpy_file_names, parent_level=self.parent_level
@@ -155,6 +164,8 @@ class CyclingExperiment(BaseExperiment):
                     )
                     logging.debug("Failed to load. Error-message: " + str(e))
                     errors.append("load:" + str(indx))
+                    h_txt += " [-]"
+                    pbar.set_postfix_str(s=h_txt, refresh=True)
                     if not self.accept_errors:
                         raise e
                     continue
@@ -163,21 +174,26 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("...not loaded...")
                 logging.debug("Did not pass check(). Could not load cell!")
                 errors.append("check:" + str(indx))
+                h_txt += " [-]"
+                pbar.set_postfix_str(s=h_txt, refresh=True)
                 continue
 
             logging.info("...loaded successfully...")
-
+            h_txt += " [OK]"
+            pbar.set_postfix_str(s=h_txt, refresh=True)
             summary_tmp = cell_data.cell.summary
             logging.info("Trying to get summary_data")
 
             if cell_data.cell.steps is None or self.force_recalc:
                 logging.info("Running make_step_table")
-
+                n_txt = f"steps {counter}"
+                pbar.set_description(n_txt, refresh=True)
                 cell_data.make_step_table()
 
             if summary_tmp is None or self.force_recalc:
                 logging.info("Running make_summary")
-
+                n_txt = f"summary {counter}"
+                pbar.set_description(n_txt, refresh=True)
                 cell_data.make_summary(find_end_voltage=True, find_ir=True)
 
             if summary_tmp.index.name == b"Cycle_Index":
@@ -214,6 +230,8 @@ class CyclingExperiment(BaseExperiment):
 
             if self.save_cellpy:
                 logging.info("saving to cellpy-format")
+                n_txt = f"saving {counter}"
+                pbar.set_description(n_txt, refresh=True)
                 if not row.fixed:
                     logging.info("saving cell to %s" % row.cellpy_file_names)
                     cell_data.ensure_step_table = True
@@ -241,6 +259,8 @@ class CyclingExperiment(BaseExperiment):
                 if self.export_cycles:
                     export_text += " [cycles]"
                 logging.info(export_text)
+                n_txt = f"{export_text} {counter}"
+                pbar.set_description(n_txt, refresh=True)
                 cell_data.to_csv(
                     self.journal.raw_dir,
                     sep=prms.Reader.sep,

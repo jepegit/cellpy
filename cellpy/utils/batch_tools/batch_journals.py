@@ -44,6 +44,11 @@ class LabJournal(BaseJournal):
         if self.db_reader is not None:
             srnos = self.db_reader.select_batch(name, batch_col)
             self.pages = simple_db_engine(self.db_reader, srnos)
+            if self.pages.empty:
+                logging.critical(f"EMPTY JOURNAL: are you sure you have provided correct input to batch?")
+                logging.critical(f"name: {name}")
+                logging.critical(f"project: {self.project}")
+                logging.critical(f"batch_col: {batch_col}")
         else:
             logging.debug("creating empty journal pages")
             self.pages = pd.DataFrame()

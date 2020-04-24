@@ -83,7 +83,7 @@ class Batch:
         logging.info("created CyclingExperiment")
 
         self.experiment.force_cellpy = kwargs.pop("force_cellpy", False)
-        self.experiment.force_raw_file = kwargs.pop("force_raw_file", False)
+        self.experiment.force_raw = kwargs.pop("force_raw_file", False)
         self.experiment.force_recalc = kwargs.pop("force_recalc", False)
         self.experiment.export_cycles = kwargs.pop("export_cycles", True)
         self.experiment.export_raw = kwargs.pop("export_raw", True)
@@ -485,6 +485,7 @@ class Batch:
 
     def update(self, **kwargs):
         """Load cells as defined in the journal"""
+        self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
 
     def make_summaries(self):

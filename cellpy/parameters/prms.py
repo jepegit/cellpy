@@ -209,12 +209,18 @@ _cellpyfile_summary = "/summary"
 _cellpyfile_fid = "/fid"
 
 _cellpyfile_complevel = 1
-_cellpyfile_complib = None  # currentlty defaults to "zlib"
+_cellpyfile_complib = None  # currently defaults to "zlib"
 _cellpyfile_raw_format = "table"
 _cellpyfile_summary_format = "table"
 _cellpyfile_stepdata_format = "table"
 _cellpyfile_infotable_format = "fixed"
 _cellpyfile_fidtable_format = "fixed"
+
+# used as global variables
+_globals_status = ""
+_globals_errors = []
+_globals_message = []
+
 
 # used during development for testing new features
 
