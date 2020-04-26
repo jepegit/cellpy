@@ -32,3 +32,9 @@ def cellpy_file():
 
     file_path = H5_PATH / "20160805_test001_45_cc.h5"
     return cellpy.get(filename=file_path)
+
+
+def cellpy_file_path():
+    """Get the path to an example cellpy file"""
+
+    return H5_PATH / "20160805_test001_45_cc.h5"

@@ -31,6 +31,7 @@ from pandas.errors import PerformanceWarning
 from scipy import interpolate
 
 from cellpy.parameters import prms
+from cellpy.parameters.legacy import internal_settings as old_settings
 from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
 from cellpy.parameters.internal_settings import (
     get_headers_summary,
@@ -1170,13 +1171,15 @@ class CellpyData(object):
         """
         raise NotImplementedError
 
-    def load(self, cellpy_file, parent_level=None, return_cls=True):
+    def dev_load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=False):
         """Loads a cellpy file.
 
         Args:
             cellpy_file (path, str): Full path to the cellpy file.
             parent_level (str, optional): Parent level. Warning! Deprecating this soon!
             return_cls (bool): Return the class.
+            accept_old (bool): Accept loading old cellpy-file versions.
+                Instead of raising WrongFileVersion it only issues a warning.
 
         Returns:
             cellpy.CellPyData class if return_cls is True
@@ -1185,7 +1188,47 @@ class CellpyData(object):
         try:
             self.logger.debug("loading cellpy-file (hdf5):")
             self.logger.debug(cellpy_file)
-            new_datasets = self._load_hdf5(cellpy_file, parent_level)
+            new_datasets = self._dev_load_hdf5(cellpy_file, parent_level, accept_old)
+            self.logger.debug("cellpy-file loaded")
+        except AttributeError:
+            new_datasets = []
+            self.logger.warning(
+                "This cellpy-file version is not supported by"
+                "current reader (try to update cellpy)."
+            )
+
+        if new_datasets:
+            for dataset in new_datasets:
+                self.cells.append(dataset)
+        else:
+            # raise LoadError
+            self.logger.warning("Could not load")
+            self.logger.warning(str(cellpy_file))
+
+        self.number_of_datasets = len(self.cells)
+        self.status_datasets = self._validate_datasets()
+        self._invent_a_name(cellpy_file)
+        if return_cls:
+            return self
+
+    def load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=False):
+        """Loads a cellpy file.
+
+        Args:
+            cellpy_file (path, str): Full path to the cellpy file.
+            parent_level (str, optional): Parent level. Warning! Deprecating this soon!
+            return_cls (bool): Return the class.
+            accept_old (bool): Accept loading old cellpy-file versions.
+                Instead of raising WrongFileVersion it only issues a warning.
+
+        Returns:
+            cellpy.CellPyData class if return_cls is True
+        """
+
+        try:
+            self.logger.debug("loading cellpy-file (hdf5):")
+            self.logger.debug(cellpy_file)
+            new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
             self.logger.debug("cellpy-file loaded")
         except AttributeError:
             new_datasets = []
@@ -1229,13 +1272,75 @@ class CellpyData(object):
 
         return cellpy_file_version
 
-    def _load_hdf5(self, filename, parent_level=None):
+    def _dev_load_hdf5(self, filename, parent_level=None, accept_old=False):
         """Load a cellpy-file.
 
         Args:
             filename (str): Name of the cellpy file.
             parent_level (str) (optional): name of the parent level
                 (defaults to "CellpyData"). DeprecationWarning!
+            accept_old (bool): accept old file versions.
+
+        Returns:
+            loaded datasets (DataSet-object)
+        """
+        CELLPY_FILE_VERSION = 6
+        HEADERS_SUMMARY["cycle_index"] = "cycle_index"
+        HEADERS_SUMMARY["discharge_capacity"] = "discharge_capacity_mAh_g"
+
+        if parent_level is None:
+            parent_level = prms._cellpyfile_root
+
+        if parent_level != prms._cellpyfile_root:
+            self.logger.debug(
+                f"Using non-default parent label for the " f"hdf-store: {parent_level}"
+            )
+
+        if not os.path.isfile(filename):
+            self.logger.info(f"File does not exist: {filename}")
+            raise IOError(f"File does not exist: {filename}")
+
+        cellpy_file_version = self._get_cellpy_file_version(filename)
+
+        if cellpy_file_version > CELLPY_FILE_VERSION:
+            raise WrongFileVersion(
+                f"File format too new: {filename} :: version: {cellpy_file_version}"
+                f"Reload from raw or upgrade your cellpy!"
+            )
+
+        elif cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
+            raise WrongFileVersion(
+                f"File format too old: {filename} :: version: {cellpy_file_version}"
+                f"Reload from raw or downgrade your cellpy!"
+            )
+
+        elif cellpy_file_version < CELLPY_FILE_VERSION:
+            if accept_old:
+                self.logger.debug(f"old cellpy file version {cellpy_file_version}")
+                self.logger.debug(f"filename: {filename}")
+                self.logger.warning(f"Loading old file-type. It is recommended that you remake the step table and the "
+                                 f"summary table.")
+                new_data = self._load_old_hdf5(filename, cellpy_file_version)
+            else:
+                raise WrongFileVersion(
+                    f"File format too old: {filename} :: version: {cellpy_file_version}"
+                    f"Try loading setting accept_old=True"
+                )
+
+        else:
+            self.logger.debug(f"Loading {filename} :: v{cellpy_file_version}")
+            new_data = self._load_hdf5_current_version(filename)
+
+        return new_data
+
+    def _load_hdf5(self, filename, parent_level=None, accept_old=False):
+        """Load a cellpy-file.
+
+        Args:
+            filename (str): Name of the cellpy file.
+            parent_level (str) (optional): name of the parent level
+                (defaults to "CellpyData"). DeprecationWarning!
+            accept_old (bool): accept old file versions.
 
         Returns:
             loaded datasets (DataSet-object)
@@ -1268,9 +1373,15 @@ class CellpyData(object):
             )
 
         elif cellpy_file_version < CELLPY_FILE_VERSION:
-            self.logger.debug(f"old cellpy file version {cellpy_file_version}")
-            self.logger.debug(f"filename: {filename}")
-            new_data = self._load_old_hdf5(filename, cellpy_file_version)
+            if accept_old:
+                self.logger.debug(f"old cellpy file version {cellpy_file_version}")
+                self.logger.debug(f"filename: {filename}")
+                new_data = self._load_old_hdf5(filename, cellpy_file_version)
+            else:
+                raise WrongFileVersion(
+                    f"File format too old: {filename} :: version: {cellpy_file_version}"
+                    f"Try loading setting accept_old=True"
+                )
 
         else:
             self.logger.debug(f"Loading {filename} :: v{cellpy_file_version}")
@@ -1319,11 +1430,59 @@ class CellpyData(object):
         ]  # but cellpy is ready when that time comes (if it ever happens)
         return new_tests
 
+    def _load_hdf5_v5(self, filename):
+        parent_level = "CellpyData"
+        raw_dir = "/raw"
+        step_dir = "/steps"
+        summary_dir = "/summary"
+        fid_dir = "/fid"
+        meta_dir = "/info"
+
+        with pd.HDFStore(filename) as store:
+            data, meta_table = self._create_initial_data_set_from_cellpy_file(
+                meta_dir, parent_level, store
+            )
+            self._check_keys_in_cellpy_file(
+                meta_dir, parent_level, raw_dir, store, summary_dir
+            )
+            self._extract_summary_from_cellpy_file(
+                data, parent_level, store, summary_dir
+            )
+            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store)
+            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store)
+            fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
+                fid_dir, parent_level, store
+            )
+
+        self._extract_meta_from_cellpy_file(data, meta_table, filename)
+
+        if fid_table_selected:
+            (data.raw_data_files, data.raw_data_files_length,) = self._convert2fid_list(
+                fid_table
+            )
+        else:
+            data.raw_data_files = None
+            data.raw_data_files_length = None
+
+        # this does not yet allow multiple sets
+        self.logger.debug("loaded new test")
+        new_tests = [
+            data
+        ]  # but cellpy is ready when that time comes (if it ever happens)
+        return new_tests
+
     def _load_old_hdf5(self, filename, cellpy_file_version):
         if cellpy_file_version < 5:
             new_data = self._load_old_hdf5_v3_to_v4(filename)
+        elif cellpy_file_version == 5:
+            new_data = self._load_hdf5_v5(filename)
         else:
             raise WrongFileVersion(f"version {cellpy_file_version} is not supported")
+
+        if cellpy_file_version < 6:
+            self.logger.debug("legacy cellpy file version needs translation")
+            new_data = old_settings.translate_headers(new_data, cellpy_file_version)
+
         return new_data
 
     def _load_old_hdf5_v3_to_v4(self, filename):
@@ -2174,7 +2333,6 @@ class CellpyData(object):
         # only use col-names that exist:
         keep = [col for col in keep if col in df.columns]
         df = df[keep]
-
         # preparing for implementation of sub_steps (will come in the future):
         df[nhdr.sub_step_index_txt] = 1
 
@@ -4940,5 +5098,15 @@ if __name__ == "__main__":
 
     from cellpy.utils import example_data
 
-    c = example_data.arbin_file()
-    c.inspect_nominal_capacity()
+    f = example_data.cellpy_file_path()
+    print(f)
+    print(f.is_file())
+    c = CellpyData()
+    c.dev_load(f, accept_old=True)
+    c.make_step_table()
+    c.make_summary()
+    print("Here we have it")
+    print(c.cell.summary.columns)
+    print(c.cell.steps.columns)
+    print(c.cell.raw.columns)
+
