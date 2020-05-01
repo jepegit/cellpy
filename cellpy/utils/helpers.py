@@ -102,8 +102,8 @@ def split_experiment(cell, base_cycles=None):
             steptable[steptable.cycle >= b_cycle],
         ]
         data0, data = [
-            data[data.Cycle_Index < b_cycle],
-            data[data.Cycle_Index >= b_cycle],
+            data[data.cycle_index < b_cycle],
+            data[data.cycle_index >= b_cycle],
         ]
         summary0, summary = [
             summary[summary.index < b_cycle],
@@ -298,7 +298,6 @@ def select_summary_based_on_rate(
 
     step_table = cell.cell.steps
     summary = cell.cell.summary
-
     if cycle_number_header not in summary.columns:
         warnings.warn(
             f"Could not find the column {cycle_number_header}\n"
@@ -310,6 +309,7 @@ def select_summary_based_on_rate(
     cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
         step_table[rate_column] > (rate - rate_std)
     )
+    # print(step_table[rate_column].unique())
     if inverse:
         cycles_mask = ~cycles_mask
 

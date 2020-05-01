@@ -18,7 +18,7 @@ from cellpy.readers.core import (
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.parameters.internal_settings import get_headers_normal
+from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy import prms
 
@@ -126,6 +126,15 @@ TABLE_NAMES = {
     "statistic": "Channel_Statistic_Table",
 }
 
+summary_headers_renaming_dict = {
+    "test_id_txt": "Test_ID",
+    "data_point_txt": "Data_Point",
+    "vmax_on_cycle_txt": "Vmax_On_Cycle",
+    "charge_time_txt": "Charge_Time",
+    "discharge_time_txt": "Discharge_Time",
+}
+
+
 normal_headers_renaming_dict = {
     "aci_phase_angle_txt": "ACI_Phase_Angle",
     "ref_aci_phase_angle_txt": "Reference_ACI_Phase_Angle",
@@ -169,8 +178,9 @@ class ArbinLoader(Loader):
         # one cycle or from cycle>x to cycle<x+n
         # prms.Reader["limit_loaded_cycles"] = [cycle from, cycle to]
 
-        self.headers_normal = get_headers_normal()
-        self.headers_global = self.get_headers_global()
+        self.arbin_headers_normal = self.get_headers_normal()  # the column headers defined by Arbin
+        self.cellpy_headers_normal = get_headers_normal()  # the column headers defined by cellpy
+        self.arbin_headers_global = self.get_headers_global()
         self.current_chunk = 0  # use this to set chunks to load
 
     @staticmethod
@@ -180,6 +190,47 @@ class ArbinLoader(Loader):
         raw_units["charge"] = 1.0  # Ah
         raw_units["mass"] = 0.001  # g
         return raw_units
+
+    @staticmethod
+    def get_headers_normal():
+        """Defines the so-called normal column headings for Arbin .res-files"""
+        headers = HeaderDict()
+        # - normal (raw-data) column headings (specific for Arbin)
+
+        headers["aci_phase_angle_txt"] = "ACI_Phase_Angle"
+        headers["ref_aci_phase_angle_txt"] = "Reference_ACI_Phase_Angle"
+
+        headers["ac_impedance_txt"] = "AC_Impedance"
+        headers["ref_ac_impedance_txt"] = "Reference_AC_Impedance"  # new
+
+        headers["charge_capacity_txt"] = "Charge_Capacity"
+        headers["charge_energy_txt"] = "Charge_Energy"
+        headers["current_txt"] = "Current"
+        headers["cycle_index_txt"] = "Cycle_Index"
+        headers["data_point_txt"] = "Data_Point"
+        headers["datetime_txt"] = "DateTime"
+        headers["discharge_capacity_txt"] = "Discharge_Capacity"
+        headers["discharge_energy_txt"] = "Discharge_Energy"
+        headers["internal_resistance_txt"] = "Internal_Resistance"
+
+        headers["is_fc_data_txt"] = "Is_FC_Data"
+        headers["step_index_txt"] = "Step_Index"
+        headers["sub_step_index_txt"] = "Sub_Step_Index"  # new
+
+        headers["step_time_txt"] = "Step_Time"
+        headers["sub_step_time_txt"] = "Sub_Step_Time"  # new
+
+        headers["test_id_txt"] = "Test_ID"
+        headers["test_time_txt"] = "Test_Time"
+
+        headers["voltage_txt"] = "Voltage"
+        headers["ref_voltage_txt"] = "Reference_Voltage"  # new
+
+        headers["dv_dt_txt"] = "dV/dt"
+        headers["frequency_txt"] = "Frequency"  # new
+        headers["amplitude_txt"] = "Amplitude"  # new
+
+        return headers
 
     @staticmethod
     def get_headers_global():
@@ -315,7 +366,7 @@ class ArbinLoader(Loader):
     def _post_process(self, data):
         fix_datetime = True
         set_index = True
-        rename_headers = True  # could safely set this to false for now, but...
+        rename_headers = True
 
         # TODO:  insert post-processing and div tests here
         #    - check dtypes
@@ -324,17 +375,27 @@ class ArbinLoader(Loader):
         #   it is not set.
 
         if rename_headers:
+            print("renaming headers")
             columns = {}
-            for key in self.headers_normal:
+            for key in self.arbin_headers_normal:
                 old_header = normal_headers_renaming_dict[key]
-                new_header = self.headers_normal[key]
+                new_header = self.cellpy_headers_normal[key]
                 columns[old_header] = new_header
 
-            data.raw.rename(index=str, columns=columns)
+            data.raw.rename(index=str, columns=columns, inplace=True)
+            if not data.summary.empty:
+                columns = {}
+                for key, old_header in summary_headers_renaming_dict.items():
+                    try:
+                        columns[old_header] = self.cellpy_headers_normal[key]
+                    except KeyError:
+                        columns[old_header] = old_header.lower()
+                data.summary.rename(index=str, columns=columns, inplace=True)
 
         if fix_datetime:
-            h_datetime = self.headers_normal.datetime_txt
+            h_datetime = self.cellpy_headers_normal.datetime_txt
             logging.debug("converting to datetime format")
+            # print(data.raw.columns)
             data.raw[h_datetime] = data.raw[h_datetime].apply(
                 xldate_as_datetime, option="to_datetime"
             )
@@ -346,7 +407,7 @@ class ArbinLoader(Loader):
                 )
 
         if set_index:
-            hdr_data_point = self.headers_normal.data_point_txt
+            hdr_data_point = self.cellpy_headers_normal.data_point_txt
             if data.raw.index.name != hdr_data_point:
                 data.raw = data.raw.set_index(hdr_data_point, drop=False)
 
@@ -362,7 +423,7 @@ class ArbinLoader(Loader):
             checked_rundata = []
             for data in run_data:
                 new_cols = data.raw.columns
-                for col in self.headers_normal:
+                for col in self.arbin_headers_normal:
                     if col not in new_cols:
                         logging.debug(f"Missing col: {col}")
                         # data.raw[col] = np.nan
@@ -387,9 +448,9 @@ class ArbinLoader(Loader):
         if headers is None:
             headers = ["Discharge_Capacity", "Charge_Capacity"]
 
-        step_txt = self.headers_normal.step_index_txt
-        point_txt = self.headers_normal.data_point_txt
-        cycle_txt = self.headers_normal.cycle_index_txt
+        step_txt = self.arbin_headers_normal.step_index_txt
+        point_txt = self.arbin_headers_normal.data_point_txt
+        cycle_txt = self.arbin_headers_normal.cycle_index_txt
 
         self.logger.debug("iterating through file: %s" % file_name)
         if not os.path.isfile(file_name):
@@ -426,7 +487,7 @@ class ArbinLoader(Loader):
         # col_names = list(global_data_df.columns.values)
         self.logger.debug("sql statement: %s" % sql)
 
-        tests = global_data_df[self.headers_normal.test_id_txt]
+        tests = global_data_df[self.arbin_headers_normal.test_id_txt]
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
         self.logger.debug("only selecting first test")
@@ -434,11 +495,11 @@ class ArbinLoader(Loader):
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
         # fid = FileID(file_name)
-        start_datetime = global_data_df[self.headers_global["start_datetime_txt"]][
+        start_datetime = global_data_df[self.arbin_headers_global["start_datetime_txt"]][
             test_no
         ]
-        test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])  # OBS
-        test_name = global_data_df[self.headers_global["test_name_txt"]][test_no]
+        test_ID = int(global_data_df[self.arbin_headers_normal.test_id_txt][test_no])  # OBS
+        test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][test_no]
 
         # --------- read raw-data (normal-data) -------------------------
         self.logger.debug("reading raw-data")
@@ -449,8 +510,8 @@ class ArbinLoader(Loader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
-        sql_5 = "order by %s" % self.headers_normal.data_point_txt
+        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, test_ID)
+        sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
         import time
 
         info_list = []
@@ -494,9 +555,9 @@ class ArbinLoader(Loader):
         Returns: dictionary with div. stats and info.
 
         """
-        step_txt = self.headers_normal.step_index_txt
-        point_txt = self.headers_normal.data_point_txt
-        cycle_txt = self.headers_normal.cycle_index_txt
+        step_txt = self.arbin_headers_normal.step_index_txt
+        point_txt = self.arbin_headers_normal.data_point_txt
+        cycle_txt = self.arbin_headers_normal.cycle_index_txt
 
         self.logger.debug("investigating file: %s" % file_name)
         if not os.path.isfile(file_name):
@@ -533,7 +594,7 @@ class ArbinLoader(Loader):
         # col_names = list(global_data_df.columns.values)
         self.logger.debug("sql statement: %s" % sql)
 
-        tests = global_data_df[self.headers_normal.test_id_txt]
+        tests = global_data_df[self.arbin_headers_normal.test_id_txt]
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
         self.logger.debug("only selecting first test")
@@ -541,11 +602,11 @@ class ArbinLoader(Loader):
         self.logger.debug("setting data for test number %i" % test_no)
         loaded_from = file_name
         # fid = FileID(file_name)
-        start_datetime = global_data_df[self.headers_global["start_datetime_txt"]][
+        start_datetime = global_data_df[self.arbin_headers_global["start_datetime_txt"]][
             test_no
         ]
-        test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])  # OBS
-        test_name = global_data_df[self.headers_global["test_name_txt"]][test_no]
+        test_ID = int(global_data_df[self.arbin_headers_normal.test_id_txt][test_no])  # OBS
+        test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][test_no]
 
         # --------- read raw-data (normal-data) -------------------------
         self.logger.debug("reading raw-data")
@@ -555,8 +616,8 @@ class ArbinLoader(Loader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
-        sql_5 = "order by %s" % self.headers_normal.data_point_txt
+        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, test_ID)
+        sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
         import time
 
         info_list = []
@@ -577,7 +638,7 @@ class ArbinLoader(Loader):
                 self.logger.debug("reached the end")
                 break
             row_count, _ = normal_df.shape
-            steps = normal_df[self.headers_normal.step_index_txt].unique()
+            steps = normal_df[self.arbin_headers_normal.step_index_txt].unique()
             txt = "cycle %i: %i [" % (cycle_number, row_count)
             for step in steps:
                 self.logger.debug(" step: %i" % step)
@@ -658,7 +719,7 @@ class ArbinLoader(Loader):
         self.logger.debug("sql statement: %s" % sql)
         global_data_df = pd.read_sql_query(sql, conn)
         # col_names = list(global_data_df.columns.values)
-        tests = global_data_df[self.headers_normal.test_id_txt]
+        tests = global_data_df[self.arbin_headers_normal.test_id_txt]
 
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
@@ -686,9 +747,9 @@ class ArbinLoader(Loader):
             # --------- read stats-data (summary-data) ---------------------
             sql = "select * from %s where %s=%s order by %s" % (
                 table_name_stats,
-                self.headers_normal.test_id_txt,
+                self.arbin_headers_normal.test_id_txt,
                 data.test_ID,
-                self.headers_normal.data_point_txt,
+                self.arbin_headers_normal.data_point_txt,
             )
             summary_df = pd.read_sql_query(sql, conn)
 
@@ -754,7 +815,7 @@ class ArbinLoader(Loader):
 
         # use pandas to load in the data
         global_data_df = pd.read_csv(tmp_name_global)
-        tests = global_data_df[self.headers_normal.test_id_txt]
+        tests = global_data_df[self.arbin_headers_normal.test_id_txt]
 
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
@@ -958,11 +1019,11 @@ class ArbinLoader(Loader):
         normal_df = pd.read_csv(temp_csv_filename_normal)
         # filter on test ID
         normal_df = normal_df[
-            normal_df[self.headers_normal.test_id_txt] == data.test_ID
-        ]
+            normal_df[self.arbin_headers_normal.test_id_txt] == data.test_ID
+            ]
         # sort on data point
         if prms._sort_if_subprocess:
-            normal_df = normal_df.sort_values(self.headers_normal.data_point_txt)
+            normal_df = normal_df.sort_values(self.arbin_headers_normal.data_point_txt)
 
         if bad_steps is not None:
             logging.debug("removing bad steps")
@@ -974,21 +1035,21 @@ class ArbinLoader(Loader):
                 self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
 
                 selector = (
-                    normal_df[self.headers_normal.cycle_index_txt] == bad_cycle
-                ) & (normal_df[self.headers_normal.step_index_txt] == bad_step)
+                               normal_df[self.arbin_headers_normal.cycle_index_txt] == bad_cycle
+                ) & (normal_df[self.arbin_headers_normal.step_index_txt] == bad_step)
 
                 normal_df = normal_df.loc[~selector, :]
 
         if prms.Reader["limit_loaded_cycles"]:
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
                 c1, c2 = prms.Reader["limit_loaded_cycles"]
-                selector = (normal_df[self.headers_normal.cycle_index_txt] > c1) & (
-                    normal_df[self.headers_normal.cycle_index_txt] < c2
+                selector = (normal_df[self.arbin_headers_normal.cycle_index_txt] > c1) & (
+                    normal_df[self.arbin_headers_normal.cycle_index_txt] < c2
                 )
 
             else:
                 c1 = prms.Reader["limit_loaded_cycles"][0]
-                selector = normal_df[self.headers_normal.cycle_index_txt] == c1
+                selector = normal_df[self.arbin_headers_normal.cycle_index_txt] == c1
 
             normal_df = normal_df.loc[selector, :]
 
@@ -997,11 +1058,11 @@ class ArbinLoader(Loader):
             d1, d2 = data_points
 
             if d1 is not None:
-                selector = normal_df[self.headers_normal.data_point_txt] >= d1
+                selector = normal_df[self.arbin_headers_normal.data_point_txt] >= d1
                 normal_df = normal_df.loc[selector, :]
 
             if d2 is not None:
-                selector = normal_df[self.headers_normal.data_point_txt] <= d2
+                selector = normal_df[self.arbin_headers_normal.data_point_txt] <= d2
                 normal_df = normal_df.loc[selector, :]
 
         length_of_test = normal_df.shape[0]
@@ -1029,21 +1090,21 @@ class ArbinLoader(Loader):
         # name of the .res file it is loaded from:
         # data.parent_filename = os.path.basename(file_name)
         data.channel_index = int(
-            global_data_df[self.headers_global["channel_index_txt"]][test_no]
+            global_data_df[self.arbin_headers_global["channel_index_txt"]][test_no]
         )
         data.channel_number = int(
-            global_data_df[self.headers_global["channel_number_txt"]][test_no]
+            global_data_df[self.arbin_headers_global["channel_number_txt"]][test_no]
         )
-        data.creator = global_data_df[self.headers_global["creator_txt"]][test_no]
-        data.item_ID = global_data_df[self.headers_global["item_id_txt"]][test_no]
+        data.creator = global_data_df[self.arbin_headers_global["creator_txt"]][test_no]
+        data.item_ID = global_data_df[self.arbin_headers_global["item_id_txt"]][test_no]
         data.schedule_file_name = global_data_df[
-            self.headers_global["schedule_file_name_txt"]
+            self.arbin_headers_global["schedule_file_name_txt"]
         ][test_no]
-        data.start_datetime = global_data_df[self.headers_global["start_datetime_txt"]][
+        data.start_datetime = global_data_df[self.arbin_headers_global["start_datetime_txt"]][
             test_no
         ]
-        data.test_ID = int(global_data_df[self.headers_normal.test_id_txt][test_no])
-        data.test_name = global_data_df[self.headers_global["test_name_txt"]][test_no]
+        data.test_ID = int(global_data_df[self.arbin_headers_normal.test_id_txt][test_no])
+        data.test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][test_no]
         data.raw_data_files.append(fid)
         return data
 
@@ -1068,7 +1129,7 @@ class ArbinLoader(Loader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.headers_normal.test_id_txt, test_ID)
+        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, test_ID)
         sql_4 = ""
 
         if bad_steps is not None:
@@ -1079,35 +1140,35 @@ class ArbinLoader(Loader):
             for bad_cycle, bad_step in bad_steps:
                 self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
                 sql_4 += "AND NOT (%s=%i " % (
-                    self.headers_normal.cycle_index_txt,
+                    self.arbin_headers_normal.cycle_index_txt,
                     bad_cycle,
                 )
-                sql_4 += "AND %s=%i) " % (self.headers_normal.step_index_txt, bad_step)
+                sql_4 += "AND %s=%i) " % (self.arbin_headers_normal.step_index_txt, bad_step)
 
         if prms.Reader["limit_loaded_cycles"]:
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
                 sql_4 += "AND %s>%i " % (
-                    self.headers_normal.cycle_index_txt,
+                    self.arbin_headers_normal.cycle_index_txt,
                     prms.Reader["limit_loaded_cycles"][0],
                 )
                 sql_4 += "AND %s<%i " % (
-                    self.headers_normal.cycle_index_txt,
+                    self.arbin_headers_normal.cycle_index_txt,
                     prms.Reader["limit_loaded_cycles"][-1],
                 )
             else:
                 sql_4 = "AND %s=%i " % (
-                    self.headers_normal.cycle_index_txt,
+                    self.arbin_headers_normal.cycle_index_txt,
                     prms.Reader["limit_loaded_cycles"][0],
                 )
 
         if data_points is not None:
             d1, d2 = data_points
             if d1 is not None:
-                sql_4 += "AND %s>=%i " % (self.headers_normal.data_point_txt, d1)
+                sql_4 += "AND %s>=%i " % (self.arbin_headers_normal.data_point_txt, d1)
             if d2 is not None:
-                sql_4 += "AND %s<=%i " % (self.headers_normal.data_point_txt, d2)
+                sql_4 += "AND %s<=%i " % (self.arbin_headers_normal.data_point_txt, d2)
 
-        sql_5 = "order by %s" % self.headers_normal.data_point_txt
+        sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         self.logger.debug("INFO ABOUT LOAD RES NORMAL")

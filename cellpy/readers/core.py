@@ -28,8 +28,8 @@ from cellpy.parameters.internal_settings import (
     get_headers_step_table,
 )
 
-CELLPY_FILE_VERSION = 5
-MINIMUM_CELLPY_FILE_VERSION = 1
+CELLPY_FILE_VERSION = 6
+MINIMUM_CELLPY_FILE_VERSION = 4
 STEP_TABLE_VERSION = 5
 RAW_TABLE_VERSION = 5
 SUMMARY_TABLE_VERSION = 5

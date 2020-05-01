@@ -85,7 +85,7 @@ def test_ica_value_bounds(dataset):
     capacity, voltage = dataset.get_ccap(5)
     c = ica.value_bounds(capacity)
     v = ica.value_bounds(voltage)
-    assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)
+    assert c == pytest.approx((0.00223229514, 3096.34930), 0.0001)
     assert v == pytest.approx((0.15119725465774536, 1.0001134872436523), 0.0001)
 
 
@@ -93,7 +93,7 @@ def test_ica_index_bounds(dataset):
     capacity, voltage = dataset.get_ccap(5)
     c = ica.index_bounds(capacity)
     v = ica.index_bounds(voltage)
-    assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)
+    assert c == pytest.approx((0.0022322951481536695, 3096.349306544769), 0.0001)
     assert v == pytest.approx((0.15119725465774536, 1.0001134872436523), 0.0001)
 
 
@@ -113,7 +113,7 @@ def test_set_data(dataset):
     q, v = dataset.get_ccap(1)
     data = pd.concat([q, v], axis=1)
     o = ica.Converter()
-    o.set_data(data, capacity_label="Charge_Capacity", voltage_label="Voltage")
+    o.set_data(data, capacity_label="charge_capacity", voltage_label="voltage")
 
 
 def test_inspect_data(converter):

@@ -217,7 +217,7 @@ class CyclingExperiment(BaseExperiment):
                         columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
                     )
                 # TODO: check if drop=False works [#index]
-                summary_tmp.set_index("Cycle_Index", inplace=True)
+                summary_tmp.set_index("cycle_index", inplace=True)
 
             summary_frames[indx] = summary_tmp
 

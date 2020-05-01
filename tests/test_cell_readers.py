@@ -69,8 +69,8 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance):
     cycle = 5
     step = 10
     step_left = 11
-    step_header = "Step_Index"
-    cycle_header = "Cycle_Index"
+    step_header = "step_index"
+    cycle_header = "cycle_index"
 
     cellpy_data_instance.from_raw(fdv.res_file_path, bad_steps=((cycle, step),))
 
@@ -81,7 +81,7 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance):
 
 
 def test_raw_data_from_data_point(cellpy_data_instance):
-    data_point_header = "Data_Point"
+    data_point_header = "data_point"
     cellpy_data_instance.from_raw(fdv.res_file_path, data_points=(10_000, None))
 
     p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
@@ -89,7 +89,7 @@ def test_raw_data_from_data_point(cellpy_data_instance):
 
 
 def test_raw_data_data_point(cellpy_data_instance):
-    data_point_header = "Data_Point"
+    data_point_header = "data_point"
     cellpy_data_instance.from_raw(fdv.res_file_path, data_points=(10_000, 10_200))
 
     p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
@@ -114,9 +114,17 @@ def test_validate_dataset_number(dataset, number):
     dataset._validate_dataset_number(number)
 
 
-def test_new_cellpy_version(cellpy_data_instance):
+def test_cellpy_version_4(cellpy_data_instance):
     f_old = fdv.cellpy_file_path_v4
-    d = cellpy_data_instance.load(f_old)
+    d = cellpy_data_instance.load(f_old, accept_old=True)
+    v = d.cell.cellpy_file_version
+    print(f"\nfile name: {f_old}")
+    print(f"cellpy version: {v}")
+
+
+def test_cellpy_version_5(cellpy_data_instance):
+    f_old = fdv.cellpy_file_path_v5
+    d = cellpy_data_instance.load(f_old, accept_old=True)
     v = d.cell.cellpy_file_version
     print(f"\nfile name: {f_old}")
     print(f"cellpy version: {v}")
@@ -133,16 +141,16 @@ def test_merge(cellpy_data_instance):
     assert len(cellpy_data_instance.datasets) == 2
 
     table_first = cellpy_data_instance.datasets[0].raw.describe()
-    count_first = table_first.loc["count", "Data_Point"]
+    count_first = table_first.loc["count", "data_point"]
 
     table_second = cellpy_data_instance.datasets[1].raw.describe()
-    count_second = table_second.loc["count", "Data_Point"]
+    count_second = table_second.loc["count", "data_point"]
 
     cellpy_data_instance.merge()
     assert len(cellpy_data_instance.datasets) == 2
 
     table_all = cellpy_data_instance.datasets[0].raw.describe()
-    count_all = table_all.loc["count", "Data_Point"]
+    count_all = table_all.loc["count", "data_point"]
     assert len(cellpy_data_instance.datasets) == 1
 
     assert pytest.approx(count_all, 0.001) == (count_first + count_second)
@@ -167,15 +175,15 @@ def test_merge_auto_from_list():
 
     len_first = len(cdi1.cells)
     table_first = cdi1.cells[0].raw.describe()
-    count_first = table_first.loc["count", "Data_Point"]
+    count_first = table_first.loc["count", "data_point"]
 
     len_second = len(cdi2.cells)
     table_second = cdi2.cells[0].raw.describe()
-    count_second = table_second.loc["count", "Data_Point"]
+    count_second = table_second.loc["count", "data_point"]
 
     len_all = len(cdi3.cells)
     table_all = cdi3.cells[0].raw.describe()
-    count_all = table_all.loc["count", "Data_Point"]
+    count_all = table_all.loc["count", "data_point"]
 
     assert len_first == 1
     assert len_second == 1
@@ -200,7 +208,7 @@ def test_print_step_table(dataset):
 
 def test_c_rate_calc(dataset):
     table = dataset.cell.steps
-    assert 0.04 in table["rate_avr"].unique()
+    assert 0.09 in table["rate_avr"].unique()
 
 
 @pytest.mark.xfail(raises=DeprecatedFeature)
@@ -453,10 +461,10 @@ def test_loadcell_raw(cellpy_data_instance):
     step_time = 1500.05
     sum_discharge_time = 362198.12
     my_test = cellpy_data_instance.cells[run_number]
-    assert my_test.summary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.raw.loc[5, "Step_Time"], 0.1)
+    assert my_test.summary.loc["1", "data_point"] == data_point
+    assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
     assert sum_discharge_time == pytest.approx(
-        my_test.summary.loc[:, "Discharge_Time"].sum(), 0.1
+        my_test.summary.loc[:, "discharge_time"].sum(), 0.1
     )
     assert my_test.cell_no == run_number
 
@@ -544,10 +552,10 @@ def test_load_cellpyfile(cellpy_data_instance):
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     unique_cycles_read = my_test.steps.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
-    assert my_test.summary.loc[1, "Data_Point"] == data_point
-    assert step_time == pytest.approx(my_test.raw.loc[5, "Step_Time"], 0.1)
+    assert my_test.summary.loc[1, "data_point"] == data_point
+    assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
     assert sum_test_time == pytest.approx(
-        my_test.summary.loc[:, "Test_Time"].sum(), 0.1
+        my_test.summary.loc[:, "test_time"].sum(), 0.1
     )
     assert my_test.cell_no == run_number
 
@@ -662,8 +670,8 @@ def test_load_custom_default(cellpy_data_instance):
     cellpy_data_instance.make_summary()
     summary = cellpy_data_instance.cell.summary
     val = summary.loc[
-        summary["Cycle_Index"] == 2,
-        ["Cycle_Index", "Discharge_Endpoint_Slippage(mAh/g)"],
+        summary["cycle_index"] == 2,
+        ["cycle_index", "shifted_discharge_capacity_u_mAh_g"],
     ].values[0][-1]
     assert 593.031 == pytest.approx(val, 0.1)
 

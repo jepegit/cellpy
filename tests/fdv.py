@@ -39,6 +39,9 @@ cellpy_file_path = os.path.join(cellpy_data_dir, cellpy_file_name)
 cellpy_file_name_v4 = "20160805_test001_45_cc_v0.h5"
 cellpy_file_path_v4 = os.path.join(cellpy_data_dir, cellpy_file_name)
 
+cellpy_file_name_v5 = "20160805_test001_45_cc_v5.h5"
+cellpy_file_path_v5 = os.path.join(cellpy_data_dir, cellpy_file_name)
+
 temporary_cellpy_file_name = "tmpfile.h5"
 temporary_cellpy_file_path = os.path.join(cellpy_data_dir, temporary_cellpy_file_name)
 

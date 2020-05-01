@@ -126,91 +126,97 @@ cellpy_limits["ir_change"] = 0.00001
 
 # headers for out-files:
 
+
+# - normal (data) -
+
+headers_normal["aci_phase_angle_txt"] = "aci_phase_angle"
+headers_normal["ref_aci_phase_angle_txt"] = "ref_aci_phase_angle"
+
+headers_normal["ac_impedance_txt"] = "ac_impedance"
+headers_normal["ref_ac_impedance_txt"] = "ref_ac_impedance"  # new
+
+headers_normal["charge_capacity_txt"] = "charge_capacity"
+headers_normal["charge_energy_txt"] = "charge_energy"
+headers_normal["current_txt"] = "current"
+headers_normal["cycle_index_txt"] = "cycle_index"
+headers_normal["data_point_txt"] = "data_point"
+headers_normal["datetime_txt"] = "date_time"
+headers_normal["discharge_capacity_txt"] = "discharge_capacity"
+headers_normal["discharge_energy_txt"] = "discharge_energy"
+headers_normal["internal_resistance_txt"] = "internal_resistance"
+
+headers_normal["is_fc_data_txt"] = "is_fc_data"
+headers_normal["step_index_txt"] = "step_index"
+headers_normal["sub_step_index_txt"] = "sub_step_index"  # new
+
+headers_normal["step_time_txt"] = "step_time"
+headers_normal["sub_step_time_txt"] = "sub_step_time"  # new
+
+headers_normal["test_id_txt"] = "test_id"
+headers_normal["test_time_txt"] = "test_time"
+
+headers_normal["voltage_txt"] = "voltage"
+headers_normal["ref_voltage_txt"] = "reference_voltage"  # new
+
+headers_normal["dv_dt_txt"] = "dv_dt"
+headers_normal["frequency_txt"] = "frequency"  # new
+headers_normal["amplitude_txt"] = "amplitude"  # new
+
+
 # - summary -
 
 # 08.12.2016: added temperature_last, temperature_mean, aux_
 # TODO (maybe): create a legacy settings module with old headers
-# TODO: rename the column names to the form cycle_index, discharge_capacity_mAh_g, etc.
-headers_summary["cycle_index"] = "Cycle_Index"
-headers_summary["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
-headers_summary["charge_capacity"] = "Charge_Capacity(mAh/g)"
-headers_summary["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
-headers_summary["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
-headers_summary["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
+# TODO: rename the column names to the form cycle_index, discharge_capacity_u_mAh_g, etc.
+headers_summary["cycle_index"] = headers_normal["cycle_index_txt"]
+headers_summary["data_point"] = headers_normal["data_point_txt"]
+headers_summary["test_time"] = headers_normal["test_time_txt"]
+headers_summary["datetime"] = headers_normal["datetime_txt"]
+
+headers_summary["discharge_capacity"] = "discharge_capacity_u_mAh_g"
+headers_summary["charge_capacity"] = "charge_capacity_u_mAh_g"
+headers_summary["cumulated_charge_capacity"] = "cumulated_charge_capacity_u_mAh_g"
+headers_summary["cumulated_discharge_capacity"] = "cumulated_discharge_capacity_u_mAh_g"
+headers_summary["coulombic_efficiency"] = "coulombic_efficiency_u_percentage"
 headers_summary[
     "cumulated_coulombic_efficiency"
-] = "Cumulated_Coulombic_Efficiency(percentage)"
-headers_summary["coulombic_difference"] = "Coulombic_Difference(mAh/g)"
+] = "cumulated_coulombic_efficiency_u_percentage"
+headers_summary["coulombic_difference"] = "coulombic_difference_u_mAh_g"
 headers_summary[
     "cumulated_coulombic_difference"
-] = "Cumulated_Coulombic_Difference(mAh/g)"
-headers_summary["discharge_capacity_loss"] = "Discharge_Capacity_Loss(mAh/g)"
-headers_summary["charge_capacity_loss"] = "Charge_Capacity_Loss(mAh/g)"
+] = "cumulated_coulombic_difference_u_mAh_g"
+headers_summary["discharge_capacity_loss"] = "discharge_capacity_loss_u_mAh_g"
+headers_summary["charge_capacity_loss"] = "charge_capacity_loss_u_mAh_g"
 headers_summary[
     "cumulated_discharge_capacity_loss"
-] = "Cumulated_Discharge_Capacity_Loss(mAh/g)"
+] = "cumulated_discharge_capacity_loss_u_mAh_g"
 headers_summary[
     "cumulated_charge_capacity_loss"
-] = "Cumulated_Charge_Capacity_Loss(mAh/g)"
-headers_summary["ir_discharge"] = "IR_Discharge(Ohms)"
-headers_summary["ir_charge"] = "IR_Charge(Ohms)"
-headers_summary["ocv_first_min"] = "OCV_First_Min(V)"
-headers_summary["ocv_second_min"] = "OCV_Second_Min(V)"
-headers_summary["ocv_first_max"] = "OCV_First_Max(V)"
-headers_summary["ocv_second_max"] = "OCV_Second_Max(V)"
-headers_summary["end_voltage_discharge"] = "End_Voltage_Discharge(V)"
-headers_summary["end_voltage_charge"] = "End_Voltage_Charge(V)"
-headers_summary["cumulated_ric_disconnect"] = "RIC_Disconnect(none)"
-headers_summary["cumulated_ric_sei"] = "RIC_SEI(none)"
-headers_summary["cumulated_ric"] = "RIC(none)"
+] = "cumulated_charge_capacity_loss_u_mAh_g"
+headers_summary["ir_discharge"] = "ir_discharge_u_Ohms"
+headers_summary["ir_charge"] = "ir_charge_u_Ohms"
+headers_summary["ocv_first_min"] = "ocv_first_min_u_V"
+headers_summary["ocv_second_min"] = "ocv_second_min_u_V"
+headers_summary["ocv_first_max"] = "ocv_first_max_u_V"
+headers_summary["ocv_second_max"] = "ocv_second_max_u_V"
+headers_summary["end_voltage_discharge"] = "end_voltage_discharge_u_V"
+headers_summary["end_voltage_charge"] = "end_voltage_charge_u_V"
+headers_summary["cumulated_ric_disconnect"] = "cumulated_ric_disconnect_u_none"
+headers_summary["cumulated_ric_sei"] = "cumulated_ric_sei_u_none"
+headers_summary["cumulated_ric"] = "cumulated_ric_u_none"
 
-headers_summary["normalized_cycle_index"] = "Normalized_Cycle_Index"
+headers_summary["normalized_cycle_index"] = "normalized_cycle_index"
 # Sum of irreversible capacity:
-headers_summary["low_level"] = "Low_Level(percentage)"
+headers_summary["low_level"] = "low_level_u_percentage"
 # SEI loss:
-headers_summary["high_level"] = "High_Level(percentage)"
-headers_summary["shifted_charge_capacity"] = "Charge_Endpoint_Slippage(mAh/g)"
-headers_summary["shifted_discharge_capacity"] = "Discharge_Endpoint_Slippage(mAh/g)"
-headers_summary["temperature_last"] = "Last_Temperature(C)"
-headers_summary["temperature_mean"] = "Average_Temperature(C)"
-headers_summary["charge_c_rate"] = "Charge_C_rate"
-headers_summary["discharge_c_rate"] = "Discharge_C_rate"
-headers_summary["pre_aux"] = "Aux_"
-
-# - normal (data) -
-
-headers_normal["aci_phase_angle_txt"] = "ACI_Phase_Angle"
-headers_normal["ref_aci_phase_angle_txt"] = "Reference_ACI_Phase_Angle"
-
-headers_normal["ac_impedance_txt"] = "AC_Impedance"
-headers_normal["ref_ac_impedance_txt"] = "Reference_AC_Impedance"  # new
-
-headers_normal["charge_capacity_txt"] = "Charge_Capacity"
-headers_normal["charge_energy_txt"] = "Charge_Energy"
-headers_normal["current_txt"] = "Current"
-headers_normal["cycle_index_txt"] = headers_summary["cycle_index"]
-headers_normal["data_point_txt"] = "Data_Point"
-headers_normal["datetime_txt"] = "DateTime"
-headers_normal["discharge_capacity_txt"] = "Discharge_Capacity"
-headers_normal["discharge_energy_txt"] = "Discharge_Energy"
-headers_normal["internal_resistance_txt"] = "Internal_Resistance"
-
-headers_normal["is_fc_data_txt"] = "Is_FC_Data"
-headers_normal["step_index_txt"] = "Step_Index"
-headers_normal["sub_step_index_txt"] = "Sub_Step_Index"  # new
-
-headers_normal["step_time_txt"] = "Step_Time"
-headers_normal["sub_step_time_txt"] = "Sub_Step_Time"  # new
-
-headers_normal["test_id_txt"] = "Test_ID"
-headers_normal["test_time_txt"] = "Test_Time"
-
-headers_normal["voltage_txt"] = "Voltage"
-headers_normal["ref_voltage_txt"] = "Reference_Voltage"  # new
-
-headers_normal["dv_dt_txt"] = "dV/dt"
-headers_normal["frequency_txt"] = "Frequency"  # new
-headers_normal["amplitude_txt"] = "Amplitude"  # new
+headers_summary["high_level"] = "high_level_u_percentage"
+headers_summary["shifted_charge_capacity"] = "shifted_charge_capacity_u_mAh_g"
+headers_summary["shifted_discharge_capacity"] = "shifted_discharge_capacity_u_mAh_g"
+headers_summary["temperature_last"] = "temperature_last_u_C"
+headers_summary["temperature_mean"] = "temperature_mean_u_C"
+headers_summary["charge_c_rate"] = "charge_c_rate"
+headers_summary["discharge_c_rate"] = "discharge_c_rate"
+headers_summary["pre_aux"] = "aux_"
 
 # - step table -
 

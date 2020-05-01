@@ -136,8 +136,8 @@ def select_ocv_points(
         info = row["type"]
 
         v_df = dfdata.loc[
-            (dfdata["Cycle_Index"] == cycle) & (dfdata["Step_Index"] == step),
-            ["Step_Time", "Voltage"],
+            (dfdata["cycle_index"] == cycle) & (dfdata["step_index"] == step),
+            ["step_time", "voltage"],
         ]
 
         poi = []
@@ -177,16 +177,16 @@ def select_ocv_points(
         if selection_method == "martin":
             poi.reverse()
 
-        df_poi = pd.DataFrame({"Step_Time": poi})
-        df_poi["Voltage"] = np.nan
+        df_poi = pd.DataFrame({"step_time": poi})
+        df_poi["voltage"] = np.nan
 
         v_df = v_df.append(df_poi, ignore_index=True)
-        v_df = v_df.sort_values("Step_Time").reset_index(drop=True)
-        v_df["new"] = v_df["Voltage"].interpolate()
+        v_df = v_df.sort_values("step_time").reset_index(drop=True)
+        v_df["new"] = v_df["voltage"].interpolate()
 
         voi = []
         for p in poi:
-            _v = v_df.loc[v_df["Step_Time"].isin([p]), "new"].values
+            _v = v_df.loc[v_df["step_time"].isin([p]), "new"].values
             _v = _v - voltage_reference
             voi.append(_v[0])
 
@@ -281,8 +281,8 @@ class MultiCycleOcvFit(object):
         ocv_fitter = OcvFit()
         ocv_fitter.set_circuits(self.circuits)
         time_voltage = self.data.get_ocv(direction=direction, cycles=self.cycles[0])
-        time = time_voltage.Step_Time
-        voltage = time_voltage.Voltage
+        time = time_voltage.step_time
+        voltage = time_voltage.voltage
         if voltage is not None and time is not None:
             ocv_fitter.set_data(time, voltage)
         else:
@@ -297,8 +297,8 @@ class MultiCycleOcvFit(object):
         for cycle in self.cycles:
             print("Fitting cycle " + str(cycle))
             time_voltage = self.data.get_ocv(direction=direction, cycles=cycle)
-            time = time_voltage.Step_Time
-            voltage = time_voltage.Voltage
+            time = time_voltage.step_time
+            voltage = time_voltage.voltage
 
             if voltage is not None:
                 step_table = self.data.cell.steps
@@ -489,8 +489,8 @@ class OcvFit(object):
         self.data = cellpydata
         self.steps = self.data.cell  # hope it works...
         time_voltage = self.data.get_ocv(direction="up", cycles=cycle)
-        time = time_voltage.Step_Time
-        voltage = time_voltage.Voltage
+        time = time_voltage.step_time
+        voltage = time_voltage.voltage
 
         self.time = np.array(time)
         self.voltage = np.array(voltage)

@@ -34,6 +34,9 @@ headers_summary_v5 = dict()
 headers_step_table_v5 = dict()
 
 headers_summary_v5["cycle_index"] = "Cycle_Index"
+headers_summary_v5["data_point"] = "Data_Point"
+headers_summary_v5["test_time"] = "Test_Time"
+headers_summary_v5["datetime"] = "DateTime"
 headers_summary_v5["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
 headers_summary_v5["charge_capacity"] = "Charge_Capacity(mAh/g)"
 headers_summary_v5["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
@@ -158,6 +161,12 @@ def translate_headers(data_sets, cellpy_file_version):
     raw_rename_dict = {
         headers_normal_v5[key]: HEADERS_NORMAL[key] for key in HEADERS_NORMAL
     }
+    # from pprint import pprint
+    # pprint(summary_rename_dict)
+    # pprint(steps_rename_dict)
+    # pprint(steps_rename_dict_extensions)
+    # pprint(raw_rename_dict)
+
     new_data_sets = []
     for data_set in data_sets:
         data_set.summary.rename(columns=summary_rename_dict, inplace=True)
@@ -165,6 +174,10 @@ def translate_headers(data_sets, cellpy_file_version):
         data_set.steps.rename(columns=steps_rename_dict, inplace=True)
         data_set.steps.rename(columns=steps_rename_dict_extensions, inplace=True)
         new_data_sets.append(data_set)
+
+        # pprint(data_set.summary.columns)
+        # pprint(data_set.steps.columns)
+        # pprint(data_set.raw.columns)
     # check(new_data_sets)
     return new_data_sets
 

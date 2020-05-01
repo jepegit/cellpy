@@ -1171,7 +1171,7 @@ class CellpyData(object):
         """
         raise NotImplementedError
 
-    def dev_load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=False):
+    def load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=True):
         """Loads a cellpy file.
 
         Args:
@@ -1188,7 +1188,7 @@ class CellpyData(object):
         try:
             self.logger.debug("loading cellpy-file (hdf5):")
             self.logger.debug(cellpy_file)
-            new_datasets = self._dev_load_hdf5(cellpy_file, parent_level, accept_old)
+            new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
             self.logger.debug("cellpy-file loaded")
         except AttributeError:
             new_datasets = []
@@ -1211,7 +1211,7 @@ class CellpyData(object):
         if return_cls:
             return self
 
-    def load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=False):
+    def old_load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=False):
         """Loads a cellpy file.
 
         Args:
@@ -1272,7 +1272,7 @@ class CellpyData(object):
 
         return cellpy_file_version
 
-    def _dev_load_hdf5(self, filename, parent_level=None, accept_old=False):
+    def _load_hdf5(self, filename, parent_level=None, accept_old=False):
         """Load a cellpy-file.
 
         Args:
@@ -1284,9 +1284,6 @@ class CellpyData(object):
         Returns:
             loaded datasets (DataSet-object)
         """
-        CELLPY_FILE_VERSION = 6
-        HEADERS_SUMMARY["cycle_index"] = "cycle_index"
-        HEADERS_SUMMARY["discharge_capacity"] = "discharge_capacity_mAh_g"
 
         if parent_level is None:
             parent_level = prms._cellpyfile_root
@@ -1331,9 +1328,11 @@ class CellpyData(object):
             self.logger.debug(f"Loading {filename} :: v{cellpy_file_version}")
             new_data = self._load_hdf5_current_version(filename)
 
+        # self.__check_loaded_data(new_data)
+
         return new_data
 
-    def _load_hdf5(self, filename, parent_level=None, accept_old=False):
+    def _old_load_hdf5(self, filename, parent_level=None, accept_old=False):
         """Load a cellpy-file.
 
         Args:
@@ -1482,8 +1481,18 @@ class CellpyData(object):
         if cellpy_file_version < 6:
             self.logger.debug("legacy cellpy file version needs translation")
             new_data = old_settings.translate_headers(new_data, cellpy_file_version)
-
+            #self.__check_loaded_data(new_data)
         return new_data
+
+    def __check_loaded_data(self, new_data):
+        print("Checking loaded data".center(80, "="))
+        print("file names:")
+        print(self.file_names)
+        print("new data sets:")
+        print(len(new_data))
+        print("first data set:")
+        first = new_data[0]
+        print(first)
 
     def _load_old_hdf5_v3_to_v4(self, filename):
         parent_level = "CellpyData"
@@ -4018,7 +4027,9 @@ class CellpyData(object):
             from_unit_cap = self.raw_units["charge"]
             from_unit_mass = self.raw_units["mass"]
             from_unit = from_unit_cap / from_unit_mass
-
+        self.logger.debug(f"from-unit: {from_unit}")
+        self.logger.debug(f"to-unit: {to_unit}")
+        self.logger.debug(f"mass: {mass}")
         return from_unit / to_unit / mass
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False):
