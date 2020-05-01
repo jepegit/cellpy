@@ -15,8 +15,8 @@ bin/mdbtools-win
 # Remark! You might need to comment out this the first time you run tests
 
 # testdata/hdf5/20160805_test001_45_cc.h5
-testdata/hdf5/20160805_test001_47_cc.h5
-testdata/hdf5/20160306_snx001_10_cc_01.h5
+#testdata/hdf5/20160805_test001_47_cc.h5
+#testdata/hdf5/20160306_snx001_10_cc_01.h5
 # testdata/batchfiles/cellpy_batch_test.json
 
 dev_data/
