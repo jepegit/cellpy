@@ -582,7 +582,7 @@ class CellpyData(object):
     def _check_cellpy_file(self, filename):
         """Get the file-ids for the cellpy_file."""
 
-        strip_filenames = True
+        use_full_filename_path = False
         parent_level = prms._cellpyfile_root
         fid_dir = prms._cellpyfile_fid
         check_on = self.filestatuschecker
@@ -598,6 +598,7 @@ class CellpyData(object):
             return None
         try:
             fidtable = store.select(parent_level + fid_dir)
+            print(fidtable)
         except KeyError:
             self.logger.warning("no fidtable -" " you should update your hdf5-file")
             fidtable = None
@@ -610,16 +611,16 @@ class CellpyData(object):
             ids = dict()
             for fid in raw_data_files:
                 full_name = fid.full_name
+                name = fid.name
                 size = fid.size
                 mod = fid.last_modified
                 self.logger.debug(f"fileID information for: {full_name}")
                 self.logger.debug(f"   modified: {mod}")
                 self.logger.debug(f"   size: {size}")
 
-                if strip_filenames:
-                    name = os.path.basename(full_name)
-                else:
+                if use_full_filename_path:
                     name = full_name
+
                 if check_on == "size":
                     ids[name] = int(fid.size)
                 elif check_on == "modified":
@@ -631,12 +632,12 @@ class CellpyData(object):
             return None
 
     @staticmethod
-    def _compare_ids(ids_res, ids_cellpy_file):
+    def _compare_ids(ids_raw, ids_cellpy_file):
         similar = True
-        l_res = len(ids_res)
+        l_res = len(ids_raw)
         l_cellpy = len(ids_cellpy_file)
         if l_res == l_cellpy and l_cellpy > 0:
-            for name, value in list(ids_res.items()):
+            for name, value in list(ids_raw.items()):
                 if ids_cellpy_file[name] != value:
                     similar = False
         else:
