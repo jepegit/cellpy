@@ -5,9 +5,9 @@ environment:
 #    - PYTHON_VERSION: 3.6
 #      MINICONDA: C:\Miniconda3-x64
 #      PYTHON_ARC: "64"
-    - PYTHON_VERSION: 3.7
+    - PYTHON_VERSION: 3.8
       MINICONDA: C:\Miniconda3
-      PYTHON_ARC: "32"
+      PYTHON_ARC: "64"
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA% %PYTHON_ARC%"
