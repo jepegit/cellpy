@@ -523,7 +523,7 @@ class CellpyData(object):
                 individual raw-file.
             """
 
-        txt = "Checking file ids - using '%s'" % self.filestatuschecker
+        txt = f"Checking file ids - using '{self.filestatuschecker}'"
         self.logger.info(txt)
 
         ids_cellpy_file = self._check_cellpy_file(cellpyfile)
@@ -1718,7 +1718,7 @@ class CellpyData(object):
         fidtable["raw_data_fid"] = fids
         if fids:
             for fid, length in zip(fids, test.raw_data_files_length):
-                fidtable["raw_data_name"].append(fid.name)
+                fidtable["raw_data_name"].append(Path(fid.name).name)
                 fidtable["raw_data_full_name"].append(fid.full_name)
                 fidtable["raw_data_size"].append(fid.size)
                 fidtable["raw_data_last_modified"].append(fid.last_modified)
@@ -1739,7 +1739,7 @@ class CellpyData(object):
         min_amount = 0
         for counter, item in enumerate(tbl["raw_data_name"]):
             fid = FileID()
-            fid.name = item
+            fid.name = Path(item).name
             fid.full_name = tbl["raw_data_full_name"][counter]
             fid.size = tbl["raw_data_size"][counter]
             fid.last_modified = tbl["raw_data_last_modified"][counter]
