@@ -44,13 +44,13 @@ extra_file = hdf_dir / "20160805_test001_47_cc.h5"
 standard_raw_file = res_dir / "20160805_test001_45_cc_01.res"
 
 updated_standard_file = hdf_dir / "20160805_test001_45_cc.h5"
-updated_extra_file = hdf_dir / "20160805_test001_45_cc.h5"
+updated_extra_file = hdf_dir / "20160805_test001_47_cc.h5"
 #
-# c = load_r_file(standard_raw_file)
-# print(f"{c.cell.raw.columns}")
-# c.make_step_table()
-# c.make_summary(find_ir=True)
-#
+c = load_r_file(standard_raw_file)
+print(f"{c.cell.raw.columns}")
+c.make_step_table()
+c.make_summary(find_ir=True)
+c.save(updated_standard_file)
 #
 # print(f"loading standard file {standard_file}")
 # c = load_c_file(standard_file)

@@ -13,7 +13,7 @@ from tqdm.auto import tqdm
 from cellpy import prms
 from cellpy import log
 import cellpy.exceptions
-from cellpy.parameters.internal_settings import get_headers_step_table
+from cellpy.parameters.internal_settings import get_headers_step_table, get_headers_journal
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
@@ -23,8 +23,8 @@ from cellpy.utils.batch_tools.dumpers import ram_dumper
 
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
-
-COLUMNS_SELECTED_FOR_VIEW = ["masses", "total_masses", "loadings"]
+hdr_journal = get_headers_journal()
+COLUMNS_SELECTED_FOR_VIEW = [hdr_journal.mass, hdr_journal.total_mass, hdr_journal.loading]
 
 
 class Batch:

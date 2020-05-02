@@ -7,9 +7,12 @@ from tqdm.auto import tqdm
 
 from cellpy.readers import cellreader
 from cellpy import prms
+from cellpy.parameters.internal_settings import get_headers_journal
 from cellpy.utils.batch_tools import batch_helpers as helper
 from cellpy.utils.batch_tools.batch_core import BaseExperiment
 from cellpy.utils.batch_tools.batch_journals import LabJournal
+
+hdr_journal = get_headers_journal()
 
 
 class CyclingExperiment(BaseExperiment):
@@ -132,8 +135,8 @@ class CyclingExperiment(BaseExperiment):
                 try:
                     cell_data.loadcell(
                         raw_files=row.raw_file_names,
-                        cellpy_file=row.cellpy_file_names,
-                        mass=row.masses,
+                        cellpy_file=row[hdr_journal.cellpy_file_name],
+                        mass=row.mass,
                         summary_on_raw=True,
                         force_raw=self.force_raw,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
@@ -155,7 +158,7 @@ class CyclingExperiment(BaseExperiment):
                 pbar.set_postfix_str(s=h_txt, refresh=True)
                 try:
                     cell_data.load(
-                        row.cellpy_file_names, parent_level=self.parent_level
+                        row[hdr_journal.filename], parent_level=self.parent_level
                     )
                 except Exception as e:
                     logging.info(
@@ -217,7 +220,10 @@ class CyclingExperiment(BaseExperiment):
                         columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
                     )
                 # TODO: check if drop=False works [#index]
-                summary_tmp.set_index("cycle_index", inplace=True)
+                try:
+                    summary_tmp.set_index("cycle_index", inplace=True)
+                except KeyError:
+                    logging.debug("cycle_index already an index")
 
             summary_frames[indx] = summary_tmp
 
@@ -233,10 +239,10 @@ class CyclingExperiment(BaseExperiment):
                 n_txt = f"saving {counter}"
                 pbar.set_description(n_txt, refresh=True)
                 if not row.fixed:
-                    logging.info("saving cell to %s" % row.cellpy_file_names)
+                    logging.info("saving cell to %s" % row.cellpy_file_name)
                     cell_data.ensure_step_table = True
                     try:
-                        cell_data.save(row.cellpy_file_names)
+                        cell_data.save(row.cellpy_file_name)
                     except Exception as e:
                         logging.error("saving file failed")
                         logging.error(e)
@@ -336,17 +342,17 @@ class CyclingExperiment(BaseExperiment):
                 counter += 1
                 l_txt = f"starting to process file # {counter} (index={indx})"
                 logging.debug(l_txt)
-                logging.debug(f"linking cellpy-file: {row.cellpy_file_names}")
+                logging.debug(f"linking cellpy-file: {row.name}")
 
-                if not os.path.isfile(row.cellpy_file_names):
-                    logging.error(row.cellpy_file_names)
+                if not os.path.isfile(row[hdr_journal.cellpy_file_name]):
+                    logging.error(row[hdr_journal.cellpy_file_name])
                     logging.error("File does not exist")
                     raise IOError
 
                 cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
 
                 step_table = helper.look_up_and_get(
-                    row.cellpy_file_names, prms._cellpyfile_step
+                    row[hdr_journal.cellpy_file_name], prms._cellpyfile_step
                 )
 
                 cell_data_frames[indx].cell.steps = step_table

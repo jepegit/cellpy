@@ -3,6 +3,7 @@ import logging
 import pandas as pd
 
 from cellpy import dbreader
+from cellpy.parameters.internal_settings import get_headers_journal
 from cellpy.utils.batch_tools import batch_helpers as helper
 
 # logger = logging.getLogger(__name__)
@@ -20,6 +21,8 @@ SELECTED_SUMMARIES = [
     "charge_c_rate",
     "discharge_c_rate",
 ]
+
+hdr_journal = get_headers_journal()
 
 
 def cycles_engine(**kwargs):
@@ -111,15 +114,15 @@ def simple_db_engine(reader=None, srnos=None):
         logging.debug("No reader provided. Creating one myself.")
 
     info_dict = dict()
-    info_dict["filenames"] = [reader.get_cell_name(srno) for srno in srnos]
-    info_dict["masses"] = [reader.get_mass(srno) for srno in srnos]
-    info_dict["total_masses"] = [reader.get_total_mass(srno) for srno in srnos]
-    info_dict["loadings"] = [reader.get_loading(srno) for srno in srnos]
-    info_dict["fixed"] = [reader.inspect_hd5f_fixed(srno) for srno in srnos]
-    info_dict["labels"] = [reader.get_label(srno) for srno in srnos]
-    info_dict["cell_type"] = [reader.get_cell_type(srno) for srno in srnos]
-    info_dict["raw_file_names"] = []
-    info_dict["cellpy_file_names"] = []
+    info_dict[hdr_journal["filename"]] = [reader.get_cell_name(srno) for srno in srnos]
+    info_dict[hdr_journal["mass"]] = [reader.get_mass(srno) for srno in srnos]
+    info_dict[hdr_journal["total_mass"]] = [reader.get_total_mass(srno) for srno in srnos]
+    info_dict[hdr_journal["loading"]] = [reader.get_loading(srno) for srno in srnos]
+    info_dict[hdr_journal["fixed"]] = [reader.inspect_hd5f_fixed(srno) for srno in srnos]
+    info_dict[hdr_journal["label"]] = [reader.get_label(srno) for srno in srnos]
+    info_dict[hdr_journal["cell_type"]] = [reader.get_cell_type(srno) for srno in srnos]
+    info_dict[hdr_journal["raw_file_names"]] = []
+    info_dict[hdr_journal["cellpy_file_name"]] = []
 
     logging.debug(f"created info-dict from {reader.db_file}:")
     # logging.debug(info_dict)
@@ -130,7 +133,7 @@ def simple_db_engine(reader=None, srnos=None):
     _groups = [reader.get_group(srno) for srno in srnos]
     logging.debug(">\ngroups: %s" % str(_groups))
     groups = helper.fix_groups(_groups)
-    info_dict["groups"] = groups
+    info_dict[hdr_journal["group"]] = groups
 
     my_timer_start = time.time()
     filename_cache = []
@@ -143,12 +146,13 @@ def simple_db_engine(reader=None, srnos=None):
         )
 
     info_df = pd.DataFrame(info_dict)
-    info_df = info_df.sort_values(["groups", "filenames"])
+
+    info_df = info_df.sort_values([hdr_journal.group, hdr_journal.filename])
     info_df = helper.make_unique_groups(info_df)
 
-    info_df["labels"] = info_df["filenames"].apply(helper.create_labels)
+    info_df[hdr_journal.label] = info_df[hdr_journal.filename].apply(helper.create_labels)
 
     # TODO: check if drop=False works [#index]
-    info_df.set_index("filenames", inplace=True)  # edit this to allow for
+    info_df.set_index(hdr_journal["filename"], inplace=True)  # edit this to allow for
     # non-nummeric index-names (for tab completion and python-box)
     return info_df

@@ -10,6 +10,8 @@ import os
 import collections
 import sys
 import time
+import importlib
+import pickle
 import warnings
 from functools import wraps
 
@@ -33,10 +35,31 @@ MINIMUM_CELLPY_FILE_VERSION = 4
 STEP_TABLE_VERSION = 5
 RAW_TABLE_VERSION = 5
 SUMMARY_TABLE_VERSION = 5
+PICKLE_PROTOCOL = 4
 
 HEADERS_NORMAL = get_headers_normal()
 HEADERS_SUMMARY = get_headers_summary()
 HEADERS_STEP_TABLE = get_headers_step_table()
+
+
+# https://stackoverflow.com/questions/60067953/
+# 'is-it-possible-to-specify-the-pickle-protocol-when-writing-pandas-to-hdf5
+class PickleProtocol:
+    def __init__(self, level):
+        self.previous = pickle.HIGHEST_PROTOCOL
+        self.level = level
+
+    def __enter__(self):
+        importlib.reload(pickle)
+        pickle.HIGHEST_PROTOCOL = self.level
+
+    def __exit__(self, *exc):
+        importlib.reload(pickle)
+        pickle.HIGHEST_PROTOCOL = self.previous
+
+
+def pickle_protocol(level):
+    return PickleProtocol(level)
 
 
 class FileID(object):

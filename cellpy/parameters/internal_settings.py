@@ -18,6 +18,7 @@ cellpy_limits = HeaderDict()
 headers_normal = HeaderDict()
 headers_summary = HeaderDict()
 headers_step_table = HeaderDict()
+headers_journal = HeaderDict()
 
 # cellpy attributes that should be loaded from cellpy-files:
 
@@ -212,8 +213,11 @@ headers_summary["low_level"] = "low_level_u_percentage"
 headers_summary["high_level"] = "high_level_u_percentage"
 headers_summary["shifted_charge_capacity"] = "shifted_charge_capacity_u_mAh_g"
 headers_summary["shifted_discharge_capacity"] = "shifted_discharge_capacity_u_mAh_g"
+# Other
 headers_summary["temperature_last"] = "temperature_last_u_C"
 headers_summary["temperature_mean"] = "temperature_mean_u_C"
+headers_summary["areal_charge_capacity"] = "areal_charge_capacity_u_mAh_cm2"
+headers_summary["areal_discharge_capacity"] = "areal_discharge_capacity_u_mAh_cm2"
 headers_summary["charge_c_rate"] = "charge_c_rate"
 headers_summary["discharge_c_rate"] = "discharge_c_rate"
 headers_summary["pre_aux"] = "aux_"
@@ -242,6 +246,19 @@ headers_step_table["internal_resistance_change"] = "ir_pct_change"
 headers_step_table["rate_avr"] = "rate_avr"
 
 
+headers_journal["filename"] = "filename"
+headers_journal["mass"] = "mass"
+headers_journal["total_mass"] = "total_mass"
+headers_journal["loading"] = "loading"
+headers_journal["fixed"] = "fixed"
+headers_journal["label"] = "label"
+headers_journal["cell_type"] = "cell_type"
+headers_journal["raw_file_names"] = "raw_file_names"
+headers_journal["cellpy_file_name"] = "cellpy_file_name"
+headers_journal["group"] = "group"
+headers_journal["sub_group"] = "sub_group"
+
+
 # TODO: (maybe) option to give cellpy-file version number for legacy headings
 def get_headers_summary():
     """Returns a dictionary containing the header-strings for the summary
@@ -266,3 +283,9 @@ def get_headers_step_table():
     """Returns a dictionary containing the header-strings for the steps table
         (used as column headers for the steps pandas DataFrames)"""
     return headers_step_table
+
+
+def get_headers_journal():
+    """Returns a dictionary containing the header-strings for the journal (batch)
+            (used as column headers for the journal pandas DataFrames)"""
+    return headers_journal

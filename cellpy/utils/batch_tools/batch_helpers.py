@@ -12,6 +12,8 @@ from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
 import cellpy.parameters.internal_settings
 
 # logger = logging.getLogger(__name__)
+hdr_summary = cellpy.parameters.internal_settings.get_headers_summary()
+hdr_journal = cellpy.parameters.internal_settings.get_headers_journal()
 
 
 def look_up_and_get(cellpy_file_name, table_name, root=None):
@@ -76,7 +78,7 @@ def create_folder_structure(project_name, batch_name):
 
 def find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
-    for run_name in info_dict["filenames"]:
+    for run_name in info_dict[hdr_journal["filename"]]:
         logging.debug(f"checking for {run_name}")
         if prms._use_filename_cache:
             raw_files, cellpyfile, filename_cache = filefinder.search_for_files(
@@ -86,8 +88,8 @@ def find_files(info_dict, filename_cache=None):
             raw_files, cellpyfile = filefinder.search_for_files(run_name)
         if not raw_files:
             raw_files = None
-        info_dict["raw_file_names"].append(raw_files)
-        info_dict["cellpy_file_names"].append(cellpyfile)
+        info_dict[hdr_journal["raw_file_names"]].append(raw_files)
+        info_dict[hdr_journal["cellpy_file_name"]].append(cellpyfile)
 
     return info_dict
 
@@ -127,17 +129,16 @@ def save_multi(data, file_name, sep=";"):
 def make_unique_groups(info_df):
     """This function cleans up the group numbers a bit."""
     # fixes group numbering
-    unique_g = info_df.groups.unique()
+    unique_g = info_df[hdr_journal.group].unique()
     unique_g = sorted(unique_g)
     new_unique_g = list(range(len(unique_g)))
-    info_df["sub_groups"] = info_df["groups"] * 0
+    info_df[hdr_journal.sub_group] = info_df[hdr_journal.group] * 0
     for i, j in zip(unique_g, new_unique_g):
         counter = 1
-        for indx, row in info_df.loc[info_df.groups == i].iterrows():
-            info_df.at[indx, "sub_groups"] = counter
-            # info_df.set_value(indx, "sub_groups", counter)
+        for indx, row in info_df.loc[info_df[hdr_journal.group] == i].iterrows():
+            info_df.at[indx, hdr_journal.sub_group] = counter
             counter += 1
-        info_df.loc[info_df.groups == i, "groups"] = j + 1
+        info_df.loc[info_df[hdr_journal.group] == i, hdr_journal.group] = j + 1
     return info_df
 
 
@@ -174,10 +175,9 @@ def create_selected_summaries_dict(summaries_list):
         header name,}
 
     """
-    headers_summary = cellpy.parameters.internal_settings.get_headers_summary()
     selected_summaries = dict()
     for h in summaries_list:
-        selected_summaries[h] = headers_summary[h]
+        selected_summaries[h] = hdr_summary[h]
     return selected_summaries
 
 
@@ -305,7 +305,7 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
 
     # extracting discharge
     out_data = _extract_dqdv(cell_data, cell_data.get_dcap, last_cycle)
-    logging.debug("extracxted ica for discharge")
+    logging.debug("extracted ica for discharge")
     try:
         save_multi(data=out_data, file_name=outname_discharge, sep=sep)
     except ExportFailed as e:

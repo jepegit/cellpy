@@ -16,22 +16,21 @@ HEADERS_STEP_TABLE = get_headers_step_table()
 
 # TODO: this should be defined in internal_settings
 HEADERS_KEYS_STEP_TABLE_EXTENDED = [
-        'point',
-        'test_time',
-        'step_time',
-        'current',
-        'voltage',
-        'charge',
-        'discharge',
-        'internal_resistance',
-     ]
-HEADERS_STEP_TABLE_EXTENSIONS = [
-        "min", "max", "avr", "first", "last", "delta", "std"
+    "point",
+    "test_time",
+    "step_time",
+    "current",
+    "voltage",
+    "charge",
+    "discharge",
+    "internal_resistance",
 ]
+HEADERS_STEP_TABLE_EXTENSIONS = ["min", "max", "avr", "first", "last", "delta", "std"]
 
 headers_normal_v5 = dict()
 headers_summary_v5 = dict()
 headers_step_table_v5 = dict()
+headers_journal_v0 = dict()
 
 headers_summary_v5["cycle_index"] = "Cycle_Index"
 headers_summary_v5["data_point"] = "Data_Point"
@@ -40,7 +39,9 @@ headers_summary_v5["datetime"] = "DateTime"
 headers_summary_v5["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
 headers_summary_v5["charge_capacity"] = "Charge_Capacity(mAh/g)"
 headers_summary_v5["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
-headers_summary_v5["cumulated_discharge_capacity"] = "Cumulated_Discharge_Capacity(mAh/g)"
+headers_summary_v5[
+    "cumulated_discharge_capacity"
+] = "Cumulated_Discharge_Capacity(mAh/g)"
 headers_summary_v5["coulombic_efficiency"] = "Coulombic_Efficiency(percentage)"
 headers_summary_v5[
     "cumulated_coulombic_efficiency"
@@ -139,16 +140,33 @@ headers_step_table_v5["internal_resistance_change"] = "ir_pct_change"
 headers_step_table_v5["rate_avr"] = "rate_avr"
 
 
+headers_journal_v0["filename"] = "filenames"
+headers_journal_v0["mass"] = "masses"
+headers_journal_v0["total_mass"] = "total_masses"
+headers_journal_v0["loading"] = "loadings"
+headers_journal_v0["fixed"] = "fixed"
+headers_journal_v0["label"] = "labels"
+headers_journal_v0["cell_type"] = "cell_types"
+headers_journal_v0["raw_file_names"] = "raw_file_names"
+headers_journal_v0["cellpy_file_name"] = "cellpy_file_names"
+headers_journal_v0["group"] = "groups"
+headers_journal_v0["sub_group"] = "sub_groups"
+
+
 def translate_headers(data_sets, cellpy_file_version):
     # this works for upgrading to versions 6,
     # remark that the extensions for the step table is hard-coded
     logging.debug(f"translate headers from v{cellpy_file_version}")
 
     summary_rename_dict = {
-        headers_summary_v5[key]: HEADERS_SUMMARY[key] for key in HEADERS_SUMMARY
+        headers_summary_v5[key]: HEADERS_SUMMARY[key]
+        for key in HEADERS_SUMMARY
+        if key in headers_summary_v5
     }
     steps_rename_dict = {
-        headers_step_table_v5[key]: HEADERS_STEP_TABLE[key] for key in HEADERS_STEP_TABLE
+        headers_step_table_v5[key]: HEADERS_STEP_TABLE[key]
+        for key in HEADERS_STEP_TABLE
+        if key in headers_step_table_v5
     }
 
     steps_rename_dict_extensions = {}

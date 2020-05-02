@@ -6,8 +6,9 @@ import collections
 
 from cellpy import cellreader
 from cellpy.exceptions import UnderDefined
+from cellpy.parameters.internal_settings import get_headers_journal
 
-
+hdr_journal = get_headers_journal()
 empty_farm = []
 
 
@@ -120,7 +121,7 @@ class Data(collections.UserDict):
             logging.debug("looking up from cellpyfile")
             pages = self.experiment.journal.pages
             info = pages.loc[cell_id, :]
-            cellpy_file = info["cellpy_file_names"]
+            cellpy_file = info[hdr_journal.cellpy_file_name]
             # linking not implemented yet - loading whole file in mem instead
             if not self.query_mode:
                 cell = self.experiment._load_cellpy_file(cellpy_file)

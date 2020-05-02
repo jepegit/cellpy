@@ -12,6 +12,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_summary,
     get_headers_step_table,
     get_headers_normal,
+    get_headers_journal,
     ATTRS_CELLPYDATA,
     ATTRS_DATASET,
 )
@@ -24,6 +25,7 @@ from cellpy.utils import batch, ica
 hdr_summary = get_headers_summary()
 hdr_steps = get_headers_step_table()
 hdr_normal = get_headers_normal()
+hdr_journal = get_headers_journal()
 
 
 def update_journal_cellpy_data_dir(
@@ -113,14 +115,12 @@ def split_experiment(cell, base_cycles=None):
         new_cell = make_new_cell()
 
         new_cell.cell.steps = steptable0
-        # new_cell.dataset.step_table_made = True
 
         new_cell.cell.raw = data0
         new_cell.cell.summary = summary0
 
         old_cell = make_new_cell()
         old_cell.cell.steps = steptable
-        # old_cell.dataset.step_table_made = True
 
         old_cell.cell.raw = data
         old_cell.cell.summary = summary
@@ -213,15 +213,19 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
 
 def add_areal_capacity(cell, cell_id, journal):
     """Adds areal capacity to the summary."""
-
+    hdr_summary.areal_charge_capacity
+    hdr_summary.areal_discharge_capacity
+    hdr_summary.charge_capacity
+    hdr_summary.discharge_capacity
+    hdr_journal.loading
     # obs! hard-coded col-names (please fix)
-    loading = journal.pages.loc[cell_id, "loadings"]  # header 2 be changed
+    loading = journal.pages.loc[cell_id, hdr_journal.loading]  # header 2 be changed
 
-    cell.cell.summary["Areal_Charge_Capacity(mAh/cm2)"] = (
-        cell.cell.summary["Charge_Capacity(mAh/g)"] * loading / 1000
+    cell.cell.summary[hdr_summary.areal_charge_capacity] = (
+        cell.cell.summary[hdr_summary.charge_capacity] * loading / 1000
     )
-    cell.cell.summary["Areal_Discharge_Capacity(mAh/cm2)"] = (
-        cell.cell.summary["Discharge_Capacity(mAh/g)"] * loading / 1000
+    cell.cell.summary[hdr_summary.areal_discharge_capacity] = (
+        cell.cell.summary[hdr_summary.discharge_capacity] * loading / 1000
     )
     return cell
 

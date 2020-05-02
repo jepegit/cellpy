@@ -51,6 +51,8 @@ from cellpy.readers.core import (
     xldate_as_datetime,
     interpolate_y_on_x,
     identify_last_data_point,
+    pickle_protocol,
+    PICKLE_PROTOCOL,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -1189,7 +1191,8 @@ class CellpyData(object):
         try:
             self.logger.debug("loading cellpy-file (hdf5):")
             self.logger.debug(cellpy_file)
-            new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
+            with pickle_protocol(PICKLE_PROTOCOL):
+                new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
             self.logger.debug("cellpy-file loaded")
         except AttributeError:
             new_datasets = []
@@ -1212,7 +1215,9 @@ class CellpyData(object):
         if return_cls:
             return self
 
-    def old_load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=False):
+    def old_load(
+        self, cellpy_file, parent_level=None, return_cls=True, accept_old=False
+    ):
         """Loads a cellpy file.
 
         Args:
@@ -1229,7 +1234,8 @@ class CellpyData(object):
         try:
             self.logger.debug("loading cellpy-file (hdf5):")
             self.logger.debug(cellpy_file)
-            new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
+            with pickle_protocol(PICKLE_PROTOCOL):
+                new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
             self.logger.debug("cellpy-file loaded")
         except AttributeError:
             new_datasets = []
@@ -1316,8 +1322,10 @@ class CellpyData(object):
             if accept_old:
                 self.logger.debug(f"old cellpy file version {cellpy_file_version}")
                 self.logger.debug(f"filename: {filename}")
-                self.logger.warning(f"Loading old file-type. It is recommended that you remake the step table and the "
-                                 f"summary table.")
+                self.logger.warning(
+                    f"Loading old file-type. It is recommended that you remake the step table and the "
+                    f"summary table."
+                )
                 new_data = self._load_old_hdf5(filename, cellpy_file_version)
             else:
                 raise WrongFileVersion(
@@ -1482,7 +1490,7 @@ class CellpyData(object):
         if cellpy_file_version < 6:
             self.logger.debug("legacy cellpy file version needs translation")
             new_data = old_settings.translate_headers(new_data, cellpy_file_version)
-            #self.__check_loaded_data(new_data)
+            # self.__check_loaded_data(new_data)
         return new_data
 
     def __check_loaded_data(self, new_data):
@@ -2054,14 +2062,14 @@ class CellpyData(object):
 
         """
         t0 = time.time()
-        self.logger.debug("Trying to get step-types")
+        # self.logger.debug("Trying to get step-types")
         if steps_to_skip is None:
             steps_to_skip = []
 
         if steptable is None:
             self.logger.debug("steptable=None")
             dataset_number = self._validate_dataset_number(dataset_number)
-            self.logger.debug(f"dt 1: {time.time() - t0}")
+            # self.logger.debug(f"dt 1: {time.time() - t0}")
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
@@ -2088,7 +2096,7 @@ class CellpyData(object):
         steptypes = []
         helper_step_types = ["ocv", "charge_discharge"]
         valid_step_type = True
-        self.logger.debug(f"dt 2: {time.time() - t0}")
+        # self.logger.debug(f"dt 2: {time.time() - t0}")
         if steptype in self.list_of_step_types:
             steptypes.append(steptype)
         else:
@@ -2103,7 +2111,7 @@ class CellpyData(object):
                     steptypes.append("discharge")
             else:
                 valid_step_type = False
-            self.logger.debug(txt)
+            # self.logger.debug(txt)
         if not valid_step_type:
             return None
 
@@ -2129,22 +2137,21 @@ class CellpyData(object):
         shdr = self.headers_step_table
 
         # retrieving cycle numbers
-        self.logger.debug(f"dt 3: {time.time() - t0}")
+        # self.logger.debug(f"dt 3: {time.time() - t0}")
         if cycle_number is None:
             cycle_numbers = self.get_cycle_numbers(dataset_number, steptable=steptable)
-
         else:
-            if isinstance(cycle_number, (list, tuple)):
+            if isinstance(cycle_number, collections.abc.Iterable):
                 cycle_numbers = cycle_number
             else:
                 cycle_numbers = [cycle_number]
 
         if trim_taper_steps is not None:
             trim_taper_steps = -trim_taper_steps
-            self.logger.debug("taper steps to trim given")
+            # self.logger.debug("taper steps to trim given")
 
         if pdtype:
-            self.logger.debug("Return pandas dataframe.")
+            # self.logger.debug("Return pandas dataframe.")
             if trim_taper_steps:
                 self.logger.info(
                     "Trimming taper steps is currently not"
@@ -2162,25 +2169,28 @@ class CellpyData(object):
         #     "returning dict will be deprecated",
         # )
         out = dict()
-        self.logger.debug(f"return a dict")
-        self.logger.debug(f"dt 4: {time.time() - t0}")
+        # self.logger.debug(f"return a dict")
+        # self.logger.debug(f"dt 4: {time.time() - t0}")
         for cycle in cycle_numbers:
             steplist = []
             for s in steptypes:
-                step = st[(st[shdr.type] == s) & (st[shdr.cycle] == cycle)][
-                    shdr.step
-                ].tolist()
-                for newstep in step[:trim_taper_steps]:
-                    if newstep in steps_to_skip:
-                        self.logger.debug(f"skipping step {newstep}")
-                    else:
-                        steplist.append(int(newstep))
+                mask_type_and_cycle = (st[shdr.type] == s) & (st[shdr.cycle] == cycle)
+                if not any(mask_type_and_cycle):
+                    self.logger.debug(f"found nothing for cycle {cycle}")
+                else:
+                    step = st[mask_type_and_cycle][
+                        shdr.step
+                    ].tolist()
+                    for newstep in step[:trim_taper_steps]:
+                        if newstep in steps_to_skip:
+                            self.logger.debug(f"skipping step {newstep}")
+                        else:
+                            steplist.append(int(newstep))
 
             if not steplist:
                 steplist = [0]
             out[cycle] = steplist
-        self.logger.debug(f"dt tot: {time.time() - t0}")
-
+        # self.logger.debug(f"dt tot: {time.time() - t0}")
         return out
 
     def load_step_specifications(self, file_name, short=False, dataset_number=None):
@@ -3049,60 +3059,61 @@ class CellpyData(object):
 
         warnings.simplefilter("ignore", PerformanceWarning)
         try:
-            store = pd.HDFStore(
-                outfile_all,
-                complib=prms._cellpyfile_complib,
-                complevel=prms._cellpyfile_complevel,
-            )
-
-            self.logger.debug("trying to put raw data")
-
-            self.logger.debug(" - lets set Data_Point as index")
-
-            hdr_data_point = self.headers_normal.data_point_txt
-
-            if test.raw.index.name != hdr_data_point:
-                test.raw = test.raw.set_index(hdr_data_point, drop=False)
-
-            store.put(root + raw_dir, test.raw, format=prms._cellpyfile_raw_format)
-            self.logger.debug(" raw -> hdf5 OK")
-
-            self.logger.debug("trying to put summary")
-            store.put(
-                root + summary_dir, test.summary, format=prms._cellpyfile_summary_format
-            )
-            self.logger.debug(" summary -> hdf5 OK")
-
-            self.logger.debug("trying to put meta data")
-            store.put(
-                root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format
-            )
-            self.logger.debug(" meta -> hdf5 OK")
-
-            self.logger.debug("trying to put fidtable")
-            store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
-            self.logger.debug(" fid -> hdf5 OK")
-
-            self.logger.debug("trying to put step")
-            try:
-                store.put(
-                    root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+            with pickle_protocol(4):
+                store = pd.HDFStore(
+                    outfile_all,
+                    complib=prms._cellpyfile_complib,
+                    complevel=prms._cellpyfile_complevel,
                 )
-                self.logger.debug(" step -> hdf5 OK")
-            except TypeError:
-                test = self._fix_dtype_step_table(test)
+
+                self.logger.debug("trying to put raw data")
+
+                self.logger.debug(" - lets set Data_Point as index")
+
+                hdr_data_point = self.headers_normal.data_point_txt
+
+                if test.raw.index.name != hdr_data_point:
+                    test.raw = test.raw.set_index(hdr_data_point, drop=False)
+
+                store.put(root + raw_dir, test.raw, format=prms._cellpyfile_raw_format)
+                self.logger.debug(" raw -> hdf5 OK")
+
+                self.logger.debug("trying to put summary")
                 store.put(
-                    root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                    root + summary_dir, test.summary, format=prms._cellpyfile_summary_format
                 )
-                self.logger.debug(" fixed step -> hdf5 OK")
+                self.logger.debug(" summary -> hdf5 OK")
 
-            # creating indexes
-            # hdr_data_point = self.headers_normal.data_point_txt
-            # hdr_cycle_steptable = self.headers_step_table.cycle
-            # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+                self.logger.debug("trying to put meta data")
+                store.put(
+                    root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format
+                )
+                self.logger.debug(" meta -> hdf5 OK")
 
-            # store.create_table_index(root + "/raw", columns=[hdr_data_point],
-            #                          optlevel=9, kind='full')
+                self.logger.debug("trying to put fidtable")
+                store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
+                self.logger.debug(" fid -> hdf5 OK")
+
+                self.logger.debug("trying to put step")
+                try:
+                    store.put(
+                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                    )
+                    self.logger.debug(" step -> hdf5 OK")
+                except TypeError:
+                    test = self._fix_dtype_step_table(test)
+                    store.put(
+                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                    )
+                    self.logger.debug(" fixed step -> hdf5 OK")
+
+                # creating indexes
+                # hdr_data_point = self.headers_normal.data_point_txt
+                # hdr_cycle_steptable = self.headers_step_table.cycle
+                # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+
+                # store.create_table_index(root + "/raw", columns=[hdr_data_point],
+                #                          optlevel=9, kind='full')
         finally:
             store.close()
         self.logger.debug(" all -> hdf5 OK")
@@ -3633,7 +3644,7 @@ class CellpyData(object):
         if cycle is None:
             cycle = self.get_cycle_numbers()
 
-        if not isinstance(cycle, (collections.Iterable,)):
+        if not isinstance(cycle, collections.abc.Iterable):
             cycle = [cycle]
 
         if split and not (categorical_column or label_cycle_number):
@@ -3835,8 +3846,8 @@ class CellpyData(object):
             steptable=steptable,
         )
 
-        c = pd.Series()
-        v = pd.Series()
+        c = pd.Series(dtype=float)
+        v = pd.Series(dtype=float)
 
         if cap_type == "charge":
             column_txt = self.headers_normal.charge_capacity_txt
@@ -3850,8 +3861,7 @@ class CellpyData(object):
                 c = selected_step[column_txt] * 1000000 / mass
             else:
                 self.logger.debug("could not find any steps for this cycle")
-                txt = "(c:%i s:%i type:%s)" % (cycle, step, cap_type)
-                raise NullData("no steps found " + txt)
+                raise NullData(f"no steps found (c:{cycle} s:{step} type:{cap_type})")
         else:
             # get all the discharge cycles
             # this is a dataframe filtered on step and cycle
@@ -5121,4 +5131,3 @@ if __name__ == "__main__":
     print(c.cell.summary.columns)
     print(c.cell.steps.columns)
     print(c.cell.raw.columns)
-

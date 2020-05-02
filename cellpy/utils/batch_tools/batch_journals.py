@@ -9,8 +9,11 @@ import pandas as pd
 from cellpy.exceptions import UnderDefined
 from cellpy.parameters import prms
 from cellpy.readers import dbreader
+from cellpy.parameters.internal_settings import get_headers_journal
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
+
+hdr_journal = get_headers_journal()
 
 
 class LabJournal(BaseJournal):
@@ -45,7 +48,9 @@ class LabJournal(BaseJournal):
             srnos = self.db_reader.select_batch(name, batch_col)
             self.pages = simple_db_engine(self.db_reader, srnos)
             if self.pages.empty:
-                logging.critical(f"EMPTY JOURNAL: are you sure you have provided correct input to batch?")
+                logging.critical(
+                    f"EMPTY JOURNAL: are you sure you have provided correct input to batch?"
+                )
                 logging.critical(f"name: {name}")
                 logging.critical(f"project: {self.project}")
                 logging.critical(f"batch_col: {batch_col}")
@@ -117,23 +122,11 @@ class LabJournal(BaseJournal):
         logging.debug(f"name: {self.name}")
         logging.debug(f"project: {self.project}")
 
-        # TODO: rename the column names to singular form (e.g. masses should be mass)
+        col_names = list(hdr_journal.values())
         pages = pd.DataFrame(
-            columns=[
-                "filenames",
-                "masses",
-                "total_masses",
-                "loadings",
-                "fixed",
-                "labels",
-                "cell_type",
-                "raw_file_names",
-                "cellpy_file_names",
-                "groups",
-                "sub_groups",
-            ]
+            columns=col_names
         )
-        pages.set_index("filenames", inplace=True)
+        pages.set_index(hdr_journal.filename, inplace=True)
         return pages
 
     def to_file(self, file_name=None):

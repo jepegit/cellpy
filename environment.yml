@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - pyviz
 dependencies:
-  - python>=3.8
+  - python>=3.7
   - pip
   - numpy
   - xlrd
@@ -13,7 +13,7 @@ dependencies:
   - click
   - scipy
   - pandas
-  - pytables>=3.6.1
+  - pytables
   - setuptools
   - ruamel.yaml
   - pyodbc
@@ -25,6 +25,9 @@ dependencies:
   - ipykernel
   - holoviz
   - hdf5
-  - pytables
+  - pytables>=3.6.1
   - python-box
+  - pytest
+  - jupyter
+  - jupyterlab
 

@@ -50,7 +50,7 @@ def populated_batch(batch_instance):
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01"
     )
     b.create_journal()
-    b.create_folder_structure()
+    b.paginate()
     b.update()
     return b
 

@@ -7,10 +7,11 @@ import pandas as pd
 
 from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
+from cellpy.parameters.internal_settings import get_headers_journal
 from cellpy.exceptions import UnderDefined
 from cellpy import prms
 
-
+hdr_journal = get_headers_journal()
 # print(prms.Batch.backend)
 
 # TODO: add palette to prms.Batch
@@ -109,7 +110,7 @@ def create_plot_option_dicts(
     if size is None:
         size = 10
 
-    groups = info.groups.unique()
+    groups = info[hdr_journal.group].unique()
     number_of_groups = len(groups)
     if colors is None:
         if number_of_groups < 4:
@@ -118,7 +119,7 @@ def create_plot_option_dicts(
         else:
             colors = palette[min(6, number_of_groups)]
 
-    sub_groups = info.sub_groups.unique()
+    sub_groups = info[hdr_journal.sub_group].unique()
     marker_it = itertools.cycle(marker_types)
     colors_it = itertools.cycle(colors)
 

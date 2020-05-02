@@ -157,9 +157,7 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
 
     else:
         if reset:
-            _update_paths(
-                userdir, False, dry_run=dry_run, reset=True, silent=True
-            )
+            _update_paths(userdir, False, dry_run=dry_run, reset=True, silent=True)
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
@@ -185,7 +183,7 @@ def _update_paths(
         if relative_home:
             h = h / custom_dir
         if not custom_dir.parts[-1] == default_dir:
-                h = h / default_dir
+            h = h / default_dir
 
     if not reset:
         outdatadir = pathlib.Path(prmreader.prms.Paths.outdatadir)
