@@ -15,7 +15,7 @@ Example:
 """
 
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import logging
 import sys
 import collections
@@ -602,7 +602,7 @@ class CellpyData(object):
             fidtable = store.select(parent_level + fid_dir)
             print(fidtable)
         except KeyError:
-            self.logger.warning("no fidtable -" " you should update your hdf5-file")
+            self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable = None
         finally:
             store.close()
@@ -1727,8 +1727,8 @@ class CellpyData(object):
         fidtable["raw_data_fid"] = fids
         if fids:
             for fid, length in zip(fids, test.raw_data_files_length):
-                fidtable["raw_data_name"].append(Path(fid.name).name)
-                fidtable["raw_data_full_name"].append(fid.full_name)
+                fidtable["raw_data_name"].append(str(Path(fid.name).name))
+                fidtable["raw_data_full_name"].append(str(Path(fid.full_name)))
                 fidtable["raw_data_size"].append(fid.size)
                 fidtable["raw_data_last_modified"].append(fid.last_modified)
                 fidtable["raw_data_last_accessed"].append(fid.last_accessed)
