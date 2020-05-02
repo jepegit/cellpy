@@ -598,11 +598,11 @@ class CellpyData(object):
         except Exception as e:
             self.logger.debug(f"could not open cellpy-file ({e})")
             return None
+        fidtable = None
         try:
             fidtable = store.select(parent_level + fid_dir)
         except KeyError:
             self.logger.warning("no fidtable - you should update your hdf5-file")
-            fidtable = None
         except NotImplementedError:
             self.logger.warning("your system cannot read the fid-table (posix-windows confusion) "
                                 "hopefully this will be solved in a newer version of pytables.")

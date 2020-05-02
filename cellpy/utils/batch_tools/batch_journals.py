@@ -10,10 +10,16 @@ from cellpy.exceptions import UnderDefined
 from cellpy.parameters import prms
 from cellpy.readers import dbreader
 from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.parameters.legacy.internal_settings import headers_journal_v0 as hdr_journal_old
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
 
 hdr_journal = get_headers_journal()
+
+trans_dict = {
+    hdr_journal_old[key]: hdr_journal[key]
+    for key in hdr_journal
+}
 
 
 class LabJournal(BaseJournal):
@@ -80,11 +86,18 @@ class LabJournal(BaseJournal):
         pages_dict = top_level_dict["info_df"]
         meta_dict = top_level_dict["metadata"]
         pages = pd.DataFrame(pages_dict)
+
         logging.debug("checking path-names")
-        pages.cellpy_file_names = pages.cellpy_file_names.apply(cls._fix_cellpy_paths)
+        try:
+            pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
+        except KeyError:
+            logging.warning("old journal file - updating")
+            pages.rename(columns=trans_dict, inplace=True)
+            pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
+
         return pages, meta_dict
 
-    def from_file(self, file_name=None):
+    def from_file(self, file_name=None, paginate=True):
         """Loads a DataFrame with all the needed info about the experiment"""
 
         file_name = self._check_file_name(file_name)
@@ -95,7 +108,8 @@ class LabJournal(BaseJournal):
         self.file_name = file_name
         self._prm_packer(meta_dict)
         self.generate_folder_names()
-        self.paginate()
+        if paginate:
+            self.paginate()
 
     def from_file_old(self, file_name=None):
         """Loads a DataFrame with all the needed info about the experiment"""
@@ -107,7 +121,7 @@ class LabJournal(BaseJournal):
 
         pages_dict = top_level_dict["info_df"]
         pages = pd.DataFrame(pages_dict)
-        pages.cellpy_file_names = pages.cellpy_file_names.apply(self._fix_cellpy_paths)
+        pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(self._fix_cellpy_paths)
         self.pages = pages
         self.file_name = file_name
         self._prm_packer(top_level_dict["metadata"])
@@ -129,7 +143,7 @@ class LabJournal(BaseJournal):
         pages.set_index(hdr_journal.filename, inplace=True)
         return pages
 
-    def to_file(self, file_name=None):
+    def to_file(self, file_name=None, paginate=True):
         """Saves a DataFrame with all the needed info about the experiment"""
         file_name = self._check_file_name(file_name)
         pages = self.pages
@@ -138,8 +152,8 @@ class LabJournal(BaseJournal):
             top_level_dict,
             default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
         )
-
-        self.paginate()
+        if paginate:
+            self.paginate()
 
         with open(file_name, "w") as outfile:
             outfile.write(jason_string)
