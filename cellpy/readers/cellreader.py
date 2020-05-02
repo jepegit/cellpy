@@ -600,10 +600,12 @@ class CellpyData(object):
             return None
         try:
             fidtable = store.select(parent_level + fid_dir)
-            print(fidtable)
         except KeyError:
             self.logger.warning("no fidtable - you should update your hdf5-file")
             fidtable = None
+        except NotImplementedError:
+            self.logger.warning("your system cannot read the fid-table (posix-windows confusion) "
+                                "hopefully this will be solved in a newer version of pytables.")
         finally:
             store.close()
         if fidtable is not None:
@@ -1748,7 +1750,10 @@ class CellpyData(object):
         min_amount = 0
         for counter, item in enumerate(tbl["raw_data_name"]):
             fid = FileID()
-            fid.name = Path(item).name
+            try:
+                fid.name = Path(item).name
+            except NotImplementedError:
+                fid.name = os.path.basename(item)
             fid.full_name = tbl["raw_data_full_name"][counter]
             fid.size = tbl["raw_data_size"][counter]
             fid.last_modified = tbl["raw_data_last_modified"][counter]
