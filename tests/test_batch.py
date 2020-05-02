@@ -22,6 +22,9 @@ from . import fdv
 log.setup_logging(default_level="DEBUG")
 
 
+# TODO: I think these tests saves new versions of cellpyfiles each time. Fix that.
+# TODO: Most likely some of these tests also saves an updated batch json file. Fix that.
+
 @pytest.fixture(scope="module")
 def clean_dir():
     new_path = tempfile.mkdtemp()

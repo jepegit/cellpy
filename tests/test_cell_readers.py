@@ -22,6 +22,7 @@ def cellpy_data_instance():
     return cellreader.CellpyData()
 
 
+# TODO: fix this: dont save a file that is used in other test modules
 @pytest.fixture(scope="module")
 def dataset():
     from cellpy import cellreader
@@ -37,6 +38,7 @@ def dataset():
     return b
 
 
+# TODO: fix this: not smart to save cellpyfile that will be used by other modules
 def test_create_cellpyfile(cellpy_data_instance):
     # create a cellpy file from the res-file (used for testing)
     cellpy_data_instance.from_raw(fdv.res_file_path)
