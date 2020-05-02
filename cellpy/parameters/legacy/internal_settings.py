@@ -179,6 +179,10 @@ def translate_headers(data_sets, cellpy_file_version):
     raw_rename_dict = {
         headers_normal_v5[key]: HEADERS_NORMAL[key] for key in HEADERS_NORMAL
     }
+
+    summary_index_name = HEADERS_SUMMARY["cycle_index"]
+    raw_index_name = HEADERS_NORMAL["data_point_txt"]
+
     # from pprint import pprint
     # pprint(summary_rename_dict)
     # pprint(steps_rename_dict)
@@ -192,6 +196,9 @@ def translate_headers(data_sets, cellpy_file_version):
         data_set.steps.rename(columns=steps_rename_dict, inplace=True)
         data_set.steps.rename(columns=steps_rename_dict_extensions, inplace=True)
         new_data_sets.append(data_set)
+        # we also need to update the index-name
+        data_set.summary.index.name = summary_index_name
+        data_set.raw.index.name = raw_index_name
 
         # pprint(data_set.summary.columns)
         # pprint(data_set.steps.columns)
