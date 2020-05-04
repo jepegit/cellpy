@@ -38,6 +38,9 @@ headers_summary_v5["test_time"] = "Test_Time"
 headers_summary_v5["datetime"] = "DateTime"
 headers_summary_v5["discharge_capacity"] = "Discharge_Capacity(mAh/g)"
 headers_summary_v5["charge_capacity"] = "Charge_Capacity(mAh/g)"
+headers_summary_v5["discharge_capacity_raw"] = "Discharge_Capacity"
+headers_summary_v5["charge_capacity_raw"] = "Charge_Capacity"
+
 headers_summary_v5["cumulated_charge_capacity"] = "Cumulated_Charge_Capacity(mAh/g)"
 headers_summary_v5[
     "cumulated_discharge_capacity"
@@ -163,6 +166,7 @@ def translate_headers(data_sets, cellpy_file_version):
         for key in HEADERS_SUMMARY
         if key in headers_summary_v5
     }
+
     steps_rename_dict = {
         headers_step_table_v5[key]: HEADERS_STEP_TABLE[key]
         for key in HEADERS_STEP_TABLE
@@ -195,10 +199,12 @@ def translate_headers(data_sets, cellpy_file_version):
         data_set.raw.rename(columns=raw_rename_dict, inplace=True)
         data_set.steps.rename(columns=steps_rename_dict, inplace=True)
         data_set.steps.rename(columns=steps_rename_dict_extensions, inplace=True)
-        new_data_sets.append(data_set)
+
         # we also need to update the index-name
         data_set.summary.index.name = summary_index_name
         data_set.raw.index.name = raw_index_name
+
+        new_data_sets.append(data_set)
 
         # pprint(data_set.summary.columns)
         # pprint(data_set.steps.columns)

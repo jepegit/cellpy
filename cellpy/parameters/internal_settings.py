@@ -127,15 +127,14 @@ cellpy_limits["ir_change"] = 0.00001
 
 # headers for out-files:
 
+# 01.05.2020: renamed the column names to the form cycle_index, discharge_capacity_u_mAh_g, etc.
 
 # - normal (data) -
 
 headers_normal["aci_phase_angle_txt"] = "aci_phase_angle"
 headers_normal["ref_aci_phase_angle_txt"] = "ref_aci_phase_angle"
-
 headers_normal["ac_impedance_txt"] = "ac_impedance"
 headers_normal["ref_ac_impedance_txt"] = "ref_ac_impedance"  # new
-
 headers_normal["charge_capacity_txt"] = "charge_capacity"
 headers_normal["charge_energy_txt"] = "charge_energy"
 headers_normal["current_txt"] = "current"
@@ -145,34 +144,28 @@ headers_normal["datetime_txt"] = "date_time"
 headers_normal["discharge_capacity_txt"] = "discharge_capacity"
 headers_normal["discharge_energy_txt"] = "discharge_energy"
 headers_normal["internal_resistance_txt"] = "internal_resistance"
-
 headers_normal["is_fc_data_txt"] = "is_fc_data"
 headers_normal["step_index_txt"] = "step_index"
 headers_normal["sub_step_index_txt"] = "sub_step_index"  # new
-
 headers_normal["step_time_txt"] = "step_time"
 headers_normal["sub_step_time_txt"] = "sub_step_time"  # new
-
 headers_normal["test_id_txt"] = "test_id"
 headers_normal["test_time_txt"] = "test_time"
-
 headers_normal["voltage_txt"] = "voltage"
 headers_normal["ref_voltage_txt"] = "reference_voltage"  # new
-
 headers_normal["dv_dt_txt"] = "dv_dt"
 headers_normal["frequency_txt"] = "frequency"  # new
 headers_normal["amplitude_txt"] = "amplitude"  # new
 
-
 # - summary -
 
 # 08.12.2016: added temperature_last, temperature_mean, aux_
-# TODO (maybe): create a legacy settings module with old headers
-# TODO: rename the column names to the form cycle_index, discharge_capacity_u_mAh_g, etc.
 headers_summary["cycle_index"] = headers_normal["cycle_index_txt"]
 headers_summary["data_point"] = headers_normal["data_point_txt"]
 headers_summary["test_time"] = headers_normal["test_time_txt"]
 headers_summary["datetime"] = headers_normal["datetime_txt"]
+headers_summary["discharge_capacity_raw"] = headers_normal["discharge_capacity_txt"]
+headers_summary["charge_capacity_raw"] = headers_normal["charge_capacity_txt"]
 
 headers_summary["discharge_capacity"] = "discharge_capacity_u_mAh_g"
 headers_summary["charge_capacity"] = "charge_capacity_u_mAh_g"
@@ -207,10 +200,14 @@ headers_summary["cumulated_ric_sei"] = "cumulated_ric_sei_u_none"
 headers_summary["cumulated_ric"] = "cumulated_ric_u_none"
 
 headers_summary["normalized_cycle_index"] = "normalized_cycle_index"
+headers_summary["normalized_charge_capacity"] = "normalized_charge_capacity"
+headers_summary["normalized_discharge_capacity"] = "normalized_discharge_capacity"
+
 # Sum of irreversible capacity:
 headers_summary["low_level"] = "low_level_u_percentage"
 # SEI loss:
 headers_summary["high_level"] = "high_level_u_percentage"
+# Shifted capacities:
 headers_summary["shifted_charge_capacity"] = "shifted_charge_capacity_u_mAh_g"
 headers_summary["shifted_discharge_capacity"] = "shifted_discharge_capacity_u_mAh_g"
 # Other
@@ -245,7 +242,7 @@ headers_step_table["internal_resistance"] = "ir"
 headers_step_table["internal_resistance_change"] = "ir_pct_change"
 headers_step_table["rate_avr"] = "rate_avr"
 
-
+# 01.05.2020: added fix column names and renamed to singular form.
 headers_journal["filename"] = "filename"
 headers_journal["mass"] = "mass"
 headers_journal["total_mass"] = "total_mass"
@@ -259,7 +256,6 @@ headers_journal["group"] = "group"
 headers_journal["sub_group"] = "sub_group"
 
 
-# TODO: (maybe) option to give cellpy-file version number for legacy headings
 def get_headers_summary():
     """Returns a dictionary containing the header-strings for the summary
     (used as column headers for the summary pandas DataFrames)"""

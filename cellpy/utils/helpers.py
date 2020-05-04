@@ -28,6 +28,45 @@ hdr_normal = get_headers_normal()
 hdr_journal = get_headers_journal()
 
 
+def _make_average(frames, keys=None, columns=None, normalize_cycles=False):
+    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
+
+    cell_id = ""
+    final_frame = None
+    new_frames = []
+    if columns is None:
+        columns = frames[0].columns
+
+    if keys is not None:
+        if isinstance(keys, (list, tuple)):
+            cell_id = list(set([k.split("_")[1] for k in keys]))
+            cell_id = "_".join(cell_id)
+        elif isinstance(keys, str):
+            cell_id = keys
+
+    new_frame = pd.concat(frames, axis=1)
+
+    for col in columns:
+        if col in [hdr_norm_cycle, hdr_cum_charge] and normalize_cycles:
+
+            avg_frame = new_frame[col].agg(["mean"], axis="columns").rename(columns={"mean": col})
+
+        else:
+            new_col_name_mean = col + "_mean"
+            new_col_name_std = col + "_std"
+
+            # very slow:
+            avg_frame = new_frame[col].agg(["mean", "std"], axis="columns").rename(
+                columns={"mean": new_col_name_mean, "std": new_col_name_std, })
+
+        new_frames.append(avg_frame)
+
+    final_frame = pd.concat(new_frames, axis=1)
+
+    return final_frame, cell_id
+
+
 def update_journal_cellpy_data_dir(
     pages, new_path=None, from_path="PureWindowsPath", to_path="Path"
 ):
@@ -142,7 +181,41 @@ def split_experiment(cell, base_cycles=None):
     return cells
 
 
-def add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
+def add_normalized_cycle_index(summary, nom_cap=None, column_name=None):
+    """Adds normalized cycles to the summary data frame.
+
+    This functionality is now also implemented as default when creating
+    the summary (make_summary). However it is kept here if you would like to
+    redo the normalization, for example if you want to use another nominal
+    capacity or if you would like to have more than one normalized cycle index.
+
+    Args:
+        summary (pandas.DataFrame): cell summary
+        cell (CellpyData): cell object
+        nom_cap (float): nominal capacity to use when normalizing. Defaults to
+            the nominal capacity defined in the cell object (this is typically
+            set during creation of the CellpyData object based on the value
+            given in the parameter file).
+        column_name (str): name of the new column. Uses the name defined in
+            cellpy.parameters.internal_settings as default.
+
+    Returns:
+        cell object now with normalized cycle index in its summary.
+    """
+    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
+
+    if column_name is None:
+        column_name = hdr_norm_cycle
+    hdr_cum_charge = hdr_cum_charge
+
+    #if nom_cap is None:
+     #   nom_cap = cell.cell.nom_cap
+    summary[column_name] = summary[hdr_cum_charge] / nom_cap
+    return summary
+
+
+def _old_add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
     """Adds normalized cycles to the summary data frame.
 
     This functionality is now also implemented as default when creating
@@ -213,6 +286,20 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
 
 def add_areal_capacity(cell, cell_id, journal):
     """Adds areal capacity to the summary."""
+
+    loading = journal.pages.loc[cell_id, hdr_journal["loading"]]
+
+    cell.cell.summary[hdr_summary["areal_charge_capacity"]] = (
+        cell.cell.summary[hdr_summary["charge_capacity"]] * loading / 1000
+    )
+    cell.cell.summary[hdr_summary["areal_discharge_capacity"]] = (
+        cell.cell.summary[hdr_summary["discharge_capacity"]] * loading / 1000
+    )
+    return cell
+
+
+def _old_add_areal_capacity(cell, cell_id, journal):
+    """Adds areal capacity to the summary."""
     hdr_summary.areal_charge_capacity
     hdr_summary.areal_discharge_capacity
     hdr_summary.charge_capacity
@@ -230,7 +317,133 @@ def add_areal_capacity(cell, cell_id, journal):
     return cell
 
 
-def concatenate_summaries(b):
+# from helpers - updated
+def concatenate_summaries(b, rate=None,
+                          columns=None,
+                          column_names=None,
+                          normalize_capacity_on=None,
+                          nom_cap=None,
+                          normalize_cycles=False, add_areal=False, group_it=False,
+                          rate_std=None, rate_column=None, inverse=False, inverted=False,
+                          ):
+    """Merge all summaries in a batch into a gigantic summary data frame.
+
+    TODO: Allow also dictionaries of cell objects.
+    TODO: Allow iterating through batch-objects (for id, name in b.iteritems() or similar)
+
+    Arguments:
+        b (cellpy.batch object): the batch with the cells.
+        group_it (bool): if True, average pr group.
+
+    Returns:
+        Multi-index pandas.DataFrame
+            top-level columns: cell-names (cell_name)
+            second-level columns: summary headers (summary_headers)
+            row-index: cycle number (cycle_index)
+
+    """
+    import logging
+    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
+
+    cell_names_nest = []
+    frames = []
+    keys = []
+
+    if columns is not None:
+        columns = [hdr_summary[name] for name in columns]
+    else:
+        columns = []
+
+    if column_names is not None:
+        columns += column_names
+
+    normalize_cycles_headers = []
+
+    if normalize_cycles:
+        if hdr_norm_cycle not in columns:
+            normalize_cycles_headers.append(hdr_norm_cycle)
+        if hdr_cum_charge not in columns:
+            normalize_cycles_headers.append(hdr_cum_charge)
+
+    if group_it:
+        g = b.pages.groupby("group")
+        for gno, b_sub in g:
+            cell_names_nest.append(list(b_sub.index))
+    else:
+        cell_names_nest.append(list(b.experiment.cell_names))
+
+    for cell_names in cell_names_nest:
+        frames_sub = []
+        keys_sub = []
+
+        for cell_id in cell_names:
+            logging.debug(f"Processing [{cell_id}]")
+            c = b.experiment.data[cell_id]
+
+            if not c.empty:
+                if add_areal:
+                    c = add_areal_capacity(c, cell_id, b.experiment.journal)
+
+                if normalize_capacity_on is not None:
+                    c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on)
+
+                if rate is not None:
+                    s = select_summary_based_on_rate(
+                        c,
+                        rate=rate, rate_std=rate_std, rate_column=rate_column,
+                        inverse=inverse, inverted=inverted)
+
+                else:
+                    s = c.cell.summary
+
+                if columns is not None:
+                    if normalize_cycles:
+                        s = s.loc[:, normalize_cycles_headers + columns].copy()
+                    else:
+                        s = s.loc[:, columns].copy()
+
+                if normalize_cycles:
+                    if nom_cap is None:
+                        _nom_cap = c.cell.nom_cap
+                    else:
+                        _nom_cap = nom_cap
+
+                    if not group_it:
+                        s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
+                        if hdr_cum_charge not in columns:
+                            s = s.drop(columns=hdr_cum_charge)
+
+                    s = s.reset_index(drop=True)
+
+                frames_sub.append(s)
+                keys_sub.append(cell_id)
+
+        if group_it:
+            if normalize_cycles:
+                s, cell_id = _make_average(frames_sub, keys_sub, normalize_cycles_headers + columns, True)
+                s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
+                if hdr_cum_charge not in columns:
+                    s = s.drop(columns=hdr_cum_charge)
+            else:
+                s, cell_id = _make_average(frames_sub, keys_sub, columns)
+
+            frames.append(s)
+            keys.append(cell_id)
+        else:
+            frames.extend(frames_sub)
+            keys.extend(keys_sub)
+
+    if frames:
+        cdf = pd.concat(frames, keys=keys, axis=1)
+        cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
+        return cdf
+    else:
+        logging.info("Empty - nothing to concatenate!")
+        return pd.DataFrame()
+
+
+def _old_concatenate_summaries(b):
     """Merge all summaries in a batch into a gigantic summary data frame.
 
     TODO: Allow also dictionaries of cell objects.
@@ -271,6 +484,74 @@ def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
 
 
 def select_summary_based_on_rate(
+    cell, rate=None, rate_std=None, rate_column=None, inverse=False, inverted=False, fix_index=True,
+):
+    """Select only cycles charged or discharged with a given rate.
+
+    Parameters:
+        cell (cellpy.CellpyData)
+        rate (float): the rate to filter on. Remark that it should be given
+            as a float, i.e. you will have to convert from C-rate to
+            the actual numeric value. For example, use rate=0.05 if you want
+            to filter on cycles that has a C/20 rate.
+        rate_std (float): fix me.
+        rate_column (str): column header name of the rate column,
+        inverse (bool): fix me.
+        inverted (bool): fix me.
+
+    Returns:
+        filtered summary (Pandas.DataFrame).
+    """
+    import warnings
+    import logging
+
+    if rate_column is None:
+        rate_column = hdr_steps["rate_avr"]
+
+    if rate is None:
+        rate = 0.05
+
+    if rate_std is None:
+        rate_std = 0.1 * rate
+
+    cycle_number_header = hdr_summary["cycle_index"]
+
+    step_table = cell.cell.steps
+    summary = cell.cell.summary
+
+    if summary.index.name != cycle_number_header:
+        warnings.warn(
+            f"{cycle_number_header} not set as index\n"
+            f"Current index :: {summary.index}\n"
+        )
+
+        if fix_index:
+            summary.set_index(cycle_number_header, drop=True, inplace=True)
+        else:
+            print(f"{cycle_number_header} not set as index!")
+            print(f"Please, set the cycle index header as index before proceeding!")
+            return summary
+
+    cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
+        step_table[rate_column] > (rate - rate_std)
+    )
+
+    if inverse:
+        cycles_mask = ~cycles_mask
+
+    filtered_step_table = step_table[cycles_mask]
+
+    filtered_cycles = filtered_step_table[hdr_steps.cycle].unique()
+
+    if inverted:
+        filtered_summary = summary.loc[~filtered_cycles, :]
+    else:
+        filtered_summary = summary.loc[filtered_cycles]
+
+    return filtered_summary
+
+
+def _old_select_summary_based_on_rate(
     cell, rate=None, rate_std=None, rate_column=None, inverse=False, inverted=False
 ):
     """Select only cycles charged or discharged with a given rate.
@@ -330,6 +611,48 @@ def select_summary_based_on_rate(
 
 
 def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False):
+    """Add normalized capacity to the summary.
+
+    Args:
+        cell (CellpyData): cell to add normalized capacity to.
+        norm_cycles (list of ints): the cycles that will be used to find
+            the normalization factor from (averaging their capacity)
+        individual_normalization (bool): find normalization factor for both
+            the charge and the discharge if true, else use normalization factor
+            from charge on both charge and discharge.
+
+    Returns:
+        cell (CellpyData) with added normalization capacity columns in
+        the summary.
+    """
+
+    if norm_cycles is None:
+        norm_cycles = [1, 2, 3, 4, 5]
+
+    col_name_charge = hdr_summary["charge_capacity"]
+    col_name_discharge = hdr_summary["discharge_capacity"]
+    col_name_norm_charge = hdr_summary["normalized_charge_capacity"]
+    col_name_norm_discharge = hdr_summary["normalized_discharge_capacity"]
+
+    norm_val_charge = cell.cell.summary.loc[norm_cycles, col_name_charge].mean()
+    if individual_normalization:
+        norm_val_discharge = cell.cell.summary.loc[
+            norm_cycles, col_name_discharge
+        ].mean()
+    else:
+        norm_val_discharge = norm_val_charge
+
+    for col_name, norm_col_name, norm_value in zip(
+        [col_name_charge, col_name_discharge],
+        [col_name_norm_charge, col_name_norm_discharge],
+        [norm_val_charge, norm_val_discharge]
+    ):
+        cell.cell.summary[norm_col_name] = cell.cell.summary[col_name] / norm_value
+
+    return cell
+
+
+def _old_add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False):
     """Add normalized capacity to the summary.
 
     Args:
