@@ -387,7 +387,7 @@ def raw_plot(cell, y=("voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs)
     hv.extension("bokeh", logo=False)
 
     raw = cell.cell.raw
-    raw["test_time_hrs"] = raw[hdr_raw["test_time"]] / 3600
+    raw["test_time_hrs"] = raw[hdr_raw["test_time_txt"]] / 3600
     x = ("test_time_hrs", "Time (hours)")
     raw_curve = hv.Curve(raw, x, y)
     layout = _raw_plot(raw_curve, title=title, **kwargs)
@@ -813,7 +813,7 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
     annotations_4 = []  # rate
 
     for i, s in enumerate(all_steps):
-        m = m_cycle_data & (data.Step_Index == s)
+        m = m_cycle_data & (data.step_index == s)
         c = data.loc[m, "current"] * 1000
         v = data.loc[m, "voltage"]
         t = data.loc[m, "test_time"] / 60
