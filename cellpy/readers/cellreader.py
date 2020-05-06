@@ -716,6 +716,7 @@ class CellpyData(object):
         # several raw-files that will be automatically merged)
 
         # TODO @jepe Make setting or prm so that it is possible to update only new data
+        # TODO @jepe Allow passing handle to progress-bar or update a global progressbar
 
         self.logger.info("Started cellpy.cellreader.loadcell")
         if cellpy_file is None:

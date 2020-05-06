@@ -7,11 +7,12 @@ import pandas as pd
 
 from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
-from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.exceptions import UnderDefined
 from cellpy import prms
 
 hdr_journal = get_headers_journal()
+hdr_summary = get_headers_summary()
 # print(prms.Batch.backend)
 
 # TODO: add palette to prms.Batch
@@ -38,7 +39,7 @@ def create_legend(info, c, option="clean", use_index=False):
     """creating more informative legends"""
 
     logging.debug("    - creating legends")
-    mass, loading, label = info.loc[c, ["masses", "loadings", "labels"]]
+    mass, loading, label = info.loc[c, [hdr_journal["mass"], hdr_journal["loading"], hdr_journal["label"]]]
 
     if use_index or not label:
         label = c.split("_")
@@ -59,7 +60,7 @@ def create_legend(info, c, option="clean", use_index=False):
 
 def look_up_group(info, c):
     logging.debug("    - looking up groups")
-    g, sg = info.loc[c, ["groups", "sub_groups"]]
+    g, sg = info.loc[c, [hdr_journal["group"], hdr_journal["sub_group"]]]
     return int(g), int(sg)
 
 
@@ -201,10 +202,8 @@ def create_summary_plot_bokeh(
 
     for cc in cols:
         g, sg = look_up_group(info, cc)
-
         legend_items = []
         l = create_legend(info, cc, option=legend_option)
-
         group_props = group_styles[g]
         sub_group_props = sub_group_styles[sg]
 
@@ -222,7 +221,7 @@ def create_summary_plot_bokeh(
 
         ch_m = p.scatter(
             source=charge_source,
-            x="Cycle_Index",
+            x=hdr_summary.cycle_index,
             y=c,
             # **legend_option_dict,
             #  Remark! cannot use the same legend name as
@@ -233,7 +232,7 @@ def create_summary_plot_bokeh(
 
         ch_l = p.line(
             source=charge_source,
-            x="Cycle_Index",
+            x=hdr_summary.cycle_index,
             y=c,
             **group_props["line"],
             **sub_group_props["line"],
@@ -260,7 +259,7 @@ def create_summary_plot_bokeh(
 
             dch_m = p.scatter(
                 source=discharge_source,
-                x="Cycle_Index",
+                x=hdr_summary.cycle_index,
                 y=c,
                 **group_props_marker_charge,
                 **sub_group_props["marker"],
@@ -268,7 +267,7 @@ def create_summary_plot_bokeh(
 
             dch_l = p.line(
                 source=discharge_source,
-                x="Cycle_Index",
+                x=hdr_summary.cycle_index,
                 y=c,
                 **group_props["line"],
                 **sub_group_props["line"],
@@ -357,6 +356,7 @@ def plot_cycle_life_summary_bokeh(
     h_ir = int(height_fractions[2] * height)
 
     group_styles, sub_group_styles = create_plot_option_dicts(info)
+
     p_eff, legends_eff = create_summary_plot_bokeh(
         coulombic_efficiency,
         info,
@@ -370,6 +370,7 @@ def plot_cycle_life_summary_bokeh(
         width=width,
         height=h_eff,
     )
+
     all_legend_items.extend(legends_eff)
 
     p_cap, legends_cap = create_summary_plot_bokeh(
@@ -407,7 +408,7 @@ def plot_cycle_life_summary_bokeh(
     p_eff.xaxis.visible = False
     p_cap.xaxis.visible = False
 
-    tooltips = [("cycle", "@Cycle_Index"), ("value", "$y{0.}")]
+    tooltips = [("cycle", f"@{hdr_summary.cycle_index}"), ("value", "$y{0.}")]
     if add_rate:
         tooltips.append(("rate", "@rate{0.000}"))
 

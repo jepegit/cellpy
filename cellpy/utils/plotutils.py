@@ -13,6 +13,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_summary,
     get_headers_normal,
     get_headers_step_table,
+    get_headers_journal,
 )
 
 try:
@@ -140,9 +141,10 @@ COLOR_DICT = {
     ],
 }
 
-headers_summary = get_headers_summary()
-headers_data = get_headers_normal()
-headers_steps = get_headers_step_table()
+hdr_summary = get_headers_summary()
+hdr_raw = get_headers_normal()
+hdr_steps = get_headers_step_table()
+hdr_journal = get_headers_journal()
 
 
 def _hv_bokeh_available():
@@ -155,13 +157,181 @@ def _hv_bokeh_available():
     return True
 
 
+def find_column(columns, label=None, end="cycle_index"):
+    hdr = None
+    lab = None
+    for col in columns:
+        if col.endswith(end):
+            hdr = col
+            if label is None:
+                lab = col.replace("_", " ")
+            else:
+                lab = label
+            break
+    return hdr, lab
+
+
+def plot_concatenated(dataframe,
+                      x=None, y=None, err=None, xlabel=None, ylabel=None,
+                      points=True, line=True, errors=True,
+                      level=None, width=800, height=300,
+                      journal=None,
+                      file_id_level=0, hdr_level=None,
+                      axis=1,
+                      mean_end="_mean",
+                      std_end="_std",
+                      cycle_end="cycle_index",
+                      legend_title="cell-type",
+                      marker_size=None,
+                      cmap="default_colors",
+                      spread=False,
+                      extension="bokeh",
+                      edges=False,
+                      **kwargs,
+                      ):
+
+    """
+
+    Example:
+        my_mpl_plot = plot_concatenated(
+            cap_cycle_norm_fast_1000, journal=b.experiment.journal,
+            height=500, marker_size=5,
+            extension="matplotlib",
+            edges=True,
+        )
+
+        my_bokeh_plot = plot_concatenated(
+            cap_cycle_norm_fast_1000, journal=b.experiment.journal,
+            height=500, marker_size=5,
+            edges=True,
+        )
+
+
+    Example:
+        # Simple conversion from bokeh to matplotlib
+        # NB! make sure you have only used matplotlib-bokeh convertable key-words (not marker_size)
+
+        hv.extension("matplotlib")
+        my_plot.opts(aspect="auto", fig_inches=(12,7), fig_size=90, legend_position="top_right",
+                     legend_cols = 2,
+                     show_frame=True)
+
+    """
+    if not hv_available:
+        print(
+            "This function uses holoviews. But could not import it."
+            "So I am aborting..."
+        )
+        return
+
+    hv.extension(extension, logo=False)
+
+    if hdr_level is None:
+        hdr_level = 0 if file_id_level == 1 else 1
+
+    averaged = True
+    columns = list(set(dataframe.columns.get_level_values(hdr_level)))
+    hdr_x, lab_x = find_column(columns, label=xlabel, end=cycle_end)
+    hdr_y, lab_y = find_column(columns, label=ylabel, end=mean_end)
+
+    if hdr_y is None:
+        averaged = False
+        errors = False
+        columns.remove(hdr_x)
+        hdr_y = columns[0]
+        if ylabel is None:
+            lab_y = hdr_y.replace("_", " ")
+        else:
+            lab_y = ylabel
+    if errors:
+        hdr_e, _ = find_column(columns, end=std_end)
+
+    grouped = dataframe.groupby(axis=axis, level=file_id_level)
+    curve_dict = dict()
+
+    if not averaged and journal is not None:
+        journal_pages = journal.pages[[hdr_journal["group"], hdr_journal["sub_group"]]].copy()
+        journal_pages["g"] = 0
+        journal_pages["sg"] = 0
+        markers = itertools.cycle(['s', 'o', '<', '*', '+', 'x'])
+        colors = itertools.cycle(hv.Cycle(cmap).values)
+
+        j = journal_pages.groupby(hdr_journal["group"])
+        for i, (jn, jg) in enumerate(j):
+            journal_pages.loc[journal_pages["group"] == jn, "g"] = i
+            journal_pages.loc[journal_pages["group"] == jn, "sg"] = list(range(len(jg)))
+
+        markers = [next(markers) for _ in range(journal_pages["sg"].max() + 1)]
+        colors = [next(colors) for _ in range(journal_pages["g"].max() + 1)]
+        journal_pages = journal_pages[["g", "sg"]]
+
+    for i, (name, group) in enumerate(grouped):
+        group.columns = group.columns.droplevel(file_id_level)
+
+        if not averaged and journal is not None:
+            g = journal_pages.loc[name, "g"]
+            sg = journal_pages.loc[name, "sg"]
+            color = colors[g]
+            marker = markers[sg]
+            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y)).opts(color=color)
+
+        else:
+            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y))
+
+        if points:
+            if not averaged and journal is not None:
+
+                scatter = hv.Scatter(curve).opts(color=color, marker=marker)
+
+                if edges and extension == "matplotlib":
+                    scatter = scatter.opts(edgecolor='k')
+
+                if edges and extension == "bokeh":
+                    scatter = scatter.opts(line_color='k', line_width=1)
+
+                if marker_size is not None and extension == "bokeh":
+                    scatter = scatter.opts(size=marker_size)
+            else:
+                scatter = hv.Scatter(curve)
+
+                if marker_size is not None and extension == "bokeh":
+                    scatter = scatter.opts(size=marker_size)
+
+        if points and line:
+            curve *= scatter
+
+        elif points:
+            curve = scatter
+
+        if errors:
+            if spread:
+                curve *= hv.Spread(group, hdr_x, [hdr_y, hdr_e])
+            else:
+                curve *= hv.ErrorBars(group, hdr_x, [hdr_y, hdr_e])  # should get the color from curve and set it here
+        curve_dict[name] = curve
+
+    if extension == "matplotlib":
+        overlay_opts = {"aspect": "auto",
+                        "fig_inches": (width * 0.016, height * 0.012),
+                        "show_frame": True,
+                        }
+    else:
+        overlay_opts = {"width": width,
+                        "height": height,
+                        }
+
+    final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(**overlay_opts, **kwargs)
+
+    return final_plot
+
+
 def create_colormarkerlist_for_info_df(
     info_df, symbol_label="all", color_style_label="seaborn-colorblind"
 ):
     logging.debug("symbol_label: " + symbol_label)
     logging.debug("color_style_label: " + color_style_label)
-    groups = info_df.groups.unique()
-    sub_groups = info_df.sub_groups.unique()
+    groups = info_df[hdr_journal.group].unique()
+    sub_groups = info_df[hdr_journal.subgroup].unique()
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
@@ -201,7 +371,7 @@ def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
     return layout
 
 
-def raw_plot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs):
+def raw_plot(cell, y=("voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs):
     # TODO: missing doc-string
 
     if title is None:
@@ -216,69 +386,12 @@ def raw_plot(cell, y=("Voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs)
 
     hv.extension("bokeh", logo=False)
 
-    # obs! col-names hard-coded. fix me.
     raw = cell.cell.raw
-    raw["Test_Time_Hrs"] = raw["Test_Time"] / 3600
-    x = ("Test_Time_Hrs", "Time (hours)")
+    raw["test_time_hrs"] = raw[hdr_raw["test_time"]] / 3600
+    x = ("test_time_hrs", "Time (hours)")
     raw_curve = hv.Curve(raw, x, y)
     layout = _raw_plot(raw_curve, title=title, **kwargs)
     return layout
-
-
-def concatenated_summary_curve_factory(
-    cdf,
-    kdims="Cycle_Index",
-    vdims="Charge_Capacity(mAh/g)",
-    title="Summary Curves",
-    fill_alpha=0.8,
-    size=12,
-    width=800,
-    legend_position="right",
-    colors=None,
-    markers=None,
-):
-    # TODO: missing doc-string
-
-    if not hv_available:
-        print(
-            "This function uses holoviews. But could not import it."
-            "So I am aborting..."
-        )
-        return
-
-    if colors is None:
-        colors = hv.Cycle("Category10")
-
-    if markers is None:
-        markers = hv.Cycle(["circle", "square", "triangle", "diamond"])
-
-    groups = []
-    curves_opts = []
-    curves = {}
-
-    for indx, new_df in cdf.groupby(level=0, axis=1):
-        g = indx.split("_")[1]
-        groups.append(g)
-
-        n = hv.Scatter(
-            data=new_df[indx], kdims=kdims, vdims=vdims, group=g, label=indx
-        ).opts(fill_alpha=fill_alpha, size=size)
-        curves[indx] = n
-
-    ugroups = set(groups)
-    max_sub_group = max([groups.count(x) for x in ugroups])
-    markers = markers[max_sub_group]
-
-    colors = colors[len(ugroups)]
-    for g, c in zip(ugroups, colors.values):
-        curves_opts.append(opts.Scatter(g, color=c, marker=markers))
-
-    curves_overlay = hv.NdOverlay(curves, kdims="cell id").opts(
-        opts.NdOverlay(width=800, legend_position=legend_position, title=title),
-        *curves_opts,
-    )
-
-    return curves_overlay
 
 
 def cycle_info_plot(
@@ -382,15 +495,15 @@ def _get_info(table, cycle, step):
 
 def _add_step_info_cols(df, table, cycles=None, steps=None, h_cycle=None, h_step=None):
     if h_cycle is None:
-        h_cycle = "Cycle_Index"  # edit
+        h_cycle = "cycle_index"  # edit
     if h_step is None:
-        h_step = "Step_Index"  # edit
+        h_step = "step_index"  # edit
 
     col_name_mapper = {"cycle": h_cycle, "step": h_step}
 
     df = df.merge(
         table.rename(columns=col_name_mapper),
-        on=("Cycle_Index", "Step_Index"),
+        on=("cycle_index", "step_index"),
         how="left",
     )
 
@@ -418,7 +531,9 @@ def _cycle_info_plot_bokeh(
     This function uses Bokeh for plotting and is intended for use in
     Jupyter Notebooks.
     """
-
+    # TODO: check that correct new column-names are used
+    # TODO: check that "cycle_index" is not used for look-up: it is the index now
+    # TODO: fix bokeh import
     from bokeh.io import output_notebook, show
     from bokeh.layouts import row, column
     from bokeh.models import ColumnDataSource, LabelSet
@@ -436,14 +551,14 @@ def _cycle_info_plot_bokeh(
             points = False
 
     if h_cycle is None:
-        h_cycle = "Cycle_Index"  # edit
+        h_cycle = "cycle_index"  # edit
     if h_step is None:
-        h_step = "Step_Index"  # edit
+        h_step = "step_index"  # edit
 
     if x is None:
-        x = "Test_Time"  # edit
+        x = "test_time"  # edit
     if y is None:
-        y = "Voltage"  # edit
+        y = "voltage"  # edit
 
     if isinstance(x, tuple):
         x, x_label = x
@@ -676,8 +791,8 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
     voltage_color = "#008B8B"
     current_color = "#CD5C5C"
 
-    m_cycle_data = data.Cycle_Index == cycle
-    all_steps = data[m_cycle_data]["Step_Index"].unique()
+    m_cycle_data = data.cycle_index == cycle
+    all_steps = data[m_cycle_data]["step_index"].unique()
 
     color = itertools.cycle(span_colors)
 
@@ -699,9 +814,9 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
 
     for i, s in enumerate(all_steps):
         m = m_cycle_data & (data.Step_Index == s)
-        c = data.loc[m, "Current"] * 1000
-        v = data.loc[m, "Voltage"]
-        t = data.loc[m, "Test_Time"] / 60
+        c = data.loc[m, "current"] * 1000
+        v = data.loc[m, "voltage"]
+        t = data.loc[m, "test_time"] / 60
         step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
             table, cycle, s
         )
