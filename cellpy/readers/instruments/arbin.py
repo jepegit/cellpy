@@ -379,7 +379,6 @@ class ArbinLoader(Loader):
         #   it is not set.
 
         if rename_headers:
-            print("renaming headers")
             columns = {}
             for key in self.arbin_headers_normal:
                 old_header = normal_headers_renaming_dict[key]
