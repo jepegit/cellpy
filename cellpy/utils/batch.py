@@ -224,6 +224,17 @@ class Batch:
     def pages(self, df):
         self.experiment.journal.pages = df
 
+    @property
+    def journal(self):
+        return self.experiment.journal
+
+    @journal.setter
+    def journal(self, new):
+        # self.experiment.journal = new
+        raise NotImplementedError("Setting a new journal object on directly on a "
+                                  "batch object is not allowed at the moment. Try modifying "
+                                  "the journal.pages instead.")
+
     def create_journal(self, description=None, from_db=True):
         """Create journal pages.
 

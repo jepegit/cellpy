@@ -158,6 +158,16 @@ def _hv_bokeh_available():
 
 
 def find_column(columns, label=None, end="cycle_index"):
+    """find columns based on how the column-name ends.
+
+    Args:
+        columns: pandas columns
+        label: if not provided, generate, if provided, return as is
+        end: the string to use for searching
+
+    Returns:
+        column header, label
+    """
     hdr = None
     lab = None
     for col in columns:
@@ -174,7 +184,7 @@ def find_column(columns, label=None, end="cycle_index"):
 def plot_concatenated(dataframe,
                       x=None, y=None, err=None, xlabel=None, ylabel=None,
                       points=True, line=True, errors=True,
-                      level=None, width=800, height=300,
+                      width=800, height=300,
                       journal=None,
                       file_id_level=0, hdr_level=None,
                       axis=1,
@@ -189,32 +199,61 @@ def plot_concatenated(dataframe,
                       edges=False,
                       **kwargs,
                       ):
+    """Create a holoviews plot of the concatenated summary.
 
-    """
+    This function is still under development. Feel free to contribute.
+
+    Args:
+        dataframe: the concatenated summary
+        x: colum-name for the x variable (not implemented yet)
+        y: colum-name for the y variable (not implemented yet)
+        err: colum-name for the std variable (not implemented yet)
+        xlabel: label for x-axis
+        ylabel: label for y-axis
+        points (bool): plot points if True
+        line (bool): plot line if True
+        errors (bool): plot line if True
+        width: width of plot
+        height: height of plot
+        journal: batch.journal object
+        file_id_level: the level (multiindex-level) where the cell-names are.
+        hdr_level:  the level (multiindex-level) where the parameter names are.
+        axis: what axis to use when looking in the data-frame (row-based or col-based).
+        mean_end: used for searching for y-column names
+        std_end: used for searching for e-column names
+        cycle_end: used for searching for x-column name
+        legend_title: title to put over the legends
+        marker_size: size of the markers used
+        cmap: color-map to use
+        spread (bool): plot error-bands instead of error-bars if True
+        extension (str): "matplotlib" or "bokeh". Note, this uses hv.extension) and will affect the
+            state of your notebook
+        edges (bool): show all axes
+        **kwargs: key-word arguments sent to hv.NdOverlay
 
     Example:
-        my_mpl_plot = plot_concatenated(
-            cap_cycle_norm_fast_1000, journal=b.experiment.journal,
-            height=500, marker_size=5,
-            extension="matplotlib",
-            edges=True,
-        )
+        >>> my_mpl_plot = plot_concatenated(
+        >>>     cap_cycle_norm_fast_1000, journal=b.experiment.journal,
+        >>>     height=500, marker_size=5,
+        >>>     extension="matplotlib",
+        >>>     edges=True,
+        >>> )
 
-        my_bokeh_plot = plot_concatenated(
-            cap_cycle_norm_fast_1000, journal=b.experiment.journal,
-            height=500, marker_size=5,
-            edges=True,
-        )
+        >>> my_bokeh_plot = plot_concatenated(
+        >>>     cap_cycle_norm_fast_1000, journal=b.experiment.journal,
+        >>>     height=500, marker_size=5,
+        >>>     edges=True,
+        >>> )
 
 
     Example:
-        # Simple conversion from bokeh to matplotlib
-        # NB! make sure you have only used matplotlib-bokeh convertable key-words (not marker_size)
+        >>> # Simple conversion from bokeh to matplotlib
+        >>> # NB! make sure you have only used matplotlib-bokeh convertable key-words (not marker_size)
 
-        hv.extension("matplotlib")
-        my_plot.opts(aspect="auto", fig_inches=(12,7), fig_size=90, legend_position="top_right",
-                     legend_cols = 2,
-                     show_frame=True)
+        >>> hv.extension("matplotlib")
+        >>> my_plot.opts(aspect="auto", fig_inches=(12,7), fig_size=90, legend_position="top_right",
+        >>>              legend_cols = 2,
+        >>>              show_frame=True)
 
     """
     if not hv_available:
@@ -325,19 +364,38 @@ def plot_concatenated(dataframe,
     return final_plot
 
 
-def create_colormarkerlist_for_info_df(
-    info_df, symbol_label="all", color_style_label="seaborn-colorblind"
+def create_colormarkerlist_for_journal(
+    journal, symbol_label="all", color_style_label="seaborn-colorblind"
 ):
+    """Fetch lists with color names and marker types of correct length for a journal.
+
+    Args:
+        journal: cellpy journal
+        symbol_label: sub-set of markers to use
+        color_style_label: cmap to use for colors
+
+    Returns:
+        colors (list), markers (list)
+    """
     logging.debug("symbol_label: " + symbol_label)
     logging.debug("color_style_label: " + color_style_label)
-    groups = info_df[hdr_journal.group].unique()
-    sub_groups = info_df[hdr_journal.subgroup].unique()
+    groups = journal.pages[hdr_journal.group].unique()
+    sub_groups = journal.pages[hdr_journal.subgroup].unique()
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
-def create_colormarkerlist(
-    groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"
-):
+def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"):
+    """Fetch lists with color names and marker types of correct length.
+
+    Args:
+        groups: list of group numbers (used to generate the list of colors)
+        sub_groups: list of sub-group numbers (used to generate the list of markers).
+        symbol_label: sub-set of markers to use
+        color_style_label: cmap to use for colors
+
+    Returns:
+        colors (list), markers (list)
+    """
     symbol_list = SYMBOL_DICT[symbol_label]
     color_list = COLOR_DICT[color_style_label]
 
@@ -532,7 +590,6 @@ def _cycle_info_plot_bokeh(
     Jupyter Notebooks.
     """
     # TODO: check that correct new column-names are used
-    # TODO: check that "cycle_index" is not used for look-up: it is the index now
     # TODO: fix bokeh import
     from bokeh.io import output_notebook, show
     from bokeh.layouts import row, column
