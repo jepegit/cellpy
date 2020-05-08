@@ -701,8 +701,9 @@ def info(version, configloc, params, check):
 @click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
 @click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
 @click.option("--nom-cap", default=None, type=float)
-@click.argument("name")
-def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name):
+@click.option("--list", "-l", "list_", is_flag=True, help="List batch-files.")
+@click.argument("name", default="NONE")
+def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name, list_):
     """Run a cellpy process.
 
     You can use this to launch specific applications.
@@ -718,6 +719,15 @@ def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name):
            cellpy run -j my_experiment.json
 
     """
+    if list_:
+        _run_list(name)
+        return
+
+    if name == "NONE":
+        print("Usage: cellpy run [OPTIONS] NAME\n"
+              "Try 'cellpy run --help' for help.\n\n"
+              "Error: Missing argument 'NAME'.")
+        return
 
     if debug:
         click.echo("[cellpy] (run) debug mode on")
@@ -779,6 +789,27 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
     if b is not None and not silent:
         print(b)
     click.echo("---")
+
+
+def _run_list(batchfiledir):
+    from cellpy import prms
+
+    if batchfiledir == "NONE" or batchfiledir is None:
+        batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
+    else:
+        batchfiledir = pathlib.Path(batchfiledir).resolve()
+
+    if batchfiledir.is_dir():
+        click.echo(f"Content of '{batchfiledir}':\n")
+        i = 0
+        for i, f in enumerate(batchfiledir.glob("cellpy*.json")):
+            click.echo(f"{f.name}")
+        if i:
+            print(f"\nnumber of batch-files located: {i}")
+        else:
+            print("No batch-files found in this directory.")
+    else:
+        click.echo(f"{batchfiledir} not found.")
 
 
 def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
