@@ -1805,10 +1805,9 @@ class CellpyData(object):
 
     def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
         self.logger.debug(
-            f"merging two datasets (merge summary = {merge_summary}) "
+            f"merging two datasets\n(merge summary = {merge_summary})\n"
             f"(merge step table = {merge_step_table})"
         )
-
         if t1.raw.empty:
             self.logger.debug("OBS! the first dataset is empty")
 
@@ -1834,14 +1833,17 @@ class CellpyData(object):
         try:
             last_data_point = max(t1.raw[data_point_header])
         except ValueError:
+            self.logger.debug("ValueError when getting last data point for r1")
             last_data_point = 0
 
         t2.raw[data_point_header] = t2.raw[data_point_header] + last_data_point
+        self.logger.debug("No error getting last data point for r2")
         # mod cycle index for set 2
         cycle_index_header = self.headers_normal.cycle_index_txt
         try:
             last_cycle = max(t1.raw[cycle_index_header])
         except ValueError:
+            self.logger.debug("ValueError when getting last cycle index for r1")
             last_cycle = 0
         t2.raw[cycle_index_header] = t2.raw[cycle_index_header] + last_cycle
         # mod test time for set 2
@@ -1849,6 +1851,7 @@ class CellpyData(object):
         t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
         # merging
         if not t1.raw.empty:
+            self.logger.debug("r1 is not empty - performing concat")
             raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
 
             # checking if we already have made a summary file of these datasets
@@ -1866,17 +1869,24 @@ class CellpyData(object):
 
             if merge_summary:
                 # check if (self-made) summary exists.
+                self.logger.debug("merge summaries")
                 self_made_summary = True
                 try:
                     test_it = t1.summary[cycle_index_header]
+                    self.logger.debug("summary t1 exists")
                 except KeyError as e:
+                    self.logger.debug("summary t1 does not exist")
                     self_made_summary = False
                 try:
                     test_it = t2.summary[cycle_index_header]
+                    self.logger.debug("summary t2 exists")
+
                 except KeyError as e:
+                    self.logger.debug("summary t2 does not exist")
                     self_made_summary = False
 
                 if self_made_summary:
+                    # This part of the code is seldom ran. Careful!
                     # mod cycle index for set 2
                     last_cycle = max(t1.summary[cycle_index_header])
                     t2.summary[cycle_index_header] = (
@@ -1888,6 +1898,7 @@ class CellpyData(object):
                     )
                     # to-do: mod all the cumsum stuff in the summary (best to make
                     # summary after merging) merging
+
                 else:
                     t2.summary[data_point_header] = (
                         t2.summary[data_point_header] + last_data_point
@@ -2073,7 +2084,6 @@ class CellpyData(object):
             steps_to_skip = []
 
         if steptable is None:
-            self.logger.debug("steptable=None")
             dataset_number = self._validate_dataset_number(dataset_number)
             # self.logger.debug(f"dt 1: {time.time() - t0}")
             if dataset_number is None:
@@ -2086,7 +2096,6 @@ class CellpyData(object):
                 if self.force_step_table_creation or self.force_all:
                     self.logger.debug("creating step_table for")
                     self.logger.debug(self.cells[dataset_number].loaded_from)
-                    # print "CREAING STEP-TABLE"
                     self.make_step_table(dataset_number=dataset_number)
 
                 else:
@@ -2681,7 +2690,6 @@ class CellpyData(object):
         self.logger.debug(f"outname: {outname}")
 
         list_of_cycles = self.get_cycle_numbers(dataset_number=dataset_number)
-        self.logger.debug(f"you have {len(list_of_cycles)} cycles")
         if last_cycle is not None:
             list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
             self.logger.debug(f"only processing up to cycle {last_cycle}")

@@ -805,7 +805,7 @@ def main():
 
 def check_new():
     use_db = False
-    f = r"C:\Scripting\Processing\Celldata\outdata\cellpy_test\cellpy_batch_embla_test.json"
+    f = r"C:\scripts\processing_cellpy\out\SecondLife\cellpy_batch_embla_002.json"
     # f = r"C:\Scripting\Processing\Celldata\outdata\SilcRoad\cellpy_batch_uio66.json"
     # f = r"C:\Scripting\Processing\Celldata\outdata\MoZEES\cellpy_batch_round_robin_001.json"
     name = "embla_test"
@@ -818,8 +818,6 @@ def check_new():
         process_batch(f, force_raw_file=False, force_cellpy=True, nom_cap=372)
 
 
-# TODO: implement a cli command that runs batch
-# TODO: implement a cli command that runs all batch jobs from a given folder
 # TODO: allow exporting html when processing batch instead of just png
 
 
@@ -830,5 +828,4 @@ def check_iterate():
 
 if __name__ == "__main__":
     print("---IN BATCH 2 MAIN---")
-    check_iterate()
-    # check_new()
+    check_new()

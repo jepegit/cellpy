@@ -386,7 +386,9 @@ class ArbinLoader(Loader):
                 columns[old_header] = new_header
 
             data.raw.rename(index=str, columns=columns, inplace=True)
-            if not data.summary.empty:
+            try:
+                # TODO: check if summary df is existing (to only check if it is
+                #  empty will give an error later!)
                 columns = {}
                 for key, old_header in summary_headers_renaming_dict.items():
                     try:
@@ -394,6 +396,8 @@ class ArbinLoader(Loader):
                     except KeyError:
                         columns[old_header] = old_header.lower()
                 data.summary.rename(index=str, columns=columns, inplace=True)
+            except Exception as e:
+                logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:
             h_datetime = self.cellpy_headers_normal.datetime_txt
@@ -764,6 +768,7 @@ class ArbinLoader(Loader):
                 txt = "\nCould not find any summary (stats-file)!"
                 txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
                 logging.debug(txt)
+                # TODO: Enforce creating a summary df or modify renaming summary df (post process part)
             # normal_df = normal_df.set_index("Data_Point")
 
             data.summary = summary_df

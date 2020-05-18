@@ -7,12 +7,13 @@ from tqdm.auto import tqdm
 
 from cellpy.readers import cellreader
 from cellpy import prms
-from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.utils.batch_tools import batch_helpers as helper
 from cellpy.utils.batch_tools.batch_core import BaseExperiment
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 
 hdr_journal = get_headers_journal()
+hdr_summary = get_headers_summary()
 
 
 class CyclingExperiment(BaseExperiment):
@@ -109,7 +110,7 @@ class CyclingExperiment(BaseExperiment):
             pbar.set_description(n_txt)
             pbar.set_postfix_str(s=h_txt, refresh=True)
 
-            if not row.raw_file_names and not self.force_cellpy:
+            if not row[hdr_journal.raw_file_names] and not self.force_cellpy:
                 logging.info("File(s) not found!")
                 logging.info(indx)
                 logging.debug("File(s) not found for index=%s" % indx)
@@ -123,8 +124,8 @@ class CyclingExperiment(BaseExperiment):
 
             cell_data = cellreader.CellpyData()
             if not self.force_cellpy or self.force_recalc:
-                logging.info("setting cycle mode (%s)..." % row.cell_type)
-                cell_data.cycle_mode = row.cell_type
+                logging.info("setting cycle mode (%s)..." % row[hdr_journal.cell_type])
+                cell_data.cycle_mode = row[hdr_journal.cell_type]
 
             logging.info("loading cell")
             if not self.force_cellpy:
@@ -134,9 +135,9 @@ class CyclingExperiment(BaseExperiment):
                 logging.debug("not forcing to load cellpy-file instead of raw file.")
                 try:
                     cell_data.loadcell(
-                        raw_files=row.raw_file_names,
+                        raw_files=row[hdr_journal.raw_file_names],
                         cellpy_file=row[hdr_journal.cellpy_file_name],
-                        mass=row.mass,
+                        mass=row[hdr_journal.mass],
                         summary_on_raw=True,
                         force_raw=self.force_raw,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
@@ -158,7 +159,7 @@ class CyclingExperiment(BaseExperiment):
                 pbar.set_postfix_str(s=h_txt, refresh=True)
                 try:
                     cell_data.load(
-                        indx, parent_level=self.parent_level
+                        row[hdr_journal.cellpy_file_name], parent_level=self.parent_level
                     )
                 except Exception as e:
                     logging.info(
@@ -199,11 +200,11 @@ class CyclingExperiment(BaseExperiment):
                 pbar.set_description(n_txt, refresh=True)
                 cell_data.make_summary(find_end_voltage=True, find_ir=True)
 
-            if summary_tmp.index.name == b"Cycle_Index":
-                logging.debug("Strange: 'Cycle_Index' is a byte-string")
-                summary_tmp.index.name = "Cycle_Index"
+            # if summary_tmp.index.name == b"Cycle_Index":
+            #     logging.debug("Strange: 'Cycle_Index' is a byte-string")
+            #     summary_tmp.index.name = "Cycle_Index"
 
-            if not summary_tmp.index.name == "Cycle_Index":
+            if not summary_tmp.index.name == hdr_summary.cycle_index:
                 # TODO: Why did I do this? Does not make any sense. It seems like
                 #    batch forces Summary to have "Cycle_Index" as index, but
                 #    files not processed by batch will not have.
