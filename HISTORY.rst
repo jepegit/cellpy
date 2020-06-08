@@ -2,6 +2,13 @@
 History
 =======
 
+0.4.0 a1 (2020)
+---------------
+
+* New column names (lowercase and underscore)
+* New batch concatenating and plotting routines
+
+
 0.3.3 (2020)
 ------------
 
