@@ -271,9 +271,9 @@ class Converter(object):
         # ---- shifting to y-x ----------------------------------------
         v1, v2 = value_bounds(self.voltage_preprocessed)
         if self.voltage_resolution is not None:
-            len_voltage = round(abs(v2 - v1) / self.voltage_resolution, 0)
+            len_voltage = int(round(abs(v2 - v1) / self.voltage_resolution, 0))
         else:
-            len_voltage = len(self.voltage_preprocessed)
+            len_voltage = int(len(self.voltage_preprocessed))
 
         # ---- interpolating ------------------------------------------
         logging.debug(" - interpolating capacity(voltage)")
