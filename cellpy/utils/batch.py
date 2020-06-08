@@ -460,21 +460,21 @@ class Batch:
 
         # update the journal pages
         columns = pages.columns
-        pages["new_cellpy_file_names"] = pages.cellpy_file_names.apply(_new_file_path)
+        pages["new_cellpy_file_name"] = pages.cellpy_file_name.apply(_new_file_path)
 
         # copy the cellpy files
         for n, row in pages.iterrows():
-            logging.info(f"{row.cellpy_file_names} -> {row.new_cellpy_file_names}")
+            logging.info(f"{row.cellpy_file_name} -> {row.new_cellpy_file_name}")
             try:
-                from_file = row.cellpy_file_names
-                to_file = row.new_cellpy_file_names
+                from_file = row.cellpy_file_name
+                to_file = row.new_cellpy_file_name
                 os.makedirs(os.path.dirname(to_file), exist_ok=True)
                 shutil.copy(from_file, to_file)
             except shutil.SameFileError:
                 logging.info("Same file! No point in copying")
 
         # save the journal pages
-        pages["cellpy_file_names"] = pages["new_cellpy_file_names"]
+        pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
         logging.info(f"saving journal to {journal_file_name}")
