@@ -186,7 +186,7 @@ def test(c):
 
 
 @task
-def build(c, docs=False, upload=True):
+def build(c, docs=False, upload=False):
     """Create distribution (and optionally upload to PyPI)"""
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")
@@ -198,6 +198,8 @@ def build(c, docs=False, upload=True):
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
         c.run("twine upload dist/*")
+    else:
+        print(" To upload to pypi: 'twine upload dist/*'")
 
 
 @task
