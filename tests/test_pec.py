@@ -15,15 +15,6 @@ def cellpy_data_instance():
     return cellreader.CellpyData()
 
 
-@pytest.fixture
-def dataset():
-    from cellpy import cellreader
-
-    d = cellreader.CellpyData()
-    d.load(fdv.mpr_cellpy_file_path)
-    return d
-
-
 def test_set_instrument(cellpy_data_instance):
     instrument = "pec_csv"
     cellpy_data_instance.set_instrument(instrument=instrument)

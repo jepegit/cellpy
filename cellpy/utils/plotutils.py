@@ -276,7 +276,8 @@ def plot_concatenated(dataframe,
     if hdr_y is None:
         averaged = False
         errors = False
-        columns.remove(hdr_x)
+        if hdr_x is not None:
+            columns.remove(hdr_x)
         hdr_y = columns[0]
         if ylabel is None:
             lab_y = hdr_y.replace("_", " ")
@@ -306,6 +307,12 @@ def plot_concatenated(dataframe,
 
     for i, (name, group) in enumerate(grouped):
         group.columns = group.columns.droplevel(file_id_level)
+        if hdr_x is None:
+            group = group.reset_index()
+            hdr_x = group.columns[0]
+
+        if lab_x is None:
+            lab_x = hdr_x.replace("_", " ")
 
         if not averaged and journal is not None:
             g = journal_pages.loc[name, "g"]
