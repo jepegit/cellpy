@@ -28,10 +28,11 @@ hdr_normal = get_headers_normal()
 hdr_journal = get_headers_journal()
 
 
-def _make_average(frames, keys=None, columns=None, normalize_cycles=False):
+def _make_average(frames, keys=None, columns=None, normalize_cycles=False, key_index_bounds=None):
+    if key_index_bounds is None:
+        key_index_bounds = [1, -2]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
-
     cell_id = ""
     final_frame = None
     new_frames = []
@@ -40,8 +41,11 @@ def _make_average(frames, keys=None, columns=None, normalize_cycles=False):
 
     if keys is not None:
         if isinstance(keys, (list, tuple)):
-            cell_id = list(set([k.split("_")[1] for k in keys]))
-            cell_id = "_".join(cell_id)
+            cell_id = list(
+                set(
+                    ["_".join(k.split("_")[key_index_bounds[0]:key_index_bounds[1]]) for k in keys]
+                )
+            )[0]
         elif isinstance(keys, str):
             cell_id = keys
 
@@ -342,6 +346,8 @@ def concatenate_summaries(b, rate=None,
             row-index: cycle number (cycle_index)
 
     """
+    default_columns = ["charge_capacity"]
+
     import logging
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
@@ -353,7 +359,7 @@ def concatenate_summaries(b, rate=None,
     if columns is not None:
         columns = [hdr_summary[name] for name in columns]
     else:
-        columns = []
+        columns = [hdr_summary[name] for name in default_columns]
 
     if column_names is not None:
         columns += column_names
