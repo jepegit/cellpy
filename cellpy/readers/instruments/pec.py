@@ -56,14 +56,52 @@ class PECLoader(Loader):
             get_headers_normal()
         )  # should consider to move this to the Loader class
 
-    @staticmethod
-    def _get_pec_units():
-        pec_units = dict()
-        pec_units["voltage"] = 0.001  # V
-        pec_units["current"] = 0.001  # A
-        pec_units["charge"] = 0.001  # Ah
-        pec_units["mass"] = 0.001  # g
-        pec_units["energy"] = 0.001  # Wh
+    #@staticmethod
+    #def _get_pec_units():
+    #    pec_units = dict()
+    #    pec_units["voltage"] = 0.001  # V
+    #    pec_units["current"] = 0.001  # A
+    #    pec_units["charge"] = 0.001  # Ah
+    #    pec_units["mass"] = 0.001  # g
+    #    pec_units["energy"] = 0.001  # Wh
+
+    #    return pec_units
+
+    def _get_pec_units(self, filename):  # Fetches units from a csv file
+        # Mapping prefixes to values
+        prefix = {
+            'µ': 10 ** -6,
+            'm': 10 ** -3,
+            '': 1
+        }
+
+        # Adding the non-variable units to the return value
+        pec_units = {
+            'charge': 0.001,  # Ah
+            'mass': 0.001,  # g
+            'energy': 0.001  # Wh
+        }
+
+        # Searching values for variable units
+        header = ['Voltage (', 'Current (']
+
+        data = pd.read_csv(filename, skiprows=find_header_length(filename))
+
+        for item in data.keys():
+            for unit in header:
+                if unit in item:
+                    x = item
+
+                    # Isolating the prefix
+                    for element in header:
+                        x = x.lstrip(element)
+                    x = x.rstrip('A)').rstrip('V)')
+
+                    # Adding units to return value
+                    if header.index(unit) == 0:
+                        pec_units['voltage'] = prefix.get(x)
+                    elif header.index(unit) == 1:
+                        pec_units['current'] = prefix.get(x)
 
         return pec_units
 
