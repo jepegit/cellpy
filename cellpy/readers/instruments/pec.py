@@ -51,21 +51,21 @@ class PECLoader(Loader):
         self.pec_data = None
         self.pec_log = None
         self.pec_settings = None
-        self.number_of_header_lines = 32
+        self.number_of_header_lines = 32  # Number of header lines is not constant
         self.cellpy_headers = (
             get_headers_normal()
         )  # should consider to move this to the Loader class
 
     @staticmethod
     def _get_pec_units():
-        raw_units = dict()
-        raw_units["voltage"] = 0.001  # V
-        raw_units["current"] = 0.001  # A
-        raw_units["charge"] = 0.001  # Ah
-        raw_units["mass"] = 0.001  # g
-        raw_units["energy"] = 0.001  # Wh
+        pec_units = dict()
+        pec_units["voltage"] = 0.001  # V
+        pec_units["current"] = 0.001  # A
+        pec_units["charge"] = 0.001  # Ah
+        pec_units["mass"] = 0.001  # g
+        pec_units["energy"] = 0.001  # Wh
 
-        return raw_units
+        return pec_units
 
     @staticmethod
     def get_raw_units():
@@ -289,3 +289,22 @@ class PECLoader(Loader):
             )
         except KeyError as e:
             logging.info(f"Problem during conversion to cellpy-format ({e})")
+
+    def find_header_length(self, filename):
+        if not os.path.isfile(filename):
+            return None
+
+        header = open(filename, 'r')
+        skiprows = 0
+
+        # Counting number of lines until the last line appears
+        for line in header:
+            skiprows += 1
+            if line == "#END RESULTS CHECK\n":  # this is the last line of header
+                break
+        header.close()
+
+        return skiprows
+
+if __name__ == "__main__":
+    pass
