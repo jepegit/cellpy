@@ -68,7 +68,7 @@ class PECLoader(Loader):
     #    return pec_units
 
     def _get_pec_units(self, filename):  # Fetches units from a csv file
-        if not os.path.isfile(file_name):
+        if not os.path.isfile(filename):
             return None
 
         # Mapping prefixes to values
