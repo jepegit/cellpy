@@ -68,6 +68,9 @@ class PECLoader(Loader):
     #    return pec_units
 
     def _get_pec_units(self, filename):  # Fetches units from a csv file
+        if not os.path.isfile(file_name):
+            return None
+
         # Mapping prefixes to values
         prefix = {
             'µ': 10 ** -6,
@@ -83,25 +86,20 @@ class PECLoader(Loader):
         }
 
         # Searching values for variable units
-        header = ['Voltage (', 'Current (']
+        header = ['Voltage (V)', 'Current (A)']
 
-        data = pd.read_csv(filename, skiprows=find_header_length(filename))
+        data = pd.read_csv(filename, skiprows=self.number_of_header_lines)
 
         for item in data.keys():
             for unit in header:
-                if unit in item:
-                    x = item
-
-                    # Isolating the prefix
-                    for element in header:
-                        x = x.lstrip(element)
-                    x = x.rstrip('A)').rstrip('V)')
-
+                x = unit.find('(') - len(unit)
+                if unit[:x + 1] in item:
+                    y = item[x].replace('(', '')
                     # Adding units to return value
                     if header.index(unit) == 0:
-                        pec_units['voltage'] = prefix.get(x)
+                        pec_units['voltage'] = prefix.get(y)
                     elif header.index(unit) == 1:
-                        pec_units['current'] = prefix.get(x)
+                        pec_units['current'] = prefix.get(y)
 
         return pec_units
 
