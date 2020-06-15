@@ -51,7 +51,10 @@ class PECLoader(Loader):
         self.pec_data = None
         self.pec_log = None
         self.pec_settings = None
-        self.number_of_header_lines = 32  # Number of header lines is not constant
+        self.variable_header_keywords = ['Voltage (V)', 'Current (A)']  # The unit of these variables will be checked
+        self.last_header_line = "#END RESULTS CHECK\n" # This is the last line of the header, used to find the length
+        self.number_of_header_lines = self._find_header_length(filename)  # Number of header lines is not constant
+        self.filename = None
         self.cellpy_headers = (
             get_headers_normal()
         )  # should consider to move this to the Loader class
@@ -67,9 +70,7 @@ class PECLoader(Loader):
 
     #    return pec_units
 
-    def _get_pec_units(self, filename):  # Fetches units from a csv file
-        if not os.path.isfile(filename):
-            return None
+    def _get_pec_units(self):  # Fetches units from a csv file
 
         # Mapping prefixes to values
         prefix = {
@@ -85,11 +86,12 @@ class PECLoader(Loader):
             'energy': 0.001  # Wh
         }
 
-        # Searching values for variable units
-        header = ['Voltage (V)', 'Current (A)']
+        # Searching keywords for the variable units
+        header = self.variable_header_keywords
 
-        data = pd.read_csv(filename, skiprows=self.number_of_header_lines)
+        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=1)
 
+        # Searching for the prefix for all the variable units
         for item in data.keys():
             for unit in header:
                 x = unit.find('(') - len(unit)
@@ -154,6 +156,7 @@ class PECLoader(Loader):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
 
+        self.filename = file_name
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
@@ -326,19 +329,13 @@ class PECLoader(Loader):
         except KeyError as e:
             logging.info(f"Problem during conversion to cellpy-format ({e})")
 
-    def find_header_length(self, filename):
-        if not os.path.isfile(filename):
-            return None
-
-        header = open(filename, 'r')
+    def _find_header_length(self):
         skiprows = 0
-
-        # Counting number of lines until the last line appears
-        for line in header:
-            skiprows += 1
-            if line == "#END RESULTS CHECK\n":  # this is the last line of header
-                break
-        header.close()
+        with open(self.filename, 'r') as header:
+            for line in header:
+                skiprows += 1
+                if line == self.last_header_line:  # this is the last line of header
+                    break
 
         return skiprows
 
