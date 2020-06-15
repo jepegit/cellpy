@@ -184,6 +184,7 @@ def find_column(columns, label=None, end="cycle_index"):
 def plot_concatenated(dataframe,
                       x=None, y=None, err=None, xlabel=None, ylabel=None,
                       points=True, line=True, errors=True,
+                      hover=True,
                       width=800, height=300,
                       journal=None,
                       file_id_level=0, hdr_level=None,
@@ -212,7 +213,8 @@ def plot_concatenated(dataframe,
         ylabel: label for y-axis
         points (bool): plot points if True
         line (bool): plot line if True
-        errors (bool): plot line if True
+        errors (bool): plot errors if True
+        hover (bool): add hover tool if True
         width: width of plot
         height: height of plot
         journal: batch.journal object
@@ -367,7 +369,11 @@ def plot_concatenated(dataframe,
                         }
 
     final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(**overlay_opts, **kwargs)
-
+    if hover:
+        if points:
+            final_plot.opts(opts.Scatter(tools=['hover']))
+        else:
+            final_plot.opts(opts.Curve(tools=['hover']))
     return final_plot
 
 
