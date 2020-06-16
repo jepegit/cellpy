@@ -3310,7 +3310,35 @@ class CellpyData(object):
 
     # TODO: make this
     def sget_current(self, cycle, step, set_number=None):
-        raise NotImplementedError
+
+        time_00 = time.time()
+        set_number = self._validate_dataset_number(set_number)
+        if set_number is None:
+            self._report_empty_dataset()
+            return
+        cycle_index_header = self.headers_normal.cycle_index_txt
+        current_header = self.headers_normal.current_txt
+        step_index_header = self.headers_normal.step_index_txt
+        test = self.cells[set_number].raw
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(
+                f"The varialbe step is a list." f"Should be an integer." f"{step}"
+            )
+            step = step[0]
+
+        c = test[
+            (test[cycle_index_header] == cycle) & (test[step_index_header] == step)
+        ]
+
+        self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        if not self.is_empty(c):
+            v = c[current_header]
+            return v
+        else:
+            return None
+
+
 
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
         """Returns voltage (in V).
