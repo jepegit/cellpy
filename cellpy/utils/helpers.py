@@ -337,6 +337,7 @@ def concatenate_summaries(b, rate=None,
 
     Arguments:
         b (cellpy.batch object): the batch with the cells.
+        rate (float): filter on rate (C-rate)
         group_it (bool): if True, average pr group.
 
     Returns:
