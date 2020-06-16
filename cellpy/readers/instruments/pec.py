@@ -51,7 +51,7 @@ class PECLoader(Loader):
         self.pec_data = None
         self.pec_log = None
         self.pec_settings = None
-        self.variable_header_keywords = ['Voltage (V)', 'Current (A)']  # The unit of these variables will be checked
+        self.variable_header_keywords = ['Voltage (V)', 'Current (A)']  # The unit of these will be read from file
         self.last_header_line = "#END RESULTS CHECK\n" # This is the last line of the header, used to find the length
         self.number_of_header_lines = self._find_header_length(filename)  # Number of header lines is not constant
         self.filename = None
@@ -71,7 +71,6 @@ class PECLoader(Loader):
     #    return pec_units
 
     def _get_pec_units(self):  # Fetches units from a csv file
-
         # Mapping prefixes to values
         prefix = {
             'µ': 10 ** -6,
@@ -86,7 +85,7 @@ class PECLoader(Loader):
             'energy': 0.001  # Wh
         }
 
-        # Searching keywords for the variable units
+        # A list with all the variable keywords without any prefixes, used as search terms
         header = self.variable_header_keywords
 
         data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=1)
@@ -97,13 +96,37 @@ class PECLoader(Loader):
                 x = unit.find('(') - len(unit)
                 if unit[:x + 1] in item:
                     y = item[x].replace('(', '')
-                    # Adding units to return value
+                    # Adding units conversion factor to return value
                     if header.index(unit) == 0:
                         pec_units['voltage'] = prefix.get(y)
                     elif header.index(unit) == 1:
                         pec_units['current'] = prefix.get(y)
 
         return pec_units
+
+    def _get_pec_times(self):
+        # Mapping units to their conversion values
+        units = {
+            '(Hours in hh:mm:ss.xxx)': self.timestamp_to_seconds,
+            '(Decimal Hours)': 3600,
+            '(Minutes)': 60,
+            '(Seconds)': 1
+
+        }
+
+        data = pd.read_csv(filename, skiprows=find_header_length(filename), nrows=1)
+        pec_times = dict()
+
+        # Adds the time variables and their units to the pec_times dictonary return value
+        for item in data.keys():
+            for unit in units:
+                if unit in item:
+                    x = item.find('(')
+                    var = item[:x - 1].lower().replace(' ', '_')
+                    its_unit = item[x:]
+                    pec_times[var] = units.get(its_unit)
+
+        return pec_times
 
     @staticmethod
     def get_raw_units():
@@ -123,6 +146,8 @@ class PECLoader(Loader):
         raw_units["charge"] = 1.0  # Ah
         raw_units["mass"] = 0.001  # g
         raw_units["energy"] = 1.0  # Wh
+        raw_units["total_time"] = 1.0  # s
+        raw_units["step_time"] = 1.0  # s
 
         return raw_units
 
@@ -303,12 +328,15 @@ class PECLoader(Loader):
 
         logging.debug("- cellpy units")
         pec_units = self._get_pec_units()
+        pec_times = self._get_pec_times()
         raw_units = self.get_raw_units()
 
         _v = pec_units["voltage"] / raw_units["voltage"]
         _i = pec_units["current"] / raw_units["current"]
         _c = pec_units["charge"] / raw_units["charge"]
         _w = pec_units["energy"] / raw_units["energy"]
+        _tt = pec_times["total_time"] / raw_units["total_time"]
+        _st = pec_times["step_time"] / raw_units["step_time"]
 
         v_txt = self.headers_normal.voltage_txt
         i_txt = self.headers_normal.current_txt
@@ -334,10 +362,16 @@ class PECLoader(Loader):
         with open(self.filename, 'r') as header:
             for line in header:
                 skiprows += 1
-                if line == self.last_header_line:  # this is the last line of header
+                if line == self.last_header_line:
                     break
 
         return skiprows
+
+    @staticmethod
+    def timestamp_to_seconds(timestamp):
+        return (datetime.datetime.strptime(timestamp, "%H:%M:%S.%f") -
+                datetime.datetime(1900, 1, 1)).total_seconds()
+
 
 if __name__ == "__main__":
     pass
