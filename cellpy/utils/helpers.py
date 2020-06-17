@@ -323,6 +323,7 @@ def _old_add_areal_capacity(cell, cell_id, journal):
 
 # from helpers - updated
 def concatenate_summaries(b, rate=None,
+                          on="charge",
                           columns=None,
                           column_names=None,
                           normalize_capacity_on=None,
@@ -398,7 +399,7 @@ def concatenate_summaries(b, rate=None,
                 if rate is not None:
                     s = select_summary_based_on_rate(
                         c,
-                        rate=rate, rate_std=rate_std, rate_column=rate_column,
+                        rate=rate, on=on, rate_std=rate_std, rate_column=rate_column,
                         inverse=inverse, inverted=inverted)
 
                 else:
@@ -491,7 +492,7 @@ def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
 
 
 def select_summary_based_on_rate(
-    cell, rate=None, rate_std=None, rate_column=None, inverse=False, inverted=False, fix_index=True,
+    cell, rate=None, on=None, rate_std=None, rate_column=None, inverse=False, inverted=False, fix_index=True,
 ):
     """Select only cycles charged or discharged with a given rate.
 
@@ -501,6 +502,7 @@ def select_summary_based_on_rate(
             as a float, i.e. you will have to convert from C-rate to
             the actual numeric value. For example, use rate=0.05 if you want
             to filter on cycles that has a C/20 rate.
+        on (str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         rate_std (float): fix me.
         rate_column (str): column header name of the rate column,
         inverse (bool): fix me.
@@ -509,11 +511,18 @@ def select_summary_based_on_rate(
     Returns:
         filtered summary (Pandas.DataFrame).
     """
+    # TODO: accept a list of step-types for "on"
+
+    # hard-coding on
+    on = "charge"
     import warnings
     import logging
 
     if rate_column is None:
         rate_column = hdr_steps["rate_avr"]
+
+    if on:
+        on_column = hdr_steps["type"]
 
     if rate is None:
         rate = 0.05
@@ -539,9 +548,14 @@ def select_summary_based_on_rate(
             print(f"Please, set the cycle index header as index before proceeding!")
             return summary
 
-    cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
-        step_table[rate_column] > (rate - rate_std)
-    )
+    if on:
+        cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
+            step_table[rate_column] > (rate - rate_std)
+        )& (step_table[on_column] == on)
+    else:
+        cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
+            step_table[rate_column] > (rate - rate_std)
+        )
 
     if inverse:
         cycles_mask = ~cycles_mask
