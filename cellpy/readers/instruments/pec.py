@@ -1,6 +1,7 @@
 """pec csv-type data files"""
 import os
 from dateutil.parser import parse
+from datetime import datetime
 import logging
 import warnings
 import numpy as np
@@ -53,8 +54,8 @@ class PECLoader(Loader):
         self.pec_settings = None
         self.variable_header_keywords = ['Voltage (V)', 'Current (A)']  # The unit of these will be read from file
         self.last_header_line = "#END RESULTS CHECK\n" # This is the last line of the header, used to find the length
-        self.number_of_header_lines = self._find_header_length(filename)  # Number of header lines is not constant
         self.filename = None
+        self.number_of_header_lines = None  # Number of header lines is not constant
         self.cellpy_headers = (
             get_headers_normal()
         )  # should consider to move this to the Loader class
@@ -96,12 +97,13 @@ class PECLoader(Loader):
                 x = unit.find('(') - len(unit)
                 if unit[:x + 1] in item:
                     y = item[x].replace('(', '')
-                    # Adding units conversion factor to return value
+                    # Adding units conversion factor to return value, renaming the headers to include correct units
                     if header.index(unit) == 0:
                         pec_units['voltage'] = prefix.get(y)
+                        pec_headers_normal["voltage_txt"] = f'Voltage_{y}V'
                     elif header.index(unit) == 1:
                         pec_units['current'] = prefix.get(y)
-
+                        pec_headers_normal["current_txt"] = f'Current_{y}A'
         return pec_units
 
     def _get_pec_times(self):
@@ -114,10 +116,11 @@ class PECLoader(Loader):
 
         }
 
-        data = pd.read_csv(filename, skiprows=find_header_length(filename), nrows=1)
+        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=1)
         pec_times = dict()
 
         # Adds the time variables and their units to the pec_times dictonary return value
+        # Also updates the column headers in pec_headers_normal with the correct name
         for item in data.keys():
             for unit in units:
                 if unit in item:
@@ -125,7 +128,10 @@ class PECLoader(Loader):
                     var = item[:x - 1].lower().replace(' ', '_')
                     its_unit = item[x:]
                     pec_times[var] = units.get(its_unit)
-
+                    if var == 'total_time':
+                        pec_headers_normal["test_time_txt"] = f'Total_Time_{its_unit[1:-1].replace(" ", "_")}'
+                    if var == 'step_time':
+                        pec_headers_normal["step_time_txt"] = f'Step_Time_{its_unit[1:-1].replace(" ", "_")}'
         return pec_times
 
     @staticmethod
@@ -182,6 +188,7 @@ class PECLoader(Loader):
             return None
 
         self.filename = file_name
+        self.number_of_header_lines = self._find_header_length()
         filesize = os.path.getsize(file_name)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
@@ -296,7 +303,7 @@ class PECLoader(Loader):
 
         headers["start_time"] = start_time
         headers["end_time"] = end_time
-        headers["test_regime_name"] = header_comments["TestRegime_Name"]
+        #headers["test_regime_name"] = header_comments["TestRegime_Name"]
 
         self.pec_settings = headers
 
@@ -330,13 +337,32 @@ class PECLoader(Loader):
         pec_units = self._get_pec_units()
         pec_times = self._get_pec_times()
         raw_units = self.get_raw_units()
+        self._rename_headers()  # Had to run this again after fixing the headers, might be a better way to fix this
 
         _v = pec_units["voltage"] / raw_units["voltage"]
         _i = pec_units["current"] / raw_units["current"]
         _c = pec_units["charge"] / raw_units["charge"]
         _w = pec_units["energy"] / raw_units["energy"]
-        _tt = pec_times["total_time"] / raw_units["total_time"]
-        _st = pec_times["step_time"] / raw_units["step_time"]
+
+
+        # Check if time is given in a units proportional to seconds or in a hh:mm:ss.xxx format
+        # Convert all hh:mm:ss.xxx formats to seconds using self.timestamp_to_seconds()
+        relevant_times = ['total_time', 'step_time']
+        for x in relevant_times:
+            if isinstance(pec_times[x], (int, float)):
+                if x == relevant_times[0]:
+                    _tt = pec_times["total_time"] / raw_units["total_time"]
+                    self.pec_data[self.headers_normal.test_time_txt] *= _tt
+                elif x == relevant_times[1]:
+                    _st = pec_times["step_time"] / raw_units["step_time"]
+                    self.pec_data[self.headers_normal.step_time_txt] *= _st
+            elif callable(pec_times[x]):
+                if x == relevant_times[0]:
+                    col = self.pec_data[self.headers_normal.test_time_txt]
+                elif x == relevant_times[1]:
+                    col = self.pec_data[self.headers_normal.step_time_txt]
+                for i in range(len(col)):
+                    col[i] = pec_times[x](col[i])
 
         v_txt = self.headers_normal.voltage_txt
         i_txt = self.headers_normal.current_txt
@@ -368,9 +394,18 @@ class PECLoader(Loader):
         return skiprows
 
     @staticmethod
-    def timestamp_to_seconds(timestamp):
-        return (datetime.datetime.strptime(timestamp, "%H:%M:%S.%f") -
-                datetime.datetime(1900, 1, 1)).total_seconds()
+    def timestamp_to_seconds(timestamp):  # Changes hh:mm:s.xxx time format to seconds
+        total_secs = 0
+
+        # strptime can not handle more than 24 hours, days are counted manually
+        hours = int(timestamp[:2])
+        if hours >= 24:
+            days = hours // 24
+            total_secs += days * 3600 * 24
+            timestamp = str(hours-24*days) + timestamp[2:]
+        total_secs += (datetime.strptime(timestamp, "%H:%M:%S.%f") -
+                datetime(1900, 1, 1)).total_seconds()
+        return total_secs
 
 
 if __name__ == "__main__":
