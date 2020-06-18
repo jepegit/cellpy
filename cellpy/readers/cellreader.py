@@ -2387,7 +2387,6 @@ class CellpyData(object):
         }
 
         df = df.rename(columns=rename_dict)
-
         by = [shdr.cycle, shdr.step, shdr.sub_step]
 
         if skip_steps is not None:
@@ -2402,6 +2401,8 @@ class CellpyData(object):
 
         if profiling:
             time_01 = time.time()
+
+        # TODO: make sure that all columns are nummeric
 
         gf = df.groupby(by=by)
         df_steps = gf.agg(
@@ -2611,6 +2612,8 @@ class CellpyData(object):
         if sort_rows:
             self.logger.debug("sorting the step rows")
             # TODO: [#index]
+            # if this throws a KeyError: 'test_time_first' it probably
+            # means that the df contains a non-nummeric 'test_time' column.
             df_steps = df_steps.sort_values(by=shdr.test_time + "_first").reset_index()
 
         if profiling:
@@ -5049,6 +5052,7 @@ def get(
     filename=None,
     mass=None,
     instrument=None,
+    nominal_capacity=None,
     logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
@@ -5114,6 +5118,11 @@ def get(
         if mass is not None:
             logging.info(f"Setting mass: {mass}")
             cellpy_instance.set_mass(mass)
+
+        if nominal_capacity is not None:
+            logging.info(f"Setting nominal capacity: {nominal_capacity}")
+            cellpy_instance.set_nom_cap(nominal_capacity)
+
         if auto_summary:
             logging.info("Creating step table")
             cellpy_instance.make_step_table()
