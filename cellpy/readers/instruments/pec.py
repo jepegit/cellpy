@@ -16,11 +16,11 @@ pec_headers_normal = dict()
 
 pec_headers_normal["step_index_txt"] = "Step"
 pec_headers_normal["cycle_index_txt"] = "Cycle"
-pec_headers_normal["test_time_txt"] = "Total_Time_Seconds"
-pec_headers_normal["step_time_txt"] = "Step_Time_Seconds"
+pec_headers_normal["test_time_txt"] = "Total_Time_Seconds"  # This might change
+pec_headers_normal["step_time_txt"] = "Step_Time_Seconds"  # This might change
 pec_headers_normal["datetime_txt"] = "Real_Time"
-pec_headers_normal["voltage_txt"] = "Voltage_mV"
-pec_headers_normal["current_txt"] = "Current_mA"
+pec_headers_normal["voltage_txt"] = "Voltage_mV"  # This might change
+pec_headers_normal["current_txt"] = "Current_mA"  # This might change
 pec_headers_normal["charge_capacity_txt"] = "Charge_Capacity_mAh"
 pec_headers_normal["discharge_capacity_txt"] = "Discharge_Capacity_mAh"
 pec_headers_normal["charge_energy_txt"] = "Charge_Capacity_mWh"
@@ -344,7 +344,6 @@ class PECLoader(Loader):
         _c = pec_units["charge"] / raw_units["charge"]
         _w = pec_units["energy"] / raw_units["energy"]
 
-
         # Check if time is given in a units proportional to seconds or in a hh:mm:ss.xxx format
         # Convert all hh:mm:ss.xxx formats to seconds using self.timestamp_to_seconds()
         relevant_times = ['total_time', 'step_time']
@@ -404,7 +403,7 @@ class PECLoader(Loader):
             total_secs += days * 3600 * 24
             timestamp = str(hours-24*days) + timestamp[2:]
         total_secs += (datetime.strptime(timestamp, "%H:%M:%S.%f") -
-                datetime(1900, 1, 1)).total_seconds()
+                datetime.strptime("00:00:00.000", "%H:%M:%S.%f")).total_seconds()
         return total_secs
 
 
