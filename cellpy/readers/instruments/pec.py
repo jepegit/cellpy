@@ -47,7 +47,8 @@ class PECLoader(Loader):
         self.pec_log = None
         self.pec_settings = None
         self.variable_header_keywords = ['Voltage (V)', 'Current (A)']  # The unit of these will be read from file
-        self.last_header_line = "#END RESULTS CHECK\n" # This is the last line of the header, used to find the length
+        self.fake_header_length = ["#RESULTS CHECK\n","#END RESULTS CHECK\n"]  # Ignores number of delimiters in between
+        self.pec_file_delimiter = ','
         self.filename = None
         self.number_of_header_lines = None  # Number of header lines is not constant
         self.cellpy_headers = (
@@ -111,7 +112,7 @@ class PECLoader(Loader):
 
         }
 
-        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=1)  # jepe: consider change to 0
+        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=0)
         pec_times = dict()
 
         # Adds the time variables and their units to the pec_times dictonary return value
@@ -388,11 +389,15 @@ class PECLoader(Loader):
 
     def _find_header_length(self):
         skiprows = 0
+        resultscheck = False  # Ignore number of delimiters inside RESULTS CHECK
+
         with open(self.filename, 'r') as header:
             for line in header:
-                skiprows += 1
-                if line == self.last_header_line:
+                if line in self.fake_header_length:
+                    resultscheck = not resultscheck
+                if line.count(self.pec_file_delimiter) > 1 and not resultscheck:  # End when there are >2 columns
                     break
+                skiprows += 1
 
         return skiprows
 
