@@ -31,14 +31,8 @@ pec_headers_normal["test_id_txt"] = "Test"
 
 # TODO: better reading of first part of the file (comments and headers)
 #  1. find the units
-
-
-
-#  2. find user-defined variables
-#  3. find units
-# Hei
-# Og hei til deg!
-# og hei
+#  2. convert cycle and step numbers so that they start with 1 and not 0
+#  3. find user-defined variables
 
 
 class PECLoader(Loader):
@@ -108,6 +102,7 @@ class PECLoader(Loader):
 
     def _get_pec_times(self):
         # Mapping units to their conversion values
+        logging.debug("retrieve pec units")
         units = {
             '(Hours in hh:mm:ss.xxx)': self.timestamp_to_seconds,
             '(Decimal Hours)': 3600,
@@ -116,7 +111,7 @@ class PECLoader(Loader):
 
         }
 
-        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=1)
+        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=1)  # jepe: consider change to 0
         pec_times = dict()
 
         # Adds the time variables and their units to the pec_times dictonary return value
@@ -222,6 +217,10 @@ class PECLoader(Loader):
         logging.debug("renaming columns")
         self._rename_headers()
         self._convert_units()
+
+        # cycle indices should not be 0
+        if 0 in self.pec_data['cycle_index']:
+            self.pec_data['cycle_index'] += 1
 
         data.raw = self.pec_data
 
@@ -356,12 +355,17 @@ class PECLoader(Loader):
                     _st = pec_times["step_time"] / raw_units["step_time"]
                     self.pec_data[self.headers_normal.step_time_txt] *= _st
             elif callable(pec_times[x]):
+                # EDIT jepe 18.06.2020: change to .apply(func) instead of for-loop
+                # (now the column is of float64 type and behaves properly)
                 if x == relevant_times[0]:
-                    col = self.pec_data[self.headers_normal.test_time_txt]
+                    # col = self.pec_data[self.headers_normal.test_time_txt]
+                    hdr = self.headers_normal.test_time_txt
                 elif x == relevant_times[1]:
-                    col = self.pec_data[self.headers_normal.step_time_txt]
-                for i in range(len(col)):
-                    col[i] = pec_times[x](col[i])
+                    # col = self.pec_data[self.headers_normal.step_time_txt]
+                    hdr = self.headers_normal.test_time_txt
+                self.pec_data[hdr] = self.pec_data[hdr].apply(pec_times[x])
+                # for i in range(len(col)):
+                #     col[i] = pec_times[x](col[i])
 
         v_txt = self.headers_normal.voltage_txt
         i_txt = self.headers_normal.current_txt
@@ -395,7 +399,6 @@ class PECLoader(Loader):
     @staticmethod
     def timestamp_to_seconds(timestamp):  # Changes hh:mm:s.xxx time format to seconds
         total_secs = 0
-
         # strptime can not handle more than 24 hours, days are counted manually
         hours = int(timestamp[:2])
         if hours >= 24:
