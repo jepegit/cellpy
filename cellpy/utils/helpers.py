@@ -2,9 +2,11 @@ import os
 import logging
 import pathlib
 import warnings
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 import cellpy
 from cellpy import prms
@@ -321,6 +323,98 @@ def _old_add_areal_capacity(cell, cell_id, journal):
     return cell
 
 
+def _remove_outliers_from_summary(s, filter_vals, freeze_indexes=None):
+    if freeze_indexes is not None:
+        filter_vals[freeze_indexes] = True
+
+    return s[filter_vals]
+
+
+def remove_outliers_from_summary_on_zscore(s, zscore_limit=4, filter_cols=None, freeze_indexes=None):
+    if freeze_indexes is None:
+        freeze_indexes = [1]
+
+    if filter_cols is None:
+        filter_cols = [hdr_summary["charge_capacity"], hdr_summary["discharge_capacity"]]
+
+    s2 = s[filter_cols].copy()
+
+    filter_vals = (np.abs(stats.zscore(s2)) < zscore_limit).all(axis=1)
+
+    s = _remove_outliers_from_summary(s, filter_vals, freeze_indexes=freeze_indexes)
+
+    return s
+
+
+def remove_outliers_from_summary_on_value(s, low=0.0, high=7_000, filter_cols=None, freeze_indexes=None):
+    if filter_cols is None:
+        filter_cols = [hdr_summary["charge_capacity"], hdr_summary["discharge_capacity"]]
+
+    s2 = s[filter_cols].copy()
+
+    filter_vals = ((s2[filter_cols] > low) & (s2[filter_cols] < high)).all(axis=1)
+
+    s = _remove_outliers_from_summary(s, filter_vals, freeze_indexes=freeze_indexes)
+
+    return s
+
+
+def remove_outliers_from_summary_on_index(s, indexes=None):
+    """Remove rows with supplied indexes (where the indexes typically are cycle-indexes).
+
+    Args:
+        s (pandas.DataFrame): cellpy summary to process
+        indexes (list): list of indexes
+
+    Returns:
+        pandas.DataFrame
+    """
+    if indexes is None:
+        indexes = [-1]
+    return s[~s.index.isin(indexes)]
+
+
+def yank_outliers(b, zscore_limit=None, low=0.0, high=7_000.0, filter_cols=None, freeze_indexes=None,
+                  remove_indexes=None, iterations=1, zscore_multiplyer=1.3, keep_old=True):
+    """
+    remove_indexes (dict or list): if dict, look-up on cell label, else a list that will be the same for all
+    """
+    if keep_old:
+        b = deepcopy(b)
+
+    # remove based on indexes and values
+    for cell_number, cell_label in enumerate(b.experiment.cell_names):
+        c = b.experiment.data[cell_label]
+        s = c.cell.summary
+        if remove_indexes is not None:
+            if isinstance(remove_indexes, dict):
+                remove_indexes_this_cell = remove_indexes[cell_label]
+            else:
+                remove_indexes_this_cell = remove_indexes
+
+            s = remove_outliers_from_summary_on_index(s, remove_indexes_this_cell)
+        s = remove_outliers_from_summary_on_value(s, low=low, high=high, filter_cols=filter_cols,
+                                                  freeze_indexes=freeze_indexes)
+        c.cell.summary = s
+
+    # removed based on zscore
+    if zscore_limit is not None:
+        for j in range(iterations):
+            tot_rows_removed = 0
+            for cell_number, cell_label in enumerate(b.experiment.cell_names):
+                c = b.experiment.data[cell_label]
+                n1 = len(c.cell.summary)
+                s = remove_outliers_from_summary_on_zscore(c.cell.summary, filter_cols=filter_cols,
+                                                           zscore_limit=zscore_limit, freeze_indexes=freeze_indexes)
+
+                rows_removed = n1 - len(s)
+                tot_rows_removed += rows_removed
+                c.cell.summary = s
+            if tot_rows_removed == 0:
+                break
+            zscore_limit *= zscore_multiplyer
+    return b
+
 # from helpers - updated
 def concatenate_summaries(b, rate=None,
                           on="charge",
@@ -348,7 +442,10 @@ def concatenate_summaries(b, rate=None,
             row-index: cycle number (cycle_index)
 
     """
-    default_columns = ["charge_capacity"]
+    if normalize_capacity_on is not None:
+        default_columns = ["normalized_charge_capacity"]
+    else:
+        default_columns = ["charge_capacity"]
 
     import logging
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -359,7 +456,16 @@ def concatenate_summaries(b, rate=None,
     keys = []
 
     if columns is not None:
-        columns = [hdr_summary[name] for name in columns]
+        if normalize_capacity_on is not None:
+            _columns = []
+            for name in columns:
+                if name.startswith("normalized_"):
+                    _columns.append(hdr_summary[name])
+                else:
+                    _columns.append(hdr_summary["normalized_" + name])
+            columns = _columns
+        else:
+            columns = [hdr_summary[name] for name in columns]
     else:
         columns = [hdr_summary[name] for name in default_columns]
 
