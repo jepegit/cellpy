@@ -23,14 +23,15 @@ from cellpy import prmreader
 from cellpy.readers.cellreader import CellpyData
 from cellpy.utils import batch, ica
 
-
 hdr_summary = get_headers_summary()
 hdr_steps = get_headers_step_table()
 hdr_normal = get_headers_normal()
 hdr_journal = get_headers_journal()
 
 
-def _make_average(frames, keys=None, columns=None, normalize_cycles=False, key_index_bounds=None):
+def _make_average(
+    frames, keys=None, columns=None, normalize_cycles=False, key_index_bounds=None
+):
     if key_index_bounds is None:
         key_index_bounds = [1, -2]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -45,7 +46,12 @@ def _make_average(frames, keys=None, columns=None, normalize_cycles=False, key_i
         if isinstance(keys, (list, tuple)):
             cell_id = list(
                 set(
-                    ["_".join(k.split("_")[key_index_bounds[0]:key_index_bounds[1]]) for k in keys]
+                    [
+                        "_".join(
+                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
+                        )
+                        for k in keys
+                    ]
                 )
             )[0]
         elif isinstance(keys, str):
@@ -56,15 +62,22 @@ def _make_average(frames, keys=None, columns=None, normalize_cycles=False, key_i
     for col in columns:
         if col in [hdr_norm_cycle, hdr_cum_charge] and normalize_cycles:
 
-            avg_frame = new_frame[col].agg(["mean"], axis="columns").rename(columns={"mean": col})
+            avg_frame = (
+                new_frame[col]
+                .agg(["mean"], axis="columns")
+                .rename(columns={"mean": col})
+            )
 
         else:
             new_col_name_mean = col + "_mean"
             new_col_name_std = col + "_std"
 
             # very slow:
-            avg_frame = new_frame[col].agg(["mean", "std"], axis="columns").rename(
-                columns={"mean": new_col_name_mean, "std": new_col_name_std, })
+            avg_frame = (
+                new_frame[col]
+                .agg(["mean", "std"], axis="columns")
+                .rename(columns={"mean": new_col_name_mean, "std": new_col_name_std,})
+            )
 
         new_frames.append(avg_frame)
 
@@ -215,42 +228,10 @@ def add_normalized_cycle_index(summary, nom_cap=None, column_name=None):
         column_name = hdr_norm_cycle
     hdr_cum_charge = hdr_cum_charge
 
-    #if nom_cap is None:
-     #   nom_cap = cell.cell.nom_cap
+    # if nom_cap is None:
+    #   nom_cap = cell.cell.nom_cap
     summary[column_name] = summary[hdr_cum_charge] / nom_cap
     return summary
-
-
-def _old_add_normalized_cycle_index(cell, nom_cap=None, column_name=None):
-    """Adds normalized cycles to the summary data frame.
-
-    This functionality is now also implemented as default when creating
-    the summary (make_summary). However it is kept here if you would like to
-    redo the normalization, for example if you want to use another nominal
-    capacity or if you would like to have more than one normalized cycle index.
-
-    Args:
-        cell (CellpyData): cell object
-        nom_cap (float): nominal capacity to use when normalizing. Defaults to
-            the nominal capacity defined in the cell object (this is typically
-            set during creation of the CellpyData object based on the value
-            given in the parameter file).
-        column_name (str): name of the new column. Uses the name defined in
-            cellpy.parameters.internal_settings as default.
-
-    Returns:
-        cell object now with normalized cycle index in its summary.
-    """
-    # TODO: remove this function
-    # now also included in dfsummary
-    if column_name is None:
-        column_name = hdr_summary.normalized_cycle_index
-    h_cum_charge = hdr_summary.cumulated_charge_capacity
-
-    if nom_cap is None:
-        nom_cap = cell.cell.nom_cap
-    cell.cell.summary[column_name] = cell.cell.summary[h_cum_charge] / nom_cap
-    return cell
 
 
 def add_c_rate(cell, nom_cap=None, column_name=None):
@@ -304,25 +285,6 @@ def add_areal_capacity(cell, cell_id, journal):
     return cell
 
 
-def _old_add_areal_capacity(cell, cell_id, journal):
-    """Adds areal capacity to the summary."""
-    hdr_summary.areal_charge_capacity
-    hdr_summary.areal_discharge_capacity
-    hdr_summary.charge_capacity
-    hdr_summary.discharge_capacity
-    hdr_journal.loading
-    # obs! hard-coded col-names (please fix)
-    loading = journal.pages.loc[cell_id, hdr_journal.loading]  # header 2 be changed
-
-    cell.cell.summary[hdr_summary.areal_charge_capacity] = (
-        cell.cell.summary[hdr_summary.charge_capacity] * loading / 1000
-    )
-    cell.cell.summary[hdr_summary.areal_discharge_capacity] = (
-        cell.cell.summary[hdr_summary.discharge_capacity] * loading / 1000
-    )
-    return cell
-
-
 def _remove_outliers_from_summary(s, filter_vals, freeze_indexes=None):
     if freeze_indexes is not None:
         filter_vals[freeze_indexes] = True
@@ -330,12 +292,29 @@ def _remove_outliers_from_summary(s, filter_vals, freeze_indexes=None):
     return s[filter_vals]
 
 
-def remove_outliers_from_summary_on_zscore(s, zscore_limit=4, filter_cols=None, freeze_indexes=None):
+def remove_outliers_from_summary_on_zscore(
+    s, zscore_limit=4, filter_cols=None, freeze_indexes=None
+):
+    """Remove outliers based on z-score.
+
+    Args:
+        s (pandas.DataFrame): summary frame
+        zscore_limit (int): remove outliers outside this z-score limit
+        filter_cols (list): list of column headers to perform the filtering on (defaults to charge and discharge capacity)
+        freeze_indexes (list): list of cycle indexes that should never be removed (defaults to cycle 1)
+
+    Returns:
+        filtered summary (pandas.DataFrame)
+    """
+
     if freeze_indexes is None:
         freeze_indexes = [1]
 
     if filter_cols is None:
-        filter_cols = [hdr_summary["charge_capacity"], hdr_summary["discharge_capacity"]]
+        filter_cols = [
+            hdr_summary["charge_capacity"],
+            hdr_summary["discharge_capacity"],
+        ]
 
     s2 = s[filter_cols].copy()
 
@@ -346,9 +325,29 @@ def remove_outliers_from_summary_on_zscore(s, zscore_limit=4, filter_cols=None, 
     return s
 
 
-def remove_outliers_from_summary_on_value(s, low=0.0, high=7_000, filter_cols=None, freeze_indexes=None):
+def remove_outliers_from_summary_on_value(
+    s, low=0.0, high=7_000, filter_cols=None, freeze_indexes=None
+):
+    """Remove outliers based highest and lowest allowed value
+
+    Args:
+        s (pandas.DataFrame): summary frame
+        low (float): low cut-off (all cycles with values below this number will be removed)
+        high (float): high cut-off (all cycles with values above this number will be removed)
+        filter_cols (list): list of column headers to perform the filtering on (defaults to charge and discharge capacity)
+        freeze_indexes (list): list of cycle indexes that should never be removed (defaults to cycle 1)
+
+    Returns:
+        filtered summary (pandas.DataFrame)
+
+    Returns:
+
+    """
     if filter_cols is None:
-        filter_cols = [hdr_summary["charge_capacity"], hdr_summary["discharge_capacity"]]
+        filter_cols = [
+            hdr_summary["charge_capacity"],
+            hdr_summary["discharge_capacity"],
+        ]
 
     s2 = s[filter_cols].copy()
 
@@ -374,11 +373,36 @@ def remove_outliers_from_summary_on_index(s, indexes=None):
     return s[~s.index.isin(indexes)]
 
 
-def yank_outliers(b, zscore_limit=None, low=0.0, high=7_000.0, filter_cols=None, freeze_indexes=None,
-                  remove_indexes=None, iterations=1, zscore_multiplyer=1.3, keep_old=True):
+def yank_outliers(
+    b,
+    zscore_limit=None,
+    low=0.0,
+    high=7_000.0,
+    filter_cols=None,
+    freeze_indexes=None,
+    remove_indexes=None,
+    iterations=1,
+    zscore_multiplyer=1.3,
+    keep_old=True,
+):
+    """Remove outliers from a batch object.
+
+    Args:
+        b (cellpy.utils.batch object): the batch object to perform filtering one (required).
+        zscore_limit (int): will filter based on z-score if given.
+        low (float): low cut-off (all cycles with values below this number will be removed)
+        high (float): high cut-off (all cycles with values above this number will be removed)
+        filter_cols (str): what columns to filter on.
+        freeze_indexes (list): indexes (cycles) that should never be removed.
+        remove_indexes (dict or list): if dict, look-up on cell label, else a list that will be the same for all
+        iterations (int): repeat z-score filtering if `zscore_limit` is given.
+        zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering (should usually be less than 1).
+        keep_old (bool): perform filtering of a copy of the batch object.
+
+    Returns:
+        cellpy.utils.batch object (returns a copy if `keep_old` is True).
     """
-    remove_indexes (dict or list): if dict, look-up on cell label, else a list that will be the same for all
-    """
+
     if keep_old:
         b = deepcopy(b)
 
@@ -393,8 +417,13 @@ def yank_outliers(b, zscore_limit=None, low=0.0, high=7_000.0, filter_cols=None,
                 remove_indexes_this_cell = remove_indexes
 
             s = remove_outliers_from_summary_on_index(s, remove_indexes_this_cell)
-        s = remove_outliers_from_summary_on_value(s, low=low, high=high, filter_cols=filter_cols,
-                                                  freeze_indexes=freeze_indexes)
+        s = remove_outliers_from_summary_on_value(
+            s,
+            low=low,
+            high=high,
+            filter_cols=filter_cols,
+            freeze_indexes=freeze_indexes,
+        )
         c.cell.summary = s
 
     # removed based on zscore
@@ -404,8 +433,12 @@ def yank_outliers(b, zscore_limit=None, low=0.0, high=7_000.0, filter_cols=None,
             for cell_number, cell_label in enumerate(b.experiment.cell_names):
                 c = b.experiment.data[cell_label]
                 n1 = len(c.cell.summary)
-                s = remove_outliers_from_summary_on_zscore(c.cell.summary, filter_cols=filter_cols,
-                                                           zscore_limit=zscore_limit, freeze_indexes=freeze_indexes)
+                s = remove_outliers_from_summary_on_zscore(
+                    c.cell.summary,
+                    filter_cols=filter_cols,
+                    zscore_limit=zscore_limit,
+                    freeze_indexes=freeze_indexes,
+                )
 
                 rows_removed = n1 - len(s)
                 tot_rows_removed += rows_removed
@@ -415,25 +448,45 @@ def yank_outliers(b, zscore_limit=None, low=0.0, high=7_000.0, filter_cols=None,
             zscore_limit *= zscore_multiplyer
     return b
 
+
 # from helpers - updated
-def concatenate_summaries(b, rate=None,
-                          on="charge",
-                          columns=None,
-                          column_names=None,
-                          normalize_capacity_on=None,
-                          nom_cap=None,
-                          normalize_cycles=False, add_areal=False, group_it=False,
-                          rate_std=None, rate_column=None, inverse=False, inverted=False,
-                          ):
+def concatenate_summaries(
+    b,
+    rate=None,
+    on="charge",
+    columns=None,
+    column_names=None,
+    normalize_capacity_on=None,
+    nom_cap=None,
+    normalize_cycles=False,
+    add_areal=False,
+    group_it=False,
+    rate_std=None,
+    rate_column=None,
+    inverse=False,
+    inverted=False,
+):
+
     """Merge all summaries in a batch into a gigantic summary data frame.
 
     TODO: Allow also dictionaries of cell objects.
     TODO: Allow iterating through batch-objects (for id, name in b.iteritems() or similar)
 
-    Arguments:
+    Args:
         b (cellpy.batch object): the batch with the cells.
         rate (float): filter on rate (C-rate)
+        on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+        columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
+        column_names (list): selected column(s) (using exact column name)
+        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization (typically the first few cycles after formation)
+        nom_cap (float): nominal capacity of the cell
+        normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
+        add_areal (bool):  add areal capacity to the summary
         group_it (bool): if True, average pr group.
+        rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+        rate_column (str): name of the column containing the C-rates.
+        inverse (bool): select steps that does not have the given C-rate.
+        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
 
     Returns:
         Multi-index pandas.DataFrame
@@ -448,6 +501,7 @@ def concatenate_summaries(b, rate=None,
         default_columns = ["charge_capacity"]
 
     import logging
+
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
 
@@ -505,8 +559,13 @@ def concatenate_summaries(b, rate=None,
                 if rate is not None:
                     s = select_summary_based_on_rate(
                         c,
-                        rate=rate, on=on, rate_std=rate_std, rate_column=rate_column,
-                        inverse=inverse, inverted=inverted)
+                        rate=rate,
+                        on=on,
+                        rate_std=rate_std,
+                        rate_column=rate_column,
+                        inverse=inverse,
+                        inverted=inverted,
+                    )
 
                 else:
                     s = c.cell.summary
@@ -535,7 +594,9 @@ def concatenate_summaries(b, rate=None,
 
         if group_it:
             if normalize_cycles:
-                s, cell_id = _make_average(frames_sub, keys_sub, normalize_cycles_headers + columns, True)
+                s, cell_id = _make_average(
+                    frames_sub, keys_sub, normalize_cycles_headers + columns, True
+                )
                 s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
                 if hdr_cum_charge not in columns:
                     s = s.drop(columns=hdr_cum_charge)
@@ -557,39 +618,6 @@ def concatenate_summaries(b, rate=None,
         return pd.DataFrame()
 
 
-def _old_concatenate_summaries(b):
-    """Merge all summaries in a batch into a gigantic summary data frame.
-
-    TODO: Allow also dictionaries of cell objects.
-    TODO: Allow iterating through batch-objects (for id, name in b.iteritems() or similar)
-
-    Arguments:
-        b (cellpy.batch object): the batch with the cells.
-
-    Returns:
-        Multi-index pandas.DataFrame
-            top-level columns: cell-names (cell_name)
-            second-level columns: summary headers (summary_headers)
-            row-index: cycle number (Cycle_Index)
-
-    """
-    frames = []
-    keys = []
-    for cell_id in b.experiment.cell_names:
-        logging.debug(f"Processing [{cell_id}]")
-        c = b.experiment.data[cell_id]
-        if not c.empty:
-            frames.append(c.cell.summary)
-            keys.append(cell_id)
-    if frames:
-        cdf = pd.concat(frames, keys=keys, axis=1)
-        cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
-        return cdf
-    else:
-        logging.info("Empty - nothing to concatenate!")
-        return pd.DataFrame()
-
-
 def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
     """Adds a rate column to the dataframe (steps)."""
 
@@ -598,7 +626,14 @@ def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
 
 
 def select_summary_based_on_rate(
-    cell, rate=None, on=None, rate_std=None, rate_column=None, inverse=False, inverted=False, fix_index=True,
+    cell,
+    rate=None,
+    on=None,
+    rate_std=None,
+    rate_column=None,
+    inverse=False,
+    inverted=False,
+    fix_index=True,
 ):
     """Select only cycles charged or discharged with a given rate.
 
@@ -609,20 +644,21 @@ def select_summary_based_on_rate(
             the actual numeric value. For example, use rate=0.05 if you want
             to filter on cycles that has a C/20 rate.
         on (str): only select cycles if based on the rate of this step-type (e.g. on="charge").
-        rate_std (float): fix me.
+        rate_std (float): allow for this inaccuracy in C-rate when selecting cycles
         rate_column (str): column header name of the rate column,
-        inverse (bool): fix me.
-        inverted (bool): fix me.
+        inverse (bool): select steps that does not have the given C-rate.
+        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        fix_index (bool): automatically set cycle indexes as the index for the summary dataframe if not already set.
 
     Returns:
         filtered summary (Pandas.DataFrame).
     """
-    # TODO: accept a list of step-types for "on"
 
-    # hard-coding on
-    on = "charge"
-    import warnings
-    import logging
+    if on is None:
+        on = ["charge"]
+    else:
+        if not isinstance(on, (list, tuple)):
+            on = [on]
 
     if rate_column is None:
         rate_column = hdr_steps["rate_avr"]
@@ -655,9 +691,11 @@ def select_summary_based_on_rate(
             return summary
 
     if on:
-        cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
-            step_table[rate_column] > (rate - rate_std)
-        )& (step_table[on_column] == on)
+        cycles_mask = (
+            (step_table[rate_column] < (rate + rate_std))
+            & (step_table[rate_column] > (rate - rate_std))
+            & (step_table[on_column].isin(on))
+        )
     else:
         cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
             step_table[rate_column] > (rate - rate_std)
@@ -674,65 +712,6 @@ def select_summary_based_on_rate(
         filtered_summary = summary.loc[~filtered_cycles, :]
     else:
         filtered_summary = summary.loc[filtered_cycles]
-
-    return filtered_summary
-
-
-def _old_select_summary_based_on_rate(
-    cell, rate=None, rate_std=None, rate_column=None, inverse=False, inverted=False
-):
-    """Select only cycles charged or discharged with a given rate.
-
-    Parameters:
-        cell (cellpy.CellpyData)
-        rate (float): the rate to filter on. Remark that it should be given
-            as a float, i.e. you will have to convert from C-rate to
-            the actual numeric value. For example, use rate=0.05 if you want
-            to filter on cycles that has a C/20 rate.
-        rate_std (float): fix me.
-        rate_column (str): column header name of the rate column,
-        inverse (bool): fix me.
-        inverted (bool): fix me.
-
-    Returns:
-        filtered summary (Pandas.DataFrame).
-    """
-
-    if rate_column is None:
-        rate_column = hdr_steps["rate_avr"]
-
-    if rate is None:
-        rate = 0.05
-    if rate_std is None:
-        rate_std = 0.1 * rate
-
-    cycle_number_header = hdr_normal.cycle_index_txt
-
-    step_table = cell.cell.steps
-    summary = cell.cell.summary
-    if cycle_number_header not in summary.columns:
-        warnings.warn(
-            f"Could not find the column {cycle_number_header}\n"
-            f"The index = {summary.index}"
-        )
-        # TODO: [#index]
-        summary = summary.reset_index(level=0)
-
-    cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
-        step_table[rate_column] > (rate - rate_std)
-    )
-    # print(step_table[rate_column].unique())
-    if inverse:
-        cycles_mask = ~cycles_mask
-
-    filtered_step_table = step_table[cycles_mask]
-
-    filtered_cycles = filtered_step_table.cycle.unique()
-
-    if inverted:
-        filtered_summary = summary[~summary[cycle_number_header].isin(filtered_cycles)]
-    else:
-        filtered_summary = summary[summary[cycle_number_header].isin(filtered_cycles)]
 
     return filtered_summary
 
@@ -772,47 +751,8 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
     for col_name, norm_col_name, norm_value in zip(
         [col_name_charge, col_name_discharge],
         [col_name_norm_charge, col_name_norm_discharge],
-        [norm_val_charge, norm_val_discharge]
+        [norm_val_charge, norm_val_discharge],
     ):
-        cell.cell.summary[norm_col_name] = cell.cell.summary[col_name] / norm_value
-
-    return cell
-
-
-def _old_add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False):
-    """Add normalized capacity to the summary.
-
-    Args:
-        cell (CellpyData): cell to add normalized capacity to.
-        norm_cycles (list of ints): the cycles that will be used to find
-            the normalization factor from (averaging their capacity)
-        individual_normalization (bool): find normalization factor for both
-            the charge and the discharge if true, else use normalization factor
-            from charge on both charge and discharge.
-
-    Returns:
-        cell (CellpyData) with added normalization capacity columns in
-        the summary.
-    """
-
-    if norm_cycles is None:
-        norm_cycles = [1, 2, 3, 4, 5]
-
-    col_name_charge = hdr_summary.charge_capacity
-    col_name_discharge = hdr_summary.discharge_capacity
-
-    norm_val_charge = cell.cell.summary.loc[norm_cycles, col_name_charge].mean()
-    if individual_normalization:
-        norm_val_discharge = cell.cell.summary.loc[
-            norm_cycles, col_name_discharge
-        ].mean()
-    else:
-        norm_val_discharge = norm_val_charge
-
-    for col_name, norm_value in zip(
-        [col_name_charge, col_name_discharge], [norm_val_charge, norm_val_discharge]
-    ):
-        norm_col_name = "_".join(["Normalized", col_name])
         cell.cell.summary[norm_col_name] = cell.cell.summary[col_name] / norm_value
 
     return cell

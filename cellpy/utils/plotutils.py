@@ -181,25 +181,34 @@ def find_column(columns, label=None, end="cycle_index"):
     return hdr, lab
 
 
-def plot_concatenated(dataframe,
-                      x=None, y=None, err=None, xlabel=None, ylabel=None,
-                      points=True, line=True, errors=True,
-                      hover=True,
-                      width=800, height=300,
-                      journal=None,
-                      file_id_level=0, hdr_level=None,
-                      axis=1,
-                      mean_end="_mean",
-                      std_end="_std",
-                      cycle_end="cycle_index",
-                      legend_title="cell-type",
-                      marker_size=None,
-                      cmap="default_colors",
-                      spread=False,
-                      extension="bokeh",
-                      edges=False,
-                      **kwargs,
-                      ):
+def plot_concatenated(
+    dataframe,
+    x=None,
+    y=None,
+    err=None,
+    xlabel=None,
+    ylabel=None,
+    points=True,
+    line=True,
+    errors=True,
+    hover=True,
+    width=800,
+    height=300,
+    journal=None,
+    file_id_level=0,
+    hdr_level=None,
+    axis=1,
+    mean_end="_mean",
+    std_end="_std",
+    cycle_end="cycle_index",
+    legend_title="cell-type",
+    marker_size=None,
+    cmap="default_colors",
+    spread=False,
+    extension="bokeh",
+    edges=False,
+    **kwargs,
+):
     """Create a holoviews plot of the concatenated summary.
 
     This function is still under development. Feel free to contribute.
@@ -292,10 +301,12 @@ def plot_concatenated(dataframe,
     curve_dict = dict()
 
     if not averaged and journal is not None:
-        journal_pages = journal.pages[[hdr_journal["group"], hdr_journal["sub_group"]]].copy()
+        journal_pages = journal.pages[
+            [hdr_journal["group"], hdr_journal["sub_group"]]
+        ].copy()
         journal_pages["g"] = 0
         journal_pages["sg"] = 0
-        markers = itertools.cycle(['s', 'o', '<', '*', '+', 'x'])
+        markers = itertools.cycle(["s", "o", "<", "*", "+", "x"])
         colors = itertools.cycle(hv.Cycle(cmap).values)
 
         j = journal_pages.groupby(hdr_journal["group"])
@@ -332,10 +343,10 @@ def plot_concatenated(dataframe,
                 scatter = hv.Scatter(curve).opts(color=color, marker=marker)
 
                 if edges and extension == "matplotlib":
-                    scatter = scatter.opts(edgecolor='k')
+                    scatter = scatter.opts(edgecolor="k")
 
                 if edges and extension == "bokeh":
-                    scatter = scatter.opts(line_color='k', line_width=1)
+                    scatter = scatter.opts(line_color="k", line_width=1)
 
                 if marker_size is not None and extension == "bokeh":
                     scatter = scatter.opts(size=marker_size)
@@ -355,25 +366,31 @@ def plot_concatenated(dataframe,
             if spread:
                 curve *= hv.Spread(group, hdr_x, [hdr_y, hdr_e])
             else:
-                curve *= hv.ErrorBars(group, hdr_x, [hdr_y, hdr_e])  # should get the color from curve and set it here
+                curve *= hv.ErrorBars(
+                    group, hdr_x, [hdr_y, hdr_e]
+                )  # should get the color from curve and set it here
         curve_dict[name] = curve
 
     if extension == "matplotlib":
-        overlay_opts = {"aspect": "auto",
-                        "fig_inches": (width * 0.016, height * 0.012),
-                        "show_frame": True,
-                        }
+        overlay_opts = {
+            "aspect": "auto",
+            "fig_inches": (width * 0.016, height * 0.012),
+            "show_frame": True,
+        }
     else:
-        overlay_opts = {"width": width,
-                        "height": height,
-                        }
+        overlay_opts = {
+            "width": width,
+            "height": height,
+        }
 
-    final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(**overlay_opts, **kwargs)
+    final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
+        **overlay_opts, **kwargs
+    )
     if hover:
         if points:
-            final_plot.opts(opts.Scatter(tools=['hover']))
+            final_plot.opts(opts.Scatter(tools=["hover"]))
         else:
-            final_plot.opts(opts.Curve(tools=['hover']))
+            final_plot.opts(opts.Curve(tools=["hover"]))
     return final_plot
 
 
@@ -397,7 +414,9 @@ def create_colormarkerlist_for_journal(
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
-def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"):
+def create_colormarkerlist(
+    groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"
+):
     """Fetch lists with color names and marker types of correct length.
 
     Args:

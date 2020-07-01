@@ -604,8 +604,10 @@ class CellpyData(object):
         except KeyError:
             self.logger.warning("no fidtable - you should update your hdf5-file")
         except NotImplementedError:
-            self.logger.warning("your system cannot read the fid-table (posix-windows confusion) "
-                                "hopefully this will be solved in a newer version of pytables.")
+            self.logger.warning(
+                "your system cannot read the fid-table (posix-windows confusion) "
+                "hopefully this will be solved in a newer version of pytables."
+            )
         finally:
             store.close()
         if fidtable is not None:
@@ -2193,9 +2195,7 @@ class CellpyData(object):
                 if not any(mask_type_and_cycle):
                     self.logger.debug(f"found nothing for cycle {cycle}")
                 else:
-                    step = st[mask_type_and_cycle][
-                        shdr.step
-                    ].tolist()
+                    step = st[mask_type_and_cycle][shdr.step].tolist()
                     for newstep in step[:trim_taper_steps]:
                         if newstep in steps_to_skip:
                             self.logger.debug(f"skipping step {newstep}")
@@ -3094,7 +3094,9 @@ class CellpyData(object):
 
                 self.logger.debug("trying to put summary")
                 store.put(
-                    root + summary_dir, test.summary, format=prms._cellpyfile_summary_format
+                    root + summary_dir,
+                    test.summary,
+                    format=prms._cellpyfile_summary_format,
                 )
                 self.logger.debug(" summary -> hdf5 OK")
 
@@ -3105,19 +3107,25 @@ class CellpyData(object):
                 self.logger.debug(" meta -> hdf5 OK")
 
                 self.logger.debug("trying to put fidtable")
-                store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
+                store.put(
+                    root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format
+                )
                 self.logger.debug(" fid -> hdf5 OK")
 
                 self.logger.debug("trying to put step")
                 try:
                     store.put(
-                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                        root + step_dir,
+                        test.steps,
+                        format=prms._cellpyfile_stepdata_format,
                     )
                     self.logger.debug(" step -> hdf5 OK")
                 except TypeError:
                     test = self._fix_dtype_step_table(test)
                     store.put(
-                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                        root + step_dir,
+                        test.steps,
+                        format=prms._cellpyfile_stepdata_format,
                     )
                     self.logger.debug(" fixed step -> hdf5 OK")
 

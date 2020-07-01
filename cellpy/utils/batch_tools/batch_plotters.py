@@ -39,7 +39,9 @@ def create_legend(info, c, option="clean", use_index=False):
     """creating more informative legends"""
 
     logging.debug("    - creating legends")
-    mass, loading, label = info.loc[c, [hdr_journal["mass"], hdr_journal["loading"], hdr_journal["label"]]]
+    mass, loading, label = info.loc[
+        c, [hdr_journal["mass"], hdr_journal["loading"], hdr_journal["label"]]
+    ]
 
     if use_index or not label:
         label = c.split("_")

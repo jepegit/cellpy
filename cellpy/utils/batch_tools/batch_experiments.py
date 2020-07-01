@@ -159,7 +159,8 @@ class CyclingExperiment(BaseExperiment):
                 pbar.set_postfix_str(s=h_txt, refresh=True)
                 try:
                     cell_data.load(
-                        row[hdr_journal.cellpy_file_name], parent_level=self.parent_level
+                        row[hdr_journal.cellpy_file_name],
+                        parent_level=self.parent_level,
                     )
                 except Exception as e:
                     logging.info(

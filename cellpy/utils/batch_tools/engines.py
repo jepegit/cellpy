@@ -116,9 +116,13 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict = dict()
     info_dict[hdr_journal["filename"]] = [reader.get_cell_name(srno) for srno in srnos]
     info_dict[hdr_journal["mass"]] = [reader.get_mass(srno) for srno in srnos]
-    info_dict[hdr_journal["total_mass"]] = [reader.get_total_mass(srno) for srno in srnos]
+    info_dict[hdr_journal["total_mass"]] = [
+        reader.get_total_mass(srno) for srno in srnos
+    ]
     info_dict[hdr_journal["loading"]] = [reader.get_loading(srno) for srno in srnos]
-    info_dict[hdr_journal["fixed"]] = [reader.inspect_hd5f_fixed(srno) for srno in srnos]
+    info_dict[hdr_journal["fixed"]] = [
+        reader.inspect_hd5f_fixed(srno) for srno in srnos
+    ]
     info_dict[hdr_journal["label"]] = [reader.get_label(srno) for srno in srnos]
     info_dict[hdr_journal["cell_type"]] = [reader.get_cell_type(srno) for srno in srnos]
     info_dict[hdr_journal["raw_file_names"]] = []
@@ -150,7 +154,9 @@ def simple_db_engine(reader=None, srnos=None):
     info_df = info_df.sort_values([hdr_journal.group, hdr_journal.filename])
     info_df = helper.make_unique_groups(info_df)
 
-    info_df[hdr_journal.label] = info_df[hdr_journal.filename].apply(helper.create_labels)
+    info_df[hdr_journal.label] = info_df[hdr_journal.filename].apply(
+        helper.create_labels
+    )
 
     # TODO: check if drop=False works [#index]
     info_df.set_index(hdr_journal["filename"], inplace=True)  # edit this to allow for

@@ -13,7 +13,10 @@ from tqdm.auto import tqdm
 from cellpy import prms
 from cellpy import log
 import cellpy.exceptions
-from cellpy.parameters.internal_settings import get_headers_step_table, get_headers_journal
+from cellpy.parameters.internal_settings import (
+    get_headers_step_table,
+    get_headers_journal,
+)
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
@@ -24,7 +27,11 @@ from cellpy.utils.batch_tools.dumpers import ram_dumper
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 hdr_journal = get_headers_journal()
-COLUMNS_SELECTED_FOR_VIEW = [hdr_journal.mass, hdr_journal.total_mass, hdr_journal.loading]
+COLUMNS_SELECTED_FOR_VIEW = [
+    hdr_journal.mass,
+    hdr_journal.total_mass,
+    hdr_journal.loading,
+]
 
 
 class Batch:
@@ -231,9 +238,11 @@ class Batch:
     @journal.setter
     def journal(self, new):
         # self.experiment.journal = new
-        raise NotImplementedError("Setting a new journal object on directly on a "
-                                  "batch object is not allowed at the moment. Try modifying "
-                                  "the journal.pages instead.")
+        raise NotImplementedError(
+            "Setting a new journal object on directly on a "
+            "batch object is not allowed at the moment. Try modifying "
+            "the journal.pages instead."
+        )
 
     def create_journal(self, description=None, from_db=True):
         """Create journal pages.

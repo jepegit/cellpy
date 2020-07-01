@@ -10,16 +10,15 @@ from cellpy.exceptions import UnderDefined
 from cellpy.parameters import prms
 from cellpy.readers import dbreader
 from cellpy.parameters.internal_settings import get_headers_journal
-from cellpy.parameters.legacy.internal_settings import headers_journal_v0 as hdr_journal_old
+from cellpy.parameters.legacy.internal_settings import (
+    headers_journal_v0 as hdr_journal_old,
+)
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
 
 hdr_journal = get_headers_journal()
 
-trans_dict = {
-    hdr_journal_old[key]: hdr_journal[key]
-    for key in hdr_journal
-}
+trans_dict = {hdr_journal_old[key]: hdr_journal[key] for key in hdr_journal}
 
 
 class LabJournal(BaseJournal):
@@ -89,11 +88,15 @@ class LabJournal(BaseJournal):
 
         logging.debug("checking path-names")
         try:
-            pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
+            pages[hdr_journal.cellpy_file_name] = pages[
+                hdr_journal.cellpy_file_name
+            ].apply(cls._fix_cellpy_paths)
         except KeyError:
             logging.warning("old journal file - updating")
             pages.rename(columns=trans_dict, inplace=True)
-            pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
+            pages[hdr_journal.cellpy_file_name] = pages[
+                hdr_journal.cellpy_file_name
+            ].apply(cls._fix_cellpy_paths)
 
         return pages, meta_dict
 
@@ -121,7 +124,9 @@ class LabJournal(BaseJournal):
 
         pages_dict = top_level_dict["info_df"]
         pages = pd.DataFrame(pages_dict)
-        pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(self._fix_cellpy_paths)
+        pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(
+            self._fix_cellpy_paths
+        )
         self.pages = pages
         self.file_name = file_name
         self._prm_packer(top_level_dict["metadata"])
@@ -137,9 +142,7 @@ class LabJournal(BaseJournal):
         logging.debug(f"project: {self.project}")
 
         col_names = list(hdr_journal.values())
-        pages = pd.DataFrame(
-            columns=col_names
-        )
+        pages = pd.DataFrame(columns=col_names)
         pages.set_index(hdr_journal.filename, inplace=True)
         return pages
 
