@@ -176,8 +176,8 @@ def test_example_data():
     a = example_data.arbin_file()
     c = example_data.cellpy_file()
 
-    assert a.cell.summary.size == 540
-    assert c.cell.summary.size == 540
+    assert a.cell.summary.size == 522
+    assert c.cell.summary.size == 1044
 
 
 def teardown_module():

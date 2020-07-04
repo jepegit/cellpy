@@ -4483,6 +4483,8 @@ class CellpyData(object):
         # capacity_modifier = None,
         # test=None
     ):
+        cycle_index_as_index = True
+
         time_00 = time.time()
 
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -5023,6 +5025,13 @@ class CellpyData(object):
             self.logger.debug("sorting columns")
             new_first_col_list = [dt_txt, tt_txt, d_txt, c_txt]
             summary = self.set_col_first(summary, new_first_col_list)
+
+        if cycle_index_as_index:
+            index_col = hdr_summary.cycle_index
+            try:
+                summary.set_index(index_col, inplace=True)
+            except KeyError:
+                logging.debug("Setting cycle_index as index failed")
 
         dataset.summary = summary
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
