@@ -192,24 +192,21 @@ class Cell(object):
         self.logger = logging.getLogger(__name__)
         self.logger.debug("created DataSet instance")
 
+        # meta-data
         self.cell_no = None
         self.mass = prms.Materials["default_mass"]  # active material (in mg)
         self.tot_mass = prms.Materials["default_mass"]  # total material (in mg)
-        self.no_cycles = 0.0
+        self.no_cycles = 0.0  # not sure if this is used - check!
         self.charge_steps = None  # not in use at the moment
         self.discharge_steps = None  # not in use at the moment
         self.ir_steps = None  # dict # not in use at the moment
         self.ocv_steps = None  # dict # not in use at the moment
         self.nom_cap = prms.DataSet["nom_cap"]  # mAh/g (for finding c-rates)
-        self.mass_given = False
+        self.mass_given = False  # not sure if this is used - check!
         self.material = prms.Materials["default_material"]
         self.merged = False
         self.file_errors = None  # not in use at the moment
         self.loaded_from = None  # loaded from (can be list if merged)
-        self.raw_data_files = []
-        self.raw_data_files_length = []
-        self.raw_units = cellpy_units
-        self.raw_limits = cellpy_limits
         self.channel_index = None
         self.channel_number = None
         self.creator = None
@@ -218,13 +215,21 @@ class Cell(object):
         self.start_datetime = None
         self.test_ID = None
         self.name = None
+
+        # custom meta-data
         for k in kwargs:
             if hasattr(self, k):
                 setattr(self, k, kwargs[k])
 
         # methods in CellpyData to update if adding new attributes:
-        #  _load_infotable()
+        # _load_infotable()
         # _create_infotable()
+        # TODO @jepe: rewrite _load/_create _infotable so that we dont have to update them when adding new attributes.
+
+        self.raw_data_files = []
+        self.raw_data_files_length = []
+        self.raw_units = cellpy_units
+        self.raw_limits = cellpy_limits
 
         self.data = collections.OrderedDict()  # not used
         self.summary = collections.OrderedDict()  # not used
@@ -232,15 +237,14 @@ class Cell(object):
         self.raw = pd.DataFrame()
         self.summary = pd.DataFrame()
         # self.summary_made = False  # Should be removed
-        self.steps = collections.OrderedDict()
+        self.steps = collections.OrderedDict()  # is this used? - check!
         # self.step_table_made = False  # Should be removed
         # self.parameter_table = collections.OrderedDict()
         self.summary_table_version = SUMMARY_TABLE_VERSION
         self.step_table_version = STEP_TABLE_VERSION
         self.cellpy_file_version = CELLPY_FILE_VERSION
         self.raw_table_version = RAW_TABLE_VERSION
-        # ready for use if implementing loading units
-        # (will probably never happen).
+
 
     @staticmethod
     def _header_str(hdr):
@@ -325,6 +329,8 @@ class Cell(object):
 
     @property
     def no_data(self):
+        # TODO: @jepe should consider renaming this to be in-line with "steps_made" etc. (or renaming steps_made and
+        #   summary_made to e.g. no_steps, no_summary)
         try:
             empty = self.raw.empty
         except AttributeError:
