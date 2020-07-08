@@ -120,6 +120,10 @@ def simple_db_engine(reader=None, srnos=None):
         reader.get_total_mass(srno) for srno in srnos
     ]
     info_dict[hdr_journal["loading"]] = [reader.get_loading(srno) for srno in srnos]
+
+    info_dict[hdr_journal["nom_cap"]] = [reader.get_nom_cap(srno) for srno in srnos]
+    info_dict[hdr_journal["experiment"]] = [reader.get_experiment_type(srno) for srno in srnos]
+
     info_dict[hdr_journal["fixed"]] = [
         reader.inspect_hd5f_fixed(srno) for srno in srnos
     ]
@@ -127,6 +131,7 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict[hdr_journal["cell_type"]] = [reader.get_cell_type(srno) for srno in srnos]
     info_dict[hdr_journal["raw_file_names"]] = []
     info_dict[hdr_journal["cellpy_file_name"]] = []
+    info_dict[hdr_journal["comment"]] = [reader.get_comment(srno) for srno in srnos]
 
     logging.debug(f"created info-dict from {reader.db_file}:")
     # logging.debug(info_dict)

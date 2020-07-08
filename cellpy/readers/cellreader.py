@@ -761,6 +761,9 @@ class CellpyData(object):
 
         else:
             self.load(cellpy_file)
+            nom_cap = kwargs.pop("nom_cap", None)
+            if nom_cap is not None:
+                self.set_nom_cap(nom_cap)
             if mass:
                 self.set_mass(mass)
 
@@ -4095,6 +4098,10 @@ class CellpyData(object):
 
     def _set_run_attribute(self, attr, vals, dataset_number=None, validated=None):
         # Sets the val (vals) for the test (datasets).
+        # Remark! This is left-over code from old ages when we thought we needed
+        #   to have data-sets with multiple cells. And before we learned about
+        #   setters and getters in Python. Feel free to refactor it.
+
         if attr == "mass":
             setter = self._set_mass
         elif attr == "tot_mass":

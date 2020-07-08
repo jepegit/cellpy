@@ -1,5 +1,6 @@
 import json
 import logging
+import warnings
 import os
 import pathlib
 import platform
@@ -18,7 +19,13 @@ from cellpy.utils.batch_tools.engines import simple_db_engine
 
 hdr_journal = get_headers_journal()
 
-trans_dict = {hdr_journal_old[key]: hdr_journal[key] for key in hdr_journal}
+trans_dict = {}
+missing_keys = []
+for key in hdr_journal:
+    if key in hdr_journal_old:
+        trans_dict[hdr_journal_old[key]] = hdr_journal[key]
+    else:
+        missing_keys.append(key)
 
 
 class LabJournal(BaseJournal):
@@ -97,6 +104,11 @@ class LabJournal(BaseJournal):
             pages[hdr_journal.cellpy_file_name] = pages[
                 hdr_journal.cellpy_file_name
             ].apply(cls._fix_cellpy_paths)
+
+        for column_name in missing_keys:
+            if column_name not in pages.columns:
+                warnings.warn(f"old journal format - missing: {column_name}")
+                pages[column_name] = None
 
         return pages, meta_dict
 

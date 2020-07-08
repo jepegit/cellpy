@@ -91,6 +91,8 @@ class CyclingExperiment(BaseExperiment):
             self.all_in_memory = all_in_memory
 
         pages = self.journal.pages
+        if self.nom_cap:
+            pages[hdr_journal.nom_cap] = self.nom_cap
 
         if pages.empty:
             raise Exception("your journal is empty")
@@ -133,6 +135,7 @@ class CyclingExperiment(BaseExperiment):
                     h_txt += " (r)"
                     pbar.set_postfix_str(s=h_txt, refresh=True)
                 logging.debug("not forcing to load cellpy-file instead of raw file.")
+
                 try:
                     cell_data.loadcell(
                         raw_files=row[hdr_journal.raw_file_names],
@@ -141,7 +144,7 @@ class CyclingExperiment(BaseExperiment):
                         summary_on_raw=True,
                         force_raw=self.force_raw,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
-                        nom_cap=self.nom_cap,
+                        nom_cap=row[hdr_journal.nom_cap],
                         **kwargs,
                     )
                 except Exception as e:

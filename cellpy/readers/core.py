@@ -196,13 +196,13 @@ class Cell(object):
         self.cell_no = None
         self.mass = prms.Materials["default_mass"]  # active material (in mg)
         self.tot_mass = prms.Materials["default_mass"]  # total material (in mg)
-        self.no_cycles = 0.0  # not sure if this is used - check!
-        self.charge_steps = None  # not in use at the moment
-        self.discharge_steps = None  # not in use at the moment
-        self.ir_steps = None  # dict # not in use at the moment
-        self.ocv_steps = None  # dict # not in use at the moment
+        self.no_cycles = 0.0
+        self.charge_steps = None
+        self.discharge_steps = None
+        self.ir_steps = None
+        self.ocv_steps = None
         self.nom_cap = prms.DataSet["nom_cap"]  # mAh/g (for finding c-rates)
-        self.mass_given = False  # not sure if this is used - check!
+        self.mass_given = False
         self.material = prms.Materials["default_material"]
         self.merged = False
         self.file_errors = None  # not in use at the moment
@@ -227,8 +227,9 @@ class Cell(object):
         self.experiment_type = None
         self.cell_type = None
         self.separator_type = None
-        self.negative_current_collector = None
-        self.positive_current_collector = None
+        self.active_electrode_current_collector = None
+        self.reference_electrode_current_collector = None
+        self.comment = None
 
         # custom meta-data
         for k in kwargs:
@@ -237,17 +238,18 @@ class Cell(object):
 
         # methods in CellpyData to update if adding new attributes:
         # ATTRS_CELLPYFILE
+
+        # place to put "checks" etc:
         # _extract_meta_from_cellpy_file
         # _create_infotable()
-        # TODO @jepe: rewrite _load/_create _infotable so that we dont have to update them when adding new attributes.
 
         self.raw_data_files = []
         self.raw_data_files_length = []
         self.raw_units = cellpy_units
         self.raw_limits = cellpy_limits
 
-        self.data = collections.OrderedDict()  # not used
-        self.summary = collections.OrderedDict()  # not used
+        # self.data = collections.OrderedDict()  # not used
+        # self.summary = collections.OrderedDict()  # not used
 
         self.raw = pd.DataFrame()
         self.summary = pd.DataFrame()

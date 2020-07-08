@@ -576,6 +576,12 @@ def init(*args, **kwargs):
     return Batch(*args, **kwargs)
 
 
+def from_journal(journal_file):
+    """Create a Batch from a journal file"""
+    b = init(db_reader=None, file_name=journal_file)
+    return b
+
+
 def load_pages(file_name):
     """Retrieve pages from a Journal file.
 
