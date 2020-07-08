@@ -216,13 +216,28 @@ class Cell(object):
         self.test_ID = None
         self.name = None
 
+        # new meta data
+        self.active_electrode_area = None  # [cm2]
+        self.active_electrode_thickness = None  # [micron]
+        self.electrolyte_type = None  #
+        self.electrolyte_volume = None  # [micro-liter]
+        self.active_electrode_type = None
+        self.counter_electrode_type = None
+        self.reference_electrode_type = None
+        self.experiment_type = None
+        self.cell_type = None
+        self.separator_type = None
+        self.negative_current_collector = None
+        self.positive_current_collector = None
+
         # custom meta-data
         for k in kwargs:
             if hasattr(self, k):
                 setattr(self, k, kwargs[k])
 
         # methods in CellpyData to update if adding new attributes:
-        # _load_infotable()
+        # ATTRS_CELLPYFILE
+        # _extract_meta_from_cellpy_file
         # _create_infotable()
         # TODO @jepe: rewrite _load/_create _infotable so that we dont have to update them when adding new attributes.
 

@@ -33,6 +33,14 @@ ATTRS_CELLPYFILE = [
     "cell_no",
     "name",
     "nom_cap",
+    "material",
+    # "item_ID",
+    # "active_electrode_area",
+    # "active_electrode_thickness",
+    # "electrolyte_type",
+    # "electrolyte_volume",
+    # "active_electrode_type",
+    # "counter_electrode_type",
 ]
 
 # Attributes that should be copied when duplicating cellpy objects:

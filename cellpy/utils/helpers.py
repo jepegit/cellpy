@@ -358,19 +358,25 @@ def remove_outliers_from_summary_on_value(
     return s
 
 
-def remove_outliers_from_summary_on_index(s, indexes=None):
+def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
     """Remove rows with supplied indexes (where the indexes typically are cycle-indexes).
 
     Args:
         s (pandas.DataFrame): cellpy summary to process
         indexes (list): list of indexes
+        remove_last (bool): remove the last point
 
     Returns:
         pandas.DataFrame
     """
     if indexes is None:
-        indexes = [-1]
-    return s[~s.index.isin(indexes)]
+        indexes = []
+
+    selection = s.index.isin(indexes)
+    if remove_last:
+        selection[-1] = True
+
+    return s[~selection]
 
 
 def yank_outliers(
@@ -381,6 +387,7 @@ def yank_outliers(
     filter_cols=None,
     freeze_indexes=None,
     remove_indexes=None,
+    remove_last=False,
     iterations=1,
     zscore_multiplyer=1.3,
     keep_old=True,
@@ -395,6 +402,7 @@ def yank_outliers(
         filter_cols (str): what columns to filter on.
         freeze_indexes (list): indexes (cycles) that should never be removed.
         remove_indexes (dict or list): if dict, look-up on cell label, else a list that will be the same for all
+        remove_last (dict or bool): if dict, look-up on cell label.
         iterations (int): repeat z-score filtering if `zscore_limit` is given.
         zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering (should usually be less than 1).
         keep_old (bool): perform filtering of a copy of the batch object.
@@ -412,11 +420,16 @@ def yank_outliers(
         s = c.cell.summary
         if remove_indexes is not None:
             if isinstance(remove_indexes, dict):
-                remove_indexes_this_cell = remove_indexes[cell_label]
+                remove_indexes_this_cell = remove_indexes.get(cell_label, None)
             else:
                 remove_indexes_this_cell = remove_indexes
 
-            s = remove_outliers_from_summary_on_index(s, remove_indexes_this_cell)
+            if isinstance(remove_last, dict):
+                remove_last_this_cell = remove_last.get(cell_label, None)
+            else:
+                remove_last_this_cell = remove_last
+
+            s = remove_outliers_from_summary_on_index(s, remove_indexes_this_cell, remove_last_this_cell)
         s = remove_outliers_from_summary_on_value(
             s,
             low=low,
