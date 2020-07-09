@@ -61,6 +61,7 @@ class CyclingExperiment(BaseExperiment):
         super().__init__(*args)
         self.journal = LabJournal(db_reader=db_reader)
         self.errors = dict()
+        self.log = dict()
 
         self.force_cellpy = False
         self.force_raw = False
@@ -372,7 +373,7 @@ class CyclingExperiment(BaseExperiment):
 
         self.errors["link"] = errors
 
-    def recalc(self, save=True, step_opts=None, summary_opts=None):
+    def recalc(self, save=True, step_opts=None, summary_opts=None, testing=False):
         """Run make_step_table and make_summary on all cells.
 
         Args:
@@ -384,7 +385,11 @@ class CyclingExperiment(BaseExperiment):
             None
         """
         errors = []
-        pbar = tqdm(list(self.journal.pages.iterrows()), file=sys.stdout, leave=False)
+        log = []
+        if testing:
+            pbar = tqdm(list(self.journal.pages.iloc[0:2, :].iterrows()), file=sys.stdout, leave=False)
+        else:
+            pbar = tqdm(list(self.journal.pages.iterrows()), file=sys.stdout, leave=False)
         for indx, row in pbar:
             nom_cap = row[hdr_journal.nom_cap]
             pbar.set_description(indx)
@@ -416,9 +421,17 @@ class CyclingExperiment(BaseExperiment):
                     warnings.warn(e_txt)
                 else:
                     if save:
+                        # remark! got a win error when trying to save (hdf5-file in use) (must fix this)
                         pbar.set_postfix_str(s="save", refresh=True)
-                        c.save(row[hdr_journal.cellpy_file_name])
+                        try:
+                            c.save(row.cellpy_file_name)
+                            log.append(f"saved {indx} to {row.cellpy_file_name}")
+                        except Exception as e:
+                            e_txt = f"saving {indx} to {row.cellpy_file_name} failed!"
+                            errors.append(e_txt)
+                            warnings.warn(e_txt)
         self.errors["recalc"] = errors
+        self.log["recalc"] = log
 
 
 class ImpedanceExperiment(BaseExperiment):
