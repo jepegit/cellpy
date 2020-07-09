@@ -2,6 +2,7 @@ import os
 import logging
 import pathlib
 import warnings
+import collections
 from copy import deepcopy
 
 import numpy as np
@@ -37,8 +38,9 @@ def _make_average(
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
     cell_id = ""
-    final_frame = None
+    not_a_number = np.NaN
     new_frames = []
+
     if columns is None:
         columns = frames[0].columns
 
@@ -56,31 +58,37 @@ def _make_average(
             )[0]
         elif isinstance(keys, str):
             cell_id = keys
-
     new_frame = pd.concat(frames, axis=1)
 
     for col in columns:
+        number_of_cols = len(new_frame.columns)
         if col in [hdr_norm_cycle, hdr_cum_charge] and normalize_cycles:
-
-            avg_frame = (
-                new_frame[col]
-                .agg(["mean"], axis="columns")
-                .rename(columns={"mean": col})
-            )
+            if number_of_cols > 1:
+                avg_frame = (
+                    new_frame[col]
+                    .agg(["mean"], axis=1)
+                    .rename(columns={"mean": col})
+                )
+            else:
+                avg_frame = new_frame[col].copy()
 
         else:
+
             new_col_name_mean = col + "_mean"
             new_col_name_std = col + "_std"
 
-            # very slow:
-            avg_frame = (
-                new_frame[col]
-                .agg(["mean", "std"], axis="columns")
-                .rename(columns={"mean": new_col_name_mean, "std": new_col_name_std,})
-            )
+            if number_of_cols > 1:
+                # very slow:
+                avg_frame = (
+                    new_frame[col]
+                    .agg(["mean", "std"], axis=1)
+                    .rename(columns={"mean": new_col_name_mean, "std": new_col_name_std,})
+                )
+            else:
+                avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
+                avg_frame[new_col_name_std] = not_a_number
 
         new_frames.append(avg_frame)
-
     final_frame = pd.concat(new_frames, axis=1)
 
     return final_frame, cell_id
@@ -606,23 +614,38 @@ def concatenate_summaries(
                 keys_sub.append(cell_id)
 
         if group_it:
-            if normalize_cycles:
-                s, cell_id = _make_average(
-                    frames_sub, keys_sub, normalize_cycles_headers + columns, True
-                )
-                s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
-                if hdr_cum_charge not in columns:
-                    s = s.drop(columns=hdr_cum_charge)
+            try:
+                if normalize_cycles:
+                    s, cell_id = _make_average(
+                        frames_sub, keys_sub, normalize_cycles_headers + columns, True
+                    )
+                    s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
+                    if hdr_cum_charge not in columns:
+                        s = s.drop(columns=hdr_cum_charge)
+                else:
+                    s, cell_id = _make_average(frames_sub, keys_sub, columns)
+            except ValueError as e:
+                print("could not make average!")
+                print(e)
             else:
-                s, cell_id = _make_average(frames_sub, keys_sub, columns)
-
-            frames.append(s)
-            keys.append(cell_id)
+                frames.append(s)
+                keys.append(cell_id)
         else:
             frames.extend(frames_sub)
             keys.extend(keys_sub)
 
     if frames:
+        if len(set(keys)) != len(keys):
+            logging.info("Got several columns with same test-name")
+            logging.info("Renaming.")
+            used_names = []
+            new_keys = []
+            for name in keys:
+                if name in used_names:
+                    name += "x"
+                new_keys.append(name)
+                used_names.append(name)
+            keys = new_keys
         cdf = pd.concat(frames, keys=keys, axis=1)
         cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
         return cdf

@@ -372,6 +372,54 @@ class CyclingExperiment(BaseExperiment):
 
         self.errors["link"] = errors
 
+    def recalc(self, save=True, step_opts=None, summary_opts=None):
+        """Run make_step_table and make_summary on all cells.
+
+        Args:
+            save (bool): Save updated cellpy-files if True.
+            step_opts (dict): parameters to inject to make_steps.
+            summary_opts (dict): parameters to inject to make_summary.
+
+        Returns:
+            None
+        """
+        errors = []
+        pbar = tqdm(list(self.journal.pages.iterrows()), file=sys.stdout, leave=False)
+        for indx, row in pbar:
+            nom_cap = row[hdr_journal.nom_cap]
+            pbar.set_description(indx)
+            try:
+                c = self.data[indx]
+            except TypeError as e:
+                e_txt = f"could not extract data for {indx} - have you forgotten to link?"
+                errors.append(e_txt)
+                warnings.warn(e_txt)
+
+            else:
+                if nom_cap:
+                    c.set_nom_cap(nom_cap)
+                try:
+                    pbar.set_postfix_str(s="steps", refresh=True)
+                    if step_opts is not None:
+                        c.make_step_table(**step_opts)
+                    else:
+                        c.make_step_table()
+
+                    pbar.set_postfix_str(s="summary", refresh=True)
+                    if summary_opts is not None:
+                        c.make_summary(**summary_opts)
+                    else:
+                        c.make_summary()
+                except Exception as e:
+                    e_txt = f"recalculating for {indx} failed!"
+                    errors.append(e_txt)
+                    warnings.warn(e_txt)
+                else:
+                    if save:
+                        pbar.set_postfix_str(s="save", refresh=True)
+                        c.save(row[hdr_journal.cellpy_file_name])
+        self.errors["recalc"] = errors
+
 
 class ImpedanceExperiment(BaseExperiment):
     def __init__(self):
