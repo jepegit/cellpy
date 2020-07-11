@@ -180,6 +180,42 @@ def info(c, full=False):
 
 
 @task
+def jupyterlab(c):
+    print("installing jupyter lab-extensions")
+    extensions = [
+        "@jupyter-widgets/jupyterlab-manager@2.0",
+        "@pyviz/jupyterlab_pyviz",
+        "@jupyter-widgets/jupyterlab-toc",
+    ]
+    for extension in extensions:
+        print(f"installing {extension}")
+        c.run(f"jupyter labextension install {extension}")
+    print("OK")
+
+
+@task
+def man(c):
+    print("-----")
+    print("CONDA")
+    print("-----")
+    print("\ncreate new environment from environment.yml file:")
+    print("> conda env create -f environment.yml")
+    print("\nremove environment:")
+    print("> conda env remove --name myenv")
+    print("\nadd conda env to jupyter:")
+    print("(assuming you are already in the conda env you would like to add to jupyter)")
+    print("> python -m ipykernel install --user --name=firstEnv")
+
+    print("----------")
+    print("JUPYTERLAB")
+    print("----------")
+    print("> jupyter labextension install @jupyter-widgets/jupyterlab-manager@2.0")
+    print("> jupyter labextension install @pyviz/jupyterlab_pyviz")
+    print("> jupyter labextension build")
+    print("> jupyter labextension list")
+
+
+@task
 def test(c):
     """Run tests with coverage"""
     c.run("pytest --cov=cellpy tests/")

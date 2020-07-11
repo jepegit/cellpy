@@ -61,6 +61,7 @@ class CyclingExperiment(BaseExperiment):
         super().__init__(*args)
         self.journal = LabJournal(db_reader=db_reader)
         self.errors = dict()
+        self.log = dict()
 
         self.force_cellpy = False
         self.force_raw = False
@@ -371,6 +372,66 @@ class CyclingExperiment(BaseExperiment):
             errors.append(e_txt)
 
         self.errors["link"] = errors
+
+    def recalc(self, save=True, step_opts=None, summary_opts=None, testing=False):
+        """Run make_step_table and make_summary on all cells.
+
+        Args:
+            save (bool): Save updated cellpy-files if True.
+            step_opts (dict): parameters to inject to make_steps.
+            summary_opts (dict): parameters to inject to make_summary.
+
+        Returns:
+            None
+        """
+        errors = []
+        log = []
+        if testing:
+            pbar = tqdm(list(self.journal.pages.iloc[0:2, :].iterrows()), file=sys.stdout, leave=False)
+        else:
+            pbar = tqdm(list(self.journal.pages.iterrows()), file=sys.stdout, leave=False)
+        for indx, row in pbar:
+            nom_cap = row[hdr_journal.nom_cap]
+            pbar.set_description(indx)
+            try:
+                c = self.data[indx]
+            except TypeError as e:
+                e_txt = f"could not extract data for {indx} - have you forgotten to link?"
+                errors.append(e_txt)
+                warnings.warn(e_txt)
+
+            else:
+                if nom_cap:
+                    c.set_nom_cap(nom_cap)
+                try:
+                    pbar.set_postfix_str(s="steps", refresh=True)
+                    if step_opts is not None:
+                        c.make_step_table(**step_opts)
+                    else:
+                        c.make_step_table()
+
+                    pbar.set_postfix_str(s="summary", refresh=True)
+                    if summary_opts is not None:
+                        c.make_summary(**summary_opts)
+                    else:
+                        c.make_summary()
+                except Exception as e:
+                    e_txt = f"recalculating for {indx} failed!"
+                    errors.append(e_txt)
+                    warnings.warn(e_txt)
+                else:
+                    if save:
+                        # remark! got a win error when trying to save (hdf5-file in use) (must fix this)
+                        pbar.set_postfix_str(s="save", refresh=True)
+                        try:
+                            c.save(row.cellpy_file_name)
+                            log.append(f"saved {indx} to {row.cellpy_file_name}")
+                        except Exception as e:
+                            e_txt = f"saving {indx} to {row.cellpy_file_name} failed!"
+                            errors.append(e_txt)
+                            warnings.warn(e_txt)
+        self.errors["recalc"] = errors
+        self.log["recalc"] = log
 
 
 class ImpedanceExperiment(BaseExperiment):

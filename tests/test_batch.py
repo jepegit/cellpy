@@ -168,6 +168,16 @@ def test_cycling_summary_plotter(populated_batch):
     populated_batch.plot_summaries()
 
 
+def test_concatinator(populated_batch):
+    from cellpy.utils import helpers
+    cellnames = populated_batch.cell_names
+    c = populated_batch.experiment.data[cellnames[0]]
+    cf = helpers.concatenate_summaries(
+        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True,
+    )
+    print(cf.head(5))
+
+
 def test_report(populated_batch):
     print(populated_batch.report)
 
