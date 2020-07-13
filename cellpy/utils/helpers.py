@@ -741,15 +741,17 @@ def select_summary_based_on_rate(
         cycles_mask = ~cycles_mask
 
     filtered_step_table = step_table[cycles_mask]
-
     filtered_cycles = filtered_step_table[hdr_steps.cycle].unique()
 
     if inverted:
-        filtered_summary = summary.loc[summary.index.intersection(~filtered_cycles), :]
+        filtered_index = summary.index.difference(filtered_cycles)
     else:
-        filtered_summary = summary.loc[summary.index.intersection(filtered_cycles)]
+        filtered_index = summary.index.intersection(filtered_cycles)
 
-    return filtered_summary
+    if filtered_index.empty:
+        warnings.warn("EMPTY")
+
+    return summary.loc[filtered_index, :]
 
 
 def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False):
