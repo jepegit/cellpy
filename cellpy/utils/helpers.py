@@ -745,9 +745,9 @@ def select_summary_based_on_rate(
     filtered_cycles = filtered_step_table[hdr_steps.cycle].unique()
 
     if inverted:
-        filtered_summary = summary.loc[~filtered_cycles, :]
+        filtered_summary = summary.loc[summary.index.intersection(~filtered_cycles), :]
     else:
-        filtered_summary = summary.loc[filtered_cycles]
+        filtered_summary = summary.loc[summary.index.intersection(filtered_cycles)]
 
     return filtered_summary
 

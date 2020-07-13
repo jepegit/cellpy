@@ -17,6 +17,8 @@ from cellpy import log
 from cellpy import prms
 
 from cellpy.utils import batch as batch
+from cellpy.utils import helpers
+
 from . import fdv
 
 log.setup_logging(default_level="DEBUG")
@@ -169,13 +171,26 @@ def test_cycling_summary_plotter(populated_batch):
 
 
 def test_concatinator(populated_batch):
-    from cellpy.utils import helpers
     cellnames = populated_batch.cell_names
     c = populated_batch.experiment.data[cellnames[0]]
     cf = helpers.concatenate_summaries(
         populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True,
     )
     print(cf.head(5))
+
+
+def test_concatinator_yanked(populated_batch):
+    b_yanked = helpers.yank_outliers(populated_batch, remove_indexes=[3, 4, 5], keep_old=False)
+    c1 = b_yanked.experiment.data[b_yanked.cell_names[0]]
+    print(c1.cell.summary.head(10))
+    cf1 = helpers.concatenate_summaries(
+        b_yanked, columns=["charge_capacity"], rate=0.04, group_it=True,
+    )
+    cf2 = helpers.concatenate_summaries(
+        b_yanked, columns=["charge_capacity"], rate=0.04, group_it=True, inverted=True,
+    )
+    print(cf1.head())
+    print(cf2.head())
 
 
 def test_report(populated_batch):
