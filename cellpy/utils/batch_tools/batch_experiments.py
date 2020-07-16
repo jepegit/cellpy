@@ -363,6 +363,7 @@ class CyclingExperiment(BaseExperiment):
 
                 cell_data_frames[indx].cell.steps = step_table
 
+            self._data = None
             self.cell_data_frames = cell_data_frames
 
         except IOError as e:
@@ -415,6 +416,7 @@ class CyclingExperiment(BaseExperiment):
                         c.make_summary(**summary_opts)
                     else:
                         c.make_summary()
+
                 except Exception as e:
                     e_txt = f"recalculating for {indx} failed!"
                     errors.append(e_txt)

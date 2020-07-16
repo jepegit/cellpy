@@ -33,6 +33,7 @@ def look_up_and_get(cellpy_file_name, table_name, root=None):
     store = pd.HDFStore(cellpy_file_name)
     try:
         table = store.select(table_path)
+        store.close()
     except KeyError as e:
         logging.warning("Could not read the table")
         store.close()
