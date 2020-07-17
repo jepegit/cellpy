@@ -389,6 +389,48 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
     return s[~selection]
 
 
+def remove_last_cycles_from_summary(s, last=None):
+    """Remove last rows after given cycle number
+    """
+
+    if last is not None:
+        s = s.loc[s.index <= last, :]
+    return s
+
+
+def yank_after(b, last=None, keep_old=True):
+    """Cut all cycles after a given cycle index number.
+
+    Args:
+        b (batch object): the batch object to perform the cut on.
+        last (int or dict {cell_name: last index}): the last cycle index to keep
+            (if dict: use individual last indexes for each cell).
+        keep_old (bool): keep the original batch object and return a copy instead.
+
+    Returns:
+        batch object
+    """
+
+    if keep_old:
+        b = deepcopy(b)
+
+    if last is None:
+        return b
+
+    for cell_number, cell_label in enumerate(b.experiment.cell_names):
+        c = b.experiment.data[cell_label]
+        s = c.cell.summary
+        if isinstance(last, dict):
+            last_this_cell = last.get(cell_label, None)
+        else:
+            last_this_cell = last
+        s = remove_last_cycles_from_summary(
+            s, last_this_cell
+        )
+        c.cell.summary = s
+    return b
+
+
 def yank_outliers(
     b,
     zscore_limit=None,
