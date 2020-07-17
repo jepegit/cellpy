@@ -947,7 +947,7 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
         return ax1, ax2, ax2, ax4
 
 
-def bplot(b, **kwargs):
+def bplot(b, individual=False, **kwargs):
     """plot batch summaries.
 
     This is wrapper around the two functions concatenate_summaries and plot_concatenated.
@@ -961,6 +961,7 @@ def bplot(b, **kwargs):
 
     Args:
         b (cellpy.batch object): the batch with the cells.
+        individual (bool): in case of multiple columns, return a list of plots instaed of a hv.Layout
         rate (float): filter on rate (C-rate)
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
@@ -989,7 +990,13 @@ def bplot(b, **kwargs):
         cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
         p.append(plot_concatenated(cs, journal=journal, spread=spread))
 
-    return hv.Layout(p).cols(1)
+    if len(p) > 1:
+        if not individual:
+            return hv.Layout(p).cols(1)
+        else:
+            return p
+    else:
+        return p[0]
 
 
 if __name__ == "__main__":

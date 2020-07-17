@@ -524,6 +524,7 @@ def concatenate_summaries(
     columns=None,
     column_names=None,
     normalize_capacity_on=None,
+    scale_by=None,
     nom_cap=None,
     normalize_cycles=False,
     add_areal=False,
@@ -576,6 +577,9 @@ def concatenate_summaries(
     frames = []
     keys = []
 
+    if any(s.startswith("areal_") for s in columns):
+        add_areal = True
+
     if columns is not None:
         if normalize_capacity_on is not None:
             _columns = []
@@ -621,7 +625,15 @@ def concatenate_summaries(
                     c = add_areal_capacity(c, cell_id, b.experiment.journal)
 
                 if normalize_capacity_on is not None:
-                    c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on)
+                    if scale_by == "nom_cap":
+                        if nom_cap is None:
+                            scale_by = c.cell.nom_cap
+                        else:
+                            scale_by = nom_cap
+                    elif scale_by is None:
+                        scale_by = 1.0
+
+                    c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
 
                 if rate is not None:
                     s = select_summary_based_on_rate(
@@ -800,7 +812,7 @@ def select_summary_based_on_rate(
     return summary.loc[filtered_index, :]
 
 
-def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False):
+def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False, scale=1.0):
     """Add normalized capacity to the summary.
 
     Args:
@@ -810,6 +822,7 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
         individual_normalization (bool): find normalization factor for both
             the charge and the discharge if true, else use normalization factor
             from charge on both charge and discharge.
+        scale (float): scale of normalization (default is 1.0).
 
     Returns:
         cell (CellpyData) with added normalization capacity columns in
@@ -837,7 +850,7 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
         [col_name_norm_charge, col_name_norm_discharge],
         [norm_val_charge, norm_val_discharge],
     ):
-        cell.cell.summary[norm_col_name] = cell.cell.summary[col_name] / norm_value
+        cell.cell.summary[norm_col_name] = scale * cell.cell.summary[col_name] / norm_value
 
     return cell
 
