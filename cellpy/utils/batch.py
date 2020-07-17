@@ -13,7 +13,11 @@ from tqdm.auto import tqdm
 from cellpy import prms
 from cellpy import log
 import cellpy.exceptions
-from cellpy.parameters.internal_settings import get_headers_step_table, get_headers_journal
+from cellpy.parameters.internal_settings import (
+    get_headers_step_table,
+    get_headers_journal,
+    get_headers_summary,
+)
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
@@ -24,7 +28,13 @@ from cellpy.utils.batch_tools.dumpers import ram_dumper
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 hdr_journal = get_headers_journal()
-COLUMNS_SELECTED_FOR_VIEW = [hdr_journal.mass, hdr_journal.total_mass, hdr_journal.loading]
+hdr_summary = get_headers_summary()
+
+COLUMNS_SELECTED_FOR_VIEW = [
+    hdr_journal.mass,
+    # hdr_journal.total_mass,
+    hdr_journal.loading,
+]
 
 
 class Batch:
@@ -133,47 +143,140 @@ class Batch:
 
     def _check_cell_raw(self, cell_id):
         try:
-            return len(self.experiment.cell_data_frames[cell_id].cell.raw)
+            c = self.experiment.data[cell_id]
+            return len(c.cell.raw)
         except Exception:
             return None
 
     def _check_cell_steps(self, cell_id):
         try:
-            return len(self.experiment.cell_data_frames[cell_id].cell.steps)
+            c = self.experiment.data[cell_id]
+            return len(c.cell.steps)
         except Exception:
             return None
 
     def _check_cell_summary(self, cell_id):
         try:
-            return len(self.experiment.cell_data_frames[cell_id].cell.summary)
-        except Exception:
+            c = self.experiment.data[cell_id]
+            return len(c.cell.summary)
+        except Exception as e:
+            return None
+
+    def _check_cell_max_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].max()
+
+        except Exception as e:
+            return None
+
+    def _check_cell_min_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].min()
+
+        except Exception as e:
+            return None
+
+    def _check_cell_avg_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].mean()
+
+        except Exception as e:
+            return None
+
+    def _check_cell_std_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].std()
+
+        except Exception as e:
             return None
 
     def _check_cell_empty(self, cell_id):
         try:
-            return self.experiment.cell_data_frames[cell_id].empty
+            c = self.experiment.data[cell_id]
+            return c.empty
         except Exception:
             return None
 
     def _check_cell_cycles(self, cell_id):
         try:
-            return (
-                self.experiment.cell_data_frames[cell_id]
-                .cell.steps[self.headers_step_table.cycle]
-                .max()
-            )
+            c = self.experiment.data[cell_id]
+            return c.cell.steps[self.headers_step_table.cycle].max()
         except Exception:
             return None
 
-    @property
-    def report(self):
+    def report(self, stylize=True):
+        """ Create a report on all the cells in the batch object.
+
+        Remark! To perform a reporting, cellpy needs to access all the data (and it might take some time).
+
+        Returns:
+            pandas.DataFrame
+        """
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW].copy()
-        pages["empty"] = pages.index.map(self._check_cell_empty)
+        # pages["empty"] = pages.index.map(self._check_cell_empty)
         pages["raw_rows"] = pages.index.map(self._check_cell_raw)
         pages["steps_rows"] = pages.index.map(self._check_cell_steps)
         pages["summary_rows"] = pages.index.map(self._check_cell_summary)
         pages["last_cycle"] = pages.index.map(self._check_cell_cycles)
+        pages["average_capacity"] = pages.index.map(self._check_cell_avg_cap)
+        pages["max_capacity"] = pages.index.map(self._check_cell_max_cap)
+        pages["min_capacity"] = pages.index.map(self._check_cell_min_cap)
+        pages["std_capacity"] = pages.index.map(self._check_cell_std_cap)
+
+        avg_last_cycle = pages.last_cycle.mean()
+        avg_max_capacity = pages.max_capacity.mean()
+
+        if stylize:
+
+            def highlight_outlier(s):
+                average = s.mean()
+                outlier = (s < average / 2) | (s > 2 * average)
+                return ["background-color: #f09223" if v else "" for v in outlier]
+
+            def highlight_small(s):
+                average = s.mean()
+                outlier = s < average / 4
+                return ["background-color: #41A1D8" if v else "" for v in outlier]
+
+            def highlight_very_small(s):
+                outlier = s <= 3
+                return ["background-color: #416CD8" if v else "" for v in outlier]
+
+            def highlight_big(s):
+                average = s.mean()
+                outlier = s > 2 * average
+                return ["background-color: #D85F41" if v else "" for v in outlier]
+
+            styled_pages = (
+                pages.style.apply(highlight_small, subset=["last_cycle"])
+                .apply(
+                    highlight_outlier,
+                    subset=["min_capacity", "max_capacity", "average_capacity"],
+                )
+                .apply(
+                    highlight_big,
+                    subset=["min_capacity", "max_capacity", "average_capacity"],
+                )
+                .apply(
+                    highlight_very_small,
+                    subset=["max_capacity", "average_capacity", "last_cycle"],
+                )
+                # .format({'min_capacity': "{:.2f}",
+                #        'max_capacity': "{:.2f}",
+                #        'average_capacity': "{:.2f}",
+                #        'std_capacity': '{:.2f}'})
+            )
+            pages = styled_pages
+
         return pages
 
     @property
@@ -196,6 +299,7 @@ class Batch:
             )
         except KeyError:
             logging.info("no summary exists")
+            print("no summaries exists (probably not loaded yet)")
 
     @property
     def summary_headers(self):
@@ -231,9 +335,11 @@ class Batch:
     @journal.setter
     def journal(self, new):
         # self.experiment.journal = new
-        raise NotImplementedError("Setting a new journal object on directly on a "
-                                  "batch object is not allowed at the moment. Try modifying "
-                                  "the journal.pages instead.")
+        raise NotImplementedError(
+            "Setting a new journal object on directly on a "
+            "batch object is not allowed at the moment. Try modifying "
+            "the journal.pages instead."
+        )
 
     def create_journal(self, description=None, from_db=True):
         """Create journal pages.
@@ -460,21 +566,21 @@ class Batch:
 
         # update the journal pages
         columns = pages.columns
-        pages["new_cellpy_file_names"] = pages.cellpy_file_names.apply(_new_file_path)
+        pages["new_cellpy_file_name"] = pages.cellpy_file_name.apply(_new_file_path)
 
         # copy the cellpy files
         for n, row in pages.iterrows():
-            logging.info(f"{row.cellpy_file_names} -> {row.new_cellpy_file_names}")
+            logging.info(f"{row.cellpy_file_name} -> {row.new_cellpy_file_name}")
             try:
-                from_file = row.cellpy_file_names
-                to_file = row.new_cellpy_file_names
+                from_file = row.cellpy_file_name
+                to_file = row.new_cellpy_file_name
                 os.makedirs(os.path.dirname(to_file), exist_ok=True)
                 shutil.copy(from_file, to_file)
             except shutil.SameFileError:
                 logging.info("Same file! No point in copying")
 
         # save the journal pages
-        pages["cellpy_file_names"] = pages["new_cellpy_file_names"]
+        pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
         logging.info(f"saving journal to {journal_file_name}")
@@ -565,6 +671,12 @@ def init(*args, **kwargs):
         kwargs.pop("db_reader", None)
         return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
     return Batch(*args, **kwargs)
+
+
+def from_journal(journal_file):
+    """Create a Batch from a journal file"""
+    b = init(db_reader=None, file_name=journal_file)
+    return b
 
 
 def load_pages(file_name):

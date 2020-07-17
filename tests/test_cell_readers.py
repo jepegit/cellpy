@@ -547,14 +547,15 @@ def test_summary_from_cellpyfile(cellpy_data_instance):
 def test_load_cellpyfile(cellpy_data_instance):
     cellpy_data_instance.load(fdv.cellpy_file_path)
     run_number = 0
-    data_point = 2283
+    cycle_number = 1
+    data_point = 1457
     step_time = 1500.05
     sum_test_time = 9301719.457
     my_test = cellpy_data_instance.cells[run_number]
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     unique_cycles_read = my_test.steps.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
-    assert my_test.summary.loc[1, "data_point"] == data_point
+    assert my_test.summary.loc[cycle_number, "data_point"] == data_point
     assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
     assert sum_test_time == pytest.approx(
         my_test.summary.loc[:, "test_time"].sum(), 0.1
@@ -671,10 +672,7 @@ def test_load_custom_default(cellpy_data_instance):
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
     summary = cellpy_data_instance.cell.summary
-    val = summary.loc[
-        summary["cycle_index"] == 2,
-        ["cycle_index", "shifted_discharge_capacity_u_mAh_g"],
-    ].values[0][-1]
+    val = summary.loc[2, "shifted_discharge_capacity_u_mAh_g"]
     assert 593.031 == pytest.approx(val, 0.1)
 
 

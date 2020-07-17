@@ -28,6 +28,17 @@ pec_headers_normal["internal_resistance_txt"] = "Internal_Resistance_1_mOhm"
 pec_headers_normal["test_id_txt"] = "Test"
 
 
+# TODO: better reading of first part of the file (comments and headers)
+#  1. find the units
+
+
+#  2. find user-defined variables
+#  3. find units
+# Hei
+# Og hei til deg!
+# og hei
+
+
 class PECLoader(Loader):
     """Main loading class"""
 

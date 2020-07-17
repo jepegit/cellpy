@@ -33,6 +33,20 @@ ATTRS_CELLPYFILE = [
     "cell_no",
     "name",
     "nom_cap",
+    "material",
+    "item_ID",
+    "active_electrode_area",
+    "active_electrode_thickness",
+    "electrolyte_type",
+    "electrolyte_volume",
+    "active_electrode_type",
+    "counter_electrode_type",
+    "reference_electrode_type",
+    "experiment_type",
+    "cell_type",
+    "active_electrode_current_collector",
+    "reference_electrode_current_collector",
+    "comment",
 ]
 
 # Attributes that should be copied when duplicating cellpy objects:
@@ -76,7 +90,7 @@ ATTRS_DATASET = [
     "channel_number",
     "charge_steps",
     "creator",
-    "data",
+    # "data",
     "discharge_steps",
     "file_errors",
     "ir_steps",
@@ -95,7 +109,7 @@ ATTRS_DATASET = [
     "raw_units",
     "schedule_file_name",
     "start_datetime",
-    "summary",
+    # "summary",
     "test_ID",
     "cell_no",
     "tot_mass",
@@ -243,10 +257,13 @@ headers_step_table["internal_resistance_change"] = "ir_pct_change"
 headers_step_table["rate_avr"] = "rate_avr"
 
 # 01.05.2020: added fix column names and renamed to singular form.
+# 08.07.2020: added nominal capacity, experiment type and comment.
 headers_journal["filename"] = "filename"
 headers_journal["mass"] = "mass"
 headers_journal["total_mass"] = "total_mass"
 headers_journal["loading"] = "loading"
+headers_journal["nom_cap"] = "nom_cap"
+headers_journal["experiment"] = "experiment"
 headers_journal["fixed"] = "fixed"
 headers_journal["label"] = "label"
 headers_journal["cell_type"] = "cell_type"
@@ -254,6 +271,7 @@ headers_journal["raw_file_names"] = "raw_file_names"
 headers_journal["cellpy_file_name"] = "cellpy_file_name"
 headers_journal["group"] = "group"
 headers_journal["sub_group"] = "sub_group"
+headers_journal["comment"] = "comment"
 
 
 def get_headers_summary():
