@@ -962,12 +962,15 @@ def bplot(b, individual=False, **kwargs):
     Args:
         b (cellpy.batch object): the batch with the cells.
         individual (bool): in case of multiple columns, return a list of plots instaed of a hv.Layout
+
+    Keyword Args sent to concatenator:
         rate (float): filter on rate (C-rate)
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
         column_names (list): selected column(s) (using exact column name)
         normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization
             (typically the first few cycles after formation)
+        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap", or given value (defaults to one).
         nom_cap (float): nominal capacity of the cell
         normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
         add_areal (bool):  add areal capacity to the summary
@@ -977,6 +980,8 @@ def bplot(b, individual=False, **kwargs):
         inverse (bool): select steps that does not have the given C-rate.
         inverted (bool): select cycles that does not have the steps filtered by given C-rate.
         journal (batch.journal object): the journal (will use the journal in b if not given).
+
+    Keyword Args sent to plotter:
         spread (bool): use error-spread instead of error-bars.
 
     Returns:
@@ -987,15 +992,18 @@ def bplot(b, individual=False, **kwargs):
     columns = kwargs.pop("columns", ["charge_capacity"])
     p = []
     for col in columns:
-        cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
-        p.append(plot_concatenated(cs, journal=journal, spread=spread))
+        try:
+            cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
+            p.append(plot_concatenated(cs, journal=journal, spread=spread))
+        except KeyError as e:
+            print(f"Sorry - missing key: {col}")
 
     if len(p) > 1:
         if not individual:
             return hv.Layout(p).cols(1)
         else:
             return p
-    else:
+    elif len(p) == 1:
         return p[0]
 
 

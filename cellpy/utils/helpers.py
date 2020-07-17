@@ -398,6 +398,15 @@ def remove_last_cycles_from_summary(s, last=None):
     return s
 
 
+def remove_first_cycles_from_summary(s, first=None):
+    """Remove last rows after given cycle number
+    """
+
+    if first is not None:
+        s = s.loc[s.index >= first, :]
+    return s
+
+
 def yank_after(b, last=None, keep_old=True):
     """Cut all cycles after a given cycle index number.
 
@@ -426,6 +435,39 @@ def yank_after(b, last=None, keep_old=True):
             last_this_cell = last
         s = remove_last_cycles_from_summary(
             s, last_this_cell
+        )
+        c.cell.summary = s
+    return b
+
+
+def yank_before(b, first=None, keep_old=True):
+    """Cut all cycles before a given cycle index number.
+
+    Args:
+        b (batch object): the batch object to perform the cut on.
+        first (int or dict {cell_name: first index}): the first cycle index to keep
+            (if dict: use individual first indexes for each cell).
+        keep_old (bool): keep the original batch object and return a copy instead.
+
+    Returns:
+        batch object
+    """
+
+    if keep_old:
+        b = deepcopy(b)
+
+    if first is None:
+        return b
+
+    for cell_number, cell_label in enumerate(b.experiment.cell_names):
+        c = b.experiment.data[cell_label]
+        s = c.cell.summary
+        if isinstance(first, dict):
+            first_this_cell = first.get(cell_label, None)
+        else:
+            first_this_cell = first
+        s = remove_first_cycles_from_summary(
+            s, first_this_cell
         )
         c.cell.summary = s
     return b
@@ -547,6 +589,7 @@ def concatenate_summaries(
         columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
         column_names (list): selected column(s) (using exact column name)
         normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization (typically the first few cycles after formation)
+        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap", or given value (defaults to one).
         nom_cap (float): nominal capacity of the cell
         normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
         add_areal (bool):  add areal capacity to the summary
