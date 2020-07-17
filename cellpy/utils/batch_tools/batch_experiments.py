@@ -388,16 +388,24 @@ class CyclingExperiment(BaseExperiment):
         errors = []
         log = []
         if testing:
-            pbar = tqdm(list(self.journal.pages.iloc[0:2, :].iterrows()), file=sys.stdout, leave=False)
+            pbar = tqdm(
+                list(self.journal.pages.iloc[0:2, :].iterrows()),
+                file=sys.stdout,
+                leave=False,
+            )
         else:
-            pbar = tqdm(list(self.journal.pages.iterrows()), file=sys.stdout, leave=False)
+            pbar = tqdm(
+                list(self.journal.pages.iterrows()), file=sys.stdout, leave=False
+            )
         for indx, row in pbar:
             nom_cap = row[hdr_journal.nom_cap]
             pbar.set_description(indx)
             try:
                 c = self.data[indx]
             except TypeError as e:
-                e_txt = f"could not extract data for {indx} - have you forgotten to link?"
+                e_txt = (
+                    f"could not extract data for {indx} - have you forgotten to link?"
+                )
                 errors.append(e_txt)
                 warnings.warn(e_txt)
 

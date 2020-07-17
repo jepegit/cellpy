@@ -181,8 +181,7 @@ class Reader(object):
         try:
             x = self._select_col(row, column_name)
         except KeyError:
-            warnings.warn(
-                f"your database is missing the following key: {column_name}")
+            warnings.warn(f"your database is missing the following key: {column_name}")
             return None
         else:
             x = x.values

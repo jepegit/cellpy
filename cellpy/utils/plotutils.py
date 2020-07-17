@@ -16,6 +16,8 @@ from cellpy.parameters.internal_settings import (
     get_headers_journal,
 )
 
+from cellpy.utils import helpers
+
 try:
     import matplotlib.pyplot as plt
 
@@ -943,6 +945,51 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
 
     if get_axes:
         return ax1, ax2, ax2, ax4
+
+
+def bplot(b, **kwargs):
+    """plot batch summaries.
+
+    This is wrapper around the two functions concatenate_summaries and plot_concatenated.
+
+    >>> p1 = bplot(b, columns=["charge_capacity"], journal=b.experiment.journal, group_it=True)
+
+    is equivalent to:
+
+    >>> cs = helpers.concatenate_summaries(b, columns=["charge_capacity"], group_it=True)
+    >>> p1 = plot_concatenated(cs, journal=journal)
+
+    Args:
+        b (cellpy.batch object): the batch with the cells.
+        rate (float): filter on rate (C-rate)
+        on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+        columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
+        column_names (list): selected column(s) (using exact column name)
+        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization
+            (typically the first few cycles after formation)
+        nom_cap (float): nominal capacity of the cell
+        normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
+        add_areal (bool):  add areal capacity to the summary
+        group_it (bool): if True, average pr group.
+        rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+        rate_column (str): name of the column containing the C-rates.
+        inverse (bool): select steps that does not have the given C-rate.
+        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        journal (batch.journal object): the journal (will use the journal in b if not given).
+        spread (bool): use error-spread instead of error-bars.
+
+    Returns:
+        holoviews plot
+    """
+    journal = kwargs.pop("journal", b.experiment.journal)
+    spread = kwargs.pop("spread", True)
+    columns = kwargs.pop("columns", ["charge_capacity"])
+    p = []
+    for col in columns:
+        cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
+        p.append(plot_concatenated(cs, journal=journal, spread=spread))
+
+    return hv.Layout(p).cols(1)
 
 
 if __name__ == "__main__":

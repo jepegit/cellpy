@@ -16,6 +16,7 @@ import cellpy.exceptions
 from cellpy.parameters.internal_settings import (
     get_headers_step_table,
     get_headers_journal,
+    get_headers_summary,
 )
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
@@ -27,9 +28,11 @@ from cellpy.utils.batch_tools.dumpers import ram_dumper
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 hdr_journal = get_headers_journal()
+hdr_summary = get_headers_summary()
+
 COLUMNS_SELECTED_FOR_VIEW = [
     hdr_journal.mass,
-    hdr_journal.total_mass,
+    # hdr_journal.total_mass,
     hdr_journal.loading,
 ]
 
@@ -140,47 +143,140 @@ class Batch:
 
     def _check_cell_raw(self, cell_id):
         try:
-            return len(self.experiment.cell_data_frames[cell_id].cell.raw)
+            c = self.experiment.data[cell_id]
+            return len(c.cell.raw)
         except Exception:
             return None
 
     def _check_cell_steps(self, cell_id):
         try:
-            return len(self.experiment.cell_data_frames[cell_id].cell.steps)
+            c = self.experiment.data[cell_id]
+            return len(c.cell.steps)
         except Exception:
             return None
 
     def _check_cell_summary(self, cell_id):
         try:
-            return len(self.experiment.cell_data_frames[cell_id].cell.summary)
-        except Exception:
+            c = self.experiment.data[cell_id]
+            return len(c.cell.summary)
+        except Exception as e:
+            return None
+
+    def _check_cell_max_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].max()
+
+        except Exception as e:
+            return None
+
+    def _check_cell_min_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].min()
+
+        except Exception as e:
+            return None
+
+    def _check_cell_avg_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].mean()
+
+        except Exception as e:
+            return None
+
+    def _check_cell_std_cap(self, cell_id):
+        try:
+            c = self.experiment.data[cell_id]
+            s = c.cell.summary
+            return s[hdr_summary.charge_capacity].std()
+
+        except Exception as e:
             return None
 
     def _check_cell_empty(self, cell_id):
         try:
-            return self.experiment.cell_data_frames[cell_id].empty
+            c = self.experiment.data[cell_id]
+            return c.empty
         except Exception:
             return None
 
     def _check_cell_cycles(self, cell_id):
         try:
-            return (
-                self.experiment.cell_data_frames[cell_id]
-                .cell.steps[self.headers_step_table.cycle]
-                .max()
-            )
+            c = self.experiment.data[cell_id]
+            return c.cell.steps[self.headers_step_table.cycle].max()
         except Exception:
             return None
 
-    @property
-    def report(self):
+    def report(self, stylize=True):
+        """ Create a report on all the cells in the batch object.
+
+        Remark! To perform a reporting, cellpy needs to access all the data (and it might take some time).
+
+        Returns:
+            pandas.DataFrame
+        """
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW].copy()
-        pages["empty"] = pages.index.map(self._check_cell_empty)
+        # pages["empty"] = pages.index.map(self._check_cell_empty)
         pages["raw_rows"] = pages.index.map(self._check_cell_raw)
         pages["steps_rows"] = pages.index.map(self._check_cell_steps)
         pages["summary_rows"] = pages.index.map(self._check_cell_summary)
         pages["last_cycle"] = pages.index.map(self._check_cell_cycles)
+        pages["average_capacity"] = pages.index.map(self._check_cell_avg_cap)
+        pages["max_capacity"] = pages.index.map(self._check_cell_max_cap)
+        pages["min_capacity"] = pages.index.map(self._check_cell_min_cap)
+        pages["std_capacity"] = pages.index.map(self._check_cell_std_cap)
+
+        avg_last_cycle = pages.last_cycle.mean()
+        avg_max_capacity = pages.max_capacity.mean()
+
+        if stylize:
+
+            def highlight_outlier(s):
+                average = s.mean()
+                outlier = (s < average / 2) | (s > 2 * average)
+                return ["background-color: #f09223" if v else "" for v in outlier]
+
+            def highlight_small(s):
+                average = s.mean()
+                outlier = s < average / 4
+                return ["background-color: #41A1D8" if v else "" for v in outlier]
+
+            def highlight_very_small(s):
+                outlier = s <= 3
+                return ["background-color: #416CD8" if v else "" for v in outlier]
+
+            def highlight_big(s):
+                average = s.mean()
+                outlier = s > 2 * average
+                return ["background-color: #D85F41" if v else "" for v in outlier]
+
+            styled_pages = (
+                pages.style.apply(highlight_small, subset=["last_cycle"])
+                .apply(
+                    highlight_outlier,
+                    subset=["min_capacity", "max_capacity", "average_capacity"],
+                )
+                .apply(
+                    highlight_big,
+                    subset=["min_capacity", "max_capacity", "average_capacity"],
+                )
+                .apply(
+                    highlight_very_small,
+                    subset=["max_capacity", "average_capacity", "last_cycle"],
+                )
+                # .format({'min_capacity': "{:.2f}",
+                #        'max_capacity': "{:.2f}",
+                #        'average_capacity': "{:.2f}",
+                #        'std_capacity': '{:.2f}'})
+            )
+            pages = styled_pages
+
         return pages
 
     @property
@@ -203,6 +299,7 @@ class Batch:
             )
         except KeyError:
             logging.info("no summary exists")
+            print("no summaries exists (probably not loaded yet)")
 
     @property
     def summary_headers(self):

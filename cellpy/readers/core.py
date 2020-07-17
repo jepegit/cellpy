@@ -262,7 +262,6 @@ class Cell(object):
         self.cellpy_file_version = CELLPY_FILE_VERSION
         self.raw_table_version = RAW_TABLE_VERSION
 
-
     @staticmethod
     def _header_str(hdr):
         txt = "\n"

@@ -65,9 +65,7 @@ def _make_average(
         if col in [hdr_norm_cycle, hdr_cum_charge] and normalize_cycles:
             if number_of_cols > 1:
                 avg_frame = (
-                    new_frame[col]
-                    .agg(["mean"], axis=1)
-                    .rename(columns={"mean": col})
+                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": col})
                 )
             else:
                 avg_frame = new_frame[col].copy()
@@ -82,10 +80,14 @@ def _make_average(
                 avg_frame = (
                     new_frame[col]
                     .agg(["mean", "std"], axis=1)
-                    .rename(columns={"mean": new_col_name_mean, "std": new_col_name_std,})
+                    .rename(
+                        columns={"mean": new_col_name_mean, "std": new_col_name_std,}
+                    )
                 )
             else:
-                avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
+                avg_frame = pd.DataFrame(
+                    data=new_frame[col].values, columns=[new_col_name_mean]
+                )
                 avg_frame[new_col_name_std] = not_a_number
 
         new_frames.append(avg_frame)
@@ -437,7 +439,9 @@ def yank_outliers(
             else:
                 remove_last_this_cell = remove_last
 
-            s = remove_outliers_from_summary_on_index(s, remove_indexes_this_cell, remove_last_this_cell)
+            s = remove_outliers_from_summary_on_index(
+                s, remove_indexes_this_cell, remove_last_this_cell
+            )
         s = remove_outliers_from_summary_on_value(
             s,
             low=low,
