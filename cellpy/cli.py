@@ -724,9 +724,11 @@ def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name, 
         return
 
     if name == "NONE":
-        print("Usage: cellpy run [OPTIONS] NAME\n"
-              "Try 'cellpy run --help' for help.\n\n"
-              "Error: Missing argument 'NAME'.")
+        print(
+            "Usage: cellpy run [OPTIONS] NAME\n"
+            "Try 'cellpy run --help' for help.\n\n"
+            "Error: Missing argument 'NAME'."
+        )
         sys.exit(-1)
 
     if debug:

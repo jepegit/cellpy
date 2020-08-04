@@ -41,3 +41,19 @@ def test_select_summary_based_on_rate(cell):
     cell.make_step_table(add_c_rate=True)
     filtered_summary = helpers.select_summary_based_on_rate(cell, 0.04)
     assert len(filtered_summary) == 3
+
+
+def test_remove_outliers_on_index(cell):
+    last = cell.get_cycle_numbers()[-1]
+    s1 = helpers.remove_outliers_from_summary_on_index(cell.cell.summary, indexes=[15])
+    s2 = helpers.remove_outliers_from_summary_on_index(cell.cell.summary, indexes=[15], remove_last=True)
+    assert 14 in s1.index
+    assert 15 not in s1.index
+    assert last in s1.index
+    assert last not in s2.index
+    assert 15 not in s2.index
+
+
+def test_concatenate_summaries(cell):
+    # the function should be moved to batch utils and the tests are in test_batch
+    pass

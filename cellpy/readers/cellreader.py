@@ -604,8 +604,10 @@ class CellpyData(object):
         except KeyError:
             self.logger.warning("no fidtable - you should update your hdf5-file")
         except NotImplementedError:
-            self.logger.warning("your system cannot read the fid-table (posix-windows confusion) "
-                                "hopefully this will be solved in a newer version of pytables.")
+            self.logger.warning(
+                "your system cannot read the fid-table (posix-windows confusion) "
+                "hopefully this will be solved in a newer version of pytables."
+            )
         finally:
             store.close()
         if fidtable is not None:
@@ -759,6 +761,9 @@ class CellpyData(object):
 
         else:
             self.load(cellpy_file)
+            nom_cap = kwargs.pop("nom_cap", None)
+            if nom_cap is not None:
+                self.set_nom_cap(nom_cap)
             if mass:
                 self.set_mass(mass)
 
@@ -2193,9 +2198,7 @@ class CellpyData(object):
                 if not any(mask_type_and_cycle):
                     self.logger.debug(f"found nothing for cycle {cycle}")
                 else:
-                    step = st[mask_type_and_cycle][
-                        shdr.step
-                    ].tolist()
+                    step = st[mask_type_and_cycle][shdr.step].tolist()
                     for newstep in step[:trim_taper_steps]:
                         if newstep in steps_to_skip:
                             self.logger.debug(f"skipping step {newstep}")
@@ -3097,7 +3100,9 @@ class CellpyData(object):
 
                 self.logger.debug("trying to put summary")
                 store.put(
-                    root + summary_dir, test.summary, format=prms._cellpyfile_summary_format
+                    root + summary_dir,
+                    test.summary,
+                    format=prms._cellpyfile_summary_format,
                 )
                 self.logger.debug(" summary -> hdf5 OK")
 
@@ -3108,19 +3113,25 @@ class CellpyData(object):
                 self.logger.debug(" meta -> hdf5 OK")
 
                 self.logger.debug("trying to put fidtable")
-                store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
+                store.put(
+                    root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format
+                )
                 self.logger.debug(" fid -> hdf5 OK")
 
                 self.logger.debug("trying to put step")
                 try:
                     store.put(
-                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                        root + step_dir,
+                        test.steps,
+                        format=prms._cellpyfile_stepdata_format,
                     )
                     self.logger.debug(" step -> hdf5 OK")
                 except TypeError:
                     test = self._fix_dtype_step_table(test)
                     store.put(
-                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                        root + step_dir,
+                        test.steps,
+                        format=prms._cellpyfile_stepdata_format,
                     )
                     self.logger.debug(" fixed step -> hdf5 OK")
 
@@ -3313,7 +3324,35 @@ class CellpyData(object):
 
     # TODO: make this
     def sget_current(self, cycle, step, set_number=None):
-        raise NotImplementedError
+
+        time_00 = time.time()
+        set_number = self._validate_dataset_number(set_number)
+        if set_number is None:
+            self._report_empty_dataset()
+            return
+        cycle_index_header = self.headers_normal.cycle_index_txt
+        current_header = self.headers_normal.current_txt
+        step_index_header = self.headers_normal.step_index_txt
+        test = self.cells[set_number].raw
+
+        if isinstance(step, (list, tuple)):
+            warnings.warn(
+                f"The varialbe step is a list." f"Should be an integer." f"{step}"
+            )
+            step = step[0]
+
+        c = test[
+            (test[cycle_index_header] == cycle) & (test[step_index_header] == step)
+        ]
+
+        self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        if not self.is_empty(c):
+            v = c[current_header]
+            return v
+        else:
+            return None
+
+
 
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
         """Returns voltage (in V).
@@ -4090,6 +4129,10 @@ class CellpyData(object):
 
     def _set_run_attribute(self, attr, vals, dataset_number=None, validated=None):
         # Sets the val (vals) for the test (datasets).
+        # Remark! This is left-over code from old ages when we thought we needed
+        #   to have data-sets with multiple cells. And before we learned about
+        #   setters and getters in Python. Feel free to refactor it.
+
         if attr == "mass":
             setter = self._set_mass
         elif attr == "tot_mass":
@@ -4478,6 +4521,8 @@ class CellpyData(object):
         # capacity_modifier = None,
         # test=None
     ):
+        cycle_index_as_index = True
+
         time_00 = time.time()
 
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -5018,6 +5063,13 @@ class CellpyData(object):
             self.logger.debug("sorting columns")
             new_first_col_list = [dt_txt, tt_txt, d_txt, c_txt]
             summary = self.set_col_first(summary, new_first_col_list)
+
+        if cycle_index_as_index:
+            index_col = hdr_summary.cycle_index
+            try:
+                summary.set_index(index_col, inplace=True)
+            except KeyError:
+                logging.debug("Setting cycle_index as index failed")
 
         dataset.summary = summary
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
