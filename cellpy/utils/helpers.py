@@ -880,7 +880,13 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
     col_name_norm_charge = hdr_summary["normalized_charge_capacity"]
     col_name_norm_discharge = hdr_summary["normalized_discharge_capacity"]
 
-    norm_val_charge = cell.cell.summary.loc[norm_cycles, col_name_charge].mean()
+    try:
+        norm_val_charge = cell.cell.summary.loc[norm_cycles, col_name_charge].mean()
+    except KeyError as e:
+        print(f"Oh no! Are you sure these cycle indexes exist?")
+        print(f"  norm_cycles: {norm_cycles}")
+        print(f"  cycle indexes: {list(cell.cell.summary.index)}")
+        raise KeyError from e
     if individual_normalization:
         norm_val_discharge = cell.cell.summary.loc[
             norm_cycles, col_name_discharge
