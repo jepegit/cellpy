@@ -4,7 +4,7 @@ cryptography>=1.5.2
 click>=6.6
 lmfit>=0.9.7
 setuptools>=35.0.1
-pandas>=0.23.0
+pandas<=1.0.5
 ruamel.yaml
 python-box
 PyGithub>=1.43
