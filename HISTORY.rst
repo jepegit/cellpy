@@ -2,6 +2,12 @@
 History
 =======
 
+0.4.0 a2 (2020)
+---------------
+
+* Reading PEC files now updated and should work
+
+
 0.4.0 a1 (2020)
 ---------------
 
