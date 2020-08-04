@@ -2412,7 +2412,6 @@ class CellpyData(object):
             [np.mean, np.std, np.amin, np.amax, first, last, delta]
         ).rename(columns={"amin": "min", "amax": "max", "mean": "avr"})
 
-        # TODO: [#index]
         df_steps = df_steps.reset_index()
 
         if profiling:
@@ -2510,37 +2509,36 @@ class CellpyData(object):
             #     e.g.
             #     df_x = df_steps.where.steps.are.unique
 
-            self.logger.debug("masking and labelling steps")
-            df_steps.loc[mask_no_current_hard & mask_voltage_stable, shdr.type] = "rest"
+            df_steps.loc[mask_no_current_hard & mask_voltage_stable, (shdr.type, slice(None))] = "rest"
 
             df_steps.loc[
-                mask_no_current_hard & mask_voltage_up, shdr.type
+                mask_no_current_hard & mask_voltage_up, (shdr.type, slice(None))
             ] = "ocvrlx_up"
 
             df_steps.loc[
-                mask_no_current_hard & mask_voltage_down, shdr.type
+                mask_no_current_hard & mask_voltage_down, (shdr.type, slice(None))
             ] = "ocvrlx_down"
 
             df_steps.loc[
-                mask_discharge_changed & mask_current_negative, shdr.type
+                mask_discharge_changed & mask_current_negative, (shdr.type, slice(None))
             ] = "discharge"
 
             df_steps.loc[
-                mask_charge_changed & mask_current_positive, shdr.type
+                mask_charge_changed & mask_current_positive, (shdr.type, slice(None))
             ] = "charge"
 
             df_steps.loc[
                 mask_voltage_stable & mask_current_negative & mask_current_down,
-                shdr.type,
+                (shdr.type, slice(None)),
             ] = "cv_discharge"
 
             df_steps.loc[
                 mask_voltage_stable & mask_current_positive & mask_current_down,
-                shdr.type,
+                (shdr.type, slice(None)),
             ] = "cv_charge"
 
             # --- internal resistance ----
-            df_steps.loc[mask_no_change, shdr.type] = "ir"
+            df_steps.loc[mask_no_change, (shdr.type, slice(None))] = "ir"
             # assumes that IR is stored in just one row
 
             # --- sub-step-txt -----------
@@ -2569,18 +2567,18 @@ class CellpyData(object):
                     df_steps.loc[
                         (df_steps[shdr.step] == row.step)
                         & (df_steps[shdr.cycle] == row.cycle),
-                        "type",
+                        (shdr.type, slice(None)),
                     ] = row.type
                     df_steps.loc[
                         (df_steps[shdr.step] == row.step)
                         & (df_steps[shdr.cycle] == row.cycle),
-                        "info",
+                        (shdr.info, slice(None)),
                     ] = row.info
             else:
                 self.logger.debug("using short format (step)")
                 for row in step_specifications.itertuples():
-                    df_steps.loc[df_steps[shdr.step] == row.step, "type"] = row.type
-                    df_steps.loc[df_steps[shdr.step] == row.step, "info"] = row.info
+                    df_steps.loc[df_steps[shdr.step] == row.step, (shdr.type, slice(None))] = row.type
+                    df_steps.loc[df_steps[shdr.step] == row.step, (shdr.info, slice(None))] = row.info
 
         if profiling:
             print(f"*** introspect: {time.time() - time_01} s")
