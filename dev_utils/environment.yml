@@ -1,0 +1,41 @@
+name: be_cellpy
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python>=3.8
+  - pip
+  - numpy
+  - xlrd
+  - matplotlib
+  - cryptography
+  - click
+  - scipy
+  - pandas>=1.1.0
+  - pytables>=3.5.1
+  - setuptools
+  - ruamel.yaml
+  - pyodbc
+  - coverage
+  - wheel
+  - flake8
+  - Sphinx
+  - PyGithub
+  - watchdog
+  - pytest
+  - twine
+  - invoke
+  - conda-build
+  - ripgrep
+  - conda-verify
+  - anaconda-client
+  - lmfit
+  - cookiecutter
+  - tqdm
+  - ipywidgets
+  - python-box
+  - pip:
+    - pytest-benchmark
+    - pytest-timeout
+    - requests
+
