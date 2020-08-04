@@ -14,4 +14,5 @@ Contributors
 ------------
 
 * Tor Kristian Vara <tor.vara@nmbu.no>
+* Ulrik Aalborg Eriksen <ulrikaer@stud.ntnu.no>
 
