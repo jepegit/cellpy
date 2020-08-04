@@ -178,11 +178,16 @@ class Reader(object):
 
     def _pick_info(self, serial_number, column_name):
         row = self.select_serial_number_row(serial_number)
-        x = self._select_col(row, column_name)
-        x = x.values
-        if len(x) == 1:
-            x = x[0]
-        return x
+        try:
+            x = self._select_col(row, column_name)
+        except KeyError:
+            warnings.warn(f"your database is missing the following key: {column_name}")
+            return None
+        else:
+            x = x.values
+            if len(x) == 1:
+                x = x[0]
+            return x
 
     def select_serial_number_row(self, serial_number):
         """Select row for identification number serial_number
@@ -305,6 +310,14 @@ class Reader(object):
         column_name_mass = self.db_sheet_cols.active_material
         mass = self._pick_info(serial_number, column_name_mass)
         return mass
+
+    def get_nom_cap(self, serial_number):
+        column_name = self.db_sheet_cols.nom_cap
+        return self._pick_info(serial_number, column_name)
+
+    def get_experiment_type(self, serial_number):
+        column_name = self.db_sheet_cols.experiment_type
+        return self._pick_info(serial_number, column_name)
 
     def get_total_mass(self, serial_number):
         column_name_mass = self.db_sheet_cols.total_material

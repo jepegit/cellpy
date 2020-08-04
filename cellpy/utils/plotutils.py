@@ -16,6 +16,8 @@ from cellpy.parameters.internal_settings import (
     get_headers_journal,
 )
 
+from cellpy.utils import helpers
+
 try:
     import matplotlib.pyplot as plt
 
@@ -181,24 +183,34 @@ def find_column(columns, label=None, end="cycle_index"):
     return hdr, lab
 
 
-def plot_concatenated(dataframe,
-                      x=None, y=None, err=None, xlabel=None, ylabel=None,
-                      points=True, line=True, errors=True,
-                      width=800, height=300,
-                      journal=None,
-                      file_id_level=0, hdr_level=None,
-                      axis=1,
-                      mean_end="_mean",
-                      std_end="_std",
-                      cycle_end="cycle_index",
-                      legend_title="cell-type",
-                      marker_size=None,
-                      cmap="default_colors",
-                      spread=False,
-                      extension="bokeh",
-                      edges=False,
-                      **kwargs,
-                      ):
+def plot_concatenated(
+    dataframe,
+    x=None,
+    y=None,
+    err=None,
+    xlabel=None,
+    ylabel=None,
+    points=True,
+    line=True,
+    errors=True,
+    hover=True,
+    width=800,
+    height=300,
+    journal=None,
+    file_id_level=0,
+    hdr_level=None,
+    axis=1,
+    mean_end="_mean",
+    std_end="_std",
+    cycle_end="cycle_index",
+    legend_title="cell-type",
+    marker_size=None,
+    cmap="default_colors",
+    spread=False,
+    extension="bokeh",
+    edges=False,
+    **kwargs,
+):
     """Create a holoviews plot of the concatenated summary.
 
     This function is still under development. Feel free to contribute.
@@ -212,7 +224,8 @@ def plot_concatenated(dataframe,
         ylabel: label for y-axis
         points (bool): plot points if True
         line (bool): plot line if True
-        errors (bool): plot line if True
+        errors (bool): plot errors if True
+        hover (bool): add hover tool if True
         width: width of plot
         height: height of plot
         journal: batch.journal object
@@ -290,10 +303,12 @@ def plot_concatenated(dataframe,
     curve_dict = dict()
 
     if not averaged and journal is not None:
-        journal_pages = journal.pages[[hdr_journal["group"], hdr_journal["sub_group"]]].copy()
+        journal_pages = journal.pages[
+            [hdr_journal["group"], hdr_journal["sub_group"]]
+        ].copy()
         journal_pages["g"] = 0
         journal_pages["sg"] = 0
-        markers = itertools.cycle(['s', 'o', '<', '*', '+', 'x'])
+        markers = itertools.cycle(["s", "o", "<", "*", "+", "x"])
         colors = itertools.cycle(hv.Cycle(cmap).values)
 
         j = journal_pages.groupby(hdr_journal["group"])
@@ -330,10 +345,10 @@ def plot_concatenated(dataframe,
                 scatter = hv.Scatter(curve).opts(color=color, marker=marker)
 
                 if edges and extension == "matplotlib":
-                    scatter = scatter.opts(edgecolor='k')
+                    scatter = scatter.opts(edgecolor="k")
 
                 if edges and extension == "bokeh":
-                    scatter = scatter.opts(line_color='k', line_width=1)
+                    scatter = scatter.opts(line_color="k", line_width=1)
 
                 if marker_size is not None and extension == "bokeh":
                     scatter = scatter.opts(size=marker_size)
@@ -353,21 +368,31 @@ def plot_concatenated(dataframe,
             if spread:
                 curve *= hv.Spread(group, hdr_x, [hdr_y, hdr_e])
             else:
-                curve *= hv.ErrorBars(group, hdr_x, [hdr_y, hdr_e])  # should get the color from curve and set it here
+                curve *= hv.ErrorBars(
+                    group, hdr_x, [hdr_y, hdr_e]
+                )  # should get the color from curve and set it here
         curve_dict[name] = curve
 
     if extension == "matplotlib":
-        overlay_opts = {"aspect": "auto",
-                        "fig_inches": (width * 0.016, height * 0.012),
-                        "show_frame": True,
-                        }
+        overlay_opts = {
+            "aspect": "auto",
+            "fig_inches": (width * 0.016, height * 0.012),
+            "show_frame": True,
+        }
     else:
-        overlay_opts = {"width": width,
-                        "height": height,
-                        }
+        overlay_opts = {
+            "width": width,
+            "height": height,
+        }
 
-    final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(**overlay_opts, **kwargs)
-
+    final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
+        **overlay_opts, **kwargs
+    )
+    if hover:
+        if points:
+            final_plot.opts(opts.Scatter(tools=["hover"]))
+        else:
+            final_plot.opts(opts.Curve(tools=["hover"]))
     return final_plot
 
 
@@ -391,7 +416,9 @@ def create_colormarkerlist_for_journal(
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
-def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"):
+def create_colormarkerlist(
+    groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"
+):
     """Fetch lists with color names and marker types of correct length.
 
     Args:
@@ -918,6 +945,51 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
 
     if get_axes:
         return ax1, ax2, ax2, ax4
+
+
+def bplot(b, **kwargs):
+    """plot batch summaries.
+
+    This is wrapper around the two functions concatenate_summaries and plot_concatenated.
+
+    >>> p1 = bplot(b, columns=["charge_capacity"], journal=b.experiment.journal, group_it=True)
+
+    is equivalent to:
+
+    >>> cs = helpers.concatenate_summaries(b, columns=["charge_capacity"], group_it=True)
+    >>> p1 = plot_concatenated(cs, journal=journal)
+
+    Args:
+        b (cellpy.batch object): the batch with the cells.
+        rate (float): filter on rate (C-rate)
+        on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+        columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
+        column_names (list): selected column(s) (using exact column name)
+        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization
+            (typically the first few cycles after formation)
+        nom_cap (float): nominal capacity of the cell
+        normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
+        add_areal (bool):  add areal capacity to the summary
+        group_it (bool): if True, average pr group.
+        rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+        rate_column (str): name of the column containing the C-rates.
+        inverse (bool): select steps that does not have the given C-rate.
+        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        journal (batch.journal object): the journal (will use the journal in b if not given).
+        spread (bool): use error-spread instead of error-bars.
+
+    Returns:
+        holoviews plot
+    """
+    journal = kwargs.pop("journal", b.experiment.journal)
+    spread = kwargs.pop("spread", True)
+    columns = kwargs.pop("columns", ["charge_capacity"])
+    p = []
+    for col in columns:
+        cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
+        p.append(plot_concatenated(cs, journal=journal, spread=spread))
+
+    return hv.Layout(p).cols(1)
 
 
 if __name__ == "__main__":

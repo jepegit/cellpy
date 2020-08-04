@@ -604,8 +604,10 @@ class CellpyData(object):
         except KeyError:
             self.logger.warning("no fidtable - you should update your hdf5-file")
         except NotImplementedError:
-            self.logger.warning("your system cannot read the fid-table (posix-windows confusion) "
-                                "hopefully this will be solved in a newer version of pytables.")
+            self.logger.warning(
+                "your system cannot read the fid-table (posix-windows confusion) "
+                "hopefully this will be solved in a newer version of pytables."
+            )
         finally:
             store.close()
         if fidtable is not None:
@@ -759,6 +761,9 @@ class CellpyData(object):
 
         else:
             self.load(cellpy_file)
+            nom_cap = kwargs.pop("nom_cap", None)
+            if nom_cap is not None:
+                self.set_nom_cap(nom_cap)
             if mass:
                 self.set_mass(mass)
 
@@ -2193,9 +2198,7 @@ class CellpyData(object):
                 if not any(mask_type_and_cycle):
                     self.logger.debug(f"found nothing for cycle {cycle}")
                 else:
-                    step = st[mask_type_and_cycle][
-                        shdr.step
-                    ].tolist()
+                    step = st[mask_type_and_cycle][shdr.step].tolist()
                     for newstep in step[:trim_taper_steps]:
                         if newstep in steps_to_skip:
                             self.logger.debug(f"skipping step {newstep}")
@@ -2387,7 +2390,6 @@ class CellpyData(object):
         }
 
         df = df.rename(columns=rename_dict)
-
         by = [shdr.cycle, shdr.step, shdr.sub_step]
 
         if skip_steps is not None:
@@ -2402,6 +2404,8 @@ class CellpyData(object):
 
         if profiling:
             time_01 = time.time()
+
+        # TODO: make sure that all columns are nummeric
 
         gf = df.groupby(by=by)
         df_steps = gf.agg(
@@ -2611,6 +2615,8 @@ class CellpyData(object):
         if sort_rows:
             self.logger.debug("sorting the step rows")
             # TODO: [#index]
+            # if this throws a KeyError: 'test_time_first' it probably
+            # means that the df contains a non-nummeric 'test_time' column.
             df_steps = df_steps.sort_values(by=shdr.test_time + "_first").reset_index()
 
         if profiling:
@@ -3094,7 +3100,9 @@ class CellpyData(object):
 
                 self.logger.debug("trying to put summary")
                 store.put(
-                    root + summary_dir, test.summary, format=prms._cellpyfile_summary_format
+                    root + summary_dir,
+                    test.summary,
+                    format=prms._cellpyfile_summary_format,
                 )
                 self.logger.debug(" summary -> hdf5 OK")
 
@@ -3105,19 +3113,25 @@ class CellpyData(object):
                 self.logger.debug(" meta -> hdf5 OK")
 
                 self.logger.debug("trying to put fidtable")
-                store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
+                store.put(
+                    root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format
+                )
                 self.logger.debug(" fid -> hdf5 OK")
 
                 self.logger.debug("trying to put step")
                 try:
                     store.put(
-                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                        root + step_dir,
+                        test.steps,
+                        format=prms._cellpyfile_stepdata_format,
                     )
                     self.logger.debug(" step -> hdf5 OK")
                 except TypeError:
                     test = self._fix_dtype_step_table(test)
                     store.put(
-                        root + step_dir, test.steps, format=prms._cellpyfile_stepdata_format
+                        root + step_dir,
+                        test.steps,
+                        format=prms._cellpyfile_stepdata_format,
                     )
                     self.logger.debug(" fixed step -> hdf5 OK")
 
@@ -4115,6 +4129,10 @@ class CellpyData(object):
 
     def _set_run_attribute(self, attr, vals, dataset_number=None, validated=None):
         # Sets the val (vals) for the test (datasets).
+        # Remark! This is left-over code from old ages when we thought we needed
+        #   to have data-sets with multiple cells. And before we learned about
+        #   setters and getters in Python. Feel free to refactor it.
+
         if attr == "mass":
             setter = self._set_mass
         elif attr == "tot_mass":
@@ -4503,6 +4521,8 @@ class CellpyData(object):
         # capacity_modifier = None,
         # test=None
     ):
+        cycle_index_as_index = True
+
         time_00 = time.time()
 
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -5044,6 +5064,13 @@ class CellpyData(object):
             new_first_col_list = [dt_txt, tt_txt, d_txt, c_txt]
             summary = self.set_col_first(summary, new_first_col_list)
 
+        if cycle_index_as_index:
+            index_col = hdr_summary.cycle_index
+            try:
+                summary.set_index(index_col, inplace=True)
+            except KeyError:
+                logging.debug("Setting cycle_index as index failed")
+
         dataset.summary = summary
         self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
@@ -5077,6 +5104,7 @@ def get(
     filename=None,
     mass=None,
     instrument=None,
+    nominal_capacity=None,
     logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
@@ -5142,6 +5170,11 @@ def get(
         if mass is not None:
             logging.info(f"Setting mass: {mass}")
             cellpy_instance.set_mass(mass)
+
+        if nominal_capacity is not None:
+            logging.info(f"Setting nominal capacity: {nominal_capacity}")
+            cellpy_instance.set_nom_cap(nominal_capacity)
+
         if auto_summary:
             logging.info("Creating step table")
             cellpy_instance.make_step_table()

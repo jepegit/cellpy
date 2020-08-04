@@ -12,7 +12,7 @@ dependencies:
   - cryptography
   - click
   - scipy
-  - pandas
+  - pandas>=1.0
   - pytables
   - setuptools
   - ruamel.yaml
@@ -20,6 +20,7 @@ dependencies:
   - PyGithub
   - cookiecutter
   - tqdm
+  - ipython
   - ipywidgets
   - lmfit
   - ipykernel
@@ -28,6 +29,7 @@ dependencies:
   - pytables>=3.6.1
   - python-box
   - pytest
+  - invoke
   - jupyter
   - jupyterlab
 
