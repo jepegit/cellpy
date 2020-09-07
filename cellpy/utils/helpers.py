@@ -620,10 +620,9 @@ def concatenate_summaries(
     frames = []
     keys = []
 
-    if any(s.startswith("areal_") for s in columns):
-        add_areal = True
-
     if columns is not None:
+        if any(s.startswith("areal_") for s in columns):
+            add_areal = True
         if normalize_capacity_on is not None:
             _columns = []
             for name in columns:
