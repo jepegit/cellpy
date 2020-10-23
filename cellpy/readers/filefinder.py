@@ -112,6 +112,7 @@ def search_for_files(
         warnings.warn("your raw file directory cannot be accessed!")
 
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
+        # TODO: give warning/error-message if run_name contains more than one file (due to duplicate in db)
         glob_text_raw = "%s_*.%s" % (os.path.basename(run_name), raw_extension)
     else:
         glob_text_raw = file_name_format
