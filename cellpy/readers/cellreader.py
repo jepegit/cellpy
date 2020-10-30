@@ -3634,6 +3634,7 @@ class CellpyData(object):
         cycle=None,
         dataset_number=None,
         method="back-and-forth",
+        insert_nan=None,
         shift=0.0,
         categorical_column=False,
         label_cycle_number=False,
@@ -3656,6 +3657,7 @@ class CellpyData(object):
                 "forth" - discharge (or charge) continues along x-axis.
                 "forth-and-forth" - discharge (or charge) also starts at 0
                     (or shift if not shift=0.0)
+            insert_nan (bool): insert a np.nan between the charge and discharge curves.
             shift: start-value for charge (or discharge) (typically used when
                 plotting shifted-capacity).
             categorical_column: add a categorical column showing if it is
@@ -3714,6 +3716,8 @@ class CellpyData(object):
                 f"- setting to 'back-and-forth'"
             )
             method = "back-and-forth"
+        if method == "forth-and-forth" and insert_nan is None:
+            insert_nan = True
 
         capacity = None
         voltage = None
@@ -3744,18 +3748,23 @@ class CellpyData(object):
                     prev_end = shift
                     initial = False
                 if self._cycle_mode == "anode":
+                    first_interpolation_direction = -1
                     _first_step_c = dc
                     _first_step_v = dv
+                    last_interpolation_direction = 1
                     _last_step_c = cc
                     _last_step_v = cv
                 else:
+                    first_interpolation_direction = 1
                     _first_step_c = cc
                     _first_step_v = cv
+                    last_interpolation_direction = -1
                     _last_step_c = dc
                     _last_step_v = dv
 
                 if method == "back-and-forth":
-                    _last = np.amax(_first_step_c)
+                    # _last = np.amax(_first_step_c)
+                    _last = _first_step_c.iat[-1]
                     # should change amax to last point
                     _first = None
                     _new_first = None
@@ -3775,12 +3784,12 @@ class CellpyData(object):
                     # self.logger.debug(f"shifting start from {_first} to "
                     #                   f"{_new_first}")
 
-                    prev_end = np.amin(_last_step_c)
-                    # should change amin to last point
+                    # prev_end = np.amin(_last_step_c)
+                    prev_end = _last_step_c.iat[-1]
 
                 elif method == "forth":
-                    _last = np.amax(_first_step_c)
-                    # should change amax to last point
+                    # _last = np.amax(_first_step_c)
+                    _last = _first_step_c.iat[-1]
                     if _last_step_c is not None:
                         _last_step_c += _last + prev_end
                     else:
@@ -3790,8 +3799,8 @@ class CellpyData(object):
                     else:
                         self.logger.debug("no first charge step found")
 
-                    prev_end = np.amax(_last_step_c)
-                    # should change amin to last point
+                    # prev_end = np.amax(_last_step_c)
+                    prev_end = _last_step_c.iat[-1]
 
                 elif method == "forth-and-forth":
                     if _last_step_c is not None:
@@ -3808,8 +3817,8 @@ class CellpyData(object):
                     try:
                         _first_df = pd.DataFrame(
                             {
-                                "voltage": _first_step_v.values,
-                                "capacity": _first_step_c.values,
+                                "voltage": _first_step_v,
+                                "capacity": _first_step_c,
                             }
                         )
                         if interpolated:
@@ -3819,8 +3828,14 @@ class CellpyData(object):
                                 x="voltage",
                                 dx=dx,
                                 number_of_points=number_of_points,
-                                direction=-1,
+                                direction=first_interpolation_direction,
                             )
+                        if insert_nan:
+                            _nan = pd.DataFrame({
+                                "capacity": [np.nan],
+                                "voltage": [np.nan]
+                            })
+                            _first_df = _first_df.append(_nan)
                         if categorical_column:
                             _first_df["direction"] = -1
 
@@ -3837,8 +3852,10 @@ class CellpyData(object):
                                 x="voltage",
                                 dx=dx,
                                 number_of_points=number_of_points,
-                                direction=1,
+                                direction=last_interpolation_direction,
                             )
+                        if insert_nan:
+                            _last_df = _last_df.append(_nan)
                         if categorical_column:
                             _last_df["direction"] = 1
 
