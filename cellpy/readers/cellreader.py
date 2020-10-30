@@ -3658,6 +3658,7 @@ class CellpyData(object):
                 "forth-and-forth" - discharge (or charge) also starts at 0
                     (or shift if not shift=0.0)
             insert_nan (bool): insert a np.nan between the charge and discharge curves.
+                Defaults to True for forth-and-forth, else False.
             shift: start-value for charge (or discharge) (typically used when
                 plotting shifted-capacity).
             categorical_column: add a categorical column showing if it is
@@ -3688,8 +3689,6 @@ class CellpyData(object):
                 unless split is explicitly set to True. Then it returns a tuple
                 with capacity (mAh/g) and voltage.
         """
-        # TODO: add option for adding a nan between charge and discharge
-        # TODO: fix error in "endpoints" for full-cells and cathode half-cells
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
