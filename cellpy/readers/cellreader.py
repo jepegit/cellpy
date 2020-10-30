@@ -3687,6 +3687,7 @@ class CellpyData(object):
                 with capacity (mAh/g) and voltage.
         """
         # TODO: add option for adding a nan between charge and discharge
+        # TODO: fix error in "endpoints" for full-cells and cathode half-cells
 
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
