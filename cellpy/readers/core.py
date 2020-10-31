@@ -188,6 +188,22 @@ class Cell(object):
 
     """
 
+    def _repr_html_(self):
+        obj = f"<b>Cell-object</b> id={hex(id(self))}"
+        txt = "<p>"
+        for p in dir(self):
+            if not p.startswith("_"):
+                if p not in ["raw", "summary", "steps"]:
+                    value = self.__getattribute__(p)
+                    txt += f"<b>{p}</b>: {value}<br>"
+        txt += "</p>"
+
+        raw_txt = f"<p><b>raw data-frame</b><br>{self.raw._repr_html_()}</p>"
+        summary_txt = f"<p><b>summary data-frame</b><br>{self.summary._repr_html_()}</p>"
+        steps_txt = f"<p><b>steps data-frame</b><br>{self.steps._repr_html_()}</p>"
+
+        return obj + txt + summary_txt + steps_txt + raw_txt
+
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
         self.logger.debug("created DataSet instance")

@@ -82,6 +82,37 @@ class CellpyData(object):
         cells (list): list of DataSet objects.
     """
 
+    def __repr__(self):
+        txt = f"CellpyData-object (id={hex(id(self))})"
+        if self.name:
+            txt += f"\nname: {self.name}"
+        if self.table_names:
+            txt += f"\ntable_names: {self.table_names}"
+        if self.tester:
+            txt += f"\ntester: {self.tester}"
+
+        number_of_cells = len(self.cells)
+        txt += f"\ncells: {number_of_cells}"
+        return txt
+
+    def _repr_html_(self):
+        obj = f"<b>CellpyData-object</b> id={hex(id(self))}"
+        header = f"""
+         <p>
+            {obj} <br>
+            <b>name</b>: {self.name} <br>
+            <b>table names</b>: {self.table_names} <br>
+            <b>tester</b>: {self.tester} <br>
+            <b>cells</b>: {len(self.cells)} <br>
+         </p>
+        """
+        cell_txt = ""
+        for i, cell in enumerate(self.cells):
+            cell_txt += f"<p><b> cell {i + 1} of {len(self.cells)}</b></p>"
+            cell_txt += cell._repr_html_()
+
+        return header + cell_txt
+
     def __str__(self):
         txt = "<CellpyData>\n"
         if self.name:
