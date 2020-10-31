@@ -96,10 +96,10 @@ class CellpyData(object):
         return txt
 
     def _repr_html_(self):
-        obj = f"<b>CellpyData-object</b> id={hex(id(self))}"
         header = f"""
          <p>
-            {obj} <br>
+            <h3>CellpyData-object</h3>
+            <b>id</b>: {hex(id(self))} <br>
             <b>name</b>: {self.name} <br>
             <b>table names</b>: {self.table_names} <br>
             <b>tester</b>: {self.tester} <br>
@@ -108,7 +108,7 @@ class CellpyData(object):
         """
         cell_txt = ""
         for i, cell in enumerate(self.cells):
-            cell_txt += f"<p><b> cell {i + 1} of {len(self.cells)}</b></p>"
+            cell_txt += f"<h4>cell {i + 1} of {len(self.cells)}</h4>"
             cell_txt += cell._repr_html_()
 
         return header + cell_txt
