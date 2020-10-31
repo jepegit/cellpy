@@ -3634,7 +3634,7 @@ class CellpyData(object):
         cycle=None,
         dataset_number=None,
         method="back-and-forth",
-        insert_nan=None,
+        insert_nan=False,
         shift=0.0,
         categorical_column=False,
         label_cycle_number=False,
@@ -3658,7 +3658,7 @@ class CellpyData(object):
                 "forth-and-forth" - discharge (or charge) also starts at 0
                     (or shift if not shift=0.0)
             insert_nan (bool): insert a np.nan between the charge and discharge curves.
-                Defaults to True for forth-and-forth, else False.
+                Defaults to False
             shift: start-value for charge (or discharge) (typically used when
                 plotting shifted-capacity).
             categorical_column: add a categorical column showing if it is
@@ -3715,8 +3715,6 @@ class CellpyData(object):
                 f"- setting to 'back-and-forth'"
             )
             method = "back-and-forth"
-        if method == "forth-and-forth" and insert_nan is None:
-            insert_nan = True
 
         capacity = None
         voltage = None
