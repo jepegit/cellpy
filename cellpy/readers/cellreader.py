@@ -104,14 +104,42 @@ class CellpyData(object):
             <b>table names</b>: {self.table_names} <br>
             <b>tester</b>: {self.tester} <br>
             <b>cells</b>: {len(self.cells)} <br>
+            <b>cycle_mode</b>: {self.cycle_mode} <br>
+            <b>sep</b>: {self.sep} <br>
+            <b>daniel_number</b>: {self.daniel_number} <br>
+            <b>cellpy_datadir</b>: {self.cellpy_datadir} <br>
+            <b>raw_datadir</b>: {self.raw_datadir} <br>
          </p>
         """
+        all_vars = "<p>"
+        all_vars += f"""
+            <b>capacity_modifiers</b>: {self.capacity_modifiers} <br>
+            <b>empty</b>: {self.empty} <br>
+            <b>ensure_step_table</b>: {self.ensure_step_table} <br>
+            <b>filestatuschecker</b>: {self.filestatuschecker} <br>
+            <b>force_step_table_creation</b>: {self.force_step_table_creation} <br>
+            <b>forced_errors</b>: {self.forced_errors} <br>
+            <b>limit_loaded_cycles</b>: {self.limit_loaded_cycles} <br>
+            <b>load_only_summary</b>: {self.load_only_summary} <br>
+            <b>profile</b>: {self.profile} <br>
+            <b>raw_limits</b>: {self.raw_limits} <br>
+            <b>raw_units</b>: {self.raw_units} <br>
+            <b>select_minimal</b>: {self.select_minimal} <br>
+            <b>selected_cell_number</b>: {self.selected_cell_number} <br>
+            <b>selected_scans</b>: {self.selected_scans} <br>
+            <b>status_datasets</b>: {self.status_datasets} <br>
+            <b>summary_exists (deprecated)</b>: {self.summary_exists} <br>
+
+
+        """
+        all_vars += "</p>"
+
         cell_txt = ""
         for i, cell in enumerate(self.cells):
             cell_txt += f"<h4>cell {i + 1} of {len(self.cells)}</h4>"
             cell_txt += cell._repr_html_()
 
-        return header + cell_txt
+        return header + all_vars + cell_txt
 
     def __str__(self):
         txt = "<CellpyData>\n"

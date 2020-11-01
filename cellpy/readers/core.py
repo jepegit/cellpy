@@ -193,14 +193,17 @@ class Cell(object):
         txt = "<p>"
         for p in dir(self):
             if not p.startswith("_"):
-                if p not in ["raw", "summary", "steps"]:
+                if p not in ["raw", "summary", "steps", "logger"]:
                     value = self.__getattribute__(p)
                     txt += f"<b>{p}</b>: {value}<br>"
         txt += "</p>"
 
-        raw_txt = f"<p><b>raw data-frame</b><br>{self.raw._repr_html_()}</p>"
-        summary_txt = f"<p><b>summary data-frame</b><br>{self.summary._repr_html_()}</p>"
-        steps_txt = f"<p><b>steps data-frame</b><br>{self.steps._repr_html_()}</p>"
+        raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"
+        raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"
+        summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"
+        summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"
+        steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"
+        steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"
 
         return obj + txt + summary_txt + steps_txt + raw_txt
 
@@ -338,7 +341,11 @@ class Cell(object):
             txt += "EMPTY (Not processed yet)\n"
 
         txt += self._header_str("RAW UNITS")
-        txt += "     Currently defined in the CellpyData-object"
+        try:
+            txt += str(self.raw.describe())
+            txt += str(self.raw.head())
+        except (AttributeError, ValueError):
+            txt += "EMPTY (Not processed yet)\n"
         return txt
 
     @property
