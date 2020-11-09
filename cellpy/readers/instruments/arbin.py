@@ -818,7 +818,7 @@ class ArbinLoader(Loader):
             )
             if not aux_global_data_df.empty:
                 # TODO: refactor out the sql creation method
-                # TODO: allow for more than one aux channel?
+                # TODO: allow for more than one aux channel? (need input from jinpeng)
                 columns_txt = "*"
 
                 sql_1 = "select %s " % columns_txt
