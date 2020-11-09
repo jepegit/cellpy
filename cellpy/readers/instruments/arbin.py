@@ -893,6 +893,7 @@ class ArbinLoader(Loader):
         data_points=None,
         **kwargs,
     ):
+        # TODO: auxiliary channels (table)
 
         table_name_global = TABLE_NAMES["global"]
         table_name_stats = TABLE_NAMES["statistic"]
