@@ -124,6 +124,8 @@ TABLE_NAMES = {
     "normal": "Channel_Normal_Table",
     "global": "Global_Table",
     "statistic": "Channel_Statistic_Table",
+    "aux_global": "Aux_Global_Data_Table",
+    "aux": "Auxiliary_Table"
 }
 
 summary_headers_renaming_dict = {
@@ -185,6 +187,8 @@ class ArbinLoader(Loader):
             get_headers_normal()
         )  # the column headers defined by cellpy
         self.arbin_headers_global = self.get_headers_global()
+        self.arbin_headers_aux_global = self.get_headers_aux_global()
+        self.arbin_headers_aux = self.get_headers_aux()
         self.current_chunk = 0  # use this to set chunks to load
 
     @staticmethod
@@ -237,9 +241,34 @@ class ArbinLoader(Loader):
         return headers
 
     @staticmethod
+    def get_headers_aux():
+        """Defines the so-called auxiliary table column headings for Arbin .res-files"""
+        headers = HeaderDict()
+        # - aux column headings (specific for Arbin)
+        headers["test_id_txt"] = "Test_ID"
+        headers["data_point_txt"] = "Data_Point"
+        headers["aux_index_txt"] = "Auxiliary_Index"
+        headers["data_type_txt"] = "Data_Type"
+        headers["x_value_txt"] = "X"
+        headers["x_dt_value"] = "dX_dt"
+        return headers
+
+    @staticmethod
+    def get_headers_aux_global():
+        """Defines the so-called auxiliary global column headings for Arbin .res-files"""
+        headers = HeaderDict()
+        # - aux global column headings (specific for Arbin)
+        headers["channel_index_txt"] = "Channel_Index"
+        headers["aux_index_txt"] = "Auxiliary_Index"
+        headers["data_type_txt"] = "Data_Type"
+        headers["aux_name_txt"] = "Nickname"
+        headers["aux_unit_txt"] = "Unit"
+        return headers
+
+    @staticmethod
     def get_headers_global():
         """Defines the so-called global column headings for Arbin .res-files"""
-        headers = dict()
+        headers = HeaderDict()
         # - global column headings (specific for Arbin)
         headers["applications_path_txt"] = "Applications_Path"
         headers["channel_index_txt"] = "Channel_Index"
@@ -696,6 +725,29 @@ class ArbinLoader(Loader):
         # return full_path, information
         raise NotImplemented
 
+    def _query_table(self, table_name, conn, sql=None):
+        self.logger.debug(f"reading {table_name}")
+        if sql is None:
+            sql = f"select * from {table_name}"
+        self.logger.debug(f"sql statement: {sql}")
+        df = pd.read_sql_query(sql, conn)
+        return df
+
+    def _aux_prep(self, aux_global_data_df):
+        # create another column with concatenated aux channel name
+        nick_names = aux_global_data_df[self.arbin_headers_aux_global.aux_name_txt]
+        new_names = []
+        for i, n in enumerate(nick_names):
+            if n:
+                new_names.append(n)
+            else:
+                new_names.append(str(i))
+        new_names = pd.Series(new_names)
+
+        units = aux_global_data_df[self.arbin_headers_aux_global.aux_unit_txt]
+        aux_global_data_df["new_names"] = "aux_" + new_names + "_u_" + units
+        return aux_global_data_df
+
     def _loader_win(
         self,
         file_name,
@@ -711,6 +763,8 @@ class ArbinLoader(Loader):
         conn = None
 
         table_name_global = TABLE_NAMES["global"]
+        table_name_aux_global = TABLE_NAMES["aux_global"]
+        table_name_aux = TABLE_NAMES["aux"]
         table_name_stats = TABLE_NAMES["statistic"]
         table_name_normal = TABLE_NAMES["normal"]
 
@@ -723,17 +777,17 @@ class ArbinLoader(Loader):
             conn = dbloader.connect(constr)
         else:
             conn = dbloader.connect(constr, autocommit=True)
-        self.logger.debug("constr str: %s" % constr)
+        self.logger.debug(f"constr str: {constr}")
 
         self.logger.debug("reading global data table")
-        sql = "select * from %s" % table_name_global
-        self.logger.debug("sql statement: %s" % sql)
-        global_data_df = pd.read_sql_query(sql, conn)
+        # sql = "select * from %s" % table_name_global
+        # self.logger.debug("sql statement: %s" % sql)
+        # global_data_df = pd.read_sql_query(sql, conn)
+        global_data_df = self._query_table(table_name=table_name_global, conn=conn)
         # col_names = list(global_data_df.columns.values)
         tests = global_data_df[self.arbin_headers_normal.test_id_txt]
-
         number_of_sets = len(tests)
-        self.logger.debug("number of datasets: %i" % number_of_sets)
+        self.logger.debug(f"number of datasets: {number_of_sets}")
         self.logger.debug(f"datasets: {tests}")
 
         if dataset_number is not None:
@@ -742,6 +796,13 @@ class ArbinLoader(Loader):
             test_nos = [dataset_number]
         else:
             test_nos = range(number_of_sets)
+
+        # Note! I don't know if arbin can have more than one auxiliary channel measurement.
+        #   This implementation makes a little bit of prep for more than one, but does not
+        #   fully implement it.
+        aux_global_data_df = self._query_table(table_name_aux_global, conn)
+        if not aux_global_data_df.empty:
+            aux_global_data_df = self._aux_prep(aux_global_data_df)
 
         for counter, test_no in enumerate(test_nos):
             if counter > 0:
@@ -755,6 +816,39 @@ class ArbinLoader(Loader):
             length_of_test, normal_df = self._load_res_normal_table(
                 conn, data.test_ID, bad_steps, data_points
             )
+            if not aux_global_data_df.empty:
+                # TODO: refactor out the sql creation method
+                # TODO: allow for more than one aux channel?
+                columns_txt = "*"
+
+                sql_1 = "select %s " % columns_txt
+                sql_2 = "from %s " % table_name_aux
+                sql_3 = "where %s=%s " % (self.arbin_headers_aux.test_id_txt, data.test_ID)
+                sql_4 = ""
+
+                sql_aux = sql_1 + sql_2 + sql_3 + sql_4
+                aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)
+
+                # selecting aux columns (does not allow for more than one aux channel at the moment)
+
+                aux_channel_name = aux_global_data_df.new_names.iloc[0]
+
+                aux_df = aux_df[
+                    [
+                        self.arbin_headers_aux.data_point_txt,
+                        self.arbin_headers_aux.x_value_txt,
+                        self.arbin_headers_aux.x_dt_value]
+                ]
+
+                # renaming column
+                aux_df = aux_df.rename(columns={
+                    self.arbin_headers_aux.x_value_txt: aux_channel_name,
+                    self.arbin_headers_aux.x_dt_value: "d_dt_" + aux_channel_name
+                }, inplace=False)
+
+                normal_df = pd.merge(normal_df, aux_df, how="left", left_on=self.arbin_headers_normal.data_point_txt,
+                                     right_on=self.arbin_headers_aux.data_point_txt)
+
             # --------- read stats-data (summary-data) ---------------------
             sql = "select * from %s where %s=%s order by %s" % (
                 table_name_stats,
@@ -1202,7 +1296,6 @@ class ArbinLoader(Loader):
             normal_df = pd.read_sql_query(sql, conn)
             # memory here
             length_of_test = normal_df.shape[0]
-            self.logger.debug(f"loaded to normal_df (length =  {length_of_test})")
         else:
             self.logger.debug(f"chunk-size: {prms.Instruments.Arbin.chunk_size}")
             self.logger.debug("creating a pd.read_sql_query generator")
@@ -1245,6 +1338,9 @@ class ArbinLoader(Loader):
                 chunk_number += 1
             length_of_test = normal_df.shape[0]
             self.logger.debug(f"finished iterating (#rows: {length_of_test})")
+
+        self.logger.debug(f"loaded to normal_df (length =  {length_of_test})")
+        self.logger.debug(f"Headers:\n{normal_df.columns}")
         return length_of_test, normal_df
 
 
