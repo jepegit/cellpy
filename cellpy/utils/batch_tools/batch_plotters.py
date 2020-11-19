@@ -4,6 +4,7 @@ import sys
 
 import itertools
 import pandas as pd
+import numpy as np
 
 from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
@@ -17,22 +18,21 @@ hdr_summary = get_headers_summary()
 
 # TODO: add palette to prms.Batch
 
-if prms.Batch.backend == "bokeh":
-    try:
-        import bokeh
-        import bokeh.plotting
-        import bokeh.palettes
-        import bokeh.models
-        import bokeh.layouts
-        import bokeh.models.annotations
+try:
+    import bokeh
+    import bokeh.plotting
+    import bokeh.palettes
+    import bokeh.models
+    import bokeh.layouts
+    import bokeh.models.annotations
 
-    except ImportError:
-        prms.Batch.backend = "matplotlib"
-        logging.debug("could not import bokeh -> using matplotlib instead")
+except ImportError:
+    prms.Batch.backend = "matplotlib"
+    logging.debug("could not import bokeh -> using matplotlib instead")
 
-    except ModuleNotFoundError:
-        prms.Batch.backend = "matplotlib"
-        logging.debug("could not import bokeh -> using matplotlib instead")
+except ModuleNotFoundError:
+    prms.Batch.backend = "matplotlib"
+    logging.debug("could not import bokeh -> using matplotlib instead")
 
 
 def create_legend(info, c, option="clean", use_index=False):
@@ -48,6 +48,7 @@ def create_legend(info, c, option="clean", use_index=False):
         label = "_".join(label[1:])
 
     if option == "clean":
+        logging.debug(f"label: {label}")
         return label
 
     if option == "mass":
@@ -56,7 +57,7 @@ def create_legend(info, c, option="clean", use_index=False):
         label = f"{label} ({loading:.2f} mg/cm2)"
     elif option == "all":
         label = f"{label} ({mass:.2f} mg) ({loading:.2f} mg/cm2)"
-
+    logging.debug(f"advanced label: {label}")
     return label
 
 
@@ -202,25 +203,36 @@ def create_summary_plot_bokeh(
     else:
         cols = charge_capacity.columns
 
+    logging.debug("iterate cols")
     for cc in cols:
         g, sg = look_up_group(info, cc)
         legend_items = []
         l = create_legend(info, cc, option=legend_option)
         group_props = group_styles[g]
         sub_group_props = sub_group_styles[sg]
+        logging.debug(f"subgroups {sub_group_props}")
 
         if sub_cols_charge is not None:
             c = f"{sub_cols_charge[0]}_{cc}"
             r = f"{sub_cols_charge[1]}_{cc}"
-            charge_capacity_sub = charge_capacity.loc[:, [c, r]]
+
+            if c not in charge_capacity.columns:
+                charge_capacity[c] = np.nan
+            if r not in charge_capacity.columns:
+                charge_capacity[r] = np.nan
+            selector = [c, r]
+            charge_capacity_sub = charge_capacity.loc[:, selector]
+
             charge_capacity_sub.columns = [c, "rate"]
             charge_source = bokeh.models.ColumnDataSource(charge_capacity_sub)
 
         else:
             c = cc
+            if c not in charge_capacity.columns:
+                charge_capacity[c] = np.nan
             charge_capacity_sub = charge_capacity.loc[:, [c]]
             charge_source = bokeh.models.ColumnDataSource(charge_capacity_sub)
-
+        logging.debug(f"starting creating scatter")
         ch_m = p.scatter(
             source=charge_source,
             x=hdr_summary.cycle_index,
@@ -231,7 +243,7 @@ def create_summary_plot_bokeh(
             **group_props["marker"],  # color
             **sub_group_props["marker"],  # marker
         )
-
+        logging.debug(f"starting creating line")
         ch_l = p.line(
             source=charge_source,
             x=hdr_summary.cycle_index,
@@ -241,7 +253,7 @@ def create_summary_plot_bokeh(
         )
 
         legend_items.extend([ch_m, ch_l])
-
+        logging.debug(f"fixing discharge cap")
         if discharge_capacity is not None:
             # creating a local copy so that I can do local changes
             group_props_marker_charge = group_props["marker"].copy()
@@ -250,12 +262,18 @@ def create_summary_plot_bokeh(
             if sub_cols_discharge is not None:
                 c = f"{sub_cols_discharge[0]}_{cc}"
                 r = f"{sub_cols_discharge[1]}_{cc}"
+                if c not in charge_capacity.columns:
+                    charge_capacity[c] = np.nan
+                if r not in charge_capacity.columns:
+                    charge_capacity[r] = np.nan
                 discharge_capacity_sub = discharge_capacity.loc[:, [c, r]]
                 discharge_capacity_sub.columns = [c, "rate"]
                 discharge_source = bokeh.models.ColumnDataSource(discharge_capacity_sub)
 
             else:
                 c = cc
+                if c not in charge_capacity.columns:
+                    charge_capacity[c] = np.nan
                 discharge_capacity_sub = discharge_capacity.loc[:, [c]]
                 discharge_source = bokeh.models.ColumnDataSource(discharge_capacity_sub)
 
@@ -278,7 +296,7 @@ def create_summary_plot_bokeh(
             legend_items.extend([dch_m, dch_l])
 
         legend_collection.append((l, legend_items))
-
+    logging.debug("exiting summary plotter")
     return p, legend_collection
 
 
@@ -554,15 +572,23 @@ def plot_cycle_life_summary_matplotlib(
             marker=m,
             markerfacecolor=c,
         )
+        try:
+            ax_cap.plot(
+                charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c
+            )
+        except Exception as e:
+            logging.debug(f"Could not plot charge capacity for {label} ({e})")
+        try:
+            ax_cap.plot(
+                discharge_capacity[label], label=name, color=c, marker=m, markerfacecolor=f
+            )
+        except Exception as e:
+            logging.debug(f"Could not plot discharge capacity for {label} ({e})")
 
-        ax_cap.plot(
-            charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c
-        )
-
-        ax_cap.plot(
-            discharge_capacity[label], label=name, color=c, marker=m, markerfacecolor=f
-        )
-        ax_ir.plot(ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c)
+        try:
+            ax_ir.plot(ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c)
+        except Exception as e:
+            logging.debug(f"Could not plot IR for {label} ({e})")
 
     ax_ce.set_ylabel("Coulombic Efficiency (%)")
     ax_ce.set_ylim((0, 110))
@@ -584,6 +610,7 @@ def summary_plotting_engine(**kwargs):
     """creates plots of summary data."""
 
     logging.debug(f"Using {prms.Batch.backend} for plotting")
+
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
     barn = None
