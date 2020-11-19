@@ -1,8 +1,8 @@
 import logging
 import warnings
-import sys
-
+from collections import defaultdict
 import itertools
+
 import pandas as pd
 import numpy as np
 
@@ -12,27 +12,20 @@ from cellpy.parameters.internal_settings import get_headers_journal, get_headers
 from cellpy.exceptions import UnderDefined
 from cellpy import prms
 
-hdr_journal = get_headers_journal()
-hdr_summary = get_headers_summary()
-# print(prms.Batch.backend)
-
 # TODO: add palette to prms.Batch
 
 try:
     import bokeh
-    import bokeh.plotting
-    import bokeh.palettes
-    import bokeh.models
-    import bokeh.layouts
-    import bokeh.models.annotations
 
 except ImportError:
     prms.Batch.backend = "matplotlib"
     logging.debug("could not import bokeh -> using matplotlib instead")
 
-except ModuleNotFoundError:
-    prms.Batch.backend = "matplotlib"
-    logging.debug("could not import bokeh -> using matplotlib instead")
+hdr_journal = get_headers_journal()
+hdr_summary = get_headers_summary()
+
+
+# print(prms.Batch.backend)
 
 
 def create_legend(info, c, option="clean", use_index=False):
@@ -161,7 +154,7 @@ def create_summary_plot_bokeh(
     legend_location="bottom_right",
     x_range=None,
     y_range=None,
-    tools=["hover"],
+    tools="hover",
 ):
 
     logging.debug(f"    - creating summary (bokeh) plot for {label}")
@@ -305,21 +298,12 @@ def plot_cycle_life_summary_bokeh(
     summaries,
     width=900,
     height=800,
-    height_fractions=[0.3, 0.4, 0.3],
+    height_fractions=None,
     legend_option="all",
     add_rate=True,
 ):
-
-    # reloading bokeh (in case we change backend during a session)
-    import bokeh
-    import bokeh.plotting
-    import bokeh.palettes
-    import bokeh.models
-    import bokeh.layouts
-    import bokeh.models.annotations
-    from bokeh.models import LegendItem, Legend
-    from collections import defaultdict
-
+    if height_fractions is None:
+        height_fractions = [0.3, 0.4, 0.3]
     logging.debug(f"   * stacking and plotting")
     logging.debug(f"      backend: {prms.Batch.backend}")
 
@@ -448,7 +432,7 @@ def plot_cycle_life_summary_bokeh(
     renderer_list = []
     for legend in legend_items_dict:
         legend_items.append(
-            LegendItem(label=legend, renderers=legend_items_dict[legend])
+            bokeh.models.LegendItem(label=legend, renderers=legend_items_dict[legend])
         )
         renderer_list.extend(legend_items_dict[legend])
 
@@ -479,7 +463,7 @@ def plot_cycle_life_summary_bokeh(
     dum_fig.x_range.end = width + 5
     dum_fig.x_range.start = width
     dum_fig.add_layout(
-        Legend(
+        bokeh.models.Legend(
             click_policy="hide",
             location="top_left",
             border_line_alpha=0,
