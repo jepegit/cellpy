@@ -46,17 +46,23 @@ class PECLoader(Loader):
         self.pec_data = None
         self.pec_log = None
         self.pec_settings = None
-        self.variable_header_keywords = ['Voltage (V)', 'Current (A)']  # The unit of these will be read from file
-        self.fake_header_length = ["#RESULTS CHECK\n","#END RESULTS CHECK\n"]  # Ignores number of delimiters in between
-        self.pec_file_delimiter = ','
+        self.variable_header_keywords = [
+            "Voltage (V)",
+            "Current (A)",
+        ]  # The unit of these will be read from file
+        self.fake_header_length = [
+            "#RESULTS CHECK\n",
+            "#END RESULTS CHECK\n",
+        ]  # Ignores number of delimiters in between
+        self.pec_file_delimiter = ","
         self.filename = None
         self.number_of_header_lines = None  # Number of header lines is not constant
         self.cellpy_headers = (
             get_headers_normal()
         )  # should consider to move this to the Loader class
 
-    #@staticmethod
-    #def _get_pec_units():
+    # @staticmethod
+    # def _get_pec_units():
     #    pec_units = dict()
     #    pec_units["voltage"] = 0.001  # V
     #    pec_units["current"] = 0.001  # A
@@ -68,18 +74,10 @@ class PECLoader(Loader):
 
     def _get_pec_units(self):  # Fetches units from a csv file
         # Mapping prefixes to values
-        prefix = {
-            'µ': 10 ** -6,
-            'm': 10 ** -3,
-            '': 1
-        }
+        prefix = {"µ": 10 ** -6, "m": 10 ** -3, "": 1}
 
         # Adding the non-variable units to the return value
-        pec_units = {
-            'charge': 0.001,  # Ah
-            'mass': 0.001,  # g
-            'energy': 0.001  # Wh
-        }
+        pec_units = {"charge": 0.001, "mass": 0.001, "energy": 0.001}  # Ah  # g  # Wh
 
         # A list with all the variable keywords without any prefixes, used as search terms
         header = self.variable_header_keywords
@@ -89,27 +87,26 @@ class PECLoader(Loader):
         # Searching for the prefix for all the variable units
         for item in data.keys():
             for unit in header:
-                x = unit.find('(') - len(unit)
-                if unit[:x + 1] in item:
-                    y = item[x].replace('(', '')
+                x = unit.find("(") - len(unit)
+                if unit[: x + 1] in item:
+                    y = item[x].replace("(", "")
                     # Adding units conversion factor to return value, renaming the headers to include correct units
                     if header.index(unit) == 0:
-                        pec_units['voltage'] = prefix.get(y)
-                        pec_headers_normal["voltage_txt"] = f'Voltage_{y}V'
+                        pec_units["voltage"] = prefix.get(y)
+                        pec_headers_normal["voltage_txt"] = f"Voltage_{y}V"
                     elif header.index(unit) == 1:
-                        pec_units['current'] = prefix.get(y)
-                        pec_headers_normal["current_txt"] = f'Current_{y}A'
+                        pec_units["current"] = prefix.get(y)
+                        pec_headers_normal["current_txt"] = f"Current_{y}A"
         return pec_units
 
     def _get_pec_times(self):
         # Mapping units to their conversion values
         logging.debug("retrieve pec units")
         units = {
-            '(Hours in hh:mm:ss.xxx)': self.timestamp_to_seconds,
-            '(Decimal Hours)': 3600,
-            '(Minutes)': 60,
-            '(Seconds)': 1
-
+            "(Hours in hh:mm:ss.xxx)": self.timestamp_to_seconds,
+            "(Decimal Hours)": 3600,
+            "(Minutes)": 60,
+            "(Seconds)": 1,
         }
 
         data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=0)
@@ -120,14 +117,18 @@ class PECLoader(Loader):
         for item in data.keys():
             for unit in units:
                 if unit in item:
-                    x = item.find('(')
-                    var = item[:x - 1].lower().replace(' ', '_')
+                    x = item.find("(")
+                    var = item[: x - 1].lower().replace(" ", "_")
                     its_unit = item[x:]
                     pec_times[var] = units.get(its_unit)
-                    if var == 'total_time':
-                        pec_headers_normal["test_time_txt"] = f'Total_Time_{its_unit[1:-1].replace(" ", "_")}'
-                    if var == 'step_time':
-                        pec_headers_normal["step_time_txt"] = f'Step_Time_{its_unit[1:-1].replace(" ", "_")}'
+                    if var == "total_time":
+                        pec_headers_normal[
+                            "test_time_txt"
+                        ] = f'Total_Time_{its_unit[1:-1].replace(" ", "_")}'
+                    if var == "step_time":
+                        pec_headers_normal[
+                            "step_time_txt"
+                        ] = f'Step_Time_{its_unit[1:-1].replace(" ", "_")}'
         return pec_times
 
     @staticmethod
@@ -220,8 +221,8 @@ class PECLoader(Loader):
         self._convert_units()
 
         # cycle indices should not be 0
-        if 0 in self.pec_data['cycle_index']:
-            self.pec_data['cycle_index'] += 1
+        if 0 in self.pec_data["cycle_index"]:
+            self.pec_data["cycle_index"] += 1
 
         data.raw = self.pec_data
 
@@ -303,7 +304,7 @@ class PECLoader(Loader):
 
         headers["start_time"] = start_time
         headers["end_time"] = end_time
-        #headers["test_regime_name"] = header_comments["TestRegime_Name"]
+        # headers["test_regime_name"] = header_comments["TestRegime_Name"]
 
         self.pec_settings = headers
 
@@ -346,7 +347,7 @@ class PECLoader(Loader):
 
         # Check if time is given in a units proportional to seconds or in a hh:mm:ss.xxx format
         # Convert all hh:mm:ss.xxx formats to seconds using self.timestamp_to_seconds()
-        relevant_times = ['total_time', 'step_time']
+        relevant_times = ["total_time", "step_time"]
         for x in relevant_times:
             if isinstance(pec_times[x], (int, float)):
                 if x == relevant_times[0]:
@@ -391,11 +392,13 @@ class PECLoader(Loader):
         skiprows = 0
         resultscheck = False  # Ignore number of delimiters inside RESULTS CHECK
 
-        with open(self.filename, 'r') as header:
+        with open(self.filename, "r") as header:
             for line in header:
                 if line in self.fake_header_length:
                     resultscheck = not resultscheck
-                if line.count(self.pec_file_delimiter) > 1 and not resultscheck:  # End when there are >2 columns
+                if (
+                    line.count(self.pec_file_delimiter) > 1 and not resultscheck
+                ):  # End when there are >2 columns
                     break
                 skiprows += 1
 
@@ -409,9 +412,11 @@ class PECLoader(Loader):
         if hours >= 24:
             days = hours // 24
             total_secs += days * 3600 * 24
-            timestamp = str(hours-24*days) + timestamp[2:]
-        total_secs += (datetime.strptime(timestamp, "%H:%M:%S.%f") -
-                datetime.strptime("00:00:00.000", "%H:%M:%S.%f")).total_seconds()
+            timestamp = str(hours - 24 * days) + timestamp[2:]
+        total_secs += (
+            datetime.strptime(timestamp, "%H:%M:%S.%f")
+            - datetime.strptime("00:00:00.000", "%H:%M:%S.%f")
+        ).total_seconds()
         return total_secs
 
 

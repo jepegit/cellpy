@@ -564,13 +564,19 @@ def plot_cycle_life_summary_matplotlib(
             logging.debug(f"Could not plot charge capacity for {label} ({e})")
         try:
             ax_cap.plot(
-                discharge_capacity[label], label=name, color=c, marker=m, markerfacecolor=f
+                discharge_capacity[label],
+                label=name,
+                color=c,
+                marker=m,
+                markerfacecolor=f,
             )
         except Exception as e:
             logging.debug(f"Could not plot discharge capacity for {label} ({e})")
 
         try:
-            ax_ir.plot(ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c)
+            ax_ir.plot(
+                ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c
+            )
         except Exception as e:
             logging.debug(f"Could not plot IR for {label} ({e})")
 
