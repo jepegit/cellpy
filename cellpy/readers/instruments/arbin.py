@@ -125,7 +125,7 @@ TABLE_NAMES = {
     "global": "Global_Table",
     "statistic": "Channel_Statistic_Table",
     "aux_global": "Aux_Global_Data_Table",
-    "aux": "Auxiliary_Table"
+    "aux": "Auxiliary_Table",
 }
 
 summary_headers_renaming_dict = {
@@ -823,7 +823,10 @@ class ArbinLoader(Loader):
 
                 sql_1 = "select %s " % columns_txt
                 sql_2 = "from %s " % table_name_aux
-                sql_3 = "where %s=%s " % (self.arbin_headers_aux.test_id_txt, data.test_ID)
+                sql_3 = "where %s=%s " % (
+                    self.arbin_headers_aux.test_id_txt,
+                    data.test_ID,
+                )
                 sql_4 = ""
 
                 sql_aux = sql_1 + sql_2 + sql_3 + sql_4
@@ -837,17 +840,26 @@ class ArbinLoader(Loader):
                     [
                         self.arbin_headers_aux.data_point_txt,
                         self.arbin_headers_aux.x_value_txt,
-                        self.arbin_headers_aux.x_dt_value]
+                        self.arbin_headers_aux.x_dt_value,
+                    ]
                 ]
 
                 # renaming column
-                aux_df = aux_df.rename(columns={
-                    self.arbin_headers_aux.x_value_txt: aux_channel_name,
-                    self.arbin_headers_aux.x_dt_value: "d_dt_" + aux_channel_name
-                }, inplace=False)
+                aux_df = aux_df.rename(
+                    columns={
+                        self.arbin_headers_aux.x_value_txt: aux_channel_name,
+                        self.arbin_headers_aux.x_dt_value: "d_dt_" + aux_channel_name,
+                    },
+                    inplace=False,
+                )
 
-                normal_df = pd.merge(normal_df, aux_df, how="left", left_on=self.arbin_headers_normal.data_point_txt,
-                                     right_on=self.arbin_headers_aux.data_point_txt)
+                normal_df = pd.merge(
+                    normal_df,
+                    aux_df,
+                    how="left",
+                    left_on=self.arbin_headers_normal.data_point_txt,
+                    right_on=self.arbin_headers_aux.data_point_txt,
+                )
 
             # --------- read stats-data (summary-data) ---------------------
             sql = "select * from %s where %s=%s order by %s" % (

@@ -79,6 +79,8 @@ def create_folder_structure(project_name, batch_name):
 
 def find_files(info_dict, filename_cache=None):
     # searches for the raw data files and the cellpyfile-name
+    # TODO: implement faster file searching
+    # TODO: implement option for not searching for raw-file names if force_cellpy is True
     for run_name in info_dict[hdr_journal["filename"]]:
         logging.debug(f"checking for {run_name}")
         if prms._use_filename_cache:

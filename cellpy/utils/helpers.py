@@ -81,7 +81,7 @@ def _make_average(
                     new_frame[col]
                     .agg(["mean", "std"], axis=1)
                     .rename(
-                        columns={"mean": new_col_name_mean, "std": new_col_name_std,}
+                        columns={"mean": new_col_name_mean, "std": new_col_name_std}
                     )
                 )
             else:
@@ -180,14 +180,14 @@ def split_experiment(cell, base_cycles=None):
             summary[summary.index >= b_cycle],
         ]
 
-        new_cell = make_new_cell()
+        new_cell = CellpyData.vacant()
 
         new_cell.cell.steps = steptable0
 
         new_cell.cell.raw = data0
         new_cell.cell.summary = summary0
 
-        old_cell = make_new_cell()
+        old_cell = CellpyData.vacant()
         old_cell.cell.steps = steptable
 
         old_cell.cell.raw = data
@@ -433,9 +433,7 @@ def yank_after(b, last=None, keep_old=True):
             last_this_cell = last.get(cell_label, None)
         else:
             last_this_cell = last
-        s = remove_last_cycles_from_summary(
-            s, last_this_cell
-        )
+        s = remove_last_cycles_from_summary(s, last_this_cell)
         c.cell.summary = s
     return b
 
@@ -466,9 +464,7 @@ def yank_before(b, first=None, keep_old=True):
             first_this_cell = first.get(cell_label, None)
         else:
             first_this_cell = first
-        s = remove_first_cycles_from_summary(
-            s, first_this_cell
-        )
+        s = remove_first_cycles_from_summary(s, first_this_cell)
         c.cell.summary = s
     return b
 
@@ -675,7 +671,9 @@ def concatenate_summaries(
                     elif scale_by is None:
                         scale_by = 1.0
 
-                    c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
+                    c = add_normalized_capacity(
+                        c, norm_cycles=normalize_capacity_on, scale=scale_by
+                    )
 
                 if rate is not None:
                     s = select_summary_based_on_rate(
@@ -854,7 +852,9 @@ def select_summary_based_on_rate(
     return summary.loc[filtered_index, :]
 
 
-def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False, scale=1.0):
+def add_normalized_capacity(
+    cell, norm_cycles=None, individual_normalization=False, scale=1.0
+):
     """Add normalized capacity to the summary.
 
     Args:
@@ -898,7 +898,9 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
         [col_name_norm_charge, col_name_norm_discharge],
         [norm_val_charge, norm_val_discharge],
     ):
-        cell.cell.summary[norm_col_name] = scale * cell.cell.summary[col_name] / norm_value
+        cell.cell.summary[norm_col_name] = (
+            scale * cell.cell.summary[col_name] / norm_value
+        )
 
     return cell
 
