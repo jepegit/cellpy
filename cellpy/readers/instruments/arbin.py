@@ -733,20 +733,21 @@ class ArbinLoader(Loader):
         df = pd.read_sql_query(sql, conn)
         return df
 
-    def _aux_prep(self, aux_global_data_df):
-        # create another column with concatenated aux channel name
-        nick_names = aux_global_data_df[self.arbin_headers_aux_global.aux_name_txt]
-        new_names = []
-        for i, n in enumerate(nick_names):
-            if n:
-                new_names.append(n)
-            else:
-                new_names.append(str(i))
-        new_names = pd.Series(new_names)
-
-        units = aux_global_data_df[self.arbin_headers_aux_global.aux_unit_txt]
-        aux_global_data_df["new_names"] = "aux_" + new_names + "_u_" + units
-        return aux_global_data_df
+    def _make_name_from_frame(self, df, aux_index, data_type, dx_dt=False):
+        df_names = df.loc[
+                   (df[self.arbin_headers_aux_global.aux_index_txt] == aux_index)
+                   & (df[self.arbin_headers_aux_global.data_type_txt] == data_type),
+                   :,
+                   ]
+        unit = df_names[self.arbin_headers_aux_global.aux_unit_txt].values[0]
+        nick = (
+            df_names[self.arbin_headers_aux_global.aux_name_txt].values[0] or aux_index
+        )
+        if dx_dt:
+            name = f"aux_d_{nick}_dt_u_d{unit}_dt"
+        else:
+            name = f"aux_{nick}_u_{unit}"
+        return name
 
     def _loader_win(
         self,
@@ -797,12 +798,7 @@ class ArbinLoader(Loader):
         else:
             test_nos = range(number_of_sets)
 
-        # Note! I don't know if arbin can have more than one auxiliary channel measurement.
-        #   This implementation makes a little bit of prep for more than one, but does not
-        #   fully implement it.
         aux_global_data_df = self._query_table(table_name_aux_global, conn)
-        if not aux_global_data_df.empty:
-            aux_global_data_df = self._aux_prep(aux_global_data_df)
 
         for counter, test_no in enumerate(test_nos):
             if counter > 0:
@@ -818,7 +814,6 @@ class ArbinLoader(Loader):
             )
             if not aux_global_data_df.empty:
                 # TODO: refactor out the sql creation method
-                # TODO: allow for more than one aux channel? (need input from jinpeng)
                 columns_txt = "*"
 
                 sql_1 = "select %s " % columns_txt
@@ -832,34 +827,48 @@ class ArbinLoader(Loader):
                 sql_aux = sql_1 + sql_2 + sql_3 + sql_4
                 aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)
 
-                # selecting aux columns (does not allow for more than one aux channel at the moment)
-
-                aux_channel_name = aux_global_data_df.new_names.iloc[0]
-
-                aux_df = aux_df[
-                    [
-                        self.arbin_headers_aux.data_point_txt,
-                        self.arbin_headers_aux.x_value_txt,
-                        self.arbin_headers_aux.x_dt_value,
-                    ]
+                # from long to wide format
+                aux_df = aux_df.drop(self.arbin_headers_aux.test_id_txt, axis=1)
+                keys = [
+                    self.arbin_headers_aux.data_point_txt,
+                    self.arbin_headers_aux.aux_index_txt,
+                    self.arbin_headers_aux.data_type_txt,
                 ]
+                aux_df = aux_df.set_index(keys=keys)
+                aux_df = aux_df.unstack(2).unstack(1).dropna(axis=1)
+
+                aux_global_data_df = aux_global_data_df.fillna(0)
 
                 # renaming column
-                aux_df = aux_df.rename(
-                    columns={
-                        self.arbin_headers_aux.x_value_txt: aux_channel_name,
-                        self.arbin_headers_aux.x_dt_value: "d_dt_" + aux_channel_name,
-                    },
-                    inplace=False,
-                )
+                aux_dfs = []
+                if self.arbin_headers_aux.x_value_txt in aux_df.columns:
+                    aux_df_x = aux_df[self.arbin_headers_aux.x_value_txt].copy()
+                    aux_df_x.columns = [
+                        self._make_name_from_frame(aux_global_data_df, z[1], z[0])
+                        for z in aux_df_x.columns
+                    ]
+                    aux_dfs.append(aux_df_x)
 
-                normal_df = pd.merge(
-                    normal_df,
-                    aux_df,
-                    how="left",
-                    left_on=self.arbin_headers_normal.data_point_txt,
-                    right_on=self.arbin_headers_aux.data_point_txt,
-                )
+                if self.arbin_headers_aux.x_dt_value in aux_df.columns:
+                    aux_df_dx_dt = aux_df[self.arbin_headers_aux.x_dt_value].copy()
+                    aux_df_dx_dt.columns = [
+                        self._make_name_from_frame(aux_global_data_df, z[1], z[0], True)
+                        for z in aux_df_dx_dt.columns
+                    ]
+                    aux_dfs.append(aux_df_dx_dt)
+
+                aux_df = pd.concat(aux_dfs, axis=1)
+
+                # TODO: clean up setting index (Data_Point). This is currently done in _post_process after
+                #    the column names are changed to cellpy-column names ("data_point").
+                #    It also keeps a copy of the "data_point"
+                #    column. And is that really necessary.
+                if not aux_df.empty:
+                    normal_df.set_index(
+                        self.arbin_headers_normal.data_point_txt, inplace=True
+                    )
+                    normal_df = normal_df.join(aux_df, how="left", )
+                    normal_df.reset_index(inplace=True)
 
             # --------- read stats-data (summary-data) ---------------------
             sql = "select * from %s where %s=%s order by %s" % (
@@ -1359,6 +1368,14 @@ class ArbinLoader(Loader):
 
 if __name__ == "__main__":
     import logging
+    from pathlib import Path
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")
+    p = Path(r"C:\scripts\cellpy_dev_resources\2020_jinpeng_aux_temperature")
+    f1 = p / "BIT_LFP5p12s_Pack02_CAP_Cyc200_T25_Nov23.res"
+    f2 = p / "BIT_LFP50_12S1P_SOP_0_97_T5_cyc200_3500W_20191231.res"
+    f3 = p / "TJP_LR1865SZ_OCV_19_Cyc150_T25_201105.res"
+
+    n = ArbinLoader().loader(f3)
+    print(n[0].raw.tail())
