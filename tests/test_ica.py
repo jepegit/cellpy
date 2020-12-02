@@ -99,7 +99,7 @@ def test_ica_index_bounds(dataset):
 
 def test_ica_dqdv_cycles(dataset):
     cycles = dataset.get_cap(
-        method="forth-and-forth", categorical_column=True, label_cycle_number=True
+        method="forth-and-forth", categorical_column=True, label_cycle_number=True, insert_nan=False,
     )
     dQdV = ica.dqdv_cycles(cycles)
 

@@ -37,7 +37,7 @@ Then define some settings and variables and create the CellpyData-object:
 
     # creating the CellpyData object and sets the cycle mode:
     cell_data = cellreader.CellpyData()
-    cell_data.set_cycle_mode(cycle_mode)
+    cell_data.cycle_mode = cycle_mode
 
 Now we will read the files, merge them, and create a summary:
 

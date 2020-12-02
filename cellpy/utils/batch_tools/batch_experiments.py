@@ -126,9 +126,6 @@ class CyclingExperiment(BaseExperiment):
                 logging.info(f"Processing {indx}")
 
             cell_data = cellreader.CellpyData()
-            if not self.force_cellpy or self.force_recalc:
-                logging.info("setting cycle mode (%s)..." % row[hdr_journal.cell_type])
-                cell_data.cycle_mode = row[hdr_journal.cell_type]
 
             logging.info("loading cell")
             if not self.force_cellpy:
@@ -146,8 +143,10 @@ class CyclingExperiment(BaseExperiment):
                         force_raw=self.force_raw,
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
                         nom_cap=row[hdr_journal.nom_cap],
+                        cell_type=row[hdr_journal.cell_type],
                         **kwargs,
                     )
+
                 except Exception as e:
                     logging.info("Failed to load: " + str(e))
                     errors.append("loadcell:" + str(indx))

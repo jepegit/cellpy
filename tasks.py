@@ -180,6 +180,17 @@ def info(c, full=False):
 
 
 @task
+def sha(c, version=None):
+    import cellpy
+    if version is None:
+        version = f"{cellpy.__version__}"
+    full_version = f"cellpy/{version}"
+    pypi_version, sha_hash = get_pypi_info(package=full_version)
+    print(f"ver: {pypi_version}")
+    print(f"sha: {sha_hash}")
+
+
+@task
 def jupyterlab(c):
     print("installing jupyter lab-extensions")
     extensions = [
@@ -213,6 +224,28 @@ def man(c):
     print("> jupyter labextension install @pyviz/jupyterlab_pyviz")
     print("> jupyter labextension build")
     print("> jupyter labextension list")
+
+    print("""
+    This is a short description in how to update the conda-forge recipe:
+    - make a fork of https://github.com/conda-forge/cellpy-feedstock
+    - clone the repo (jepegit/cellpy-feedstock)
+         >>> git clone https://github.com/jepegit/cellpy-feedstok.git
+         git remote add upstream https://github.com/conda-forge/<feedstock>
+         git fetch upstream
+         git rebase upstream/master
+         git checkout -b update_x_x_x
+    - edit
+        hash and version
+    - add and commit (e.g. updated feedstock to version 1.0.1)
+    - git push origin <branch-name>
+    - rerender if needed (different requirements, platforms, issues)
+        conda install -c conda-forge conda-smithy
+        conda smithy rerender -c auto
+    - Create a pull request via the web interface by navigating to
+      https://github.com/<your-github-id>/<feedstock> with your web browser
+      and clicking the button create pull request.
+
+    """)
 
 
 @task

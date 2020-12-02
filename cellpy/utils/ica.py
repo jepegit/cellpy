@@ -444,6 +444,7 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
             >>> ...   1,
             >>> ...   categorical_column=True,
             >>> ...   method = "forth-and-forth"
+            >>> ...   insert_nan=False,
             >>> ... )
             >>> voltage, incremental = ica.dqdv_cycle(cycle_df)
 
@@ -532,6 +533,7 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
             >>> ...   categorical_column=True,
             >>> ...   method = "forth-and-forth",
             >>> ...   label_cycle_number=True,
+            >>> ...   insert_nan=False,
             >>> ... )
             >>> ica_df = ica.dqdv_cycles(cycles_df)
 
@@ -547,7 +549,7 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
     cycle_group = cycles.groupby("cycle")
     keys = list()
     for cycle_number, cycle in cycle_group:
-
+        cycle = cycle.dropna()
         v, dq = dqdv_cycle(cycle, splitter=True, **kwargs)
         _ica_df = pd.DataFrame({"voltage": v, "dq": dq})
         if not not_merged:
@@ -812,6 +814,7 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
         method="forth-and-forth",
         categorical_column=True,
         label_cycle_number=True,
+        insert_nan=False,
     )
     ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
 
