@@ -79,7 +79,7 @@ class CSVExporter(BaseExporter):
 
 
 class OriginLabExporter(BaseExporter):
-    """Exporter that saves the files in a format convinent for OriginLab."""
+    """Exporter that saves the files in a format convenient for OriginLab."""
 
     def __init__(self):
         super().__init__()

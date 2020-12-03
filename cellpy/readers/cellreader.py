@@ -2568,7 +2568,9 @@ class CellpyData(object):
             #     e.g.
             #     df_x = df_steps.where.steps.are.unique
 
-            df_steps.loc[mask_no_current_hard & mask_voltage_stable, (shdr.type, slice(None))] = "rest"
+            df_steps.loc[
+                mask_no_current_hard & mask_voltage_stable, (shdr.type, slice(None))
+            ] = "rest"
 
             df_steps.loc[
                 mask_no_current_hard & mask_voltage_up, (shdr.type, slice(None))
@@ -2636,8 +2638,12 @@ class CellpyData(object):
             else:
                 self.logger.debug("using short format (step)")
                 for row in step_specifications.itertuples():
-                    df_steps.loc[df_steps[shdr.step] == row.step, (shdr.type, slice(None))] = row.type
-                    df_steps.loc[df_steps[shdr.step] == row.step, (shdr.info, slice(None))] = row.info
+                    df_steps.loc[
+                        df_steps[shdr.step] == row.step, (shdr.type, slice(None))
+                    ] = row.type
+                    df_steps.loc[
+                        df_steps[shdr.step] == row.step, (shdr.info, slice(None))
+                    ] = row.info
 
         if profiling:
             print(f"*** introspect: {time.time() - time_01} s")
@@ -3409,8 +3415,6 @@ class CellpyData(object):
         else:
             return None
 
-
-
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
         """Returns voltage (in V).
 
@@ -3782,10 +3786,10 @@ class CellpyData(object):
         initial = True
         for current_cycle in cycle:
             error = False
-            # self.logger.debug(f"processing cycle {current_cycle}")
             try:
                 cc, cv = self.get_ccap(current_cycle, dataset_number, **kwargs)
                 dc, dv = self.get_dcap(current_cycle, dataset_number, **kwargs)
+
             except NullData as e:
                 error = True
                 self.logger.debug(e)
@@ -3800,7 +3804,6 @@ class CellpyData(object):
                     self.logger.debug("get_ccap returns empty dc Series")
 
                 if initial:
-                    # self.logger.debug("(initial cycle)")
                     prev_end = shift
                     initial = False
                 if self._cycle_mode == "anode":
@@ -3842,7 +3845,6 @@ class CellpyData(object):
 
                     # prev_end = np.amin(_last_step_c)
                     prev_end = _last_step_c.iat[-1]
-
                 elif method == "forth":
                     # _last = np.amax(_first_step_c)
                     _last = _first_step_c.iat[-1]
@@ -3872,10 +3874,7 @@ class CellpyData(object):
 
                     try:
                         _first_df = pd.DataFrame(
-                            {
-                                "voltage": _first_step_v,
-                                "capacity": _first_step_c,
-                            }
+                            {"voltage": _first_step_v, "capacity": _first_step_c,}
                         )
                         if interpolated:
                             _first_df = interpolate_y_on_x(
@@ -3887,10 +3886,9 @@ class CellpyData(object):
                                 direction=first_interpolation_direction,
                             )
                         if insert_nan:
-                            _nan = pd.DataFrame({
-                                "capacity": [np.nan],
-                                "voltage": [np.nan]
-                            })
+                            _nan = pd.DataFrame(
+                                {"capacity": [np.nan], "voltage": [np.nan]}
+                            )
                             _first_df = _first_df.append(_nan)
                         if categorical_column:
                             _first_df["direction"] = -1
