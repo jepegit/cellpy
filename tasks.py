@@ -230,7 +230,7 @@ def man(c):
     - make a fork of https://github.com/conda-forge/cellpy-feedstock
     - clone the repo (jepegit/cellpy-feedstock)
          >>> git clone https://github.com/jepegit/cellpy-feedstok.git
-         git remote add upstream https://github.com/conda-forge/<feedstock>
+         git remote add upstream https://github.com/conda-forge/cellpy-feedstock
          git fetch upstream
          git rebase upstream/master
          git checkout -b update_x_x_x
@@ -242,7 +242,7 @@ def man(c):
         conda install -c conda-forge conda-smithy
         conda smithy rerender -c auto
     - Create a pull request via the web interface by navigating to
-      https://github.com/<your-github-id>/<feedstock> with your web browser
+      https://github.com/jepegit/cellpy-feedstok.git with your web browser
       and clicking the button create pull request.
 
     """)
