@@ -936,6 +936,8 @@ class ArbinLoader(Loader):
         table_name_global = TABLE_NAMES["global"]
         table_name_stats = TABLE_NAMES["statistic"]
         table_name_normal = TABLE_NAMES["normal"]
+        table_name_aux_global = TABLE_NAMES["aux_global"]
+        table_name_aux = TABLE_NAMES["aux"]
 
         new_tests = []
 
@@ -954,6 +956,8 @@ class ArbinLoader(Loader):
             table_name_global,
             table_name_normal,
             table_name_stats,
+            table_name_aux_global,
+            table_name_aux,
             temp_dir,
             temp_filename,
         )
@@ -1112,6 +1116,8 @@ class ArbinLoader(Loader):
         table_name_global,
         table_name_normal,
         table_name_stats,
+        table_name_aux_global,
+        table_name_aux,
         temp_dir,
         temp_filename,
     ):
@@ -1121,11 +1127,15 @@ class ArbinLoader(Loader):
         temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
         temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
         temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
+        temp_csv_filename_aux_global = os.path.join(temp_dir, "aux_global_tmp.csv")
+        temp_csv_filename_aux = os.path.join(temp_dir, "aux_tmp.csv")
         # making the cmds
         mdb_prms = [
             (table_name_global, temp_csv_filename_global),
             (table_name_normal, temp_csv_filename_normal),
             (table_name_stats, temp_csv_filename_stats),
+            (table_name_aux_global, temp_csv_filename_aux_global),
+            (table_name_aux, temp_csv_filename_aux),
         ]
         # executing cmds
         for table_name, tmp_file in mdb_prms:
@@ -1136,6 +1146,8 @@ class ArbinLoader(Loader):
             temp_csv_filename_global,
             temp_csv_filename_normal,
             temp_csv_filename_stats,
+            temp_csv_filename_aux_global,
+            temp_csv_filename_aux,
         )
 
     def _load_from_tmp_files(
@@ -1144,6 +1156,8 @@ class ArbinLoader(Loader):
         temp_csv_filename_global,
         temp_csv_filename_normal,
         temp_csv_filename_stats,
+        temp_csv_filename_aux_global,
+        temp_csv_filename_aux,
         temp_filename,
         bad_steps,
         data_points,
@@ -1218,6 +1232,8 @@ class ArbinLoader(Loader):
 
         length_of_test = normal_df.shape[0]
         summary_df = pd.read_csv(temp_csv_filename_stats)
+        aux_global_df = pd.read_csv(temp_csv_filename_aux_global)
+        aux_df = pd.read_csv(temp_csv_filename_aux)
 
         # clean up
         for f in [
@@ -1225,13 +1241,15 @@ class ArbinLoader(Loader):
             temp_csv_filename_stats,
             temp_csv_filename_normal,
             temp_csv_filename_global,
+            temp_csv_filename_aux_global,
+            temp_csv_filename_aux,
         ]:
             if os.path.isfile(f):
                 try:
                     os.remove(f)
                 except WindowsError as e:
                     self.logger.warning(f"could not remove tmp-file\n{f} {e}")
-        return length_of_test, normal_df, summary_df
+        return length_of_test, normal_df, summary_df, aux_global_df, aux_df
 
     def _init_data(self, file_name, global_data_df, test_no):
         data = Cell()
