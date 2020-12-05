@@ -778,18 +778,13 @@ class ArbinLoader(Loader):
             conn = dbloader.connect(constr)
         else:
             conn = dbloader.connect(constr, autocommit=True)
-        self.logger.debug(f"constr str: {constr}")
 
         self.logger.debug("reading global data table")
-        # sql = "select * from %s" % table_name_global
-        # self.logger.debug("sql statement: %s" % sql)
-        # global_data_df = pd.read_sql_query(sql, conn)
+        self.logger.debug(f"constr str: {constr}")
         global_data_df = self._query_table(table_name=table_name_global, conn=conn)
-        # col_names = list(global_data_df.columns.values)
         tests = global_data_df[self.arbin_headers_normal.test_id_txt]
         number_of_sets = len(tests)
         self.logger.debug(f"number of datasets: {number_of_sets}")
-        self.logger.debug(f"datasets: {tests}")
 
         if dataset_number is not None:
             self.logger.info(f"Dataset number given: {dataset_number}")
@@ -798,77 +793,22 @@ class ArbinLoader(Loader):
         else:
             test_nos = range(number_of_sets)
 
-        aux_global_data_df = self._query_table(table_name_aux_global, conn)
-
         for counter, test_no in enumerate(test_nos):
             if counter > 0:
                 self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
                 if not ALLOW_MULTI_TEST_FILE:
                     break
             data = self._init_data(file_name, global_data_df, test_no)
-
+            test_id = data.test_ID
             self.logger.debug("reading raw-data")
+
             # --------- read raw-data (normal-data) ------------------------
             length_of_test, normal_df = self._load_res_normal_table(
-                conn, data.test_ID, bad_steps, data_points
+                conn, test_id, bad_steps, data_points
             )
-            if not aux_global_data_df.empty:
-                # TODO: refactor out the sql creation method
-                columns_txt = "*"
-
-                sql_1 = "select %s " % columns_txt
-                sql_2 = "from %s " % table_name_aux
-                sql_3 = "where %s=%s " % (
-                    self.arbin_headers_aux.test_id_txt,
-                    data.test_ID,
-                )
-                sql_4 = ""
-
-                sql_aux = sql_1 + sql_2 + sql_3 + sql_4
-                aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)
-
-                # from long to wide format
-                aux_df = aux_df.drop(self.arbin_headers_aux.test_id_txt, axis=1)
-                keys = [
-                    self.arbin_headers_aux.data_point_txt,
-                    self.arbin_headers_aux.aux_index_txt,
-                    self.arbin_headers_aux.data_type_txt,
-                ]
-                aux_df = aux_df.set_index(keys=keys)
-                aux_df = aux_df.unstack(2).unstack(1).dropna(axis=1)
-
-                aux_global_data_df = aux_global_data_df.fillna(0)
-
-                # renaming column
-                aux_dfs = []
-                if self.arbin_headers_aux.x_value_txt in aux_df.columns:
-                    aux_df_x = aux_df[self.arbin_headers_aux.x_value_txt].copy()
-                    aux_df_x.columns = [
-                        self._make_name_from_frame(aux_global_data_df, z[1], z[0])
-                        for z in aux_df_x.columns
-                    ]
-                    aux_dfs.append(aux_df_x)
-
-                if self.arbin_headers_aux.x_dt_value in aux_df.columns:
-                    aux_df_dx_dt = aux_df[self.arbin_headers_aux.x_dt_value].copy()
-                    aux_df_dx_dt.columns = [
-                        self._make_name_from_frame(aux_global_data_df, z[1], z[0], True)
-                        for z in aux_df_dx_dt.columns
-                    ]
-                    aux_dfs.append(aux_df_dx_dt)
-
-                aux_df = pd.concat(aux_dfs, axis=1)
-
-                # TODO: clean up setting index (Data_Point). This is currently done in _post_process after
-                #    the column names are changed to cellpy-column names ("data_point").
-                #    It also keeps a copy of the "data_point"
-                #    column. And is that really necessary.
-                if not aux_df.empty:
-                    normal_df.set_index(
-                        self.arbin_headers_normal.data_point_txt, inplace=True
-                    )
-                    normal_df = normal_df.join(aux_df, how="left", )
-                    normal_df.reset_index(inplace=True)
+            # --------- read auxiliary data (aux-data) ---------------------
+            normal_df = self._load_win_res_auxiliary_table(conn, normal_df, table_name_aux, table_name_aux_global,
+                                                           test_id)
 
             # --------- read stats-data (summary-data) ---------------------
             sql = "select * from %s where %s=%s order by %s" % (
@@ -903,6 +843,82 @@ class ArbinLoader(Loader):
             new_tests.append(data)
         return new_tests
 
+    def _load_win_res_auxiliary_table(self, conn, normal_df, table_name_aux, table_name_aux_global, test_id):
+        aux_global_data_df = self._query_table(table_name_aux_global, conn)
+        if not aux_global_data_df.empty:
+            aux_df = self._get_aux_df(conn, test_id, table_name_aux)
+            aux_df, aux_global_data_df = self._aux_to_wide(aux_df, aux_global_data_df)
+            aux_df = self._rename_aux_cols(aux_df, aux_global_data_df)
+
+            if not aux_df.empty:
+                normal_df = self._join_aux_to_normal(aux_df, normal_df)
+        return normal_df
+
+    def _load_posix_res_auxiliary_table(self, aux_global_data_df, aux_df, normal_df):
+        if not aux_global_data_df.empty:
+            aux_df, aux_global_data_df = self._aux_to_wide(aux_df, aux_global_data_df)
+            aux_df = self._rename_aux_cols(aux_df, aux_global_data_df)
+
+            if not aux_df.empty:
+                normal_df = self._join_aux_to_normal(aux_df, normal_df)
+        return normal_df
+
+    def _join_aux_to_normal(self, aux_df, normal_df):
+        # TODO: clean up setting index (Data_Point). This is currently done in _post_process after
+        #    the column names are changed to cellpy-column names ("data_point").
+        #    It also keeps a copy of the "data_point"
+        #    column. And is that really necessary.
+        normal_df.set_index(
+            self.arbin_headers_normal.data_point_txt, inplace=True
+        )
+        normal_df = normal_df.join(aux_df, how="left", )
+        normal_df.reset_index(inplace=True)
+        return normal_df
+
+    def _rename_aux_cols(self, aux_df, aux_global_data_df):
+        aux_dfs = []
+        if self.arbin_headers_aux.x_value_txt in aux_df.columns:
+            aux_df_x = aux_df[self.arbin_headers_aux.x_value_txt].copy()
+            aux_df_x.columns = [
+                self._make_name_from_frame(aux_global_data_df, z[1], z[0])
+                for z in aux_df_x.columns
+            ]
+            aux_dfs.append(aux_df_x)
+        if self.arbin_headers_aux.x_dt_value in aux_df.columns:
+            aux_df_dx_dt = aux_df[self.arbin_headers_aux.x_dt_value].copy()
+            aux_df_dx_dt.columns = [
+                self._make_name_from_frame(aux_global_data_df, z[1], z[0], True)
+                for z in aux_df_dx_dt.columns
+            ]
+            aux_dfs.append(aux_df_dx_dt)
+        aux_df = pd.concat(aux_dfs, axis=1)
+        return aux_df
+
+    def _aux_to_wide(self, aux_df, aux_global_data_df):
+        aux_df = aux_df.drop(self.arbin_headers_aux.test_id_txt, axis=1)
+        keys = [
+            self.arbin_headers_aux.data_point_txt,
+            self.arbin_headers_aux.aux_index_txt,
+            self.arbin_headers_aux.data_type_txt,
+        ]
+        aux_df = aux_df.set_index(keys=keys)
+        aux_df = aux_df.unstack(2).unstack(1).dropna(axis=1)
+        aux_global_data_df = aux_global_data_df.fillna(0)
+        return aux_df, aux_global_data_df
+
+    def _get_aux_df(self, conn, test_id, table_name_aux):
+        columns_txt = "*"
+        sql_1 = "select %s " % columns_txt
+        sql_2 = "from %s " % table_name_aux
+        sql_3 = "where %s=%s " % (
+            self.arbin_headers_aux.test_id_txt,
+            test_id,
+        )
+        sql_4 = ""
+        sql_aux = sql_1 + sql_2 + sql_3 + sql_4
+        aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)
+        return aux_df
+
     def _loader_posix(
         self,
         file_name,
@@ -919,6 +935,8 @@ class ArbinLoader(Loader):
         table_name_global = TABLE_NAMES["global"]
         table_name_stats = TABLE_NAMES["statistic"]
         table_name_normal = TABLE_NAMES["normal"]
+        table_name_aux_global = TABLE_NAMES["aux_global"]
+        table_name_aux = TABLE_NAMES["aux"]
 
         new_tests = []
 
@@ -933,10 +951,12 @@ class ArbinLoader(Loader):
         if DEBUG_MODE:
             time_0 = time.time()
 
-        tmp_name_global, tmp_name_raw, tmp_name_stats = self._create_tmp_files(
+        tmp_name_global, tmp_name_raw, tmp_name_stats, tmp_name_aux_global, tmp_name_aux = self._create_tmp_files(
             table_name_global,
             table_name_normal,
             table_name_stats,
+            table_name_aux_global,
+            table_name_aux,
             temp_dir,
             temp_filename,
         )
@@ -947,7 +967,6 @@ class ArbinLoader(Loader):
 
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
-        self.logger.debug(f"datasets: {tests}")
 
         if dataset_number is not None:
             self.logger.info(f"Dataset number given: {dataset_number}")
@@ -965,15 +984,20 @@ class ArbinLoader(Loader):
 
             self.logger.debug("reading raw-data")
 
-            length_of_test, normal_df, summary_df = self._load_from_tmp_files(
+            length_of_test, normal_df, summary_df, aux_global_data_df, aux_df = self._load_from_tmp_files(
                 data,
                 tmp_name_global,
                 tmp_name_raw,
                 tmp_name_stats,
+                tmp_name_aux_global,
+                tmp_name_aux,
                 temp_filename,
                 bad_steps,
                 data_points,
             )
+
+            # --------- read auxiliary data (aux-data) ---------------------
+            normal_df = self._load_posix_res_auxiliary_table(aux_global_data_df, aux_df, normal_df)
 
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
@@ -1089,6 +1113,8 @@ class ArbinLoader(Loader):
         table_name_global,
         table_name_normal,
         table_name_stats,
+        table_name_aux_global,
+        table_name_aux,
         temp_dir,
         temp_filename,
     ):
@@ -1098,11 +1124,15 @@ class ArbinLoader(Loader):
         temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
         temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
         temp_csv_filename_stats = os.path.join(temp_dir, "stats_tmp.csv")
+        temp_csv_filename_aux_global = os.path.join(temp_dir, "aux_global_tmp.csv")
+        temp_csv_filename_aux = os.path.join(temp_dir, "aux_tmp.csv")
         # making the cmds
         mdb_prms = [
             (table_name_global, temp_csv_filename_global),
             (table_name_normal, temp_csv_filename_normal),
             (table_name_stats, temp_csv_filename_stats),
+            (table_name_aux_global, temp_csv_filename_aux_global),
+            (table_name_aux, temp_csv_filename_aux),
         ]
         # executing cmds
         for table_name, tmp_file in mdb_prms:
@@ -1113,6 +1143,8 @@ class ArbinLoader(Loader):
             temp_csv_filename_global,
             temp_csv_filename_normal,
             temp_csv_filename_stats,
+            temp_csv_filename_aux_global,
+            temp_csv_filename_aux,
         )
 
     def _load_from_tmp_files(
@@ -1121,6 +1153,8 @@ class ArbinLoader(Loader):
         temp_csv_filename_global,
         temp_csv_filename_normal,
         temp_csv_filename_stats,
+        temp_csv_filename_aux_global,
+        temp_csv_filename_aux,
         temp_filename,
         bad_steps,
         data_points,
@@ -1169,6 +1203,7 @@ class ArbinLoader(Loader):
                 normal_df = normal_df.loc[~selector, :]
 
         if prms.Reader["limit_loaded_cycles"]:
+            logging.debug("Not yet tested for aux data")
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
                 c1, c2 = prms.Reader["limit_loaded_cycles"]
                 selector = (
@@ -1183,6 +1218,7 @@ class ArbinLoader(Loader):
 
         if data_points is not None:
             logging.debug("selecting data-point range")
+            logging.debug("Not yet tested for aux data")
             d1, d2 = data_points
 
             if d1 is not None:
@@ -1195,6 +1231,8 @@ class ArbinLoader(Loader):
 
         length_of_test = normal_df.shape[0]
         summary_df = pd.read_csv(temp_csv_filename_stats)
+        aux_global_df = pd.read_csv(temp_csv_filename_aux_global)
+        aux_df = pd.read_csv(temp_csv_filename_aux)
 
         # clean up
         for f in [
@@ -1202,13 +1240,15 @@ class ArbinLoader(Loader):
             temp_csv_filename_stats,
             temp_csv_filename_normal,
             temp_csv_filename_global,
+            temp_csv_filename_aux_global,
+            temp_csv_filename_aux,
         ]:
             if os.path.isfile(f):
                 try:
                     os.remove(f)
                 except WindowsError as e:
                     self.logger.warning(f"could not remove tmp-file\n{f} {e}")
-        return length_of_test, normal_df, summary_df
+        return length_of_test, normal_df, summary_df, aux_global_df, aux_df
 
     def _init_data(self, file_name, global_data_df, test_no):
         data = Cell()
@@ -1371,11 +1411,11 @@ if __name__ == "__main__":
     from pathlib import Path
     from cellpy import log
 
-    log.setup_logging(default_level="DEBUG")
+    log.setup_logging(default_level="CRITICAL")
     p = Path(r"C:\scripts\cellpy_dev_resources\2020_jinpeng_aux_temperature")
     f1 = p / "BIT_LFP5p12s_Pack02_CAP_Cyc200_T25_Nov23.res"
     f2 = p / "BIT_LFP50_12S1P_SOP_0_97_T5_cyc200_3500W_20191231.res"
     f3 = p / "TJP_LR1865SZ_OCV_19_Cyc150_T25_201105.res"
 
-    n = ArbinLoader().loader(f3)
+    n = ArbinLoader().loader(f1)
     print(n[0].raw.tail())

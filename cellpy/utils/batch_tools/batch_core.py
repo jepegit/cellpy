@@ -85,7 +85,7 @@ class Data(collections.UserDict):
     requires summary data or other settings not set as default).
     """
 
-    # TODO (jepe): decide if we should inclued querying functionallity here.
+    # TODO (jepe): decide if we should included querying functionality here.
 
     def __init__(self, experiment, *args):
         super().__init__(*args)

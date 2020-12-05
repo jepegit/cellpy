@@ -250,7 +250,7 @@ class CellpyData(object):
         self.force_step_table_creation = prms.Reader.force_step_table_creation
         self.force_all = prms.Reader.force_all
         self.sep = prms.Reader.sep
-        self._cycle_mode = prms.Reader.cycle_mode
+        self._cycle_mode = None
         # self.max_res_filesize = prms.Reader.max_res_filesize
         self.load_only_summary = prms.Reader.load_only_summary
         self.select_minimal = prms.Reader.select_minimal
@@ -496,23 +496,23 @@ class CellpyData(object):
         self.logger = logging.getLogger(__name__)
         log.setup_logging(default_level="DEBUG")
 
-    def set_cycle_mode(self, cycle_mode):
-        """set the cycle mode"""
-        # TODO: remove this
-        warnings.warn(
-            "deprecated - use it as a property instead, e.g.: cycle_mode = 'anode'",
-            DeprecationWarning,
-        )
-        self._cycle_mode = cycle_mode
-
     @property
     def cycle_mode(self):
-        return self._cycle_mode
+        try:
+            cell = self.cell
+            return cell.cycle_mode
+        except IndexError:
+            return self._cycle_mode
 
     @cycle_mode.setter
     def cycle_mode(self, cycle_mode):
         self.logger.debug(f"-> cycle_mode: {cycle_mode}")
-        self._cycle_mode = cycle_mode
+        try:
+            cell = self.cell
+            cell.cycle_mode = cycle_mode
+            self._cycle_mode = cycle_mode
+        except IndexError:
+            self._cycle_mode = cycle_mode
 
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
@@ -734,6 +734,7 @@ class CellpyData(object):
         only_summary=False,
         force_raw=False,
         use_cellpy_stat_file=None,
+        cell_type=None,
         **kwargs,
     ):
 
@@ -751,6 +752,8 @@ class CellpyData(object):
             force_raw (bool): only use raw-files
             use_cellpy_stat_file (bool): use stat file if creating summary
                 from raw
+            cell_type (str): set the cell type (e.g. "anode"). If not, the default from
+               the config file is used.
             **kwargs: passed to from_raw
 
         Example:
@@ -798,6 +801,9 @@ class CellpyData(object):
             self.logger.info("Loading raw-file")
             self.logger.debug(raw_files)
             self.from_raw(raw_files, **kwargs)
+            if cell_type is not None:
+                self.cycle_mode = cell_type
+                logging.debug(f"setting cycle mode: {cell_type}")
             self.logger.debug("loaded files")
             # Check if the run was loaded ([] if empty)
             if self.status_datasets:
@@ -1261,6 +1267,7 @@ class CellpyData(object):
             with pickle_protocol(PICKLE_PROTOCOL):
                 new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
             self.logger.debug("cellpy-file loaded")
+
         except AttributeError:
             new_datasets = []
             self.logger.warning(
@@ -1680,6 +1687,7 @@ class CellpyData(object):
         try:
             data.steps = store.select(parent_level + step_dir)
         except Exception as e:
+            print(e)
             self.logging.debug("could not get steps from cellpy-file")
             data.steps = pd.DataFrame()
             warnings.warn(f"Unhandled exception raised: {e}")
@@ -1708,6 +1716,9 @@ class CellpyData(object):
             data.mass = 1.0
         else:
             data.mass_given = True
+
+        if data.cycle_mode is None:
+            logging.critical("cycle mode not found")
 
         data.loaded_from = str(filename)
 
@@ -1772,6 +1783,7 @@ class CellpyData(object):
             infotable[attribute] = [value]
 
         infotable["cellpy_file_version"] = [CELLPY_FILE_VERSION]
+        infotable["cycle_mode"] = [self.cycle_mode]
 
         limits = test.raw_limits
         for key in limits:
@@ -3697,7 +3709,7 @@ class CellpyData(object):
         cycle=None,
         dataset_number=None,
         method="back-and-forth",
-        insert_nan=False,
+        insert_nan=None,
         shift=0.0,
         categorical_column=False,
         label_cycle_number=False,
@@ -3721,7 +3733,7 @@ class CellpyData(object):
                 "forth-and-forth" - discharge (or charge) also starts at 0
                     (or shift if not shift=0.0)
             insert_nan (bool): insert a np.nan between the charge and discharge curves.
-                Defaults to False
+                Defaults to True for "forth-and-forth", else False
             shift: start-value for charge (or discharge) (typically used when
                 plotting shifted-capacity).
             categorical_column: add a categorical column showing if it is
@@ -3779,6 +3791,12 @@ class CellpyData(object):
             )
             method = "back-and-forth"
 
+        if insert_nan is None:
+            if method == "forth-and-forth":
+                insert_nan = True
+            else:
+                insert_nan = False
+
         capacity = None
         voltage = None
         cycle_df = pd.DataFrame()
@@ -3806,7 +3824,7 @@ class CellpyData(object):
                 if initial:
                     prev_end = shift
                     initial = False
-                if self._cycle_mode == "anode":
+                if self.cycle_mode == "anode":
                     first_interpolation_direction = -1
                     _first_step_c = dc
                     _first_step_v = dv
@@ -4873,7 +4891,7 @@ class CellpyData(object):
             ocv1_type = "ocvrlx_up"
             ocv2_type = "ocvrlx_down"
 
-            if not self._cycle_mode == "anode":
+            if not self.cycle_mode == "anode":
                 ocv2_type = "ocvrlx_up"
                 ocv1_type = "ocvrlx_down"
 

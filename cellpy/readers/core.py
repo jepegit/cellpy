@@ -238,6 +238,7 @@ class Cell(object):
         self.name = None
 
         # new meta data
+        self.cycle_mode = prms.Reader.cycle_mode
         self.active_electrode_area = None  # [cm2]
         self.active_electrode_thickness = None  # [micron]
         self.electrolyte_type = None  #
@@ -524,9 +525,6 @@ def collect_capacity_curves(
     maximum_v_value = -np.Inf
     charge_list = []
     cycles = kwargs.pop("cycle", None)
-
-    print(80 * "=")
-    print(cycles)
 
     if cycles is None:
         cycles = data.get_cycle_numbers()
