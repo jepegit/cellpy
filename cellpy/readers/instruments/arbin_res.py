@@ -32,7 +32,7 @@ SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 use_subprocess = prms.Instruments.Arbin.use_subprocess
 detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
 
-# Finding out some stuff about the platform
+# Finding out some stuff about the platform (TODO: refactor to mixin)
 is_posix = False
 is_macos = False
 if os.name == "posix":
@@ -49,6 +49,7 @@ if DEBUG_MODE:
     logging.debug(f"detect_subprocess_need: {detect_subprocess_need}")
     logging.debug(f"current_platform: {current_platform}")
 
+# TODO: refactor to mixin
 if detect_subprocess_need:
     logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
@@ -76,6 +77,7 @@ try:
 except AttributeError:
     driver_dll = None
 
+# TODO: deprecate ado
 use_ado = False
 
 if ODBC == "ado":
@@ -104,6 +106,7 @@ if not use_ado:
 if DEBUG_MODE:
     logging.debug(f"dbloader: {dbloader}")
 
+# TODO: refactor to mixin
 # The columns to choose if minimum selection is selected
 MINIMUM_SELECTION = [
     "Data_Point",
@@ -135,7 +138,6 @@ summary_headers_renaming_dict = {
     "charge_time_txt": "Charge_Time",
     "discharge_time_txt": "Discharge_Time",
 }
-
 
 normal_headers_renaming_dict = {
     "aci_phase_angle_txt": "ACI_Phase_Angle",

@@ -198,6 +198,7 @@ _prm_globtxt = ".cellpy_prms*.conf"
 _odbcs = ["pyodbc", "ado", "pypyodbc"]
 _odbc = "pyodbc"
 _search_for_odbc_driver = True
+_allow_multi_test_file = False
 _use_filename_cache = True
 _sub_process_path = Path(__file__) / "../../../bin/mdbtools-win/mdb-export"
 _sub_process_path = _sub_process_path.resolve()

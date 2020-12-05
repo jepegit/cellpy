@@ -1,6 +1,9 @@
 """
-Contains classes that are sub-classed by the different loaders
+When you make a new loader you have to subclass the Loader class.
+Remember also to register it in cellpy.cellreader.
+
 (for future development, not used very efficiently yet).
+(and if you figure out a better name for this module, please let me know).
 """
 
 import abc
@@ -8,18 +11,16 @@ import logging
 
 import cellpy.readers.core as core
 
-# Just for self-studying and fun at the moment...
-# Note to myself: use Abstract Base Classes.
-
 
 class AtomicLoad(object):
     """Atomic loading class"""
-
     pass
 
 
 class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
+
+    # TODO: should also include the functions for getting cellpy headers etc here
 
     @staticmethod
     @abc.abstractmethod
@@ -51,7 +52,7 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def loader(self, *args, **kwargs):
-        """Loads data into a DataSet object and returns it"""
+        """Loads data into a Cell object and returns it"""
         pass
 
     def identify_last_data_point(self, data):
