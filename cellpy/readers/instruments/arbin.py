@@ -989,11 +989,12 @@ class ArbinLoader(Loader):
                 tmp_name_global,
                 tmp_name_raw,
                 tmp_name_stats,
+                tmp_name_aux_global,
+                tmp_name_aux,
                 temp_filename,
                 bad_steps,
                 data_points,
             )
-
 
             # --------- read auxiliary data (aux-data) ---------------------
             normal_df = self._load_posix_res_auxiliary_table(aux_global_data_df, aux_df, normal_df)
@@ -1202,6 +1203,7 @@ class ArbinLoader(Loader):
                 normal_df = normal_df.loc[~selector, :]
 
         if prms.Reader["limit_loaded_cycles"]:
+            logging.debug("Not yet tested for aux data")
             if len(prms.Reader["limit_loaded_cycles"]) > 1:
                 c1, c2 = prms.Reader["limit_loaded_cycles"]
                 selector = (
@@ -1216,6 +1218,7 @@ class ArbinLoader(Loader):
 
         if data_points is not None:
             logging.debug("selecting data-point range")
+            logging.debug("Not yet tested for aux data")
             d1, d2 = data_points
 
             if d1 is not None:
