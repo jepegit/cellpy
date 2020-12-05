@@ -76,7 +76,13 @@ res_file_name = "20160805_test001_45_cc_01.res"
 res_file_path = os.path.join(raw_data_dir, res_file_name)
 
 res_file_name2 = "20160805_test001_45_cc_02.res"
-res_file_path2 = os.path.join(raw_data_dir, res_file_name)
+res_file_path2 = os.path.join(raw_data_dir, res_file_name2)
+
+res_file_name3 = "aux_multi_x.res"
+res_file_path3 = os.path.join(raw_data_dir, res_file_name3)
+
+res_file_name4 = "aux_one_x_dx.res"
+res_file_path4 = os.path.join(raw_data_dir, res_file_name4)
 
 # -------- biologics specific files -----------------
 mpr_file_name = "biol.mpr"

@@ -916,7 +916,6 @@ class ArbinLoader(Loader):
         )
         sql_4 = ""
         sql_aux = sql_1 + sql_2 + sql_3 + sql_4
-        print(sql_aux)
         aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)
         return aux_df
 
@@ -1412,7 +1411,7 @@ if __name__ == "__main__":
     from pathlib import Path
     from cellpy import log
 
-    log.setup_logging(default_level="DEBUG")
+    log.setup_logging(default_level="CRITICAL")
     p = Path(r"C:\scripts\cellpy_dev_resources\2020_jinpeng_aux_temperature")
     f1 = p / "BIT_LFP5p12s_Pack02_CAP_Cyc200_T25_Nov23.res"
     f2 = p / "BIT_LFP50_12S1P_SOP_0_97_T5_cyc200_3500W_20191231.res"
