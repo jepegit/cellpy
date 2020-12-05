@@ -450,12 +450,13 @@ class CellpyData(object):
         self.logger.debug(f"Setting instrument: {instrument}")
 
         if instrument in ["arbin", "arbin_res"]:
-            from cellpy.readers.instruments.arbin import ArbinLoader as RawLoader
+            from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
 
             self._set_instrument(RawLoader)
             self.tester = "arbin"
 
         elif instrument == "arbin_sql":
+            from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
             warnings.warn(f"{instrument} not implemented yet")
             self.tester = "arbin"
 
