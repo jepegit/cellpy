@@ -951,7 +951,7 @@ class ArbinLoader(Loader):
         if DEBUG_MODE:
             time_0 = time.time()
 
-        tmp_name_global, tmp_name_raw, tmp_name_stats = self._create_tmp_files(
+        tmp_name_global, tmp_name_raw, tmp_name_stats, tmp_name_aux_global, tmp_name_aux = self._create_tmp_files(
             table_name_global,
             table_name_normal,
             table_name_stats,
@@ -984,7 +984,7 @@ class ArbinLoader(Loader):
 
             self.logger.debug("reading raw-data")
 
-            length_of_test, normal_df, summary_df = self._load_from_tmp_files(
+            length_of_test, normal_df, summary_df, aux_global_data_df, aux_df = self._load_from_tmp_files(
                 data,
                 tmp_name_global,
                 tmp_name_raw,
@@ -994,9 +994,6 @@ class ArbinLoader(Loader):
                 data_points,
             )
 
-            # TODO: edit this (load the aux tables)
-            aux_df = None
-            aux_global_data_df = None
 
             # --------- read auxiliary data (aux-data) ---------------------
             normal_df = self._load_posix_res_auxiliary_table(aux_global_data_df, aux_df, normal_df)
