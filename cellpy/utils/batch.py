@@ -336,7 +336,7 @@ class Batch:
     def journal(self, new):
         # self.experiment.journal = new
         raise NotImplementedError(
-            "Setting a new journal object on directly on a "
+            "Setting a new journal object directly on a "
             "batch object is not allowed at the moment. Try modifying "
             "the journal.pages instead."
         )

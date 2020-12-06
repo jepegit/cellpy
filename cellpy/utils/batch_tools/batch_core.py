@@ -18,17 +18,39 @@ class Doer(metaclass=abc.ABCMeta):
     Attributes:
         experiments: list of experiments.
         farms: list of farms (containing pandas DataFrames) (one pr experiment).
-        barn (str): identifier for where to place the output-files.
+        barn (str): identifier for where to place the output-files (i.e. the animals).
     """
 
     def __init__(self, *args):
+        """Setting up the Do-er.
+
+        Args:
+            *args: list of experiments
+        """
         self.experiments = []
-        self.farms = []
-        self.barn = None
+        self.farms = []  # A list of lists, each list is a green field where your animals wander around
+        self.engines = []  # The engines creates the animals
+        self.dumpers = []  # The dumpers places animals in the barn
+        self.barn = None  # This is where we put the animals during winter (and in the night)
+        self.locked = False  # if the farm is not locked, the animals will escape. But that is OK.
         args = self._validate_base_experiment_type(args)
         if args:
             self.experiments.extend(args)
             self.farms.append(empty_farm)
+
+    def _assign_engine(self, engine):
+        self.engines.append(engine)
+
+    def _assign_dumper(self, dumper):
+        self.dumpers.append(dumper)
+
+    @abc.abstractmethod
+    def run_engine(self, engine):
+        pass
+
+    @abc.abstractmethod
+    def run_dumper(self, dumper):
+        pass
 
     def __str__(self):
         return f"({self.__class__.__name__})"
@@ -64,13 +86,23 @@ class Doer(metaclass=abc.ABCMeta):
 
     def empty_the_farms(self):
         """Free all the farms for content (empty all lists)."""
+        if not self.locked:
+            logging.debug("emptying the farm for all the pandas")
+            self.farms = [[] for _ in self.farms]
 
-        logging.debug("emptying the farm for all the pandas")
-        self.farms = [[] for _ in self.farms]
-
-    @abc.abstractmethod
     def do(self):
-        pass
+        """Do what is needed and dump it for each engine."""
+
+        if not self.experiments:
+            raise UnderDefined("cannot run until you have assigned an experiment")
+        for engine in self.engines:
+            self.empty_the_farms()
+            logging.debug(f"running - {str(engine)}")
+            self.run_engine(engine)
+
+            for dumper in self.dumpers:
+                logging.debug(f"exporting - {str(dumper)}")
+                self.run_dumper(dumper)
 
 
 class Data(collections.UserDict):
@@ -301,15 +333,29 @@ class BaseExporter(Doer, metaclass=abc.ABCMeta):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.engines = list()
-        self.dumpers = list()
         self._use_dir = None
+        self.current_engine = None
 
-    def _assign_engine(self, engine):
-        self.engines.append(engine)
+    def run_engine(self, engine):
+        logging.debug(f"start engine::{engine.__name__}")
+        self.current_engine = engine
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
+        logging.debug("::engine ended")
 
-    def _assign_dumper(self, dumper):
-        self.dumpers.append(dumper)
+    def run_dumper(self, dumper):
+        logging.debug(f"start dumper::{dumper.__name__}")
+        dumper(
+            experiments=self.experiments,
+            farms=self.farms,
+            barn=self.barn,
+            engine=self.current_engine,
+        )
+        logging.debug("::engine ended")
+
+
+class BasePlotter(Doer, metaclass=abc.ABCMeta):
+    def __init__(self, *args):
+        super().__init__(*args)
 
     @abc.abstractmethod
     def run_engine(self, engine):
@@ -319,29 +365,39 @@ class BaseExporter(Doer, metaclass=abc.ABCMeta):
     def run_dumper(self, dumper):
         pass
 
-    def do(self):
-        if not self.experiments:
-            raise UnderDefined("cannot run until you have assigned an experiment")
-        for engine in self.engines:
-            self.empty_the_farms()
-            logging.debug(f"running - {str(engine)}")
-            self.run_engine(engine)
 
-            for dumper in self.dumpers:
-                logging.debug(f"exporting - {str(dumper)}")
-                self.run_dumper(dumper)
-
-
-class BasePlotter(Doer):
+class BaseReporter(Doer, metaclass=abc.ABCMeta):
     def __init__(self, *args):
         super().__init__(*args)
 
+    @abc.abstractmethod
+    def run_engine(self, engine):
+        pass
 
-class BaseReporter(Doer):
+    @abc.abstractmethod
+    def run_dumper(self, dumper):
+        pass
+
+
+class BaseAnalyzer(Doer, metaclass=abc.ABCMeta):
     def __init__(self, *args):
         super().__init__(*args)
+        self.current_engine = None
 
+    def run_engine(self, engine):
+        """Run the engine, build the barn and put the animals on the farm"""
+        logging.debug(f"start engine::{engine.__name__}")
+        self.current_engine = engine
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
+        logging.debug("::engine ended")
 
-class BaseAnalyzer(Doer):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def run_dumper(self, dumper):
+        """Place the animals in the barn"""
+        logging.debug(f"start dumper::{dumper.__name__}")
+        dumper(
+            experiments=self.experiments,
+            farms=self.farms,
+            barn=self.barn,
+            engine=self.current_engine,
+        )
+        logging.debug("::engine ended")

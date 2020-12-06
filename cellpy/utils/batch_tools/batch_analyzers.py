@@ -109,7 +109,7 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
 
     def do(self):
         if not self.experiments:
-            raise UnderDefined("cannot run until " "you have assigned an experiment")
+            raise UnderDefined("cannot run until you have assigned an experiment")
 
         for engine in self.engines:
             self.empty_the_farms()

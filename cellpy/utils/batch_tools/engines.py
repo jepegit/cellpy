@@ -1,3 +1,8 @@
+"""Engines are functions that are used by the Do-ers.
+Keyword Args: experiments, farms, barn
+Returns: farms, barn
+"""
+
 import time
 import logging
 import pandas as pd
@@ -108,7 +113,7 @@ def dq_dv_engine(**kwargs):
 
 def simple_db_engine(reader=None, srnos=None):
     """engine that gets values from the simple excel 'db'"""
-
+    # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
