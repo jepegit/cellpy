@@ -379,13 +379,13 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
     Returns:
         pandas.DataFrame
     """
+    logging.debug("removing outliers from summary on index")
     if indexes is None:
         indexes = []
 
     selection = s.index.isin(indexes)
     if remove_last:
         selection[-1] = True
-
     return s[~selection]
 
 
@@ -506,9 +506,11 @@ def yank_outliers(
 
     # remove based on indexes and values
     for cell_number, cell_label in enumerate(b.experiment.cell_names):
+        logging.debug(f"yanking {cell_label} ")
         c = b.experiment.data[cell_label]
         s = c.cell.summary
         if remove_indexes is not None:
+            logging.debug("removing indexes")
             if isinstance(remove_indexes, dict):
                 remove_indexes_this_cell = remove_indexes.get(cell_label, None)
             else:

@@ -223,6 +223,7 @@ class BaseJournal:
 
     def __init__(self):
         self.pages = None  # pandas.DataFrame
+        self.session = None  # dictionary
         self.name = None
         self.project = None
         self.file_name = None
@@ -238,6 +239,7 @@ class BaseJournal:
             f"  - project: {str(self.project)}\n"
             f"  - file_name: {str(self.file_name)}\n"
             f"  - pages: ->\n{str(self.pages)}\n"
+            f"  - session: ->\n{str(self.session)}\n"
             f"           <-\n"
         )
 

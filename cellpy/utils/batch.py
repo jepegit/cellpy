@@ -695,7 +695,7 @@ def load_pages(file_name):
 
     """
     logging.info(f"Loading pages from {file_name}")
-    pages, _ = LabJournal.read_journal_jason_file(file_name)
+    pages, *_ = LabJournal.read_journal_jason_file(file_name)
     return pages
 
 
