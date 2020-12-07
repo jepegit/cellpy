@@ -127,12 +127,12 @@ class Doer(metaclass=abc.ABCMeta):
 class Data(collections.UserDict):
     """Class that is used to access the experiment.journal.pages DataFrame.
 
-    The Data class loads the complete cellpy-file if dfdata is not already
+    The Data class loads the complete cellpy-file if raw-data is not already
     loaded in memory. In future version, it could be that the Data object
     will return a link allowing querying instead to save memory usage...
 
     Remark that some cellpy (cellreader.CellpyData) function might not work if
-    you have the dfdata in memory, but not summary data (if the cellpy function
+    you have the raw-data in memory, but not summary data (if the cellpy function
     requires summary data or other settings not set as default).
     """
 
@@ -142,23 +142,33 @@ class Data(collections.UserDict):
         super().__init__(*args)
         self.experiment = experiment
         self.query_mode = False
-        self.accessor = "x_"
-        # self._create_accessors()
+        self.accessor_pre = "x_"
+        self.accessors = {}
+        self._create_accessors()
 
     def _create_accessor_label(self, cell_label):
-        return self.accessor + cell_label
+        return self.accessor_pre + cell_label
 
     def _create_cell_label(self, accessor_label):
-        return accessor_label.lstrip(self.accessor)
+        return accessor_label.lstrip(self.accessor_pre)
 
     def _create_accessors(self):
         cell_labels = self.experiment.journal.pages.index
         for cell_label in cell_labels:
-            self.__dict__[self._create_accessor_label(cell_label)] = self.experiment.cell_data_frames[cell_label]
+            try:
+                self.accessors[self._create_accessor_label(cell_label)] = self.experiment.cell_data_frames[cell_label]
+            except KeyError as e:
+                logging.debug(f"Could not create accessors for {cell_label}"
+                              f"(probably missing from the experiment.cell_data_frames"
+                              f"attribute) {e}")
 
     def __getitem__(self, cell_id):
         cellpy_data_object = self.__look_up__(cell_id)
         return cellpy_data_object
+
+    def __dir__(self):
+        # This is the secret sauce that allows jupyter to do tab-complete
+        return self.accessors
 
     def __str__(self):
         t = ""
@@ -173,8 +183,14 @@ class Data(collections.UserDict):
         t += "\n"
         return t
 
+    def __getattr__(self, item):
+        if item in self.accessors:
+            item = self._create_cell_label(item)
+            return self.__getitem__(item)
+        else:
+            return super().__getattribute__(item)
+
     def __look_up__(self, cell_id):
-        logging.debug("running __look_up__")
         try:
             if not self.experiment.cell_data_frames[cell_id].cell.raw.empty:
                 return self.experiment.cell_data_frames[cell_id]
@@ -182,17 +198,16 @@ class Data(collections.UserDict):
                 raise AttributeError
 
         except AttributeError:
-            logging.debug("looking up from cellpyfile")
+            logging.critical("Need to do a look-up from the cellpy file")
             pages = self.experiment.journal.pages
             info = pages.loc[cell_id, :]
             cellpy_file = info[hdr_journal.cellpy_file_name]
-            # linking not implemented yet - loading whole file in mem instead
+            # linking (query_mode) not implemented yet - loading whole file in mem instead
             if not self.query_mode:
                 cell = self.experiment._load_cellpy_file(cellpy_file)
                 self.experiment.cell_data_frames[cell_id] = cell
-                # trick for making tab-completion work (only works after
-                # initial look-up):
-                self.__dict__["x_" + cell_id] = self.experiment.cell_data_frames[
+                # trick for making tab-completion work:
+                self.accessors[self._create_accessor_label(cell_id)] = self.experiment.cell_data_frames[
                     cell_id
                 ]
                 return cell
