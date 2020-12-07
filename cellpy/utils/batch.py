@@ -369,7 +369,6 @@ class Batch:
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
         """
-
         logging.debug("Creating a journal")
         logging.debug(f"description: {description}")
         logging.debug(f"from_db: {from_db}")
@@ -610,6 +609,10 @@ class Batch:
         """Load cells as defined in the journal"""
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
+
+    def recalc(self, **kwargs):
+        self.experiment.errors["recalc"] = []
+        self.experiment.recalc(**kwargs)
 
     def make_summaries(self):
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)

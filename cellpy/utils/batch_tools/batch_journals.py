@@ -71,8 +71,15 @@ class LabJournal(BaseJournal):
         else:
             logging.debug("creating empty journal pages")
             self.pages = pd.DataFrame()
+
+        self.generate_empty_session()
         self.generate_folder_names()
         self.paginate()
+
+    def generate_empty_session(self):
+        self.session = {}
+        for item in keys_journal_session:
+            self.session[item] = None
 
     @staticmethod
     def _fix_cellpy_paths(p):
@@ -205,12 +212,12 @@ class LabJournal(BaseJournal):
         if self.project:
             self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
         else:
-            print("Could not create project dir (missing project definition)")
+            logging.critical("Could not create project dir (missing project definition)")
         if self.name:
             self.batch_dir = os.path.join(self.project_dir, self.name)
             self.raw_dir = os.path.join(self.batch_dir, "raw_data")
         else:
-            print("Could not create batch_dir and raw_dir", "(missing batch name)")
+            logging.critical("Could not create batch_dir and raw_dir", "(missing batch name)")
 
     def paginate(self):
         """Make folders where we would like to put results etc."""

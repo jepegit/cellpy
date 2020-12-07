@@ -33,8 +33,7 @@ hdr_journal = get_headers_journal()
 
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
-    logging.debug("cycles_engine:")
-    logging.critical("cycles_engine::Not finished yet (sorry).")
+    logging.debug("cycles_engine::Not finished yet (sorry).")
     # raise NotImplementedError
 
     experiments = kwargs["experiments"]
@@ -159,9 +158,10 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict = helper.find_files(info_dict, filename_cache)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
-        logging.info(
+        logging.critical(
             "The function _find_files was very slow. "
-            "Save your info_df so you don't have to run it again!"
+            "Save your journal so you don't have to run it again! "
+            "You can load it again using the from_journal(journal_name) method."
         )
 
     info_df = pd.DataFrame(info_dict)

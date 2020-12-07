@@ -167,7 +167,7 @@ class Data(collections.UserDict):
         return cellpy_data_object
 
     def __dir__(self):
-        # This is the secret sauce that allows jupyter to do tab-complete
+        # This is the secret sauce that allows jupyter to do tab-completion
         return self.accessors
 
     def __str__(self):
@@ -198,7 +198,7 @@ class Data(collections.UserDict):
                 raise AttributeError
 
         except AttributeError:
-            logging.critical("Need to do a look-up from the cellpy file")
+            logging.debug("Need to do a look-up from the cellpy file")
             pages = self.experiment.journal.pages
             info = pages.loc[cell_id, :]
             cellpy_file = info[hdr_journal.cellpy_file_name]

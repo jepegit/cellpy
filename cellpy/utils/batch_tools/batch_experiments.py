@@ -403,7 +403,7 @@ class CyclingExperiment(BaseExperiment):
                     if summary_opts is not None:
                         c.make_summary(**summary_opts)
                     else:
-                        c.make_summary()
+                        c.make_summary(find_end_voltage=True, find_ir=True)
 
                 except Exception as e:
                     e_txt = f"recalculating for {indx} failed!"
