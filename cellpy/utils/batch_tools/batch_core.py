@@ -1,12 +1,15 @@
 import logging
+import os
 import abc
 import collections
 
 #  import box
 
 from cellpy import cellreader
+from cellpy import prms
 from cellpy.exceptions import UnderDefined
 from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.utils.batch_tools import batch_helpers as helper
 
 hdr_journal = get_headers_journal()
 empty_farm = []
@@ -54,6 +57,7 @@ class Doer(metaclass=abc.ABCMeta):
             self.farms.append(empty_farm)
 
     def _assign_engine(self, engine):
+
         self.engines.append(engine)
 
     def _assign_dumper(self, dumper):
@@ -138,6 +142,19 @@ class Data(collections.UserDict):
         super().__init__(*args)
         self.experiment = experiment
         self.query_mode = False
+        self.accessor = "x_"
+        # self._create_accessors()
+
+    def _create_accessor_label(self, cell_label):
+        return self.accessor + cell_label
+
+    def _create_cell_label(self, accessor_label):
+        return accessor_label.lstrip(self.accessor)
+
+    def _create_accessors(self):
+        cell_labels = self.experiment.journal.pages.index
+        for cell_label in cell_labels:
+            self.__dict__[self._create_accessor_label(cell_label)] = self.experiment.cell_data_frames[cell_label]
 
     def __getitem__(self, cell_id):
         cellpy_data_object = self.__look_up__(cell_id)
@@ -189,12 +206,14 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def __init__(self, *args):
         self.journal = None
         self.summary_frames = None
-        self.cell_data_frames = None
+        self.cell_data_frames = dict()
         self.memory_dumped = dict()
         self.parent_level = "CellpyData"
         self.log_level = "CRITICAL"
         self._data = None
         self._store_data_object = True
+        self._cellpy_object = None
+        self.limit = 10
 
     def __str__(self):
         return (
@@ -206,8 +225,52 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def __repr__(self):
         return self.__class__.__name__
 
-    def _link_cellpy_file(self, file_name):
-        raise NotImplementedError
+    def __len__(self):
+        try:
+            length = len(self.journal.pages.index)
+        except TypeError:
+            length = 0
+        return length
+
+    def __iter__(self):
+        self._counter = 0
+        self._limit = len(self)
+        return self
+
+    def __next__(self):
+        counter = self._counter
+        limit = self._limit
+        if counter >= limit:
+            raise StopIteration
+        else:
+            self._counter += 1
+            cell_label = self.journal.pages.index[counter]
+            try:
+                logging.debug(f"looking for cell {cell_label}")
+                cellpy_object = self.data[cell_label]
+            except (TypeError, KeyError):
+                logging.debug("There is no data available - trying to link")
+                try:
+                    self._link_cellpy_file(cell_label)
+                    cellpy_object = self.data[cell_label]
+                except (IOError, KeyError, UnderDefined):
+                    raise StopIteration
+            return cellpy_object
+
+    def _link_cellpy_file(self, cell_label):
+        logging.debug("linking cellpy file")
+        cellpy_file_name = self.journal.pages.loc[cell_label, hdr_journal.cellpy_file_name]
+        if not os.path.isfile(cellpy_file_name):
+            raise IOError
+
+        cellpy_object = cellreader.CellpyData(initialize=True)
+        step_table = helper.look_up_and_get(cellpy_file_name, prms._cellpyfile_step)
+        if step_table.empty:
+            raise UnderDefined
+
+        cellpy_object.cell.steps = step_table
+        self._data = None
+        self.cell_data_frames[cell_label] = cellpy_object
 
     def _load_cellpy_file(self, file_name):
         cellpy_data = cellreader.CellpyData()
@@ -226,6 +289,8 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         if self._data is None:
             data = Data(self)
             if self._store_data_object:
+                # for cell_name in self.journal.pages.index:
+                #     data[cell_name] = None
                 self._data = data
             return data
         else:

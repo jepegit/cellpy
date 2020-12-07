@@ -339,31 +339,12 @@ class CyclingExperiment(BaseExperiment):
         """
         logging.info("[establishing links]")
         logging.debug("checking and establishing link to data")
-        cell_data_frames = dict()
-        counter = 0
+
         errors = []
         try:
-            for indx, row in self.journal.pages.iterrows():
-                counter += 1
-                l_txt = f"starting to process file # {counter} (index={indx})"
-                logging.debug(l_txt)
-                logging.debug(f"linking cellpy-file: {row.name}")
-
-                if not os.path.isfile(row[hdr_journal.cellpy_file_name]):
-                    logging.error(row[hdr_journal.cellpy_file_name])
-                    logging.error("File does not exist")
-                    raise IOError
-
-                cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
-
-                step_table = helper.look_up_and_get(
-                    row[hdr_journal.cellpy_file_name], prms._cellpyfile_step
-                )
-
-                cell_data_frames[indx].cell.steps = step_table
-
-            self._data = None
-            self.cell_data_frames = cell_data_frames
+            for cell_label in self.journal.pages.index:
+                logging.debug(f"trying to link {cell_label}")
+                self._link_cellpy_file(cell_label)
 
         except IOError as e:
             logging.warning(e)

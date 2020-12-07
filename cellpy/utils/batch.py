@@ -130,6 +130,12 @@ class Batch:
     def __str__(self):
         return str(self.experiment)
 
+    def __len__(self):
+        return len(self.experiment)
+
+    def __iter__(self):
+        return self.experiment.__iter__()
+
     def show_pages(self, number_of_rows=5):
         warnings.warn("Deprecated - use pages.head() instead", DeprecationWarning)
         return self.experiment.journal.pages.head(number_of_rows)
@@ -673,9 +679,11 @@ def init(*args, **kwargs):
     return Batch(*args, **kwargs)
 
 
-def from_journal(journal_file):
+def from_journal(journal_file, autolink=True):
     """Create a Batch from a journal file"""
     b = init(db_reader=None, file_name=journal_file)
+    if autolink:
+        b.link()
     return b
 
 
