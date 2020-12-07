@@ -13,12 +13,19 @@ empty_farm = []
 
 
 class Doer(metaclass=abc.ABCMeta):
-    """Base class for all the classes that do something to the experiment.
+    """Base class for all the classes that do something to the experiment(s).
 
     Attributes:
         experiments: list of experiments.
-        farms: list of farms (containing pandas DataFrames) (one pr experiment).
-        barn (str): identifier for where to place the output-files (i.e. the animals).
+        farms: list of farms (one pr experiment) (containing pandas DataFrames).
+        barn (str): identifier for where to place the output-files (i.e. the animals)
+            (typically a directory path).
+
+    The do-er iterates through all the connected engines and dumpers (the dumpers are
+    run for each engine).
+
+    It is the responsibility of the engines and dumpers to iterate through the experiments.
+    The most natural way is to work with just one experiment.
     """
 
     def __init__(self, *args):
@@ -32,7 +39,15 @@ class Doer(metaclass=abc.ABCMeta):
         self.engines = []  # The engines creates the animals
         self.dumpers = []  # The dumpers places animals in the barn
         self.barn = None  # This is where we put the animals during winter (and in the night)
-        self.locked = False  # if the farm is not locked, the animals will escape. But that is OK.
+
+        # Decide if the farm should be locked or not. If not locked, the farm will be emptied
+        # before each engine run (if the farm is not locked, the animals will escape).
+        # Typically, you would not want to lock the farm.
+        # Remark that also the engines have access to the farms (gets the farm
+        # as input and sends a modified version back), and most of them empties the farm before populating
+        # them with new content anyway:
+        self.locked = False
+
         args = self._validate_base_experiment_type(args)
         if args:
             self.experiments.extend(args)

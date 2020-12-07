@@ -1,6 +1,7 @@
 """Engines are functions that are used by the Do-ers.
-Keyword Args: experiments, farms, barn
-Returns: farms, barn
+
+    Keyword Args: experiments, farms, barn
+    Returns: farms, barn
 """
 
 import time
@@ -32,8 +33,8 @@ hdr_journal = get_headers_journal()
 
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
-    logging.info("cycles_engine:")
-    logging.info("Not ready for production")
+    logging.debug("cycles_engine:")
+    logging.critical("cycles_engine::Not finished yet (sorry).")
     # raise NotImplementedError
 
     experiments = kwargs["experiments"]
@@ -47,10 +48,12 @@ def cycles_engine(**kwargs):
             logging.debug("all in memory")
             for key in experiment.cell_data_frames:
                 logging.debug(f"extracting cycles from {key}")
+                # extract cycles here and send it to the farm
         else:
             logging.debug("dont have it in memory - need to lookup in the files")
             for key in experiment.cell_data_frames:
                 logging.debug(f"looking up cellpyfile for {key}")
+                # extract cycles here and send it to the farm
 
     return farms, barn
 
