@@ -79,7 +79,7 @@ def create_plot_option_dicts(
             # palette = bokeh.palettes.brewer['YlGnBu']
             palette = bokeh.palettes.d3["Category10"]
             # palette = bokeh.palettes.brewer[prms.Batch.bokeh_palette']
-        except NameError:
+        except (NameError, AttributeError):
             palette = [
                 ["k"],
                 ["k", "r"],
@@ -619,7 +619,6 @@ def summary_plotting_engine(**kwargs):
     """creates plots of summary data."""
 
     logging.debug(f"Using {prms.Batch.backend} for plotting")
-
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
     barn = None

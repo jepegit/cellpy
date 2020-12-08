@@ -480,7 +480,7 @@ def yank_outliers(
     remove_last=False,
     iterations=1,
     zscore_multiplyer=1.3,
-    keep_old=True,
+    keep_old=False,
 ):
     """Remove outliers from a batch object.
 
@@ -494,8 +494,10 @@ def yank_outliers(
         remove_indexes (dict or list): if dict, look-up on cell label, else a list that will be the same for all
         remove_last (dict or bool): if dict, look-up on cell label.
         iterations (int): repeat z-score filtering if `zscore_limit` is given.
-        zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering (should usually be less than 1).
-        keep_old (bool): perform filtering of a copy of the batch object.
+        zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering
+            (should usually be less than 1).
+        keep_old (bool): perform filtering of a copy of the batch object
+            (not recommended at the moment since it then loads the full cellpyfile).
 
     Returns:
         cellpy.utils.batch object (returns a copy if `keep_old` is True).

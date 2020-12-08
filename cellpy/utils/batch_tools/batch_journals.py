@@ -102,6 +102,9 @@ class LabJournal(BaseJournal):
         meta = top_level_dict["metadata"]
         session = top_level_dict.get("session", None)
         pages = pd.DataFrame(pages_dict)
+        if pages.empty:
+            logging.critical("could not find any pages in the journal")
+            raise UnderDefined
         pages = cls._clean_pages(pages)
 
         if session is None:
@@ -146,7 +149,11 @@ class LabJournal(BaseJournal):
 
         file_name = self._check_file_name(file_name)
         logging.debug(f"reading {file_name}")
-        pages, meta_dict, session = self.read_journal_jason_file(file_name)
+        try:
+            pages, meta_dict, session = self.read_journal_jason_file(file_name)
+        except UnderDefined as e:
+            logging.critical(f"could not load {file_name}")
+            raise UnderDefined from e
         logging.debug(f"got pages and meta_dict")
         self.pages = pages
         self.session = session
