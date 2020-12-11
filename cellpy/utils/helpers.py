@@ -606,6 +606,8 @@ def concatenate_summaries(
             row-index: cycle number (cycle_index)
 
     """
+    # TODO: refactor me
+    # TODO: check if selecting normalize_cycles and group_it performs the operation in logical order
     if normalize_capacity_on is not None:
         default_columns = ["normalized_charge_capacity"]
     else:
