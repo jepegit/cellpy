@@ -50,3 +50,7 @@ class ArbinSQLLoader(Loader):
         """returns a Cell object with loaded data"""
 
         raise NotImplemented
+
+
+if __name__ == "__main__":
+    print("hei")

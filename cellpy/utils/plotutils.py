@@ -8,6 +8,7 @@ import warnings
 import importlib
 import logging
 import itertools
+import collections
 from pathlib import Path
 
 from cellpy.parameters.internal_settings import (
@@ -277,7 +278,10 @@ def plot_concatenated(
         )
         return
 
-    hv.extension(extension, logo=False)
+    if extension == "matplotlib":
+        hover = False
+
+    hv.extension(extension, logo=False, )
 
     if hdr_level is None:
         hdr_level = 0 if file_id_level == 1 else 1
@@ -1013,6 +1017,8 @@ def save_fig(figure, file_name=None, wide=False, size=None, dpi=300, **kwargs):
 
 
 def hv_bokeh_to_mpl(figure, wide=False, size=(6, 4), **kwargs):
+    # I think this needs to be tackled differently. For example by setting hv.extension("matplotlib") and
+    # re-making the figure. Or making a custom renderer.
     figure = hv.render(figure, backend="matplotlib")
     axes = figure.axes
     number_of_axes = len(axes)
@@ -1083,12 +1089,13 @@ def bplot(b, individual=False, cols=1, **kwargs):
     journal = kwargs.pop("journal", b.experiment.journal)
     spread = kwargs.pop("spread", True)
     columns = kwargs.pop("columns", ["charge_capacity"])
-    p = []
-    width = width // cols
+    extension = kwargs.pop("extension", "bokeh")
+    p = collections.OrderedDict()
+    i_width = width // cols
     for i, col in enumerate(columns):
         try:
             cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
-            _p = plot_concatenated(cs, journal=journal, spread=spread, width=width)
+            _p = plot_concatenated(cs, journal=journal, spread=spread, width=i_width, extension=extension, title=col)
 
             if i < len(columns) - 1:
                 _p.opts(show_legend=False)
@@ -1098,19 +1105,31 @@ def bplot(b, individual=False, cols=1, **kwargs):
                 _p.opts(show_legend=True, legend_position="right")
             # if (len(columns) > 1) and cols > 1:
             #     _p.opts(frame_width=width)
-            _p.opts(frame_width=width)
-            p.append(_p)
+            if extension == "bokeh":
+                _p.opts(frame_width=width)
+            p[col] = _p
 
         except KeyError as e:
             print(f"Sorry - missing key: {col}")
             logging.debug(e)
 
+    w = width / 180 * cols
+    h = 5 * len(p) / cols
     if len(p) > 1:
         if not individual:
-            return hv.Layout(p).cols(cols)
+            out = hv.NdLayout(p, sort=False).cols(cols)
+            if extension == "matplotlib":
+                out.opts(fig_inches=(w, h))
         else:
-            return p
+            if extension == "matplotlib":
+                out = [o.opts(fig_inches=(w, h)) for o in p.values()]
+            else:
+                out = [p.values()]
+        return out
+
     elif len(p) == 1:
+        if extension == "matplotlib":
+            return p[0].opts(fig_inches=(w, h))
         return p[0]
 
 
