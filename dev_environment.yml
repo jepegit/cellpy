@@ -3,10 +3,11 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python>=3.8
+    - python>=3.8
   - pip
   - numpy
   - xlrd
+  - openpyxl
   - matplotlib
   - cryptography
   - click
