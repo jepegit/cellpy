@@ -6,7 +6,6 @@ dependencies:
     - python>=3.8
   - pip
   - numpy
-  - xlrd
   - openpyxl
   - matplotlib
   - cryptography
