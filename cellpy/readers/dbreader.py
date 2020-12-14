@@ -10,7 +10,16 @@ import numpy as np
 
 from cellpy.parameters import prms
 
+
 # logger = logging.getLogger(__name__)
+
+# Note 14.12.2020: xlrd has explicitly removed support for anything other than xls files
+# Solution: install openpyxl
+# df1=pd.read_excel(
+#      os.path.join(APP_PATH, "Data", "aug_latest.xlsm"),
+#      sheet_name=None,
+#      engine='openpyxl',
+# )
 
 
 class DbSheetCols(object):
@@ -135,7 +144,7 @@ class Reader(object):
         logging.debug(f"Number of rows (no means all): {nrows}")
         logging.debug(f"Skipping the following rows: {rows_to_skip}")
         logging.debug(f"Declaring the following dtyps: {dtypes_dict}")
-        work_book = pd.ExcelFile(self.db_file)
+        work_book = pd.ExcelFile(self.db_file, engine='openpyxl')
         try:
             sheet = work_book.parse(
                 table_name,

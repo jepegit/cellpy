@@ -13,22 +13,37 @@ cellpy
         :target: https://cellpy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pyup.io/repos/github/jepegit/cellpy/shield.svg
-     :target: https://pyup.io/repos/github/jepegit/cellpy/
-     :alt: Updates
-
 
 This Python Package was developed to help the
 researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 batteries and cells.
 
+Documentation
+-------------
+
+The documentation for ``cellpy`` is hosted on `Read the docs
+<https://cellpy.readthedocs.io>`_.
 
 
+Installation and dependencies
+-----------------------------
 
-* Free software: MIT license
-* Documentation: https://cellpy.readthedocs.io.
+The easiest way to install ``cellpy`` is to install with conda or pip::
 
+   conda install cellpy --channel conda-forge
+
+If you prefer, you can also install using pip::
+
+   pip install cellpy
+
+Have a look at the documentation for more detailed installation procedures, especially
+with respect to "difficult" dependencies when installing with pip.
+
+Licence
+-------
+
+``cellpy`` is free software made available under the MIT License.
 
 Features
 --------
@@ -38,11 +53,4 @@ Features
 * Process and plot the data.
 * And more...
 
-Credits
----------
-
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 

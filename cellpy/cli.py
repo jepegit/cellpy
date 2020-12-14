@@ -786,7 +786,8 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
         return
 
     b = batch.process_batch(
-        file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs
+        file, force_raw_file=raw, force_cellpy=cellpyfile,
+        nom_cap=nom_cap, backend="matplotlib", **kwargs
     )
     if b is not None and not silent:
         print(b)

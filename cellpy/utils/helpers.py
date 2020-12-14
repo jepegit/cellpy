@@ -379,13 +379,13 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
     Returns:
         pandas.DataFrame
     """
+    logging.debug("removing outliers from summary on index")
     if indexes is None:
         indexes = []
 
     selection = s.index.isin(indexes)
     if remove_last:
         selection[-1] = True
-
     return s[~selection]
 
 
@@ -480,7 +480,7 @@ def yank_outliers(
     remove_last=False,
     iterations=1,
     zscore_multiplyer=1.3,
-    keep_old=True,
+    keep_old=False,
 ):
     """Remove outliers from a batch object.
 
@@ -494,8 +494,10 @@ def yank_outliers(
         remove_indexes (dict or list): if dict, look-up on cell label, else a list that will be the same for all
         remove_last (dict or bool): if dict, look-up on cell label.
         iterations (int): repeat z-score filtering if `zscore_limit` is given.
-        zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering (should usually be less than 1).
-        keep_old (bool): perform filtering of a copy of the batch object.
+        zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering
+            (should usually be less than 1).
+        keep_old (bool): perform filtering of a copy of the batch object
+            (not recommended at the moment since it then loads the full cellpyfile).
 
     Returns:
         cellpy.utils.batch object (returns a copy if `keep_old` is True).
@@ -506,9 +508,11 @@ def yank_outliers(
 
     # remove based on indexes and values
     for cell_number, cell_label in enumerate(b.experiment.cell_names):
+        logging.debug(f"yanking {cell_label} ")
         c = b.experiment.data[cell_label]
         s = c.cell.summary
         if remove_indexes is not None:
+            logging.debug("removing indexes")
             if isinstance(remove_indexes, dict):
                 remove_indexes_this_cell = remove_indexes.get(cell_label, None)
             else:
@@ -602,6 +606,8 @@ def concatenate_summaries(
             row-index: cycle number (cycle_index)
 
     """
+    # TODO: refactor me
+    # TODO: check if selecting normalize_cycles and group_it performs the operation in logical order
     if normalize_capacity_on is not None:
         default_columns = ["normalized_charge_capacity"]
     else:

@@ -1,3 +1,8 @@
+"""Dumpers are functions that are used by the Do-ers.
+Keyword Args: experiments, farms, barn, engine
+Returns nothing.
+"""
+
 import logging
 import os
 
@@ -7,7 +12,7 @@ from cellpy.utils.batch_tools.batch_helpers import generate_folder_names
 
 def csv_dumper(**kwargs):
     """dump data to csv"""
-    logging.info("dumping to csv")
+    logging.debug("dumping to csv")
     barn = kwargs["barn"]
     farms = kwargs["farms"]
     experiments = kwargs["experiments"]
@@ -16,7 +21,7 @@ def csv_dumper(**kwargs):
         project = experiment.journal.project
         project_dir, batch_dir, raw_dir = experiment.journal.paginate()
         if batch_dir is None:
-            logging.info("have to generate folder-name on the fly")
+            logging.debug("have to generate folder-name on the fly")
             out_data_dir, project_dir, batch_dir, raw_dir = generate_folder_names(
                 name, project
             )
@@ -88,7 +93,7 @@ def screen_dumper(**kwargs):
         print(" - your farm has burned to the ground.")
     else:
         for number, farm in enumerate(farms):
-            print(f"[#{number+1}]You have {len(farm)} " f"little pandas in this farm.")
+            print(f"[#{number + 1}]You have {len(farm)} little pandas in this farm.")
             for animal in farm:
                 print(80 * "=")
                 try:

@@ -65,7 +65,8 @@ def search_for_files(
     Returns:
         run-file names (list) and cellpy-file-name (path).
     """
-
+    # TODO: rename this and edit it so that it also can
+    #  look up in db as well as do faster searching
     time_00 = time.time()
     res_extension = "res"
     version = 0.1
@@ -154,6 +155,7 @@ def search_for_files(
         if os.path.isdir(raw_file_dir):
             if len(cache) == 0:
                 cache = os.listdir(raw_file_dir)
+
             run_files = [
                 os.path.join(raw_file_dir, x)
                 for x in cache

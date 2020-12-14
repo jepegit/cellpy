@@ -21,7 +21,7 @@ from cellpy.parameters.internal_settings import (
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
-from cellpy.utils.batch_tools.batch_analyzers import OCVRelaxationAnalyzer
+from cellpy.utils.batch_tools.batch_analyzers import OCVRelaxationAnalyzer, BaseSummaryAnalyzer
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 
@@ -122,6 +122,10 @@ class Batch:
         self.exporter = CSVExporter()
         self.exporter._assign_dumper(ram_dumper)
         self.exporter.assign(self.experiment)
+
+        self.summary_collector = BaseSummaryAnalyzer()
+        self.summary_collector.assign(self.experiment)
+
         self.plotter = CyclingSummaryPlotter()
         self.plotter.assign(self.experiment)
         self._journal_name = self.journal_name
@@ -129,6 +133,12 @@ class Batch:
 
     def __str__(self):
         return str(self.experiment)
+
+    def __len__(self):
+        return len(self.experiment)
+
+    def __iter__(self):
+        return self.experiment.__iter__()
 
     def show_pages(self, number_of_rows=5):
         warnings.warn("Deprecated - use pages.head() instead", DeprecationWarning)
@@ -212,6 +222,37 @@ class Batch:
         except Exception:
             return None
 
+    def drop(self, cell_label=None):
+        """Drop cells from the journal.
+
+        If cell_label is not given, cellpy will look into the journal for session
+        info about bad cells, and if it finds it, it will remove those from the
+        journal.
+
+        Note! remember to save your journal again after modifying it.
+        Note! this method has not been properly tested yet.
+
+        Args:
+            cell_label (str): the cell label of the cell you would like to remove.
+
+        Returns: cellpy.utils.batch object (returns a copy if `keep_old` is True).
+
+        """
+        if cell_label is None:
+            try:
+                cell_labels = self.journal.session["bad_cells"]
+            except AttributeError:
+                logging.critical("session info about bad cells is missing - cannot drop")
+                return
+        else:
+            cell_labels = [cell_label]
+
+        for cell_label in cell_labels:
+            if cell_label not in self.pages.index:
+                logging.critical(f"could not find {cell_label}")
+            else:
+                self.pages = self.pages.drop(cell_label)
+
     def report(self, stylize=True):
         """ Create a report on all the cells in the batch object.
 
@@ -289,17 +330,21 @@ class Batch:
     def journal_name(self):
         return self.experiment.journal.file_name
 
+    def _concat_memory_dumped(self, engine_name):
+        keys = [df.name for df in self.experiment.memory_dumped[engine_name]]
+        return pd.concat(
+            self.experiment.memory_dumped[engine_name], keys=keys, axis=1
+        )
+
     @property
     def summaries(self):
         # should add link-mode?
         try:
-            keys = [df.name for df in self.experiment.memory_dumped["summary_engine"]]
-            return pd.concat(
-                self.experiment.memory_dumped["summary_engine"], keys=keys, axis=1
-            )
+            return self._concat_memory_dumped("summary_engine")
         except KeyError:
-            logging.info("no summary exists")
-            print("no summaries exists (probably not loaded yet)")
+            logging.critical("no summaries exists (dumping to ram first)")
+            self.summary_collector.do()
+            return self._concat_memory_dumped("summary_engine")
 
     @property
     def summary_headers(self):
@@ -336,7 +381,7 @@ class Batch:
     def journal(self, new):
         # self.experiment.journal = new
         raise NotImplementedError(
-            "Setting a new journal object on directly on a "
+            "Setting a new journal object directly on a "
             "batch object is not allowed at the moment. Try modifying "
             "the journal.pages instead."
         )
@@ -363,7 +408,6 @@ class Batch:
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
         """
-
         logging.debug("Creating a journal")
         logging.debug(f"description: {description}")
         logging.debug(f"from_db: {from_db}")
@@ -605,16 +649,28 @@ class Batch:
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
 
+    def recalc(self, **kwargs):
+        self.experiment.errors["recalc"] = []
+        self.experiment.recalc(**kwargs)
+
     def make_summaries(self):
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
         self.exporter.do()
 
     def combine_summaries(self, export_to_csv=True):
         """Combine selected columns from each of the cells into single frames"""
-        self.exporter.do()
+        if export_to_csv:
+            self.exporter.do()
+        else:
+            self.summary_collector.do()
 
     def plot_summaries(self, output_filename=None, backend=None):
-        """Plot the summaries (should be run after running combine_summaries)"""
+        """Plot the summaries"""
+
+        if "summary_engine" not in self.experiment.memory_dumped:
+            logging.debug("running summary_collector")
+            self.summary_collector.do()
+
         if backend is None:
             backend = prms.Batch.backend
 
@@ -673,9 +729,11 @@ def init(*args, **kwargs):
     return Batch(*args, **kwargs)
 
 
-def from_journal(journal_file):
+def from_journal(journal_file, autolink=True):
     """Create a Batch from a journal file"""
     b = init(db_reader=None, file_name=journal_file)
+    if autolink:
+        b.link()
     return b
 
 
@@ -695,7 +753,12 @@ def load_pages(file_name):
 
     """
     logging.info(f"Loading pages from {file_name}")
-    pages, _ = LabJournal.read_journal_jason_file(file_name)
+    try:
+        pages, *_ = LabJournal.read_journal_jason_file(file_name)
+    except cellpy.exceptions.UnderDefined:
+        logging.critical("could not find any pages.")
+        return
+
     return pages
 
 
@@ -720,6 +783,7 @@ def process_batch(*args, **kwargs):
     """
     silent = kwargs.pop("silent", False)
     backend = kwargs.pop("backend", None)
+
     if backend is not None:
         prms.Batch.backend = backend
     else:

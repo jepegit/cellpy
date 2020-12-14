@@ -9,7 +9,17 @@ for an opinionated step-by-step procedure.
 Stable release
 --------------
 
-``cellpy`` uses several packages that are a bit cumbersome to install on
+The preferred way to install ``cellpy`` is by using conda.
+.. code-block:: console
+
+    $ conda install cellpy --channel conda-forge
+
+This will also install all of the dependencies, as well as ``jupyter``
+that comes in handy when working with ``cellpy``.
+
+If you would like to install only ``cellpy``, you should install using pip.
+You also need to take into account that ``cellpy`` uses several packages
+that are a bit cumbersome to install on
 windows. It is therefore recommended to install one of the ``anaconda``
 python packages (python 3.6 or above) before installing ``cellpy``.
 If you chose ``miniconda``, you should install
@@ -20,7 +30,7 @@ If you chose ``miniconda``, you should install
     $ conda install scipy numpy pytables
 
 
-To install ``cellpy``, run this command in your terminal:
+Then install ``cellpy``, by running this command in your terminal:
 
 .. code-block:: console
 
@@ -45,16 +55,6 @@ or:
 
 .. _pyodbc: https://github.com/mkleehammer/pyodbc/
 
-
-You can also try to install the ``cellpy`` conda-build package
-(however, we have not tested it very well yet). Hopefully,
-this will be the main installation method in not-too-long.
-
-.. code-block:: console
-
-    $ conda config --add channels conda-forge
-    $ conda config --add channels jepegit
-    $ conda install cellpy
 
 If this is the first time you install ``cellpy``, it is recommended
 that you run the setup script:

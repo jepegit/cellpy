@@ -2,6 +2,14 @@
 History
 =======
 
+0.4.0 (2020)
+------------
+
+* Reading arbin .res files with auxiliary data should now work.
+* Many bugs have been removed - many new introduced.
+* Now on conda-forge (can be installed using conda).
+
+
 0.4.0 a2 (2020)
 ---------------
 

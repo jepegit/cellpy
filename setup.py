@@ -27,7 +27,7 @@ requirements = [
     "setuptools",
     "ruamel.yaml",
     "matplotlib",
-    "xlrd",
+    "openpyxl",
     "click",
     "PyGithub",
     "tqdm",
@@ -45,7 +45,7 @@ test_requirements = [
     "matplotlib",
     "lmfit",
     "pyodbc",
-    "xlrd",
+    "openpyxl",
     "click",
     "PyGithub",
     # 'pytables', # not available by pip

@@ -5,6 +5,15 @@ import pandas as pd
 from cellpy.utils.batch_tools.batch_core import BaseAnalyzer
 from cellpy.utils.ocv_rlx import select_ocv_points
 from cellpy.exceptions import UnderDefined
+from cellpy.utils.batch_tools.engines import summary_engine
+from cellpy.utils.batch_tools.dumpers import ram_dumper
+
+
+class BaseSummaryAnalyzer(BaseAnalyzer):
+    def __init__(self):
+        super().__init__()
+        self._assign_engine(summary_engine)
+        self._assign_dumper(ram_dumper)
 
 
 class ICAAnalyzer(BaseAnalyzer):
@@ -109,7 +118,7 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
 
     def do(self):
         if not self.experiments:
-            raise UnderDefined("cannot run until " "you have assigned an experiment")
+            raise UnderDefined("cannot run until you have assigned an experiment")
 
         for engine in self.engines:
             self.empty_the_farms()

@@ -1,3 +1,9 @@
+"""Engines are functions that are used by the Do-ers.
+
+    Keyword Args: experiments, farms, barn
+    Returns: farms, barn
+"""
+
 import time
 import logging
 import pandas as pd
@@ -27,8 +33,7 @@ hdr_journal = get_headers_journal()
 
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
-    logging.info("cycles_engine:")
-    logging.info("Not ready for production")
+    logging.debug("cycles_engine::Not finished yet (sorry).")
     # raise NotImplementedError
 
     experiments = kwargs["experiments"]
@@ -42,10 +47,12 @@ def cycles_engine(**kwargs):
             logging.debug("all in memory")
             for key in experiment.cell_data_frames:
                 logging.debug(f"extracting cycles from {key}")
+                # extract cycles here and send it to the farm
         else:
             logging.debug("dont have it in memory - need to lookup in the files")
             for key in experiment.cell_data_frames:
                 logging.debug(f"looking up cellpyfile for {key}")
+                # extract cycles here and send it to the farm
 
     return farms, barn
 
@@ -108,7 +115,7 @@ def dq_dv_engine(**kwargs):
 
 def simple_db_engine(reader=None, srnos=None):
     """engine that gets values from the simple excel 'db'"""
-
+    # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
@@ -151,9 +158,10 @@ def simple_db_engine(reader=None, srnos=None):
     info_dict = helper.find_files(info_dict, filename_cache)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
-        logging.info(
+        logging.critical(
             "The function _find_files was very slow. "
-            "Save your info_df so you don't have to run it again!"
+            "Save your journal so you don't have to run it again! "
+            "You can load it again using the from_journal(journal_name) method."
         )
 
     info_df = pd.DataFrame(info_dict)
