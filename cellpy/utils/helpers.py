@@ -40,7 +40,6 @@ def _make_average(
     cell_id = ""
     not_a_number = np.NaN
     new_frames = []
-
     if columns is None:
         columns = frames[0].columns
 
@@ -50,7 +49,7 @@ def _make_average(
                 set(
                     [
                         "_".join(
-                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
+                            k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
                         )
                         for k in keys
                     ]
@@ -575,6 +574,7 @@ def concatenate_summaries(
     rate_column=None,
     inverse=False,
     inverted=False,
+    key_index_bounds=[1, -2],
 ):
 
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -598,6 +598,8 @@ def concatenate_summaries(
         rate_column (str): name of the column containing the C-rates.
         inverse (bool): select steps that does not have the given C-rate.
         inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
+            key_index_bound[0] to key_index_bound[1].
 
     Returns:
         Multi-index pandas.DataFrame
@@ -721,13 +723,13 @@ def concatenate_summaries(
             try:
                 if normalize_cycles:
                     s, cell_id = _make_average(
-                        frames_sub, keys_sub, normalize_cycles_headers + columns, True
+                        frames_sub, keys_sub, normalize_cycles_headers + columns, True, key_index_bounds,
                     )
                     s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
                     if hdr_cum_charge not in columns:
                         s = s.drop(columns=hdr_cum_charge)
                 else:
-                    s, cell_id = _make_average(frames_sub, keys_sub, columns)
+                    s, cell_id = _make_average(frames_sub, keys_sub, columns, key_index_bounds=key_index_bounds)
             except ValueError as e:
                 print("could not make average!")
                 print(e)
@@ -745,8 +747,11 @@ def concatenate_summaries(
             used_names = []
             new_keys = []
             for name in keys:
-                if name in used_names:
-                    name += "x"
+                while True:
+                    if name in used_names:
+                        name += "x"
+                    else:
+                        break
                 new_keys.append(name)
                 used_names.append(name)
             keys = new_keys
