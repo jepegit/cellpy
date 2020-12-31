@@ -372,6 +372,11 @@ class Batch:
     @pages.setter
     def pages(self, df):
         self.experiment.journal.pages = df
+        all_cell_labels = set(self.experiment.cell_data_frames.keys())
+        cell_labels_to_keep = set(self.journal.pages.index)
+        cell_labels_to_remove = all_cell_labels - cell_labels_to_keep
+        for cell_label in cell_labels_to_remove:
+            del self.experiment.cell_data_frames[cell_label]
 
     @property
     def journal(self):

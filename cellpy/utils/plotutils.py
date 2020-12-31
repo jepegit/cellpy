@@ -1115,7 +1115,8 @@ def bplot(b, individual=False, cols=1, **kwargs):
 
     w = width / 180 * cols
     h = 5 * len(p) / cols
-    if len(p) > 1:
+
+    if len(p) >= 1:
         if not individual:
             out = hv.NdLayout(p, sort=False).cols(cols)
             if extension == "matplotlib":
@@ -1126,11 +1127,6 @@ def bplot(b, individual=False, cols=1, **kwargs):
             else:
                 out = [p.values()]
         return out
-
-    elif len(p) == 1:
-        if extension == "matplotlib":
-            return p[0].opts(fig_inches=(w, h))
-        return p[0]
 
 
 if __name__ == "__main__":
