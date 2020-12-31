@@ -6,7 +6,7 @@ File Formats and Data Structures
 
 .. warning::
    This part of the documentation is currently being updated.
-   We hope to have a trustable version ready by end of 2020.
+   It is 99.9% trustable, but in need of better logical structure and formatting.
 
 
 The most important file formats and data structures for cellpy is
@@ -208,8 +208,9 @@ class attribute list `list_of_step_types` and is written to the "step" column.
 
 For each type of testers that are supported by ``cellpy``,
 a set of column headings and
-other different settings/attributes must be provided. These definitions are now put
-inside the CellpyData class, but will be moved out later.
+other different settings/attributes must be provided. These definitions stored in the
+``cellpy.parameters.internal_settings`` module and are also injected into 
+the CellpyData class upon initiation.
 
 Supported testers are:
 
@@ -224,6 +225,9 @@ Testers that is planned supported:
 
 * arbin (ms sql-server)
 * maccor
+
+In addition, ``cellpy`` can load custom csv-ish files by providing a file description (using the
+``ìnstruments.Custom`` object).
 
 
 Tester dependent attributes
@@ -307,25 +311,96 @@ column headings - normal table
 CellpyData - methods
 ~~~~~~~~~~~~~~~~~~~~
 
+The ``CellpyData`` object contains lots of methods for manipulating, extracting
+and summarising the data from the run(s). Two methods are typically automatically run when
+you create your ``CellpyData`` object when running ``cellpy.get(filename)``:
 
-Todo
+``make_step_table``: creates a statistical summary of all the steps in the run(s) and categorizes
+the step type from that. It is also possible to give the step types directly (step_specifications).
+
+``make_summary``: create a summary based on cycle number.
+
+Other methods worth mentioning are (based on what I typically use):
+
+``load``: load a cellpy file.
+
+``load_raw``: load raw data file(s) (merges automatically if several filenames are given as a list).
+
+``get_cap``: get the capacity-voltage graph from one or more cycles in three different formats as well
+as optinally interpolated, normalized and/or scaled.
+
+``get_cycle_numbers``: get the cycle numbers for your run.
+
+``get_ocv``: get the rest steps after each charge and discharge step.
+
+Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyData``) for more info.
 
 Cells
 ~~~~~
 
-Each run is a `cellpy.cellreader.Cell` instance.
+Each run is a ``cellpy.cellreader.Cell`` instance.
 The instance contain general information about
 the run-settings (such as mass etc.).
 The measurement data, information, and summary is stored
-in three pandas.DataFrames:
+in three ``pandas.DataFrames``:
 
 * ``raw``: raw data from the run.
-* ``steps``: stats from each step (and step type).
-* ``summary``  summary data vs. cycle number (e.g. coulombic coulombic efficiency)
+* ``steps``: stats from each step (and step type), created using the 
+   ``CellpyData.make_step_table`` method.
+* ``summary``  summary data vs. cycle number (e.g. coulombic coulombic efficiency), created using
+   the ``CellpyData.make_summary`` method.
 
-Todo.
+The headers (columns) for the different DataFrames were given earlier in this chapter.
+As mentioned above, the ``Cell``object also contains metadata for the run.
+
+metadata
+........
+
+.. code-block:: python
+
+    cell_no = None
+    mass = prms.Materials["default_mass"]  # active material (in mg)
+    tot_mass = prms.Materials["default_mass"]  # total material (in mg)
+    no_cycles = 0.0
+    charge_steps = None
+    discharge_steps = None
+    ir_steps = None
+    ocv_steps = None
+    nom_cap = prms.DataSet["nom_cap"]  # mAh/g (for finding c-rates)
+    mass_given = False
+    material = prms.Materials["default_material"]
+    merged = False
+    file_errors = None  # not in use at the moment
+    loaded_from = None  # loaded from (can be list if merged)
+    channel_index = None
+    channel_number = None
+    creator = None
+    item_ID = None
+    schedule_file_name = None
+    start_datetime = None
+    test_ID = None
+    name = None
+    cycle_mode = prms.Reader.cycle_mode
+    active_electrode_area = None  # [cm2]
+    active_electrode_thickness = None  # [micron]
+    electrolyte_type = None  #
+    electrolyte_volume = None  # [micro-liter]
+    active_electrode_type = None
+    counter_electrode_type = None
+    reference_electrode_type = None
+    experiment_type = None
+    cell_type = None
+    separator_type = None
+    active_electrode_current_collector = None
+    reference_electrode_current_collector = None
+    comment = None
+
+
+The ``Cell`` object can also take custom metadata if provieded as keyword arguments (for developers).
 
 FileID
 ~~~~~~
 
-Todo
+The ``FileID`` object contains information about the raw file(s) and is used when comparing the cellpy-file 
+with the raw file(s) (for example to check if it has been updated compared to the cellpy-file).
+Notice that ``FileID`` will contain a list of file identifcation parameters if the run is from several raw files.
