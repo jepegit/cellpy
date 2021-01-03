@@ -9,7 +9,7 @@ for an opinionated step-by-step procedure.
 Stable release
 --------------
 
-The preferred way to install ``cellpy`` is by using conda.
+The preferred way to install ``cellpy`` is by using conda:
 
 .. code-block:: console
 
