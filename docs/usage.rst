@@ -54,8 +54,11 @@ You can also look for open circuit voltage steps::
     >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
     >>> time2, voltage2 = d.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
-There are many more methods available. Take a look at the
-index page (:doc:`source/modules`) or some of
+There are many more methods available, including methods
+for selecting steps and cycles (``get_current``, ``get_voltage``, *etc.*)
+or tuning the data (*e.g.* ``split`` and ``merge`).
+
+Take a look at the index page (:doc:`source/modules`) or some of
 the tutorials or examples (:doc:`Tutorials`).
 
 
@@ -72,7 +75,22 @@ table as well as the summary table::
     >>> # cellpy.get("cellpyfiles/20141030_CELL_6_cc_0.h5")
 
 
-If you would like to use more sophisticated methods (e.g. database readers),
+There also exists a method that takes the raw-file name and the cellpy-file name
+as input and only loads the raw-file if the cellpy-file is older than the
+raw-file::
+
+    >>> c = cellreader.CellpyData()
+    >>> raw_files = [rawfile_01, rawfile_02]
+    >>> c.loadcell(raw_files, cellpy_file)
+
+``cellpy`` contains a logger (the logs are saved in the cellpy logging
+directory as defined in the config file). You can set the log level
+(to the screen) by::
+
+    >>> from cellpy import log
+    >>> log.setup_logging(default_level="DEBUG")
+
+If you would like to use more sophisticated methods (*e.g.* database readers),
 take a look at the tutorial (if it exists), check the source code, or simply
 send an e-mail to one of the authors.
 
