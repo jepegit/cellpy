@@ -2,6 +2,9 @@
 Usage
 =====
 
+1. Simple usage as a python library
+-----------------------------------
+
 To use ``cellpy``, start with importing the needed modules::
 
     >>> from cellpy import cellreader
@@ -26,7 +29,12 @@ data and finding out what each step in each cycle is)::
     >>> d.make_summary()
     >>> d.make_step_table()
 
-You can save your data in csv-format easily by::
+You can now save your data as a tester agnostic cellpy-file (uses hdf5 file format, and will
+include your summary and step table)::
+
+   >>> d.save("cellpyfiles/20141030_CELL_6_cc_0.h5")
+
+You can also save your data in csv-format easily by::
 
     >>> d.to_csv(OutFolder)
 
@@ -46,6 +54,24 @@ You can also look for open circuit voltage steps::
     >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
     >>> time2, voltage2 = d.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
+There are many more methods available. Take a look at the index page or some of
+the tutorials or examples.
+
+
+2. Convenience functions
+------------------------
+
+The easiest way to load a file is to use the ``cellpy.get``method. It interprets
+the file-type from the file extension and automatically creates the step
+table as well as the summary table if needed::
+
+    >>> import cellpy
+    >>> c = cellpy.get(r"C:\data\20141030_CELL_6_cc_01.res", mass=0.982)
+
+
 If you would like to use more sophisticated methods (e.g. database readers),
 take a look at the tutorial (if it exists), check the source code, or simply
 send an e-mail to one of the authors.
+
+
+

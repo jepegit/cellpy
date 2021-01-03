@@ -10,9 +10,11 @@ Stable release
 --------------
 
 The preferred way to install ``cellpy`` is by using conda.
+
 .. code-block:: console
 
     $ conda install cellpy --channel conda-forge
+
 
 This will also install all of the dependencies, as well as ``jupyter``
 that comes in handy when working with ``cellpy``.
