@@ -56,7 +56,7 @@ You can also look for open circuit voltage steps::
 
 There are many more methods available, including methods
 for selecting steps and cycles (``get_current``, ``get_voltage``, *etc.*)
-or tuning the data (*e.g.* ``split`` and ``merge`).
+or tuning the data (*e.g.* ``split`` and ``merge``).
 
 Take a look at the index page (:doc:`modules <source/modules>) or some of
 the tutorials or examples (:doc:`tutorials <Tutorials/utils>`).
