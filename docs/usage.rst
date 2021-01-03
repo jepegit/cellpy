@@ -58,16 +58,16 @@ There are many more methods available, including methods
 for selecting steps and cycles (``get_current``, ``get_voltage``, *etc.*)
 or tuning the data (*e.g.* ``split`` and ``merge`).
 
-Take a look at the index page (:doc:`source/modules`) or some of
-the tutorials or examples (:doc:`Tutorials`).
+Take a look at the index page (:doc:`modules <source/modules>) or some of
+the tutorials or examples (:doc:`tutorials <Tutorials/utils>`).
 
 
 2. Convenience methods and tools
 --------------------------------
 
-The easiest way to load a file is to use the ``cellpy.get``method. It interprets
-the file-type from the file extension and automatically creates the step
-table as well as the summary table::
+The easiest way to load a file is to use the ``cellpy.get`` method. It
+interprets the file-type from the file extension and automatically creates
+the step table as well as the summary table::
 
     >>> import cellpy
     >>> c = cellpy.get(r"C:\data\20141030_CELL_6_cc_01.res", mass=0.982)
