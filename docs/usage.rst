@@ -9,25 +9,25 @@ To use ``cellpy``, start with importing the needed modules::
 
     >>> from cellpy import cellreader
 
-Lets define some variables::
+Let us define some variables::
 
-    >>> FileName  = r"C:\data\20141030_CELL_6_cc_01.res"
-    >>> Mass      = 0.982 # mass of active material in mg
-    >>> OutFolder = r"C:\processed_data"
+    >>> file_name  = r"C:\data\20141030_CELL_6_cc_01.res"
+    >>> mass      = 0.982 # mass of active material in mg
+    >>> out_folder = r"C:\processed_data"
 
 Then load the data into the data-class (this is data obtained using an Arbin battery tester,
 for the moment we assume that you are using the default settings where the default
 data-format is the Arbin .res format)::
 
     >>> d = cellreader.CellpyData()
-    >>> d.from_raw(FileName) # this tells cellpy to read the arbin data file (.res format)
-    >>> d.set_mass(Mass)
+    >>> d.from_raw(file_name) # this tells cellpy to read the arbin data file (.res format)
+    >>> d.set_mass(mass)
 
 Create a summary (for each cycle) and generate a step table (parsing the
 data and finding out what each step in each cycle is)::
 
-    >>> d.make_summary()
     >>> d.make_step_table()
+    >>> d.make_summary()
 
 You can now save your data as a tester agnostic cellpy-file (uses hdf5 file format, and will
 include your summary and step table)::
@@ -36,7 +36,7 @@ include your summary and step table)::
 
 You can also save your data in csv-format easily by::
 
-    >>> d.to_csv(OutFolder)
+    >>> d.to_csv(out_folder)
 
 Or maybe you want to take a closer look at the capacities for
 the different cycles? No problem. Now you are set to extract data
@@ -44,7 +44,7 @@ for specific cycles and steps::
 
     >>> list_of_cycles = d.get_cycle_numbers()
     >>> number_of_cycles = len(list_of_cycles)
-    >>> print "you have %i cycles" % (number_of_cycles)
+    >>> print(f"you have {number_of_cycles} cycles")
     you have 658 cycles
     >>> current,voltage = d.get_cap(5) # current and voltage for cycle 5
 
@@ -54,19 +54,22 @@ You can also look for open circuit voltage steps::
     >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
     >>> time2, voltage2 = d.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
-There are many more methods available. Take a look at the index page or some of
-the tutorials or examples.
+There are many more methods available. Take a look at the
+index page (:doc:`source/modules`) or some of
+the tutorials or examples (:doc:`Tutorials`).
 
 
-2. Convenience functions
-------------------------
+2. Convenience methods and tools
+--------------------------------
 
 The easiest way to load a file is to use the ``cellpy.get``method. It interprets
 the file-type from the file extension and automatically creates the step
-table as well as the summary table if needed::
+table as well as the summary table::
 
     >>> import cellpy
     >>> c = cellpy.get(r"C:\data\20141030_CELL_6_cc_01.res", mass=0.982)
+    >>> # or load the cellpy-file:
+    >>> # cellpy.get("cellpyfiles/20141030_CELL_6_cc_0.h5")
 
 
 If you would like to use more sophisticated methods (e.g. database readers),
