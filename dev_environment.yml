@@ -32,10 +32,13 @@ dependencies:
   - lmfit
   - cookiecutter
   - tqdm
+  - pandoc
+  - ipykernel
   - ipywidgets
   - python-box
   - pip:
     - pytest-benchmark
     - pytest-timeout
     - requests
+    - nbsphinx
 

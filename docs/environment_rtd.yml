@@ -19,4 +19,8 @@ dependencies:
   - Sphinx
   - tqdm
   - python-box
+  - pandoc
+  - ipykernel
+  - pip:
+    - nbsphinx
 
