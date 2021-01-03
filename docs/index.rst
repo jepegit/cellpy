@@ -9,7 +9,8 @@ Welcome to cellpy's documentation!
 .. include::
    readme.rst
 
-Contents:
+Contents
+========
 
 .. toctree::
    :maxdepth: 3
