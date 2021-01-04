@@ -1,0 +1,26 @@
+name: cellpy
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python >=3.7
+  - pip
+  - numpy
+  - openpyxl
+  - matplotlib
+  - cryptography
+  - click
+  - scipy
+  - pandas
+  - pytables >=3.5.1
+  - setuptools
+  - ruamel.yaml
+  - pyodbc
+  - Sphinx
+  - tqdm
+  - python-box
+  - pandoc
+  - ipykernel
+  - pip:
+    - nbsphinx
+

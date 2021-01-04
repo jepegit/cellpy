@@ -9,10 +9,12 @@ for an opinionated step-by-step procedure.
 Stable release
 --------------
 
-The preferred way to install ``cellpy`` is by using conda.
+The preferred way to install ``cellpy`` is by using conda:
+
 .. code-block:: console
 
     $ conda install cellpy --channel conda-forge
+
 
 This will also install all of the dependencies, as well as ``jupyter``
 that comes in handy when working with ``cellpy``.
@@ -63,8 +65,9 @@ that you run the setup script:
 
     $ cellpy setup -i
 
-This will install a ``_cellpy_prms_USER.conf`` file in your home directory
-(USER = your user name). Feel free to edit this to fit your needs.
+This will install a ``.cellpy_prms_USER.conf`` file in your home directory
+(USER = your user name) for posix systems and the documents folder in windows.
+Feel free to edit this to fit your needs.
 
 (It is probably best to run the command also if you are upgrading ``cellpy``)
 
@@ -73,10 +76,11 @@ You can restore your prms-file by running ``cellpy setup`` if needed
 copied to your user folder).
 
 .. note:: Since Arbin (at least some versions) uses access database files, you
-    will need to install something that can talk to them, e.g. ``pyodbc`` or
-    similar. These most likely need to use Microsoft's dll for handling access
-    database formats, and you might run into 32bit vs. 64bit issues. On Windows,
-    the simplest solution is to have the same "bit" for python and
+    will need to install ``pyodbc``, a python ODBC bridge that can talk to database
+    files. On windows, at least if you don´t have a newer version of office 365,
+    you  most likely need to use Microsoft's dll for handling access
+    database formats, and you might run into 32bit *vs.* 64bit issues.
+    The simplest solution is to have the same "bit" for python and
     the access dll (or office). More advanced options are explained in more details
     in the getting-started tutorial. For Posix-type systems, you will need to download
     and install ``mdbtools``. If you are on Windows and you cannot get your

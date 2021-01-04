@@ -3,7 +3,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-    - python >=3.7
+  - python >=3.7
   - pip
   - numpy
   - openpyxl
@@ -12,7 +12,7 @@ dependencies:
   - click
   - scipy
   - pandas
-    - pytables >=3.5.1
+  - pytables >=3.5.1
   - setuptools
   - ruamel.yaml
   - pyodbc
@@ -32,10 +32,13 @@ dependencies:
   - lmfit
   - cookiecutter
   - tqdm
+  - pandoc
+  - ipykernel
   - ipywidgets
   - python-box
   - pip:
     - pytest-benchmark
     - pytest-timeout
     - requests
+    - nbsphinx
 

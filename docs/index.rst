@@ -6,12 +6,15 @@
 Welcome to cellpy's documentation!
 ==================================
 
-Contents:
+.. include::
+   readme.rst
+
+Contents
+========
 
 .. toctree::
    :maxdepth: 3
 
-   readme
    installation
    usage
    tutorial
