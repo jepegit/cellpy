@@ -42,7 +42,7 @@ files named ``.cellpy_prms_SOMENAME.conf``.
 
 If you have run ``cellpy setup`` in the cmd window or in the shell, the
 configuration file will be placed in the appropriate place.
-It will have the name ``cellpy_prms_USERNAME.conf`` (where USERNAME is your username).
+It will have the name ``.cellpy_prms_USERNAME.conf`` (where USERNAME is your username).
 
 The configuration file is a YAML-file and it is reasonably easy to read and edit (but
 remember that YAML is rather strict with regards to spaces and indentations).
