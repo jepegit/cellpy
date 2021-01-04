@@ -13,15 +13,6 @@ from cellpy.parameters import prms
 
 # logger = logging.getLogger(__name__)
 
-# Note 14.12.2020: xlrd has explicitly removed support for anything other than xls files
-# Solution: install openpyxl
-# df1=pd.read_excel(
-#      os.path.join(APP_PATH, "Data", "aug_latest.xlsm"),
-#      sheet_name=None,
-#      engine='openpyxl',
-# )
-
-
 class DbSheetCols(object):
     def __init__(self, level=0):
         for table_key in prms.DbCols:
@@ -132,6 +123,15 @@ class Reader(object):
 
     def _open_sheet(self, dtypes_dict=None):
         """Opens sheets and returns it"""
+
+        # Note 14.12.2020: xlrd has explicitly removed support for anything other than xls files
+        # Solution: install openpyxl
+        # df1=pd.read_excel(
+        #      os.path.join(APP_PATH, "Data", "aug_latest.xlsm"),
+        #      sheet_name=None,
+        #      engine='openpyxl',
+        # )
+
         table_name = self.db_sheet_table
         header_row = self.db_header_row
         nrows = self.nrows
