@@ -9,22 +9,29 @@ Welcome to cellpy's documentation!
 .. include::
    readme.rst
 
-Contents
-========
+Content
+-------
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    installation
    usage
-   tutorial
-   formats
-   examples
-   tips_and_tricks
    contributing
    authors
    history
+
+Tutorials
+---------
+
+.. toctree::
+   :maxdepth: 2
+   tutorial
+   formats
    notebooks/tutorial_get_cap.ipynb
+   examples
+   tips_and_tricks
+
 
 Indices and tables
 ==================
