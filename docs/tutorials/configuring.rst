@@ -7,7 +7,7 @@ How the configuration parameters are set and read
 When ``cellpy`` is imported, it sets a default set of parameters.
 Then it tries to read the parameters
 from your .conf-file (located in your user directory). If it is successful,
-the paramteters set in your .conf-file
+the parameters set in your .conf-file
 will over-ride the default ones.
 
 The parameters are stored in the module ``cellpy.parameters.prms``.
@@ -36,117 +36,143 @@ The configuration file
 ----------------------
 
 ``cellpy`` tries to read your .conf-file when imported the first time,
-and looks in your user directory
-(*e.g.* C:\\Users\\USERNAME on not-too-old versions of windows) after
-files named ``_cellpy_prms_SOMENAME.conf``.
-If you have run ``cellpy setup`` in the cmd window or in the shell, a
-file named
-``_cellpy_prms_USERNAME.conf`` (where USERNAME is
-your username) should exist in your home directory. This is a YAML-file and
-it is reasonably easy to read and edit (but
+and looks in your user directory on posix or in the documents folder on
+windows (*e.g.* C:\\Users\\USERNAME\\Documents on not-too-old versions of windows) after
+files named ``.cellpy_prms_SOMENAME.conf``.
+
+If you have run ``cellpy setup`` in the cmd window or in the shell, the
+configuration file will be placed in the appropriate place.
+It will have the name ``cellpy_prms_USERNAME.conf`` (where USERNAME is your username).
+
+The configuration file is a YAML-file and it is reasonably easy to read and edit (but
 remember that YAML is rather strict with regards to spaces and indentations).
+
 As an example, here are the first lines
 from one of the authors' configuration file:
 
 .. code-block:: yaml
 
     ---
-    # settings related to running the batch procedure
-    Batch:
-      backend: bokeh
-      color_style_label: seaborn-deep
-      dpi: 300
-      fig_extension: png
-      figure_type: unlimited
-      markersize: 4
-      notebook: true
-      summary_plot_height: 800
-      summary_plot_height_fractions:
-      - 0.2
-      - 0.5
-      - 0.3
-      summary_plot_width: 900
-      symbol_label: simple
+    Paths:
+      outdatadir: C:\scripts\processing_cellpy\out
+      rawdatadir: I:\Org\MPT-BAT-LAB\Arbin-data
+      cellpydatadir: C:\scripts\processing_cellpy\cellpyfiles
+      db_path: C:\scripts\processing_cellpy\db
+      filelogdir: C:\scripts\processing_cellpy\logs
+      examplesdir: C:\scripts\processing_cellpy\examples
+      notebookdir: C:\scripts\processing_cellpy\notebooks
+      batchfiledir: C:\scripts\processing_cellpy\batchfiles
+      db_filename: 2020_Cell_Analysis_db_001.xlsx
+
+    FileNames:
+      file_name_format: YYYYMMDD_[NAME]EEE_CC_TT_RR
+
+
+The first part contains definitions of the different paths, files and file-patterns
+that ``cellpy`` will use. This is probably the place
+where you most likely will have to do some edits sometime.
+
+Next comes definitions needed when using a db.
+
+.. code-block:: yaml
+
+    # settings related to the db used in the batch routine
+    Db:
+      db_type: simple_excel_reader
+      db_table_name: db_table
+      db_header_row: 0
+      db_unit_row: 1
+      db_data_start_row: 2
+      db_search_start_row: 2
+      db_search_end_row: -1
+
+    # definitions of headers for the simple_excel_reader
+    DbCols:
+      id:
+      - id
+      - int
+      exists:
+      - exists
+      - bol
+      batch:
+      - batch
+      - str
+      sub_batch_01:
+      - b01
+      - str
+      .
+      .
+
+
+Its rather long (since it needs to define the column names used in the db excel sheet).
+After this, the settings the datasets and the ``cellreader`` comes, as well as for the different instruments.
+You will also find the settings for the ``batch`` utility at the bottom.
+
+.. code-block:: yaml
 
     # settings related to your data
     DataSet:
       nom_cap: 3579
 
-    # settings related to the db used in the batch routine
-    Db:
-      db_data_start_row: 2
-      db_header_row: 0
-      db_search_end_row: -1
-      db_search_start_row: 2
-      db_table_name: db_table
-      db_type: simple_excel_reader
-      db_unit_row: 1
-
-    # definitions of headers for the simple_excel_reader
-    DbCols:
-      active_material: !!python/tuple
-      - mass_active_material
-      - float
-      batch: !!python/tuple
-      - batch
-      - str
-      cell_name: !!python/tuple
-      - cell
-      - str
-      .
-      .
-
-Then follows a lot of column name definitions. After this, the settings
-for the different instruments, the paths cellpy uses for finding files
-and storing files (e.g. where to store cellpy-files). In addition, several
-settings used by cellreader is given in the end (might be moved to a
-more sensible place in later versions).
-
-.. code-block:: yaml
-
-    FileNames: {}
-    Instruments:
-      chunk_size: null
-      custom_instrument_definitions_file: null
-      detect_subprocess_need: false
-      max_chunks: null
-      max_res_filesize: 150000000
-      office_version: 64bit
-      sub_process_path: None
-      tester: arbin
-      use_subprocess: false
-    Paths:
-      cellpydatadir: C:\ExperimentalData\BatteryTestData\Arbin\HDF5
-      db_filename: 2017_Cell_Analysis_db_001.xlsx
-      db_path: C:\Users\jepe\Documents\Databases\Experiments\arbin
-      examplesdir: C:\Scripting\Processing\Celldata\examples
-      filelogdir: C:\Scripting\Processing\Celldata\outdata
-      outdatadir: C:\Scripting\Processing\Celldata\outdata
-      rawdatadir: I:\Org\ensys\EnergyStorageMaterials\Data-backup\Arbin
+    # settings related to the reader
     Reader:
-      auto_dirs: true
-      capacity_interpolation_step: 2.0
-      cellpy_datadir: null
-      chunk_size: null
-      cycle_mode: anode
-      daniel_number: 5
-      ensure_step_table: false
+      diagnostics: false
       filestatuschecker: size
-      force_all: false
       force_step_table_creation: true
-      last_chunk: null
-      limit_loaded_cycles: null
-      load_only_summary: false
-      max_chunks: null
-      max_res_filesize: 150000000
-      raw_datadir: null
-      select_minimal: false
+      force_all: false
       sep: ;
+      cycle_mode: anode
       sorted_data: true
-      time_interpolation_step: 10.0
-      use_cellpy_stat_file: false
+      load_only_summary: false
+      select_minimal: false
+      limit_loaded_cycles:
+      ensure_step_table: false
+      daniel_number: 5
       voltage_interpolation_step: 0.01
+      time_interpolation_step: 10.0
+      capacity_interpolation_step: 2.0
+      use_cellpy_stat_file: false
+      raw_datadir:
+      cellpy_datadir:
+      auto_dirs: true
+      chunk_size:
+      last_chunk:
+      max_chunks:
+      max_res_filesize: 400000000
+
+    # settings related to the instrument loader
+    # (each instrument can have its own set of settings)
+    Instruments:
+      tester: arbin
+      custom_instrument_definitions_file:
+      Arbin:
+        chunk_size:
+        detect_subprocess_need: false
+        max_chunks:
+        max_res_filesize: 400000000
+        odbc_driver:
+        office_version: 64bit
+        sub_process_path:
+        use_subprocess: false
+
+    # settings related to running the batch procedure
+    Batch:
+      fig_extension: png
+      backend: bokeh
+      notebook: true
+      dpi: 300
+      markersize: 4
+      symbol_label: simple
+      color_style_label: seaborn-deep
+      figure_type: unlimited
+      summary_plot_width: 900
+      summary_plot_height: 800
+      summary_plot_height_fractions:
+      - 0.2
+      - 0.5
+      - 0.3
     ...
+
 
 As you can see, the author of this particular file most likely works with
 silicon as anode material for lithium ion

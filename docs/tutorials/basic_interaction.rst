@@ -1,5 +1,5 @@
-Basic interaction with your data
-================================
+Interacting with your data
+==========================
 
 Read cell data
 --------------

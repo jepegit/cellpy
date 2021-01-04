@@ -1,6 +1,6 @@
-======
-Basics
-======
+============
+Basics usage
+============
 
 .. include:: tutorials/getting_started_tutorial.rst
 .. include:: tutorials/configuring.rst

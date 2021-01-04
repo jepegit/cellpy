@@ -1,13 +1,13 @@
-The getting started with ``cellpy`` tutorial (opinionated verson)
-=================================================================
+The getting started with ``cellpy`` tutorial (opinionated version)
+==================================================================
 
 This tutorial will help you getting started with ``cellpy`` and
 tries to give you a step-by-step recipe. The information in this tutorial
 can also (most likely) be found elsewhere. For the novice users,
 jump directly to chapter 1.2.
 
-1.1 How to install ``cellpy`` - the minimalistic explanation
-------------------------------------------------------------
+How to install ``cellpy`` - the minimalistic explanation
+--------------------------------------------------------
 
 If you know what you are doing, and only need the most basic features
 of ``cellpy``, you should be able to get things up and running by
@@ -77,8 +77,8 @@ temporary csv-files, and then import from those csv-file (using the
 ``pandas`` library). You can install ``mdbtools`` using your systems
 preferred package manager (*e.g.* ``apt-get install mdbtools``).
 
-1.2 The tea spoon explanation
------------------------------
+The tea spoon explanation
+-------------------------
 
 If you are used to installing stuff from the command line (or shell),
 then things might very well run smoothly. However, a considerable
@@ -182,8 +182,8 @@ To run a more complete check of your installation, there exist a
    cellpy info --check
 
 
-2. The ``cellpy`` command to your rescue
-----------------------------------------
+The ``cellpy`` command to your rescue
+-------------------------------------
 
 To help installing and controlling your ``cellpy`` installation, a CLI
 is provided with four main commands, including ``info`` for getting
@@ -268,8 +268,8 @@ made and saved to your home directory. You can always issue
 (it’s written in YAML format and it should be relatively easy to edit it
 in a text editor)
 
-3. Running your first script
-----------------------------
+Running your first script
+-------------------------
 
 As with most software, you are encouraged to play a little with it. I
 hope there are some useful stuff in the code repository (for example in
@@ -329,8 +329,8 @@ terminal window). You probably need to use the ``--reset`` flag this time
 since it is not your first time running it).
 
 
-4. What next?
--------------
+What next?
+----------
 
 For example: If you want to use the highly popular ``cellpy.utils.batch``
 utility, you

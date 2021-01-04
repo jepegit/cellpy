@@ -42,13 +42,13 @@ This attribute is just a list of runs (each run is a
 This implies that you can store many runs in one ``CellpyData`` instance.
 Sometimes this can be necessary, but it is recommended to only store one
 run in one instance. Most of the functions (the class methods) automatically
-selects the 0-th item in ``CellpyData.cells`` if the `test_number` is not
+selects the 0-th item in ``CellpyData.cells`` if the ``test_number`` is not
 explicitly given.
 
 You may already have figured it out: in cellpy, data for a given cell
-is usually named a run. And each run is a `cellpy.cellreader.Cell` instance.
+is usually named a run. And each run is a ``cellpy.cellreader.Cell`` instance.
 
-Here is a list of other important class attributes in `CellpyData`:
+Here is a list of other important class attributes in ``CellpyData``:
 
 column headings - normal data
 ..............................
