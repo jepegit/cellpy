@@ -17,18 +17,19 @@ Content
 
    installation
    usage
+   formats
    contributing
    authors
    history
 
-Tutorials
----------
+Examples and tutorials
+----------------------
 
 .. toctree::
-   :maxdepth: 2
-   tutorial
-   formats
-   notebooks/tutorial_get_cap.ipynb
+   :maxdepth: 3
+
+   basics
+   notebooks
    examples
    tips_and_tricks
 

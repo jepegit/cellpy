@@ -209,7 +209,7 @@ class attribute list `list_of_step_types` and is written to the "step" column.
 For each type of testers that are supported by ``cellpy``,
 a set of column headings and
 other different settings/attributes must be provided. These definitions stored in the
-``cellpy.parameters.internal_settings`` module and are also injected into 
+``cellpy.parameters.internal_settings`` module and are also injected into
 the CellpyData class upon initiation.
 
 Supported testers are:
@@ -345,13 +345,13 @@ The measurement data, information, and summary is stored
 in three ``pandas.DataFrames``:
 
 * ``raw``: raw data from the run.
-* ``steps``: stats from each step (and step type), created using the 
+* ``steps``: stats from each step (and step type), created using the
    ``CellpyData.make_step_table`` method.
 * ``summary``  summary data vs. cycle number (e.g. coulombic coulombic efficiency), created using
    the ``CellpyData.make_summary`` method.
 
 The headers (columns) for the different DataFrames were given earlier in this chapter.
-As mentioned above, the ``Cell``object also contains metadata for the run.
+As mentioned above, the ``Cell`` object also contains metadata for the run.
 
 metadata
 ........
@@ -401,6 +401,6 @@ The ``Cell`` object can also take custom metadata if provieded as keyword argume
 FileID
 ~~~~~~
 
-The ``FileID`` object contains information about the raw file(s) and is used when comparing the cellpy-file 
+The ``FileID`` object contains information about the raw file(s) and is used when comparing the cellpy-file
 with the raw file(s) (for example to check if it has been updated compared to the cellpy-file).
 Notice that ``FileID`` will contain a list of file identifcation parameters if the run is from several raw files.

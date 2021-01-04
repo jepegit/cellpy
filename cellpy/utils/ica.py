@@ -24,7 +24,7 @@ from cellpy.readers.core import collect_capacity_curves
 # TODO: @jepe - binning method (assigned to Asbjoern)
 
 
-class Converter(object):
+class Converter:
     """Class for dq-dv handling.
 
     Typical usage is to  (1) set the data,  (2) inspect the data,
@@ -614,18 +614,17 @@ def dqdv(
         max_points: restricting to max points in vector (capacity-selected)
 
     Returns: voltage, dqdv
-
-    Notes:
-        PEC data (Helge)
-            pre_smoothing = False
-            diff_smoothing = False
-            pos_smoothing = False
-            voltage_resolution = 0.005
-        PEC data (Preben)
-            ...
-        Arbin data (IFE)
-            ...
     """
+    # Notes:
+    #     PEC data
+    #         pre_smoothing = False
+    #         diff_smoothing = False
+    #         pos_smoothing = False
+    #         voltage_resolution = 0.005
+    #     PEC data
+    #         ...
+    #     Arbin data (IFE)
+    #         ...
 
     converter = Converter(**kwargs)
     logging.debug("dqdv - starting")
@@ -909,14 +908,14 @@ def _dqdv_split_frames(
     return ica_charge_df, ica_discharge_df
 
 
-def check_class_ica():
+def _check_class_ica():
     print(40 * "=")
     print("running check_class_ica")
     print(40 * "-")
 
     import matplotlib.pyplot as plt
 
-    cell = get_a_cell_to_play_with()
+    cell = _get_a_cell_to_play_with()
     cycle = 5
     print("looking at cycle %i" % cycle)
 
@@ -977,7 +976,7 @@ def check_class_ica():
     plt.show()
 
 
-def get_a_cell_to_play_with():
+def _get_a_cell_to_play_with():
     from cellpy import cellreader
 
     # -------- defining overall path-names etc ----------
@@ -1007,6 +1006,6 @@ if __name__ == "__main__":
     import pandas as pd
     from cellpy import cellreader
 
-    cell = get_a_cell_to_play_with()
+    cell = _get_a_cell_to_play_with()
 
     a = dqdv_frames(cell)
