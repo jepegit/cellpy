@@ -24,6 +24,7 @@ Contents
    contributing
    authors
    history
+   notebooks/tutorial_get_cap.ipynb
 
 Indices and tables
 ==================
