@@ -8,5 +8,5 @@ Tutorials
 .. include:: Tutorials/pandas.rst
 .. include:: Tutorials/data_mining.rst
 .. include:: Tutorials/utils.rst
-
+.. include:: notebooks/tutorial_get_cap.ipynb
 
