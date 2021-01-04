@@ -324,3 +324,4 @@ texinfo_documents = [
 # texinfo_no_detailmenu = False
 
 modindex_common_prefix = ["cellpy."]
+nbsphinx_kernel_name = 'python3'
