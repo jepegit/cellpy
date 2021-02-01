@@ -76,6 +76,7 @@ class CyclingExperiment(BaseExperiment):
         self.export_ica = False
         self.last_cycle = None
         self.nom_cap = None
+        self.custom_data_folder = None
 
         self.selected_summaries = None
 
@@ -135,6 +136,8 @@ class CyclingExperiment(BaseExperiment):
                 logging.debug("not forcing to load cellpy-file instead of raw file.")
 
                 try:
+                    # TODO: replace 'loadcell' with its individual parts instead - this
+                    #   will make refactoring much much easier
                     cell_data.loadcell(
                         raw_files=row[hdr_journal.raw_file_names],
                         cellpy_file=row[hdr_journal.cellpy_file_name],
@@ -243,6 +246,9 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("saving to cellpy-format")
                 n_txt = f"saving {counter}"
                 pbar.set_description(n_txt, refresh=True)
+                if self.custom_data_folder is not None:
+                    print("Save to custom data-folder not implemented yet")
+                    print(f"Saving to {row.cellpy_file_name} instead")
                 if not row.fixed:
                     logging.info("saving cell to %s" % row.cellpy_file_name)
                     cell_data.ensure_step_table = True

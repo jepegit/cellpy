@@ -560,6 +560,7 @@ def yank_outliers(
 # from helpers - updated
 def concatenate_summaries(
     b,
+    max_cycle=None,
     rate=None,
     on="charge",
     columns=None,
@@ -584,6 +585,7 @@ def concatenate_summaries(
 
     Args:
         b (cellpy.batch object): the batch with the cells.
+        max_cycle (int): drop all cycles above this value.
         rate (float): filter on rate (C-rate)
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
@@ -667,6 +669,8 @@ def concatenate_summaries(
             c = b.experiment.data[cell_id]
 
             if not c.empty:
+                if max_cycle is not None:
+                    c = c.drop_from(max_cycle+1)
                 if add_areal:
                     c = add_areal_capacity(c, cell_id, b.experiment.journal)
 
