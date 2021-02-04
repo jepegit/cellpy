@@ -406,7 +406,7 @@ def remove_first_cycles_from_summary(s, first=None):
     return s
 
 
-def yank_after(b, last=None, keep_old=True):
+def yank_after(b, last=None, keep_old=False):
     """Cut all cycles after a given cycle index number.
 
     Args:
@@ -434,10 +434,11 @@ def yank_after(b, last=None, keep_old=True):
             last_this_cell = last
         s = remove_last_cycles_from_summary(s, last_this_cell)
         c.cell.summary = s
-    return b
+    if keep_old:
+        return b
 
 
-def yank_before(b, first=None, keep_old=True):
+def yank_before(b, first=None, keep_old=False):
     """Cut all cycles before a given cycle index number.
 
     Args:
@@ -465,7 +466,8 @@ def yank_before(b, first=None, keep_old=True):
             first_this_cell = first
         s = remove_first_cycles_from_summary(s, first_this_cell)
         c.cell.summary = s
-    return b
+    if keep_old:
+        return b
 
 
 def yank_outliers(
@@ -499,17 +501,21 @@ def yank_outliers(
             (not recommended at the moment since it then loads the full cellpyfile).
 
     Returns:
-        cellpy.utils.batch object (returns a copy if `keep_old` is True).
+        if keep_old: new cellpy.utils.batch object.
+        else: dictionary of removed cycles
     """
 
     if keep_old:
         b = deepcopy(b)
+
+    removed_cycles = dict()
 
     # remove based on indexes and values
     for cell_number, cell_label in enumerate(b.experiment.cell_names):
         logging.debug(f"yanking {cell_label} ")
         c = b.experiment.data[cell_label]
         s = c.cell.summary
+        before = set(s.index)
         if remove_indexes is not None:
             logging.debug("removing indexes")
             if isinstance(remove_indexes, dict):
@@ -525,6 +531,8 @@ def yank_outliers(
             s = remove_outliers_from_summary_on_index(
                 s, remove_indexes_this_cell, remove_last_this_cell
             )
+            # TODO: populate removed_cycles
+        before = set(s.index)
         s = remove_outliers_from_summary_on_value(
             s,
             low=low,
@@ -532,7 +540,10 @@ def yank_outliers(
             filter_cols=filter_cols,
             freeze_indexes=freeze_indexes,
         )
+        removed = before - set(s.index)
         c.cell.summary = s
+        if removed:
+            removed_cycles[cell_label] = list(removed)
 
     # removed based on zscore
     if zscore_limit is not None:
@@ -547,14 +558,17 @@ def yank_outliers(
                     zscore_limit=zscore_limit,
                     freeze_indexes=freeze_indexes,
                 )
-
+                # TODO: populate removed_cycles
                 rows_removed = n1 - len(s)
                 tot_rows_removed += rows_removed
                 c.cell.summary = s
             if tot_rows_removed == 0:
                 break
             zscore_limit *= zscore_multiplyer
-    return b
+    if keep_old:
+        return b
+    else:
+        return removed_cycles
 
 
 # from helpers - updated

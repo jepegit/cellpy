@@ -180,14 +180,15 @@ def test_concatinator(populated_batch):
 
 
 def test_concatinator_yanked(populated_batch):
-    b_yanked = helpers.yank_outliers(populated_batch, remove_indexes=[3, 4, 5], keep_old=False)
-    c1 = b_yanked.experiment.data[b_yanked.cell_names[0]]
+    removed = helpers.yank_outliers(populated_batch, remove_indexes=[3, 4, 5], keep_old=False)
+    print(removed)
+    c1 = populated_batch.experiment.data[populated_batch.cell_names[0]]
     print(c1.cell.summary.head(10))
     cf1 = helpers.concatenate_summaries(
-        b_yanked, columns=["charge_capacity"], rate=0.04, group_it=True,
+        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True,
     )
     cf2 = helpers.concatenate_summaries(
-        b_yanked, columns=["charge_capacity"], rate=0.04, group_it=True, inverted=True,
+        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True, inverted=True,
     )
     print(cf1.head())
     print(cf2.head())
