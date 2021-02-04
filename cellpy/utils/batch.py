@@ -637,7 +637,6 @@ class Batch:
 
         # return pages
 
-    # TODO: load_journal
     # TODO: list_journals?
 
     def link(self):

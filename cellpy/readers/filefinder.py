@@ -123,6 +123,9 @@ def search_for_files(
 
     # TODO: @jepe - use pathlib
     # TODO: @jepe - use reg_exp
+    # TODO: @jepe - allow for searching in sub-folders
+    # TODO: @jepe - allow for searching in cloud
+    # TODO: @jepe - allow for searching in several folders
 
     if cache is None:
 
