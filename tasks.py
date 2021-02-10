@@ -251,7 +251,7 @@ def man(c):
       https://github.com/jepegit/cellpy-feedstok.git with your web browser
       and clicking the button create pull request.
     - Wait for the automatic checks have complete (takes several minutes)
-    - Merge pull request.
+    - Merge pull request (big green button)
 
     - check if the new version is there:
       >>> conda search -f cellpy
