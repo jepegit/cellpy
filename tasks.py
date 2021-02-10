@@ -252,6 +252,7 @@ def man(c):
       and clicking the button create pull request.
     - Wait for the automatic checks have complete (takes several minutes)
     - Merge pull request (big green button)
+    - Drink a cup of coffee or walk the dog
 
     - check if the new version is there:
       >>> conda search -f cellpy
