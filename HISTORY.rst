@@ -2,6 +2,14 @@
 History
 =======
 
+0.4.1 (2021)
+------------
+
+* Updated documentations
+* CLI improvements
+* New argument for get_cap: max_cycle
+
+
 0.4.0 (2020)
 ------------
 
