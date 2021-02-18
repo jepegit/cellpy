@@ -17,6 +17,7 @@ from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
+USE_MY_DOCUMENTS = True
 
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 
@@ -51,7 +52,7 @@ def get_user_dir():
     """gets the name of the user directory"""
     # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
     user_dir = pathlib.Path().home().resolve()
-    if os.name == "nt":
+    if os.name == "nt" and USE_MY_DOCUMENTS:
         _user_dir = user_dir / "documents"
         if _user_dir.is_dir():
             user_dir = _user_dir

@@ -8,6 +8,7 @@ History
 * Updated documentations
 * CLI improvements
 * New argument for get_cap: max_cycle
+* Reverting from using Documents to user home for location of prm file in windows.
 
 
 0.4.0 (2020)
