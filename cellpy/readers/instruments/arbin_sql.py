@@ -68,7 +68,6 @@ class ArbinSQLLoader(Loader):
             # data_base= row['Database_Name']
             query = "SELECT " + str(row['Database_Name']) + ".dbo.StatisticData_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name FROM " + str(row['Database_Name']) + ".dbo.StatisticData_Table JOIN ArbinPro8MasterInfo.dbo.TestList_Table ON " + str(row['Database_Name']) + ".dbo.StatisticData_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN " + str(test_name)
             data_df = pd.read_sql_query(query, conn)
-
         return data_df
 
 if __name__ == "__main__":
