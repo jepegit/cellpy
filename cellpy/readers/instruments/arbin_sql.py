@@ -8,7 +8,7 @@ import platform
 import warnings
 import time
 import numpy as np
-
+import pyodbc
 import pandas as pd
 
 from cellpy.readers.core import (
@@ -50,3 +50,28 @@ class ArbinSQLLoader(Loader):
         """returns a Cell object with loaded data"""
 
         raise NotImplemented
+
+    def SQL_loader(self, tests: list):
+        test_name= tuple(tests)+("",)
+        master_q = "SELECT Database_Name, Test_Name FROM ArbinPro8MasterInfo.dbo.TestList_Table WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN " + str(
+                test_name)
+
+        conn = pyodbc.connect('Driver={SQL Server};'
+                              'Server=PC7188\MSSQLSERVER_1;'
+                              # 'Database=TestDB;'
+                              'Trusted_Connection=yes;')
+
+        cursor = conn.cursor()
+        sql_query = pd.read_sql_query(master_q, conn)
+
+        for index, row in sql_query.iterrows():
+            # data_base= row['Database_Name']
+            query = "SELECT " + str(row['Database_Name']) + ".dbo.StatisticData_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name FROM " + str(row['Database_Name']) + ".dbo.StatisticData_Table JOIN ArbinPro8MasterInfo.dbo.TestList_Table ON " + str(row['Database_Name']) + ".dbo.StatisticData_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN " + str(test_name)
+            data_df = pd.read_sql_query(query, conn)
+
+        return data_df
+
+if __name__ == "__main__":
+    print("hei")
+    df = SQL_loader(["20201106_HC03B1W_1_cc_01"])
+    print(df.head())
