@@ -51,24 +51,35 @@ class ArbinSQLLoader(Loader):
 
         raise NotImplemented
 
-    def SQL_loader(self, tests: list):
+    def SQL_loader(self, server: str, tests: list): # server for testing= PC7188\MSSQLSERVER_1
         test_name= tuple(tests)+("",)
+
         master_q = "SELECT Database_Name, Test_Name FROM ArbinPro8MasterInfo.dbo.TestList_Table WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN " + str(
                 test_name)
 
         conn = pyodbc.connect('Driver={SQL Server};'
-                              'Server=PC7188\MSSQLSERVER_1;'
-                              # 'Database=TestDB;'
+                              'Server='+server+';'
                               'Trusted_Connection=yes;')
 
-        cursor = conn.cursor()
         sql_query = pd.read_sql_query(master_q, conn)
 
         for index, row in sql_query.iterrows():
-            # data_base= row['Database_Name']
-            query = "SELECT " + str(row['Database_Name']) + ".dbo.StatisticData_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name FROM " + str(row['Database_Name']) + ".dbo.StatisticData_Table JOIN ArbinPro8MasterInfo.dbo.TestList_Table ON " + str(row['Database_Name']) + ".dbo.StatisticData_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN " + str(test_name)
-            data_df = pd.read_sql_query(query, conn)
-        return data_df
+            data_query = ("SELECT " + str(row['Database_Name']) + ".dbo.IV_Basic_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
+                      "FROM " + str(row['Database_Name']) + ".dbo.IV_Basic_Table "
+                      "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+                      "ON " + str(row['Database_Name']) + ".dbo.IV_Basic_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
+                      "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN " + str(test_name))
+
+            stat_query = ("SELECT " + str(row['Database_Name']) + ".dbo.StatisticData_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
+                       "FROM " + str(row['Database_Name']) + ".dbo.StatisticData_Table "
+                       "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+                       "ON " + str(row['Database_Name']) + ".dbo.StatisticData_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
+                       "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN " + str(test_name))
+
+            data_df = pd.read_sql_query(data_query, conn)
+            stat_df = pd.read_sql_query(stat_query, conn)
+
+        return data_df, stat_df
 
 if __name__ == "__main__":
     print("hei")
