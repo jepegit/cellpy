@@ -27,6 +27,7 @@ log.setup_logging(default_level="DEBUG")
 # TODO: I think these tests saves new versions of cellpyfiles each time. Fix that.
 # TODO: Most likely some of these tests also saves an updated batch json file. Fix that.
 
+
 @pytest.fixture(scope="module")
 def clean_dir():
     new_path = tempfile.mkdtemp()
@@ -180,7 +181,9 @@ def test_concatinator(populated_batch):
 
 
 def test_concatinator_yanked(populated_batch):
-    b_yanked = helpers.yank_outliers(populated_batch, remove_indexes=[3, 4, 5], keep_old=False)
+    b_yanked = helpers.yank_outliers(
+        populated_batch, remove_indexes=[3, 4, 5], keep_old=False
+    )
     c1 = b_yanked.experiment.data[b_yanked.cell_names[0]]
     print(c1.cell.summary.head(10))
     cf1 = helpers.concatenate_summaries(

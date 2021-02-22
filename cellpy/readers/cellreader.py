@@ -457,6 +457,7 @@ class CellpyData(object):
 
         elif instrument == "arbin_sql":
             from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
+
             warnings.warn(f"{instrument} not implemented yet")
             self.tester = "arbin"
 

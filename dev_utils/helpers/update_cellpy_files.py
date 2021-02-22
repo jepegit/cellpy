@@ -3,11 +3,11 @@ from cellpy import prms
 import cellpy
 
 raw_files = [
-    ["/Users/jepe/scripting/cellpy/testdata/data/20160805_test001_45_cc_01.res",
-        "/Users/jepe/scripting/cellpy/testdata/data/20160805_test001_45_cc_02.res"],
+    [
+        "/Users/jepe/scripting/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+        "/Users/jepe/scripting/cellpy/testdata/data/20160805_test001_45_cc_02.res",
+    ],
     "/Users/jepe/scripting/cellpy/testdata/data/20160805_test001_47_cc_01.res",
-
-
 ]
 
 files = [
@@ -21,7 +21,7 @@ def from_raw():
         print(f)
         print("->")
         print(fc)
-        #print(Path(f).is_file())
+        # print(Path(f).is_file())
         # prms._cellpyfile_step = '/step'
         c = cellpy.get(f)
         # prms._cellpyfile_step = '/steps'
@@ -37,7 +37,7 @@ def from_cellpy():
         c = cellpy.get(f)
         # prms._cellpyfile_step = '/steps'
         print(c.cell.summary.head())
-        #c.save(f)
+        # c.save(f)
 
 
 if __name__ == "__main__":

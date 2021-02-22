@@ -182,6 +182,7 @@ def info(c, full=False):
 @task
 def sha(c, version=None):
     import cellpy
+
     if version is None:
         version = f"{cellpy.__version__}"
     full_version = f"cellpy/{version}"
@@ -214,7 +215,9 @@ def man(c):
     print("\nremove environment:")
     print("> conda env remove --name myenv")
     print("\nadd conda env to jupyter:")
-    print("(assuming you are already in the conda env you would like to add to jupyter)")
+    print(
+        "(assuming you are already in the conda env you would like to add to jupyter)"
+    )
     print("> python -m ipykernel install --user --name=firstEnv")
 
     print("----------")
@@ -225,7 +228,8 @@ def man(c):
     print("> jupyter labextension build")
     print("> jupyter labextension list")
 
-    print("""
+    print(
+        """
     This is a short description in how to update the conda-forge recipe:
     - make a fork of https://github.com/conda-forge/cellpy-feedstock
     - clone the repo (jepegit/cellpy-feedstock)
@@ -245,7 +249,8 @@ def man(c):
       https://github.com/jepegit/cellpy-feedstok.git with your web browser
       and clicking the button create pull request.
 
-    """)
+    """
+    )
 
 
 @task

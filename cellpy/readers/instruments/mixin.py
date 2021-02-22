@@ -14,6 +14,7 @@ import cellpy.readers.core as core
 
 class AtomicLoad(object):
     """Atomic loading class"""
+
     pass
 
 

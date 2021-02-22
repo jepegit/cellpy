@@ -809,8 +809,9 @@ class ArbinLoader(Loader):
                 conn, test_id, bad_steps, data_points
             )
             # --------- read auxiliary data (aux-data) ---------------------
-            normal_df = self._load_win_res_auxiliary_table(conn, normal_df, table_name_aux, table_name_aux_global,
-                                                           test_id)
+            normal_df = self._load_win_res_auxiliary_table(
+                conn, normal_df, table_name_aux, table_name_aux_global, test_id
+            )
 
             # --------- read stats-data (summary-data) ---------------------
             sql = "select * from %s where %s=%s order by %s" % (
@@ -845,7 +846,9 @@ class ArbinLoader(Loader):
             new_tests.append(data)
         return new_tests
 
-    def _load_win_res_auxiliary_table(self, conn, normal_df, table_name_aux, table_name_aux_global, test_id):
+    def _load_win_res_auxiliary_table(
+        self, conn, normal_df, table_name_aux, table_name_aux_global, test_id
+    ):
         aux_global_data_df = self._query_table(table_name_aux_global, conn)
         if not aux_global_data_df.empty:
             aux_df = self._get_aux_df(conn, test_id, table_name_aux)
@@ -870,9 +873,7 @@ class ArbinLoader(Loader):
         #    the column names are changed to cellpy-column names ("data_point").
         #    It also keeps a copy of the "data_point"
         #    column. And is that really necessary.
-        normal_df.set_index(
-            self.arbin_headers_normal.data_point_txt, inplace=True
-        )
+        normal_df.set_index(self.arbin_headers_normal.data_point_txt, inplace=True)
         normal_df = normal_df.join(aux_df, how="left", )
         normal_df.reset_index(inplace=True)
         return normal_df
@@ -912,10 +913,7 @@ class ArbinLoader(Loader):
         columns_txt = "*"
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_aux
-        sql_3 = "where %s=%s " % (
-            self.arbin_headers_aux.test_id_txt,
-            test_id,
-        )
+        sql_3 = "where %s=%s " % (self.arbin_headers_aux.test_id_txt, test_id,)
         sql_4 = ""
         sql_aux = sql_1 + sql_2 + sql_3 + sql_4
         aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)
@@ -953,7 +951,13 @@ class ArbinLoader(Loader):
         if DEBUG_MODE:
             time_0 = time.time()
 
-        tmp_name_global, tmp_name_raw, tmp_name_stats, tmp_name_aux_global, tmp_name_aux = self._create_tmp_files(
+        (
+            tmp_name_global,
+            tmp_name_raw,
+            tmp_name_stats,
+            tmp_name_aux_global,
+            tmp_name_aux,
+        ) = self._create_tmp_files(
             table_name_global,
             table_name_normal,
             table_name_stats,
@@ -986,7 +990,13 @@ class ArbinLoader(Loader):
 
             self.logger.debug("reading raw-data")
 
-            length_of_test, normal_df, summary_df, aux_global_data_df, aux_df = self._load_from_tmp_files(
+            (
+                length_of_test,
+                normal_df,
+                summary_df,
+                aux_global_data_df,
+                aux_df,
+            ) = self._load_from_tmp_files(
                 data,
                 tmp_name_global,
                 tmp_name_raw,
@@ -999,7 +1009,9 @@ class ArbinLoader(Loader):
             )
 
             # --------- read auxiliary data (aux-data) ---------------------
-            normal_df = self._load_posix_res_auxiliary_table(aux_global_data_df, aux_df, normal_df)
+            normal_df = self._load_posix_res_auxiliary_table(
+                aux_global_data_df, aux_df, normal_df
+            )
 
             if summary_df.empty and prms.Reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
