@@ -9,14 +9,15 @@ Subpackages
     cellpy.parameters
     cellpy.readers
     cellpy.utils
+    cellpy.core
 
 Submodules
 ----------
 
-cellpy.cellpy\_setup module
----------------------------
+cellpy.cli module
+-----------------
 
-.. automodule:: cellpy.cellpy_setup
+.. automodule:: cellpy.cli
     :members:
     :undoc-members:
     :show-inheritance:
@@ -37,6 +38,13 @@ cellpy.log module
     :undoc-members:
     :show-inheritance:
 
+cellpy.core module
+------------------
+
+.. automodule:: cellpy.core
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Module contents
 ---------------

@@ -145,7 +145,7 @@ Instruments = {"tester": "arbin", "custom_instrument_definitions_file": None}
 
 Instruments = box.Box(Instruments)
 
-# Pre-defined intsruments:
+# Pre-defined instruments:
 
 Arbin = {
     "max_res_filesize": 150_000_000,

@@ -1,5 +1,5 @@
-Working with the pandas.DataFrame objects directly
-==================================================
+Working with the ``pandas.DataFrame`` objects directly
+======================================================
 
 .. warning::
     The package authors are seriously considering re-naming several of the
@@ -7,7 +7,7 @@ Working with the pandas.DataFrame objects directly
     in spirit, but the actual names will change. Soon. Very soon.
 
 
-The ``CellpyData`` object stores the data in several pandas.DataFrame objects.
+The ``CellpyData`` object stores the data in several ``pandas.DataFrame`` objects.
 The easies way to get to the DataFrames is by the following procedure:
 
 .. code-block:: python
@@ -15,31 +15,24 @@ The easies way to get to the DataFrames is by the following procedure:
     # Assumed name of the CellpyData object: cellpy_data
 
     # get the 'test':
-    cellpy_test = cell_data.dataset
-    # cellpy_test is now a cellpy DataSet object (cellpy.readers.cellreader.DataSet)
+    c = cell_data.cell
+    # cellpy_test is now a cellpy Cell object (cellpy.readers.cellreader.Cell)
 
     # pandas.DataFrame with data vs cycle number (e.g. coulombic efficiency):
-    summary = cellpy_test.summary
-    # or
-    summary = cell_data.dataset_summary
+    summary_data = c.summary
 
     # pandas.DataFrame with the raw data:
-    rawdata = cellpy_test.raw
-    # or
-    raw_data = cellpy_data.dataset_normal
+    raw_data = c.raw
 
     # pandas.DataFrame with statistics on each step and info about step type:
-    step_table = cellpy_test.steps
-
-    # run_summary = cellpy_test.run_summary
-    # This is not implemented yet (overall information like cycle life-time)
+    step_info = c.steps
 
 
-You can then manipulate your data with the standard pandas.DataFrame methods
-(and pandas methods in general).
+You can then manipulate your data with the standard ``pandas.DataFrame`` methods
+(and ``pandas`` methods in general).
 
 .. note::
-    At the moment, **CellpyData** objects can store several sets of test-data
+    At the moment, ``CellpyData`` objects can store several sets of test-data
     (several 'tests'). They are stored
     in a list. It is not recommended to utilise this
     *'possible to store multiple tests'* feature as it might be

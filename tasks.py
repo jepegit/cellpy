@@ -231,23 +231,36 @@ def man(c):
     print(
         """
     This is a short description in how to update the conda-forge recipe:
-    - make a fork of https://github.com/conda-forge/cellpy-feedstock
-    - clone the repo (jepegit/cellpy-feedstock)
+    - (If not done): make a fork of https://github.com/conda-forge/cellpy-feedstock
+    - (if not done): clone the repo (jepegit/cellpy-feedstock)
          >>> git clone https://github.com/jepegit/cellpy-feedstok.git
-         git remote add upstream https://github.com/conda-forge/cellpy-feedstock
+         >>> git remote add upstream https://github.com/conda-forge/cellpy-feedstock
+    - Get recent changes
          git fetch upstream
          git rebase upstream/master
+    - Make a new branch in your local clone
          git checkout -b update_x_x_x
-    - edit
-        hash and version
-    - add and commit (e.g. updated feedstock to version 1.0.1)
-    - git push origin <branch-name>
-    - rerender if needed (different requirements, platforms, issues)
-        conda install -c conda-forge conda-smithy
-        conda smithy rerender -c auto
+    - Edit
+        hash and version and build number
+        (hash: pypi - release history - Download files)
+        (version: use normalized format e.g. 0.5.2a3 not 0.5.2.a3!)
+        (build number: should be 0 for new versions)
+    - Add and commit (e.g. updated feedstock to version 1.0.1)
+    - Push
+        >>> git push origin <branch-name>
+    - re-render if needed (different requirements, platforms, issues)
+        >>> conda install -c conda-forge conda-smithy
+        >>> conda smithy rerender -c auto
     - Create a pull request via the web interface by navigating to
       https://github.com/jepegit/cellpy-feedstok.git with your web browser
       and clicking the button create pull request.
+    - Wait for the automatic checks have complete (takes several minutes)
+    - Merge pull request (big green button)
+    - Drink a cup of coffee or walk the dog
+
+    - check if the new version is there:
+      >>> conda search -f cellpy
+    - now you can delete the branch (if you want)
 
     """
     )
@@ -260,7 +273,7 @@ def test(c):
 
 
 @task
-def build(c, docs=False, upload=False):
+def build(c, docs=False, upload=True):
     """Create distribution (and optionally upload to PyPI)"""
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")
@@ -271,6 +284,7 @@ def build(c, docs=False, upload=False):
     if upload:
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
+        print(" Trying with using username and password from keyring.")
         c.run("twine upload dist/*")
     else:
         print(" To upload to pypi: 'twine upload dist/*'")

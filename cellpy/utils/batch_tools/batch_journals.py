@@ -10,7 +10,9 @@ import pandas as pd
 from cellpy.exceptions import UnderDefined
 from cellpy.parameters import prms
 from cellpy.readers import dbreader
-from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.parameters.internal_settings import (
+    get_headers_journal, keys_journal_session
+)
 from cellpy.parameters.legacy.internal_settings import (
     headers_journal_v0 as hdr_journal_old,
 )
@@ -69,8 +71,15 @@ class LabJournal(BaseJournal):
         else:
             logging.debug("creating empty journal pages")
             self.pages = pd.DataFrame()
+
+        self.generate_empty_session()
         self.generate_folder_names()
         self.paginate()
+
+    def generate_empty_session(self):
+        self.session = {}
+        for item in keys_journal_session:
+            self.session[item] = None
 
     @staticmethod
     def _fix_cellpy_paths(p):
@@ -90,9 +99,34 @@ class LabJournal(BaseJournal):
         with open(file_name, "r") as infile:
             top_level_dict = json.load(infile)
         pages_dict = top_level_dict["info_df"]
-        meta_dict = top_level_dict["metadata"]
+        meta = top_level_dict["metadata"]
+        session = top_level_dict.get("session", None)
         pages = pd.DataFrame(pages_dict)
+        if pages.empty:
+            logging.critical("could not find any pages in the journal")
+            raise UnderDefined
+        pages = cls._clean_pages(pages)
 
+        if session is None:
+            logging.debug(f"no session - generating empty one")
+            session = dict()
+
+        session, pages = cls._clean_session(session, pages)
+
+        return pages, meta, session
+
+    @classmethod
+    def _clean_session(cls, session, pages):
+        # include steps for cleaning up the session dict here
+        if not session:
+            logging.critical("no session found in your journal file")
+        for item in keys_journal_session:
+            session[item] = session.get(item, None)
+
+        return session, pages
+
+    @classmethod
+    def _clean_pages(cls, pages):
         logging.debug("checking path-names")
         try:
             pages[hdr_journal.cellpy_file_name] = pages[
@@ -104,22 +138,25 @@ class LabJournal(BaseJournal):
             pages[hdr_journal.cellpy_file_name] = pages[
                 hdr_journal.cellpy_file_name
             ].apply(cls._fix_cellpy_paths)
-
         for column_name in missing_keys:
             if column_name not in pages.columns:
                 warnings.warn(f"old journal format - missing: {column_name}")
                 pages[column_name] = None
-
-        return pages, meta_dict
+        return pages
 
     def from_file(self, file_name=None, paginate=True):
         """Loads a DataFrame with all the needed info about the experiment"""
 
         file_name = self._check_file_name(file_name)
         logging.debug(f"reading {file_name}")
-        pages, meta_dict = self.read_journal_jason_file(file_name)
+        try:
+            pages, meta_dict, session = self.read_journal_jason_file(file_name)
+        except UnderDefined as e:
+            logging.critical(f"could not load {file_name}")
+            raise UnderDefined from e
         logging.debug(f"got pages and meta_dict")
         self.pages = pages
+        self.session = session
         self.file_name = file_name
         self._prm_packer(meta_dict)
         self.generate_folder_names()
@@ -162,7 +199,8 @@ class LabJournal(BaseJournal):
         """Saves a DataFrame with all the needed info about the experiment"""
         file_name = self._check_file_name(file_name)
         pages = self.pages
-        top_level_dict = {"info_df": pages, "metadata": self._prm_packer()}
+        session = self.session
+        top_level_dict = {"info_df": pages, "metadata": self._prm_packer(), "session": session}
         jason_string = json.dumps(
             top_level_dict,
             default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
@@ -181,12 +219,12 @@ class LabJournal(BaseJournal):
         if self.project:
             self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
         else:
-            print("Could not create project dir (missing project definition)")
+            logging.critical("Could not create project dir (missing project definition)")
         if self.name:
             self.batch_dir = os.path.join(self.project_dir, self.name)
             self.raw_dir = os.path.join(self.batch_dir, "raw_data")
         else:
-            print("Could not create batch_dir and raw_dir", "(missing batch name)")
+            logging.critical("Could not create batch_dir and raw_dir", "(missing batch name)")
 
     def paginate(self):
         """Make folders where we would like to put results etc."""

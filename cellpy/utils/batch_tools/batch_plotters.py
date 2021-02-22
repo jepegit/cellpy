@@ -79,7 +79,7 @@ def create_plot_option_dicts(
             # palette = bokeh.palettes.brewer['YlGnBu']
             palette = bokeh.palettes.d3["Category10"]
             # palette = bokeh.palettes.brewer[prms.Batch.bokeh_palette']
-        except NameError:
+        except (NameError, AttributeError):
             palette = [
                 ["k"],
                 ["k", "r"],
@@ -302,6 +302,7 @@ def plot_cycle_life_summary_bokeh(
     legend_option="all",
     add_rate=True,
 ):
+    # TODO: This function should be refactored!
     if height_fractions is None:
         height_fractions = [0.3, 0.4, 0.3]
     logging.debug(f"   * stacking and plotting")
@@ -334,21 +335,25 @@ def plot_cycle_life_summary_bokeh(
 
         try:
             coulombic_efficiency = summaries.loc[
-                :, idx[["coulombic_efficiency", "charge_c_rate"], :]
-            ]
+                                   :, idx[["coulombic_efficiency", "charge_c_rate"], :]
+                                   ]
         except AttributeError:
             warnings.warn(
                 "No charge rate columns available - consider re-creating summary!"
             )
             coulombic_efficiency = summaries.coulombic_efficiency
 
-        try:
-            ir_charge = summaries.loc[:, idx[["ir_charge", "charge_c_rate"], :]]
-        except AttributeError:
-            warnings.warn(
-                "No charge rate columns available - consider re-creating summary!"
-            )
-            ir_charge = summaries.ir_charge
+        if "ir_charge" in summaries.columns:
+            try:
+                ir_charge = summaries.loc[:, idx[["ir_charge", "charge_c_rate"], :]]
+
+            except AttributeError:
+                warnings.warn(
+                    "No charge rate columns available - consider re-creating summary!"
+                )
+                ir_charge = summaries.ir_charge
+        else:
+            ir_charge = pd.DataFrame()
     else:
         discharge_capacity = summaries.discharge_capacity
         charge_capacity = summaries.charge_capacity
@@ -376,7 +381,10 @@ def plot_cycle_life_summary_bokeh(
     )
 
     all_legend_items.extend(legends_eff)
-
+    if not ir_charge.empty:
+        cap_x_axis = None
+    else:
+        cap_x_axis = "Cycle number"
     p_cap, legends_cap = create_summary_plot_bokeh(
         (charge_capacity, discharge_capacity),
         info,
@@ -385,32 +393,34 @@ def plot_cycle_life_summary_bokeh(
         legend_option=legend_option,
         label="charge and discharge cap.",
         title=None,
-        x_axis_label=None,
+        x_axis_label=cap_x_axis,
         height=h_cap,
         width=width,
         x_range=p_eff.x_range,
     )
     all_legend_items.extend(legends_cap)
+    if not ir_charge.empty:
+        p_ir, legends_ir = create_summary_plot_bokeh(
+            ir_charge,
+            info,
+            group_styles,
+            sub_group_styles,
+            label="ir charge",
+            legend_option=legend_option,
+            title=None,
+            x_axis_label="Cycle number",
+            y_axis_label="IR Charge (Ohm)",
+            width=width,
+            height=h_ir,
+            x_range=p_eff.x_range,
+        )
 
-    p_ir, legends_ir = create_summary_plot_bokeh(
-        ir_charge,
-        info,
-        group_styles,
-        sub_group_styles,
-        label="ir charge",
-        legend_option=legend_option,
-        title=None,
-        x_axis_label="Cycle number",
-        y_axis_label="IR Charge (Ohm)",
-        width=width,
-        height=h_ir,
-        x_range=p_eff.x_range,
-    )
-    all_legend_items.extend(legends_ir)
+        all_legend_items.extend(legends_ir)
 
     p_eff.y_range.start, p_eff.y_range.end = 20, 120
     p_eff.xaxis.visible = False
-    p_cap.xaxis.visible = False
+    if not ir_charge.empty:
+        p_cap.xaxis.visible = False
 
     tooltips = [("cycle", f"@{hdr_summary.cycle_index}"), ("value", "$y{0.}")]
     if add_rate:
@@ -420,9 +430,12 @@ def plot_cycle_life_summary_bokeh(
 
     p_eff.add_tools(hover)
     p_cap.add_tools(hover)
-    p_ir.add_tools(hover)
+    if not ir_charge.empty:
+        p_ir.add_tools(hover)
 
-    renderer_list = p_eff.renderers + p_cap.renderers + p_ir.renderers
+    renderer_list = p_eff.renderers + p_cap.renderers
+    if not ir_charge.empty:
+        renderer_list += p_ir.renderers
 
     legend_items_dict = defaultdict(list)
     for label, r in all_legend_items:
@@ -472,12 +485,18 @@ def plot_cycle_life_summary_bokeh(
     )
     dum_fig.title.align = "center"
 
+    grid_layout = [p_eff, p_cap]
+    if not ir_charge.empty:
+        grid_layout.append(p_ir)
     fig_grid = bokeh.layouts.gridplot(
-        [p_eff, p_cap, p_ir], ncols=1, sizing_mode="stretch_width"
+        grid_layout, ncols=1, sizing_mode="stretch_width"
     )
 
     info_text = "(filled:charge) (open:discharge)"
-    p_ir.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
+    if not ir_charge.empty:
+        p_ir.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
+    else:
+        p_cap.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
 
     final_figure = bokeh.layouts.row(
         children=[fig_grid, dum_fig], sizing_mode="stretch_width"
@@ -600,20 +619,16 @@ def summary_plotting_engine(**kwargs):
     """creates plots of summary data."""
 
     logging.debug(f"Using {prms.Batch.backend} for plotting")
-
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
     barn = None
-
     logging.debug("    - summary_plot_engine")
     farms = _preparing_data_and_plotting(experiments=experiments, farms=farms, **kwargs)
-
     return farms, barn
 
 
 def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
-
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
@@ -724,7 +739,7 @@ class CyclingSummaryPlotter(BasePlotter):
         returns farms to self.farms and barn to self.barn. Thus, one could
         in principle modify self.experiments within the engine without
         explicitly 'notifying' the poor soul who is writing a batch routine
-        using that engine. However, it is strongly adviced not to do such
+        using that engine. However, it is strongly advised not to do such
         things. And if you, as engine designer, really need to, then at least
         notify it through a debug (logger) statement.
         """
@@ -734,7 +749,9 @@ class CyclingSummaryPlotter(BasePlotter):
         self.current_engine = engine
         if self.reset_farms:
             self.farms = []
+
         self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
+
         logging.debug("::engine ended")
 
     def run_dumper(self, dumper):
@@ -758,18 +775,18 @@ class CyclingSummaryPlotter(BasePlotter):
         )
         logging.debug("::dumper ended")
 
-    def do(self):
-        if not self.experiments:
-            raise UnderDefined("cannot run until " "you have assigned an experiment")
-
-        for engine in self.engines:
-            self.empty_the_farms()
-            logging.debug(f"running - {str(engine)}")
-            self.run_engine(engine)
-
-            for dumper in self.dumpers:
-                logging.debug(f"exporting - {str(dumper)}")
-                self.run_dumper(dumper)
+    # def do(self):
+    #     if not self.experiments:
+    #         raise UnderDefined("cannot run until " "you have assigned an experiment")
+    #
+    #     for engine in self.engines:
+    #         self.empty_the_farms()
+    #         logging.debug(f"running - {str(engine)}")
+    #         self.run_engine(engine)
+    #
+    #         for dumper in self.dumpers:
+    #             logging.debug(f"exporting - {str(dumper)}")
+    #             self.run_dumper(dumper)
 
 
 class EISPlotter(BasePlotter):

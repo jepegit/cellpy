@@ -690,6 +690,12 @@ def info(version, configloc, params, check):
     help="Run a batch job defined in the given journal-file",
 )
 @click.option(
+    "--key",
+    "-k",
+    is_flag=True,
+    help="Run a batch job defined by batch-name",
+)
+@click.option(
     "--batch",
     "-b",
     is_flag=True,
@@ -700,10 +706,16 @@ def info(version, configloc, params, check):
 @click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
 @click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
 @click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
-@click.option("--nom-cap", default=None, type=float)
+@click.option("--nom-cap", default=None, type=float, help="nominal capacity (used in calculating rates etc)")
+@click.option("--batch_col", default=None, type=str, help="batch column (if selecting running from db)")
+@click.option("--project", "-p", default=None, type=str, help="project (if selecting running from db)")
 @click.option("--list", "-l", "list_", is_flag=True, help="List batch-files.")
 @click.argument("name", default="NONE")
-def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name, list_):
+def run(
+    journal, key, batch, debug, silent, raw, cellpyfile, minimal,
+    nom_cap, name, batch_col, project,
+    list_
+):
     """Run a cellpy process.
 
     You can use this to launch specific applications.
@@ -714,7 +726,7 @@ def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name, 
 
            cellpy run db
 
-        run a batch job described in a journal file (not implemented yet)
+        run a batch job described in a journal file
 
            cellpy run -j my_experiment.json
 
@@ -745,11 +757,45 @@ def run(journal, batch, debug, silent, raw, cellpyfile, minimal, nom_cap, name, 
     elif batch:
         _run_journals(name, debug, silent, raw, cellpyfile, minimal)
 
+    elif key:
+        _run_from_db(name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project)
+
     elif name.lower() == "db":
         _run_db(debug, silent)
 
     else:
         _run(name, debug, silent)
+
+
+def _run_from_db(name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project):
+    click.echo(f"running from db \nkey={name}, batch_col={batch_col}, project={project}")
+
+    kwargs = dict()
+    kwargs["name"] = name
+
+    if debug:
+        kwargs["default_log_level"] = "DEBUG"
+    if not minimal:
+        kwargs["export_raw"] = False
+        kwargs["export_cycles"] = False
+        kwargs["export_ica"] = False
+
+    if batch_col is not None:
+        kwargs["batch_col"] = batch_col
+    if project is None:
+        kwargs["project"] = "various"
+    else:
+        kwargs["project"] = project
+
+    from cellpy.utils import batch
+
+    b = batch.process_batch(
+        force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, backend="matplotlib", **kwargs
+    )
+
+    if b is not None and not silent:
+        print(b)
+    click.echo("---")
 
 
 def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
@@ -786,7 +832,8 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
         return
 
     b = batch.process_batch(
-        file, force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, **kwargs
+        file, force_raw_file=raw, force_cellpy=cellpyfile,
+        nom_cap=nom_cap, backend="matplotlib", **kwargs
     )
     if b is not None and not silent:
         print(b)

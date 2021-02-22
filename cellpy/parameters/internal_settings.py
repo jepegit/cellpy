@@ -273,6 +273,8 @@ headers_journal["group"] = "group"
 headers_journal["sub_group"] = "sub_group"
 headers_journal["comment"] = "comment"
 
+keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
+
 
 def get_headers_summary():
     """Returns a dictionary containing the header-strings for the summary

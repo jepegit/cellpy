@@ -258,6 +258,7 @@ class CellpyData(object):
         # self.max_chunks = prms.Reader.max_chunks
         # self.last_chunk = prms.Reader.last_chunk
         self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
+        self.limit_data_points = None
         # self.load_until_error = prms.Reader.load_until_error
         self.ensure_step_table = prms.Reader.ensure_step_table
         self.daniel_number = prms.Reader.daniel_number
@@ -1142,7 +1143,7 @@ class CellpyData(object):
         test_exists = False
         if test:
             if test[0].no_data:
-                self.logging.debug(
+                logging.debug(
                     "the first dataset (or only dataset) loaded from the raw data file is empty"
                 )
             else:
@@ -1661,13 +1662,38 @@ class CellpyData(object):
                 )
         self.logger.debug(f"Keys in current cellpy-file: {store.keys()}")
 
-    @staticmethod
-    def _extract_raw_from_cellpy_file(data, parent_level, raw_dir, store):
-        data.raw = store.select(parent_level + raw_dir)
+    def _hdf5_cycle_filter(self, table=None):
+        # this is not the best way to do it
+        if max_cycle := self.limit_loaded_cycles:
+            if table == "summary":
+                logging.debug(f"limited to cycle_number {max_cycle}")
+                return (f"index <= {int(max_cycle)}", )
+            elif table == "raw":
+                logging.debug(f"limited to data_point {self.limit_data_points}")
+                return (f"index <= {int(self.limit_data_points)}", )
 
-    @staticmethod
-    def _extract_summary_from_cellpy_file(data, parent_level, store, summary_dir):
-        data.summary = store.select(parent_level + summary_dir)
+    def _extract_summary_from_cellpy_file(self, data, parent_level, store, summary_dir):
+        cycle_filter = self._hdf5_cycle_filter("summary")
+        data.summary = store.select(parent_level + summary_dir, where=cycle_filter)
+        # TODO: max data point should be an attribute
+        max_data_point = data.summary["data_point"].max()
+        self.limit_data_points = int(max_data_point)
+
+    def _extract_raw_from_cellpy_file(self, data, parent_level, raw_dir, store):
+        cycle_filter = self._hdf5_cycle_filter("raw")
+        data.raw = store.select(parent_level + raw_dir, where=cycle_filter)
+
+    def _extract_steps_from_cellpy_file(self, data, parent_level, step_dir, store):
+        try:
+            data.steps = store.select(parent_level + step_dir)
+            if self.limit_data_points:
+                data.steps = data.steps.loc[data.steps["point_last"] <= self.limit_data_points]
+                logging.debug(f"limited to data_point {self.limit_data_points}")
+        except Exception as e:
+            print(e)
+            logging.debug("could not get steps from cellpy-file")
+            data.steps = pd.DataFrame()
+            warnings.warn(f"Unhandled exception raised: {e}")
 
     def _extract_fids_from_cellpy_file(self, fid_dir, parent_level, store):
         self.logger.debug(f"Extracting fid table from {fid_dir} in hdf5 store")
@@ -1684,15 +1710,6 @@ class CellpyData(object):
             warnings.warn("no fid_table - you should update your cellpy-file")
             fid_table_selected = False
         return fid_table, fid_table_selected
-
-    def _extract_steps_from_cellpy_file(self, data, parent_level, step_dir, store):
-        try:
-            data.steps = store.select(parent_level + step_dir)
-        except Exception as e:
-            print(e)
-            self.logging.debug("could not get steps from cellpy-file")
-            data.steps = pd.DataFrame()
-            warnings.warn(f"Unhandled exception raised: {e}")
 
     def _extract_meta_from_cellpy_file(self, data, meta_table, filename):
         # get attributes from meta table
@@ -3992,20 +4009,24 @@ class CellpyData(object):
             steptable=steptable,
         )
 
-        c = pd.Series(dtype=float)
-        v = pd.Series(dtype=float)
-
         if cap_type == "charge":
             column_txt = self.headers_normal.charge_capacity_txt
         else:
             column_txt = self.headers_normal.discharge_capacity_txt
         if cycle:
-            step = cycles[cycle][0]
-            selected_step = self._select_step(cycle, step, dataset_number)
-            if not self.is_empty(selected_step):
-                v = selected_step[self.headers_normal.voltage_txt]
-                c = selected_step[column_txt] * 1000000 / mass
-            else:
+            steps = cycles[cycle]
+            _v = []
+            _c = []
+
+            for step in sorted(steps):
+                selected_step = self._select_step(cycle, step, dataset_number)
+                if not self.is_empty(selected_step):
+                    _v.append(selected_step[self.headers_normal.voltage_txt])
+                    _c.append(selected_step[column_txt] * 1000000 / mass)
+            try:
+                voltage = pd.concat(_v, axis=0)
+                cap = pd.concat(_c, axis=0)
+            except:
                 self.logger.debug("could not find any steps for this cycle")
                 raise NullData(f"no steps found (c:{cycle} s:{step} type:{cap_type})")
         else:
@@ -4013,10 +4034,7 @@ class CellpyData(object):
             # this is a dataframe filtered on step and cycle
             raise NotImplementedError
             # TODO: fix this now!
-            # d = self.select_steps(cycles, append_df=True)
-            # v = d[self.headers_normal.voltage_txt]
-            # c = d[column_txt] * 1000000 / mass
-        return c, v
+        return cap, voltage
 
     def get_ocv(
         self,

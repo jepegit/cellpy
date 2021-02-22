@@ -1,13 +1,13 @@
-The getting started with ``cellpy`` tutorial (opinionated verson)
-=================================================================
+The getting started with ``cellpy`` tutorial (opinionated version)
+==================================================================
 
 This tutorial will help you getting started with ``cellpy`` and
 tries to give you a step-by-step recipe. The information in this tutorial
 can also (most likely) be found elsewhere. For the novice users,
 jump directly to chapter 1.2.
 
-1.1 How to install ``cellpy`` - the minimalistic explanation
-------------------------------------------------------------
+How to install ``cellpy`` - the minimalistic explanation
+--------------------------------------------------------
 
 If you know what you are doing, and only need the most basic features
 of ``cellpy``, you should be able to get things up and running by
@@ -26,11 +26,42 @@ You also need the typical scientific python pack, including ``numpy``,
 can use ``conda`` so that you don’t have to hassle with missing
 C-compilers if you are on an Windows machine).
 
+
+Install a couple of other dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You should also install some additional dependencies:
+
+``pytables`` is needed for working with the hdf5 files (the cellpy-files):
+
+.. code:: bash
+
+   conda install -c conda-forge pytables
+
+If you would like to use some of the fitting routines in ``cellpy``, you
+will need to install ``lmfit``:
+
+.. code:: bash
+
+   conda install -c conda-forge lmfit
+
+
+Another tool that is really handy is Jupyter. And the plotting library
+bundle holoviz. You might already have them installed. If not, I recommend
+that you look at their documentation (google it) and install them. You can most
+likely use the same method as for pytables etc.
+
 Note! In addition to the requirements set in the ``setup.py`` file, you
 will also need a Python ODBC bridge for loading .res-files from Arbin
 testers. And possible also other *‘too-be-implemented’* file formats. I
 recommend `pyodbc <https://github.com/mkleehammer/pyodbc/wiki>`__ that
-can be installed from conda forge or using pip. For reading .res-files
+can be installed from conda forge or using pip.
+
+.. code:: bash
+
+   conda install -c conda-forge pyodbc
+
+For reading .res-files
 (which actually are in a Microsoft Access format) you also need a driver
 or similar to help your ODBC bridge accessing it. A small hint for
 Windows users: if you don’t have one of the most recent Office version,
@@ -46,8 +77,8 @@ temporary csv-files, and then import from those csv-file (using the
 ``pandas`` library). You can install ``mdbtools`` using your systems
 preferred package manager (*e.g.* ``apt-get install mdbtools``).
 
-1.2 The tea spoon explanation
------------------------------
+The tea spoon explanation
+-------------------------
 
 If you are used to installing stuff from the command line (or shell),
 then things might very well run smoothly. However, a considerable
@@ -68,63 +99,50 @@ select python 2.7. Use at least python 3.6. And select the 64 bit version
 (if you fail at installing the 64 bit version, then you can try the
 weaker 32 bit version). Download it and let it install.
 
-Install ``cellpy``
-~~~~~~~~~~~~~~~~~~
+Create a virtual environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Open up a command window
-(you can find a command window on Windows by
-*e.g* pressing the Windows button + r and typing ``cmd.exe``). Then type
+This step can be omitted (but its not necessary very smart to do so).
+Create a virtual conda environment called ``my_cellpy`` (the name is not
+important, but it should be a name you are able to remember).
+
+
+Open up a command window (you can find a command window on Windows by
+*e.g* pressing the Windows button + r and typing ``cmd.exe``), or even better,
+open up "anaconda prompt". Then type
 
 .. code:: bash
 
-   pip install cellpy
+   conda create -n my_cellpy
+
+Then activate your environment:
+
+.. code:: bash
+
+   conda activate my_cellpy
 
 If you get an error message, then it could be that your Python version is
-not available for you (maybe you installed as root?). What usually works
-is to try to locate the “anaconda prompt” program and run that instead
-of the command window. Note that the bin version matters some times, so try
+not available for you (maybe you installed as root?). If you were using
+the command window on windows, try to locate the “anaconda prompt” program and run that
+instead.
+
+Install ``cellpy``
+~~~~~~~~~~~~~~~~~~
+
+.. code:: bash
+
+   conda install -c conda-forge cellpy
+
+Note that the bin version matters some times, so try
 to make a mental note of what you selected (for
 example, if you plan to use the Microsoft Access odbc driver, and it is
 32-bit, you probably should chose to install an 32-bit python version
 (see next sub-chapter)).
 
-Install odbc driver
-~~~~~~~~~~~~~~~~~~~
-
-Some of the battery and cell testers output data in SQL format. To read
-those, you will need to install ``pyodbc``
-
-.. code:: bash
-
-   conda install -c conda-forge pyodbc
-
-You most likely also want to install the Microsoft Access odbc driver
-which can be downloaded from `this
+If you don't have the newest office suit, you might need to install
+the Microsoft Access odbc driver which can be downloaded from `this
 page <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__
 
-Install a couple of other dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-It is most likely already taken care of by your python distribution, but
-to be on the safe side, you should also install some additional
-dependencies
-
-.. code:: bash
-
-   conda install -c conda-forge pytables
-
-.. code:: bash
-
-   conda install -c conda-forge lmfit
-
-.. code:: bash
-
-   conda install -c conda-forge python-box
-
-Another tool that is really handy is Jupyter. And the plotting library
-bundle holoviz. You might already have them installed. If not, I recommend
-that you look at their documentation (google it) and install them. You can most
-likely use the same method as for pytables etc. (``pyodbc``
 
 Check your installation
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -164,8 +182,8 @@ To run a more complete check of your installation, there exist a
    cellpy info --check
 
 
-2. The ``cellpy`` command to your rescue
-----------------------------------------
+The ``cellpy`` command to your rescue
+-------------------------------------
 
 To help installing and controlling your ``cellpy`` installation, a CLI
 is provided with four main commands, including ``info`` for getting
@@ -188,9 +206,12 @@ This will out-put some (hopefully) helpful text
      --help  Show this message and exit.
 
    Commands:
+      edit   Edit your cellpy config file.
       info   This will give you some valuable information about your cellpy.
+      new    Will in the future be used for setting up a batch experiment.
       pull   Download examples or tests from the big internet.
-      run    Will in the future be used for running a cellpy process.
+      run    Run a cellpy process.
+      serve  Start a Jupyter server
       setup  This will help you to setup cellpy.
 
 
@@ -237,8 +258,9 @@ folder), you can use the ``-d`` option *e.g.*
 
 .. note::
 
-    If you dont choose the ``-i`` option, you can edit your configurations
-    directly in the cellpy configuration file inside your home directory.
+    If you don't choose the ``-i`` option, you can always edit your configurations
+    directly in the cellpy configuration file (that should be located inside your
+    home directory on posix or Documents folder on windows).
 
 When you have answered all your questions, a configuration file will be
 made and saved to your home directory. You can always issue
@@ -246,8 +268,8 @@ made and saved to your home directory. You can always issue
 (it’s written in YAML format and it should be relatively easy to edit it
 in a text editor)
 
-3. Running your first script
-----------------------------
+Running your first script
+-------------------------
 
 As with most software, you are encouraged to play a little with it. I
 hope there are some useful stuff in the code repository (for example in
@@ -262,7 +284,7 @@ Let's start by a trying to import ``cellpy`` in an interactive Python session.
 If you have an icon to press to start up the Python in interactive mode,
 do that (it could also be for example an ipython console or a
 Jupyter Notebook).
-You can also start an interactrive Python session
+You can also start an interactive Python session
 if you are in your terminal window of command window by just writing ``python``
 and pressing enter.
 
@@ -307,8 +329,8 @@ terminal window). You probably need to use the ``--reset`` flag this time
 since it is not your first time running it).
 
 
-4. What next?
--------------
+What next?
+----------
 
 For example: If you want to use the highly popular ``cellpy.utils.batch``
 utility, you

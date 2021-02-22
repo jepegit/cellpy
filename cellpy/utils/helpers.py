@@ -40,7 +40,6 @@ def _make_average(
     cell_id = ""
     not_a_number = np.NaN
     new_frames = []
-
     if columns is None:
         columns = frames[0].columns
 
@@ -50,7 +49,7 @@ def _make_average(
                 set(
                     [
                         "_".join(
-                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
+                            k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
                         )
                         for k in keys
                     ]
@@ -379,13 +378,13 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
     Returns:
         pandas.DataFrame
     """
+    logging.debug("removing outliers from summary on index")
     if indexes is None:
         indexes = []
 
     selection = s.index.isin(indexes)
     if remove_last:
         selection[-1] = True
-
     return s[~selection]
 
 
@@ -407,7 +406,7 @@ def remove_first_cycles_from_summary(s, first=None):
     return s
 
 
-def yank_after(b, last=None, keep_old=True):
+def yank_after(b, last=None, keep_old=False):
     """Cut all cycles after a given cycle index number.
 
     Args:
@@ -435,10 +434,11 @@ def yank_after(b, last=None, keep_old=True):
             last_this_cell = last
         s = remove_last_cycles_from_summary(s, last_this_cell)
         c.cell.summary = s
-    return b
+    if keep_old:
+        return b
 
 
-def yank_before(b, first=None, keep_old=True):
+def yank_before(b, first=None, keep_old=False):
     """Cut all cycles before a given cycle index number.
 
     Args:
@@ -466,7 +466,8 @@ def yank_before(b, first=None, keep_old=True):
             first_this_cell = first
         s = remove_first_cycles_from_summary(s, first_this_cell)
         c.cell.summary = s
-    return b
+    if keep_old:
+        return b
 
 
 def yank_outliers(
@@ -480,7 +481,7 @@ def yank_outliers(
     remove_last=False,
     iterations=1,
     zscore_multiplyer=1.3,
-    keep_old=True,
+    keep_old=False,
 ):
     """Remove outliers from a batch object.
 
@@ -494,21 +495,29 @@ def yank_outliers(
         remove_indexes (dict or list): if dict, look-up on cell label, else a list that will be the same for all
         remove_last (dict or bool): if dict, look-up on cell label.
         iterations (int): repeat z-score filtering if `zscore_limit` is given.
-        zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering (should usually be less than 1).
-        keep_old (bool): perform filtering of a copy of the batch object.
+        zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering
+            (should usually be less than 1).
+        keep_old (bool): perform filtering of a copy of the batch object
+            (not recommended at the moment since it then loads the full cellpyfile).
 
     Returns:
-        cellpy.utils.batch object (returns a copy if `keep_old` is True).
+        if keep_old: new cellpy.utils.batch object.
+        else: dictionary of removed cycles
     """
 
     if keep_old:
         b = deepcopy(b)
 
+    removed_cycles = dict()
+
     # remove based on indexes and values
     for cell_number, cell_label in enumerate(b.experiment.cell_names):
+        logging.debug(f"yanking {cell_label} ")
         c = b.experiment.data[cell_label]
         s = c.cell.summary
+        before = set(s.index)
         if remove_indexes is not None:
+            logging.debug("removing indexes")
             if isinstance(remove_indexes, dict):
                 remove_indexes_this_cell = remove_indexes.get(cell_label, None)
             else:
@@ -522,6 +531,8 @@ def yank_outliers(
             s = remove_outliers_from_summary_on_index(
                 s, remove_indexes_this_cell, remove_last_this_cell
             )
+            # TODO: populate removed_cycles
+        before = set(s.index)
         s = remove_outliers_from_summary_on_value(
             s,
             low=low,
@@ -529,7 +540,10 @@ def yank_outliers(
             filter_cols=filter_cols,
             freeze_indexes=freeze_indexes,
         )
+        removed = before - set(s.index)
         c.cell.summary = s
+        if removed:
+            removed_cycles[cell_label] = list(removed)
 
     # removed based on zscore
     if zscore_limit is not None:
@@ -544,19 +558,23 @@ def yank_outliers(
                     zscore_limit=zscore_limit,
                     freeze_indexes=freeze_indexes,
                 )
-
+                # TODO: populate removed_cycles
                 rows_removed = n1 - len(s)
                 tot_rows_removed += rows_removed
                 c.cell.summary = s
             if tot_rows_removed == 0:
                 break
             zscore_limit *= zscore_multiplyer
-    return b
+    if keep_old:
+        return b
+    else:
+        return removed_cycles
 
 
 # from helpers - updated
 def concatenate_summaries(
     b,
+    max_cycle=None,
     rate=None,
     on="charge",
     columns=None,
@@ -571,6 +589,7 @@ def concatenate_summaries(
     rate_column=None,
     inverse=False,
     inverted=False,
+    key_index_bounds=[1, -2],
 ):
 
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -580,6 +599,7 @@ def concatenate_summaries(
 
     Args:
         b (cellpy.batch object): the batch with the cells.
+        max_cycle (int): drop all cycles above this value.
         rate (float): filter on rate (C-rate)
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
@@ -594,6 +614,8 @@ def concatenate_summaries(
         rate_column (str): name of the column containing the C-rates.
         inverse (bool): select steps that does not have the given C-rate.
         inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
+            key_index_bound[0] to key_index_bound[1].
 
     Returns:
         Multi-index pandas.DataFrame
@@ -602,6 +624,8 @@ def concatenate_summaries(
             row-index: cycle number (cycle_index)
 
     """
+    # TODO: refactor me
+    # TODO: check if selecting normalize_cycles and group_it performs the operation in logical order
     if normalize_capacity_on is not None:
         default_columns = ["normalized_charge_capacity"]
     else:
@@ -659,6 +683,8 @@ def concatenate_summaries(
             c = b.experiment.data[cell_id]
 
             if not c.empty:
+                if max_cycle is not None:
+                    c = c.drop_from(max_cycle+1)
                 if add_areal:
                     c = add_areal_capacity(c, cell_id, b.experiment.journal)
 
@@ -715,13 +741,13 @@ def concatenate_summaries(
             try:
                 if normalize_cycles:
                     s, cell_id = _make_average(
-                        frames_sub, keys_sub, normalize_cycles_headers + columns, True
+                        frames_sub, keys_sub, normalize_cycles_headers + columns, True, key_index_bounds,
                     )
                     s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
                     if hdr_cum_charge not in columns:
                         s = s.drop(columns=hdr_cum_charge)
                 else:
-                    s, cell_id = _make_average(frames_sub, keys_sub, columns)
+                    s, cell_id = _make_average(frames_sub, keys_sub, columns, key_index_bounds=key_index_bounds)
             except ValueError as e:
                 print("could not make average!")
                 print(e)
@@ -739,8 +765,11 @@ def concatenate_summaries(
             used_names = []
             new_keys = []
             for name in keys:
-                if name in used_names:
-                    name += "x"
+                while True:
+                    if name in used_names:
+                        name += "x"
+                    else:
+                        break
                 new_keys.append(name)
                 used_names.append(name)
             keys = new_keys

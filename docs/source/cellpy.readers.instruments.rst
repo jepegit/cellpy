@@ -7,7 +7,13 @@ Submodules
 cellpy.readers.instruments.arbin module
 ---------------------------------------
 
-.. automodule:: cellpy.readers.instruments.arbin
+.. automodule:: cellpy.readers.instruments.arbin_res
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+.. automodule:: cellpy.readers.instruments.arbin_sql
     :members:
     :undoc-members:
     :show-inheritance:
