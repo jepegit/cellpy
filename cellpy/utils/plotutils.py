@@ -281,7 +281,9 @@ def plot_concatenated(
     if extension == "matplotlib":
         hover = False
 
-    hv.extension(extension, logo=False, )
+    hv.extension(
+        extension, logo=False,
+    )
 
     if hdr_level is None:
         hdr_level = 0 if file_id_level == 1 else 1
@@ -1095,7 +1097,14 @@ def bplot(b, individual=False, cols=1, **kwargs):
     for i, col in enumerate(columns):
         try:
             cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
-            _p = plot_concatenated(cs, journal=journal, spread=spread, width=i_width, extension=extension, title=col)
+            _p = plot_concatenated(
+                cs,
+                journal=journal,
+                spread=spread,
+                width=i_width,
+                extension=extension,
+                title=col,
+            )
 
             if i < len(columns) - 1:
                 _p.opts(show_legend=False)
