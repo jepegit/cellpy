@@ -49,7 +49,7 @@ def _make_average(
                 set(
                     [
                         "_".join(
-                            k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
+                            k.split("_")[key_index_bounds[0]: key_index_bounds[1]]
                         )
                         for k in keys
                     ]
@@ -684,7 +684,7 @@ def concatenate_summaries(
 
             if not c.empty:
                 if max_cycle is not None:
-                    c = c.drop_from(max_cycle+1)
+                    c = c.drop_from(max_cycle + 1)
                 if add_areal:
                     c = add_areal_capacity(c, cell_id, b.experiment.journal)
 
@@ -741,13 +741,19 @@ def concatenate_summaries(
             try:
                 if normalize_cycles:
                     s, cell_id = _make_average(
-                        frames_sub, keys_sub, normalize_cycles_headers + columns, True, key_index_bounds,
+                        frames_sub,
+                        keys_sub,
+                        normalize_cycles_headers + columns,
+                        True,
+                        key_index_bounds,
                     )
                     s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
                     if hdr_cum_charge not in columns:
                         s = s.drop(columns=hdr_cum_charge)
                 else:
-                    s, cell_id = _make_average(frames_sub, keys_sub, columns, key_index_bounds=key_index_bounds)
+                    s, cell_id = _make_average(
+                        frames_sub, keys_sub, columns, key_index_bounds=key_index_bounds
+                    )
             except ValueError as e:
                 print("could not make average!")
                 print(e)

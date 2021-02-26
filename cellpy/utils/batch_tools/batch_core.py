@@ -38,10 +38,14 @@ class Doer(metaclass=abc.ABCMeta):
             *args: list of experiments
         """
         self.experiments = []
-        self.farms = []  # A list of lists, each list is a green field where your animals wander around
+        self.farms = (
+            []
+        )  # A list of lists, each list is a green field where your animals wander around
         self.engines = []  # The engines creates the animals
         self.dumpers = []  # The dumpers places animals in the barn
-        self.barn = None  # This is where we put the animals during winter (and in the night)
+        self.barn = (
+            None  # This is where we put the animals during winter (and in the night)
+        )
 
         # Decide if the farm should be locked or not. If not locked, the farm will be emptied
         # before each engine run (if the farm is not locked, the animals will escape).
@@ -156,11 +160,15 @@ class Data(collections.UserDict):
         cell_labels = self.experiment.journal.pages.index
         for cell_label in cell_labels:
             try:
-                self.accessors[self._create_accessor_label(cell_label)] = self.experiment.cell_data_frames[cell_label]
+                self.accessors[
+                    self._create_accessor_label(cell_label)
+                ] = self.experiment.cell_data_frames[cell_label]
             except KeyError as e:
-                logging.debug(f"Could not create accessors for {cell_label}"
-                              f"(probably missing from the experiment.cell_data_frames"
-                              f"attribute) {e}")
+                logging.debug(
+                    f"Could not create accessors for {cell_label}"
+                    f"(probably missing from the experiment.cell_data_frames"
+                    f"attribute) {e}"
+                )
 
     def __getitem__(self, cell_id):
         cellpy_data_object = self.__look_up__(cell_id)
@@ -207,9 +215,9 @@ class Data(collections.UserDict):
                 cell = self.experiment._load_cellpy_file(cellpy_file)
                 self.experiment.cell_data_frames[cell_id] = cell
                 # trick for making tab-completion work:
-                self.accessors[self._create_accessor_label(cell_id)] = self.experiment.cell_data_frames[
-                    cell_id
-                ]
+                self.accessors[
+                    self._create_accessor_label(cell_id)
+                ] = self.experiment.cell_data_frames[cell_id]
                 return cell
             else:
                 raise NotImplementedError
@@ -274,7 +282,9 @@ class BaseExperiment(metaclass=abc.ABCMeta):
 
     def _link_cellpy_file(self, cell_label):
         logging.debug("linking cellpy file")
-        cellpy_file_name = self.journal.pages.loc[cell_label, hdr_journal.cellpy_file_name]
+        cellpy_file_name = self.journal.pages.loc[
+            cell_label, hdr_journal.cellpy_file_name
+        ]
         if not os.path.isfile(cellpy_file_name):
             raise IOError
 

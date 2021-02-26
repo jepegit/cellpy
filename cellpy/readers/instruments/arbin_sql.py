@@ -57,8 +57,8 @@ def SQL_loader(server: str, tests: list):
     test_name = tuple(tests) + ("",)
 
     master_q = (
-        "SELECT Database_Name, Test_Name FROM ArbinPro8MasterInfo.dbo.TestList_Table WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
-        + str(test_name)
+        f"SELECT Database_Name, Test_Name FROM ArbinPro8MasterInfo.dbo.TestList_Table WHERE "
+        f"ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN {test_name}"
     )
 
     conn = pyodbc.connect(

@@ -1667,10 +1667,10 @@ class CellpyData(object):
         if max_cycle := self.limit_loaded_cycles:
             if table == "summary":
                 logging.debug(f"limited to cycle_number {max_cycle}")
-                return (f"index <= {int(max_cycle)}", )
+                return (f"index <= {int(max_cycle)}",)
             elif table == "raw":
                 logging.debug(f"limited to data_point {self.limit_data_points}")
-                return (f"index <= {int(self.limit_data_points)}", )
+                return (f"index <= {int(self.limit_data_points)}",)
 
     def _extract_summary_from_cellpy_file(self, data, parent_level, store, summary_dir):
         cycle_filter = self._hdf5_cycle_filter("summary")
@@ -1687,7 +1687,9 @@ class CellpyData(object):
         try:
             data.steps = store.select(parent_level + step_dir)
             if self.limit_data_points:
-                data.steps = data.steps.loc[data.steps["point_last"] <= self.limit_data_points]
+                data.steps = data.steps.loc[
+                    data.steps["point_last"] <= self.limit_data_points
+                    ]
                 logging.debug(f"limited to data_point {self.limit_data_points}")
         except Exception as e:
             print(e)
