@@ -26,6 +26,8 @@ DEBUG_MODE = prms.Reader.diagnostics
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
+print(prms.Instruments.Arbin)
+SERVER = prms.Instruments.Arbin["SQL_server"]
 
 
 class ArbinSQLLoader(Loader):
