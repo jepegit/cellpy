@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import glob
 import os
 import pathlib
@@ -17,7 +16,7 @@ from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 
 DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
-USE_MY_DOCUMENTS = True
+USE_MY_DOCUMENTS = False
 
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 
@@ -83,7 +82,18 @@ def _update_prms(config_dict):
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
             for k in config_dict[key]:
-                _config_attr[k] = config_dict[key][k]
+                try:
+                    k_in_dict = list(config_dict[key][k].keys())
+                    k_in_attr = list(_config_attr[k].keys())
+                    z = {**_config_attr[k], **config_dict[key][k]}
+
+                except AttributeError:
+                    z = config_dict[key][k]
+                    logging.info("- not a dict")
+
+                finally:
+                    _config_attr[k] = z
+
         else:
             logging.info("\n  not-supported prm: %s" % key)
 
@@ -228,19 +238,9 @@ def info():
 
 
 def main():
-    print("Testing")
-    # out = r"C:\Users\jepe\_cellpy_prms_jepe.conf"
-    # _write_prm_file(out)
-    print(prms.Reader)
-
-    f = _get_prm_file()
-    _write_prm_file(f)
-
-    print(f)
-
-    _read_prm_file(f)
-
-    print(prms.Reader)
+    print("STARTING")
+    # print(info())
+    _read_prm_file(_get_prm_file())
 
 
 if __name__ == "__main__":

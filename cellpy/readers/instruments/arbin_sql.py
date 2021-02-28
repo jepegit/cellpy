@@ -26,7 +26,6 @@ DEBUG_MODE = prms.Reader.diagnostics
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
-print(prms.Instruments.Arbin)
 SERVER = prms.Instruments.Arbin["SQL_server"]
 
 
@@ -113,7 +112,7 @@ if __name__ == "__main__":
     # Made a copy of the db on my local machine
     # remark! used SQL Server Management Studio to restore
     #    the backup, not sure how to connect directly to the backup-files
-    server = r"localhost\SQLEXPRESS"
+    server = SERVER
     data_df, stat_df = test_sql_loader(server, ["20201106_HC03B1W_1_cc_01"])
     print(" db loaded and returned as pandas DataFrames ".center(80, "-"))
     print("DATA:")
