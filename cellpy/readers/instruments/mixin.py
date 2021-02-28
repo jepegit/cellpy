@@ -11,6 +11,20 @@ import logging
 
 import cellpy.readers.core as core
 
+MINIMUM_SELECTION = [
+    "Data_Point",
+    "Test_Time",
+    "Step_Time",
+    "DateTime",
+    "Step_Index",
+    "Cycle_Index",
+    "Current",
+    "Voltage",
+    "Charge_Capacity",
+    "Discharge_Capacity",
+    "Internal_Resistance",
+]
+
 
 class AtomicLoad(object):
     """Atomic loading class"""

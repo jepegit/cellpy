@@ -458,9 +458,9 @@ class CellpyData(object):
 
         elif instrument == "arbin_sql":
             from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
-
-            warnings.warn(f"{instrument} not implemented yet")
-            self.tester = "arbin"
+            warnings.warn(f"{instrument} is experimental! Not ready for production!")
+            self._set_instrument(RawLoader)
+            self.tester = "arbin_sql"
 
         elif instrument in ["pec", "pec_csv"]:
             warnings.warn("Experimental! Not ready for production!")
