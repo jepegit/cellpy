@@ -23,6 +23,12 @@ from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy import prms
 
+# TODO: get more meta data from the SQL db
+# TODO: update the cellpy.get function
+# TODO: update the batch functionality (including filefinder)
+# TODO: make routine for "setting up the SQL Server" so that it is accessible and document it
+# TODO: make loader for csv-files exported from SQL Server using Arbin's GUI.
+
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 ODBC = prms._odbc
