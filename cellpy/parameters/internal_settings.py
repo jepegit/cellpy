@@ -170,6 +170,10 @@ headers_normal["ref_voltage_txt"] = "reference_voltage"  # new
 headers_normal["dv_dt_txt"] = "dv_dt"
 headers_normal["frequency_txt"] = "frequency"  # new
 headers_normal["amplitude_txt"] = "amplitude"  # new
+headers_normal["channel_id_txt"] = "channel_id"  # new Arbin SQL Server
+headers_normal["data_flag_txt"] = "data_flag"  # new Arbin SQL Server
+headers_normal["test_name_txt"] = "test_name"  # new Arbin SQL Server
+headers_normal["test_id_txt"] = "test_id"  # new Arbin SQL Server
 
 # - summary -
 
@@ -180,7 +184,9 @@ headers_summary["test_time"] = headers_normal["test_time_txt"]
 headers_summary["datetime"] = headers_normal["datetime_txt"]
 headers_summary["discharge_capacity_raw"] = headers_normal["discharge_capacity_txt"]
 headers_summary["charge_capacity_raw"] = headers_normal["charge_capacity_txt"]
-
+headers_summary["test_name"] = headers_normal["test_name_txt"]
+headers_summary["data_flag"] = headers_normal["data_flag_txt"]
+headers_summary["channel_id"] = headers_normal["channel_id_txt"]
 headers_summary["discharge_capacity"] = "discharge_capacity_u_mAh_g"
 headers_summary["charge_capacity"] = "charge_capacity_u_mAh_g"
 headers_summary["cumulated_charge_capacity"] = "cumulated_charge_capacity_u_mAh_g"

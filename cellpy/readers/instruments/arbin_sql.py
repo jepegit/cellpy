@@ -1,5 +1,6 @@
 """arbin MS SQL Server data"""
 import os
+import datetime
 import sys
 import tempfile
 import shutil
@@ -22,13 +23,15 @@ from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy import prms
 
-DEBUG_MODE = prms.Reader.diagnostics
-ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file
+DEBUG_MODE = prms.Reader.diagnostics  # not used
+ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 ODBC = prms._odbc
-SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
+SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver  # not used
 SERVER = prms.Instruments.Arbin["SQL_server"]
 
 # Names of the tables in the SQL Server db that is used by cellpy
+
+# Not used anymore - maybe use a similar dict for the SQL table names (they are hard-coded at the moment)
 TABLE_NAMES = {
     "normal": "Channel_Normal_Table",
     "global": "Global_Table",
@@ -37,6 +40,7 @@ TABLE_NAMES = {
     "aux": "Auxiliary_Table",
 }
 
+# Contains several headers not encountered yet in the Arbin SQL Server tables
 summary_headers_renaming_dict = {
     "test_id_txt": "Test_ID",
     "data_point_txt": "Data_Point",
@@ -45,6 +49,7 @@ summary_headers_renaming_dict = {
     "discharge_time_txt": "Discharge_Time",
 }
 
+# Contains several headers not encountered yet in the Arbin SQL Server tables
 normal_headers_renaming_dict = {
     "aci_phase_angle_txt": "ACI_Phase_Angle",
     "ref_aci_phase_angle_txt": "Reference_ACI_Phase_Angle",
@@ -53,14 +58,14 @@ normal_headers_renaming_dict = {
     "charge_capacity_txt": "Charge_Capacity",
     "charge_energy_txt": "Charge_Energy",
     "current_txt": "Current",
-    "cycle_index_txt": "Cycle_Index",
+    "cycle_index_txt": "Cycle_ID",
     "data_point_txt": "Data_Point",
     "datetime_txt": "Date_Time",
     "discharge_capacity_txt": "Discharge_Capacity",
     "discharge_energy_txt": "Discharge_Energy",
     "internal_resistance_txt": "Internal_Resistance",
     "is_fc_data_txt": "Is_FC_Data",
-    "step_index_txt": "Step_Index",
+    "step_index_txt": "Step_ID",
     "sub_step_index_txt": "Sub_Step_Index",  # new
     "step_time_txt": "Step_Time",
     "sub_step_time_txt": "Sub_Step_Time",  # new
@@ -71,7 +76,43 @@ normal_headers_renaming_dict = {
     "dv_dt_txt": "dV/dt",
     "frequency_txt": "Frequency",  # new
     "amplitude_txt": "Amplitude",  # new
+    "channel_id_txt": "Channel_ID",  # new Arbin SQL Server
+    "data_flag_txt": "Data_Flags",  # new Arbin SQL Server
+    "test_name_txt": "Test_Name",  # new Arbin SQL Server
 }
+
+
+# Arbin SQL Server table headers (for both data df and stats df)
+# --------------------------------------------------------------
+# Test_ID
+# Channel_ID
+# Date_Time
+# Data_Point
+# Test_Time
+# Step_Time
+# Cycle_ID
+# Step_ID
+# Current
+# Voltage
+# Charge_Capacity
+# Discharge_Capacity
+# Charge_Energy
+# Discharge_Energy
+# Data_Flags
+# Test_Name
+# (all these headers are now implemented in the internal_settings
+
+
+def from_arbin_to_datetime(n):
+    # This is a hack that I have not verified yet
+    # (what is so special with 1976.08.23? I have only encountered 1900.01.01 and 1970.01.01 before)
+    # (or is the internal clock in our arbin machine set to 2014?)
+    n /= 1_000_000_000_000
+    temp = datetime.datetime(1976, 8, 23)
+    delta = datetime.timedelta(days=n)
+    time_object = temp + delta
+    time_in_str = time_object.strftime("%y-%m-%d %H:%M:%S:%f")
+    return time_in_str
 
 
 class ArbinSQLLoader(Loader):
@@ -80,7 +121,7 @@ class ArbinSQLLoader(Loader):
     def __init__(self):
         """initiates the ArbinSQLLoader class"""
         self.arbin_headers_normal = (
-            self.get_headers_normal()
+            get_headers_normal()
         )  # the column headers defined by Arbin
         self.cellpy_headers_normal = (
             get_headers_normal()
@@ -93,48 +134,14 @@ class ArbinSQLLoader(Loader):
 
     @staticmethod
     def get_headers_normal():
-        """Defines the so-called normal column headings for Arbin .res-files"""
-        headers = HeaderDict()
-        # - normal (raw-data) column headings (specific for Arbin)
-
-        headers["aci_phase_angle_txt"] = "ACI_Phase_Angle"
-        headers["ref_aci_phase_angle_txt"] = "Reference_ACI_Phase_Angle"
-
-        headers["ac_impedance_txt"] = "AC_Impedance"
-        headers["ref_ac_impedance_txt"] = "Reference_AC_Impedance"  # new
-
-        headers["charge_capacity_txt"] = "Charge_Capacity"
-        headers["charge_energy_txt"] = "Charge_Energy"
-        headers["current_txt"] = "Current"
-        headers["cycle_index_txt"] = "Cycle_Index"
-        headers["data_point_txt"] = "Data_Point"
-        headers["datetime_txt"] = "DateTime"
-        headers["discharge_capacity_txt"] = "Discharge_Capacity"
-        headers["discharge_energy_txt"] = "Discharge_Energy"
-        headers["internal_resistance_txt"] = "Internal_Resistance"
-
-        headers["is_fc_data_txt"] = "Is_FC_Data"
-        headers["step_index_txt"] = "Step_Index"
-        headers["sub_step_index_txt"] = "Sub_Step_Index"  # new
-
-        headers["step_time_txt"] = "Step_Time"
-        headers["sub_step_time_txt"] = "Sub_Step_Time"  # new
-
-        headers["test_id_txt"] = "Test_ID"
-        headers["test_time_txt"] = "Test_Time"
-
-        headers["voltage_txt"] = "Voltage"
-        headers["ref_voltage_txt"] = "Reference_Voltage"  # new
-
-        headers["dv_dt_txt"] = "dV/dt"
-        headers["frequency_txt"] = "Frequency"  # new
-        headers["amplitude_txt"] = "Amplitude"  # new
-
-        return headers
+        """Defines the so-called normal column headings for Arbin SQL Server"""
+        # covered by cellpy at the moment
+        return get_headers_normal()
 
     @staticmethod
     def get_headers_aux():
-        """Defines the so-called auxiliary table column headings for Arbin .res-files"""
+        """Defines the so-called auxiliary table column headings for Arbin SQL Server"""
+        # not in use (yet)
         headers = HeaderDict()
         # - aux column headings (specific for Arbin)
         headers["test_id_txt"] = "Test_ID"
@@ -147,7 +154,8 @@ class ArbinSQLLoader(Loader):
 
     @staticmethod
     def get_headers_aux_global():
-        """Defines the so-called auxiliary global column headings for Arbin .res-files"""
+        """Defines the so-called auxiliary global column headings for Arbin SQL Server"""
+        # not in use yet
         headers = HeaderDict()
         # - aux global column headings (specific for Arbin)
         headers["channel_index_txt"] = "Channel_Index"
@@ -159,7 +167,8 @@ class ArbinSQLLoader(Loader):
 
     @staticmethod
     def get_headers_global():
-        """Defines the so-called global column headings for Arbin .res-files"""
+        """Defines the so-called global column headings for Arbin SQL Server"""
+        # not in use yet
         headers = HeaderDict()
         # - global column headings (specific for Arbin)
         headers["applications_path_txt"] = "Applications_Path"
@@ -213,6 +222,8 @@ class ArbinSQLLoader(Loader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    # TODO: rename this (for all instruments) to e.g. load
+    # TODO: implement more options (bad_cycles, ...)
     def loader(self, name):
         """returns a Cell object with loaded data.
 
@@ -274,18 +285,19 @@ class ArbinSQLLoader(Loader):
 
         # Remark that we also set index during saving the file to hdf5 if
         #   it is not set.
-
+        from pprint import pprint
         if rename_headers:
             columns = {}
             for key in self.arbin_headers_normal:
+                print(key)
                 old_header = normal_headers_renaming_dict[key]
                 new_header = self.cellpy_headers_normal[key]
                 columns[old_header] = new_header
-
+            print(80 * "*")
+            pprint(columns)
             data.raw.rename(index=str, columns=columns, inplace=True)
+            print(data.raw.columns)
             try:
-                # TODO: check if summary df is existing (to only check if it is
-                #  empty will give an error later!)
                 columns = {}
                 for key, old_header in summary_headers_renaming_dict.items():
                     try:
@@ -297,21 +309,18 @@ class ArbinSQLLoader(Loader):
                 logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:
+
             h_datetime = self.cellpy_headers_normal.datetime_txt
             logging.debug("converting to datetime format")
-            print(data.raw.columns)
 
-            # Breaks here (probably not windows format anymore?):
-            # TODO: fix this
-            print(data.raw[h_datetime])
             data.raw[h_datetime] = data.raw[h_datetime].apply(
-                xldate_as_datetime, option="to_datetime"
+                from_arbin_to_datetime
             )
 
             h_datetime = h_datetime
             if h_datetime in data.summary:
                 data.summary[h_datetime] = data.summary[h_datetime].apply(
-                    xldate_as_datetime, option="to_datetime"
+                    from_arbin_to_datetime
                 )
 
         if set_index:
@@ -322,6 +331,7 @@ class ArbinSQLLoader(Loader):
         return data
 
     def _query_sql(self, name):
+        # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = "Driver={SQL Server};Server=" + self.server + ";Trusted_Connection=yes;"
         master_q = (
@@ -426,6 +436,16 @@ def test_sql_loader(server: str = None, tests: list = None):
     return data_df, stat_df
 
 
+def test_query():
+    import pathlib
+    name = ["20201106_HC03B1W_1_cc_01"]
+    dd, ds = test_sql_loader(SERVER, name)
+    out = pathlib.Path(r"C:\scripts\notebooks\Div")
+    dd.to_clipboard()
+    input("x")
+    ds.to_clipboard()
+
+
 def test_loader():
     print(" Testing connection to arbin sql server ".center(80, "-"))
 
@@ -433,20 +453,39 @@ def test_loader():
     name = "20201106_HC03B1W_1_cc_01"
     cell = sql_loader.loader(name)
 
-    return None
+    return cell
 
 
 def test_loader_from_outside():
     from cellpy import cellreader
+    import matplotlib.pyplot as plt
+
     name = "20201106_HC03B1W_1_cc_01"
     c = cellreader.CellpyData()
     c.set_instrument("arbin_sql")
-    print(c)
+    # print(c)
     c.from_raw(name)
-    print(c)
+    # print(c)
     c.make_step_table()
     c.make_summary()
+    # print(c)
+    raw = c.cell.raw
+    steps = c.cell.steps
+    summary = c.cell.summary
+    raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
+    steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
+    summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
+
+    n = c.get_number_of_cycles()
+    print(f"number of cycles: {n}")
+
+    cycle = c.get_cap(1, method="forth")
+    print(cycle.head())
+    cycle.plot(x="capacity", y="voltage")
+    plt.show()
 
 
 if __name__ == "__main__":
+    # test_query()
+    # cell = test_loader()
     test_loader_from_outside()
