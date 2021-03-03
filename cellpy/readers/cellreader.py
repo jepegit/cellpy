@@ -462,6 +462,12 @@ class CellpyData(object):
             self._set_instrument(RawLoader)
             self.tester = "arbin_sql"
 
+        elif instrument == "arbin_sql_csv":
+            from cellpy.readers.instruments.arbin_sql_csv import ArbinCsvLoader as RawLoader
+            warnings.warn(f"{instrument} is experimental! Not ready for production!")
+            self._set_instrument(RawLoader)
+            self.tester = "arbin_sql_csv"
+
         elif instrument in ["pec", "pec_csv"]:
             warnings.warn("Experimental! Not ready for production!")
             from cellpy.readers.instruments.pec import PECLoader as RawLoader
@@ -3375,7 +3381,7 @@ class CellpyData(object):
         # TODO: remove me
         return self.cells[n]
 
-    def sget_voltage(self, cycle, step, set_number=None):
+    def sget_voltage(self, cycle, step, dataset_number=None):
         """Returns voltage for cycle, step.
 
         Convenience function; same as issuing
@@ -3385,68 +3391,31 @@ class CellpyData(object):
         Args:
             cycle: cycle number
             step: step number
-            set_number: the dataset number (automatic selection if None)
+            dataset_number: the dataset number (automatic selection if None)
 
         Returns:
             pandas.Series or None if empty
         """
+        header = self.headers_normal.voltage_txt
+        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
 
-        time_00 = time.time()
-        set_number = self._validate_dataset_number(set_number)
-        if set_number is None:
-            self._report_empty_dataset()
-            return
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        voltage_header = self.headers_normal.voltage_txt
-        step_index_header = self.headers_normal.step_index_txt
-        test = self.cells[set_number].raw
+    def sget_current(self, cycle, step, dataset_number=None):
+        """Returns current for cycle, step.
 
-        if isinstance(step, (list, tuple)):
-            warnings.warn(
-                f"The varialbe step is a list." f"Should be an integer." f"{step}"
-            )
-            step = step[0]
+                Convenience function; same as issuing
+                   raw[(raw[cycle_index_header] == cycle) &
+                         (raw[step_index_header] == step)][current_header]
 
-        c = test[
-            (test[cycle_index_header] == cycle) & (test[step_index_header] == step)
-        ]
+                Args:
+                    cycle: cycle number
+                    step: step number
+                    dataset_number: the dataset number (automatic selection if None)
 
-        self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
-        if not self.is_empty(c):
-            v = c[voltage_header]
-            return v
-        else:
-            return None
-
-    # TODO: make this
-    def sget_current(self, cycle, step, set_number=None):
-
-        time_00 = time.time()
-        set_number = self._validate_dataset_number(set_number)
-        if set_number is None:
-            self._report_empty_dataset()
-            return
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        current_header = self.headers_normal.current_txt
-        step_index_header = self.headers_normal.step_index_txt
-        test = self.cells[set_number].raw
-
-        if isinstance(step, (list, tuple)):
-            warnings.warn(
-                f"The varialbe step is a list." f"Should be an integer." f"{step}"
-            )
-            step = step[0]
-
-        c = test[
-            (test[cycle_index_header] == cycle) & (test[step_index_header] == step)
-        ]
-
-        self.logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
-        if not self.is_empty(c):
-            v = c[current_header]
-            return v
-        else:
-            return None
+                Returns:
+                    pandas.Series or None if empty
+                """
+        header = self.headers_normal.current_txt
+        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
 
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
         """Returns voltage (in V).
@@ -3550,28 +3519,37 @@ class CellpyData(object):
             pandas.Series or None if empty
         """
 
+        header = self.headers_normal.step_time_txt
+        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
+
+    def _sget(self, cycle, step, header, usteps=False, dataset_number=None):
         dataset_number = self._validate_dataset_number(dataset_number)
+        logging.debug(f"searching for {header}")
         if dataset_number is None:
             self._report_empty_dataset()
             return
+
         cycle_index_header = self.headers_normal.cycle_index_txt
-        step_time_header = self.headers_normal.step_time_txt
         step_index_header = self.headers_normal.step_index_txt
+
+        if usteps:
+            print("Using sget for usteps is not supported yet.")
+            print("I encourage you to work with the DataFrames directly instead.")
+            print(" - look up the 'ustep' in the steps DataFrame")
+            print(" - get the start and end 'data_point'")
+            print(" - look up the start and end 'data_point' in the raw DataFrame")
+            print("")
+            print("(Just remember to run make_step_table with the all_steps set to True before you do it)")
+            return
+
         test = self.cells[dataset_number].raw
 
-        if isinstance(step, (list, tuple)):
-            warnings.warn(f"The variable step is a list. Should be an integer. {step}")
-            step = step[0]
+        if not isinstance(step, (list, tuple)):
+            step = [step]
 
-        c = test.loc[
-            (test[cycle_index_header] == cycle) & (test[step_index_header] == step), :
-        ]
-
-        if not self.is_empty(c):
-            t = c[step_time_header]
-            return t
-        else:
-            return None
+        return test.loc[
+            (test[cycle_index_header] == cycle) & (test[step_index_header].isin(step)), header
+        ].reset_index(drop=True)
 
     def sget_timestamp(self, cycle, step, dataset_number=None):
         """Returns timestamp for cycle, step.
@@ -3582,36 +3560,34 @@ class CellpyData(object):
 
         Args:
             cycle: cycle number
-            step: step number
+            step: step number (can be a list of several step numbers)
             dataset_number: the dataset number (automatic selection if None)
 
         Returns:
             pandas.Series
         """
 
-        dataset_number = self._validate_dataset_number(dataset_number)
-        if dataset_number is None:
-            self._report_empty_dataset()
-            return
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        timestamp_header = self.headers_normal.test_time_txt
-        step_index_header = self.headers_normal.step_index_txt
-        test = self.cells[dataset_number].raw
+        header = self.headers_normal.test_time_txt
+        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
 
-        if isinstance(step, (list, tuple)):
-            warnings.warn(
-                f"The varialbe step is a list." f"Should be an integer." f"{step}"
-            )
-            step = step[0]
+    def sget_step_numbers(self, cycle, step, dataset_number=None):
+        """Returns step number for cycle, step.
 
-        c = test[
-            (test[cycle_index_header] == cycle) & (test[step_index_header] == step)
-        ]
-        if not self.is_empty(c):
-            t = c[timestamp_header]
-            return t
-        else:
-            return pd.Series()
+        Convenience function; same as issuing
+           raw[(raw[cycle_index_header] == cycle) &
+                 (raw[step_index_header] == step)][step_index_header]
+
+        Args:
+            cycle: cycle number
+            step: step number (can be a list of several step numbers)
+            dataset_number: the dataset number (automatic selection if None)
+
+        Returns:
+            pandas.Series
+        """
+
+        header = self.headers_normal.step_index_txt
+        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
 
     def get_datetime(self, cycle=None, dataset_number=None, full=True):
 
