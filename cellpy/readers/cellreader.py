@@ -59,6 +59,12 @@ HEADERS_NORMAL = get_headers_normal()
 HEADERS_SUMMARY = get_headers_summary()
 HEADERS_STEP_TABLE = get_headers_step_table()
 
+# TODO: @jepe - new feature - method for assigning new cycle numbers and step numbers
+#   - Sometimes the user forgets to increment the cycle number and it would be good
+#   to have a method so that its possible to set new cycle numbers manually
+#   - Some testers merges different steps into one (e.g CC-CV), it would be nice to have
+#   a method for "splitting that up"
+
 # TODO: @jepe - performance warnings - mixed types within cols (pytables)
 performance_warning_level = "ignore"  # "ignore", "error"
 warnings.filterwarnings(
