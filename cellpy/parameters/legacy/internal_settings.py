@@ -14,7 +14,6 @@ HEADERS_NORMAL = get_headers_normal()
 HEADERS_SUMMARY = get_headers_summary()
 HEADERS_STEP_TABLE = get_headers_step_table()
 
-# TODO: this should be defined in internal_settings
 HEADERS_KEYS_STEP_TABLE_EXTENDED = [
     "point",
     "test_time",

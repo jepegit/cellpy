@@ -155,6 +155,7 @@ Arbin = {
     "detect_subprocess_need": False,
     "sub_process_path": None,
     "office_version": "64bit",
+    "SQL_server": r"localhost\SQLEXPRESS",
 }
 
 # Register pre-defined instruments:

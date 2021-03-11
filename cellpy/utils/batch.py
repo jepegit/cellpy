@@ -21,7 +21,10 @@ from cellpy.parameters.internal_settings import (
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
-from cellpy.utils.batch_tools.batch_analyzers import OCVRelaxationAnalyzer, BaseSummaryAnalyzer
+from cellpy.utils.batch_tools.batch_analyzers import (
+    OCVRelaxationAnalyzer,
+    BaseSummaryAnalyzer,
+)
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 
@@ -242,7 +245,9 @@ class Batch:
             try:
                 cell_labels = self.journal.session["bad_cells"]
             except AttributeError:
-                logging.critical("session info about bad cells is missing - cannot drop")
+                logging.critical(
+                    "session info about bad cells is missing - cannot drop"
+                )
                 return
         else:
             cell_labels = [cell_label]
@@ -332,9 +337,7 @@ class Batch:
 
     def _concat_memory_dumped(self, engine_name):
         keys = [df.name for df in self.experiment.memory_dumped[engine_name]]
-        return pd.concat(
-            self.experiment.memory_dumped[engine_name], keys=keys, axis=1
-        )
+        return pd.concat(self.experiment.memory_dumped[engine_name], keys=keys, axis=1)
 
     @property
     def summaries(self):

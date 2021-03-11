@@ -11,7 +11,8 @@ from cellpy.exceptions import UnderDefined
 from cellpy.parameters import prms
 from cellpy.readers import dbreader
 from cellpy.parameters.internal_settings import (
-    get_headers_journal, keys_journal_session
+    get_headers_journal,
+    keys_journal_session,
 )
 from cellpy.parameters.legacy.internal_settings import (
     headers_journal_v0 as hdr_journal_old,
@@ -200,7 +201,11 @@ class LabJournal(BaseJournal):
         file_name = self._check_file_name(file_name)
         pages = self.pages
         session = self.session
-        top_level_dict = {"info_df": pages, "metadata": self._prm_packer(), "session": session}
+        top_level_dict = {
+            "info_df": pages,
+            "metadata": self._prm_packer(),
+            "session": session,
+        }
         jason_string = json.dumps(
             top_level_dict,
             default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
@@ -219,12 +224,16 @@ class LabJournal(BaseJournal):
         if self.project:
             self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
         else:
-            logging.critical("Could not create project dir (missing project definition)")
+            logging.critical(
+                "Could not create project dir (missing project definition)"
+            )
         if self.name:
             self.batch_dir = os.path.join(self.project_dir, self.name)
             self.raw_dir = os.path.join(self.batch_dir, "raw_data")
         else:
-            logging.critical("Could not create batch_dir and raw_dir", "(missing batch name)")
+            logging.critical(
+                "Could not create batch_dir and raw_dir", "(missing batch name)"
+            )
 
     def paginate(self):
         """Make folders where we would like to put results etc."""

@@ -121,11 +121,12 @@ def search_for_files(
     cellpy_file = "{0}.{1}".format(run_name, cellpy_file_extension)
     cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
 
-    # TODO: @jepe - use pathlib
+    # TODO: @jepe - use pathlib [muhammad 1]
     # TODO: @jepe - use reg_exp
-    # TODO: @jepe - allow for searching in sub-folders
+    # TODO: @jepe - allow for searching in sub-folders [muhammad 2]
     # TODO: @jepe - allow for searching in cloud
     # TODO: @jepe - allow for searching in several folders
+    # TODO: @jepe - how to implement searching in db?
 
     if cache is None:
 

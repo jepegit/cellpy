@@ -13,6 +13,7 @@ from cellpy.parameters import prms
 
 # logger = logging.getLogger(__name__)
 
+
 class DbSheetCols(object):
     def __init__(self, level=0):
         for table_key in prms.DbCols:
@@ -144,7 +145,7 @@ class Reader(object):
         logging.debug(f"Number of rows (no means all): {nrows}")
         logging.debug(f"Skipping the following rows: {rows_to_skip}")
         logging.debug(f"Declaring the following dtyps: {dtypes_dict}")
-        work_book = pd.ExcelFile(self.db_file, engine='openpyxl')
+        work_book = pd.ExcelFile(self.db_file, engine="openpyxl")
         try:
             sheet = work_book.parse(
                 table_name,

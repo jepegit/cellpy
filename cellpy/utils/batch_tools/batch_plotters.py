@@ -488,9 +488,7 @@ def plot_cycle_life_summary_bokeh(
     grid_layout = [p_eff, p_cap]
     if not ir_charge.empty:
         grid_layout.append(p_ir)
-    fig_grid = bokeh.layouts.gridplot(
-        grid_layout, ncols=1, sizing_mode="stretch_width"
-    )
+    fig_grid = bokeh.layouts.gridplot(grid_layout, ncols=1, sizing_mode="stretch_width")
 
     info_text = "(filled:charge) (open:discharge)"
     if not ir_charge.empty:

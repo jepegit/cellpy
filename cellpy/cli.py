@@ -21,8 +21,6 @@ USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
 GITHUB_SIZE_LIMIT = 1_000_000
 
-# TODO: check setup - seems like it does not use username anymore
-
 
 def save_prm_file(prm_filename):
     """saves (writes) the prms to file"""
@@ -690,10 +688,7 @@ def info(version, configloc, params, check):
     help="Run a batch job defined in the given journal-file",
 )
 @click.option(
-    "--key",
-    "-k",
-    is_flag=True,
-    help="Run a batch job defined by batch-name",
+    "--key", "-k", is_flag=True, help="Run a batch job defined by batch-name",
 )
 @click.option(
     "--batch",
@@ -706,15 +701,41 @@ def info(version, configloc, params, check):
 @click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
 @click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
 @click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
-@click.option("--nom-cap", default=None, type=float, help="nominal capacity (used in calculating rates etc)")
-@click.option("--batch_col", default=None, type=str, help="batch column (if selecting running from db)")
-@click.option("--project", "-p", default=None, type=str, help="project (if selecting running from db)")
+@click.option(
+    "--nom-cap",
+    default=None,
+    type=float,
+    help="nominal capacity (used in calculating rates etc)",
+)
+@click.option(
+    "--batch_col",
+    default=None,
+    type=str,
+    help="batch column (if selecting running from db)",
+)
+@click.option(
+    "--project",
+    "-p",
+    default=None,
+    type=str,
+    help="project (if selecting running from db)",
+)
 @click.option("--list", "-l", "list_", is_flag=True, help="List batch-files.")
 @click.argument("name", default="NONE")
 def run(
-    journal, key, batch, debug, silent, raw, cellpyfile, minimal,
-    nom_cap, name, batch_col, project,
-    list_
+    journal,
+    key,
+    batch,
+    debug,
+    silent,
+    raw,
+    cellpyfile,
+    minimal,
+    nom_cap,
+    name,
+    batch_col,
+    project,
+    list_,
 ):
     """Run a cellpy process.
 
@@ -758,7 +779,9 @@ def run(
         _run_journals(name, debug, silent, raw, cellpyfile, minimal)
 
     elif key:
-        _run_from_db(name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project)
+        _run_from_db(
+            name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project
+        )
 
     elif name.lower() == "db":
         _run_db(debug, silent)
@@ -767,8 +790,12 @@ def run(
         _run(name, debug, silent)
 
 
-def _run_from_db(name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project):
-    click.echo(f"running from db \nkey={name}, batch_col={batch_col}, project={project}")
+def _run_from_db(
+    name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project
+):
+    click.echo(
+        f"running from db \nkey={name}, batch_col={batch_col}, project={project}"
+    )
 
     kwargs = dict()
     kwargs["name"] = name
@@ -790,7 +817,11 @@ def _run_from_db(name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_c
     from cellpy.utils import batch
 
     b = batch.process_batch(
-        force_raw_file=raw, force_cellpy=cellpyfile, nom_cap=nom_cap, backend="matplotlib", **kwargs
+        force_raw_file=raw,
+        force_cellpy=cellpyfile,
+        nom_cap=nom_cap,
+        backend="matplotlib",
+        **kwargs,
     )
 
     if b is not None and not silent:
@@ -832,8 +863,12 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
         return
 
     b = batch.process_batch(
-        file, force_raw_file=raw, force_cellpy=cellpyfile,
-        nom_cap=nom_cap, backend="matplotlib", **kwargs
+        file,
+        force_raw_file=raw,
+        force_cellpy=cellpyfile,
+        nom_cap=nom_cap,
+        backend="matplotlib",
+        **kwargs,
     )
     if b is not None and not silent:
         print(b)
