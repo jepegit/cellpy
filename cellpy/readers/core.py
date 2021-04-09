@@ -590,7 +590,7 @@ def interpolate_y_on_x(
             dx: step-value (defaults to 10.0)
             number_of_points: number of points for interpolated values (use
                 instead of dx and overrides dx if given).
-            direction (-1,1): if direction is negetive, then invert the
+            direction (-1,1): if direction is negative, then invert the
                 x-values before interpolating.
             **kwargs: arguments passed to scipy.interpolate.interp1d
 
@@ -598,6 +598,9 @@ def interpolate_y_on_x(
             generated x-values.
 
         """
+
+    # TODO: allow for giving a fixed interpolation range (x-values).
+    #  Remember to treat extrapolation properly (e.g. replace with NaN?).
 
     if x is None:
         x = df.columns[0]

@@ -3786,6 +3786,9 @@ class CellpyData(object):
                 with capacity (mAh/g) and voltage.
         """
 
+        # TODO: allow for fixing the interpolation range (so that it is possible
+        #   to run the function on several cells and have a common x-axis
+
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
