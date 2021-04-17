@@ -360,13 +360,16 @@ class CyclingExperiment(BaseExperiment):
 
         self.errors["link"] = errors
 
-    def recalc(self, save=True, step_opts=None, summary_opts=None, testing=False):
+    def recalc(self, save=True, step_opts=None, summary_opts=None, indexes=None, calc_steps=True, testing=False):
         """Run make_step_table and make_summary on all cells.
 
         Args:
             save (bool): Save updated cellpy-files if True.
             step_opts (dict): parameters to inject to make_steps.
             summary_opts (dict): parameters to inject to make_summary.
+            indexes (list): Only recalculate for given indexes (i.e. list of cell-names).
+            calc_steps (bool): Run make_steps before making the summary.
+            testing (bool): Only for testing purposes.
 
         Returns:
             None
@@ -379,12 +382,17 @@ class CyclingExperiment(BaseExperiment):
                 file=sys.stdout,
                 leave=False,
             )
+        elif indexes is not None:
+            pbar = tqdm(
+                list(self.journal.pages.loc[indexes, :].iterrows()), file=sys.stdout, leave=False
+            )
         else:
             pbar = tqdm(
                 list(self.journal.pages.iterrows()), file=sys.stdout, leave=False
             )
         for indx, row in pbar:
             nom_cap = row[hdr_journal.nom_cap]
+            mass = row[hdr_journal.mass]
             pbar.set_description(indx)
             try:
                 c = self.data[indx]
@@ -398,12 +406,15 @@ class CyclingExperiment(BaseExperiment):
             else:
                 if nom_cap:
                     c.set_nom_cap(nom_cap)
+                if mass:
+                    c.set_mass(mass)
                 try:
-                    pbar.set_postfix_str(s="steps", refresh=True)
-                    if step_opts is not None:
-                        c.make_step_table(**step_opts)
-                    else:
-                        c.make_step_table()
+                    if calc_steps:
+                        pbar.set_postfix_str(s="steps", refresh=True)
+                        if step_opts is not None:
+                            c.make_step_table(**step_opts)
+                        else:
+                            c.make_step_table()
 
                     pbar.set_postfix_str(s="summary", refresh=True)
                     if summary_opts is not None:

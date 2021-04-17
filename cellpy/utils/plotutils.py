@@ -211,6 +211,8 @@ def plot_concatenated(
     spread=False,
     extension="bokeh",
     edges=False,
+    keys=None,
+    simple=False,
     **kwargs,
 ):
     """Create a holoviews plot of the concatenated summary.
@@ -244,6 +246,8 @@ def plot_concatenated(
         extension (str): "matplotlib" or "bokeh". Note, this uses hv.extension) and will affect the
             state of your notebook
         edges (bool): show all axes
+        keys (dict): columns to plot (not working yet)
+        simple (bool): making a simple hv.Overlay instead of an hv.NdOverlay if True
         **kwargs: key-word arguments sent to hv.NdOverlay
 
     Example:
@@ -271,6 +275,11 @@ def plot_concatenated(
         >>>              show_frame=True)
 
     """
+    # TODO: add option for using labels from journal in the legend
+
+    if keys is None:
+        keys = dict()
+
     if not hv_available:
         print(
             "This function uses holoviews. But could not import it."
@@ -328,6 +337,12 @@ def plot_concatenated(
         journal_pages = journal_pages[["g", "sg"]]
 
     for i, (name, group) in enumerate(grouped):
+        if name in keys:
+            label = keys[name]
+        else:
+            label = name
+            keys[name] = name
+
         group.columns = group.columns.droplevel(file_id_level)
         if hdr_x is None:
             group = group.reset_index()
@@ -341,10 +356,10 @@ def plot_concatenated(
             sg = journal_pages.loc[name, "sg"]
             color = colors[g]
             marker = markers[sg]
-            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y)).opts(color=color)
+            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y), label=label).opts(color=color)
 
         else:
-            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y))
+            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y), label=label)
 
         if points:
             if not averaged and journal is not None:
@@ -378,7 +393,7 @@ def plot_concatenated(
                 curve *= hv.ErrorBars(
                     group, hdr_x, [hdr_y, hdr_e]
                 )  # should get the color from curve and set it here
-        curve_dict[name] = curve
+        curve_dict[label] = curve
 
     if extension == "matplotlib":
         overlay_opts = {
@@ -392,9 +407,21 @@ def plot_concatenated(
             "height": height,
         }
 
-    final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
-        **overlay_opts, **kwargs
-    )
+    if simple:
+        if len(keys) == len(curve_dict):
+            new_curve_dict = {}
+            for k in keys:
+                new_curve_dict[k] = curve_dict[keys[k]]
+            curve_dict = new_curve_dict
+
+        final_plot = hv.Overlay([*curve_dict.values()], vdims=[*curve_dict.keys()]).opts(
+            **overlay_opts, **kwargs
+        )
+    else:
+        final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
+            **overlay_opts, **kwargs
+        )
+
     if hover:
         if points:
             final_plot.opts(opts.Scatter(tools=["hover"]))
