@@ -31,4 +31,5 @@ dependencies:
     - invoke
     - jupyter
     - jupyterlab
+    - qgrid
 

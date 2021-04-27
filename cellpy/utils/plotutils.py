@@ -1073,6 +1073,96 @@ def hv_bokeh_to_mpl(figure, wide=False, size=(6, 4), **kwargs):
     return figure
 
 
+def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=False, spread=True,
+          capacity_unit="gravimetric"):
+    """create a holoviews-plot containing Coulombic Efficiency, Capacity, and IR.
+
+    Args:
+        b (cellpy.batch object): the batch with the cells.
+        cap_ylim (tuple of two floats): scaling of y-axis for capacity plots.
+        ce_ylim (tuple of two floats): scaling of y-axis for c.e. plots.
+        ir_ylim (tuple of two floats): scaling of y-axis for i.r. plots.
+        simple (bool): if True, use hv.Overlay instead of hv.NdOverlay.
+        group_it (bool): if True, average pr group.
+        spread (bool): if True, show spread instead of error-bars
+        capacity_unit (str): select "gravimetric", or "areal"
+
+    Returns:
+        hv.Overlay or hv.NdOverlay
+    """
+
+    bplot_shared_opts = {
+        "group_it": group_it,
+        "simple": simple,
+        "spread": spread,
+    }
+
+    cap_colum_dict = {
+        "gravimetric": {
+            "discharge": "discharge_capacity",
+            "charge": "charge_capacity",
+            "unit": "mAh/g(a.m.)",
+            "ylim": (0, 5000)
+        },
+        "areal": {
+            "discharge": "areal_discharge_capacity",
+            "charge": "areal_charge_capacity",
+            "unit": "mAh/cm2",
+            "ylim": (0, 3)
+        },
+    }
+
+    if cap_ylim is not None:
+        cap_colum_dict[capacity_unit]['ylim'] = cap_ylim
+
+    if ce_ylim is None:
+        ce_ylim = (80, 120)
+
+    if ir_ylim is None:
+        ir_ylim = (0, 200)
+
+    if simple:
+        overlay_opts = hv.opts.Overlay
+        layout_opts = hv.opts.Overlay
+    else:
+        overlay_opts = hv.opts.NdOverlay
+        layout_opts = hv.opts.NdLayout
+
+    # print("creating interactive plots")
+    oplot_ce = bplot(b, columns=["coulombic_efficiency"], **bplot_shared_opts).opts(
+        hv.opts.Curve(ylim=ce_ylim),
+        overlay_opts(title="", height=150, show_legend=False, xlabel="", ylabel="C.E."),
+        layout_opts(title="Coulombic efficiency (%)")
+    )
+    # print(" - created oplot_ce")
+
+    oplot_dcap = bplot(b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts).opts(
+        hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
+        overlay_opts(title="", height=400, show_legend=True, xlabel="", ylabel="discharge"),
+        layout_opts(title=f"Capacity ({cap_colum_dict[capacity_unit]['unit']})")
+    )
+    # print(" - created oplot_dcap")
+
+    oplot_ccap = bplot(b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts).opts(
+        hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
+        overlay_opts(title="", height=150, show_legend=False, xlabel="", ylabel="charge"),
+        layout_opts(title="")
+    )
+    # print(" - created oplot_ccap")
+
+    oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts).opts(
+        hv.opts.Curve(ylim=ir_ylim),
+        overlay_opts(title="", height=150, show_legend=False, xlabel="", ylabel="discharge"),
+        layout_opts(title="Internal Resistance (Ohm)"))
+
+    oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts).opts(
+        hv.opts.Curve(ylim=ir_ylim),
+        overlay_opts(title="", height=150, show_legend=False, ylabel="charge"),
+        layout_opts(title=""))
+
+    return (oplot_ce + oplot_dcap + oplot_ccap + oplot_ird + oplot_irc).cols(1)
+
+
 def bplot(b, individual=False, cols=1, **kwargs):
     """plot batch summaries.
 
@@ -1109,7 +1199,9 @@ def bplot(b, individual=False, cols=1, **kwargs):
         journal (batch.journal object): the journal (will use the journal in b if not given).
 
     Keyword Args sent to plotter:
+        width (int): width of plot.
         spread (bool): use error-spread instead of error-bars.
+        simple (bool): use hv.Overlay instead of hv.NdOverlay.
 
     Returns:
         holoviews plot
@@ -1117,6 +1209,7 @@ def bplot(b, individual=False, cols=1, **kwargs):
     width = kwargs.pop("width", 800)
     journal = kwargs.pop("journal", b.experiment.journal)
     spread = kwargs.pop("spread", True)
+    simple = kwargs.pop("simple", False)
     columns = kwargs.pop("columns", ["charge_capacity"])
     extension = kwargs.pop("extension", "bokeh")
     p = collections.OrderedDict()
@@ -1131,6 +1224,7 @@ def bplot(b, individual=False, cols=1, **kwargs):
                 width=i_width,
                 extension=extension,
                 title=col,
+                simple=simple,
             )
 
             if i < len(columns) - 1:
@@ -1154,7 +1248,10 @@ def bplot(b, individual=False, cols=1, **kwargs):
 
     if len(p) >= 1:
         if not individual:
-            out = hv.NdLayout(p, sort=False).cols(cols)
+            if simple:
+                out = hv.Layout(list(p.values())).cols(cols)
+            else:
+                out = hv.NdLayout(p, sort=False).cols(cols)
             if extension == "matplotlib":
                 out.opts(fig_inches=(w, h))
         else:

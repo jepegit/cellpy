@@ -230,7 +230,7 @@ class Converter:
         if self.max_points is not None:
             len_capacity = min(self.max_points, self.len_capacity)
         elif self.capacity_resolution is not None:
-            len_capacity = round(abs(c2 - c1) / self.capacity_resolution, 0)
+            len_capacity = int(round(abs(c2 - c1) / self.capacity_resolution, 0))
         else:
             len_capacity = self.len_capacity
 
