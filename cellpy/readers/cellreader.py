@@ -1518,8 +1518,8 @@ class CellpyData(object):
                 fid_table
             )
         else:
-            data.raw_data_files = None
-            data.raw_data_files_length = None
+            data.raw_data_files = []
+            data.raw_data_files_length = []
 
         # this does not yet allow multiple sets
         new_tests = [
@@ -1558,8 +1558,8 @@ class CellpyData(object):
                 fid_table
             )
         else:
-            data.raw_data_files = None
-            data.raw_data_files_length = None
+            data.raw_data_files = []
+            data.raw_data_files_length = []
 
         # this does not yet allow multiple sets
         self.logger.debug("loaded new test")
@@ -1623,8 +1623,8 @@ class CellpyData(object):
                 fid_table
             )
         else:
-            data.raw_data_files = None
-            data.raw_data_files_length = None
+            data.raw_data_files = []
+            data.raw_data_files_length = []
 
         new_tests = [data]
         return new_tests
@@ -3136,8 +3136,8 @@ class CellpyData(object):
             return
 
         outfile_all = Path(filename)
-        if not filename.suffix:
-            filename.rename(filename.with_suffix(f'.{extension}'))
+        if not outfile_all.suffix:
+            outfile_all.with_suffix(f'.{extension}')
 
         if os.path.isfile(outfile_all):
             self.logger.debug("Outfile exists")

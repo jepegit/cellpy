@@ -273,7 +273,7 @@ class ArbinSQLLoader(Loader):
         data.raw_data_files.append(fid)
 
         data.raw = data_df
-        data.raw_data_files_length = len(data_df)
+        data.raw_data_files_length.append(len(data_df))
         data.summary = stat_df
         data = self._post_process(data)
         data = self.identify_last_data_point(data)

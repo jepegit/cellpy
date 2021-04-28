@@ -170,7 +170,7 @@ class ArbinCsvLoader(Loader):
         data.raw_data_files.append(fid)
 
         data.raw = data_df
-        data.raw_data_files_length = len(data_df)
+        data.raw_data_files_length.append(len(data_df))
         data.summary = pd.DataFrame()  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
@@ -233,32 +233,32 @@ def test_loader_from_outside():
     c.make_step_table()
     c.make_summary()
 
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
-    raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
-    steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
-    summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
-
-    n = c.get_number_of_cycles()
-    print(f"number of cycles: {n}")
-
-    cycle = c.get_cap(1, method="forth")
-    print(cycle.head())
-    # cycle.plot(x="capacity", y="voltage")
-    # plt.show()
-
-    s = c.get_step_numbers()
-    t = c.sget_timestamp(1, s[1])
-    v = c.sget_voltage(1, s[1])
-    steps = c.sget_step_numbers(1, s[1])
-
-    print("step numbers:")
-    print(s)
-    print("/ntesttime:")
-    print(t)
-    print("/nvoltage")
-    print(v)
+    # raw = c.cell.raw
+    # steps = c.cell.steps
+    # summary = c.cell.summary
+    # raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
+    # steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
+    # summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
+    #
+    # n = c.get_number_of_cycles()
+    # print(f"number of cycles: {n}")
+    #
+    # cycle = c.get_cap(1, method="forth")
+    # print(cycle.head())
+    # # cycle.plot(x="capacity", y="voltage")
+    # # plt.show()
+    #
+    # s = c.get_step_numbers()
+    # t = c.sget_timestamp(1, s[1])
+    # v = c.sget_voltage(1, s[1])
+    # steps = c.sget_step_numbers(1, s[1])
+    #
+    # print("step numbers:")
+    # print(s)
+    # print("/ntesttime:")
+    # print(t)
+    # print("/nvoltage")
+    # print(v)
     # plt.plot(t, v)
     # plt.plot(t, steps)
     # plt.show()
