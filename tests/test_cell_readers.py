@@ -4,6 +4,7 @@ import shutil
 import datetime
 import pytest
 import logging
+import pathlib
 
 import cellpy.readers.core
 from cellpy.exceptions import DeprecatedFeature
@@ -633,6 +634,18 @@ def test_save_cellpyfile_auto_extension(cellpy_data_instance):
     assert os.path.isfile(tmp_file + ".h5")
     os.remove(tmp_file + ".h5")
     assert not os.path.isfile(tmp_file + ".h5")
+
+
+def test_save_cellpyfile_auto_extension_pathlib(cellpy_data_instance):
+    cellpy_data_instance.loadcell(fdv.res_file_path)
+    cellpy_data_instance.make_summary(find_ir=True)
+    cellpy_data_instance.make_step_table()
+    tmp_file = pathlib.Path(next(tempfile._get_candidate_names()))
+    cellpy_data_instance.save(tmp_file)
+    tmp_file = tmp_file.with_suffix(".h5")
+    assert tmp_file.is_file()
+    os.remove(tmp_file)
+    assert not tmp_file.is_file()
 
 
 def test_save_cvs(cellpy_data_instance):

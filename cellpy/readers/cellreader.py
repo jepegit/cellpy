@@ -3137,7 +3137,7 @@ class CellpyData(object):
 
         outfile_all = Path(filename)
         if not outfile_all.suffix:
-            outfile_all.with_suffix(f'.{extension}')
+            outfile_all = outfile_all.with_suffix(f'.{extension}')
 
         if os.path.isfile(outfile_all):
             self.logger.debug("Outfile exists")
