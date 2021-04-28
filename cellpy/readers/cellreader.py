@@ -3135,10 +3135,9 @@ class CellpyData(object):
             self.logger.info("If you really want to do it, use save with force=True")
             return
 
-        if not os.path.splitext(filename)[-1]:
-            outfile_all = filename + "." + extension
-        else:
-            outfile_all = filename
+        outfile_all = Path(filename)
+        if not filename.suffix:
+            filename.rename(filename.with_suffix(f'.{extension}'))
 
         if os.path.isfile(outfile_all):
             self.logger.debug("Outfile exists")

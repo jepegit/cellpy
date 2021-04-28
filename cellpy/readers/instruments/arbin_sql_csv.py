@@ -259,9 +259,12 @@ def test_loader_from_outside():
     print(t)
     print("/nvoltage")
     print(v)
-    plt.plot(t, v)
-    plt.plot(t, steps)
-    plt.show()
+    # plt.plot(t, v)
+    # plt.plot(t, steps)
+    # plt.show()
+
+    outfile = datadir / "test_out"
+    c.save(outfile)
 
 
 if __name__ == "__main__":
