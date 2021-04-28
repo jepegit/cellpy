@@ -21,8 +21,6 @@ USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
 GITHUB_SIZE_LIMIT = 1_000_000
 
-# TODO: check setup - seems like it does not use username anymore
-
 
 def save_prm_file(prm_filename):
     """saves (writes) the prms to file"""

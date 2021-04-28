@@ -19,7 +19,7 @@ from cellpy.readers.core import (
     xldate_as_datetime,
 )
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.instruments.mixin import Loader
+from cellpy.readers.instruments.mixin import Loader, MINIMUM_SELECTION
 from cellpy import prms
 
 DEBUG_MODE = prms.Reader.diagnostics
@@ -106,21 +106,6 @@ if not use_ado:
 if DEBUG_MODE:
     logging.debug(f"dbloader: {dbloader}")
 
-# TODO: refactor to mixin
-# The columns to choose if minimum selection is selected
-MINIMUM_SELECTION = [
-    "Data_Point",
-    "Test_Time",
-    "Step_Time",
-    "DateTime",
-    "Step_Index",
-    "Cycle_Index",
-    "Current",
-    "Voltage",
-    "Charge_Capacity",
-    "Discharge_Capacity",
-    "Internal_Resistance",
-]
 
 # Names of the tables in the .res db that is used by cellpy
 TABLE_NAMES = {
