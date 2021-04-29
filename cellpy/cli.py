@@ -1143,18 +1143,28 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
             _download_g_file(repo, gfilename.as_posix(), nfilename)
 
 
+def _get_default_template():
+    template = "standard"
+    try:
+        template = prmreader.prms.Batch.template
+    except:
+        logging.debug("You dont have any default template defined in you .conf file")
+    return template
+
+
 @click.command()
 @click.option(
     "--template",
     "-t",
-    default="standard",
     help="what template to use ('standard', 'gitt', or 'single').",
 )
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
 @click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
 @click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
 def new(template, directory, serve, lab):
-    """Will in the future be used for setting up a batch experiment."""
+    """Set up a batch experiment."""
+    if not template:
+        template = _get_default_template()
     if lab:
         server = "lab"
     else:
@@ -1170,7 +1180,10 @@ def new(template, directory, serve, lab):
 
     from cellpy.parameters import prms
 
-    templates = {"standard": "https://github.com/jepegit/cellpy_cookie_standard.git"}
+    templates = {
+        "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
+        "ife": "https://github.com/jepegit/cellpy_cookie_ife.git"
+    }
 
     click.echo(f"Template: {template}")
     if not template.lower() in templates.keys():

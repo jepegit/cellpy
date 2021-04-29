@@ -174,6 +174,7 @@ Materials = box.Box(Materials)
 # --------------------------
 
 Batch = {
+    "template": "standard",
     "fig_extension": "png",
     "backend": "bokeh",
     "notebook": True,
