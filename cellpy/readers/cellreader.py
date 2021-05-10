@@ -5247,29 +5247,28 @@ def get(
         cellpy_instance.cycle_mode = cycle_mode
 
     if filename is not None:
-        # cellpy file
         if file_needed:
             if not isinstance(filename, (list, tuple)):
                 filename = Path(filename)
 
-            if not filename.is_file():
-                print(f"Could not find {filename}")
-                print("Returning None")
-                return
+                if not filename.is_file():
+                    print(f"Could not find {filename}")
+                    print("Returning None")
+                    return
 
-            if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
-                logging.info(f"Loading cellpy-file: {filename}")
-                cellpy_instance.load(filename)
-                if mass is not None:
-                    logging.info(f"Setting mass: {mass}")
-                    cellpy_instance.set_mass(mass)
-                    if auto_summary:
-                        logging.info("Creating step table")
-                        cellpy_instance.make_step_table()
-                        logging.info("Creating summary data")
-                        cellpy_instance.make_summary()
-                logging.info("Created CellpyData object")
-                return cellpy_instance
+                if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
+                    logging.info(f"Loading cellpy-file: {filename}")
+                    cellpy_instance.load(filename)
+                    if mass is not None:
+                        logging.info(f"Setting mass: {mass}")
+                        cellpy_instance.set_mass(mass)
+                        if auto_summary:
+                            logging.info("Creating step table")
+                            cellpy_instance.make_step_table()
+                            logging.info("Creating summary data")
+                            cellpy_instance.make_summary()
+                    logging.info("Created CellpyData object")
+                    return cellpy_instance
 
         # raw file
         logging.info(f"Loading raw-file: {filename}")
