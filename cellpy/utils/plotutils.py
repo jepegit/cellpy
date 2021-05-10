@@ -4,6 +4,8 @@ Utilities for helping to plot cellpy-data.
 """
 
 import os
+from io import StringIO
+import sys
 import warnings
 import importlib
 import logging
@@ -290,9 +292,16 @@ def plot_concatenated(
     if extension == "matplotlib":
         hover = False
 
-    hv.extension(
-        extension, logo=False,
-    )
+    try:
+        current_extension = hv.Store.current_backend
+        if extension != current_extension:
+            hv.extension(
+                extension, logo=False,
+            )
+    except Exception as e:
+        hv.extension(
+            extension, logo=False,
+        )
 
     if hdr_level is None:
         hdr_level = 0 if file_id_level == 1 else 1
@@ -658,16 +667,25 @@ def _cycle_info_plot_bokeh(
     Jupyter Notebooks.
     """
     # TODO: check that correct new column-names are used
-    # TODO: fix bokeh import
-    from bokeh.io import output_notebook, show
-    from bokeh.layouts import row, column
-    from bokeh.models import ColumnDataSource, LabelSet
-    from bokeh.models import HoverTool
-    from bokeh.models.annotations import Span
-    from bokeh.models.widgets import Slider, TextInput
-    from bokeh.plotting import figure
+    # TODO: fix bokeh import (use e.g. import bokeh.io)
 
-    output_notebook(hide_banner=True)
+    try:
+        from bokeh.io import output_notebook, show
+        from bokeh.layouts import row, column
+        from bokeh.models import ColumnDataSource, LabelSet
+        from bokeh.models import HoverTool
+        from bokeh.models.annotations import Span
+        from bokeh.models.widgets import Slider, TextInput
+        from bokeh.plotting import figure
+
+    except ImportError:
+        warnings.warn("Could not import bokeh")
+        return
+
+    try:
+        output_notebook(hide_banner=True)
+    finally:
+        sys.stdout = sys.__stdout__
 
     if points:
         if cycle is None or (len(cycle) > 1):
@@ -1074,7 +1092,7 @@ def hv_bokeh_to_mpl(figure, wide=False, size=(6, 4), **kwargs):
 
 
 def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=False, spread=True,
-          capacity_unit="gravimetric"):
+          capacity_unit="gravimetric", **kwargs):
     """create a holoviews-plot containing Coulombic Efficiency, Capacity, and IR.
 
     Args:
@@ -1091,11 +1109,7 @@ def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=F
         hv.Overlay or hv.NdOverlay
     """
 
-    bplot_shared_opts = {
-        "group_it": group_it,
-        "simple": simple,
-        "spread": spread,
-    }
+    extension = kwargs.pop("extension", "bokeh")
 
     cap_colum_dict = {
         "gravimetric": {
@@ -1121,9 +1135,54 @@ def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=F
     if ir_ylim is None:
         ir_ylim = (0, 200)
 
+    overlay_sensitive_opts = {
+        "ce": {},
+        "dcap": {},
+        "ccap": {},
+        "ird": {},
+        "irc": {},
+    }
+
+    layout_sensitive_opts = {
+        "ce": {},
+        "dcap": {},
+        "ccap": {},
+        "ird": {},
+        "irc": {},
+    }
+
+    if extension == "bokeh":
+        overlay_sensitive_opts["ce"] = {"height": 150}
+        overlay_sensitive_opts["dcap"] = {"height": 400}
+        overlay_sensitive_opts["ccap"] = {"height": 150}
+        overlay_sensitive_opts["ird"] = {"height": 150}
+        overlay_sensitive_opts["irc"] = {"height": 150}
+
+    elif extension == "matplotlib":
+        simple = True
+        overlay_sensitive_opts["ce"] = {"aspect": 2}
+        overlay_sensitive_opts["dcap"] = {"aspect": 2}
+        overlay_sensitive_opts["ccap"] = {"aspect": 2}
+        overlay_sensitive_opts["ird"] = {"aspect": 2}
+        overlay_sensitive_opts["irc"] = {"aspect": 2}
+
+        hspace = 2
+        layout_sensitive_opts["ce"] = {"hspace": hspace}
+        layout_sensitive_opts["dcap"] = {"hspace": hspace}
+        layout_sensitive_opts["ccap"] = {"hspace": hspace}
+        layout_sensitive_opts["ird"] = {"hspace": hspace}
+        layout_sensitive_opts["irc"] = {"hspace": hspace}
+
+    bplot_shared_opts = {
+        "group_it": group_it,
+        "simple": simple,
+        "spread": spread,
+        "extension": extension,
+    }
+
     if simple:
         overlay_opts = hv.opts.Overlay
-        layout_opts = hv.opts.Overlay
+        layout_opts = hv.opts.Layout
     else:
         overlay_opts = hv.opts.NdOverlay
         layout_opts = hv.opts.NdLayout
@@ -1131,34 +1190,36 @@ def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=F
     # print("creating interactive plots")
     oplot_ce = bplot(b, columns=["coulombic_efficiency"], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=ce_ylim),
-        overlay_opts(title="", height=150, show_legend=False, xlabel="", ylabel="C.E."),
-        layout_opts(title="Coulombic efficiency (%)")
+        overlay_opts(title="", show_legend=False, xlabel="", ylabel="C.E.", **overlay_sensitive_opts["ce"]),
+        layout_opts(title="Coulombic efficiency (%)", **layout_sensitive_opts["ce"])
     )
     # print(" - created oplot_ce")
 
     oplot_dcap = bplot(b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
-        overlay_opts(title="", height=400, show_legend=True, xlabel="", ylabel="discharge"),
-        layout_opts(title=f"Capacity ({cap_colum_dict[capacity_unit]['unit']})")
+        overlay_opts(title="", show_legend=True, xlabel="", ylabel="discharge", **overlay_sensitive_opts["dcap"]),
+        layout_opts(title=f"Capacity ({cap_colum_dict[capacity_unit]['unit']})", **layout_sensitive_opts["dcap"])
     )
     # print(" - created oplot_dcap")
 
     oplot_ccap = bplot(b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
-        overlay_opts(title="", height=150, show_legend=False, xlabel="", ylabel="charge"),
-        layout_opts(title="")
+        overlay_opts(title="", show_legend=False, xlabel="", ylabel="charge", **overlay_sensitive_opts["ccap"]),
+        layout_opts(title="", **layout_sensitive_opts["ccap"])
     )
     # print(" - created oplot_ccap")
 
     oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=ir_ylim),
-        overlay_opts(title="", height=150, show_legend=False, xlabel="", ylabel="discharge"),
-        layout_opts(title="Internal Resistance (Ohm)"))
+        overlay_opts(title="", show_legend=False, xlabel="", ylabel="discharge", **overlay_sensitive_opts["ird"]),
+        layout_opts(title="Internal Resistance (Ohm)", **layout_sensitive_opts["ird"])
+    )
 
     oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=ir_ylim),
-        overlay_opts(title="", height=150, show_legend=False, ylabel="charge"),
-        layout_opts(title=""))
+        overlay_opts(title="", show_legend=False, ylabel="charge", **overlay_sensitive_opts["irc"]),
+        layout_opts(title="", **layout_sensitive_opts["irc"])
+    )
 
     return (oplot_ce + oplot_dcap + oplot_ccap + oplot_ird + oplot_irc).cols(1)
 

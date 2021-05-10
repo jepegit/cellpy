@@ -295,14 +295,11 @@ class ArbinSQLLoader(Loader):
         if rename_headers:
             columns = {}
             for key in self.arbin_headers_normal:
-                print(key)
                 old_header = normal_headers_renaming_dict[key]
                 new_header = self.cellpy_headers_normal[key]
                 columns[old_header] = new_header
-            print(80 * "*")
-            pprint(columns)
+
             data.raw.rename(index=str, columns=columns, inplace=True)
-            print(data.raw.columns)
             try:
                 columns = {}
                 for key, old_header in summary_headers_renaming_dict.items():
@@ -466,7 +463,7 @@ def test_loader_from_outside():
     from cellpy import cellreader
     import matplotlib.pyplot as plt
 
-    name = "20201106_HC03B1W_1_cc_01"
+    name = "20200820_CoFBAT_slurry07B_01_cc_01"
     c = cellreader.CellpyData()
     c.set_instrument("arbin_sql")
     # print(c)

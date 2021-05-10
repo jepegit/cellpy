@@ -1839,12 +1839,22 @@ class CellpyData(object):
         fidtable["raw_data_fid"] = fids
         if fids:
             for fid, length in zip(fids, test.raw_data_files_length):
-                fidtable["raw_data_name"].append(str(Path(fid.name).name))
-                fidtable["raw_data_full_name"].append(str(Path(fid.full_name)))
-                fidtable["raw_data_size"].append(fid.size)
-                fidtable["raw_data_last_modified"].append(fid.last_modified)
-                fidtable["raw_data_last_accessed"].append(fid.last_accessed)
-                fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
+                try:
+                    fidtable["raw_data_name"].append(str(Path(fid.name).name))
+                    fidtable["raw_data_full_name"].append(str(Path(fid.full_name)))
+                    fidtable["raw_data_size"].append(fid.size)
+                    fidtable["raw_data_last_modified"].append(fid.last_modified)
+                    fidtable["raw_data_last_accessed"].append(fid.last_accessed)
+                    fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
+                except:
+                    logging.debug("this is probably not from a file")
+                    fidtable["raw_data_name"].append("db")
+                    fidtable["raw_data_full_name"].append("db")
+                    fidtable["raw_data_size"].append(fid.size)
+                    fidtable["raw_data_last_modified"].append("db")
+                    fidtable["raw_data_last_accessed"].append("db")
+                    fidtable["raw_data_last_info_changed"].append("db")
+
                 fidtable["raw_data_location"].append(fid.location)
                 fidtable["raw_data_files_length"].append(length)
                 fidtable["last_data_point"].append(fid.last_data_point)
@@ -5223,16 +5233,24 @@ def get(
     log.setup_logging(default_level=logging_mode)
     cellpy_instance = CellpyData()
 
+    db_readers = ['arbin_sql']
+
     if instrument is not None:
         cellpy_instance.set_instrument(instrument=instrument)
+
+    if cellpy_instance.tester in db_readers:
+        file_needed = False
+    else:
+        file_needed = True
 
     if cycle_mode is not None:
         cellpy_instance.cycle_mode = cycle_mode
 
     if filename is not None:
         # cellpy file
-        if not isinstance(filename, (list, tuple)):
-            filename = Path(filename)
+        if file_needed:
+            if not isinstance(filename, (list, tuple)):
+                filename = Path(filename)
 
             if not filename.is_file():
                 print(f"Could not find {filename}")

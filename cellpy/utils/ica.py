@@ -30,6 +30,13 @@ class Converter:
     Typical usage is to  (1) set the data,  (2) inspect the data,
     (3) pre-process the data,
     (4) perform the dq-dv transform, and finally (5) post-process the data.
+
+    A short note about normalization:
+    If normalization is set to False, then no normalization will be done.
+    If normalization is True, and normalization_factor is None, the total capacity of the half cycle will be
+       used for normalization, else the normalization_factor will be used.
+    If normalization is True, and normalization_roof is not None, the capacity divided by normalization_roof will be
+       used for normalization.
     """
 
     def __init__(
