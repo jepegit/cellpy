@@ -1093,6 +1093,11 @@ class CellpyData(object):
             self.file_names = [file_names]
 
         # file_type = self.tester
+        instrument = kwargs.pop("instrument", None)
+        if instrument:
+            print("Setting custom instrument")
+            print(f"-> {instrument}")
+            self.set_instrument(instrument)
         raw_file_loader = self.loader
         # test is currently a list of tests - this option will be removed in the future
         # so set_number is hard-coded to 0, i.e. actual-test is always test[0]
@@ -1939,7 +1944,10 @@ class CellpyData(object):
         # finding diff of time
         start_time_1 = t1.start_datetime
         start_time_2 = t2.start_datetime
-        diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(start_time_1)
+        if self.tester in ["arbin", "arbin_res"]:
+            diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(start_time_1)
+        else:
+            diff_time = start_time_2 - start_time_1
         diff_time = diff_time.total_seconds()
 
         if diff_time < 0:
@@ -1958,7 +1966,7 @@ class CellpyData(object):
         t2.raw[data_point_header] = t2.raw[data_point_header] + last_data_point
         self.logger.debug("No error getting last data point for r2")
         # mod cycle index for set 2
-        cycle_index_header = self.headers_normal.cycle_index_txt
+        cycle_index_header = self.headers_summary.cycle_index
         try:
             last_cycle = max(t1.raw[cycle_index_header])
         except ValueError:
@@ -1975,10 +1983,17 @@ class CellpyData(object):
 
             # checking if we already have made a summary file of these datasets
             # (to be used if merging summaries (but not properly implemented yet))
-            if t1.summary_made and t2.summary_made:
-                dfsummary_made = True
+            if t1.summary.empty or t2.summary.empty:
+                summary_made = False
             else:
-                dfsummary_made = False
+                summary_made = True
+
+            try:
+                _ = t1.summary[cycle_index_header]  # during loading arbin res files, a stats-frame is loaded into
+                _ = t2.summary[cycle_index_header]  # the summary. This prevents merging those.
+            except KeyError:
+                summary_made = False
+                logging.info("The summary is not complete - run make_summary()")
 
             # checking if we already have made step tables for these datasets
             if t1.steps_made and t2.steps_made:
@@ -1986,46 +2001,36 @@ class CellpyData(object):
             else:
                 step_table_made = False
 
-            if merge_summary:
+            if merge_summary and summary_made:
                 # check if (self-made) summary exists.
                 self.logger.debug("merge summaries")
-                self_made_summary = True
-                try:
-                    test_it = t1.summary[cycle_index_header]
-                    self.logger.debug("summary t1 exists")
-                except KeyError as e:
-                    self.logger.debug("summary t1 does not exist")
-                    self_made_summary = False
-                try:
-                    test_it = t2.summary[cycle_index_header]
-                    self.logger.debug("summary t2 exists")
 
-                except KeyError as e:
-                    self.logger.debug("summary t2 does not exist")
-                    self_made_summary = False
+                # This part of the code is seldom ran. Careful!
+                # mod cycle index for set 2
+                last_cycle = max(t1.summary[cycle_index_header])
+                t2.summary[cycle_index_header] = (
+                    t2.summary[cycle_index_header] + last_cycle
+                )
+                # mod test time for set 2
+                t2.summary[test_time_header] = (
+                    t2.summary[test_time_header] + diff_time
+                )
+                # to-do: mod all the cumsum stuff in the summary (best to make
+                # summary after merging) merging
 
-                if self_made_summary:
-                    # This part of the code is seldom ran. Careful!
-                    # mod cycle index for set 2
-                    last_cycle = max(t1.summary[cycle_index_header])
-                    t2.summary[cycle_index_header] = (
-                        t2.summary[cycle_index_header] + last_cycle
-                    )
-                    # mod test time for set 2
-                    t2.summary[test_time_header] = (
-                        t2.summary[test_time_header] + diff_time
-                    )
-                    # to-do: mod all the cumsum stuff in the summary (best to make
-                    # summary after merging) merging
-
-                else:
-                    t2.summary[data_point_header] = (
-                        t2.summary[data_point_header] + last_data_point
-                    )
+                t2.summary[data_point_header] = (
+                    t2.summary[data_point_header] + last_data_point
+                )
 
                 summary2 = pd.concat([t1.summary, t2.summary], ignore_index=True)
 
                 test.summary = summary2
+            else:
+                self.logger.debug(
+                    "could not merge summary tables "
+                    "(non-existing) -"
+                    "create them first!"
+                )
 
             if merge_step_table:
                 if step_table_made:

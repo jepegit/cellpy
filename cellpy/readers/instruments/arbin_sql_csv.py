@@ -1,4 +1,6 @@
 """arbin MS SQL Server csv data"""
+
+from dateutil.parser import parse
 import pandas as pd
 
 from cellpy.readers.core import (
@@ -137,7 +139,7 @@ class ArbinCsvLoader(Loader):
 
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
-    def loader(self, name):
+    def loader(self, name, **kwargs):
         """returns a Cell object with loaded data.
 
         Loads data from arbin SQL server db.
@@ -199,6 +201,9 @@ class ArbinCsvLoader(Loader):
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
             if data.raw.index.name != hdr_data_point:
                 data.raw = data.raw.set_index(hdr_data_point, drop=False)
+
+        hdr_date_time = self.arbin_headers_normal.datetime_txt
+        data.start_datetime = parse(data.raw[hdr_date_time].iat[0])
 
         return data
 
