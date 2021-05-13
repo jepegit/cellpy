@@ -361,6 +361,19 @@ class Batch:
         return self.experiment.cell_names
 
     @property
+    def labels(self):
+        # Plan: allow cells to both have a label and a cell_name, where that latter should be an unique
+        # identifier. Consider also to allow for a group-name.
+        # The label and cell name can be the same. Consider allowing several cells to share the same label
+        # thus returning several cellpy cell objects. Our use "group" for this purpose.
+        print("Label-based look-up is not supported yet. Performing cell-name based look-up instead.")
+        return self.experiment.cell_names
+
+    @property
+    def cells(self):
+        return self.experiment.data
+
+    @property
     def raw_headers(self):
         return self.experiment.data[0].cell.raw.columns
 
