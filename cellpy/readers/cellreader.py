@@ -464,12 +464,16 @@ class CellpyData(object):
 
         elif instrument == "arbin_sql":
             from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
+
             warnings.warn(f"{instrument} is experimental! Not ready for production!")
             self._set_instrument(RawLoader)
             self.tester = "arbin_sql"
 
         elif instrument == "arbin_sql_csv":
-            from cellpy.readers.instruments.arbin_sql_csv import ArbinCsvLoader as RawLoader
+            from cellpy.readers.instruments.arbin_sql_csv import (
+                ArbinCsvLoader as RawLoader,
+            )
+
             warnings.warn(f"{instrument} is experimental! Not ready for production!")
             self._set_instrument(RawLoader)
             self.tester = "arbin_sql_csv"
@@ -1706,7 +1710,7 @@ class CellpyData(object):
             if self.limit_data_points:
                 data.steps = data.steps.loc[
                     data.steps["point_last"] <= self.limit_data_points
-                    ]
+                ]
                 logging.debug(f"limited to data_point {self.limit_data_points}")
         except Exception as e:
             print(e)
@@ -1945,7 +1949,9 @@ class CellpyData(object):
         start_time_1 = t1.start_datetime
         start_time_2 = t2.start_datetime
         if self.tester in ["arbin", "arbin_res"]:
-            diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(start_time_1)
+            diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
+                start_time_1
+            )
         else:
             diff_time = start_time_2 - start_time_1
         diff_time = diff_time.total_seconds()
@@ -1989,8 +1995,12 @@ class CellpyData(object):
                 summary_made = True
 
             try:
-                _ = t1.summary[cycle_index_header]  # during loading arbin res files, a stats-frame is loaded into
-                _ = t2.summary[cycle_index_header]  # the summary. This prevents merging those.
+                _ = t1.summary[
+                    cycle_index_header
+                ]  # during loading arbin res files, a stats-frame is loaded into
+                _ = t2.summary[
+                    cycle_index_header
+                ]  # the summary. This prevents merging those.
             except KeyError:
                 summary_made = False
                 logging.info("The summary is not complete - run make_summary()")
@@ -2012,9 +2022,7 @@ class CellpyData(object):
                     t2.summary[cycle_index_header] + last_cycle
                 )
                 # mod test time for set 2
-                t2.summary[test_time_header] = (
-                    t2.summary[test_time_header] + diff_time
-                )
+                t2.summary[test_time_header] = t2.summary[test_time_header] + diff_time
                 # to-do: mod all the cumsum stuff in the summary (best to make
                 # summary after merging) merging
 
@@ -3152,7 +3160,7 @@ class CellpyData(object):
 
         outfile_all = Path(filename)
         if not outfile_all.suffix:
-            outfile_all = outfile_all.with_suffix(f'.{extension}')
+            outfile_all = outfile_all.with_suffix(f".{extension}")
 
         if os.path.isfile(outfile_all):
             self.logger.debug("Outfile exists")
@@ -3417,7 +3425,9 @@ class CellpyData(object):
             pandas.Series or None if empty
         """
         header = self.headers_normal.voltage_txt
-        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
+        return self._sget(
+            cycle, step, header, usteps=False, dataset_number=dataset_number
+        )
 
     def sget_current(self, cycle, step, dataset_number=None):
         """Returns current for cycle, step.
@@ -3435,7 +3445,9 @@ class CellpyData(object):
                     pandas.Series or None if empty
                 """
         header = self.headers_normal.current_txt
-        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
+        return self._sget(
+            cycle, step, header, usteps=False, dataset_number=dataset_number
+        )
 
     def get_voltage(self, cycle=None, dataset_number=None, full=True):
         """Returns voltage (in V).
@@ -3540,7 +3552,9 @@ class CellpyData(object):
         """
 
         header = self.headers_normal.step_time_txt
-        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
+        return self._sget(
+            cycle, step, header, usteps=False, dataset_number=dataset_number
+        )
 
     def _sget(self, cycle, step, header, usteps=False, dataset_number=None):
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -3559,7 +3573,9 @@ class CellpyData(object):
             print(" - get the start and end 'data_point'")
             print(" - look up the start and end 'data_point' in the raw DataFrame")
             print("")
-            print("(Just remember to run make_step_table with the all_steps set to True before you do it)")
+            print(
+                "(Just remember to run make_step_table with the all_steps set to True before you do it)"
+            )
             return
 
         test = self.cells[dataset_number].raw
@@ -3568,7 +3584,8 @@ class CellpyData(object):
             step = [step]
 
         return test.loc[
-            (test[cycle_index_header] == cycle) & (test[step_index_header].isin(step)), header
+            (test[cycle_index_header] == cycle) & (test[step_index_header].isin(step)),
+            header,
         ].reset_index(drop=True)
 
     def sget_timestamp(self, cycle, step, dataset_number=None):
@@ -3588,7 +3605,9 @@ class CellpyData(object):
         """
 
         header = self.headers_normal.test_time_txt
-        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
+        return self._sget(
+            cycle, step, header, usteps=False, dataset_number=dataset_number
+        )
 
     def sget_step_numbers(self, cycle, step, dataset_number=None):
         """Returns step number for cycle, step.
@@ -3607,7 +3626,9 @@ class CellpyData(object):
         """
 
         header = self.headers_normal.step_index_txt
-        return self._sget(cycle, step, header, usteps=False, dataset_number=dataset_number)
+        return self._sget(
+            cycle, step, header, usteps=False, dataset_number=dataset_number
+        )
 
     def get_datetime(self, cycle=None, dataset_number=None, full=True):
 
@@ -5238,7 +5259,7 @@ def get(
     log.setup_logging(default_level=logging_mode)
     cellpy_instance = CellpyData()
 
-    db_readers = ['arbin_sql']
+    db_readers = ["arbin_sql"]
 
     if instrument is not None:
         cellpy_instance.set_instrument(instrument=instrument)

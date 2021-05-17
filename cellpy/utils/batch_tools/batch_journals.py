@@ -48,7 +48,7 @@ class LabJournal(BaseJournal):
             file_name = self.file_name
         return file_name
 
-    def from_db(self, project=None, name=None, batch_col=None):
+    def from_db(self, project=None, name=None, batch_col=None, **kwargs):
         logging.debug("creating journal from db")
         if batch_col is None:
             batch_col = self.batch_col
@@ -61,7 +61,7 @@ class LabJournal(BaseJournal):
         logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
         if self.db_reader is not None:
             srnos = self.db_reader.select_batch(name, batch_col)
-            self.pages = simple_db_engine(self.db_reader, srnos)
+            self.pages = simple_db_engine(self.db_reader, srnos, **kwargs)
             if self.pages.empty:
                 logging.critical(
                     f"EMPTY JOURNAL: are you sure you have provided correct input to batch?"

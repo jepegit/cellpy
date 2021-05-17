@@ -353,7 +353,9 @@ def test_search_for_files():
     run_files, cellpy_file = filefinder.search_for_files(
         fdv.run_name, raw_file_dir=fdv.raw_data_dir, cellpy_file_dir=fdv.output_dir
     )
-
+    print(f"fdv.res_file_path: {fdv.res_file_path}")
+    print(f"run_files: {run_files}")
+    print(run_files)
     assert fdv.res_file_path in run_files
     assert os.path.basename(cellpy_file) == fdv.cellpy_file_name
 

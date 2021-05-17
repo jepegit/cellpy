@@ -365,7 +365,9 @@ def plot_concatenated(
             sg = journal_pages.loc[name, "sg"]
             color = colors[g]
             marker = markers[sg]
-            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y), label=label).opts(color=color)
+            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y), label=label).opts(
+                color=color
+            )
 
         else:
             curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y), label=label)
@@ -423,9 +425,9 @@ def plot_concatenated(
                 new_curve_dict[k] = curve_dict[keys[k]]
             curve_dict = new_curve_dict
 
-        final_plot = hv.Overlay([*curve_dict.values()], vdims=[*curve_dict.keys()]).opts(
-            **overlay_opts, **kwargs
-        )
+        final_plot = hv.Overlay(
+            [*curve_dict.values()], vdims=[*curve_dict.keys()]
+        ).opts(**overlay_opts, **kwargs)
     else:
         final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
             **overlay_opts, **kwargs
@@ -1091,8 +1093,17 @@ def hv_bokeh_to_mpl(figure, wide=False, size=(6, 4), **kwargs):
     return figure
 
 
-def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=False, spread=True,
-          capacity_unit="gravimetric", **kwargs):
+def oplot(
+    b,
+    cap_ylim=None,
+    ce_ylim=None,
+    ir_ylim=None,
+    simple=False,
+    group_it=False,
+    spread=True,
+    capacity_unit="gravimetric",
+    **kwargs,
+):
     """create a holoviews-plot containing Coulombic Efficiency, Capacity, and IR.
 
     Args:
@@ -1116,18 +1127,18 @@ def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=F
             "discharge": "discharge_capacity",
             "charge": "charge_capacity",
             "unit": "mAh/g(a.m.)",
-            "ylim": (0, 5000)
+            "ylim": (0, 5000),
         },
         "areal": {
             "discharge": "areal_discharge_capacity",
             "charge": "areal_charge_capacity",
             "unit": "mAh/cm2",
-            "ylim": (0, 3)
+            "ylim": (0, 3),
         },
     }
 
     if cap_ylim is not None:
-        cap_colum_dict[capacity_unit]['ylim'] = cap_ylim
+        cap_colum_dict[capacity_unit]["ylim"] = cap_ylim
 
     if ce_ylim is None:
         ce_ylim = (80, 120)
@@ -1190,35 +1201,71 @@ def oplot(b, cap_ylim=None, ce_ylim=None, ir_ylim=None, simple=False, group_it=F
     # print("creating interactive plots")
     oplot_ce = bplot(b, columns=["coulombic_efficiency"], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=ce_ylim),
-        overlay_opts(title="", show_legend=False, xlabel="", ylabel="C.E.", **overlay_sensitive_opts["ce"]),
-        layout_opts(title="Coulombic efficiency (%)", **layout_sensitive_opts["ce"])
+        overlay_opts(
+            title="",
+            show_legend=False,
+            xlabel="",
+            ylabel="C.E.",
+            **overlay_sensitive_opts["ce"],
+        ),
+        layout_opts(title="Coulombic efficiency (%)", **layout_sensitive_opts["ce"]),
     )
     # print(" - created oplot_ce")
 
-    oplot_dcap = bplot(b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts).opts(
+    oplot_dcap = bplot(
+        b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts
+    ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
-        overlay_opts(title="", show_legend=True, xlabel="", ylabel="discharge", **overlay_sensitive_opts["dcap"]),
-        layout_opts(title=f"Capacity ({cap_colum_dict[capacity_unit]['unit']})", **layout_sensitive_opts["dcap"])
+        overlay_opts(
+            title="",
+            show_legend=True,
+            xlabel="",
+            ylabel="discharge",
+            **overlay_sensitive_opts["dcap"],
+        ),
+        layout_opts(
+            title=f"Capacity ({cap_colum_dict[capacity_unit]['unit']})",
+            **layout_sensitive_opts["dcap"],
+        ),
     )
     # print(" - created oplot_dcap")
 
-    oplot_ccap = bplot(b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts).opts(
+    oplot_ccap = bplot(
+        b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts
+    ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
-        overlay_opts(title="", show_legend=False, xlabel="", ylabel="charge", **overlay_sensitive_opts["ccap"]),
-        layout_opts(title="", **layout_sensitive_opts["ccap"])
+        overlay_opts(
+            title="",
+            show_legend=False,
+            xlabel="",
+            ylabel="charge",
+            **overlay_sensitive_opts["ccap"],
+        ),
+        layout_opts(title="", **layout_sensitive_opts["ccap"]),
     )
     # print(" - created oplot_ccap")
 
     oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=ir_ylim),
-        overlay_opts(title="", show_legend=False, xlabel="", ylabel="discharge", **overlay_sensitive_opts["ird"]),
-        layout_opts(title="Internal Resistance (Ohm)", **layout_sensitive_opts["ird"])
+        overlay_opts(
+            title="",
+            show_legend=False,
+            xlabel="",
+            ylabel="discharge",
+            **overlay_sensitive_opts["ird"],
+        ),
+        layout_opts(title="Internal Resistance (Ohm)", **layout_sensitive_opts["ird"]),
     )
 
     oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts).opts(
         hv.opts.Curve(ylim=ir_ylim),
-        overlay_opts(title="", show_legend=False, ylabel="charge", **overlay_sensitive_opts["irc"]),
-        layout_opts(title="", **layout_sensitive_opts["irc"])
+        overlay_opts(
+            title="",
+            show_legend=False,
+            ylabel="charge",
+            **overlay_sensitive_opts["irc"],
+        ),
+        layout_opts(title="", **layout_sensitive_opts["irc"]),
     )
 
     return (oplot_ce + oplot_dcap + oplot_ccap + oplot_ird + oplot_irc).cols(1)

@@ -128,6 +128,7 @@ DbCols = {
     "loading": ("loading_active_material", "float"),
     "nom_cap": ("nominal_capacity", "float"),
     "file_name_indicator": ("file_name_indicator", "str"),
+    "instrument": ("instrument", "str"),
     "raw_file_names": ("raw_file_names", "list"),
     "cellpy_file_name": ("cellpy_file_name", "str"),
     "comment_slurry": ("comment_slurry", "str"),

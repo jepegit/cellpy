@@ -293,6 +293,7 @@ class ArbinSQLLoader(Loader):
         # Remark that we also set index during saving the file to hdf5 if
         #   it is not set.
         from pprint import pprint
+
         if rename_headers:
             columns = {}
             for key in self.arbin_headers_normal:
@@ -317,9 +318,7 @@ class ArbinSQLLoader(Loader):
             h_datetime = self.cellpy_headers_normal.datetime_txt
             logging.debug("converting to datetime format")
 
-            data.raw[h_datetime] = data.raw[h_datetime].apply(
-                from_arbin_to_datetime
-            )
+            data.raw[h_datetime] = data.raw[h_datetime].apply(from_arbin_to_datetime)
 
             h_datetime = h_datetime
             if h_datetime in data.summary:
@@ -340,7 +339,9 @@ class ArbinSQLLoader(Loader):
     def _query_sql(self, name):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
-        con_str = "Driver={SQL Server};Server=" + self.server + ";Trusted_Connection=yes;"
+        con_str = (
+            "Driver={SQL Server};Server=" + self.server + ";Trusted_Connection=yes;"
+        )
         master_q = (
             "SELECT Database_Name, Test_Name FROM "
             "ArbinPro8MasterInfo.dbo.TestList_Table WHERE "
@@ -445,6 +446,7 @@ def test_sql_loader(server: str = None, tests: list = None):
 
 def test_query():
     import pathlib
+
     name = ["20201106_HC03B1W_1_cc_01"]
     dd, ds = test_sql_loader(SERVER, name)
     out = pathlib.Path(r"C:\scripts\notebooks\Div")

@@ -329,6 +329,10 @@ class Reader(object):
         column_name = self.db_sheet_cols.experiment_type
         return self._pick_info(serial_number, column_name)
 
+    def get_instrument(self, serial_number):
+        column_name = self.db_sheet_cols.instrument
+        return self._pick_info(serial_number, column_name)
+
     def get_total_mass(self, serial_number):
         column_name_mass = self.db_sheet_cols.total_material
         total_mass = self._pick_info(serial_number, column_name_mass)

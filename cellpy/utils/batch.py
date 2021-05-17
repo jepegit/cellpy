@@ -366,7 +366,9 @@ class Batch:
         # identifier. Consider also to allow for a group-name.
         # The label and cell name can be the same. Consider allowing several cells to share the same label
         # thus returning several cellpy cell objects. Our use "group" for this purpose.
-        print("Label-based look-up is not supported yet. Performing cell-name based look-up instead.")
+        print(
+            "Label-based look-up is not supported yet. Performing cell-name based look-up instead."
+        )
         return self.experiment.cell_names
 
     @property
@@ -407,7 +409,7 @@ class Batch:
             "the journal.pages instead."
         )
 
-    def create_journal(self, description=None, from_db=True):
+    def create_journal(self, description=None, from_db=True, **kwargs):
         """Create journal pages.
 
         This method is a wrapper for the different Journal methods for making
@@ -428,6 +430,8 @@ class Batch:
             from_db (bool): Deprecation Warning: this parameter will be removed as it is
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
+
+            **kwargs: sent to sub-function(s) (e.g. from_db -> simple_db_reader -> find_files -> filefinder.search_for_files)
         """
         logging.debug("Creating a journal")
         logging.debug(f"description: {description}")
@@ -439,7 +443,7 @@ class Batch:
             from_db = False
 
         if from_db:
-            self.experiment.journal.from_db()
+            self.experiment.journal.from_db(**kwargs)
             self.experiment.journal.to_file()
             self.duplicate_journal(prms.Paths.batchfiledir)
 
