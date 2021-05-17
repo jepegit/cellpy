@@ -29,14 +29,13 @@ unit_labels = {
     "capacity": "Ah",
     "energy": "Wh",
     "resistance": "Ohm",
-    "temperature": "C"
+    "temperature": "C",
 }
 
 incremental_unit_labels = {
     "dv_dt": f"{unit_labels['voltage']}/{unit_labels['time']}",
     "dq_dv": f"{unit_labels['capacity']}/{unit_labels['voltage']}",
     "dv_dq": f"{unit_labels['voltage']}/{unit_labels['capacity']}",
-
 }
 
 # Contains several headers not encountered yet in the Arbin SQL Server tables
@@ -173,7 +172,9 @@ class ArbinCsvLoader(Loader):
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
-        data.summary = pd.DataFrame()  # creating an empty frame - loading summary is not implemented yet
+        data.summary = (
+            pd.DataFrame()
+        )  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
         new_tests.append(data)
@@ -195,7 +196,11 @@ class ArbinCsvLoader(Loader):
             new_aux_headers = self.get_headers_aux(data.raw)
             data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
 
-            data.raw.rename(index=str, columns=not_implemented_in_cellpy_yet_renaming_dict, inplace=True)
+            data.raw.rename(
+                index=str,
+                columns=not_implemented_in_cellpy_yet_renaming_dict,
+                inplace=True,
+            )
 
         if set_index:
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
@@ -214,8 +219,10 @@ class ArbinCsvLoader(Loader):
 
 def test_csv_loader():
     import pathlib
+
     datadir = pathlib.Path(
-        r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709")
+        r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709"
+    )
     name = datadir / "2021_02_02_standardageing_1C_25dC_1_Channel_1_Wb_1.CSV"
     loader = ArbinCsvLoader()
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
@@ -226,8 +233,10 @@ def test_loader_from_outside():
     from cellpy import cellreader
     import matplotlib.pyplot as plt
     import pathlib
+
     datadir = pathlib.Path(
-        r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709")
+        r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709"
+    )
     name = datadir / "2021_02_02_standardageing_1C_25dC_1_Channel_1_Wb_1.CSV"
     c = cellreader.CellpyData()
     c.set_instrument("arbin_sql_csv")

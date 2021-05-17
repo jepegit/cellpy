@@ -113,7 +113,7 @@ def dq_dv_engine(**kwargs):
     return farms, barn
 
 
-def simple_db_engine(reader=None, srnos=None):
+def simple_db_engine(reader=None, srnos=None, **kwargs):
     """engine that gets values from the simple excel 'db'"""
     # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:
@@ -138,6 +138,9 @@ def simple_db_engine(reader=None, srnos=None):
     ]
     info_dict[hdr_journal["label"]] = [reader.get_label(srno) for srno in srnos]
     info_dict[hdr_journal["cell_type"]] = [reader.get_cell_type(srno) for srno in srnos]
+    info_dict[hdr_journal["instrument"]] = [
+        reader.get_instrument(srno) for srno in srnos
+    ]
     info_dict[hdr_journal["raw_file_names"]] = []
     info_dict[hdr_journal["cellpy_file_name"]] = []
     info_dict[hdr_journal["comment"]] = [reader.get_comment(srno) for srno in srnos]
@@ -155,7 +158,7 @@ def simple_db_engine(reader=None, srnos=None):
 
     my_timer_start = time.time()
     filename_cache = []
-    info_dict = helper.find_files(info_dict, filename_cache)
+    info_dict = helper.find_files(info_dict, filename_cache, **kwargs)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logging.critical(

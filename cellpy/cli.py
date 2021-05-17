@@ -1154,9 +1154,7 @@ def _get_default_template():
 
 @click.command()
 @click.option(
-    "--template",
-    "-t",
-    help="what template to use ('standard', 'gitt', or 'single').",
+    "--template", "-t", help="what template to use ('standard', 'gitt', or 'single').",
 )
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
 @click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
@@ -1182,7 +1180,7 @@ def new(template, directory, serve, lab):
 
     templates = {
         "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
-        "ife": "https://github.com/jepegit/cellpy_cookie_ife.git"
+        "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
     }
 
     click.echo(f"Template: {template}")

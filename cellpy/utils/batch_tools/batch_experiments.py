@@ -76,6 +76,7 @@ class CyclingExperiment(BaseExperiment):
         self.export_ica = False
         self.last_cycle = None
         self.nom_cap = None
+        self.instrument = None
         self.custom_data_folder = None
 
         self.selected_summaries = None
@@ -87,6 +88,9 @@ class CyclingExperiment(BaseExperiment):
             all_in_memory (bool): store the cellpydata in memory (default
                 False)
 
+            kwargs:
+                instrument (str):
+
         """
         logging.info("[update experiment]")
         if all_in_memory is not None:
@@ -94,7 +98,24 @@ class CyclingExperiment(BaseExperiment):
 
         pages = self.journal.pages
         if self.nom_cap:
+            warnings.warn(
+                "Setting nominal capacity through attributes will be deprecated soon since it modifies "
+                "the journal pages."
+            )
             pages[hdr_journal.nom_cap] = self.nom_cap
+
+        if self.instrument:
+            warnings.warn(
+                "Setting instrument through attributes will be deprecated soon since it modifies the journal pages."
+            )
+            pages[hdr_journal.instrument] = self.instrument
+
+        if x := kwargs.pop("instrument", None):
+            warnings.warn(
+                "Setting instrument through params will be deprecated soon since it modifies the journal pages."
+                "Future version will require instrument in the journal pages."
+            )
+            pages[hdr_journal.instrument] = x
 
         if pages.empty:
             raise Exception("your journal is empty")
@@ -115,9 +136,7 @@ class CyclingExperiment(BaseExperiment):
             pbar.set_postfix_str(s=h_txt, refresh=True)
 
             if not row[hdr_journal.raw_file_names] and not self.force_cellpy:
-                logging.info("File(s) not found!")
-                logging.info(indx)
-                logging.debug("File(s) not found for index=%s" % indx)
+                logging.info(f"Raw file(s) not given in the journal.pages for index={indx}")
                 errors.append(indx)
                 h_txt += " [-]"
                 pbar.set_postfix_str(s=h_txt, refresh=True)
@@ -147,6 +166,7 @@ class CyclingExperiment(BaseExperiment):
                         use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
                         nom_cap=row[hdr_journal.nom_cap],
                         cell_type=row[hdr_journal.cell_type],
+                        instrument=row[hdr_journal.instrument],
                         **kwargs,
                     )
 
@@ -360,7 +380,15 @@ class CyclingExperiment(BaseExperiment):
 
         self.errors["link"] = errors
 
-    def recalc(self, save=True, step_opts=None, summary_opts=None, indexes=None, calc_steps=True, testing=False):
+    def recalc(
+        self,
+        save=True,
+        step_opts=None,
+        summary_opts=None,
+        indexes=None,
+        calc_steps=True,
+        testing=False,
+    ):
         """Run make_step_table and make_summary on all cells.
 
         Args:
@@ -384,7 +412,9 @@ class CyclingExperiment(BaseExperiment):
             )
         elif indexes is not None:
             pbar = tqdm(
-                list(self.journal.pages.loc[indexes, :].iterrows()), file=sys.stdout, leave=False
+                list(self.journal.pages.loc[indexes, :].iterrows()),
+                file=sys.stdout,
+                leave=False,
             )
         else:
             pbar = tqdm(

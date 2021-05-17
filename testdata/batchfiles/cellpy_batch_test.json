@@ -32,6 +32,10 @@
             "20160805_test001_45_cc": "anode",
             "20160805_test001_47_cc": "anode"
         },
+        "instrument": {
+            "20160805_test001_45_cc": null,
+            "20160805_test001_47_cc": null
+        },
         "raw_file_names": {
             "20160805_test001_45_cc": [
                 "C:\\scripts\\cellpy\\testdata\\data\\20160805_test001_45_cc_01.res",
@@ -62,9 +66,9 @@
         "name": "test",
         "project": "ProjectOfRun",
         "time_stamp": null,
-        "project_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmpu5sccg8o\\ProjectOfRun",
-        "batch_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmpu5sccg8o\\ProjectOfRun\\test",
-        "raw_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmpu5sccg8o\\ProjectOfRun\\test\\raw_data"
+        "project_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp4fumn7c4\\ProjectOfRun",
+        "batch_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp4fumn7c4\\ProjectOfRun\\test",
+        "raw_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp4fumn7c4\\ProjectOfRun\\test\\raw_data"
     },
     "session": {
         "starred": null,

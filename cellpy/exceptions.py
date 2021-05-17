@@ -37,6 +37,12 @@ class ExportFailed(Error):
     pass
 
 
+class IOError(Error):
+    """Raised when exporting data failed"""
+
+    pass
+
+
 class NullData(Error):
     """Raised when required data is missing (e.g. voltage = None or summary_frames are missing)"""
 
