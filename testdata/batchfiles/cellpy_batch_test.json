@@ -33,8 +33,8 @@
             "20160805_test001_47_cc": "anode"
         },
         "instrument": {
-            "20160805_test001_45_cc": null,
-            "20160805_test001_47_cc": null
+            "20160805_test001_45_cc": "arbin_res",
+            "20160805_test001_47_cc": "arbin_res"
         },
         "raw_file_names": {
             "20160805_test001_45_cc": [
@@ -66,9 +66,9 @@
         "name": "test",
         "project": "ProjectOfRun",
         "time_stamp": null,
-        "project_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp35j374hk\\ProjectOfRun",
-        "batch_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp35j374hk\\ProjectOfRun\\test",
-        "raw_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp35j374hk\\ProjectOfRun\\test\\raw_data"
+        "project_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp526nw985\\ProjectOfRun",
+        "batch_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp526nw985\\ProjectOfRun\\test",
+        "raw_dir": "C:\\Users\\jepe\\AppData\\Local\\Temp\\tmp526nw985\\ProjectOfRun\\test\\raw_data"
     },
     "session": {
         "starred": null,
