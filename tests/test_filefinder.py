@@ -40,7 +40,6 @@ def test_search_for_res_files():
         cellpy_file_dir=fdv.output_dir,
         prm_filename=None,
         file_name_format=None,
-        cache=None,
     )
 
     assert fdv.res_file_path in raw_files
@@ -55,7 +54,6 @@ def test_search_for_strange_files():
         cellpy_file_dir=fdv.output_dir,
         prm_filename=None,
         file_name_format=None,
-        cache=None,
     )
     assert len(raw_files) == 0
 

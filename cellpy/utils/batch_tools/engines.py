@@ -157,8 +157,7 @@ def simple_db_engine(reader=None, srnos=None, **kwargs):
     info_dict[hdr_journal["group"]] = groups
 
     my_timer_start = time.time()
-    filename_cache = []
-    info_dict = helper.find_files(info_dict, filename_cache, **kwargs)
+    info_dict = helper.find_files(info_dict, **kwargs)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logging.critical(
