@@ -73,8 +73,7 @@ def search_for_files(
     # TODO: update prms and conf file to allow for setting if search should be done in
     #  sub-folders, several folders, db, cloud etc
     version = 0.2
-
-    logging.debug(f"searching for {run_name}")
+    t0 = time.time()
 
     if raw_file_dir is None:
         raw_file_dir = prms.Paths["rawdatadir"]
@@ -114,8 +113,14 @@ def search_for_files(
     else:
         glob_text_raw = file_name_format
 
+    logging.debug(f"searching for raw files in: {raw_file_dir}")
+    logging.debug(f"searching for {run_name}")
+    logging.debug(f"using glob {glob_text_raw}")
+
     cellpy_file = f"{run_name}{cellpy_file_extension}"
     cellpy_file = cellpy_file_dir / cellpy_file
+
+    logging.debug(f"generated cellpy filename {cellpy_file}")
 
     run_files = []
     for d in raw_file_dir:
@@ -124,11 +129,15 @@ def search_for_files(
             # raise cellpy.exceptions.IOError("your raw file directory cannot be accessed!")
             _run_files = []
         else:
+            logging.debug(f"checking in folder {d}")
             if sub_folders:
                 _run_files = d.rglob(glob_text_raw)
             else:
                 _run_files = d.glob(glob_text_raw)
+
             _run_files = [str(f.resolve()) for f in _run_files]
+            # TODO: check that db reader can accept pathlib.Path objects (and fix the tests)
+            # _run_files = [f.resolve() for f in _run_files]
             _run_files.sort()
         run_files.extend(_run_files)
 

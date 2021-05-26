@@ -92,6 +92,9 @@ class CyclingExperiment(BaseExperiment):
                 instrument (str):
 
         """
+
+        # TODO: implement experiment.last_cycle
+
         logging.info("[update experiment]")
         if all_in_memory is not None:
             self.all_in_memory = all_in_memory

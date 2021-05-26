@@ -209,3 +209,4 @@ def test_report(populated_batch):
 # # Since the batch-files contains full paths I need to figure out how to make a custom json-file for the test.
 #     folder_name = prms.Paths.batchfiledir
 #     batch.iterate_batches(folder_name, default_log_level="CRITICAL")
+
