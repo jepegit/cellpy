@@ -130,8 +130,10 @@ def search_for_files(
             _run_files = []
         else:
             logging.debug(f"checking in folder {d}")
+
             if sub_folders:
                 _run_files = d.rglob(glob_text_raw)
+
             else:
                 _run_files = d.glob(glob_text_raw)
 

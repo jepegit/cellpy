@@ -139,7 +139,9 @@ class CyclingExperiment(BaseExperiment):
             pbar.set_postfix_str(s=h_txt, refresh=True)
 
             if not row[hdr_journal.raw_file_names] and not self.force_cellpy:
-                logging.info(f"Raw file(s) not given in the journal.pages for index={indx}")
+                logging.info(
+                    f"Raw file(s) not given in the journal.pages for index={indx}"
+                )
                 errors.append(indx)
                 h_txt += " [-]"
                 pbar.set_postfix_str(s=h_txt, refresh=True)

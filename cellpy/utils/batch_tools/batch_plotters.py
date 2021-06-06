@@ -156,7 +156,9 @@ def create_summary_plot_bokeh(
     y_range=None,
     tools="hover",
 ):
-
+    # TODO: include max cycle (bokeh struggles when there is to much to plot)
+    #   could also consider interpolating
+    #   or defaulting to datashader for large files.
     logging.debug(f"    - creating summary (bokeh) plot for {label}")
     discharge_capacity = None
     if isinstance(data, (list, tuple)):

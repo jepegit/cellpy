@@ -294,7 +294,9 @@ def plot_concatenated(
     elif extension == "plotly":
         print("The plotly backend might not work properly yet.")
         print("Fingers crossed.")
-        print("(at least, make sure you are using the most recent versions of jupyter, holoviews and plotly)")
+        print(
+            "(at least, make sure you are using the most recent versions of jupyter, holoviews and plotly)"
+        )
 
     try:
         current_extension = hv.Store.current_backend

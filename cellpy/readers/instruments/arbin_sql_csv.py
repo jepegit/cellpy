@@ -1,6 +1,7 @@
 """arbin MS SQL Server csv data"""
 
 from dateutil.parser import parse
+
 import pandas as pd
 
 from cellpy.readers.core import (
@@ -281,5 +282,33 @@ def test_loader_from_outside():
     c.save(outfile)
 
 
+def test_seamless_files():
+    from cellpy import cellreader
+    import matplotlib.pyplot as plt
+    import pathlib
+
+    datadir = pathlib.Path(
+        r"I:\Org\MPT-BAT-LAB\Processed\Experiments\seamless\Raw data"
+    )
+    name1 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.CSV"
+    name2 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.CSV"
+
+    names = [name1, name2]
+
+    # c = cellreader.CellpyData()
+    # c.set_instrument("arbin_sql_csv")
+    #
+    # c.from_raw(name1)
+    # c.set_mass(0.016569)
+    #
+    # c.make_step_table()
+    # c.make_summary()
+    # print(c)
+
+    cell_data = cellreader.CellpyData()
+    cell_data.set_instrument("arbin_sql_csv")
+    cell_data.loadcell(names, mass=0.016569, )
+
+
 if __name__ == "__main__":
-    test_loader_from_outside()
+    test_seamless_files()
