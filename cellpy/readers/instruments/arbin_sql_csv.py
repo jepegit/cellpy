@@ -185,15 +185,14 @@ class ArbinCsvLoader(Loader):
     def _post_process(self, data):
         set_index = True
         rename_headers = True
-
         if rename_headers:
             columns = {}
             for key in self.arbin_headers_normal:
                 old_header = normal_headers_renaming_dict[key]
                 new_header = self.cellpy_headers_normal[key]
                 columns[old_header] = new_header
-            data.raw.rename(index=str, columns=columns, inplace=True)
 
+            data.raw.rename(index=str, columns=columns, inplace=True)
             new_aux_headers = self.get_headers_aux(data.raw)
             data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
 
@@ -214,7 +213,8 @@ class ArbinCsvLoader(Loader):
         return data
 
     def _query_csv(self, name):
-        data_df = pd.read_csv(name, sep=",")
+        # NOTE! I am using the prms.Reader.sep prm as the delimiter.
+        data_df = pd.read_csv(name, sep=prms.Reader.sep)
         return data_df
 
 
@@ -283,28 +283,28 @@ def test_loader_from_outside():
 
 
 def test_seamless_files():
-    from cellpy import cellreader
+    from cellpy import cellreader, prms
     import matplotlib.pyplot as plt
     import pathlib
 
     datadir = pathlib.Path(
-        r"I:\Org\MPT-BAT-LAB\Processed\Experiments\seamless\Raw data"
+        r"\\ad.ife.no\dfs\Org\MPT-BAT-LAB\Processed\Experiments\seamless\Raw data_excel"
     )
-    name1 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.CSV"
-    name2 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.CSV"
+    name1 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
+    name2 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
+
+    c = cellreader.CellpyData()
+    c.set_instrument("arbin_sql_csv")
+
+    prms.Reader.sep = ";"
+
+    c.from_raw(name1)
+    c.set_mass(0.016569)
+
+    c.make_step_table()
+    c.make_summary()
 
     names = [name1, name2]
-
-    # c = cellreader.CellpyData()
-    # c.set_instrument("arbin_sql_csv")
-    #
-    # c.from_raw(name1)
-    # c.set_mass(0.016569)
-    #
-    # c.make_step_table()
-    # c.make_summary()
-    # print(c)
-
     cell_data = cellreader.CellpyData()
     cell_data.set_instrument("arbin_sql_csv")
     cell_data.loadcell(names, mass=0.016569, )
