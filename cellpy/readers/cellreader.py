@@ -722,8 +722,15 @@ class CellpyData(object):
         l_cellpy = len(ids_cellpy_file)
         if l_res == l_cellpy and l_cellpy > 0:
             for name, value in list(ids_raw.items()):
-                if ids_cellpy_file[name] != value:
+                try:
+                    c_value = ids_cellpy_file[name]
+                except KeyError:
+                    logging.debug("KeyError when comparing raw and cellpy file.")
+                    logging.debug("Could be due to upper case vs. lower case confusion.")
                     similar = False
+                else:
+                    if c_value != value:
+                        similar = False
         else:
             similar = False
 
