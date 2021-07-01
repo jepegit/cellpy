@@ -159,7 +159,7 @@ def test_dqdv_frames_split(dataset):
     assert df_ica_charge.size == 300
     assert df_ica_discharge.size == 300
     df_ica_charge, df_ica_discharge = ica.dqdv_frames(dataset, split=True)
-    assert df_ica_charge.size == 5100
+    assert df_ica_charge.size == 5400
     assert df_ica_discharge.size == 5400
     assert "voltage" in df_ica_charge.columns
     assert "cycle" in df_ica_charge.columns

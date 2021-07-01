@@ -35,8 +35,9 @@ hdr_summary = get_headers_summary()
 
 COLUMNS_SELECTED_FOR_VIEW = [
     hdr_journal.mass,
-    # hdr_journal.total_mass,
+    hdr_journal.total_mass,
     hdr_journal.loading,
+    hdr_journal.nom_cap,
 ]
 
 

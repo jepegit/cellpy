@@ -778,27 +778,31 @@ def _constrained_dq_dv_using_dataframes(capacity, minimum_v, maximum_v, **kwargs
 
 def _make_ica_charge_curves(cycles_dfs, cycle_numbers, minimum_v, maximum_v, **kwargs):
     incremental_charge_list = []
+
     for c, n in zip(cycles_dfs, cycle_numbers):
-        if not c.empty:
+        if c.empty:
+            logging.info(f"{n} is empty")
+            v = [np.nan]
+            dq = [np.nan]
+        else:
             v, dq = _constrained_dq_dv_using_dataframes(
                 c, minimum_v, maximum_v, **kwargs
             )
-            if not incremental_charge_list:
-                d = pd.DataFrame({"v": v})
-                d.name = "voltage"
-                incremental_charge_list.append(d)
+        if not incremental_charge_list:
+            d = pd.DataFrame({"v": v})
+            d.name = "voltage"
+            incremental_charge_list.append(d)
 
-                d = pd.DataFrame({f"dq": dq})
-                d.name = n
-                incremental_charge_list.append(d)
+            d = pd.DataFrame({f"dq": dq})
+            d.name = n
+            incremental_charge_list.append(d)
 
-            else:
-                d = pd.DataFrame({f"dq": dq})
-                # d.name = f"{cycle}"
-                d.name = n
-                incremental_charge_list.append(d)
         else:
-            print(f"{n} is empty")
+            d = pd.DataFrame({f"dq": dq})
+            # d.name = f"{cycle}"
+            d.name = n
+            incremental_charge_list.append(d)
+
     return incremental_charge_list
 
 
@@ -876,12 +880,14 @@ def _dqdv_split_frames(
         max_cycle_number=max_cycle_number,
         cycle=cycle,
     )
+    logging.debug(f"retrieved {len(charge_dfs)} charge cycles")
     # charge_df = pd.concat(
     # charge_dfs, axis=1, keys=[k.name for k in charge_dfs])
 
     ica_charge_dfs = _make_ica_charge_curves(
         charge_dfs, cycles, minimum_v, maximum_v, **kwargs
     )
+
     ica_charge_df = pd.concat(
         ica_charge_dfs, axis=1, keys=[k.name for k in ica_charge_dfs]
     )
@@ -895,6 +901,7 @@ def _dqdv_split_frames(
         max_cycle_number=max_cycle_number,
         cycle=cycle,
     )
+    logging.debug(f"retrieved {len(dcharge_dfs)} discharge cycles")
     ica_dcharge_dfs = _make_ica_charge_curves(
         dcharge_dfs, cycles, minimum_v, maximum_v, **kwargs
     )

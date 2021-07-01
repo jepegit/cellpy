@@ -1150,13 +1150,15 @@ class CellpyData(object):
                     # The reason for this choice is not clear anymore, but
                     # let us keep it like this for now
                     self.logger.debug("added the data set - merging file info")
+                    # TODO: include this into prms (and config-file):
+                    max_raw_files_to_merge = 20
                     for j in range(len(new_tests[set_number].raw_data_files)):
                         raw_data_file = new_tests[set_number].raw_data_files[j]
                         file_size = new_tests[set_number].raw_data_files_length[j]
                         test[set_number].raw_data_files.append(raw_data_file)
                         test[set_number].raw_data_files_length.append(file_size)
                         counter += 1
-                        if counter > 10:
+                        if counter > max_raw_files_to_merge:
                             self.logger.debug("ERROR? Too many files to merge")
                             raise ValueError(
                                 "Too many files to merge - "
@@ -4173,7 +4175,7 @@ class CellpyData(object):
             no_cycles = np.amax(steptable[self.headers_step_table.cycle])
         return no_cycles
 
-    def get_cycle_numbers(self, dataset_number=None, steptable=None):
+    def get_cycle_numbers_old(self, dataset_number=None, steptable=None):
         """Get a list containing all the cycle numbers in the test."""
         self.logger.debug("getting cycle numbers")
         if steptable is None:
@@ -4188,6 +4190,84 @@ class CellpyData(object):
             cycles = steptable[self.headers_step_table.cycle].dropna().unique()
         self.logger.debug(f"got {len(cycles)} cycle numbers")
         return cycles
+
+    def get_cycle_numbers(self, dataset_number=None,
+                          steptable=None, rate=None,
+                          rate_on=None,
+                          rate_std=None,
+                          rate_column=None,
+                          inverse=False,
+
+                          ):
+        """Get a list containing all the cycle numbers in the test.
+
+        Parameters:
+            rate (float): the rate to filter on. Remark that it should be given
+                as a float, i.e. you will have to convert from C-rate to
+                the actual numeric value. For example, use rate=0.05 if you want
+                to filter on cycles that has a C/20 rate.
+            rate_on (str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            rate_std (float): allow for this inaccuracy in C-rate when selecting cycles
+            rate_column (str): column header name of the rate column,
+            inverse (bool): select steps that does not have the given C-rate.
+
+        Returns:
+            numpy.ndarray of cycle numbers.
+        """
+
+        self.logger.debug("getting cycle numbers")
+        if steptable is None:
+            dataset_number = self._validate_dataset_number(dataset_number)
+            if dataset_number is None:
+                self._report_empty_dataset()
+                return
+            d = self.cells[dataset_number].raw
+            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
+            steptable = self.cells[dataset_number].steps
+        else:
+            self.logger.debug("steptable is given as input parameter")
+            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
+
+        if rate is None:
+            return cycles
+
+        self.logger.debug("filtering on rate")
+        if rate_on is None:
+            rate_on = ["charge"]
+        else:
+            if not isinstance(rate_on, (list, tuple)):
+                rate_on = [rate_on]
+
+        if rate_column is None:
+            rate_column = self.headers_step_table["rate_avr"]
+
+        if rate_on:
+            on_column = self.headers_step_table["type"]
+
+        if rate is None:
+            rate = 0.05
+
+        if rate_std is None:
+            rate_std = 0.1 * rate
+
+        if rate_on:
+            cycles_mask = (
+                (steptable[rate_column] < (rate + rate_std))
+                & (steptable[rate_column] > (rate - rate_std))
+                & (steptable[on_column].isin(rate_on))
+            )
+        else:
+            cycles_mask = (steptable[rate_column] < (rate + rate_std)) & (
+                steptable[rate_column] > (rate - rate_std)
+            )
+
+        if inverse:
+            cycles_mask = ~cycles_mask
+
+        filtered_step_table = steptable[cycles_mask]
+        filtered_cycles = filtered_step_table[self.headers_step_table["cycle"]].unique()
+
+        return filtered_cycles
 
     def get_ir(self, dataset_number=None):
         """Get the IR data (Deprecated)."""
