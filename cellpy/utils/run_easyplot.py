@@ -6,4 +6,15 @@ if __name__ == "__main__":
 
     files = ["./data/raw/20160805_test001_45_cc_01.res"]
 
-    easyplot.plot(files)
+    easyplot.plot(files,
+        cyclelifeplot = False,      # NOT YET IMPLEMENTED
+        cyclelife_xlabel = "Cycles",
+        cyclelife_ylabel = "Capacity [mAh/g]",
+        cyclelife_ylabel_percent = "Capacity retention [%]",
+        galvanostatic_plot = True,
+        galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
+        galvanostatic_xlabel = "Capacity [mAh/g]",
+        galvanostatic_ylabel = "Cell potential [V]",
+        specific_cycles = None,
+        dqdvplot = False,       # NOT YET IMPLEMENTED
+    )
