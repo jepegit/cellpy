@@ -80,19 +80,20 @@ class Plot:
         return color
 
     def fix(self, fig, ax):
-        # Applies all the user settings to the fig and axis
+        # Applies kwargs settings and other plot settings
+
+        ## Parameters which could be user defined later
+        """
         ax.set(
-            ylabel = 'Potential [V]',
-            xlabel = 'Specific Capacity [mAh/g]',
-            #ylim = (2.5,5),
-            #xlim = (0, 150),
-            #xticks = (np.arange(0, 150), step=20)),
-            #yticks = (np.arange(3, 5, step=0.2)),
+            xticks = (np.arange(0, 150), step=20)),
+            yticks = (np.arange(3, 5, step=0.2)),
             )
+        """
+
+        # The params below should always be like this.
         ax.tick_params(direction='in', top = 'true', right = 'true')
 
         # Apply all kwargs to plot
-
         for kwarg in self.kwargs:
             # Galvanostatic plot details
             if kwarg == "galvanostatic_xlabel":
