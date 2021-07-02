@@ -104,10 +104,14 @@ class Plot:
             elif kwarg == "galvanostatic_caplim":
                 ax.set(xlim = self.kwargs["galvanostatic_caplim"])
             
+            # General plot details
+            elif kwarg == "figsize":
+                fig.set_size_inches(self.kwargs["figsize"])
+            elif kwarg == "figtitle":
+                if type(kwargs["figtitle"]) == str:
+                    fig.suptitle(kwargs["figtitle"])
 
 
-                
-            
 def handle_outpath(dictval):
     if os.path.isdir(dictval):
         return dictval
@@ -117,4 +121,5 @@ def handle_outpath(dictval):
             return dictval
         except OSError as e:
             print("Cannot create output directory " + dictval + ". Please make sure you have write permission.")
+            print(e)
             exit()

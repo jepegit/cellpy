@@ -19,4 +19,6 @@ if __name__ == "__main__":
         specific_cycles = None,
         dqdvplot = False,       # NOT YET IMPLEMENTED
         outpath = "./",
+        figsize = (6,4), # 6 inches wide, 4 inches tall
+        figtitle = None, # None = original filepath
     )
