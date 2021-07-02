@@ -13,8 +13,10 @@ if __name__ == "__main__":
         cyclelife_ylabel_percent = "Capacity retention [%]",
         galvanostatic_plot = True,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
+        galvanostatic_caplim = None,
         galvanostatic_xlabel = "Capacity [mAh/g]",
         galvanostatic_ylabel = "Cell potential [V]",
         specific_cycles = None,
         dqdvplot = False,       # NOT YET IMPLEMENTED
+        outpath = "./",
     )

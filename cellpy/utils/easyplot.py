@@ -12,17 +12,20 @@ import matplotlib as mpl
 #### WORK IN PROGRESS ####
 
 def plot(files, **kwargs):
-    plot = Plot(**kwargs)
+    plot = Plot(**kwargs) #Initialize plot object
+    outpath = handle_outpath(kwargs["outpath"]) #Takes care of the output path
+
     for file in files:
         # Get the data
         cpobj = cellpy.get(filename = file)     # Initiate cellpy object
         cyc_nums = cpobj.get_cycle_numbers()    # Get ID of all cycles
         color = plot.give_color()               # Get a color for the curves
         
-        plot_draw_save(cpobj, cyc_nums, color, plot, file)
+        if kwargs["galvanostatic_plot"] == True:
+            plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath)
 
 
-def plot_draw_save(cpobj, cyc_nums, color, plot, file):
+def plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath):
 
     # Get Pandas DataFrame of pot vs cap from cellpy object
     df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
@@ -54,7 +57,7 @@ def plot_draw_save(cpobj, cyc_nums, color, plot, file):
 
 
     # Save fig
-    savepath = "delete_me.png" 
+    savepath = outpath + os.path.basename(file).split(".")[0] + "_GC-plot.png" 
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
 
@@ -64,6 +67,8 @@ class Plot:
         # Set all kwargs as self.kwarg vars
         for key in kwargs:
             setattr(self, key, kwargs[key])
+
+        self.kwargs = kwargs
 
         # List of available colors
         self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
@@ -85,3 +90,31 @@ class Plot:
             #yticks = (np.arange(3, 5, step=0.2)),
             )
         ax.tick_params(direction='in', top = 'true', right = 'true')
+
+        # Apply all kwargs to plot
+
+        for kwarg in self.kwargs:
+            # Galvanostatic plot details
+            if kwarg == "galvanostatic_xlabel":
+                ax.set(xlabel = self.kwargs["galvanostatic_xlabel"])
+            elif kwarg == "galvanostatic_ylabel":
+                ax.set(ylabel = self.kwargs["galvanostatic_ylabel"])
+            elif kwarg == "galvanostatic_potlim":
+                ax.set(ylim = self.kwargs["galvanostatic_potlim"])
+            elif kwarg == "galvanostatic_caplim":
+                ax.set(xlim = self.kwargs["galvanostatic_caplim"])
+            
+
+
+                
+            
+def handle_outpath(dictval):
+    if os.path.isdir(dictval):
+        return dictval
+    elif not os.path.isdir(dictval):
+        try:
+            os.mkdir(dictval)
+            return dictval
+        except OSError as e:
+            print("Cannot create output directory " + dictval + ". Please make sure you have write permission.")
+            exit()
