@@ -16,12 +16,12 @@ if __name__ == "__main__":
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = "Capacity [mAh/g]",
         cyclelife_ylabel_percent = "Capacity retention [%]",
-        galvanostatic_plot = False,
+        galvanostatic_plot = True,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
         galvanostatic_xlabel = "Capacity [mAh/g]",
         galvanostatic_ylabel = "Cell potential [V]",
-        dqdvplot = True,
+        dqdvplot = False,
         dqdvplot_potlim = (0,1),     #min and max limit on potential-axis
         dqdvplot_dqlim = None,
         dqdvplot_xlabel = "dQ/dV [?]", # TODO what unit? jees

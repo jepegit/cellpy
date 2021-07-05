@@ -15,10 +15,10 @@ import numpy as np
 #### WORK IN PROGRESS ####
 
 def plot(files, **kwargs):
-    g = G()                                     # Get obj for handling global params
+    g = G()                                     # Spawn obj for handling global params
     outpath = handle_outpath(kwargs["outpath"]) # Takes care of the output path
     cyclelifeplotobjects = []                   # Something to store the objects in
-    specific_cycles = False
+    specific_cycles = False                     # TODO: This should be better implemented, especially when feature for file-individual cycle selection is implemented.
 
     for file in files:
         plot = Plot(**kwargs)                       # Initialize plot object
@@ -47,7 +47,7 @@ def plot(files, **kwargs):
         if kwargs["galvanostatic_plot"] == True and kwargs["dqdvplot"] == True:
             plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath)
 
-
+    # If the user want cyclelife plot, we do it to all the input files.
     if kwargs["cyclelifeplot"] == True:
         plot_cyclelife(cyclelifeplotobjects, **kwargs)
 
@@ -113,14 +113,9 @@ def plot_cyclelife(cyclelifeplotobjects, **kwargs):
     fig.savefig(savepath, bbox_inches='tight')
 
 def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath):
-    # Get Pandas DataFrame of pot vs cap from cellpy object
-    df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
-
-    # Group by cycle and make list of cycle numbers
-    cycgrouped = df.groupby("cycle")
-    keys = []
-    for key, item in cycgrouped:
-        keys.append(key)
+    ### NOT STARTED ###
+    print("DO NOT ASK FOR BOTH GALVANOSTATIC AND DQDV PLOTS AT THE SAME TIME, THE FEATURE HAS NOT BEEN IMPLEMENTED")
+    raise NotImplementedError
 
 def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
     from cellpy.utils import ica
