@@ -8,7 +8,7 @@ if __name__ == "__main__":
                 "./data/raw/20160805_test001_45_cc_01_copy.res"]
 
     easyplot.plot(files,
-        cyclelifeplot = True,      # NOT YET IMPLEMENTED
+        cyclelifeplot = True,
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = "Capacity [mAh/g]",
         cyclelife_ylabel_percent = "Capacity retention [%]",
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         galvanostatic_caplim = None,
         galvanostatic_xlabel = "Capacity [mAh/g]",
         galvanostatic_ylabel = "Cell potential [V]",
-        specific_cycles = None,
+        specific_cycles = [1, 2, 5, 10],
         dqdvplot = False,       # NOT YET IMPLEMENTED
         outpath = "./",
         figsize = (6,4), # 6 inches wide, 4 inches tall

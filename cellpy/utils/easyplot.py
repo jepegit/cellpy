@@ -17,6 +17,7 @@ def plot(files, **kwargs):
     g = G()                                     # Get obj for handling global params
     outpath = handle_outpath(kwargs["outpath"]) # Takes care of the output path
     cyclelifeplotobjects = []                   # Something to store the objects in
+    specific_cycles = False
 
     for file in files:
         plot = Plot(**kwargs)                       # Initialize plot object
@@ -24,10 +25,16 @@ def plot(files, **kwargs):
         # Get the data
         cpobj = cellpy.get(filename = file)     # Initiate cellpy object
         cyc_nums = cpobj.get_cycle_numbers()    # Get ID of all cycles
+        if kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
+            cyc_nums = list(set(cyc_nums).intersection(kwargs["specific_cycles"])) 
+            specific_cycles = True
+        else:
+            specific_cycles = False
+        
         color = g.give_color()               # Get a color for the curves
         
         if kwargs["galvanostatic_plot"] == True:
-            plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath)
+            plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
 
         if kwargs["cyclelifeplot"] == True:
             cyclelifeplotobjects.append((cpobj, cyc_nums, color, file)) # Remember that tuples are immutable
@@ -141,7 +148,7 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath):
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
 
-def plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath):
+def plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
 
     # Get Pandas DataFrame of pot vs cap from cellpy object
     df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
@@ -155,17 +162,24 @@ def plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath):
     # Create the plot obj
     fig, ax = plt.subplots(figsize=(6, 4))
 
-    # Set up colormap and add colorbar
-    cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
-    norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
-    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
+    # Fix colorbar or cycle colors
+    if not specific_cycles: # If this is none, then plot all!
+        # Set up colormap and add colorbar
+        cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+        norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+        fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
 
     # Plot cycles
+    colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
     for cyc in keys:
-        cyccolor = cmap(cyc/keys[-1])
-        cyc_df = cycgrouped.get_group(cyc)
         if cyc in cyc_nums:   
-            ax.plot(cyc_df["capacity"], cyc_df["voltage"], label=str(key), c = cyccolor)
+            if specific_cycles:
+                cyccolor = colors[0]
+                colors = colors[1:]
+            else:
+                cyccolor = cmap(cyc/keys[-1])
+            cyc_df = cycgrouped.get_group(cyc)
+            ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle" + str(cyc), c = cyccolor)
 
     # Set all plot settings from Plot object
     plot.fix(fig, ax)
@@ -226,6 +240,9 @@ class Plot:
                 ax.set(ylim = self.kwargs["galvanostatic_potlim"])
             elif kwarg == "galvanostatic_caplim":
                 ax.set(xlim = self.kwargs["galvanostatic_caplim"])
+            elif kwarg == "specific_cycles":
+                if self.kwargs["specific_cycles"] != None:
+                    ax.legend()
             
             # General plot details
             elif kwarg == "figsize":
