@@ -23,6 +23,10 @@ if __name__ == "__main__":
         galvanostatic_ylabel = "Cell potential [V]",
         specific_cycles = None, #[1, 2, 5, 10],
         dqdvplot = True,
+        dqdvplot_xlabel = "dQ/dV [?]", # TODO what unit? jees
+        dqdvplot_ylabel = "Cell potential [V]",
+        dqdvplot_potlim = (0,1),     #min and max limit on potential-axis
+        dqdvplot_dqlim = None,
         outpath = "./",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figtitle = None, # None = original filepath
