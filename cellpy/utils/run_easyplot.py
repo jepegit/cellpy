@@ -21,8 +21,8 @@ if __name__ == "__main__":
         galvanostatic_caplim = None,
         galvanostatic_xlabel = "Capacity [mAh/g]",
         galvanostatic_ylabel = "Cell potential [V]",
-        specific_cycles = [1, 2, 5, 10],
-        dqdvplot = True,       # NOT YET IMPLEMENTED
+        specific_cycles = None, #[1, 2, 5, 10],
+        dqdvplot = True,
         outpath = "./",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figtitle = None, # None = original filepath
