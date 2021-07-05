@@ -11,6 +11,7 @@ from matplotlib.lines import Line2D
 import numpy as np
 
 
+
 #### WORK IN PROGRESS ####
 
 def plot(files, **kwargs):
@@ -31,13 +32,21 @@ def plot(files, **kwargs):
         else:
             specific_cycles = False
         
-        color = g.give_color()               # Get a color for the curves
+        color = g.give_color()               # Get a color for the data
         
-        if kwargs["galvanostatic_plot"] == True:
+        # Plot whatever the user want
+        if kwargs["cyclelifeplot"] == True :
+            cyclelifeplotobjects.append((cpobj, cyc_nums, color, file)) # Remember that tuples are immutable
+
+        if kwargs["galvanostatic_plot"] == True and kwargs["dqdvplot"] == False:
             plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
 
-        if kwargs["cyclelifeplot"] == True:
-            cyclelifeplotobjects.append((cpobj, cyc_nums, color, file)) # Remember that tuples are immutable
+        if kwargs["dqdvplot"] == True and kwargs["galvanostatic_plot"] == False:
+            plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
+
+        if kwargs["galvanostatic_plot"] == True and kwargs["dqdvplot"] == True:
+            plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath)
+
 
     if kwargs["cyclelifeplot"] == True:
         plot_cyclelife(cyclelifeplotobjects, **kwargs)
@@ -113,9 +122,10 @@ def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath):
     for key, item in cycgrouped:
         keys.append(key)
 
-def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath):
+def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
+    from cellpy.utils import ica
     # Get Pandas DataFrame of pot vs cap from cellpy object
-    df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
+    df = ica.dqdv_frames(cpobj)
 
     # Group by cycle and make list of cycle numbers
     cycgrouped = df.groupby("cycle")
@@ -126,17 +136,24 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath):
     # Create the plot obj
     fig, ax = plt.subplots(figsize=(6, 4))
 
-    # Set up colormap and add colorbar
-    cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
-    norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
-    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
+    # Fix colorbar or cycle colors
+    if not specific_cycles: # If this is none, then plot all!
+        # Set up colormap and add colorbar
+        cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+        norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+        fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
 
     # Plot cycles
+    colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
     for cyc in keys:
-        cyccolor = cmap(cyc/keys[-1]) # Color = colormap of curr_cyc / last cyc (num in {0,1})
-        cyc_df = cycgrouped.get_group(cyc)
-        if cyc in cyc_nums:   # Only plot the cycle if the user actually wants it plotted
-            ax.plot(cyc_df["capacity"], cyc_df["voltage"], label=str(key), c = cyccolor)
+        if cyc in cyc_nums:   
+            if specific_cycles:
+                cyccolor = colors[0]
+                colors = colors[1:]
+            else:
+                cyccolor = cmap(cyc/keys[-1])
+            cyc_df = cycgrouped.get_group(cyc)
+            ax.plot(cyc_df["dq"], cyc_df["voltage"], label=str(cyc), c = cyccolor)
 
     # Set all plot settings from Plot object
     plot.fix(fig, ax)
@@ -144,9 +161,10 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath):
 
 
     # Save fig
-    savepath = outpath + os.path.basename(file).split(".")[0] + "_GC-plot.png" 
+    savepath = outpath + os.path.basename(file).split(".")[0] + "_dQdV-plot.png" 
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
+    
 
 def plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
 
