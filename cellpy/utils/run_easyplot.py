@@ -4,13 +4,16 @@ if __name__ == "__main__":
     import cellpy
     from cellpy.utils import easyplot
 
-    files = ["./data/raw/20160805_test001_45_cc_01.res"]
+    files = [   "./data/raw/20160805_test001_45_cc_01.res",
+                "./data/raw/20160805_test001_45_cc_01_copy.res"]
 
     easyplot.plot(files,
-        cyclelifeplot = False,      # NOT YET IMPLEMENTED
+        cyclelifeplot = True,      # NOT YET IMPLEMENTED
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = "Capacity [mAh/g]",
         cyclelife_ylabel_percent = "Capacity retention [%]",
+        cyclelife_coulombic_efficiency = True,
+        cyclelife_percentage = False,
         galvanostatic_plot = True,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
