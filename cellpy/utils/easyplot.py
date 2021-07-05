@@ -39,7 +39,7 @@ def plot(files, **kwargs):
             cyclelifeplotobjects.append((cpobj, cyc_nums, color, file)) # Remember that tuples are immutable
 
         if kwargs["galvanostatic_plot"] == True and kwargs["dqdvplot"] == False:
-            plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
+            plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
 
         if kwargs["dqdvplot"] == True and kwargs["galvanostatic_plot"] == False:
             plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
@@ -165,7 +165,7 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
     fig.savefig(savepath, bbox_inches='tight')
     
 
-def plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
+def plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
 
     # Get Pandas DataFrame of pot vs cap from cellpy object
     df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
