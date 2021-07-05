@@ -156,9 +156,8 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
             ax.plot(cyc_df["dq"], cyc_df["voltage"], label=str(cyc), c = cyccolor)
 
     # Set all plot settings from Plot object
-    plot.fix(fig, ax)
+    plot.fix_dqdv(fig, ax)
     fig.suptitle(file)
-
 
     # Save fig
     savepath = outpath + os.path.basename(file).split(".")[0] + "_dQdV-plot.png" 
@@ -202,7 +201,6 @@ def plot_galvanostatic(cpobj, cyc_nums, color, plot, file, outpath, specific_cyc
     # Set all plot settings from Plot object
     plot.fix(fig, ax)
     fig.suptitle(file)
-
 
     # Save fig
     savepath = outpath + os.path.basename(file).split(".")[0] + "_GC-plot.png" 
@@ -293,6 +291,39 @@ class Plot:
             elif kwarg == "cyclelife_percentage":
                 if self.kwargs["cyclelife_percentage"] == True:
                     ax.set(ylabel = self.kwargs["cyclelife_ylabel_percent"])
+            
+            # General plot details
+            elif kwarg == "figsize":
+                fig.set_size_inches(self.kwargs["figsize"])
+            elif kwarg == "figtitle":
+                if type(self.kwargs["figtitle"]) == str:
+                    fig.suptitle(self.kwargs["figtitle"])
+
+    def fix_dqdv(self, fig, ax):
+        # Applies kwargs settings and other plot settings
+
+        ## Parameters which could be user defined later
+        """
+        ax.set(
+            xticks = (np.arange(0, 150), step=20)),
+            yticks = (np.arange(3, 5, step=0.2)),
+            )
+        """
+
+        # The params below should always be like this.
+        ax.tick_params(direction='in', top = 'true', right = 'true')
+
+        # Apply all kwargs to plot
+        for kwarg in self.kwargs:
+            # Cyclelife plot details
+            if kwarg == "dqdvplot_xlabel":
+                ax.set(xlabel = self.kwargs["dqdvplot_xlabel"])
+            elif kwarg == "dqdvplot_ylabel":
+                ax.set(ylabel = self.kwargs["dqdvplot_ylabel"])
+            elif kwarg == "dqdvplot_potlim":
+                ax.set(ylim = self.kwargs["dqdvplot_potlim"])
+            elif kwarg == "dqdvplot_caplim":
+                ax.set(xlim = self.kwargs["dqdvplot_caplim"])
             
             # General plot details
             elif kwarg == "figsize":
