@@ -95,17 +95,36 @@ def plot_cyclelife(cyclelifeplotobjects, **kwargs):
 
         # Actully place it in plot
         ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
-        ax.scatter(dchgs[0], dchgs[1], c = color, label = str(filename))
+        ax.scatter(dchgs[0], dchgs[1], c = color, label = str(os.path.basename(filename)))
+
+    if kwargs["cyclelife_coulombic_efficiency"] == True:
+        ax_ce = ax.twinx()
+        ax_ce.set(ylabel = kwargs["cyclelife_coulombic_efficiency_ylabel"])
+        coulombic_efficiency = cpobj.cell.summary["coulombic_efficiency_u_percentage"]
+        ax_ce.scatter(range(len(coulombic_efficiency)), coulombic_efficiency, c = color, marker = "+")
 
 
     # Get labels and handles for legend generation and eventual savefile
     handles, labels = ax.get_legend_handles_labels()
     handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
-    ax.legend(handles=handles)
+    if kwargs["cyclelife_coulombic_efficiency"] == True:
+        handles.append(Line2D([0], [0], marker='+', color='black', alpha = 1, label = 'Coulombic Efficiency', linestyle=''))
+    
 
     # Set all plot settings from Plot object
-    plot.fix_cyclelife(fig, ax)
+    plot.fix_cyclelife(fig, ax) #This done first since we need to adjust figsize afterwords if the legend is to be placed outside
+    if kwargs["cyclelife_legend_outside"] == True:
+        if kwargs["cyclelife_coulombic_efficiency"] == True:
+            ax.legend(handles=handles, bbox_to_anchor=(1.15, 1), loc='upper left')
+        else:
+            ax.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        figsize = kwargs["figsize"]
+        fig.set_size_inches((figsize[0]+3, figsize[1]))
+    else:
+        ax.legend(handles=handles)
     fig.suptitle("Capacity versus Cycle life")
+    fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
 
     # Save fig
     savepath = outpath.strip("_") + "_Cyclelife.png" 
