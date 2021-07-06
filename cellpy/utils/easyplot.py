@@ -239,7 +239,7 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
             ax.plot(cyc_df["dq"], cyc_df["voltage"], label=str(cyc), c = cyccolor)
 
     # Set all plot settings from Plot object
-    fig.suptitle(file)
+    fig.suptitle(os.path.basename(file))
     plot.fix_dqdv(fig, ax)
 
     # Save fig
@@ -330,26 +330,23 @@ class Plot:
         ax.tick_params(direction='in', top = 'true', right = 'true')
 
         # Apply all kwargs to plot
-        for kwarg in self.kwargs:
+        try:
             # Galvanostatic plot details
-            if kwarg == "galvanostatic_xlabel":
-                ax.set(xlabel = self.kwargs["galvanostatic_xlabel"])
-            elif kwarg == "galvanostatic_ylabel":
-                ax.set(ylabel = self.kwargs["galvanostatic_ylabel"])
-            elif kwarg == "galvanostatic_potlim":
-                ax.set(ylim = self.kwargs["galvanostatic_potlim"])
-            elif kwarg == "galvanostatic_caplim":
-                ax.set(xlim = self.kwargs["galvanostatic_caplim"])
-            elif kwarg == "specific_cycles":
-                if self.kwargs["specific_cycles"] != None:
+            ax.set(xlabel = self.kwargs["galvanostatic_xlabel"])
+            ax.set(ylabel = self.kwargs["galvanostatic_ylabel"])
+            ax.set(ylim = self.kwargs["galvanostatic_potlim"])
+            ax.set(xlim = self.kwargs["galvanostatic_caplim"])
+
+            if self.kwargs["specific_cycles"] != None:
                     ax.legend()
-            
+
             # General plot details
-            elif kwarg == "figsize":
-                fig.set_size_inches(self.kwargs["figsize"])
-            elif kwarg == "figtitle":
-                if type(self.kwargs["figtitle"]) == str:
+            fig.set_size_inches(self.kwargs["figsize"])
+            if type(self.kwargs["figtitle"]) == str:
                     fig.suptitle(self.kwargs["figtitle"])
+        except Exception as e:
+            logging.error(e)
+                
 
     def fix_cyclelife(self, fig, ax):
         # Applies kwargs settings and other plot settings
@@ -366,23 +363,21 @@ class Plot:
         ax.tick_params(direction='in', top = 'true', right = 'true')
 
         # Apply all kwargs to plot
-        for kwarg in self.kwargs:
+        try:
             # Cyclelife plot details
-            if kwarg == "cyclelife_xlabel":
-                ax.set(xlabel = self.kwargs["cyclelife_xlabel"])
-            elif kwarg == "cyclelife_ylabel":
-                if self.kwargs["cyclelife_percentage"] == False:
-                    ax.set(ylabel = self.kwargs["cyclelife_ylabel"])
-            elif kwarg == "cyclelife_percentage":
-                if self.kwargs["cyclelife_percentage"] == True:
-                    ax.set(ylabel =self.kwargs["cyclelife_ylabel_percent"])
-            
+            ax.set(xlabel = self.kwargs["cyclelife_xlabel"])
+            if self.kwargs["cyclelife_percentage"] == True:
+                ax.set(ylabel =self.kwargs["cyclelife_ylabel_percent"])
+            else:
+                ax.set(ylabel = self.kwargs["cyclelife_ylabel"])
+
             # General plot details
-            elif kwarg == "figsize":
-                fig.set_size_inches(self.kwargs["figsize"])
-            elif kwarg == "figtitle":
-                if type(self.kwargs["figtitle"]) == str:
+            fig.set_size_inches(self.kwargs["figsize"])
+            if type(self.kwargs["figtitle"]) == str:
                     fig.suptitle(self.kwargs["figtitle"])
+        except Exception as e:
+            logging.error(e)
+            
 
     def fix_dqdv(self, fig, ax):
         # Applies kwargs settings and other plot settings
@@ -399,23 +394,19 @@ class Plot:
         ax.tick_params(direction='in', top = 'true', right = 'true')
 
         # Apply all kwargs to plot
-        for kwarg in self.kwargs:
+        try:
             # Cyclelife plot details
-            if kwarg == "dqdvplot_xlabel":
-                ax.set(xlabel = self.kwargs["dqdvplot_xlabel"])
-            elif kwarg == "dqdvplot_ylabel":
-                ax.set(ylabel = self.kwargs["dqdvplot_ylabel"])
-            elif kwarg == "dqdvplot_potlim":
-                ax.set(ylim = self.kwargs["dqdvplot_potlim"])
-            elif kwarg == "dqdvplot_caplim":
-                ax.set(xlim = self.kwargs["dqdvplot_caplim"])
-            
+            ax.set(xlabel = self.kwargs["dqdvplot_xlabel"])
+            ax.set(ylabel = self.kwargs["dqdvplot_ylabel"])
+            ax.set(ylim = self.kwargs["dqdvplot_potlim"])
+            ax.set(xlim = self.kwargs["dqdvplot_caplim"])
+
             # General plot details
-            elif kwarg == "figsize":
-                fig.set_size_inches(self.kwargs["figsize"])
-            elif kwarg == "figtitle":
-                if type(self.kwargs["figtitle"]) == str:
-                    fig.suptitle(self.kwargs["figtitle"])
+            fig.set_size_inches(self.kwargs["figsize"])
+            if type(self.kwargs["figtitle"]) == str:
+                fig.suptitle(self.kwargs["figtitle"])
+        except Exception as e:
+            logging.error(e)
 
 def handle_outpath(dictval):
     if os.path.isdir(dictval):
