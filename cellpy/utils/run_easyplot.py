@@ -21,7 +21,7 @@ if __name__ == "__main__":
         galvanostatic_caplim = None,
         galvanostatic_xlabel = "Capacity [mAh/g]",
         galvanostatic_ylabel = "Cell potential [V]",
-        dqdvplot = False,
+        dqdvplot = True,
         dqdvplot_potlim = (0,1),     #min and max limit on potential-axis
         dqdvplot_dqlim = None,
         dqdvplot_xlabel = "dQ/dV [?]", # TODO what unit? jees

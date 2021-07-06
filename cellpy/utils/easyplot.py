@@ -45,7 +45,7 @@ def plot(files, **kwargs):
             plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
 
         if kwargs["galvanostatic_plot"] == True and kwargs["dqdvplot"] == True:
-            plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath)
+            plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
 
     # If the user want cyclelife plot, we do it to all the input files.
     if kwargs["cyclelifeplot"] == True:
@@ -112,10 +112,79 @@ def plot_cyclelife(cyclelifeplotobjects, **kwargs):
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
 
-def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath):
-    ### NOT STARTED ###
-    print("DO NOT ASK FOR BOTH GALVANOSTATIC AND DQDV PLOTS AT THE SAME TIME, THE FEATURE HAS NOT BEEN IMPLEMENTED")
-    raise NotImplementedError
+def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
+    ### WIP ###
+
+    fig, axs = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
+    fig.subplots_adjust(wspace=0)
+
+    # Fix colorbar or cycle colors
+    if not specific_cycles: # If this is none, then plot all!
+        # Set up colormap and add colorbar
+        cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+        norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+        fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
+
+    ## Plot GC on the left subplot (ax[0]) ##
+
+    # Get Pandas DataFrame of pot vs cap from cellpy object
+    df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
+
+    # Group by cycle and make list of cycle numbers
+    cycgrouped = df.groupby("cycle")
+    keys = []
+    for key, item in cycgrouped:
+        keys.append(key)
+
+    # Plot cycles
+    colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
+    for cyc in keys:
+        if cyc in cyc_nums:   
+            if specific_cycles:
+                cyccolor = colors[0]
+                colors = colors[1:]
+            else:
+                cyccolor = cmap(cyc/keys[-1])
+            cyc_df = cycgrouped.get_group(cyc)
+            axs[0].plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle" + str(cyc), c = cyccolor)
+    
+
+    ## Plot dQdV on the right subplot (ax[1]) ##
+
+    from cellpy.utils import ica
+    # Get Pandas DataFrame of pot vs cap from cellpy object
+    df = ica.dqdv_frames(cpobj)
+
+    # Group by cycle and make list of cycle numbers
+    cycgrouped = df.groupby("cycle")
+    keys = []
+    for key, item in cycgrouped:
+        keys.append(key)
+    
+    # Plot cycles
+    colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
+    for cyc in keys:
+        if cyc in cyc_nums:   
+            if specific_cycles:
+                cyccolor = colors[0]
+                colors = colors[1:]
+            else:
+                cyccolor = cmap(cyc/keys[-1])
+            cyc_df = cycgrouped.get_group(cyc)
+            axs[1].plot(cyc_df["dq"], cyc_df["voltage"], label=str(cyc), c = cyccolor)
+
+    # Set all plot settings from Plot object
+    fig.suptitle(file)
+    plot.fix_dqdv(fig, axs[1])
+    axs[1].set(ylabel="") # Fix func sets ylabel, but here it is the same as galvanostatic x-label so it can be removed
+    plot.fix(fig, axs[0])
+
+    # Save fig
+    savepath = outpath + os.path.basename(file).split(".")[0] + "_GC-dQdV-plot.png" 
+    print("Saving to: " + savepath)
+    fig.savefig(savepath, bbox_inches='tight')
+    #print("DO NOT ASK FOR BOTH GALVANOSTATIC AND DQDV PLOTS AT THE SAME TIME, THE FEATURE HAS NOT BEEN IMPLEMENTED")
+    #raise NotImplementedError
 
 def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
     from cellpy.utils import ica
@@ -151,8 +220,8 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
             ax.plot(cyc_df["dq"], cyc_df["voltage"], label=str(cyc), c = cyccolor)
 
     # Set all plot settings from Plot object
-    plot.fix_dqdv(fig, ax)
     fig.suptitle(file)
+    plot.fix_dqdv(fig, ax)
 
     # Save fig
     savepath = outpath + os.path.basename(file).split(".")[0] + "_dQdV-plot.png" 
@@ -194,8 +263,9 @@ def plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
             ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle" + str(cyc), c = cyccolor)
 
     # Set all plot settings from Plot object
-    plot.fix(fig, ax)
     fig.suptitle(file)
+    plot.fix(fig, ax)
+
 
     # Save fig
     savepath = outpath + os.path.basename(file).split(".")[0] + "_GC-plot.png" 
