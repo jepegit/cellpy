@@ -371,10 +371,11 @@ class Plot:
             if kwarg == "cyclelife_xlabel":
                 ax.set(xlabel = self.kwargs["cyclelife_xlabel"])
             elif kwarg == "cyclelife_ylabel":
-                ax.set(ylabel = self.kwargs["cyclelife_ylabel"])
+                if self.kwargs["cyclelife_percentage"] == False:
+                    ax.set(ylabel = self.kwargs["cyclelife_ylabel"])
             elif kwarg == "cyclelife_percentage":
                 if self.kwargs["cyclelife_percentage"] == True:
-                    ax.set(ylabel = self.kwargs["cyclelife_ylabel_percent"])
+                    ax.set(ylabel =self.kwargs["cyclelife_ylabel_percent"])
             
             # General plot details
             elif kwarg == "figsize":

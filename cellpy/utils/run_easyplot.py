@@ -17,7 +17,7 @@ if __name__ == "__main__":
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = "Capacity [mAh/g]",
         cyclelife_ylabel_percent = "Capacity retention [%]",
-        cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
+        cyclelife_legend_outside = False, # if True, the legend is placed outside the plot
         galvanostatic_plot = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
