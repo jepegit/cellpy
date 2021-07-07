@@ -6,13 +6,17 @@ if __name__ == "__main__":
 
     files = [   
             #"./data/raw/20160805_test001_45_cc_01.res",
-            "./data/seam12/20210628_seam12_04_01_cc_01_2021_06_29_152933/20210628_seam12_04_01_cc_01_Channel_48_Wb_1.CSV",
+            #"./data/raw/20160805_test001_45_cc_01_copy.res",
+            "./data/20210430_seam10_01_01_cc_01_Channel_48_Wb_1.xlsx.csv",
+            "./data/20210430_seam10_01_02_cc_01_Channel_49_Wb_1.xlsx.csv"
             ]
 
-    ezplt = easyplot.EasyPlot(files,
+    nicknames = ["Seam10_01_01", "Seam10_01_02"]
+
+    ezplt = easyplot.EasyPlot(files, nicknames,
         cyclelife_plot = True,
         cyclelife_percentage = True,
-        cyclelife_coulombic_efficiency = True,
+        cyclelife_coulombic_efficiency = False,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
@@ -23,7 +27,7 @@ if __name__ == "__main__":
         galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         galvanostatic_ylabel = "Cell potential [V]",
-        dqdv_plot = True,
+        dqdv_plot = False,
         dqdv_potlim = (0,1),     #min and max limit on potential-axis
         dqdv_dqlim = None,
         dqdv_xlabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$", # TODO what unit? jees
@@ -34,4 +38,5 @@ if __name__ == "__main__":
         figtitle = None, # None = original filepath
     )
     
+    #ezplt.help()
     ezplt.plot()

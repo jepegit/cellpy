@@ -15,9 +15,10 @@ import numpy as np
 
 class EasyPlot():
     # Main easyplot object. Holds user input and runs all plot commands
-    def __init__(self, files, **kwargs):
+    def __init__(self, files, nicknames, **kwargs):
         # Make all user input variables of self
         self.files = files
+        self.nicknames = nicknames
         self.kwargs = kwargs
 
         # List of available colors
@@ -61,7 +62,7 @@ class EasyPlot():
     def plot(self):
         for file in self.files:
             # Get the data
-            cpobj = cellpy.get(filename = file, instrument="arbin_sql_csv") # Initiate cellpy object
+            cpobj = cellpy.get(filename = file, instrument="arbin_sql_csv") # Initiate cellpy object 
             cyc_nums = cpobj.get_cycle_numbers()                            # Get ID of all cycles
 
             if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
@@ -93,18 +94,19 @@ class EasyPlot():
 
     def help(self):
         ## Prints out help page of this module
-        help_str =   """The easyplot extension to cellpy aims to easily plot data in a pretty manner\n
-In order to use this function, you must import cellpy, and easyplot from cellpy.utils.
-\n
-Usage:
-Create list of datafiles you want to plot on the following format:
-files = [
-\t'./folder/filename.ext',
-\t'./folder/filename2.ext',
-\t]
-\n
-And then call the easyplot.plot function with the files list as the first parameter, and any optional keyword arguments.
-Here is an example of the use of all keyword arguments:\n"""
+        help_str = ("The easyplot extension to cellpy aims to easily plot data in a pretty manner.\n"
+                    "In order to use this function, you must import cellpy, and easyplot from cellpy.utils.\n"
+                    "\n"
+                    "Usage:\n"
+                    "Create list of datafiles you want to plot on the following format:\n"
+                    "\n"
+                    "files = [\n"
+                    "\t'./folder/filename.ext',\n"
+                    "\t'./folder/filename2.ext',\n"
+                    "\t]\n"
+                    "\n"
+                    "And then call the easyplot.plot function with the files list as the first parameter, and any optional keyword arguments.\n"
+                    "Here is an example of the use of all keyword arguments:\n")
         for kw in self.user_params:
             if type(self.user_params[kw][1]) == str:
                 insert = "'"+self.user_params[kw][1] + "'"
@@ -125,6 +127,11 @@ Here is an example of the use of all keyword arguments:\n"""
         # Check that output dir exist (or create one)
         self.outpath = self.handle_outpath() # Takes care of the output path
 
+        # Check the nicknames
+        if self.nicknames:
+            if len(self.nicknames) != len(self.files):
+                logging.error("Use nicknames = None, or specify exactly one nickname per datafile. You have specified " + str(len(self.nicknames)) + " nicknames while inputting " + str(len(self.files)) + " datafiles")
+                raise AssertionError
 
         # Check that all kwargs are used correctly
         for key in self.kwargs:
@@ -201,9 +208,15 @@ Here is an example of the use of all keyword arguments:\n"""
                 for i in range(len(dchgs[1])):
                     dchgs[1][i] /= norm_fact
 
+            # Make label from filename or nickname
+            if self.nicknames:
+                label = self.nicknames[self.files.index(filename)]
+            else:
+                label = str(os.path.basename(filename))
+
             # Actully place it in plot
             ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
-            ax.scatter(dchgs[0], dchgs[1], c = color, label = str(os.path.basename(filename)))
+            ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
 
         if self.kwargs["cyclelife_coulombic_efficiency"] == True:
             ax_ce = ax.twinx()
