@@ -1,6 +1,7 @@
 # Author: Amund M. Raniseth
 # Date: 01.07.2021
 
+
 import os
 from pathlib import Path
 import logging
@@ -40,19 +41,21 @@ Here is an example of the use of all keyword arguments:\n"""
 
 
 def plot(files, **kwargs):
+    global g
     g = G(files, **kwargs)                      # Spawn obj for handling global params
-    outpath = handle_outpath(g.outpath) # Takes care of the output path
+    g.verify_input()                            # Checks all files and kwargs
+
     cyclelifeplotobjects = []                   # Something to store the objects in
     specific_cycles = False                     # TODO: This should be better implemented, especially when feature for file-individual cycle selection is implemented.
-    print(kwargs)
+
     for file in g.files:
         plot = Plot(**kwargs)                       # Initialize file-individual plot object
 
         # Get the data
         cpobj = cellpy.get(filename = file, instrument="arbin_sql_csv")     # Initiate cellpy object
         cyc_nums = cpobj.get_cycle_numbers()    # Get ID of all cycles
-        if kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
-            cyc_nums = list(set(cyc_nums).intersection(kwargs["specific_cycles"])) 
+        if g.specific_cycles != None:   # Only get the cycles which both exist in data, and that the user want
+            cyc_nums = list(set(cyc_nums).intersection(g.specific_cycles)) 
             specific_cycles = True
         else:
             specific_cycles = False
@@ -60,29 +63,28 @@ def plot(files, **kwargs):
         color = g.give_color()               # Get a color for the data
         
         # Plot whatever the user want
-        if kwargs["cyclelifeplot"] == True :
+        if g.cyclelife_plot == True :
             cyclelifeplotobjects.append((cpobj, cyc_nums, color, file)) # Remember that tuples are immutable
 
-        if kwargs["galvanostatic_plot"] == True and kwargs["dqdvplot"] == False:
-            plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
+        if g.galvanostatic_plot == True and g.dqdv_plot == False:
+            plot_gc(cpobj, cyc_nums, color, plot, file, specific_cycles)
 
-        if kwargs["dqdvplot"] == True and kwargs["galvanostatic_plot"] == False:
-            plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
+        if g.dqdv_plot == True and g.galvanostatic_plot == False:
+            plot_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles)
 
-        if kwargs["galvanostatic_plot"] == True and kwargs["dqdvplot"] == True:
-            plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles)
+        if g.galvanostatic_plot == True and g.dqdv_plot == True:
+            plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles)
 
     # If the user want cyclelife plot, we do it to all the input files.
-    if kwargs["cyclelifeplot"] == True:
+    if g.cyclelife_plot == True:
         plot_cyclelife(cyclelifeplotobjects, **kwargs)
 
 def plot_cyclelife(cyclelifeplotobjects, **kwargs):
     # Initialize custom plot obj and matplotlib fig and ax objects
     plot = Plot(**kwargs)
     fig, ax = plt.subplots(figsize=(6, 4))
-    outpath = kwargs["outpath"]
 
-
+    outpath = g.outpath
     for cpobj, cyc_nums, color, filename in cyclelifeplotobjects:
         # Get Pandas DataFrame of pot vs cap from cellpy object
         df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
@@ -152,11 +154,11 @@ def plot_cyclelife(cyclelifeplotobjects, **kwargs):
     fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
 
     # Save fig
-    savepath = outpath.strip("_") + "_Cyclelife.png" 
+    savepath = g.outpath.strip("_") + "_Cyclelife.png" 
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
 
-def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
+def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles):
     ### WIP ###
 
     fig, axs = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
@@ -224,13 +226,13 @@ def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycle
     plot.fix(fig, axs[0])
 
     # Save fig
-    savepath = outpath + os.path.basename(file).split(".")[0] + "_GC-dQdV-plot.png" 
+    savepath = g.outpath + os.path.basename(file).split(".")[0] + "_GC-dQdV-plot.png" 
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
     #print("DO NOT ASK FOR BOTH GALVANOSTATIC AND DQDV PLOTS AT THE SAME TIME, THE FEATURE HAS NOT BEEN IMPLEMENTED")
     #raise NotImplementedError
 
-def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
+def plot_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles):
     from cellpy.utils import ica
     # Get Pandas DataFrame of pot vs cap from cellpy object
     df = ica.dqdv_frames(cpobj)
@@ -268,12 +270,12 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
     plot.fix_dqdv(fig, ax)
 
     # Save fig
-    savepath = outpath + os.path.basename(file).split(".")[0] + "_dQdV-plot.png" 
+    savepath = g.outpath + os.path.basename(file).split(".")[0] + "_dQdV-plot.png" 
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
     
 
-def plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
+def plot_gc(cpobj, cyc_nums, color, plot, file, specific_cycles):
 
     # Get Pandas DataFrame of pot vs cap from cellpy object
     df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
@@ -312,7 +314,7 @@ def plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
 
 
     # Save fig
-    savepath = outpath + os.path.basename(file).split(".")[0] + "_GC-plot.png" 
+    savepath = g.outpath + os.path.basename(file).split(".")[0] + "_GC-plot.png" 
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
 
@@ -320,6 +322,7 @@ def plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
 # Global class for holding input variables and filenames
 class G:
     def __init__(self, files, **kwargs):
+        self.kwargs = kwargs
         # Make all kwargs variables of self
         for key in kwargs:
             setattr(self, key, kwargs[key])
@@ -347,11 +350,11 @@ class G:
             "galvanostatic_caplim"  : (tuple, None),
             "galvanostatic_xlabel"  : (str, "Capacity [mAh/g]"),
             "galvanostatic_ylabel"  : (str, "Cell potential [V]"),
-            "dqdvplot"          : (bool, False),
-            "dqdvplot_potlim"   : (tuple, None),     #min and max limit on potential-axis
-            "dqdvplot_dqlim"    : (tuple, None),
-            "dqdvplot_xlabel"   : (str, "dQ/dV [?]"), # TODO what unit? jees
-            "dqdvplot_ylabel"   : (str, "Cell potential [V]"),
+            "dqdv_plot"          : (bool, False),
+            "dqdv_potlim"   : (tuple, None),     #min and max limit on potential-axis
+            "dqdv_dqlim"    : (tuple, None),
+            "dqdv_xlabel"   : (str, "dQ/dV [?]"), # TODO what unit? jees
+            "dqdv_ylabel"   : (str, "Cell potential [V]"),
             "specific_cycles"   : (list, None),
             "outpath"   : (str, "./"),
             "figsize"   : (tuple, (6,4)), # 6 inches wide, 4 inches tall
@@ -359,28 +362,52 @@ class G:
         }
 
 
-    def verify_input():
-        # File handling
+
+    def verify_input(self):
+        # Check that all files exist
         for file in self.files:
             if not os.path.isfile(file):
                 logging.error("File not found: " + str(file))
                 raise FileNotFoundError
+        
+        # Check that output dir exist (or create one)
+        self.outpath = self.handle_outpath() # Takes care of the output path
 
-        ### Check that all kwargs are used correctly ###
 
-        # categorize all kwargs by self.user_params (which has the correct formatting)
+        # Check that all kwargs are used correctly
         for key in self.kwargs:
-            if not self.user_params[key]:
+            # Check that input parameter exist
+            try:
+                self.user_params[key]
+            except KeyError as e:
                 logging.error("Input parameter " + key + " is not a valid parameter! Please see example configuration for help or run easyplot.help()")
-            if type(self.kwargs[key]) == self.user_params[key][0]:
-                logging.error("Type of inputparameter for keyword " + key + " is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
+        
+            # Check that the type is correct
+            if type(self.kwargs[key]) != self.user_params[key][0] and type(self.kwargs[key]) != type(None):
+                logging.error("Type of inputparameter for keyword '" + key + "' is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
                 raise TypeError
+
+
+
 
     def give_color(self):
         # Picks the first color from the color list and gives it away
         color = self.colors[0]
         self.colors=self.colors[1:]
         return color
+
+
+
+    def handle_outpath(self):
+        if os.path.isdir(self.outpath):
+            return self.outpath
+        elif not os.path.isdir(self.outpath):
+            try:
+                os.mkdir(self.outpath)
+                return self.outpath
+            except OSError as e:
+                logging.error("Cannot create output directory " + self.outpath + ". Please make sure you have write permission. Errormessage: " + e)
+
     
 
 class Plot:
@@ -473,10 +500,10 @@ class Plot:
         # Apply all kwargs to plot
         try:
             # Cyclelife plot details
-            ax.set(xlabel = self.kwargs["dqdvplot_xlabel"])
-            ax.set(ylabel = self.kwargs["dqdvplot_ylabel"])
-            ax.set(ylim = self.kwargs["dqdvplot_potlim"])
-            ax.set(xlim = self.kwargs["dqdvplot_caplim"])
+            ax.set(xlabel = self.kwargs["dqdv_xlabel"])
+            ax.set(ylabel = self.kwargs["dqdv_ylabel"])
+            ax.set(ylim = self.kwargs["dqdv_potlim"])
+            ax.set(xlim = self.kwargs["dqdv_caplim"])
 
             # General plot details
             fig.set_size_inches(self.kwargs["figsize"])
@@ -485,14 +512,3 @@ class Plot:
         except Exception as e:
             logging.error(e)
 
-def handle_outpath(dictval):
-    if os.path.isdir(dictval):
-        return dictval
-    elif not os.path.isdir(dictval):
-        try:
-            os.mkdir(dictval)
-            return dictval
-        except OSError as e:
-            print("Cannot create output directory " + dictval + ". Please make sure you have write permission.")
-            print(e)
-            exit()
