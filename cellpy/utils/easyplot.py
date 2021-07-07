@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import logging
 import cellpy
+from matplotlib.artist import kwdoc
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
@@ -14,17 +15,41 @@ import numpy as np
 
 #### WORK IN PROGRESS ####
 
+def help():
+    ## Prints out help page of this module
+    help_str =   """The easyplot extension to cellpy aims to easily plot data in a pretty manner\n
+In order to use this function, you must import cellpy, and easyplot from cellpy.utils.\n
+\n
+Usage:\n
+Create list of datafiles you want to plot on the following format:\n
+files = [\n
+\t'./folder/filename.ext',\n
+\t'./folder/filename2.ext',\n
+\t]\n
+\n
+And then call the easyplot.plot function with the files list as the first parameter, and any optional keyword arguments.\n
+Here is an example of the use of all keyword arguments:\n"""
+    g = G(["?", "?"])
+    for kw in g.user_params:
+        if type(g.user_params[kw][1]) == str:
+            insert = "'"+g.user_params[kw][1] + "'"
+        else:
+            insert = str(g.user_params[kw][1])
+        help_str += "\t" + kw + " = " + insert + ",\n"
+    print(help_str)
+
+
 def plot(files, **kwargs):
-    g = G()                                     # Spawn obj for handling global params
-    outpath = handle_outpath(kwargs["outpath"]) # Takes care of the output path
+    g = G(files, **kwargs)                      # Spawn obj for handling global params
+    outpath = handle_outpath(g.outpath) # Takes care of the output path
     cyclelifeplotobjects = []                   # Something to store the objects in
     specific_cycles = False                     # TODO: This should be better implemented, especially when feature for file-individual cycle selection is implemented.
-
-    for file in files:
-        plot = Plot(**kwargs)                       # Initialize plot object
+    print(kwargs)
+    for file in g.files:
+        plot = Plot(**kwargs)                       # Initialize file-individual plot object
 
         # Get the data
-        cpobj = cellpy.get(filename = file)     # Initiate cellpy object
+        cpobj = cellpy.get(filename = file, instrument="arbin_sql_csv")     # Initiate cellpy object
         cyc_nums = cpobj.get_cycle_numbers()    # Get ID of all cycles
         if kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
             cyc_nums = list(set(cyc_nums).intersection(kwargs["specific_cycles"])) 
@@ -282,7 +307,7 @@ def plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
             ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle" + str(cyc), c = cyccolor)
 
     # Set all plot settings from Plot object
-    fig.suptitle(file)
+    fig.suptitle(os.path.basename(file))
     plot.fix(fig, ax)
 
 
@@ -292,12 +317,64 @@ def plot_gc(cpobj, cyc_nums, color, plot, file, outpath, specific_cycles):
     fig.savefig(savepath, bbox_inches='tight')
 
 
-# Global class for when differentiation between testdata is needed
+# Global class for holding input variables and filenames
 class G:
-    def __init__(self):
+    def __init__(self, files, **kwargs):
+        # Make all kwargs variables of self
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
+
+        # Make list of files a variable of self
+        self.files = files
+
+
         # List of available colors
         self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
 
+        # Dictionary of all possible user input arguments(as keys) with example values of correct type
+        # Value is a tuple (immutable) of type and default value.
+        self.user_params = {
+            "cyclelife_plot"                        : (bool, True),
+            "cyclelife_percentage"                  : (bool, False),
+            "cyclelife_coulombic_efficiency"        : (bool, False),
+            "cyclelife_coulombic_efficiency_ylabel" : (str, "Coulombic efficiency [%]"),
+            "cyclelife_xlabel"                      : (str, "Cycles"),
+            "cyclelife_ylabel"                      : (str, "Capacity [mAh/g]"),
+            "cyclelife_ylabel_percent"              : (str, "Capacity retention [%]"),
+            "cyclelife_legend_outside"              : (bool, False), # if True, the legend is placed outside the plot
+            "galvanostatic_plot"    : (bool, True),
+            "galvanostatic_potlim"  : (tuple, None),     #min and max limit on potential-axis
+            "galvanostatic_caplim"  : (tuple, None),
+            "galvanostatic_xlabel"  : (str, "Capacity [mAh/g]"),
+            "galvanostatic_ylabel"  : (str, "Cell potential [V]"),
+            "dqdvplot"          : (bool, False),
+            "dqdvplot_potlim"   : (tuple, None),     #min and max limit on potential-axis
+            "dqdvplot_dqlim"    : (tuple, None),
+            "dqdvplot_xlabel"   : (str, "dQ/dV [?]"), # TODO what unit? jees
+            "dqdvplot_ylabel"   : (str, "Cell potential [V]"),
+            "specific_cycles"   : (list, None),
+            "outpath"   : (str, "./"),
+            "figsize"   : (tuple, (6,4)), # 6 inches wide, 4 inches tall
+            "figtitle"  : (str, "Title"), # None = original filepath
+        }
+
+
+    def verify_input():
+        # File handling
+        for file in self.files:
+            if not os.path.isfile(file):
+                logging.error("File not found: " + str(file))
+                raise FileNotFoundError
+
+        ### Check that all kwargs are used correctly ###
+
+        # categorize all kwargs by self.user_params (which has the correct formatting)
+        for key in self.kwargs:
+            if not self.user_params[key]:
+                logging.error("Input parameter " + key + " is not a valid parameter! Please see example configuration for help or run easyplot.help()")
+            if type(self.kwargs[key]) == self.user_params[key][0]:
+                logging.error("Type of inputparameter for keyword " + key + " is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
+                raise TypeError
 
     def give_color(self):
         # Picks the first color from the color list and gives it away
