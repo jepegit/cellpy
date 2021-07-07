@@ -19,16 +19,16 @@ import numpy as np
 def help():
     ## Prints out help page of this module
     help_str =   """The easyplot extension to cellpy aims to easily plot data in a pretty manner\n
-In order to use this function, you must import cellpy, and easyplot from cellpy.utils.\n
+In order to use this function, you must import cellpy, and easyplot from cellpy.utils.
 \n
-Usage:\n
-Create list of datafiles you want to plot on the following format:\n
-files = [\n
-\t'./folder/filename.ext',\n
-\t'./folder/filename2.ext',\n
-\t]\n
+Usage:
+Create list of datafiles you want to plot on the following format:
+files = [
+\t'./folder/filename.ext',
+\t'./folder/filename2.ext',
+\t]
 \n
-And then call the easyplot.plot function with the files list as the first parameter, and any optional keyword arguments.\n
+And then call the easyplot.plot function with the files list as the first parameter, and any optional keyword arguments.
 Here is an example of the use of all keyword arguments:\n"""
     g = G(["?", "?"])
     for kw in g.user_params:
@@ -41,7 +41,7 @@ Here is an example of the use of all keyword arguments:\n"""
 
 
 def plot(files, **kwargs):
-    global g
+    global g    # TODO: This is not pretty, but is it worth passing it in on all the functions?
     g = G(files, **kwargs)                      # Spawn obj for handling global params
     g.verify_input()                            # Checks all files and kwargs
 
@@ -78,6 +78,8 @@ def plot(files, **kwargs):
     # If the user want cyclelife plot, we do it to all the input files.
     if g.cyclelife_plot == True:
         plot_cyclelife(cyclelifeplotobjects, **kwargs)
+
+
 
 def plot_cyclelife(cyclelifeplotobjects, **kwargs):
     # Initialize custom plot obj and matplotlib fig and ax objects
@@ -154,9 +156,11 @@ def plot_cyclelife(cyclelifeplotobjects, **kwargs):
     fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
 
     # Save fig
-    savepath = g.outpath.strip("_") + "_Cyclelife.png" 
+    savepath = outpath.strip("_") + "_Cyclelife.png" 
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
+
+
 
 def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles):
     ### WIP ###
@@ -232,6 +236,8 @@ def plot_gc_and_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles):
     #print("DO NOT ASK FOR BOTH GALVANOSTATIC AND DQDV PLOTS AT THE SAME TIME, THE FEATURE HAS NOT BEEN IMPLEMENTED")
     #raise NotImplementedError
 
+
+
 def plot_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles):
     from cellpy.utils import ica
     # Get Pandas DataFrame of pot vs cap from cellpy object
@@ -274,6 +280,7 @@ def plot_dQdV(cpobj, cyc_nums, color, plot, file, specific_cycles):
     print("Saving to: " + savepath)
     fig.savefig(savepath, bbox_inches='tight')
     
+
 
 def plot_gc(cpobj, cyc_nums, color, plot, file, specific_cycles):
 
@@ -342,18 +349,18 @@ class G:
             "cyclelife_coulombic_efficiency"        : (bool, False),
             "cyclelife_coulombic_efficiency_ylabel" : (str, "Coulombic efficiency [%]"),
             "cyclelife_xlabel"                      : (str, "Cycles"),
-            "cyclelife_ylabel"                      : (str, "Capacity [mAh/g]"),
+            "cyclelife_ylabel"                      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
             "cyclelife_ylabel_percent"              : (str, "Capacity retention [%]"),
             "cyclelife_legend_outside"              : (bool, False), # if True, the legend is placed outside the plot
             "galvanostatic_plot"    : (bool, True),
             "galvanostatic_potlim"  : (tuple, None),     #min and max limit on potential-axis
             "galvanostatic_caplim"  : (tuple, None),
-            "galvanostatic_xlabel"  : (str, "Capacity [mAh/g]"),
+            "galvanostatic_xlabel"  : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
             "galvanostatic_ylabel"  : (str, "Cell potential [V]"),
             "dqdv_plot"          : (bool, False),
             "dqdv_potlim"   : (tuple, None),     #min and max limit on potential-axis
             "dqdv_dqlim"    : (tuple, None),
-            "dqdv_xlabel"   : (str, "dQ/dV [?]"), # TODO what unit? jees
+            "dqdv_xlabel"   : (str, r"dQ/dV $\left[\frac{mAh}{gV}\right]$"), # TODO what unit? jees
             "dqdv_ylabel"   : (str, "Cell potential [V]"),
             "specific_cycles"   : (list, None),
             "outpath"   : (str, "./"),
