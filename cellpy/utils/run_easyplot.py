@@ -9,15 +9,15 @@ if __name__ == "__main__":
             "./data/seam12/20210628_seam12_04_01_cc_01_2021_06_29_152933/20210628_seam12_04_01_cc_01_Channel_48_Wb_1.CSV",
             ]
 
-    easyplot.plot(files,
+    ezplt = easyplot.EasyPlot(files,
         cyclelife_plot = True,
-        cyclelife_percentage = False,
-        cyclelife_coulombic_efficiency = False,
+        cyclelife_percentage = True,
+        cyclelife_coulombic_efficiency = True,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         cyclelife_ylabel_percent = "Capacity retention [%]",
-        cyclelife_legend_outside = False, # if True, the legend is placed outside the plot
+        cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
         galvanostatic_plot = True,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
@@ -33,3 +33,5 @@ if __name__ == "__main__":
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figtitle = None, # None = original filepath
     )
+    
+    ezplt.plot()
