@@ -10,6 +10,7 @@ from matplotlib.artist import kwdoc
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 
 
@@ -62,7 +63,7 @@ class EasyPlot():
     def plot(self):
         for file in self.files:
             # Get the data
-            cpobj = cellpy.get(filename = file, ) # Initiate cellpy object instrument="arbin_sql_csv"
+            cpobj = cellpy.get(filename = file, instrument="arbin_sql_csv") # Initiate cellpy object 
             cyc_nums = cpobj.get_cycle_numbers()                            # Get ID of all cycles
 
             if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
@@ -414,6 +415,7 @@ class EasyPlot():
 
         # The params below should always be like this.
         ax.tick_params(direction='in', top = 'true', right = 'true')
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
         # Apply all kwargs to plot
         try:
