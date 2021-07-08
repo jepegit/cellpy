@@ -62,7 +62,7 @@ class EasyPlot():
     def plot(self):
         for file in self.files:
             # Get the data
-            cpobj = cellpy.get(filename = file, instrument="arbin_sql_csv") # Initiate cellpy object 
+            cpobj = cellpy.get(filename = file, ) # Initiate cellpy object instrument="arbin_sql_csv"
             cyc_nums = cpobj.get_cycle_numbers()                            # Get ID of all cycles
 
             if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
@@ -273,7 +273,7 @@ class EasyPlot():
                 else:
                     cyccolor = cmap(cyc/keys[-1])
                 cyc_df = cycgrouped.get_group(cyc)
-                ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle" + str(cyc), c = cyccolor)
+                ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
 
         # Set all plot settings from Plot object
         fig.suptitle(os.path.basename(file))
@@ -318,7 +318,7 @@ class EasyPlot():
                 else:
                     cyccolor = cmap(cyc/keys[-1])
                 cyc_df = cycgrouped.get_group(cyc)
-                ax.plot(cyc_df["dq"], cyc_df["voltage"], label=str(cyc), c = cyccolor)
+                ax.plot(cyc_df["voltage"], cyc_df["dq"], label="Cycle " + str(cyc), c = cyccolor)
 
         # Set all plot settings from Plot object
         fig.suptitle(os.path.basename(file))
@@ -363,7 +363,7 @@ class EasyPlot():
                 else:
                     cyccolor = cmap(cyc/keys[-1])
                 cyc_df = cycgrouped.get_group(cyc)
-                axs[0].plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle" + str(cyc), c = cyccolor)
+                axs[0].plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
         
 
         ## Plot dQdV on the right subplot (ax[1]) ##
@@ -391,10 +391,8 @@ class EasyPlot():
                 axs[1].plot(cyc_df["dq"], cyc_df["voltage"], label=str(cyc), c = cyccolor)
 
         # Set all plot settings from Plot object
-        fig.suptitle(file)
-        self.fix_dqdv(fig, axs[1])
-        axs[1].set(ylabel="") # Fix func sets ylabel, but here it is the same as galvanostatic x-label so it can be removed
-        self.fix_gc(fig, axs[0])
+        fig.suptitle(os.path.basename(file))
+        self.fix_gc_and_dqdv(fig, axs)
 
         # Save fig
         savepath = self.outpath + os.path.basename(file).split(".")[0] + "_GC-dQdV-plot.png" 
@@ -505,8 +503,11 @@ class EasyPlot():
             # Cyclelife plot details
             ax.set(xlabel = self.kwargs["dqdv_xlabel"])
             ax.set(ylabel = self.kwargs["dqdv_ylabel"])
-            ax.set(ylim = self.kwargs["dqdv_potlim"])
-            ax.set(xlim = self.kwargs["dqdv_caplim"])
+            ax.set(ylim = self.kwargs["dqdv_dqlim"])
+            ax.set(xlim = self.kwargs["dqdv_potlim"])
+
+            if self.kwargs["specific_cycles"] != None:
+                    ax.legend()
 
             # General plot details
             fig.set_size_inches(self.kwargs["figsize"])
@@ -516,3 +517,35 @@ class EasyPlot():
         except Exception as e:
             logging.error(e)
 
+
+
+    def fix_gc_and_dqdv(self, fig, axs):
+        for ax in axs:
+            # The params below should always be like this.
+            ax.tick_params(direction='in', top = 'true', right = 'true')
+
+        # Apply all kwargs to plot
+        try:
+            # dQdV plot details
+            axs[1].set(xlabel = self.kwargs["dqdv_ylabel"]) # switched x and y label since this dQdV plot is flipped to match the adjacent gc plot
+            axs[1].set(ylabel ="")            # Empty since we already have potential on gc axs
+            axs[1].set(ylim = self.kwargs["galvanostatic_potlim"])
+            axs[1].set(xlim = self.kwargs["dqdv_dqlim"])
+
+            # Galvanostatic plot details
+            axs[0].set(xlabel = self.kwargs["galvanostatic_xlabel"])
+            axs[0].set(ylabel = self.kwargs["galvanostatic_ylabel"])
+            axs[0].set(ylim = self.kwargs["galvanostatic_potlim"])
+            axs[0].set(xlim = self.kwargs["galvanostatic_caplim"])
+
+            if self.kwargs["specific_cycles"] != None:
+                    axs[0].legend()
+
+            # General plot details
+            fig.set_size_inches(self.kwargs["figsize"])
+            if type(self.kwargs["figtitle"]) == str:
+                fig.suptitle(self.kwargs["figtitle"])
+
+        except Exception as e:
+            print(e)
+            logging.error(e)
