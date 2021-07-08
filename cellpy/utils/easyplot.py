@@ -10,7 +10,6 @@ from matplotlib.artist import kwdoc
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
-from matplotlib.ticker import MaxNLocator
 import numpy as np
 
 
@@ -415,7 +414,7 @@ class EasyPlot():
 
         # The params below should always be like this.
         ax.tick_params(direction='in', top = 'true', right = 'true')
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.xaxis.get_major_locator().set_params(integer=True)
 
         # Apply all kwargs to plot
         try:
