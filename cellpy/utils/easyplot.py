@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Author: Amund M. Raniseth
 # Date: 01.07.2021
 
@@ -62,7 +64,7 @@ class EasyPlot():
     def plot(self):
         for file in self.files:
             # Get the data
-            cpobj = cellpy.get(filename = file, instrument="arbin_sql_csv") # Initiate cellpy object 
+            cpobj = cellpy.get(filename = file, instrument="arbin_sql") # Initiate cellpy object 
             cyc_nums = cpobj.get_cycle_numbers()                            # Get ID of all cycles
 
             if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
@@ -119,10 +121,10 @@ class EasyPlot():
 
     def verify_input(self):
         # Check that all files exist
-        for file in self.files:
-            if not os.path.isfile(file):
-                logging.error("File not found: " + str(file))
-                raise FileNotFoundError
+        #for file in self.files:
+        #    if not os.path.isfile(file):
+        #        logging.error("File not found: " + str(file))
+        #        raise FileNotFoundError
         
         # Check that output dir exist (or create one)
         self.outpath = self.handle_outpath() # Takes care of the output path
@@ -145,6 +147,14 @@ class EasyPlot():
             if type(self.kwargs[key]) != self.user_params[key][0] and type(self.kwargs[key]) != type(None):
                 logging.error("Type of inputparameter for keyword '" + key + "' is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
                 raise TypeError
+
+
+
+    def set_arbin_sql_credentials(self, server = "localhost", uid="sa", pwd="Changeme123", driver="SQL Server"):
+            cellpy.prms.Instruments.Arbin["SQL_server"] = server
+            cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
+            cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
+            cellpy.prms.Instruments.Arbin["SQL_Driver"] = driver
 
 
 
@@ -262,6 +272,7 @@ class EasyPlot():
             cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
             norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
             fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
+            #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
 
         # Plot cycles
         colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
