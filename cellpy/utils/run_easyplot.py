@@ -65,6 +65,6 @@ if __name__ == "__main__":
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figtitle = None, # None = original filepath
     )
-    ezplt.set_arbin_sql_credentials("localhost", "sa", "Amund1234", "SQL Driver")
+    ezplt.set_arbin_sql_credentials("localhost", "sa", "Amund1234", "SQL Server")
     #ezplt.help()
     ezplt.plot()

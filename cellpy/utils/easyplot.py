@@ -17,6 +17,7 @@ import numpy as np
 
 class EasyPlot():
     # Main easyplot object. Holds user input and runs all plot commands
+
     def __init__(self, files, nicknames, **kwargs):
         # Make all user input variables of self
         self.files = files
@@ -53,8 +54,11 @@ class EasyPlot():
             "figtitle"  : (str, "Title"), # None = original filepath
         }
 
-        #Verify that the user input is sufficient
+        # Verify that the user input is sufficient
         self.verify_input()
+
+        # Fill in the rest of the variables from self.user_params if the user didn't specify
+        self.fill_input()
 
         # Extra variables for internal use
         self.cyclelifeplotobjects = []  # List of objects for cyclelife plot
@@ -148,6 +152,14 @@ class EasyPlot():
                 logging.error("Type of inputparameter for keyword '" + key + "' is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
                 raise TypeError
 
+
+
+    def fill_input(self):
+        # Fill in the rest of the variables from self.user_params if the user didn't specify
+        # Can't just join dicts since they have differing formats, need to loop...
+        for key in self.user_params:
+            if key not in self.kwargs:
+                self.kwargs[key] = self.user_params[key][1]
 
 
     def set_arbin_sql_credentials(self, server = "localhost", uid="sa", pwd="Changeme123", driver="SQL Server"):
