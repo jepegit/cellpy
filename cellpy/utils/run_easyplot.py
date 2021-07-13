@@ -10,10 +10,10 @@ if __name__ == "__main__":
             #"./data/raw/20160805_test001_45_cc_01_copy.res",
             #"./data/20210430_seam10_01_01_cc_01_Channel_48_Wb_1.xlsx.csv",
             #"./data/20210430_seam10_01_02_cc_01_Channel_49_Wb_1.xlsx.csv"
-            "20210624_seam12_07_01_cc_02",
-            "20210624_seam12_07_02_cc_02",
-            "20210624_seam12_07_03_cc_02",
-            #"20210628_seam12_04_01_cc_01",
+            #"20210624_seam12_07_01_cc_02",
+            #"20210624_seam12_07_02_cc_02",
+            #"20210624_seam12_07_03_cc_02",
+            "20210628_seam12_04_01_cc_01",
             #"20210628_seam12_04_02_cc_02",
             #"20210628_seam12_04_03_cc_01",
             #"20210628_seam12_05_01_cc_01",
@@ -22,7 +22,7 @@ if __name__ == "__main__":
             #"20210628_seam12_06_01_cc_01",
             #"20210628_seam12_06_02_cc_02",
             #"20210628_seam12_06_03_cc_01",
-            #"20210628_seam12_07_01_cc_01",
+            "20210628_seam12_07_01_cc_01",
             #"20210628_seam12_07_02_cc_01",
             #"20210628_seam12_07_03_cc_01",
             #"20210630_seam13_01_01_cc_01",
@@ -42,15 +42,16 @@ if __name__ == "__main__":
     nicknames = None #["Seam10_01_01", "Seam10_01_02"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
-        cyclelife_plot = True,
+        cyclelife_plot = False,
         cyclelife_percentage = False,
-        cyclelife_coulombic_efficiency = False,
+        cyclelife_coulombic_efficiency = True,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         cyclelife_ylabel_percent = "Capacity retention [%]",
         cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
         galvanostatic_plot = True,
+        galvanostatic_all_in_one = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = (-5, 60),
         galvanostatic_xlabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
@@ -61,7 +62,7 @@ if __name__ == "__main__":
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
         specific_cycles = None, #[]
-        outpath = "./ezplots/seam12-07_RateCap/",
+        outpath = "./ezplots/deleteme/",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figtitle = None, # None = original filepath
     )

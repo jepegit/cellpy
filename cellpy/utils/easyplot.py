@@ -38,12 +38,13 @@ class EasyPlot():
             "cyclelife_ylabel"                      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
             "cyclelife_ylabel_percent"              : (str, "Capacity retention [%]"),
             "cyclelife_legend_outside"              : (bool, False), # if True, the legend is placed outside the plot
-            "galvanostatic_plot"    : (bool, True),
-            "galvanostatic_potlim"  : (tuple, None),     #min and max limit on potential-axis
-            "galvanostatic_caplim"  : (tuple, None),
-            "galvanostatic_xlabel"  : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
-            "galvanostatic_ylabel"  : (str, "Cell potential [V]"),
-            "dqdv_plot"          : (bool, False),
+            "galvanostatic_plot"        : (bool, True),
+            "galvanostatic_all_in_one"  : (bool, False), # Decides if everything should be plotted in the same plot
+            "galvanostatic_potlim"      : (tuple, None),     # min and max limit on potential-axis
+            "galvanostatic_caplim"      : (tuple, None),
+            "galvanostatic_xlabel"      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
+            "galvanostatic_ylabel"      : (str, "Cell potential [V]"),
+            "dqdv_plot"     : (bool, False),
             "dqdv_potlim"   : (tuple, None),     #min and max limit on potential-axis
             "dqdv_dqlim"    : (tuple, None),
             "dqdv_xlabel"   : (str, r"dQ/dV $\left[\frac{mAh}{gV}\right]$"), # TODO what unit? jees
@@ -68,7 +69,16 @@ class EasyPlot():
     def plot(self):
         for file in self.files:
             # Get the data
-            cpobj = cellpy.get(filename = file, instrument="arbin_sql") # Initiate cellpy object 
+            if self.use_arbin_sql:
+                cpobj = cellpy.get(filename = file, instrument="arbin_sql") # Initiate cellpy object 
+            else:
+                # Check that file exist
+                if not os.path.isfile(file):
+                    logging.error("File not found: " + str(file))
+                    raise FileNotFoundError
+
+                cpobj = cellpy.get(filename = file) # Load regular file 
+
             cyc_nums = cpobj.get_cycle_numbers()                            # Get ID of all cycles
 
             if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
@@ -80,10 +90,25 @@ class EasyPlot():
             color = self.give_color()               # Get a color for the data
         
             # Plot whatever the user want
-            if self.kwargs["cyclelife_plot"] == True :
+            if self.kwargs["cyclelife_plot"] == True or self.kwargs["galvanostatic_all_in_one"] == True:
                 self.cyclelifeplotobjects.append((cpobj, cyc_nums, color, file)) # Remember that tuples are immutable
 
-            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == False:
+            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == False and self.kwargs["galvanostatic_all_in_one"] == False:
+                self.plot_gc(cpobj, cyc_nums, color, file, specific_cycles)
+
+            if self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_plot"] == False and self.kwargs["galvanostatic_all_in_one"] == False:
+                self.plot_dQdV(cpobj, cyc_nums, color, file, specific_cycles)
+
+            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_all_in_one"] == False:
+                self.plot_gc_and_dQdV(cpobj, cyc_nums, color, file, specific_cycles)
+
+        # If the user want cyclelife plot, we do it to all the input files.
+        if self.kwargs["cyclelife_plot"] == True:
+            self.plot_cyclelife(self.cyclelifeplotobjects)
+
+        # If the user want all galvanostatic data in the same plot:
+        if self.kwargs["galvanostatic_all_in_one"] == True:
+            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == False and self.kwargs["galvanostatic_all_in_one"] == False:
                 self.plot_gc(cpobj, cyc_nums, color, file, specific_cycles)
 
             if self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_plot"] == False:
@@ -91,11 +116,6 @@ class EasyPlot():
 
             if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == True:
                 self.plot_gc_and_dQdV(cpobj, cyc_nums, color, file, specific_cycles)
-
-        # If the user want cyclelife plot, we do it to all the input files.
-        if self.kwargs["cyclelife_plot"] == True:
-            self.plot_cyclelife(self.cyclelifeplotobjects)
-
         
 
     def help(self):
@@ -124,11 +144,6 @@ class EasyPlot():
 
 
     def verify_input(self):
-        # Check that all files exist
-        #for file in self.files:
-        #    if not os.path.isfile(file):
-        #        logging.error("File not found: " + str(file))
-        #        raise FileNotFoundError
         
         # Check that output dir exist (or create one)
         self.outpath = self.handle_outpath() # Takes care of the output path
@@ -241,12 +256,12 @@ class EasyPlot():
             ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
             ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
 
-        if self.kwargs["cyclelife_coulombic_efficiency"] == True:
-            ax_ce = ax.twinx()
-            ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
-            coulombic_efficiency = cpobj.cell.summary["coulombic_efficiency_u_percentage"]
-            ax_ce.scatter(range(len(coulombic_efficiency)), coulombic_efficiency, c = color, marker = "+")
-
+            if self.kwargs["cyclelife_coulombic_efficiency"] == True:
+                ax_ce = ax.twinx()
+                ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
+                coulombic_efficiency = cpobj.cell.summary["coulombic_efficiency_u_percentage"]
+                ax_ce.scatter(range(len(coulombic_efficiency)), coulombic_efficiency, c = color, marker = "+")
+                #print(filename + " Dchg 1-3: " + str(dchgs[1][0:3])  + ", CE 1-3: " + str(coulombic_efficiency[0:3]))
 
         # Get labels and handles for legend generation and eventual savefile
         handles, labels = ax.get_legend_handles_labels()
