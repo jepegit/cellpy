@@ -167,6 +167,7 @@ class EasyPlot():
             cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
             cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
             cellpy.prms.Instruments.Arbin["SQL_Driver"] = driver
+            self.use_arbin_sql = True
 
 
 
