@@ -51,9 +51,9 @@ if __name__ == "__main__":
         cyclelife_ylabel_percent = "Capacity retention [%]",
         cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
         galvanostatic_plot = True,
-        galvanostatic_all_in_one = False,
+        galvanostatic_all_in_one = True,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
-        galvanostatic_caplim = (-5, 60),
+        galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         galvanostatic_ylabel = "Cell potential [V]",
         dqdv_plot = False,
@@ -61,9 +61,10 @@ if __name__ == "__main__":
         dqdv_dqlim = None,
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
-        specific_cycles = None, #[]
+        specific_cycles = [1, 2, 3],#[]
         outpath = "./ezplots/deleteme/",
         figsize = (6,4), # 6 inches wide, 4 inches tall
+        figres = 100, # Dots per inch
         figtitle = None, # None = original filepath
     )
     ezplt.set_arbin_sql_credentials("localhost", "sa", "Amund1234", "SQL Server")

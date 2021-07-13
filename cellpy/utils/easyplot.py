@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import logging
 import cellpy
+from matplotlib import lines
 from matplotlib.artist import kwdoc
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -24,9 +25,10 @@ class EasyPlot():
         self.nicknames = nicknames
         self.kwargs = kwargs
         self.figs = []
+        self.file_data = []
 
         # List of available colors
-        self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
+        self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]*5
 
         # Dictionary of all possible user input arguments(as keys) with example values of correct type
         # Value is a tuple (immutable) of type and default value.
@@ -69,21 +71,23 @@ class EasyPlot():
 
 
     def plot(self):
-        self.figs = (plt.subplots(figsize=(6, 4))) * self.get_num_figs()
-        print(self.figs)
+        # Spawn figures and AxesSubplots as tuple in list
+        self.figs = [(plt.subplots(figsize=(6, 4)))] * self.get_num_figs()
+
+        # Load all cellpy files
         for file in self.files:
-            # Get the data
+            # If using arbin sql
             if self.use_arbin_sql:
                 cpobj = cellpy.get(filename = file, instrument="arbin_sql") # Initiate cellpy object 
-            else:
+            else: # Not Arbin SQL? Then its probably a local file
                 # Check that file exist
                 if not os.path.isfile(file):
                     logging.error("File not found: " + str(file))
                     raise FileNotFoundError
-
                 cpobj = cellpy.get(filename = file) # Load regular file 
 
-            cyc_nums = cpobj.get_cycle_numbers()                            # Get ID of all cycles
+            # Get ID of all cycles
+            cyc_nums = cpobj.get_cycle_numbers()                            
 
             if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
                 cyc_nums = list(set(cyc_nums).intersection(self.kwargs["specific_cycles"])) 
@@ -92,35 +96,22 @@ class EasyPlot():
                 specific_cycles = False
         
             color = self.give_color()               # Get a color for the data
-        
-            # Plot whatever the user want
-            if self.kwargs["cyclelife_plot"] == True or self.kwargs["galvanostatic_all_in_one"] == True:
-                self.cyclelifeplotobjects.append((cpobj, cyc_nums, color, file)) # Remember that tuples are immutable
 
-            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == False and self.kwargs["galvanostatic_all_in_one"] == False:
-                self.plot_gc(cpobj, cyc_nums, color, file, specific_cycles)
-
-            if self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_plot"] == False and self.kwargs["galvanostatic_all_in_one"] == False:
-                self.plot_dQdV(cpobj, cyc_nums, color, file, specific_cycles)
-
-            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_all_in_one"] == False:
-                self.plot_gc_and_dQdV(cpobj, cyc_nums, color, file, specific_cycles)
+            self.file_data.append((cpobj, cyc_nums, color, file))
 
         # If the user want cyclelife plot, we do it to all the input files.
         if self.kwargs["cyclelife_plot"] == True:
-            self.plot_cyclelife(self.cyclelifeplotobjects)
+            self.plot_cyclelife()
 
-        # If the user want all galvanostatic data in the same plot:
-        if self.kwargs["galvanostatic_all_in_one"] == True:
-            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == False and self.kwargs["galvanostatic_all_in_one"] == False:
-                self.plot_gc(cpobj, cyc_nums, color, file, specific_cycles)
+        if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == False:
+            self.plot_gc()
 
-            if self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_plot"] == False:
-                self.plot_dQdV(cpobj, cyc_nums, color, file, specific_cycles)
+        if self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_plot"] == False:
+            self.plot_dQdV()
 
-            if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == True:
-                self.plot_gc_and_dQdV(cpobj, cyc_nums, color, file, specific_cycles)
-        
+        if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == True:
+            self.plot_gc_and_dQdV()
+            
 
     def help(self):
         ## Prints out help page of this module
@@ -171,6 +162,11 @@ class EasyPlot():
                 logging.error("Type of inputparameter for keyword '" + key + "' is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
                 raise TypeError
 
+        # Can only place all GC data in the same figure if the chosen amount of cycles is below 8
+        if self.kwargs["galvanostatic_all_in_one"] == True and self.kwargs["specific_cycles"] == None:
+            logging.error("You MUST specify what cycles to plot (maximum 8) when plotting all the galvanostatic data in the same plot! Check out the 'galvanostatic_all_in_one' parameter.")
+            raise TypeError
+
 
 
     def fill_input(self):
@@ -216,6 +212,13 @@ class EasyPlot():
 
 
 
+    def give_fig(self):
+        fig, ax = self.figs[0]
+        self.figs = self.figs[1:]
+        return (fig, ax)
+
+
+
     def handle_outpath(self):
         if os.path.isdir(self.kwargs["outpath"]):
             return self.kwargs["outpath"]
@@ -228,12 +231,10 @@ class EasyPlot():
 
     
 
-    def plot_cyclelife(self, cyclelifeplotobjects):
-        # Initialize custom plot obj and matplotlib fig and ax objects
-        fig, ax = plt.subplots(figsize=(6, 4))
-
+    def plot_cyclelife(self):
+        
         outpath = self.outpath
-        for cpobj, cyc_nums, color, filename in cyclelifeplotobjects:
+        for cpobj, cyc_nums, color, filename in self.file_data:
             # Get Pandas DataFrame of pot vs cap from cellpy object
             df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
             outpath += os.path.basename(filename).split(".")[0] + "_"
@@ -275,6 +276,7 @@ class EasyPlot():
                 label = str(os.path.basename(filename))
 
             # Actully place it in plot
+            fig, ax = self.give_fig()
             ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
             ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
 
@@ -298,32 +300,64 @@ class EasyPlot():
         # Save fig
         savepath = outpath.strip("_") + "_Cyclelife.png" 
         print("Saving to: " + savepath)
-        fig.savefig(savepath, bbox_inches='tight')
+        fig.savefig(savepath, bbox_inches='tight', dpi = self.kwargs["figres"])
 
 
 
-    def plot_gc(self, cpobj, cyc_nums, color, file, specific_cycles):
+    def plot_gc(self):
 
-        # Get Pandas DataFrame of pot vs cap from cellpy object
-        df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
+        if self.kwargs["galvanostatic_all_in_one"] == True:   # Everything goes in the same figure.
 
-        # Group by cycle and make list of cycle numbers
-        cycgrouped = df.groupby("cycle")
-        keys = []
-        for key, item in cycgrouped:
-            keys.append(key)
+            fig, ax = self.give_fig()
+            linestyles = ['solid', 'dotted', 'dashed', 'dashdot', (0, (3, 5, 1, 5, 1, 5))] # Having different linestyles looks UGLY when plotted! avoid it!
+            colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
 
-        # Create the plot obj
-        fig, ax = plt.subplots(figsize=(6, 4))
+            for cpobj, cyc_nums, color, filename in self.file_data:
+                # Get Pandas DataFrame of pot vs cap from cellpy object
+                df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
 
-        # Fix colorbar or cycle colors
-        if not specific_cycles: # If this is none, then plot all!
-            # Set up colormap and add colorbar
-            cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
-            norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
-            fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
-            #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
+                # Group by cycle and make list of cycle numbers
+                cycgrouped = df.groupby("cycle")
+                keys = []
+                for key, item in cycgrouped:
+                    keys.append(key)
 
+                # Plot cycles
+                
+                linestyle = linestyles[0]
+                linestyles = linestyles[1:]
+                for cyc in keys:
+                    if cyc in cyc_nums:   
+                        cyccolor = colors[0]
+                        colors = colors[1:]
+
+                        cyc_df = cycgrouped.get_group(cyc)
+                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+
+
+
+        else: # Then each data goes in its own figure
+            for cpobj, cyc_nums, color, filename in self.file_data:
+
+                fig, ax = self.give_fig()
+
+                # Get Pandas DataFrame of pot vs cap from cellpy object
+                df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
+
+                # Group by cycle and make list of cycle numbers
+                cycgrouped = df.groupby("cycle")
+                keys = []
+                for key, item in cycgrouped:
+                    keys.append(key)
+
+            # Fix colorbar or cycle colors
+            if self.kwargs["specific_cycles"] == None: # Plot all cycles
+                # Set up colormap and add colorbar
+                cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+                norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+                fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
+                #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
+        """
         # Plot cycles
         colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
         for cyc in keys:
@@ -335,14 +369,14 @@ class EasyPlot():
                     cyccolor = cmap(cyc/keys[-1])
                 cyc_df = cycgrouped.get_group(cyc)
                 ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
-
+        """
         # Set all plot settings from Plot object
-        fig.suptitle(os.path.basename(file))
+        #fig.suptitle(os.path.basename("boop"))
         self.fix_gc(fig, ax)
 
 
         # Save fig
-        savepath = self.outpath + os.path.basename(file).split(".")[0] + "_GC-plot.png" 
+        savepath = self.outpath + "_GC-plot.png" #os.path.basename("boop").split(".")[0] + 
         print("Saving to: " + savepath)
         fig.savefig(savepath, bbox_inches='tight')
 
