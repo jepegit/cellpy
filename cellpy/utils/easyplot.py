@@ -23,6 +23,7 @@ class EasyPlot():
         self.files = files
         self.nicknames = nicknames
         self.kwargs = kwargs
+        self.figs = []
 
         # List of available colors
         self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
@@ -52,6 +53,7 @@ class EasyPlot():
             "specific_cycles"   : (list, None),
             "outpath"   : (str, "./"),
             "figsize"   : (tuple, (6,4)), # 6 inches wide, 4 inches tall
+            "figres"    : (int, 100),     # Dots per Inch
             "figtitle"  : (str, "Title"), # None = original filepath
         }
 
@@ -67,6 +69,8 @@ class EasyPlot():
 
 
     def plot(self):
+        self.figs = (plt.subplots(figsize=(6, 4))) * self.get_num_figs()
+        print(self.figs)
         for file in self.files:
             # Get the data
             if self.use_arbin_sql:
@@ -177,12 +181,30 @@ class EasyPlot():
                 self.kwargs[key] = self.user_params[key][1]
 
 
+
     def set_arbin_sql_credentials(self, server = "localhost", uid="sa", pwd="Changeme123", driver="SQL Server"):
             cellpy.prms.Instruments.Arbin["SQL_server"] = server
             cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
             cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
             cellpy.prms.Instruments.Arbin["SQL_Driver"] = driver
             self.use_arbin_sql = True
+
+
+
+    def get_num_figs(self):
+        num_figs = 0
+        if self.kwargs["galvanostatic_all_in_one"] == False:
+            if self.kwargs["galvanostatic_plot"] == True or self.kwargs["dqdv_plot"] == True:
+                num_figs += len(self.files)
+        else:
+            if self.kwargs["galvanostatic_plot"] == True or self.kwargs["dqdv_plot"] == True:
+                num_figs += 1
+
+        if self.kwargs["cyclelife_plot"] == True:
+            num_figs += 1
+
+
+        return num_figs
 
 
 
