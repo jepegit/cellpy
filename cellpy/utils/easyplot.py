@@ -427,7 +427,7 @@ class EasyPlot():
             savepath = self.outpath
 
             for cpobj, cyc_nums, color, filename in self.file_data:
-                # Get Pandas DataFrame of pot vs cap from cellpy object
+                # Get Pandas DataFrame of dQdV
                 if self.kwargs["only_dischg"]:
                     _, df = ica.dqdv_frames(cpobj, split = True)
                 elif self.kwargs["only_chg"]:
@@ -473,8 +473,13 @@ class EasyPlot():
             for cpobj, cyc_nums, color, filename in self.file_data:
                 fig, ax = self.give_fig()
 
-                # Get Pandas DataFrame of pot vs cap from cellpy object
-                df = ica.dqdv_frames(cpobj)
+                # Get Pandas DataFrame of dQdV
+                if self.kwargs["only_dischg"]:
+                    _, df = ica.dqdv_frames(cpobj, split = True)
+                elif self.kwargs["only_chg"]:
+                    df, _ = ica.dqdv_frames(cpobj, split = True)
+                else:
+                    df = ica.dqdv_frames(cpobj)
 
                 # Group by cycle and make list of cycle numbers
                 cycgrouped = df.groupby("cycle")
@@ -517,10 +522,173 @@ class EasyPlot():
 
 
     def plot_gc_and_dQdV(self):
-        fig, axs = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
-        fig.subplots_adjust(wspace=0)
+        from cellpy.utils import ica
+        if self.kwargs["all_in_one"] == True:   # Everything goes in the same figure.
+            fig, ax = self.give_fig()
+            fig.delaxes(ax)
+            ax1, ax2 = fig.subplots(1,2,sharey=True)
+            fig.set_size_inches(8, 4)
+            fig.subplots_adjust(wspace=0)
 
-        # Fix colorbar or cycle colors
+            colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
+            savepath = self.outpath
+            
+            for cpobj, cyc_nums, color, filename in self.file_data:
+
+                # Get Pandas DataFrame of pot vs cap from cellpy object
+                df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
+
+                # Group by cycle and make list of cycle numbers
+                cycgrouped = df.groupby("cycle")
+                keys = []
+                for key, item in cycgrouped:
+                    keys.append(key)
+
+                # Fix colorbar or cycle colors
+                if self.kwargs["specific_cycles"] == None: # Plot all cycles
+                    # Set up colormap and add colorbar
+                    cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+                    norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle number for ' + os.path.basename(filename).split(".")[0], pad = 0.2)
+                    
+                # Plot GC in leftmost plot (ax)
+                for cyc in keys:
+                    if cyc in cyc_nums:   
+                        if self.kwargs["specific_cycles"]:
+                            cyccolor = colors[0]
+                            colors = colors[1:]
+                        else:
+                            cyccolor = cmap(cyc/keys[-1])
+
+                        cyc_df = cycgrouped.get_group(cyc)
+                        if self.kwargs["only_dischg"] == False and self.kwargs["only_chg"] == False:
+                            ax1.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        elif self.kwargs["only_dischg"] == True:
+                            dchg = cyc_df.groupby("direction")
+                            dchg_df = dchg.get_group(-1)
+                            ax1.plot(dchg_df["capacity"], dchg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        elif self.kwargs["only_chg"] == True:
+                            chg = cyc_df.groupby("direction")
+                            chg_df = chg.get_group(1)
+                            ax1.plot(chg_df["capacity"], chg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+        
+                # Get Pandas DataFrame for dQdV
+                if self.kwargs["only_dischg"]:
+                    _, df = ica.dqdv_frames(cpobj, split = True)
+                elif self.kwargs["only_chg"]:
+                    df, _ = ica.dqdv_frames(cpobj, split = True)
+                else:
+                    df = ica.dqdv_frames(cpobj)
+
+                # Group by cycle and make list of cycle numbers
+                cycgrouped = df.groupby("cycle")
+                keys = []
+                for key, item in cycgrouped:
+                    keys.append(key)
+
+                # Plot cycles
+                for cyc in keys:
+                    if cyc in cyc_nums:   
+                        if self.kwargs["specific_cycles"]:
+                            cyccolor = colors[0]
+                            colors = colors[1:]
+                        else:
+                            cyccolor = cmap(cyc/keys[-1])
+
+                        cyc_df = cycgrouped.get_group(cyc)
+                        ax2.plot(cyc_df["dq"], cyc_df["voltage"],  label=os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                savepath += os.path.basename(filename).split(".")[0]
+
+            # Set all plot settings from Plot object
+            fig.suptitle("GC and dQdV")
+            self.fix_gc_and_dqdv(fig, [ax1, ax2])
+
+            # Save fig
+            savepath = savepath + "_GC-dQdV-plot.png" 
+            self.save_fig(fig, savepath)
+        
+        else: #Then all files are placed in separate plots
+            for cpobj, cyc_nums, color, filename in self.file_data:
+                fig, ax = self.give_fig()
+                fig.delaxes(ax)
+                ax1, ax2 = fig.subplots(1,2,sharey=True)
+                fig.set_size_inches(8, 4)
+                fig.subplots_adjust(wspace=0)
+
+                colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
+
+                # Get Pandas DataFrame of pot vs cap from cellpy object
+                df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
+
+                # Group by cycle and make list of cycle numbers
+                cycgrouped = df.groupby("cycle")
+                keys = []
+                for key, item in cycgrouped:
+                    keys.append(key)
+
+                # Fix colorbar or cycle colors
+                if self.kwargs["specific_cycles"] == None: # Plot all cycles
+                    # Set up colormap and add colorbar
+                    cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+                    norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
+                    
+                # Plot GC in leftmost plot (ax)
+                for cyc in keys:
+                    if cyc in cyc_nums:   
+                        if self.kwargs["specific_cycles"]:
+                            cyccolor = colors[0]
+                            colors = colors[1:]
+                        else:
+                            cyccolor = cmap(cyc/keys[-1])
+
+                        cyc_df = cycgrouped.get_group(cyc)
+                        if self.kwargs["only_dischg"] == False and self.kwargs["only_chg"] == False:
+                            ax1.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        elif self.kwargs["only_dischg"] == True:
+                            dchg = cyc_df.groupby("direction")
+                            dchg_df = dchg.get_group(-1)
+                            ax1.plot(dchg_df["capacity"], dchg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        elif self.kwargs["only_chg"] == True:
+                            chg = cyc_df.groupby("direction")
+                            chg_df = chg.get_group(1)
+                            ax1.plot(chg_df["capacity"], chg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+        
+                # Get Pandas DataFrame for dQdV
+                if self.kwargs["only_dischg"]:
+                    _, df = ica.dqdv_frames(cpobj, split = True)
+                elif self.kwargs["only_chg"]:
+                    df, _ = ica.dqdv_frames(cpobj, split = True)
+                else:
+                    df = ica.dqdv_frames(cpobj)
+
+                # Group by cycle and make list of cycle numbers
+                cycgrouped = df.groupby("cycle")
+                keys = []
+                for key, item in cycgrouped:
+                    keys.append(key)
+
+                # Plot cycles
+                for cyc in keys:
+                    if cyc in cyc_nums:   
+                        if self.kwargs["specific_cycles"]:
+                            cyccolor = colors[0]
+                            colors = colors[1:]
+                        else:
+                            cyccolor = cmap(cyc/keys[-1])
+
+                        cyc_df = cycgrouped.get_group(cyc)
+                        ax2.plot(cyc_df["dq"], cyc_df["voltage"], label=os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                
+                # Set all plot settings from Plot object
+                fig.suptitle(os.path.basename(filename))
+                self.fix_gc_and_dqdv(fig, [ax1, ax2])
+
+                # Save fig
+                savepath = self.outpath + os.path.basename(filename).split(".")[0] + "_GC-dQdV-plot.png" 
+                self.save_fig(fig, savepath)
+        
+        """# Fix colorbar or cycle colors
         if not specific_cycles: # If this is none, then plot all!
             # Set up colormap and add colorbar
             cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
@@ -582,7 +750,7 @@ class EasyPlot():
         # Save fig
         savepath = self.outpath + os.path.basename(file).split(".")[0] + "_GC-dQdV-plot.png" 
         print("Saving to: " + savepath)
-        fig.savefig(savepath, bbox_inches='tight')
+        fig.savefig(savepath, bbox_inches='tight')"""
 
 
 
