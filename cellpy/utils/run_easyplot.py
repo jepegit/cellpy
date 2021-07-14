@@ -52,6 +52,8 @@ if __name__ == "__main__":
         cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
         galvanostatic_plot = True,
         galvanostatic_all_in_one = True,
+        galvanostatic_only_dischg = True,
+        galvanostatic_only_chg = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
@@ -61,7 +63,7 @@ if __name__ == "__main__":
         dqdv_dqlim = None,
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
-        specific_cycles = [1, 2, 3],#[]
+        specific_cycles = None,#[]
         outpath = "./ezplots/deleteme/",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figres = 100, # Dots per inch

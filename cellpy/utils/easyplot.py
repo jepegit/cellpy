@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 import numpy as np
+import warnings
 
 
 class EasyPlot():
@@ -24,6 +25,7 @@ class EasyPlot():
         self.files = files
         self.nicknames = nicknames
         self.kwargs = kwargs
+        self.figs_given = 0
         self.figs = []
         self.file_data = []
 
@@ -43,6 +45,8 @@ class EasyPlot():
             "cyclelife_legend_outside"              : (bool, False), # if True, the legend is placed outside the plot
             "galvanostatic_plot"        : (bool, True),
             "galvanostatic_all_in_one"  : (bool, False), # Decides if everything should be plotted in the same plot
+            "galvanostatic_only_dischg" : (bool, False), # Only show discharge curves
+            "galvanostatic_only_chg"    : (bool, False), # Only show charge curves
             "galvanostatic_potlim"      : (tuple, None),     # min and max limit on potential-axis
             "galvanostatic_caplim"      : (tuple, None),
             "galvanostatic_xlabel"      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
@@ -65,14 +69,11 @@ class EasyPlot():
         # Fill in the rest of the variables from self.user_params if the user didn't specify
         self.fill_input()
 
-        # Extra variables for internal use
-        self.cyclelifeplotobjects = []  # List of objects for cyclelife plot
-        self.specific_cycles = False    # TODO: This should be better implemented, especially when feature for file-individual cycle selection is implemented.
-
 
     def plot(self):
         # Spawn figures and AxesSubplots as tuple in list
-        self.figs = [(plt.subplots(figsize=(6, 4)))] * self.get_num_figs()
+        for _ in range(self.get_num_figs()):
+            self.figs.append((plt.subplots(figsize=(6, 4))))
 
         # Load all cellpy files
         for file in self.files:
@@ -90,10 +91,13 @@ class EasyPlot():
             cyc_nums = cpobj.get_cycle_numbers()                            
 
             if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
+                cyc_not_available = (set(cyc_nums)^set(self.kwargs["specific_cycles"]))&set(self.kwargs["specific_cycles"])
+                if len(cyc_not_available) > 0:
+                    warn_str = "You want to plot cycles which are not available in the data! Datafile: " + os.path.basename(file).split(".")[0] + ", Cycle(s): " + str(cyc_not_available)
+                    warnings.warn(warn_str)
                 cyc_nums = list(set(cyc_nums).intersection(self.kwargs["specific_cycles"])) 
-                specific_cycles = True
-            else:
-                specific_cycles = False
+
+
         
             color = self.give_color()               # Get a color for the data
 
@@ -162,10 +166,9 @@ class EasyPlot():
                 logging.error("Type of inputparameter for keyword '" + key + "' is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
                 raise TypeError
 
-        # Can only place all GC data in the same figure if the chosen amount of cycles is below 8
-        if self.kwargs["galvanostatic_all_in_one"] == True and self.kwargs["specific_cycles"] == None:
-            logging.error("You MUST specify what cycles to plot (maximum 8) when plotting all the galvanostatic data in the same plot! Check out the 'galvanostatic_all_in_one' parameter.")
-            raise TypeError
+        # Check that the user isn't trying to plot "only" both discharge and charge.
+        if self.kwargs["galvanostatic_only_dischg"] == True and self.kwargs["galvanostatic_only_chg"] == True:
+            logging.error("You can't plot 'only' discharge AND charge curves! Set one to False please.")
 
 
 
@@ -213,8 +216,8 @@ class EasyPlot():
 
 
     def give_fig(self):
-        fig, ax = self.figs[0]
-        self.figs = self.figs[1:]
+        fig, ax = self.figs[self.figs_given]
+        self.figs_given += 1
         return (fig, ax)
 
 
@@ -299,8 +302,7 @@ class EasyPlot():
 
         # Save fig
         savepath = outpath.strip("_") + "_Cyclelife.png" 
-        print("Saving to: " + savepath)
-        fig.savefig(savepath, bbox_inches='tight', dpi = self.kwargs["figres"])
+        self.save_fig(fig, savepath)
 
 
 
@@ -311,6 +313,7 @@ class EasyPlot():
             fig, ax = self.give_fig()
             linestyles = ['solid', 'dotted', 'dashed', 'dashdot', (0, (3, 5, 1, 5, 1, 5))] # Having different linestyles looks UGLY when plotted! avoid it!
             colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
+            savepath = self.outpath
 
             for cpobj, cyc_nums, color, filename in self.file_data:
                 # Get Pandas DataFrame of pot vs cap from cellpy object
@@ -322,23 +325,50 @@ class EasyPlot():
                 for key, item in cycgrouped:
                     keys.append(key)
 
+
+                # Fix colorbar or cycle colors
+                if self.kwargs["specific_cycles"] == None: # Plot all cycles
+                    # Set up colormap and add colorbar
+                    cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+                    norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle number for ' + os.path.basename(filename).split(".")[0])
+                    #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
+            
                 # Plot cycles
-                
                 linestyle = linestyles[0]
                 linestyles = linestyles[1:]
                 for cyc in keys:
                     if cyc in cyc_nums:   
-                        cyccolor = colors[0]
-                        colors = colors[1:]
+                        if self.kwargs["specific_cycles"]:
+                            cyccolor = colors[0]
+                            colors = colors[1:]
+                        else:
+                            cyccolor = cmap(cyc/keys[-1])
 
                         cyc_df = cycgrouped.get_group(cyc)
-                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        if self.kwargs["galvanostatic_only_dischg"] == False and self.kwargs["galvanostatic_only_chg"] == False:
+                            ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        elif self.kwargs["galvanostatic_only_dischg"] == True:
+                            dchg = cyc_df.groupby("direction")
+                            dchg_df = dchg.get_group(-1)
+                            ax.plot(dchg_df["capacity"], dchg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        elif self.kwargs["galvanostatic_only_chg"] == True:
+                            chg = cyc_df.groupby("direction")
+                            chg_df = chg.get_group(1)
+                            ax.plot(chg_df["capacity"], chg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
 
+                savepath += os.path.basename(filename).split(".")[0]
+
+            fig.suptitle("Galvanostatic cyclingdata")
+            self.fix_gc(fig, ax)
+
+            #Save fig
+            savepath += "_GC-plot.png"
+            self.save_fig(fig, savepath)
 
 
         else: # Then each data goes in its own figure
             for cpobj, cyc_nums, color, filename in self.file_data:
-
                 fig, ax = self.give_fig()
 
                 # Get Pandas DataFrame of pot vs cap from cellpy object
@@ -350,39 +380,48 @@ class EasyPlot():
                 for key, item in cycgrouped:
                     keys.append(key)
 
-            # Fix colorbar or cycle colors
-            if self.kwargs["specific_cycles"] == None: # Plot all cycles
-                # Set up colormap and add colorbar
-                cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
-                norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
-                fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
-                #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
-        """
-        # Plot cycles
-        colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
-        for cyc in keys:
-            if cyc in cyc_nums:   
-                if specific_cycles:
-                    cyccolor = colors[0]
-                    colors = colors[1:]
-                else:
-                    cyccolor = cmap(cyc/keys[-1])
-                cyc_df = cycgrouped.get_group(cyc)
-                ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
-        """
-        # Set all plot settings from Plot object
-        #fig.suptitle(os.path.basename("boop"))
-        self.fix_gc(fig, ax)
+                # Fix colorbar or cycle colors
+                if self.kwargs["specific_cycles"] == None: # Plot all cycles
+                    # Set up colormap and add colorbar
+                    cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
+                    norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
+                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
+                    #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
+            
+                # Plot cycles
+                colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
+                for cyc in keys:
+                    if cyc in cyc_nums:   
+                        if self.kwargs["specific_cycles"]:
+                            cyccolor = colors[0]
+                            colors = colors[1:]
+                        else:
+                            cyccolor = cmap(cyc/keys[-1])
+
+                        cyc_df = cycgrouped.get_group(cyc)
+                        # TODO: This if elif block is pretty much the same as the one above (for all in one plot), can it be reused in stead of written twice?
+                        if self.kwargs["galvanostatic_only_dischg"] == False and self.kwargs["galvanostatic_only_chg"] == False:
+                            ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
+                        elif self.kwargs["galvanostatic_only_dischg"] == True:
+                            dchg = cyc_df.groupby("direction")
+                            dchg_df = dchg.get_group(-1)
+                            ax.plot(dchg_df["capacity"], dchg_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
+                        elif self.kwargs["galvanostatic_only_chg"] == True:
+                            chg = cyc_df.groupby("direction")
+                            chg_df = chg.get_group(1)
+                            ax.plot(chg_df["capacity"], chg_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
+
+                # Set all plot settings from Plot object
+                fig.suptitle(os.path.basename(filename))
+                self.fix_gc(fig, ax)
+
+                # Save fig
+                savepath = self.outpath + os.path.basename(filename).split(".")[0] +  "_GC-plot.png"
+                self.save_fig(fig, savepath)
 
 
-        # Save fig
-        savepath = self.outpath + "_GC-plot.png" #os.path.basename("boop").split(".")[0] + 
-        print("Saving to: " + savepath)
-        fig.savefig(savepath, bbox_inches='tight')
 
-
-
-    def plot_dQdV(self, cpobj, cyc_nums, color, file, specific_cycles):
+    def plot_dQdV(self):
         from cellpy.utils import ica
         # Get Pandas DataFrame of pot vs cap from cellpy object
         df = ica.dqdv_frames(cpobj)
@@ -426,7 +465,7 @@ class EasyPlot():
         
 
 
-    def plot_gc_and_dQdV(self, cpobj, cyc_nums, color, file, specific_cycles):
+    def plot_gc_and_dQdV(self):
         fig, axs = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
         fig.subplots_adjust(wspace=0)
 
@@ -645,3 +684,10 @@ class EasyPlot():
         except Exception as e:
             print(e)
             logging.error(e)
+
+
+
+    def save_fig(self, fig, savepath):
+        # The point of this is to have savefig parameters the same across all plots (for now just fig dpi and bbox inches)
+        print("Saving to: " + savepath)
+        fig.savefig(savepath, bbox_inches='tight', dpi = self.kwargs["figres"])
