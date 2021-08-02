@@ -85,7 +85,10 @@ class EasyPlot():
                 if not os.path.isfile(file):
                     logging.error("File not found: " + str(file))
                     raise FileNotFoundError
-                cpobj = cellpy.get(filename = file) # Load regular file 
+                cpobj = cellpy.get(filename = file) # Load regular file
+                # Check that we get data
+            if cpobj == None:
+                warnings.warn("File reader returned no data for filename " + file + ", Please make sure that the file exists or that the data exists in an eventual database.")
 
             # Get ID of all cycles
             cyc_nums = cpobj.get_cycle_numbers()                            
@@ -166,6 +169,13 @@ class EasyPlot():
                 logging.error("Type of inputparameter for keyword '" + key + "' is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
                 raise TypeError
 
+        # Add default params for eventual kwargs the user didn't input
+        for key in self.user_params:
+            try:
+                self.kwargs[key]
+            except KeyError as e:
+                self.kwargs[key] = self.user_params[key][1]
+
         # Check that the user isn't trying to plot "only" both discharge and charge.
         if self.kwargs["only_dischg"] == True and self.kwargs["only_chg"] == True:
             logging.error("You can't plot 'only' discharge AND charge curves! Set one to False please.")
@@ -227,7 +237,7 @@ class EasyPlot():
             return self.kwargs["outpath"]
         elif not os.path.isdir(self.kwargs["outpath"]):
             try:
-                os.mkdir(self.kwargs["outpath"])
+                os.makedirs(self.kwargs["outpath"])
                 return self.kwargs["outpath"]
             except OSError as e:
                 logging.error("Cannot create output directory " + self.kwargs["outpath"] + ". Please make sure you have write permission. Errormessage: " + e)
