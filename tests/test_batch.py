@@ -1,5 +1,6 @@
 import pytest
 import tempfile
+import pathlib
 import logging
 import time
 import pandas
@@ -42,7 +43,7 @@ def batch_instance(clean_dir):
     prms.Paths["rawdatadir"] = fdv.raw_data_dir
     prms.Paths["db_path"] = fdv.db_dir
     prms.Paths["filelogdir"] = clean_dir
-    prms.Paths["batchfiledir"] = fdv.batch_file_dir
+    prms.Paths["batchfiledir"] = clean_dir
     prms.Paths["notebookdir"] = clean_dir
     return batch
 
@@ -52,6 +53,7 @@ def populated_batch(batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01"
     )
+
     b.create_journal()
     b.paginate()
     b.update()
