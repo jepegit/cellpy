@@ -256,7 +256,9 @@ def search_for_files(
     if cache is None:
         use_pathlib_path = False
         return_as_str_list = True
-        run_files = _sub_search(glob_text_raw, raw_file_dir, return_as_str_list, use_pathlib_path)
+        run_files = _sub_search(
+            glob_text_raw, raw_file_dir, return_as_str_list, use_pathlib_path
+        )
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return run_files, cellpy_file
 

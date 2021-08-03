@@ -334,9 +334,9 @@ class ArbinSQLLoader(Loader):
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
             if data.raw.index.name != hdr_data_point:
                 data.raw = data.raw.set_index(hdr_data_point, drop=False)
-    
+
         hdr_date_time = self.arbin_headers_normal.datetime_txt
-        data.start_datetime = parse("20"+ data.raw[hdr_date_time].iat[0][:-7])
+        data.start_datetime = parse("20" + data.raw[hdr_date_time].iat[0][:-7])
 
         return data
 
@@ -344,7 +344,10 @@ class ArbinSQLLoader(Loader):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = (
-            "Driver={" + SQL_DRIVER + "}" + f";Server={SQL_SERVER};UID={SQL_UID};PWD={SQL_PWD};Trusted_Connection=yes;"
+            "Driver={"
+            + SQL_DRIVER
+            + "}"
+            + f";Server={SQL_SERVER};UID={SQL_UID};PWD={SQL_PWD};Trusted_Connection=yes;"
         )
         master_q = (
             "SELECT Database_Name, Test_Name FROM "
