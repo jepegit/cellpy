@@ -274,10 +274,20 @@ class EasyPlot():
             ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
 
             if self.kwargs["cyclelife_coulombic_efficiency"] == True:
+                # Get CE for cyc_nums
+                coulombic_efficiency = cpobj.cell.summary["coulombic_efficiency_u_percentage"]
+                cycs = []
+                CEs = []
+                for cyc in keys:
+                    if cyc in cyc_nums:
+                        cycs.append(cyc)
+                        CEs.append(coulombic_efficiency[cyc])
+                
+                # Spawn twinx axis and set label
                 ax_ce = ax.twinx()
                 ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
-                coulombic_efficiency = cpobj.cell.summary["coulombic_efficiency_u_percentage"]
-                ax_ce.scatter(range(len(coulombic_efficiency)), coulombic_efficiency, c = color, marker = "+")
+                # Place it in the plot
+                ax_ce.scatter(cycs, CEs, c = color, marker = "+")
                 #print(filename + " Dchg 1-3: " + str(dchgs[1][0:3])  + ", CE 1-3: " + str(coulombic_efficiency[0:3]))
 
         # Get labels and handles for legend generation and eventual savefile
