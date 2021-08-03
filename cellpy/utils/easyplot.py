@@ -25,7 +25,6 @@ class EasyPlot():
         self.files = files
         self.nicknames = nicknames
         self.kwargs = kwargs
-        #self.figs_given = 0
         self.figs = []
         self.file_data = []
         self.use_arbin_sql = False
@@ -73,10 +72,6 @@ class EasyPlot():
 
 
     def plot(self):
-        # 3 lines below Obsolete: give_fig now gives to whomever asks and adds to self.figs
-        # Spawn figures and AxesSubplots as tuple in list
-        #for _ in range(self.get_num_figs()):
-        #    self.figs.append((plt.subplots(figsize=(6, 4))))
 
         # Load all cellpy files
         for file in self.files:
@@ -199,23 +194,6 @@ class EasyPlot():
             cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
             cellpy.prms.Instruments.Arbin["SQL_Driver"] = driver
             self.use_arbin_sql = True
-
-
-
-    def get_num_figs(self): #OBSOLETE, the class now gives a figure to whomever asks.
-        num_figs = 0
-        if self.kwargs["all_in_one"] == False:
-            if self.kwargs["galvanostatic_plot"] == True or self.kwargs["dqdv_plot"] == True:
-                num_figs += len(self.files)
-        else:
-            if self.kwargs["galvanostatic_plot"] == True or self.kwargs["dqdv_plot"] == True:
-                num_figs += 1
-
-        if self.kwargs["cyclelife_plot"] == True:
-            num_figs += 1
-
-
-        return num_figs
 
 
 
