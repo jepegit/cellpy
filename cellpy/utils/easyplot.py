@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+"""easyplot module for cellpy. It provides easy plotting of any cellpy-readable data using matplotlib.
+"""
 # Author: Amund M. Raniseth
 # Date: 01.07.2021
 
@@ -18,9 +19,16 @@ import warnings
 
 
 class EasyPlot():
-    # Main easyplot object. Holds user input and runs all plot commands
+    """Main easyplot class. 
+    Takes all the inputs from the user in its kwargs upon object initialization.
+    Gathers data, handles and plots it when object.plot() is called.
+
+    Help: initiate an object and call the object.help() function.
+    """
 
     def __init__(self, files, nicknames, **kwargs):
+        """Initialization function of the EasyPlot class. Takes a list of filenames, eventual list of nicknames and kwargs which are supported."""
+        
         # Make all user input variables of self
         self.files = files
         self.nicknames = nicknames
@@ -72,6 +80,7 @@ class EasyPlot():
 
 
     def plot(self):
+        """This is the method the user calls on his/hers easyplot object in order to gather the data and plot it."""
 
         # Load all cellpy files
         for file in self.files:
@@ -123,6 +132,7 @@ class EasyPlot():
             
 
     def help(self):
+        """Method of the EasyPlot class which prints some helptext in addition to all supported params."""
         ## Prints out help page of this module
         help_str = ("The easyplot extension to cellpy aims to easily plot data in a pretty manner.\n"
                     "In order to use this function, you must import cellpy, and easyplot from cellpy.utils.\n"
