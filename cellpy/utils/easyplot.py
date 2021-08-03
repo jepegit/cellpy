@@ -225,7 +225,13 @@ class EasyPlot():
     
 
     def plot_cyclelife(self):
-        
+        # Spawn fig and axis for plotting
+        fig, ax = self.give_fig()
+        if self.kwargs["cyclelife_coulombic_efficiency"] == True:
+            # Spawn twinx axis and set label
+            ax_ce = ax.twinx()
+            ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
+
         outpath = self.outpath
         for cpobj, cyc_nums, color, filename in self.file_data:
             # Get Pandas DataFrame of pot vs cap from cellpy object
@@ -269,7 +275,6 @@ class EasyPlot():
                 label = str(os.path.basename(filename))
 
             # Actully place it in plot
-            fig, ax = self.give_fig()
             ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
             ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
 
@@ -283,9 +288,6 @@ class EasyPlot():
                         cycs.append(cyc)
                         CEs.append(coulombic_efficiency[cyc])
                 
-                # Spawn twinx axis and set label
-                ax_ce = ax.twinx()
-                ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
                 # Place it in the plot
                 ax_ce.scatter(cycs, CEs, c = color, marker = "+")
                 #print(filename + " Dchg 1-3: " + str(dchgs[1][0:3])  + ", CE 1-3: " + str(coulombic_efficiency[0:3]))
