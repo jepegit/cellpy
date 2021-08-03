@@ -34,7 +34,11 @@ DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver  # not used
-SERVER = prms.Instruments.Arbin["SQL_server"]
+SQL_SERVER = prms.Instruments.Arbin["SQL_server"]
+SQL_UID = prms.Instruments.Arbin["SQL_UID"]
+SQL_PWD = prms.Instruments.Arbin["SQL_PWD"]
+SQL_DRIVER = prms.Instruments.Arbin["SQL_Driver"]
+
 
 # Names of the tables in the SQL Server db that is used by cellpy
 
@@ -137,7 +141,7 @@ class ArbinSQLLoader(Loader):
         self.arbin_headers_aux_global = self.get_headers_aux_global()
         self.arbin_headers_aux = self.get_headers_aux()
         self.current_chunk = 0  # use this to set chunks to load
-        self.server = SERVER
+        self.server = SQL_SERVER
 
     @staticmethod
     def get_headers_normal():
@@ -252,7 +256,7 @@ class ArbinSQLLoader(Loader):
 
         # selecting only one value (might implement multi-channel/id use later)
         test_id = data_df["Test_ID"].iloc[0]
-        id_name = f"{SERVER}:{name}:{test_id}"
+        id_name = f"{SQL_SERVER}:{name}:{test_id}"
 
         channel_id = data_df["Channel_ID"].iloc[0]
 
@@ -330,9 +334,9 @@ class ArbinSQLLoader(Loader):
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
             if data.raw.index.name != hdr_data_point:
                 data.raw = data.raw.set_index(hdr_data_point, drop=False)
-
+    
         hdr_date_time = self.arbin_headers_normal.datetime_txt
-        data.start_datetime = parse(data.raw[hdr_date_time].iat[0])
+        data.start_datetime = parse("20"+ data.raw[hdr_date_time].iat[0][:-7])
 
         return data
 
@@ -340,7 +344,7 @@ class ArbinSQLLoader(Loader):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = (
-            "Driver={SQL Server};Server=" + self.server + ";Trusted_Connection=yes;"
+            "Driver={" + SQL_DRIVER + "}" + f";Server={SQL_SERVER};UID={SQL_UID};PWD={SQL_PWD};Trusted_Connection=yes;"
         )
         master_q = (
             "SELECT Database_Name, Test_Name FROM "
@@ -448,7 +452,7 @@ def test_query():
     import pathlib
 
     name = ["20201106_HC03B1W_1_cc_01"]
-    dd, ds = test_sql_loader(SERVER, name)
+    dd, ds = test_sql_loader(SQL_SERVER, name)
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     dd.to_clipboard()
     input("x")
