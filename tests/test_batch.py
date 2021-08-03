@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import pathlib
+import os
 import logging
 import time
 import pandas
@@ -38,7 +39,7 @@ def clean_dir():
 @pytest.fixture(scope="module")
 def batch_instance(clean_dir):
     prms.Paths["db_filename"] = fdv.db_file_name
-    prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
+    prms.Paths["cellpydatadir"] = clean_dir
     prms.Paths["outdatadir"] = clean_dir
     prms.Paths["rawdatadir"] = fdv.raw_data_dir
     prms.Paths["db_path"] = fdv.db_dir
@@ -163,7 +164,7 @@ def test_cycling_experiment_to_file(cycling_experiment):
 
 
 def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
-    name = fdv.run_name
+    name = fdv.run_name_2
     capacity_voltage_df = updated_cycling_experiment.data[name].get_cap(cycle=1)
     assert len(capacity_voltage_df) == 1105
 
