@@ -351,7 +351,7 @@ class ArbinSQLLoader(Loader):
             "ArbinPro8MasterInfo.dbo.TestList_Table WHERE "
             f"ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN {name_str}"
         )
-        #print("Connecting with string" + con_str)
+
         conn = pyodbc.connect(con_str)
         sql_query = pd.read_sql_query(master_q, conn)
 
