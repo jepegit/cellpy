@@ -142,6 +142,9 @@ Arbin = {
     "sub_process_path": None,
     "office_version": "64bit",
     "SQL_server": r"localhost\SQLEXPRESS",
+    "SQL_UID": "sa",
+    "SQL_PWD": "Changeme123",
+    "SQL_Driver": "SQL Server",
 }
 
 # Register pre-defined instruments:
