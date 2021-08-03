@@ -25,7 +25,7 @@ class EasyPlot():
         self.files = files
         self.nicknames = nicknames
         self.kwargs = kwargs
-        self.figs_given = 0
+        #self.figs_given = 0
         self.figs = []
         self.file_data = []
         self.use_arbin_sql = False
@@ -55,6 +55,7 @@ class EasyPlot():
             "dqdv_xlabel"   : (str, r"dQ/dV $\left[\frac{mAh}{gV}\right]$"), # TODO what unit? jees
             "dqdv_ylabel"   : (str, "Cell potential [V]"),
             "specific_cycles"   : (list, None),
+            "exclude_cycles"    : (list, None),
             "all_in_one"  : (bool, False), # Decides if everything should be plotted in the same plot in GC and dQdV plot
             "only_dischg" : (bool, False), # Only show discharge curves
             "only_chg"    : (bool, False), # Only show charge curves
@@ -72,9 +73,10 @@ class EasyPlot():
 
 
     def plot(self):
+        # 3 lines below Obsolete: give_fig now gives to whomever asks and adds to self.figs
         # Spawn figures and AxesSubplots as tuple in list
-        for _ in range(self.get_num_figs()):
-            self.figs.append((plt.subplots(figsize=(6, 4))))
+        #for _ in range(self.get_num_figs()):
+        #    self.figs.append((plt.subplots(figsize=(6, 4))))
 
         # Load all cellpy files
         for file in self.files:
@@ -99,7 +101,11 @@ class EasyPlot():
                 if len(cyc_not_available) > 0:
                     warn_str = "You want to plot cycles which are not available in the data! Datafile: " + os.path.basename(file).split(".")[0] + ", Cycle(s): " + str(cyc_not_available)
                     warnings.warn(warn_str)
-                cyc_nums = list(set(cyc_nums).intersection(self.kwargs["specific_cycles"])) 
+                cyc_nums = list( set(cyc_nums).intersection(self.kwargs["specific_cycles"]) )
+
+            if self.kwargs["exclude_cycles"] != None:
+                cyc_nums = list( set(cyc_nums) - set(self.kwargs["exclude_cycles"]) )
+
 
 
         
@@ -196,7 +202,7 @@ class EasyPlot():
 
 
 
-    def get_num_figs(self):
+    def get_num_figs(self): #OBSOLETE, the class now gives a figure to whomever asks.
         num_figs = 0
         if self.kwargs["all_in_one"] == False:
             if self.kwargs["galvanostatic_plot"] == True or self.kwargs["dqdv_plot"] == True:
@@ -222,8 +228,8 @@ class EasyPlot():
 
 
     def give_fig(self):
-        fig, ax = self.figs[self.figs_given]
-        self.figs_given += 1
+        fig, ax = plt.subplots(figsize=(6, 4))
+        self.figs.append((fig, ax))
         return (fig, ax)
 
 
