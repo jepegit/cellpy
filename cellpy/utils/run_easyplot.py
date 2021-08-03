@@ -13,7 +13,7 @@ if __name__ == "__main__":
             #"20210624_seam12_07_01_cc_02",
             #"20210624_seam12_07_02_cc_02",
             #"20210624_seam12_07_03_cc_02",
-            "20210628_seam12_04_01_cc_01",
+            #"20210628_seam12_04_01_cc_01",
             #"20210628_seam12_04_02_cc_02",
             #"20210628_seam12_04_03_cc_01",
             #"20210628_seam12_05_01_cc_01",
@@ -23,9 +23,9 @@ if __name__ == "__main__":
             #"20210628_seam12_06_02_cc_02",
             #"20210628_seam12_06_03_cc_01",
             "20210628_seam12_07_01_cc_01",
-            #"20210628_seam12_07_02_cc_01",
-            #"20210628_seam12_07_03_cc_01",
-            #"20210630_seam13_01_01_cc_01",
+            "20210628_seam12_07_02_cc_01",
+            "20210628_seam12_07_03_cc_01",
+            "20210630_seam13_01_01_cc_01",
             #"20210630_seam13_01_02_cc_01",
             #"20210630_seam13_01_03_cc",
             #"20210630_seam13_02_01_cc_01",
@@ -42,8 +42,8 @@ if __name__ == "__main__":
     nicknames = None #["Seam10_01_01", "Seam10_01_02"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
-        cyclelife_plot = False,
-        cyclelife_percentage = False,
+        cyclelife_plot = True,
+        cyclelife_percentage = True,
         cyclelife_coulombic_efficiency = True,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
         cyclelife_xlabel = "Cycles",
@@ -61,6 +61,7 @@ if __name__ == "__main__":
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
         specific_cycles = None,#[]
+        exclude_cycles = [1, 5, 10,11,12],#[]
         all_in_one = True,
         only_dischg = True,
         only_chg = False,
