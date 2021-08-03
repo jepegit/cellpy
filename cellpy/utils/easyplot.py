@@ -28,6 +28,7 @@ class EasyPlot():
         self.figs_given = 0
         self.figs = []
         self.file_data = []
+        self.use_arbin_sql = False
 
         # List of available colors
         self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]*5
@@ -63,11 +64,11 @@ class EasyPlot():
             "figtitle"  : (str, "Title"), # None = original filepath
         }
 
-        # Verify that the user input is sufficient
-        self.verify_input()
-
         # Fill in the rest of the variables from self.user_params if the user didn't specify
         self.fill_input()
+
+        # Verify that the user input is sufficient
+        self.verify_input()
 
 
     def plot(self):
@@ -169,13 +170,6 @@ class EasyPlot():
                 logging.error("Type of inputparameter for keyword '" + key + "' is wrong. The user specified " + str(type(self.kwargs[key])) + " but the program needs a " + str(self.user_params[key][0]))
                 raise TypeError
 
-        # Add default params for eventual kwargs the user didn't input
-        for key in self.user_params:
-            try:
-                self.kwargs[key]
-            except KeyError as e:
-                self.kwargs[key] = self.user_params[key][1]
-
         # Check that the user isn't trying to plot "only" both discharge and charge.
         if self.kwargs["only_dischg"] == True and self.kwargs["only_chg"] == True:
             logging.error("You can't plot 'only' discharge AND charge curves! Set one to False please.")
@@ -186,7 +180,9 @@ class EasyPlot():
         # Fill in the rest of the variables from self.user_params if the user didn't specify
         # Can't just join dicts since they have differing formats, need to loop...
         for key in self.user_params:
-            if key not in self.kwargs:
+            try:
+                self.kwargs[key]
+            except KeyError as e:
                 self.kwargs[key] = self.user_params[key][1]
 
 
@@ -323,7 +319,8 @@ class EasyPlot():
             fig, ax = self.give_fig()
             colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
             savepath = self.outpath
-
+            
+            colorbar_incrementor = -1
             for cpobj, cyc_nums, color, filename in self.file_data:
                 # Get Pandas DataFrame of pot vs cap from cellpy object
                 df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
@@ -340,7 +337,9 @@ class EasyPlot():
                     # Set up colormap and add colorbar
                     cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
                     norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
-                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle number for ' + os.path.basename(filename).split(".")[0])
+                    cbaxes = fig.add_axes([1.05+colorbar_incrementor/8, 0.1, 0.03, 0.8])
+                    colorbar_incrementor += 1
+                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax = cbaxes,label='Cycle number for ' + os.path.basename(filename).split(".")[0])
                     #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
             
                 # Plot cycles
@@ -436,6 +435,7 @@ class EasyPlot():
             colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
             savepath = self.outpath
 
+            colorbar_incrementor = -1
             for cpobj, cyc_nums, color, filename in self.file_data:
                 # Get Pandas DataFrame of dQdV
                 if self.kwargs["only_dischg"]:
@@ -456,7 +456,10 @@ class EasyPlot():
                     # Set up colormap and add colorbar
                     cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
                     norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
-                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle number for ' + os.path.basename(filename).split(".")[0])
+                    cbaxes = fig.add_axes([1.05+colorbar_incrementor/8, 0.1, 0.03, 0.8])
+                    colorbar_incrementor += 1
+                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax = cbaxes,label='Cycle number for ' + os.path.basename(filename).split(".")[0])
+                    
                     #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
             
                 # Plot cycles
@@ -543,8 +546,9 @@ class EasyPlot():
             colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
             savepath = self.outpath
             
+            colorbar_incrementor = -1
             for cpobj, cyc_nums, color, filename in self.file_data:
-
+                
                 # Get Pandas DataFrame of pot vs cap from cellpy object
                 df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
 
@@ -559,7 +563,9 @@ class EasyPlot():
                     # Set up colormap and add colorbar
                     cmap = mpl.colors.LinearSegmentedColormap.from_list("name", [color, "black"], N=256, gamma=1.0)
                     norm = mpl.colors.Normalize(vmin=cyc_nums[0], vmax=cyc_nums[-1])
-                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle number for ' + os.path.basename(filename).split(".")[0], pad = 0.2)
+                    cbaxes = fig.add_axes([1.05+colorbar_incrementor/8, 0.1, 0.03, 0.8])
+                    colorbar_incrementor += 1
+                    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax = cbaxes,label='Cycle number for ' + os.path.basename(filename).split(".")[0], pad = 0.2)
                     
                 # Plot GC in leftmost plot (ax)
                 for cyc in keys:
