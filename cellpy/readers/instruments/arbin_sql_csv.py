@@ -290,8 +290,14 @@ def test_seamless_files():
     datadir = pathlib.Path(
         r"\\ad.ife.no\dfs\Org\MPT-BAT-LAB\Processed\Experiments\seamless\Raw data_excel"
     )
-    name1 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
-    name2 = datadir / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
+    name1 = (
+        datadir
+        / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
+    )
+    name2 = (
+        datadir
+        / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
+    )
 
     c = cellreader.CellpyData()
     c.set_instrument("arbin_sql_csv")
@@ -307,7 +313,9 @@ def test_seamless_files():
     names = [name1, name2]
     cell_data = cellreader.CellpyData()
     cell_data.set_instrument("arbin_sql_csv")
-    cell_data.loadcell(names, mass=0.016569, )
+    cell_data.loadcell(
+        names, mass=0.016569,
+    )
 
 
 if __name__ == "__main__":

@@ -726,7 +726,9 @@ class CellpyData(object):
                     c_value = ids_cellpy_file[name]
                 except KeyError:
                     logging.debug("KeyError when comparing raw and cellpy file.")
-                    logging.debug("Could be due to upper case vs. lower case confusion.")
+                    logging.debug(
+                        "Could be due to upper case vs. lower case confusion."
+                    )
                     similar = False
                 else:
                     if c_value != value:
@@ -4191,14 +4193,16 @@ class CellpyData(object):
         self.logger.debug(f"got {len(cycles)} cycle numbers")
         return cycles
 
-    def get_cycle_numbers(self, dataset_number=None,
-                          steptable=None, rate=None,
-                          rate_on=None,
-                          rate_std=None,
-                          rate_column=None,
-                          inverse=False,
-
-                          ):
+    def get_cycle_numbers(
+        self,
+        dataset_number=None,
+        steptable=None,
+        rate=None,
+        rate_on=None,
+        rate_std=None,
+        rate_column=None,
+        inverse=False,
+    ):
         """Get a list containing all the cycle numbers in the test.
 
         Parameters:

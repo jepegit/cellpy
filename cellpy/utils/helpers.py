@@ -299,12 +299,16 @@ def _remove_outliers_from_summary(s, filter_vals, freeze_indexes=None):
         try:
             filter_vals[freeze_indexes] = True
         except IndexError:
-            logging.critical(f"Could not freeze - missing cycle indexes {freeze_indexes}")
+            logging.critical(
+                f"Could not freeze - missing cycle indexes {freeze_indexes}"
+            )
 
     return s[filter_vals]
 
 
-def remove_outliers_from_summary_on_window(s, window_size=3, cut=0.1, iterations=1, col_name=None, freeze_indexes=None):
+def remove_outliers_from_summary_on_window(
+    s, window_size=3, cut=0.1, iterations=1, col_name=None, freeze_indexes=None
+):
     """Removes outliers based based on neighbours"""
     if col_name is None:
         col = hdr_summary["charge_capacity"]
@@ -316,9 +320,11 @@ def remove_outliers_from_summary_on_window(s, window_size=3, cut=0.1, iterations
         return np.std(x) / np.mean(x)
 
     for j in range(iterations):
-        fractional_deviation_series = s[col].rolling(
-            window=window_size, center=True, min_periods=1
-        ).apply(fractional_std)
+        fractional_deviation_series = (
+            s[col]
+                .rolling(window=window_size, center=True, min_periods=1)
+                .apply(fractional_std)
+        )
         filter_vals = fractional_deviation_series < cut
         s = s[filter_vals]
 
@@ -358,7 +364,9 @@ def remove_outliers_from_summary_on_nn_distance(
         if len(y) == 2:
             return abs(np.diff(y)) / np.mean(y)
         else:
-            return min(abs(y[1] - y[0]), abs(y[1] - y[2])) / min(np.mean(y[0:1]), np.mean(y[1:]))
+            return min(abs(y[1] - y[0]), abs(y[1] - y[2])) / min(
+                np.mean(y[0:1]), np.mean(y[1:])
+            )
 
     s2 = s[filter_cols].copy()
 
@@ -631,7 +639,7 @@ def yank_outliers(
                 window_size=window_size,
                 cut=window_cut,
                 iterations=iterations,
-                freeze_indexes=freeze_indexes
+                freeze_indexes=freeze_indexes,
             )
 
         removed = before - set(s.index)
