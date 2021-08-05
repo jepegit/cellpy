@@ -34,7 +34,7 @@ if __name__ == "__main__":
     #'20210628_seam12_07_03_cc_01',
             ]
 
-    nicknames = None #["Seam10_01_01", "Seam10_01_02"]
+    nicknames = None  # ["Seam10_01_01", "Seam10_01_02"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
         cyclelife_plot = True,
@@ -69,5 +69,5 @@ if __name__ == "__main__":
         figtitle = None, # None = original filepath
     )
     ezplt.set_arbin_sql_credentials("localhost", "sa", "Amund1234", "SQL Server")
-    #ezplt.help()
+    # ezplt.help()
     ezplt.plot()

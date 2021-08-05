@@ -92,8 +92,9 @@ def test_select_batch_extra(db_reader):
     output = db_reader.select_batch(
         test_batch_name, db_reader.db_sheet_cols.sub_batch_01
     )
-    assert test_serial_number_one not in output
-    assert test_serial_number_two in output
+
+    assert test_serial_number_two not in output
+    assert test_serial_number_one in output
     assert test_serial_number_labeled_not_existing not in output
 
 

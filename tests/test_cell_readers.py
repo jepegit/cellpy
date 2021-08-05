@@ -19,20 +19,26 @@ log.setup_logging(default_level="DEBUG")
 @pytest.fixture
 def cellpy_data_instance():
     from cellpy import cellreader
+    from cellpy import log
+    log.setup_logging(default_level="INFO")
 
     return cellreader.CellpyData()
 
 
-# TODO: fix this: dont save a file that is used in other test modules
 @pytest.fixture(scope="module")
 def dataset():
     from cellpy import cellreader
+    from cellpy import log
+    log.setup_logging(default_level="INFO")
+    p = pathlib.Path(fdv.cellpy_file_path)
 
-    a = cellreader.CellpyData()
-    a.from_raw(fdv.res_file_path)
-    a.set_mass(1.0)
-    a.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-    a.save(fdv.cellpy_file_path)
+    if not p.is_file():
+        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
+        a = cellreader.CellpyData()
+        a.from_raw(fdv.res_file_path)
+        a.set_mass(1.0)
+        a.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+        a.save(fdv.cellpy_file_path)
 
     b = cellreader.CellpyData()
     b.load(fdv.cellpy_file_path)
@@ -40,15 +46,16 @@ def dataset():
 
 
 # TODO: fix this: not smart to save cellpyfile that will be used by other modules
-def test_create_cellpyfile(cellpy_data_instance):
+def test_create_cellpyfile(cellpy_data_instance, tmp_path):
     # create a cellpy file from the res-file (used for testing)
     cellpy_data_instance.from_raw(fdv.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(
         find_ocv=False, find_ir=True, find_end_voltage=True
     )
-    print(f"trying to save the cellpy file to {fdv.cellpy_file_path}")
-    cellpy_data_instance.save(fdv.cellpy_file_path)
+    name = pathlib.Path(tmp_path) / pathlib.Path(fdv.cellpy_file_path).name
+    logging.info(f"trying to save the cellpy file to {name}")
+    cellpy_data_instance.save(name)
 
 
 @pytest.mark.parametrize(
@@ -673,20 +680,21 @@ def test_check_cellpy_file(cellpy_data_instance):
     ids = cellpy_data_instance._check_cellpy_file(file_name)
 
 
-def test_cellpyfile_roundtrip():
+def test_cellpyfile_roundtrip(tmp_path):
     from cellpy import cellreader
 
+    cellpy_file_name = pathlib.Path(tmp_path) / pathlib.Path(fdv.cellpy_file_path).name
     cdi = cellreader.CellpyData()
 
     # create a cellpy file from the res-file
     cdi.from_raw(fdv.res_file_path)
     cdi.set_mass(1.0)
     cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-    cdi.save(fdv.cellpy_file_path)
+    cdi.save(cellpy_file_name)
 
     # load the cellpy file
     cdi = cellreader.CellpyData()
-    cdi.load(fdv.cellpy_file_path)
+    cdi.load(cellpy_file_name)
     cdi.make_step_table()
     cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
 
