@@ -44,6 +44,7 @@ def search_for_files(
     file_name_format=None,
     reg_exp=None,
     sub_folders=False,
+    file_list=None,
 ):
     """Searches for files (raw-data files and cellpy-files).
 
@@ -62,6 +63,11 @@ def search_for_files(
                (default: YYYYMMDD_[name]EEE_CC_TT_RR).
            reg_exp(str): use regular expression instead (defaults to None).
            sub_folders (bool): perform search also in sub-folders.
+           file_list (list of str): perform the search within a given list
+               of filenames instead of searching the folder(s). The list should
+               not contain the full filepath (only the actual file names). If
+               you want to provide the full path, you will have to modify the
+               file_name_format or reg_exp accordingly.
 
        Returns:
            run-file names (list) and cellpy-file-name (path).
@@ -122,26 +128,30 @@ def search_for_files(
 
     logging.debug(f"generated cellpy filename {cellpy_file}")
 
-    run_files = []
-    for d in raw_file_dir:
-        if not d.is_dir():
-            warnings.warn("your raw file directory cannot be accessed!")
-            # raise cellpy.exceptions.IOError("your raw file directory cannot be accessed!")
-            _run_files = []
-        else:
-            logging.debug(f"checking in folder {d}")
-
-            if sub_folders:
-                _run_files = d.rglob(glob_text_raw)
-
+    if file_list is not None:
+        logging.debug("searching within provided list of files")
+        run_files = fnmatch.filter(file_list, glob_text_raw)
+    else:
+        run_files = []
+        for d in raw_file_dir:
+            if not d.is_dir():
+                warnings.warn("your raw file directory cannot be accessed!")
+                # raise cellpy.exceptions.IOError("your raw file directory cannot be accessed!")
+                _run_files = []
             else:
-                _run_files = d.glob(glob_text_raw)
+                logging.debug(f"checking in folder {d}")
 
-            _run_files = [str(f.resolve()) for f in _run_files]
-            # TODO: check that db reader can accept pathlib.Path objects (and fix the tests)
-            # _run_files = [f.resolve() for f in _run_files]
-            _run_files.sort()
-        run_files.extend(_run_files)
+                if sub_folders:
+                    _run_files = d.rglob(glob_text_raw)
+
+                else:
+                    _run_files = d.glob(glob_text_raw)
+
+                _run_files = [str(f.resolve()) for f in _run_files]
+                # TODO: check that db reader can accept pathlib.Path objects (and fix the tests)
+                # _run_files = [f.resolve() for f in _run_files]
+                _run_files.sort()
+            run_files.extend(_run_files)
 
     return run_files, cellpy_file
 

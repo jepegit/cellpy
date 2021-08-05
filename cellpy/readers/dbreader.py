@@ -500,7 +500,7 @@ class Reader(object):
 
         return sheet.loc[:, identity].values.astype(int)
 
-    def select_batch(self, batch, batch_col_name=None):
+    def select_batch(self, batch, batch_col_name=None, case_sensitive=True):
         """selects the rows  in column batch_col_number
         (default: DbSheetCols.batch)"""
 
@@ -511,7 +511,11 @@ class Reader(object):
         identity = self.db_sheet_cols.id
         exists_col_number = self.db_sheet_cols.exists
 
-        criterion = sheet.loc[:, batch_col_name] == batch
+        if case_sensitive:
+            criterion = sheet.loc[:, batch_col_name] == batch
+        else:
+            criterion = (sheet.loc[:, batch_col_name]).upper() == batch.upper()
+
         exists = sheet.loc[:, exists_col_number] > 0
         # This will crash if the col is not of dtype number
         sheet = sheet[criterion & exists]

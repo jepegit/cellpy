@@ -1,17 +1,19 @@
-import os
-import tempfile
-import shutil
-import datetime
 import pytest
-import logging
-
-import cellpy.readers.core
-from cellpy.exceptions import DeprecatedFeature
 from cellpy import filefinder
 from cellpy import log
 from . import fdv
 
 log.setup_logging(default_level="DEBUG")
+
+
+@pytest.fixture(scope="module")
+def env():
+    from cellpy.parameters import prms
+    prms.Paths["outdatadir"] = fdv.output_dir
+    prms.Paths["rawdatadir"] = fdv.raw_data_dir
+    prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
+    prms.Paths["db_path"] = fdv.db_dir
+    prms.Paths["db_filename"] = fdv.db_file_name
 
 
 def test_search_for_files_with_dirs():
@@ -25,7 +27,7 @@ def test_search_for_files_with_dirs():
     assert os.path.basename(cellpy_file) == fdv.cellpy_file_name
 
 
-def test_search_for_files_default_dirs():
+def test_search_for_files_default_dirs(env):
     raw_files, cellpy_file = filefinder.search_for_files(fdv.run_name)
 
     assert fdv.res_file_path in raw_files
