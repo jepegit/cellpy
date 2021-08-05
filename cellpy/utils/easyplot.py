@@ -8,6 +8,7 @@
 import os
 from pathlib import Path
 import logging
+from re import S
 import cellpy
 from matplotlib import lines
 from matplotlib.artist import kwdoc
@@ -15,7 +16,10 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 import numpy as np
+import pandas as pd
 import warnings
+from matplotlib.ticker import FuncFormatter
+from matplotlib.scale import LogScale
 
 
 class EasyPlot():
@@ -47,10 +51,14 @@ class EasyPlot():
             "cyclelife_percentage"                  : (bool, False),
             "cyclelife_coulombic_efficiency"        : (bool, False),
             "cyclelife_coulombic_efficiency_ylabel" : (str, "Coulombic efficiency [%]"),
+            "cyclelife_charge_c_rate"               : (bool, False),
+            "cyclelife_discharge_c_rate"            : (bool, False),
+            "cyclelife_c_rate_ylabel"               : (str, "Effective C-rate"),
             "cyclelife_xlabel"                      : (str, "Cycles"),
             "cyclelife_ylabel"                      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
             "cyclelife_ylabel_percent"              : (str, "Capacity retention [%]"),
             "cyclelife_legend_outside"              : (bool, False), # if True, the legend is placed outside the plot
+            "capacity_determination_from_ratecap"        : (bool, False), # If True, uses the ratecap and capacity to determine the exp capacity
             "galvanostatic_plot"        : (bool, True),
             "galvanostatic_potlim"      : (tuple, None),     # min and max limit on potential-axis
             "galvanostatic_caplim"      : (tuple, None),
@@ -129,6 +137,9 @@ class EasyPlot():
 
         if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == True:
             self.plot_gc_and_dQdV()
+
+        if self.kwargs["capacity_determination_from_ratecap"] == True:
+            self.plot_cap_from_rc()
             
 
     def help(self):
@@ -241,6 +252,27 @@ class EasyPlot():
             # Spawn twinx axis and set label
             ax_ce = ax.twinx()
             ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
+        if self.kwargs["cyclelife_charge_c_rate"] == True or self.kwargs["cyclelife_discharge_c_rate"] == True:
+            ax_c_rate = ax.twinx()
+            #LogScale(ax_c_rate) # toggles logarithmic scale
+
+            def format_label(x, pos):
+                # The commented out code here makes the fractioned C-rate like C/50 and so on.
+                """
+                if x >= 1:
+                    s = '%.2gC' % x
+                elif x == 0:
+                    s = r'C/$\infty$'
+                else:
+                    newfloat = 1/x
+                    s = 'C/%.2g' % newfloat
+                    """
+                # The following just has decimal place C-rate.
+                s = '%.3gC' % x
+                return s
+
+            ax_c_rate.yaxis.set_major_formatter(FuncFormatter(format_label))
+            ax_c_rate.set(ylabel = "Effective C-rate")
 
         outpath = self.outpath
         for cpobj, cyc_nums, color, filename in self.file_data:
@@ -297,16 +329,47 @@ class EasyPlot():
                     if cyc in cyc_nums:
                         cycs.append(cyc)
                         CEs.append(coulombic_efficiency[cyc])
-                
+
                 # Place it in the plot
                 ax_ce.scatter(cycs, CEs, c = color, marker = "+")
                 #print(filename + " Dchg 1-3: " + str(dchgs[1][0:3])  + ", CE 1-3: " + str(coulombic_efficiency[0:3]))
+
+            if self.kwargs["cyclelife_charge_c_rate"] == True or self.kwargs["cyclelife_discharge_c_rate"] == True:
+                #charge_c_rate = cpobj.cell.summary["charge_c_rate"] #This gives incorrect c-rates.
+                
+                stepstable = cpobj.cell.steps
+                chg_c_rates, dchg_c_rates = get_effective_C_rates(stepstable)
+
+                selected_chg_c_rates = []
+                selected_dchg_c_rates = []
+                selected_cycs = []
+
+                for cyc in keys:
+                    if cyc in cyc_nums:
+                        selected_chg_c_rates.append(chg_c_rates[cyc-1])
+                        selected_dchg_c_rates.append(dchg_c_rates[cyc-1])
+                        selected_cycs.append(cyc)
+                
+                if self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == False:
+                    ax_c_rate.scatter(selected_cycs, selected_chg_c_rates, c = color, marker = "_")
+                elif self.kwargs["cyclelife_charge_c_rate"] == False and self.kwargs["cyclelife_discharge_c_rate"] == True:
+                    ax_c_rate.scatter(selected_cycs, selected_dchg_c_rates, c = color, marker = "_")
+                elif self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == True:
+                    ax_c_rate.scatter(selected_cycs, selected_chg_c_rates, c = color, marker = "_")
+                    ax_c_rate.scatter(selected_cycs, selected_dchg_c_rates, c = color, alpha = 0.2, marker = "_")
 
         # Get labels and handles for legend generation and eventual savefile
         handles, labels = ax.get_legend_handles_labels()
         handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
         if self.kwargs["cyclelife_coulombic_efficiency"] == True:
             handles.append(Line2D([0], [0], marker='+', color='black', alpha = 1, label = 'Coulombic Efficiency', linestyle=''))
+        if self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == False:
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
+        elif self.kwargs["cyclelife_charge_c_rate"] == False and self.kwargs["cyclelife_discharge_c_rate"] == True:
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective discharge C-rate', linestyle=''))
+        elif self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == True:
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 0.2, label = 'Effective discharge C-rate', linestyle=''))
         
 
         # Set all plot settings from Plot object
@@ -776,6 +839,24 @@ class EasyPlot():
 
 
 
+    def plot_cap_from_rc(self):
+        # Spawn fig and axis for plotting
+        fig, ax = self.give_fig()
+
+        outpath = self.outpath
+        for cpobj, cyc_nums, color, filename in self.file_data:
+            # Get Pandas DataFrame of pot vs cap from cellpy object
+            #df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
+            outpath += os.path.basename(filename).split(".")[0] + "_"
+
+            stepstable = cpobj.cell.steps
+            chg_c_rates, dchg_c_rates = get_effective_C_rates_and_caps(stepstable)
+
+        
+        print("bom")
+
+
+
     def fix_cyclelife(self, fig, ax, handles):
         # Applies kwargs settings and other plot settings
 
@@ -812,7 +893,7 @@ class EasyPlot():
 
         # Take care of having the legend outside the plot
         if self.kwargs["cyclelife_legend_outside"] == True:
-            if self.kwargs["cyclelife_coulombic_efficiency"] == True:
+            if self.kwargs["cyclelife_coulombic_efficiency"] == True or self.kwargs["cyclelife_charge_c_rate"] == True or self.kwargs["cyclelife_discharge_c_rate"] == True:
                 ax.legend(handles=handles, bbox_to_anchor=(1.18, 1), loc='upper left')
             else:
                 ax.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -932,3 +1013,31 @@ class EasyPlot():
         # The point of this is to have savefig parameters the same across all plots (for now just fig dpi and bbox inches)
         print("Saving to: " + savepath)
         fig.savefig(savepath, bbox_inches='tight', dpi = self.kwargs["figres"])
+
+
+def get_effective_C_rates(steptable):
+
+    newdf = steptable[["step_time_avr", "cycle", "type"]]
+    chg_c_rates = []
+    dchg_c_rates = []
+    for i,elem in enumerate(newdf.iterrows()):
+        if elem[1]["type"] == "charge":
+            chg_c_rates.append(1/(elem[1]["step_time_avr"]/3600))
+        elif elem[1]["type"] == "discharge":
+            dchg_c_rates.append(1/(elem[1]["step_time_avr"]/3600))
+
+    return chg_c_rates, dchg_c_rates
+
+def get_effective_C_rates_and_caps(steptable):
+    print(steptable.columns)
+    newdf = steptable[["step_time_avr", "cycle", "type", "charge_avr", "discharge_avr"]]
+    print(newdf)
+    chg_c_rates = []
+    dchg_c_rates = []
+    for i,elem in enumerate(newdf.iterrows()):
+        if elem[1]["type"] == "charge":
+            chg_c_rates.append(1/(elem[1]["step_time_avr"]/3600))
+        elif elem[1]["type"] == "discharge":
+            dchg_c_rates.append(1/(elem[1]["step_time_avr"]/3600))
+
+    return chg_c_rates, dchg_c_rates
