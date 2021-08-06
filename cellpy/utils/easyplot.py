@@ -843,17 +843,68 @@ class EasyPlot():
         # Spawn fig and axis for plotting
         fig, ax = self.give_fig()
 
+        # Get labels and handles for legend generation and eventual savefile
+        handles, labels = ax.get_legend_handles_labels()
+        #handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
+        handles.append(Line2D([0], [0], marker='o', color='black', label = 'Disharge capacity', linestyle=''))
+        
+
         outpath = self.outpath
         for cpobj, cyc_nums, color, filename in self.file_data:
             # Get Pandas DataFrame of pot vs cap from cellpy object
             #df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
             outpath += os.path.basename(filename).split(".")[0] + "_"
 
+            handles.append(Line2D([0], [0], marker='o', color=color, label = filename, linestyle=''))
+
             stepstable = cpobj.cell.steps
-            chg_c_rates, dchg_c_rates = get_effective_C_rates_and_caps(stepstable)
+            chglist, dchglist = get_effective_C_rates_and_caps(stepstable)
+
+            # Remove all cycles which are not in cyc_nums by looking at the 0th element (cyc num) of every sublist in chglist
+            new_chglist = [x for x in chglist if x[0] in cyc_nums]
+            new_dchglist = [x for x in dchglist if x[0] in cyc_nums]
+
+            
+            linregress_xlist = []
+            linregress_ylist = []
+            for chg, dchg in zip(new_chglist, new_dchglist):
+                #ax.scatter(chg[1] , chg[2] , color = color, alpha = 0.2) 
+                ax.scatter(1/dchg[1], dchg[2], color = color)
+        
+                linregress_xlist.append(1/dchg[1])
+                linregress_ylist.append(dchg[2])
+
+            
+            # Fitting curve to the exponential function
+            # Import curve fitting package from scipy
+            from scipy.optimize import curve_fit
+
+            x_arr = np.array(linregress_xlist)
+            y_arr = np.array(linregress_ylist)
+
+            def _exp_func(x,a,b,c):
+                return a*np.exp(b*x) + c
+
+            pars, cov = curve_fit(f=_exp_func, xdata = x_arr, ydata=y_arr, p0=[0,0,0], bounds=(-np.inf, np.inf))
+            x_vals = np.linspace(x_arr[0], x_arr[-1], 100)
+            ax.plot(x_vals, _exp_func(x_vals, *pars))
+            ax.hlines(pars[2], ax.get_xlim()[0], ax.get_xlim()[1], colors = "black")
+            # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+            std_dev = np.sqrt(np.diag(cov))
+            handles.append(
+                Line2D(
+                    [0], [0], 
+                    marker="_", color="black", 
+                    label = 'Calculated maximum capacity:' + '\n' +'{:.2e} $\pm$ {:.2e}'.format(pars[2], std_dev[0]) + r'$\left[\frac{mAh}{g}\right]$', linestyle=''
+                    ))
+
 
         
-        print("bom")
+        self.fix_cap_from_rc(fig, ax, handles)
+
+        # Save fig
+        savepath = outpath + "CapDet.png" 
+        self.save_fig(fig, savepath)
 
 
 
@@ -904,7 +955,25 @@ class EasyPlot():
             ax.legend(handles=handles)
         fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
             
+    def fix_cap_from_rc(self, fig, ax, handles):
+        #ax.set_yscale("log")
+        ax.set(xlabel = r"Inverse C-rate $\left[ h \right]$", ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$")
+        # General plot details
+        fig.set_size_inches(self.kwargs["figsize"])
+        if type(self.kwargs["figtitle"]) == str:
+                fig.suptitle(self.kwargs["figtitle"])
+        else:
+            fig.suptitle("Capacity determination from Rate Capability")
 
+        # Take care of having the legend outside the plot
+        if self.kwargs["cyclelife_legend_outside"] == True:
+            ax.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
+
+            figsize = self.kwargs["figsize"]
+            fig.set_size_inches((figsize[0]+3, figsize[1]))
+        else:
+            ax.legend(handles=handles)
+        fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
 
     def fix_gc(self, fig, ax):
         # Applies kwargs settings and other plot settings
@@ -1029,15 +1098,15 @@ def get_effective_C_rates(steptable):
     return chg_c_rates, dchg_c_rates
 
 def get_effective_C_rates_and_caps(steptable):
-    print(steptable.columns)
     newdf = steptable[["step_time_avr", "cycle", "type", "charge_avr", "discharge_avr"]]
-    print(newdf)
-    chg_c_rates = []
-    dchg_c_rates = []
+    chglist = [] # [[cycle, chg_crate, chg_cap], [cycle increase with crates and capacities for this cycle]]
+    dchglist = []
     for i,elem in enumerate(newdf.iterrows()):
-        if elem[1]["type"] == "charge":
-            chg_c_rates.append(1/(elem[1]["step_time_avr"]/3600))
-        elif elem[1]["type"] == "discharge":
-            dchg_c_rates.append(1/(elem[1]["step_time_avr"]/3600))
+        cyc = elem[1]["cycle"]
 
-    return chg_c_rates, dchg_c_rates
+        if elem[1]["type"] == "charge":
+            chglist.append([ cyc, 1/(elem[1]["step_time_avr"]/3600), elem[1]["charge_avr"]*1000 ])
+        elif elem[1]["type"] == "discharge":
+            dchglist.append([cyc, 1/(elem[1]["step_time_avr"]/3600), elem[1]["discharge_avr"]*1000 ])
+
+    return chglist, dchglist

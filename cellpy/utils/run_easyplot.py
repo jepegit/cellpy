@@ -6,6 +6,7 @@ if __name__ == "__main__":
     import easyplot
 
     files = [   
+    '20210624_seam12_07_01_cc_02',
             # === SEAM 12 RATE CAPABILITY ===
     #'20210712_seam12_04_rc_01_cc_01',
     #'20210712_seam12_04_rc_02_cc_01',
@@ -20,7 +21,7 @@ if __name__ == "__main__":
     #'20210712_seam12_07_rc_02_cc_01',
     #'20210712_seam12_07_rc_03_cc_01',
     # === SEAM 12 1ST GC ===
-    '20210628_seam12_04_01_cc_01',
+    #'20210628_seam12_04_01_cc_01',
     #'20210628_seam12_04_02_cc_02',
     #'20210628_seam12_04_03_cc_01',
     #'20210628_seam12_05_01_cc_01',
@@ -37,31 +38,31 @@ if __name__ == "__main__":
     nicknames = None  # ["Seam10_01_01", "Seam10_01_02"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
-        cyclelife_plot = True,
+        cyclelife_plot = False,
         cyclelife_percentage = False,
         cyclelife_coulombic_efficiency = False,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
-        cyclelife_charge_c_rate = True,
-        cyclelife_discharge_c_rate = True,
+        cyclelife_charge_c_rate = False,
+        cyclelife_discharge_c_rate = False,
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         cyclelife_ylabel_percent = "Capacity retention [%]",
         cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
         capacity_determination_from_ratecap = True,
-        galvanostatic_plot = True,
+        galvanostatic_plot = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         galvanostatic_ylabel = "Cell potential [V]",
-        dqdv_plot = True,
+        dqdv_plot = False,
         dqdv_potlim = None,     #min and max limit on potential-axis
         dqdv_dqlim = None,
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
         specific_cycles = None,#[]
-        exclude_cycles = None,#[]
+        exclude_cycles = [1,2,3,4,5,31, 32, 33, 34, 35],#[]
         all_in_one = True,
-        only_dischg = True,
+        only_dischg = False,
         only_chg = False,
         outpath = "./ezplots/deleteme/",
         figsize = (6,4), # 6 inches wide, 4 inches tall
