@@ -45,6 +45,7 @@ def search_for_files(
     reg_exp=None,
     sub_folders=False,
     file_list=None,
+    pre_path=None,
 ):
     """Searches for files (raw-data files and cellpy-files).
 
@@ -68,6 +69,9 @@ def search_for_files(
                not contain the full filepath (only the actual file names). If
                you want to provide the full path, you will have to modify the
                file_name_format or reg_exp accordingly.
+           pre_path (path or str): path to prepend the list of files selected
+                from the file_list.
+
 
        Returns:
            run-file names (list) and cellpy-file-name (path).
@@ -129,8 +133,13 @@ def search_for_files(
     logging.debug(f"generated cellpy filename {cellpy_file}")
 
     if file_list is not None:
+        if len(raw_file_dir) > 1:
+            logging.info("you provided several raw file directories")
         logging.debug("searching within provided list of files")
         run_files = fnmatch.filter(file_list, glob_text_raw)
+        if pre_path is not None:
+            pre_path = pathlib.Path(pre_path)
+            run_files = list(map(lambda x: pre_path / x, run_files))
     else:
         run_files = []
         for d in raw_file_dir:

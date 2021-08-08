@@ -113,7 +113,7 @@ def dq_dv_engine(**kwargs):
     return farms, barn
 
 
-def simple_db_engine(reader=None, srnos=None, **kwargs):
+def simple_db_engine(reader=None, srnos=None, file_list=None, pre_path=None, **kwargs):
     """engine that gets values from the simple excel 'db'"""
     # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:
@@ -157,7 +157,7 @@ def simple_db_engine(reader=None, srnos=None, **kwargs):
     info_dict[hdr_journal["group"]] = groups
 
     my_timer_start = time.time()
-    info_dict = helper.find_files(info_dict, **kwargs)
+    info_dict = helper.find_files(info_dict, file_list=file_list, pre_path=pre_path, **kwargs)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logging.critical(
@@ -167,15 +167,29 @@ def simple_db_engine(reader=None, srnos=None, **kwargs):
         )
 
     info_df = pd.DataFrame(info_dict)
+    try:
+        info_df = info_df.sort_values([hdr_journal.group, hdr_journal.filename])
+    except TypeError as e:
+        logging.warning("could not sort the values")
+        logging.warning(f"{info_df[[hdr_journal.group, hdr_journal.filename]]}")
+        logging.warning("maybe you have a corrupted db?")
+        logging.warning("typically happens if the srno is not unique (several rows or records in "
+                        "your db has the same srno or key)")
+        logging.warning(e)
 
-    info_df = info_df.sort_values([hdr_journal.group, hdr_journal.filename])
     info_df = helper.make_unique_groups(info_df)
-
-    info_df[hdr_journal.label] = info_df[hdr_journal.filename].apply(
-        helper.create_labels
-    )
-
-    # TODO: check if drop=False works [#index]
-    info_df.set_index(hdr_journal["filename"], inplace=True)  # edit this to allow for
-    # non-nummeric index-names (for tab completion and python-box)
+    try:
+        info_df[hdr_journal.label] = info_df[hdr_journal.filename].apply(
+            helper.create_labels
+        )
+    except AttributeError as e:
+        logging.warning("could not make labels")
+        logging.warning("maybe you have a corrupted db?")
+        logging.warning("typically happens if the srno is not unique (several rows or records in "
+                        "your db has the same srno or key)")
+        logging.warning(e)
+    else:
+        # TODO: check if drop=False works [#index]
+        info_df.set_index(hdr_journal["filename"], inplace=True)  # edit this to allow for
+        # non-numeric index-names (for tab completion and python-box)
     return info_df
