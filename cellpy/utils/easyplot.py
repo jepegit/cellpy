@@ -73,6 +73,7 @@ class EasyPlot():
             "galvanostatic_caplim"      : (tuple, None),
             "galvanostatic_xlabel"      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
             "galvanostatic_ylabel"      : (str, "Cell potential [V]"),
+            "galvanostatic_normalize_capacity": (bool, False), #Normalizes all cycles' capacity to 1.
             "dqdv_plot"     : (bool, False),
             "dqdv_potlim"   : (tuple, None),     #min and max limit on potential-axis
             "dqdv_dqlim"    : (tuple, None),
@@ -451,17 +452,35 @@ class EasyPlot():
                         else:
                             cyccolor = cmap(cyc/keys[-1])
 
+
                         cyc_df = cycgrouped.get_group(cyc)
+                        
                         if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
-                            ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                            pass
                         elif self.kwargs["only_dischg"]:
                             dchg = cyc_df.groupby("direction")
-                            dchg_df = dchg.get_group(-1)
-                            ax.plot(dchg_df["capacity"], dchg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                            cyc_df = dchg.get_group(-1)
                         elif self.kwargs["only_chg"]:
                             chg = cyc_df.groupby("direction")
-                            chg_df = chg.get_group(1)
-                            ax.plot(chg_df["capacity"], chg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                            cyc_df = chg.get_group(1)
+                        print("SEESH!BEFOE")
+                        if self.kwargs["galvanostatic_normalize_capacity"]:
+                            print("SEESH!")
+                            #Then we normalize capacity column on the last element
+                            # Sometimes, last elem is nan...
+                            if str(cyc_df["capacity"].iloc[-1]) == "nan":
+                                lastelem = cyc_df["capacity"].iloc[-2]
+                            else: 
+                                lastelem = cyc_df["capacity"].iloc[-1]
+                            print(cyc_df["capacity"])
+                            print("=================")
+                            print(lastelem)
+                            print("===================")
+                            maxcap = cyc_df["capacity"].max()
+                            cyc_df["capacity"] = cyc_df["capacity"].div(maxcap)
+                            print(cyc_df["capacity"])
+
+                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
 
                 savepath += os.path.basename(filename).split(".")[0]
 
