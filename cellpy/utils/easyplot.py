@@ -42,7 +42,15 @@ class EasyPlot():
         self.use_arbin_sql = False
 
         # List of available colors
-        self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]*5
+        if len(self.files) > 10:
+            self.colors = '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000'
+            warnings.warn("You inserted more than 10 datafiles! In a desperate attempt to keep the plots tidy, another colorpalette with 20 distinct colors were chosen.")
+        elif len(self.files) > 20:
+            warnings.warn("You inserted more than 20 datafiles! We do not have that many colors in the palette, this some colors are beeing recycled. Keep track of the filenames and legends and make sure this doesn't confuse you.")
+        else:
+            self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]*5
+
+
 
         # Dictionary of all possible user input arguments(as keys) with example values of correct type
         # Value is a tuple (immutable) of type and default value.
