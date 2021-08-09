@@ -463,22 +463,12 @@ class EasyPlot():
                         elif self.kwargs["only_chg"]:
                             chg = cyc_df.groupby("direction")
                             cyc_df = chg.get_group(1)
-                        print("SEESH!BEFOE")
+
+                        # TODO: The way this is set up, when plotting both discharge and charge, the whole cycle is normalized on the maximum capacity, meaning the charge can be normalized on the discharge or the other way around.
                         if self.kwargs["galvanostatic_normalize_capacity"]:
-                            print("SEESH!")
-                            #Then we normalize capacity column on the last element
-                            # Sometimes, last elem is nan...
-                            if str(cyc_df["capacity"].iloc[-1]) == "nan":
-                                lastelem = cyc_df["capacity"].iloc[-2]
-                            else: 
-                                lastelem = cyc_df["capacity"].iloc[-1]
-                            print(cyc_df["capacity"])
-                            print("=================")
-                            print(lastelem)
-                            print("===================")
+                            #Then we normalize capacity column on the max value (since this should be max cap)
                             maxcap = cyc_df["capacity"].max()
                             cyc_df["capacity"] = cyc_df["capacity"].div(maxcap)
-                            print(cyc_df["capacity"])
 
                         ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
 
