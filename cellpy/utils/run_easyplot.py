@@ -33,6 +33,7 @@ if __name__ == "__main__":
     #'20210628_seam12_07_01_cc_01',
     #'20210628_seam12_07_02_cc_01',
     #'20210628_seam12_07_03_cc_01',
+    #'./dev_data/DPV_test_1_SEAM12_04_02-testcell.mpr',
             ]
 
     nicknames = None  # ["Seam10_01_01", "Seam10_01_02"]
@@ -60,11 +61,12 @@ if __name__ == "__main__":
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
         specific_cycles = None,#[]
-        exclude_cycles = [1,2,3,4,5,31, 32, 33, 34, 35],#[]
-        all_in_one = True,
+        exclude_cycles = None,#[]
+        all_in_one = False,
         only_dischg = False,
         only_chg = False,
         outpath = "./ezplots/deleteme/",
+        outtype = ".png",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figres = 100, # Dots per inch
         figtitle = None, # None = original filepath

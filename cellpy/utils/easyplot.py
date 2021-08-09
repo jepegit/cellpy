@@ -75,6 +75,7 @@ class EasyPlot():
             "only_dischg" : (bool, False), # Only show discharge curves
             "only_chg"    : (bool, False), # Only show charge curves
             "outpath"   : (str, "./"),
+            "outtype"   : (str, ".png"),  # What file format to save in 
             "figsize"   : (tuple, (6,4)), # 6 inches wide, 4 inches tall
             "figres"    : (int, 100),     # Dots per Inch
             "figtitle"  : (str, "Title"), # None = original filepath
@@ -100,7 +101,7 @@ class EasyPlot():
                 if not os.path.isfile(file):
                     logging.error("File not found: " + str(file))
                     raise FileNotFoundError
-                cpobj = cellpy.get(filename = file) # Load regular file
+                cpobj = cellpy.get(filename = file, instrument="biologics_mpr") # Load regular file
                 # Check that we get data
             if cpobj == None:
                 warnings.warn("File reader returned no data for filename " + file + ", Please make sure that the file exists or that the data exists in an eventual database.")
@@ -376,7 +377,7 @@ class EasyPlot():
         self.fix_cyclelife(fig, ax, handles)
 
         # Save fig
-        savepath = outpath.strip("_") + "_Cyclelife.png" 
+        savepath = outpath.strip("_") + "_Cyclelife" 
         self.save_fig(fig, savepath)
 
 
@@ -438,7 +439,7 @@ class EasyPlot():
             self.fix_gc(fig, ax)
 
             #Save fig
-            savepath += "_GC-plot.png"
+            savepath += "_GC-plot"
             self.save_fig(fig, savepath)
 
 
@@ -491,7 +492,7 @@ class EasyPlot():
                 self.fix_gc(fig, ax)
 
                 # Save fig
-                savepath = self.outpath + os.path.basename(filename).split(".")[0] +  "_GC-plot.png"
+                savepath = self.outpath + os.path.basename(filename).split(".")[0] +  "_GC-plot"
                 self.save_fig(fig, savepath)
 
 
@@ -548,7 +549,7 @@ class EasyPlot():
             self.fix_dqdv(fig, ax)
 
             #Save fig
-            savepath += "_dQdV-plot.png"
+            savepath += "_dQdV-plot"
             self.save_fig(fig, savepath)
 
         else:
@@ -598,7 +599,7 @@ class EasyPlot():
                 self.fix_dqdv(fig, ax)
 
                 # Save fig
-                savepath = self.outpath + os.path.basename(filename).split(".")[0] + "_dQdV-plot.png" 
+                savepath = self.outpath + os.path.basename(filename).split(".")[0] + "_dQdV-plot" 
                 self.save_fig(fig, savepath)
         
 
@@ -689,7 +690,7 @@ class EasyPlot():
             self.fix_gc_and_dqdv(fig, [ax1, ax2])
 
             # Save fig
-            savepath = savepath + "_GC-dQdV-plot.png" 
+            savepath = savepath + "_GC-dQdV-plot" 
             self.save_fig(fig, savepath)
         
         else: #Then all files are placed in separate plots
@@ -770,7 +771,7 @@ class EasyPlot():
                 self.fix_gc_and_dqdv(fig, [ax1, ax2])
 
                 # Save fig
-                savepath = self.outpath + os.path.basename(filename).split(".")[0] + "_GC-dQdV-plot.png" 
+                savepath = self.outpath + os.path.basename(filename).split(".")[0] + "_GC-dQdV-plot" 
                 self.save_fig(fig, savepath)
         
         """# Fix colorbar or cycle colors
@@ -833,7 +834,7 @@ class EasyPlot():
         self.fix_gc_and_dqdv(fig, axs)
 
         # Save fig
-        savepath = self.outpath + os.path.basename(file).split(".")[0] + "_GC-dQdV-plot.png" 
+        savepath = self.outpath + os.path.basename(file).split(".")[0] + "_GC-dQdV-plot" 
         print("Saving to: " + savepath)
         fig.savefig(savepath, bbox_inches='tight')"""
 
@@ -845,7 +846,7 @@ class EasyPlot():
 
         # Get labels and handles for legend generation and eventual savefile
         handles, labels = ax.get_legend_handles_labels()
-        #handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
+        handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
         handles.append(Line2D([0], [0], marker='o', color='black', label = 'Disharge capacity', linestyle=''))
         
 
@@ -868,7 +869,7 @@ class EasyPlot():
             linregress_xlist = []
             linregress_ylist = []
             for chg, dchg in zip(new_chglist, new_dchglist):
-                #ax.scatter(chg[1] , chg[2] , color = color, alpha = 0.2) 
+                ax.scatter(chg[1] , chg[2] , color = color, alpha = 0.2) 
                 ax.scatter(1/dchg[1], dchg[2], color = color)
         
                 linregress_xlist.append(1/dchg[1])
@@ -886,15 +887,16 @@ class EasyPlot():
                 return a*np.exp(b*x) + c
 
             pars, cov = curve_fit(f=_exp_func, xdata = x_arr, ydata=y_arr, p0=[0,0,0], bounds=(-np.inf, np.inf))
-            x_vals = np.linspace(x_arr[0], x_arr[-1], 100)
+            x_vals = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100) #x_arr[0], x_arr[-1], 100)
             ax.plot(x_vals, _exp_func(x_vals, *pars))
-            ax.hlines(pars[2], ax.get_xlim()[0], ax.get_xlim()[1], colors = "black")
+            ax.hlines(pars[2], ax.get_xlim()[0], ax.get_xlim()[1], colors = color)
             # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
             std_dev = np.sqrt(np.diag(cov))
+            # Make a sweet legend to put on this
             handles.append(
                 Line2D(
                     [0], [0], 
-                    marker="_", color="black", 
+                    marker="_", color=color, 
                     label = 'Calculated maximum capacity:' + '\n' +'{:.2e} $\pm$ {:.2e}'.format(pars[2], std_dev[0]) + r'$\left[\frac{mAh}{g}\right]$', linestyle=''
                     ))
 
@@ -903,7 +905,7 @@ class EasyPlot():
         self.fix_cap_from_rc(fig, ax, handles)
 
         # Save fig
-        savepath = outpath + "CapDet.png" 
+        savepath = outpath + "CapDet" 
         self.save_fig(fig, savepath)
 
 
@@ -1079,6 +1081,7 @@ class EasyPlot():
 
 
     def save_fig(self, fig, savepath):
+        savepath += self.kwargs["outtype"]
         # The point of this is to have savefig parameters the same across all plots (for now just fig dpi and bbox inches)
         print("Saving to: " + savepath)
         fig.savefig(savepath, bbox_inches='tight', dpi = self.kwargs["figres"])
