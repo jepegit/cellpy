@@ -54,6 +54,7 @@ class EasyPlot():
             "cyclelife_charge_c_rate"               : (bool, False),
             "cyclelife_discharge_c_rate"            : (bool, False),
             "cyclelife_c_rate_ylabel"               : (str, "Effective C-rate"),
+            "cyclelife_ir"                          : (bool, False),    # Allows user to plot IR data aswell
             "cyclelife_xlabel"                      : (str, "Cycles"),
             "cyclelife_ylabel"                      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
             "cyclelife_ylabel_percent"              : (str, "Capacity retention [%]"),
@@ -127,19 +128,19 @@ class EasyPlot():
             self.file_data.append((cpobj, cyc_nums, color, file))
 
         # If the user want cyclelife plot, we do it to all the input files.
-        if self.kwargs["cyclelife_plot"] == True:
+        if self.kwargs["cyclelife_plot"]:
             self.plot_cyclelife()
 
-        if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == False:
+        if self.kwargs["galvanostatic_plot"] and not self.kwargs["dqdv_plot"]:
             self.plot_gc()
 
-        if self.kwargs["dqdv_plot"] == True and self.kwargs["galvanostatic_plot"] == False:
+        if self.kwargs["dqdv_plot"] and not self.kwargs["galvanostatic_plot"]:
             self.plot_dQdV()
 
-        if self.kwargs["galvanostatic_plot"] == True and self.kwargs["dqdv_plot"] == True:
+        if self.kwargs["galvanostatic_plot"] and self.kwargs["dqdv_plot"]:
             self.plot_gc_and_dQdV()
 
-        if self.kwargs["capacity_determination_from_ratecap"] == True:
+        if self.kwargs["capacity_determination_from_ratecap"]:
             self.plot_cap_from_rc()
             
 
@@ -194,7 +195,7 @@ class EasyPlot():
                 raise TypeError
 
         # Check that the user isn't trying to plot "only" both discharge and charge.
-        if self.kwargs["only_dischg"] == True and self.kwargs["only_chg"] == True:
+        if self.kwargs["only_dischg"] and self.kwargs["only_chg"]:
             logging.error("You can't plot 'only' discharge AND charge curves! Set one to False please.")
 
 
@@ -249,14 +250,12 @@ class EasyPlot():
     def plot_cyclelife(self):
         # Spawn fig and axis for plotting
         fig, ax = self.give_fig()
-        if self.kwargs["cyclelife_coulombic_efficiency"] == True:
+        if self.kwargs["cyclelife_coulombic_efficiency"]:
             # Spawn twinx axis and set label
             ax_ce = ax.twinx()
             ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
-        if self.kwargs["cyclelife_charge_c_rate"] == True or self.kwargs["cyclelife_discharge_c_rate"] == True:
+        if self.kwargs["cyclelife_charge_c_rate"] or self.kwargs["cyclelife_discharge_c_rate"]:
             ax_c_rate = ax.twinx()
-            #LogScale(ax_c_rate) # toggles logarithmic scale
-
             def format_label(x, pos):
                 # The commented out code here makes the fractioned C-rate like C/50 and so on.
                 """
@@ -274,6 +273,9 @@ class EasyPlot():
 
             ax_c_rate.yaxis.set_major_formatter(FuncFormatter(format_label))
             ax_c_rate.set(ylabel = "Effective C-rate")
+
+        if self.kwargs["cyclelife_ir"]:
+            ax_ir = ax.twinx()  
 
         outpath = self.outpath
         for cpobj, cyc_nums, color, filename in self.file_data:
@@ -304,7 +306,7 @@ class EasyPlot():
                     chgs[0].append(cyc)      # Append to chg list
                     chgs[1].append(chg_df["capacity"].iat[-2])
 
-            if self.kwargs["cyclelife_percentage"] == True: # Normalize all datapoints on the first one
+            if self.kwargs["cyclelife_percentage"]: # Normalize all datapoints on the first one
                 norm_fact = dchgs[1][0]/100 # /100 is to get range from 0-100(%) in stead of 0-1
                 for i in range(len(chgs[1])):
                     chgs[1][i] /= norm_fact
@@ -321,7 +323,7 @@ class EasyPlot():
             ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
             ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
 
-            if self.kwargs["cyclelife_coulombic_efficiency"] == True:
+            if self.kwargs["cyclelife_coulombic_efficiency"]:
                 # Get CE for cyc_nums
                 coulombic_efficiency = cpobj.cell.summary["coulombic_efficiency_u_percentage"]
                 cycs = []
@@ -335,7 +337,7 @@ class EasyPlot():
                 ax_ce.scatter(cycs, CEs, c = color, marker = "+")
                 #print(filename + " Dchg 1-3: " + str(dchgs[1][0:3])  + ", CE 1-3: " + str(coulombic_efficiency[0:3]))
 
-            if self.kwargs["cyclelife_charge_c_rate"] == True or self.kwargs["cyclelife_discharge_c_rate"] == True:
+            if self.kwargs["cyclelife_charge_c_rate"] or self.kwargs["cyclelife_discharge_c_rate"]:
                 #charge_c_rate = cpobj.cell.summary["charge_c_rate"] #This gives incorrect c-rates.
                 
                 stepstable = cpobj.cell.steps
@@ -351,24 +353,44 @@ class EasyPlot():
                         selected_dchg_c_rates.append(dchg_c_rates[cyc-1])
                         selected_cycs.append(cyc)
                 
-                if self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == False:
+                if self.kwargs["cyclelife_charge_c_rate"] and not self.kwargs["cyclelife_discharge_c_rate"]:
                     ax_c_rate.scatter(selected_cycs, selected_chg_c_rates, c = color, marker = "_")
-                elif self.kwargs["cyclelife_charge_c_rate"] == False and self.kwargs["cyclelife_discharge_c_rate"] == True:
+                elif not self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
                     ax_c_rate.scatter(selected_cycs, selected_dchg_c_rates, c = color, marker = "_")
-                elif self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == True:
+                elif self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
                     ax_c_rate.scatter(selected_cycs, selected_chg_c_rates, c = color, marker = "_")
                     ax_c_rate.scatter(selected_cycs, selected_dchg_c_rates, c = color, alpha = 0.2, marker = "_")
+
+            """if self.kwargs["cyclelife_ir"]:
+                chg_ir = []
+                dchg_ir = []
+
+                
+                steptable = cpobj.steps
+                print(steptable)
+                newdf = steptable[["ir", "cycle", "type"]]
+                for i,elem in enumerate(newdf.iterrows()):
+                    if elem[1]["type"] == "charge":
+                        chg_ir.append(elem[1]["ir"])
+                    elif elem[1]["type"] == "discharge":
+                        dchg_ir.append(elem[1]["ir"])
+                print(chg_ir)
+
+                for cyc in keys:
+                    if cyc in cyc_nums:
+                        ax_ir.scatter(cyc, chg_ir[cyc], c = color, marker = "*")
+                        """
 
         # Get labels and handles for legend generation and eventual savefile
         handles, labels = ax.get_legend_handles_labels()
         handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
-        if self.kwargs["cyclelife_coulombic_efficiency"] == True:
+        if self.kwargs["cyclelife_coulombic_efficiency"]:
             handles.append(Line2D([0], [0], marker='+', color='black', alpha = 1, label = 'Coulombic Efficiency', linestyle=''))
-        if self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == False:
+        if self.kwargs["cyclelife_charge_c_rate"] and not self.kwargs["cyclelife_discharge_c_rate"]:
             handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
-        elif self.kwargs["cyclelife_charge_c_rate"] == False and self.kwargs["cyclelife_discharge_c_rate"] == True:
+        elif not self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
             handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective discharge C-rate', linestyle=''))
-        elif self.kwargs["cyclelife_charge_c_rate"] == True and self.kwargs["cyclelife_discharge_c_rate"] == True:
+        elif self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
             handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
             handles.append(Line2D([0], [0], marker='_', color='black', alpha = 0.2, label = 'Effective discharge C-rate', linestyle=''))
         
@@ -384,7 +406,7 @@ class EasyPlot():
 
     def plot_gc(self):
 
-        if self.kwargs["all_in_one"] == True:   # Everything goes in the same figure.
+        if self.kwargs["all_in_one"]:   # Everything goes in the same figure.
 
             fig, ax = self.give_fig()
             colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
@@ -422,13 +444,13 @@ class EasyPlot():
                             cyccolor = cmap(cyc/keys[-1])
 
                         cyc_df = cycgrouped.get_group(cyc)
-                        if self.kwargs["only_dischg"] == False and self.kwargs["only_chg"] == False:
+                        if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
                             ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_dischg"] == True:
+                        elif self.kwargs["only_dischg"]:
                             dchg = cyc_df.groupby("direction")
                             dchg_df = dchg.get_group(-1)
                             ax.plot(dchg_df["capacity"], dchg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_chg"] == True:
+                        elif self.kwargs["only_chg"]:
                             chg = cyc_df.groupby("direction")
                             chg_df = chg.get_group(1)
                             ax.plot(chg_df["capacity"], chg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
@@ -476,13 +498,13 @@ class EasyPlot():
 
                         cyc_df = cycgrouped.get_group(cyc)
                         # TODO: This if elif block is pretty much the same as the one above (for all in one plot), can it be reused in stead of written twice?
-                        if self.kwargs["only_dischg"] == False and self.kwargs["only_chg"] == False:
+                        if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
                             ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_dischg"] == True:
+                        elif self.kwargs["only_dischg"]:
                             dchg = cyc_df.groupby("direction")
                             dchg_df = dchg.get_group(-1)
                             ax.plot(dchg_df["capacity"], dchg_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_chg"] == True:
+                        elif self.kwargs["only_chg"]:
                             chg = cyc_df.groupby("direction")
                             chg_df = chg.get_group(1)
                             ax.plot(chg_df["capacity"], chg_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
@@ -499,7 +521,7 @@ class EasyPlot():
 
     def plot_dQdV(self):
         from cellpy.utils import ica
-        if self.kwargs["all_in_one"] == True:   # Everything goes in the same figure.
+        if self.kwargs["all_in_one"]:   # Everything goes in the same figure.
 
             fig, ax = self.give_fig()
             colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ] * 5
@@ -606,7 +628,7 @@ class EasyPlot():
 
     def plot_gc_and_dQdV(self):
         from cellpy.utils import ica
-        if self.kwargs["all_in_one"] == True:   # Everything goes in the same figure.
+        if self.kwargs["all_in_one"]:   # Everything goes in the same figure.
             fig, ax = self.give_fig()
             fig.delaxes(ax)
             ax1, ax2 = fig.subplots(1,2,sharey=True)
@@ -647,13 +669,13 @@ class EasyPlot():
                             cyccolor = cmap(cyc/keys[-1])
 
                         cyc_df = cycgrouped.get_group(cyc)
-                        if self.kwargs["only_dischg"] == False and self.kwargs["only_chg"] == False:
+                        if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
                             ax1.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_dischg"] == True:
+                        elif self.kwargs["only_dischg"]:
                             dchg = cyc_df.groupby("direction")
                             dchg_df = dchg.get_group(-1)
                             ax1.plot(dchg_df["capacity"], dchg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_chg"] == True:
+                        elif self.kwargs["only_chg"]:
                             chg = cyc_df.groupby("direction")
                             chg_df = chg.get_group(1)
                             ax1.plot(chg_df["capacity"], chg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
@@ -729,13 +751,13 @@ class EasyPlot():
                             cyccolor = cmap(cyc/keys[-1])
 
                         cyc_df = cycgrouped.get_group(cyc)
-                        if self.kwargs["only_dischg"] == False and self.kwargs["only_chg"] == False:
+                        if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
                             ax1.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_dischg"] == True:
+                        elif self.kwargs["only_dischg"]:
                             dchg = cyc_df.groupby("direction")
                             dchg_df = dchg.get_group(-1)
                             ax1.plot(dchg_df["capacity"], dchg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
-                        elif self.kwargs["only_chg"] == True:
+                        elif self.kwargs["only_chg"]:
                             chg = cyc_df.groupby("direction")
                             chg_df = chg.get_group(1)
                             ax1.plot(chg_df["capacity"], chg_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
@@ -929,7 +951,7 @@ class EasyPlot():
         try:
             # Cyclelife plot details
             ax.set(xlabel = self.kwargs["cyclelife_xlabel"])
-            if self.kwargs["cyclelife_percentage"] == True:
+            if self.kwargs["cyclelife_percentage"]:
                 ax.set(ylabel =self.kwargs["cyclelife_ylabel_percent"])
             else:
                 ax.set(ylabel = self.kwargs["cyclelife_ylabel"])
@@ -945,8 +967,8 @@ class EasyPlot():
             logging.error(e)
 
         # Take care of having the legend outside the plot
-        if self.kwargs["cyclelife_legend_outside"] == True:
-            if self.kwargs["cyclelife_coulombic_efficiency"] == True or self.kwargs["cyclelife_charge_c_rate"] == True or self.kwargs["cyclelife_discharge_c_rate"] == True:
+        if self.kwargs["cyclelife_legend_outside"]:
+            if self.kwargs["cyclelife_coulombic_efficiency"] or self.kwargs["cyclelife_charge_c_rate"] or self.kwargs["cyclelife_discharge_c_rate"]:
                 ax.legend(handles=handles, bbox_to_anchor=(1.18, 1), loc='upper left')
             else:
                 ax.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -968,7 +990,7 @@ class EasyPlot():
             fig.suptitle("Capacity determination from Rate Capability")
 
         # Take care of having the legend outside the plot
-        if self.kwargs["cyclelife_legend_outside"] == True:
+        if self.kwargs["cyclelife_legend_outside"]:
             ax.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
 
             figsize = self.kwargs["figsize"]
