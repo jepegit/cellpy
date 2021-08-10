@@ -24,7 +24,7 @@ if __name__ == "__main__":
     '20210628_seam12_04_01_cc_01',
     #'20210628_seam12_04_02_cc_02',
     #'20210628_seam12_04_03_cc_01',
-    '20210628_seam12_05_01_cc_01',
+    #'20210628_seam12_05_01_cc_01',
     #'20210628_seam12_05_02_cc_01',
     #'20210628_seam12_05_03_cc_01',
     #'20210628_seam12_06_01_cc_01',
@@ -34,13 +34,14 @@ if __name__ == "__main__":
     #'20210628_seam12_07_02_cc_01',
     #'20210628_seam12_07_03_cc_01',
     #'./dev_data/DPV_test_1_SEAM12_04_02-testcell.mpr',
+    #'./20160805_test001_47_cc_01.res',
             ]
 
     nicknames = None  # ["Seam10_01_01", "Seam10_01_02"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
         cyclelife_plot = True,
-        cyclelife_percentage = False,
+        cyclelife_percentage = True,
         cyclelife_coulombic_efficiency = False,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
         cyclelife_charge_c_rate = False,
@@ -50,13 +51,14 @@ if __name__ == "__main__":
         cyclelife_ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         cyclelife_ylabel_percent = "Capacity retention [%]",
         cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
+        cyclelife_degradation_slope = True,
         capacity_determination_from_ratecap = False,
-        galvanostatic_plot = True,
+        galvanostatic_plot = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         galvanostatic_ylabel = "Cell potential [V]",
-        galvanostatic_normalize_capacity = True,
+        galvanostatic_normalize_capacity = False,
         dqdv_plot = False,
         dqdv_potlim = None,     #min and max limit on potential-axis
         dqdv_dqlim = None,

@@ -67,6 +67,7 @@ class EasyPlot():
             "cyclelife_ylabel"                      : (str, r"Capacity $\left[\frac{mAh}{g}\right]$"),
             "cyclelife_ylabel_percent"              : (str, "Capacity retention [%]"),
             "cyclelife_legend_outside"              : (bool, False), # if True, the legend is placed outside the plot
+            "cyclelife_degradation_slope"           : (bool, False), # Adds simple degradation slope regression to plot
             "capacity_determination_from_ratecap"        : (bool, False), # If True, uses the ratecap and capacity to determine the exp capacity
             "galvanostatic_plot"        : (bool, True),
             "galvanostatic_potlim"      : (tuple, None),     # min and max limit on potential-axis
@@ -111,7 +112,7 @@ class EasyPlot():
                 if not os.path.isfile(file):
                     logging.error("File not found: " + str(file))
                     raise FileNotFoundError
-                cpobj = cellpy.get(filename = file, instrument="biologics_mpr") # Load regular file
+                cpobj = cellpy.get(filename = file) # Load regular file
                 # Check that we get data
             if cpobj == None:
                 warnings.warn("File reader returned no data for filename " + file + ", Please make sure that the file exists or that the data exists in an eventual database.")
@@ -369,6 +370,17 @@ class EasyPlot():
                 elif self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
                     ax_c_rate.scatter(selected_cycs, selected_chg_c_rates, c = color, marker = "_")
                     ax_c_rate.scatter(selected_cycs, selected_dchg_c_rates, c = color, alpha = 0.2, marker = "_")
+
+
+            if self.kwargs["cyclelife_degradation_slope"]:
+                from scipy.stats import linregress
+                slope, intercept, r, p, se = linregress(dchgs[0], dchgs[1])
+                x = np.linspace(0, ax.get_xlim()[1]*0.9, 10)
+                degradation_unit = r" $\frac{mAh}{g\cdot cycle}$" if not self.kwargs["cyclelife_percentage"] else r' $\frac{\%}{cycle}$'
+                intercept_unit = r" $\frac{mAh}{g}$" if not self.kwargs["cyclelife_percentage"] else r'%'
+                ax.plot(x, x*slope + intercept, c = color, label = "Degradation: %g" %slope + degradation_unit + "\nIntercept:       %g" %intercept + intercept_unit + ", r=%g"%r)
+
+                
 
             """if self.kwargs["cyclelife_ir"]:
                 chg_ir = []
