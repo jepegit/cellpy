@@ -264,7 +264,9 @@ headers_step_table["rate_avr"] = "rate_avr"
 
 # 01.05.2020: added fix column names and renamed to singular form.
 # 08.07.2020: added nominal capacity, experiment type and comment.
+# 10.08.2021: added id_key (can be used for look-up in other dbs).
 headers_journal["filename"] = "filename"
+headers_journal["id_key"] = "id_key"
 headers_journal["mass"] = "mass"
 headers_journal["total_mass"] = "total_mass"
 headers_journal["loading"] = "loading"

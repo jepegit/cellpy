@@ -113,7 +113,7 @@ def dq_dv_engine(**kwargs):
     return farms, barn
 
 
-def simple_db_engine(reader=None, srnos=None, file_list=None, pre_path=None, **kwargs):
+def simple_db_engine(reader=None, srnos=None, file_list=None, pre_path=None, include_key=False, **kwargs):
     """engine that gets values from the simple excel 'db'"""
     # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:
@@ -122,6 +122,8 @@ def simple_db_engine(reader=None, srnos=None, file_list=None, pre_path=None, **k
 
     info_dict = dict()
     info_dict[hdr_journal["filename"]] = [reader.get_cell_name(srno) for srno in srnos]
+    if include_key:
+        info_dict[hdr_journal["id_key"]] = srnos
     info_dict[hdr_journal["mass"]] = [reader.get_mass(srno) for srno in srnos]
     info_dict[hdr_journal["total_mass"]] = [
         reader.get_total_mass(srno) for srno in srnos
