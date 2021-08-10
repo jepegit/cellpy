@@ -6,7 +6,7 @@ if __name__ == "__main__":
     import easyplot
 
     files = [   
-    '20210624_seam12_07_01_cc_02',
+    #'20210624_seam12_07_01_cc_02',
             # === SEAM 12 RATE CAPABILITY ===
     #'20210712_seam12_04_rc_01_cc_01',
     #'20210712_seam12_04_rc_02_cc_01',
@@ -21,10 +21,10 @@ if __name__ == "__main__":
     #'20210712_seam12_07_rc_02_cc_01',
     #'20210712_seam12_07_rc_03_cc_01',
     # === SEAM 12 1ST GC ===
-    #'20210628_seam12_04_01_cc_01',
+    '20210628_seam12_04_01_cc_01',
     #'20210628_seam12_04_02_cc_02',
     #'20210628_seam12_04_03_cc_01',
-    #'20210628_seam12_05_01_cc_01',
+    '20210628_seam12_05_01_cc_01',
     #'20210628_seam12_05_02_cc_01',
     #'20210628_seam12_05_03_cc_01',
     #'20210628_seam12_06_01_cc_01',
@@ -39,13 +39,13 @@ if __name__ == "__main__":
     nicknames = None  # ["Seam10_01_01", "Seam10_01_02"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
-        cyclelife_plot = False,
+        cyclelife_plot = True,
         cyclelife_percentage = False,
         cyclelife_coulombic_efficiency = False,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
-        cyclelife_charge_c_rate = True,
+        cyclelife_charge_c_rate = False,
         cyclelife_discharge_c_rate = False,
-        cyclelife_ir = False,
+        cyclelife_ir = False, # NOT FINISHED
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         cyclelife_ylabel_percent = "Capacity retention [%]",
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
         specific_cycles = None,#[]
         exclude_cycles = None,#[]
-        all_in_one = True,
+        all_in_one = False,
         only_dischg = False,
         only_chg = False,
         outpath = "./ezplots/deleteme/",

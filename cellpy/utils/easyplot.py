@@ -469,6 +469,7 @@ class EasyPlot():
                             #Then we normalize capacity column on the max value (since this should be max cap)
                             maxcap = cyc_df["capacity"].max()
                             cyc_df["capacity"] = cyc_df["capacity"].div(maxcap)
+                            ax.set_xlabel("Normalized Capacity")
 
                         ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
 
@@ -516,15 +517,22 @@ class EasyPlot():
                         cyc_df = cycgrouped.get_group(cyc)
                         # TODO: This if elif block is pretty much the same as the one above (for all in one plot), can it be reused in stead of written twice?
                         if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
-                            ax.plot(cyc_df["capacity"], cyc_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
+                            pass
                         elif self.kwargs["only_dischg"]:
                             dchg = cyc_df.groupby("direction")
-                            dchg_df = dchg.get_group(-1)
-                            ax.plot(dchg_df["capacity"], dchg_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
+                            cyc_df = dchg.get_group(-1)
                         elif self.kwargs["only_chg"]:
                             chg = cyc_df.groupby("direction")
-                            chg_df = chg.get_group(1)
-                            ax.plot(chg_df["capacity"], chg_df["voltage"], label="Cycle " + str(cyc), c = cyccolor)
+                            cyc_df = chg.get_group(1)
+
+                        # TODO: The way this is set up, when plotting both discharge and charge, the whole cycle is normalized on the maximum capacity, meaning the charge can be normalized on the discharge or the other way around.
+                        if self.kwargs["galvanostatic_normalize_capacity"]:
+                            #Then we normalize capacity column on the max value (since this should be max cap)
+                            maxcap = cyc_df["capacity"].max()
+                            cyc_df["capacity"] = cyc_df["capacity"].div(maxcap)
+                            ax.set_xlabel("Normalized Capacity")
+
+                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
 
                 # Set all plot settings from Plot object
                 fig.suptitle(os.path.basename(filename))
