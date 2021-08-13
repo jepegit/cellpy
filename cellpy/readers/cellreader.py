@@ -5359,7 +5359,7 @@ def get(
     Args:
         filename (str, os.PathLike, or list of raw-file names): path to file(s)
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
-        instrument (str): instrument to use (defaults to the one in your cellpy config file)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file) (arbin_res, arbin_sql, arbin_sql_csv, arbin_sql_xlxs)
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
         logging_mode (str): "INFO" or "DEBUG"
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
