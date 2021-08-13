@@ -1,5 +1,7 @@
 import logging
 import os
+import pathlib
+from ruamel import yaml
 
 import pandas as pd
 
@@ -8,6 +10,7 @@ from cellpy.parameters.internal_settings import get_headers_normal, ATTRS_CELLPY
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.readers.core import FileID, Cell, check64bit, humanize_bytes
 from cellpy.parameters import prms
+from cellpy.exceptions import FileNotFound
 
 DEFAULT_CONFIG = {
     "structure": {
@@ -123,15 +126,26 @@ class CustomLoader(Loader):
     def pick_definition_file():
         return prms.Instruments.custom_instrument_definitions_file
 
+    @staticmethod
+    def load_definition_file():
+        definitions_file = pathlib.Path(prms.Instruments.custom_instrument_definitions_file)
+        if not definitions_file.is_file():
+            raise FileNotFound(f"Custom definitions file not found ({definitions_file})")
+        yml = yaml.YAML()
+        with open(definitions_file, "r") as ff:
+            settings = yml.load(ff.read())
+        return settings
+
     # TODO: @jepe - create yaml file example (from DEFAULT_CONFIG)
-    # TODO: @jepe - create yaml file parser
+
     def parse_definition_file(self):
         if self.definition_file is None:
             logging.info("no definition file for custom format")
             logging.info("using default settings")
             settings = DEFAULT_CONFIG
         else:
-            raise NotImplementedError
+            logging.info("loading definition file for custom format")
+            settings = self.load_definition_file()
 
         self.units = settings["units"]
         self.limits = settings["limits"]
@@ -174,55 +188,58 @@ class CustomLoader(Loader):
 
     def loader(self, file_name, **kwargs):
         new_tests = []
+        var_dict = dict()
+
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return
 
         # find out strategy (based on structure)
-        if self.structure["format"] in ["csv", "xlxs"]:
+        if self.structure["format"] not in ["csv", "xlsx"]:
+            print(self.structure["format"])
             raise NotImplementedError
-
-        sep = self.structure.get("sep", prms.Reader.sep)
-        if sep is None:
-            sep = prms.Reader.sep
-
-        locate_vars_by = self.structure.get("locate_vars_by", "key_value_pairs")
-        comment_chars = self.structure.get("comment_chars", ["#", "!"])
-        header_row = self.structure.get("start_data", None)
-        if header_row is None:
-            header_row = self._find_data_start(file_name, sep)
-
-        # parse variables
-        var_lines = []
-        with open(file_name, "rb") as fp:
-            for i, line in enumerate(fp):
-                if i < header_row:
-                    line = line.strip()
-                    try:
-                        line = line.decode()
-                    except UnicodeDecodeError:
-                        logging.debug(
-                            "UnicodeDecodeError: " "skipping this line: " f"{line}"
-                        )
-                    else:
-                        if line.startswith(comment_chars):
-                            logging.debug(f"Comment: {line}")
-                        else:
-                            var_lines.append(line)
-                else:
-                    break
-
-        var_dict = dict()
-        if locate_vars_by == "key_value_pairs":
-            for line in var_lines:
-                parts = line.split(sep)
-                try:
-                    var_dict[parts[0]] = parts[1]
-                except IndexError as e:
-                    logging.debug(f"{e}\ncould not split var-value\n{line}")
-
         else:
-            raise NotImplementedError
+            logging.debug(self.structure["format"])
+
+        if self.structure["format"] == "csv":
+            sep = self.structure.get("sep", prms.Reader.sep)
+
+            locate_vars_by = self.structure.get("locate_vars_by", "key_value_pairs")
+            comment_chars = self.structure.get("comment_chars", ["#", "!"])
+            header_row = self.structure.get("start_data", None)
+            if header_row is None:
+                header_row = self._find_data_start(file_name, sep)
+
+            # parsing the top part of the file, looking for variables
+            var_lines = []
+            with open(file_name, "rb") as fp:
+                for i, line in enumerate(fp):
+                    if i < header_row:
+                        line = line.strip()
+                        try:
+                            line = line.decode()
+                        except UnicodeDecodeError:
+                            logging.debug(
+                                "UnicodeDecodeError: " "skipping this line: " f"{line}"
+                            )
+                        else:
+                            if line.startswith(comment_chars):
+                                logging.debug(f"Comment: {line}")
+                            else:
+                                var_lines.append(line)
+                    else:
+                        break
+
+            if locate_vars_by == "key_value_pairs":
+                for line in var_lines:
+                    parts = line.split(sep)
+                    try:
+                        var_dict[parts[0]] = parts[1]
+                    except IndexError as e:
+                        logging.debug(f"{e}\ncould not split var-value\n{line}")
+
+            else:
+                raise NotImplementedError
 
         data = Cell()
         data.loaded_from = file_name
@@ -252,8 +269,8 @@ class CustomLoader(Loader):
             raw = self._parse_csv_data(file_name, sep, header_row)
 
         elif self.structure["format"] == "xlsx":
-            print("UNDER DEVELOPMENT")
-            raise NotImplementedError
+            raw = self._parse_xlsx_data(file_name)
+            # raise NotImplementedError
 
         raw = self._rename_cols(raw)
         raw = self._check_cycleno_stepno(raw)
@@ -262,6 +279,16 @@ class CustomLoader(Loader):
         data.raw = raw
         new_tests.append(data)
         return new_tests
+
+    def _parse_xlsx_data(self, file_name):
+        sheet_name = self.structure["table_name"]
+        raw_frame = pd.read_excel(file_name, engine="openpyxl", sheet_name=sheet_name)
+        print("NOT FINISHED - continue coding from here")
+
+        # next: implement method for assuring that both charge and discharge cols have the final value for last step in
+        #   the cycle (as arbin does)
+
+        return raw_frame
 
     def _parse_csv_data(self, file_name, sep, header_row):
         raw = pd.read_csv(file_name, sep=sep, header=header_row, skip_blank_lines=False)
