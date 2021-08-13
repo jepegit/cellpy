@@ -7,7 +7,6 @@ Remember also to register it in cellpy.cellreader.
 """
 
 import abc
-import logging
 
 import cellpy.readers.core as core
 

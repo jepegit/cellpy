@@ -35,8 +35,9 @@ hdr_summary = get_headers_summary()
 
 COLUMNS_SELECTED_FOR_VIEW = [
     hdr_journal.mass,
-    # hdr_journal.total_mass,
+    hdr_journal.total_mass,
     hdr_journal.loading,
+    hdr_journal.nom_cap,
 ]
 
 
@@ -78,6 +79,8 @@ class Batch:
             nom_cap (float): give a nominal capacity if you want to use another value than
                 the one given in the config-file or prm-class.
         """
+        # TODO: add option for setting max cycle number
+        #   use self.experiment.last_cycle = xxx
         default_log_level = kwargs.pop("log_level", None)
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
@@ -433,6 +436,9 @@ class Batch:
 
             **kwargs: sent to sub-function(s) (e.g. from_db -> simple_db_reader -> find_files -> filefinder.search_for_files)
         """
+
+        # TODO (jepe): create option to update journal without looking for files
+
         logging.debug("Creating a journal")
         logging.debug(f"description: {description}")
         logging.debug(f"from_db: {from_db}")
@@ -740,6 +746,7 @@ def init(*args, **kwargs):
         >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
         >>> normal_init_of_batch = Batch.init()
     """
+    # TODO: add option for setting max cycle number (experiment.last_cycle)
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
     file_name = kwargs.pop("file_name", None)
@@ -755,6 +762,7 @@ def init(*args, **kwargs):
 
 def from_journal(journal_file, autolink=True):
     """Create a Batch from a journal file"""
+    # TODO: add option for setting max cycle number (experiment.last_cycle)
     b = init(db_reader=None, file_name=journal_file)
     if autolink:
         b.link()

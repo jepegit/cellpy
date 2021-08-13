@@ -553,8 +553,9 @@ def collect_capacity_curves(
 
         except NullData as e:
             logging.warning(e)
-            break
-
+            d = pd.DataFrame()
+            d.name = cycle
+            charge_list.append(d)
         else:
             d = pd.DataFrame({"q": q, "v": v})
             # d.name = f"{cycle}"

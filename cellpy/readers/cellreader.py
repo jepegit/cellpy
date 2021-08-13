@@ -722,8 +722,17 @@ class CellpyData(object):
         l_cellpy = len(ids_cellpy_file)
         if l_res == l_cellpy and l_cellpy > 0:
             for name, value in list(ids_raw.items()):
-                if ids_cellpy_file[name] != value:
+                try:
+                    c_value = ids_cellpy_file[name]
+                except KeyError:
+                    logging.debug("KeyError when comparing raw and cellpy file.")
+                    logging.debug(
+                        "Could be due to upper case vs. lower case confusion."
+                    )
                     similar = False
+                else:
+                    if c_value != value:
+                        similar = False
         else:
             similar = False
 
@@ -1143,13 +1152,15 @@ class CellpyData(object):
                     # The reason for this choice is not clear anymore, but
                     # let us keep it like this for now
                     self.logger.debug("added the data set - merging file info")
+                    # TODO: include this into prms (and config-file):
+                    max_raw_files_to_merge = 20
                     for j in range(len(new_tests[set_number].raw_data_files)):
                         raw_data_file = new_tests[set_number].raw_data_files[j]
                         file_size = new_tests[set_number].raw_data_files_length[j]
                         test[set_number].raw_data_files.append(raw_data_file)
                         test[set_number].raw_data_files_length.append(file_size)
                         counter += 1
-                        if counter > 10:
+                        if counter > max_raw_files_to_merge:
                             self.logger.debug("ERROR? Too many files to merge")
                             raise ValueError(
                                 "Too many files to merge - "
@@ -1271,7 +1282,7 @@ class CellpyData(object):
         """
         raise NotImplementedError
 
-    def load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=True):
+    def load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=True, selector=None):
         """Loads a cellpy file.
 
         Args:
@@ -1280,6 +1291,7 @@ class CellpyData(object):
             return_cls (bool): Return the class.
             accept_old (bool): Accept loading old cellpy-file versions.
                 Instead of raising WrongFileVersion it only issues a warning.
+            selector (): under development
 
         Returns:
             cellpy.CellPyData class if return_cls is True
@@ -1289,7 +1301,7 @@ class CellpyData(object):
             self.logger.debug("loading cellpy-file (hdf5):")
             self.logger.debug(cellpy_file)
             with pickle_protocol(PICKLE_PROTOCOL):
-                new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
+                new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old, selector=selector)
             self.logger.debug("cellpy-file loaded")
 
         except AttributeError:
@@ -1377,7 +1389,7 @@ class CellpyData(object):
 
         return cellpy_file_version
 
-    def _load_hdf5(self, filename, parent_level=None, accept_old=False):
+    def _load_hdf5(self, filename, parent_level=None, accept_old=False, selector=None):
         """Load a cellpy-file.
 
         Args:
@@ -1385,6 +1397,7 @@ class CellpyData(object):
             parent_level (str) (optional): name of the parent level
                 (defaults to "CellpyData"). DeprecationWarning!
             accept_old (bool): accept old file versions.
+            selector (): select specific ranges (under development)
 
         Returns:
             loaded datasets (DataSet-object)
@@ -1433,13 +1446,13 @@ class CellpyData(object):
 
         else:
             self.logger.debug(f"Loading {filename} :: v{cellpy_file_version}")
-            new_data = self._load_hdf5_current_version(filename)
+            new_data = self._load_hdf5_current_version(filename, selector=selector)
 
         # self.__check_loaded_data(new_data)
 
         return new_data
 
-    def _old_load_hdf5(self, filename, parent_level=None, accept_old=False):
+    def _old_load_hdf5(self, filename, parent_level=None, accept_old=False, selector=None):
         """Load a cellpy-file.
 
         Args:
@@ -1447,6 +1460,7 @@ class CellpyData(object):
             parent_level (str) (optional): name of the parent level
                 (defaults to "CellpyData"). DeprecationWarning!
             accept_old (bool): accept old file versions.
+            selector (): select specific cycles etc (under development)
 
         Returns:
             loaded datasets (DataSet-object)
@@ -1491,11 +1505,11 @@ class CellpyData(object):
 
         else:
             self.logger.debug(f"Loading {filename} :: v{cellpy_file_version}")
-            new_data = self._load_hdf5_current_version(filename)
+            new_data = self._load_hdf5_current_version(filename, selector=selector)
 
         return new_data
 
-    def _load_hdf5_current_version(self, filename, meta_dir="/info", parent_level=None):
+    def _load_hdf5_current_version(self, filename, meta_dir="/info", parent_level=None, selector=None):
         if parent_level is None:
             parent_level = prms._cellpyfile_root
 
@@ -1504,6 +1518,8 @@ class CellpyData(object):
         summary_dir = prms._cellpyfile_summary
         fid_dir = prms._cellpyfile_fid
 
+        logging.debug(f"filename: {filename}")
+        logging.debug(f"selector: {selector}")
         with pd.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
                 meta_dir, parent_level, store
@@ -1512,10 +1528,10 @@ class CellpyData(object):
                 meta_dir, parent_level, raw_dir, store, summary_dir
             )
             self._extract_summary_from_cellpy_file(
-                data, parent_level, store, summary_dir
+                data, parent_level, store, summary_dir, selector=selector
             )
-            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store)
-            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store)
+            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store, selector=selector)
+            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store, selector=selector)
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
             )
@@ -1536,7 +1552,7 @@ class CellpyData(object):
         ]  # but cellpy is ready when that time comes (if it ever happens)
         return new_tests
 
-    def _load_hdf5_v5(self, filename):
+    def _load_hdf5_v5(self, filename, selector=None):
         parent_level = "CellpyData"
         raw_dir = "/raw"
         step_dir = "/steps"
@@ -1552,10 +1568,10 @@ class CellpyData(object):
                 meta_dir, parent_level, raw_dir, store, summary_dir
             )
             self._extract_summary_from_cellpy_file(
-                data, parent_level, store, summary_dir
+                data, parent_level, store, summary_dir, selector=selector
             )
-            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store)
-            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store)
+            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store, selector=selector)
+            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store, selector=selector)
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
             )
@@ -1693,24 +1709,42 @@ class CellpyData(object):
                 logging.debug(f"limited to data_point {self.limit_data_points}")
                 return (f"index <= {int(self.limit_data_points)}",)
 
-    def _extract_summary_from_cellpy_file(self, data, parent_level, store, summary_dir):
-        cycle_filter = self._hdf5_cycle_filter("summary")
+    def _unpack_selector(self, selector):
+        # not implemented yet
+        # should be used for trimming the selector so that it is not necessary to parse it individually
+        # for all the _extract_xxx_from_cellpy_file methods.
+        return selector
+
+    def _extract_summary_from_cellpy_file(self, data, parent_level, store, summary_dir, selector=None):
+        if selector is not None:
+            cycle_filter = []
+            if max_cycle := selector.get("max_cycle", None):
+                cycle_filter.append(f"index <= {int(max_cycle)}")
+                self.limit_loaded_cycles = max_cycle
+        else:
+            # getting cycle filter by setting attributes:
+            cycle_filter = self._hdf5_cycle_filter("summary")
+
         data.summary = store.select(parent_level + summary_dir, where=cycle_filter)
         # TODO: max data point should be an attribute
         max_data_point = data.summary["data_point"].max()
         self.limit_data_points = int(max_data_point)
+        logging.debug(f"data-point max limit: {self.limit_data_points}")
 
-    def _extract_raw_from_cellpy_file(self, data, parent_level, raw_dir, store):
-        cycle_filter = self._hdf5_cycle_filter("raw")
+    def _extract_raw_from_cellpy_file(self, data, parent_level, raw_dir, store, selector=None):
+        # selector is not implemented yet for only raw data
+        # however, selector for max_cycle will still work since
+        # the attribute self.limit_data_points is set while reading the summary
+        cycle_filter = self._hdf5_cycle_filter(table="raw")
         data.raw = store.select(parent_level + raw_dir, where=cycle_filter)
 
-    def _extract_steps_from_cellpy_file(self, data, parent_level, step_dir, store):
+    def _extract_steps_from_cellpy_file(self, data, parent_level, step_dir, store, selector=None):
         try:
             data.steps = store.select(parent_level + step_dir)
             if self.limit_data_points:
                 data.steps = data.steps.loc[
                     data.steps["point_last"] <= self.limit_data_points
-                ]
+                    ]
                 logging.debug(f"limited to data_point {self.limit_data_points}")
         except Exception as e:
             print(e)
@@ -4166,7 +4200,7 @@ class CellpyData(object):
             no_cycles = np.amax(steptable[self.headers_step_table.cycle])
         return no_cycles
 
-    def get_cycle_numbers(self, dataset_number=None, steptable=None):
+    def get_cycle_numbers_old(self, dataset_number=None, steptable=None):
         """Get a list containing all the cycle numbers in the test."""
         self.logger.debug("getting cycle numbers")
         if steptable is None:
@@ -4181,6 +4215,86 @@ class CellpyData(object):
             cycles = steptable[self.headers_step_table.cycle].dropna().unique()
         self.logger.debug(f"got {len(cycles)} cycle numbers")
         return cycles
+
+    def get_cycle_numbers(
+        self,
+        dataset_number=None,
+        steptable=None,
+        rate=None,
+        rate_on=None,
+        rate_std=None,
+        rate_column=None,
+        inverse=False,
+    ):
+        """Get a list containing all the cycle numbers in the test.
+
+        Parameters:
+            rate (float): the rate to filter on. Remark that it should be given
+                as a float, i.e. you will have to convert from C-rate to
+                the actual numeric value. For example, use rate=0.05 if you want
+                to filter on cycles that has a C/20 rate.
+            rate_on (str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            rate_std (float): allow for this inaccuracy in C-rate when selecting cycles
+            rate_column (str): column header name of the rate column,
+            inverse (bool): select steps that does not have the given C-rate.
+
+        Returns:
+            numpy.ndarray of cycle numbers.
+        """
+
+        self.logger.debug("getting cycle numbers")
+        if steptable is None:
+            dataset_number = self._validate_dataset_number(dataset_number)
+            if dataset_number is None:
+                self._report_empty_dataset()
+                return
+            d = self.cells[dataset_number].raw
+            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
+            steptable = self.cells[dataset_number].steps
+        else:
+            self.logger.debug("steptable is given as input parameter")
+            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
+
+        if rate is None:
+            return cycles
+
+        self.logger.debug("filtering on rate")
+        if rate_on is None:
+            rate_on = ["charge"]
+        else:
+            if not isinstance(rate_on, (list, tuple)):
+                rate_on = [rate_on]
+
+        if rate_column is None:
+            rate_column = self.headers_step_table["rate_avr"]
+
+        if rate_on:
+            on_column = self.headers_step_table["type"]
+
+        if rate is None:
+            rate = 0.05
+
+        if rate_std is None:
+            rate_std = 0.1 * rate
+
+        if rate_on:
+            cycles_mask = (
+                (steptable[rate_column] < (rate + rate_std))
+                & (steptable[rate_column] > (rate - rate_std))
+                & (steptable[on_column].isin(rate_on))
+            )
+        else:
+            cycles_mask = (steptable[rate_column] < (rate + rate_std)) & (
+                steptable[rate_column] > (rate - rate_std)
+            )
+
+        if inverse:
+            cycles_mask = ~cycles_mask
+
+        filtered_step_table = steptable[cycles_mask]
+        filtered_cycles = filtered_step_table[self.headers_step_table["cycle"]].unique()
+
+        return filtered_cycles
 
     def get_ir(self, dataset_number=None):
         """Get the IR data (Deprecated)."""
@@ -5238,16 +5352,19 @@ def get(
     logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
+    **kwargs
 ):
     """Create a CellpyData object
 
     Args:
         filename (str, os.PathLike, or list of raw-file names): path to file(s)
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
-        instrument (str): instrument to use (defaults to the one in your cellpy config file)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file) (arbin_res, arbin_sql, arbin_sql_csv, arbin_sql_xlxs)
+        nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
         logging_mode (str): "INFO" or "DEBUG"
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
         auto_summary (bool): (re-) create summary.
+        **kwargs: sent to the loader
 
     Returns:
         CellpyData object (if successful, None if not)
@@ -5284,7 +5401,9 @@ def get(
 
                 if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
                     logging.info(f"Loading cellpy-file: {filename}")
-                    cellpy_instance.load(filename)
+                    cellpy_instance.load(filename, **kwargs)
+
+                    # in case the user wants to give another mass to the cell:
                     if mass is not None:
                         logging.info(f"Setting mass: {mass}")
                         cellpy_instance.set_mass(mass)
@@ -5298,7 +5417,7 @@ def get(
 
         # raw file
         logging.info(f"Loading raw-file: {filename}")
-        cellpy_instance.from_raw(filename)
+        cellpy_instance.from_raw(filename, **kwargs)
         if not cellpy_instance:
             print("Could not load file: check log!")
             print("Returning None")
@@ -5318,8 +5437,8 @@ def get(
             logging.info("Creating summary data")
             cellpy_instance.make_summary()
 
-        logging.info("Created CellpyData object")
-        return cellpy_instance
+    logging.info("Created CellpyData object")
+    return cellpy_instance
 
 
 if __name__ == "__main__":

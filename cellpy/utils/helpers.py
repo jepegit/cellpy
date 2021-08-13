@@ -296,9 +296,86 @@ def add_areal_capacity(cell, cell_id, journal):
 
 def _remove_outliers_from_summary(s, filter_vals, freeze_indexes=None):
     if freeze_indexes is not None:
-        filter_vals[freeze_indexes] = True
+        try:
+            filter_vals[freeze_indexes] = True
+        except IndexError:
+            logging.critical(
+                f"Could not freeze - missing cycle indexes {freeze_indexes}"
+            )
 
     return s[filter_vals]
+
+
+def remove_outliers_from_summary_on_window(
+    s, window_size=3, cut=0.1, iterations=1, col_name=None, freeze_indexes=None
+):
+    """Removes outliers based based on neighbours"""
+    if col_name is None:
+        col = hdr_summary["charge_capacity"]
+
+    else:
+        col = hdr_summary[col_name]
+
+    def fractional_std(x):
+        return np.std(x) / np.mean(x)
+
+    for j in range(iterations):
+        fractional_deviation_series = (
+            s[col]
+                .rolling(window=window_size, center=True, min_periods=1)
+                .apply(fractional_std)
+        )
+        filter_vals = fractional_deviation_series < cut
+        s = s[filter_vals]
+
+    s = _remove_outliers_from_summary(s, filter_vals, freeze_indexes=freeze_indexes)
+
+    return s
+
+
+def remove_outliers_from_summary_on_nn_distance(
+    s, distance=0.7, filter_cols=None, freeze_indexes=None
+):
+    """Remove outliers with missing neighbours.
+
+    Args:
+        s (pandas.DataFrame): summary frame
+        distance (float): cut-off (all cycles that have a closest neighbour further apart this number will be removed)
+        filter_cols (list): list of column headers to perform the filtering on (defaults to charge and discharge capacity)
+        freeze_indexes (list): list of cycle indexes that should never be removed (defaults to cycle 1)
+
+    Returns:
+        filtered summary (pandas.DataFrame)
+
+    Returns:
+
+    """
+    if filter_cols is None:
+        filter_cols = [
+            hdr_summary["charge_capacity"],
+            hdr_summary["discharge_capacity"],
+        ]
+
+    def neighbour_window(y):
+        y = y.values
+        if len(y) == 1:
+            # only included in case the pandas rolling function changes in the future
+            return 0.5
+        if len(y) == 2:
+            return abs(np.diff(y)) / np.mean(y)
+        else:
+            return min(abs(y[1] - y[0]), abs(y[1] - y[2])) / min(
+                np.mean(y[0:1]), np.mean(y[1:])
+            )
+
+    s2 = s[filter_cols].copy()
+
+    r = s2[filter_cols].rolling(3, center=True, min_periods=1).apply(neighbour_window)
+    filter_vals = (r < distance).all(axis=1)
+
+    s = _remove_outliers_from_summary(s, filter_vals, freeze_indexes=freeze_indexes)
+
+    return s
 
 
 def remove_outliers_from_summary_on_zscore(
@@ -481,6 +558,9 @@ def yank_outliers(
     remove_last=False,
     iterations=1,
     zscore_multiplyer=1.3,
+    distance=None,
+    window_size=None,
+    window_cut=0.1,
     keep_old=False,
 ):
     """Remove outliers from a batch object.
@@ -497,6 +577,10 @@ def yank_outliers(
         iterations (int): repeat z-score filtering if `zscore_limit` is given.
         zscore_multiplyer (int): multiply `zscore_limit` with this number between each z-score filtering
             (should usually be less than 1).
+        distance (float): nearest neighbour normalised distance required (typically 0.5).
+        window_size (int): number of cycles to include in the window.
+        window_cut (float): cut-off.
+
         keep_old (bool): perform filtering of a copy of the batch object
             (not recommended at the moment since it then loads the full cellpyfile).
 
@@ -531,8 +615,7 @@ def yank_outliers(
             s = remove_outliers_from_summary_on_index(
                 s, remove_indexes_this_cell, remove_last_this_cell
             )
-            # TODO: populate removed_cycles
-        before = set(s.index)
+
         s = remove_outliers_from_summary_on_value(
             s,
             low=low,
@@ -540,13 +623,32 @@ def yank_outliers(
             filter_cols=filter_cols,
             freeze_indexes=freeze_indexes,
         )
+
+        if distance is not None:
+            s = remove_outliers_from_summary_on_nn_distance(
+                s,
+                distance=distance,
+                filter_cols=filter_cols,
+                freeze_indexes=freeze_indexes,
+            )
+            c.cell.summary = s
+
+        if window_size is not None:
+            s = remove_outliers_from_summary_on_window(
+                s,
+                window_size=window_size,
+                cut=window_cut,
+                iterations=iterations,
+                freeze_indexes=freeze_indexes,
+            )
+
         removed = before - set(s.index)
         c.cell.summary = s
         if removed:
             removed_cycles[cell_label] = list(removed)
 
-    # removed based on zscore
     if zscore_limit is not None:
+        logging.info("using the zscore - removed cycles not kept track on")
         for j in range(iterations):
             tot_rows_removed = 0
             for cell_number, cell_label in enumerate(b.experiment.cell_names):
@@ -565,6 +667,7 @@ def yank_outliers(
             if tot_rows_removed == 0:
                 break
             zscore_limit *= zscore_multiplyer
+
     if keep_old:
         return b
     else:
