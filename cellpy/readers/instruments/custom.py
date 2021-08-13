@@ -179,7 +179,7 @@ class CustomLoader(Loader):
             return
 
         # find out strategy (based on structure)
-        if self.structure["format"] != "csv":
+        if self.structure["format"] in ["csv", "xlxs"]:
             raise NotImplementedError
 
         sep = self.structure.get("sep", prms.Reader.sep)
@@ -248,8 +248,13 @@ class CustomLoader(Loader):
             logging.debug("total_mass is given, but not propagated")
 
         logging.debug(f"unused vars: {var_dict}")
+        if self.structure["format"] == "csv":
+            raw = self._parse_csv_data(file_name, sep, header_row)
 
-        raw = self._parse_csv_data(file_name, sep, header_row)
+        elif self.structure["format"] == "xlsx":
+            print("UNDER DEVELOPMENT")
+            raise NotImplementedError
+
         raw = self._rename_cols(raw)
         raw = self._check_cycleno_stepno(raw)
         data.raw_data_files_length.append(raw.shape[0])
