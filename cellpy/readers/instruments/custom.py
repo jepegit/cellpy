@@ -128,9 +128,13 @@ class CustomLoader(Loader):
 
     @staticmethod
     def load_definition_file():
-        definitions_file = pathlib.Path(prms.Instruments.custom_instrument_definitions_file)
+        definitions_file = pathlib.Path(
+            prms.Instruments.custom_instrument_definitions_file
+        )
         if not definitions_file.is_file():
-            raise FileNotFound(f"Custom definitions file not found ({definitions_file})")
+            raise FileNotFound(
+                f"Custom definitions file not found ({definitions_file})"
+            )
         yml = yaml.YAML()
         with open(definitions_file, "r") as ff:
             settings = yml.load(ff.read())
@@ -248,12 +252,12 @@ class CustomLoader(Loader):
         # parsing cellpydata attributes
         for attribute in ATTRS_CELLPYFILE:
             key = self.variables.get(attribute, None)
-            # print(f"{attribute} -> {key}")
-            if key:
-                val = var_dict.pop(key, None)
+            val = var_dict.pop(key, None)
+            # print(f"{attribute} -> {key}:{val}")
+            if val:
                 if key in ["mass"]:
                     val = float(val)
-                # print(f"{attribute}: {val}")
+                # print(f"mass, {attribute}: {val}")
                 setattr(data, attribute, val)
 
         data.raw_data_files.append(fid)
@@ -270,24 +274,84 @@ class CustomLoader(Loader):
 
         elif self.structure["format"] == "xlsx":
             raw = self._parse_xlsx_data(file_name)
-            # raise NotImplementedError
 
         raw = self._rename_cols(raw)
+
+        capacity_structure = self.structure.get("capacity_structure", "cellpy")
+        if capacity_structure == "cellpy":
+            logging.debug("standard cellpy structure - no additional processing of capacity columns needed")
+        elif capacity_structure == "one_col_state":
+            # TODO: make this a function or method
+            # TODO: currently, the user needs to assign the name of the capacity column to the charge_capacity
+            #  variable in the yaml file. Should improve this later.
+            cap_col = "charge_capacity"
+            col = self.structure["state_col"]
+            charge_key = self.structure["charge_key"]
+            discharge_key = self.structure["discharge_key"]
+
+            raw["new_c"] = 0
+            raw["new_d"] = 0
+            cycle_index_hdr = self.headers_normal["cycle_index_txt"]
+            charge_cap_hdr = self.headers_normal["charge_capacity_txt"]
+            discharge_cap_hdr = self.headers_normal["discharge_capacity_txt"]
+            data_point = self.headers_normal["data_point_txt"]
+            cycle_numbers = raw[cycle_index_hdr].unique()
+            # cell_type = prms.Reader.cycle_mode
+            for i in cycle_numbers:
+                charge_cap = raw.loc[
+                    (raw[col] == charge_key) & (raw[cycle_index_hdr] == i),
+                    [data_point, cap_col],
+                ]
+                discharge_cap = raw.loc[
+                    (raw[col] == discharge_key) & (raw[cycle_index_hdr] == i),
+                    [data_point, cap_col],
+                ]
+                charge_cap_last_index, charge_cap_last_val = charge_cap.iloc[-1]
+                discharge_cap_last_index, discharge_cap_last_val = discharge_cap.iloc[
+                    -1
+                ]
+
+                raw["new_c"].update(charge_cap[cap_col])
+                raw["new_d"].update(discharge_cap[cap_col])
+
+                raw.loc[
+                    (raw[data_point] > discharge_cap_last_index)
+                    & (raw[cycle_index_hdr] == i),
+                    "new_d",
+                ] = discharge_cap_last_val
+                raw.loc[
+                    (raw[data_point] > charge_cap_last_index)
+                    & (raw[cycle_index_hdr] == i),
+                    "new_c",
+                ] = charge_cap_last_val
+
+            raw[charge_cap_hdr] = raw["new_c"]
+            raw[discharge_cap_hdr] = raw["new_d"]
+            raw.drop(["new_c", "new_d"], axis=1)
+        else:
+            raise NotImplementedError(f"{capacity_structure} is not yet supported")
+
+        raw = self._select_cols(raw)
         raw = self._check_cycleno_stepno(raw)
+
         data.raw_data_files_length.append(raw.shape[0])
         data.summary = None
         data.raw = raw
         new_tests.append(data)
         return new_tests
 
+    def _select_cols(self, raw):
+        selected = [
+            self.headers_normal[col_def]
+            for col_def in self.headers
+            if self.headers_normal[col_def] in raw.columns
+        ]
+        raw = raw[selected]
+        return raw
+
     def _parse_xlsx_data(self, file_name):
         sheet_name = self.structure["table_name"]
         raw_frame = pd.read_excel(file_name, engine="openpyxl", sheet_name=sheet_name)
-        print("NOT FINISHED - continue coding from here")
-
-        # next: implement method for assuring that both charge and discharge cols have the final value for last step in
-        #   the cycle (as arbin does)
-
         return raw_frame
 
     def _parse_csv_data(self, file_name, sep, header_row):

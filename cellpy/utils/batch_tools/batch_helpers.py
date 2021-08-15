@@ -94,7 +94,9 @@ def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
     # TODO: implement option for not searching for raw-file names if force_cellpy is True
     for run_name in info_dict[hdr_journal["filename"]]:
         logging.debug(f"checking for {run_name}")
-        raw_files, cellpyfile = filefinder.search_for_files(run_name, file_list=file_list, pre_path=pre_path, **kwargs)
+        raw_files, cellpyfile = filefinder.search_for_files(
+            run_name, file_list=file_list, pre_path=pre_path, **kwargs
+        )
         if not raw_files:
             raw_files = None
         info_dict[hdr_journal["raw_file_names"]].append(raw_files)

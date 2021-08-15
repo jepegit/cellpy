@@ -1282,7 +1282,14 @@ class CellpyData(object):
         """
         raise NotImplementedError
 
-    def load(self, cellpy_file, parent_level=None, return_cls=True, accept_old=True, selector=None):
+    def load(
+        self,
+        cellpy_file,
+        parent_level=None,
+        return_cls=True,
+        accept_old=True,
+        selector=None,
+    ):
         """Loads a cellpy file.
 
         Args:
@@ -1301,7 +1308,9 @@ class CellpyData(object):
             self.logger.debug("loading cellpy-file (hdf5):")
             self.logger.debug(cellpy_file)
             with pickle_protocol(PICKLE_PROTOCOL):
-                new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old, selector=selector)
+                new_datasets = self._load_hdf5(
+                    cellpy_file, parent_level, accept_old, selector=selector
+                )
             self.logger.debug("cellpy-file loaded")
 
         except AttributeError:
@@ -1452,7 +1461,9 @@ class CellpyData(object):
 
         return new_data
 
-    def _old_load_hdf5(self, filename, parent_level=None, accept_old=False, selector=None):
+    def _old_load_hdf5(
+        self, filename, parent_level=None, accept_old=False, selector=None
+    ):
         """Load a cellpy-file.
 
         Args:
@@ -1509,7 +1520,9 @@ class CellpyData(object):
 
         return new_data
 
-    def _load_hdf5_current_version(self, filename, meta_dir="/info", parent_level=None, selector=None):
+    def _load_hdf5_current_version(
+        self, filename, meta_dir="/info", parent_level=None, selector=None
+    ):
         if parent_level is None:
             parent_level = prms._cellpyfile_root
 
@@ -1530,8 +1543,12 @@ class CellpyData(object):
             self._extract_summary_from_cellpy_file(
                 data, parent_level, store, summary_dir, selector=selector
             )
-            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store, selector=selector)
-            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store, selector=selector)
+            self._extract_raw_from_cellpy_file(
+                data, parent_level, raw_dir, store, selector=selector
+            )
+            self._extract_steps_from_cellpy_file(
+                data, parent_level, step_dir, store, selector=selector
+            )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
             )
@@ -1570,8 +1587,12 @@ class CellpyData(object):
             self._extract_summary_from_cellpy_file(
                 data, parent_level, store, summary_dir, selector=selector
             )
-            self._extract_raw_from_cellpy_file(data, parent_level, raw_dir, store, selector=selector)
-            self._extract_steps_from_cellpy_file(data, parent_level, step_dir, store, selector=selector)
+            self._extract_raw_from_cellpy_file(
+                data, parent_level, raw_dir, store, selector=selector
+            )
+            self._extract_steps_from_cellpy_file(
+                data, parent_level, step_dir, store, selector=selector
+            )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
             )
@@ -1715,7 +1736,9 @@ class CellpyData(object):
         # for all the _extract_xxx_from_cellpy_file methods.
         return selector
 
-    def _extract_summary_from_cellpy_file(self, data, parent_level, store, summary_dir, selector=None):
+    def _extract_summary_from_cellpy_file(
+        self, data, parent_level, store, summary_dir, selector=None
+    ):
         if selector is not None:
             cycle_filter = []
             if max_cycle := selector.get("max_cycle", None):
@@ -1731,14 +1754,18 @@ class CellpyData(object):
         self.limit_data_points = int(max_data_point)
         logging.debug(f"data-point max limit: {self.limit_data_points}")
 
-    def _extract_raw_from_cellpy_file(self, data, parent_level, raw_dir, store, selector=None):
+    def _extract_raw_from_cellpy_file(
+        self, data, parent_level, raw_dir, store, selector=None
+    ):
         # selector is not implemented yet for only raw data
         # however, selector for max_cycle will still work since
         # the attribute self.limit_data_points is set while reading the summary
         cycle_filter = self._hdf5_cycle_filter(table="raw")
         data.raw = store.select(parent_level + raw_dir, where=cycle_filter)
 
-    def _extract_steps_from_cellpy_file(self, data, parent_level, step_dir, store, selector=None):
+    def _extract_steps_from_cellpy_file(
+        self, data, parent_level, step_dir, store, selector=None
+    ):
         try:
             data.steps = store.select(parent_level + step_dir)
             if self.limit_data_points:
@@ -3744,7 +3771,7 @@ class CellpyData(object):
             v /= 60.0
         return v
 
-    def get_dcap(self, cycle=None, dataset_number=None, **kwargs):
+    def get_dcap(self, cycle=None, dataset_number=None, converter=None, **kwargs):
         """Returns discharge_capacity (in mAh/g), and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
@@ -3756,11 +3783,15 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
+        if converter is None:
+            converter = self.get_converter_to_specific()
 
-        dc, v = self._get_cap(cycle, dataset_number, "discharge", **kwargs)
+        dc, v = self._get_cap(
+            cycle, dataset_number, "discharge", converter=converter, **kwargs
+        )
         return dc, v
 
-    def get_ccap(self, cycle=None, dataset_number=None, **kwargs):
+    def get_ccap(self, cycle=None, dataset_number=None, converter=None, **kwargs):
         """Returns charge_capacity (in mAh/g), and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
@@ -3772,8 +3803,11 @@ class CellpyData(object):
         if dataset_number is None:
             self._report_empty_dataset()
             return
-
-        cc, v = self._get_cap(cycle, dataset_number, "charge", **kwargs)
+        if converter is None:
+            converter = self.get_converter_to_specific()
+        cc, v = self._get_cap(
+            cycle, dataset_number, "charge", converter=converter, **kwargs
+        )
         return cc, v
 
     def get_cap(
@@ -3874,14 +3908,25 @@ class CellpyData(object):
 
         capacity = None
         voltage = None
+        specific_converter = self.get_converter_to_specific()
         cycle_df = pd.DataFrame()
 
         initial = True
         for current_cycle in cycle:
             error = False
             try:
-                cc, cv = self.get_ccap(current_cycle, dataset_number, **kwargs)
-                dc, dv = self.get_dcap(current_cycle, dataset_number, **kwargs)
+                cc, cv = self.get_ccap(
+                    current_cycle,
+                    dataset_number,
+                    converter=specific_converter,
+                    **kwargs,
+                )
+                dc, dv = self.get_dcap(
+                    current_cycle,
+                    dataset_number,
+                    converter=specific_converter,
+                    **kwargs,
+                )
 
             except NullData as e:
                 error = True
@@ -4040,16 +4085,18 @@ class CellpyData(object):
         trim_taper_steps=None,
         steps_to_skip=None,
         steptable=None,
+        converter=None,
     ):
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: @jepe - does not allow for constant voltage yet?
-        # TODO: @jepe - add similar function that returns pd.DataFrame
         dataset_number = self._validate_dataset_number(dataset_number)
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        test = self.cells[dataset_number]
-        mass = self.get_mass(dataset_number)
+        test = self.cells[
+            dataset_number
+        ]  # not used anymore - will be removed when we skip several cells option
+
         if cap_type == "charge_capacity":
             cap_type = "charge"
         elif cap_type == "discharge_capacity":
@@ -4078,7 +4125,7 @@ class CellpyData(object):
                 selected_step = self._select_step(cycle, step, dataset_number)
                 if not self.is_empty(selected_step):
                     _v.append(selected_step[self.headers_normal.voltage_txt])
-                    _c.append(selected_step[column_txt] * 1000000 / mass)
+                    _c.append(selected_step[column_txt] * converter)
             try:
                 voltage = pd.concat(_v, axis=0)
                 cap = pd.concat(_c, axis=0)
@@ -4088,8 +4135,12 @@ class CellpyData(object):
         else:
             # get all the discharge cycles
             # this is a dataframe filtered on step and cycle
-            raise NotImplementedError
-            # TODO: fix this now!
+            # This functionality is not crucial since get_cap (that uses this method) has it
+            # (but it might be nice to improve performance)
+            raise NotImplementedError(
+                "Not yet possible to extract without giving cycle numbers (use get_cap instead)"
+            )
+
         return cap, voltage
 
     def get_ocv(
@@ -4303,7 +4354,7 @@ class CellpyData(object):
     def get_converter_to_specific(
         self, dataset=None, mass=None, to_unit=None, from_unit=None
     ):
-        """get the convertion values
+        """get the conversion values
 
         Args:
             dataset: DataSet object
@@ -4341,6 +4392,7 @@ class CellpyData(object):
         self.logger.debug(f"from-unit: {from_unit}")
         self.logger.debug(f"to-unit: {to_unit}")
         self.logger.debug(f"mass: {mass}")
+
         return from_unit / to_unit / mass
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False):
@@ -4699,18 +4751,17 @@ class CellpyData(object):
                 txt = "creating summary for file "
                 test = self.cells[j]
                 if not self._is_not_empty_dataset(test):
-                    self.logger.info("Empty test %i" % j)
+                    self.logger.info(f"Empty test {j})")
                     return
                 if isinstance(test.loaded_from, (list, tuple)):
                     for f in test.loaded_from:
-                        txt += f
-                        txt += "\n"
+                        txt += f"{f}\n"
                 else:
                     txt += str(test.loaded_from)
 
                 if not test.mass_given:
-                    txt += " mass for test %i is not given" % j
-                    txt += " setting it to %f mg" % test.mass
+                    txt += f" mass for test {j} is not given"
+                    txt += f" setting it to {test.mass} mg"
                 self.logger.debug(txt)
 
                 self._make_summary(
@@ -4780,7 +4831,7 @@ class CellpyData(object):
         #            use_cellpy_stat_file=False
 
         if not mass:
-            mass = dataset.mass
+            mass = dataset.mass or 1.0
         else:
             if update_it:
                 dataset.mass = mass
@@ -4857,7 +4908,7 @@ class CellpyData(object):
                 try:
                     summary_requirment = raw[d_txt].isin(summary_df[d_txt])
                 except KeyError:
-                    self.logger.info("Error in stat_file (?) - " "using _select_last")
+                    self.logger.info("Error in stat_file (?) - using _select_last")
                     summary_requirment = self._select_last(raw)
             else:
                 summary_requirment = self._select_last(raw)
@@ -4904,7 +4955,7 @@ class CellpyData(object):
 
         if self.cycle_mode == "anode":
             self.logger.info(
-                "Assuming cycling in anode half-cell (discharge " "before charge) mode"
+                "Assuming cycling in anode half-cell (discharge before charge) mode"
             )
             _first_step_txt = discharge_title
             _second_step_txt = charge_title
@@ -4988,9 +5039,9 @@ class CellpyData(object):
                 - summary[_second_step_txt].cumsum()
             )
         else:
-            txt = "ref cycle number: %i" % n
+            txt = f"ref cycle number: {n}"
             self.logger.info(
-                "could not extract low-high levels (ref cycle " "number does not exist)"
+                "could not extract low-high levels (ref cycle number does not exist)"
             )
             # self.logger.info(txt)
             summary[low_level_at_cycle_n_txt] = np.nan
@@ -5352,7 +5403,7 @@ def get(
     logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
-    **kwargs
+    **kwargs,
 ):
     """Create a CellpyData object
 
@@ -5436,6 +5487,12 @@ def get(
             cellpy_instance.make_step_table()
             logging.info("Creating summary data")
             cellpy_instance.make_summary()
+    else:
+        if mass:
+            prms.Materials["default_mass"] = mass
+            prms.Materials["default_mass"] = mass
+        if nominal_capacity:
+            prms.DataSet["nom_cap"] = nominal_capacity
 
     logging.info("Created CellpyData object")
     return cellpy_instance
