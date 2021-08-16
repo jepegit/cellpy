@@ -6,7 +6,7 @@ if __name__ == "__main__":
     import easyplot
 
     files = [   
-    #'20210624_seam12_07_01_cc_02',
+    '20210624_seam12_07_01_cc_02',
             # === SEAM 12 RATE CAPABILITY ===
     #'20210712_seam12_04_rc_01_cc_01',
     #'20210712_seam12_04_rc_02_cc_01',
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     #'20210712_seam12_07_rc_02_cc_01',
     #'20210712_seam12_07_rc_03_cc_01',
     # === SEAM 12 1ST GC ===
-    '20210628_seam12_04_01_cc_01',
+    #'20210628_seam12_04_01_cc_01',
     #'20210628_seam12_04_02_cc_02',
     #'20210628_seam12_04_03_cc_01',
     #'20210628_seam12_05_01_cc_01',
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$",
         cyclelife_ylabel_percent = "Capacity retention [%]",
-        cyclelife_legend_outside = True, # if True, the legend is placed outside the plot
+        cyclelife_legend_outside = True,         # if True, the legend is placed outside the plot
         cyclelife_degradation_slope = True,
         capacity_determination_from_ratecap = False,
         galvanostatic_plot = False,
@@ -75,6 +75,6 @@ if __name__ == "__main__":
         figres = 100, # Dots per inch
         figtitle = None, # None = original filepath
     )
-    ezplt.set_arbin_sql_credentials("localhost", "sa", "Amund1234", "SQL Server")
+    ezplt.set_arbin_sql_credentials("localhost", "dnuma", "amund1234")
     # ezplt.help()
     ezplt.plot()
