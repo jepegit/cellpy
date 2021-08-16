@@ -221,7 +221,7 @@ class EasyPlot():
 
 
 
-    def set_arbin_sql_credentials(self, server = "localhost", uid="sa", pwd="Changeme123", driver="SQL Server"):
+    def set_arbin_sql_credentials(self, server = "localhost", uid="sa", pwd="Changeme123", driver="ODBC Driver 17 for SQL Server"):
             cellpy.prms.Instruments.Arbin["SQL_server"] = server
             cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
             cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
