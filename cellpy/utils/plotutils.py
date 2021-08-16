@@ -291,6 +291,12 @@ def plot_concatenated(
 
     if extension == "matplotlib":
         hover = False
+    elif extension == "plotly":
+        print("The plotly backend might not work properly yet.")
+        print("Fingers crossed.")
+        print(
+            "(at least, make sure you are using the most recent versions of jupyter, holoviews and plotly)"
+        )
 
     try:
         current_extension = hv.Store.current_backend
@@ -433,7 +439,7 @@ def plot_concatenated(
             **overlay_opts, **kwargs
         )
 
-    if hover:
+    if hover and not extension == "plotly":
         if points:
             final_plot.opts(opts.Scatter(tools=["hover"]))
         else:

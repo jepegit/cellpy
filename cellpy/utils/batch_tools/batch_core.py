@@ -141,6 +141,7 @@ class Data(collections.UserDict):
     """
 
     # TODO (jepe): decide if we should included querying functionality here.
+    # TODO (jepe): implement experiment.last_cycle
 
     def __init__(self, experiment, *args):
         super().__init__(*args)
@@ -311,6 +312,8 @@ class BaseExperiment(metaclass=abc.ABCMeta):
             >>> cell_data_one = experiment.data["2018_cell_001"]
             >>> capacity, voltage = cell_data_one.get_cap(cycle=1)
         """
+
+        # TODO: implement max cycle number (experiment.last_cycle)
         if self._data is None:
             data = Data(self)
             if self._store_data_object:
