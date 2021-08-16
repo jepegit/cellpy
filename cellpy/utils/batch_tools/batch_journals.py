@@ -4,6 +4,8 @@ import warnings
 import os
 import pathlib
 import platform
+import tempfile
+import shutil
 
 import pandas as pd
 
@@ -41,11 +43,17 @@ class LabJournal(BaseJournal):
             self.db_reader = db_reader
         self.batch_col = "b01"
 
-    def _check_file_name(self, file_name):
+    def _check_file_name(self, file_name, to_project_folder=False):
         if file_name is None:
             if not self.file_name:
                 self.generate_file_name()
             file_name = self.file_name
+        file_name = pathlib.Path(file_name)
+        if file_name.suffix != ".json":
+            file_name = file_name.with_suffix(".json")
+        if to_project_folder:
+            file_name = pathlib.Path(self.project_dir) / file_name
+        self.file_name = file_name  # updates object (maybe not smart)
         return file_name
 
     def from_db(self, project=None, name=None, batch_col=None, **kwargs):
@@ -117,6 +125,54 @@ class LabJournal(BaseJournal):
         return pages, meta, session
 
     @classmethod
+    def read_journal_excel_file(cls, file_name, **kwargs):
+        sheet_names = {"meta": "meta", "pages": "pages", "session": "session"}
+        project = kwargs.pop("project", "NaN")
+        name = kwargs.pop("batch", pathlib.Path(file_name).stem)
+        META = {
+            "name": name,
+            "project": project,
+            "project_dir": pathlib.Path("."),
+            "batch_dir": pathlib.Path("."),
+            "raw_dir": pathlib.Path("."),
+        }
+        logging.debug(f"xlsx loader starting on {file_name}")
+
+        meta_sheet_name = sheet_names["meta"]  # not implemented yet
+        pages_sheet_name = sheet_names["pages"]
+        session_sheet_name = sheet_names["session"]  # not implemented yet
+
+        temporary_directory = tempfile.mkdtemp()
+        temporary_file_name = shutil.copy(file_name, temporary_directory)
+        try:
+            pages = pd.read_excel(
+                temporary_file_name, engine="openpyxl", sheet_name=pages_sheet_name
+            )
+        except KeyError:
+            print(f"Worksheet '{pages_sheet_name}' does not exist.")
+            return None
+
+        session = None  # not implemented
+        meta = None  # not implemented
+
+        if pages.empty:
+            logging.critical("could not find any pages in the journal")
+            raise UnderDefined
+        pages = cls._clean_pages(pages)
+        pages = pages.set_index(hdr_journal.filename)
+
+        if meta is None:
+            meta = META
+
+        if session is None:
+            logging.debug(f"no session - generating empty one")
+            session = dict()
+
+        session, pages = cls._clean_session(session, pages)
+
+        return pages, meta, session
+
+    @classmethod
     def _clean_session(cls, session, pages):
         # include steps for cleaning up the session dict here
         if not session:
@@ -134,33 +190,55 @@ class LabJournal(BaseJournal):
                 hdr_journal.cellpy_file_name
             ].apply(cls._fix_cellpy_paths)
         except KeyError:
-            logging.warning("old journal file - updating")
-            pages.rename(columns=trans_dict, inplace=True)
-            pages[hdr_journal.cellpy_file_name] = pages[
-                hdr_journal.cellpy_file_name
-            ].apply(cls._fix_cellpy_paths)
+            # assumes it is a old type journal file
+            print(f"The key '{hdr_journal.cellpy_file_name}' is missing!")
+            print(f"Assumes that this is an old-type journal file.")
+            try:
+                pages.rename(columns=trans_dict, inplace=True)
+                pages[hdr_journal.cellpy_file_name] = pages[
+                    hdr_journal.cellpy_file_name
+                ].apply(cls._fix_cellpy_paths)
+                logging.warning("old journal file - updating")
+            except KeyError as e:
+                print("Error! Could still not parse the pages.")
+                print(f"Missing key: {hdr_journal.cellpy_file_name}")
+                pages[hdr_journal.cellpy_file_name] = None
+
         for column_name in missing_keys:
             if column_name not in pages.columns:
-                warnings.warn(f"old journal format - missing: {column_name}")
+                warnings.warn(f"wrong journal format - missing: {column_name}")
+                pages[column_name] = None
+        for column_name in hdr_journal:
+            if column_name not in pages.columns:
                 pages[column_name] = None
         return pages
 
-    def from_file(self, file_name=None, paginate=True):
+    def from_file(self, file_name=None, paginate=True, **kwargs):
         """Loads a DataFrame with all the needed info about the experiment"""
 
         file_name = self._check_file_name(file_name)
         logging.debug(f"reading {file_name}")
+        if pathlib.Path(file_name).suffix.lower() == ".xlsx":
+            file_loader = self.read_journal_excel_file
+        else:
+            file_loader = self.read_journal_jason_file
         try:
-            pages, meta_dict, session = self.read_journal_jason_file(file_name)
+            out = file_loader(file_name, **kwargs)
+            if out is None:
+                raise IOError(f"Error reading {file_name}.")
+            pages, meta_dict, session = out
         except UnderDefined as e:
             logging.critical(f"could not load {file_name}")
             raise UnderDefined from e
+
         logging.debug(f"got pages and meta_dict")
+
         self.pages = pages
         self.session = session
         self.file_name = file_name
         self._prm_packer(meta_dict)
         self.generate_folder_names()
+
         if paginate:
             self.paginate()
 
@@ -196,9 +274,9 @@ class LabJournal(BaseJournal):
         pages.set_index(hdr_journal.filename, inplace=True)
         return pages
 
-    def to_file(self, file_name=None, paginate=True):
+    def to_file(self, file_name=None, paginate=True, to_project_folder=True):
         """Saves a DataFrame with all the needed info about the experiment"""
-        file_name = self._check_file_name(file_name)
+        file_name = self._check_file_name(file_name, to_project_folder=to_project_folder)
         pages = self.pages
         session = self.session
         top_level_dict = {
@@ -221,7 +299,10 @@ class LabJournal(BaseJournal):
 
     def generate_folder_names(self):
         """Set appropriate folder names."""
+        logging.debug("creating folder names")
         if self.project:
+            logging.debug("got project name")
+            logging.debug(self.project)
             self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
         else:
             logging.critical(
@@ -234,6 +315,9 @@ class LabJournal(BaseJournal):
             logging.critical(
                 "Could not create batch_dir and raw_dir", "(missing batch name)"
             )
+        logging.debug(f"batch dir: {self.batch_dir}")
+        logging.debug(f"project dir: {self.project_dir}")
+        logging.debug(f"raw dir: {self.raw_dir}")
 
     def paginate(self):
         """Make folders where we would like to put results etc."""

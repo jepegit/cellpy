@@ -279,7 +279,9 @@ class CustomLoader(Loader):
 
         capacity_structure = self.structure.get("capacity_structure", "cellpy")
         if capacity_structure == "cellpy":
-            logging.debug("standard cellpy structure - no additional processing of capacity columns needed")
+            logging.debug(
+                "standard cellpy structure - no additional processing of capacity columns needed"
+            )
         elif capacity_structure == "one_col_state":
             # TODO: make this a function or method
             # TODO: currently, the user needs to assign the name of the capacity column to the charge_capacity
