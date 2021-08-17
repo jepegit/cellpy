@@ -347,6 +347,15 @@ class CustomLoader(Loader):
         else:
             raise NotImplementedError(f"{capacity_structure} is not yet supported")
 
+        # TODO: convert time columns to correct format
+        step_time_conversion = self.structure.get("time_conversion_step_time", None)
+        total_time_conversion = self.structure.get("time_conversion_total_time", None)
+        if step_time_conversion:
+            print("IMPLEMENT ME")
+
+        if total_time_conversion:
+            print("IMPLEMENT ME")
+
         raw = self._select_cols(raw)
         raw = self._check_cycleno_stepno(raw)
 
