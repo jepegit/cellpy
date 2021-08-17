@@ -199,7 +199,7 @@ class CustomLoader(Loader):
             return
 
         # find out strategy (based on structure)
-        if self.structure["format"] not in ["csv", "xlsx"]:
+        if self.structure["format"] not in ["csv", "xlsx", "xls"]:
             print(self.structure["format"])
             raise NotImplementedError
         else:
@@ -275,6 +275,9 @@ class CustomLoader(Loader):
         elif self.structure["format"] == "xlsx":
             raw = self._parse_xlsx_data(file_name)
 
+        elif self.structure["format"] == "xls":
+            raw = self._parse_xls_data(file_name)
+
         raw = self._rename_cols(raw)
 
         capacity_structure = self.structure.get("capacity_structure", "cellpy")
@@ -299,37 +302,48 @@ class CustomLoader(Loader):
             data_point = self.headers_normal["data_point_txt"]
             cycle_numbers = raw[cycle_index_hdr].unique()
             # cell_type = prms.Reader.cycle_mode
+            good_cycles = []
+            bad_cycles = []
             for i in cycle_numbers:
-                charge_cap = raw.loc[
-                    (raw[col] == charge_key) & (raw[cycle_index_hdr] == i),
-                    [data_point, cap_col],
-                ]
-                discharge_cap = raw.loc[
-                    (raw[col] == discharge_key) & (raw[cycle_index_hdr] == i),
-                    [data_point, cap_col],
-                ]
-                charge_cap_last_index, charge_cap_last_val = charge_cap.iloc[-1]
-                discharge_cap_last_index, discharge_cap_last_val = discharge_cap.iloc[
-                    -1
-                ]
+                try:
+                    charge_cap = raw.loc[
+                        (raw[col] == charge_key) & (raw[cycle_index_hdr] == i),
+                        [data_point, cap_col],
+                    ]
+                    discharge_cap = raw.loc[
+                        (raw[col] == discharge_key) & (raw[cycle_index_hdr] == i),
+                        [data_point, cap_col],
+                    ]
+                    if not charge_cap.empty:
+                        charge_cap_last_index, charge_cap_last_val = charge_cap.iloc[-1]
+                        raw["new_c"].update(charge_cap[cap_col])
 
-                raw["new_c"].update(charge_cap[cap_col])
-                raw["new_d"].update(discharge_cap[cap_col])
+                        raw.loc[
+                            (raw[data_point] > charge_cap_last_index)
+                            & (raw[cycle_index_hdr] == i),
+                            "new_c",
+                        ] = charge_cap_last_val
 
-                raw.loc[
-                    (raw[data_point] > discharge_cap_last_index)
-                    & (raw[cycle_index_hdr] == i),
-                    "new_d",
-                ] = discharge_cap_last_val
-                raw.loc[
-                    (raw[data_point] > charge_cap_last_index)
-                    & (raw[cycle_index_hdr] == i),
-                    "new_c",
-                ] = charge_cap_last_val
+                    if not discharge_cap.empty:
+                        discharge_cap_last_index, discharge_cap_last_val = discharge_cap.iloc[-1]
+                        raw["new_d"].update(discharge_cap[cap_col])
+
+                        raw.loc[
+                            (raw[data_point] > discharge_cap_last_index)
+                            & (raw[cycle_index_hdr] == i),
+                            "new_d",
+                        ] = discharge_cap_last_val
+
+                    good_cycles.append(i)
+
+                except:
+                    bad_cycles.append(i)
 
             raw[charge_cap_hdr] = raw["new_c"]
             raw[discharge_cap_hdr] = raw["new_d"]
             raw.drop(["new_c", "new_d"], axis=1)
+            if bad_cycles:
+                logging.critical(f"The data contains bad cycles: {bad_cycles}")
         else:
             raise NotImplementedError(f"{capacity_structure} is not yet supported")
 
@@ -350,6 +364,11 @@ class CustomLoader(Loader):
         ]
         raw = raw[selected]
         return raw
+
+    def _parse_xls_data(self, file_name):
+        sheet_name = self.structure["table_name"]
+        raw_frame = pd.read_excel(file_name, engine="xlrd", sheet_name=sheet_name)
+        return raw_frame
 
     def _parse_xlsx_data(self, file_name):
         sheet_name = self.structure["table_name"]

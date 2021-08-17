@@ -197,15 +197,25 @@ class Cell(object):
                     value = self.__getattribute__(p)
                     txt += f"<b>{p}</b>: {value}<br>"
         txt += "</p>"
+        try:
+            raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"
+            raw_txt += (
+                f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"
+            )
+        except AttributeError:
+            raw_txt = "<p><b>raw data-frame </b><br> not found!</p>"
 
-        raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"
-        raw_txt += (
-            f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"
-        )
-        summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"
-        summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"
-        steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"
-        steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"
+        try:
+            summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"
+            summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"
+        except AttributeError:
+            summary_txt = "<p><b>summary data-frame </b><br> not found!</p>"
+
+        try:
+            steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"
+            steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"
+        except AttributeError:
+            steps_txt = "<p><b>steps data-frame </b><br> not found!</p>"
 
         return obj + txt + summary_txt + steps_txt + raw_txt
 

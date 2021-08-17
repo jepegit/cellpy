@@ -47,11 +47,12 @@ class LabJournal(BaseJournal):
         if file_name is None:
             if not self.file_name:
                 self.generate_file_name()
-            file_name = self.file_name
-        file_name = pathlib.Path(file_name)
-        if file_name.suffix != ".json":
-            file_name = file_name.with_suffix(".json")
+            file_name = pathlib.Path(self.file_name)
+        else:
+            file_name = pathlib.Path(file_name)
+
         if to_project_folder:
+            file_name = file_name.with_suffix(".json")
             file_name = pathlib.Path(self.project_dir) / file_name
         self.file_name = file_name  # updates object (maybe not smart)
         return file_name

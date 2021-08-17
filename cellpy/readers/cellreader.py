@@ -5428,6 +5428,7 @@ def get(
     from cellpy import log
 
     log.setup_logging(default_level=logging_mode)
+    logging.debug("-------running-get--------")
     cellpy_instance = CellpyData()
 
     db_readers = ["arbin_sql"]
