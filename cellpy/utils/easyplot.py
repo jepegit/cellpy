@@ -328,7 +328,8 @@ class EasyPlot():
                 label = self.nicknames[self.files.index(filename)]
             else:
                 label = str(os.path.basename(filename))
-
+            #print("Discharge capacities:")
+            #print(dchgs[1])
             # Actully place it in plot
             ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
             ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
@@ -344,6 +345,8 @@ class EasyPlot():
                         CEs.append(coulombic_efficiency[cyc])
 
                 # Place it in the plot
+                #print("CE's")
+                #print(CEs)
                 ax_ce.scatter(cycs, CEs, c = color, marker = "+")
                 #print(filename + " Dchg 1-3: " + str(dchgs[1][0:3])  + ", CE 1-3: " + str(coulombic_efficiency[0:3]))
 
@@ -516,6 +519,12 @@ class EasyPlot():
                     fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),label='Cycle')
                     #fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
             
+                # Make label from filename or nickname
+                if self.nicknames:
+                    label = self.nicknames[self.files.index(filename)]
+                else:
+                    label = str(os.path.basename(filename))
+
                 # Plot cycles
                 colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]
                 for cyc in keys:
@@ -544,10 +553,11 @@ class EasyPlot():
                             cyc_df["capacity"] = cyc_df["capacity"].div(maxcap)
                             ax.set_xlabel("Normalized Capacity")
 
-                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= label.split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
 
                 # Set all plot settings from Plot object
-                fig.suptitle(os.path.basename(filename))
+                
+                fig.suptitle(label)
                 self.fix_gc(fig, ax)
 
                 # Save fig
