@@ -72,7 +72,7 @@ if __name__ == "__main__":
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{\mu Ah}{V}\right]$",
         specific_cycles = None,#[]
-        exclude_cycles = None,#[]
+        exclude_cycles = [1,2,3,4,5],#[]
         all_in_one = False,
         only_dischg = True,
         only_chg = False,

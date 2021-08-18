@@ -931,8 +931,9 @@ class EasyPlot():
 
         # Get labels and handles for legend generation and eventual savefile
         handles, labels = ax.get_legend_handles_labels()
-        handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
-        handles.append(Line2D([0], [0], marker='o', color='black', label = 'Disharge capacity', linestyle=''))
+        #handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
+        handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Disharge capacity', linestyle=''))
+        handles.append(Line2D([0], [0], marker='+', color='black', label = 'Cap avg per C-rate', linestyle=''))
         
 
         outpath = self.outpath
@@ -956,7 +957,7 @@ class EasyPlot():
             for chg, dchg in zip(new_chglist, new_dchglist):
                 #print(dchg)
                 #ax.scatter(chg[1] , chg[2] , color = color, alpha = 0.2) 
-                ax.scatter(1/dchg[1], dchg[2], color = color)
+                ax.scatter(1/dchg[1], dchg[2], color = color, alpha = 0.2)
         
                 linregress_xlist.append(1/dchg[1])
                 linregress_ylist.append(dchg[2])
@@ -969,13 +970,51 @@ class EasyPlot():
             x_arr = np.array(linregress_xlist)
             y_arr = np.array(linregress_ylist)
 
-            def _exp_func(x,a,b,c):
-                return a*np.exp(b*x) + c
+            # Average the capacity for each c-rate
+            def _reduce_to_averages(xvals, yvals):
+                i=0
+                j = 0
+                x_grouped = []
+                y_grouped = []
 
-            pars, cov = curve_fit(f=_exp_func, xdata = x_arr, ydata=y_arr, p0 = [0,0,0], bounds=(-np.inf, np.inf))
+                x_lst = []
+                y_lst = []
+
+                for x,y in zip(xvals,yvals):
+                    i+=1
+                    if i <= 5:
+                        x_lst.append(x)
+                        y_lst.append(y)
+                        
+
+                    if i == 5:
+                        i = 0
+                        x_grouped.append(x_lst)
+                        y_grouped.append(y_lst)
+
+                        x_lst = []
+                        y_lst = []
+                
+                x_arr = []
+                y_arr = []
+
+                for xcrate, ycrate in zip(x_grouped, y_grouped):
+                    x_arr.append(sum(xcrate)/len(xcrate))
+                    y_arr.append(sum(ycrate)/len(ycrate))
+                return x_arr, y_arr
+                
+
+
+            x_arr, y_arr = _reduce_to_averages(x_arr, y_arr)
+            
+            ax.scatter(x_arr, y_arr, marker="+")
+            def _exp_func(x,a,b,c):
+                return -a*np.exp(-b*x) + c
+
+            pars, cov = curve_fit(f=_exp_func, xdata = x_arr, ydata=y_arr)
             x_vals = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100) #x_arr[0], x_arr[-1], 100)
             ax.plot(x_vals, _exp_func(x_vals, *pars))
-            ax.hlines(pars[2], ax.get_xlim()[0], ax.get_xlim()[1], colors = color)
+            ax.hlines(pars[2], ax.get_xlim()[0], ax.get_xlim()[1], colors = color, linestyle='--')
             # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
             std_dev = np.sqrt(np.diag(cov))
             # Make a sweet legend to put on this
@@ -983,7 +1022,7 @@ class EasyPlot():
                 Line2D(
                     [0], [0], 
                     marker="_", color=color, 
-                    label = 'Calculated maximum capacity:' + '\n' +'{:.2e} $\pm$ {:.2e}'.format(pars[2], std_dev[0]) + r'$\left[\frac{mAh}{g}\right]$', linestyle=''
+                    label = 'Calculated maximum capacity:' + '\n' +'{:.2e} $\pm$ {:.2e}'.format(pars[2], std_dev[0]) + r'$\left[\mu Ah\right]$', linestyle=''
                     ))
 
 
@@ -1191,7 +1230,7 @@ def get_effective_C_rates(steptable):
     return chg_c_rates, dchg_c_rates
 
 def get_effective_C_rates_and_caps(steptable):
-    newdf = steptable[["step_time_avr", "cycle", "type", "charge_avr", "discharge_avr"]]
+    newdf = steptable[["step_time_avr", "cycle", "type", "charge_avr", "discharge_last"]]
     chglist = [] # [[cycle, chg_crate, chg_cap], [cycle increase with crates and capacities for this cycle]]
     dchglist = []
     for i,elem in enumerate(newdf.iterrows()):
@@ -1200,6 +1239,6 @@ def get_effective_C_rates_and_caps(steptable):
         if elem[1]["type"] == "charge":
             chglist.append([ cyc, 1/(elem[1]["step_time_avr"]/3600), elem[1]["charge_avr"]*1000 ])
         elif elem[1]["type"] == "discharge":
-            dchglist.append([cyc, 1/(elem[1]["step_time_avr"]/3600), elem[1]["discharge_avr"]*1000 ])
+            dchglist.append([cyc, 1/(elem[1]["step_time_avr"]/3600), elem[1]["discharge_last"]*1000*1000 ])
 
     return chglist, dchglist
