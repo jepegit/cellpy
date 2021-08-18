@@ -31,23 +31,23 @@ if __name__ == "__main__":
     '20210628_seam12_04_01_cc_01',
     #'20210628_seam12_04_02_cc_02',
     #'20210628_seam12_04_03_cc_01',
-    '20210628_seam12_05_01_cc_01',
+    #'20210628_seam12_05_01_cc_01',
     #'20210628_seam12_05_02_cc_01',
     #'20210628_seam12_05_03_cc_01',
-    '20210628_seam12_06_01_cc_01',
+    #'20210628_seam12_06_01_cc_01',
     #'20210628_seam12_06_02_cc_01',
     #'20210628_seam12_06_03_cc_01',
-    '20210628_seam12_07_01_cc_01',
+    #'20210628_seam12_07_01_cc_01',
     #'20210628_seam12_07_02_cc_01',
     #'20210628_seam12_07_03_cc_01',
     #'./dev_data/DPV_test_1_SEAM12_04_02-testcell.mpr',
     #'./20160805_test001_47_cc_01.res',
             ]
 
-    nicknames = ["04 Pure Si", "05 Low Carbon", "06 Medium Carbon", "07 High Carbon"]
+    nicknames = None #["04 Pure Si", "05 Low Carbon", "06 Medium Carbon", "07 High Carbon"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
-        cyclelife_plot = False,
+        cyclelife_plot = True,
         cyclelife_percentage = False,
         cyclelife_coulombic_efficiency = False,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
@@ -60,27 +60,28 @@ if __name__ == "__main__":
         cyclelife_legend_outside = False,         # if True, the legend is placed outside the plot
         cyclelife_degradation_slope = False,
         capacity_determination_from_ratecap = False,
-        galvanostatic_plot = True,
+        galvanostatic_plot = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\mu Ah \right]$",
         galvanostatic_ylabel = "Cell potential [V]",
         galvanostatic_normalize_capacity = False,
         dqdv_plot = False,
-        dqdv_potlim = None,     #min and max limit on potential-axis
-        dqdv_dqlim = None,
+        dqdv_potlim = (0,1),     #min and max limit on potential-axis
+        dqdv_dqlim = (-1000,1000),
         dqdv_xlabel = "Cell potential [V]",
-        dqdv_ylabel = r"dQ/dV $\left[\frac{mAh}{gV}\right]$",
+        dqdv_ylabel = r"dQ/dV $\left[\frac{\mu Ah}{V}\right]$",
         specific_cycles = None,#[]
         exclude_cycles = None,#[]
         all_in_one = False,
         only_dischg = False,
         only_chg = False,
         outpath = "./ezplots/endpres/",
+        outname = "fayle", #This will override automatic filename creation, meaning you can only output one plot at the time
         outtype = ".svg",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figres = 100, # Dots per inch
-        figtitle = None, # None = original filepath
+        figtitle = "Tittelen er endret!", # None = original filepath
     )
     ezplt.set_arbin_sql_credentials("localhost", "dnuma", "amund1234")
     # ezplt.help()

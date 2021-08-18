@@ -56,6 +56,7 @@ class EasyPlot():
         # Value is a tuple (immutable) of type and default value.
         self.user_params = {
             "cyclelife_plot"                        : (bool, True),
+            "cyclelife_separate_data"               : (bool, False), # will plot each cyclelife datafile in separate plots
             "cyclelife_percentage"                  : (bool, False),
             "cyclelife_coulombic_efficiency"        : (bool, False),
             "cyclelife_coulombic_efficiency_ylabel" : (str, "Coulombic efficiency [%]"),
@@ -87,6 +88,7 @@ class EasyPlot():
             "only_chg"    : (bool, False), # Only show charge curves
             "outpath"   : (str, "./"),
             "outtype"   : (str, ".png"),  # What file format to save in 
+            "outname"   : (str, None),    # Overrides the automatic filename generation
             "figsize"   : (tuple, (6,4)), # 6 inches wide, 4 inches tall
             "figres"    : (int, 100),     # Dots per Inch
             "figtitle"  : (str, "Title"), # None = original filepath
@@ -447,6 +449,11 @@ class EasyPlot():
                 for key, item in cycgrouped:
                     keys.append(key)
 
+                # Make label from filename or nickname
+                if self.nicknames:
+                    label = str(self.nicknames[self.files.index(filename)])
+                else:
+                    label = str(os.path.basename(filename))
 
                 # Fix colorbar or cycle colors
                 if self.kwargs["specific_cycles"] == None: # Plot all cycles
@@ -486,7 +493,7 @@ class EasyPlot():
                             cyc_df["capacity"] = cyc_df["capacity"].div(maxcap)
                             ax.set_xlabel("Normalized Capacity")
 
-                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= os.path.basename(filename).split(".")[0] + ", Cyc " + str(cyc), c = cyccolor)
+                        ax.plot(cyc_df["capacity"], cyc_df["voltage"], label= label + ", Cyc " + str(cyc), c = cyccolor)
 
                 savepath += os.path.basename(filename).split(".")[0]
 
@@ -521,7 +528,7 @@ class EasyPlot():
             
                 # Make label from filename or nickname
                 if self.nicknames:
-                    label = self.nicknames[self.files.index(filename)]
+                    label = str(self.nicknames[self.files.index(filename)])
                 else:
                     label = str(os.path.basename(filename))
 
@@ -938,13 +945,14 @@ class EasyPlot():
             linregress_xlist = []
             linregress_ylist = []
             for chg, dchg in zip(new_chglist, new_dchglist):
-                ax.scatter(chg[1] , chg[2] , color = color, alpha = 0.2) 
+                #print(dchg)
+                #ax.scatter(chg[1] , chg[2] , color = color, alpha = 0.2) 
                 ax.scatter(1/dchg[1], dchg[2], color = color)
         
                 linregress_xlist.append(1/dchg[1])
                 linregress_ylist.append(dchg[2])
 
-            
+            print(linregress_ylist)
             # Fitting curve to the exponential function
             # Import curve fitting package from scipy
             from scipy.optimize import curve_fit
@@ -955,7 +963,7 @@ class EasyPlot():
             def _exp_func(x,a,b,c):
                 return a*np.exp(b*x) + c
 
-            pars, cov = curve_fit(f=_exp_func, xdata = x_arr, ydata=y_arr, p0=[0,0,0], bounds=(-np.inf, np.inf))
+            pars, cov = curve_fit(f=_exp_func, xdata = x_arr, ydata=y_arr, p0 = [0,0,0], bounds=(-np.inf, np.inf))
             x_vals = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100) #x_arr[0], x_arr[-1], 100)
             ax.plot(x_vals, _exp_func(x_vals, *pars))
             ax.hlines(pars[2], ax.get_xlim()[0], ax.get_xlim()[1], colors = color)
@@ -1150,8 +1158,12 @@ class EasyPlot():
 
 
     def save_fig(self, fig, savepath):
-        savepath += self.kwargs["outtype"]
-        # The point of this is to have savefig parameters the same across all plots (for now just fig dpi and bbox inches)
+        """The point of this is to have savefig parameters the same across all plots (for now just fig dpi and bbox inches)"""
+        if self.kwargs["outname"]:
+            savepath = self.kwargs["outpath"] + self.kwargs["outname"] + self.kwargs["outtype"]
+        else:
+            savepath += self.kwargs["outtype"]
+
         print("Saving to: " + savepath)
         fig.savefig(savepath, bbox_inches='tight', dpi = self.kwargs["figres"])
 
