@@ -520,7 +520,11 @@ def plot_cycle_life_summary_matplotlib(
     discharge_capacity = summaries.discharge_capacity
     charge_capacity = summaries.charge_capacity
     coulombic_efficiency = summaries.coulombic_efficiency
-    ir_charge = summaries.ir_charge
+    try:
+        ir_charge = summaries.ir_charge
+    except AttributeError:
+        logging.debug("the data is missing ir charge")
+        ir_charge = None
 
     h_eff = int(height_fractions[0] * height)
     h_cap = int(height_fractions[1] * height)
@@ -552,8 +556,10 @@ def plot_cycle_life_summary_matplotlib(
     group_styles, sub_group_styles = create_plot_option_dicts(
         info, marker_types=marker_types
     )
-
-    canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1)
+    if ir_charge is None:
+        canvas, (ax_cap, ax_ce) = plt.subplots(2, 1)
+    else:
+        canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1)
     for label in charge_capacity.columns.get_level_values(0):
         name = create_legend(info, label, option=legend_option)
         g, sg = look_up_group(info, label)
@@ -592,20 +598,27 @@ def plot_cycle_life_summary_matplotlib(
         except Exception as e:
             logging.debug(f"Could not plot discharge capacity for {label} ({e})")
 
-        try:
-            ax_ir.plot(
-                ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c
-            )
-        except Exception as e:
-            logging.debug(f"Could not plot IR for {label} ({e})")
+        if ir_charge is not None:
+            try:
+                ax_ir.plot(
+                    ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c
+                )
+            except Exception as e:
+                logging.debug(f"Could not plot IR for {label} ({e})")
 
+    ax_all = [ax_cap, ax_ce]
     ax_ce.set_ylabel("Coulombic Efficiency (%)")
     ax_ce.set_ylim((0, 110))
     ax_cap.set_ylabel("Capacity (mAh/g)")
-    ax_ir.set_ylabel("IR (charge)")
-    ax_ir.set_xlabel("Cycle")
 
-    for ax in [ax_cap, ax_ce, ax_ir]:
+    if ir_charge is not None:
+        ax_ir.set_ylabel("IR (charge)")
+        ax_ir.set_xlabel("Cycle")
+        ax_all.append(ax_ir)
+    else:
+        ax_ce.set_xlabel("Cycle")
+
+    for ax in ax_all:
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.6, box.height])
 

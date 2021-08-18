@@ -194,6 +194,14 @@ class CustomLoader(Loader):
         new_tests = []
         var_dict = dict()
 
+        cycle_index_hdr = self.headers_normal["cycle_index_txt"]
+        charge_cap_hdr = self.headers_normal["charge_capacity_txt"]
+        discharge_cap_hdr = self.headers_normal["discharge_capacity_txt"]
+        datetime_hdr = self.headers_normal["datetime_txt"]
+        data_point = self.headers_normal["data_point_txt"]
+        step_time_hdr = self.headers_normal["step_time_txt"]
+        test_time_hdr = self.headers_normal["test_time_txt"]
+
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return
@@ -289,17 +297,17 @@ class CustomLoader(Loader):
             # TODO: make this a function or method
             # TODO: currently, the user needs to assign the name of the capacity column to the charge_capacity
             #  variable in the yaml file. Should improve this later.
+            delimiter = "::"
             cap_col = "charge_capacity"
             col = self.structure["state_col"]
             charge_key = self.structure["charge_key"]
+            charge_key = charge_key.split(delimiter)
             discharge_key = self.structure["discharge_key"]
+            discharge_key = discharge_key.split(delimiter)
 
             raw["new_c"] = 0
             raw["new_d"] = 0
-            cycle_index_hdr = self.headers_normal["cycle_index_txt"]
-            charge_cap_hdr = self.headers_normal["charge_capacity_txt"]
-            discharge_cap_hdr = self.headers_normal["discharge_capacity_txt"]
-            data_point = self.headers_normal["data_point_txt"]
+
             cycle_numbers = raw[cycle_index_hdr].unique()
             # cell_type = prms.Reader.cycle_mode
             good_cycles = []
@@ -307,13 +315,14 @@ class CustomLoader(Loader):
             for i in cycle_numbers:
                 try:
                     charge_cap = raw.loc[
-                        (raw[col] == charge_key) & (raw[cycle_index_hdr] == i),
+                        (raw[col].isin(charge_key)) & (raw[cycle_index_hdr] == i),
                         [data_point, cap_col],
                     ]
                     discharge_cap = raw.loc[
-                        (raw[col] == discharge_key) & (raw[cycle_index_hdr] == i),
+                        (raw[col].isin(discharge_key)) & (raw[cycle_index_hdr] == i),
                         [data_point, cap_col],
                     ]
+
                     if not charge_cap.empty:
                         charge_cap_last_index, charge_cap_last_val = charge_cap.iloc[-1]
                         raw["new_c"].update(charge_cap[cap_col])
@@ -347,15 +356,33 @@ class CustomLoader(Loader):
         else:
             raise NotImplementedError(f"{capacity_structure} is not yet supported")
 
-        # TODO: convert time columns to correct format
         step_time_conversion = self.structure.get("time_conversion_step_time", None)
-        total_time_conversion = self.structure.get("time_conversion_total_time", None)
+        test_time_conversion = self.structure.get("time_conversion_test_time", None)
+        date_time_conversion = self.structure.get("time_conversion_date_time", None)
+
+        if date_time_conversion:
+            if date_time_conversion.lower() == "test_time":
+                raw[datetime_hdr] = raw[test_time_hdr]
+                self.headers["datetime_txt"] = datetime_hdr
+            else:
+                raise NotImplementedError(f"date_time conversion method not implemented ({date_time_conversion})")
+
+        if test_time_conversion:
+            if test_time_conversion.lower() == "date_time_to_sec":
+                start_time = raw[test_time_hdr].iloc[0]
+                raw[test_time_hdr] = (
+                        raw[test_time_hdr] - start_time).dt.total_seconds()  # Warning: replaces original column
+                raw[test_time_hdr] = raw[test_time_hdr]
+            else:
+                raise NotImplementedError(f"test_time conversion method not implemented ({test_time_conversion})")
+
         if step_time_conversion:
-            print("IMPLEMENT ME")
-
-        if total_time_conversion:
-            print("IMPLEMENT ME")
-
+            # "unit" can be lifted to an argument later (will need a parser for the step_time_conversion string)
+            unit = "ns"
+            if step_time_conversion.lower() == "time_to_sec":
+                raw[step_time_hdr] = pd.to_timedelta(raw[step_time_hdr], unit=unit).dt.total_seconds()
+            else:
+                raise NotImplementedError(f"step_time conversion method not implemented ({step_time_conversion})")
         raw = self._select_cols(raw)
         raw = self._check_cycleno_stepno(raw)
 
@@ -376,13 +403,19 @@ class CustomLoader(Loader):
 
     def _parse_xls_data(self, file_name):
         sheet_name = self.structure["table_name"]
-        raw_frame = pd.read_excel(file_name, engine="xlrd", sheet_name=sheet_name)
-        return raw_frame
+
+        raw_frame = pd.read_excel(file_name, engine="xlrd", sheet_name=None)  # TODO: replace this with pd.ExcelReader
+        matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+        if matching:
+            return raw_frame[matching[0]]
 
     def _parse_xlsx_data(self, file_name):
         sheet_name = self.structure["table_name"]
-        raw_frame = pd.read_excel(file_name, engine="openpyxl", sheet_name=sheet_name)
-        return raw_frame
+        raw_frame = pd.read_excel(file_name, engine="openpyxl",
+                                  sheet_name=None)  # TODO: replace this with pd.ExcelReader
+        matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+        if matching:
+            return raw_frame[matching[0]]
 
     def _parse_csv_data(self, file_name, sep, header_row):
         raw = pd.read_csv(file_name, sep=sep, header=header_row, skip_blank_lines=False)

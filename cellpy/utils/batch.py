@@ -615,6 +615,12 @@ class Batch:
         Returns:
             The updated journal pages.
         """
+
+        # TODO: To save a copy of the cellpy-files that we also want to modify, we have to
+        #   first run duplicate_cellpy_files and then modify and save them (not sure how easy that is). It would be
+        #   better if we could have an option that iterates through the files and saves them directly (not copying).
+        #   For example b.export_cellpy_files(path, processing, ...)
+
         pages = self.experiment.journal.pages
         cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
 
@@ -779,7 +785,6 @@ def load_pages(file_name):
 
     """
 
-    # TODO: implement loading other file-types (use from_file instead?)
     logging.info(f"Loading pages from {file_name}")
     try:
         pages, *_ = LabJournal.read_journal_jason_file(file_name)

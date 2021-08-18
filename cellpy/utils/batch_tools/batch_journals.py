@@ -185,6 +185,8 @@ class LabJournal(BaseJournal):
 
     @classmethod
     def _clean_pages(cls, pages):
+        logging.debug("removing empty rows")
+        pages = pages.dropna(how="all")
         logging.debug("checking path-names")
         try:
             pages[hdr_journal.cellpy_file_name] = pages[
@@ -204,6 +206,14 @@ class LabJournal(BaseJournal):
                 print("Error! Could still not parse the pages.")
                 print(f"Missing key: {hdr_journal.cellpy_file_name}")
                 pages[hdr_journal.cellpy_file_name] = None
+
+        # only keep selected cells if keep column exists
+        if "keep" in pages.columns:
+            print("found keep")
+            pages = pages.loc[
+                    pages.keep > 0,
+                    :
+                    ]
 
         for column_name in missing_keys:
             if column_name not in pages.columns:

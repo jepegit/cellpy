@@ -1757,6 +1757,7 @@ class CellpyData(object):
             cycle_filter = self._hdf5_cycle_filter("summary")
 
         data.summary = store.select(parent_level + summary_dir, where=cycle_filter)
+
         # TODO: max data point should be an attribute
         max_data_point = data.summary["data_point"].max()
         self.limit_data_points = int(max_data_point)
@@ -4396,8 +4397,10 @@ class CellpyData(object):
         logging.debug(f"from-unit: {from_unit}")
         logging.debug(f"to-unit: {to_unit}")
         logging.debug(f"mass: {mass}")
+        conversion_factor = from_unit / to_unit / mass
+        logging.debug(f"conversion factor: {conversion_factor}")
 
-        return from_unit / to_unit / mass
+        return conversion_factor
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False):
         raise DeprecatedFeature(

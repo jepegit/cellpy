@@ -99,6 +99,8 @@ class CyclingExperiment(BaseExperiment):
         if all_in_memory is not None:
             self.all_in_memory = all_in_memory
 
+        selector = kwargs.pop("selector", None)
+
         pages = self.journal.pages
         if self.nom_cap:
             warnings.warn(
@@ -192,6 +194,7 @@ class CyclingExperiment(BaseExperiment):
                     cell_data.load(
                         row[hdr_journal.cellpy_file_name],
                         parent_level=self.parent_level,
+                        selector=selector
                     )
                 except Exception as e:
                     logging.info(
@@ -407,6 +410,8 @@ class CyclingExperiment(BaseExperiment):
         Returns:
             None
         """
+
+        # TODO: option (default) to only recalc if the values (mass, nom_cap,...) have changed
         errors = []
         log = []
         if testing:
@@ -455,7 +460,7 @@ class CyclingExperiment(BaseExperiment):
                     if summary_opts is not None:
                         c.make_summary(**summary_opts)
                     else:
-                        c.make_summary(find_end_voltage=True, find_ir=True)
+                        c.make_summary(find_end_voltage=False, find_ir=True)
 
                 except Exception as e:
                     e_txt = f"recalculating for {indx} failed!"
