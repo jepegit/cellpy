@@ -333,8 +333,15 @@ class EasyPlot():
             #print("Discharge capacities:")
             #print(dchgs[1])
             # Actully place it in plot
-            ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
-            ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
+            if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
+                ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
+                ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
+            elif self.kwargs["only_dischg"]:
+                ax.scatter(dchgs[0], dchgs[1], c = color, label = label)
+            elif self.kwargs["only_chg"]:
+                ax.scatter(chgs[0], chgs[1], c = color, alpha = 0.2, )
+            
+            
 
             if self.kwargs["cyclelife_coulombic_efficiency"]:
                 # Get CE for cyc_nums
@@ -409,7 +416,9 @@ class EasyPlot():
 
         # Get labels and handles for legend generation and eventual savefile
         handles, labels = ax.get_legend_handles_labels()
-        handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
+        if not self.kwargs["only_dischg"]:
+            handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
+
         if self.kwargs["cyclelife_coulombic_efficiency"]:
             handles.append(Line2D([0], [0], marker='+', color='black', alpha = 1, label = 'Coulombic Efficiency', linestyle=''))
         if self.kwargs["cyclelife_charge_c_rate"] and not self.kwargs["cyclelife_discharge_c_rate"]:
@@ -952,7 +961,7 @@ class EasyPlot():
                 linregress_xlist.append(1/dchg[1])
                 linregress_ylist.append(dchg[2])
 
-            print(linregress_ylist)
+            #print(linregress_ylist)
             # Fitting curve to the exponential function
             # Import curve fitting package from scipy
             from scipy.optimize import curve_fit
@@ -1036,7 +1045,7 @@ class EasyPlot():
             
     def fix_cap_from_rc(self, fig, ax, handles):
         #ax.set_yscale("log")
-        ax.set(xlabel = r"Inverse C-rate $\left[ h \right]$", ylabel = r"Capacity $\left[\frac{mAh}{g}\right]$")
+        ax.set(xlabel = r"Inverse C-rate $\left[ h \right]$", ylabel = r"Capacity $\left[\mu Ah \right]$")
         # General plot details
         fig.set_size_inches(self.kwargs["figsize"])
         if type(self.kwargs["figtitle"]) == str:

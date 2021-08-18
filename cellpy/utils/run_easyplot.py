@@ -6,7 +6,7 @@ if __name__ == "__main__":
     import easyplot
 
     files = [   
-    #'20210624_seam12_07_01_cc_02',
+    '20210624_seam12_07_01_cc_02',
     # === SEAM 17 1ST GC ===
     #'20210812_seam17_07_gc_01_cc_01',
     #'20210812_seam17_07_gc_02_cc_01',
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     #'20210712_seam12_07_rc_02_cc_01',
     #'20210712_seam12_07_rc_03_cc_01',
     # === SEAM 12 1ST GC ===
-    '20210628_seam12_04_01_cc_01',
+    #'20210628_seam12_04_01_cc_01',
     #'20210628_seam12_04_02_cc_02',
     #'20210628_seam12_04_03_cc_01',
     #'20210628_seam12_05_01_cc_01',
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         cyclelife_ylabel_percent = "Capacity retention [%]",
         cyclelife_legend_outside = False,         # if True, the legend is placed outside the plot
         cyclelife_degradation_slope = False,
-        capacity_determination_from_ratecap = False,
+        capacity_determination_from_ratecap = True,
         galvanostatic_plot = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
@@ -74,14 +74,13 @@ if __name__ == "__main__":
         specific_cycles = None,#[]
         exclude_cycles = None,#[]
         all_in_one = False,
-        only_dischg = False,
+        only_dischg = True,
         only_chg = False,
         outpath = "./ezplots/endpres/",
-        outname = "fayle", #This will override automatic filename creation, meaning you can only output one plot at the time
         outtype = ".svg",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figres = 100, # Dots per inch
-        figtitle = "Tittelen er endret!", # None = original filepath
+        figtitle = None, # None = original filepath
     )
     ezplt.set_arbin_sql_credentials("localhost", "dnuma", "amund1234")
     # ezplt.help()
