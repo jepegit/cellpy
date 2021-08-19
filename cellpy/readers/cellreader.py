@@ -651,7 +651,7 @@ class CellpyData(object):
 
         ids = dict()
         for f in file_names:
-            logging.debug(f"checking res file {f}")
+            logging.debug(f"checking raw file {f}")
             fid = FileID(f)
             # logging.debug(fid)
             if fid.name is None:
@@ -775,6 +775,7 @@ class CellpyData(object):
         force_raw=False,
         use_cellpy_stat_file=None,
         cell_type=None,
+        selector=None,
         **kwargs,
     ):
 
@@ -794,6 +795,7 @@ class CellpyData(object):
                 from raw
             cell_type (str): set the cell type (e.g. "anode"). If not, the default from
                the config file is used.
+            selector (dict): passed to load.
             **kwargs: passed to from_raw
 
         Example:
@@ -865,7 +867,7 @@ class CellpyData(object):
                 logging.warning("Empty run!")
 
         else:
-            self.load(cellpy_file)
+            self.load(cellpy_file, selector=selector)
             nom_cap = kwargs.pop("nom_cap", None)
             if nom_cap is not None:
                 self.set_nom_cap(nom_cap)
@@ -886,6 +888,7 @@ class CellpyData(object):
         force_raw=False,
         use_cellpy_stat_file=None,
         nom_cap=None,
+        selector=None,
     ):
 
         logging.info("Started cellpy.cellreader.loadcell")
@@ -916,7 +919,7 @@ class CellpyData(object):
                 logging.warning("Empty run!")
             return self
 
-        self.load(cellpy_file)
+        self.load(cellpy_file, selector=selector)
         if mass:
             self.set_mass(mass)
 
@@ -1315,6 +1318,7 @@ class CellpyData(object):
         try:
             logging.debug("loading cellpy-file (hdf5):")
             logging.debug(cellpy_file)
+
             with pickle_protocol(PICKLE_PROTOCOL):
                 new_datasets = self._load_hdf5(
                     cellpy_file, parent_level, accept_old, selector=selector
@@ -1433,7 +1437,7 @@ class CellpyData(object):
             raise IOError(f"File does not exist: {filename}")
 
         cellpy_file_version = self._get_cellpy_file_version(filename)
-
+        logging.debug(f"Cellpy file version {cellpy_file_version}; selector={selector}")
         if cellpy_file_version > CELLPY_FILE_VERSION:
             raise WrongFileVersion(
                 f"File format too new: {filename} :: version: {cellpy_file_version}"
@@ -1466,65 +1470,6 @@ class CellpyData(object):
             new_data = self._load_hdf5_current_version(filename, selector=selector)
 
         # self.__check_loaded_data(new_data)
-
-        return new_data
-
-    def _old_load_hdf5(
-        self, filename, parent_level=None, accept_old=False, selector=None
-    ):
-        """Load a cellpy-file.
-
-        Args:
-            filename (str): Name of the cellpy file.
-            parent_level (str) (optional): name of the parent level
-                (defaults to "CellpyData"). DeprecationWarning!
-            accept_old (bool): accept old file versions.
-            selector (): select specific cycles etc (under development)
-
-        Returns:
-            loaded datasets (DataSet-object)
-        """
-
-        if parent_level is None:
-            parent_level = prms._cellpyfile_root
-
-        if parent_level != prms._cellpyfile_root:
-            logging.debug(
-                f"Using non-default parent label for the " f"hdf-store: {parent_level}"
-            )
-
-        if not os.path.isfile(filename):
-            logging.info(f"File does not exist: {filename}")
-            raise IOError(f"File does not exist: {filename}")
-
-        cellpy_file_version = self._get_cellpy_file_version(filename)
-
-        if cellpy_file_version > CELLPY_FILE_VERSION:
-            raise WrongFileVersion(
-                f"File format too new: {filename} :: version: {cellpy_file_version}"
-                f"Reload from raw or upgrade your cellpy!"
-            )
-
-        elif cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
-            raise WrongFileVersion(
-                f"File format too old: {filename} :: version: {cellpy_file_version}"
-                f"Reload from raw or downgrade your cellpy!"
-            )
-
-        elif cellpy_file_version < CELLPY_FILE_VERSION:
-            if accept_old:
-                logging.debug(f"old cellpy file version {cellpy_file_version}")
-                logging.debug(f"filename: {filename}")
-                new_data = self._load_old_hdf5(filename, cellpy_file_version)
-            else:
-                raise WrongFileVersion(
-                    f"File format too old: {filename} :: version: {cellpy_file_version}"
-                    f"Try loading setting accept_old=True"
-                )
-
-        else:
-            logging.debug(f"Loading {filename} :: v{cellpy_file_version}")
-            new_data = self._load_hdf5_current_version(filename, selector=selector)
 
         return new_data
 
@@ -1570,7 +1515,6 @@ class CellpyData(object):
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
-
         # this does not yet allow multiple sets
         new_tests = [
             data
@@ -3207,7 +3151,6 @@ class CellpyData(object):
             return
 
         test = self.get_cell(dataset_number)
-
         summary_made = test.summary_made
 
         if not summary_made and not force:
@@ -3216,7 +3159,6 @@ class CellpyData(object):
             return
 
         step_table_made = test.steps_made
-
         if not step_table_made and not force and not ensure_step_table:
             logging.info(
                 "You should not save datasets without making a step-table first!"
@@ -3235,11 +3177,11 @@ class CellpyData(object):
                 try:
                     os.remove(outfile_all)
                 except PermissionError as e:
-                    logging.info("Could not over write old file")
+                    logging.critical("Could not over write old file")
                     logging.info(e)
                     return
             else:
-                logging.info("Save (hdf5): file exist - did not save", end=" ")
+                logging.critical("Save (hdf5): file exist - did not save", end=" ")
                 logging.info(outfile_all)
                 return
 

@@ -2,6 +2,7 @@ import logging
 import warnings
 import os
 import sys
+import pathlib
 
 from tqdm.auto import tqdm
 
@@ -99,7 +100,8 @@ class CyclingExperiment(BaseExperiment):
         if all_in_memory is not None:
             self.all_in_memory = all_in_memory
 
-        selector = kwargs.pop("selector", None)
+        logging.info(f"Additional keyword arguments: {kwargs}")
+        selector = kwargs.get("selector", None)
 
         pages = self.journal.pages
         if self.nom_cap:
@@ -289,13 +291,11 @@ class CyclingExperiment(BaseExperiment):
                 else:
                     logging.debug("saving cell skipped (set to 'fixed' in info_df)")
             else:
-                warnings.warn("you opted to not save to cellpy-format")
-                logging.info("I strongly recommend you to save to cellpy-format:")
-                logging.info(" >>> b.save_cellpy = True")
-                logging.info(
-                    "Without the cellpy-files, you cannot select specific cells"
-                    " if you did not opt to store all in memory"
-                )
+                logging.info("You opted to not save to cellpy-format")
+                logging.info("It is usually recommended to save to cellpy-format:")
+                logging.info(" >>> b.experiment.save_cellpy = True")
+                logging.info("Without the cellpy-files, you cannot select specific cells")
+                logging.info("if you did not opt to store all in memory")
 
             if self.export_raw or self.export_cycles:
                 export_text = "exporting"
@@ -334,6 +334,27 @@ class CyclingExperiment(BaseExperiment):
         self.errors["update"] = errors
         self.summary_frames = summary_frames
         self.cell_data_frames = cell_data_frames
+
+    def export_cellpy_files(self, path=None, **kwargs):
+        if path is None:
+            path = "."
+        errors = []
+        path = pathlib.Path(path)
+        cell_names = self.cell_names
+        for cell_name in cell_names:
+            cellpy_file_name = self.journal.pages.loc[
+                cell_name, hdr_journal.cellpy_file_name
+            ]
+            cellpy_file_name = path / pathlib.Path(cellpy_file_name).name
+            print(f"Exporting {cell_name} to {cellpy_file_name}")
+            try:
+                c = self.data[cell_name]
+            except TypeError as e:
+                errors.append(f"could not extract data for {cell_name} - linking")
+                self._link_cellpy_file(cell_name)
+
+            c.save(cellpy_file_name, **kwargs)
+        self.errors["export_cellpy_files"] = errors
 
     @property
     def cell_names(self):

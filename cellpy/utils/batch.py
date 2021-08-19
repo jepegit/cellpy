@@ -573,7 +573,7 @@ class Batch:
         """
 
         # Remark! Got an recursive error when running on mac.
-        self.experiment.journal.to_file(to_project_folder=True)
+        self.experiment.journal.to_file(to_project_folder=True, paginate=False)
         logging.info("saving journal pages")
         self.duplicate_journal(prms.Paths.batchfiledir)
         logging.info("duplicating journal pages")
@@ -599,7 +599,7 @@ class Batch:
         except shutil.SameFileError:
             logging.debug("same file exception encountered")
 
-    def duplicate_cellpy_files(self, location="standard"):
+    def duplicate_cellpy_files(self, location="standard", selector=None, **kwargs):
         """Copy the cellpy files and make a journal with the new names available in
         the current folder.
 
@@ -611,15 +611,14 @@ class Batch:
                 "cellpydatadir": the stated cellpy data dir in your settings (prms)
             or if the location is not one of the above, use the actual value of the
                 location argument.
+            selector (dict): if given, the cellpy files are reloaded after duplicating and
+                modified based on the given selector(s).
+
+            kwargs: sent to update if selector is provided
 
         Returns:
             The updated journal pages.
         """
-
-        # TODO: To save a copy of the cellpy-files that we also want to modify, we have to
-        #   first run duplicate_cellpy_files and then modify and save them (not sure how easy that is). It would be
-        #   better if we could have an option that iterates through the files and saves them directly (not copying).
-        #   For example b.export_cellpy_files(path, processing, ...)
 
         pages = self.experiment.journal.pages
         cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
@@ -658,10 +657,12 @@ class Batch:
         pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
-        logging.info(f"saving journal to {journal_file_name}")
-        self.experiment.journal.to_file(journal_file_name)
+        self.experiment.journal.to_file(journal_file_name, paginate=False, to_project_folder=False)
+        if selector is not None:
+            logging.info("Modifying the cellpy-files.")
+            logging.info(f"selector: {selector}")
+            self.update(selector=selector, **kwargs)
 
-        # return pages
 
     # TODO: list_journals?
 
@@ -678,6 +679,12 @@ class Batch:
         """Load cells as defined in the journal"""
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
+
+    def export_cellpy_files(self, path=None, **kwargs):
+        if path is None:
+            path = pathlib.Path(".").resolve()
+        self.experiment.errors["export_cellpy_files"] = []
+        self.experiment.export_cellpy_files(path=path, **kwargs)
 
     def recalc(self, **kwargs):
         self.experiment.errors["recalc"] = []

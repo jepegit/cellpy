@@ -209,7 +209,7 @@ class LabJournal(BaseJournal):
 
         # only keep selected cells if keep column exists
         if "keep" in pages.columns:
-            print("found keep")
+            logging.debug("Journal contains 'keep' - selecting only 'keep' > 0.")
             pages = pages.loc[
                     pages.keep > 0,
                     :
