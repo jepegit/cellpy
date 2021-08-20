@@ -11,3 +11,11 @@ log.setup_logging(default_level=logging.DEBUG)
 
 def test_import():
     pass
+
+
+def test_journal_loading():
+    pass
+
+
+def test_journal_saving():
+    pass
