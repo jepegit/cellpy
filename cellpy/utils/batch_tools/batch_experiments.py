@@ -96,6 +96,8 @@ class CyclingExperiment(BaseExperiment):
 
         # TODO: implement experiment.last_cycle
 
+        force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
+
         logging.info("[update experiment]")
         if all_in_memory is not None:
             self.all_in_memory = all_in_memory
@@ -142,7 +144,7 @@ class CyclingExperiment(BaseExperiment):
             pbar.set_description(n_txt)
             pbar.set_postfix_str(s=h_txt, refresh=True)
 
-            if not row[hdr_journal.raw_file_names] and not self.force_cellpy:
+            if not row[hdr_journal.raw_file_names] and not force_cellpy:
                 logging.info(
                     f"Raw file(s) not given in the journal.pages for index={indx}"
                 )
@@ -157,7 +159,7 @@ class CyclingExperiment(BaseExperiment):
             cell_data = cellreader.CellpyData()
 
             logging.info("loading cell")
-            if not self.force_cellpy:
+            if not force_cellpy:
                 if self.force_raw:
                     h_txt += " (r)"
                     pbar.set_postfix_str(s=h_txt, refresh=True)
@@ -396,16 +398,16 @@ class CyclingExperiment(BaseExperiment):
         logging.debug("checking and establishing link to data")
 
         errors = []
-        try:
-            for cell_label in self.journal.pages.index:
-                logging.debug(f"trying to link {cell_label}")
-                self._link_cellpy_file(cell_label)
 
-        except IOError as e:
-            logging.warning(e)
-            e_txt = "links not established - try update instead"
-            logging.warning(e_txt)
-            errors.append(e_txt)
+        for cell_label in self.journal.pages.index:
+            logging.debug(f"trying to link {cell_label}")
+            try:
+                self._link_cellpy_file(cell_label)
+            except IOError as e:
+                logging.warning(e)
+                e_txt = f"{cell_label}: links not established - try update instead"
+                logging.warning(e_txt)
+                errors.append(e_txt)
 
         self.errors["link"] = errors
 

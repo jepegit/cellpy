@@ -652,6 +652,8 @@ class Batch:
                 shutil.copy(from_file, to_file)
             except shutil.SameFileError:
                 logging.info("Same file! No point in copying")
+            except FileNotFoundError:
+                logging.info("File not found! Cannot copy it!")
 
         # save the journal pages
         pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
@@ -661,8 +663,8 @@ class Batch:
         if selector is not None:
             logging.info("Modifying the cellpy-files.")
             logging.info(f"selector: {selector}")
+            self.experiment.force_cellpy = True
             self.update(selector=selector, **kwargs)
-
 
     # TODO: list_journals?
 
