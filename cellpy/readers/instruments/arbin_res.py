@@ -154,7 +154,19 @@ normal_headers_renaming_dict = {
 
 
 class ArbinLoader(Loader):
-    """ Class for loading arbin-data from res-files."""
+    """ Class for loading arbin-data from res-files.
+
+    Implemented Cellpy params (prms.Instruments.Arbin):
+        max_res_filesize
+        chunk_size
+        max_chunks
+        use_subprocess
+        detect_subprocess_need
+        sub_process_path
+        office_version
+        SQL_server
+
+    """
 
     def __init__(self):
         """initiates the ArbinLoader class"""

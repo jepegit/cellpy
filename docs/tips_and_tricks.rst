@@ -54,4 +54,5 @@ it without having to edit your config file) is the input and output directories.
     prms.Paths.cellpydatadir = r"C:\tmp"
     prms.Paths.filelogdir = r"C:\tmp"
 
+
 More tips and tricks will come soon!

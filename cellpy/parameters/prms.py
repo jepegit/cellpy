@@ -5,30 +5,15 @@ from pathlib import Path
 import sys
 import box
 
-# class Parameter(object):
-#     """class for storing parameters"""
-#     def __init__(self, name, prm_dict):
-#         self.name = name
-#         for key in prm_dict:
-#             setattr(self, key, prm_dict[key])
-#
-#     def __repr__(self):
-#         return "<cellpy_prms: %s>" % self.__dict__
+# When adding prms, please
+#   1) check / update the internal_settings.py file as well to ensure that copying / splitting cellpy objects
+#   behaves properly.
+#   2) check / update the .cellpy_prms_default.conf file
 
 # locations etc for reading custom parameters
 script_dir = os.path.abspath(os.path.dirname(__file__))
 cur_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 user_dir = os.path.expanduser("~")
-
-# search_path = dict()
-# search_path["curdir"] = cur_dir
-# search_path["filedir"] = script_dir
-# search_path["userdir"] = user_dir
-#
-# search_order = ["curdir", "filedir", "userdir"]
-# default_name = "_cellpy_prms_default.ini"
-# prm_default = os.path.join(script_dir, default_name)
-# prm_filename = prm_default
 
 # --------------------------
 # Paths
@@ -65,7 +50,7 @@ Reader = {
     "sorted_data": True,  # finding step-types assumes sorted data
     "load_only_summary": False,
     "select_minimal": False,
-    "limit_loaded_cycles": None,
+    "limit_loaded_cycles": None,  # limit loading cycles to given cycle number
     "ensure_step_table": False,
     "daniel_number": 5,
     "voltage_interpolation_step": 0.01,

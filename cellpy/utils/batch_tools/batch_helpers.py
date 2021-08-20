@@ -77,28 +77,24 @@ def create_folder_structure(project_name, batch_name):
     return info_file, (project_dir, batch_dir, raw_dir)
 
 
-def find_files(info_dict, filename_cache=None, **kwargs):
+def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
     """Find files using cellpy.filefinder.
 
     Args:
-        info_dict: journal pages
-        filename_cache: cached directory content
-        **kwargs: sent to filefinder.search_for_files
+        info_dict: journal pages.
+        file_list: list of files names to search through.
+        pre_path: path to prepend found files from file_list (if file_list is given).
+        **kwargs: sent to filefinder.search_for_files.
 
     Returns:
-
+        info_dict
     """
     # searches for the raw data files and the cellpyfile-name
     # TODO: implement faster file searching
     # TODO: implement option for not searching for raw-file names if force_cellpy is True
     for run_name in info_dict[hdr_journal["filename"]]:
         logging.debug(f"checking for {run_name}")
-        if prms._use_filename_cache:
-            raw_files, cellpyfile, filename_cache = filefinder.search_for_files(
-                run_name, cache=filename_cache, **kwargs
-            )
-        else:
-            raw_files, cellpyfile = filefinder.search_for_files(run_name, **kwargs)
+        raw_files, cellpyfile = filefinder.search_for_files(run_name, file_list=file_list, pre_path=pre_path, **kwargs)
         if not raw_files:
             raw_files = None
         info_dict[hdr_journal["raw_file_names"]].append(raw_files)
