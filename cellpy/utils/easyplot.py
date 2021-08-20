@@ -84,6 +84,7 @@ USER_PARAMS = {
     "figsize": (tuple, (6, 4)),  # 6 inches wide, 4 inches tall
     "figres": (int, 100),  # Dots per Inch
     "figtitle": (str, "Title"),  # None = original filepath
+    "save_figures": (bool, True)
 }
 
 
@@ -1732,16 +1733,18 @@ class EasyPlot:
             logging.error(e)
 
     def save_fig(self, fig, savepath):
-        """The point of this is to have savefig parameters the same across all plots (for now just fig dpi and bbox inches)"""
-        if self.kwargs["outname"]:
-            savepath = (
-                self.kwargs["outpath"] + self.kwargs["outname"] + self.kwargs["outtype"]
-            )
-        else:
-            savepath += self.kwargs["outtype"]
+        """The point of this is to have savefig parameters the same across
+        all plots (for now just fig dpi and bbox inches)"""
+        if self.kwargs.get("save_figures", True):
+            if self.kwargs["outname"]:
+                savepath = (
+                    self.kwargs["outpath"] + self.kwargs["outname"] + self.kwargs["outtype"]
+                )
+            else:
+                savepath += self.kwargs["outtype"]
 
-        print("Saving to: " + savepath)
-        fig.savefig(savepath, bbox_inches="tight", dpi=self.kwargs["figres"])
+            print("Saving to: " + savepath)
+            fig.savefig(savepath, bbox_inches="tight", dpi=self.kwargs["figres"])
 
 
 def get_effective_C_rates(steptable):
@@ -1787,3 +1790,28 @@ def get_effective_C_rates_and_caps(steptable):
             )
 
     return chglist, dchglist
+
+
+def main():
+    from cellpy import log
+    log.setup_logging(default_level="DEBUG")
+    f1 = Path("../../testdata/data/20160805_test001_45_cc_01.res")
+    f2 = Path("../../testdata/data/20160805_test001_47_cc_01.res")
+
+    raw_files = [f1, f2]
+    nicknames = ["cell1", "cell2"]
+
+    logging.debug(raw_files)
+    logging.debug(nicknames)
+
+    ezplt = EasyPlot(raw_files, nicknames, figtitle="Test1", save_figures=True)
+    ezplt.plot()
+    plt.show()
+
+    return
+
+
+if __name__ == "__main__":
+    print(" running easyplot ".center(80, "-"))
+    main()
+    print(" finished ".center(80, "-"))
