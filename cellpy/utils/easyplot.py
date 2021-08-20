@@ -100,15 +100,32 @@ class EasyPlot():
     """
 
     def __init__(self, files, nicknames, **kwargs):
-        """Initialization function of the EasyPlot class. Takes a list of filenames, eventual list of nicknames and kwargs which are supported."""
+        """Initialization function of the EasyPlot class. 
+        Input parameters:
+        filenames (list of strings)
+        nicknames (list of strings), must match length of filenames, or can be set to None.
+        any kwargs: use easyplot.help() to print all kwargs to terminal.
+        
+        Returns:
+        easyplot object
+        
+        Most basic usage:
+        ezpltobj = easyplot.EasyPlot(["name1", "name2"], None)"""
+
         
         # Make all user input variables of self
         self.files = files
         self.nicknames = nicknames
         self.kwargs = kwargs
+
+        # More needed variables
         self.figs = []
         self.file_data = []
         self.use_arbin_sql = False
+
+        # Dictionary of all possible user input arguments(as keys) with example values of correct type
+        # Value is a tuple (immutable) of type and default value.
+        self.user_params = USER_PARAMS
 
         # List of available colors
         if len(self.files) > 10:
@@ -120,11 +137,6 @@ class EasyPlot():
             self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]*5
 
 
-
-        # Dictionary of all possible user input arguments(as keys) with example values of correct type
-        # Value is a tuple (immutable) of type and default value.
-        self.user_params = USER_PARAMS
-
         # Fill in the rest of the variables from self.user_params if the user didn't specify
         self.fill_input()
 
@@ -133,7 +145,8 @@ class EasyPlot():
 
 
     def plot(self):
-        """This is the method the user calls on his/hers easyplot object in order to gather the data and plot it."""
+        """This is the method the user calls on his/hers easyplot object in order to gather the data and plot it.
+        Usage: object.plot()"""
 
         # Load all cellpy files
         for file in self.files:
@@ -153,7 +166,8 @@ class EasyPlot():
             # Get ID of all cycles
             cyc_nums = cpobj.get_cycle_numbers()                            
 
-            if self.kwargs["specific_cycles"] != None:   # Only get the cycles which both exist in data, and that the user want
+            # Only get the cycles which both exist in data, and that the user want
+            if self.kwargs["specific_cycles"] != None:
                 cyc_not_available = (set(cyc_nums)^set(self.kwargs["specific_cycles"]))&set(self.kwargs["specific_cycles"])
                 if len(cyc_not_available) > 0:
                     warn_str = "You want to plot cycles which are not available in the data! Datafile: " + os.path.basename(file).split(".")[0] + ", Cycle(s): " + str(cyc_not_available)
@@ -163,14 +177,12 @@ class EasyPlot():
             if self.kwargs["exclude_cycles"] != None:
                 cyc_nums = list( set(cyc_nums) - set(self.kwargs["exclude_cycles"]) )
 
-
-
         
             color = self.give_color()               # Get a color for the data
 
             self.file_data.append((cpobj, cyc_nums, color, file))
 
-        # If the user want cyclelife plot, we do it to all the input files.
+        # Check kwargs/input parameters to see what plots to make
         if self.kwargs["cyclelife_plot"]:
             self.plot_cyclelife()
 
