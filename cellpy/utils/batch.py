@@ -659,7 +659,9 @@ class Batch:
         pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
-        self.experiment.journal.to_file(journal_file_name, paginate=False, to_project_folder=False)
+        self.experiment.journal.to_file(
+            journal_file_name, paginate=False, to_project_folder=False
+        )
         if selector is not None:
             logging.info("Modifying the cellpy-files.")
             logging.info(f"selector: {selector}")

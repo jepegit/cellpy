@@ -334,7 +334,10 @@ class CustomLoader(Loader):
                         ] = charge_cap_last_val
 
                     if not discharge_cap.empty:
-                        discharge_cap_last_index, discharge_cap_last_val = discharge_cap.iloc[-1]
+                        (
+                            discharge_cap_last_index,
+                            discharge_cap_last_val,
+                        ) = discharge_cap.iloc[-1]
                         raw["new_d"].update(discharge_cap[cap_col])
 
                         raw.loc[
@@ -365,24 +368,33 @@ class CustomLoader(Loader):
                 raw[datetime_hdr] = raw[test_time_hdr]
                 self.headers["datetime_txt"] = datetime_hdr
             else:
-                raise NotImplementedError(f"date_time conversion method not implemented ({date_time_conversion})")
+                raise NotImplementedError(
+                    f"date_time conversion method not implemented ({date_time_conversion})"
+                )
 
         if test_time_conversion:
             if test_time_conversion.lower() == "date_time_to_sec":
                 start_time = raw[test_time_hdr].iloc[0]
                 raw[test_time_hdr] = (
-                        raw[test_time_hdr] - start_time).dt.total_seconds()  # Warning: replaces original column
+                    raw[test_time_hdr] - start_time
+                ).dt.total_seconds()  # Warning: replaces original column
                 raw[test_time_hdr] = raw[test_time_hdr]
             else:
-                raise NotImplementedError(f"test_time conversion method not implemented ({test_time_conversion})")
+                raise NotImplementedError(
+                    f"test_time conversion method not implemented ({test_time_conversion})"
+                )
 
         if step_time_conversion:
             # "unit" can be lifted to an argument later (will need a parser for the step_time_conversion string)
             unit = "ns"
             if step_time_conversion.lower() == "time_to_sec":
-                raw[step_time_hdr] = pd.to_timedelta(raw[step_time_hdr], unit=unit).dt.total_seconds()
+                raw[step_time_hdr] = pd.to_timedelta(
+                    raw[step_time_hdr], unit=unit
+                ).dt.total_seconds()
             else:
-                raise NotImplementedError(f"step_time conversion method not implemented ({step_time_conversion})")
+                raise NotImplementedError(
+                    f"step_time conversion method not implemented ({step_time_conversion})"
+                )
         raw = self._select_cols(raw)
         raw = self._check_cycleno_stepno(raw)
 
@@ -404,15 +416,18 @@ class CustomLoader(Loader):
     def _parse_xls_data(self, file_name):
         sheet_name = self.structure["table_name"]
 
-        raw_frame = pd.read_excel(file_name, engine="xlrd", sheet_name=None)  # TODO: replace this with pd.ExcelReader
+        raw_frame = pd.read_excel(
+            file_name, engine="xlrd", sheet_name=None
+        )  # TODO: replace this with pd.ExcelReader
         matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
         if matching:
             return raw_frame[matching[0]]
 
     def _parse_xlsx_data(self, file_name):
         sheet_name = self.structure["table_name"]
-        raw_frame = pd.read_excel(file_name, engine="openpyxl",
-                                  sheet_name=None)  # TODO: replace this with pd.ExcelReader
+        raw_frame = pd.read_excel(
+            file_name, engine="openpyxl", sheet_name=None
+        )  # TODO: replace this with pd.ExcelReader
         matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
         if matching:
             return raw_frame[matching[0]]

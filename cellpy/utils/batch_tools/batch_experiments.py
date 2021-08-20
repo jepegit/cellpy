@@ -198,7 +198,7 @@ class CyclingExperiment(BaseExperiment):
                     cell_data.load(
                         row[hdr_journal.cellpy_file_name],
                         parent_level=self.parent_level,
-                        selector=selector
+                        selector=selector,
                     )
                 except Exception as e:
                     logging.info(
@@ -296,7 +296,9 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("You opted to not save to cellpy-format")
                 logging.info("It is usually recommended to save to cellpy-format:")
                 logging.info(" >>> b.experiment.save_cellpy = True")
-                logging.info("Without the cellpy-files, you cannot select specific cells")
+                logging.info(
+                    "Without the cellpy-files, you cannot select specific cells"
+                )
                 logging.info("if you did not opt to store all in memory")
 
             if self.export_raw or self.export_cycles:

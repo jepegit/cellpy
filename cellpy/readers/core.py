@@ -199,9 +199,7 @@ class Cell(object):
         txt += "</p>"
         try:
             raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"
-            raw_txt += (
-                f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"
-            )
+            raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"
         except AttributeError:
             raw_txt = "<p><b>raw data-frame </b><br> not found!</p>"
         except ValueError:
@@ -213,7 +211,9 @@ class Cell(object):
         except AttributeError:
             summary_txt = "<p><b>summary data-frame </b><br> not found!</p>"
         except ValueError:
-            summary_txt = "<p><b>summary data-frame </b><br> does not contain any columns!</p>"
+            summary_txt = (
+                "<p><b>summary data-frame </b><br> does not contain any columns!</p>"
+            )
 
         try:
             steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"
@@ -221,7 +221,9 @@ class Cell(object):
         except AttributeError:
             steps_txt = "<p><b>steps data-frame </b><br> not found!</p>"
         except ValueError:
-            steps_txt = "<p><b>steps data-frame </b><br> does not contain any columns!</p>"
+            steps_txt = (
+                "<p><b>steps data-frame </b><br> does not contain any columns!</p>"
+            )
 
         return obj + txt + summary_txt + steps_txt + raw_txt
 

@@ -210,10 +210,7 @@ class LabJournal(BaseJournal):
         # only keep selected cells if keep column exists
         if "keep" in pages.columns:
             logging.debug("Journal contains 'keep' - selecting only 'keep' > 0.")
-            pages = pages.loc[
-                    pages.keep > 0,
-                    :
-                    ]
+            pages = pages.loc[pages.keep > 0, :]
 
         for column_name in missing_keys:
             if column_name not in pages.columns:
@@ -287,7 +284,9 @@ class LabJournal(BaseJournal):
 
     def to_file(self, file_name=None, paginate=True, to_project_folder=True):
         """Saves a DataFrame with all the needed info about the experiment"""
-        file_name = self._check_file_name(file_name, to_project_folder=to_project_folder)
+        file_name = self._check_file_name(
+            file_name, to_project_folder=to_project_folder
+        )
         pages = self.pages
         session = self.session
         top_level_dict = {
