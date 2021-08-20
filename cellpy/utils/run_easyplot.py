@@ -5,6 +5,8 @@ if __name__ == "__main__":
     import cellpy
     import easyplot
 
+    #easyplot.help()
+
     files = [   
     '20210624_seam12_07_01_cc_02',
     # === SEAM 17 1ST GC ===
@@ -47,7 +49,7 @@ if __name__ == "__main__":
     nicknames = None #["04 Pure Si", "05 Low Carbon", "06 Medium Carbon", "07 High Carbon"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
-        cyclelife_plot = False,
+        cyclelife_plot = True,
         cyclelife_percentage = False,
         cyclelife_coulombic_efficiency = False,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
@@ -59,8 +61,8 @@ if __name__ == "__main__":
         cyclelife_ylabel_percent = "Capacity retention [%]",
         cyclelife_legend_outside = False,         # if True, the legend is placed outside the plot
         cyclelife_degradation_slope = False,
-        capacity_determination_from_ratecap = True,
-        galvanostatic_plot = False,
+        capacity_determination_from_ratecap = False,
+        galvanostatic_plot = True,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\mu Ah \right]$",
@@ -74,7 +76,7 @@ if __name__ == "__main__":
         specific_cycles = None,#[]
         exclude_cycles = [1,2,3,4,5],#[]
         all_in_one = False,
-        only_dischg = True,
+        only_dischg = False,
         only_chg = False,
         outpath = "./ezplots/dev_crate/",
         outtype = ".svg",

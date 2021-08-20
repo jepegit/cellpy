@@ -21,40 +21,9 @@ import warnings
 from matplotlib.ticker import FuncFormatter
 from matplotlib.scale import LogScale
 
-
-class EasyPlot():
-    """Main easyplot class. 
-    Takes all the inputs from the user in its kwargs upon object initialization.
-    Gathers data, handles and plots it when object.plot() is called.
-
-    Help: initiate an object and call the object.help() function.
-    """
-
-    def __init__(self, files, nicknames, **kwargs):
-        """Initialization function of the EasyPlot class. Takes a list of filenames, eventual list of nicknames and kwargs which are supported."""
-        
-        # Make all user input variables of self
-        self.files = files
-        self.nicknames = nicknames
-        self.kwargs = kwargs
-        self.figs = []
-        self.file_data = []
-        self.use_arbin_sql = False
-
-        # List of available colors
-        if len(self.files) > 10:
-            self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#000000']
-            warnings.warn("You inserted more than 10 datafiles! In a desperate attempt to keep the plots tidy, another colorpalette with 19 distinct colors were chosen.")
-        elif len(self.files) > 19:
-            warnings.warn("You inserted more than 19 datafiles! We do not have that many colors in the palette, this some colors are beeing recycled. Keep track of the filenames and legends and make sure this doesn't confuse you.")
-        else:
-            self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]*5
-
-
-
-        # Dictionary of all possible user input arguments(as keys) with example values of correct type
-        # Value is a tuple (immutable) of type and default value.
-        self.user_params = {
+# Dictionary of all possible user input arguments(as keys) with example values of correct type
+# Value is a tuple (immutable) of type and default value.
+USER_PARAMS =  {
             "cyclelife_plot"                        : (bool, True),
             "cyclelife_separate_data"               : (bool, False), # will plot each cyclelife datafile in separate plots
             "cyclelife_percentage"                  : (bool, False),
@@ -93,6 +62,66 @@ class EasyPlot():
             "figres"    : (int, 100),     # Dots per Inch
             "figtitle"  : (str, "Title"), # None = original filepath
         }
+
+
+def help():
+    """Method of the EasyPlot class which prints some helptext in addition to all supported params."""
+    ## Prints out help page of this module
+    help_str = ("The easyplot extension to cellpy aims to easily plot data in a pretty manner.\n"
+                "In order to use this function, you must import cellpy, and easyplot from cellpy.utils.\n"
+                "\n"
+                "Usage:\n"
+                "Create list of datafiles you want to plot on the following format:\n"
+                "\n"
+                "files = [\n"
+                "\t'./folder/filename.ext',\n"
+                "\t'./folder/filename2.ext',\n"
+                "\t]\n"
+                "\n"
+                "And then call the easyplot.plot function with the files list as the first parameter, and any optional keyword arguments.\n"
+                "Here is an example of the use of all keyword arguments:\n")
+    for kw in USER_PARAMS:
+        if type(USER_PARAMS[kw][1]) == str:
+            insert = "'"+USER_PARAMS[kw][1] + "'"
+        else:
+            insert = str(USER_PARAMS[kw][1])
+        help_str += "\t" + kw + " = " + insert + ",\n"
+    print(help_str)
+
+
+class EasyPlot():
+    """Main easyplot class. 
+    Takes all the inputs from the user in its kwargs upon object initialization.
+    Gathers data, handles and plots it when object.plot() is called.
+
+    Help: initiate an object and call the object.help() function.
+    """
+
+    def __init__(self, files, nicknames, **kwargs):
+        """Initialization function of the EasyPlot class. Takes a list of filenames, eventual list of nicknames and kwargs which are supported."""
+        
+        # Make all user input variables of self
+        self.files = files
+        self.nicknames = nicknames
+        self.kwargs = kwargs
+        self.figs = []
+        self.file_data = []
+        self.use_arbin_sql = False
+
+        # List of available colors
+        if len(self.files) > 10:
+            self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#000000']
+            warnings.warn("You inserted more than 10 datafiles! In a desperate attempt to keep the plots tidy, another colorpalette with 19 distinct colors were chosen.")
+        elif len(self.files) > 19:
+            warnings.warn("You inserted more than 19 datafiles! We do not have that many colors in the palette, this some colors are beeing recycled. Keep track of the filenames and legends and make sure this doesn't confuse you.")
+        else:
+            self.colors =  ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan' ]*5
+
+
+
+        # Dictionary of all possible user input arguments(as keys) with example values of correct type
+        # Value is a tuple (immutable) of type and default value.
+        self.user_params = USER_PARAMS
 
         # Fill in the rest of the variables from self.user_params if the user didn't specify
         self.fill_input()
@@ -154,31 +183,6 @@ class EasyPlot():
 
         if self.kwargs["capacity_determination_from_ratecap"]:
             self.plot_cap_from_rc()
-            
-
-    def help(self):
-        """Method of the EasyPlot class which prints some helptext in addition to all supported params."""
-        ## Prints out help page of this module
-        help_str = ("The easyplot extension to cellpy aims to easily plot data in a pretty manner.\n"
-                    "In order to use this function, you must import cellpy, and easyplot from cellpy.utils.\n"
-                    "\n"
-                    "Usage:\n"
-                    "Create list of datafiles you want to plot on the following format:\n"
-                    "\n"
-                    "files = [\n"
-                    "\t'./folder/filename.ext',\n"
-                    "\t'./folder/filename2.ext',\n"
-                    "\t]\n"
-                    "\n"
-                    "And then call the easyplot.plot function with the files list as the first parameter, and any optional keyword arguments.\n"
-                    "Here is an example of the use of all keyword arguments:\n")
-        for kw in self.user_params:
-            if type(self.user_params[kw][1]) == str:
-                insert = "'"+self.user_params[kw][1] + "'"
-            else:
-                insert = str(self.user_params[kw][1])
-            help_str += "\t" + kw + " = " + insert + ",\n"
-        print(help_str)
 
 
 
