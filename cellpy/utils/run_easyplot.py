@@ -8,7 +8,7 @@ if __name__ == "__main__":
     #easyplot.help()
 
     files = [   
-    '20210624_seam12_07_01_cc_02',
+    #'20210624_seam12_07_01_cc_02',
     # === SEAM 17 1ST GC ===
     #'20210812_seam17_07_gc_01_cc_01',
     #'20210812_seam17_07_gc_02_cc_01',
@@ -30,15 +30,15 @@ if __name__ == "__main__":
     #'20210712_seam12_07_rc_02_cc_01',
     #'20210712_seam12_07_rc_03_cc_01',
     # === SEAM 12 1ST GC ===
-    #'20210628_seam12_04_01_cc_01',
+    '20210628_seam12_04_01_cc_01',
     #'20210628_seam12_04_02_cc_02',
     #'20210628_seam12_04_03_cc_01',
-    #'20210628_seam12_05_01_cc_01',
+    '20210628_seam12_05_01_cc_01',
     #'20210628_seam12_05_02_cc_01',
     #'20210628_seam12_05_03_cc_01',
     #'20210628_seam12_06_01_cc_01',
     #'20210628_seam12_06_02_cc_01',
-    #'20210628_seam12_06_03_cc_01',
+    '20210628_seam12_06_03_cc_01',
     #'20210628_seam12_07_01_cc_01',
     #'20210628_seam12_07_02_cc_01',
     #'20210628_seam12_07_03_cc_01',
@@ -50,11 +50,12 @@ if __name__ == "__main__":
 
     ezplt = easyplot.EasyPlot(files, nicknames,
         cyclelife_plot = True,
+        cyclelife_separate_data = True,
         cyclelife_percentage = False,
-        cyclelife_coulombic_efficiency = False,
+        cyclelife_coulombic_efficiency = True,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
         cyclelife_charge_c_rate = False,
-        cyclelife_discharge_c_rate = True,
+        cyclelife_discharge_c_rate = False,
         cyclelife_ir = False, # NOT FINISHED
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\mu Ah\right]$",
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         cyclelife_legend_outside = False,         # if True, the legend is placed outside the plot
         cyclelife_degradation_slope = False,
         capacity_determination_from_ratecap = False,
-        galvanostatic_plot = True,
+        galvanostatic_plot = False,
         galvanostatic_potlim = (0,1),     #min and max limit on potential-axis
         galvanostatic_caplim = None,
         galvanostatic_xlabel = r"Capacity $\left[\mu Ah \right]$",
@@ -74,7 +75,7 @@ if __name__ == "__main__":
         dqdv_xlabel = "Cell potential [V]",
         dqdv_ylabel = r"dQ/dV $\left[\frac{\mu Ah}{V}\right]$",
         specific_cycles = None,#[]
-        exclude_cycles = [1,2,3,4,5],#[]
+        exclude_cycles = None,#[]
         all_in_one = False,
         only_dischg = False,
         only_chg = False,

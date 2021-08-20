@@ -265,36 +265,60 @@ class EasyPlot():
 
     def plot_cyclelife(self):
         # Spawn fig and axis for plotting
-        fig, ax = self.give_fig()
-        if self.kwargs["cyclelife_coulombic_efficiency"]:
-            # Spawn twinx axis and set label
-            ax_ce = ax.twinx()
-            ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
-        if self.kwargs["cyclelife_charge_c_rate"] or self.kwargs["cyclelife_discharge_c_rate"]:
-            ax_c_rate = ax.twinx()
-            def format_label(x, pos):
-                # The commented out code here makes the fractioned C-rate like C/50 and so on.
-                """
-                if x >= 1:
-                    s = '%.2gC' % x
-                elif x == 0:
-                    s = r'C/$\infty$'
-                else:
-                    newfloat = 1/x
-                    s = 'C/%.2g' % newfloat
+        if not self.kwargs["cyclelife_separate_data"]:
+            fig, ax = self.give_fig()
+            if self.kwargs["cyclelife_coulombic_efficiency"]:
+                # Spawn twinx axis and set label
+                ax_ce = ax.twinx()
+                ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
+            if self.kwargs["cyclelife_charge_c_rate"] or self.kwargs["cyclelife_discharge_c_rate"]:
+                ax_c_rate = ax.twinx()
+                def format_label(x, pos):
+                    # The commented out code here makes the fractioned C-rate like C/50 and so on.
                     """
-                # The following just has decimal place C-rate.
-                s = '%.3gC' % x
-                return s
+                    if x >= 1:
+                        s = '%.2gC' % x
+                    elif x == 0:
+                        s = r'C/$\infty$'
+                    else:
+                        newfloat = 1/x
+                        s = 'C/%.2g' % newfloat
+                        """
+                    # The following just has decimal place C-rate.
+                    s = '%.3gC' % x
+                    return s
 
-            ax_c_rate.yaxis.set_major_formatter(FuncFormatter(format_label))
-            ax_c_rate.set(ylabel = "Effective C-rate")
+                ax_c_rate.yaxis.set_major_formatter(FuncFormatter(format_label))
+                ax_c_rate.set(ylabel = "Effective C-rate")
 
-        if self.kwargs["cyclelife_ir"]:
-            ax_ir = ax.twinx()  
+            if self.kwargs["cyclelife_ir"]:
+                ax_ir = ax.twinx()  
 
-        outpath = self.outpath
+            outpath = self.outpath
+
         for cpobj, cyc_nums, color, filename in self.file_data:
+            if self.kwargs["cyclelife_separate_data"]:
+                fig, ax = self.give_fig()
+                if self.kwargs["cyclelife_coulombic_efficiency"]:
+                    # Spawn twinx axis and set label
+                    ax_ce = ax.twinx()
+                    ax_ce.set(ylabel = self.kwargs["cyclelife_coulombic_efficiency_ylabel"])
+                if self.kwargs["cyclelife_charge_c_rate"] or self.kwargs["cyclelife_discharge_c_rate"]:
+                    ax_c_rate = ax.twinx()
+                    def format_label(x, pos):
+                        # The following just has decimal place C-rate.
+                        s = '%.3gC' % x
+                        return s
+
+                    ax_c_rate.yaxis.set_major_formatter(FuncFormatter(format_label))
+                    ax_c_rate.set(ylabel = "Effective C-rate")
+
+                if self.kwargs["cyclelife_ir"]:
+                    ax_ir = ax.twinx()  
+
+                outpath = self.outpath
+
+
             # Get Pandas DataFrame of pot vs cap from cellpy object
             df = cpobj.get_cap(method="forth-and-forth", label_cycle_number=True, categorical_column=True)
             outpath += os.path.basename(filename).split(".")[0] + "_"
@@ -358,8 +382,6 @@ class EasyPlot():
                         CEs.append(coulombic_efficiency[cyc])
 
                 # Place it in the plot
-                #print("CE's")
-                #print(CEs)
                 ax_ce.scatter(cycs, CEs, c = color, marker = "+")
                 #print(filename + " Dchg 1-3: " + str(dchgs[1][0:3])  + ", CE 1-3: " + str(coulombic_efficiency[0:3]))
 
@@ -418,28 +440,21 @@ class EasyPlot():
                         ax_ir.scatter(cyc, chg_ir[cyc], c = color, marker = "*")
                         """
 
-        # Get labels and handles for legend generation and eventual savefile
-        handles, labels = ax.get_legend_handles_labels()
-        if not self.kwargs["only_dischg"]:
-            handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
+            if self.kwargs["cyclelife_separate_data"]:
+                # Set all plot settings from Plot object
+                self.fix_cyclelife(fig, ax)
 
-        if self.kwargs["cyclelife_coulombic_efficiency"]:
-            handles.append(Line2D([0], [0], marker='+', color='black', alpha = 1, label = 'Coulombic Efficiency', linestyle=''))
-        if self.kwargs["cyclelife_charge_c_rate"] and not self.kwargs["cyclelife_discharge_c_rate"]:
-            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
-        elif not self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
-            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective discharge C-rate', linestyle=''))
-        elif self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
-            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
-            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 0.2, label = 'Effective discharge C-rate', linestyle=''))
-        
+                # Save fig
+                savepath = outpath.strip("_") + "_Cyclelife" 
+                self.save_fig(fig, savepath)
+        if not self.kwargs["cyclelife_separate_data"]:
 
-        # Set all plot settings from Plot object
-        self.fix_cyclelife(fig, ax, handles)
+            # Set all plot settings from Plot object
+            self.fix_cyclelife(fig, ax)
 
-        # Save fig
-        savepath = outpath.strip("_") + "_Cyclelife" 
-        self.save_fig(fig, savepath)
+            # Save fig
+            savepath = outpath.strip("_") + "_Cyclelife" 
+            self.save_fig(fig, savepath)
 
 
 
@@ -1050,7 +1065,7 @@ class EasyPlot():
 
 
 
-    def fix_cyclelife(self, fig, ax, handles):
+    def fix_cyclelife(self, fig, ax):
         # Applies kwargs settings and other plot settings
 
         ## Parameters which could be user defined later
@@ -1060,6 +1075,24 @@ class EasyPlot():
             yticks = (np.arange(3, 5, step=0.2)),
             )
         """
+        # Get labels and handles for legend generation and eventual savefile
+        handles, labels = ax.get_legend_handles_labels()
+        if not self.kwargs["only_dischg"]:
+            handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
+        
+        if self.kwargs["cyclelife_coulombic_efficiency"]:
+            handles.append(Line2D([0], [0], marker='+', color='black', alpha = 1, label = 'Coulombic Efficiency', linestyle=''))
+        
+        if self.kwargs["cyclelife_charge_c_rate"] and not self.kwargs["cyclelife_discharge_c_rate"]:
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
+        elif not self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective discharge C-rate', linestyle=''))
+        elif self.kwargs["cyclelife_charge_c_rate"] and self.kwargs["cyclelife_discharge_c_rate"]:
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 1, label = 'Effective charge C-rate', linestyle=''))
+            handles.append(Line2D([0], [0], marker='_', color='black', alpha = 0.2, label = 'Effective discharge C-rate', linestyle=''))
+        
+
+
 
         # The params below should always be like this.
         ax.tick_params(direction='in', top = 'true', right = 'true')
