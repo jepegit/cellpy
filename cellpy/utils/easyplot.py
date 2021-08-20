@@ -96,7 +96,7 @@ class EasyPlot():
     Takes all the inputs from the user in its kwargs upon object initialization.
     Gathers data, handles and plots it when object.plot() is called.
 
-    Help: initiate an object and call the object.help() function.
+    Help: type easyplot.help()
     """
 
     def __init__(self, files, nicknames, **kwargs):
