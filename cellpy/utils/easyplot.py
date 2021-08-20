@@ -932,8 +932,8 @@ class EasyPlot():
         # Get labels and handles for legend generation and eventual savefile
         handles, labels = ax.get_legend_handles_labels()
         #handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Charge capacity', linestyle=''))
-        handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Disharge capacity', linestyle=''))
-        handles.append(Line2D([0], [0], marker='+', color='black', label = 'Cap avg per C-rate', linestyle=''))
+        #handles.append(Line2D([0], [0], marker='o', color='black', alpha = 0.2, label = 'Disharge capacity', linestyle=''))
+        #handles.append(Line2D([0], [0], marker='+', color='black', label = 'Cap avg per C-rate', linestyle=''))
         
 
         outpath = self.outpath
@@ -957,7 +957,7 @@ class EasyPlot():
             for chg, dchg in zip(new_chglist, new_dchglist):
                 #print(dchg)
                 #ax.scatter(chg[1] , chg[2] , color = color, alpha = 0.2) 
-                ax.scatter(1/dchg[1], dchg[2], color = color, alpha = 0.2)
+                ax.scatter(1/dchg[1], dchg[2], color = color, alpha = 1)
         
                 linregress_xlist.append(1/dchg[1])
                 linregress_ylist.append(dchg[2])
@@ -965,67 +965,78 @@ class EasyPlot():
             #print(linregress_ylist)
             # Fitting curve to the exponential function
             # Import curve fitting package from scipy
-            from scipy.optimize import curve_fit
+            #from scipy.optimize import curve_fit
 
             x_arr = np.array(linregress_xlist)
             y_arr = np.array(linregress_ylist)
 
+
             # Average the capacity for each c-rate
             def _reduce_to_averages(xvals, yvals):
-                i=0
-                j = 0
-                x_grouped = []
-                y_grouped = []
+                """This function scans through the data and averages relevant points together."""
 
-                x_lst = []
-                y_lst = []
+                point_grouped = []
+                point_lst = []
+                dists = []
+                for i in range(1,len(xvals)):
+                    prev_point = np.array((xvals[i-1], yvals[i-1]))
+                    curr_point = np.array((xvals[i]  , yvals[i]  ))
 
-                for x,y in zip(xvals,yvals):
-                    i+=1
-                    if i <= 5:
-                        x_lst.append(x)
-                        y_lst.append(y)
-                        
+                    dev = 0.3
+                    if (prev_point*(1-dev))[0] < curr_point[0] < (prev_point*(1+dev))[0]:
+                        #If this point is within dev (percentage sort of) of last point, then its in the same c-rate
+                        point_lst.append(curr_point)
+                    else:
+                        #New c-rate
+                        point_grouped.append(point_lst)
+                        point_lst = []
 
-                    if i == 5:
-                        i = 0
-                        x_grouped.append(x_lst)
-                        y_grouped.append(y_lst)
-
-                        x_lst = []
-                        y_lst = []
-                
+                print(point_grouped)
+                    
                 x_arr = []
                 y_arr = []
 
-                for xcrate, ycrate in zip(x_grouped, y_grouped):
-                    x_arr.append(sum(xcrate)/len(xcrate))
-                    y_arr.append(sum(ycrate)/len(ycrate))
+                for group in point_grouped:
+                     stacked_arr = np.stack(group, axis = 1)
+                     averaged_arr = np.average(stacked_arr, axis = 1)
+                     x_arr.append(averaged_arr[0])
+                     y_arr.append(averaged_arr[1])
+                     
+                print(x_arr)
+                print(y_arr)
+
                 return x_arr, y_arr
                 
 
 
-            x_arr, y_arr = _reduce_to_averages(x_arr, y_arr)
+            #x_arr, y_arr = _reduce_to_averages(x_arr, y_arr)
             
-            ax.scatter(x_arr, y_arr, marker="+")
-            def _exp_func(x,a,b,c):
-                return -a*np.exp(-b*x) + c
+            #ax.scatter(x_arr, y_arr, marker="+")
+            #def _exp_func(x,a,b,c):
+            #    return -a* (b**x) + a + -a * (b**(x+c)) +a 
 
-            pars, cov = curve_fit(f=_exp_func, xdata = x_arr, ydata=y_arr)
-            x_vals = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100) #x_arr[0], x_arr[-1], 100)
-            ax.plot(x_vals, _exp_func(x_vals, *pars))
-            ax.hlines(pars[2], ax.get_xlim()[0], ax.get_xlim()[1], colors = color, linestyle='--')
+            #pars, cov = curve_fit(f=_exp_func, p0 = [50, 0.7, 0], xdata = x_arr, ydata=y_arr, bounds = ([0,0.1, -20],[1e9, 1, 20]))
+
+            #x_vals = np.linspace(min(x_arr), max(x_arr), 100) #x_arr[0], x_arr[-1], 100)
+            #ax.plot(x_vals, _exp_func(x_vals, *pars))
+            #ax.hlines(max(y_arr), ax.get_xlim()[0], ax.get_xlim()[1], colors = color, linestyle='--')
             # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
-            std_dev = np.sqrt(np.diag(cov))
+            #std_dev = np.sqrt(np.diag(cov))
             # Make a sweet legend to put on this
+            #handles.append(
+            #    Line2D(
+            #        [0], [0], 
+            #        marker="_", color=color, 
+            #        label = 'Calculated maximum capacity:' + '\n' +'{:.2e} $\pm$ {:.2e}'.format(pars[0], std_dev[0]) + r'$\left[\mu Ah\right]$', linestyle=''
+            #        ))
+
+            ax.hlines(max(y_arr), ax.get_xlim()[0], ax.get_xlim()[1], colors = color, linestyle='--')
             handles.append(
                 Line2D(
                     [0], [0], 
                     marker="_", color=color, 
-                    label = 'Calculated maximum capacity:' + '\n' +'{:.2e} $\pm$ {:.2e}'.format(pars[2], std_dev[0]) + r'$\left[\mu Ah\right]$', linestyle=''
+                    label = 'Highest capacity:' + '\n' +'{:.2e}'.format(max(y_arr)) + r'$\left[\mu Ah\right]$', linestyle=''
                     ))
-
-
         
         self.fix_cap_from_rc(fig, ax, handles)
 
@@ -1083,7 +1094,8 @@ class EasyPlot():
         fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
             
     def fix_cap_from_rc(self, fig, ax, handles):
-        #ax.set_yscale("log")
+
+        ax.tick_params(direction='in', top = 'true', right = 'true')
         ax.set(xlabel = r"Inverse C-rate $\left[ h \right]$", ylabel = r"Capacity $\left[\mu Ah \right]$")
         # General plot details
         fig.set_size_inches(self.kwargs["figsize"])

@@ -47,12 +47,12 @@ if __name__ == "__main__":
     nicknames = None #["04 Pure Si", "05 Low Carbon", "06 Medium Carbon", "07 High Carbon"]
 
     ezplt = easyplot.EasyPlot(files, nicknames,
-        cyclelife_plot = True,
+        cyclelife_plot = False,
         cyclelife_percentage = False,
         cyclelife_coulombic_efficiency = False,
         cyclelife_coulombic_efficiency_ylabel = "Coulombic efficiency [%]",
         cyclelife_charge_c_rate = False,
-        cyclelife_discharge_c_rate = False,
+        cyclelife_discharge_c_rate = True,
         cyclelife_ir = False, # NOT FINISHED
         cyclelife_xlabel = "Cycles",
         cyclelife_ylabel = r"Capacity $\left[\mu Ah\right]$",
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         all_in_one = False,
         only_dischg = True,
         only_chg = False,
-        outpath = "./ezplots/endpres/",
+        outpath = "./ezplots/dev_crate/",
         outtype = ".svg",
         figsize = (6,4), # 6 inches wide, 4 inches tall
         figres = 100, # Dots per inch
