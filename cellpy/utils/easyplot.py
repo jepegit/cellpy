@@ -22,6 +22,8 @@ from matplotlib.scale import LogScale
 from matplotlib.ticker import FuncFormatter
 
 import cellpy
+from cellpy import log
+from cellpy.utils.batch_tools.batch_journals import LabJournal
 
 # Dictionary of all possible user input arguments(as keys) with example values of correct type
 # Value is a tuple (immutable) of type and default value.
@@ -123,11 +125,11 @@ class EasyPlot:
     Help: type easyplot.help()
     """
 
-    def __init__(self, files, nicknames, **kwargs):
+    def __init__(self, files, nicknames=None, journal=None, **kwargs):
         """Initialization function of the EasyPlot class.
         Input parameters:
         filenames (list of strings)
-        nicknames (list of strings), must match length of filenames, or can be set to None.
+        nicknames (list of strings), must match length of filenames.
         any kwargs: use easyplot.help() to print all kwargs to terminal.
 
         Returns:
@@ -145,6 +147,7 @@ class EasyPlot:
         self.figs = []
         self.file_data = []
         self.use_arbin_sql = False
+        self.journal_file = journal
 
         # Dictionary of all possible user input arguments(as keys) with example values of correct type
         # Value is a tuple (immutable) of type and default value.
@@ -319,6 +322,12 @@ class EasyPlot:
             logging.error(
                 "You can't plot 'only' discharge AND charge curves! Set one to False please."
             )
+
+        # Check that the user isn't providing both a list of files and a journal filename
+        if (self.journal_file is not None) and (self.files is not None):
+            logging.error("You can't give both filenames and a journal file at the same time.")
+            logging.error("Chose either filenames OR journal file name please.")
+            raise ValueError
 
     def fill_input(self):
         """Fill in the rest of the variables from self.user_params if the user didn't specify"""
@@ -1792,17 +1801,27 @@ def get_effective_C_rates_and_caps(steptable):
     return chglist, dchglist
 
 
+def load_journal_file(file_name):
+    journal = LabJournal(db_reader=None)
+    journal.from_file(file_name, paginate=False)
+    return journal
+
+
 def main():
-    from cellpy import log
     log.setup_logging(default_level="DEBUG")
     f1 = Path("../../testdata/data/20160805_test001_45_cc_01.res")
     f2 = Path("../../testdata/data/20160805_test001_47_cc_01.res")
+    journal_file = Path("../../testdata/db/cellpy_batch_test.json")
 
     raw_files = [f1, f2]
     nicknames = ["cell1", "cell2"]
 
     logging.debug(raw_files)
     logging.debug(nicknames)
+
+    journal = load_journal_file(journal_file)
+    print(journal)
+    return
 
     ezplt = EasyPlot(raw_files, nicknames, figtitle="Test1", save_figures=True)
     ezplt.plot()

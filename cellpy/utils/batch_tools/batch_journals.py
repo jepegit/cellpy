@@ -214,7 +214,7 @@ class LabJournal(BaseJournal):
 
         for column_name in missing_keys:
             if column_name not in pages.columns:
-                warnings.warn(f"wrong journal format - missing: {column_name}")
+                logging.debug(f"wrong journal format - missing: {column_name}")
                 pages[column_name] = None
         for column_name in hdr_journal:
             if column_name not in pages.columns:
