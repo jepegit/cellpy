@@ -187,7 +187,7 @@ class EasyPlot():
 
 
     def verify_input(self):
-        
+        """Verifies that the users' input to the object is correct."""
         # Check that output dir exist (or create one)
         self.outpath = self.handle_outpath() # Takes care of the output path
 
@@ -217,7 +217,7 @@ class EasyPlot():
 
 
     def fill_input(self):
-        # Fill in the rest of the variables from self.user_params if the user didn't specify
+        """Fill in the rest of the variables from self.user_params if the user didn't specify"""
         # Can't just join dicts since they have differing formats, need to loop...
         for key in self.user_params:
             try:
@@ -228,6 +228,8 @@ class EasyPlot():
 
 
     def set_arbin_sql_credentials(self, server = "localhost", uid="sa", pwd="Changeme123", driver="ODBC Driver 17 for SQL Server"):
+            """Sets cellpy.prms.Instruments.Arbin details to fit what is inserted.
+            Parameters: Server = 'IP of server', uid = 'username', pwd = 'password', driver = 'ODBC Driver 17 for SQL Server' """
             cellpy.prms.Instruments.Arbin["SQL_server"] = server
             cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
             cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
@@ -237,7 +239,7 @@ class EasyPlot():
 
 
     def give_color(self):
-        # Picks the first color from the color list and gives it away
+        """Picks the first color from the color list and gives it away"""
         color = self.colors[0]
         self.colors=self.colors[1:]
         return color
@@ -245,6 +247,7 @@ class EasyPlot():
 
 
     def give_fig(self):
+        """Gives figure to whoever asks and appends it to figure list"""
         fig, ax = plt.subplots(figsize=(6, 4))
         self.figs.append((fig, ax))
         return (fig, ax)
@@ -252,6 +255,7 @@ class EasyPlot():
 
 
     def handle_outpath(self):
+        """Makes sure that self.outpath exists, or creates it."""
         if os.path.isdir(self.kwargs["outpath"]):
             return self.kwargs["outpath"]
         elif not os.path.isdir(self.kwargs["outpath"]):
@@ -264,6 +268,7 @@ class EasyPlot():
     
 
     def plot_cyclelife(self):
+        """Takes all the parameters inserted in the object creation and plots cyclelife"""
         # Spawn fig and axis for plotting
         if not self.kwargs["cyclelife_separate_data"]:
             fig, ax = self.give_fig()
@@ -459,6 +464,7 @@ class EasyPlot():
 
 
     def plot_gc(self):
+        """Takes all the parameters inserted in the object creation and plots Voltage-Capacity curves"""
 
         if self.kwargs["all_in_one"]:   # Everything goes in the same figure.
 
@@ -602,6 +608,7 @@ class EasyPlot():
 
 
     def plot_dQdV(self):
+        """Takes all the parameters inserted in the object creation and plots dQdV"""
         from cellpy.utils import ica
         if self.kwargs["all_in_one"]:   # Everything goes in the same figure.
 
@@ -709,6 +716,7 @@ class EasyPlot():
 
 
     def plot_gc_and_dQdV(self):
+        """Takes all the parameters inserted in the object creation and plots Voltage-Curves and dQdV data together"""
         from cellpy.utils import ica
         if self.kwargs["all_in_one"]:   # Everything goes in the same figure.
             fig, ax = self.give_fig()
@@ -945,6 +953,7 @@ class EasyPlot():
 
 
     def plot_cap_from_rc(self):
+        """Takes all the parameters inserted in the object creation and plots capacity VS inverse c-rate"""
         # Spawn fig and axis for plotting
         fig, ax = self.give_fig()
 
@@ -1066,6 +1075,7 @@ class EasyPlot():
 
 
     def fix_cyclelife(self, fig, ax):
+        """Makes the finishing touches to the cyclelife plot"""
         # Applies kwargs settings and other plot settings
 
         ## Parameters which could be user defined later
@@ -1131,7 +1141,7 @@ class EasyPlot():
         fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
             
     def fix_cap_from_rc(self, fig, ax, handles):
-
+        """Makes the finishing touches to the capacity vs inverse C-rate plot"""
         ax.tick_params(direction='in', top = 'true', right = 'true')
         ax.set(xlabel = r"Inverse C-rate $\left[ h \right]$", ylabel = r"Capacity $\left[\mu Ah \right]$")
         # General plot details
@@ -1152,6 +1162,7 @@ class EasyPlot():
         fig.tight_layout() #Needed to not clip ylabel on coulombic efficiency
 
     def fix_gc(self, fig, ax):
+        """Makes the finishing touches to the voltage-curves plot"""
         # Applies kwargs settings and other plot settings
 
         ## Parameters which could be user defined later
@@ -1187,6 +1198,7 @@ class EasyPlot():
 
 
     def fix_dqdv(self, fig, ax):
+        """Makes the finishing touches to the dQdV plot"""
         # Applies kwargs settings and other plot settings
 
         ## Parameters which could be user defined later
@@ -1222,6 +1234,7 @@ class EasyPlot():
 
 
     def fix_gc_and_dqdv(self, fig, axs):
+        """Makes the finishing touches to the dQdV / Voltage curves plot"""
         for ax in axs:
             # The params below should always be like this.
             ax.tick_params(direction='in', top = 'true', right = 'true')
