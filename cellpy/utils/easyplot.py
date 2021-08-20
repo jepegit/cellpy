@@ -1,25 +1,27 @@
 # -*- coding: utf-8 -*-
 """easyplot module for cellpy. It provides easy plotting of any cellpy-readable data using matplotlib.
-"""
-# Author: Amund M. Raniseth
-# Date: 01.07.2021
+Author: Amund M. Raniseth
+Date: 01.07.2021
+""" 
 
 
-import os
-from pathlib import Path
 import logging
+import os
+import warnings
+from pathlib import Path
 from re import S
-import cellpy
-from matplotlib import lines
-from matplotlib.artist import kwdoc
-import matplotlib.pyplot as plt
+
 import matplotlib as mpl
-from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import warnings
-from matplotlib.ticker import FuncFormatter
+from matplotlib import lines
+from matplotlib.artist import kwdoc
+from matplotlib.lines import Line2D
 from matplotlib.scale import LogScale
+from matplotlib.ticker import FuncFormatter
+
+import cellpy
 
 # Dictionary of all possible user input arguments(as keys) with example values of correct type
 # Value is a tuple (immutable) of type and default value.
