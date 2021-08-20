@@ -2,6 +2,7 @@ import logging
 import warnings
 import os
 import sys
+import pathlib
 
 from tqdm.auto import tqdm
 
@@ -95,9 +96,14 @@ class CyclingExperiment(BaseExperiment):
 
         # TODO: implement experiment.last_cycle
 
+        force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
+
         logging.info("[update experiment]")
         if all_in_memory is not None:
             self.all_in_memory = all_in_memory
+
+        logging.info(f"Additional keyword arguments: {kwargs}")
+        selector = kwargs.get("selector", None)
 
         pages = self.journal.pages
         if self.nom_cap:
@@ -138,7 +144,7 @@ class CyclingExperiment(BaseExperiment):
             pbar.set_description(n_txt)
             pbar.set_postfix_str(s=h_txt, refresh=True)
 
-            if not row[hdr_journal.raw_file_names] and not self.force_cellpy:
+            if not row[hdr_journal.raw_file_names] and not force_cellpy:
                 logging.info(
                     f"Raw file(s) not given in the journal.pages for index={indx}"
                 )
@@ -153,7 +159,7 @@ class CyclingExperiment(BaseExperiment):
             cell_data = cellreader.CellpyData()
 
             logging.info("loading cell")
-            if not self.force_cellpy:
+            if not force_cellpy:
                 if self.force_raw:
                     h_txt += " (r)"
                     pbar.set_postfix_str(s=h_txt, refresh=True)
@@ -192,6 +198,7 @@ class CyclingExperiment(BaseExperiment):
                     cell_data.load(
                         row[hdr_journal.cellpy_file_name],
                         parent_level=self.parent_level,
+                        selector=selector
                     )
                 except Exception as e:
                     logging.info(
@@ -286,13 +293,11 @@ class CyclingExperiment(BaseExperiment):
                 else:
                     logging.debug("saving cell skipped (set to 'fixed' in info_df)")
             else:
-                warnings.warn("you opted to not save to cellpy-format")
-                logging.info("I strongly recommend you to save to cellpy-format:")
-                logging.info(" >>> b.save_cellpy = True")
-                logging.info(
-                    "Without the cellpy-files, you cannot select specific cells"
-                    " if you did not opt to store all in memory"
-                )
+                logging.info("You opted to not save to cellpy-format")
+                logging.info("It is usually recommended to save to cellpy-format:")
+                logging.info(" >>> b.experiment.save_cellpy = True")
+                logging.info("Without the cellpy-files, you cannot select specific cells")
+                logging.info("if you did not opt to store all in memory")
 
             if self.export_raw or self.export_cycles:
                 export_text = "exporting"
@@ -331,6 +336,27 @@ class CyclingExperiment(BaseExperiment):
         self.errors["update"] = errors
         self.summary_frames = summary_frames
         self.cell_data_frames = cell_data_frames
+
+    def export_cellpy_files(self, path=None, **kwargs):
+        if path is None:
+            path = "."
+        errors = []
+        path = pathlib.Path(path)
+        cell_names = self.cell_names
+        for cell_name in cell_names:
+            cellpy_file_name = self.journal.pages.loc[
+                cell_name, hdr_journal.cellpy_file_name
+            ]
+            cellpy_file_name = path / pathlib.Path(cellpy_file_name).name
+            print(f"Exporting {cell_name} to {cellpy_file_name}")
+            try:
+                c = self.data[cell_name]
+            except TypeError as e:
+                errors.append(f"could not extract data for {cell_name} - linking")
+                self._link_cellpy_file(cell_name)
+
+            c.save(cellpy_file_name, **kwargs)
+        self.errors["export_cellpy_files"] = errors
 
     @property
     def cell_names(self):
@@ -372,16 +398,16 @@ class CyclingExperiment(BaseExperiment):
         logging.debug("checking and establishing link to data")
 
         errors = []
-        try:
-            for cell_label in self.journal.pages.index:
-                logging.debug(f"trying to link {cell_label}")
-                self._link_cellpy_file(cell_label)
 
-        except IOError as e:
-            logging.warning(e)
-            e_txt = "links not established - try update instead"
-            logging.warning(e_txt)
-            errors.append(e_txt)
+        for cell_label in self.journal.pages.index:
+            logging.debug(f"trying to link {cell_label}")
+            try:
+                self._link_cellpy_file(cell_label)
+            except IOError as e:
+                logging.warning(e)
+                e_txt = f"{cell_label}: links not established - try update instead"
+                logging.warning(e_txt)
+                errors.append(e_txt)
 
         self.errors["link"] = errors
 
@@ -407,6 +433,8 @@ class CyclingExperiment(BaseExperiment):
         Returns:
             None
         """
+
+        # TODO: option (default) to only recalc if the values (mass, nom_cap,...) have changed
         errors = []
         log = []
         if testing:
@@ -455,7 +483,7 @@ class CyclingExperiment(BaseExperiment):
                     if summary_opts is not None:
                         c.make_summary(**summary_opts)
                     else:
-                        c.make_summary(find_end_voltage=True, find_ir=True)
+                        c.make_summary(find_end_voltage=False, find_ir=True)
 
                 except Exception as e:
                     e_txt = f"recalculating for {indx} failed!"

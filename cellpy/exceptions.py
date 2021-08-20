@@ -19,6 +19,12 @@ class ConfigFileNotRead(Error):
     pass
 
 
+class FileNotFound(Error):
+    """Raised when the given file is not found"""
+
+    pass
+
+
 class WrongFileVersion(Error):
     """Raised when the file version is wrong"""
 

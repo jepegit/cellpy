@@ -1,5 +1,7 @@
 import logging
 import os
+import pathlib
+from ruamel import yaml
 
 import pandas as pd
 
@@ -8,6 +10,7 @@ from cellpy.parameters.internal_settings import get_headers_normal, ATTRS_CELLPY
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.readers.core import FileID, Cell, check64bit, humanize_bytes
 from cellpy.parameters import prms
+from cellpy.exceptions import FileNotFound
 
 DEFAULT_CONFIG = {
     "structure": {
@@ -123,15 +126,30 @@ class CustomLoader(Loader):
     def pick_definition_file():
         return prms.Instruments.custom_instrument_definitions_file
 
+    @staticmethod
+    def load_definition_file():
+        definitions_file = pathlib.Path(
+            prms.Instruments.custom_instrument_definitions_file
+        )
+        if not definitions_file.is_file():
+            raise FileNotFound(
+                f"Custom definitions file not found ({definitions_file})"
+            )
+        yml = yaml.YAML()
+        with open(definitions_file, "r") as ff:
+            settings = yml.load(ff.read())
+        return settings
+
     # TODO: @jepe - create yaml file example (from DEFAULT_CONFIG)
-    # TODO: @jepe - create yaml file parser
+
     def parse_definition_file(self):
         if self.definition_file is None:
             logging.info("no definition file for custom format")
             logging.info("using default settings")
             settings = DEFAULT_CONFIG
         else:
-            raise NotImplementedError
+            logging.info("loading definition file for custom format")
+            settings = self.load_definition_file()
 
         self.units = settings["units"]
         self.limits = settings["limits"]
@@ -174,55 +192,66 @@ class CustomLoader(Loader):
 
     def loader(self, file_name, **kwargs):
         new_tests = []
+        var_dict = dict()
+
+        cycle_index_hdr = self.headers_normal["cycle_index_txt"]
+        charge_cap_hdr = self.headers_normal["charge_capacity_txt"]
+        discharge_cap_hdr = self.headers_normal["discharge_capacity_txt"]
+        datetime_hdr = self.headers_normal["datetime_txt"]
+        data_point = self.headers_normal["data_point_txt"]
+        step_time_hdr = self.headers_normal["step_time_txt"]
+        test_time_hdr = self.headers_normal["test_time_txt"]
+
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return
 
         # find out strategy (based on structure)
-        if self.structure["format"] != "csv":
+        if self.structure["format"] not in ["csv", "xlsx", "xls"]:
+            print(self.structure["format"])
             raise NotImplementedError
-
-        sep = self.structure.get("sep", prms.Reader.sep)
-        if sep is None:
-            sep = prms.Reader.sep
-
-        locate_vars_by = self.structure.get("locate_vars_by", "key_value_pairs")
-        comment_chars = self.structure.get("comment_chars", ["#", "!"])
-        header_row = self.structure.get("start_data", None)
-        if header_row is None:
-            header_row = self._find_data_start(file_name, sep)
-
-        # parse variables
-        var_lines = []
-        with open(file_name, "rb") as fp:
-            for i, line in enumerate(fp):
-                if i < header_row:
-                    line = line.strip()
-                    try:
-                        line = line.decode()
-                    except UnicodeDecodeError:
-                        logging.debug(
-                            "UnicodeDecodeError: " "skipping this line: " f"{line}"
-                        )
-                    else:
-                        if line.startswith(comment_chars):
-                            logging.debug(f"Comment: {line}")
-                        else:
-                            var_lines.append(line)
-                else:
-                    break
-
-        var_dict = dict()
-        if locate_vars_by == "key_value_pairs":
-            for line in var_lines:
-                parts = line.split(sep)
-                try:
-                    var_dict[parts[0]] = parts[1]
-                except IndexError as e:
-                    logging.debug(f"{e}\ncould not split var-value\n{line}")
-
         else:
-            raise NotImplementedError
+            logging.debug(self.structure["format"])
+
+        if self.structure["format"] == "csv":
+            sep = self.structure.get("sep", prms.Reader.sep)
+
+            locate_vars_by = self.structure.get("locate_vars_by", "key_value_pairs")
+            comment_chars = self.structure.get("comment_chars", ["#", "!"])
+            header_row = self.structure.get("start_data", None)
+            if header_row is None:
+                header_row = self._find_data_start(file_name, sep)
+
+            # parsing the top part of the file, looking for variables
+            var_lines = []
+            with open(file_name, "rb") as fp:
+                for i, line in enumerate(fp):
+                    if i < header_row:
+                        line = line.strip()
+                        try:
+                            line = line.decode()
+                        except UnicodeDecodeError:
+                            logging.debug(
+                                "UnicodeDecodeError: " "skipping this line: " f"{line}"
+                            )
+                        else:
+                            if line.startswith(comment_chars):
+                                logging.debug(f"Comment: {line}")
+                            else:
+                                var_lines.append(line)
+                    else:
+                        break
+
+            if locate_vars_by == "key_value_pairs":
+                for line in var_lines:
+                    parts = line.split(sep)
+                    try:
+                        var_dict[parts[0]] = parts[1]
+                    except IndexError as e:
+                        logging.debug(f"{e}\ncould not split var-value\n{line}")
+
+            else:
+                raise NotImplementedError
 
         data = Cell()
         data.loaded_from = file_name
@@ -231,12 +260,12 @@ class CustomLoader(Loader):
         # parsing cellpydata attributes
         for attribute in ATTRS_CELLPYFILE:
             key = self.variables.get(attribute, None)
-            # print(f"{attribute} -> {key}")
-            if key:
-                val = var_dict.pop(key, None)
+            val = var_dict.pop(key, None)
+            # print(f"{attribute} -> {key}:{val}")
+            if val:
                 if key in ["mass"]:
                     val = float(val)
-                # print(f"{attribute}: {val}")
+                # print(f"mass, {attribute}: {val}")
                 setattr(data, attribute, val)
 
         data.raw_data_files.append(fid)
@@ -248,15 +277,145 @@ class CustomLoader(Loader):
             logging.debug("total_mass is given, but not propagated")
 
         logging.debug(f"unused vars: {var_dict}")
+        if self.structure["format"] == "csv":
+            raw = self._parse_csv_data(file_name, sep, header_row)
 
-        raw = self._parse_csv_data(file_name, sep, header_row)
+        elif self.structure["format"] == "xlsx":
+            raw = self._parse_xlsx_data(file_name)
+
+        elif self.structure["format"] == "xls":
+            raw = self._parse_xls_data(file_name)
+
         raw = self._rename_cols(raw)
+
+        capacity_structure = self.structure.get("capacity_structure", "cellpy")
+        if capacity_structure == "cellpy":
+            logging.debug(
+                "standard cellpy structure - no additional processing of capacity columns needed"
+            )
+        elif capacity_structure == "one_col_state":
+            # TODO: make this a function or method
+            # TODO: currently, the user needs to assign the name of the capacity column to the charge_capacity
+            #  variable in the yaml file. Should improve this later.
+            delimiter = "::"
+            cap_col = "charge_capacity"
+            col = self.structure["state_col"]
+            charge_key = self.structure["charge_key"]
+            charge_key = charge_key.split(delimiter)
+            discharge_key = self.structure["discharge_key"]
+            discharge_key = discharge_key.split(delimiter)
+
+            raw["new_c"] = 0
+            raw["new_d"] = 0
+
+            cycle_numbers = raw[cycle_index_hdr].unique()
+            # cell_type = prms.Reader.cycle_mode
+            good_cycles = []
+            bad_cycles = []
+            for i in cycle_numbers:
+                try:
+                    charge_cap = raw.loc[
+                        (raw[col].isin(charge_key)) & (raw[cycle_index_hdr] == i),
+                        [data_point, cap_col],
+                    ]
+                    discharge_cap = raw.loc[
+                        (raw[col].isin(discharge_key)) & (raw[cycle_index_hdr] == i),
+                        [data_point, cap_col],
+                    ]
+
+                    if not charge_cap.empty:
+                        charge_cap_last_index, charge_cap_last_val = charge_cap.iloc[-1]
+                        raw["new_c"].update(charge_cap[cap_col])
+
+                        raw.loc[
+                            (raw[data_point] > charge_cap_last_index)
+                            & (raw[cycle_index_hdr] == i),
+                            "new_c",
+                        ] = charge_cap_last_val
+
+                    if not discharge_cap.empty:
+                        discharge_cap_last_index, discharge_cap_last_val = discharge_cap.iloc[-1]
+                        raw["new_d"].update(discharge_cap[cap_col])
+
+                        raw.loc[
+                            (raw[data_point] > discharge_cap_last_index)
+                            & (raw[cycle_index_hdr] == i),
+                            "new_d",
+                        ] = discharge_cap_last_val
+
+                    good_cycles.append(i)
+
+                except:
+                    bad_cycles.append(i)
+
+            raw[charge_cap_hdr] = raw["new_c"]
+            raw[discharge_cap_hdr] = raw["new_d"]
+            raw.drop(["new_c", "new_d"], axis=1)
+            if bad_cycles:
+                logging.critical(f"The data contains bad cycles: {bad_cycles}")
+        else:
+            raise NotImplementedError(f"{capacity_structure} is not yet supported")
+
+        step_time_conversion = self.structure.get("time_conversion_step_time", None)
+        test_time_conversion = self.structure.get("time_conversion_test_time", None)
+        date_time_conversion = self.structure.get("time_conversion_date_time", None)
+
+        if date_time_conversion:
+            if date_time_conversion.lower() == "test_time":
+                raw[datetime_hdr] = raw[test_time_hdr]
+                self.headers["datetime_txt"] = datetime_hdr
+            else:
+                raise NotImplementedError(f"date_time conversion method not implemented ({date_time_conversion})")
+
+        if test_time_conversion:
+            if test_time_conversion.lower() == "date_time_to_sec":
+                start_time = raw[test_time_hdr].iloc[0]
+                raw[test_time_hdr] = (
+                        raw[test_time_hdr] - start_time).dt.total_seconds()  # Warning: replaces original column
+                raw[test_time_hdr] = raw[test_time_hdr]
+            else:
+                raise NotImplementedError(f"test_time conversion method not implemented ({test_time_conversion})")
+
+        if step_time_conversion:
+            # "unit" can be lifted to an argument later (will need a parser for the step_time_conversion string)
+            unit = "ns"
+            if step_time_conversion.lower() == "time_to_sec":
+                raw[step_time_hdr] = pd.to_timedelta(raw[step_time_hdr], unit=unit).dt.total_seconds()
+            else:
+                raise NotImplementedError(f"step_time conversion method not implemented ({step_time_conversion})")
+        raw = self._select_cols(raw)
         raw = self._check_cycleno_stepno(raw)
+
         data.raw_data_files_length.append(raw.shape[0])
         data.summary = None
         data.raw = raw
         new_tests.append(data)
         return new_tests
+
+    def _select_cols(self, raw):
+        selected = [
+            self.headers_normal[col_def]
+            for col_def in self.headers
+            if self.headers_normal[col_def] in raw.columns
+        ]
+        raw = raw[selected]
+        return raw
+
+    def _parse_xls_data(self, file_name):
+        sheet_name = self.structure["table_name"]
+
+        raw_frame = pd.read_excel(file_name, engine="xlrd", sheet_name=None)  # TODO: replace this with pd.ExcelReader
+        matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+        if matching:
+            return raw_frame[matching[0]]
+
+    def _parse_xlsx_data(self, file_name):
+        sheet_name = self.structure["table_name"]
+        raw_frame = pd.read_excel(file_name, engine="openpyxl",
+                                  sheet_name=None)  # TODO: replace this with pd.ExcelReader
+        matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+        if matching:
+            return raw_frame[matching[0]]
 
     def _parse_csv_data(self, file_name, sep, header_row):
         raw = pd.read_csv(file_name, sep=sep, header=header_row, skip_blank_lines=False)

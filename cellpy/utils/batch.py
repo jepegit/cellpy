@@ -123,7 +123,7 @@ class Batch:
                     self.experiment.journal.batch_col = kwargs[key]
 
         else:
-            self.experiment.journal.from_file(file_name=file_name)
+            self.experiment.journal.from_file(file_name=file_name, **kwargs)
 
         self.exporter = CSVExporter()
         self.exporter._assign_dumper(ram_dumper)
@@ -421,15 +421,12 @@ class Batch:
         using the methods available in Journal for now.
 
         Args:
-            description: the information and meta-data needed to generate the journal
-                pages.
+            description: the information and meta-data needed to generate the journal pages.
                 "empty": create an empty journal
                 dictionary: create journal pages from a dictionary
                 pd.DataFrame: create  journal pages from a pandas DataFrame
                 filename.json: load cellpy batch file
-
-                filename.xlxs: create journal pages from an excel file
-                    (not implemented yet)
+                filename.xlsx: create journal pages from an excel file
             from_db (bool): Deprecation Warning: this parameter will be removed as it is
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
@@ -467,12 +464,8 @@ class Batch:
 
             if is_file:
                 logging.info(f"loading file {description}")
-                if description.suffix == ".json":
-                    logging.debug("loading batch json file")
+                if description.suffix in [".json", ".xlsx"]:
                     self.experiment.journal.from_file(description)
-                elif description.suffix == ".xlxs":
-                    logging.debug("loading excel file")
-                    warnings.warn("not implemented yet")
                 else:
                     warnings.warn("unknown file extension")
 
@@ -580,9 +573,10 @@ class Batch:
         """
 
         # Remark! Got an recursive error when running on mac.
-        self.experiment.journal.to_file()
-        self.duplicate_journal(prms.Paths.batchfiledir)
+        self.experiment.journal.to_file(to_project_folder=True, paginate=False)
         logging.info("saving journal pages")
+        self.duplicate_journal(prms.Paths.batchfiledir)
+        logging.info("duplicating journal pages")
 
     def duplicate_journal(self, folder=None):
         """Copy the journal to folder.
@@ -605,7 +599,7 @@ class Batch:
         except shutil.SameFileError:
             logging.debug("same file exception encountered")
 
-    def duplicate_cellpy_files(self, location="standard"):
+    def duplicate_cellpy_files(self, location="standard", selector=None, **kwargs):
         """Copy the cellpy files and make a journal with the new names available in
         the current folder.
 
@@ -617,10 +611,15 @@ class Batch:
                 "cellpydatadir": the stated cellpy data dir in your settings (prms)
             or if the location is not one of the above, use the actual value of the
                 location argument.
+            selector (dict): if given, the cellpy files are reloaded after duplicating and
+                modified based on the given selector(s).
+
+            kwargs: sent to update if selector is provided
 
         Returns:
             The updated journal pages.
         """
+
         pages = self.experiment.journal.pages
         cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
 
@@ -653,15 +652,19 @@ class Batch:
                 shutil.copy(from_file, to_file)
             except shutil.SameFileError:
                 logging.info("Same file! No point in copying")
+            except FileNotFoundError:
+                logging.info("File not found! Cannot copy it!")
 
         # save the journal pages
         pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
-        logging.info(f"saving journal to {journal_file_name}")
-        self.experiment.journal.to_file(journal_file_name)
-
-        # return pages
+        self.experiment.journal.to_file(journal_file_name, paginate=False, to_project_folder=False)
+        if selector is not None:
+            logging.info("Modifying the cellpy-files.")
+            logging.info(f"selector: {selector}")
+            self.experiment.force_cellpy = True
+            self.update(selector=selector, **kwargs)
 
     # TODO: list_journals?
 
@@ -678,6 +681,12 @@ class Batch:
         """Load cells as defined in the journal"""
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
+
+    def export_cellpy_files(self, path=None, **kwargs):
+        if path is None:
+            path = pathlib.Path(".").resolve()
+        self.experiment.errors["export_cellpy_files"] = []
+        self.experiment.export_cellpy_files(path=path, **kwargs)
 
     def recalc(self, **kwargs):
         self.experiment.errors["recalc"] = []
@@ -784,6 +793,7 @@ def load_pages(file_name):
         pandas.DataFrame
 
     """
+
     logging.info(f"Loading pages from {file_name}")
     try:
         pages, *_ = LabJournal.read_journal_jason_file(file_name)
@@ -948,7 +958,7 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
     print("\n...Finished ")
 
 
-def main():
+def check_standard():
     from pathlib import Path
 
     # Use these when working on my work PC:
