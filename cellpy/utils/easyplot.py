@@ -24,6 +24,12 @@ from matplotlib.ticker import FuncFormatter
 import cellpy
 from cellpy import log
 from cellpy.utils.batch_tools.batch_journals import LabJournal
+from cellpy.parameters.internal_settings import (
+    get_headers_journal,
+    keys_journal_session,
+)
+
+hdr_journal = get_headers_journal()
 
 # Dictionary of all possible user input arguments(as keys) with example values of correct type
 # Value is a tuple (immutable) of type and default value.
@@ -86,7 +92,8 @@ USER_PARAMS = {
     "figsize": (tuple, (6, 4)),  # 6 inches wide, 4 inches tall
     "figres": (int, 100),  # Dots per Inch
     "figtitle": (str, "Title"),  # None = original filepath
-    "save_figures": (bool, True)
+    "save_figures": (bool, True),
+    "save_journal": (bool, False),  # Save journal
 }
 
 
@@ -128,8 +135,9 @@ class EasyPlot:
     def __init__(self, files=None, nicknames=None, journal=None, **kwargs):
         """Initialization function of the EasyPlot class.
         Input parameters:
-        filenames (list of strings)
+        filenames (list of strings).
         nicknames (list of strings), must match length of filenames.
+        journal (str or pathlib.Path object): journal file name (should not be used if files is given).
         any kwargs: use easyplot.help() to print all kwargs to terminal.
 
         Returns:
@@ -147,13 +155,19 @@ class EasyPlot:
         self.figs = []
         self.file_data = []
         self.use_arbin_sql = False
-        self.journal_file = journal
+        self.journal_file = Path(journal)
         self.journal = None
 
         # Dictionary of all possible user input arguments(as keys) with example values of correct type
         # Value is a tuple (immutable) of type and default value.
         self.user_params = USER_PARAMS
+
+        # Create 'empty' attributes for later use
         self.outpath = None
+        self.masses = None
+        self.labels = None
+        self.nom_caps = None
+        self.colors = None
 
         # List of available colors
 
@@ -241,7 +255,6 @@ class EasyPlot:
                             logging.error("File not found: " + str(_f))
                             raise FileNotFoundError
 
-
                 else:
                     file_name = file
                     if not os.path.isfile(file):
@@ -297,6 +310,24 @@ class EasyPlot:
 
         if self.kwargs["capacity_determination_from_ratecap"]:
             self.plot_cap_from_rc()
+
+        self._wrap_up()
+
+    def _wrap_up(self):
+        # saving journal file
+        # (only json supported so far)
+        if self.kwargs["save_journal"]:
+            if self.journal is not None:
+                if self.outpath is not None:
+                    journal_file_path = Path(self.outpath) / self.journal_file.name
+                else:
+                    journal_file_path = self.journal_file.name
+
+                # if we want to enforce that the file will be a xlsx file:
+                # journal_file_path = journal_file_path.with_suffix(".xlsx")
+
+                journal_file_path = journal_file_path.with_suffix(".json")
+                self.journal.to_file(file_name=journal_file_path, paginate=False, to_project_folder=False)
 
     def verify_input(self):
         """Verifies that the users' input to the object is correct."""
@@ -369,13 +400,32 @@ class EasyPlot:
 
     def _populate_from_journal(self):
         logging.debug(f"populating from journal")
-        logging.debug("using hard-coded column names - please fix later")
-        raw_files = self.journal.pages.raw_file_names.to_list()
-        names = self.journal.pages.label.to_list()
-        masses = self.journal.pages.mass.to_list()
-        labels = self.journal.pages.label.to_list()
-        print(raw_files)
-        self.files = raw_files
+        # populating from only a subset of the available journal columns
+        # - can be increased later
+        try:
+            self.files = self.journal.pages[hdr_journal["raw_file_names"]].to_list()
+        except AttributeError:
+            logging.debug("No raw files found in your journal")
+
+        try:
+            self.masses = self.journal.pages[hdr_journal["mass"]].to_list()
+        except AttributeError:
+            logging.debug("No masses found in your journal")
+
+        try:
+            self.labels = self.journal.pages[hdr_journal["label"]].to_list()
+        except AttributeError:
+            logging.debug("No labels found in your journal")
+
+        try:
+            self.nom_cap = self.journal.pages[hdr_journal["nom_cap"]].to_list()
+        except AttributeError:
+            logging.debug("No nominal capacity found in your journal")
+
+        try:
+            self.cellpy_files = self.journal.pages[hdr_journal["cellpy_file_name"]].to_list()
+        except AttributeError:
+            logging.debug("No cellpy files found in your journal")
 
     def fill_input(self):
         """Fill in the rest of the variables from self.user_params if the user didn't specify"""
@@ -383,7 +433,7 @@ class EasyPlot:
         for key in self.user_params:
             try:
                 self.kwargs[key]
-            except KeyError as e:
+            except KeyError:
                 self.kwargs[key] = self.user_params[key][1]
 
     def set_arbin_sql_credentials(
@@ -409,24 +459,29 @@ class EasyPlot:
 
     def give_fig(self):
         """Gives figure to whoever asks and appends it to figure list"""
+
         fig, ax = plt.subplots(figsize=(6, 4))
         self.figs.append((fig, ax))
-        return (fig, ax)
+        return fig, ax
 
     def handle_outpath(self):
         """Makes sure that self.outpath exists, or creates it."""
-        if os.path.isdir(self.kwargs["outpath"]):
-            return self.kwargs["outpath"]
-        elif not os.path.isdir(self.kwargs["outpath"]):
+        out_path = self.kwargs["outpath"]
+
+        # should make this a pathlib.Path object - but not sure if str is assumed later on in the code
+        if os.path.isdir(out_path):
+            logging.debug(f"out path set to {out_path}")
+            return out_path
+        elif not os.path.isdir(out_path):
+            logging.debug(f"outpath does not exits - creating")
             try:
-                os.makedirs(self.kwargs["outpath"])
-                return self.kwargs["outpath"]
+                os.makedirs(out_path)
+                logging.debug(f"out path set to {out_path}")
+                return out_path
             except OSError as e:
                 logging.error(
-                    "Cannot create output directory "
-                    + self.kwargs["outpath"]
-                    + ". Please make sure you have write permission. Errormessage: "
-                    + e
+                    f"Cannot create output directory {out_path}. Please make sure you "
+                    f"have write permission. Error message: {e}"
                 )
 
     def plot_cyclelife(self):
@@ -1848,12 +1903,6 @@ def get_effective_C_rates_and_caps(steptable):
     return chglist, dchglist
 
 
-def _load_journal_file(file_name):
-    journal = LabJournal(db_reader=None)
-    journal.from_file(file_name, paginate=False)
-    return journal
-
-
 def main():
     log.setup_logging(default_level="DEBUG")
     f1 = Path("../../testdata/data/20160805_test001_45_cc_01.res")
@@ -1874,20 +1923,11 @@ def main():
 
 def _dev_journal_loading():
     log.setup_logging(default_level="DEBUG")
-    f1 = Path("../../testdata/data/20160805_test001_45_cc_01.res")
-    f2 = Path("../../testdata/data/20160805_test001_47_cc_01.res")
     journal_file = Path("../../testdata/db/cellpy_batch_test.json")
-
-    raw_files = [f1, f2]
-    nicknames = ["cell1", "cell2"]
-
-    logging.debug(raw_files)
-    logging.debug(nicknames)
-
-    journal = _load_journal_file(journal_file)
-    ezplt = EasyPlot(None, journal=journal_file, figtitle="Test1", save_figures=False)
+    ezplt = EasyPlot(None, journal=journal_file, figtitle="Test1", save_figures=False, save_journal=True,
+                     outpath="./tmp/")
     ezplt.plot()
-    plt.show()
+    # plt.show()
 
     return
 

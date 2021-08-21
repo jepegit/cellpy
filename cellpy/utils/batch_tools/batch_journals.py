@@ -245,9 +245,9 @@ class LabJournal(BaseJournal):
         self.session = session
         self.file_name = file_name
         self._prm_packer(meta_dict)
-        self.generate_folder_names()
 
         if paginate:
+            self.generate_folder_names()
             self.paginate()
 
     def from_file_old(self, file_name=None):
@@ -283,7 +283,16 @@ class LabJournal(BaseJournal):
         return pages
 
     def to_file(self, file_name=None, paginate=True, to_project_folder=True):
-        """Saves a DataFrame with all the needed info about the experiment"""
+        """Saves a DataFrame with all the needed info about the experiment.
+
+        Args:
+            file_name (str or pathlib.Path): journal file name
+            paginate (bool): make project folders
+            to_project_folder (bool): save journal file to the folder containing your cellpy projects
+
+        Returns:
+
+        """
         file_name = self._check_file_name(
             file_name, to_project_folder=to_project_folder
         )
@@ -294,18 +303,20 @@ class LabJournal(BaseJournal):
             "metadata": self._prm_packer(),
             "session": session,
         }
+
         jason_string = json.dumps(
             top_level_dict,
             default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
         )
-        if paginate:
-            self.paginate()
 
         with open(file_name, "w") as outfile:
             outfile.write(jason_string)
 
         self.file_name = file_name
-        logging.info("Saved file to {}".format(file_name))
+        logging.info(f"Saved file to {file_name}")
+
+        if paginate:
+            self.paginate()
 
     def generate_folder_names(self):
         """Set appropriate folder names."""
