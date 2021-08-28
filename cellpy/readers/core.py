@@ -294,7 +294,7 @@ class Cell(object):
         self.raw = pd.DataFrame()
         self.summary = pd.DataFrame()
         # self.summary_made = False  # Should be removed
-        self.steps = collections.OrderedDict()  # is this used? - check!
+        self.steps = pd.DataFrame()  # is this used? - check!
         # self.step_table_made = False  # Should be removed
         # self.parameter_table = collections.OrderedDict()
         self.summary_table_version = SUMMARY_TABLE_VERSION
