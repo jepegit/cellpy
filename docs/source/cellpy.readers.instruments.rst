@@ -12,16 +12,20 @@ cellpy.readers.instruments.arbin module
     :undoc-members:
     :show-inheritance:
 
-
 .. automodule:: cellpy.readers.instruments.arbin_sql
     :members:
     :undoc-members:
     :show-inheritance:
 
-cellpy.readers.instruments.biologic\_file\_format module
---------------------------------------------------------
+.. automodule:: cellpy.readers.instruments.arbin_sql_csv
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-.. automodule:: cellpy.readers.instruments.biologic_file_format
+cellpy.readers.instruments.custom module
+---------------------------------------
+
+.. automodule:: cellpy.readers.instruments.custom
     :members:
     :undoc-members:
     :show-inheritance:
@@ -30,14 +34,6 @@ cellpy.readers.instruments.biologics\_mpr module
 ------------------------------------------------
 
 .. automodule:: cellpy.readers.instruments.biologics_mpr
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-cellpy.readers.instruments.maccor module
-----------------------------------------
-
-.. automodule:: cellpy.readers.instruments.maccor
     :members:
     :undoc-members:
     :show-inheritance:

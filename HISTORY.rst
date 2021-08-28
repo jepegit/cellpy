@@ -9,6 +9,8 @@ History
 * CLI improvements
 * New argument for get_cap: max_cycle
 * Reverting from using Documents to user home for location of prm file in windows.
+* Easyplot by Amund
+* Arbin sql reader by Muhammad
 
 
 0.4.0 (2020)

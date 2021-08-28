@@ -38,7 +38,7 @@ import os
 # Get the project root dir, which is the parent dir of this
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
-project_prmsdir = os.path.join(project_root, r"cellpy\parametres")
+project_prmsdir = os.path.join(project_root, r"cellpy\parameters")
 project_utils = os.path.join(project_root, r"cellpy\utils")
 project_scripts = os.path.join(project_root, r"cellpy\scripts")
 project_readers = os.path.join(project_root, r"cellpy\readers")
@@ -109,7 +109,7 @@ master_doc = "index"
 
 # General information about the project.
 project = u"cellpy"
-copyright = u"2019, Jan Petter Maehlen"
+copyright = u"2021, Jan Petter Maehlen"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
