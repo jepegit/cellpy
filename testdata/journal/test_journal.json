@@ -1,0 +1,130 @@
+{
+    "info_df": {
+        "keep": {
+            "test001": 1.0,
+            "test002": 1.0,
+            "test003": 1.0,
+            "test004": 1.0,
+            "test005": 1.0
+        },
+        "id_key": {
+            "test001": 1.0,
+            "test002": 2.0,
+            "test003": 3.0,
+            "test004": 4.0,
+            "test005": 5.0
+        },
+        "mass": {
+            "test001": 0.5102623157,
+            "test002": 0.4543876008,
+            "test003": 0.4958430344,
+            "test004": 0.4543876008,
+            "test005": 0.4471779602
+        },
+        "total_mass": {
+            "test001": 2.8175,
+            "test002": 2.5375,
+            "test003": 2.6975,
+            "test004": 2.8975,
+            "test005": 2.7875
+        },
+        "loading": {
+            "test001": 0.9563686779,
+            "test002": 0.8613258279,
+            "test003": 0.9156360279,
+            "test004": 0.983474854,
+            "test005": 0.9461384488
+        },
+        "nom_cap": {
+            "test001": 2970.0,
+            "test002": 2926.0,
+            "test003": 3454.0,
+            "test004": 3080.0,
+            "test005": 3117.4
+        },
+        "experiment": {
+            "test001": "cycling",
+            "test002": "cycling",
+            "test003": "cycling",
+            "test004": "cycling",
+            "test005": "cycling"
+        },
+        "cell_type": {
+            "test001": "anode",
+            "test002": "anode",
+            "test003": "anode",
+            "test004": "anode",
+            "test005": "anode"
+        },
+        "instrument": {
+            "test001": "arbin_res",
+            "test002": "arbin_res",
+            "test003": "arbin_res",
+            "test004": "arbin_res",
+            "test005": "arbin_res"
+        },
+        "comment": {
+            "test001": "test",
+            "test002": "test",
+            "test003": "test",
+            "test004": "test",
+            "test005": "test"
+        },
+        "fixed": {
+            "test001": 0.0,
+            "test002": 0.0,
+            "test003": 0.0,
+            "test004": 0.0,
+            "test005": 0.0
+        },
+        "label": {
+            "test001": "cell001",
+            "test002": "cell002",
+            "test003": "cell003",
+            "test004": "cell004",
+            "test005": "cell005"
+        },
+        "cellpy_file_name": {
+            "test001": "data\\cellpyfiles\\20160805_test001_45_cc_01.cellpy",
+            "test002": "data\\cellpyfiles\\20160805_test001_45_cc_02.cellpy",
+            "test003": "data\\cellpyfiles\\20160805_test001_45_cc_03.cellpy",
+            "test004": "data\\cellpyfiles\\20160805_test001_45_cc_04.cellpy",
+            "test005": "data\\cellpyfiles\\20160805_test001_45_cc_05.cellpy"
+        },
+        "raw_file_names": {
+            "test001": "data/raw/20160805_test001_45_cc_01.res",
+            "test002": "data/raw/20160805_test001_45_cc_02.res",
+            "test003": "data/raw/20160805_test001_45_cc_03.res",
+            "test004": "data/raw/20160805_test001_45_cc_04.res",
+            "test005": "data/raw/20160805_test001_45_cc_05.res"
+        },
+        "group": {
+            "test001": 1.0,
+            "test002": 1.0,
+            "test003": 1.0,
+            "test004": 1.0,
+            "test005": 2.0
+        },
+        "sub_group": {
+            "test001": 1.0,
+            "test002": 2.0,
+            "test003": 3.0,
+            "test004": 4.0,
+            "test005": 1.0
+        }
+    },
+    "metadata": {
+        "name": "test_journal",
+        "project": "NaN",
+        "time_stamp": null,
+        "project_dir": "C:\\scripts\\processing_cellpy\\out\\NaN",
+        "batch_dir": "C:\\scripts\\processing_cellpy\\out\\NaN\\test_journal",
+        "raw_dir": "C:\\scripts\\processing_cellpy\\out\\NaN\\test_journal\\raw_data"
+    },
+    "session": {
+        "starred": null,
+        "bad_cells": null,
+        "bad_cycles": null,
+        "notes": null
+    }
+}

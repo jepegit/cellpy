@@ -130,7 +130,7 @@ class LabJournal(BaseJournal):
         sheet_names = {"meta": "meta", "pages": "pages", "session": "session"}
         project = kwargs.pop("project", "NaN")
         name = kwargs.pop("batch", pathlib.Path(file_name).stem)
-        META = {
+        _meta = {
             "name": name,
             "project": project,
             "project_dir": pathlib.Path("."),
@@ -139,9 +139,9 @@ class LabJournal(BaseJournal):
         }
         logging.debug(f"xlsx loader starting on {file_name}")
 
-        meta_sheet_name = sheet_names["meta"]  # not implemented yet
+        meta_sheet_name = sheet_names["meta"]  # not tested yet
         pages_sheet_name = sheet_names["pages"]
-        session_sheet_name = sheet_names["session"]  # not implemented yet
+        session_sheet_name = sheet_names["session"]  # not tested yet
 
         temporary_directory = tempfile.mkdtemp()
         temporary_file_name = shutil.copy(file_name, temporary_directory)
@@ -153,8 +153,18 @@ class LabJournal(BaseJournal):
             print(f"Worksheet '{pages_sheet_name}' does not exist.")
             return None
 
-        session = None  # not implemented
-        meta = None  # not implemented
+        try:
+            session = pd.read_excel(temporary_file_name, sheet_name=session_sheet_name, engine="openpyxl",
+                                    header=[0, 1])
+        except (KeyError, ValueError):
+            print(f"Worksheet '{session_sheet_name}' does not exist.")
+            session = None
+
+        try:
+            meta = pd.read_excel(temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl")
+        except (KeyError, ValueError):
+            print(f"Worksheet '{meta_sheet_name}' does not exist.")
+            meta = None
 
         if pages.empty:
             logging.critical("could not find any pages in the journal")
@@ -163,15 +173,57 @@ class LabJournal(BaseJournal):
         pages = pages.set_index(hdr_journal.filename)
 
         if meta is None:
-            meta = META
+            meta = _meta
+        else:
+            meta = cls._unpack_meta(meta)
 
         if session is None:
             logging.debug(f"no session - generating empty one")
             session = dict()
+        else:
+            session = cls._unpack_session(session)
 
         session, pages = cls._clean_session(session, pages)
 
         return pages, meta, session
+
+    @classmethod
+    def _unpack_session(cls, session):
+        try:
+            bcn2 = {l: list(sb["cycle_index"].values) for l, sb in session["bad_cycles"].groupby("cell_name")}
+        except KeyError:
+            bcn2 = []
+
+        try:
+            bc2 = list(session["bad_cells"]["cell_name"].dropna().values.flatten())
+        except KeyError:
+            bc2 = []
+
+        try:
+            s2 = list(session["starred"]["cell_name"].dropna().values.flatten())
+        except KeyError:
+            s2 = []
+
+        try:
+            n2 = list(session["notes"]["txt"].dropna().values.flatten())
+        except KeyError:
+            n2 = []
+
+        session = {
+            "bad_cycles": bcn2,
+            "bad_cells": bc2,
+            "starred": s2,
+            "notes": n2
+        }
+
+        return session
+
+    @classmethod
+    def _unpack_meta(cls, meta):
+        # TODO: add try-except
+        meta = meta.loc[:, ["parameter", "value"]]
+        meta = meta.set_index("parameter")
+        return meta.to_dict()["value"]
 
     @classmethod
     def _clean_session(cls, session, pages):
@@ -298,25 +350,85 @@ class LabJournal(BaseJournal):
         )
         pages = self.pages
         session = self.session
+        meta = self._prm_packer()
         top_level_dict = {
             "info_df": pages,
-            "metadata": self._prm_packer(),
+            "metadata": meta,
             "session": session,
         }
 
-        jason_string = json.dumps(
-            top_level_dict,
-            default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
-        )
+        is_json = False
+        is_xlsx = False
 
-        with open(file_name, "w") as outfile:
-            outfile.write(jason_string)
+        if file_name.suffix == ".xlsx":
+            is_xlsx = True
+
+        if file_name.suffix == ".json":
+            is_json = True
+
+        if is_xlsx:
+            df_session = self._pack_session(session)
+            df_meta = self._pack_meta(meta)
+
+            try:
+                with pd.ExcelWriter(file_name, mode="w", engine="openpyxl") as writer:
+                    pages.to_excel(writer, sheet_name="pages", engine="openpyxl")
+                    # no index is not supported for multi-index (update to index=False when pandas implements it):
+                    df_session.to_excel(writer, sheet_name="session", engine="openpyxl")
+                    df_meta.to_excel(writer, sheet_name="meta", engine="openpyxl", index=False)
+            except PermissionError as e:
+                print(f"Could not load journal to xlsx ({e})")
+
+        if is_json:
+            jason_string = json.dumps(
+                top_level_dict,
+                default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
+            )
+
+            with open(file_name, "w") as outfile:
+                outfile.write(jason_string)
 
         self.file_name = file_name
         logging.info(f"Saved file to {file_name}")
 
         if paginate:
             self.paginate()
+
+    @staticmethod
+    def _pack_session(session):
+        frames = []
+        keys = []
+        try:
+            l_bad_cycle_numbers = []
+            for k, v in session["bad_cycles"].items():
+                l_bad_cycle_numbers.append(pd.DataFrame(data=v, columns=[k]))
+
+            df_bad_cycle_numbers = pd.concat(l_bad_cycle_numbers, axis=1).melt(var_name="cell_name",
+                                                                               value_name="cycle_index").dropna()
+            frames.append(df_bad_cycle_numbers)
+            keys.append("bad_cycles")
+        except KeyError:
+            logging.debug("missing bad cycle numbers")
+
+        df_bad_cells = pd.DataFrame(session["bad_cells"], columns=["cell_name"])
+        frames.append(df_bad_cells)
+        keys.append("bad_cells")
+
+        df_starred = pd.DataFrame(session["starred"], columns=["cell_name"])
+        frames.append(df_starred)
+        keys.append("starred")
+
+        df_notes = pd.DataFrame(session["notes"], columns=["txt"])
+        frames.append(df_notes)
+        keys.append("notes")
+
+        session = pd.concat(frames, axis=1, keys=keys)
+        return session
+
+    @staticmethod
+    def _pack_meta(meta):
+        meta = pd.DataFrame(meta, index=[0]).melt(var_name="parameter", value_name="value")
+        return meta
 
     def generate_folder_names(self):
         """Set appropriate folder names."""
@@ -409,3 +521,44 @@ class LabJournal(BaseJournal):
     def add_cell(self, cell_id, **kwargs):
         """Add a cell to the pages"""
         pass
+
+
+def _dev_journal_loading():
+    from cellpy import log
+    log.setup_logging(default_level="DEBUG")
+    journal_file = pathlib.Path("../../../dev_data/db/test_journal.xlsx")
+    print(journal_file.is_file())
+    logging.debug(f"reading journal file {journal_file}")
+    journal = LabJournal(db_reader=None)
+    journal.from_file(journal_file, paginate=False)
+    print(80 * "-")
+    print(journal.pages)
+    print(80 * "-")
+    print(journal.session)
+
+    # creating a mock session
+    bad_cycle_numbers = {
+        '20160805_test001_45_cc': [4, 337, 338],
+        '20160805_test001_47_cc': [7, 8, 9],
+    }
+    bad_cells = ['20160805_test001_45_cc']
+
+    notes = {"date_stamp": "one comment for the road",
+             "date_stamp2": "another comment"}
+    session = {
+        "bad_cycle_numbers": bad_cycle_numbers,
+        "bad_cells": bad_cells,
+        "notes": notes,
+    }
+
+    # journal.session = session
+
+    new_journal_name = journal_file.with_name(f"{journal_file.stem}_tmp.xlsx")
+    print(new_journal_name)
+    journal.to_file(file_name=new_journal_name, paginate=False, to_project_folder=False)
+
+
+if __name__ == "__main__":
+    print(" running journal ".center(80, "-"))
+    _dev_journal_loading()
+    print(" finished ".center(80, "-"))

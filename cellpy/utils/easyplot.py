@@ -155,7 +155,10 @@ class EasyPlot:
         self.figs = []
         self.file_data = []
         self.use_arbin_sql = False
-        self.journal_file = Path(journal)
+        if journal is not None:
+            self.journal_file = Path(journal)
+        else:
+            self.journal_file = None
         self.journal = None
 
         # Dictionary of all possible user input arguments(as keys) with example values of correct type
@@ -259,6 +262,7 @@ class EasyPlot:
                     file_name = file
                     if not os.path.isfile(file):
                         logging.error("File not found: " + str(file))
+                        print(os.getcwd())
                         raise FileNotFoundError
 
                 cpobj = cellpy.get(filename=file)  # Load regular file
@@ -315,7 +319,6 @@ class EasyPlot:
 
     def _wrap_up(self):
         # saving journal file
-        # (only json supported so far)
         if self.kwargs["save_journal"]:
             if self.journal is not None:
                 if self.outpath is not None:
@@ -328,6 +331,8 @@ class EasyPlot:
 
                 journal_file_path = journal_file_path.with_suffix(".json")
                 self.journal.to_file(file_name=journal_file_path, paginate=False, to_project_folder=False)
+                xlsx_journal_file_path = journal_file_path.with_name(f"{journal_file_path.stem}.xlsx")
+                self.journal.to_file(file_name=xlsx_journal_file_path, paginate=False, to_project_folder=False)
 
     def verify_input(self):
         """Verifies that the users' input to the object is correct."""
