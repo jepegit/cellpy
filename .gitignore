@@ -10,6 +10,7 @@ __pycache__/
 old/
 bin/
 bin/mdbtools-win
+cellpy/utils/tmp
 
 # testdata that changes when running tests
 # Remark! You might need to comment out this the first time you run tests

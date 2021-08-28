@@ -22,6 +22,14 @@ from matplotlib.scale import LogScale
 from matplotlib.ticker import FuncFormatter
 
 import cellpy
+from cellpy import log
+from cellpy.utils.batch_tools.batch_journals import LabJournal
+from cellpy.parameters.internal_settings import (
+    get_headers_journal,
+    keys_journal_session,
+)
+
+hdr_journal = get_headers_journal()
 
 # Dictionary of all possible user input arguments(as keys) with example values of correct type
 # Value is a tuple (immutable) of type and default value.
@@ -84,6 +92,8 @@ USER_PARAMS = {
     "figsize": (tuple, (6, 4)),  # 6 inches wide, 4 inches tall
     "figres": (int, 100),  # Dots per Inch
     "figtitle": (str, "Title"),  # None = original filepath
+    "save_figures": (bool, True),
+    "save_journal": (bool, False),  # Save journal
 }
 
 
@@ -122,11 +132,12 @@ class EasyPlot:
     Help: type easyplot.help()
     """
 
-    def __init__(self, files, nicknames, **kwargs):
+    def __init__(self, files=None, nicknames=None, journal=None, **kwargs):
         """Initialization function of the EasyPlot class.
         Input parameters:
-        filenames (list of strings)
-        nicknames (list of strings), must match length of filenames, or can be set to None.
+        filenames (list of strings).
+        nicknames (list of strings), must match length of filenames.
+        journal (str or pathlib.Path object): journal file name (should not be used if files is given).
         any kwargs: use easyplot.help() to print all kwargs to terminal.
 
         Returns:
@@ -144,13 +155,33 @@ class EasyPlot:
         self.figs = []
         self.file_data = []
         self.use_arbin_sql = False
+        if journal is not None:
+            self.journal_file = Path(journal)
+        else:
+            self.journal_file = None
+        self.journal = None
 
         # Dictionary of all possible user input arguments(as keys) with example values of correct type
         # Value is a tuple (immutable) of type and default value.
         self.user_params = USER_PARAMS
+
+        # Create 'empty' attributes for later use
         self.outpath = None
+        self.masses = None
+        self.labels = None
+        self.nom_caps = None
+        self.colors = None
 
         # List of available colors
+
+        # Fill in the rest of the variables from self.user_params if the user didn't specify
+        self.fill_input()
+
+        # Verify that the user input is sufficient
+        self.verify_input()
+        self._generate_list_of_available_colors()
+
+    def _generate_list_of_available_colors(self):
         if 19 >= len(self.files) > 10:
             self.colors = [
                 "#e6194b",
@@ -176,11 +207,14 @@ class EasyPlot:
                 "#000000",
             ]
             warnings.warn(
-                "You inserted more than 10 datafiles! In a desperate attempt to keep the plots tidy, another colorpalette with 19 distinct colors were chosen."
+                "You inserted more than 10 datafiles! In a desperate attempt to keep "
+                "the plots tidy, another colorpalette with 19 distinct colors were chosen."
             )
         elif len(self.files) > 19:
             warnings.warn(
-                "You inserted more than 19 datafiles! We do not have that many colors in the palette, this some colors are beeing recycled. Keep track of the filenames and legends and make sure this doesn't confuse you."
+                "You inserted more than 19 datafiles! We do not have that "
+                "many colors in the palette, this some colors are beeing recycled. "
+                "Keep track of the filenames and legends and make sure this doesn't confuse you."
             )
         else:
             self.colors = [
@@ -196,35 +230,47 @@ class EasyPlot:
                               "tab:cyan",
                           ] * 5
 
-        # Fill in the rest of the variables from self.user_params if the user didn't specify
-        self.fill_input()
-
-        # Verify that the user input is sufficient
-        self.verify_input()
-
     def plot(self):
         """This is the method the user calls on his/hers easyplot object in order to gather the data and plot it.
         Usage: object.plot()"""
 
         # Load all cellpy files
+        logging.debug("starting plotting")
         for file in self.files:
+            if isinstance(file, (list, tuple)):
+                logging.debug("linked files provided - need to merge")
+                linked_files = True
+            else:
+                linked_files = False
+
             # If using arbin sql
             if self.use_arbin_sql:
                 cpobj = cellpy.get(
                     filename=file, instrument="arbin_sql"
                 )  # Initiate cellpy object
             else:  # Not Arbin SQL? Then its probably a local file
-                # Check that file exist
-                if not os.path.isfile(file):
-                    logging.error("File not found: " + str(file))
-                    raise FileNotFoundError
+
+                # Check that file(s) exist
+                if linked_files:
+                    file_name = "_".join(file)
+                    for _f in file:
+                        if not os.path.isfile(_f):
+                            logging.error("File not found: " + str(_f))
+                            raise FileNotFoundError
+
+                else:
+                    file_name = file
+                    if not os.path.isfile(file):
+                        logging.error("File not found: " + str(file))
+                        print(os.getcwd())
+                        raise FileNotFoundError
+
                 cpobj = cellpy.get(filename=file)  # Load regular file
                 # Check that we get data
             if cpobj is None:
                 warnings.warn(
-                    "File reader returned no data for filename "
-                    + file
-                    + ", Please make sure that the file exists or that the data exists in an eventual database."
+                    f"File reader returned no data for filename {file}. Please make sure that the file exists or "
+                    f"that the data exists in an eventual database."
                 )
 
             # Get ID of all cycles
@@ -237,10 +283,9 @@ class EasyPlot:
                                     ) & set(self.kwargs["specific_cycles"])
                 if len(cyc_not_available) > 0:
                     warn_str = (
-                        "You want to plot cycles which are not available in the data! Datafile: "
-                        + os.path.basename(file).split(".")[0]
-                        + ", Cycle(s): "
-                        + str(cyc_not_available)
+                        f"You want to plot cycles which are not available in the data! Datafile(s): "
+                        f"{file}"
+                        f", Cycle(s): {str(cyc_not_available)}"
                     )
                     warnings.warn(warn_str)
                 cyc_nums = list(
@@ -252,7 +297,7 @@ class EasyPlot:
 
             color = self.give_color()  # Get a color for the data
 
-            self.file_data.append((cpobj, cyc_nums, color, file))
+            self.file_data.append((cpobj, cyc_nums, color, file_name))
 
         # Check kwargs/input parameters to see what plots to make
         if self.kwargs["cyclelife_plot"]:
@@ -269,6 +314,25 @@ class EasyPlot:
 
         if self.kwargs["capacity_determination_from_ratecap"]:
             self.plot_cap_from_rc()
+
+        self._wrap_up()
+
+    def _wrap_up(self):
+        # saving journal file
+        if self.kwargs["save_journal"]:
+            if self.journal is not None:
+                if self.outpath is not None:
+                    journal_file_path = Path(self.outpath) / self.journal_file.name
+                else:
+                    journal_file_path = self.journal_file.name
+
+                # if we want to enforce that the file will be a xlsx file:
+                # journal_file_path = journal_file_path.with_suffix(".xlsx")
+
+                journal_file_path = journal_file_path.with_suffix(".json")
+                self.journal.to_file(file_name=journal_file_path, paginate=False, to_project_folder=False)
+                xlsx_journal_file_path = journal_file_path.with_name(f"{journal_file_path.stem}.xlsx")
+                self.journal.to_file(file_name=xlsx_journal_file_path, paginate=False, to_project_folder=False)
 
     def verify_input(self):
         """Verifies that the users' input to the object is correct."""
@@ -319,13 +383,62 @@ class EasyPlot:
                 "You can't plot 'only' discharge AND charge curves! Set one to False please."
             )
 
+        if self.journal_file is not None:
+            # Check that the user isn't providing both a list of files and a journal filename
+            if self.files is not None:
+                logging.error("You can't give both filenames and a journal file at the same time.")
+                logging.error("Chose either filenames OR journal file name please.")
+                raise ValueError
+            self._read_journal_file()
+            self._populate_from_journal()  # Temporary fix - the parameters should be read directly from journal later
+        else:
+            if self.files is None:
+                logging.error("No file names provided.")
+                logging.error("Add file names OR journal file name please.")
+                raise ValueError
+
+    def _read_journal_file(self):
+        logging.debug(f"reading journal file {self.journal_file}")
+        journal = LabJournal(db_reader=None)
+        journal.from_file(self.journal_file, paginate=False)
+        self.journal = journal
+
+    def _populate_from_journal(self):
+        logging.debug(f"populating from journal")
+        # populating from only a subset of the available journal columns
+        # - can be increased later
+        try:
+            self.files = self.journal.pages[hdr_journal["raw_file_names"]].to_list()
+        except AttributeError:
+            logging.debug("No raw files found in your journal")
+
+        try:
+            self.masses = self.journal.pages[hdr_journal["mass"]].to_list()
+        except AttributeError:
+            logging.debug("No masses found in your journal")
+
+        try:
+            self.labels = self.journal.pages[hdr_journal["label"]].to_list()
+        except AttributeError:
+            logging.debug("No labels found in your journal")
+
+        try:
+            self.nom_cap = self.journal.pages[hdr_journal["nom_cap"]].to_list()
+        except AttributeError:
+            logging.debug("No nominal capacity found in your journal")
+
+        try:
+            self.cellpy_files = self.journal.pages[hdr_journal["cellpy_file_name"]].to_list()
+        except AttributeError:
+            logging.debug("No cellpy files found in your journal")
+
     def fill_input(self):
         """Fill in the rest of the variables from self.user_params if the user didn't specify"""
         # Can't just join dicts since they have differing formats, need to loop...
         for key in self.user_params:
             try:
                 self.kwargs[key]
-            except KeyError as e:
+            except KeyError:
                 self.kwargs[key] = self.user_params[key][1]
 
     def set_arbin_sql_credentials(
@@ -351,24 +464,29 @@ class EasyPlot:
 
     def give_fig(self):
         """Gives figure to whoever asks and appends it to figure list"""
+
         fig, ax = plt.subplots(figsize=(6, 4))
         self.figs.append((fig, ax))
-        return (fig, ax)
+        return fig, ax
 
     def handle_outpath(self):
         """Makes sure that self.outpath exists, or creates it."""
-        if os.path.isdir(self.kwargs["outpath"]):
-            return self.kwargs["outpath"]
-        elif not os.path.isdir(self.kwargs["outpath"]):
+        out_path = self.kwargs["outpath"]
+
+        # should make this a pathlib.Path object - but not sure if str is assumed later on in the code
+        if os.path.isdir(out_path):
+            logging.debug(f"out path set to {out_path}")
+            return out_path
+        elif not os.path.isdir(out_path):
+            logging.debug(f"outpath does not exits - creating")
             try:
-                os.makedirs(self.kwargs["outpath"])
-                return self.kwargs["outpath"]
+                os.makedirs(out_path)
+                logging.debug(f"out path set to {out_path}")
+                return out_path
             except OSError as e:
                 logging.error(
-                    "Cannot create output directory "
-                    + self.kwargs["outpath"]
-                    + ". Please make sure you have write permission. Errormessage: "
-                    + e
+                    f"Cannot create output directory {out_path}. Please make sure you "
+                    f"have write permission. Error message: {e}"
                 )
 
     def plot_cyclelife(self):
@@ -434,8 +552,6 @@ class EasyPlot:
 
                 if self.kwargs["cyclelife_ir"]:
                     ax_ir = ax.twinx()
-
-                outpath = self.outpath
 
             # Get Pandas DataFrame of pot vs cap from cellpy object
             df = cpobj.get_cap(
@@ -622,6 +738,7 @@ class EasyPlot:
                 # Save fig
                 savepath = outpath.strip("_") + "_Cyclelife"
                 self.save_fig(fig, savepath)
+
         if not self.kwargs["cyclelife_separate_data"]:
 
             # Set all plot settings from Plot object
@@ -1732,16 +1849,18 @@ class EasyPlot:
             logging.error(e)
 
     def save_fig(self, fig, savepath):
-        """The point of this is to have savefig parameters the same across all plots (for now just fig dpi and bbox inches)"""
-        if self.kwargs["outname"]:
-            savepath = (
-                self.kwargs["outpath"] + self.kwargs["outname"] + self.kwargs["outtype"]
-            )
-        else:
-            savepath += self.kwargs["outtype"]
+        """The point of this is to have savefig parameters the same across
+        all plots (for now just fig dpi and bbox inches)"""
+        if self.kwargs.get("save_figures", True):
+            if self.kwargs["outname"]:
+                savepath = (
+                    self.kwargs["outpath"] + self.kwargs["outname"] + self.kwargs["outtype"]
+                )
+            else:
+                savepath += self.kwargs["outtype"]
 
-        print("Saving to: " + savepath)
-        fig.savefig(savepath, bbox_inches="tight", dpi=self.kwargs["figres"])
+            print("Saving to: " + savepath)
+            fig.savefig(savepath, bbox_inches="tight", dpi=self.kwargs["figres"])
 
 
 def get_effective_C_rates(steptable):
@@ -1787,3 +1906,38 @@ def get_effective_C_rates_and_caps(steptable):
             )
 
     return chglist, dchglist
+
+
+def main():
+    log.setup_logging(default_level="DEBUG")
+    f1 = Path("../../testdata/data/20160805_test001_45_cc_01.res")
+    f2 = Path("../../testdata/data/20160805_test001_47_cc_01.res")
+
+    raw_files = [f1, f2]
+    nicknames = ["cell1", "cell2"]
+
+    logging.debug(raw_files)
+    logging.debug(nicknames)
+
+    ezplt = EasyPlot(raw_files, nicknames, figtitle="Test1", save_figures=True)
+    ezplt.plot()
+    plt.show()
+
+    return
+
+
+def _dev_journal_loading():
+    log.setup_logging(default_level="DEBUG")
+    journal_file = Path("../../testdata/db/cellpy_batch_test.json")
+    ezplt = EasyPlot(None, journal=journal_file, figtitle="Test1", save_figures=False, save_journal=True,
+                     outpath="./tmp/")
+    ezplt.plot()
+    # plt.show()
+
+    return
+
+
+if __name__ == "__main__":
+    print(" running easyplot ".center(80, "-"))
+    _dev_journal_loading()
+    print(" finished ".center(80, "-"))
