@@ -1414,11 +1414,13 @@ class ArbinLoader(Loader):
 
         self.logger.debug(f"loaded to normal_df (length =  {length_of_test})")
         self.logger.debug(f"Headers:\n{normal_df.columns}")
+
+        if normal_df is None:
+            normal_df = pd.DataFrame(columns=self.arbin_headers_normal.values())
         return length_of_test, normal_df
 
 
-if __name__ == "__main__":
-    import logging
+def check_loader_aux():
     from pathlib import Path
     from cellpy import log
 
@@ -1430,3 +1432,21 @@ if __name__ == "__main__":
 
     n = ArbinLoader().loader(f1)
     print(n[0].raw.tail())
+
+
+def check_loader_empty_normal():
+    from cellpy import log
+
+    log.setup_logging(default_level="CRITICAL")
+
+    a = ArbinLoader()
+    cols = a.arbin_headers_normal
+    df = pd.DataFrame(columns=cols.values())
+    print(df)
+    print(df.empty)
+
+
+if __name__ == "__main__":
+    print(" arbin-res-py ".center(80, "="))
+    check_loader_empty_normal()
+    print(" finished ".center(80, "="))
