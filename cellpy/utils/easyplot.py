@@ -330,9 +330,17 @@ class EasyPlot:
                 # journal_file_path = journal_file_path.with_suffix(".xlsx")
 
                 journal_file_path = journal_file_path.with_suffix(".json")
-                self.journal.to_file(file_name=journal_file_path, paginate=False, to_project_folder=False)
-                xlsx_journal_file_path = journal_file_path.with_name(f"{journal_file_path.stem}.xlsx")
-                self.journal.to_file(file_name=xlsx_journal_file_path, paginate=False, to_project_folder=False)
+                self.journal.to_file(
+                    file_name=journal_file_path, paginate=False, to_project_folder=False
+                )
+                xlsx_journal_file_path = journal_file_path.with_name(
+                    f"{journal_file_path.stem}.xlsx"
+                )
+                self.journal.to_file(
+                    file_name=xlsx_journal_file_path,
+                    paginate=False,
+                    to_project_folder=False,
+                )
 
     def verify_input(self):
         """Verifies that the users' input to the object is correct."""
@@ -386,7 +394,9 @@ class EasyPlot:
         if self.journal_file is not None:
             # Check that the user isn't providing both a list of files and a journal filename
             if self.files is not None:
-                logging.error("You can't give both filenames and a journal file at the same time.")
+                logging.error(
+                    "You can't give both filenames and a journal file at the same time."
+                )
                 logging.error("Chose either filenames OR journal file name please.")
                 raise ValueError
             self._read_journal_file()
@@ -428,7 +438,9 @@ class EasyPlot:
             logging.debug("No nominal capacity found in your journal")
 
         try:
-            self.cellpy_files = self.journal.pages[hdr_journal["cellpy_file_name"]].to_list()
+            self.cellpy_files = self.journal.pages[
+                hdr_journal["cellpy_file_name"]
+            ].to_list()
         except AttributeError:
             logging.debug("No cellpy files found in your journal")
 
@@ -1854,7 +1866,9 @@ class EasyPlot:
         if self.kwargs.get("save_figures", True):
             if self.kwargs["outname"]:
                 savepath = (
-                    self.kwargs["outpath"] + self.kwargs["outname"] + self.kwargs["outtype"]
+                    self.kwargs["outpath"]
+                    + self.kwargs["outname"]
+                    + self.kwargs["outtype"]
                 )
             else:
                 savepath += self.kwargs["outtype"]
@@ -1929,8 +1943,14 @@ def main():
 def _dev_journal_loading():
     log.setup_logging(default_level="DEBUG")
     journal_file = Path("../../testdata/db/cellpy_batch_test.json")
-    ezplt = EasyPlot(None, journal=journal_file, figtitle="Test1", save_figures=False, save_journal=True,
-                     outpath="./tmp/")
+    ezplt = EasyPlot(
+        None,
+        journal=journal_file,
+        figtitle="Test1",
+        save_figures=False,
+        save_journal=True,
+        outpath="./tmp/",
+    )
     ezplt.plot()
     # plt.show()
 

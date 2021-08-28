@@ -154,14 +154,20 @@ class LabJournal(BaseJournal):
             return None
 
         try:
-            session = pd.read_excel(temporary_file_name, sheet_name=session_sheet_name, engine="openpyxl",
-                                    header=[0, 1])
+            session = pd.read_excel(
+                temporary_file_name,
+                sheet_name=session_sheet_name,
+                engine="openpyxl",
+                header=[0, 1],
+            )
         except (KeyError, ValueError):
             print(f"Worksheet '{session_sheet_name}' does not exist.")
             session = None
 
         try:
-            meta = pd.read_excel(temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl")
+            meta = pd.read_excel(
+                temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl"
+            )
         except (KeyError, ValueError):
             print(f"Worksheet '{meta_sheet_name}' does not exist.")
             meta = None
@@ -190,7 +196,10 @@ class LabJournal(BaseJournal):
     @classmethod
     def _unpack_session(cls, session):
         try:
-            bcn2 = {l: list(sb["cycle_index"].values) for l, sb in session["bad_cycles"].groupby("cell_name")}
+            bcn2 = {
+                l: list(sb["cycle_index"].values)
+                for l, sb in session["bad_cycles"].groupby("cell_name")
+            }
         except KeyError:
             bcn2 = []
 
@@ -209,12 +218,7 @@ class LabJournal(BaseJournal):
         except KeyError:
             n2 = []
 
-        session = {
-            "bad_cycles": bcn2,
-            "bad_cells": bc2,
-            "starred": s2,
-            "notes": n2
-        }
+        session = {"bad_cycles": bcn2, "bad_cells": bc2, "starred": s2, "notes": n2}
 
         return session
 
@@ -375,14 +379,18 @@ class LabJournal(BaseJournal):
                     pages.to_excel(writer, sheet_name="pages", engine="openpyxl")
                     # no index is not supported for multi-index (update to index=False when pandas implements it):
                     df_session.to_excel(writer, sheet_name="session", engine="openpyxl")
-                    df_meta.to_excel(writer, sheet_name="meta", engine="openpyxl", index=False)
+                    df_meta.to_excel(
+                        writer, sheet_name="meta", engine="openpyxl", index=False
+                    )
             except PermissionError as e:
                 print(f"Could not load journal to xlsx ({e})")
 
         if is_json:
             jason_string = json.dumps(
                 top_level_dict,
-                default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
+                default=lambda info_df: json.loads(
+                    info_df.to_json(default_handler=str)
+                ),
             )
 
             with open(file_name, "w") as outfile:
@@ -403,8 +411,11 @@ class LabJournal(BaseJournal):
             for k, v in session["bad_cycles"].items():
                 l_bad_cycle_numbers.append(pd.DataFrame(data=v, columns=[k]))
 
-            df_bad_cycle_numbers = pd.concat(l_bad_cycle_numbers, axis=1).melt(var_name="cell_name",
-                                                                               value_name="cycle_index").dropna()
+            df_bad_cycle_numbers = (
+                pd.concat(l_bad_cycle_numbers, axis=1)
+                    .melt(var_name="cell_name", value_name="cycle_index")
+                    .dropna()
+            )
             frames.append(df_bad_cycle_numbers)
             keys.append("bad_cycles")
         except KeyError:
@@ -427,7 +438,9 @@ class LabJournal(BaseJournal):
 
     @staticmethod
     def _pack_meta(meta):
-        meta = pd.DataFrame(meta, index=[0]).melt(var_name="parameter", value_name="value")
+        meta = pd.DataFrame(meta, index=[0]).melt(
+            var_name="parameter", value_name="value"
+        )
         return meta
 
     def generate_folder_names(self):
@@ -525,6 +538,7 @@ class LabJournal(BaseJournal):
 
 def _dev_journal_loading():
     from cellpy import log
+
     log.setup_logging(default_level="DEBUG")
     journal_file = pathlib.Path("../../../dev_data/db/test_journal.xlsx")
     print(journal_file.is_file())
@@ -538,13 +552,12 @@ def _dev_journal_loading():
 
     # creating a mock session
     bad_cycle_numbers = {
-        '20160805_test001_45_cc': [4, 337, 338],
-        '20160805_test001_47_cc': [7, 8, 9],
+        "20160805_test001_45_cc": [4, 337, 338],
+        "20160805_test001_47_cc": [7, 8, 9],
     }
-    bad_cells = ['20160805_test001_45_cc']
+    bad_cells = ["20160805_test001_45_cc"]
 
-    notes = {"date_stamp": "one comment for the road",
-             "date_stamp2": "another comment"}
+    notes = {"date_stamp": "one comment for the road", "date_stamp2": "another comment"}
     session = {
         "bad_cycle_numbers": bad_cycle_numbers,
         "bad_cells": bad_cells,
