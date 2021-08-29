@@ -5318,7 +5318,14 @@ class CellpyData(object):
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def inspect_nominal_capacity(self, cycles=None):
+        """Method for estimating the nominal capacity
 
+        Args:
+            cycles (list of ints): the cycles where it is assumed that the cell reaches nominal capacity.
+
+        Returns:
+            Nominal capacity (float).
+        """
         logging.debug("inspecting: nominal capacity")
         print("Sorry! This method is still under development.")
         print("Maybe you can plot your data and find the nominal capacity yourself?")

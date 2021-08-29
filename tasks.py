@@ -32,6 +32,7 @@ Examples:
 
 
 def get_platform():
+    """get the platform you are running on"""
     platforms = {
         "linux1": "Linux",
         "linux2": "Linux",
@@ -47,6 +48,7 @@ def get_platform():
 
 @contextmanager
 def capture():
+    """context manager to capture output from a running subproject"""
     o_stream = io.StringIO()
     yield o_stream
     print(o_stream.getvalue())
@@ -54,6 +56,14 @@ def capture():
 
 
 def get_pypi_info(package="cellpy"):
+    """get version number and sha256 for a pypi package
+
+    Args:
+        package (str): name of package
+
+    Returns:
+        [version, sha256]
+    """
     url = f"https://pypi.org/pypi/{package}/json"
     response = requests.get(url)
     if not response:
@@ -63,8 +73,8 @@ def get_pypi_info(package="cellpy"):
     response = response.json()
     version = response["info"]["version"]
     release = response["releases"][version][-1]
-    sha = release["digests"]["sha256"]
-    return version, sha
+    sha256 = release["digests"]["sha256"]
+    return version, sha256
 
 
 def update_meta_yaml_line(line, update_dict):
