@@ -15,6 +15,6 @@ pytest-benchmark
 pytest-timeout
 invoke
 requests
-cookiecutter
+cookiecutter==1.7.3
 tqdm
 
