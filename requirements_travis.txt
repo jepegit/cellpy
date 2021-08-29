@@ -6,7 +6,7 @@ lmfit>=0.9.7
 setuptools>=35.0.1
 pandas
 ruamel.yaml
-python-box
+python-box==5.4.1
 PyGithub>=1.43
 numpy>=1.16.4
 pytest-benchmark
