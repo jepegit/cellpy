@@ -9,7 +9,7 @@ ruamel.yaml
 python-box
 PyGithub>=1.43
 numpy>=1.16.4
-pytest-benchmark
+pytest-benchmark==3.4.1
 pytest-timeout
 cookiecutter
 tqdm
