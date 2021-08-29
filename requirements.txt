@@ -12,6 +12,6 @@ ruamel.yaml
 pyodbc>=4.0.16
 python-box
 PyGithub>=1.43.0
-tqdm~=4.44.1
+tqdm==4.62.2
 cookiecutter
 
