@@ -10,7 +10,7 @@ Sphinx>=1.5.5
 pytest>=3.0.7
 twine>=1.9.1
 numpy>=1.16.4
-python-box
+python-box==5.4.1
 pytest-benchmark
 pytest-timeout
 invoke
