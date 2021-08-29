@@ -14,7 +14,7 @@ python-box
 pytest-benchmark
 pytest-timeout
 invoke
-requests
+requests==2.26.0
 cookiecutter
 tqdm
 
