@@ -12,5 +12,5 @@ PyGithub>=1.43
 numpy>=1.16.4
 pytest-benchmark
 pytest-timeout
-cookiecutter
+cookiecutter==1.7.3
 tqdm
