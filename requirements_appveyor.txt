@@ -11,6 +11,6 @@ python-box
 PyGithub>=1.43
 numpy>=1.16.4
 pytest-benchmark
-pytest-timeout
+pytest-timeout==1.4.2
 cookiecutter
 tqdm
