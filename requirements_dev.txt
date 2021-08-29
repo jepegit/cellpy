@@ -13,7 +13,7 @@ numpy>=1.16.4
 python-box
 pytest-benchmark
 pytest-timeout
-invoke
+invoke==1.6.0
 requests
 cookiecutter
 tqdm
