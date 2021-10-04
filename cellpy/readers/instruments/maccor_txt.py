@@ -214,6 +214,7 @@ class MaccorTxtLoader(Loader):
 
 
 def test_loader():
+    # NOT EDITED YET!!!
     import pathlib
 
     datadir = pathlib.Path(
@@ -226,6 +227,7 @@ def test_loader():
 
 
 def test_loader_from_outside():
+    # NOT EDITED YET!!!
     from cellpy import cellreader
     import matplotlib.pyplot as plt
     import pathlib
