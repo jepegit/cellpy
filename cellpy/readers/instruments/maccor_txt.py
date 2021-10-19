@@ -182,7 +182,7 @@ class MaccorTxtLoader(Loader):
         rename_headers = True
         if rename_headers:
             columns = {}
-            for key in self.arbin_headers_normal:
+            for key in self.cellpy_headers_normal:
                 old_header = normal_headers_renaming_dict[key]
                 new_header = self.cellpy_headers_normal[key]
                 columns[old_header] = new_header
@@ -202,7 +202,7 @@ class MaccorTxtLoader(Loader):
             if data.raw.index.name != hdr_data_point:
                 data.raw = data.raw.set_index(hdr_data_point, drop=False)
 
-        hdr_date_time = self.arbin_headers_normal.datetime_txt
+        hdr_date_time = self.cellpy_headers_normal.datetime_txt
         data.start_datetime = parse(data.raw[hdr_date_time].iat[0])
 
         return data
