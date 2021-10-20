@@ -441,13 +441,15 @@ class CellpyData(object):
         return cells
 
     # TODO: @jepe - merge the _set_xxinstrument methods into one method
-    def set_instrument(self, instrument=None):
+    def set_instrument(self, instrument=None, **kwargs):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Args:
             instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]
+            kwargs (dict): key-word arguments sent to the initializer of the
+                loader class
 
-        Sets the instrument used for obtaining the data (i.e. sets fileformat)
+        Sets the instrument used for obtaining the data (i.e. sets file-format)
 
         """
 
@@ -467,7 +469,7 @@ class CellpyData(object):
         elif instrument == "arbin_sql":
             from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
 
-            warnings.warn(f"{instrument} is experimental! Not ready for production!")
+            logging.warning(f"{instrument} is experimental! Not ready for production!")
             self._set_instrument(RawLoader)
             self.tester = "arbin_sql"
 
@@ -476,12 +478,12 @@ class CellpyData(object):
                 ArbinCsvLoader as RawLoader,
             )
 
-            warnings.warn(f"{instrument} is experimental! Not ready for production!")
-            self._set_instrument(RawLoader)
+            logging.warning(f"{instrument} is experimental! Not ready for production!")
+            self._set_instrument(RawLoader, **kwargs)
             self.tester = "arbin_sql_csv"
 
         elif instrument in ["pec", "pec_csv"]:
-            warnings.warn("Experimental! Not ready for production!")
+            logging.warning("Experimental! Not ready for production!")
             from cellpy.readers.instruments.pec import PECLoader as RawLoader
 
             self._set_instrument(RawLoader)
@@ -490,9 +492,15 @@ class CellpyData(object):
         elif instrument in ["biologics", "biologics_mpr"]:
             from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
 
-            warnings.warn("Experimental! Not ready for production!")
+            logging.warning("Experimental! Not ready for production!")
             self._set_instrument(RawLoader)
             self.tester = "biologic"
+
+        elif instrument in ["maccor", "maccor_txt"]:
+            from cellpy.readers.instruments.maccor_txt import MaccorTxtLoader as RawLoader
+            logging.warning("Experimental! Not ready for production!")
+            self._set_instrument(RawLoader, **kwargs)
+            self.tester = "maccor"
 
         elif instrument.startswith("custom"):
             logging.debug(f"using custom instrument: {instrument}")
@@ -513,8 +521,8 @@ class CellpyData(object):
         else:
             raise Exception(f"option does not exist: '{instrument}'")
 
-    def _set_instrument(self, loader_class):
-        self.loader_class = loader_class()
+    def _set_instrument(self, loader_class, **kwargs):
+        self.loader_class = loader_class(**kwargs)
         # ----- get information --------------------------
         self.raw_units = self.loader_class.get_raw_units()
         self.raw_limits = self.loader_class.get_raw_limits()
