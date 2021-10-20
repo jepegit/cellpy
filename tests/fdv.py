@@ -93,6 +93,13 @@ mpr_file_path = os.path.join(raw_data_dir, mpr_file_name)
 mpr_cellpy_file_name = "biol.h5"
 mpr_cellpy_file_path = os.path.join(cellpy_data_dir, mpr_cellpy_file_name)
 
+# -------- maccor specific files -----------------
+mcc_file_name = "maccor_001.txt"
+mcc_file_path = os.path.join(raw_data_dir, mcc_file_name)
+
+mcc_cellpy_file_name = "maccor_001.h5"
+mcc_cellpy_file_path = os.path.join(cellpy_data_dir, mcc_cellpy_file_name)
+
 # -------- pec specific files -----------------------
 pec_file_name = "pec.csv"
 pec_file_path = os.path.join(raw_data_dir, pec_file_name)
