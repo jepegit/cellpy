@@ -1,5 +1,6 @@
 """Maccor txt data"""
 import logging
+from dataclasses import dataclass, field
 
 from dateutil.parser import parse
 
@@ -11,14 +12,25 @@ from cellpy.readers.core import (
 )
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
+from cellpy.readers.instruments.configurations import register_configuration
 from cellpy import prms
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
+SUPPORTED_MODELS = [("one", "maccor_txt_one"), ("two", "maccor_txt_two")]
+
+# Should obviously make this smoother:
+model_01 = register_configuration(SUPPORTED_MODELS[0][0], SUPPORTED_MODELS[0][1])
+all_supported_models = dict(model_01=model_01)
+
+print("\n")
+print(80 * "-")
+print(model_01)
+# ----------- model 01 --------------------
+
 # not updated yet
 unit_labels = {
     "resistance": "Ohms",
-
     # not observed yet:
     "time": "s",
     "current": "A",
@@ -50,7 +62,6 @@ normal_headers_renaming_dict = {
     "charge_energy_txt": f"Watt-hr",
     "ac_impedance_txt": f"ACImp/{unit_labels['resistance']}",
     "internal_resistance_txt": f"DCIR/{unit_labels['resistance']}",
-
     # not observed yet:
     "sub_step_index_txt": f"Sub_Step_Index",  # new
     "sub_step_time_txt": f"Sub_Step_Time",  # new
@@ -71,7 +82,6 @@ normal_headers_renaming_dict = {
     "channel_id_txt": f"Channel_ID",  # new Arbin SQL Server
     "data_flag_txt": f"Data_Flags",  # new Arbin SQL Server
     "test_name_txt": f"Test_Name",  # new Arbin SQL Server
-
 }
 
 # not observed yet
@@ -84,23 +94,23 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 }
 
 columns_to_keep = [
-    'TestTime',
-    'Rec#',
-    'Cyc#',
-    'Step',
-    'StepTime',
-    'Amp-hr',
-    'Watt-hr',
-    'Amps',
-    'Volts',
-    'State',
-    'ES',
-    'DPt Time',
-    'ACImp/Ohms',
-    'DCIR/Ohms',
+    "TestTime",
+    "Rec#",
+    "Cyc#",
+    "Step",
+    "StepTime",
+    "Amp-hr",
+    "Watt-hr",
+    "Amps",
+    "Volts",
+    "State",
+    "ES",
+    "DPt Time",
+    "ACImp/Ohms",
+    "DCIR/Ohms",
 ]
 
-STATES = {
+states = {
     "column_name": "State",
     "charge_keys": ["C"],
     "discharge_keys": ["D"],
@@ -108,17 +118,27 @@ STATES = {
 }
 
 
+# NEXT: rename to ModelParameters class e.g.
+#   m = all_supported_models["model_01"]
+#  rename normal_headers_renaming_dict to m.normal_headers_renaming_dict etc.
+
+
 class MaccorTxtLoader(Loader):
     """ Class for loading data from Maccor txt files."""
 
     def __init__(self, **kwargs):
         """initiates the MaccorTxtLoader class"""
-        self.sep = kwargs.pop("sep", prms.Instruments.Maccor.sep)
-        self.skiprows = kwargs.pop("skiprows", prms.Instruments.Maccor.skiprows)
-        self.header = kwargs.pop("header", prms.Instruments.Maccor.header)
+        model = kwargs.pop("model", prms.Instruments.Maccor.default_model)
+        self.format_params = prms.Instruments.Maccor[model]
+
+        logging.debug(self.format_params)
+        self.sep = kwargs.pop("sep", self.format_params["sep"])
+        self.skiprows = kwargs.pop("skiprows", self.format_params["skiprows"])
+        self.header = kwargs.pop("header", self.format_params["header"])
+        self.encoding = kwargs.pop("encoding", self.format_params["encoding"])
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
-        self.raw_headers_normal = normal_headers_renaming_dict
+        # self.raw_headers_normal = normal_headers_renaming_dict
         self.cellpy_headers_normal = (
             get_headers_normal()
         )  # the column headers defined by cellpy
@@ -262,7 +282,9 @@ class MaccorTxtLoader(Loader):
 
         if convert_step_time_to_timedelta:
             hdr_step_time = self.cellpy_headers_normal.step_time_txt
-            data.raw[hdr_step_time] = pd.to_timedelta(data.raw[hdr_step_time]).dt.total_seconds()
+            data.raw[hdr_step_time] = pd.to_timedelta(
+                data.raw[hdr_step_time]
+            ).dt.total_seconds()
 
         if convert_test_time_to_timedelta:
             hdr_test_time = self.cellpy_headers_normal.test_time_txt
@@ -273,18 +295,28 @@ class MaccorTxtLoader(Loader):
 
         return data
 
-    def _query_csv(self, name, sep=None, skiprows=None, header=None):
+    def _query_csv(self, name, sep=None, skiprows=None, header=None, encoding=None):
         sep = sep or self.sep
         skiprows = skiprows or self.skiprows
         header = header or self.header
-        data_df = pd.read_csv(name, sep=sep, skiprows=skiprows, header=header)
+        encoding = encoding or self.encoding
+        logging.debug(f"{sep=}, {skiprows=}, {header=}, {encoding=}")
+        data_df = pd.read_csv(
+            name, sep=sep, skiprows=skiprows, header=header, encoding=encoding
+        )
         return data_df
 
 
 def state_splitter(
-    raw, base_col_name="charge_capacity", n_charge=1, n_discharge=1, new_col_name_charge="charge_capacity",
+    raw,
+    base_col_name="charge_capacity",
+    n_charge=1,
+    n_discharge=1,
+    new_col_name_charge="charge_capacity",
     new_col_name_discharge="discharge_capacity",
-    temp_col_name_charge="tmp_charge", temp_col_name_discharge="tmp_discharge", states=None,
+    temp_col_name_charge="tmp_charge",
+    temp_col_name_discharge="tmp_discharge",
+    states=None,
 ):
     headers = get_headers_normal()
     cycle_index_hdr = headers["cycle_index_txt"]
@@ -326,17 +358,15 @@ def state_splitter(
                 raw[temp_col_name_charge].update(n_charge * charge[base_col_name])
 
                 raw.loc[
-                    (raw[data_point] > charge_last_index)
-                    & (raw[cycle_index_hdr] == i),
+                    (raw[data_point] > charge_last_index) & (raw[cycle_index_hdr] == i),
                     temp_col_name_charge,
                 ] = charge_last_val
 
             if not discharge.empty:
-                (
-                    discharge_last_index,
-                    discharge_last_val,
-                ) = discharge.iloc[-1]
-                raw[temp_col_name_discharge].update(n_discharge * discharge[base_col_name])
+                (discharge_last_index, discharge_last_val,) = discharge.iloc[-1]
+                raw[temp_col_name_discharge].update(
+                    n_discharge * discharge[base_col_name]
+                )
 
                 raw.loc[
                     (raw[data_point] > discharge_last_index)
@@ -362,10 +392,14 @@ def current_splitter(raw):
     headers = get_headers_normal()
     return state_splitter(
         raw,
-        base_col_name="current", n_charge=1, n_discharge=-1, temp_col_name_charge="tmp_charge",
-        new_col_name_charge=headers["current_txt"], new_col_name_discharge=headers["current_txt"],
+        base_col_name="current",
+        n_charge=1,
+        n_discharge=-1,
+        temp_col_name_charge="tmp_charge",
+        new_col_name_charge=headers["current_txt"],
+        new_col_name_discharge=headers["current_txt"],
         temp_col_name_discharge="tmp_charge",
-        states=STATES,
+        states=states,
     )
 
 
@@ -373,16 +407,21 @@ def capacity_splitter(raw):
     headers = get_headers_normal()
     return state_splitter(
         raw,
-        base_col_name="charge_capacity", n_charge=1, n_discharge=1,
-        new_col_name_charge=headers["charge_capacity_txt"], new_col_name_discharge=headers["discharge_capacity_txt"],
-        temp_col_name_charge="tmp_charge", temp_col_name_discharge="tmp_discharge",
-        states=STATES,
+        base_col_name="charge_capacity",
+        n_charge=1,
+        n_discharge=1,
+        new_col_name_charge=headers["charge_capacity_txt"],
+        new_col_name_discharge=headers["discharge_capacity_txt"],
+        temp_col_name_charge="tmp_charge",
+        temp_col_name_discharge="tmp_discharge",
+        states=states,
     )
 
 
 def test_loader():
     import pathlib
     import matplotlib.pyplot as plt
+
     pd.options.display.max_columns = 100
     # prms.Reader.sep = "\t"
     datadir = pathlib.Path(

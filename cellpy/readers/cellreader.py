@@ -497,7 +497,10 @@ class CellpyData(object):
             self.tester = "biologic"
 
         elif instrument in ["maccor", "maccor_txt"]:
-            from cellpy.readers.instruments.maccor_txt import MaccorTxtLoader as RawLoader
+            from cellpy.readers.instruments.maccor_txt import (
+                MaccorTxtLoader as RawLoader,
+            )
+
             logging.warning("Experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "maccor"

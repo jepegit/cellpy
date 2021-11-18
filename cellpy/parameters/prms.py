@@ -147,11 +147,28 @@ Arbin = {
     "SQL_Driver": "SQL Server",
 }
 
-Maccor = {
-    "skiprows": 2,
+Maccor = {}
+
+maccor_model_1 = {
+    "name": "one",
+    "skiprows": 2,  # 12 for other file
     "sep": "\t",
-    "header": 1
+    "header": 1,  # 0 for other file
+    "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
 }
+
+maccor_model_2 = {
+    "name": "two",
+    "skiprows": 12,
+    "sep": "\t",
+    "header": 0,
+    "encoding": "ISO-8859-1",
+}
+
+Maccor["one"] = maccor_model_1
+Maccor["two"] = maccor_model_2
+
+Maccor["default_model"] = "one"
 
 # Register pre-defined instruments:
 

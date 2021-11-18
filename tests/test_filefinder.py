@@ -9,6 +9,7 @@ log.setup_logging(default_level="DEBUG")
 @pytest.fixture(scope="module")
 def env():
     from cellpy.parameters import prms
+
     prms.Paths["outdatadir"] = fdv.output_dir
     prms.Paths["rawdatadir"] = fdv.raw_data_dir
     prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir

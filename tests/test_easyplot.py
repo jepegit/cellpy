@@ -69,6 +69,7 @@ def test_journal_loading_xlsx():
 
 def test_journal_saving_xlsx():
     import tempfile
+
     temporary_directory = tempfile.mkdtemp()
     journal_file_xlsx = Path(fdv.journal_dir) / fdv.journal_file_full_xlsx
     assert journal_file_xlsx.is_file()

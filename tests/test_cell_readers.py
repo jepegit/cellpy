@@ -20,6 +20,7 @@ log.setup_logging(default_level="DEBUG")
 def cellpy_data_instance():
     from cellpy import cellreader
     from cellpy import log
+
     log.setup_logging(default_level="INFO")
 
     return cellreader.CellpyData()
@@ -29,11 +30,14 @@ def cellpy_data_instance():
 def dataset():
     from cellpy import cellreader
     from cellpy import log
+
     log.setup_logging(default_level="INFO")
     p = pathlib.Path(fdv.cellpy_file_path)
 
     if not p.is_file():
-        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
+        logging.info(
+            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
+        )
         a = cellreader.CellpyData()
         a.from_raw(fdv.res_file_path)
         a.set_mass(1.0)

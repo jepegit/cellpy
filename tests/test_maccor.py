@@ -26,6 +26,7 @@ def dataset():
 
 def test_set_instrument(cellpy_data_instance):
     import os
+
     instrument = "maccor_txt"
     cellpy_data_instance.set_instrument(instrument=instrument)
     cellpy_data_instance.from_raw(fdv.mcc_file_path, sep="\t")
@@ -41,10 +42,13 @@ def test_set_instrument(cellpy_data_instance):
 
 def test_cellpy_get():
     instrument = "maccor_txt"
-    c = get(fdv.mcc_file_path, instrument=instrument, sep="\t")
+    c = get(fdv.mcc_file_path, instrument=instrument, sep="\t", logging_mode="DEBUG")
     assert len(c.cell.raw) == 6704
 
 # def test_cellpy_get_2():
+#     from cellpy import prms
+#
+#     prms.Instruments.Maccor.format_params = "two"
 #     instrument = "maccor_txt"
-#     c = get(fdv.mcc_file_path2, instrument=instrument, skiprows=13, sep="\t")
+#     c = get(fdv.mcc_file_path2, instrument=instrument)
 #     assert len(c.cell.raw) == 6704
