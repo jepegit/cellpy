@@ -113,7 +113,9 @@ class MaccorTxtLoader(Loader):
 
     def __init__(self, **kwargs):
         """initiates the MaccorTxtLoader class"""
-        self.sep = kwargs.pop("sep", prms.Reader.sep)
+        self.sep = kwargs.pop("sep", prms.Instruments.Maccor.sep)
+        self.skiprows = kwargs.pop("skiprows", prms.Instruments.Maccor.skiprows)
+        self.header = kwargs.pop("header", prms.Instruments.Maccor.header)
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
         self.raw_headers_normal = normal_headers_renaming_dict
@@ -271,8 +273,10 @@ class MaccorTxtLoader(Loader):
 
         return data
 
-    def _query_csv(self, name, sep=None, skiprows=2, header=1):
+    def _query_csv(self, name, sep=None, skiprows=None, header=None):
         sep = sep or self.sep
+        skiprows = skiprows or self.skiprows
+        header = header or self.header
         data_df = pd.read_csv(name, sep=sep, skiprows=skiprows, header=header)
         return data_df
 

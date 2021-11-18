@@ -147,9 +147,16 @@ Arbin = {
     "SQL_Driver": "SQL Server",
 }
 
+Maccor = {
+    "skiprows": 2,
+    "sep": "\t",
+    "header": 1
+}
+
 # Register pre-defined instruments:
 
 Instruments["Arbin"] = Arbin
+Instruments["Maccor"] = Maccor
 
 # --------------------------
 # Materials

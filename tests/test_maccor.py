@@ -39,7 +39,12 @@ def test_set_instrument(cellpy_data_instance):
     shutil.rmtree(temp_dir)
 
 
-def test_cellpy_get(cellpy_data_instance):
+def test_cellpy_get():
     instrument = "maccor_txt"
     c = get(fdv.mcc_file_path, instrument=instrument, sep="\t")
     assert len(c.cell.raw) == 6704
+
+# def test_cellpy_get_2():
+#     instrument = "maccor_txt"
+#     c = get(fdv.mcc_file_path2, instrument=instrument, skiprows=13, sep="\t")
+#     assert len(c.cell.raw) == 6704
