@@ -1,8 +1,5 @@
 """Maccor txt data"""
 import logging
-from dataclasses import dataclass, field
-
-from dateutil.parser import parse
 
 import pandas as pd
 
@@ -17,110 +14,16 @@ from cellpy import prms
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
-SUPPORTED_MODELS = [("one", "maccor_txt_one"), ("two", "maccor_txt_two")]
-
-# Should obviously make this smoother:
-model_01 = register_configuration(SUPPORTED_MODELS[0][0], SUPPORTED_MODELS[0][1])
-all_supported_models = dict(model_01=model_01)
-
-print("\n")
-print(80 * "-")
-print(model_01)
-# ----------- model 01 --------------------
-
-# not updated yet
-unit_labels = {
-    "resistance": "Ohms",
-    # not observed yet:
-    "time": "s",
-    "current": "A",
-    "voltage": "V",
-    "power": "W",
-    "capacity": "Ah",
-    "energy": "Wh",
-    "temperature": "C",
-}
-
-# not observed yet
-incremental_unit_labels = {
-    "dv_dt": f"{unit_labels['voltage']}/{unit_labels['time']}",
-    "dq_dv": f"{unit_labels['capacity']}/{unit_labels['voltage']}",
-    "dv_dq": f"{unit_labels['voltage']}/{unit_labels['capacity']}",
-}
-
-normal_headers_renaming_dict = {
-    "data_point_txt": f"Rec#",
-    "datetime_txt": f"DPt Time",
-    "test_time_txt": f"TestTime",
-    "step_time_txt": f"StepTime",
-    "cycle_index_txt": f"Cyc#",
-    "step_index_txt": f"Step",
-    "current_txt": f"Amps",
-    "voltage_txt": f"Volts",
-    "power_txt": f"Watt-hr",
-    "charge_capacity_txt": f"Amp-hr",
-    "charge_energy_txt": f"Watt-hr",
-    "ac_impedance_txt": f"ACImp/{unit_labels['resistance']}",
-    "internal_resistance_txt": f"DCIR/{unit_labels['resistance']}",
-    # not observed yet:
-    "sub_step_index_txt": f"Sub_Step_Index",  # new
-    "sub_step_time_txt": f"Sub_Step_Time",  # new
-    "discharge_capacity_txt": f"Discharge_Capacity({unit_labels['capacity']})",
-    "discharge_energy_txt": f"Discharge_Energy({unit_labels['energy']})",
-    "dv_dt_txt": f"dV/dt({incremental_unit_labels['dv_dt']})",  # TODO: include the new cols into internal settings
-    "dq_dv_txt": f"dV/dt({incremental_unit_labels['dq_dv']})",  # TODO: include the new cols into internal settings
-    "dv_dq_txt": f"dV/dt({incremental_unit_labels['dv_dq']})",  # TODO: include the new cols into internal settings
-    "acr_txt": f"Internal_Resistance({unit_labels['resistance']})",  # TODO: include the new cols into internal settings
-    "aci_phase_angle_txt": f"ACI_Phase_Angle",
-    "ref_aci_phase_angle_txt": f"Reference_ACI_Phase_Angle",
-    "ref_ac_impedance_txt": f"Reference_AC_Impedance",
-    "is_fc_data_txt": f"Is_FC_Data",
-    "test_id_txt": f"Test_ID",
-    "ref_voltage_txt": f"Reference_Voltage({unit_labels['resistance']})",  # new
-    "frequency_txt": f"Frequency",  # new
-    "amplitude_txt": f"Amplitude",  # new
-    "channel_id_txt": f"Channel_ID",  # new Arbin SQL Server
-    "data_flag_txt": f"Data_Flags",  # new Arbin SQL Server
-    "test_name_txt": f"Test_Name",  # new Arbin SQL Server
-}
-
-# not observed yet
-not_implemented_in_cellpy_yet_renaming_dict = {
-    f"Power({unit_labels['power']})": "power",
-    f"ACR({unit_labels['resistance']})": "acr",
-    f"dV/dt({incremental_unit_labels['dv_dt']})": "dv_dt",
-    f"dQ/dV({incremental_unit_labels['dq_dv']})": "dq_dv",
-    f"dV/dQ({incremental_unit_labels['dv_dq']})": "dv_dq",
-}
-
-columns_to_keep = [
-    "TestTime",
-    "Rec#",
-    "Cyc#",
-    "Step",
-    "StepTime",
-    "Amp-hr",
-    "Watt-hr",
-    "Amps",
-    "Volts",
-    "State",
-    "ES",
-    "DPt Time",
-    "ACImp/Ohms",
-    "DCIR/Ohms",
-]
-
-states = {
-    "column_name": "State",
-    "charge_keys": ["C"],
-    "discharge_keys": ["D"],
-    "rest_keys": ["R"],
-}
+SUPPORTED_MODELS = {"one": "maccor_txt_one",
+                    "two": "maccor_txt_two"}
 
 
-# NEXT: rename to ModelParameters class e.g.
-#   m = all_supported_models["model_01"]
-#  rename normal_headers_renaming_dict to m.normal_headers_renaming_dict etc.
+def configuration(name):
+    """Register and load model configuration"""
+    model_module_name = SUPPORTED_MODELS.get(name, None)
+    if model_module_name is None:
+        raise Exception(f"the model {name} does not have any defined configuration")
+    return register_configuration(name, model_module_name)
 
 
 class MaccorTxtLoader(Loader):
@@ -130,6 +33,7 @@ class MaccorTxtLoader(Loader):
         """initiates the MaccorTxtLoader class"""
         model = kwargs.pop("model", prms.Instruments.Maccor.default_model)
         self.format_params = prms.Instruments.Maccor[model]
+        self.config_params = configuration(model)
 
         logging.debug(self.format_params)
         self.sep = kwargs.pop("sep", self.format_params["sep"])
@@ -143,6 +47,7 @@ class MaccorTxtLoader(Loader):
             get_headers_normal()
         )  # the column headers defined by cellpy
 
+    # TODO: Move this away
     @staticmethod
     def get_headers_normal():
         """Defines the so-called normal column headings"""
@@ -162,6 +67,7 @@ class MaccorTxtLoader(Loader):
         return headers
 
     # not updated yet
+    # Should be moved to self.config_params and implemented in the parent class
     @staticmethod
     def get_raw_units():
         raw_units = dict()
@@ -171,6 +77,7 @@ class MaccorTxtLoader(Loader):
         return raw_units
 
     # not updated yet
+    # Should be moved to self.config_params and implemented in the parent class
     @staticmethod
     def get_raw_limits():
         """returns a dictionary with resolution limits"""
@@ -204,7 +111,7 @@ class MaccorTxtLoader(Loader):
             self.sep = sep
         data_df = self._query_csv(name)
         if not self.keep_all_columns:
-            data_df = data_df[columns_to_keep]
+            data_df = data_df[self.config_params.columns_to_keep]
 
         data = Cell()
 
@@ -247,8 +154,8 @@ class MaccorTxtLoader(Loader):
         if rename_headers:
             columns = {}
             for key in self.cellpy_headers_normal:
-                if key in normal_headers_renaming_dict:
-                    old_header = normal_headers_renaming_dict[key]
+                if key in self.config_params.normal_headers_renaming_dict:
+                    old_header = self.config_params.normal_headers_renaming_dict[key]
                     new_header = self.cellpy_headers_normal[key]
                     columns[old_header] = new_header
 
@@ -259,14 +166,14 @@ class MaccorTxtLoader(Loader):
 
             data.raw.rename(
                 index=str,
-                columns=not_implemented_in_cellpy_yet_renaming_dict,
+                columns=self.config_params.not_implemented_in_cellpy_yet_renaming_dict,
                 inplace=True,
             )
 
         if split_current:
-            data.raw = current_splitter(data.raw)
+            data.raw = current_splitter(data.raw, self.config_params.states)
         if split_caps:
-            data.raw = capacity_splitter(data.raw)
+            data.raw = capacity_splitter(data.raw, self.config_params.states)
 
         if set_index:
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
@@ -318,6 +225,22 @@ def state_splitter(
     temp_col_name_discharge="tmp_discharge",
     states=None,
 ):
+    """Split states.
+
+    Args:
+        raw: the raw data dataframe
+        base_col_name: what column to split
+        n_charge: sign of charge (e.g. 1 for positive)
+        n_discharge: sign of discharge (e.g. -1 for negative)
+        new_col_name_charge: str
+        new_col_name_discharge: str
+        temp_col_name_charge: str
+        temp_col_name_discharge: str
+        states: dictionary defining the state identification character/string
+
+    Returns: raw data
+
+    """
     headers = get_headers_normal()
     cycle_index_hdr = headers["cycle_index_txt"]
     data_point = headers["data_point_txt"]
@@ -388,7 +311,8 @@ def state_splitter(
     return raw
 
 
-def current_splitter(raw):
+def current_splitter(raw, states):
+    """Split current into positive and negative"""
     headers = get_headers_normal()
     return state_splitter(
         raw,
@@ -403,7 +327,8 @@ def current_splitter(raw):
     )
 
 
-def capacity_splitter(raw):
+def capacity_splitter(raw, states):
+    """split capacity into charge and discharge"""
     headers = get_headers_normal()
     return state_splitter(
         raw,

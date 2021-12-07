@@ -168,6 +168,7 @@ class LabJournal(BaseJournal):
             meta = pd.read_excel(
                 temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl"
             )
+
         except (KeyError, ValueError):
             print(f"Worksheet '{meta_sheet_name}' does not exist.")
             meta = None
@@ -181,7 +182,7 @@ class LabJournal(BaseJournal):
         if meta is None:
             meta = _meta
         else:
-            meta = cls._unpack_meta(meta)
+            meta = cls._unpack_meta(meta) or _meta
 
         if session is None:
             logging.debug(f"no session - generating empty one")
@@ -224,8 +225,10 @@ class LabJournal(BaseJournal):
 
     @classmethod
     def _unpack_meta(cls, meta):
-        # TODO: add try-except
-        meta = meta.loc[:, ["parameter", "value"]]
+        try:
+            meta = meta.loc[:, ["parameter", "value"]]
+        except KeyError:
+            return
         meta = meta.set_index("parameter")
         return meta.to_dict()["value"]
 
