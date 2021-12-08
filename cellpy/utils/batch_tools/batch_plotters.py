@@ -73,23 +73,23 @@ def create_plot_option_dicts(
     """
 
     logging.debug("    - creating plot-options-dict (for bokeh)")
-
     if palette is None:
         try:
             # palette = bokeh.palettes.brewer['YlGnBu']
-            palette = bokeh.palettes.d3["Category10"]
+            palette = bokeh.palettes.d3["Category20"]
             # palette = bokeh.palettes.brewer[prms.Batch.bokeh_palette']
-        except (NameError, AttributeError):
-            palette = [
-                ["k"],
-                ["k", "r"],
-                ["k", "r", "b"],
-                ["k", "r", "b", "g"],
-                ["k", "r", "b", "g", "c"],
-                ["k", "r", "b", "g", "c", "m"],
-                ["k", "r", "b", "g", "c", "m", "y"],
-            ]
-
+        except (NameError, AttributeError) as e:
+            logging.info(f"could not create the palette {e}")
+            palette = {
+                1: ["k"],
+                3: ["k", "r"],
+                4: ["k", "r", "b"],
+                5: ["k", "r", "b", "g"],
+                6: ["k", "r", "b", "g", "c"],
+                7: ["k", "r", "b", "g", "c", "m"],
+                8: ["k", "r", "b", "g", "c", "m", "y"],
+            }
+        max_palette_row = max(palette.keys())
     if marker_types is None:
         marker_types = [
             "circle",
@@ -114,7 +114,7 @@ def create_plot_option_dicts(
             colors = palette[3]
 
         else:
-            colors = palette[min(6, number_of_groups)]
+            colors = palette[min(max_palette_row, number_of_groups)]
 
     sub_groups = info[hdr_journal.sub_group].unique()
     marker_it = itertools.cycle(marker_types)
@@ -182,7 +182,6 @@ def create_summary_plot_bokeh(
     sub_cols_charge = None
     sub_cols_discharge = None
     legend_collection = []
-
     if isinstance(charge_capacity.columns, pd.MultiIndex):
         cols = charge_capacity.columns.get_level_values(1)
         sub_cols_charge = charge_capacity.columns.get_level_values(0).unique()
@@ -197,7 +196,6 @@ def create_summary_plot_bokeh(
             ]
     else:
         cols = charge_capacity.columns
-
     logging.debug("iterate cols")
     for cc in cols:
         g, sg = look_up_group(info, cc)
@@ -289,7 +287,6 @@ def create_summary_plot_bokeh(
             )
 
             legend_items.extend([dch_m, dch_l])
-
         legend_collection.append((l, legend_items))
     logging.debug("exiting summary plotter")
     return p, legend_collection
@@ -312,7 +309,6 @@ def plot_cycle_life_summary_bokeh(
 
     idx = pd.IndexSlice
     all_legend_items = []
-
     if add_rate:
 
         try:
@@ -381,8 +377,8 @@ def plot_cycle_life_summary_bokeh(
         width=width,
         height=h_eff,
     )
-
     all_legend_items.extend(legends_eff)
+
     if not ir_charge.empty:
         cap_x_axis = None
     else:
@@ -642,6 +638,7 @@ def summary_plotting_engine(**kwargs):
 
 def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
+
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
@@ -681,13 +678,18 @@ def _preparing_data_and_plotting(**kwargs):
                 summaries = pd.concat(
                     experiment.memory_dumped["summary_engine"], keys=keys, axis=1
                 )
+
                 canvas = _plotting_data(
                     pages, summaries, width, height, height_fractions, **kwargs
                 )
                 farms.append(canvas)
 
             except KeyError:
-                logging.info("no summary exists")
+                logging.info("could not parse the summaries")
+                logging.info(" - might be new a bug?")
+                logging.info(" - might be a known bug related to dropping cells (b.drop)")
+                logging.info(" - maybe try reloading the data helps?")
+
     return farms
 
 

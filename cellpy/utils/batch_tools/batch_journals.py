@@ -104,7 +104,7 @@ class LabJournal(BaseJournal):
         return pathlib.Path(p)
 
     @classmethod
-    def read_journal_jason_file(cls, file_name):
+    def read_journal_jason_file(cls, file_name, **kwargs):
         logging.debug(f"json loader starting on {file_name}")
         with open(file_name, "r") as infile:
             top_level_dict = json.load(infile)

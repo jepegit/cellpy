@@ -385,11 +385,9 @@ class CustomLoader(Loader):
                 )
 
         if step_time_conversion:
-            # "unit" can be lifted to an argument later (will need a parser for the step_time_conversion string)
-            unit = "ns"
             if step_time_conversion.lower() == "time_to_sec":
                 raw[step_time_hdr] = pd.to_timedelta(
-                    raw[step_time_hdr], unit=unit
+                    raw[step_time_hdr]
                 ).dt.total_seconds()
             else:
                 raise NotImplementedError(
@@ -503,7 +501,24 @@ class CustomLoader(Loader):
         return new_rundata
 
 
-if __name__ == "__main__":
+def load_paal():
+    import pathlib
+    from pprint import pprint
+    elkem_tester = pathlib.Path(r"C:\scripts\tasks\sibanode\2021_08_11_round_robbin\elkem_format.yml")
+    prms.Instruments.custom_instrument_definitions_file = elkem_tester
+    print("running this")
+    loader = CustomLoader()
+    # loader.pick_definition_file()
+    datadir = r"C:\scripts\tasks\sibanode\2021_08_11_round_robbin\data\raw\elkem\elkem"
+    datadir = pathlib.Path(datadir)
+    my_file_name = datadir / "240014-1-1-1621.xls"
+    # print(help(loader.get_raw_units))
+    # print(help(loader.get_raw_limits))
+    # print(f"Trying to load {my_file_name}")
+    loader.load(my_file_name)
+
+
+def load_example_file():
     import pathlib
     from pprint import pprint
 
@@ -513,7 +528,11 @@ if __name__ == "__main__":
     datadir = "/Users/jepe/scripting/cellpy/test_data"
     datadir = pathlib.Path(datadir)
     my_file_name = datadir / "custom_data_001.csv"
-    # print(help(loader.get_raw_units))
-    # print(help(loader.get_raw_limits))
-    # print(f"Trying to load {my_file_name}")
+    print(help(loader.get_raw_units))
+    print(help(loader.get_raw_limits))
+    print(f"Trying to load {my_file_name}")
     loader.load(my_file_name)
+
+
+if __name__ == "__main__":
+    load_paal()
