@@ -65,9 +65,11 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def loader(self, *args, **kwargs):
+    def loader(self, *args, **kwargs) -> list:
         """Loads data into a Cell object and returns it"""
         pass
 
-    def identify_last_data_point(self, data):
+    @staticmethod
+    def identify_last_data_point(data):
+        """This method is used to find the last record in the data."""
         return core.identify_last_data_point(data)

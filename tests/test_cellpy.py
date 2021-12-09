@@ -155,6 +155,8 @@ def test_get():
     )
     cellpy.get(filename=fdv.cellpy_file_path)
     cellpy.get()
+    cellpy.get(filename=fdv.cellpy_file_path, post_processor_hook=print)  # should only give a warning
+    cellpy.get(filename=fdv.res_file_path, post_processor_hook=print)  # should print
 
 
 # @pytest.mark.unimportant

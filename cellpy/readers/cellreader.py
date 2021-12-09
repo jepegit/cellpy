@@ -1099,13 +1099,15 @@ class CellpyData(object):
         self._invent_a_name()
         return self
 
-    def from_raw(self, file_names=None, **kwargs):
+    def from_raw(self, file_names=None, post_processor_hook=None, **kwargs):
         """Load a raw data-file.
 
         Args:
             file_names (list of raw-file names): uses CellpyData.file_names if
                 None. If the list contains more than one file name, then the
                 runs will be merged together.
+            post_processor_hook (callable): function that will be applied to the
+                cellpy.dataset object after initial loading and before it is
 
         Other keywords depending on loader:
             [ArbinLoader]:
@@ -1144,7 +1146,9 @@ class CellpyData(object):
         for f in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{f}")
-            new_tests = raw_file_loader(f, **kwargs)
+            new_tests = raw_file_loader(f, **kwargs)  # list of tests
+            if post_processor_hook is not None:
+                new_tests = post_processor_hook(new_tests)
 
             if new_tests:
 
@@ -5365,6 +5369,7 @@ def get(
     filename=None,
     mass=None,
     instrument=None,
+    instrument_file=None,
     nominal_capacity=None,
     logging_mode=None,
     cycle_mode=None,
@@ -5377,6 +5382,7 @@ def get(
         filename (str, os.PathLike, or list of raw-file names): path to file(s)
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
         instrument (str): instrument to use (defaults to the one in your cellpy config file) (arbin_res, arbin_sql, arbin_sql_csv, arbin_sql_xlxs)
+        instrument_file (str or path): yaml file for custom file type
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
         logging_mode (str): "INFO" or "DEBUG"
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
@@ -5396,7 +5402,12 @@ def get(
 
     db_readers = ["arbin_sql"]
 
-    if instrument is not None:
+    if instrument_file is not None:
+        # TODO: make tests for this:
+        cellpy_instance.set_instrument(instrument="custom")
+        prms.Instruments.custom_instrument_definitions_file = instrument_file
+
+    elif instrument is not None:
         cellpy_instance.set_instrument(instrument=instrument)
 
     if cellpy_instance.tester in db_readers:
@@ -5419,6 +5430,8 @@ def get(
 
                 if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
                     logging.info(f"Loading cellpy-file: {filename}")
+                    if kwargs.pop("post_processor_hook", None) is not None:
+                        logging.warning("post_processor_hook is not allowed when loading cellpy-files")
                     cellpy_instance.load(filename, **kwargs)
 
                     # in case the user wants to give another mass to the cell:
