@@ -106,7 +106,7 @@ class CustomLoader(Loader):
     xxx
     xxx
 
-
+    [doc not finished yet]
     """
 
     def __init__(self):
@@ -114,20 +114,20 @@ class CustomLoader(Loader):
 
         self.logger = logging.getLogger(__name__)
         self.headers_normal = get_headers_normal()
-        self.definition_file = self.pick_definition_file()
+        self.definition_file = self._pick_definition_file()
         self.units = None
         self.limits = None
         self.headers = None
         self.variables = None
         self.structure = None
-        self.parse_definition_file()
+        self._parse_definition_file()
 
     @staticmethod
-    def pick_definition_file():
+    def _pick_definition_file():
         return prms.Instruments.custom_instrument_definitions_file
 
     @staticmethod
-    def load_definition_file():
+    def _load_definition_file():
         definitions_file = pathlib.Path(
             prms.Instruments.custom_instrument_definitions_file
         )
@@ -142,14 +142,14 @@ class CustomLoader(Loader):
 
     # TODO: @jepe - create yaml file example (from DEFAULT_CONFIG)
 
-    def parse_definition_file(self):
+    def _parse_definition_file(self):
         if self.definition_file is None:
             logging.info("no definition file for custom format")
             logging.info("using default settings")
             settings = DEFAULT_CONFIG
         else:
             logging.info("loading definition file for custom format")
-            settings = self.load_definition_file()
+            settings = self._load_definition_file()
 
         self.units = settings["units"]
         self.limits = settings["limits"]
@@ -191,6 +191,18 @@ class CustomLoader(Loader):
             return v
 
     def loader(self, file_name, **kwargs):
+        """Custom loader method
+
+        Args:
+            file_name (path): name of the file with the raw data
+            **kwargs: optional key-word arguments
+                pre_processor_hook (callable): function to apply before returning
+                    the data (run after renaming the cols but before changing the structure)
+
+        Returns:
+            List of cellpy Cell objects.
+        """
+        pre_processor_hook = kwargs.pop("pre_processor_hook", None)
         new_tests = []
         var_dict = dict()
 
@@ -287,6 +299,9 @@ class CustomLoader(Loader):
             raw = self._parse_xls_data(file_name)
 
         raw = self._rename_cols(raw)
+        if pre_processor_hook is not None:
+            logging.debug("running pre-processing-hook")
+            raw = pre_processor_hook(raw)
 
         capacity_structure = self.structure.get("capacity_structure", "cellpy")
         if capacity_structure == "cellpy":
@@ -348,7 +363,7 @@ class CustomLoader(Loader):
 
                     good_cycles.append(i)
 
-                except:
+                except Exception:
                     bad_cycles.append(i)
 
             raw[charge_cap_hdr] = raw["new_c"]

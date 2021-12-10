@@ -441,11 +441,12 @@ class CellpyData(object):
         return cells
 
     # TODO: @jepe - merge the _set_xxinstrument methods into one method
-    def set_instrument(self, instrument=None, **kwargs):
+    def set_instrument(self, instrument=None, instrument_file=None, **kwargs):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Args:
             instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]
+            instrument_file: (path) instrument definition file
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
@@ -507,14 +508,20 @@ class CellpyData(object):
 
         elif instrument.startswith("custom"):
             logging.debug(f"using custom instrument: {instrument}")
-            _instrument = instrument.split(custom_instrument_splitter)
-            try:
-                custom_instrument_definition_file = _instrument[1]
+            if not instrument_file:
+                _instrument = instrument.split(custom_instrument_splitter)
+                try:
+                    instrument_file = _instrument[1]
+
+                except IndexError:
+                    logging.debug("no definition file provided")
+                else:
+                    instrument_file = None
+
+            if instrument_file:
                 prms.Instruments.custom_instrument_definitions_file = (
-                    custom_instrument_definition_file
+                    instrument_file
                 )
-            except IndexError:
-                logging.debug("no definition file provided")
 
             from cellpy.readers.instruments.custom import CustomLoader as RawLoader
 
@@ -1099,15 +1106,16 @@ class CellpyData(object):
         self._invent_a_name()
         return self
 
-    def from_raw(self, file_names=None, post_processor_hook=None, **kwargs):
+    def from_raw(self, file_names=None, pre_processor_hook=None, post_processor_hook=None, **kwargs):
         """Load a raw data-file.
 
         Args:
             file_names (list of raw-file names): uses CellpyData.file_names if
                 None. If the list contains more than one file name, then the
                 runs will be merged together.
+            pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
-                cellpy.dataset object after initial loading and before it is
+                cellpy.dataset object after initial loading.
 
         Other keywords depending on loader:
             [ArbinLoader]:
@@ -1116,7 +1124,7 @@ class CellpyData(object):
                 dataset_number (int): the data set number to select if you are dealing
                     with arbin files with more than one data-set.
                 data_points (tuple of ints): load only data from data_point[0] to
-                    data_point[1] (use None for infinite). NOT IMPLEMEMTED YET.
+                    data_point[1] (use None for infinite). NOT IMPLEMENTED YET.
 
         """
         # This function only loads one test at a time (but could contain several
@@ -1139,37 +1147,38 @@ class CellpyData(object):
         # test is currently a list of tests - this option will be removed in the future
         # so set_number is hard-coded to 0, i.e. actual-test is always test[0]
         set_number = 0
-        test = None
+        cells = None
         counter = 0
         logging.debug("start iterating through file(s)")
 
-        for f in self.file_names:
+        for file_name in self.file_names:
             logging.debug("loading raw file:")
-            logging.debug(f"{f}")
-            new_tests = raw_file_loader(f, **kwargs)  # list of tests
+            logging.debug(f"{file_name}")
+            new_cells = raw_file_loader(file_name, pre_processor_hook=pre_processor_hook, **kwargs)  # list of tests
             if post_processor_hook is not None:
-                new_tests = post_processor_hook(new_tests)
+                # REMARK! this needs to be changed if we stop returning the datasets in a list
+                # (i.e. if we chose to remove option for having more than one test pr instance)
+                new_cells = [post_processor_hook(n) for n in new_cells]
 
-            if new_tests:
-
+            if new_cells:
                 # retrieving the first cell data (e.g. first file)
-                if test is None:
+                if cells is None:
                     logging.debug("getting data from first file")
-                    if new_tests[set_number].no_data:
+                    if new_cells[set_number].no_data:
                         logging.debug("NO DATA")
                     else:
-                        test = new_tests
+                        cells = new_cells
 
                 # appending cell data file to existing
                 else:
                     logging.debug("continuing reading files...")
-                    _test = self._append(test[set_number], new_tests[set_number])
+                    _cells = self._append(cells[set_number], new_cells[set_number])
 
-                    if not _test:
-                        logging.warning(f"EMPTY TEST: {f}")
+                    if not _cells:
+                        logging.warning(f"NO CELLS FOUND: {file_name}")
                         continue
 
-                    test[set_number] = _test
+                    cells[set_number] = _cells
 
                     # retrieving file info in a for-loop in case of multiple files
                     # Remark!
@@ -1180,11 +1189,11 @@ class CellpyData(object):
                     logging.debug("added the data set - merging file info")
                     # TODO: include this into prms (and config-file):
                     max_raw_files_to_merge = 20
-                    for j in range(len(new_tests[set_number].raw_data_files)):
-                        raw_data_file = new_tests[set_number].raw_data_files[j]
-                        file_size = new_tests[set_number].raw_data_files_length[j]
-                        test[set_number].raw_data_files.append(raw_data_file)
-                        test[set_number].raw_data_files_length.append(file_size)
+                    for j in range(len(new_cells[set_number].raw_data_files)):
+                        raw_data_file = new_cells[set_number].raw_data_files[j]
+                        file_size = new_cells[set_number].raw_data_files_length[j]
+                        cells[set_number].raw_data_files.append(raw_data_file)
+                        cells[set_number].raw_data_files_length.append(file_size)
                         counter += 1
                         if counter > max_raw_files_to_merge:
                             logging.debug("ERROR? Too many files to merge")
@@ -1199,8 +1208,8 @@ class CellpyData(object):
         logging.debug("finished loading the raw-files")
 
         test_exists = False
-        if test:
-            if test[0].no_data:
+        if cells:
+            if cells[0].no_data:
                 logging.debug(
                     "the first dataset (or only dataset) loaded from the raw data file is empty"
                 )
@@ -1210,9 +1219,9 @@ class CellpyData(object):
         if test_exists:
             if not prms.Reader.sorted_data:
                 logging.debug("sorting data")
-                test[set_number] = self._sort_data(test[set_number])
-
-            self.cells.append(test[set_number])
+                cells[set_number] = self._sort_data(cells[set_number])
+            # REMARK! If you want to allow for more than one cell pr instance, this needs to be replaced (for example using .extend)
+            self.cells.append(cells[set_number])
         else:
             logging.warning("No new datasets added!")
         self.number_of_datasets = len(self.cells)
@@ -5404,8 +5413,8 @@ def get(
 
     if instrument_file is not None:
         # TODO: make tests for this:
-        cellpy_instance.set_instrument(instrument="custom")
-        prms.Instruments.custom_instrument_definitions_file = instrument_file
+        cellpy_instance.set_instrument(instrument="custom", instrument_file=instrument_file)
+        # prms.Instruments.custom_instrument_definitions_file = instrument_file
 
     elif instrument is not None:
         cellpy_instance.set_instrument(instrument=instrument)

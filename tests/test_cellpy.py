@@ -145,7 +145,16 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
 
 
 def test_get():
+    # TODO: split into units and make more
+    #   different filetypes
+    #   pre and post processor hooks
+    #   optional kwargs
+
     import cellpy
+
+    def _my_post_processor(c):
+        print(c)
+        return c
 
     cellpy.get(
         filename=fdv.pec_file_path,
@@ -155,8 +164,8 @@ def test_get():
     )
     cellpy.get(filename=fdv.cellpy_file_path)
     cellpy.get()
-    cellpy.get(filename=fdv.cellpy_file_path, post_processor_hook=print)  # should only give a warning
-    cellpy.get(filename=fdv.res_file_path, post_processor_hook=print)  # should print
+    cellpy.get(filename=fdv.cellpy_file_path, post_processor_hook=_my_post_processor)  # should only give a warning
+    cellpy.get(filename=fdv.res_file_path, post_processor_hook=_my_post_processor)  # should print
 
 
 # @pytest.mark.unimportant
