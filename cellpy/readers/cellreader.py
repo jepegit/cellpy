@@ -512,20 +512,22 @@ class CellpyData(object):
                 _instrument = instrument.split(custom_instrument_splitter)
                 try:
                     instrument_file = _instrument[1]
+                    logging.debug(f"provided instrument file through instrument splitter: {instrument_file}")
 
                 except IndexError:
                     logging.debug("no definition file provided")
-                else:
+                    logging.debug(instrument)
                     instrument_file = None
 
             if instrument_file:
+                logging.debug(f"setting instrument file: {instrument_file}")
                 prms.Instruments.custom_instrument_definitions_file = (
                     instrument_file
                 )
 
             from cellpy.readers.instruments.custom import CustomLoader as RawLoader
 
-            self._set_instrument(RawLoader)
+            self._set_instrument(RawLoader, **kwargs)
             self.tester = "custom"
 
         else:
@@ -834,7 +836,6 @@ class CellpyData(object):
             >>> ... cell_datas.append(cell_data)
             >>>
         """
-
         # This is a part of a dramatic API change. It will not be possible to
         # load more than one set of datasets (i.e. one single cellpy-file or
         # several raw-files that will be automatically merged)
@@ -1139,10 +1140,17 @@ class CellpyData(object):
 
         # file_type = self.tester
         instrument = kwargs.pop("instrument", None)
-        if instrument:
+        instrument_file = kwargs.pop("instrument_file", None)
+        if instrument_file:
+            logging.info("Setting custom instrument")
+            logging.info(f"-> {instrument}")
+            logging.info(f"-> instrument file: {instrument_file}")
+            self.set_instrument(instrument="custom", instrument_file=instrument_file)
+        elif instrument:
             logging.info("Setting custom instrument")
             logging.info(f"-> {instrument}")
             self.set_instrument(instrument)
+
         raw_file_loader = self.loader
         # test is currently a list of tests - this option will be removed in the future
         # so set_number is hard-coded to 0, i.e. actual-test is always test[0]

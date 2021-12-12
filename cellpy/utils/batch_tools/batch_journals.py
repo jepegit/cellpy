@@ -411,6 +411,7 @@ class LabJournal(BaseJournal):
         keys = []
         try:
             l_bad_cycle_numbers = []
+
             for k, v in session["bad_cycles"].items():
                 l_bad_cycle_numbers.append(pd.DataFrame(data=v, columns=[k]))
 
@@ -421,7 +422,7 @@ class LabJournal(BaseJournal):
             )
             frames.append(df_bad_cycle_numbers)
             keys.append("bad_cycles")
-        except KeyError:
+        except (KeyError, AttributeError):
             logging.debug("missing bad cycle numbers")
 
         df_bad_cells = pd.DataFrame(session["bad_cells"], columns=["cell_name"])
@@ -449,7 +450,7 @@ class LabJournal(BaseJournal):
     def generate_folder_names(self):
         """Set appropriate folder names."""
         logging.debug("creating folder names")
-        if self.project:
+        if self.project and isinstance(self.project, (pathlib.Path, str)):
             logging.debug("got project name")
             logging.debug(self.project)
             self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)

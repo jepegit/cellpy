@@ -124,6 +124,7 @@ class CustomLoader(Loader):
 
     @staticmethod
     def _pick_definition_file():
+        logging.debug(f"instrument file: {prms.Instruments.custom_instrument_definitions_file}")
         return prms.Instruments.custom_instrument_definitions_file
 
     @staticmethod
