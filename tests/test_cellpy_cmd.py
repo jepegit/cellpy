@@ -1,9 +1,6 @@
-import click
 from click.testing import CliRunner
 import pytest
 
-from cellpy import log
-from cellpy import prms
 import cellpy
 from cellpy import cli, prmreader
 

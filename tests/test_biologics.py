@@ -3,31 +3,19 @@
 import pytest
 import logging
 from cellpy import log
-from . import fdv
 
 log.setup_logging(default_level=logging.DEBUG)
 
 
 @pytest.fixture
-def cellpy_data_instance():
-    from cellpy import cellreader
-
-    return cellreader.CellpyData()
+def mpr_cell(cellpy_data_instance, parameters):
+    return cellpy_data_instance.load(parameters.mpr_cellpy_file_path)
 
 
-@pytest.fixture
-def dataset():
-    from cellpy import cellreader
-
-    d = cellreader.CellpyData()
-    d.load(fdv.mpr_cellpy_file_path)
-    return d
-
-
-def test_set_instrument(cellpy_data_instance):
+def test_set_instrument(cellpy_data_instance, parameters):
     instrument = "biologics_mpr"
     cellpy_data_instance.set_instrument(instrument=instrument)
-    cellpy_data_instance.from_raw(fdv.mpr_file_path)
+    cellpy_data_instance.from_raw(parameters.mpr_file_path)
     # cellpy_data_instance.make_step_table()
     # cellpy_data_instance.make_summary()
     # temp_dir = tempfile.mkdtemp()

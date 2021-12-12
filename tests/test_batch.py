@@ -21,8 +21,6 @@ from cellpy import prms
 from cellpy.utils import batch as batch
 from cellpy.utils import helpers
 
-from . import fdv
-
 log.setup_logging(default_level="DEBUG")
 
 
@@ -36,20 +34,20 @@ def clean_dir():
     return new_path
 
 
-@pytest.fixture(scope="module")
-def batch_instance(clean_dir):
-    prms.Paths["db_filename"] = fdv.db_file_name
+@pytest.fixture
+def batch_instance(clean_dir, parameters):
+    prms.Paths["db_filename"] = parameters.db_file_name
     prms.Paths["cellpydatadir"] = clean_dir
     prms.Paths["outdatadir"] = clean_dir
-    prms.Paths["rawdatadir"] = fdv.raw_data_dir
-    prms.Paths["db_path"] = fdv.db_dir
+    prms.Paths["rawdatadir"] = parameters.raw_data_dir
+    prms.Paths["db_path"] = parameters.db_dir
     prms.Paths["filelogdir"] = clean_dir
     prms.Paths["batchfiledir"] = clean_dir
     prms.Paths["notebookdir"] = clean_dir
     return batch
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def populated_batch(batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01"
@@ -61,7 +59,7 @@ def populated_batch(batch_instance):
     return b
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def cycling_experiment(batch_instance):
     experiment = batch_experiments.CyclingExperiment()
     experiment.journal.project = "ProjectOfRun"
@@ -73,7 +71,7 @@ def cycling_experiment(batch_instance):
     return experiment
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def updated_cycling_experiment(cycling_experiment):
     # warning: this test uses the same cellpy file that some of the other
     # tests updates from time to time. so if one of those tests fails and corrupts
@@ -142,9 +140,9 @@ def test_link(cycling_experiment):
     print(names)
 
 
-def test_load_from_file(batch_instance):
+def test_load_from_file(batch_instance, parameters):
     experiment = batch_experiments.CyclingExperiment()
-    pages = fdv.pages
+    pages = parameters.pages
     experiment.journal.from_file(pages)
 
 
@@ -163,8 +161,8 @@ def test_cycling_experiment_to_file(cycling_experiment):
     cycling_experiment.journal.to_file()
 
 
-def test_interact_with_cellpydata_get_cap(updated_cycling_experiment):
-    name = fdv.run_name_2
+def test_interact_with_cellpydata_get_cap(updated_cycling_experiment, parameters):
+    name = parameters.run_name_2
     capacity_voltage_df = updated_cycling_experiment.data[name].get_cap(cycle=1)
     assert len(capacity_voltage_df) == 1105
 

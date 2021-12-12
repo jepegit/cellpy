@@ -2,18 +2,8 @@ import pytest
 import logging
 from cellpy import log
 from cellpy.utils import ocv_rlx
-from . import fdv
 
 log.setup_logging(default_level=logging.DEBUG)
-
-
-@pytest.fixture
-def dataset():
-    from cellpy import cellreader
-
-    d = cellreader.CellpyData()
-    d.load(fdv.cellpy_file_path)
-    return d
 
 
 @pytest.mark.parametrize(

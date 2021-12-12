@@ -13,11 +13,8 @@ from . import fdv
 log.setup_logging(default_level="DEBUG")
 
 
-@pytest.fixture(scope="module")
-def cellpy_data_instance():
-    from cellpy import cellreader
-
-    return cellreader.CellpyData()
+def test_conftest(hello_world):
+    assert hello_world == "hello cellpy!"
 
 
 @pytest.fixture()

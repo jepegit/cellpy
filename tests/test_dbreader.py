@@ -1,5 +1,4 @@
 import pytest
-from . import fdv
 
 # parameters and variables specific for this module
 test_serial_number_one = 614
@@ -15,16 +14,16 @@ test_total_mass = 2.831
 test_areal_loading = 0.0
 
 
-@pytest.fixture(scope="module")
-def db_reader():
+@pytest.fixture
+def db_reader(parameters):
     from cellpy.readers import dbreader
     from cellpy.parameters import prms
 
-    prms.Paths["outdatadir"] = fdv.output_dir
-    prms.Paths["rawdatadir"] = fdv.raw_data_dir
-    prms.Paths["cellpydatadir"] = fdv.cellpy_data_dir
-    prms.Paths["db_path"] = fdv.db_dir
-    prms.Paths["db_filename"] = fdv.db_file_name
+    prms.Paths["outdatadir"] = parameters.output_dir
+    prms.Paths["rawdatadir"] = parameters.raw_data_dir
+    prms.Paths["cellpydatadir"] = parameters.cellpy_data_dir
+    prms.Paths["db_path"] = parameters.db_dir
+    prms.Paths["db_filename"] = parameters.db_file_name
     return dbreader.Reader()
 
 
@@ -143,9 +142,9 @@ def test_get_label(db_reader):
     assert output == "test"
 
 
-def test_get_cell_name(db_reader):
+def test_get_cell_name(db_reader, parameters):
     output = db_reader.get_cell_name(test_serial_number_one)
-    assert output == fdv.run_name
+    assert output == parameters.run_name
 
 
 def test_get_comment(db_reader):

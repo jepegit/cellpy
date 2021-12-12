@@ -9,55 +9,20 @@ import pathlib
 import cellpy.readers.core
 from cellpy.exceptions import DeprecatedFeature
 from cellpy import log, prms
-from . import fdv
 
 log.setup_logging(default_level="DEBUG")
 
+
 # TODO: refactor from 'dataset' to 'cell' manually (PyCharm cannot handle pytest)
-
-
-@pytest.fixture
-def cellpy_data_instance():
-    from cellpy import cellreader
-    from cellpy import log
-
-    log.setup_logging(default_level="INFO")
-
-    return cellreader.CellpyData()
-
-
-@pytest.fixture(scope="module")
-def dataset():
-    from cellpy import cellreader
-    from cellpy import log
-
-    log.setup_logging(default_level="INFO")
-    p = pathlib.Path(fdv.cellpy_file_path)
-
-    if not p.is_file():
-        logging.info(
-            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
-        )
-        a = cellreader.CellpyData()
-        a.from_raw(fdv.res_file_path)
-        a.set_mass(1.0)
-        a.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
-        a.save(fdv.cellpy_file_path)
-
-    b = cellreader.CellpyData()
-    b.load(fdv.cellpy_file_path)
-    return b
-
-
 # TODO: fix this: not smart to save cellpyfile that will be used by other modules
-def test_create_cellpyfile(cellpy_data_instance, tmp_path):
+def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     # create a cellpy file from the res-file (used for testing)
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(
         find_ocv=False, find_ir=True, find_end_voltage=True
     )
-    name = pathlib.Path(tmp_path) / pathlib.Path(fdv.cellpy_file_path).name
+    name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     logging.info(f"trying to save the cellpy file to {name}")
     cellpy_data_instance.save(name)
 
@@ -79,14 +44,14 @@ def test_xldate_as_datetime(xldate, datemode, option, expected):
     assert result == expected
 
 
-def test_raw_bad_data_cycle_and_step(cellpy_data_instance):
+def test_raw_bad_data_cycle_and_step(cellpy_data_instance, parameters):
     cycle = 5
     step = 10
     step_left = 11
     step_header = "step_index"
     cycle_header = "cycle_index"
 
-    cellpy_data_instance.from_raw(fdv.res_file_path, bad_steps=((cycle, step),))
+    cellpy_data_instance.from_raw(parameters.res_file_path, bad_steps=((cycle, step),))
 
     r = cellpy_data_instance.cell.raw
     steps = r.loc[r[cycle_header] == cycle, step_header].unique()
@@ -94,17 +59,17 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance):
     assert step_left in steps
 
 
-def test_raw_data_from_data_point(cellpy_data_instance):
+def test_raw_data_from_data_point(cellpy_data_instance, parameters):
     data_point_header = "data_point"
-    cellpy_data_instance.from_raw(fdv.res_file_path, data_points=(10_000, None))
+    cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, None))
 
     p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
     assert p1 == 10_000
 
 
-def test_raw_data_data_point(cellpy_data_instance):
+def test_raw_data_data_point(cellpy_data_instance, parameters):
     data_point_header = "data_point"
-    cellpy_data_instance.from_raw(fdv.res_file_path, data_points=(10_000, 10_200))
+    cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, 10_200))
 
     p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
     p2 = cellpy_data_instance.cell.raw[data_point_header].iloc[-1]
@@ -112,10 +77,10 @@ def test_raw_data_data_point(cellpy_data_instance):
     assert p2 == 10_200
 
 
-def test_raw_limited_loaded_cycles_prm(cellpy_data_instance):
+def test_raw_limited_loaded_cycles_prm(cellpy_data_instance, parameters):
     try:
         prms.Reader["limit_loaded_cycles"] = [2, 6]
-        cellpy_data_instance.from_raw(fdv.res_file_path)
+        cellpy_data_instance.from_raw(parameters.res_file_path)
         cycles = cellpy_data_instance.get_cycle_numbers()
     finally:
         prms.Reader["limit_loaded_cycles"] = None
@@ -128,25 +93,25 @@ def test_validate_dataset_number(dataset, number):
     dataset._validate_dataset_number(number)
 
 
-def test_cellpy_version_4(cellpy_data_instance):
-    f_old = fdv.cellpy_file_path_v4
+def test_cellpy_version_4(cellpy_data_instance, parameters):
+    f_old = parameters.cellpy_file_path_v4
     d = cellpy_data_instance.load(f_old, accept_old=True)
     v = d.cell.cellpy_file_version
     print(f"\nfile name: {f_old}")
     print(f"cellpy version: {v}")
 
 
-def test_cellpy_version_5(cellpy_data_instance):
-    f_old = fdv.cellpy_file_path_v5
+def test_cellpy_version_5(cellpy_data_instance, parameters):
+    f_old = parameters.cellpy_file_path_v5
     d = cellpy_data_instance.load(f_old, accept_old=True)
     v = d.cell.cellpy_file_version
     print(f"\nfile name: {f_old}")
     print(f"cellpy version: {v}")
 
 
-def test_merge(cellpy_data_instance):
-    f1 = fdv.res_file_path
-    f2 = fdv.res_file_path2
+def test_merge(cellpy_data_instance, parameters):
+    f1 = parameters.res_file_path
+    f2 = parameters.res_file_path2
     assert os.path.isfile(f1)
     assert os.path.isfile(f2)
     cellpy_data_instance.from_raw(f1)
@@ -170,15 +135,15 @@ def test_merge(cellpy_data_instance):
     assert pytest.approx(count_all, 0.001) == (count_first + count_second)
 
 
-def test_merge_auto_from_list():
+def test_merge_auto_from_list(parameters):
     from cellpy import cellreader
 
     cdi1 = cellreader.CellpyData()
     cdi2 = cellreader.CellpyData()
     cdi3 = cellreader.CellpyData()
 
-    f1 = fdv.res_file_path
-    f2 = fdv.res_file_path2
+    f1 = parameters.res_file_path
+    f2 = parameters.res_file_path2
     assert os.path.isfile(f1)
     assert os.path.isfile(f2)
 
@@ -357,18 +322,18 @@ def test_check64bit():
     logging.debug(f"OS 64bit? {b}")
 
 
-def test_search_for_files():
+def test_search_for_files(parameters):
     import os
     from cellpy import filefinder
 
     run_files, cellpy_file = filefinder.search_for_files(
-        fdv.run_name, raw_file_dir=fdv.raw_data_dir, cellpy_file_dir=fdv.output_dir
+        parameters.run_name, raw_file_dir=parameters.raw_data_dir, cellpy_file_dir=parameters.output_dir
     )
-    print(f"fdv.res_file_path: {fdv.res_file_path}")
+    print(f"parameters.res_file_path: {parameters.res_file_path}")
     print(f"run_files: {run_files}")
     print(run_files)
-    assert fdv.res_file_path in run_files
-    assert os.path.basename(cellpy_file) == fdv.cellpy_file_name
+    assert parameters.res_file_path in run_files
+    assert os.path.basename(cellpy_file) == parameters.cellpy_file_name
 
 
 def test_set_res_datadir_wrong(cellpy_data_instance):
@@ -387,9 +352,9 @@ def test_set_res_datadir_none(cellpy_data_instance):
     assert before == after
 
 
-def test_set_res_datadir(cellpy_data_instance):
-    cellpy_data_instance.set_cellpy_datadir(fdv.data_dir)
-    assert fdv.data_dir == cellpy_data_instance.cellpy_datadir
+def test_set_res_datadir(cellpy_data_instance, parameters):
+    cellpy_data_instance.set_cellpy_datadir(parameters.data_dir)
+    assert parameters.data_dir == cellpy_data_instance.cellpy_datadir
 
 
 def test_set_raw_datadir(dataset):
@@ -405,8 +370,8 @@ def test_merge(dataset):
     print("maybe deprecated")
 
 
-def test_fid(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path)
+def test_fid(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path)
     my_test = cellpy_data_instance.cell
     assert len(my_test.raw_data_files) == 1
     fid_object = my_test.raw_data_files[0]
@@ -417,11 +382,11 @@ def test_fid(cellpy_data_instance):
     print(fid_object.get_last())
 
 
-def test_only_fid():
+def test_only_fid(parameters):
     from cellpy.readers.core import FileID
 
     my_fid_one = FileID()
-    my_file = fdv.cellpy_file_path
+    my_file = parameters.cellpy_file_path
     my_fid_one.populate(my_file)
     my_fid_two = FileID(my_file)
     assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
@@ -438,11 +403,11 @@ def test_only_fid():
     ],
 )
 def test_load_step_specs_short(
-    cellpy_data_instance, cycle, step, expected_type, expected_info
+    cellpy_data_instance, cycle, step, expected_type, expected_info, parameters
 ):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
-    file_name = fdv.short_step_table_file_path
+    file_name = parameters.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
     step_table = cellpy_data_instance.cell.steps
@@ -457,10 +422,10 @@ def test_load_step_specs_short(
 
 
 @pytest.mark.slowtest
-def test_load_step_specs(cellpy_data_instance):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+def test_load_step_specs(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
-    file_name = fdv.step_table_file_path
+    file_name = parameters.step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name)
     step_table = cellpy_data_instance.cell.steps
@@ -470,22 +435,22 @@ def test_load_step_specs(cellpy_data_instance):
     assert t == "ocvrlx_down"
 
 
-def test_load_arbin_res_aux_single(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path4)
+def test_load_arbin_res_aux_single(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path4)
     assert "aux_0_u_C" in cellpy_data_instance.cell.raw.columns
     assert "aux_d_0_dt_u_dC_dt" in cellpy_data_instance.cell.raw.columns
     assert cellpy_data_instance.cell.raw.size == 195345
 
 
-def test_load_arbin_res_aux_multiple(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path3)
+def test_load_arbin_res_aux_multiple(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path3)
     assert "aux_0_u_V" in cellpy_data_instance.cell.raw.columns
     assert "aux_11_u_V" in cellpy_data_instance.cell.raw.columns
     assert cellpy_data_instance.cell.raw.size == 134976
 
 
-def test_loadcell_raw(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path)
+def test_loadcell_raw(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path)
     run_number = 0
     data_point = 2283
     step_time = 1500.05
@@ -503,44 +468,44 @@ def test_loadcell_raw(cellpy_data_instance):
     # cellpy_data_instance.save(test_cellpy_file_full)
 
 
-def test_make_step_table(cellpy_data_instance):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+def test_make_step_table(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table()
 
 
-def test_make_new_step_table(cellpy_data_instance):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+def test_make_new_step_table(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True)
     assert len(cellpy_data_instance.cell.steps) == 103
 
 
-def test_make_step_table_all_steps(cellpy_data_instance):
+def test_make_step_table_all_steps(cellpy_data_instance, parameters):
     # need a new test data-file for GITT
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, all_steps=True)
     assert len(cellpy_data_instance.cell.steps) == 103
 
 
-def test_make_step_table_no_rate(cellpy_data_instance):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+def test_make_step_table_no_rate(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, add_c_rate=False)
     assert "rate_avr" not in cellpy_data_instance.cell.steps.columns
 
 
-def test_make_step_table_skip_steps(cellpy_data_instance):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+def test_make_step_table_skip_steps(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, skip_steps=[1, 10])
     print(cellpy_data_instance.cell.steps)
     assert len(cellpy_data_instance.cell.steps) == 87
 
 
-def test_make_summary(cellpy_data_instance):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+def test_make_summary(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
     s1 = cellpy_data_instance.cells[0].summary
@@ -552,14 +517,14 @@ def test_make_summary(cellpy_data_instance):
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
-def test_make_summary_with_c_rate(cellpy_data_instance):
-    cellpy_data_instance.from_raw(fdv.res_file_path)
+def test_make_summary_with_c_rate(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(add_c_rate=True)
 
 
-def test_summary_from_cellpyfile(cellpy_data_instance):
-    cellpy_data_instance.load(fdv.cellpy_file_path)
+def test_summary_from_cellpyfile(cellpy_data_instance, parameters):
+    cellpy_data_instance.load(parameters.cellpy_file_path)
     s1 = cellpy_data_instance.get_summary()
     mass = cellpy_data_instance.get_mass()
     cellpy_data_instance.set_mass(mass)
@@ -572,8 +537,8 @@ def test_summary_from_cellpyfile(cellpy_data_instance):
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
-def test_load_cellpyfile(cellpy_data_instance):
-    cellpy_data_instance.load(fdv.cellpy_file_path)
+def test_load_cellpyfile(cellpy_data_instance, parameters):
+    cellpy_data_instance.load(parameters.cellpy_file_path)
     run_number = 0
     cycle_number = 1
     data_point = 1457
@@ -627,8 +592,8 @@ def test_get_converter_to_specific(dataset, test_input, expected):
     assert c == expected
 
 
-def test_save_cellpyfile_with_extension(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path)
+def test_save_cellpyfile_with_extension(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names()) + ".h5"
@@ -638,8 +603,8 @@ def test_save_cellpyfile_with_extension(cellpy_data_instance):
     assert not os.path.isfile(tmp_file)
 
 
-def test_save_cellpyfile_auto_extension(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path)
+def test_save_cellpyfile_auto_extension(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())
@@ -649,8 +614,8 @@ def test_save_cellpyfile_auto_extension(cellpy_data_instance):
     assert not os.path.isfile(tmp_file + ".h5")
 
 
-def test_save_cellpyfile_auto_extension_pathlib(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path)
+def test_save_cellpyfile_auto_extension_pathlib(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = pathlib.Path(next(tempfile._get_candidate_names()))
@@ -661,8 +626,8 @@ def test_save_cellpyfile_auto_extension_pathlib(cellpy_data_instance):
     assert not tmp_file.is_file()
 
 
-def test_save_cvs(cellpy_data_instance):
-    cellpy_data_instance.loadcell(fdv.res_file_path)
+def test_save_cvs(cellpy_data_instance, parameters):
+    cellpy_data_instance.loadcell(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     temp_dir = tempfile.mkdtemp()
@@ -679,19 +644,19 @@ def test_str_cellpy_data_object(dataset):
     assert str(dataset.cell).find("rosenborg") < 0
 
 
-def test_check_cellpy_file(cellpy_data_instance):
-    file_name = fdv.cellpy_file_path
+def test_check_cellpy_file(cellpy_data_instance, parameters):
+    file_name = parameters.cellpy_file_path
     ids = cellpy_data_instance._check_cellpy_file(file_name)
 
 
-def test_cellpyfile_roundtrip(tmp_path):
+def test_cellpyfile_roundtrip(tmp_path, parameters):
     from cellpy import cellreader
 
-    cellpy_file_name = pathlib.Path(tmp_path) / pathlib.Path(fdv.cellpy_file_path).name
+    cellpy_file_name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     cdi = cellreader.CellpyData()
 
     # create a cellpy file from the res-file
-    cdi.from_raw(fdv.res_file_path)
+    cdi.from_raw(parameters.res_file_path)
     cdi.set_mass(1.0)
     cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
     cdi.save(cellpy_file_name)
@@ -703,10 +668,10 @@ def test_cellpyfile_roundtrip(tmp_path):
     cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
 
 
-def test_load_custom_default(cellpy_data_instance):
+def test_load_custom_default(cellpy_data_instance, parameters):
     from cellpy import prms
 
-    file_name = fdv.custom_file_paths
+    file_name = parameters.custom_file_paths
     prms.Instruments.custom_instrument_definitions_file = None
     cellpy_data_instance.set_instrument("custom")
     cellpy_data_instance.from_raw(file_name)
@@ -726,14 +691,14 @@ def test_group_by_interpolate(dataset):
     )
 
 
-def test_get():
-    c_h5 = cellpy.get(fdv.cellpy_file_path)
-    c_res = cellpy.get(fdv.res_file_path, instrument="arbin", mass=0.045)
+def test_get(parameters):
+    c_h5 = cellpy.get(parameters.cellpy_file_path)
+    c_res = cellpy.get(parameters.res_file_path, instrument="arbin", mass=0.045)
 
 
-def test_get_advanced():
+def test_get_advanced(parameters):
     c_many = cellpy.get(
-        [fdv.res_file_path, fdv.res_file_path2], logging_mode="DEBUG", mass=0.035
+        [parameters.res_file_path, parameters.res_file_path2], logging_mode="DEBUG", mass=0.035
     )
 
 

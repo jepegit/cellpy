@@ -3,7 +3,6 @@ import logging
 import pandas as pd
 from cellpy import log
 from cellpy.utils import ica
-from . import fdv
 from cellpy.exceptions import NullData
 
 # import warnings
@@ -16,22 +15,6 @@ from cellpy.exceptions import NullData
 #      indexing is deprecated
 
 log.setup_logging(default_level=logging.DEBUG)
-
-
-@pytest.fixture
-def cellpy_data_instance():
-    from cellpy import cellreader
-
-    return cellreader.CellpyData()
-
-
-@pytest.fixture
-def dataset():
-    from cellpy import cellreader
-
-    d = cellreader.CellpyData()
-    d.load(fdv.cellpy_file_path)
-    return d
 
 
 @pytest.fixture

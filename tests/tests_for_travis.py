@@ -1,5 +1,4 @@
 import os
-import pytest
 
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))

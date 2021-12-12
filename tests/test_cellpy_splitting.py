@@ -3,20 +3,16 @@ import logging
 import pandas as pd
 from cellpy import log
 from cellpy.utils import helpers
-from . import fdv
 from cellpy.exceptions import NullData
 
 
 log.setup_logging(default_level=logging.DEBUG)
 
 
+# TODO: manually renaming cellpy fixture to cell; remove this when all instances of dataset is renamed to cell
 @pytest.fixture
-def cell():
-    from cellpy import cellreader
-
-    d = cellreader.CellpyData()
-    d.load(fdv.cellpy_file_path)
-    return d
+def cell(dataset):
+    return dataset
 
 
 def test_split(cell):

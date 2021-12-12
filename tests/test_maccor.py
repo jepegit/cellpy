@@ -3,33 +3,22 @@ import shutil
 import pytest
 import logging
 from cellpy import log, get
-from . import fdv
+
 
 log.setup_logging(default_level=logging.DEBUG)
 
 
 @pytest.fixture
-def cellpy_data_instance():
-    from cellpy import cellreader
-
-    return cellreader.CellpyData()
+def maccor_cell(cellpy_data_instance, parameters):
+    return cellpy_data_instance.load(parameters.mpr_cellpy_file_path)
 
 
-@pytest.fixture
-def dataset():
-    from cellpy import cellreader
-
-    d = cellreader.CellpyData()
-    d.load(fdv.mpr_cellpy_file_path)
-    return d
-
-
-def test_set_instrument(cellpy_data_instance):
+def test_set_instrument(cellpy_data_instance, parameters):
     import os
 
     instrument = "maccor_txt"
     cellpy_data_instance.set_instrument(instrument=instrument)
-    cellpy_data_instance.from_raw(fdv.mcc_file_path, sep="\t")
+    cellpy_data_instance.from_raw(parameters.mcc_file_path, sep="\t")
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
     assert len(cellpy_data_instance.cell.raw) == 6704
@@ -40,15 +29,15 @@ def test_set_instrument(cellpy_data_instance):
     shutil.rmtree(temp_dir)
 
 
-def test_cellpy_get():
+def test_cellpy_get(parameters):
     instrument = "maccor_txt"
-    c = get(fdv.mcc_file_path, instrument=instrument, sep="\t", logging_mode="DEBUG")
+    c = get(parameters.mcc_file_path, instrument=instrument, sep="\t", logging_mode="DEBUG")
     assert len(c.cell.raw) == 6704
 
-# def test_cellpy_get_2():
+# def test_cellpy_get_2(parameters):
 #     from cellpy import prms
 #
 #     prms.Instruments.Maccor.format_params = "two"
 #     instrument = "maccor_txt"
-#     c = get(fdv.mcc_file_path2, instrument=instrument)
+#     c = get(parameters.mcc_file_path2, instrument=instrument)
 #     assert len(c.cell.raw) == 6704
