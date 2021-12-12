@@ -7,6 +7,14 @@ import pytest
 from . import fdv
 
 
+# NOTE: all tests can now use the parameters fixture instead of importing fdv directly.
+# NOTE: if you decide to implement scoped fixtures in a module, you will have to either
+#   add a new fixture here (e.g. dataset_module_scope with corresponding parameters_module_scope)
+#   and use those, or duplicate the fixtures inside the module
+
+# TODO: change name of 'dataset' to 'cell' (this will require changes all usage of 'dataset' to 'cell' in all modules)
+
+
 @pytest.fixture
 def hello_world():
     return "hello cellpy!"
