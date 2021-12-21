@@ -10,7 +10,7 @@ from cellpy import log
 from cellpy import prms
 from . import fdv
 
-log.setup_logging(default_level="DEBUG")
+log.setup_logging(default_level="DEBUG", testing=True)
 
 
 def test_conftest(hello_world):
@@ -28,7 +28,7 @@ def setup_module():
 
     try:
         os.mkdir(fdv.output_dir)
-    except:
+    except Exception:
         print("could not make directory")
 
 
@@ -36,7 +36,7 @@ def test_logger(clean_dir):
     test_logging_json = os.path.join(fdv.data_dir, "test_logging.json")
     prms.Paths["filelogdir"] = fdv.log_dir
 
-    log.setup_logging()
+    log.setup_logging(testing=True)
     tmp_logger = logging.getLogger()
     assert tmp_logger.level == logging.DEBUG
 
@@ -54,7 +54,7 @@ def test_logger(clean_dir):
         elif handler.name == "debug_file_handler":
             assert handler.level == logging.DEBUG
 
-    log.setup_logging(default_level="DEBUG")
+    log.setup_logging(default_level="DEBUG", testing=True)
     tmp_logger = logging.getLogger()
     tmp_logger.info("default: testing logger (info)")
     tmp_logger.debug("default: testing logger (debug)")
@@ -70,7 +70,7 @@ def test_logger(clean_dir):
         elif handler.name == "debug_file_handler":
             assert handler.level == logging.DEBUG
 
-    log.setup_logging(default_level="INFO")
+    log.setup_logging(default_level="INFO", testing=True)
     for handler in logging.getLogger().handlers:
         if handler.name == "console":
             assert handler.level == logging.INFO
@@ -81,10 +81,10 @@ def test_logger(clean_dir):
         elif handler.name == "debug_file_handler":
             assert handler.level == logging.DEBUG
 
-    log.setup_logging(default_json_path="./a_file_that_does_not_exist.json")
+    log.setup_logging(default_json_path="./a_file_that_does_not_exist.json", testing=True)
     assert len(logging.getLogger().handlers) == 4
 
-    log.setup_logging(default_json_path=test_logging_json)
+    log.setup_logging(default_json_path=test_logging_json, testing=True)
     log.setup_logging(custom_log_dir=clean_dir)
     tmp_logger = logging.getLogger()
     tmp_logger.info("customdir, default: testing logger (info)")
@@ -93,7 +93,7 @@ def test_logger(clean_dir):
 
 
 def test_logger_advanced(clean_dir):
-    log.setup_logging(reset_big_log=True)
+    log.setup_logging(reset_big_log=True, testing=True)
     tmp_logger = logging.getLogger()
     tmp_logger.info("customdir, default: testing logger (info)")
     tmp_logger.debug("customdir, default: testing logger (debug)")
@@ -158,11 +158,12 @@ def test_get():
         instrument="pec_csv",
         mass=50_000,
         cycle_mode="cathode",
+        testing=True,
     )
-    cellpy.get(filename=fdv.cellpy_file_path)
-    cellpy.get()
-    cellpy.get(filename=fdv.cellpy_file_path, post_processor_hook=_my_post_processor)  # should only give a warning
-    cellpy.get(filename=fdv.res_file_path, post_processor_hook=_my_post_processor)  # should print
+    cellpy.get(filename=fdv.cellpy_file_path, testing=True)
+    cellpy.get(testing=True)
+    cellpy.get(filename=fdv.cellpy_file_path, post_processor_hook=_my_post_processor, testing=True)  # should only give a warning
+    cellpy.get(filename=fdv.res_file_path, post_processor_hook=_my_post_processor, testing=True)  # should print
 
 
 # @pytest.mark.unimportant
@@ -181,8 +182,8 @@ def test_humanize_bytes():
 def test_example_data():
     from cellpy.utils import example_data
 
-    a = example_data.arbin_file()
-    c = example_data.cellpy_file()
+    a = example_data.arbin_file(testing=True)
+    c = example_data.cellpy_file(testing=True)
 
     assert a.cell.summary.size == 522
     assert c.cell.summary.size == 1044

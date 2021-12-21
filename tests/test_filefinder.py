@@ -2,7 +2,7 @@ import pytest
 from cellpy import filefinder
 from cellpy import log
 
-log.setup_logging(default_level="DEBUG")
+log.setup_logging(default_level="DEBUG", testing=True)
 
 
 @pytest.fixture

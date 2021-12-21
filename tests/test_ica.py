@@ -14,7 +14,7 @@ from cellpy.exceptions import NullData
 #    FutureWarning: Using a non-tuple sequence for multidimensional
 #      indexing is deprecated
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
 @pytest.fixture

@@ -8,7 +8,7 @@ from cellpy import prms
 from cellpy import prmreader
 from . import fdv
 
-log.setup_logging(default_level="DEBUG")
+log.setup_logging(default_level="DEBUG", testing=True)
 
 config_file_txt = """---
 Batch:

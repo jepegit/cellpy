@@ -4,7 +4,7 @@ import pytest
 import logging
 from cellpy import log
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
 @pytest.fixture

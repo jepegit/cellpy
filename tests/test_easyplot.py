@@ -8,7 +8,7 @@ from cellpy.utils import easyplot
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 from cellpy.exceptions import NullData
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
 def test_import():

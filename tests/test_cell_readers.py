@@ -10,7 +10,7 @@ import cellpy.readers.core
 from cellpy.exceptions import DeprecatedFeature
 from cellpy import log, prms
 
-log.setup_logging(default_level="DEBUG")
+log.setup_logging(default_level="DEBUG", testing=True)
 
 
 # TODO: refactor from 'dataset' to 'cell' manually (PyCharm cannot handle pytest)
@@ -692,18 +692,18 @@ def test_group_by_interpolate(dataset):
 
 
 def test_get(parameters):
-    c_h5 = cellpy.get(parameters.cellpy_file_path)
-    c_res = cellpy.get(parameters.res_file_path, instrument="arbin", mass=0.045)
+    c_h5 = cellpy.get(parameters.cellpy_file_path, testing=True)
+    c_res = cellpy.get(parameters.res_file_path, instrument="arbin", mass=0.045, testing=True)
 
 
 def test_get_advanced(parameters):
     c_many = cellpy.get(
-        [parameters.res_file_path, parameters.res_file_path2], logging_mode="DEBUG", mass=0.035
+        [parameters.res_file_path, parameters.res_file_path2], logging_mode="DEBUG", mass=0.035, testing=True
     )
 
 
 def test_get_empty():
-    c_empty = cellpy.get()
+    c_empty = cellpy.get(testing=True)
 
 
 @pytest.mark.parametrize("val,validated", [(2.3, None), ([2.3], None), ([2.3], [True])])

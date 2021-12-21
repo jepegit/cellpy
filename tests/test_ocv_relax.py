@@ -3,7 +3,7 @@ import logging
 from cellpy import log
 from cellpy.utils import ocv_rlx
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
 @pytest.mark.parametrize(

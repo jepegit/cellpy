@@ -5,7 +5,7 @@ from cellpy.utils import helpers
 from cellpy.exceptions import NullData
 
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
 # TODO: manually renaming cellpy fixture to cell; remove this when all instances of dataset is renamed to cell

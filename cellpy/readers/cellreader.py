@@ -5391,6 +5391,7 @@ def get(
     logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
+    testing=False,
     **kwargs,
 ):
     """Create a CellpyData object
@@ -5404,6 +5405,7 @@ def get(
         logging_mode (str): "INFO" or "DEBUG"
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
         auto_summary (bool): (re-) create summary.
+        testing (bool): set to True if testing (will for example prevent making .log files)
         **kwargs: sent to the loader
 
     Returns:
@@ -5413,7 +5415,7 @@ def get(
 
     from cellpy import log
 
-    log.setup_logging(default_level=logging_mode)
+    log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyData()
 

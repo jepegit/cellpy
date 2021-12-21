@@ -21,7 +21,7 @@ from cellpy import prms
 from cellpy.utils import batch as batch
 from cellpy.utils import helpers
 
-log.setup_logging(default_level="DEBUG")
+log.setup_logging(default_level="DEBUG", testing=True)
 
 
 # TODO: I think these tests saves new versions of cellpyfiles each time. Fix that.
@@ -50,7 +50,7 @@ def batch_instance(clean_dir, parameters):
 @pytest.fixture
 def populated_batch(batch_instance):
     b = batch_instance.init(
-        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01"
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True,
     )
 
     b.create_journal()

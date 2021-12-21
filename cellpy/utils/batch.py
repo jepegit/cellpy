@@ -760,9 +760,10 @@ def init(*args, **kwargs):
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
+    testing = kwargs.pop("testing", None)
     file_name = kwargs.pop("file_name", None)
 
-    log.setup_logging(default_level=default_log_level, reset_big_log=True)
+    log.setup_logging(default_level=default_log_level, testing=testing, reset_big_log=True)
 
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:

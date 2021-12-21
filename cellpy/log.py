@@ -7,6 +7,7 @@ import pathlib
 import json
 import logging.config
 import logging
+import tempfile
 import warnings
 
 from cellpy import prms
@@ -21,6 +22,7 @@ def setup_logging(
     custom_log_dir=None,
     reset_big_log=False,
     max_size=5_000_000,
+    testing=False,
 ):
     """Setup logging configuration.
 
@@ -31,6 +33,7 @@ def setup_logging(
         custom_log_dir: path for saving logs.
         reset_big_log (bool): reset log if too big (max_size).
         max_size (int): if reset_log, this is the max limit.
+        testing (bool): set as True if testing, and you don't want to create any .log files
 
     """
 
@@ -51,10 +54,12 @@ def setup_logging(
         with open(path, "rt") as f:
             config = json.load(f)
 
-        log_dir = os.path.abspath(prms.Paths["filelogdir"])
-
-        if custom_log_dir:
+        if testing:
+            log_dir = tempfile.mkdtemp()
+        elif custom_log_dir:
             log_dir = custom_log_dir
+        else:
+            log_dir = os.path.abspath(prms.Paths["filelogdir"])
 
         if not os.path.isdir(log_dir):
             warning_txt = (

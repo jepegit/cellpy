@@ -5,7 +5,7 @@ import logging
 from cellpy import log
 from . import fdv
 
-log.setup_logging(default_level=logging.DEBUG)
+log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
 def test_set_instrument(cellpy_data_instance, parameters):

@@ -31,7 +31,7 @@ def cellpy_data_instance():
     from cellpy import cellreader
     from cellpy import log
 
-    log.setup_logging(default_level="DEBUG")
+    log.setup_logging(default_level="DEBUG", testing=True)
 
     return cellreader.CellpyData()
 
