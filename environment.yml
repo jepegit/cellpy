@@ -1,6 +1,5 @@
 name: cellpy
 channels:
-    - defaults
     - conda-forge
     - pyviz
 dependencies:
