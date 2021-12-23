@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import os
+from pathlib import Path
 import io
 import logging
 from cellpy import log
@@ -180,3 +181,11 @@ def test_save_prm_file(clean_dir):
     #     lines = f.readlines()
     # for line in lines:
     #     print(line, end="")
+
+
+def test_dataclass_prms_type_hint():
+    assert isinstance(prms.NewPaths.outdatadir, (os.PathLike, str))
+    prms.NewPaths.outdatadir = r"C:\my_data\processed"
+    assert isinstance(prms.NewPaths.outdatadir, (os.PathLike, str))
+    prms.NewPaths.outdatadir = Path(r"C:\my_data\processed")
+    assert isinstance(prms.NewPaths.outdatadir, (os.PathLike, str))

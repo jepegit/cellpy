@@ -435,7 +435,6 @@ def test_loader_from_outside():
     outfile = out / "test_out"
     c.save(outfile)
 
-
 def test_loader_from_outside_with_get():
     import cellpy
     import matplotlib.pyplot as plt
@@ -447,7 +446,10 @@ def test_loader_from_outside_with_get():
     )
     name = datadir / "01_UBham_M50_Validation_0deg_01.txt"
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
-    print(f"Exists? {name.is_file()}")
+    print(f"File exists? {name.is_file()}")
+    if not name.is_file():
+        print(f"could not find {name} ")
+        return
 
     c = cellpy.get(filename=name, instrument="maccor_txt", sep="\t", mass=1.0)
 

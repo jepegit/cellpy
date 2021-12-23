@@ -1,8 +1,12 @@
 """cellpy parameters"""
 
 import os
+import pathlib
+from dataclasses import dataclass
 from pathlib import Path
 import sys
+from typing import Union
+
 import box
 
 # When adding prms, please
@@ -14,6 +18,26 @@ import box
 script_dir = os.path.abspath(os.path.dirname(__file__))
 cur_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 user_dir = os.path.expanduser("~")
+
+# -----------------------------------
+# Test using dataclass instead of box
+# -----------------------------------
+
+wdir = Path(cur_dir)
+
+
+@dataclass
+class NewPaths:
+    outdatadir: Union[Path, str] = wdir
+    rawdatadir: Union[Path, str] = wdir
+    cellpydatadir: Union[Path, str] = wdir
+    db_path: Union[Path, str] = wdir
+    filelogdir: Union[Path, str] = wdir
+    examplesdir: Union[Path, str] = wdir
+    notebookdir: Union[Path, str] = wdir
+    batchfiledir: Union[Path, str] = wdir
+    db_filename: str = "cellpy_db.xlsx"
+
 
 # --------------------------
 # Paths
