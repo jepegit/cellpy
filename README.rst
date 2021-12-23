@@ -12,6 +12,9 @@ cellpy
 .. image:: https://readthedocs.org/projects/cellpy/badge/?version=latest
         :target: https://cellpy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
+        
+.. image:: https://pepy.tech/badge/cellpy
+        :target: https://pepy.tech/project/cellpy
 
 
 This Python Package was developed to help the
