@@ -61,6 +61,11 @@ Paths = box.Box(Paths)
 FileNames = {"file_name_format": "YYYYMMDD_[NAME]EEE_CC_TT_RR"}
 FileNames = box.Box(FileNames)
 
+
+# @dataclass
+# class FileNames:
+#     file_name_format: str = 'YYYYMMDD_[NAME]EEE_CC_TT_RR'
+
 # --------------------------
 # Reader
 # --------------------------

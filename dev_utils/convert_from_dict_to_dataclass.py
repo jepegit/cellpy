@@ -1,7 +1,7 @@
 from cellpy import prms
 # import boxing
 
-translator = {
+type_translator = {
     "<class 'bool'>": "bool",
     "<class 'NoneType'>": "str",
     "<class 'str'>": "str",
@@ -15,6 +15,9 @@ translator = {
 
 }
 
+value_translator = {
+    "'None'": None
+}
 
 should_be_inside_ticks = [
     "str"
@@ -25,20 +28,27 @@ def main():
     print("STARTING:")
     boxed = [d for d in dir(prms) if (not d.startswith("_")) and (d[0].isupper())]
 
-    for boxed_object_str in boxed:
-        print(boxed_object_str.center(80, "-"))
-        the_actual_box = getattr(prms, boxed_object_str)
-        if isinstance(the_actual_box, dict):
+    parse_the_things(boxed)
+
+
+def parse_the_things(things_to_parse, the_module=prms):
+    for thing in things_to_parse:
+        print(thing.center(80, "-"))
+        the_actual_thing = getattr(the_module, thing)
+        if isinstance(the_actual_thing, dict):
             print("@dataclass")
-            print(f"class {boxed_object_str}:")
-            for k, v in the_actual_box.items():
-                type_hint = translator.get(str(type(v)), None)
+            print(f"class {thing}:")
+            for k, v in the_actual_thing.items():
+                type_hint = type_translator.get(str(type(v)), None)
                 if not type_hint:
                     type_hint = f"**{type(v)}**"
                 if type_hint in should_be_inside_ticks:
                     v = f"'{v}'"
+                else:
+                    v = str(v)
+                v = value_translator.get(v, v)
                 print(f"    {k}: {type_hint} = {v}")
-            print(2*"\n")
+            print(2 * "\n")
 
 
 if __name__ == "__main__":

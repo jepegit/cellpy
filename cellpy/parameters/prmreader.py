@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from dataclasses import asdict
 import glob
 import os
 import pathlib
@@ -75,6 +76,8 @@ def _write_prm_file(file_name=None):
 
 
 def _update_prms(config_dict):
+    # TODO: clean up this when all dicts in prms has been replaced with
+    #  dataclasses or pydantic classes
     logging.debug("updating parameters")
     logging.debug("new prms:" + str(config_dict))
 
@@ -83,6 +86,7 @@ def _update_prms(config_dict):
             _config_attr = getattr(prms, key)
             for k in config_dict[key]:
                 try:
+                    # a trick to force AttributeError if not nested:
                     k_in_dict = list(config_dict[key][k].keys())
                     k_in_attr = list(_config_attr[k].keys())
                     z = {**_config_attr[k], **config_dict[key][k]}
@@ -92,10 +96,26 @@ def _update_prms(config_dict):
                     logging.info("- not a dict")
 
                 finally:
-                    _config_attr[k] = z
+                    if isinstance(_config_attr, dict):
+                        logging.debug(f"{_config_attr} is a dict -> ask the "
+                                      f"maintainer of cellpy to replace it "
+                                      f"with a dataclass")
+                        _config_attr[k] = z
+                    else:
+                        setattr(_config_attr, k, z)
+
 
         else:
             logging.info("\n  not-supported prm: %s" % key)
+
+
+def _convert_to_dict(x):
+    try:
+        dictionary = x.to_dict()
+    except AttributeError:
+        # TODO: fix this - this does not work for dataclasses, only instances of it - replace with pydantic?
+        dictionary = asdict(x)
+    return dictionary
 
 
 def _pack_prms():
@@ -103,14 +123,14 @@ def _pack_prms():
     to include them here"""
 
     config_dict = {
-        "Paths": prms.Paths.to_dict(),
-        "FileNames": prms.FileNames.to_dict(),
-        "Db": prms.Db.to_dict(),
-        "DbCols": prms.DbCols.to_dict(),
-        "DataSet": prms.DataSet.to_dict(),
-        "Reader": prms.Reader.to_dict(),
-        "Instruments": prms.Instruments.to_dict(),
-        "Batch": prms.Batch.to_dict(),
+        "Paths": _convert_to_dict(prms.Paths),
+        "FileNames": _convert_to_dict(prms.FileNames),
+        "Db": _convert_to_dict(prms.Db),
+        "DbCols": _convert_to_dict(prms.DbCols),
+        "DataSet": _convert_to_dict(prms.DataSet),
+        "Reader": _convert_to_dict(prms.Reader),
+        "Instruments": _convert_to_dict(prms.Instruments),
+        "Batch": _convert_to_dict(prms.Batch),
     }
     return config_dict
 
@@ -241,6 +261,7 @@ def main():
     print("STARTING")
     # print(info())
     _read_prm_file(_get_prm_file())
+    _pack_prms()
 
 
 if __name__ == "__main__":
