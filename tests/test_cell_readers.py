@@ -79,11 +79,11 @@ def test_raw_data_data_point(cellpy_data_instance, parameters):
 
 def test_raw_limited_loaded_cycles_prm(cellpy_data_instance, parameters):
     try:
-        prms.Reader["limit_loaded_cycles"] = [2, 6]
+        prms.Reader.limit_loaded_cycles = [2, 6]
         cellpy_data_instance.from_raw(parameters.res_file_path)
         cycles = cellpy_data_instance.get_cycle_numbers()
     finally:
-        prms.Reader["limit_loaded_cycles"] = None
+        prms.Reader.limit_loaded_cycles = None
 
     assert all(cycles == [3, 4, 5])
 

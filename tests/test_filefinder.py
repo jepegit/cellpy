@@ -9,11 +9,11 @@ log.setup_logging(default_level="DEBUG", testing=True)
 def env(parameters):
     from cellpy.parameters import prms
 
-    prms.Paths["outdatadir"] = parameters.output_dir
-    prms.Paths["rawdatadir"] = parameters.raw_data_dir
-    prms.Paths["cellpydatadir"] = parameters.cellpy_data_dir
-    prms.Paths["db_path"] = parameters.db_dir
-    prms.Paths["db_filename"] = parameters.db_file_name
+    prms.Paths.outdatadir = parameters.output_dir
+    prms.Paths.rawdatadir = parameters.raw_data_dir
+    prms.Paths.cellpydatadir = parameters.cellpy_data_dir
+    prms.Paths.db_path = parameters.db_dir
+    prms.Paths.db_filename = parameters.db_file_name
 
 
 def test_search_for_files_with_dirs(parameters):

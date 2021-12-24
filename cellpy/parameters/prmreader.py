@@ -113,7 +113,6 @@ def _convert_to_dict(x):
     try:
         dictionary = x.to_dict()
     except AttributeError:
-        # TODO: fix this - this does not work for dataclasses, only instances of it - replace with pydantic?
         dictionary = asdict(x)
     return dictionary
 

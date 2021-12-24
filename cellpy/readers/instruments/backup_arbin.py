@@ -168,7 +168,7 @@ class ArbinLoader(Loader):
         self.logger = logging.getLogger(__name__)
         # use the following prm to limit to loading only
         # one cycle or from cycle>x to cycle<x+n
-        # prms.Reader["limit_loaded_cycles"] = [cycle from, cycle to]
+        # prms.Reader.limit_loaded_cycles = [cycle from, cycle to]
 
         self.headers_normal = get_headers_normal()
         self.headers_global = self.get_headers_global()
@@ -625,181 +625,181 @@ class ArbinLoader(Loader):
         # return full_path, information
         raise NotImplemented
 
-    def loader_win(
-        self,
-        temp_filename,
-        table_name_global,
-        file_name,
-        bad_steps=None,
-        dataset_number=None,
-        data_points=None,
-    ):
+    # def loader_win(
+    #     self,
+    #     temp_filename,
+    #     table_name_global,
+    #     file_name,
+    #     bad_steps=None,
+    #     dataset_number=None,
+    #     data_points=None,
+    # ):
+    #
+    #     constr = self._get_res_connector(temp_filename)
+    #
+    #     if use_ado:
+    #         conn = dbloader.connect(constr)
+    #     else:
+    #         conn = dbloader.connect(constr, autocommit=True)
+    #     self.logger.debug("constr str: %s" % constr)
+    #
+    #     self.logger.debug("reading global data table")
+    #     sql = "select * from %s" % table_name_global
+    #     self.logger.debug("sql statement: %s" % sql)
+    #     global_data_df = pd.read_sql_query(sql, conn)
+    #     # col_names = list(global_data_df.columns.values)
+    #     tests = global_data_df[self.headers_normal.test_id_txt]
+    #
+    #     number_of_sets = len(tests)
+    #     self.logger.debug("number of datasets: %i" % number_of_sets)
+    #     self.logger.debug(f"datasets: {tests}")
+    #
+    #     if dataset_number is not None:
+    #         self.logger.info(f"Dataset number given: {dataset_number}")
+    #         self.logger.info(f"Available dataset numbers: {tests}")
+    #         test_nos = [dataset_number]
+    #     else:
+    #         test_nos = range(number_of_sets)
+    #
+    #     for counter, test_no in enumerate(test_nos):
+    #         if counter > 0:
+    #             self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
+    #             if not ALLOW_MULTI_TEST_FILE:
+    #                 break
+    #         data = self._init_data(file_name, global_data_df, test_no)
+    #
+    #         self.logger.debug("reading raw-data")
+    #         if not use_mdbtools:
+    #             # --------- read raw-data (normal-data) ------------------------
+    #             length_of_test, normal_df = self._load_res_normal_table(
+    #                 conn, data.test_ID, bad_steps
+    #             )
+    #             # --------- read stats-data (summary-data) ---------------------
+    #             sql = "select * from %s where %s=%s order by %s" % (
+    #                 table_name_stats,
+    #                 self.headers_normal.test_id_txt,
+    #                 data.test_ID,
+    #                 self.headers_normal.data_point_txt,
+    #             )
+    #             summary_df = pd.read_sql_query(sql, conn)
+    #
+    #         else:
+    #             length_of_test, normal_df, summary_df = self._load_from_tmp_files(
+    #                 data, tmp_name_global, tmp_name_raw, tmp_name_stats, temp_filename
+    #             )
+    #
+    #         if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+    #             txt = "\nCould not find any summary (stats-file)!"
+    #             txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+    #             logging.debug(txt)
+    #         # normal_df = normal_df.set_index("Data_Point")
+    #
+    #         data.summary = summary_df
+    #         if DEBUG_MODE:
+    #             mem_usage = normal_df.memory_usage()
+    #             logging.debug(
+    #                 f"memory usage for "
+    #                 f"loaded data: \n{mem_usage}"
+    #                 f"\ntotal: {humanize_bytes(mem_usage.sum())}"
+    #             )
+    #             logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
+    #
+    #         data.raw = normal_df
+    #         data.raw_data_files_length.append(length_of_test)
+    #
+    #         data = self._post_process(data)
+    #         data = self.identify_last_data_point(data)
+    #
+    #         new_tests.append(data)
+    #
+    #     pass
 
-        constr = self._get_res_connector(temp_filename)
-
-        if use_ado:
-            conn = dbloader.connect(constr)
-        else:
-            conn = dbloader.connect(constr, autocommit=True)
-        self.logger.debug("constr str: %s" % constr)
-
-        self.logger.debug("reading global data table")
-        sql = "select * from %s" % table_name_global
-        self.logger.debug("sql statement: %s" % sql)
-        global_data_df = pd.read_sql_query(sql, conn)
-        # col_names = list(global_data_df.columns.values)
-        tests = global_data_df[self.headers_normal.test_id_txt]
-
-        number_of_sets = len(tests)
-        self.logger.debug("number of datasets: %i" % number_of_sets)
-        self.logger.debug(f"datasets: {tests}")
-
-        if dataset_number is not None:
-            self.logger.info(f"Dataset number given: {dataset_number}")
-            self.logger.info(f"Available dataset numbers: {tests}")
-            test_nos = [dataset_number]
-        else:
-            test_nos = range(number_of_sets)
-
-        for counter, test_no in enumerate(test_nos):
-            if counter > 0:
-                self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
-                if not ALLOW_MULTI_TEST_FILE:
-                    break
-            data = self._init_data(file_name, global_data_df, test_no)
-
-            self.logger.debug("reading raw-data")
-            if not use_mdbtools:
-                # --------- read raw-data (normal-data) ------------------------
-                length_of_test, normal_df = self._load_res_normal_table(
-                    conn, data.test_ID, bad_steps
-                )
-                # --------- read stats-data (summary-data) ---------------------
-                sql = "select * from %s where %s=%s order by %s" % (
-                    table_name_stats,
-                    self.headers_normal.test_id_txt,
-                    data.test_ID,
-                    self.headers_normal.data_point_txt,
-                )
-                summary_df = pd.read_sql_query(sql, conn)
-
-            else:
-                length_of_test, normal_df, summary_df = self._load_from_tmp_files(
-                    data, tmp_name_global, tmp_name_raw, tmp_name_stats, temp_filename
-                )
-
-            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
-                txt = "\nCould not find any summary (stats-file)!"
-                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-                logging.debug(txt)
-            # normal_df = normal_df.set_index("Data_Point")
-
-            data.summary = summary_df
-            if DEBUG_MODE:
-                mem_usage = normal_df.memory_usage()
-                logging.debug(
-                    f"memory usage for "
-                    f"loaded data: \n{mem_usage}"
-                    f"\ntotal: {humanize_bytes(mem_usage.sum())}"
-                )
-                logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
-
-            data.raw = normal_df
-            data.raw_data_files_length.append(length_of_test)
-
-            data = self._post_process(data)
-            data = self.identify_last_data_point(data)
-
-            new_tests.append(data)
-
-        pass
-
-    def loader_posix(
-        self, file_name, bad_steps=None, dataset_number=None, data_points=None
-    ):
-        if is_posix:
-            if is_macos:
-                self.logger.debug("\nMAC OSX USING MDBTOOLS")
-            else:
-                self.logger.debug("\nPOSIX USING MDBTOOLS")
-        else:
-            self.logger.debug("\nWINDOWS USING MDBTOOLS-WIN")
-
-        tmp_name_global, tmp_name_raw, tmp_name_stats = self._create_tmp_files(
-            table_name_global,
-            table_name_normal,
-            table_name_stats,
-            temp_dir,
-            temp_filename,
-        )
-
-        # use pandas to load in the data
-        global_data_df = pd.read_csv(tmp_name_global)
-        tests = global_data_df[self.headers_normal.test_id_txt]
-
-        number_of_sets = len(tests)
-        self.logger.debug("number of datasets: %i" % number_of_sets)
-        self.logger.debug(f"datasets: {tests}")
-
-        if dataset_number is not None:
-            self.logger.info(f"Dataset number given: {dataset_number}")
-            self.logger.info(f"Available dataset numbers: {tests}")
-            test_nos = [dataset_number]
-        else:
-            test_nos = range(number_of_sets)
-
-        for counter, test_no in enumerate(test_nos):
-            if counter > 0:
-                self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
-                if not ALLOW_MULTI_TEST_FILE:
-                    break
-            data = self._init_data(file_name, global_data_df, test_no)
-
-            self.logger.debug("reading raw-data")
-            if not use_mdbtools:
-                # --------- read raw-data (normal-data) ------------------------
-                length_of_test, normal_df = self._load_res_normal_table(
-                    conn, data.test_ID, bad_steps
-                )
-                # --------- read stats-data (summary-data) ---------------------
-                sql = "select * from %s where %s=%s order by %s" % (
-                    table_name_stats,
-                    self.headers_normal.test_id_txt,
-                    data.test_ID,
-                    self.headers_normal.data_point_txt,
-                )
-                summary_df = pd.read_sql_query(sql, conn)
-
-            else:
-                length_of_test, normal_df, summary_df = self._load_from_tmp_files(
-                    data, tmp_name_global, tmp_name_raw, tmp_name_stats, temp_filename
-                )
-
-            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
-                txt = "\nCould not find any summary (stats-file)!"
-                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-                logging.debug(txt)
-            # normal_df = normal_df.set_index("Data_Point")
-
-            data.summary = summary_df
-            if DEBUG_MODE:
-                mem_usage = normal_df.memory_usage()
-                logging.debug(
-                    f"memory usage for "
-                    f"loaded data: \n{mem_usage}"
-                    f"\ntotal: {humanize_bytes(mem_usage.sum())}"
-                )
-                logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
-
-            data.raw = normal_df
-            data.raw_data_files_length.append(length_of_test)
-
-            data = self._post_process(data)
-            data = self.identify_last_data_point(data)
-
-            new_tests.append(data)
-
-        pass
+    # def loader_posix(
+    #     self, file_name, bad_steps=None, dataset_number=None, data_points=None
+    # ):
+    #     if is_posix:
+    #         if is_macos:
+    #             self.logger.debug("\nMAC OSX USING MDBTOOLS")
+    #         else:
+    #             self.logger.debug("\nPOSIX USING MDBTOOLS")
+    #     else:
+    #         self.logger.debug("\nWINDOWS USING MDBTOOLS-WIN")
+    #
+    #     tmp_name_global, tmp_name_raw, tmp_name_stats = self._create_tmp_files(
+    #         table_name_global,
+    #         table_name_normal,
+    #         table_name_stats,
+    #         temp_dir,
+    #         temp_filename,
+    #     )
+    #
+    #     # use pandas to load in the data
+    #     global_data_df = pd.read_csv(tmp_name_global)
+    #     tests = global_data_df[self.headers_normal.test_id_txt]
+    #
+    #     number_of_sets = len(tests)
+    #     self.logger.debug("number of datasets: %i" % number_of_sets)
+    #     self.logger.debug(f"datasets: {tests}")
+    #
+    #     if dataset_number is not None:
+    #         self.logger.info(f"Dataset number given: {dataset_number}")
+    #         self.logger.info(f"Available dataset numbers: {tests}")
+    #         test_nos = [dataset_number]
+    #     else:
+    #         test_nos = range(number_of_sets)
+    #
+    #     for counter, test_no in enumerate(test_nos):
+    #         if counter > 0:
+    #             self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
+    #             if not ALLOW_MULTI_TEST_FILE:
+    #                 break
+    #         data = self._init_data(file_name, global_data_df, test_no)
+    #
+    #         self.logger.debug("reading raw-data")
+    #         if not use_mdbtools:
+    #             # --------- read raw-data (normal-data) ------------------------
+    #             length_of_test, normal_df = self._load_res_normal_table(
+    #                 conn, data.test_ID, bad_steps
+    #             )
+    #             # --------- read stats-data (summary-data) ---------------------
+    #             sql = "select * from %s where %s=%s order by %s" % (
+    #                 table_name_stats,
+    #                 self.headers_normal.test_id_txt,
+    #                 data.test_ID,
+    #                 self.headers_normal.data_point_txt,
+    #             )
+    #             summary_df = pd.read_sql_query(sql, conn)
+    #
+    #         else:
+    #             length_of_test, normal_df, summary_df = self._load_from_tmp_files(
+    #                 data, tmp_name_global, tmp_name_raw, tmp_name_stats, temp_filename
+    #             )
+    #
+    #         if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+    #             txt = "\nCould not find any summary (stats-file)!"
+    #             txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+    #             logging.debug(txt)
+    #         # normal_df = normal_df.set_index("Data_Point")
+    #
+    #         data.summary = summary_df
+    #         if DEBUG_MODE:
+    #             mem_usage = normal_df.memory_usage()
+    #             logging.debug(
+    #                 f"memory usage for "
+    #                 f"loaded data: \n{mem_usage}"
+    #                 f"\ntotal: {humanize_bytes(mem_usage.sum())}"
+    #             )
+    #             logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
+    #
+    #         data.raw = normal_df
+    #         data.raw_data_files_length.append(length_of_test)
+    #
+    #         data = self._post_process(data)
+    #         data = self.identify_last_data_point(data)
+    #
+    #         new_tests.append(data)
+    #
+    #     pass
 
     def loader(self, file_name, bad_steps=None, dataset_number=None, data_points=None):
         """Loads data from arbin .res files.
@@ -1078,10 +1078,10 @@ class ArbinLoader(Loader):
 
         table_name_normal = TABLE_NAMES["normal"]
 
-        if prms.Reader["load_only_summary"]:  # SETTING
+        if prms.Reader.load_only_summary:  # SETTING
             warnings.warn("not implemented")
 
-        if prms.Reader["select_minimal"]:  # SETTING
+        if prms.Reader.select_minimal:  # SETTING
             columns = MINIMUM_SELECTION
             columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
         else:
@@ -1103,20 +1103,20 @@ class ArbinLoader(Loader):
                 )
                 sql_4 += "AND %s=%i) " % (self.headers_normal.step_index_txt, bad_step)
 
-        if prms.Reader["limit_loaded_cycles"]:
-            if len(prms.Reader["limit_loaded_cycles"]) > 1:
+        if prms.Reader.limit_loaded_cycles:
+            if len(prms.Reader.limit_loaded_cycles) > 1:
                 sql_4 += "AND %s>%i " % (
                     self.headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][0],
+                    prms.Reader.limit_loaded_cycles[0],
                 )
                 sql_4 += "AND %s<%i " % (
                     self.headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][-1],
+                    prms.Reader.limit_loaded_cycles[-1],
                 )
             else:
                 sql_4 = "AND %s=%i " % (
                     self.headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][0],
+                    prms.Reader.limit_loaded_cycles[0],
                 )
 
         sql_5 = "order by %s" % self.headers_normal.data_point_txt

@@ -34,7 +34,7 @@ def setup_module():
 
 def test_logger(clean_dir):
     test_logging_json = os.path.join(fdv.data_dir, "test_logging.json")
-    prms.Paths["filelogdir"] = fdv.log_dir
+    prms.Paths.filelogdir = fdv.log_dir
 
     log.setup_logging(testing=True)
     tmp_logger = logging.getLogger()

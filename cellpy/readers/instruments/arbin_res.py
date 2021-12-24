@@ -177,7 +177,7 @@ class ArbinLoader(Loader):
         self.logger = logging.getLogger(__name__)
         # use the following prm to limit to loading only
         # one cycle or from cycle>x to cycle<x+n
-        # prms.Reader["limit_loaded_cycles"] = [cycle from, cycle to]
+        # prms.Reader.limit_loaded_cycles = [cycle from, cycle to]
 
         self.arbin_headers_normal = (
             self.get_headers_normal()
@@ -1213,16 +1213,16 @@ class ArbinLoader(Loader):
 
                 normal_df = normal_df.loc[~selector, :]
 
-        if prms.Reader["limit_loaded_cycles"]:
+        if prms.Reader.limit_loaded_cycles:
             logging.debug("Not yet tested for aux data")
-            if len(prms.Reader["limit_loaded_cycles"]) > 1:
-                c1, c2 = prms.Reader["limit_loaded_cycles"]
+            if len(prms.Reader.limit_loaded_cycles) > 1:
+                c1, c2 = prms.Reader.limit_loaded_cycles
                 selector = (
                     normal_df[self.arbin_headers_normal.cycle_index_txt] > c1
                 ) & (normal_df[self.arbin_headers_normal.cycle_index_txt] < c2)
 
             else:
-                c1 = prms.Reader["limit_loaded_cycles"][0]
+                c1 = prms.Reader.limit_loaded_cycles[0]
                 selector = normal_df[self.arbin_headers_normal.cycle_index_txt] == c1
 
             normal_df = normal_df.loc[selector, :]
@@ -1301,10 +1301,10 @@ class ArbinLoader(Loader):
 
         table_name_normal = TABLE_NAMES["normal"]
 
-        if prms.Reader["load_only_summary"]:  # SETTING
+        if prms.Reader.load_only_summary:  # SETTING
             warnings.warn("not implemented")
 
-        if prms.Reader["select_minimal"]:  # SETTING
+        if prms.Reader.select_minimal:  # SETTING
             columns = MINIMUM_SELECTION
             columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
         else:
@@ -1331,20 +1331,20 @@ class ArbinLoader(Loader):
                     bad_step,
                 )
 
-        if prms.Reader["limit_loaded_cycles"]:
-            if len(prms.Reader["limit_loaded_cycles"]) > 1:
+        if prms.Reader.limit_loaded_cycles:
+            if len(prms.Reader.limit_loaded_cycles) > 1:
                 sql_4 += "AND %s>%i " % (
                     self.arbin_headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][0],
+                    prms.Reader.limit_loaded_cycles[0],
                 )
                 sql_4 += "AND %s<%i " % (
                     self.arbin_headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][-1],
+                    prms.Reader.limit_loaded_cycles[-1],
                 )
             else:
                 sql_4 = "AND %s=%i " % (
                     self.arbin_headers_normal.cycle_index_txt,
-                    prms.Reader["limit_loaded_cycles"][0],
+                    prms.Reader.limit_loaded_cycles[0],
                 )
 
         if data_points is not None:

@@ -36,14 +36,14 @@ def clean_dir():
 
 @pytest.fixture
 def batch_instance(clean_dir, parameters):
-    prms.Paths["db_filename"] = parameters.db_file_name
-    prms.Paths["cellpydatadir"] = clean_dir
-    prms.Paths["outdatadir"] = clean_dir
-    prms.Paths["rawdatadir"] = parameters.raw_data_dir
-    prms.Paths["db_path"] = parameters.db_dir
-    prms.Paths["filelogdir"] = clean_dir
-    prms.Paths["batchfiledir"] = clean_dir
-    prms.Paths["notebookdir"] = clean_dir
+    prms.Paths.db_filename = parameters.db_file_name
+    prms.Paths.cellpydatadir = clean_dir
+    prms.Paths.outdatadir = clean_dir
+    prms.Paths.rawdatadir = parameters.raw_data_dir
+    prms.Paths.db_path = parameters.db_dir
+    prms.Paths.filelogdir = clean_dir
+    prms.Paths.batchfiledir = clean_dir
+    prms.Paths.notebookdir = clean_dir
     return batch
 
 
