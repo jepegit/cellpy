@@ -976,12 +976,12 @@ def check_standard():
     out_data_path = Path(out_data_path)
 
     logging.info("---SETTING SOME PRMS---")
-    prms.Paths["db_filename"] = "cellpy_db.xlsx"
-    prms.Paths["cellpydatadir"] = test_data_path / "hdf5"
-    prms.Paths["outdatadir"] = out_data_path
-    prms.Paths["rawdatadir"] = test_data_path / "data"
-    prms.Paths["db_path"] = test_data_path / "db"
-    prms.Paths["filelogdir"] = test_data_path / "log"
+    prms.Paths.db_filename = "cellpy_db.xlsx"
+    prms.Paths.cellpydatadir = test_data_path / "hdf5"
+    prms.Paths.outdatadir = out_data_path
+    prms.Paths.rawdatadir = test_data_path / "data"
+    prms.Paths.db_path = test_data_path / "db"
+    prms.Paths.filelogdir = test_data_path / "log"
 
     project = "prebens_experiment"
     name = "test"

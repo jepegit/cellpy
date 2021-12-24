@@ -4,6 +4,7 @@ import pathlib
 import tempfile
 import warnings
 import logging
+from dataclasses import asdict
 
 import pandas as pd
 import numpy as np
@@ -16,8 +17,9 @@ from cellpy.parameters import prms
 
 class DbSheetCols(object):
     def __init__(self, level=0):
-        for table_key in prms.DbCols:
-            setattr(self, table_key, prms.DbCols[table_key][level])
+        db_cols_from_prms = asdict(prms.DbCols)
+        for table_key, values in db_cols_from_prms.items():
+            setattr(self, table_key, values[level])
 
     def __repr__(self):
         return f"<DbCols: {self.__dict__}>"
@@ -27,8 +29,8 @@ class Reader(object):
     def __init__(self, db_file=None, db_datadir=None, db_datadir_processed=None):
 
         if not db_file:
-            self.db_path = prms.Paths["db_path"]
-            self.db_filename = prms.Paths["db_filename"]
+            self.db_path = prms.Paths.db_path
+            self.db_filename = prms.Paths.db_filename
             self.db_file = os.path.join(self.db_path, self.db_filename)
         else:
             self.db_path = os.path.dirname(db_file)
@@ -36,12 +38,12 @@ class Reader(object):
             self.db_file = db_file
 
         if not db_datadir:
-            self.db_datadir = prms.Paths["rawdatadir"]
+            self.db_datadir = prms.Paths.rawdatadir
         else:
             self.db_datadir = db_datadir
 
         if not db_datadir_processed:
-            self.db_datadir_processed = prms.Paths["cellpydatadir"]
+            self.db_datadir_processed = prms.Paths.cellpydatadir
         else:
             self.db_datadir_processed = db_datadir_processed
 

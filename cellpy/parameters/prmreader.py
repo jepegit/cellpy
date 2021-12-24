@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 import glob
 import os
 import pathlib
@@ -255,12 +255,28 @@ def info():
                 print(f"prms.{key}.{subkey} = ", f"{prms.__dict__[key][subkey]}")
             print(80 * "=")
 
+        elif isinstance(prms.__dict__[key], type):
+            try:
+                # THIS DOES NOT WORK - FIX IT
+                dataclass_dict = asdict(prms.__dict__[key])
+            except TypeError:
+                pass
+            else:
+                print()
+                print(80 * "=")
+                print(f"prms.{key}:")
+                print(80 * "-")
+                for subkey in dataclass_dict:
+                    print(f"prms.{key}.{subkey} = ", f"{dataclass_dict[subkey]}")
+                print(80 * "=")
+
 
 def main():
     print("STARTING")
     # print(info())
     _read_prm_file(_get_prm_file())
     _pack_prms()
+    info()
 
 
 if __name__ == "__main__":

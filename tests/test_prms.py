@@ -171,7 +171,7 @@ def test_save_prm_file(clean_dir):
         f.write(config_file_txt)
 
     prmreader._read_prm_file(tmp_config_file_name)
-    prms.Instruments["tester"] = "biologics"
+    prms.Instruments.tester = "biologics"
     prms.Reader.cycle_mode = "cathode"
     prmreader._write_prm_file(tmp_config_file_name)
     prmreader._read_prm_file(tmp_config_file_name)
@@ -184,8 +184,8 @@ def test_save_prm_file(clean_dir):
 
 
 def test_dataclass_prms_type_hint():
-    assert isinstance(prms.NewPaths.outdatadir, (os.PathLike, str))
-    prms.NewPaths.outdatadir = r"C:\my_data\processed"
-    assert isinstance(prms.NewPaths.outdatadir, (os.PathLike, str))
-    prms.NewPaths.outdatadir = Path(r"C:\my_data\processed")
-    assert isinstance(prms.NewPaths.outdatadir, (os.PathLike, str))
+    assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
+    prms.Paths.outdatadir = r"C:\my_data\processed"
+    assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
+    prms.Paths.outdatadir = Path(r"C:\my_data\processed")
+    assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))

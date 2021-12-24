@@ -21,10 +21,10 @@ def create_full_names(
         cellpy_file_extension = "h5"
 
     if raw_file_dir is None:
-        raw_file_dir = prms.Paths["rawdatadir"]
+        raw_file_dir = prms.Paths.rawdatadir
 
     if cellpy_file_dir is None:
-        cellpy_file_dir = prms.Paths["cellpydatadir"]
+        cellpy_file_dir = prms.Paths.cellpydatadir
 
     raw_file = os.path.join(raw_file_dir, run_name)
 
@@ -86,7 +86,7 @@ def search_for_files(
     t0 = time.time()
 
     if raw_file_dir is None:
-        raw_file_dir = prms.Paths["rawdatadir"]
+        raw_file_dir = prms.Paths.rawdatadir
 
     if not isinstance(raw_file_dir, (list, tuple)):
         raw_file_dir = [pathlib.Path(raw_file_dir)]
@@ -106,7 +106,7 @@ def search_for_files(
         logging.debug("reading prm file disabled")
 
     if cellpy_file_dir is None:
-        cellpy_file_dir = pathlib.Path(prms.Paths["cellpydatadir"])
+        cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
     else:
         cellpy_file_dir = pathlib.Path(cellpy_file_dir)
 

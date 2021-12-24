@@ -1059,7 +1059,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     d = CellpyData()
 
     if not outdir:
-        outdir = prms.Paths["cellpydatadir"]
+        outdir = prms.Paths.cellpydatadir
 
     if not outfile:
         outfile = os.path.basename(filename).split(".")[0] + ".h5"

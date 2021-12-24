@@ -58,7 +58,7 @@ def create_folder_structure(project_name, batch_name):
     Returns: (info_file, (project_dir, batch_dir, raw_dir))
 
     """
-    out_data_dir = prms.Paths["outdatadir"]
+    out_data_dir = prms.Paths.outdatadir
     project_dir = os.path.join(out_data_dir, project_name)
     batch_dir = os.path.join(project_dir, batch_name)
     raw_dir = os.path.join(batch_dir, "raw_data")

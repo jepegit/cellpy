@@ -5488,8 +5488,8 @@ def get(
             cellpy_instance.make_summary()
     else:
         if mass:
-            prms.Materials["default_mass"] = mass
-            prms.Materials["default_mass"] = mass
+            prms.Materials.default_mass = mass
+            prms.Materials.default_mass = mass
         if nominal_capacity:
             prms.DataSet["nom_cap"] = nominal_capacity
 

@@ -359,16 +359,16 @@ metadata
 .. code-block:: python
 
     cell_no = None
-    mass = prms.Materials["default_mass"]  # active material (in mg)
-    tot_mass = prms.Materials["default_mass"]  # total material (in mg)
+    mass = prms.Materials.default_mass  # active material (in mg)
+    tot_mass = prms.Materials.default_mass  # total material (in mg)
     no_cycles = 0.0
     charge_steps = None
     discharge_steps = None
     ir_steps = None
     ocv_steps = None
-    nom_cap = prms.DataSet["nom_cap"]  # mAh/g (for finding c-rates)
+    nom_cap = prms.DataSet.nom_cap  # mAh/g (for finding c-rates)
     mass_given = False
-    material = prms.Materials["default_material"]
+    material = prms.Materials.default_material
     merged = False
     file_errors = None  # not in use at the moment
     loaded_from = None  # loaded from (can be list if merged)
