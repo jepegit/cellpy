@@ -101,7 +101,11 @@ ATTRS_DATASET_DEEP = ["raw_data_files"]
 
 @dataclass
 class BaseSettings:
-    ...
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
 
 
 @dataclass
