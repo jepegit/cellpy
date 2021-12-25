@@ -366,12 +366,12 @@ class ArbinSQLLoader(Loader):
                 "SELECT "
                 + str(row["Database_Name"])
                 + ".dbo.IV_Basic_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
-                  "FROM " + str(row["Database_Name"]) + ".dbo.IV_Basic_Table "
-                                                        "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
-                                                        "ON "
+                "FROM " + str(row["Database_Name"]) + ".dbo.IV_Basic_Table "
+                "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+                "ON "
                 + str(row["Database_Name"])
                 + ".dbo.IV_Basic_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
-                  "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
+                "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
                 + str(name_str)
             )
 
@@ -379,12 +379,12 @@ class ArbinSQLLoader(Loader):
                 "SELECT "
                 + str(row["Database_Name"])
                 + ".dbo.StatisticData_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
-                  "FROM " + str(row["Database_Name"]) + ".dbo.StatisticData_Table "
-                                                        "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
-                                                        "ON "
+                "FROM " + str(row["Database_Name"]) + ".dbo.StatisticData_Table "
+                "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+                "ON "
                 + str(row["Database_Name"])
                 + ".dbo.StatisticData_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
-                  "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
+                "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
                 + str(name_str)
             )
 
@@ -420,12 +420,12 @@ def test_sql_loader(server: str = None, tests: list = None):
             "SELECT "
             + str(row["Database_Name"])
             + ".dbo.IV_Basic_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
-              "FROM " + str(row["Database_Name"]) + ".dbo.IV_Basic_Table "
-                                                    "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
-                                                    "ON "
+            "FROM " + str(row["Database_Name"]) + ".dbo.IV_Basic_Table "
+            "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+            "ON "
             + str(row["Database_Name"])
             + ".dbo.IV_Basic_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
-              "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
+            "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
             + str(test_name)
         )
 
@@ -433,12 +433,12 @@ def test_sql_loader(server: str = None, tests: list = None):
             "SELECT "
             + str(row["Database_Name"])
             + ".dbo.StatisticData_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
-              "FROM " + str(row["Database_Name"]) + ".dbo.StatisticData_Table "
-                                                    "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
-                                                    "ON "
+            "FROM " + str(row["Database_Name"]) + ".dbo.StatisticData_Table "
+            "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+            "ON "
             + str(row["Database_Name"])
             + ".dbo.StatisticData_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
-              "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
+            "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
             + str(test_name)
         )
         print(f"** data query: {data_query}")

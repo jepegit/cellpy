@@ -3,10 +3,7 @@ import logging
 
 import pandas as pd
 
-from cellpy.readers.core import (
-    FileID,
-    Cell,
-)
+from cellpy.readers.core import FileID, Cell
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy.readers.instruments.configurations import register_configuration
@@ -14,8 +11,7 @@ from cellpy import prms
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
-SUPPORTED_MODELS = {"one": "maccor_txt_one",
-                    "two": "maccor_txt_two"}
+SUPPORTED_MODELS = {"one": "maccor_txt_one", "two": "maccor_txt_two"}
 
 
 def configuration(name):
@@ -286,7 +282,7 @@ def state_splitter(
                 ] = charge_last_val
 
             if not discharge.empty:
-                (discharge_last_index, discharge_last_val,) = discharge.iloc[-1]
+                (discharge_last_index, discharge_last_val) = discharge.iloc[-1]
                 raw[temp_col_name_discharge].update(
                     n_discharge * discharge[base_col_name]
                 )
@@ -434,6 +430,7 @@ def test_loader_from_outside():
 
     outfile = out / "test_out"
     c.save(outfile)
+
 
 def test_loader_from_outside_with_get():
     import cellpy

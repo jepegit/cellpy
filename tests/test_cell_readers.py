@@ -69,7 +69,9 @@ def test_raw_data_from_data_point(cellpy_data_instance, parameters):
 
 def test_raw_data_data_point(cellpy_data_instance, parameters):
     data_point_header = "data_point"
-    cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, 10_200))
+    cellpy_data_instance.from_raw(
+        parameters.res_file_path, data_points=(10_000, 10_200)
+    )
 
     p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
     p2 = cellpy_data_instance.cell.raw[data_point_header].iloc[-1]
@@ -327,7 +329,9 @@ def test_search_for_files(parameters):
     from cellpy import filefinder
 
     run_files, cellpy_file = filefinder.search_for_files(
-        parameters.run_name, raw_file_dir=parameters.raw_data_dir, cellpy_file_dir=parameters.output_dir
+        parameters.run_name,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.output_dir,
     )
     print(f"parameters.res_file_path: {parameters.res_file_path}")
     print(f"run_files: {run_files}")
@@ -652,7 +656,9 @@ def test_check_cellpy_file(cellpy_data_instance, parameters):
 def test_cellpyfile_roundtrip(tmp_path, parameters):
     from cellpy import cellreader
 
-    cellpy_file_name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
+    cellpy_file_name = (
+        pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
+    )
     cdi = cellreader.CellpyData()
 
     # create a cellpy file from the res-file
@@ -693,12 +699,17 @@ def test_group_by_interpolate(dataset):
 
 def test_get(parameters):
     c_h5 = cellpy.get(parameters.cellpy_file_path, testing=True)
-    c_res = cellpy.get(parameters.res_file_path, instrument="arbin", mass=0.045, testing=True)
+    c_res = cellpy.get(
+        parameters.res_file_path, instrument="arbin", mass=0.045, testing=True
+    )
 
 
 def test_get_advanced(parameters):
     c_many = cellpy.get(
-        [parameters.res_file_path, parameters.res_file_path2], logging_mode="DEBUG", mass=0.035, testing=True
+        [parameters.res_file_path, parameters.res_file_path2],
+        logging_mode="DEBUG",
+        mass=0.035,
+        testing=True,
     )
 
 

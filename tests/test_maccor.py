@@ -31,8 +31,15 @@ def test_set_instrument(cellpy_data_instance, parameters):
 
 def test_cellpy_get(parameters):
     instrument = "maccor_txt"
-    c = get(parameters.mcc_file_path, instrument=instrument, sep="\t", logging_mode="DEBUG", testing=True)
+    c = get(
+        parameters.mcc_file_path,
+        instrument=instrument,
+        sep="\t",
+        logging_mode="DEBUG",
+        testing=True,
+    )
     assert len(c.cell.raw) == 6704
+
 
 # def test_cellpy_get_2(parameters):
 #     from cellpy import prms

@@ -687,9 +687,7 @@ def info(version, configloc, params, check):
     is_flag=True,
     help="Run a batch job defined in the given journal-file",
 )
-@click.option(
-    "--key", "-k", is_flag=True, help="Run a batch job defined by batch-name",
-)
+@click.option("--key", "-k", is_flag=True, help="Run a batch job defined by batch-name")
 @click.option(
     "--batch",
     "-b",
@@ -1154,7 +1152,7 @@ def _get_default_template():
 
 @click.command()
 @click.option(
-    "--template", "-t", help="what template to use ('standard', 'gitt', or 'single').",
+    "--template", "-t", help="what template to use ('standard', 'gitt', or 'single')."
 )
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
 @click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")

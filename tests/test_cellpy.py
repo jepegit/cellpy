@@ -81,7 +81,9 @@ def test_logger(clean_dir):
         elif handler.name == "debug_file_handler":
             assert handler.level == logging.DEBUG
 
-    log.setup_logging(default_json_path="./a_file_that_does_not_exist.json", testing=True)
+    log.setup_logging(
+        default_json_path="./a_file_that_does_not_exist.json", testing=True
+    )
     assert len(logging.getLogger().handlers) == 4
 
     log.setup_logging(default_json_path=test_logging_json, testing=True)
@@ -162,8 +164,14 @@ def test_get():
     )
     cellpy.get(filename=fdv.cellpy_file_path, testing=True)
     cellpy.get(testing=True)
-    cellpy.get(filename=fdv.cellpy_file_path, post_processor_hook=_my_post_processor, testing=True)  # should only give a warning
-    cellpy.get(filename=fdv.res_file_path, post_processor_hook=_my_post_processor, testing=True)  # should print
+    cellpy.get(
+        filename=fdv.cellpy_file_path,
+        post_processor_hook=_my_post_processor,
+        testing=True,
+    )  # should only give a warning
+    cellpy.get(
+        filename=fdv.res_file_path, post_processor_hook=_my_post_processor, testing=True
+    )  # should print
 
 
 # @pytest.mark.unimportant

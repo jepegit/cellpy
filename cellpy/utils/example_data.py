@@ -25,7 +25,9 @@ def arbin_file(auto_summary=True, testing=False):
     """
     file_path = RAW_PATH / "20160805_test001_45_cc_01.res"
     mass = 0.704
-    return cellpy.get(filename=file_path, mass=mass, auto_summary=auto_summary, testing=testing)
+    return cellpy.get(
+        filename=file_path, mass=mass, auto_summary=auto_summary, testing=testing
+    )
 
 
 def cellpy_file(testing=False):

@@ -5491,7 +5491,7 @@ def get(
             prms.Materials.default_mass = mass
             prms.Materials.default_mass = mass
         if nominal_capacity:
-            prms.DataSet["nom_cap"] = nominal_capacity
+            prms.DataSet.nom_cap = nominal_capacity
 
     logging.info("Created CellpyData object")
     return cellpy_instance

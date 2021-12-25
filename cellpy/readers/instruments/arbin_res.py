@@ -734,10 +734,10 @@ class ArbinLoader(Loader):
 
     def _make_name_from_frame(self, df, aux_index, data_type, dx_dt=False):
         df_names = df.loc[
-                   (df[self.arbin_headers_aux_global.aux_index_txt] == aux_index)
-                   & (df[self.arbin_headers_aux_global.data_type_txt] == data_type),
-                   :,
-                   ]
+            (df[self.arbin_headers_aux_global.aux_index_txt] == aux_index)
+            & (df[self.arbin_headers_aux_global.data_type_txt] == data_type),
+            :,
+        ]
         unit = df_names[self.arbin_headers_aux_global.aux_unit_txt].values[0]
         nick = (
             df_names[self.arbin_headers_aux_global.aux_name_txt].values[0] or aux_index
@@ -871,7 +871,7 @@ class ArbinLoader(Loader):
         #    It also keeps a copy of the "data_point"
         #    column. And is that really necessary.
         normal_df.set_index(self.arbin_headers_normal.data_point_txt, inplace=True)
-        normal_df = normal_df.join(aux_df, how="left", )
+        normal_df = normal_df.join(aux_df, how="left")
         normal_df.reset_index(inplace=True)
         return normal_df
 
@@ -910,7 +910,7 @@ class ArbinLoader(Loader):
         columns_txt = "*"
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_aux
-        sql_3 = "where %s=%s " % (self.arbin_headers_aux.test_id_txt, test_id,)
+        sql_3 = "where %s=%s " % (self.arbin_headers_aux.test_id_txt, test_id)
         sql_4 = ""
         sql_aux = sql_1 + sql_2 + sql_3 + sql_4
         aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)

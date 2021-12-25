@@ -69,9 +69,7 @@ def _write_prm_file(file_name=None):
             yaml.default_flow_style = False
             yaml.explicit_start = True
             yaml.explicit_end = True
-            yaml.dump(
-                config_dict, config_file,
-            )
+            yaml.dump(config_dict, config_file)
     except yaml.YAMLError:
         raise ConfigFileNotWritten
 
@@ -98,13 +96,14 @@ def _update_prms(config_dict):
 
                 finally:
                     if isinstance(_config_attr, dict):
-                        logging.debug(f"{_config_attr} is a dict -> ask the "
-                                      f"maintainer of cellpy to replace it "
-                                      f"with a dataclass")
+                        logging.debug(
+                            f"{_config_attr} is a dict -> ask the "
+                            f"maintainer of cellpy to replace it "
+                            f"with a dataclass"
+                        )
                         _config_attr[k] = z
                     else:
                         setattr(_config_attr, k, z)
-
 
         else:
             logging.info("\n  not-supported prm: %s" % key)
@@ -261,7 +260,9 @@ def info():
             print()
 
         elif isinstance(current_object, prms.CellPyConfig):
-            attributes = {k: v for k, v in vars(current_object).items() if not k.startswith("_")}
+            attributes = {
+                k: v for k, v in vars(current_object).items() if not k.startswith("_")
+            }
             print(f" {key} ".center(80, "="))
             pprint(attributes, width=1)
             print()

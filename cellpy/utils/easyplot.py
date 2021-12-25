@@ -218,17 +218,17 @@ class EasyPlot:
             )
         else:
             self.colors = [
-                              "tab:blue",
-                              "tab:orange",
-                              "tab:green",
-                              "tab:red",
-                              "tab:purple",
-                              "tab:brown",
-                              "tab:pink",
-                              "tab:gray",
-                              "tab:olive",
-                              "tab:cyan",
-                          ] * 5
+                "tab:blue",
+                "tab:orange",
+                "tab:green",
+                "tab:red",
+                "tab:purple",
+                "tab:brown",
+                "tab:pink",
+                "tab:gray",
+                "tab:olive",
+                "tab:cyan",
+            ] * 5
 
     def plot(self):
         """This is the method the user calls on his/hers easyplot object in order to gather the data and plot it.
@@ -279,8 +279,8 @@ class EasyPlot:
             # Only get the cycles which both exist in data, and that the user want
             if self.kwargs["specific_cycles"] is not None:
                 cyc_not_available = (
-                                        set(cyc_nums) ^ set(self.kwargs["specific_cycles"])
-                                    ) & set(self.kwargs["specific_cycles"])
+                    set(cyc_nums) ^ set(self.kwargs["specific_cycles"])
+                ) & set(self.kwargs["specific_cycles"])
                 if len(cyc_not_available) > 0:
                     warn_str = (
                         f"You want to plot cycles which are not available in the data! Datafile(s): "
@@ -622,16 +622,12 @@ class EasyPlot:
             # print(dchgs[1])
             # Actully place it in plot
             if not self.kwargs["only_dischg"] and not self.kwargs["only_chg"]:
-                ax.scatter(
-                    chgs[0], chgs[1], c=color, alpha=0.2,
-                )
+                ax.scatter(chgs[0], chgs[1], c=color, alpha=0.2)
                 ax.scatter(dchgs[0], dchgs[1], c=color, label=label)
             elif self.kwargs["only_dischg"]:
                 ax.scatter(dchgs[0], dchgs[1], c=color, label=label)
             elif self.kwargs["only_chg"]:
-                ax.scatter(
-                    chgs[0], chgs[1], c=color, alpha=0.2,
-                )
+                ax.scatter(chgs[0], chgs[1], c=color, alpha=0.2)
 
             if self.kwargs["cyclelife_coulombic_efficiency"]:
                 # Get CE for cyc_nums
@@ -717,10 +713,10 @@ class EasyPlot:
                     x * slope + intercept,
                     c=color,
                     label="Degradation: %g" % slope
-                          + degradation_unit
-                          + "\nIntercept:       %g" % intercept
-                          + intercept_unit
-                          + ", r=%g" % r,
+                    + degradation_unit
+                    + "\nIntercept:       %g" % intercept
+                    + intercept_unit
+                    + ", r=%g" % r,
                 )
 
             """if self.kwargs["cyclelife_ir"]:
@@ -767,17 +763,17 @@ class EasyPlot:
 
             fig, ax = self.give_fig()
             colors = [
-                         "tab:blue",
-                         "tab:orange",
-                         "tab:green",
-                         "tab:red",
-                         "tab:purple",
-                         "tab:brown",
-                         "tab:pink",
-                         "tab:gray",
-                         "tab:olive",
-                         "tab:cyan",
-                     ] * 5
+                "tab:blue",
+                "tab:orange",
+                "tab:green",
+                "tab:red",
+                "tab:purple",
+                "tab:brown",
+                "tab:pink",
+                "tab:gray",
+                "tab:olive",
+                "tab:cyan",
+            ] * 5
             savepath = self.outpath
 
             colorbar_incrementor = -1
@@ -816,7 +812,7 @@ class EasyPlot:
                         mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
                         cax=cbaxes,
                         label="Cycle number for "
-                              + os.path.basename(filename).split(".")[0],
+                        + os.path.basename(filename).split(".")[0],
                     )
                     # fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
 
@@ -969,17 +965,17 @@ class EasyPlot:
 
             fig, ax = self.give_fig()
             colors = [
-                         "tab:blue",
-                         "tab:orange",
-                         "tab:green",
-                         "tab:red",
-                         "tab:purple",
-                         "tab:brown",
-                         "tab:pink",
-                         "tab:gray",
-                         "tab:olive",
-                         "tab:cyan",
-                     ] * 5
+                "tab:blue",
+                "tab:orange",
+                "tab:green",
+                "tab:red",
+                "tab:purple",
+                "tab:brown",
+                "tab:pink",
+                "tab:gray",
+                "tab:olive",
+                "tab:cyan",
+            ] * 5
             savepath = self.outpath
 
             colorbar_incrementor = -1
@@ -1013,7 +1009,7 @@ class EasyPlot:
                         mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
                         cax=cbaxes,
                         label="Cycle number for "
-                              + os.path.basename(filename).split(".")[0],
+                        + os.path.basename(filename).split(".")[0],
                     )
 
                     # fig.colorbar.ax.yaxis.get_major_locator().set_params(integer=True) #TODO fix such that we dont have decimals on the cycle colorbar!!
@@ -1032,8 +1028,8 @@ class EasyPlot:
                             cyc_df["voltage"],
                             cyc_df["dq"],
                             label=os.path.basename(filename).split(".")[0]
-                                  + ", Cyc "
-                                  + str(cyc),
+                            + ", Cyc "
+                            + str(cyc),
                             c=cyccolor,
                         )
                 savepath += os.path.basename(filename).split(".")[0]
@@ -1130,17 +1126,17 @@ class EasyPlot:
             fig.subplots_adjust(wspace=0)
 
             colors = [
-                         "tab:blue",
-                         "tab:orange",
-                         "tab:green",
-                         "tab:red",
-                         "tab:purple",
-                         "tab:brown",
-                         "tab:pink",
-                         "tab:gray",
-                         "tab:olive",
-                         "tab:cyan",
-                     ] * 5
+                "tab:blue",
+                "tab:orange",
+                "tab:green",
+                "tab:red",
+                "tab:purple",
+                "tab:brown",
+                "tab:pink",
+                "tab:gray",
+                "tab:olive",
+                "tab:cyan",
+            ] * 5
             savepath = self.outpath
 
             colorbar_incrementor = -1
@@ -1174,7 +1170,7 @@ class EasyPlot:
                         mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
                         cax=cbaxes,
                         label="Cycle number for "
-                              + os.path.basename(filename).split(".")[0],
+                        + os.path.basename(filename).split(".")[0],
                         pad=0.2,
                     )
 
@@ -1196,8 +1192,8 @@ class EasyPlot:
                                 cyc_df["capacity"],
                                 cyc_df["voltage"],
                                 label=os.path.basename(filename).split(".")[0]
-                                      + ", Cyc "
-                                      + str(cyc),
+                                + ", Cyc "
+                                + str(cyc),
                                 c=cyccolor,
                             )
                         elif self.kwargs["only_dischg"]:
@@ -1207,8 +1203,8 @@ class EasyPlot:
                                 dchg_df["capacity"],
                                 dchg_df["voltage"],
                                 label=os.path.basename(filename).split(".")[0]
-                                      + ", Cyc "
-                                      + str(cyc),
+                                + ", Cyc "
+                                + str(cyc),
                                 c=cyccolor,
                             )
                         elif self.kwargs["only_chg"]:
@@ -1218,8 +1214,8 @@ class EasyPlot:
                                 chg_df["capacity"],
                                 chg_df["voltage"],
                                 label=os.path.basename(filename).split(".")[0]
-                                      + ", Cyc "
-                                      + str(cyc),
+                                + ", Cyc "
+                                + str(cyc),
                                 c=cyccolor,
                             )
 
@@ -1251,8 +1247,8 @@ class EasyPlot:
                             cyc_df["dq"],
                             cyc_df["voltage"],
                             label=os.path.basename(filename).split(".")[0]
-                                  + ", Cyc "
-                                  + str(cyc),
+                            + ", Cyc "
+                            + str(cyc),
                             c=cyccolor,
                         )
                 savepath += os.path.basename(filename).split(".")[0]
@@ -1274,17 +1270,17 @@ class EasyPlot:
                 fig.subplots_adjust(wspace=0)
 
                 colors = [
-                             "tab:blue",
-                             "tab:orange",
-                             "tab:green",
-                             "tab:red",
-                             "tab:purple",
-                             "tab:brown",
-                             "tab:pink",
-                             "tab:gray",
-                             "tab:olive",
-                             "tab:cyan",
-                         ] * 5
+                    "tab:blue",
+                    "tab:orange",
+                    "tab:green",
+                    "tab:red",
+                    "tab:purple",
+                    "tab:brown",
+                    "tab:pink",
+                    "tab:gray",
+                    "tab:olive",
+                    "tab:cyan",
+                ] * 5
 
                 # Get Pandas DataFrame of pot vs cap from cellpy object
                 df = cpobj.get_cap(
@@ -1328,8 +1324,8 @@ class EasyPlot:
                                 cyc_df["capacity"],
                                 cyc_df["voltage"],
                                 label=os.path.basename(filename).split(".")[0]
-                                      + ", Cyc "
-                                      + str(cyc),
+                                + ", Cyc "
+                                + str(cyc),
                                 c=cyccolor,
                             )
                         elif self.kwargs["only_dischg"]:
@@ -1339,8 +1335,8 @@ class EasyPlot:
                                 dchg_df["capacity"],
                                 dchg_df["voltage"],
                                 label=os.path.basename(filename).split(".")[0]
-                                      + ", Cyc "
-                                      + str(cyc),
+                                + ", Cyc "
+                                + str(cyc),
                                 c=cyccolor,
                             )
                         elif self.kwargs["only_chg"]:
@@ -1350,8 +1346,8 @@ class EasyPlot:
                                 chg_df["capacity"],
                                 chg_df["voltage"],
                                 label=os.path.basename(filename).split(".")[0]
-                                      + ", Cyc "
-                                      + str(cyc),
+                                + ", Cyc "
+                                + str(cyc),
                                 c=cyccolor,
                             )
 
@@ -1383,8 +1379,8 @@ class EasyPlot:
                             cyc_df["dq"],
                             cyc_df["voltage"],
                             label=os.path.basename(filename).split(".")[0]
-                                  + ", Cyc "
-                                  + str(cyc),
+                            + ", Cyc "
+                            + str(cyc),
                             c=cyccolor,
                         )
 
@@ -1585,9 +1581,9 @@ class EasyPlot:
                     marker="_",
                     color=color,
                     label="Highest capacity:"
-                          + "\n"
-                          + "{:.2e}".format(max(y_arr))
-                          + r"$\left[\mu Ah\right]$",
+                    + "\n"
+                    + "{:.2e}".format(max(y_arr))
+                    + r"$\left[\mu Ah\right]$",
                     linestyle="",
                 )
             )

@@ -124,7 +124,9 @@ class CustomLoader(Loader):
 
     @staticmethod
     def _pick_definition_file():
-        logging.debug(f"instrument file: {prms.Instruments.custom_instrument_definitions_file}")
+        logging.debug(
+            f"instrument file: {prms.Instruments.custom_instrument_definitions_file}"
+        )
         return prms.Instruments.custom_instrument_definitions_file
 
     @staticmethod
@@ -520,7 +522,10 @@ class CustomLoader(Loader):
 def load_paal():
     import pathlib
     from pprint import pprint
-    elkem_tester = pathlib.Path(r"C:\scripts\tasks\sibanode\2021_08_11_round_robbin\elkem_format.yml")
+
+    elkem_tester = pathlib.Path(
+        r"C:\scripts\tasks\sibanode\2021_08_11_round_robbin\elkem_format.yml"
+    )
     prms.Instruments.custom_instrument_definitions_file = elkem_tester
     print("running this")
     loader = CustomLoader()

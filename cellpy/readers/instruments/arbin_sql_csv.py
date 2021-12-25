@@ -4,10 +4,7 @@ from dateutil.parser import parse
 
 import pandas as pd
 
-from cellpy.readers.core import (
-    FileID,
-    Cell,
-)
+from cellpy.readers.core import FileID, Cell
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.mixin import Loader
 from cellpy import prms
@@ -313,9 +310,7 @@ def test_seamless_files():
     names = [name1, name2]
     cell_data = cellreader.CellpyData()
     cell_data.set_instrument("arbin_sql_csv")
-    cell_data.loadcell(
-        names, mass=0.016569,
-    )
+    cell_data.loadcell(names, mass=0.016569)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 from cellpy import prms
+
 # import boxing
 
 type_translator = {
@@ -12,16 +13,11 @@ type_translator = {
     "<class 'box.box.Box'>": "dict",
     "<class 'dict'>": "dict",
     "<class 'ruamel.yaml.scalarfloat.ScalarFloat'>": "float",
-
 }
 
-value_translator = {
-    "'None'": None
-}
+value_translator = {"'None'": None}
 
-should_be_inside_ticks = [
-    "str"
-]
+should_be_inside_ticks = ["str"]
 
 
 def main():

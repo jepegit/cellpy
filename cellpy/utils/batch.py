@@ -763,7 +763,9 @@ def init(*args, **kwargs):
     testing = kwargs.pop("testing", None)
     file_name = kwargs.pop("file_name", None)
 
-    log.setup_logging(default_level=default_log_level, testing=testing, reset_big_log=True)
+    log.setup_logging(
+        default_level=default_log_level, testing=testing, reset_big_log=True
+    )
 
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:

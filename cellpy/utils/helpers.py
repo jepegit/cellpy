@@ -49,7 +49,7 @@ def _make_average(
                 set(
                     [
                         "_".join(
-                            k.split("_")[key_index_bounds[0]: key_index_bounds[1]]
+                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
                         )
                         for k in keys
                     ]
@@ -322,8 +322,8 @@ def remove_outliers_from_summary_on_window(
     for j in range(iterations):
         fractional_deviation_series = (
             s[col]
-                .rolling(window=window_size, center=True, min_periods=1)
-                .apply(fractional_std)
+            .rolling(window=window_size, center=True, min_periods=1)
+            .apply(fractional_std)
         )
         filter_vals = fractional_deviation_series < cut
         s = s[filter_vals]

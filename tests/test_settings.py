@@ -10,4 +10,3 @@ def test_get_headers_normal():
     headers = get_headers_normal()
     logging.debug(headers)
     assert headers["voltage_txt"] == "voltage"
-

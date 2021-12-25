@@ -301,13 +301,9 @@ def plot_concatenated(
     try:
         current_extension = hv.Store.current_backend
         if extension != current_extension:
-            hv.extension(
-                extension, logo=False,
-            )
+            hv.extension(extension, logo=False)
     except Exception as e:
-        hv.extension(
-            extension, logo=False,
-        )
+        hv.extension(extension, logo=False)
 
     if hdr_level is None:
         hdr_level = 0 if file_id_level == 1 else 1
@@ -419,10 +415,7 @@ def plot_concatenated(
             "show_frame": True,
         }
     else:
-        overlay_opts = {
-            "width": width,
-            "height": height,
-        }
+        overlay_opts = {"width": width, "height": height}
 
     if simple:
         if len(keys) == len(curve_dict):
@@ -1152,21 +1145,9 @@ def oplot(
     if ir_ylim is None:
         ir_ylim = (0, 200)
 
-    overlay_sensitive_opts = {
-        "ce": {},
-        "dcap": {},
-        "ccap": {},
-        "ird": {},
-        "irc": {},
-    }
+    overlay_sensitive_opts = {"ce": {}, "dcap": {}, "ccap": {}, "ird": {}, "irc": {}}
 
-    layout_sensitive_opts = {
-        "ce": {},
-        "dcap": {},
-        "ccap": {},
-        "ird": {},
-        "irc": {},
-    }
+    layout_sensitive_opts = {"ce": {}, "dcap": {}, "ccap": {}, "ird": {}, "irc": {}}
 
     if extension == "bokeh":
         overlay_sensitive_opts["ce"] = {"height": 150}

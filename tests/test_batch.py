@@ -50,7 +50,7 @@ def batch_instance(clean_dir, parameters):
 @pytest.fixture
 def populated_batch(batch_instance):
     b = batch_instance.init(
-        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True,
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
 
     b.create_journal()
@@ -176,7 +176,7 @@ def test_concatinator(populated_batch):
     cellnames = populated_batch.cell_names
     c = populated_batch.experiment.data[cellnames[0]]
     cf = helpers.concatenate_summaries(
-        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True,
+        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True
     )
     print(cf.head(5))
 
@@ -189,7 +189,7 @@ def test_concatinator_yanked(populated_batch):
     c1 = populated_batch.experiment.data[populated_batch.cell_names[0]]
     print(c1.cell.summary.head(10))
     cf1 = helpers.concatenate_summaries(
-        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True,
+        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True
     )
     cf2 = helpers.concatenate_summaries(
         populated_batch,

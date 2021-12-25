@@ -20,7 +20,9 @@ def test_search_for_files_with_dirs(parameters):
     import os
 
     raw_files, cellpy_file = filefinder.search_for_files(
-        parameters.run_name, raw_file_dir=parameters.raw_data_dir, cellpy_file_dir=parameters.output_dir
+        parameters.run_name,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.output_dir,
     )
 
     assert parameters.res_file_path in raw_files

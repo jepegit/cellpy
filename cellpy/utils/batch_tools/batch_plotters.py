@@ -333,8 +333,8 @@ def plot_cycle_life_summary_bokeh(
 
         try:
             coulombic_efficiency = summaries.loc[
-                                   :, idx[["coulombic_efficiency", "charge_c_rate"], :]
-                                   ]
+                :, idx[["coulombic_efficiency", "charge_c_rate"], :]
+            ]
         except AttributeError:
             warnings.warn(
                 "No charge rate columns available - consider re-creating summary!"
@@ -687,7 +687,9 @@ def _preparing_data_and_plotting(**kwargs):
             except KeyError:
                 logging.info("could not parse the summaries")
                 logging.info(" - might be new a bug?")
-                logging.info(" - might be a known bug related to dropping cells (b.drop)")
+                logging.info(
+                    " - might be a known bug related to dropping cells (b.drop)"
+                )
                 logging.info(" - maybe try reloading the data helps?")
 
     return farms

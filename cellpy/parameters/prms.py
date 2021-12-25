@@ -24,9 +24,11 @@ user_dir = os.path.expanduser("~")
 
 wdir = Path(cur_dir)
 
+
 @dataclass
 class CellPyConfig:
     ...
+
 
 @dataclass
 class PathsClass(CellPyConfig):
@@ -67,7 +69,7 @@ Paths = PathsClass()
 
 @dataclass
 class FileNamesClass(CellPyConfig):
-    file_name_format: str = 'YYYYMMDD_[NAME]EEE_CC_TT_RR'
+    file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
 
 
 FileNames = FileNamesClass()
@@ -103,15 +105,17 @@ FileNames = FileNamesClass()
 @dataclass
 class ReaderClass(CellPyConfig):
     diagnostics: bool = False
-    filestatuschecker: str = 'size'
+    filestatuschecker: str = "size"
     force_step_table_creation: bool = True
     force_all: bool = False  # not used yet - should be used when saving
-    sep: str = ';'
-    cycle_mode: str = 'anode'
+    sep: str = ";"
+    cycle_mode: str = "anode"
     sorted_data: bool = True  # finding step-types assumes sorted data
     load_only_summary: bool = False
     select_minimal: bool = False
-    limit_loaded_cycles: Union[int, None] = None  # limit loading cycles to given cycle number
+    limit_loaded_cycles: Union[
+        int, None
+    ] = None  # limit loading cycles to given cycle number
     ensure_step_table: bool = False
     daniel_number: int = 5
     voltage_interpolation_step: float = 0.01
@@ -133,17 +137,21 @@ Reader = ReaderClass()
 # --------------------------
 # DataSet
 # --------------------------
-DataSet = {
-    "nom_cap": 3579
-}  # mAh/g (used for finding c-rates) [should be moved to Materials]
-DataSet = box.Box(DataSet)
+# DataSet = {
+#     "nom_cap": 3579
+# }  # mAh/g (used for finding c-rates) [should be moved to Materials]
+# DataSet = box.Box(DataSet)
 
-#
-# @dataclass
-# class DataSetClass(CellPyConfig):
-#     nom_cap: float = 3579
-#
-# DataSet = DataSetClass()
+
+@dataclass
+class DataSetClass(CellPyConfig):
+    """Values used when processing the data (will be deprecated)"""
+
+    nom_cap: float = 3579
+
+
+DataSet = DataSetClass()
+
 
 # --------------------------
 # Db
@@ -162,8 +170,8 @@ DataSet = box.Box(DataSet)
 
 @dataclass
 class DbClass(CellPyConfig):
-    db_type: str = 'simple_excel_reader'
-    db_table_name: str = 'db_table'
+    db_type: str = "simple_excel_reader"
+    db_table_name: str = "db_table"
     db_header_row: int = 0
     db_unit_row: int = 1
     db_data_start_row: int = 2
@@ -214,35 +222,35 @@ Db = DbClass()
 
 @dataclass
 class DbColsClass(CellPyConfig):
-    id: Tuple[str, str] = ('id', 'int')
-    exists: Tuple[str, str] = ('exists', 'bol')
-    batch: Tuple[str, str] = ('batch', 'str')
-    sub_batch_01: Tuple[str, str] = ('b01', 'str')
-    sub_batch_02: Tuple[str, str] = ('b02', 'str')
-    sub_batch_03: Tuple[str, str] = ('b03', 'str')
-    sub_batch_04: Tuple[str, str] = ('b04', 'str')
-    sub_batch_05: Tuple[str, str] = ('b05', 'str')
-    sub_batch_06: Tuple[str, str] = ('b06', 'str')
-    sub_batch_07: Tuple[str, str] = ('b07', 'str')
-    project: Tuple[str, str] = ('project', 'str')
-    label: Tuple[str, str] = ('label', 'str')
-    group: Tuple[str, str] = ('group', 'int')
-    selected: Tuple[str, str] = ('selected', 'bol')
-    cell_name: Tuple[str, str] = ('cell', 'str')
-    cell_type: Tuple[str, str] = ('cell_type', 'cat')
-    experiment_type: Tuple[str, str] = ('experiment_type', 'cat')
-    active_material: Tuple[str, str] = ('mass_active_material', 'float')
-    total_material: Tuple[str, str] = ('mass_total', 'float')
-    loading: Tuple[str, str] = ('loading_active_material', 'float')
-    nom_cap: Tuple[str, str] = ('nominal_capacity', 'float')
-    file_name_indicator: Tuple[str, str] = ('file_name_indicator', 'str')
-    instrument: Tuple[str, str] = ('instrument', 'str')
-    raw_file_names: Tuple[str, str] = ('raw_file_names', 'Tuple[str, str]')
-    cellpy_file_name: Tuple[str, str] = ('cellpy_file_name', 'str')
-    comment_slurry: Tuple[str, str] = ('comment_slurry', 'str')
-    comment_cell: Tuple[str, str] = ('comment_cell', 'str')
-    comment_general: Tuple[str, str] = ('comment_general', 'str')
-    freeze: Tuple[str, str] = ('freeze', 'bol')
+    id: Tuple[str, str] = ("id", "int")
+    exists: Tuple[str, str] = ("exists", "bol")
+    batch: Tuple[str, str] = ("batch", "str")
+    sub_batch_01: Tuple[str, str] = ("b01", "str")
+    sub_batch_02: Tuple[str, str] = ("b02", "str")
+    sub_batch_03: Tuple[str, str] = ("b03", "str")
+    sub_batch_04: Tuple[str, str] = ("b04", "str")
+    sub_batch_05: Tuple[str, str] = ("b05", "str")
+    sub_batch_06: Tuple[str, str] = ("b06", "str")
+    sub_batch_07: Tuple[str, str] = ("b07", "str")
+    project: Tuple[str, str] = ("project", "str")
+    label: Tuple[str, str] = ("label", "str")
+    group: Tuple[str, str] = ("group", "int")
+    selected: Tuple[str, str] = ("selected", "bol")
+    cell_name: Tuple[str, str] = ("cell", "str")
+    cell_type: Tuple[str, str] = ("cell_type", "cat")
+    experiment_type: Tuple[str, str] = ("experiment_type", "cat")
+    active_material: Tuple[str, str] = ("mass_active_material", "float")
+    total_material: Tuple[str, str] = ("mass_total", "float")
+    loading: Tuple[str, str] = ("loading_active_material", "float")
+    nom_cap: Tuple[str, str] = ("nominal_capacity", "float")
+    file_name_indicator: Tuple[str, str] = ("file_name_indicator", "str")
+    instrument: Tuple[str, str] = ("instrument", "str")
+    raw_file_names: Tuple[str, str] = ("raw_file_names", "Tuple[str, str]")
+    cellpy_file_name: Tuple[str, str] = ("cellpy_file_name", "str")
+    comment_slurry: Tuple[str, str] = ("comment_slurry", "str")
+    comment_cell: Tuple[str, str] = ("comment_cell", "str")
+    comment_general: Tuple[str, str] = ("comment_general", "str")
+    freeze: Tuple[str, str] = ("freeze", "bol")
 
 
 DbCols = DbColsClass()
@@ -310,7 +318,6 @@ Maccor["two"] = maccor_model_2
 Maccor["default_model"] = "one"
 
 
-
 # @dataclass
 # class MaccorClass(CellPyConfig):
 #     one: dict = {'name': 'one', 'skiprows': 2, 'sep': '\t', 'header': 1, 'encoding': 'ISO-8859-1'}
@@ -342,9 +349,12 @@ Instruments["Maccor"] = Maccor
 
 @dataclass
 class MaterialsClass(CellPyConfig):
-    cell_class: str = 'Li-Ion'
-    default_material: str = 'silicon'
+    """Default material-specific values used in processing the data."""
+
+    cell_class: str = "Li-Ion"
+    default_material: str = "silicon"
     default_mass: float = 1.0
+    default_nom_cap: float = 1.0  # not used yet - should replace the DataSet class
 
 
 Materials = MaterialsClass()
@@ -374,18 +384,20 @@ Materials = MaterialsClass()
 #
 @dataclass
 class BatchClass(CellPyConfig):
-    template: str = 'standard'
-    fig_extension: str = 'png'
-    backend: str = 'bokeh'
+    template: str = "standard"
+    fig_extension: str = "png"
+    backend: str = "bokeh"
     notebook: bool = True
     dpi: int = 300
     markersize: int = 4
-    symbol_label: str = 'simple'
-    color_style_label: str = 'seaborn-deep'
-    figure_type: str = 'unlimited'
+    symbol_label: str = "simple"
+    color_style_label: str = "seaborn-deep"
+    figure_type: str = "unlimited"
     summary_plot_width: int = 900
     summary_plot_height: int = 800
-    summary_plot_height_fractions: List[int] = field(default_factory=lambda: [0.2, 0.5, 0.3])
+    summary_plot_height_fractions: List[int] = field(
+        default_factory=lambda: [0.2, 0.5, 0.3]
+    )
 
 
 Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])

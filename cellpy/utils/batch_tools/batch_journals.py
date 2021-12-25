@@ -358,11 +358,7 @@ class LabJournal(BaseJournal):
         pages = self.pages
         session = self.session
         meta = self._prm_packer()
-        top_level_dict = {
-            "info_df": pages,
-            "metadata": meta,
-            "session": session,
-        }
+        top_level_dict = {"info_df": pages, "metadata": meta, "session": session}
 
         is_json = False
         is_xlsx = False
@@ -417,8 +413,8 @@ class LabJournal(BaseJournal):
 
             df_bad_cycle_numbers = (
                 pd.concat(l_bad_cycle_numbers, axis=1)
-                    .melt(var_name="cell_name", value_name="cycle_index")
-                    .dropna()
+                .melt(var_name="cell_name", value_name="cycle_index")
+                .dropna()
             )
             frames.append(df_bad_cycle_numbers)
             keys.append("bad_cycles")
