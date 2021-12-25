@@ -12,6 +12,7 @@ import warnings
 
 import box
 from ruamel.yaml import YAML
+import ruamel
 
 from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
@@ -70,13 +71,11 @@ def _write_prm_file(file_name=None):
             yaml.explicit_start = True
             yaml.explicit_end = True
             yaml.dump(config_dict, config_file)
-    except yaml.YAMLError:
+    except ruamel.yaml.YAMLError:
         raise ConfigFileNotWritten
 
 
 def _update_prms(config_dict):
-    # TODO: clean up this when all dicts in prms has been replaced with
-    #  dataclasses or pydantic classes
     logging.debug("updating parameters")
     logging.debug("new prms:" + str(config_dict))
 
@@ -84,29 +83,25 @@ def _update_prms(config_dict):
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
             for k in config_dict[key]:
-                try:
-                    # a trick to force AttributeError if not nested:
-                    k_in_dict = list(config_dict[key][k].keys())
-                    k_in_attr = list(_config_attr[k].keys())
-                    z = {**_config_attr[k], **config_dict[key][k]}
-
-                except AttributeError:
-                    z = config_dict[key][k]
-                    logging.debug("- not a dict")
-
-                finally:
-                    if isinstance(_config_attr, dict):
-                        logging.debug(
-                            f"{_config_attr} is a dict -> ask the "
-                            f"maintainer of cellpy to replace it "
-                            f"with a dataclass"
-                        )
-                        _config_attr[k] = z
-                    else:
-                        setattr(_config_attr, k, z)
-
+                z = config_dict[key][k]
+                if isinstance(z, ruamel.yaml.comments.CommentedMap):
+                    z = box.Box(z)
+                setattr(_config_attr, k, z)
         else:
             logging.info("\n  not-supported prm: %s" % key)
+
+
+def _convert_instruments_to_dict(x):
+    # Converting instruments to dictionary (since it contains box.Box objects)
+    d = asdict(x)
+    for k, v in d.items():
+
+        try:
+            d[k] = v.to_dict()
+        except AttributeError:
+            pass
+
+    return d
 
 
 def _convert_to_dict(x):
@@ -128,7 +123,7 @@ def _pack_prms():
         "DbCols": _convert_to_dict(prms.DbCols),
         "DataSet": _convert_to_dict(prms.DataSet),
         "Reader": _convert_to_dict(prms.Reader),
-        "Instruments": _convert_to_dict(prms.Instruments),
+        "Instruments": _convert_instruments_to_dict(prms.Instruments),
         "Batch": _convert_to_dict(prms.Batch),
     }
     return config_dict
@@ -252,7 +247,7 @@ def info():
 
         elif isinstance(current_object, box.Box):
             print()
-            print(" DICT-TYPE PRM ".center(80, "="))
+            print(" OLD-TYPE PRM ".center(80, "="))
             print(f"prms.{key}:")
             print(80 * "-")
             for subkey in current_object:
@@ -269,14 +264,19 @@ def info():
 
 
 def main():
-    print(" STARTING PRMREADER ".center(80, "-"))
-    # print(info())
-    _read_prm_file(_get_prm_file())
-    _pack_prms()
+    print(" STARTING THE ACTUAL SCRIPT ".center(80, "-"))
+    print("PRM FILE:")
+    f = _get_prm_file()
+    print(f)
+    print("READING:")
+    _read_prm_file(f)
+    print("PACKING:")
+    pprint(_pack_prms())
+    print("INFO:")
     info()
-    print(prms)
-    pprint(str(prms.Batch), width=1)
-    print(prms.Batch.summary_plot_height_fractions)
+    # print(prms)
+    # pprint(str(prms.Batch), width=1)
+    # print(prms.Batch.summary_plot_height_fractions)
 
 
 if __name__ == "__main__":

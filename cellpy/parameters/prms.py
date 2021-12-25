@@ -254,97 +254,11 @@ class DbColsClass(CellPyConfig):
 
 
 DbCols = DbColsClass()
-# --------------------------
-# Instruments
-# --------------------------
-
-Instruments = {"tester": "arbin", "custom_instrument_definitions_file": None}
-
-Instruments = box.Box(Instruments)
-
-# Pre-defined instruments:
-
-Arbin = {
-    "max_res_filesize": 150_000_000,
-    "chunk_size": None,
-    "max_chunks": None,
-    "use_subprocess": False,
-    "detect_subprocess_need": False,
-    "sub_process_path": None,
-    "office_version": "64bit",
-    "SQL_server": r"localhost\SQLEXPRESS",
-    "SQL_UID": "sa",
-    "SQL_PWD": "Changeme123",
-    "SQL_Driver": "SQL Server",
-}
-
-
-# @dataclass
-# class ArbinClass(CellPyConfig):
-#     max_res_filesize: int = 150000000
-#     chunk_size: str = None
-#     max_chunks: str = None
-#     use_subprocess: bool = False
-#     detect_subprocess_need: bool = False
-#     sub_process_path: str = None
-#     office_version: str = '64bit'
-#     SQL_server: str = 'localhost\SQLEXPRESS'
-#     SQL_UID: str = 'sa'
-#     SQL_PWD: str = 'Changeme123'
-#     SQL_Driver: str = 'SQL Server'
-
-
-Maccor = {}
-
-maccor_model_1 = {
-    "name": "one",
-    "skiprows": 2,  # 12 for other file
-    "sep": "\t",
-    "header": 1,  # 0 for other file
-    "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
-}
-
-maccor_model_2 = {
-    "name": "two",
-    "skiprows": 12,
-    "sep": "\t",
-    "header": 0,
-    "encoding": "ISO-8859-1",
-}
-
-Maccor["one"] = maccor_model_1
-Maccor["two"] = maccor_model_2
-
-Maccor["default_model"] = "one"
-
-
-# @dataclass
-# class MaccorClass(CellPyConfig):
-#     one: dict = {'name': 'one', 'skiprows': 2, 'sep': '\t', 'header': 1, 'encoding': 'ISO-8859-1'}
-#     two: dict = {'name': 'two', 'skiprows': 12, 'sep': '\t', 'header': 0, 'encoding': 'ISO-8859-1'}
-#     default_model: str = 'one'
-
-
-# Register pre-defined instruments:
-
-Instruments["Arbin"] = Arbin
-Instruments["Maccor"] = Maccor
-#
-#
-# @dataclass
-# class InstrumentsClass(CellPyConfig):
-#     tester: str = 'arbin'
-#     custom_instrument_definitions_file: str = None
-#     Arbin: dict = {'max_res_filesize': 150000000, 'chunk_size': None, 'max_chunks': None, 'use_subprocess': False, 'detect_subprocess_need': False, 'sub_process_path': None, 'office_version': '64bit', 'SQL_server': 'localhost\\SQLEXPRESS', 'SQL_UID': 'sa', 'SQL_PWD': 'Changeme123', 'SQL_Driver': 'SQL Server', 'odbc_driver': None}
-#     Maccor: dict = {'one': {'name': 'one', 'skiprows': 2, 'sep': '\t', 'header': 1, 'encoding': 'ISO-8859-1'}, 'two': {'name': 'two', 'skiprows': 12, 'sep': '\t', 'header': 0, 'encoding': 'ISO-8859-1'}, 'default_model': 'one'}
 
 
 # --------------------------
 # Materials
 # --------------------------
-#
-# Materials = {"cell_class": "Li-Ion", "default_material": "silicon", "default_mass": 1.0}
-# Materials = box.Box(Materials)
 
 
 @dataclass
@@ -401,6 +315,72 @@ class BatchClass(CellPyConfig):
 
 
 Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
+
+
+# ------------------------------------------------------------------------------
+# Instruments
+#
+#  This should be updated - currently using dicts instead of sub-classes of
+#  dataclasses. I guess I could update this but is a bit challenging
+#  so maybe replace later  using e.g. pydantic
+# ------------------------------------------------------------------------------
+
+# Pre-defined instruments:
+
+Arbin = {
+    "max_res_filesize": 150_000_000,
+    "chunk_size": None,
+    "max_chunks": None,
+    "use_subprocess": False,
+    "detect_subprocess_need": False,
+    "sub_process_path": None,
+    "office_version": "64bit",
+    "SQL_server": r"localhost\SQLEXPRESS",
+    "SQL_UID": "sa",
+    "SQL_PWD": "Changeme123",
+    "SQL_Driver": "SQL Server",
+}
+
+Arbin = box.Box(Arbin)
+
+
+Maccor = {}
+
+maccor_model_1 = {
+    "name": "one",
+    "skiprows": 2,  # 12 for other file
+    "sep": "\t",
+    "header": 1,  # 0 for other file
+    "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
+}
+
+maccor_model_2 = {
+    "name": "two",
+    "skiprows": 12,
+    "sep": "\t",
+    "header": 0,
+    "encoding": "ISO-8859-1",
+}
+
+Maccor["one"] = maccor_model_1
+Maccor["two"] = maccor_model_2
+Maccor["default_model"] = "one"
+
+Maccor = box.Box(Maccor)
+
+
+# remark! using box.Box for each instrument
+@dataclass
+class InstrumentsClass(CellPyConfig):
+    tester: str
+    custom_instrument_definitions_file: str
+    Arbin: box.Box
+    Maccor: box.Box
+
+
+Instruments = InstrumentsClass(
+    tester="arbin", custom_instrument_definitions_file=None, Arbin=Arbin, Maccor=Maccor
+)
 
 
 # ---------------------------

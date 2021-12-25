@@ -189,3 +189,9 @@ def test_dataclass_prms_type_hint():
     assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
     prms.Paths.outdatadir = Path(r"C:\my_data\processed")
     assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
+
+
+def test_dataclass_prms_instruments_subclass():
+    print(prms.Instruments.Arbin)
+    detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
+    print(detect_subprocess_need)
