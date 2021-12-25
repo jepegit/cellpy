@@ -13,9 +13,7 @@ PIP_DEVELOPMENT_MODE = (
     "pip install -e ."  # will install in development mode for current virtualenv
 )
 MAKE_DIST = "python setup.py sdist"  # creates a build with version number name
-UPLOAD_PYPI = (
-    "twine upload dist/*"
-)  # uploads to pypi (note! remove old tar-files first if using *)
+UPLOAD_PYPI = "twine upload dist/*"  # uploads to pypi (note! remove old tar-files first if using *)
 # use yolk to find out latest cellpy version
 FIND_CELLPY_VERSION_ON_PYPI = (
     "yolk -V cellpy"  # First you might have to install yolk: pip install yolk3k
@@ -26,15 +24,11 @@ RUN_COVERAGE = "pytest -cov=cellpy tests/"
 # some sphinx commands
 # BUILD = "sphinx-build -b html sourcedir builddir" # not used
 EASY_BUILD = "make html"  # inside the docs directory to make html docs
-CREATE_APIDOC = (
-    "sphinx-apidoc -o source ../cellpy"
-)  # inside the docs directory to make .rst files for docstrings etc.
+CREATE_APIDOC = "sphinx-apidoc -o source ../cellpy"  # inside the docs directory to make .rst files for docstrings etc.
 
 # creating conda build
 # --------------------
-CONDA_UPDATE_DEV = (
-    "conda env update -f dev_environment.yml"
-)  # update your development environment first
+CONDA_UPDATE_DEV = "conda env update -f dev_environment.yml"  # update your development environment first
 CONDA_CREATE_DEV = (
     "conda env create -f dev_environment.yml"  # or create a development environment
 )

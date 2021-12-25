@@ -42,6 +42,8 @@ from cellpy.parameters.internal_settings import (
     ATTRS_DATASET,
     ATTRS_DATASET_DEEP,
     ATTRS_CELLPYDATA,
+    HeaderDict,
+    ValuesDict,
 )
 from cellpy.readers.core import (
     FileID,
@@ -512,7 +514,9 @@ class CellpyData(object):
                 _instrument = instrument.split(custom_instrument_splitter)
                 try:
                     instrument_file = _instrument[1]
-                    logging.debug(f"provided instrument file through instrument splitter: {instrument_file}")
+                    logging.debug(
+                        f"provided instrument file through instrument splitter: {instrument_file}"
+                    )
 
                 except IndexError:
                     logging.debug("no definition file provided")
@@ -521,9 +525,7 @@ class CellpyData(object):
 
             if instrument_file:
                 logging.debug(f"setting instrument file: {instrument_file}")
-                prms.Instruments.custom_instrument_definitions_file = (
-                    instrument_file
-                )
+                prms.Instruments.custom_instrument_definitions_file = instrument_file
 
             from cellpy.readers.instruments.custom import CustomLoader as RawLoader
 
@@ -1107,7 +1109,13 @@ class CellpyData(object):
         self._invent_a_name()
         return self
 
-    def from_raw(self, file_names=None, pre_processor_hook=None, post_processor_hook=None, **kwargs):
+    def from_raw(
+        self,
+        file_names=None,
+        pre_processor_hook=None,
+        post_processor_hook=None,
+        **kwargs,
+    ):
         """Load a raw data-file.
 
         Args:
@@ -1162,7 +1170,9 @@ class CellpyData(object):
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
-            new_cells = raw_file_loader(file_name, pre_processor_hook=pre_processor_hook, **kwargs)  # list of tests
+            new_cells = raw_file_loader(
+                file_name, pre_processor_hook=pre_processor_hook, **kwargs
+            )  # list of tests
             if post_processor_hook is not None:
                 # REMARK! this needs to be changed if we stop returning the datasets in a list
                 # (i.e. if we chose to remove option for having more than one test pr instance)
@@ -5202,7 +5212,7 @@ class CellpyData(object):
                 if step2[-1]:
                     end_voltage_c = raw[
                         (raw[c_txt] == cycle) & (dataset.raw[s_txt] == step2[-1])
-                        ][voltage_header]
+                    ][voltage_header]
                     end_voltage_c = end_voltage_c.values[-1]
                     # end_voltage_c = np.amax(end_voltage_c)
                 else:
@@ -5423,7 +5433,9 @@ def get(
 
     if instrument_file is not None:
         # TODO: make tests for this:
-        cellpy_instance.set_instrument(instrument="custom", instrument_file=instrument_file)
+        cellpy_instance.set_instrument(
+            instrument="custom", instrument_file=instrument_file
+        )
         # prms.Instruments.custom_instrument_definitions_file = instrument_file
 
     elif instrument is not None:
@@ -5450,7 +5462,9 @@ def get(
                 if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
                     logging.info(f"Loading cellpy-file: {filename}")
                     if kwargs.pop("post_processor_hook", None) is not None:
-                        logging.warning("post_processor_hook is not allowed when loading cellpy-files")
+                        logging.warning(
+                            "post_processor_hook is not allowed when loading cellpy-files"
+                        )
                     cellpy_instance.load(filename, **kwargs)
 
                     # in case the user wants to give another mass to the cell:

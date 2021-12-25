@@ -6,19 +6,29 @@ import collections
 class HeaderDict(collections.UserDict):
     """Sub-classing dict to allow for tab-completion."""
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: str) -> None:
         if key == "data":
             raise KeyError("protected key")
         super().__setitem__(key, value)
         self.__dict__[key] = value
 
 
-cellpy_units = HeaderDict()
-cellpy_limits = HeaderDict()
-headers_normal = HeaderDict()
-headers_summary = HeaderDict()
-headers_step_table = HeaderDict()
-headers_journal = HeaderDict()
+class ValuesDict(collections.UserDict):
+    """Sub-classing dict to allow for tab-completion."""
+
+    def __setitem__(self, key: str, value: float) -> None:
+        if key == "data":
+            raise KeyError("protected key")
+        super().__setitem__(key, value)
+        self.__dict__[key] = value
+
+
+cellpy_units: ValuesDict = ValuesDict()
+cellpy_limits: ValuesDict = ValuesDict()
+headers_normal: HeaderDict = HeaderDict()
+headers_summary: HeaderDict = HeaderDict()
+headers_step_table: HeaderDict = HeaderDict()
+headers_journal: HeaderDict = HeaderDict()
 
 # cellpy attributes that should be loaded from cellpy-files:
 
@@ -119,24 +129,24 @@ ATTRS_DATASET_DEEP = ["raw_data_files"]
 
 # cellpy units:
 
-cellpy_units["current"] = 0.001  # mA
-cellpy_units["charge"] = 0.001  # Ah
-cellpy_units["mass"] = 0.001  # mg (used for input of mass)
-cellpy_units["specific"] = 1.0  # g (used for calc. of e.g. spec. capacity)
-cellpy_units["voltage"] = 1.0  # V (not implemented yet)
+cellpy_units["current"]: float = 0.001  # mA
+cellpy_units["charge"]: float = 0.001  # Ah
+cellpy_units["mass"]: float = 0.001  # mg (used for input of mass)
+cellpy_units["specific"]: float = 1.0  # g (used for calc. of e.g. spec. capacity)
+cellpy_units["voltage"]: float = 1.0  # V (not implemented yet)
 
 
 # cellpy limits:
 
-cellpy_limits["current_hard"] = 0.0000000000001
-cellpy_limits["current_soft"] = 0.00001
-cellpy_limits["stable_current_hard"] = 2.0
-cellpy_limits["stable_current_soft"] = 4.0
-cellpy_limits["stable_voltage_hard"] = 2.0
-cellpy_limits["stable_voltage_soft"] = 4.0
-cellpy_limits["stable_charge_hard"] = 0.9
-cellpy_limits["stable_charge_soft"] = 5.0
-cellpy_limits["ir_change"] = 0.00001
+cellpy_limits["current_hard"]: float = 0.0000000000001
+cellpy_limits["current_soft"]: float = 0.00001
+cellpy_limits["stable_current_hard"]: float = 2.0
+cellpy_limits["stable_current_soft"]: float = 4.0
+cellpy_limits["stable_voltage_hard"]: float = 2.0
+cellpy_limits["stable_voltage_soft"]: float = 4.0
+cellpy_limits["stable_charge_hard"]: float = 0.9
+cellpy_limits["stable_charge_soft"]: float = 5.0
+cellpy_limits["ir_change"]: float = 0.00001
 
 
 # headers for out-files:
@@ -285,7 +295,7 @@ headers_journal["comment"] = "comment"
 keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
 
 
-def get_headers_summary():
+def get_headers_summary() -> HeaderDict:
     """Returns a dictionary containing the header-strings for the summary
     (used as column headers for the summary pandas DataFrames)"""
     # maybe I can do some tricks in here so that tab completion works?
@@ -293,24 +303,24 @@ def get_headers_summary():
     return headers_summary
 
 
-def get_cellpy_units():
+def get_cellpy_units() -> ValuesDict:
     """Returns a dictionary with units"""
     return cellpy_units
 
 
-def get_headers_normal():
+def get_headers_normal() -> HeaderDict:
     """Returns a dictionary containing the header-strings for the normal data
         (used as column headers for the main data pandas DataFrames)"""
     return headers_normal
 
 
-def get_headers_step_table():
+def get_headers_step_table() -> HeaderDict:
     """Returns a dictionary containing the header-strings for the steps table
         (used as column headers for the steps pandas DataFrames)"""
     return headers_step_table
 
 
-def get_headers_journal():
+def get_headers_journal() -> HeaderDict:
     """Returns a dictionary containing the header-strings for the journal (batch)
             (used as column headers for the journal pandas DataFrames)"""
     return headers_journal
