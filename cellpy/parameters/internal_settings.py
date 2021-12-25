@@ -184,7 +184,6 @@ headers_normal["channel_id_txt"] = "channel_id"  # new Arbin SQL Server
 headers_normal["data_flag_txt"] = "data_flag"  # new Arbin SQL Server
 headers_normal["test_name_txt"] = "test_name"  # new Arbin SQL Server
 headers_normal["test_id_txt"] = "test_id"  # new Arbin SQL Server
-
 # - summary -
 
 # 08.12.2016: added temperature_last, temperature_mean, aux_
