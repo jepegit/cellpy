@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from dataclasses import asdict, dataclass
+from pprint import pprint
 import glob
 import os
 import pathlib
@@ -241,34 +242,29 @@ def info():
     """this function will show only the 'box'-type
     attributes and their content in the cellpy.prms module"""
     print("convenience function for listing prms")
-    print(type(prms))
     print(prms.__name__)
     print(f"prm file: {_get_prm_file()}")
+    print()
 
-    for key in prms.__dict__:
-        if isinstance(prms.__dict__[key], box.Box):
+    for key, current_object in prms.__dict__.items():
+
+        if key.startswith("_") and not key.startswith("__") and prms._debug:
+            print(f"Internal: {key} (type={type(current_object)}): {current_object}")
+
+        elif isinstance(current_object, box.Box):
             print()
-            print(80 * "=")
+            print(" DICT-TYPE PRM ".center(80, "="))
             print(f"prms.{key}:")
             print(80 * "-")
-            for subkey in prms.__dict__[key]:
-                print(f"prms.{key}.{subkey} = ", f"{prms.__dict__[key][subkey]}")
-            print(80 * "=")
+            for subkey in current_object:
+                print(f"prms.{key}.{subkey} = ", f"{current_object[subkey]}")
+            print()
 
-        elif isinstance(prms.__dict__[key], type):
-            try:
-                # THIS DOES NOT WORK - FIX IT
-                dataclass_dict = asdict(prms.__dict__[key])
-            except TypeError:
-                pass
-            else:
-                print()
-                print(80 * "=")
-                print(f"prms.{key}:")
-                print(80 * "-")
-                for subkey in dataclass_dict:
-                    print(f"prms.{key}.{subkey} = ", f"{dataclass_dict[subkey]}")
-                print(80 * "=")
+        elif isinstance(current_object, prms.CellPyConfig):
+            attributes = {k: v for k, v in vars(current_object).items() if not k.startswith("_")}
+            print(f" {key} ".center(80, "="))
+            pprint(attributes, width=1)
+            print()
 
 
 def main():

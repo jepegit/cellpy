@@ -25,9 +25,12 @@ user_dir = os.path.expanduser("~")
 
 wdir = Path(cur_dir)
 
+@dataclass
+class CellPyConfig:
+    ...
 
 @dataclass
-class PathsClass:
+class PathsClass(CellPyConfig):
     outdatadir: Union[Path, str] = wdir
     rawdatadir: Union[Path, str] = wdir
     cellpydatadir: Union[Path, str] = wdir
@@ -64,7 +67,7 @@ Paths = PathsClass()
 
 
 @dataclass
-class FileNamesClass:
+class FileNamesClass(CellPyConfig):
     file_name_format: str = 'YYYYMMDD_[NAME]EEE_CC_TT_RR'
 
 
@@ -99,7 +102,7 @@ FileNames = FileNamesClass()
 
 
 @dataclass
-class ReaderClass:
+class ReaderClass(CellPyConfig):
     diagnostics: bool = False
     filestatuschecker: str = 'size'
     force_step_table_creation: bool = True
@@ -136,10 +139,12 @@ DataSet = {
 }  # mAh/g (used for finding c-rates) [should be moved to Materials]
 DataSet = box.Box(DataSet)
 
-
-
-
-
+#
+# @dataclass
+# class DataSetClass(CellPyConfig):
+#     nom_cap: float = 3579
+#
+# DataSet = DataSetClass()
 
 # --------------------------
 # Db
@@ -157,7 +162,7 @@ DataSet = box.Box(DataSet)
 
 
 @dataclass
-class DbClass:
+class DbClass(CellPyConfig):
     db_type: str = 'simple_excel_reader'
     db_table_name: str = 'db_table'
     db_header_row: int = 0
@@ -209,7 +214,7 @@ Db = DbClass()
 
 
 @dataclass
-class DbColsClass:
+class DbColsClass(CellPyConfig):
     id: Tuple[str, str] = ('id', 'int')
     exists: Tuple[str, str] = ('exists', 'bol')
     batch: Tuple[str, str] = ('batch', 'str')
@@ -268,7 +273,7 @@ Arbin = {
 
 
 # @dataclass
-# class ArbinClass:
+# class ArbinClass(CellPyConfig):
 #     max_res_filesize: int = 150000000
 #     chunk_size: str = None
 #     max_chunks: str = None
@@ -308,7 +313,7 @@ Maccor["default_model"] = "one"
 
 
 # @dataclass
-# class MaccorClass:
+# class MaccorClass(CellPyConfig):
 #     one: dict = {'name': 'one', 'skiprows': 2, 'sep': '\t', 'header': 1, 'encoding': 'ISO-8859-1'}
 #     two: dict = {'name': 'two', 'skiprows': 12, 'sep': '\t', 'header': 0, 'encoding': 'ISO-8859-1'}
 #     default_model: str = 'one'
@@ -321,7 +326,7 @@ Instruments["Maccor"] = Maccor
 #
 #
 # @dataclass
-# class InstrumentsClass:
+# class InstrumentsClass(CellPyConfig):
 #     tester: str = 'arbin'
 #     custom_instrument_definitions_file: str = None
 #     Arbin: dict = {'max_res_filesize': 150000000, 'chunk_size': None, 'max_chunks': None, 'use_subprocess': False, 'detect_subprocess_need': False, 'sub_process_path': None, 'office_version': '64bit', 'SQL_server': 'localhost\\SQLEXPRESS', 'SQL_UID': 'sa', 'SQL_PWD': 'Changeme123', 'SQL_Driver': 'SQL Server', 'odbc_driver': None}
@@ -337,7 +342,7 @@ Instruments["Maccor"] = Maccor
 
 
 @dataclass
-class MaterialsClass:
+class MaterialsClass(CellPyConfig):
     cell_class: str = 'Li-Ion'
     default_material: str = 'silicon'
     default_mass: float = 1.0
@@ -369,7 +374,7 @@ Batch = box.Box(Batch)
 
 #
 # @dataclass
-# class BatchClass:
+# class BatchClass(CellPyConfig):
 #     template: str = 'standard'
 #     fig_extension: str = 'png'
 #     backend: str = 'bokeh'
@@ -384,10 +389,11 @@ Batch = box.Box(Batch)
 #     summary_plot_height_fractions: list = [0.2, 0.5, 0.3]
 #
 # Batch = BatchClass()
-# --------------------------
-# Other non-config
-# --------------------------
+# ---------------------------
+# Other secret- or non-config
+# ---------------------------
 
+_debug = False
 _variable_that_is_not_saved_to_config = "Hei"
 _prm_default_name = ".cellpy_prms_default.conf"
 _prm_globtxt = ".cellpy_prms*.conf"
