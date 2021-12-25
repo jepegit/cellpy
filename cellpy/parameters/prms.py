@@ -1,11 +1,10 @@
 """cellpy parameters"""
 
 import os
-import pathlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import sys
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 import box
 
@@ -353,42 +352,45 @@ Materials = MaterialsClass()
 # --------------------------
 # Batch-options
 # --------------------------
-
-Batch = {
-    "template": "standard",
-    "fig_extension": "png",
-    "backend": "bokeh",
-    "notebook": True,
-    "dpi": 300,
-    "markersize": 4,
-    "symbol_label": "simple",
-    "color_style_label": "seaborn-deep",
-    "figure_type": "unlimited",
-    "summary_plot_width": 900,
-    "summary_plot_height": 800,
-    "summary_plot_height_fractions": [0.2, 0.5, 0.3],
-}
-
-Batch = box.Box(Batch)
+#
+# Batch = {
+#     "template": "standard",
+#     "fig_extension": "png",
+#     "backend": "bokeh",
+#     "notebook": True,
+#     "dpi": 300,
+#     "markersize": 4,
+#     "symbol_label": "simple",
+#     "color_style_label": "seaborn-deep",
+#     "figure_type": "unlimited",
+#     "summary_plot_width": 900,
+#     "summary_plot_height": 800,
+#     "summary_plot_height_fractions": [0.2, 0.5, 0.3],
+# }
+#
+# Batch = box.Box(Batch)
 
 
 #
-# @dataclass
-# class BatchClass(CellPyConfig):
-#     template: str = 'standard'
-#     fig_extension: str = 'png'
-#     backend: str = 'bokeh'
-#     notebook: bool = True
-#     dpi: int = 300
-#     markersize: int = 4
-#     symbol_label: str = 'simple'
-#     color_style_label: str = 'seaborn-deep'
-#     figure_type: str = 'unlimited'
-#     summary_plot_width: int = 900
-#     summary_plot_height: int = 800
-#     summary_plot_height_fractions: list = [0.2, 0.5, 0.3]
-#
-# Batch = BatchClass()
+@dataclass
+class BatchClass(CellPyConfig):
+    template: str = 'standard'
+    fig_extension: str = 'png'
+    backend: str = 'bokeh'
+    notebook: bool = True
+    dpi: int = 300
+    markersize: int = 4
+    symbol_label: str = 'simple'
+    color_style_label: str = 'seaborn-deep'
+    figure_type: str = 'unlimited'
+    summary_plot_width: int = 900
+    summary_plot_height: int = 800
+    summary_plot_height_fractions: List[int] = field(default_factory=lambda: [0.2, 0.5, 0.3])
+
+
+Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
+
+
 # ---------------------------
 # Other secret- or non-config
 # ---------------------------

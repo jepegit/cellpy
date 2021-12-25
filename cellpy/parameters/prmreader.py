@@ -94,7 +94,7 @@ def _update_prms(config_dict):
 
                 except AttributeError:
                     z = config_dict[key][k]
-                    logging.info("- not a dict")
+                    logging.debug("- not a dict")
 
                 finally:
                     if isinstance(_config_attr, dict):
@@ -268,11 +268,14 @@ def info():
 
 
 def main():
-    print("STARTING")
+    print(" STARTING PRMREADER ".center(80, "-"))
     # print(info())
     _read_prm_file(_get_prm_file())
     _pack_prms()
     info()
+    print(prms)
+    pprint(str(prms.Batch), width=1)
+    print(prms.Batch.summary_plot_height_fractions)
 
 
 if __name__ == "__main__":
