@@ -1,6 +1,6 @@
 """Internal settings and definitions and functions for getting them."""
 from collections import UserDict
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 
 # TODO: remove import of this
@@ -16,15 +16,33 @@ class HeaderDict(UserDict):
 
 @dataclass
 class BaseSettings:
+
     def __getitem__(self, key):
         return getattr(self, key)
 
     def __setitem__(self, key, value):
         setattr(self, key, value)
 
+    @property
+    def _field_names(self):
+        return [field.name for field in fields(self)]
+
     def __iter__(self):
-        for field in self.__dataclass_fields__:
+        for field in self._field_names:
+            yield field
+
+    def _value_iter(self):
+        for field in self._field_names:
             yield getattr(self, field)
+
+    def keys(self):
+        return [key for key in self.__iter__()]
+
+    def values(self):
+        return [v for v in self._value_iter()]
+
+    def items(self):
+        return zip(self.keys(), self.values())
 
 
 @dataclass

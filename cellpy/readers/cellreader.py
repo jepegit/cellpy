@@ -5509,7 +5509,33 @@ def get(
     return cellpy_instance
 
 
-if __name__ == "__main__":
+def check_raw():
+    from cellpy.utils import example_data
+
+    cellpy_data_instance = CellpyData()
+    res_file_path = example_data.arbin_file_path()
+    cellpy_data_instance.loadcell(res_file_path)
+    run_number = 0
+    data_point = 2283
+    step_time = 1500.05
+    sum_discharge_time = 362198.12
+    my_test = cellpy_data_instance.cells[run_number]
+
+    summary = my_test.summary
+    raw = my_test.raw
+    print(summary.columns)
+    print(summary.index)
+    print(summary.head())
+    print(summary.iloc[1, 1])
+    print(summary.loc[:, "Data_Point"])
+    print(summary.loc[1, "Data_Point"])
+
+    print(raw.columns)
+    # assert my_test.summary.loc["1", "data_point"] == data_point
+    assert my_test.cell_no == run_number
+
+
+def check_cellpy_file():
     print("running", end=" ")
     print(sys.argv[0])
     import logging
@@ -5530,3 +5556,7 @@ if __name__ == "__main__":
     print(c.cell.summary.columns)
     print(c.cell.steps.columns)
     print(c.cell.raw.columns)
+
+
+if __name__ == "__main__":
+    check_raw()

@@ -48,3 +48,9 @@ def cellpy_file_path():
     """Get the path to an example cellpy file"""
 
     return H5_PATH / "20160805_test001_45_cc.h5"
+
+
+def arbin_file_path():
+    """Get the path to an example arbin res file"""
+
+    return RAW_PATH / "20160805_test001_45_cc_01.res"
