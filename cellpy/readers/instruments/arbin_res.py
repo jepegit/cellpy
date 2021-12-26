@@ -425,6 +425,10 @@ class ArbinLoader(Loader):
                         columns[old_header] = old_header.lower()
                 data.summary.rename(index=str, columns=columns, inplace=True)
             except Exception as e:
+                txt = f"Exception raised ({e})\n" \
+                      f"key: {key} old_header: {old_header}" \
+                      f"cellpy headers normal type {type(self.cellpy_headers_normal)}"
+                raise Exception(txt)
                 logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:

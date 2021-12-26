@@ -460,6 +460,8 @@ def test_loadcell_raw(cellpy_data_instance, parameters):
     step_time = 1500.05
     sum_discharge_time = 362198.12
     my_test = cellpy_data_instance.cells[run_number]
+    summary = my_test.summary
+    # print(summary.head())
     assert my_test.summary.loc["1", "data_point"] == data_point
     assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
     assert sum_discharge_time == pytest.approx(
