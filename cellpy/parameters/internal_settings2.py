@@ -1,102 +1,17 @@
 """Internal settings and definitions and functions for getting them."""
+from collections import UserDict
 from dataclasses import dataclass
 
-# cellpy attributes that should be loaded from cellpy-files:
 
-ATTRS_CELLPYFILE = [
-    "mass",
-    "channel_index",
-    "channel_number",
-    "creator",
-    "cycle_mode",
-    "schedule_file_name",
-    "start_datetime",
-    "test_ID",
-    "cell_no",
-    "name",
-    "nom_cap",
-    "material",
-    "item_ID",
-    "active_electrode_area",
-    "active_electrode_thickness",
-    "electrolyte_type",
-    "electrolyte_volume",
-    "active_electrode_type",
-    "counter_electrode_type",
-    "reference_electrode_type",
-    "experiment_type",
-    "active_electrode_current_collector",
-    "reference_electrode_current_collector",
-    "comment",
-]
+# TODO: remove import of this
+class HeaderDict(UserDict):
+    """Sub-classing dict to allow for tab-completion."""
 
-# Attributes that should be copied when duplicating cellpy objects:
-
-# current attributes for the cellpy.cellpydata objects
-ATTRS_CELLPYDATA = [
-    "auto_dirs",
-    "capacity_modifiers",
-    "cellpy_datadir",
-    "daniel_number",
-    "ensure_step_table",
-    "file_names",
-    "filestatuschecker",
-    "force_all",
-    "force_step_table_creation",
-    "forced_errors",
-    "limit_loaded_cycles",
-    "load_only_summary",
-    "minimum_selection",
-    "name",
-    "number_of_datasets",
-    "profile",
-    "raw_datadir",
-    "raw_limits",
-    "raw_units",
-    "select_minimal",
-    "selected_cell_number",
-    "selected_scans",
-    "sep",
-    "status_datasets",
-    "summary_exists",
-    "table_names",
-    "tester",
-]
-
-# current attributes used for the cellpy.cell objects
-ATTRS_DATASET = [
-    "cellpy_file_version",
-    "channel_index",
-    "channel_number",
-    "charge_steps",
-    "creator",
-    "cycle_mode",
-    # "data",
-    "discharge_steps",
-    "file_errors",
-    "ir_steps",
-    "item_ID",
-    "loaded_from",
-    "mass",
-    "mass_given",
-    "material",
-    "merged",
-    "name",
-    "no_cycles",
-    "nom_cap",
-    "ocv_steps",
-    "raw_data_files_length",
-    "raw_limits",
-    "raw_units",
-    "schedule_file_name",
-    "start_datetime",
-    # "summary",
-    "test_ID",
-    "cell_no",
-    "tot_mass",
-]
-
-ATTRS_DATASET_DEEP = ["raw_data_files"]
+    def __setitem__(self, key: str, value: str) -> None:
+        if key == "data":
+            raise KeyError("protected key")
+        super().__setitem__(key, value)
+        self.__dict__[key] = value
 
 
 @dataclass
@@ -106,6 +21,10 @@ class BaseSettings:
 
     def __setitem__(self, key, value):
         setattr(self, key, value)
+
+    def __iter__(self):
+        for field in self.__dataclass_fields__:
+            yield getattr(self, field)
 
 
 @dataclass
@@ -254,12 +173,111 @@ class HeadersJournal(BaseSettings):
     comment: str = 'comment'
 
 
+keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
+
 cellpy_units = CellpyUnits()
 cellpy_limits = CellpyLimits()
 headers_step_table = HeadersStepTable()
 headers_journal = HeadersJournal()
 headers_summary = HeadersSummary()
 headers_normal = HeadersNormal()
+
+# cellpy attributes that should be loaded from cellpy-files:
+
+ATTRS_CELLPYFILE = [
+    "mass",
+    "channel_index",
+    "channel_number",
+    "creator",
+    "cycle_mode",
+    "schedule_file_name",
+    "start_datetime",
+    "test_ID",
+    "cell_no",
+    "name",
+    "nom_cap",
+    "material",
+    "item_ID",
+    "active_electrode_area",
+    "active_electrode_thickness",
+    "electrolyte_type",
+    "electrolyte_volume",
+    "active_electrode_type",
+    "counter_electrode_type",
+    "reference_electrode_type",
+    "experiment_type",
+    "active_electrode_current_collector",
+    "reference_electrode_current_collector",
+    "comment",
+]
+
+# Attributes that should be copied when duplicating cellpy objects:
+
+# current attributes for the cellpy.cellpydata objects
+ATTRS_CELLPYDATA = [
+    "auto_dirs",
+    "capacity_modifiers",
+    "cellpy_datadir",
+    "daniel_number",
+    "ensure_step_table",
+    "file_names",
+    "filestatuschecker",
+    "force_all",
+    "force_step_table_creation",
+    "forced_errors",
+    "limit_loaded_cycles",
+    "load_only_summary",
+    "minimum_selection",
+    "name",
+    "number_of_datasets",
+    "profile",
+    "raw_datadir",
+    "raw_limits",
+    "raw_units",
+    "select_minimal",
+    "selected_cell_number",
+    "selected_scans",
+    "sep",
+    "status_datasets",
+    "summary_exists",
+    "table_names",
+    "tester",
+]
+
+# current attributes used for the cellpy.cell objects
+ATTRS_DATASET = [
+    "cellpy_file_version",
+    "channel_index",
+    "channel_number",
+    "charge_steps",
+    "creator",
+    "cycle_mode",
+    # "data",
+    "discharge_steps",
+    "file_errors",
+    "ir_steps",
+    "item_ID",
+    "loaded_from",
+    "mass",
+    "mass_given",
+    "material",
+    "merged",
+    "name",
+    "no_cycles",
+    "nom_cap",
+    "ocv_steps",
+    "raw_data_files_length",
+    "raw_limits",
+    "raw_units",
+    "schedule_file_name",
+    "start_datetime",
+    # "summary",
+    "test_ID",
+    "cell_no",
+    "tot_mass",
+]
+
+ATTRS_DATASET_DEEP = ["raw_data_files"]
 
 
 def get_headers_summary() -> BaseSettings:

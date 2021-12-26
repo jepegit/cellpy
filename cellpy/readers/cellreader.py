@@ -42,8 +42,6 @@ from cellpy.parameters.internal_settings import (
     ATTRS_DATASET,
     ATTRS_DATASET_DEEP,
     ATTRS_CELLPYDATA,
-    HeaderDict,
-    ValuesDict,
 )
 from cellpy.readers.core import (
     FileID,
