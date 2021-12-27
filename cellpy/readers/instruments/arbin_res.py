@@ -22,6 +22,8 @@ from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.mixin import Loader, MINIMUM_SELECTION
 from cellpy import prms
 
+# TODO: use InstrumentSettings (dataclass) from internal_settings instead of HeaderDict.
+
 DEBUG_MODE = prms.Reader.diagnostics
 ALLOW_MULTI_TEST_FILE = False
 
@@ -425,9 +427,11 @@ class ArbinLoader(Loader):
                         columns[old_header] = old_header.lower()
                 data.summary.rename(index=str, columns=columns, inplace=True)
             except Exception as e:
-                txt = f"Exception raised ({e})\n" \
-                      f"key: {key} old_header: {old_header}" \
-                      f"cellpy headers normal type {type(self.cellpy_headers_normal)}"
+                txt = (
+                    f"Exception raised ({e})\n"
+                    f"key: {key} old_header: {old_header}"
+                    f"cellpy headers normal type {type(self.cellpy_headers_normal)}"
+                )
                 raise Exception(txt)
                 logging.debug(f"Could not rename summary df ::\n{e}")
 
@@ -971,7 +975,6 @@ class ArbinLoader(Loader):
         # use pandas to load in the data
         global_data_df = pd.read_csv(tmp_name_global)
         tests = global_data_df[self.arbin_headers_normal.test_id_txt]
-
         number_of_sets = len(tests)
         self.logger.debug("number of datasets: %i" % number_of_sets)
 
