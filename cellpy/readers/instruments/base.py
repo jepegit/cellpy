@@ -34,7 +34,8 @@ class AtomicLoad(object):
 class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
 
-    # TODO: should also include the functions for getting cellpy headers etc here
+    # TODO: should also include the functions for getting cellpy headers etc
+    #  here
 
     @staticmethod
     @abc.abstractmethod

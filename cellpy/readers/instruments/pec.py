@@ -10,7 +10,7 @@ import pandas as pd
 
 from cellpy.readers.core import FileID, Cell, humanize_bytes
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.instruments.mixin import Loader
+from cellpy.readers.instruments.base import Loader
 
 pec_headers_normal = dict()
 

@@ -21,7 +21,7 @@ from cellpy.readers.core import (
     xldate_as_datetime,
 )
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.instruments.mixin import Loader
+from cellpy.readers.instruments.base import Loader
 from cellpy import prms
 
 # TODO: get more meta data from the SQL db

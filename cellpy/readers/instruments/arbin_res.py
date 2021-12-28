@@ -19,7 +19,7 @@ from cellpy.readers.core import (
     xldate_as_datetime,
 )
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.instruments.mixin import Loader, MINIMUM_SELECTION
+from cellpy.readers.instruments.base import Loader, MINIMUM_SELECTION
 from cellpy import prms
 
 # TODO: use InstrumentSettings (dataclass) from internal_settings instead of HeaderDict.

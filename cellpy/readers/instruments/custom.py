@@ -7,7 +7,7 @@ import pandas as pd
 
 from cellpy.parameters.internal_settings import get_headers_normal, ATTRS_CELLPYFILE
 
-from cellpy.readers.instruments.mixin import Loader
+from cellpy.readers.instruments.base import Loader
 from cellpy.readers.core import FileID, Cell, check64bit, humanize_bytes
 from cellpy.parameters import prms
 from cellpy.exceptions import FileNotFound
