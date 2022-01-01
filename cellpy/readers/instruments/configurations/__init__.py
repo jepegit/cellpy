@@ -16,6 +16,7 @@ class ModelParameters:
     not_implemented_in_cellpy_yet_renaming_dict: dict = field(default_factory=dict)
     columns_to_keep: dict = field(default_factory=dict)
     states: dict = field(default_factory=dict)
+    formatters: dict = field(default_factory=dict)
 
 
 def register_configuration(
@@ -29,6 +30,11 @@ def register_configuration(
     Returns: ModelParameters
     """
     m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
+    try:
+        formatters = m.formatters
+    except AttributeError:
+        formatters = None
+
     model_01 = ModelParameters(
         name=name,
         unit_labels=m.unit_labels,
@@ -37,5 +43,6 @@ def register_configuration(
         not_implemented_in_cellpy_yet_renaming_dict=m.not_implemented_in_cellpy_yet_renaming_dict,
         columns_to_keep=m.columns_to_keep,
         states=m.states,
+        formatters=formatters
     )
     return model_01

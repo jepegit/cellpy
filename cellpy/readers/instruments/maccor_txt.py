@@ -1,5 +1,6 @@
 """Maccor txt data"""
 import logging
+import sys
 from pprint import pprint
 
 import pandas as pd
@@ -12,7 +13,7 @@ from cellpy import prms
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
-SUPPORTED_MODELS = {"one": "maccor_txt_one", "two": "maccor_txt_two"}
+SUPPORTED_MODELS = {"zero": "maccor_txt_zero", "one": "maccor_txt_one", "two": "maccor_txt_two"}
 
 
 def configuration(name):
@@ -23,20 +24,29 @@ def configuration(name):
     return register_configuration(name, model_module_name)
 
 
+# TODO: create a class that is a general CSV loader that can be subclassed
 class MaccorTxtLoader(Loader):
     """Class for loading data from Maccor txt files."""
 
     def __init__(self, **kwargs):
         """initiates the MaccorTxtLoader class"""
         model = kwargs.pop("model", prms.Instruments.Maccor.default_model)
-        self.format_params = prms.Instruments.Maccor[model]
         self.config_params = configuration(model)
+        self.name = None
 
-        logging.debug(self.format_params)
-        self.sep = kwargs.pop("sep", self.format_params["sep"])
-        self.skiprows = kwargs.pop("skiprows", self.format_params["skiprows"])
-        self.header = kwargs.pop("header", self.format_params["header"])
-        self.encoding = kwargs.pop("encoding", self.format_params["encoding"])
+        if self.config_params.formatters is None:
+            # check for "over-rides" from arguments
+            self.sep = kwargs.pop("sep", None)
+            self.skiprows = kwargs.pop("skiprows", 3)
+            self.header = kwargs.pop("header", 0)
+            self.encoding = kwargs.pop("encoding", "ISO-8859-1")
+
+        else:
+            self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
+            self.skiprows = kwargs.pop("skiprows", self.config_params.formatters["skiprows"])
+            self.header = kwargs.pop("header", self.config_params.formatters["header"])
+            self.encoding = kwargs.pop("encoding", self.config_params.formatters["encoding"])
+
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
         # self.raw_headers_normal = normal_headers_renaming_dict
@@ -90,6 +100,25 @@ class MaccorTxtLoader(Loader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def _auto_formatter(self):
+        # THIS FUNCTION SHOULD SET THE ATTRIBUTES:
+        # self.sep
+        # self.skiprows
+        # self.header
+        # self.encoding
+        print("AUTO FORMATTER - NOT READY FOR PRODUCTION YET!!!!")
+        print("AND REMARK THAT IT IS CURRENTLY ONLY RUN IF SEP IS NONE!!!")
+        separator, first_index = find_delimiter_and_start(
+            self.name,
+            separators=None,
+            checking_length_header=100,
+            checking_length_whole=200,
+        )
+        self.encoding = "ISO-8859-1"
+        self.sep = separator
+        self.skiprows = first_index
+        self.header = 0
+
     def loader(self, name, **kwargs):
         """returns a Cell object with loaded data.
 
@@ -102,10 +131,15 @@ class MaccorTxtLoader(Loader):
         Returns:
             new_tests (list of data objects)
         """
+        self.name = name
         new_tests = []
         sep = kwargs.get("sep", None)
         if sep is not None:
             self.sep = sep
+
+        if self.sep is None:
+            self._auto_formatter()
+
         data_df = self._query_csv(name)
         if not self.keep_all_columns:
             data_df = data_df[self.config_params.columns_to_keep]
@@ -436,6 +470,19 @@ def check_find_delimiter():
     print(f"Found delimiter ({sep}) and start line {first_index} in {file_name}")
 
 
+def check_dev_loader(name=None, model=None):
+    if name is None:
+        name = check_retrieve_file()
+
+    pd.options.display.max_columns = 100
+    # prms.Reader.sep = "\t"
+
+    loader = MaccorTxtLoader(sep="\t", model=model)
+    dd = loader.loader(name)
+    raw = dd[0].raw
+    print(raw.head())
+
+
 def check_loader(name=None):
     import matplotlib.pyplot as plt
 
@@ -549,7 +596,7 @@ def check_loader_from_outside_with_get():
         r"C:\scripting\cellpy_dev_resources\2021_leafs_data\Charge-Discharge\Maccor series 4000"
     )
     name = datadir / "01_UBham_M50_Validation_0deg_01.txt"
-    out = pathlib.Path(r"C:\scripting\notebooks\Div")
+    out = pathlib.Path(r"C:\scripting\trash")
     print(f"File exists? {name.is_file()}")
     if not name.is_file():
         print(f"could not find {name} ")
@@ -560,9 +607,10 @@ def check_loader_from_outside_with_get():
     raw = c.cell.raw
     steps = c.cell.steps
     summary = c.cell.summary
-    raw.to_csv(r"C:\scripting\notebooks\Div\trash\raw.csv", sep=";")
-    steps.to_csv(r"C:\scripting\notebooks\Div\trash\steps.csv", sep=";")
-    summary.to_csv(r"C:\scripting\notebooks\Div\trash\summary.csv", sep=";")
+
+    raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
+    steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
+    summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
 
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
     raw.plot(x="test_time", y="voltage", ax=ax1)
@@ -606,6 +654,6 @@ def check_loader_from_outside_with_get():
 
 
 if __name__ == "__main__":
-    # check_loader()
-    check_find_delimiter()
+    check_dev_loader(model="zero")
+    # check_find_delimiter()
     # check_loader_from_outside_with_get()

@@ -362,8 +362,8 @@ maccor_model_2 = {
     "encoding": "ISO-8859-1",
 }
 
-Maccor["one"] = maccor_model_1
-Maccor["two"] = maccor_model_2
+Maccor["one"] = maccor_model_1  # remove this (in configurations folder instead)
+Maccor["two"] = maccor_model_2  # remove this
 Maccor["default_model"] = "one"
 
 Maccor = box.Box(Maccor)
