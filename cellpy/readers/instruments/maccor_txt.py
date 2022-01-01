@@ -340,23 +340,8 @@ def capacity_splitter(raw, states):
     )
 
 
-def check_retrieve_file():
-    import pathlib
-
-    pd.options.display.max_columns = 100
-    # prms.Reader.sep = "\t"
-    data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources")
-    data_dir = data_root / r"2021_leafs_data\Charge-Discharge\Maccor series 4000"
-    name = data_dir / "01_UBham_M50_Validation_0deg_01.txt"
-    print(f"Exists? {name.is_file()}")
-    if name.is_file():
-        return name
-    else:
-        raise IOError(f"could not locate the file {name}")
-
-
 def find_delimiter_and_start(
-    file_name=None,
+    file_name,
     separators=None,
     checking_length_header=100,
     checking_length_whole=200,
@@ -367,14 +352,12 @@ def find_delimiter_and_start(
         (possible header part (checking_length_header) and the rest of the data). Then it counts the appearances of
         the different possible delimiters in the rest of the data part, and then selects a delimiter if it has unique
         counts for all the lines.
-        The first line is defined as where the delimiter is used same number of times (probably a header line).
 
+        The first line is defined as where the delimiter is used same number of times (probably a header line).
     """
 
     if separators is None:
-        separators = [",", ";", "\t"]
-    if file_name is None:
-        file_name = check_retrieve_file()
+        separators = [",", ";", "\t", "|", "\n"]
     logging.debug(f"checking internals of the file {file_name}")
 
     with open(file_name, "r") as fin:
@@ -424,6 +407,33 @@ def _find_separator(checking_length, lines, separators):
         if len(value_as_list) == 1 and number_of_hits > 0:
             separator = separators[indx]
     return separator, number_of_hits
+
+
+def check_retrieve_file():
+    import pathlib
+
+    pd.options.display.max_columns = 100
+    # prms.Reader.sep = "\t"
+    data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources")
+    data_dir = data_root / r"2021_leafs_data\Charge-Discharge\Maccor series 4000"
+    name = data_dir / "01_UBham_M50_Validation_0deg_01.txt"
+    print(f"Exists? {name.is_file()}")
+    if name.is_file():
+        return name
+    else:
+        raise IOError(f"could not locate the file {name}")
+
+
+def check_find_delimiter():
+    file_name = check_retrieve_file()
+    separator, first_index = find_delimiter_and_start(file_name)
+    if separator == "\t":
+        sep = "TAB"
+    elif separator == " ":
+        sep = "SPACE"
+    else:
+        sep = separator
+    print(f"Found delimiter ({sep}) and start line {first_index} in {file_name}")
 
 
 def check_loader(name=None):
@@ -597,5 +607,5 @@ def check_loader_from_outside_with_get():
 
 if __name__ == "__main__":
     # check_loader()
-    find_delimiter_and_start()
+    check_find_delimiter()
     # check_loader_from_outside_with_get()
