@@ -461,7 +461,7 @@ class EasyPlot:
         driver="ODBC Driver 17 for SQL Server",
     ):
         """Sets cellpy.prms.Instruments.Arbin details to fit what is inserted.
-            Parameters: Server = 'IP of server', uid = 'username', pwd = 'password', driver = 'ODBC Driver 17 for SQL Server' """
+        Parameters: Server = 'IP of server', uid = 'username', pwd = 'password', driver = 'ODBC Driver 17 for SQL Server'"""
         cellpy.prms.Instruments.Arbin["SQL_server"] = server
         cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
         cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
@@ -526,7 +526,7 @@ class EasyPlot:
                     else:
                         newfloat = 1/x
                         s = 'C/%.2g' % newfloat
-                        """
+                    """
                     # The following just has decimal place C-rate.
                     s = "%.3gC" % x
                     return s

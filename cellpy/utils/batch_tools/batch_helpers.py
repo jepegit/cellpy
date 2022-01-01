@@ -153,7 +153,9 @@ def make_unique_groups(info_df):
     return info_df
 
 
-def _remove_date_and_celltype(label,):
+def _remove_date_and_celltype(
+    label,
+):
     parts = label.split("_")
     parts.pop(0)
     if parts[-1] in ["cc", "ec", "eth"]:

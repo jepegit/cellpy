@@ -73,7 +73,7 @@ def _read_modules(fileobj):
 
 
 class MprLoader(Loader):
-    """ Class for loading biologics-data from mpr-files."""
+    """Class for loading biologics-data from mpr-files."""
 
     # Note: the class is sub-classing Loader. At the moment, Loader does
     # not really contain anything...
@@ -150,8 +150,7 @@ class MprLoader(Loader):
         return new_rundata
 
     def inspect(self, run_data):
-        """inspect the file.
-        """
+        """inspect the file."""
         return run_data
 
     def repair(self, file_name):

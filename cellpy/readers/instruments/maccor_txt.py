@@ -1,5 +1,6 @@
 """Maccor txt data"""
 import logging
+from pprint import pprint
 
 import pandas as pd
 
@@ -23,7 +24,7 @@ def configuration(name):
 
 
 class MaccorTxtLoader(Loader):
-    """ Class for loading data from Maccor txt files."""
+    """Class for loading data from Maccor txt files."""
 
     def __init__(self, **kwargs):
         """initiates the MaccorTxtLoader class"""
@@ -339,29 +340,125 @@ def capacity_splitter(raw, states):
     )
 
 
-def test_loader():
+def check_retrieve_file():
     import pathlib
-    import matplotlib.pyplot as plt
 
     pd.options.display.max_columns = 100
     # prms.Reader.sep = "\t"
-    datadir = pathlib.Path(
-        r"C:\scripts\cellpy_dev_resources\2021_leafs_data\Charge-Discharge\Maccor series 4000"
-    )
-    name = datadir / "01_UBham_M50_Validation_0deg_01.txt"
+    data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources")
+    data_dir = data_root / r"2021_leafs_data\Charge-Discharge\Maccor series 4000"
+    name = data_dir / "01_UBham_M50_Validation_0deg_01.txt"
     print(f"Exists? {name.is_file()}")
+    if name.is_file():
+        return name
+    else:
+        raise IOError(f"could not locate the file {name}")
+
+
+def find_delimiter_and_start(
+    file_name=None,
+    separators=None,
+    checking_length_header=100,
+    checking_length_whole=200,
+):
+    """function to automatically detect the delimiter and what line the first data appears on.
+
+    Remark! This function is rather simple, it splits the data into to parts
+        (possible header part (checking_length_header) and the rest of the data). Then it counts the appearances of
+        the different possible delimiters in the rest of the data part, and then selects a delimiter if it has unique
+        counts for all the lines.
+        The first line is defined as where the delimiter is used same number of times (probably a header line).
+
+    """
+
+    if separators is None:
+        separators = [",", ";", "\t"]
+    if file_name is None:
+        file_name = check_retrieve_file()
+    logging.debug(f"checking internals of the file {file_name}")
+
+    with open(file_name, "r") as fin:
+        lines = []
+        for j in range(checking_length_whole):
+            line = fin.readline().strip()
+            if not line:
+                break
+            lines.append(line)
+
+    separator, number_of_hits = _find_separator(
+        checking_length_whole - checking_length_header, lines, separators
+    )
+
+    if separator is not None:
+        first_index = _find_first_line_whit_delimiter(
+            checking_length_header, lines, number_of_hits, separator
+        )
+        logging.debug(f"First line with delimiter: {first_index}")
+        return separator, first_index
+    else:
+        raise IOError(f"could not decide delimiter in {file_name}")
+
+
+def _find_first_line_whit_delimiter(
+    checking_length_header, lines, number_of_hits, separator
+):
+    first_part = lines[:checking_length_header]
+    return [
+        line_number
+        for line_number, line in enumerate(first_part)
+        if line.count(separator) == number_of_hits
+    ][0]
+
+
+def _find_separator(checking_length, lines, separators):
+    separator = None
+    number_of_hits = 0
+    last_part = lines[checking_length:]
+    check_sep = dict()
+    for i, v in enumerate(separators):
+        check_sep[i] = [line.count(v) for line in last_part]
+    unique_sep_counts = {i: set(v) for i, v in check_sep.items()}
+    for indx, value in unique_sep_counts.items():
+        value_as_list = list(value)
+        number_of_hits = value_as_list[0]
+        if len(value_as_list) == 1 and number_of_hits > 0:
+            separator = separators[indx]
+    return separator, number_of_hits
+
+
+def check_loader(name=None):
+    import matplotlib.pyplot as plt
+
+    if name is None:
+        name = check_retrieve_file()
+
+    pd.options.display.max_columns = 100
+    # prms.Reader.sep = "\t"
+
     loader = MaccorTxtLoader(sep="\t")
     dd = loader.loader(name)
     raw = dd[0].raw
-    raw.plot(x="data_point", y="current")
-    raw.plot(x="data_point", y=["charge_capacity", "discharge_capacity"])
-    raw.plot(x="test_time", y=["charge_capacity", "discharge_capacity"])
-    raw.plot(x="step_time", y=["charge_capacity", "discharge_capacity"])
+    raw.plot(x="data_point", y="current", title="current vs data-point")
+    raw.plot(
+        x="data_point",
+        y=["charge_capacity", "discharge_capacity"],
+        title="capacity vs data-point",
+    )
+    raw.plot(
+        x="test_time",
+        y=["charge_capacity", "discharge_capacity"],
+        title="capacity vs test-time",
+    )
+    raw.plot(
+        x="step_time",
+        y=["charge_capacity", "discharge_capacity"],
+        title="capacity vs step-time",
+    )
     print(raw.head())
     plt.show()
 
 
-def test_loader_from_outside():
+def check_loader_from_outside():
     # NOT EDITED YET!!!
     from cellpy import cellreader
     import matplotlib.pyplot as plt
@@ -432,17 +529,17 @@ def test_loader_from_outside():
     c.save(outfile)
 
 
-def test_loader_from_outside_with_get():
+def check_loader_from_outside_with_get():
     import cellpy
     import matplotlib.pyplot as plt
     import pathlib
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(
-        r"C:\scripts\cellpy_dev_resources\2021_leafs_data\Charge-Discharge\Maccor series 4000"
+        r"C:\scripting\cellpy_dev_resources\2021_leafs_data\Charge-Discharge\Maccor series 4000"
     )
     name = datadir / "01_UBham_M50_Validation_0deg_01.txt"
-    out = pathlib.Path(r"C:\scripts\notebooks\Div")
+    out = pathlib.Path(r"C:\scripting\notebooks\Div")
     print(f"File exists? {name.is_file()}")
     if not name.is_file():
         print(f"could not find {name} ")
@@ -453,9 +550,9 @@ def test_loader_from_outside_with_get():
     raw = c.cell.raw
     steps = c.cell.steps
     summary = c.cell.summary
-    raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
-    steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
-    summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
+    raw.to_csv(r"C:\scripting\notebooks\Div\trash\raw.csv", sep=";")
+    steps.to_csv(r"C:\scripting\notebooks\Div\trash\steps.csv", sep=";")
+    summary.to_csv(r"C:\scripting\notebooks\Div\trash\summary.csv", sep=";")
 
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
     raw.plot(x="test_time", y="voltage", ax=ax1)
@@ -499,4 +596,6 @@ def test_loader_from_outside_with_get():
 
 
 if __name__ == "__main__":
-    test_loader_from_outside_with_get()
+    # check_loader()
+    find_delimiter_and_start()
+    # check_loader_from_outside_with_get()

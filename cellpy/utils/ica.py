@@ -704,54 +704,54 @@ def dqdv(
 def dqdv_frames(cell, split=False, tidy=True, **kwargs):
     """Returns dqdv data as pandas.DataFrame(s) for all cycles.
 
-            Args:
-                cell (CellpyData-object).
-                split (bool): return one frame for charge and one for
-                    discharge if True (defaults to False).
-                tidy (bool): returns the split frames in wide format (defaults
-                    to True. Remark that this option is currently not available
-                    for non-split frames).
+    Args:
+        cell (CellpyData-object).
+        split (bool): return one frame for charge and one for
+            discharge if True (defaults to False).
+        tidy (bool): returns the split frames in wide format (defaults
+            to True. Remark that this option is currently not available
+            for non-split frames).
 
-                **kwargs: key-word arguments to Converter:
-                    cycle = int or list of ints (cycle numbers), will process all (or up to max_cycle_number)
-                        if not given or equal to None.
-                    points_pr_split (int): only used when investigating data
-                        using splits, defaults to 10.
-                    max_points: None
-                    voltage_resolution (float): used for interpolating voltage
-                        data (e.g. 0.005)
-                    capacity_resolution: used for interpolating capacity data
-                    minimum_splits (int): defaults to 3.
-                    interpolation_method: scipy interpolation method
-                    increment_method (str): defaults to "diff"
-                    pre_smoothing (bool): set to True for pre-smoothing (window)
-                    smoothing (bool): set to True for smoothing during
-                        differentiation (window)
-                    post_smoothing (bool): set to True for post-smoothing
-                        (gaussian)
-                    normalize (bool): set to True for normalizing to capacity
-                    normalizing_factor (float):
-                    normalizing_roof  (float):
-                    savgol_filter_window_divisor_default (int): used for window
-                        smoothing, defaults to 50
-                    savgol_filter_window_order: used for window smoothing
-                    voltage_fwhm (float): used for setting the post-processing
-                        gaussian sigma, defaults to 0.01
-                    gaussian_order (int): defaults to 0
-                    gaussian_mode (str): defaults to "reflect"
-                    gaussian_cval (float): defaults to 0.0
-                    gaussian_truncate (float): defaults to 4.0
+        **kwargs: key-word arguments to Converter:
+            cycle = int or list of ints (cycle numbers), will process all (or up to max_cycle_number)
+                if not given or equal to None.
+            points_pr_split (int): only used when investigating data
+                using splits, defaults to 10.
+            max_points: None
+            voltage_resolution (float): used for interpolating voltage
+                data (e.g. 0.005)
+            capacity_resolution: used for interpolating capacity data
+            minimum_splits (int): defaults to 3.
+            interpolation_method: scipy interpolation method
+            increment_method (str): defaults to "diff"
+            pre_smoothing (bool): set to True for pre-smoothing (window)
+            smoothing (bool): set to True for smoothing during
+                differentiation (window)
+            post_smoothing (bool): set to True for post-smoothing
+                (gaussian)
+            normalize (bool): set to True for normalizing to capacity
+            normalizing_factor (float):
+            normalizing_roof  (float):
+            savgol_filter_window_divisor_default (int): used for window
+                smoothing, defaults to 50
+            savgol_filter_window_order: used for window smoothing
+            voltage_fwhm (float): used for setting the post-processing
+                gaussian sigma, defaults to 0.01
+            gaussian_order (int): defaults to 0
+            gaussian_mode (str): defaults to "reflect"
+            gaussian_cval (float): defaults to 0.0
+            gaussian_truncate (float): defaults to 4.0
 
-            Returns:
-                pandas.DataFrame(s) with the following columns:
-                    cycle: cycle number (if split is set to True).
-                    voltage: voltage
-                    dq: the incremental capacity
+    Returns:
+        pandas.DataFrame(s) with the following columns:
+            cycle: cycle number (if split is set to True).
+            voltage: voltage
+            dq: the incremental capacity
 
-            Example:
-                >>> from cellpy.utils import ica
-                >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
-                >>> charge_df.plot(x=("voltage", "v"))
+    Example:
+        >>> from cellpy.utils import ica
+        >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
+        >>> charge_df.plot(x=("voltage", "v"))
     """
     # TODO: should add option for normalizing based on first cycle capacity
     # this is e.g. done by first finding the first cycle capacity (nom_cap)
@@ -809,14 +809,14 @@ def _make_ica_charge_curves(cycles_dfs, cycle_numbers, minimum_v, maximum_v, **k
 def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
     """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
 
-        Args:
-            cell: CellpyData-object
+    Args:
+        cell: CellpyData-object
 
-        Returns:
-            pandas.DataFrame with the following columns:
-                cycle: cycle number
-                voltage: voltage
-                dq: the incremental capacity
+    Returns:
+        pandas.DataFrame with the following columns:
+            cycle: cycle number
+            voltage: voltage
+            dq: the incremental capacity
     """
     cycle = kwargs.pop("cycle", None)
     cycles = cell.get_cap(
@@ -850,21 +850,21 @@ def _dqdv_split_frames(
 ):
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
-        Args:
-            cell (CellpyData-object).
-            tidy (bool): return in wide format if False (default),
-                long (tidy) format if True.
+    Args:
+        cell (CellpyData-object).
+        tidy (bool): return in wide format if False (default),
+            long (tidy) format if True.
 
-        Returns:
-            (charge_ica_frame, discharge_ica_frame) where the frames are
-            pandas.DataFrames where the first column is voltage ('v') and
-            the following columns are the incremental capcaity for each
-            cycle (multi-indexed, where cycle number is on the top level).
+    Returns:
+        (charge_ica_frame, discharge_ica_frame) where the frames are
+        pandas.DataFrames where the first column is voltage ('v') and
+        the following columns are the incremental capcaity for each
+        cycle (multi-indexed, where cycle number is on the top level).
 
-        Example:
-            >>> from cellpy.utils import ica
-            >>> charge_ica_df, dcharge_ica_df = ica.ica_frames(my_cell)
-            >>> charge_ica_df.plot(x=("voltage", "v"))
+    Example:
+        >>> from cellpy.utils import ica
+        >>> charge_ica_df, dcharge_ica_df = ica.ica_frames(my_cell)
+        >>> charge_ica_df.plot(x=("voltage", "v"))
 
     """
     cycle = kwargs.pop("cycle", None)

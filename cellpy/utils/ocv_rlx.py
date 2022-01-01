@@ -36,33 +36,33 @@ def select_ocv_points(
 
     """Select points from the ocvrlx steps.
 
-        Args:
-            cellpydata: CellpyData-object
-            cycles: list of cycle numbers to process (optional)
-            selection_method: criteria for selecting points
-                martin: select first and last, and then last/2, last/2/2 etc.
-                    until you have reached the wanted number of points.
-                fixed_times: select first, and then
-            number_of_points: number of points you want.
-            interval: interval between each point (in use only for methods
-                where interval makes sense). If it is a list, then
-                number_of_points will be calculated as len(interval) + 1 (and
-                override the set number_of_points).
-            relative_voltage: set to True if you would like the voltage to be
-                relative to the voltage before starting the ocv rlx step.
-                Defaults to False. Remark that for the initial rxl step (when
-                you just have put your cell on the tester) does not have any
-                prior voltage. The relative voltage will then be versus the
-                first measurement point.
-            report_times: also report the ocv rlx total time if True (defaults
-                to False)
-            direction ("up", "down" or "both"): select "up" if you would like
-                to process only the ocv rlx steps where the voltage is relaxing
-                upwards and vice versa. Defaults to "both".
-            return_times (bool): return a DataFrame with information about times.
+    Args:
+        cellpydata: CellpyData-object
+        cycles: list of cycle numbers to process (optional)
+        selection_method: criteria for selecting points
+            martin: select first and last, and then last/2, last/2/2 etc.
+                until you have reached the wanted number of points.
+            fixed_times: select first, and then
+        number_of_points: number of points you want.
+        interval: interval between each point (in use only for methods
+            where interval makes sense). If it is a list, then
+            number_of_points will be calculated as len(interval) + 1 (and
+            override the set number_of_points).
+        relative_voltage: set to True if you would like the voltage to be
+            relative to the voltage before starting the ocv rlx step.
+            Defaults to False. Remark that for the initial rxl step (when
+            you just have put your cell on the tester) does not have any
+            prior voltage. The relative voltage will then be versus the
+            first measurement point.
+        report_times: also report the ocv rlx total time if True (defaults
+            to False)
+        direction ("up", "down" or "both"): select "up" if you would like
+            to process only the ocv rlx steps where the voltage is relaxing
+            upwards and vice versa. Defaults to "both".
+        return_times (bool): return a DataFrame with information about times.
 
-        Returns:
-            pandas.DataFrame (and another pandas.DataFrame if return_times is True)
+    Returns:
+        pandas.DataFrame (and another pandas.DataFrame if return_times is True)
 
     """
     t0 = time.time()

@@ -466,8 +466,7 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
 
 
 def remove_last_cycles_from_summary(s, last=None):
-    """Remove last rows after given cycle number
-    """
+    """Remove last rows after given cycle number"""
 
     if last is not None:
         s = s.loc[s.index <= last, :]
@@ -475,8 +474,7 @@ def remove_last_cycles_from_summary(s, last=None):
 
 
 def remove_first_cycles_from_summary(s, first=None):
-    """Remove last rows after given cycle number
-    """
+    """Remove last rows after given cycle number"""
 
     if first is not None:
         s = s.loc[s.index >= first, :]

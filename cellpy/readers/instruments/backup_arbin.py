@@ -157,7 +157,7 @@ normal_headers_renaming_dict = {
 
 
 class ArbinLoader(Loader):
-    """ Class for loading arbin-data from res-files."""
+    """Class for loading arbin-data from res-files."""
 
     def __init__(self):
         """initiates the ArbinLoader class"""

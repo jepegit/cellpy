@@ -262,7 +262,7 @@ class Batch:
                 self.pages = self.pages.drop(cell_label)
 
     def report(self, stylize=True):
-        """ Create a report on all the cells in the batch object.
+        """Create a report on all the cells in the batch object.
 
         Remark! To perform a reporting, cellpy needs to access all the data (and it might take some time).
 

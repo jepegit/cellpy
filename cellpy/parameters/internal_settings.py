@@ -74,6 +74,7 @@ class BaseSettings(DictLikeClass):
             var2: int = 12
 
     """
+
     ...
 
 
@@ -91,6 +92,7 @@ class InstrumentSettings(DictLikeClass):
         Try to use it as you would use a normal dataclass.
 
     """
+
     ...
 
 
@@ -362,17 +364,17 @@ def get_cellpy_units() -> BaseSettings:
 
 def get_headers_normal() -> BaseSettings:
     """Returns a dictionary containing the header-strings for the normal data
-        (used as column headers for the main data pandas DataFrames)"""
+    (used as column headers for the main data pandas DataFrames)"""
     return headers_normal
 
 
 def get_headers_step_table() -> BaseSettings:
     """Returns a dictionary containing the header-strings for the steps table
-        (used as column headers for the steps pandas DataFrames)"""
+    (used as column headers for the steps pandas DataFrames)"""
     return headers_step_table
 
 
 def get_headers_journal() -> BaseSettings:
     """Returns a dictionary containing the header-strings for the journal (batch)
-            (used as column headers for the journal pandas DataFrames)"""
+    (used as column headers for the journal pandas DataFrames)"""
     return headers_journal

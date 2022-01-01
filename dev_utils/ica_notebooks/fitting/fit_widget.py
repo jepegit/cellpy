@@ -8,8 +8,7 @@ import holoviews as hv
 
 class SiliconPeaksFitWidget(widgets.VBox):
     def __init__(self, silicon_peaks, x, y, name=None):
-        """
-        """
+        """ """
         #    [ ]             jitter
         #    [x] |-----o--|  scale
         #    [x] |-----o--|  shift

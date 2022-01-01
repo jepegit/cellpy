@@ -33,7 +33,7 @@ def load_nda(*args, **kwargs):
 
 
 class NdaLoader(Loader):
-    """ Class for using the NDA loader by Frederik Huld (Beyonder)."""
+    """Class for using the NDA loader by Frederik Huld (Beyonder)."""
 
     def __init__(self):
         """initiates the NdaLoader class"""

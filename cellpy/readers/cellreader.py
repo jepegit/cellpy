@@ -356,7 +356,7 @@ class CellpyData(object):
 
     def drop_from(self, cycle=None):
         """Select first part of experiment (CellpyData object) up to cycle number
-         'cycle'"""
+        'cycle'"""
         if isinstance(cycle, int):
             c1, c2 = self.split_many(base_cycles=cycle)
             return c1
@@ -633,7 +633,7 @@ class CellpyData(object):
                 True if update is not needed.
              If detailed is True it returns a dict containing True or False for each
                 individual raw-file.
-            """
+        """
 
         txt = f"Checking file ids - using '{self.filestatuschecker}'"
         logging.info(txt)
@@ -1549,9 +1549,10 @@ class CellpyData(object):
         self._extract_meta_from_cellpy_file(data, meta_table, filename)
 
         if fid_table_selected:
-            (data.raw_data_files, data.raw_data_files_length,) = self._convert2fid_list(
-                fid_table
-            )
+            (
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ) = self._convert2fid_list(fid_table)
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
@@ -1592,9 +1593,10 @@ class CellpyData(object):
         self._extract_meta_from_cellpy_file(data, meta_table, filename)
 
         if fid_table_selected:
-            (data.raw_data_files, data.raw_data_files_length,) = self._convert2fid_list(
-                fid_table
-            )
+            (
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ) = self._convert2fid_list(fid_table)
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
@@ -1657,9 +1659,10 @@ class CellpyData(object):
             "Loaded old cellpy-file version (<5). " "Please update and save again."
         )
         if fid_table_selected:
-            (data.raw_data_files, data.raw_data_files_length,) = self._convert2fid_list(
-                fid_table
-            )
+            (
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ) = self._convert2fid_list(fid_table)
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
@@ -2391,7 +2394,7 @@ class CellpyData(object):
         return out
 
     def load_step_specifications(self, file_name, short=False, dataset_number=None):
-        """ Load a table that contains step-type definitions.
+        """Load a table that contains step-type definitions.
 
         This function loads a file containing a specification for each step or
         for each (cycle_number, step_number) combinations if short==False. The
@@ -2459,7 +2462,7 @@ class CellpyData(object):
         from_data_point=None,
     ):
 
-        """ Create a table (v.4) that contains summary information for each step.
+        """Create a table (v.4) that contains summary information for each step.
 
         This function creates a table containing information about the
         different steps for each cycle and, based on that, decides what type of
@@ -3480,18 +3483,18 @@ class CellpyData(object):
     def sget_current(self, cycle, step, dataset_number=None):
         """Returns current for cycle, step.
 
-                Convenience function; same as issuing
-                   raw[(raw[cycle_index_header] == cycle) &
-                         (raw[step_index_header] == step)][current_header]
+        Convenience function; same as issuing
+           raw[(raw[cycle_index_header] == cycle) &
+                 (raw[step_index_header] == step)][current_header]
 
-                Args:
-                    cycle: cycle number
-                    step: step number
-                    dataset_number: the dataset number (automatic selection if None)
+        Args:
+            cycle: cycle number
+            step: step number
+            dataset_number: the dataset number (automatic selection if None)
 
-                Returns:
-                    pandas.Series or None if empty
-                """
+        Returns:
+            pandas.Series or None if empty
+        """
         header = self.headers_normal.current_txt
         return self._sget(
             cycle, step, header, usteps=False, dataset_number=dataset_number
@@ -3999,7 +4002,10 @@ class CellpyData(object):
 
                     try:
                         _first_df = pd.DataFrame(
-                            {"voltage": _first_step_v, "capacity": _first_step_c,}
+                            {
+                                "voltage": _first_step_v,
+                                "capacity": _first_step_c,
+                            }
                         )
                         if interpolated:
                             _first_df = interpolate_y_on_x(
@@ -4450,22 +4456,19 @@ class CellpyData(object):
                     logging.debug("_set_run_attribute: this set is empty")
 
     def set_mass(self, masses, dataset_number=None, validated=None):
-        """Sets the mass (masses) for the test (datasets).
-        """
+        """Sets the mass (masses) for the test (datasets)."""
         self._set_run_attribute(
             "mass", masses, dataset_number=dataset_number, validated=validated
         )
 
     def set_tot_mass(self, masses, dataset_number=None, validated=None):
-        """Sets the mass (masses) for the test (datasets).
-        """
+        """Sets the mass (masses) for the test (datasets)."""
         self._set_run_attribute(
             "tot_mass", masses, dataset_number=dataset_number, validated=validated
         )
 
     def set_nom_cap(self, nom_caps, dataset_number=None, validated=None):
-        """Sets the mass (masses) for the test (datasets).
-        """
+        """Sets the mass (masses) for the test (datasets)."""
         self._set_run_attribute(
             "nom_cap", nom_caps, dataset_number=dataset_number, validated=validated
         )

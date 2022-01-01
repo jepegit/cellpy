@@ -65,22 +65,22 @@ def pickle_protocol(level):
 class FileID(object):
     """class for storing information about the raw-data files.
 
-        This class is used for storing and handling raw-data file information.
-        It is important to keep track of when the data was extracted from the
-        raw-data files so that it is easy to know if the hdf5-files used for
-        @storing "treated" data is up-to-date.
+    This class is used for storing and handling raw-data file information.
+    It is important to keep track of when the data was extracted from the
+    raw-data files so that it is easy to know if the hdf5-files used for
+    @storing "treated" data is up-to-date.
 
-        Attributes:
-            name (str): Filename of the raw-data file.
-            full_name (str): Filename including path of the raw-data file.
-            size (float): Size of the raw-data file.
-            last_modified (datetime): Last time of modification of the raw-data
-                file.
-            last_accessed (datetime): last time of access of the raw-data file.
-            last_info_changed (datetime): st_ctime of the raw-data file.
-            location (str): Location of the raw-data file.
+    Attributes:
+        name (str): Filename of the raw-data file.
+        full_name (str): Filename including path of the raw-data file.
+        size (float): Size of the raw-data file.
+        last_modified (datetime): Last time of modification of the raw-data
+            file.
+        last_accessed (datetime): last time of access of the raw-data file.
+        last_info_changed (datetime): st_ctime of the raw-data file.
+        location (str): Location of the raw-data file.
 
-        """
+    """
 
     def __init__(self, filename=None):
         make_defaults = True
@@ -600,23 +600,23 @@ def interpolate_y_on_x(
 ):
     """Interpolate a column based on another column.
 
-        Args:
-            df: DataFrame with the (cycle) data.
-            x: Column name for the x-value (defaults to the step-time column).
-            y: Column name for the y-value (defaults to the voltage column).
-            new_x (numpy array or None): Interpolate using these new x-values
-                instead of generating x-values based on dx or number_of_points.
-            dx: step-value (defaults to 10.0)
-            number_of_points: number of points for interpolated values (use
-                instead of dx and overrides dx if given).
-            direction (-1,1): if direction is negative, then invert the
-                x-values before interpolating.
-            **kwargs: arguments passed to scipy.interpolate.interp1d
+    Args:
+        df: DataFrame with the (cycle) data.
+        x: Column name for the x-value (defaults to the step-time column).
+        y: Column name for the y-value (defaults to the voltage column).
+        new_x (numpy array or None): Interpolate using these new x-values
+            instead of generating x-values based on dx or number_of_points.
+        dx: step-value (defaults to 10.0)
+        number_of_points: number of points for interpolated values (use
+            instead of dx and overrides dx if given).
+        direction (-1,1): if direction is negative, then invert the
+            x-values before interpolating.
+        **kwargs: arguments passed to scipy.interpolate.interp1d
 
-        Returns: DataFrame with interpolated y-values based on given or
-            generated x-values.
+    Returns: DataFrame with interpolated y-values based on given or
+        generated x-values.
 
-        """
+    """
 
     # TODO: allow for giving a fixed interpolation range (x-values).
     #  Remember to treat extrapolation properly (e.g. replace with NaN?).
