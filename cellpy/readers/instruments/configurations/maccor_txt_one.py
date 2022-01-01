@@ -81,10 +81,28 @@ columns_to_keep = [
 ]
 
 states = {
-    "column_name": "State",
+    "column_name": "Md",
     "charge_keys": ["C"],
     "discharge_keys": ["D"],
     "rest_keys": ["R"],
+}
+
+raw_units = {
+    "current": 1.0,
+    "charge": 1.0,
+    "mass": 0.001
+}
+
+raw_limits = {
+    "current_hard": 0.000_000_000_000_1,
+    "current_soft": 0.000_01,
+    "stable_current_hard": 2.0,
+    "stable_current_soft": 4.0,
+    "stable_voltage_hard": 2.0,
+    "stable_voltage_soft": 4.0,
+    "stable_charge_hard": 0.001,
+    "stable_charge_soft": 5.0,
+    "ir_change": 0.00001
 }
 
 formatters = {
@@ -92,4 +110,5 @@ formatters = {
     "sep": "\t",
     "header": 0,  # 0 for other file
     "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
+    "decimal": "."
 }

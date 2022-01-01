@@ -16,7 +16,10 @@ class ModelParameters:
     not_implemented_in_cellpy_yet_renaming_dict: dict = field(default_factory=dict)
     columns_to_keep: dict = field(default_factory=dict)
     states: dict = field(default_factory=dict)
+    raw_units: dict = field(default_factory=dict)
+    raw_limits: dict = field(default_factory=dict)
     formatters: dict = field(default_factory=dict)
+    pre_processors: dict = field(default_factory=dict)
 
 
 def register_configuration(
@@ -35,6 +38,11 @@ def register_configuration(
     except AttributeError:
         formatters = None
 
+    try:
+        pre_processors = m.pre_processors
+    except AttributeError:
+        pre_processors = None
+
     model_01 = ModelParameters(
         name=name,
         unit_labels=m.unit_labels,
@@ -43,6 +51,9 @@ def register_configuration(
         not_implemented_in_cellpy_yet_renaming_dict=m.not_implemented_in_cellpy_yet_renaming_dict,
         columns_to_keep=m.columns_to_keep,
         states=m.states,
-        formatters=formatters
+        raw_units=m.raw_units,
+        raw_limits=m.raw_limits,
+        formatters=formatters,
+        pre_processors=pre_processors,
     )
     return model_01

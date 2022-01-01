@@ -40,26 +40,22 @@ class MaccorTxtLoader(Loader):
             self.skiprows = kwargs.pop("skiprows", 3)
             self.header = kwargs.pop("header", 0)
             self.encoding = kwargs.pop("encoding", "ISO-8859-1")
+            self.decimal = kwargs.pop("decimal", ".")
 
         else:
             self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
             self.skiprows = kwargs.pop("skiprows", self.config_params.formatters["skiprows"])
             self.header = kwargs.pop("header", self.config_params.formatters["header"])
             self.encoding = kwargs.pop("encoding", self.config_params.formatters["encoding"])
+            self.decimal = kwargs.pop("decimal", self.config_params.formatters["decimal"])
 
+        self.pre_processors = kwargs.pop("pre_processors", self.config_params.pre_processors)
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
         # self.raw_headers_normal = normal_headers_renaming_dict
         self.cellpy_headers_normal = (
             get_headers_normal()
         )  # the column headers defined by cellpy
-
-    # TODO: Move this away
-    @staticmethod
-    def get_headers_normal():
-        """Defines the so-called normal column headings"""
-        # covered by cellpy at the moment
-        return get_headers_normal()
 
     @staticmethod
     def get_headers_aux(df):
@@ -101,23 +97,23 @@ class MaccorTxtLoader(Loader):
         return raw_limits
 
     def _auto_formatter(self):
-        # THIS FUNCTION SHOULD SET THE ATTRIBUTES:
-        # self.sep
-        # self.skiprows
-        # self.header
-        # self.encoding
-        print("AUTO FORMATTER - NOT READY FOR PRODUCTION YET!!!!")
-        print("AND REMARK THAT IT IS CURRENTLY ONLY RUN IF SEP IS NONE!!!")
         separator, first_index = find_delimiter_and_start(
             self.name,
             separators=None,
             checking_length_header=100,
             checking_length_whole=200,
         )
-        self.encoding = "ISO-8859-1"
+        self.encoding = "ISO-8859-1"  # consider adding a find_encoding function
         self.sep = separator
-        self.skiprows = first_index
-        self.header = 0
+        self.skiprows = first_index  # consider adding a find_rows_to_skip function
+        self.header = 0   # consider adding a find_header function
+
+        logging.critical(
+            f"auto-formatting:\n{self.sep=}\n{self.skiprows=}\n{self.header=}\n{self.encoding=}\n"
+        )
+
+    def _pre_process(self):
+        raise NotImplementedError
 
     def loader(self, name, **kwargs):
         """returns a Cell object with loaded data.
@@ -134,9 +130,11 @@ class MaccorTxtLoader(Loader):
         self.name = name
         new_tests = []
         sep = kwargs.get("sep", None)
+
+        if self.pre_processors is not None:
+            self._pre_process()
         if sep is not None:
             self.sep = sep
-
         if self.sep is None:
             self._auto_formatter()
 
@@ -162,11 +160,11 @@ class MaccorTxtLoader(Loader):
         data.raw_data_files.append(fid)
 
         data.raw = data_df
+        # data.raw.to_clipboard()
         data.raw_data_files_length.append(len(data_df))
         data.summary = (
             pd.DataFrame()
         )  # creating an empty frame - loading summary is not implemented yet
-
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
         new_tests.append(data)
@@ -188,9 +186,11 @@ class MaccorTxtLoader(Loader):
                 if key in self.config_params.normal_headers_renaming_dict:
                     old_header = self.config_params.normal_headers_renaming_dict[key]
                     new_header = self.cellpy_headers_normal[key]
+                    # print(f"renaming {old_header} to {new_header}")
                     columns[old_header] = new_header
 
             data.raw.rename(index=str, columns=columns, inplace=True)
+
             if self.include_aux:
                 new_aux_headers = self.get_headers_aux(data.raw)
                 data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
@@ -233,14 +233,15 @@ class MaccorTxtLoader(Loader):
 
         return data
 
-    def _query_csv(self, name, sep=None, skiprows=None, header=None, encoding=None):
+    def _query_csv(self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None):
         sep = sep or self.sep
         skiprows = skiprows or self.skiprows
         header = header or self.header
         encoding = encoding or self.encoding
-        logging.debug(f"{sep=}, {skiprows=}, {header=}, {encoding=}")
+        decimal = decimal or self.decimal
+        logging.debug(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
         data_df = pd.read_csv(
-            name, sep=sep, skiprows=skiprows, header=header, encoding=encoding
+            name, sep=sep, skiprows=skiprows, header=header, encoding=encoding, decimal=decimal
         )
         return data_df
 
@@ -391,16 +392,16 @@ def find_delimiter_and_start(
     """
 
     if separators is None:
-        separators = [",", ";", "\t", "|", "\n"]
+        separators = [";", "\t", "|", ","]
     logging.debug(f"checking internals of the file {file_name}")
 
     with open(file_name, "r") as fin:
         lines = []
         for j in range(checking_length_whole):
-            line = fin.readline().strip()
+            line = fin.readline()
             if not line:
                 break
-            lines.append(line)
+            lines.append(line.strip())
 
     separator, number_of_hits = _find_separator(
         checking_length_whole - checking_length_header, lines, separators
@@ -420,6 +421,10 @@ def _find_first_line_whit_delimiter(
     checking_length_header, lines, number_of_hits, separator
 ):
     first_part = lines[:checking_length_header]
+    if number_of_hits is None:
+        # remark! if number of hits (i.e. how many separators pr line) is not given, we set it to the amount of
+        # separators we find in the third last line.
+        number_of_hits = lines[-3].count(separator)
     return [
         line_number
         for line_number, line in enumerate(first_part)
@@ -429,28 +434,36 @@ def _find_first_line_whit_delimiter(
 
 def _find_separator(checking_length, lines, separators):
     separator = None
-    number_of_hits = 0
-    last_part = lines[checking_length:]
+    number_of_hits = None
+    last_part = lines[checking_length:-1]  # don't include last line since it might be corrupted
     check_sep = dict()
+
     for i, v in enumerate(separators):
         check_sep[i] = [line.count(v) for line in last_part]
+
     unique_sep_counts = {i: set(v) for i, v in check_sep.items()}
+
     for indx, value in unique_sep_counts.items():
         value_as_list = list(value)
         number_of_hits = value_as_list[0]
         if len(value_as_list) == 1 and number_of_hits > 0:
             separator = separators[indx]
+            break
+
     return separator, number_of_hits
 
 
-def check_retrieve_file():
+def check_retrieve_file(n=1):
     import pathlib
 
     pd.options.display.max_columns = 100
     # prms.Reader.sep = "\t"
     data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources")
     data_dir = data_root / r"2021_leafs_data\Charge-Discharge\Maccor series 4000"
-    name = data_dir / "01_UBham_M50_Validation_0deg_01.txt"
+    if n == 2:
+        name = data_dir / "KIT-Full-cell-PW-HC-CT-cell002.txt"
+    else:
+        name = data_dir / "01_UBham_M50_Validation_0deg_01.txt"
     print(f"Exists? {name.is_file()}")
     if name.is_file():
         return name
@@ -477,10 +490,42 @@ def check_dev_loader(name=None, model=None):
     pd.options.display.max_columns = 100
     # prms.Reader.sep = "\t"
 
-    loader = MaccorTxtLoader(sep="\t", model=model)
-    dd = loader.loader(name)
+    sep = "\t"
+    loader1 = MaccorTxtLoader(sep=sep, model=model)
+    loader2 = MaccorTxtLoader(model="one")
+    loader3 = MaccorTxtLoader(model="zero")
+    loader4 = MaccorTxtLoader(model="zero")
+    dd = loader1.loader(name)
+    dd = loader2.loader(name)
+    dd = loader3.loader(name)
+    dd = loader4.loader(name)
     raw = dd[0].raw
-    print(raw.head())
+    print(len(raw))
+
+
+def check_dev_loader2(name=None, model=None, sep=None):
+    if name is None:
+        name = check_retrieve_file(2)
+
+    pd.options.display.max_columns = 100
+    print(f"Loaded {name.name}")
+
+    df = pd.read_csv(name, sep="\t", decimal=",", skiprows=11, header=1, encoding="ISO-8859-1")
+    df.to_clipboard()
+    # OH NO! Pandas cannot read it properly - it shifts the headers one step
+    #   to the right!!!!
+
+    if sep is not None:
+        loader3 = MaccorTxtLoader(sep=sep, model=model)
+    elif sep == "none":
+        loader3 = MaccorTxtLoader(sep=None, model=model)
+    else:
+        loader3 = MaccorTxtLoader(model=model)
+
+    dd = loader3.loader(name)
+
+    raw = dd[0].raw
+    print(len(raw))
 
 
 def check_loader(name=None):
@@ -654,6 +699,6 @@ def check_loader_from_outside_with_get():
 
 
 if __name__ == "__main__":
-    check_dev_loader(model="zero")
+    check_dev_loader2(sep="none", model="two")
     # check_find_delimiter()
     # check_loader_from_outside_with_get()
