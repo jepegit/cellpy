@@ -64,7 +64,7 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 }
 
 columns_to_keep = ['Rec', 'Cycle P', 'Cycle C', 'Step', 'TestTime', 'StepTime',
-       'Cap. [Ah]', 'Ener. [Wh]', 'Current [A]', 'Voltage [V]', 'Md', 'DPT Time']
+                   'Cap. [Ah]', 'Ener. [Wh]', 'Current [A]', 'Voltage [V]', 'Md', 'DPT Time']
 
 states = {
     "column_name": "Md",
@@ -93,7 +93,7 @@ raw_limits = {
 }
 
 formatters = {
-    "skiprows": 13,  # 12 for other file
+    "skiprows": 12,  # 12 for other file
     "sep": "\t",
     "header": 0,  # 0 for other file
     "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
@@ -101,5 +101,5 @@ formatters = {
 }
 
 pre_processors = {
-    "remove_empty_lines": True
+    "remove_empty_lines": True,
 }

@@ -20,6 +20,7 @@ class ModelParameters:
     raw_limits: dict = field(default_factory=dict)
     formatters: dict = field(default_factory=dict)
     pre_processors: dict = field(default_factory=dict)
+    post_processors: dict = field(default_factory=dict)
 
 
 def register_configuration(
@@ -36,12 +37,17 @@ def register_configuration(
     try:
         formatters = m.formatters
     except AttributeError:
-        formatters = None
+        formatters = dict()
 
     try:
         pre_processors = m.pre_processors
     except AttributeError:
-        pre_processors = None
+        pre_processors = dict()
+
+    try:
+        post_processors = m.post_processors
+    except AttributeError:
+        post_processors = dict()
 
     model_01 = ModelParameters(
         name=name,
@@ -55,5 +61,6 @@ def register_configuration(
         raw_limits=m.raw_limits,
         formatters=formatters,
         pre_processors=pre_processors,
+        post_processors=post_processors,
     )
     return model_01

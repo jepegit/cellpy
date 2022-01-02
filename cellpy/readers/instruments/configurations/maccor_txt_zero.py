@@ -105,4 +105,4 @@ raw_limits = {
     "ir_change": 0.00001
 }
 
-formatters = None
+formatters = {}

@@ -1,15 +1,20 @@
 """Maccor txt data"""
 import logging
+import pathlib
+import shutil
 import sys
+import tempfile
 from pprint import pprint
+from typing import Union
 
 import pandas as pd
 
+from cellpy import prms
 from cellpy.readers.core import FileID, Cell
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.base import Loader
 from cellpy.readers.instruments.configurations import register_configuration
-from cellpy import prms
+from cellpy.readers.instruments.processors import pre_processors, post_processors
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
@@ -29,13 +34,35 @@ class MaccorTxtLoader(Loader):
     """Class for loading data from Maccor txt files."""
 
     def __init__(self, **kwargs):
-        """initiates the MaccorTxtLoader class"""
+        """initiates the MaccorTxtLoader class.
+
+        Several attributes can be set during initialization of the class as **kwargs. Remark that some also
+        can be provided as arguments to the `loader` method and will then automatically be "transparent"
+        to the `cellpy.get` function. So if you would like to give the user access to modify these arguments,
+        you should implement them in the `loader` method.
+
+        Key word attributes:
+            model (str): short name of the (already implemented) sub-model.
+            sep (str): delimiter.
+            skiprows (int): number of lines to skip.
+            header (int): number of the header lines.
+            encoding (str): encoding, defaults 'to ISO--8859-1'.
+            decimal (str): character used for decimal in the raw data, defaults to '.'.
+            processors (dict): pre-processing steps to take (before loading with pandas).
+            post_processors (dict): post-processing steps to make after loading the data, but before
+                returning them to the caller.
+            include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
+            keep_all_columns (bool): load all columns, also columns that are not 100% necessary for `cellpy` to work.
+                Remark that the configuration settings for the sub-model must include a list of column header names
+                that should be kept if keep_all_columns is False (default).
+        """
         model = kwargs.pop("model", prms.Instruments.Maccor.default_model)
         self.config_params = configuration(model)
         self.name = None
+        self._file_path = None
 
-        if self.config_params.formatters is None:
-            # check for "over-rides" from arguments
+        if not self.config_params.formatters:
+            # check for "over-rides" from arguments in class initialization
             self.sep = kwargs.pop("sep", None)
             self.skiprows = kwargs.pop("skiprows", 3)
             self.header = kwargs.pop("header", 0)
@@ -49,13 +76,10 @@ class MaccorTxtLoader(Loader):
             self.encoding = kwargs.pop("encoding", self.config_params.formatters["encoding"])
             self.decimal = kwargs.pop("decimal", self.config_params.formatters["decimal"])
 
-        self.pre_processors = kwargs.pop("pre_processors", self.config_params.pre_processors)
+        self.pre_processors = kwargs.pop("processors", self.config_params.pre_processors)
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
-        # self.raw_headers_normal = normal_headers_renaming_dict
-        self.cellpy_headers_normal = (
-            get_headers_normal()
-        )  # the column headers defined by cellpy
+        self.cellpy_headers_normal = get_headers_normal()  # the column headers defined by cellpy
 
     @staticmethod
     def get_headers_aux(df):
@@ -77,6 +101,7 @@ class MaccorTxtLoader(Loader):
         raw_units["current"] = 1.0  # A
         raw_units["charge"] = 1.0  # Ah
         raw_units["mass"] = 0.001  # g
+        # return self.config_params.raw_units
         return raw_units
 
     # not updated yet
@@ -94,6 +119,7 @@ class MaccorTxtLoader(Loader):
         raw_limits["stable_charge_hard"] = 0.001
         raw_limits["stable_charge_soft"] = 5.0
         raw_limits["ir_change"] = 0.00001
+        # return self.config_params.raw_limits
         return raw_limits
 
     def _auto_formatter(self):
@@ -105,40 +131,62 @@ class MaccorTxtLoader(Loader):
         )
         self.encoding = "ISO-8859-1"  # consider adding a find_encoding function
         self.sep = separator
-        self.skiprows = first_index  # consider adding a find_rows_to_skip function
+        self.skiprows = first_index - 1   # consider adding a find_rows_to_skip function
         self.header = 0   # consider adding a find_header function
 
         logging.critical(
-            f"auto-formatting:\n{self.sep=}\n{self.skiprows=}\n{self.header=}\n{self.encoding=}\n"
+            f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
         )
 
     def _pre_process(self):
-        raise NotImplementedError
+        # create a copy of the file and set file_path attribute
+        temp_dir = pathlib.Path(tempfile.gettempdir())
+        temp_filename = temp_dir / self.name.name
+        shutil.copy2(self.name, temp_dir)
+        logging.debug(f"tmp file: {temp_filename}")
+        self._file_path = temp_filename
 
-    def loader(self, name, **kwargs):
+        # pre-processors to run self.pre_processors
+        # pre-processors available: pre_processors
+
+        for processor_name in self.pre_processors:
+            if self.pre_processors[processor_name]:
+                if hasattr(pre_processors, processor_name):
+                    logging.critical(f"running pre-processor: {processor_name}")
+                    processor = getattr(pre_processors, processor_name)
+                    self._file_path = processor(self._file_path)
+                else:
+                    raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
+
+    def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> list:
         """returns a Cell object with loaded data.
 
-        Loads data from arbin SQL server db.
+        Loads data from Maccor txt file (csv-ish).
 
         Args:
-            name (str): name of the file
-            kwargs (dict): key-word arguments from raw_loader
+            name (str, pathlib.Path): name of the file.
+            kwargs (dict): key-word arguments from raw_loader.
+
+        **kwargs:
+            sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
+                start of data (skiprows).
 
         Returns:
             new_tests (list of data objects)
         """
-        self.name = name
+        self._file_path = pathlib.Path(name)
+        self.name = pathlib.Path(name)
         new_tests = []
         sep = kwargs.get("sep", None)
 
-        if self.pre_processors is not None:
+        if self.pre_processors:
             self._pre_process()
         if sep is not None:
             self.sep = sep
         if self.sep is None:
             self._auto_formatter()
 
-        data_df = self._query_csv(name)
+        data_df = self._query_csv(self._file_path)
         if not self.keep_all_columns:
             data_df = data_df[self.config_params.columns_to_keep]
 
@@ -172,6 +220,8 @@ class MaccorTxtLoader(Loader):
         return new_tests
 
     def _post_process(self, data):
+        # TODO: implement post_processor methodology from processors
+        #  (similar as pre-processing)
         split_caps = True
         split_current = True
         set_index = True
@@ -183,7 +233,9 @@ class MaccorTxtLoader(Loader):
         if rename_headers:
             columns = {}
             for key in self.cellpy_headers_normal:
+
                 if key in self.config_params.normal_headers_renaming_dict:
+
                     old_header = self.config_params.normal_headers_renaming_dict[key]
                     new_header = self.cellpy_headers_normal[key]
                     # print(f"renaming {old_header} to {new_header}")
@@ -203,6 +255,7 @@ class MaccorTxtLoader(Loader):
 
         if split_current:
             data.raw = current_splitter(data.raw, self.config_params.states)
+
         if split_caps:
             data.raw = capacity_splitter(data.raw, self.config_params.states)
 
@@ -234,12 +287,13 @@ class MaccorTxtLoader(Loader):
         return data
 
     def _query_csv(self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None):
+        logging.debug(f"parsing with pandas.read_csv: {name}")
         sep = sep or self.sep
         skiprows = skiprows or self.skiprows
         header = header or self.header
         encoding = encoding or self.encoding
         decimal = decimal or self.decimal
-        logging.debug(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
+        logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
         data_df = pd.read_csv(
             name, sep=sep, skiprows=skiprows, header=header, encoding=encoding, decimal=decimal
         )
@@ -345,6 +399,7 @@ def state_splitter(
 
 def current_splitter(raw, states):
     """Split current into positive and negative"""
+    raw.to_clipboard()
     headers = get_headers_normal()
     return state_splitter(
         raw,
@@ -433,6 +488,7 @@ def _find_first_line_whit_delimiter(
 
 
 def _find_separator(checking_length, lines, separators):
+    logging.debug("searching for separators")
     separator = None
     number_of_hits = None
     last_part = lines[checking_length:-1]  # don't include last line since it might be corrupted
@@ -461,9 +517,10 @@ def check_retrieve_file(n=1):
     data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources")
     data_dir = data_root / r"2021_leafs_data\Charge-Discharge\Maccor series 4000"
     if n == 2:
-        name = data_dir / "KIT-Full-cell-PW-HC-CT-cell002.txt"
+        name = data_dir / "KIT-Full-cell-PW-HC-CT-cell016.txt"
     else:
         name = data_dir / "01_UBham_M50_Validation_0deg_01.txt"
+    print(name)
     print(f"Exists? {name.is_file()}")
     if name.is_file():
         return name
@@ -503,19 +560,13 @@ def check_dev_loader(name=None, model=None):
     print(len(raw))
 
 
-def check_dev_loader2(name=None, model=None, sep=None):
+def check_dev_loader2(name=None, model=None, sep=None, number=2):
     if name is None:
-        name = check_retrieve_file(2)
+        name = check_retrieve_file(number)
 
     pd.options.display.max_columns = 100
-    print(f"Loaded {name.name}")
 
-    df = pd.read_csv(name, sep="\t", decimal=",", skiprows=11, header=1, encoding="ISO-8859-1")
-    df.to_clipboard()
-    # OH NO! Pandas cannot read it properly - it shifts the headers one step
-    #   to the right!!!!
-
-    if sep is not None:
+    if sep is not None and sep != "none":
         loader3 = MaccorTxtLoader(sep=sep, model=model)
     elif sep == "none":
         loader3 = MaccorTxtLoader(sep=None, model=model)
@@ -526,18 +577,19 @@ def check_dev_loader2(name=None, model=None, sep=None):
 
     raw = dd[0].raw
     print(len(raw))
+    print(raw)
 
 
-def check_loader(name=None):
+def check_loader(name=None, number=1, model="one"):
     import matplotlib.pyplot as plt
 
     if name is None:
-        name = check_retrieve_file()
-
+        name = check_retrieve_file(number)
+    print(name)
     pd.options.display.max_columns = 100
     # prms.Reader.sep = "\t"
 
-    loader = MaccorTxtLoader(sep="\t")
+    loader = MaccorTxtLoader(sep="\t", model=model)
     dd = loader.loader(name)
     raw = dd[0].raw
     raw.plot(x="data_point", y="current", title="current vs data-point")
@@ -699,6 +751,7 @@ def check_loader_from_outside_with_get():
 
 
 if __name__ == "__main__":
-    check_dev_loader2(sep="none", model="two")
+    # check_dev_loader2(model="two")
+    check_loader(number=2, model="two")
     # check_find_delimiter()
     # check_loader_from_outside_with_get()

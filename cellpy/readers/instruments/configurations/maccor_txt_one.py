@@ -81,7 +81,7 @@ columns_to_keep = [
 ]
 
 states = {
-    "column_name": "Md",
+    "column_name": "State",
     "charge_keys": ["C"],
     "discharge_keys": ["D"],
     "rest_keys": ["R"],
