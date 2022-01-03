@@ -103,3 +103,14 @@ formatters = {
 pre_processors = {
     "remove_empty_lines": True,
 }
+
+post_processors = {
+    "split_capacity": True,
+    "split_current": True,
+    "set_index": True,
+    "rename_headers": True,
+    "set_cycle_number_not_zero": True,
+    "convert_date_time_to_datetime": True,
+    "convert_step_time_to_timedelta": True,
+    "convert_test_time_to_timedelta": True,
+}

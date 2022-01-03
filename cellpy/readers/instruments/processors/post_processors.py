@@ -1,23 +1,33 @@
+"""Post-processing methods for instrument loaders.
+
+All methods must implement the following parameters/arguments:
+    filename: Union[str, pathlib.Path], *args: str, **kwargs: str
+
+All methods should return None (i.e. nothing).
+
+"""
+
 import logging
 
 import pandas as pd
 
 from cellpy.parameters.internal_settings import headers_normal
+from cellpy.readers.core import Cell
+from cellpy.readers.instruments.configurations import ModelParameters
 
 
-def set_index(data, config_params):
+def set_cycle_number_not_zero(data: Cell, config_params: ModelParameters) -> Cell:
     data.raw[headers_normal.cycle_index_txt] += 1
     return data
 
 
-def convert_date_time_to_datetime(data, config_params):
+def convert_date_time_to_datetime(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_date_time = headers_normal.datetime_txt
-    data.raw[headers_normal.cycle_index_txt] += 1
     data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
     return data
 
 
-def convert_step_time_to_timedelta(data, config_params):
+def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_step_time = headers_normal.step_time_txt
     data.raw[hdr_step_time] = pd.to_timedelta(
         data.raw[hdr_step_time]
@@ -25,21 +35,21 @@ def convert_step_time_to_timedelta(data, config_params):
     return data
 
 
-def convert_test_time_to_timedelta(data, config_params):
+def convert_test_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_test_time = headers_normal.test_time_txt
     x = pd.to_timedelta(data.raw[hdr_test_time])
     data.raw[hdr_test_time] = x.dt.total_seconds()
     return data
 
 
-def set_cycle_number_not_zero(data, config_params):
+def set_index(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_data_point = headers_normal.data_point_txt
     if data.raw.index.name != hdr_data_point:
         data.raw = data.raw.set_index(hdr_data_point, drop=False)
     return data
 
 
-def rename_headers(data, config_params):
+def rename_headers(data: Cell, config_params: ModelParameters) -> Cell:
     columns = {}
     for key in headers_normal:
         if key in config_params.normal_headers_renaming_dict:
@@ -58,7 +68,7 @@ def rename_headers(data, config_params):
 
 
 def _state_splitter(
-    raw,
+    raw: pd.DataFrame,
     base_col_name="charge_capacity",
     n_charge=1,
     n_discharge=1,
@@ -67,7 +77,7 @@ def _state_splitter(
     temp_col_name_charge="tmp_charge",
     temp_col_name_discharge="tmp_discharge",
     states=None,
-):
+) -> pd.DataFrame:
     """Split states.
 
     Args:
@@ -154,7 +164,7 @@ def _state_splitter(
     return raw
 
 
-def current_splitter(data, config_params):
+def split_current(data: Cell, config_params: ModelParameters) -> Cell:
     """Split current into positive and negative"""
     data.raw = _state_splitter(
         data.raw,
@@ -170,9 +180,8 @@ def current_splitter(data, config_params):
     return data
 
 
-def capacity_splitter(data, config_params):
+def split_capacity(data: Cell, config_params: ModelParameters) -> Cell:
     """split capacity into charge and discharge"""
-
     data.raw = _state_splitter(
         data.raw,
         base_col_name=headers_normal.charge_capacity_txt,

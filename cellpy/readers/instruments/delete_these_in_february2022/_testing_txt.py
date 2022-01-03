@@ -107,8 +107,7 @@ pre_processors = {
 }
 
 post_processors = {
-    "remove_empty_lines": True,
-    "split_caps": True,
+    "split_capacity": True,
     "split_current": True,
     "set_index": True,
     "rename_headers": True,

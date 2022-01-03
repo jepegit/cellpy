@@ -109,7 +109,7 @@ class CustomLoader(Loader):
     [doc not finished yet]
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """initiates the class"""
 
         self.logger = logging.getLogger(__name__)

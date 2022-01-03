@@ -129,7 +129,7 @@ def from_arbin_to_datetime(n):
 class ArbinSQLLoader(Loader):
     """Class for loading arbin-data from MS SQL server."""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
         self.arbin_headers_normal = (
             get_headers_normal()

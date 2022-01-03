@@ -165,8 +165,33 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
         return core.identify_last_data_point(data)
 
 
-class TxtLoader(Loader,  metaclass=abc.ABCMeta):
-    """Main txt loading class"""
+class TxtLoader(Loader):
+    """Main txt loading class.
+
+    This class can be sub-classed if you want to make a data-reader for csv-type files. The subclass needs to have
+    at least one associated CONFIGURATION_MODULE defined and must have the following attributes as minimum:
+
+        default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
+        supported_models: dict = SUPPORTED_MODELS
+
+    where SUPPORTED_MODELS is a dictionary with {NICK_NAME : CONFIGURATION_MODULE_NAME}  key-value pairs.
+
+    It is also possible to set these in a custom pre_init method:
+
+        @classmethod
+        def pre_init(cls):
+            cls.default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
+            cls.supported_models: dict = SUPPORTED_MODELS
+
+    or turn off automatic registering of configuration:
+        @classmethod
+        def pre_init(cls):
+            cls.auto_register_config = False  # defaults to True
+
+    During initialisation of the class, if auto_register_config == True,  it will dynamically load the definitions
+    provided in the CONFIGURATION_MODULE.py located in the cellpy.readers.instruments.configurations folder/package.
+
+    """
 
     def __init__(self, *args, **kwargs):
         """initiates the TxtLoader class.
@@ -191,22 +216,27 @@ class TxtLoader(Loader,  metaclass=abc.ABCMeta):
                 Remark that the configuration settings for the sub-model must include a list of column header names
                 that should be kept if keep_all_columns is False (default).
         """
+
+        self.auto_register_config = True
+        self.pre_init()
+
         if not hasattr(self, "supported_models"):
             raise AttributeError(f"missing attribute in sub-class of TxtLoader: supported_models")
         if not hasattr(self, "default_model"):
             raise AttributeError(f"missing attribute in sub-class of TxtLoader: default_model")
 
-        self.model = kwargs.pop("model", self.default_model)
-        self.config_params = self.register_configuration()
+        self.model = kwargs.pop("model", self.default_model)  # in case model is given as argument
+        if self.auto_register_config:
+            self.config_params = self.register_configuration()
         self.name = None
         self._file_path = None
 
         if not self.config_params.formatters:
             # check for "over-rides" from arguments in class initialization
             self.sep = kwargs.pop("sep", None)
-            self.skiprows = kwargs.pop("skiprows", 3)
+            self.skiprows = kwargs.pop("skiprows", 0)
             self.header = kwargs.pop("header", 0)
-            self.encoding = kwargs.pop("encoding", "ISO-8859-1")
+            self.encoding = kwargs.pop("encoding", "utf-8")
             self.decimal = kwargs.pop("decimal", ".")
 
         else:
@@ -222,8 +252,13 @@ class TxtLoader(Loader,  metaclass=abc.ABCMeta):
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
         self.cellpy_headers_normal = headers_normal  # the column headers defined by cellpy
 
+    def pre_init(self):
+        ...
+
     def register_configuration(self) -> ModelParameters:
         """Register and load model configuration"""
+        if self.model is None:  # in case None was given as argument (model=None in initialisation)
+            self.model = self.default_model
         model_module_name = self.supported_models.get(self.model, None)
         if model_module_name is None:
             raise Exception(f"the model {self.model} does not have any defined configuration")
@@ -254,7 +289,8 @@ class TxtLoader(Loader,  metaclass=abc.ABCMeta):
         """
         return self.config_params.raw_limits
 
-    def get_headers_aux(self) -> dict:
+    @staticmethod
+    def get_headers_aux(raw: pd.DataFrame) -> dict:
         raise NotImplementedError(f"missing method in sub-class of TxtLoader: get_headers_aux")
 
     def _pre_process(self):
@@ -337,7 +373,6 @@ class TxtLoader(Loader,  metaclass=abc.ABCMeta):
         if data.start_datetime is None:
             data.start_datetime = data.raw[headers_normal.datetime_txt].iat[0]
         new_tests.append(data)
-
         return new_tests
 
     def parse_meta(self) -> dict:
@@ -380,17 +415,29 @@ class TxtLoader(Loader,  metaclass=abc.ABCMeta):
         return data
 
     def _post_process(self, data):
+        # ordered post-processing steps:
+        ordered_steps = ["rename_headers"]
+        for processor_name in ordered_steps:
+            if processor_name in self.post_processors:
+                data = self._perform_post_process_step(data, processor_name)
+
+        # non-ordered post-processing steps
         for processor_name in self.post_processors:
-            if self.post_processors[processor_name]:
-                if hasattr(post_processors, processor_name):
-                    logging.critical(f"running post-processor: {processor_name}")
-                    processor = getattr(post_processors, processor_name)
-                    data = processor(data, self.config_params)
-                    if hasattr(self, f"_post_{processor_name}"):  # internal addon-function
-                        _processor = getattr(self, f"_post_{processor_name}")
-                        data = _processor(data)
-                else:
-                    raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
+            if processor_name not in ordered_steps:
+                data = self._perform_post_process_step(data, processor_name)
+        return data
+
+    def _perform_post_process_step(self, data, processor_name):
+        if self.post_processors[processor_name]:
+            if hasattr(post_processors, processor_name):
+                logging.critical(f"running post-processor: {processor_name}")
+                processor = getattr(post_processors, processor_name)
+                data = processor(data, self.config_params)
+                if hasattr(self, f"_post_{processor_name}"):  # internal addon-function
+                    _processor = getattr(self, f"_post_{processor_name}")
+                    data = _processor(data)
+            else:
+                raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
         return data
 
 

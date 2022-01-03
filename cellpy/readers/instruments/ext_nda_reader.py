@@ -35,7 +35,7 @@ def load_nda(*args, **kwargs):
 class NdaLoader(Loader):
     """Class for using the NDA loader by Frederik Huld (Beyonder)."""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """initiates the NdaLoader class"""
         # could use __init__(self, cellpydata_object) and
         # set self.logger = cellpydata_object.logger etc.

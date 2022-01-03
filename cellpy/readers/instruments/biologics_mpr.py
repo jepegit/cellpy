@@ -78,7 +78,7 @@ class MprLoader(Loader):
     # Note: the class is sub-classing Loader. At the moment, Loader does
     # not really contain anything...
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.logger = logging.getLogger(__name__)
         self.headers_normal = get_headers_normal()
         self.current_chunk = 0  # use this to set chunks to load

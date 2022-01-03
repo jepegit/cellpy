@@ -471,7 +471,7 @@ class CellpyData(object):
             from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
 
             logging.warning(f"{instrument} is experimental! Not ready for production!")
-            self._set_instrument(RawLoader)
+            self._set_instrument(RawLoader, **kwargs)
             self.tester = "arbin_sql"
 
         elif instrument == "arbin_sql_csv":
@@ -487,14 +487,14 @@ class CellpyData(object):
             logging.warning("Experimental! Not ready for production!")
             from cellpy.readers.instruments.pec import PECLoader as RawLoader
 
-            self._set_instrument(RawLoader)
+            self._set_instrument(RawLoader, **kwargs)
             self.tester = "pec"
 
         elif instrument in ["biologics", "biologics_mpr"]:
             from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
 
             logging.warning("Experimental! Not ready for production!")
-            self._set_instrument(RawLoader)
+            self._set_instrument(RawLoader, **kwargs)
             self.tester = "biologic"
 
         elif instrument in ["maccor", "maccor_txt"]:
@@ -5440,7 +5440,8 @@ def get(
         # prms.Instruments.custom_instrument_definitions_file = instrument_file
 
     elif instrument is not None:
-        cellpy_instance.set_instrument(instrument=instrument)
+        model = kwargs.pop("model", None)
+        cellpy_instance.set_instrument(instrument=instrument, model=model)
 
     if cellpy_instance.tester in db_readers:
         file_needed = False

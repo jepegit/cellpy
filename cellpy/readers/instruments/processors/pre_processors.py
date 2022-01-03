@@ -28,7 +28,7 @@ def remove_empty_lines(filename: Union[str, pathlib.Path], *args: str, **kwargs:
     Returns:
         pathlib.Path of modified file
     """
-    logging.getLogger().setLevel(logging.DEBUG)
+    # logging.getLogger().setLevel(logging.DEBUG)
     logging.debug(f"args: {args}, kwargs: {kwargs}")
     logging.debug(f"filename: {filename}")
 
