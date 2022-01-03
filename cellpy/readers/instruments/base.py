@@ -331,6 +331,7 @@ class TxtLoader(Loader):
         """
         self._file_path = pathlib.Path(name)
         self.name = pathlib.Path(name)
+        pre_processor_hook = kwargs.pop("pre_processor_hook", None)
         new_tests = []
         sep = kwargs.get("sep", None)
 
@@ -342,6 +343,11 @@ class TxtLoader(Loader):
             self._auto_formatter()
 
         data_df = self._query_csv(self._file_path)
+
+        if pre_processor_hook is not None:
+            logging.debug("running pre-processing-hook")
+            data_df = pre_processor_hook(data_df)
+
         if not self.keep_all_columns:
             data_df = data_df[self.config_params.columns_to_keep]
 
@@ -372,10 +378,20 @@ class TxtLoader(Loader):
         data = self.identify_last_data_point(data)
         if data.start_datetime is None:
             data.start_datetime = data.raw[headers_normal.datetime_txt].iat[0]
+
+        data = self.validate(data)
         new_tests.append(data)
         return new_tests
 
+    def validate(self, data: core.Cell) -> core.Cell:
+        """validation of the loaded data, should raise an appropriate exception if it fails."""
+
+        logging.debug(f"no validation of defined in this sub-class of TxtLoader")
+        return data
+
     def parse_meta(self) -> dict:
+        """method that parses the data for meta-data (e.g. start-time, channel number, ...)"""
+
         logging.debug(f"no parsing method for meta-data defined in this sub-class of TxtLoader")
         return dict()
 
@@ -386,7 +402,7 @@ class TxtLoader(Loader):
             checking_length_header=100,
             checking_length_whole=200,
         )
-        self.encoding = "ISO-8859-1"  # consider adding a find_encoding function
+        self.encoding = "UTF-8"  # consider adding a find_encoding function
         self.sep = separator
         self.skiprows = first_index - 1   # consider adding a find_rows_to_skip function
         self.header = 0   # consider adding a find_header function
@@ -407,6 +423,29 @@ class TxtLoader(Loader):
             name, sep=sep, skiprows=skiprows, header=header, encoding=encoding, decimal=decimal
         )
         return data_df
+    # copy-paste from custom loader in an effort to combine the classes
+    # def _parse_xls_data(self, file_name):
+    #     sheet_name = self.structure["table_name"]
+    #
+    #     raw_frame = pd.read_excel(
+    #         file_name, engine="xlrd", sheet_name=None
+    #     )  # TODO: replace this with pd.ExcelReader
+    #     matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+    #     if matching:
+    #         return raw_frame[matching[0]]
+    #
+    # def _parse_xlsx_data(self, file_name):
+    #     sheet_name = self.structure["table_name"]
+    #     raw_frame = pd.read_excel(
+    #         file_name, engine="openpyxl", sheet_name=None
+    #     )  # TODO: replace this with pd.ExcelReader
+    #     matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+    #     if matching:
+    #         return raw_frame[matching[0]]
+    #
+    # def _parse_csv_data(self, file_name, sep, header_row):
+    #     raw = pd.read_csv(file_name, sep=sep, header=header_row, skip_blank_lines=False)
+    #     return raw
 
     def _post_rename_headers(self, data):
         if self.include_aux:
