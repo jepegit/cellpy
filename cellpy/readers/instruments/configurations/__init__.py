@@ -19,6 +19,7 @@ class ModelParameters:
     raw_units: dict = field(default_factory=dict)
     raw_limits: dict = field(default_factory=dict)
     formatters: dict = field(default_factory=dict)
+    meta_keys: dict = field(default_factory=dict)
     pre_processors: dict = field(default_factory=dict)
     post_processors: dict = field(default_factory=dict)
 
@@ -32,6 +33,9 @@ def register_configuration(
     cellpy.readers.instruments.configurations module and return it.
 
     Returns: ModelParameters
+
+    TODO: Either: expand this function so that it also reads from yaml files,
+        or use pydantic
     """
     m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
     try:
@@ -49,6 +53,11 @@ def register_configuration(
     except AttributeError:
         post_processors = dict()
 
+    try:
+        meta_keys = m.meta_keys
+    except AttributeError:
+        meta_keys = dict()
+
     model_01 = ModelParameters(
         name=name,
         unit_labels=m.unit_labels,
@@ -59,6 +68,7 @@ def register_configuration(
         states=m.states,
         raw_units=m.raw_units,
         raw_limits=m.raw_limits,
+        meta_keys=meta_keys,
         formatters=formatters,
         pre_processors=pre_processors,
         post_processors=post_processors,

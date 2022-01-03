@@ -3,12 +3,21 @@ When you make a new loader you have to subclass the Loader class.
 Remember also to register it in cellpy.cellreader.
 
 (for future development, not used very efficiently yet).
-(and if you figure out a better name for this module, please let me know).
 """
 
 import abc
+import logging
+import pathlib
+import shutil
+import tempfile
+from typing import Union, List
+
+import pandas as pd
 
 import cellpy.readers.core as core
+from cellpy.parameters.internal_settings import headers_normal
+from cellpy.readers.instruments.configurations import register_configuration, ModelParameters
+from cellpy.readers.instruments.processors import pre_processors, post_processors
 
 MINIMUM_SELECTION = [
     "Data_Point",
@@ -23,6 +32,86 @@ MINIMUM_SELECTION = [
     "Discharge_Capacity",
     "Internal_Resistance",
 ]
+
+
+# TODO: move this to another module (e.g. inside processors):
+def find_delimiter_and_start(
+    file_name,
+    separators=None,
+    checking_length_header=100,
+    checking_length_whole=200,
+):
+    """function to automatically detect the delimiter and what line the first data appears on.
+
+    Remark! This function is rather simple, it splits the data into to parts
+        (possible header part (checking_length_header) and the rest of the data). Then it counts the appearances of
+        the different possible delimiters in the rest of the data part, and then selects a delimiter if it has unique
+        counts for all the lines.
+
+        The first line is defined as where the delimiter is used same number of times (probably a header line).
+    """
+
+    if separators is None:
+        separators = [";", "\t", "|", ","]
+    logging.debug(f"checking internals of the file {file_name}")
+
+    with open(file_name, "r") as fin:
+        lines = []
+        for j in range(checking_length_whole):
+            line = fin.readline()
+            if not line:
+                break
+            lines.append(line.strip())
+
+    separator, number_of_hits = _find_separator(
+        checking_length_whole - checking_length_header, lines, separators
+    )
+
+    if separator is not None:
+        first_index = _find_first_line_whit_delimiter(
+            checking_length_header, lines, number_of_hits, separator
+        )
+        logging.debug(f"First line with delimiter: {first_index}")
+        return separator, first_index
+    else:
+        raise IOError(f"could not decide delimiter in {file_name}")
+
+
+def _find_first_line_whit_delimiter(
+    checking_length_header, lines, number_of_hits, separator
+):
+    first_part = lines[:checking_length_header]
+    if number_of_hits is None:
+        # remark! if number of hits (i.e. how many separators pr line) is not given, we set it to the amount of
+        # separators we find in the third last line.
+        number_of_hits = lines[-3].count(separator)
+    return [
+        line_number
+        for line_number, line in enumerate(first_part)
+        if line.count(separator) == number_of_hits
+    ][0]
+
+
+def _find_separator(checking_length, lines, separators):
+    logging.debug("searching for separators")
+    separator = None
+    number_of_hits = None
+    last_part = lines[checking_length:-1]  # don't include last line since it might be corrupted
+    check_sep = dict()
+
+    for i, v in enumerate(separators):
+        check_sep[i] = [line.count(v) for line in last_part]
+
+    unique_sep_counts = {i: set(v) for i, v in check_sep.items()}
+
+    for index, value in unique_sep_counts.items():
+        value_as_list = list(value)
+        number_of_hits = value_as_list[0]
+        if len(value_as_list) == 1 and number_of_hits > 0:
+            separator = separators[index]
+            break
+
+    return separator, number_of_hits
 
 
 class AtomicLoad(object):
@@ -71,6 +160,237 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
         pass
 
     @staticmethod
-    def identify_last_data_point(data):
+    def identify_last_data_point(data: core.Cell) -> core.Cell:
         """This method is used to find the last record in the data."""
         return core.identify_last_data_point(data)
+
+
+class TxtLoader(Loader,  metaclass=abc.ABCMeta):
+    """Main txt loading class"""
+
+    def __init__(self, *args, **kwargs):
+        """initiates the TxtLoader class.
+
+        Several attributes can be set during initialization of the class as **kwargs. Remark that some also
+        can be provided as arguments to the `loader` method and will then automatically be "transparent"
+        to the `cellpy.get` function. So if you would like to give the user access to modify these arguments,
+        you should implement them in the `loader` method.
+
+        Key word attributes:
+            model (str): short name of the (already implemented) sub-model.
+            sep (str): delimiter.
+            skiprows (int): number of lines to skip.
+            header (int): number of the header lines.
+            encoding (str): encoding.
+            decimal (str): character used for decimal in the raw data, defaults to '.'.
+            processors (dict): pre-processing steps to take (before loading with pandas).
+            post_processors (dict): post-processing steps to make after loading the data, but before
+                returning them to the caller.
+            include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
+            keep_all_columns (bool): load all columns, also columns that are not 100% necessary for `cellpy` to work.
+                Remark that the configuration settings for the sub-model must include a list of column header names
+                that should be kept if keep_all_columns is False (default).
+        """
+        if not hasattr(self, "supported_models"):
+            raise AttributeError(f"missing attribute in sub-class of TxtLoader: supported_models")
+        if not hasattr(self, "default_model"):
+            raise AttributeError(f"missing attribute in sub-class of TxtLoader: default_model")
+
+        self.model = kwargs.pop("model", self.default_model)
+        self.config_params = self.register_configuration()
+        self.name = None
+        self._file_path = None
+
+        if not self.config_params.formatters:
+            # check for "over-rides" from arguments in class initialization
+            self.sep = kwargs.pop("sep", None)
+            self.skiprows = kwargs.pop("skiprows", 3)
+            self.header = kwargs.pop("header", 0)
+            self.encoding = kwargs.pop("encoding", "ISO-8859-1")
+            self.decimal = kwargs.pop("decimal", ".")
+
+        else:
+            self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
+            self.skiprows = kwargs.pop("skiprows", self.config_params.formatters["skiprows"])
+            self.header = kwargs.pop("header", self.config_params.formatters["header"])
+            self.encoding = kwargs.pop("encoding", self.config_params.formatters["encoding"])
+            self.decimal = kwargs.pop("decimal", self.config_params.formatters["decimal"])
+
+        self.pre_processors = kwargs.pop("pre_processors", self.config_params.pre_processors)
+        self.post_processors = kwargs.pop("post_processors", self.config_params.post_processors)
+        self.include_aux = kwargs.pop("include_aux", False)
+        self.keep_all_columns = kwargs.pop("keep_all_columns", False)
+        self.cellpy_headers_normal = headers_normal  # the column headers defined by cellpy
+
+    def register_configuration(self) -> ModelParameters:
+        """Register and load model configuration"""
+        model_module_name = self.supported_models.get(self.model, None)
+        if model_module_name is None:
+            raise Exception(f"the model {self.model} does not have any defined configuration")
+        return register_configuration(self.model, model_module_name)
+
+    def get_raw_units(self):
+        """Include the settings for the units used by the instrument.
+
+        The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
+        Si units can be used). For example, for current defined in mA, the value for the
+        current unit-fraction will be 0.001.
+
+        Returns: dictionary containing the unit-fractions for current, charge, and mass
+
+        """
+        return self.config_params.raw_units
+
+    def get_raw_limits(self):
+        """Include the settings for how to decide what kind of step you are examining here.
+
+        The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
+        for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
+        It is expected that different instruments (with different resolution etc.) have different
+        'epsilons'.
+
+        Returns: the raw limits (dict)
+
+        """
+        return self.config_params.raw_limits
+
+    def get_headers_aux(self) -> dict:
+        raise NotImplementedError(f"missing method in sub-class of TxtLoader: get_headers_aux")
+
+    def _pre_process(self):
+        # create a copy of the file and set file_path attribute
+        temp_dir = pathlib.Path(tempfile.gettempdir())
+        temp_filename = temp_dir / self.name.name
+        shutil.copy2(self.name, temp_dir)
+        logging.debug(f"tmp file: {temp_filename}")
+        self._file_path = temp_filename
+
+        # pre-processors to run self.pre_processors
+        # pre-processors available: pre_processors
+
+        for processor_name in self.pre_processors:
+            if self.pre_processors[processor_name]:
+                if hasattr(pre_processors, processor_name):
+                    logging.critical(f"running pre-processor: {processor_name}")
+                    processor = getattr(pre_processors, processor_name)
+                    self._file_path = processor(self._file_path)
+                else:
+                    raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
+
+    def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> List[core.Cell]:
+        """returns a Cell object with loaded data.
+
+        Loads data from Maccor txt file (csv-ish).
+
+        Args:
+            name (str, pathlib.Path): name of the file.
+            kwargs (dict): key-word arguments from raw_loader.
+
+        **kwargs:
+            sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
+                start of data (skiprows).
+
+        Returns:
+            new_tests (list of data objects)
+        """
+        self._file_path = pathlib.Path(name)
+        self.name = pathlib.Path(name)
+        new_tests = []
+        sep = kwargs.get("sep", None)
+
+        if self.pre_processors:
+            self._pre_process()
+        if sep is not None:
+            self.sep = sep
+        if self.sep is None:
+            self._auto_formatter()
+
+        data_df = self._query_csv(self._file_path)
+        if not self.keep_all_columns:
+            data_df = data_df[self.config_params.columns_to_keep]
+
+        data = core.Cell()
+
+        # metadata
+        meta = self.parse_meta()
+        data.loaded_from = name
+        data.channel_index = meta.get("channel_index", None)
+        data.test_ID = meta.get("test_ID", None)
+        data.test_name = meta.get("test_name", None)
+        data.channel_number = meta.get("channel_number", None)
+        data.creator = meta.get("creator", None)
+        data.item_ID = meta.get("item_ID", None)
+        data.schedule_file_name = meta.get("schedule_file_name", None)
+        data.start_datetime = meta.get("start_datetime", None)
+
+        # Generating a FileID project:
+        fid = core.FileID(name)
+        data.raw_data_files.append(fid)
+
+        data.raw = data_df
+        data.raw_data_files_length.append(len(data_df))
+        data.summary = (
+            pd.DataFrame()
+        )  # creating an empty frame - loading summary is not implemented
+        data = self._post_process(data)
+        data = self.identify_last_data_point(data)
+        if data.start_datetime is None:
+            data.start_datetime = data.raw[headers_normal.datetime_txt].iat[0]
+        new_tests.append(data)
+
+        return new_tests
+
+    def parse_meta(self) -> dict:
+        logging.debug(f"no parsing method for meta-data defined in this sub-class of TxtLoader")
+        return dict()
+
+    def _auto_formatter(self):
+        separator, first_index = find_delimiter_and_start(
+            self.name,
+            separators=None,
+            checking_length_header=100,
+            checking_length_whole=200,
+        )
+        self.encoding = "ISO-8859-1"  # consider adding a find_encoding function
+        self.sep = separator
+        self.skiprows = first_index - 1   # consider adding a find_rows_to_skip function
+        self.header = 0   # consider adding a find_header function
+
+        logging.critical(
+            f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
+        )
+
+    def _query_csv(self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None):
+        logging.debug(f"parsing with pandas.read_csv: {name}")
+        sep = sep or self.sep
+        skiprows = skiprows or self.skiprows
+        header = header or self.header
+        encoding = encoding or self.encoding
+        decimal = decimal or self.decimal
+        logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
+        data_df = pd.read_csv(
+            name, sep=sep, skiprows=skiprows, header=header, encoding=encoding, decimal=decimal
+        )
+        return data_df
+
+    def _post_rename_headers(self, data):
+        if self.include_aux:
+            new_aux_headers = self.get_headers_aux(data.raw)
+            data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
+        return data
+
+    def _post_process(self, data):
+        for processor_name in self.post_processors:
+            if self.post_processors[processor_name]:
+                if hasattr(post_processors, processor_name):
+                    logging.critical(f"running post-processor: {processor_name}")
+                    processor = getattr(post_processors, processor_name)
+                    data = processor(data, self.config_params)
+                    if hasattr(self, f"_post_{processor_name}"):  # internal addon-function
+                        _processor = getattr(self, f"_post_{processor_name}")
+                        data = _processor(data)
+                else:
+                    raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
+        return data
+
+

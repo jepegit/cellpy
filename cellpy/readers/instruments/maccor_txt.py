@@ -13,7 +13,7 @@ from cellpy import prms
 from cellpy.readers.core import FileID, Cell
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.base import Loader
-from cellpy.readers.instruments.configurations import register_configuration
+from cellpy.readers.instruments.configurations import register_configuration, ModelParameters
 from cellpy.readers.instruments.processors import pre_processors, post_processors
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
@@ -21,7 +21,7 @@ DEBUG_MODE = prms.Reader.diagnostics  # not used
 SUPPORTED_MODELS = {"zero": "maccor_txt_zero", "one": "maccor_txt_one", "two": "maccor_txt_two"}
 
 
-def configuration(name):
+def configuration(name) -> ModelParameters:
     """Register and load model configuration"""
     model_module_name = SUPPORTED_MODELS.get(name, None)
     if model_module_name is None:
