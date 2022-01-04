@@ -491,7 +491,7 @@ def yank_after(b, last=None, keep_old=False):
         keep_old (bool): keep the original batch object and return a copy instead.
 
     Returns:
-        batch object
+        batch object if keep_old is True, else None
     """
 
     if keep_old:
@@ -523,7 +523,7 @@ def yank_before(b, first=None, keep_old=False):
         keep_old (bool): keep the original batch object and return a copy instead.
 
     Returns:
-        batch object
+        batch object if keep_old is True, else None
     """
 
     if keep_old:
@@ -755,11 +755,15 @@ def concatenate_summaries(
         else:
             columns = [hdr_summary[name] for name in columns]
     else:
-        columns = [hdr_summary[name] for name in default_columns]
+        columns = []
 
     if column_names is not None:
         columns += column_names
 
+    if len(columns) > 1:
+        columns = [hdr_summary[name] for name in default_columns]
+
+    logging.info(f"concatenating the following columns: {columns}")
     normalize_cycles_headers = []
 
     if normalize_cycles:

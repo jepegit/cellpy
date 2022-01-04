@@ -2,6 +2,16 @@
 History
 =======
 
+0.4.2 (2021)
+------------
+
+* Changed definition of Coulombic Difference (negative of previous)
+* Updated loaders with hooks and additional base class TxtLoader with configuration mechanism
+* Support for Maccor txt files
+* Supports only python 3.8 and up
+* Several bug fixes
+
+
 0.4.1 (2021)
 ------------
 

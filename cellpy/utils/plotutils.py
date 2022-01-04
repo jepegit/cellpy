@@ -295,7 +295,8 @@ def plot_concatenated(
         print("The plotly backend might not work properly yet.")
         print("Fingers crossed.")
         print(
-            "(at least, make sure you are using the most recent versions of jupyter, holoviews and plotly)"
+            "(at least, make sure you are using the most "
+            "recent versions of jupyter, holoviews and plotly)"
         )
 
     try:
@@ -1186,7 +1187,7 @@ def oplot(
         layout_opts = hv.opts.NdLayout
 
     # print("creating interactive plots")
-    oplot_ce = bplot(b, columns=["coulombic_efficiency"], **bplot_shared_opts).opts(
+    oplot_ce = bplot(b, columns=["coulombic_efficiency"], **bplot_shared_opts, **kwargs).opts(
         hv.opts.Curve(ylim=ce_ylim),
         overlay_opts(
             title="",
@@ -1200,7 +1201,7 @@ def oplot(
     # print(" - created oplot_ce")
 
     oplot_dcap = bplot(
-        b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts
+        b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts, **kwargs
     ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
         overlay_opts(
@@ -1218,7 +1219,7 @@ def oplot(
     # print(" - created oplot_dcap")
 
     oplot_ccap = bplot(
-        b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts
+        b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts, **kwargs
     ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
         overlay_opts(
@@ -1232,7 +1233,7 @@ def oplot(
     )
     # print(" - created oplot_ccap")
 
-    oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts).opts(
+    oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts, **kwargs).opts(
         hv.opts.Curve(ylim=ir_ylim),
         overlay_opts(
             title="",
@@ -1244,7 +1245,7 @@ def oplot(
         layout_opts(title="Internal Resistance (Ohm)", **layout_sensitive_opts["ird"]),
     )
 
-    oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts).opts(
+    oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts, **kwargs).opts(
         hv.opts.Curve(ylim=ir_ylim),
         overlay_opts(
             title="",

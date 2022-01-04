@@ -357,24 +357,24 @@ def get_headers_summary() -> BaseSettings:
     return headers_summary
 
 
-def get_cellpy_units() -> BaseSettings:
+def get_cellpy_units() -> CellpyUnits:
     """Returns a dictionary with units"""
     return cellpy_units
 
 
-def get_headers_normal() -> BaseSettings:
+def get_headers_normal() -> HeadersNormal:
     """Returns a dictionary containing the header-strings for the normal data
     (used as column headers for the main data pandas DataFrames)"""
     return headers_normal
 
 
-def get_headers_step_table() -> BaseSettings:
+def get_headers_step_table() -> HeadersStepTable:
     """Returns a dictionary containing the header-strings for the steps table
     (used as column headers for the steps pandas DataFrames)"""
     return headers_step_table
 
 
-def get_headers_journal() -> BaseSettings:
+def get_headers_journal() -> HeadersJournal:
     """Returns a dictionary containing the header-strings for the journal (batch)
     (used as column headers for the journal pandas DataFrames)"""
     return headers_journal

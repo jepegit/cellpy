@@ -41,7 +41,7 @@ from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYFILE,
     ATTRS_DATASET,
     ATTRS_DATASET_DEEP,
-    ATTRS_CELLPYDATA,
+    ATTRS_CELLPYDATA, headers_normal, headers_summary, headers_step_table,
 )
 from cellpy.readers.core import (
     FileID,
@@ -276,9 +276,9 @@ class CellpyData(object):
         self.auto_dirs = prms.Reader.auto_dirs
 
         # - headers and instruments
-        self.headers_normal = get_headers_normal()
-        self.headers_summary = get_headers_summary()
-        self.headers_step_table = get_headers_step_table()
+        self.headers_normal = headers_normal
+        self.headers_summary = headers_summary
+        self.headers_step_table = headers_step_table
 
         self.table_names = None  # dictionary defined in set_instruments
         self.set_instrument()
@@ -1051,7 +1051,7 @@ class CellpyData(object):
         from_cycle = self.cell.summary.iloc[-1][cycle_index_header]
         self.make_summary(from_cycle=from_cycle, **kwargs)
         # For later:
-        # (Remark! need to solve how to merge culumated columns)
+        # (Remark! need to solve how to merge cumulated columns)
         # new_summary = self.make_summary(from_cycle=from_cycle)
         # merged_summary = pd.concat([old_summary, new_summary]).reset_index(drop=True)
         # self.cell.summary = merged_summary
@@ -1061,6 +1061,7 @@ class CellpyData(object):
         with only new data.
         """
         print("NOT FINISHED YET - but very close")
+        # TODO @jepe: implement changes from original from_raw method introduced after this one was last edited.
         if file_names:
             self.file_names = file_names
 
@@ -4841,6 +4842,12 @@ class CellpyData(object):
         specific_converter = self.get_converter_to_specific(dataset=dataset, mass=mass)
 
         hdr_normal = self.headers_normal
+
+        # TODO @jepe: don't "unpack" these (replace all occurrences with the unpacked ones)
+        #  (even though that will slow the code a little bit)
+
+        # TODO @jepe: rename from xxx_txt to xxx in the internal_settings
+        #  (careful - this needs to be done step-by-step combined with frequent testing)
         dt_txt = hdr_normal.datetime_txt
         tt_txt = hdr_normal.test_time_txt
         st_txt = hdr_normal.step_time_txt
@@ -4929,6 +4936,18 @@ class CellpyData(object):
             # logging.debug("Values obtained from raw:")
             # logging.debug(summary.head(20))
 
+        if self.cycle_mode == "anode":
+            logging.info(
+                "Assuming cycling in anode half-cell (discharge before charge) mode"
+            )
+            _first_step_txt = discharge_title
+            _second_step_txt = charge_title
+        else:
+            logging.info("Assuming cycling in full-cell / cathode mode")
+            _first_step_txt = charge_title
+            _second_step_txt = discharge_title
+
+        # TODO @jepe: replace these with DataFrame.assign:
         # logging.debug("Creates summary: specific discharge ('%s')"
         #                   % discharge_title)
         summary[discharge_title] = summary[discharge_txt] * specific_converter
@@ -4945,37 +4964,16 @@ class CellpyData(object):
         #                   cumcharge_title)
         summary[cumcharge_title] = summary[charge_title].cumsum()
 
-        if self.cycle_mode == "anode":
-            logging.info(
-                "Assuming cycling in anode half-cell (discharge before charge) mode"
-            )
-            _first_step_txt = discharge_title
-            _second_step_txt = charge_title
-        else:
-            logging.info("Assuming cycling in full-cell / cathode mode")
-            _first_step_txt = charge_title
-            _second_step_txt = discharge_title
-
-        # logging.debug("Creates summary: coulombic efficiency ('%s')" %
-        #                   coulomb_title)
-        # logging.debug("100 * ('%s')/('%s)" % (_second_step_txt,
-        #                                           _first_step_txt))
         summary[coulomb_title] = (
             100.0 * summary[_second_step_txt] / summary[_first_step_txt]
         )
 
-        # logging.debug("Creates summary: coulombic difference ('%s')" %
-        #                   coulomb_diff_title)
-        # logging.debug("'%s') - ('%s)" % (_second_step_txt, _first_step_txt))
         summary[coulomb_diff_title] = (
-            summary[_second_step_txt] - summary[_first_step_txt]
+            summary[_first_step_txt] - summary[_second_step_txt]
         )
 
-        # logging.debug("Creates summary: cumulated "
-        #                   f"coulombic efficiency ('{cumcoulomb_title}')")
         summary[cumcoulomb_title] = summary[coulomb_title].cumsum()
-        # logging.debug("Creates summary: cumulated coulombic difference "
-        #                   "f('{cumcoulomb_diff_title}')")
+
         summary[cumcoulomb_diff_title] = summary[coulomb_diff_title].cumsum()
 
         # ---------------- discharge loss ---------------------
@@ -5010,6 +5008,7 @@ class CellpyData(object):
         # NH = 100%  ok if NH<120 at n=200
         # NB = 20% stable (or less)
 
+        # TODO @jepe: refactor this to method:
         n = self.daniel_number
         cap_ref = summary.loc[summary[c_txt] == n, _first_step_txt]
         if not cap_ref.empty:
@@ -5075,6 +5074,7 @@ class CellpyData(object):
         #     summary[date_time_txt_title] = \
         #         summary[dt_txt].apply(xldate_as_datetime)  # , option="to_string")
 
+        # TODO @jepe: refactor this to method:
         if find_ocv and not self.load_only_summary:
             warnings.warn(DeprecationWarning("this option will be removed in v.0.4.0"))
             # should remove this option
@@ -5149,6 +5149,7 @@ class CellpyData(object):
                 summary.insert(0, column=ocv_2_v_min_title, value=ocvcol_min)
                 summary.insert(0, column=ocv_2_v_max_title, value=ocvcol_max)
 
+        # TODO @jepe: refactor this to method:
         if find_end_voltage and not self.load_only_summary:
             # needs to be fixed so that end-voltage also can be extracted
             # from the summary
@@ -5228,6 +5229,7 @@ class CellpyData(object):
             summary.insert(0, column=endv_discharge_title, value=ir_frame_dc)
             summary.insert(0, column=endv_charge_title, value=ir_frame_c)
 
+        # TODO @jepe: refactor this to method:
         if find_ir and (not self.load_only_summary) and (ir_txt in dataset.raw.columns):
             # should check:  test.charge_steps = None,
             # test.discharge_steps = None
@@ -5294,6 +5296,7 @@ class CellpyData(object):
             summary.insert(0, column=ir_discharge_title, value=ir_frame)
             summary.insert(0, column=ir_charge_title, value=ir_frame2)
 
+        # TODO @jepe: refactor this to method:
         if add_normalized_cycle_index:
             if normalization_cycles is not None:
                 logging.info(
@@ -5316,6 +5319,7 @@ class CellpyData(object):
             logging.info(f"Using the following nominal capacity: {nom_cap}")
             summary[h_normalized_cycle] = summary[cumcharge_title] / nom_cap
 
+        # TODO @jepe: refactor this to method:
         if add_c_rate:
             logging.debug("Extracting C-rates")
             steps = self.cell.steps
