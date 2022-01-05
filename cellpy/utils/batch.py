@@ -741,7 +741,7 @@ class Batch:
                     "could not find the bokeh module -> using matplotlib instead"
                 )
 
-        self.plotter.do()
+        self.plotter.do(**kwargs)
 
 
 def init(*args, **kwargs):

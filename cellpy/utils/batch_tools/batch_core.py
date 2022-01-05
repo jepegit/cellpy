@@ -484,7 +484,7 @@ class BasePlotter(Doer, metaclass=abc.ABCMeta):
         super().__init__(*args)
 
     @abc.abstractmethod
-    def run_engine(self, engine):
+    def run_engine(self, engine, **kwargs):
         pass
 
     @abc.abstractmethod

@@ -300,6 +300,7 @@ def plot_cycle_life_summary_bokeh(
     height_fractions=None,
     legend_option="all",
     add_rate=True,
+    **kwargs,
 ):
     # TODO: This function should be refactored!
     if height_fractions is None:
@@ -507,6 +508,7 @@ def plot_cycle_life_summary_matplotlib(
     height=800,
     height_fractions=[0.2, 0.5, 0.3],
     legend_option="all",
+    **kwargs
 ):
 
     import matplotlib.pyplot as plt
@@ -553,9 +555,13 @@ def plot_cycle_life_summary_matplotlib(
         info, marker_types=marker_types
     )
     if ir_charge is None:
+        # TODO: implement figsize here:
+        # canvas, (ax_cap, ax_ce) = plt.subplots(2, 1, figsize=(18, 8))  # replace with prms width, height, etc
         canvas, (ax_cap, ax_ce) = plt.subplots(2, 1)
     else:
-        canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1)
+        # TODO: implement figsize here:
+        # canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1, figsize=(24, 8))
+        canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1, figsize=(24, 8))
     for label in charge_capacity.columns.get_level_values(0):
         name = create_legend(info, label, option=legend_option)
         g, sg = look_up_group(info, label)
@@ -647,7 +653,7 @@ def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     elif prms.Batch.backend == "matplotlib":
         logging.info("[obs! experimental]")
         canvas = plot_cycle_life_summary_matplotlib(
-            pages, summaries, width, height, height_fractions
+            pages, summaries, width, height, height_fractions, **kwargs
         )
     else:
         logging.info(f"the {prms.Batch.backend} " f"back-end is not implemented yet.")
@@ -661,9 +667,10 @@ def _preparing_data_and_plotting(**kwargs):
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
 
-    width = prms.Batch.summary_plot_width
-    height = prms.Batch.summary_plot_height
-    height_fractions = prms.Batch.summary_plot_height_fractions
+    width = kwargs.pop("width", prms.Batch.summary_plot_width)
+    height = kwargs.pop("height", prms.Batch.summary_plot_height)
+
+    height_fractions = kwargs.pop("height_fractions", prms.Batch.summary_plot_height_fractions)
 
     for experiment in experiments:
         if not isinstance(experiment, CyclingExperiment):
@@ -734,7 +741,7 @@ class CyclingSummaryPlotter(BasePlotter):
     def _assign_dumper(self, dumper):
         self.dumpers.append(dumper)
 
-    def run_engine(self, engine):
+    def run_engine(self, engine, **kwargs):
         """run engine (once pr. experiment).
 
         Args:
@@ -766,8 +773,7 @@ class CyclingSummaryPlotter(BasePlotter):
         self.current_engine = engine
         if self.reset_farms:
             self.farms = []
-
-        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms, **kwargs)
 
         logging.debug("::engine ended")
 
