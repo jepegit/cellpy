@@ -383,7 +383,7 @@ class CyclingExperiment(BaseExperiment):
                 print(f"{key}: {type(self.memory_dumped[key])}")
         print(80 * "=")
 
-    def link(self):
+    def link(self, **kwargs):
         """Ensure that an appropriate link to the cellpy-files exists for
         each cell.
 
@@ -397,6 +397,13 @@ class CyclingExperiment(BaseExperiment):
 
         (OK, I will change it. Soon.)
 
+        **kwargs: passed to _link_cellpy_file
+            max_cycle (int): maximum cycle number to link/load (remark that the
+                cellpy objects will get the property overwrite_able set to False
+                if you give a max_cycle to prevent accidentally saving a "truncated"
+                file (use c.save(filename, overwrite=True) to force overwrite))
+
+
         """
         logging.info("[establishing links]")
         logging.debug("checking and establishing link to data")
@@ -406,7 +413,7 @@ class CyclingExperiment(BaseExperiment):
         for cell_label in self.journal.pages.index:
             logging.debug(f"trying to link {cell_label}")
             try:
-                self._link_cellpy_file(cell_label)
+                self._link_cellpy_file(cell_label, **kwargs)
             except IOError as e:
                 logging.warning(e)
                 e_txt = f"{cell_label}: links not established - try update instead"

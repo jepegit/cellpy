@@ -68,7 +68,7 @@ class Doer(metaclass=abc.ABCMeta):
         self.dumpers.append(dumper)
 
     @abc.abstractmethod
-    def run_engine(self, engine):
+    def run_engine(self, engine, **kwargs):
         pass
 
     @abc.abstractmethod
@@ -113,7 +113,7 @@ class Doer(metaclass=abc.ABCMeta):
             logging.debug("emptying the farm for all the pandas")
             self.farms = [[] for _ in self.farms]
 
-    def do(self):
+    def do(self, **kwargs):
         """Do what is needed and dump it for each engine."""
 
         if not self.experiments:
@@ -121,7 +121,7 @@ class Doer(metaclass=abc.ABCMeta):
         for engine in self.engines:
             self.empty_the_farms()
             logging.debug(f"running - {str(engine)}")
-            self.run_engine(engine)
+            self.run_engine(engine, **kwargs)
 
             for dumper in self.dumpers:
                 logging.debug(f"exporting - {str(dumper)}")
@@ -208,11 +208,13 @@ class Data(collections.UserDict):
 
         except AttributeError:
             logging.debug("Need to do a look-up from the cellpy file")
+            # last_cycle = self.experiment.max_cycle
             pages = self.experiment.journal.pages
             info = pages.loc[cell_id, :]
             cellpy_file = info[hdr_journal.cellpy_file_name]
             # linking (query_mode) not implemented yet - loading whole file in mem instead
             if not self.query_mode:
+                # TODO: modify _load_cellpy_file so that it can select parts of the data (max_cycle etc)
                 cell = self.experiment._load_cellpy_file(cellpy_file)
                 self.experiment.cell_data_frames[cell_id] = cell
                 # trick for making tab-completion work:
@@ -238,6 +240,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self._store_data_object = True
         self._cellpy_object = None
         self.limit = 10
+        self._max_cycle = None
 
     def __str__(self):
         return (
@@ -281,7 +284,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
                     raise StopIteration
             return cellpy_object
 
-    def _link_cellpy_file(self, cell_label):
+    def _link_cellpy_file(self, cell_label, max_cycle=None):
         logging.debug("linking cellpy file")
         cellpy_file_name = self.journal.pages.loc[
             cell_label, hdr_journal.cellpy_file_name
@@ -290,19 +293,34 @@ class BaseExperiment(metaclass=abc.ABCMeta):
             raise IOError
 
         cellpy_object = cellreader.CellpyData(initialize=True)
-        step_table = helper.look_up_and_get(cellpy_file_name, prms._cellpyfile_step)
+        step_table = helper.look_up_and_get(cellpy_file_name, prms._cellpyfile_step, max_cycle=max_cycle)
         if step_table.empty:
             raise UnderDefined
-
+        if max_cycle:
+            cellpy_object.overwrite_able = False
+            self.max_cycle = max_cycle
         cellpy_object.cell.steps = step_table
         self._data = None
         self.cell_data_frames[cell_label] = cellpy_object
 
     def _load_cellpy_file(self, file_name):
+        # TODO: modify this so that it can select parts of the data (max_cycle etc)
+        selector = dict()
         cellpy_data = cellreader.CellpyData()
-        cellpy_data.load(file_name, self.parent_level)
+        if self.max_cycle:
+            cellpy_data.overwrite_able = False
+            selector["max_cycle"] = self.max_cycle
+        cellpy_data.load(file_name, self.parent_level, selector=selector)
         logging.info(f" <- grabbing ( {file_name} )")
         return cellpy_data
+
+    @property
+    def max_cycle(self):
+        return self._max_cycle
+
+    @max_cycle.setter
+    def max_cycle(self, value):
+        self._max_cycle = value
 
     @property
     def data(self):
@@ -492,11 +510,11 @@ class BaseAnalyzer(Doer, metaclass=abc.ABCMeta):
         super().__init__(*args)
         self.current_engine = None
 
-    def run_engine(self, engine):
+    def run_engine(self, engine, **kwargs):
         """Run the engine, build the barn and put the animals on the farm"""
         logging.debug(f"start engine::{engine.__name__}")
         self.current_engine = engine
-        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
+        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms, **kwargs)
         logging.debug("::engine ended")
 
     def run_dumper(self, dumper):

@@ -12,11 +12,13 @@ from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
 import cellpy.parameters.internal_settings
 
 # logger = logging.getLogger(__name__)
+from cellpy.parameters.internal_settings import headers_step_table
+
 hdr_summary = cellpy.parameters.internal_settings.get_headers_summary()
 hdr_journal = cellpy.parameters.internal_settings.get_headers_journal()
 
 
-def look_up_and_get(cellpy_file_name, table_name, root=None):
+def look_up_and_get(cellpy_file_name, table_name, root=None, max_cycle=None):
     """Extracts table from cellpy hdf5-file."""
 
     # infoname = '/CellpyData/info'
@@ -31,8 +33,16 @@ def look_up_and_get(cellpy_file_name, table_name, root=None):
 
     logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
     store = pd.HDFStore(cellpy_file_name)
+    # max_cycle is not implemented properly yet
+    # TODO: implement max_cycle
     try:
-        table = store.select(table_path)
+        if max_cycle and table_name == prms._cellpyfile_step:
+            _cycle_header = headers_step_table.cycle
+            cycles = store.select(table_path, where="columns=[_cycle_header]")
+            _where = cycles[_cycle_header] <= max_cycle
+            table = store.select(table_path, where=_where)
+        else:
+            table = store.select(table_path)
         store.close()
     except KeyError as e:
         logging.warning("Could not read the table")

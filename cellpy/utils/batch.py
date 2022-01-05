@@ -670,9 +670,14 @@ class Batch:
 
     # TODO: list_journals?
 
-    def link(self):
-        """Link journal content to the cellpy-files and load the step information."""
-        self.experiment.link()
+    def link(self, max_cycle=None):
+        """Link journal content to the cellpy-files and load the step information.
+
+        Args:
+            max_cycle (int): set maximum cycle number to link to.
+
+        """
+        self.experiment.link(max_cycle=max_cycle)
 
     def load(self):
         # does the same as update
@@ -698,19 +703,19 @@ class Batch:
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
         self.exporter.do()
 
-    def combine_summaries(self, export_to_csv=True):
+    def combine_summaries(self, export_to_csv=True, **kwargs):
         """Combine selected columns from each of the cells into single frames"""
         if export_to_csv:
             self.exporter.do()
         else:
-            self.summary_collector.do()
+            self.summary_collector.do(**kwargs)
 
-    def plot_summaries(self, output_filename=None, backend=None):
+    def plot_summaries(self, output_filename=None, backend=None, **kwargs):
         """Plot the summaries"""
 
         if "summary_engine" not in self.experiment.memory_dumped:
             logging.debug("running summary_collector")
-            self.summary_collector.do()
+            self.summary_collector.do(reset=True)
 
         if backend is None:
             backend = prms.Batch.backend

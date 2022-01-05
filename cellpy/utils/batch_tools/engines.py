@@ -1,6 +1,6 @@
 """Engines are functions that are used by the Do-ers.
 
-    Keyword Args: experiments, farms, barn
+    Keyword Args: experiments, farms, barn, optionals
     Returns: farms, barn
 """
 
@@ -78,7 +78,8 @@ def summary_engine(**kwargs):
     # farms = kwargs["farms"]
 
     farms = []
-    experiments = kwargs["experiments"]
+    experiments = kwargs.pop("experiments")
+    reset = kwargs.pop("reset", False)
 
     for experiment in experiments:
         if experiment.selected_summaries is None:
@@ -86,7 +87,7 @@ def summary_engine(**kwargs):
         else:
             selected_summaries = experiment.selected_summaries
 
-        if experiment.summary_frames is None:
+        if reset or experiment.summary_frames is None:
             logging.debug("No summary frames found")
             logging.debug("Re-loading")
             experiment.summary_frames = _load_summaries(experiment)

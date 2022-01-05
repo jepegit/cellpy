@@ -234,6 +234,7 @@ class CellpyData(object):
         self.status_datasets = []
         self.selected_cell_number = 0
         self.number_of_datasets = 0
+        self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
         self.capacity_modifiers = ["reset"]
 
@@ -1716,15 +1717,33 @@ class CellpyData(object):
                 )
         logging.debug(f"Keys in current cellpy-file: {store.keys()}")
 
+    def _hdf5_locate_data_points_from_max_cycle_number(self, table_name, max_cycle, parent_level, store, child_level):
+        if table_name == prms._cellpyfile_step:
+            _cycle_header = headers_step_table.cycle
+            table_path = parent_level + child_level
+        elif table_name == prms._cellpyfile_raw:
+            _cycle_header = headers_normal.cycle_index_txt
+            table_path = parent_level + child_level
+
+        cycles = store.select(table_path, where="columns=[_cycle_header]")
+        return cycles[_cycle_header] <= max_cycle
+
     def _hdf5_cycle_filter(self, table=None):
         # this is not the best way to do it
         if max_cycle := self.limit_loaded_cycles:
             if table == "summary":
                 logging.debug(f"limited to cycle_number {max_cycle}")
-                return (f"index <= {int(max_cycle)}",)
+                return f"index <= {int(max_cycle)}"
             elif table == "raw":
+                # update this by finding the last data point
+                #  by making a function setting self.limit_data_points
                 logging.debug(f"limited to data_point {self.limit_data_points}")
-                return (f"index <= {int(self.limit_data_points)}",)
+                return f"index <= {int(self.limit_data_points)}"
+            elif table == "steps":
+                # update this by finding the last data point
+                #  by making a function setting self.limit_data_points
+                logging.debug(f"limited to data_point {self.limit_data_points}")
+                return f"index <= {int(self.limit_data_points)}"
 
     def _unpack_selector(self, selector):
         # not implemented yet
@@ -1738,10 +1757,13 @@ class CellpyData(object):
         if selector is not None:
             cycle_filter = []
             if max_cycle := selector.get("max_cycle", None):
+                # self.overwrite_able = False
+
                 cycle_filter.append(f"index <= {int(max_cycle)}")
                 self.limit_loaded_cycles = max_cycle
         else:
             # getting cycle filter by setting attributes:
+            self.limit_loaded_cycles = None
             cycle_filter = self._hdf5_cycle_filter("summary")
 
         data.summary = store.select(parent_level + summary_dir, where=cycle_filter)
@@ -3163,7 +3185,7 @@ class CellpyData(object):
         filename,
         dataset_number=None,
         force=False,
-        overwrite=True,
+        overwrite=None,
         extension="h5",
         ensure_step_table=None,
     ):
@@ -3184,6 +3206,9 @@ class CellpyData(object):
         """
         logging.debug(f"Trying to save cellpy-file to {filename}")
         logging.info(f" -> {filename}")
+
+        if overwrite is None:
+            overwrite = self.overwrite_able
 
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
