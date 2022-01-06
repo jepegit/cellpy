@@ -426,6 +426,8 @@ class CellpyData(object):
             new_cell = CellpyData.vacant(cell=self)
             old_cell = CellpyData.vacant(cell=self)
 
+            summary0 = summary0.set_index(h_summary_index)
+
             new_cell.cell.steps = steptable0
             new_cell.cell.raw = data0
             new_cell.cell.summary = summary0

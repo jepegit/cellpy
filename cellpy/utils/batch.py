@@ -8,16 +8,14 @@ import os
 import sys
 
 import pandas as pd
+from pandas import Index
 from tqdm.auto import tqdm
 
 from cellpy import prms
 from cellpy import log
 import cellpy.exceptions
-from cellpy.parameters.internal_settings import (
-    get_headers_step_table,
-    get_headers_journal,
-    get_headers_summary,
-)
+from cellpy.parameters.internal_settings import headers_journal, headers_summary, headers_step_table
+from cellpy.utils.batch_tools.batch_core import Data
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
@@ -30,14 +28,12 @@ from cellpy.utils.batch_tools.dumpers import ram_dumper
 
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
-hdr_journal = get_headers_journal()
-hdr_summary = get_headers_summary()
 
 COLUMNS_SELECTED_FOR_VIEW = [
-    hdr_journal.mass,
-    hdr_journal.total_mass,
-    hdr_journal.loading,
-    hdr_journal.nom_cap,
+    headers_journal.mass,
+    headers_journal.total_mass,
+    headers_journal.loading,
+    headers_journal.nom_cap,
 ]
 
 
@@ -135,7 +131,7 @@ class Batch:
         self.plotter = CyclingSummaryPlotter()
         self.plotter.assign(self.experiment)
         self._journal_name = self.journal_name
-        self.headers_step_table = get_headers_step_table()
+        self.headers_step_table = headers_step_table
 
     def __str__(self):
         return str(self.experiment)
@@ -182,7 +178,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].max()
+            return s[headers_summary.charge_capacity].max()
 
         except Exception as e:
             return None
@@ -191,7 +187,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].min()
+            return s[headers_summary.charge_capacity].min()
 
         except Exception as e:
             return None
@@ -200,7 +196,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].mean()
+            return s[headers_summary.charge_capacity].mean()
 
         except Exception as e:
             return None
@@ -209,7 +205,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].std()
+            return s[headers_summary.charge_capacity].std()
 
         except Exception as e:
             return None
@@ -344,7 +340,7 @@ class Batch:
 
     @property
     def summaries(self):
-        # should add link-mode?
+        """Concatenated summaries from all cells (multiindex dataframe)."""
         try:
             return self._concat_memory_dumped("summary_engine")
         except KeyError:
@@ -354,18 +350,19 @@ class Batch:
 
     @property
     def summary_headers(self):
+        """The column names of the concatenated summaries"""
         try:
             return self.summaries.columns.get_level_values(0)
         except AttributeError:
             logging.info("can't get any columns")
 
     @property
-    def cell_names(self):
+    def cell_names(self) -> list:
         return self.experiment.cell_names
 
     @property
     def labels(self):
-        # Plan: allow cells to both have a label and a cell_name, where that latter should be an unique
+        # Plan: allow cells to both have a label and a cell_name, where that latter should be a unique
         # identifier. Consider also to allow for a group-name.
         # The label and cell name can be the same. Consider allowing several cells to share the same label
         # thus returning several cellpy cell objects. Our use "group" for this purpose.
@@ -375,23 +372,28 @@ class Batch:
         return self.experiment.cell_names
 
     @property
-    def cells(self):
+    def cells(self) -> Data:
+        """access cells as a Data object (attribute lookup and automatic loading)"""
         return self.experiment.data
 
     @property
-    def raw_headers(self):
-        return self.experiment.data[0].cell.raw.columns
+    def cell_summary_headers(self) -> Index:
+        return self.experiment.data[self.experiment.cell_names[0]].cell.summary.columns
 
     @property
-    def step_headers(self):
-        return self.experiment.data[0].cell.steps.columns
+    def cell_raw_headers(self) -> Index:
+        return self.experiment.data[self.experiment.cell_names[0]].cell.raw.columns
 
     @property
-    def pages(self):
+    def cell_step_headers(self) -> Index:
+        return self.experiment.data[self.experiment.cell_names[0]].cell.steps.columns
+
+    @property
+    def pages(self) -> pd.DataFrame:
         return self.experiment.journal.pages
 
     @pages.setter
-    def pages(self, df):
+    def pages(self, df: pd.DataFrame):
         self.experiment.journal.pages = df
         all_cell_labels = set(self.experiment.cell_data_frames.keys())
         cell_labels_to_keep = set(self.journal.pages.index)
@@ -400,7 +402,7 @@ class Batch:
             del self.experiment.cell_data_frames[cell_label]
 
     @property
-    def journal(self):
+    def journal(self) -> LabJournal:
         return self.experiment.journal
 
     @journal.setter
@@ -553,18 +555,18 @@ class Batch:
             self.experiment.journal.paginate()
             self.duplicate_journal(prms.Paths.batchfiledir)
 
-    def create_folder_structure(self):
+    def create_folder_structure(self) -> None:
         warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
         self.experiment.journal.paginate()
         logging.info("created folders")
 
-    def paginate(self):
+    def paginate(self) -> None:
         """Create the folders where cellpy will put its output."""
 
         self.experiment.journal.paginate()
         logging.info("created folders")
 
-    def save_journal(self):
+    def save_journal(self) -> None:
         """Save the journal (json-format).
 
         The journal file will be saved in the project directory and in the
@@ -578,7 +580,7 @@ class Batch:
         self.duplicate_journal(prms.Paths.batchfiledir)
         logging.info("duplicating journal pages")
 
-    def duplicate_journal(self, folder=None):
+    def duplicate_journal(self, folder=None) -> None:
         """Copy the journal to folder.
 
         Args:
@@ -599,7 +601,7 @@ class Batch:
         except shutil.SameFileError:
             logging.debug("same file exception encountered")
 
-    def duplicate_cellpy_files(self, location="standard", selector=None, **kwargs):
+    def duplicate_cellpy_files(self, location: str = "standard", selector: dict = None, **kwargs) -> None:
         """Copy the cellpy files and make a journal with the new names available in
         the current folder.
 
@@ -670,50 +672,56 @@ class Batch:
 
     # TODO: list_journals?
 
-    def link(self, max_cycle=None):
+    def link(self, max_cycle=None, force_combine_summaries=False) -> None:
         """Link journal content to the cellpy-files and load the step information.
 
         Args:
             max_cycle (int): set maximum cycle number to link to.
+            force_combine_summaries (bool): automatically run combine_summaries (set this to True
+                if you are re-linking without max_cycle for a batch that previously were linked
+                with max_cycle)
 
         """
-        self.experiment.link(max_cycle=max_cycle)
 
-    def load(self):
+        self.experiment.link(max_cycle=max_cycle)
+        if force_combine_summaries or max_cycle:
+            self.summary_collector.do(reset=True)
+
+    def load(self) -> None:
         # does the same as update
         warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> None:
         """Load cells as defined in the journal"""
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
 
-    def export_cellpy_files(self, path=None, **kwargs):
+    def export_cellpy_files(self, path=None, **kwargs) -> None:
         if path is None:
             path = pathlib.Path(".").resolve()
         self.experiment.errors["export_cellpy_files"] = []
         self.experiment.export_cellpy_files(path=path, **kwargs)
 
-    def recalc(self, **kwargs):
+    def recalc(self, **kwargs) -> None:
         self.experiment.errors["recalc"] = []
         self.experiment.recalc(**kwargs)
 
-    def make_summaries(self):
+    def make_summaries(self) -> None:
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
         self.exporter.do()
 
-    def combine_summaries(self, export_to_csv=True, **kwargs):
+    def combine_summaries(self, export_to_csv=True, **kwargs) -> None:
         """Combine selected columns from each of the cells into single frames"""
         if export_to_csv:
             self.exporter.do()
         else:
             self.summary_collector.do(**kwargs)
 
-    def plot_summaries(self, output_filename=None, backend=None, **kwargs):
+    def plot_summaries(self, output_filename=None, backend=None, reload_data=False, **kwargs) -> None:
         """Plot the summaries"""
 
-        if "summary_engine" not in self.experiment.memory_dumped:
+        if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
             logging.debug("running summary_collector")
             self.summary_collector.do(reset=True)
 
@@ -744,7 +752,7 @@ class Batch:
         self.plotter.do(**kwargs)
 
 
-def init(*args, **kwargs):
+def init(*args, **kwargs) -> Batch:
     """Returns an initialized instance of the Batch class.
 
     Args:
@@ -779,7 +787,7 @@ def init(*args, **kwargs):
     return Batch(*args, **kwargs)
 
 
-def from_journal(journal_file, autolink=True):
+def from_journal(journal_file, autolink=True) -> Batch:
     """Create a Batch from a journal file"""
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     b = init(db_reader=None, file_name=journal_file)
@@ -788,7 +796,7 @@ def from_journal(journal_file, autolink=True):
     return b
 
 
-def load_pages(file_name):
+def load_pages(file_name) -> pd.DataFrame:
     """Retrieve pages from a Journal file.
 
     This function is here to let you easily inspect a Journal file without
@@ -807,14 +815,12 @@ def load_pages(file_name):
     logging.info(f"Loading pages from {file_name}")
     try:
         pages, *_ = LabJournal.read_journal_jason_file(file_name)
+        return pages
     except cellpy.exceptions.UnderDefined:
         logging.critical("could not find any pages.")
-        return
-
-    return pages
 
 
-def process_batch(*args, **kwargs):
+def process_batch(*args, **kwargs) -> Batch:
     """Execute a batch run, either from a given file_name or by giving the name and project as input.
 
     Usage:

@@ -506,15 +506,21 @@ def plot_cycle_life_summary_matplotlib(
     summaries,
     width=900,
     height=800,
-    height_fractions=[0.2, 0.5, 0.3],
+    height_fractions=None,
     legend_option="all",
     **kwargs
 ):
 
     import matplotlib.pyplot as plt
 
-    # print(" running matplotlib plotter ".center(80,"="))
+    # Not used (yet?) - requires a more advanced generation of sub-plots
+    if height_fractions is None:
+        height_fractions = [0.3, 0.4, 0.3]
 
+    # print(" running matplotlib plotter ".center(80,"="))
+    # convert from bokeh to matplotlib - figsize - inch-ish
+    width /= 80
+    height /= 120
     discharge_capacity = summaries.discharge_capacity
     charge_capacity = summaries.charge_capacity
     coulombic_efficiency = summaries.coulombic_efficiency
@@ -523,10 +529,6 @@ def plot_cycle_life_summary_matplotlib(
     except AttributeError:
         logging.debug("the data is missing ir charge")
         ir_charge = None
-
-    h_eff = int(height_fractions[0] * height)
-    h_cap = int(height_fractions[1] * height)
-    h_ir = int(height_fractions[2] * height)
 
     plt.rcParams["figure.figsize"] = (10, 10)
     marker_types = [
@@ -551,17 +553,21 @@ def plot_cycle_life_summary_matplotlib(
         ",",
     ]
 
+    marker_size = kwargs.pop("marker_size", None)
     group_styles, sub_group_styles = create_plot_option_dicts(
-        info, marker_types=marker_types
+        info, marker_types=marker_types,
+        size=marker_size
     )
     if ir_charge is None:
-        # TODO: implement figsize here:
-        # canvas, (ax_cap, ax_ce) = plt.subplots(2, 1, figsize=(18, 8))  # replace with prms width, height, etc
-        canvas, (ax_cap, ax_ce) = plt.subplots(2, 1)
+        canvas, (ax_ce, ax_cap) = plt.subplots(
+            2, 1, figsize=(width, height), sharex=True,
+            gridspec_kw={"height_ratios": height_fractions[:-1]}
+        )
     else:
-        # TODO: implement figsize here:
-        # canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1, figsize=(24, 8))
-        canvas, (ax_cap, ax_ce, ax_ir) = plt.subplots(3, 1, figsize=(24, 8))
+        canvas, (ax_ce, ax_cap, ax_ir) = plt.subplots(
+            3, 1, figsize=(width, height), sharex=True,
+            gridspec_kw={"height_ratios": height_fractions}
+        )
     for label in charge_capacity.columns.get_level_values(0):
         name = create_legend(info, label, option=legend_option)
         g, sg = look_up_group(info, label)
@@ -576,13 +582,6 @@ def plot_cycle_life_summary_matplotlib(
         m = marker["marker"]
         f = "white"
 
-        ax_ce.plot(
-            coulombic_efficiency[label],
-            label=name,
-            color=c,
-            marker=m,
-            markerfacecolor=c,
-        )
         try:
             ax_cap.plot(
                 charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c
@@ -600,6 +599,14 @@ def plot_cycle_life_summary_matplotlib(
         except Exception as e:
             logging.debug(f"Could not plot discharge capacity for {label} ({e})")
 
+        ax_ce.plot(
+            coulombic_efficiency[label],
+            label=name,
+            color=c,
+            marker=m,
+            markerfacecolor=c,
+        )
+
         if ir_charge is not None:
             try:
                 ax_ir.plot(
@@ -609,23 +616,25 @@ def plot_cycle_life_summary_matplotlib(
                 logging.debug(f"Could not plot IR for {label} ({e})")
 
     ax_all = [ax_cap, ax_ce]
-    ax_ce.set_ylabel("Coulombic Efficiency (%)")
+    ax_ce.set_ylabel("Coulombic\nEfficiency (%)")
     ax_ce.set_ylim((0, 110))
-    ax_cap.set_ylabel("Capacity (mAh/g)")
+    ax_cap.set_ylabel("Capacity\n(mAh/g)")
 
     if ir_charge is not None:
-        ax_ir.set_ylabel("IR (charge)")
+        ax_ir.set_ylabel("IR\n(charge)")
         ax_ir.set_xlabel("Cycle")
         ax_all.append(ax_ir)
     else:
-        ax_ce.set_xlabel("Cycle")
+        ax_cap.set_xlabel("Cycle")
 
     for ax in ax_all:
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.6, box.height])
 
     # Put a legend to the right of the current axis
-    ax_ce.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    legend = ax_cap.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    legend.get_frame().set_facecolor('none')
+    legend.get_frame().set_linewidth(0.0)
 
     return canvas
 

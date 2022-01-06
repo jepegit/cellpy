@@ -225,7 +225,6 @@ class HeadersStepTable(BaseSettings):
 @dataclass
 class HeadersJournal(BaseSettings):
     filename: str = "filename"
-    id_key: str = "id_key"
     mass: str = "mass"
     total_mass: str = "total_mass"
     loading: str = "loading"
