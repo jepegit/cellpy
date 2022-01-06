@@ -14,7 +14,9 @@ import uuid
 from typing import Union
 
 
-def remove_empty_lines(filename: Union[str, pathlib.Path], *args: str, **kwargs: str) -> pathlib.Path:
+def remove_empty_lines(
+    filename: Union[str, pathlib.Path], *args: str, **kwargs: str
+) -> pathlib.Path:
     """Remove all the empty lines in the file.
 
     The method saves to the same name as the original file, so it is recommended to work on a temporary

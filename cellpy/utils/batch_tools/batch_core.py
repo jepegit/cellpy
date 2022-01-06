@@ -293,7 +293,9 @@ class BaseExperiment(metaclass=abc.ABCMeta):
             raise IOError
 
         cellpy_object = cellreader.CellpyData(initialize=True)
-        step_table = helper.look_up_and_get(cellpy_file_name, prms._cellpyfile_step, max_cycle=max_cycle)
+        step_table = helper.look_up_and_get(
+            cellpy_file_name, prms._cellpyfile_step, max_cycle=max_cycle
+        )
         if step_table.empty:
             raise UnderDefined
         if max_cycle:
@@ -514,7 +516,9 @@ class BaseAnalyzer(Doer, metaclass=abc.ABCMeta):
         """Run the engine, build the barn and put the animals on the farm"""
         logging.debug(f"start engine::{engine.__name__}")
         self.current_engine = engine
-        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms, **kwargs)
+        self.farms, self.barn = engine(
+            experiments=self.experiments, farms=self.farms, **kwargs
+        )
         logging.debug("::engine ended")
 
     def run_dumper(self, dumper):

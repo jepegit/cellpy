@@ -13,12 +13,19 @@ from cellpy import prms
 from cellpy.readers.core import FileID, Cell
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.base import Loader
-from cellpy.readers.instruments.configurations import register_configuration, ModelParameters
+from cellpy.readers.instruments.configurations import (
+    register_configuration,
+    ModelParameters,
+)
 from cellpy.readers.instruments.processors import pre_processors, post_processors
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
-SUPPORTED_MODELS = {"zero": "maccor_txt_zero", "one": "maccor_txt_one", "two": "maccor_txt_two"}
+SUPPORTED_MODELS = {
+    "zero": "maccor_txt_zero",
+    "one": "maccor_txt_one",
+    "two": "maccor_txt_two",
+}
 
 
 def configuration(name) -> ModelParameters:
@@ -71,15 +78,25 @@ class MaccorTxtLoader(Loader):
 
         else:
             self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
-            self.skiprows = kwargs.pop("skiprows", self.config_params.formatters["skiprows"])
+            self.skiprows = kwargs.pop(
+                "skiprows", self.config_params.formatters["skiprows"]
+            )
             self.header = kwargs.pop("header", self.config_params.formatters["header"])
-            self.encoding = kwargs.pop("encoding", self.config_params.formatters["encoding"])
-            self.decimal = kwargs.pop("decimal", self.config_params.formatters["decimal"])
+            self.encoding = kwargs.pop(
+                "encoding", self.config_params.formatters["encoding"]
+            )
+            self.decimal = kwargs.pop(
+                "decimal", self.config_params.formatters["decimal"]
+            )
 
-        self.pre_processors = kwargs.pop("../processors", self.config_params.pre_processors)
+        self.pre_processors = kwargs.pop(
+            "../processors", self.config_params.pre_processors
+        )
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
-        self.cellpy_headers_normal = get_headers_normal()  # the column headers defined by cellpy
+        self.cellpy_headers_normal = (
+            get_headers_normal()
+        )  # the column headers defined by cellpy
 
     @staticmethod
     def get_headers_aux(df):
@@ -131,8 +148,8 @@ class MaccorTxtLoader(Loader):
         )
         self.encoding = "ISO-8859-1"  # consider adding a find_encoding function
         self.sep = separator
-        self.skiprows = first_index - 1   # consider adding a find_rows_to_skip function
-        self.header = 0   # consider adding a find_header function
+        self.skiprows = first_index - 1  # consider adding a find_rows_to_skip function
+        self.header = 0  # consider adding a find_header function
 
         logging.critical(
             f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
@@ -156,7 +173,9 @@ class MaccorTxtLoader(Loader):
                     processor = getattr(pre_processors, processor_name)
                     self._file_path = processor(self._file_path)
                 else:
-                    raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
+                    raise NotImplementedError(
+                        f"{processor_name} is not currently supported - aborting!"
+                    )
 
     def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> list:
         """returns a Cell object with loaded data.
@@ -286,7 +305,9 @@ class MaccorTxtLoader(Loader):
 
         return data
 
-    def _query_csv(self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None):
+    def _query_csv(
+        self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None
+    ):
         logging.debug(f"parsing with pandas.read_csv: {name}")
         sep = sep or self.sep
         skiprows = skiprows or self.skiprows
@@ -295,7 +316,12 @@ class MaccorTxtLoader(Loader):
         decimal = decimal or self.decimal
         logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
         data_df = pd.read_csv(
-            name, sep=sep, skiprows=skiprows, header=header, encoding=encoding, decimal=decimal
+            name,
+            sep=sep,
+            skiprows=skiprows,
+            header=header,
+            encoding=encoding,
+            decimal=decimal,
         )
         return data_df
 
@@ -491,7 +517,9 @@ def _find_separator(checking_length, lines, separators):
     logging.debug("searching for separators")
     separator = None
     number_of_hits = None
-    last_part = lines[checking_length:-1]  # don't include last line since it might be corrupted
+    last_part = lines[
+        checking_length:-1
+    ]  # don't include last line since it might be corrupted
     check_sep = dict()
 
     for i, v in enumerate(separators):

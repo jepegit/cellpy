@@ -8,7 +8,11 @@ from cellpy.readers.instruments.base import TxtLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
-SUPPORTED_MODELS = {"zero": "maccor_txt_zero", "one": "maccor_txt_one", "two": "maccor_txt_two"}
+SUPPORTED_MODELS = {
+    "zero": "maccor_txt_zero",
+    "one": "maccor_txt_one",
+    "two": "maccor_txt_two",
+}
 
 
 class MaccorTxtLoader(TxtLoader):
@@ -214,7 +218,6 @@ def check_loader_from_outside_with_get():
     raw = c.cell.raw
     steps = c.cell.steps
     summary = c.cell.summary
-
 
     raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")

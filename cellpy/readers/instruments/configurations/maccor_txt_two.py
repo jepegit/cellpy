@@ -63,8 +63,20 @@ not_implemented_in_cellpy_yet_renaming_dict = {
     f"dV/dQ({incremental_unit_labels['dv_dq']})": "dv_dq",
 }
 
-columns_to_keep = ['Rec', 'Cycle P', 'Cycle C', 'Step', 'TestTime', 'StepTime',
-                   'Cap. [Ah]', 'Ener. [Wh]', 'Current [A]', 'Voltage [V]', 'Md', 'DPT Time']
+columns_to_keep = [
+    "Rec",
+    "Cycle P",
+    "Cycle C",
+    "Step",
+    "TestTime",
+    "StepTime",
+    "Cap. [Ah]",
+    "Ener. [Wh]",
+    "Current [A]",
+    "Voltage [V]",
+    "Md",
+    "DPT Time",
+]
 
 states = {
     "column_name": "Md",
@@ -74,11 +86,7 @@ states = {
 }
 
 
-raw_units = {
-    "current": 1.0,
-    "charge": 1.0,
-    "mass": 0.001
-}
+raw_units = {"current": 1.0, "charge": 1.0, "mass": 0.001}
 
 raw_limits = {
     "current_hard": 0.000_000_000_000_1,
@@ -89,7 +97,7 @@ raw_limits = {
     "stable_voltage_soft": 4.0,
     "stable_charge_hard": 0.001,
     "stable_charge_soft": 5.0,
-    "ir_change": 0.00001
+    "ir_change": 0.00001,
 }
 
 formatters = {
@@ -97,7 +105,7 @@ formatters = {
     "sep": "\t",
     "header": 0,  # 0 for other file
     "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
-    "decimal": ","
+    "decimal": ",",
 }
 
 pre_processors = {

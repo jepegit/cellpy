@@ -115,7 +115,9 @@ def simple_db_engine(
         logging.debug("No reader provided. Creating one myself.")
 
     info_dict = dict()
-    info_dict[headers_journal["filename"]] = [reader.get_cell_name(srno) for srno in srnos]
+    info_dict[headers_journal["filename"]] = [
+        reader.get_cell_name(srno) for srno in srnos
+    ]
     if include_key:
         info_dict[headers_journal["id_key"]] = srnos
     info_dict[headers_journal["mass"]] = [reader.get_mass(srno) for srno in srnos]
@@ -133,7 +135,9 @@ def simple_db_engine(
         reader.inspect_hd5f_fixed(srno) for srno in srnos
     ]
     info_dict[headers_journal["label"]] = [reader.get_label(srno) for srno in srnos]
-    info_dict[headers_journal["cell_type"]] = [reader.get_cell_type(srno) for srno in srnos]
+    info_dict[headers_journal["cell_type"]] = [
+        reader.get_cell_type(srno) for srno in srnos
+    ]
     info_dict[headers_journal["instrument"]] = [
         reader.get_instrument(srno) for srno in srnos
     ]

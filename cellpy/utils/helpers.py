@@ -13,7 +13,11 @@ import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
-    ATTRS_DATASET, headers_summary, headers_step_table, headers_normal, headers_journal,
+    ATTRS_DATASET,
+    headers_summary,
+    headers_step_table,
+    headers_normal,
+    headers_journal,
 )
 
 from cellpy import prmreader
@@ -688,7 +692,7 @@ def concatenate_summaries(
     inverted=False,
     key_index_bounds=[1, -2],
     melt=False,
-    cell_type_split_position=1
+    cell_type_split_position=1,
 ):
 
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -891,10 +895,21 @@ def concatenate_summaries(
         cdf = pd.concat(frames, keys=keys, axis=1)
         cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
         if melt:
-            cdf = cdf.reset_index(drop=False).melt(id_vars=hdr_summary.cycle_index, value_name="value")
-            melted_column_order = ["summary_header", "cell_name", hdr_summary.cycle_index, "value"]
+            cdf = cdf.reset_index(drop=False).melt(
+                id_vars=hdr_summary.cycle_index, value_name="value"
+            )
+            melted_column_order = [
+                "summary_header",
+                "cell_name",
+                hdr_summary.cycle_index,
+                "value",
+            ]
             if cell_type_split_position is not None:
-                cdf = cdf.assign(cell_type=cdf.cell_name.str.split("_", expand=True)[cell_type_split_position])
+                cdf = cdf.assign(
+                    cell_type=cdf.cell_name.str.split("_", expand=True)[
+                        cell_type_split_position
+                    ]
+                )
                 melted_column_order.insert(-2, "cell_type")
             cdf = cdf.reindex(columns=melted_column_order)
 

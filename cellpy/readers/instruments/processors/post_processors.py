@@ -194,5 +194,3 @@ def split_capacity(data: Cell, config_params: ModelParameters) -> Cell:
         states=config_params.states,
     )
     return data
-
-

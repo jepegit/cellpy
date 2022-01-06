@@ -16,7 +16,10 @@ import pandas as pd
 
 import cellpy.readers.core as core
 from cellpy.parameters.internal_settings import headers_normal
-from cellpy.readers.instruments.configurations import register_configuration, ModelParameters
+from cellpy.readers.instruments.configurations import (
+    register_configuration,
+    ModelParameters,
+)
 from cellpy.readers.instruments.processors import pre_processors, post_processors
 
 MINIMUM_SELECTION = [
@@ -96,7 +99,9 @@ def _find_separator(checking_length, lines, separators):
     logging.debug("searching for separators")
     separator = None
     number_of_hits = None
-    last_part = lines[checking_length:-1]  # don't include last line since it might be corrupted
+    last_part = lines[
+        checking_length:-1
+    ]  # don't include last line since it might be corrupted
     check_sep = dict()
 
     for i, v in enumerate(separators):
@@ -221,11 +226,17 @@ class TxtLoader(Loader):
         self.pre_init()
 
         if not hasattr(self, "supported_models"):
-            raise AttributeError(f"missing attribute in sub-class of TxtLoader: supported_models")
+            raise AttributeError(
+                f"missing attribute in sub-class of TxtLoader: supported_models"
+            )
         if not hasattr(self, "default_model"):
-            raise AttributeError(f"missing attribute in sub-class of TxtLoader: default_model")
+            raise AttributeError(
+                f"missing attribute in sub-class of TxtLoader: default_model"
+            )
 
-        self.model = kwargs.pop("model", self.default_model)  # in case model is given as argument
+        self.model = kwargs.pop(
+            "model", self.default_model
+        )  # in case model is given as argument
         if self.auto_register_config:
             self.config_params = self.register_configuration()
         self.name = None
@@ -241,27 +252,43 @@ class TxtLoader(Loader):
 
         else:
             self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
-            self.skiprows = kwargs.pop("skiprows", self.config_params.formatters["skiprows"])
+            self.skiprows = kwargs.pop(
+                "skiprows", self.config_params.formatters["skiprows"]
+            )
             self.header = kwargs.pop("header", self.config_params.formatters["header"])
-            self.encoding = kwargs.pop("encoding", self.config_params.formatters["encoding"])
-            self.decimal = kwargs.pop("decimal", self.config_params.formatters["decimal"])
+            self.encoding = kwargs.pop(
+                "encoding", self.config_params.formatters["encoding"]
+            )
+            self.decimal = kwargs.pop(
+                "decimal", self.config_params.formatters["decimal"]
+            )
 
-        self.pre_processors = kwargs.pop("pre_processors", self.config_params.pre_processors)
-        self.post_processors = kwargs.pop("post_processors", self.config_params.post_processors)
+        self.pre_processors = kwargs.pop(
+            "pre_processors", self.config_params.pre_processors
+        )
+        self.post_processors = kwargs.pop(
+            "post_processors", self.config_params.post_processors
+        )
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
-        self.cellpy_headers_normal = headers_normal  # the column headers defined by cellpy
+        self.cellpy_headers_normal = (
+            headers_normal  # the column headers defined by cellpy
+        )
 
     def pre_init(self):
         ...
 
     def register_configuration(self) -> ModelParameters:
         """Register and load model configuration"""
-        if self.model is None:  # in case None was given as argument (model=None in initialisation)
+        if (
+            self.model is None
+        ):  # in case None was given as argument (model=None in initialisation)
             self.model = self.default_model
         model_module_name = self.supported_models.get(self.model, None)
         if model_module_name is None:
-            raise Exception(f"the model {self.model} does not have any defined configuration")
+            raise Exception(
+                f"the model {self.model} does not have any defined configuration"
+            )
         return register_configuration(self.model, model_module_name)
 
     def get_raw_units(self):
@@ -291,7 +318,9 @@ class TxtLoader(Loader):
 
     @staticmethod
     def get_headers_aux(raw: pd.DataFrame) -> dict:
-        raise NotImplementedError(f"missing method in sub-class of TxtLoader: get_headers_aux")
+        raise NotImplementedError(
+            f"missing method in sub-class of TxtLoader: get_headers_aux"
+        )
 
     def _pre_process(self):
         # create a copy of the file and set file_path attribute
@@ -311,7 +340,9 @@ class TxtLoader(Loader):
                     processor = getattr(pre_processors, processor_name)
                     self._file_path = processor(self._file_path)
                 else:
-                    raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
+                    raise NotImplementedError(
+                        f"{processor_name} is not currently supported - aborting!"
+                    )
 
     def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> List[core.Cell]:
         """returns a Cell object with loaded data.
@@ -392,7 +423,9 @@ class TxtLoader(Loader):
     def parse_meta(self) -> dict:
         """method that parses the data for meta-data (e.g. start-time, channel number, ...)"""
 
-        logging.debug(f"no parsing method for meta-data defined in this sub-class of TxtLoader")
+        logging.debug(
+            f"no parsing method for meta-data defined in this sub-class of TxtLoader"
+        )
         return dict()
 
     def _auto_formatter(self):
@@ -404,14 +437,16 @@ class TxtLoader(Loader):
         )
         self.encoding = "UTF-8"  # consider adding a find_encoding function
         self.sep = separator
-        self.skiprows = first_index - 1   # consider adding a find_rows_to_skip function
-        self.header = 0   # consider adding a find_header function
+        self.skiprows = first_index - 1  # consider adding a find_rows_to_skip function
+        self.header = 0  # consider adding a find_header function
 
         logging.critical(
             f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
         )
 
-    def _query_csv(self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None):
+    def _query_csv(
+        self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None
+    ):
         logging.debug(f"parsing with pandas.read_csv: {name}")
         sep = sep or self.sep
         skiprows = skiprows or self.skiprows
@@ -420,9 +455,15 @@ class TxtLoader(Loader):
         decimal = decimal or self.decimal
         logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
         data_df = pd.read_csv(
-            name, sep=sep, skiprows=skiprows, header=header, encoding=encoding, decimal=decimal
+            name,
+            sep=sep,
+            skiprows=skiprows,
+            header=header,
+            encoding=encoding,
+            decimal=decimal,
         )
         return data_df
+
     # copy-paste from custom loader in an effort to combine the classes
     # def _parse_xls_data(self, file_name):
     #     sheet_name = self.structure["table_name"]
@@ -476,7 +517,7 @@ class TxtLoader(Loader):
                     _processor = getattr(self, f"_post_{processor_name}")
                     data = _processor(data)
             else:
-                raise NotImplementedError(f"{processor_name} is not currently supported - aborting!")
+                raise NotImplementedError(
+                    f"{processor_name} is not currently supported - aborting!"
+                )
         return data
-
-

@@ -508,7 +508,7 @@ def plot_cycle_life_summary_matplotlib(
     height=800,
     height_fractions=None,
     legend_option="all",
-    **kwargs
+    **kwargs,
 ):
 
     import matplotlib.pyplot as plt
@@ -555,18 +555,23 @@ def plot_cycle_life_summary_matplotlib(
 
     marker_size = kwargs.pop("marker_size", None)
     group_styles, sub_group_styles = create_plot_option_dicts(
-        info, marker_types=marker_types,
-        size=marker_size
+        info, marker_types=marker_types, size=marker_size
     )
     if ir_charge is None:
         canvas, (ax_ce, ax_cap) = plt.subplots(
-            2, 1, figsize=(width, height), sharex=True,
-            gridspec_kw={"height_ratios": height_fractions[:-1]}
+            2,
+            1,
+            figsize=(width, height),
+            sharex=True,
+            gridspec_kw={"height_ratios": height_fractions[:-1]},
         )
     else:
         canvas, (ax_ce, ax_cap, ax_ir) = plt.subplots(
-            3, 1, figsize=(width, height), sharex=True,
-            gridspec_kw={"height_ratios": height_fractions}
+            3,
+            1,
+            figsize=(width, height),
+            sharex=True,
+            gridspec_kw={"height_ratios": height_fractions},
         )
     for label in charge_capacity.columns.get_level_values(0):
         name = create_legend(info, label, option=legend_option)
@@ -633,7 +638,7 @@ def plot_cycle_life_summary_matplotlib(
 
     # Put a legend to the right of the current axis
     legend = ax_cap.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-    legend.get_frame().set_facecolor('none')
+    legend.get_frame().set_facecolor("none")
     legend.get_frame().set_linewidth(0.0)
 
     return canvas
@@ -679,7 +684,9 @@ def _preparing_data_and_plotting(**kwargs):
     width = kwargs.pop("width", prms.Batch.summary_plot_width)
     height = kwargs.pop("height", prms.Batch.summary_plot_height)
 
-    height_fractions = kwargs.pop("height_fractions", prms.Batch.summary_plot_height_fractions)
+    height_fractions = kwargs.pop(
+        "height_fractions", prms.Batch.summary_plot_height_fractions
+    )
 
     for experiment in experiments:
         if not isinstance(experiment, CyclingExperiment):
@@ -782,7 +789,9 @@ class CyclingSummaryPlotter(BasePlotter):
         self.current_engine = engine
         if self.reset_farms:
             self.farms = []
-        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms, **kwargs)
+        self.farms, self.barn = engine(
+            experiments=self.experiments, farms=self.farms, **kwargs
+        )
 
         logging.debug("::engine ended")
 

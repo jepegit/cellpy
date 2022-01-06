@@ -1187,7 +1187,9 @@ def oplot(
         layout_opts = hv.opts.NdLayout
 
     # print("creating interactive plots")
-    oplot_ce = bplot(b, columns=["coulombic_efficiency"], **bplot_shared_opts, **kwargs).opts(
+    oplot_ce = bplot(
+        b, columns=["coulombic_efficiency"], **bplot_shared_opts, **kwargs
+    ).opts(
         hv.opts.Curve(ylim=ce_ylim),
         overlay_opts(
             title="",
@@ -1201,7 +1203,10 @@ def oplot(
     # print(" - created oplot_ce")
 
     oplot_dcap = bplot(
-        b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts, **kwargs
+        b,
+        columns=[cap_colum_dict[capacity_unit]["discharge"]],
+        **bplot_shared_opts,
+        **kwargs,
     ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
         overlay_opts(
@@ -1219,7 +1224,10 @@ def oplot(
     # print(" - created oplot_dcap")
 
     oplot_ccap = bplot(
-        b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts, **kwargs
+        b,
+        columns=[cap_colum_dict[capacity_unit]["charge"]],
+        **bplot_shared_opts,
+        **kwargs,
     ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
         overlay_opts(

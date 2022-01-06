@@ -41,7 +41,10 @@ from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYFILE,
     ATTRS_DATASET,
     ATTRS_DATASET_DEEP,
-    ATTRS_CELLPYDATA, headers_normal, headers_summary, headers_step_table,
+    ATTRS_CELLPYDATA,
+    headers_normal,
+    headers_summary,
+    headers_step_table,
 )
 from cellpy.readers.core import (
     FileID,
@@ -1719,7 +1722,9 @@ class CellpyData(object):
                 )
         logging.debug(f"Keys in current cellpy-file: {store.keys()}")
 
-    def _hdf5_locate_data_points_from_max_cycle_number(self, table_name, max_cycle, parent_level, store, child_level):
+    def _hdf5_locate_data_points_from_max_cycle_number(
+        self, table_name, max_cycle, parent_level, store, child_level
+    ):
         if table_name == prms._cellpyfile_step:
             _cycle_header = headers_step_table.cycle
             table_path = parent_level + child_level

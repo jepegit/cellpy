@@ -14,7 +14,11 @@ from tqdm.auto import tqdm
 from cellpy import prms
 from cellpy import log
 import cellpy.exceptions
-from cellpy.parameters.internal_settings import headers_journal, headers_summary, headers_step_table
+from cellpy.parameters.internal_settings import (
+    headers_journal,
+    headers_summary,
+    headers_step_table,
+)
 from cellpy.utils.batch_tools.batch_core import Data
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
@@ -601,7 +605,9 @@ class Batch:
         except shutil.SameFileError:
             logging.debug("same file exception encountered")
 
-    def duplicate_cellpy_files(self, location: str = "standard", selector: dict = None, **kwargs) -> None:
+    def duplicate_cellpy_files(
+        self, location: str = "standard", selector: dict = None, **kwargs
+    ) -> None:
         """Copy the cellpy files and make a journal with the new names available in
         the current folder.
 
@@ -718,7 +724,9 @@ class Batch:
         else:
             self.summary_collector.do(**kwargs)
 
-    def plot_summaries(self, output_filename=None, backend=None, reload_data=False, **kwargs) -> None:
+    def plot_summaries(
+        self, output_filename=None, backend=None, reload_data=False, **kwargs
+    ) -> None:
         """Plot the summaries"""
 
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
