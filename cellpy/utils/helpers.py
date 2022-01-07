@@ -692,7 +692,7 @@ def concatenate_summaries(
     inverted=False,
     key_index_bounds=[1, -2],
     melt=False,
-    cell_type_split_position=1,
+    cell_type_split_position="auto",
 ):
 
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -720,8 +720,9 @@ def concatenate_summaries(
         key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
             key_index_bound[0] to key_index_bound[1].
         melt (bool): return frame as melted (long format).
-        cell_type_split_position (int): list item number for creating a cell type identifier after performing
-            a split("_") on the cell names (only valid if melt==True). Set to None to not include a cell_type col.
+        cell_type_split_position (int | None | "auto"): list item number for creating a cell type identifier
+            after performing a split("_") on the cell names (only valid if melt==True). Set to None to not
+            include a cell_type col.
 
     Returns:
         Multi-index pandas.DataFrame
@@ -741,6 +742,8 @@ def concatenate_summaries(
         default_columns = ["charge_capacity"]
 
     import logging
+
+    reserved_cell_label_names = ["FC"]
 
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
@@ -904,7 +907,17 @@ def concatenate_summaries(
                 hdr_summary.cycle_index,
                 "value",
             ]
+
+            if cell_type_split_position == "auto":
+                cell_type_split_position = 1
+                _pp = cdf.cell_name.str.split("_", expand=True).values[0]
+                for _p in _pp[1:]:
+                    if _p not in reserved_cell_label_names:
+                        break
+                    cell_type_split_position += 1
+
             if cell_type_split_position is not None:
+
                 cdf = cdf.assign(
                     cell_type=cdf.cell_name.str.split("_", expand=True)[
                         cell_type_split_position

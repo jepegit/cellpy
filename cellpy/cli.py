@@ -699,6 +699,7 @@ def info(version, configloc, params, check):
 @click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
 @click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
 @click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
+@click.option("--generate_notebooks", "-g", is_flag=True, help="Setup a cellpy project (Jupyter notebooks).")
 @click.option(
     "--nom-cap",
     default=None,
@@ -729,6 +730,7 @@ def run(
     raw,
     cellpyfile,
     minimal,
+    generate_notebooks,
     nom_cap,
     name,
     batch_col,
@@ -778,7 +780,7 @@ def run(
 
     elif key:
         _run_from_db(
-            name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project
+            name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project, generate_notebooks
         )
 
     elif name.lower() == "db":
@@ -789,7 +791,7 @@ def run(
 
 
 def _run_from_db(
-    name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project
+    name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project, generate_notebooks
 ):
     click.echo(
         f"running from db \nkey={name}, batch_col={batch_col}, project={project}"
@@ -812,8 +814,11 @@ def _run_from_db(
     else:
         kwargs["project"] = project
 
+    click.echo("Warming up ...")
+
     from cellpy.utils import batch
 
+    click.echo("  - starting batch processing")
     b = batch.process_batch(
         force_raw_file=raw,
         force_cellpy=cellpyfile,
@@ -821,6 +826,12 @@ def _run_from_db(
         backend="matplotlib",
         **kwargs,
     )
+
+    if generate_notebooks:
+        click.echo("  - generating cellpy project")
+        # TODO: function that does the same as "cellpy new"
+        #  - consider transferring arguments through "cellpy run"
+        print("HERE IT SHOULD GENERATE A CELLPY PROJECT")
 
     if b is not None and not silent:
         print(b)

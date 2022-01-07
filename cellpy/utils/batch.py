@@ -157,6 +157,10 @@ class Batch:
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
 
+    @property
+    def name(self):
+        return self.experiment.journal.name
+
     def _check_cell_raw(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
