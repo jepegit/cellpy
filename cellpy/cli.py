@@ -103,6 +103,7 @@ def cli():
     "--root-dir",
     "-d",
     default=None,
+    type=click.Path(),
     help="Use custom root dir. If not given, your home directory"
     " will be used as the top level where cellpy-folders"
     " will be put. The folder path must follow"
@@ -110,12 +111,20 @@ def cli():
     " $ cellpy setup -d 'MyDir'",
 )
 @click.option(
+    "--folder-name",
+    "-n",
+    default=None,
+    type=click.Path(),
+    help="",
+)
+@click.option(
     "--testuser", "-t", default=None, help="Fake name for fake user (for tesing)"
 )
-def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
+def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, testuser):
     """This will help you to setup cellpy."""
 
     click.echo("[cellpy] (setup)")
+    click.echo(f"[cellpy] root-dir: {root_dir}")
 
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
@@ -129,6 +138,10 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         click.echo(f" - dst_file: {dst_file}")
         click.echo(f" - not_relative: {not_relative}")
 
+    if root_dir and not interactive:
+        click.echo("[cellpy] custom root-dir can only be used in interactive mode")
+        click.echo("[cellpy] -> setting interactive mode")
+        interactive = True
     if not root_dir:
         root_dir = userdir
         # root_dir = pathlib.Path(os.getcwd())
@@ -145,17 +158,20 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         click.echo(f"[cellpy] (setup) DEV-MODE dst_file: {dst_file}")
 
     if not pathlib.Path(dst_file).is_file():
+        click.echo(f"[cellpy] {dst_file} not found -> I will make one for you!")
         reset = True
 
     if interactive:
         click.echo(" interactive mode ".center(80, "-"))
-        _update_paths(root_dir, not not_relative, dry_run=dry_run, reset=reset)
+        _update_paths(custom_dir=root_dir, relative_home=not not_relative, default_dir=folder_name,
+                      dry_run=dry_run, reset=reset)
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
     else:
         if reset:
-            _update_paths(userdir, False, dry_run=dry_run, reset=True, silent=True)
+            _update_paths(userdir, False, default_dir=folder_name,
+                          dry_run=dry_run, reset=True, silent=True)
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
@@ -165,11 +181,14 @@ def _update_paths(
     relative_home=True,
     reset=False,
     dry_run=False,
-    default_dir="cellpy_data",
+    default_dir=None,
     silent=False,
 ):
 
     h = prmreader.get_user_dir()
+
+    if default_dir is None:
+        default_dir = "cellpy_data"
 
     if dry_run:
         click.echo(f" - default_dir: {default_dir}")
@@ -193,6 +212,7 @@ def _update_paths(
         db_filename = prmreader.prms.Paths.db_filename
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
         batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
+        templatedir = pathlib.Path(prmreader.prms.Paths.templatedir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -203,6 +223,7 @@ def _update_paths(
         db_filename = "cellpy_db.xlsx"
         notebookdir = "notebooks"
         batchfiledir = "batchfiles"
+        templatedir = "templates"
 
     outdatadir = h / outdatadir
     rawdatadir = h / rawdatadir
@@ -212,6 +233,7 @@ def _update_paths(
     db_path = h / db_path
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
+    templatedir = h /templatedir
 
     if dry_run:
         click.echo(f" - base (h): {h}")
@@ -240,6 +262,7 @@ def _update_paths(
         )
 
         batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
+        templatedir = _ask_about_path("where to put your batch files", batchfiledir)
 
     # update folders based on suggestions
     for d in [
@@ -251,6 +274,7 @@ def _update_paths(
         notebookdir,
         db_path,
         batchfiledir,
+        templatedir,
     ]:
 
         if not dry_run:
@@ -268,19 +292,22 @@ def _update_paths(
     prmreader.prms.Paths.db_filename = str(db_filename)
     prmreader.prms.Paths.notebookdir = str(notebookdir)
     prmreader.prms.Paths.batchfiledir = str(batchfiledir)
+    prmreader.prms.Paths.templatedir = str(templatedir)
 
 
 def _ask_about_path(q, p):
-    click.echo(f"\n[cellpy] (setup) input {q}:\n[cellpy] (setup) [{p}]")
-    new_path = input("[cellpy] (setup) >>> ").strip()
+    click.echo(f"\n[cellpy] (setup) input {q}")
+    click.echo(f"[cellpy] (setup) current: {p}")
+    new_path = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
     if not new_path:
         new_path = p
     return pathlib.Path(new_path)
 
 
 def _ask_about_name(q, n):
-    click.echo(f"[cellpy] (setup) input {q}:\n[cellpy] (setup) [{n}]")
-    new_name = input("[cellpy] (setup) >>> ").strip()
+    click.echo(f"\n[cellpy] (setup) input {q}")
+    click.echo(f"[cellpy] (setup) current: {n}")
+    new_name = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
     if not new_name:
         new_name = n
     return new_name
@@ -294,7 +321,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         if confirm:
             if not o_parent.is_dir():
                 create_dir = input(
-                    f"[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
+                    f"\n[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
                 )
                 if not create_dir:
                     create_dir = True
@@ -480,6 +507,7 @@ def _check_config_file():
             "outdatadir",
             "rawdatadir",
             "batchfiledir",
+            "templatedir",
             "db_path",
         ]
         missing = 0
@@ -1191,6 +1219,9 @@ def new(template, directory, serve, lab):
         "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
         "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
     }
+    local_templates_path = prms.Paths.templatedir
+    # print(local_templates_path)
+    # return
 
     click.echo(f"Template: {template}")
     if not template.lower() in templates.keys():

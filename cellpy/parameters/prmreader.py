@@ -77,7 +77,7 @@ def _write_prm_file(file_name=None):
 
 def _update_prms(config_dict):
     logging.debug("updating parameters")
-    logging.debug("new prms:" + str(config_dict))
+    logging.debug(f"new prms: {config_dict}")
 
     for key in config_dict:
         if hasattr(prms, key):
@@ -139,7 +139,10 @@ def _read_prm_file(prm_filename):
     except yaml.YAMLError as e:
         raise ConfigFileNotRead from e
     else:
-        _update_prms(prm_dict)
+        if isinstance(prm_dict, dict):
+            _update_prms(prm_dict)
+        else:
+            print(type(prm_dict))
 
 
 def _read_prm_file_without_updating(prm_filename):
@@ -222,7 +225,6 @@ def _get_prm_file(file_name=None, search_order=None):
         prm_filename = prm_file
     else:
         prm_filename = prm_default
-
     return prm_filename
 
 

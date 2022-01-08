@@ -36,6 +36,7 @@ class PathsClass(CellPyConfig):
     filelogdir: Union[Path, str] = wdir
     examplesdir: Union[Path, str] = wdir
     notebookdir: Union[Path, str] = wdir
+    templatedir: Union[Path, str] = wdir
     batchfiledir: Union[Path, str] = wdir
     db_filename: str = "cellpy_db.xlsx"
 
