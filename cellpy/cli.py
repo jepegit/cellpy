@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 import sys
 import subprocess
@@ -1189,43 +1190,59 @@ def _get_default_template():
     return template
 
 
+def _read_local_templates(local_templates_path=None):
+    if local_templates_path is None:
+        local_templates_path = pathlib.Path(prmreader.prms.Paths.templatedir)
+    templates = {}
+    for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
+        label = p.stem.lstrip("cellpy_cookie_")
+        templates[label] = str(p)
+    logging.debug(f"Found the following templates: {templates}")
+    return templates
+
+
 @click.command()
 @click.option(
-    "--template", "-t", help="what template to use ('standard', 'gitt', or 'single')."
+    "--template", "-t", help="what template to use."
 )
-@click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
+@click.option("--local-user-template", "-u", is_flag=True, default=False, help="Use local template from the templates directory.")
+@click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
 @click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
-@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
-def new(template, directory, serve, lab):
+@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook.")
+def new(template, local_user_template, directory, serve, lab):
     """Set up a batch experiment."""
+    from cellpy.parameters import prms
+
     if not template:
         template = _get_default_template()
+
     if lab:
         server = "lab"
     else:
         server = "notebook"
+
     try:
         import cookiecutter.main
         import cookiecutter.exceptions
         import cookiecutter.prompt
+
     except ModuleNotFoundError:
         click.echo("Could not import cookiecutter.")
         click.echo("Try installing it with. For example by writing:")
         click.echo("\npip install cookiecutter\n")
 
-    from cellpy.parameters import prms
-
-    templates = {
-        "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
-        "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
-    }
-    local_templates_path = prms.Paths.templatedir
-    # print(local_templates_path)
-    # return
+    if not local_user_template:
+        templates = {
+            "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
+            "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
+        }
+    else:
+        templates = _read_local_templates()
 
     click.echo(f"Template: {template}")
     if not template.lower() in templates.keys():
         click.echo("This template does not exist. Aborting.")
+        return
 
     if directory is None:
         logging.debug("no dir given")
