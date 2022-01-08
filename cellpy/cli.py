@@ -164,15 +164,26 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test
 
     if interactive:
         click.echo(" interactive mode ".center(80, "-"))
-        _update_paths(custom_dir=root_dir, relative_home=not not_relative, default_dir=folder_name,
-                      dry_run=dry_run, reset=reset)
+        _update_paths(
+            custom_dir=root_dir,
+            relative_home=not not_relative,
+            default_dir=folder_name,
+            dry_run=dry_run,
+            reset=reset,
+        )
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
     else:
         if reset:
-            _update_paths(userdir, False, default_dir=folder_name,
-                          dry_run=dry_run, reset=True, silent=True)
+            _update_paths(
+                userdir,
+                False,
+                default_dir=folder_name,
+                dry_run=dry_run,
+                reset=True,
+                silent=True,
+            )
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
@@ -234,7 +245,7 @@ def _update_paths(
     db_path = h / db_path
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
-    templatedir = h /templatedir
+    templatedir = h / templatedir
 
     if dry_run:
         click.echo(f" - base (h): {h}")
@@ -728,7 +739,12 @@ def info(version, configloc, params, check):
 @click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
 @click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
 @click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
-@click.option("--generate_notebooks", "-g", is_flag=True, help="Setup a cellpy project (Jupyter notebooks).")
+@click.option(
+    "--generate_notebooks",
+    "-g",
+    is_flag=True,
+    help="Setup a cellpy project (Jupyter notebooks).",
+)
 @click.option(
     "--nom-cap",
     default=None,
@@ -809,7 +825,16 @@ def run(
 
     elif key:
         _run_from_db(
-            name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project, generate_notebooks
+            name,
+            debug,
+            silent,
+            raw,
+            cellpyfile,
+            minimal,
+            nom_cap,
+            batch_col,
+            project,
+            generate_notebooks,
         )
 
     elif name.lower() == "db":
@@ -820,7 +845,16 @@ def run(
 
 
 def _run_from_db(
-    name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project, generate_notebooks
+    name,
+    debug,
+    silent,
+    raw,
+    cellpyfile,
+    minimal,
+    nom_cap,
+    batch_col,
+    project,
+    generate_notebooks,
 ):
     click.echo(
         f"running from db \nkey={name}, batch_col={batch_col}, project={project}"
@@ -1202,10 +1236,14 @@ def _read_local_templates(local_templates_path=None):
 
 
 @click.command()
+@click.option("--template", "-t", help="what template to use.")
 @click.option(
-    "--template", "-t", help="what template to use."
+    "--local-user-template",
+    "-u",
+    is_flag=True,
+    default=False,
+    help="Use local template from the templates directory.",
 )
-@click.option("--local-user-template", "-u", is_flag=True, default=False, help="Use local template from the templates directory.")
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
 @click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
 @click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook.")
