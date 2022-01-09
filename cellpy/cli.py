@@ -739,10 +739,10 @@ def info(version, configloc, params, check):
     "-p",
     is_flag=True,
     help="Use PaperMill to run the notebook(s) within the given project folder "
-         "(will only work properly if the notebooks can be sorted in correct run-order by 'sorted'). "
-         "Warning! since we are using `click` - the NAME will be 'converted' when it is loaded "
-         "(same as print(name) does) - "
-         "so you can't use backslash ('\\') as normal in windows (use either '/' or '\\\\' instead)."
+    "(will only work properly if the notebooks can be sorted in correct run-order by 'sorted'). "
+    "Warning! since we are using `click` - the NAME will be 'converted' when it is loaded "
+    "(same as print(name) does) - "
+    "so you can't use backslash ('\\') as normal in windows (use either '/' or '\\\\' instead).",
 )
 @click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
 @click.option("--silent", "-s", is_flag=True, help="Run in silent mode.")
@@ -783,7 +783,7 @@ def run(
     batch_col,
     project,
     list_,
-    name
+    name,
 ):
     """Run a cellpy process.
 
@@ -1533,6 +1533,7 @@ def _cli_setup_interactive():
 def check_it(var=None):
     import sys
     import pathlib
+
     p_env = pathlib.Path(sys.prefix)
     print(p_env.name)
     new(list_=True)
