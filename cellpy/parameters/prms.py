@@ -254,6 +254,12 @@ _cellpyfile_stepdata_format = "table"
 _cellpyfile_infotable_format = "fixed"
 _cellpyfile_fidtable_format = "fixed"
 
+# templates
+_registered_templates = {
+    "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
+    "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
+}
+
 # used as global variables
 _globals_status = ""
 _globals_errors = []

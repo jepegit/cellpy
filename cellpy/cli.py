@@ -729,22 +729,26 @@ def info(version, configloc, params, check):
 )
 @click.option("--key", "-k", is_flag=True, help="Run a batch job defined by batch-name")
 @click.option(
-    "--batch",
-    "-b",
+    "--folder",
+    "-f",
     is_flag=True,
     help="Run all batch jobs iteratively in a given folder",
 )
+@click.option(
+    "--cellpy-project",
+    "-p",
+    is_flag=True,
+    help="Use PaperMill to run the notebook(s) within the given project folder "
+         "(will only work properly if the notebooks can be sorted in correct run-order by 'sorted'). "
+         "Warning! since we are using `click` - the NAME will be 'converted' when it is loaded "
+         "(same as print(name) does) - "
+         "so you can't use backslash ('\\') as normal in windows (use either '/' or '\\\\' instead)."
+)
 @click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
 @click.option("--silent", "-s", is_flag=True, help="Run in silent mode.")
-@click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
-@click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
-@click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
-@click.option(
-    "--generate_notebooks",
-    "-g",
-    is_flag=True,
-    help="Setup a cellpy project (Jupyter notebooks).",
-)
+@click.option("--raw", is_flag=True, help="Force loading raw-file(s).")
+@click.option("--cellpyfile", is_flag=True, help="Force cellpy-file(s).")
+@click.option("--minimal", is_flag=True, help="Minimal processing.")
 @click.option(
     "--nom-cap",
     default=None,
@@ -759,28 +763,27 @@ def info(version, configloc, params, check):
 )
 @click.option(
     "--project",
-    "-p",
     default=None,
     type=str,
-    help="project (if selecting running from db)",
+    help="name of the project (if selecting running from db)",
 )
 @click.option("--list", "-l", "list_", is_flag=True, help="List batch-files.")
 @click.argument("name", default="NONE")
 def run(
     journal,
     key,
-    batch,
+    folder,
+    cellpy_project,
     debug,
     silent,
     raw,
     cellpyfile,
     minimal,
-    generate_notebooks,
     nom_cap,
-    name,
     batch_col,
     project,
     list_,
+    name
 ):
     """Run a cellpy process.
 
@@ -802,7 +805,7 @@ def run(
         return
 
     if name == "NONE":
-        print(
+        click.echo(
             "Usage: cellpy run [OPTIONS] NAME\n"
             "Try 'cellpy run --help' for help.\n\n"
             "Error: Missing argument 'NAME'."
@@ -817,10 +820,13 @@ def run(
 
     click.echo("[cellpy]\n")
 
-    if journal:
+    if cellpy_project:
+        _run_project(name)
+
+    elif journal:
         _run_journal(name, debug, silent, raw, cellpyfile, minimal, nom_cap)
 
-    elif batch:
+    elif folder:
         _run_journals(name, debug, silent, raw, cellpyfile, minimal)
 
     elif key:
@@ -834,7 +840,6 @@ def run(
             nom_cap,
             batch_col,
             project,
-            generate_notebooks,
         )
 
     elif name.lower() == "db":
@@ -854,7 +859,6 @@ def _run_from_db(
     nom_cap,
     batch_col,
     project,
-    generate_notebooks,
 ):
     click.echo(
         f"running from db \nkey={name}, batch_col={batch_col}, project={project}"
@@ -889,12 +893,6 @@ def _run_from_db(
         backend="matplotlib",
         **kwargs,
     )
-
-    if generate_notebooks:
-        click.echo("  - generating cellpy project")
-        # TODO: function that does the same as "cellpy new"
-        #  - consider transferring arguments through "cellpy run"
-        print("HERE IT SHOULD GENERATE A CELLPY PROJECT")
 
     if b is not None and not silent:
         print(b)
@@ -996,6 +994,24 @@ def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
         folder_name, force_raw_file=raw, force_cellpy=cellpyfile, silent=True, **kwargs
     )
     click.echo("---")
+
+
+def _run_project(our_new_project, **kwargs):
+    try:
+        import papermill as pm
+    except ImportError:
+        click.echo(
+            "[cellpy]: You need to install papermill for automatically execute the notebooks."
+        )
+        click.echo("[cellpy]: You can install it using pip like this:")
+        click.echo(" >> pip install papermill")
+        return
+    our_new_project = pathlib.Path(our_new_project)
+    click.echo(f"[cellpy]: trying to run notebooks in {our_new_project}")
+    notebooks = sorted(list(our_new_project.glob("*.ipynb")))
+    for notebook in notebooks:
+        click.echo(f"[cellpy - papermill] running {notebook.name}")
+        pm.execute_notebook(notebook, notebook, parameters=kwargs)
 
 
 def _run(name, debug, silent):
@@ -1236,7 +1252,8 @@ def _read_local_templates(local_templates_path=None):
 
 
 @click.command()
-@click.option("--template", "-t", help="what template to use.")
+@click.option("--template", "-t", help="What template to use.")
+@click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
 @click.option(
     "--local-user-template",
     "-u",
@@ -1244,12 +1261,53 @@ def _read_local_templates(local_templates_path=None):
     default=False,
     help="Use local template from the templates directory.",
 )
-@click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
-@click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
-@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook.")
-def new(template, local_user_template, directory, serve, lab):
+@click.option("--serve", "-s", "serve_", is_flag=True, help="Run Jupyter.")
+@click.option(
+    "--run",
+    "-r",
+    "run_",
+    is_flag=True,
+    help="Use PaperMill to run the notebook(s) from the template "
+    "(will only work properly if the notebooks can be sorted in correct run-order by 'sorted'.",
+)
+@click.option(
+    "--lab",
+    "-j",
+    is_flag=True,
+    help="Use Jupyter Lab instead of Notebook when serving.",
+)
+@click.option(
+    "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
+)
+def new(template, directory, local_user_template, serve_, run_, lab, list_):
+    """Set up a batch experiment."""
+    function_new(template, directory, local_user_template, serve_, run_, lab, list_)
+
+
+def function_new(template, directory, local_user_template, serve_, run_, lab, list_):
     """Set up a batch experiment."""
     from cellpy.parameters import prms
+
+    if list_:
+        click.echo(f"\n[cellpy] batch templates")
+
+        default_template = _get_default_template()
+        local_templates = _read_local_templates()
+        local_templates_path = prmreader.prms.Paths.templatedir
+        registered_templates = prms._registered_templates
+        click.echo(f"[cellpy] - default: {default_template}")
+        click.echo("[cellpy] - registered templates (on github):")
+        for label, link in registered_templates.items():
+            click.echo(f"\t\t{label:18s} {link}")
+
+        if local_templates:
+            click.echo(f"[cellpy] - local templates ({local_templates_path}):")
+            for label, link in local_templates.items():
+                click.echo(f"\t\t{label:18s} {link}")
+        else:
+            click.echo(f"[cellpy] - local templates ({local_templates_path}): none")
+
+        return
 
     if not template:
         template = _get_default_template()
@@ -1270,10 +1328,7 @@ def new(template, local_user_template, directory, serve, lab):
         click.echo("\npip install cookiecutter\n")
 
     if not local_user_template:
-        templates = {
-            "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
-            "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
-        }
+        templates = prms._registered_templates
     else:
         templates = _read_local_templates()
 
@@ -1319,20 +1374,48 @@ def new(template, local_user_template, directory, serve, lab):
         except FileExistsError:
             click.echo("OK - but this directory already exists!")
 
-    os.chdir(directory / project_dir)
+    # get a list of all folders
+    selected_project_dir = directory / project_dir
+    existing_projects = os.listdir(selected_project_dir)
+
+    os.chdir(selected_project_dir)
 
     try:
+        selected_template = templates[template.lower()]
         cookiecutter.main.cookiecutter(
-            templates[template.lower()], extra_context={"project_name": project_dir}
+            selected_template, extra_context={"project_name": project_dir}
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")
         click.echo(" - cookiecutter refused to create the project")
         click.echo(e)
 
-    if serve:
+    if serve_:
         os.chdir(directory)
         _serve(server)
+
+    if run_:
+        try:
+            import papermill as pm
+        except ImportError:
+            click.echo(
+                "[cellpy]: You need to install papermill for automatically execute the notebooks."
+            )
+            click.echo("[cellpy]: You can install it using pip like this:")
+            click.echo(" >> pip install papermill")
+            return
+        new_existing_projects = os.listdir(selected_project_dir)
+        our_new_projects = list(set(new_existing_projects) - set(existing_projects))
+
+        if not len(our_new_projects):
+            click.echo(
+                "[cellpy]: Sorry, could not deiced what is the new project "
+                "- so I don't dare to try to execute automatically."
+            )
+            return
+        our_new_project = selected_project_dir / our_new_projects[0]
+
+        _run_project(our_new_project)
 
 
 def _serve(server):
@@ -1447,7 +1530,16 @@ def _cli_setup_interactive():
             click.echo(line.strip())
 
 
+def check_it(var=None):
+    import sys
+    import pathlib
+    p_env = pathlib.Path(sys.prefix)
+    print(p_env.name)
+    new(list_=True)
+
+
 if __name__ == "__main__":
-    click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
-    _main_pull()
-    click.echo("ok")
+    check_it()
+    # click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
+    # _main_pull()
+    # click.echo("ok")
