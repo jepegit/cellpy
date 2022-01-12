@@ -72,13 +72,7 @@ class ReaderClass(CellPyConfig):
     time_interpolation_step: float = 10.0
     capacity_interpolation_step: float = 2.0
     use_cellpy_stat_file: bool = False
-    raw_datadir: Union[str, None] = None
-    cellpy_datadir: Union[str, None] = None
     auto_dirs: bool = True  # search in prm-file for res and hdf5 dirs in loadcell
-    chunk_size: Union[int, None] = None
-    last_chunk: Union[int, None] = None
-    max_chunks: Union[int, None] = None
-    max_res_filesize: int = 150000000
 
 
 Reader = ReaderClass()
