@@ -78,12 +78,14 @@ def _write_prm_file(file_name=None):
 def _update_prms(config_dict):
     logging.debug("updating parameters")
     logging.debug(f"new prms: {config_dict}")
-
     for key in config_dict:
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
             for k in config_dict[key]:
                 z = config_dict[key][k]
+                if isinstance(z, dict):
+                    y = getattr(_config_attr, k)
+                    z = box.Box({**y, **z})
                 if isinstance(z, ruamel.yaml.comments.CommentedMap):
                     z = box.Box(z)
                 setattr(_config_attr, k, z)
