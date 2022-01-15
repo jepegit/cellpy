@@ -318,9 +318,14 @@ def build(c, dist=True, docs=True, upload=False, serve=False):
         print(" Serving docs")
         os.chdir(builds_path)
         _location = r"localhost:8081"
-        c.run(f"python -m webbrowser -t http://{_location}")
+        # c.run(f"python -m webbrowser -t http://{_location}")
         sphinx_serve()
 
+
+@task
+def serve(c):
+    _location = r"localhost:8081"
+    c.run(f"python -m webbrowser -t http://{_location}")
 
 
 @task

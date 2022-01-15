@@ -9,7 +9,18 @@ with results (we had to stop the experiment and re-start for some
 reason).
 The files are in the .res format (Arbin).
 
-First, import modules, including the cellreader-object from ``cellpy``:
+The easiest way to load data is to use the
+``cellpy.get`` method.
+
+.. code-block:: python
+
+    import cellpy
+
+    electrode_mass = 0.658 # active mass of electrode in mg
+    cell_data = cellpy.get("20170101_ife01_cc_01.res", mass=electrode_mass, cycle_mode="anode")
+
+If you prefer, you can obtain the same by using ``cellpy.cellreader.CellpyData`` object directly:
+First, import the cellreader-object from ``cellpy``:
 
 .. code-block:: python
 
@@ -50,7 +61,7 @@ Now we will read the files, merge them, and create a summary:
     # Note: make_summary will automatically run the
     # make_step_table function if it does not exist.
 
-And save it:
+Then its probably best to save the data in the cellpy-format:
 
 .. code-block:: python
 
@@ -58,8 +69,8 @@ And save it:
     cellpy_file = os.path.join(cellpy_data_dir, "20170101_ife01_cc2.h5")
     cell_data.save(cellpy_file)
 
-For convenience, ``cellpy`` also has a method that simplifies
-this process a little bit.
+For convenience, ``cellpy`` also has a method that can be used to select whether-or-not to load
+directly from the raw-file.
 Using the ``loadcell`` method, you can specify both the raw
 file name(s) and the cellpy file name, and
 ``cellpy`` will check if the raw file(s) is/are updated since
@@ -78,12 +89,62 @@ summary automatically.
     if not cell_data.check():
         print("Could not load the data")
 
-Another method has recently appeared in the ``cellpy`` universe: the
-``cellpy.get`` method. It is a cleaner and easier way to load data with.
+More about the ``cellpy.get`` method
+------------------------------------
+
+The following keyword arguments is current supported by ``cellpy.get``:
 
 .. code-block:: python
 
-    cell_data = cellpy.get(raw_file, mass=0.23)
+    # from the docstring:
+    Args:
+        filename (str, os.PathLike, or list of raw-file names): path to file(s)
+        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file) (arbin_res, arbin_sql, arbin_sql_csv, arbin_sql_xlxs)
+        instrument_file (str or path): yaml file for custom file type
+        nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
+        logging_mode (str): "INFO" or "DEBUG"
+        cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
+        auto_summary (bool): (re-) create summary.
+        testing (bool): set to True if testing (will for example prevent making .log files)
+        **kwargs: sent to the loader
+
+Reading a cellpy file:
+
+.. code-block:: python
+
+    c = cellpy.get("my_cellpyfile.cellpy")
+    # or
+    c = cellpy.get("my_cellpyfile.h5")
+
+Reading anode half-cell data from arbin sql:
+
+.. code-block:: python
+
+    c = cellpy.get("my_cellpyfile", instrument="arbin_sql", cycle_mode="anode")
+    # Remark! if sql prms are not set in your config-file you have to set them manually (e.g. setting values in
+    #    prms.Instruments.Arbin.VAR)
+
+Reading data obtained by exporting csv from arbin sql using non-default delimiter sign:
+
+.. code-block:: python
+
+    c = cellpy.get("my_cellpyfile.csv", instrument="arbin_sql_csv", sep=";")
+
+Reading data obtained by exporting a csv file from Maccor
+using a sub-model (this example uses one of the models already available inside ``cellpy``):
+
+.. code-block:: python
+
+    c = cellpy.get(filename="name.txt", instrument="maccor_txt", model="one", mass=1.0)
+
+Reading csv file using the custom loader where the format definitions are given in a user-supplied
+yaml-file:
+
+.. code-block:: python
+
+    c = cellpy.get(filename="name.txt", instrument_file="my_custom_file_format.yml")
+
 
 Extract current-voltage graphs
 ------------------------------
