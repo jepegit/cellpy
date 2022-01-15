@@ -7,4 +7,4 @@ Basics usage
 .. include:: tutorials/basic_interaction.rst
 .. include:: tutorials/pandas.rst
 .. include:: tutorials/data_mining.rst
-.. include:: tutorials/utils.rst
+.. include:: tutorials/the_cellpy_cmd.rst

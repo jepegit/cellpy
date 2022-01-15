@@ -11,6 +11,7 @@ cellpy.utils.batch module
     :members:
     :undoc-members:
     :show-inheritance:
+    :exclude-members: check_iterate, check_new, check_standard
 
 cellpy.utils.batch\_tools module
 --------------------------------

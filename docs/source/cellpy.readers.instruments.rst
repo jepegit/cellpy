@@ -38,10 +38,10 @@ cellpy.readers.instruments.biologics\_mpr module
     :undoc-members:
     :show-inheritance:
 
-cellpy.readers.instruments.mixin module
+cellpy.readers.instruments.base module
 ---------------------------------------
 
-.. automodule:: cellpy.readers.instruments.mixin
+.. automodule:: cellpy.readers.instruments.base
     :members:
     :undoc-members:
     :show-inheritance:
@@ -54,6 +54,32 @@ cellpy.readers.instruments.pec module
     :undoc-members:
     :show-inheritance:
 
+cellpy.readers.instruments.maccor module
+----------------------------------------
+
+.. automodule:: cellpy.readers.instruments.maccor_txt
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+cellpy.readers.instruments.processors module
+--------------------------------------------
+
+pre-processors
+..............
+
+.. automodule:: cellpy.readers.instruments.processors.pre_processors
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+post-processors
+...............
+
+.. automodule:: cellpy.readers.instruments.processors.post_processors
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Module contents
 ---------------
