@@ -200,20 +200,19 @@ This will out-put some (hopefully) helpful text
 
 .. code:: bash
 
-   Usage: cellpy [OPTIONS] COMMAND [ARGS]...
+    Usage: cellpy [OPTIONS] COMMAND [ARGS]...
 
-   Options:
-     --help  Show this message and exit.
+    Options:
+      --help  Show this message and exit.
 
-   Commands:
+    Commands:
       edit   Edit your cellpy config file.
       info   This will give you some valuable information about your cellpy.
-      new    Will in the future be used for setting up a batch experiment.
+      new    Set up a batch experiment.
       pull   Download examples or tests from the big internet.
       run    Run a cellpy process.
       serve  Start a Jupyter server
       setup  This will help you to setup cellpy.
-
 
 You can get information about the sub-commands by issuing –-help after
 them also. For example, issuing

@@ -79,7 +79,7 @@ summary automatically.
         print("Could not load the data")
 
 Another method has recently appeared in the ``cellpy`` universe: the
-``cellpy.get`` method.
+``cellpy.get`` method. It is a cleaner and easier way to load data with.
 
 .. code-block:: python
 

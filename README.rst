@@ -12,7 +12,7 @@ cellpy
 .. image:: https://readthedocs.org/projects/cellpy/badge/?version=latest
         :target: https://cellpy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
-        
+
 .. image:: https://pepy.tech/badge/cellpy
         :target: https://pepy.tech/project/cellpy
 
@@ -32,11 +32,13 @@ The documentation for ``cellpy`` is hosted on `Read the docs
 Installation and dependencies
 -----------------------------
 
-The easiest way to install ``cellpy`` is to install with conda or pip::
+The easiest way to install ``cellpy`` is to install with conda or pip.
+
+With conda::
 
    conda install cellpy --channel conda-forge
 
-If you prefer, you can also install using pip::
+Or if you prefer installing using pip::
 
    pip install cellpy
 
