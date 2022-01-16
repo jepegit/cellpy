@@ -120,7 +120,7 @@ Further reading
 ---------------
 
 You can find more information in the Tutorials, particularly
-in :doc:`Tutorials/getting_started_tutorial`.
+in :doc:`tutorials/getting_started_tutorial`.
 
 .. _Github repo: https://github.com/jepegit/cellpy
 
