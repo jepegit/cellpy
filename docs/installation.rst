@@ -59,9 +59,9 @@ or:
 
 Some of the utilities in ``cellpy`` have additional dependencies:
 
-- Using the cli commands `cellpy new` and `cellpy pull` requires ``git`` installed.
-- Using the ``ocv_rlx`` utilities requires ``lmfit``.
-- For using the ``batch`` utilities, ``holoviews`` is recommended.
+- Using the ``ocv_rlx`` utilities requires ``lmfit`` and ``matplotlib``.
+- For using the ``batch`` utilities efficiently, ``holoviews`` is needed, as
+  well as ``bokeh`` and ``matplotlib`` for plotting.
 
 
 If this is the first time you install ``cellpy``, it is recommended
@@ -72,16 +72,22 @@ that you run the setup script:
     $ cellpy setup -i
 
 This will install a ``.cellpy_prms_USER.conf`` file in your home directory
-(USER = your user name) for posix systems and the documents folder in windows.
+(USER = your user name).
 Feel free to edit this to fit your needs.
 
-(It is probably best to run the command also if you are upgrading ``cellpy``)
+If you are OK with letting ``cellpy`` select your settings, you can omit
+the `-i` (interactive mode).
 
-You can restore your prms-file by running ``cellpy setup`` if needed
-(*i.e.* get a copy of the default file
-copied to your user folder).
+.. hint:: It is recommended to run the command also after
+    each time you upgrade ``cellpy``. It will keep the settings you already
+    have in your prms-file and, if the newer version
+    has introduced some new parameters, it will add those too.
 
-.. note:: Since Arbin (at least some versions) uses access database files, you
+
+.. hint:: You can restore your prms-file by running ``cellpy setup -r`` if needed
+    (*i.e.* get a copy of the default file copied to your user folder).
+
+.. caution:: Since Arbin (at least some versions) uses access database files, you
     will need to install ``pyodbc``, a python ODBC bridge that can talk to database
     files. On windows, at least if you don´t have a newer version of office 365,
     you  most likely need to use Microsoft's dll for handling access

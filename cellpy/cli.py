@@ -11,7 +11,7 @@ import click
 import pkg_resources
 import pathlib
 
-from github import Github, GithubException
+from github import Github
 
 from cellpy.parameters import prmreader
 from cellpy.exceptions import ConfigFileNotWritten
@@ -22,7 +22,6 @@ VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
 USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
-GITHUB_SIZE_LIMIT = 1_000_000
 
 
 def save_prm_file(prm_filename):
@@ -1153,29 +1152,6 @@ def _download_g_blob(name, local_path):
     click.echo(f"[cellpy] (pull) downloaded blob: {filename}")
 
 
-def _download_g_file(repo, name, local_path):
-    WORKING = True
-    BRANCH = "master"
-    print(f"Trying to access and download {name} to {local_path}")
-
-    if not WORKING:
-        print(f"Trying to access and download {name} to {local_path}")
-        print(" -> SORRY - THIS FEATURE IS CURRENTLY DISABLED!")
-        return
-
-    file_content_encoded = repo.get_contents(urllib.parse.quote(name), ref=BRANCH).content
-    file_content = base64.b64decode(file_content_encoded)
-
-    dirs = local_path.parent
-
-    if not dirs.is_dir():
-        click.echo(f"[cellpy] (pull) creating dir: {dirs}")
-        dirs.mkdir(parents=True)
-    with local_path.open("wb") as ofile:
-        ofile.write(file_content.decoded_content)
-        click.echo(f"[cellpy] (pull) downloaded: {name}")
-
-
 def _parse_g_dir(repo, gdirpath):
     """parses a repo directory two-levels deep"""
     for f in repo.get_contents(gdirpath):
@@ -1237,11 +1213,7 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
         gfilename = pathlib.Path(gfile.path)
         nfilename = rootpath / gfilename
 
-        if gfile.size > GITHUB_SIZE_LIMIT:
-            _download_g_blob(gfile, nfilename)
-
-        else:
-            _download_g_file(repo, gfilename.as_posix(), nfilename)
+        _download_g_blob(gfile, nfilename)
 
 
 def _get_default_template():

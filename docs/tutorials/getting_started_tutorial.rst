@@ -247,19 +247,20 @@ data, cellpy-files, logs, databases and output data (and inform
    cellpy setup -i
 
 The ``-i`` option makes sure that the setup is done interactively.
-The program will ask you about where specific folders are, *e.g.* where
+The program will ask you about where specific folders are, *e.g.* where
 you would like to put your outputs and where your cell data files are
-located. If the folders don’t exist, ``cellpy`` will try to create them.a
+located. If the folders don’t exist, ``cellpy`` will try to create them.
 
 If you want to specify a root folder different from the default (your HOME
 folder), you can use the ``-d`` option *e.g.*
 ``cellpy setup -i -d /Users/kingkong/cellpydir``
 
-.. note::
+.. hint::
 
-    If you don't choose the ``-i`` option, you can always edit your configurations
+    If you don't choose the ``-i`` option and goes for accepting all the defaults,
+    you can always edit your configurations
     directly in the cellpy configuration file (that should be located inside your
-    home directory on posix or Documents folder on windows).
+    home directory, /~ in posix and c:\users\NAME in not-too-old windows).
 
 When you have answered all your questions, a configuration file will be
 made and saved to your home directory. You can always issue
@@ -275,7 +276,7 @@ hope there are some useful stuff in the code repository (for example in
 the `examples
 folder <https://github.com/jepegit/cellpy/tree/master/examples>`__).
 
-.. note::
+.. hint::
     The ``cellpy pull`` command can assist in downloading
     both examples and tests.
 
@@ -292,8 +293,8 @@ any error-messages.
 
 .. code-block:: python
 
-    Python 3.6.7 |Anaconda, Inc.| (default, Oct 23 2018, 14:01:38)
-    [GCC 4.2.1 Compatible Clang 4.0.1 (tags/RELEASE_401/final)] on darwin
+    Python 3.9.9 | packaged by conda-forge | (main, Dec 20 2021, 02:36:06)
+    [MSC v.1929 64 bit (AMD64)] on win32
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import cellpy
     >>>
@@ -331,7 +332,7 @@ since it is not your first time running it).
 What next?
 ----------
 
-For example: If you want to use the highly popular ``cellpy.utils.batch``
+For example: If you want to use the highly popular (?) ``cellpy.utils.batch``
 utility, you
 need to make (or copy from a friend) the "database" (an excel-file with
 appropriate headers in the first row) and make sure that all the paths
