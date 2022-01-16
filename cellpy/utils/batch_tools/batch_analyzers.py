@@ -34,12 +34,9 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
     To get the DataFrames from the farms, you can use
     >>> ocv_point_frames = OCVRelaxationAnalyzer.last
 
-    Attributes (for select_ocv_points):
+    Attributes:
         selection_method: criteria for selecting points
-            martin: select first and last, and then last/2, last/2/2 etc.
-                until you have reached the wanted number of points.
-            fixed_time: select first, and then
-            defaults to "martin"
+            (martin: select first and last, and then last/2, last/2/2 etc. until you have reached the wanted number of points; fixed_time: select first, and same interval; defaults to "martin")
         number_of_points: number of points you want.
             defaults to 5
         interval: interval between each point (in use only for methods
@@ -60,10 +57,12 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
             to process only the ocv rlx steps where the voltage is relaxing
             upwards and vize versa. Defaults to "both
 
-    To-do:
+    Notes:
+        This analyzer is not working as intended yet. Todos:
+
         - include better engine-dumper methodology and dump
-            stuff to both memory and file(s)
-            (should add this to BaseAnalyser)
+          stuff to both memory and file(s)
+          (should add this to BaseAnalyser)
         - recieve settings and parameters
         - option (dumper) for plotting?
         - automatic fitting of OCV rlx data?

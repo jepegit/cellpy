@@ -350,23 +350,23 @@ The ``CellpyData`` object contains lots of methods for manipulating, extracting
 and summarising the data from the run(s). Two methods are typically automatically run when
 you create your ``CellpyData`` object when running ``cellpy.get(filename)``:
 
-``make_step_table``: creates a statistical summary of all the steps in the run(s) and categorizes
-the step type from that. It is also possible to give the step types directly (step_specifications).
+    - ``make_step_table``: creates a statistical summary of all the steps in the run(s) and categorizes
+      the step type from that. It is also possible to give the step types directly (step_specifications).
 
-``make_summary``: create a summary based on cycle number.
+    - ``make_summary``: create a summary based on cycle number.
 
 Other methods worth mentioning are (based on what I typically use):
 
-``load``: load a cellpy file.
+    - ``load``: load a cellpy file.
 
-``load_raw``: load raw data file(s) (merges automatically if several filenames are given as a list).
+    - ``load_raw``: load raw data file(s) (merges automatically if several filenames are given as a list).
 
-``get_cap``: get the capacity-voltage graph from one or more cycles in three different formats as well
-as optionally interpolated, normalized and/or scaled.
+    - ``get_cap``: get the capacity-voltage graph from one or more cycles in three different formats as well
+      as optionally interpolated, normalized and/or scaled.
 
-``get_cycle_numbers``: get the cycle numbers for your run.
+    - ``get_cycle_numbers``: get the cycle numbers for your run.
 
-``get_ocv``: get the rest steps after each charge and discharge step.
+    - ``get_ocv``: get the rest steps after each charge and discharge step.
 
 Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyData``) for more info.
 
@@ -379,11 +379,11 @@ the run-settings (such as mass etc.).
 The measurement data, information, and summary is stored
 in three ``pandas.DataFrames``:
 
-* ``raw``: raw data from the run.
-* ``steps``: stats from each step (and step type), created using the
-   ``CellpyData.make_step_table`` method.
-* ``summary``  summary data vs. cycle number (e.g. coulombic coulombic efficiency), created using
-   the ``CellpyData.make_summary`` method.
+    - ``raw``: raw data from the run.
+    - ``steps``: stats from each step (and step type), created using the
+      ``CellpyData.make_step_table`` method.
+    - ``summary``: summary data vs. cycle number (e.g. coulombic coulombic efficiency), created using
+      the ``CellpyData.make_summary`` method.
 
 The headers (columns) for the different DataFrames were given earlier in this chapter.
 As mentioned above, the ``Cell`` object also contains metadata for the run.

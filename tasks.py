@@ -296,7 +296,7 @@ def test(c):
 
 
 @task
-def build(c, dist=True, docs=True, upload=False, serve=False):
+def build(c, dist=True, docs=True, upload=False, serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")
@@ -319,7 +319,9 @@ def build(c, dist=True, docs=True, upload=False, serve=False):
         print(" Serving docs")
         os.chdir(builds_path)
         _location = r"localhost:8081"
-        c.run(f"python -m webbrowser -t http://{_location}")
+        if browser:
+            print(f" - opening browser in http://{_location}")
+            c.run(f"python -m webbrowser -t http://{_location}")
         sphinx_serve()
 
 

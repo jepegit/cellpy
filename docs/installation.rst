@@ -3,7 +3,7 @@ Installation
 ============
 
 If you are (relatively) new to installing python packages, please jump to the
-getting started tutorial (:doc:`Tutorials/getting_started_tutorial`)
+getting started tutorial (:doc:`tutorials/getting_started_tutorial`)
 for an opinionated step-by-step procedure.
 
 Stable release
@@ -61,7 +61,7 @@ Some of the utilities in ``cellpy`` have additional dependencies:
 
 - Using the cli commands `cellpy new` and `cellpy pull` requires ``git`` installed.
 - Using the ``ocv_rlx`` utilities requires ``lmfit``.
-- For using the ``batch`` utilities, holoviews is recommended.
+- For using the ``batch`` utilities, ``holoviews`` is recommended.
 
 
 If this is the first time you install ``cellpy``, it is recommended
