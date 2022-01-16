@@ -16,7 +16,7 @@ The preferred way to install ``cellpy`` is by using conda:
     $ conda install cellpy --channel conda-forge
 
 
-This will also install all of the dependencies, as well as ``jupyter``
+This will also install all of the critical dependencies, as well as ``jupyter``
 that comes in handy when working with ``cellpy``.
 
 If you would like to install only ``cellpy``, you should install using pip.
@@ -56,6 +56,12 @@ or:
     $ conda install -c conda-forge pyodbc
 
 .. _pyodbc: https://github.com/mkleehammer/pyodbc/
+
+Some of the utilities in ``cellpy`` have additional dependencies:
+
+- Using the cli commands `cellpy new` and `cellpy pull` requires ``git`` installed.
+- Using the ``ocv_rlx`` utilities requires ``lmfit``.
+- For using the ``batch`` utilities, holoviews is recommended.
 
 
 If this is the first time you install ``cellpy``, it is recommended
