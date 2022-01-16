@@ -23,7 +23,7 @@ If you would like to install only ``cellpy``, you should install using pip.
 You also need to take into account that ``cellpy`` uses several packages
 that are a bit cumbersome to install on
 windows. It is therefore recommended to install one of the ``anaconda``
-python packages (python 3.6 or above) before installing ``cellpy``.
+python packages (python 3.8 or above) before installing ``cellpy``.
 If you chose ``miniconda``, you should install
 ``scipy``, ``numpy`` and ``pytables`` using ``conda``:
 
