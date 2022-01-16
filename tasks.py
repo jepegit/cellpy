@@ -314,11 +314,12 @@ def build(c, dist=True, docs=True, upload=False, serve=False):
         print(" To upload to pypi: 'twine upload dist/*'")
     if serve:
         import pathlib
+
         builds_path = pathlib.Path("docs") / "_build"
         print(" Serving docs")
         os.chdir(builds_path)
         _location = r"localhost:8081"
-        # c.run(f"python -m webbrowser -t http://{_location}")
+        c.run(f"python -m webbrowser -t http://{_location}")
         sphinx_serve()
 
 

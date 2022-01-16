@@ -27,16 +27,18 @@ from cellpy.readers.core import collect_capacity_curves
 class Converter:
     """Class for dq-dv handling.
 
-    Typical usage is to  (1) set the data,  (2) inspect the data,
+    Typical usage is to (1) set the data, (2) inspect the data,
     (3) pre-process the data,
     (4) perform the dq-dv transform, and finally (5) post-process the data.
 
     A short note about normalization:
-    If normalization is set to False, then no normalization will be done.
-    If normalization is True, and normalization_factor is None, the total capacity of the half cycle will be
-       used for normalization, else the normalization_factor will be used.
-    If normalization is True, and normalization_roof is not None, the capacity divided by normalization_roof will be
-       used for normalization.
+
+        - If ``normalization`` is set to ``False``, then no normalization will be done.
+        - If ``normalization`` is ``True``, and ``normalization_factor`` is ``None``, the total capacity of
+          the half cycle will be used for normalization, else the ``normalization_factor`` will be used.
+        - If ``normalization`` is ``True``, and ``normalization_roof`` is not ``None``,
+          the capacity divided by ``normalization_roof`` will be used for normalization.
+
     """
 
     def __init__(
@@ -130,12 +132,12 @@ class Converter:
         return txt
 
     def set_data(self, capacity, voltage=None, capacity_label="q", voltage_label="v"):
-        """Set the data"""
+        """Set the data."""
 
         logging.debug("setting data (capacity and voltage)")
 
         if isinstance(capacity, pd.DataFrame):
-            logging.debug("recieved a pandas.DataFrame")
+            logging.debug("received a pandas.DataFrame")
             self.capacity = capacity[capacity_label]
             self.voltage = capacity[voltage_label]
         else:
@@ -144,7 +146,7 @@ class Converter:
             self.voltage = voltage
 
     def inspect_data(self, capacity=None, voltage=None, err_est=False, diff_est=False):
-        """check and inspect the data"""
+        """Check and inspect the data."""
 
         logging.debug("inspecting the data")
 
@@ -224,7 +226,7 @@ class Converter:
             )
 
     def pre_process_data(self):
-        """perform some pre-processing of the data (i.e. interpolation)"""
+        """Perform some pre-processing of the data (i.e. interpolation)."""
 
         logging.debug("pre-processing the data")
 
@@ -266,7 +268,7 @@ class Converter:
             )
 
     def increment_data(self):
-        """perform the dq-dv transform"""
+        """Perform the dq-dv transform."""
 
         # NOTE TO ASBJOERN: Probably insert method for "binning" instead of
         # TODO: Asbjørn will insert "binning" here
@@ -334,8 +336,7 @@ class Converter:
     def post_process_data(
         self, voltage=None, incremental_capacity=None, voltage_step=None
     ):
-        """perform post-processing (smoothing, normalisation, interpolation) of
-        the data"""
+        """Perform post-processing (smoothing, normalisation, interpolation) of the data."""
 
         logging.debug("post-processing data")
 
@@ -390,12 +391,12 @@ class Converter:
 
 
 def value_bounds(x):
-    """returns tuple with min and max in x"""
+    """Returns tuple with min and max in x."""
     return np.amin(x), np.amax(x)
 
 
 def index_bounds(x):
-    """returns tuple with first and last item"""
+    """Returns tuple with first and last item."""
     if isinstance(x, (pd.DataFrame, pd.Series)):
         return x.iloc[0], x.iloc[-1]
     else:
@@ -406,54 +407,49 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycle.
 
-    Returns the a DataFrame with a 'voltage' and a 'incremental_capacity'
+    Returns the DataFrame with a 'voltage' and a 'incremental_capacity'
     column.
 
-        Args:
-            cycle (pandas.DataFrame): the cycle data ('voltage', 'capacity',
-                'direction' (1 or -1)).
-            splitter (bool): insert a np.NaN row between charge and discharge.
+    Args:
+        cycle (pandas.DataFrame): the cycle data ('voltage', 'capacity', 'direction' (1 or -1)).
+        splitter (bool): insert a np.NaN row between charge and discharge.
 
-            **kwargs: key-word arguments to Converter:
-                points_pr_split (int): only used when investigating data using
-                    splits, defaults to 10.
-                max_points: None
-                voltage_resolution (float): used for interpolating voltage data
-                    (e.g. 0.005)
-                capacity_resolution: used for interpolating capacity data
-                minimum_splits (int): defaults to 3.
-                interpolation_method: scipy interpolation method
-                increment_method (str): defaults to "diff"
-                pre_smoothing (bool): set to True for pre-smoothing (window)
-                smoothing (bool): set to True for smoothing during
-                    differentiation (window)
-                post_smoothing (bool): set to True for post-smoothing (gaussian)
-                normalize (bool): set to True for normalizing to capacity
-                normalizing_factor (float):
-                normalizing_roof  (float):
-                savgol_filter_window_divisor_default (int): used for window
-                    smoothing, defaults to 50
-                savgol_filter_window_order: used for window smoothing
-                voltage_fwhm (float): used for setting the post-processing
-                    gaussian sigma, defaults to 0.01
-                gaussian_order (int): defaults to 0
-                gaussian_mode (str): defaults to "reflect"
-                gaussian_cval (float): defaults to 0.0
-                gaussian_truncate (float): defaults to 4.0
+    Returns:
+        List of step numbers corresponding to the selected steptype.
+        Returns a ``pandas.DataFrame`` instead of a list if ``pdtype`` is set to ``True``.
 
-        Returns:
-            List of step numbers corresponding to the selected steptype.
-                Returns a pandas.DataFrame
-            instead of a list if pdtype is set to True.
+    Additional key-word arguments are sent to Converter:
 
-        Example:
-            >>> cycle_df = my_data.get_cap(
-            >>> ...   1,
-            >>> ...   categorical_column=True,
-            >>> ...   method = "forth-and-forth"
-            >>> ...   insert_nan=False,
-            >>> ... )
-            >>> voltage, incremental = ica.dqdv_cycle(cycle_df)
+    Keyword Args:
+        points_pr_split (int): only used when investigating data using splits, defaults to 10.
+        max_points: None
+        voltage_resolution (float): used for interpolating voltage data (e.g. 0.005)
+        capacity_resolution: used for interpolating capacity data
+        minimum_splits (int): defaults to 3.
+        interpolation_method: scipy interpolation method
+        increment_method (str): defaults to "diff"
+        pre_smoothing (bool): set to True for pre-smoothing (window)
+        smoothing (bool): set to True for smoothing during differentiation (window)
+        post_smoothing (bool): set to True for post-smoothing (gaussian)
+        normalize (bool): set to True for normalizing to capacity
+        normalizing_factor (float):
+        normalizing_roof  (float):
+        savgol_filter_window_divisor_default (int): used for window smoothing, defaults to 50
+        savgol_filter_window_order: used for window smoothing
+        voltage_fwhm (float): used for setting the post-processing gaussian sigma, defaults to 0.01
+        gaussian_order (int): defaults to 0
+        gaussian_mode (str): defaults to "reflect"
+        gaussian_cval (float): defaults to 0.0
+        gaussian_truncate (float): defaults to 4.0
+
+    Example:
+        >>> cycle_df = my_data.get_cap(
+        >>> ...   1,
+        >>> ...   categorical_column=True,
+        >>> ...   method = "forth-and-forth"
+        >>> ...   insert_nan=False,
+        >>> ... )
+        >>> voltage, incremental = ica.dqdv_cycle(cycle_df)
 
     """
 
@@ -499,50 +495,52 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
     Returns a DataFrame with a 'voltage' and a 'incremental_capacity'
     column.
 
-        Args:
-            cycles (pandas.DataFrame): the cycle data ('cycle', 'voltage',
-                 'capacity', 'direction' (1 or -1)).
-            not_merged (bool): return list of frames instead of concatenating (
-                defaults to False).
+    Args:
+        cycles (pandas.DataFrame): the cycle data ('cycle', 'voltage',
+             'capacity', 'direction' (1 or -1)).
+        not_merged (bool): return list of frames instead of concatenating (
+            defaults to False).
 
-            **kwargs: key-word arguments to Converter:
-                points_pr_split (int): only used when investigating data using
-                    splits, defaults to 10.
-                max_points: None
-                voltage_resolution (float): used for interpolating voltage data
-                    (e.g. 0.005)
-                capacity_resolution: used for interpolating capacity data
-                minimum_splits (int): defaults to 3.
-                interpolation_method: scipy interpolation method
-                increment_method (str): defaults to "diff"
-                pre_smoothing (bool): set to True for pre-smoothing (window)
-                smoothing (bool): set to True for smoothing during
-                    differentiation (window)
-                post_smoothing (bool): set to True for post-smoothing (gaussian)
-                normalize (bool): set to True for normalizing to capacity
-                normalizing_factor (float):
-                normalizing_roof  (float):
-                savgol_filter_window_divisor_default (int): used for window
-                    smoothing, defaults to 50
-                savgol_filter_window_order: used for window smoothing
-                voltage_fwhm (float): used for setting the post-processing
-                    gaussian sigma, defaults to 0.01
-                gaussian_order (int): defaults to 0
-                gaussian_mode (str): defaults to "reflect"
-                gaussian_cval (float): defaults to 0.0
-                gaussian_truncate (float): defaults to 4.0
+    Returns:
+        ``pandas.DataFrame`` with columns 'cycle', 'voltage', 'dq'.
 
-        Returns:
-            pandas.DataFrame with columns 'cycle', 'voltage', 'dq'.
+    Additional key-word arguments are sent to Converter:
 
-        Example:
-            >>> cycles_df = my_data.get_cap(
-            >>> ...   categorical_column=True,
-            >>> ...   method = "forth-and-forth",
-            >>> ...   label_cycle_number=True,
-            >>> ...   insert_nan=False,
-            >>> ... )
-            >>> ica_df = ica.dqdv_cycles(cycles_df)
+    Keyword Args:
+        points_pr_split (int): only used when investigating data using
+            splits, defaults to 10.
+        max_points: None
+        voltage_resolution (float): used for interpolating voltage data
+            (e.g. 0.005)
+        capacity_resolution: used for interpolating capacity data
+        minimum_splits (int): defaults to 3.
+        interpolation_method: scipy interpolation method
+        increment_method (str): defaults to "diff"
+        pre_smoothing (bool): set to True for pre-smoothing (window)
+        smoothing (bool): set to True for smoothing during
+            differentiation (window)
+        post_smoothing (bool): set to True for post-smoothing (gaussian)
+        normalize (bool): set to True for normalizing to capacity
+        normalizing_factor (float):
+        normalizing_roof  (float):
+        savgol_filter_window_divisor_default (int): used for window
+            smoothing, defaults to 50
+        savgol_filter_window_order: used for window smoothing
+        voltage_fwhm (float): used for setting the post-processing
+            gaussian sigma, defaults to 0.01
+        gaussian_order (int): defaults to 0
+        gaussian_mode (str): defaults to "reflect"
+        gaussian_cval (float): defaults to 0.0
+        gaussian_truncate (float): defaults to 4.0
+
+    Example:
+        >>> cycles_df = my_data.get_cap(
+        >>> ...   categorical_column=True,
+        >>> ...   method = "forth-and-forth",
+        >>> ...   label_cycle_number=True,
+        >>> ...   insert_nan=False,
+        >>> ... )
+        >>> ica_df = ica.dqdv_cycles(cycles_df)
 
     """
 
@@ -620,7 +618,9 @@ def dqdv(
         savgol_filter_window_order: used for window smoothing
         max_points: restricting to max points in vector (capacity-selected)
 
-    Returns: voltage, dqdv
+    Returns:
+        (voltage, dqdv)
+
     """
     # Notes:
     #     PEC data
@@ -712,46 +712,50 @@ def dqdv_frames(cell, split=False, tidy=True, **kwargs):
             to True. Remark that this option is currently not available
             for non-split frames).
 
-        **kwargs: key-word arguments to Converter:
-            cycle = int or list of ints (cycle numbers), will process all (or up to max_cycle_number)
-                if not given or equal to None.
-            points_pr_split (int): only used when investigating data
-                using splits, defaults to 10.
-            max_points: None
-            voltage_resolution (float): used for interpolating voltage
-                data (e.g. 0.005)
-            capacity_resolution: used for interpolating capacity data
-            minimum_splits (int): defaults to 3.
-            interpolation_method: scipy interpolation method
-            increment_method (str): defaults to "diff"
-            pre_smoothing (bool): set to True for pre-smoothing (window)
-            smoothing (bool): set to True for smoothing during
-                differentiation (window)
-            post_smoothing (bool): set to True for post-smoothing
-                (gaussian)
-            normalize (bool): set to True for normalizing to capacity
-            normalizing_factor (float):
-            normalizing_roof  (float):
-            savgol_filter_window_divisor_default (int): used for window
-                smoothing, defaults to 50
-            savgol_filter_window_order: used for window smoothing
-            voltage_fwhm (float): used for setting the post-processing
-                gaussian sigma, defaults to 0.01
-            gaussian_order (int): defaults to 0
-            gaussian_mode (str): defaults to "reflect"
-            gaussian_cval (float): defaults to 0.0
-            gaussian_truncate (float): defaults to 4.0
-
     Returns:
-        pandas.DataFrame(s) with the following columns:
-            cycle: cycle number (if split is set to True).
-            voltage: voltage
-            dq: the incremental capacity
+        one or two ``pandas.DataFrame`` with the following columns:
+        cycle: cycle number (if split is set to True).
+        voltage: voltage
+        dq: the incremental capacity
+
+
+    Additional key-word arguments are sent to Converter:
+
+    Keyword Args:
+        cycle (int or list of ints (cycle numbers)): will process all (or up to max_cycle_number)
+            if not given or equal to None.
+        points_pr_split (int): only used when investigating data
+            using splits, defaults to 10.
+        max_points: None
+        voltage_resolution (float): used for interpolating voltage
+            data (e.g. 0.005)
+        capacity_resolution: used for interpolating capacity data
+        minimum_splits (int): defaults to 3.
+        interpolation_method: scipy interpolation method
+        increment_method (str): defaults to "diff"
+        pre_smoothing (bool): set to True for pre-smoothing (window)
+        smoothing (bool): set to True for smoothing during
+            differentiation (window)
+        post_smoothing (bool): set to True for post-smoothing
+            (gaussian)
+        normalize (bool): set to True for normalizing to capacity
+        normalizing_factor (float):
+        normalizing_roof  (float):
+        savgol_filter_window_divisor_default (int): used for window
+            smoothing, defaults to 50
+        savgol_filter_window_order: used for window smoothing
+        voltage_fwhm (float): used for setting the post-processing
+            gaussian sigma, defaults to 0.01
+        gaussian_order (int): defaults to 0
+        gaussian_mode (str): defaults to "reflect"
+        gaussian_cval (float): defaults to 0.0
+        gaussian_truncate (float): defaults to 4.0
 
     Example:
         >>> from cellpy.utils import ica
         >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
         >>> charge_df.plot(x=("voltage", "v"))
+
     """
     # TODO: should add option for normalizing based on first cycle capacity
     # this is e.g. done by first finding the first cycle capacity (nom_cap)

@@ -501,6 +501,7 @@ def check_loader_from_outside():
 
 def check_get():
     import cellpy
+
     name = "20200820_CoFBAT_slurry07B_01_cc_01"
     c = cellpy.get(name, instrument="arbin_sql")
     print(c)

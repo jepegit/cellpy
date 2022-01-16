@@ -1,6 +1,13 @@
 cellpy.utils package
 ====================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    cellpy.utils.batch_tools
+
 Submodules
 ----------
 
@@ -12,14 +19,6 @@ cellpy.utils.batch module
     :undoc-members:
     :show-inheritance:
     :exclude-members: check_iterate, check_new, check_standard
-
-cellpy.utils.batch\_tools module
---------------------------------
-
-.. automodule:: cellpy.utils.batch_tools
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 cellpy.utils.helpers module
 ---------------------------

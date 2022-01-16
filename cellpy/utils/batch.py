@@ -235,17 +235,19 @@ class Batch:
     def drop(self, cell_label=None):
         """Drop cells from the journal.
 
-        If cell_label is not given, cellpy will look into the journal for session
+        If ``cell_label`` is not given, ``cellpy`` will look into the journal for session
         info about bad cells, and if it finds it, it will remove those from the
         journal.
 
         Note! remember to save your journal again after modifying it.
+
         Note! this method has not been properly tested yet.
 
         Args:
             cell_label (str): the cell label of the cell you would like to remove.
 
-        Returns: cellpy.utils.batch object (returns a copy if `keep_old` is True).
+        Returns:
+            ``cellpy.utils.batch`` object (returns a copy if `keep_old` is ``True``).
 
         """
         if cell_label is None:
@@ -271,7 +273,7 @@ class Batch:
         Remark! To perform a reporting, cellpy needs to access all the data (and it might take some time).
 
         Returns:
-            pandas.DataFrame
+            ``pandas.DataFrame``
         """
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW].copy()
@@ -431,17 +433,17 @@ class Batch:
         using the methods available in Journal for now.
 
         Args:
-            description: the information and meta-data needed to generate the journal pages.
-                "empty": create an empty journal
-                dictionary: create journal pages from a dictionary
-                pd.DataFrame: create  journal pages from a pandas DataFrame
-                filename.json: load cellpy batch file
-                filename.xlsx: create journal pages from an excel file
+            description: the information and meta-data needed to generate the journal pages ('empty': create an
+                empty journal; ``dict``: create journal pages from a dictionary; ``pd.DataFrame``: create journal pages
+                from a ``pandas.DataFrame``: 'filename.json': load cellpy batch file; 'filename.xlsx': create journal
+                pages from an Excel file).
             from_db (bool): Deprecation Warning: this parameter will be removed as it is
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
 
-            **kwargs: sent to sub-function(s) (e.g. from_db -> simple_db_reader -> find_files -> filefinder.search_for_files)
+            **kwargs: sent to sub-function(s) (*e.g.* from_db -> simple_db_reader -> find_files ->
+                filefinder.search_for_files).
+
         """
 
         # TODO (jepe): create option to update journal without looking for files
@@ -719,10 +721,12 @@ class Batch:
 
     def make_summaries(self) -> None:
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
+
         self.exporter.do()
 
     def combine_summaries(self, export_to_csv=True, **kwargs) -> None:
         """Combine selected columns from each of the cells into single frames"""
+
         if export_to_csv:
             self.exporter.do()
         else:
@@ -769,15 +773,15 @@ def init(*args, **kwargs) -> Batch:
 
     Args:
         *args: passed directly to Batch()
-            name: name of batch
-            project: name of project
-            batch_col: batch column identifier
+            **name**: name of batch;
+            **project**: name of project;
+            **batch_col**: batch column identifier.
         **kwargs:
-            file_name: json file if loading from pages
-            default_log_level: "INFO" or "DEBUG"
-            The rest is passed directly to Batch()
+            **file_name**: json file if loading from pages;
+            **default_log_level**: "INFO" or "DEBUG";
+            the rest is passed directly to Batch().
 
-    Usage:
+    Examples:
         >>> empty_batch = Batch.init(db_reader=None)
         >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
         >>> normal_init_of_batch = Batch.init()
@@ -835,13 +839,13 @@ def load_pages(file_name) -> pd.DataFrame:
 def process_batch(*args, **kwargs) -> Batch:
     """Execute a batch run, either from a given file_name or by giving the name and project as input.
 
-    Usage:
-        process_batch(file_name | (name, project), **kwargs)
+    Examples:
+        >>> process_batch(file_name | (name, project), **kwargs)
 
     Args:
         *args: file_name or name and project (both string)
 
-    Optional keyword arguments:
+    Keyword Args:
         backend (str): what backend to use when plotting ('bokeh' or 'matplotlib').
             Defaults to 'matplotlib'.
         dpi (int): resolution used when saving matplotlib plot(s). Defaults to 300 dpi.
@@ -849,7 +853,7 @@ def process_batch(*args, **kwargs) -> Batch:
             'CRITICAL', 'DEBUG', or 'INFO'. The default is 'CRITICAL' (i.e. usually no log output to console).
 
     Returns:
-        cellpy.batch.Batch object
+        ``cellpy.batch.Batch`` object
     """
     silent = kwargs.pop("silent", False)
     backend = kwargs.pop("backend", None)
@@ -930,7 +934,7 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
         folder (str or pathlib.Path): folder containing the journal files.
         extension (str): extension for the journal files (used when creating a default glob-pattern).
         glob_pattern (str): optional glob pattern.
-        **kwargs: keyword arguments passed to ´batch.process_batch´.
+        **kwargs: keyword arguments passed to ``batch.process_batch``.
     """
 
     folder = pathlib.Path(folder)

@@ -725,15 +725,18 @@ def concatenate_summaries(
             include a cell_type col.
 
     Returns:
-        Multi-index pandas.DataFrame
-            top-level columns or second col for melted: cell-names (cell_name)
-            second-level columns or first col for melted: summary headers (summary_headers)
-            row-index or third col for melted: cycle number (cycle_index)
-            cell_type on forth col for melted if cell_type_split_position is given
+        Multi-index ``pandas.DataFrame``
 
+    Notes:
+        The returned ``DataFrame`` has the following structure:
 
+        - top-level columns or second col for melted: cell-names (cell_name)
+        - second-level columns or first col for melted: summary headers (summary_headers)
+        - row-index or third col for melted: cycle number (cycle_index)
+        - cell_type on forth col for melted if cell_type_split_position is given
 
     """
+
     # TODO: refactor me
     # TODO: check if selecting normalize_cycles and group_it performs the operation in logical order
     if normalize_capacity_on is not None:
