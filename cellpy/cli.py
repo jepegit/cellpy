@@ -1,5 +1,7 @@
+import base64
 import os
 import re
+import urllib
 from pathlib import Path
 import sys
 import subprocess
@@ -9,7 +11,7 @@ import click
 import pkg_resources
 import pathlib
 
-from github import Github
+from github import Github, GithubException
 
 from cellpy.parameters import prmreader
 from cellpy.exceptions import ConfigFileNotWritten
@@ -1152,7 +1154,18 @@ def _download_g_blob(name, local_path):
 
 
 def _download_g_file(repo, name, local_path):
-    file_content = repo.get_file_contents(name)
+    WORKING = True
+    BRANCH = "master"
+    print(f"Trying to access and download {name} to {local_path}")
+
+    if not WORKING:
+        print(f"Trying to access and download {name} to {local_path}")
+        print(" -> SORRY - THIS FEATURE IS CURRENTLY DISABLED!")
+        return
+
+    file_content_encoded = repo.get_contents(urllib.parse.quote(name), ref=BRANCH).content
+    file_content = base64.b64decode(file_content_encoded)
+
     dirs = local_path.parent
 
     if not dirs.is_dir():
