@@ -17,7 +17,7 @@ import pandas as pd
 import cellpy.readers.core as core
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.readers.instruments.configurations import (
-    register_configuration,
+    register_configuration_from_module,
     ModelParameters,
 )
 from cellpy.readers.instruments.processors import pre_processors, post_processors
@@ -202,11 +202,11 @@ class TxtLoader(Loader):
         """initiates the TxtLoader class.
 
         Several attributes can be set during initialization of the class as **kwargs. Remark that some also
-        can be provided as arguments to the `loader` method and will then automatically be "transparent"
-        to the `cellpy.get` function. So if you would like to give the user access to modify these arguments,
-        you should implement them in the `loader` method.
+        can be provided as arguments to the ``loader`` method and will then automatically be "transparent"
+        to the ``cellpy.get`` function. So if you would like to give the user access to modify these arguments,
+        you should implement them in the ``loader`` method.
 
-        Key word attributes:
+        Keyword Args:
             model (str): short name of the (already implemented) sub-model.
             sep (str): delimiter.
             skiprows (int): number of lines to skip.
@@ -217,9 +217,10 @@ class TxtLoader(Loader):
             post_processors (dict): post-processing steps to make after loading the data, but before
                 returning them to the caller.
             include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
-            keep_all_columns (bool): load all columns, also columns that are not 100% necessary for `cellpy` to work.
+            keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
                 Remark that the configuration settings for the sub-model must include a list of column header names
                 that should be kept if keep_all_columns is False (default).
+
         """
 
         self.auto_register_config = True
@@ -289,7 +290,7 @@ class TxtLoader(Loader):
             raise Exception(
                 f"the model {self.model} does not have any defined configuration"
             )
-        return register_configuration(self.model, model_module_name)
+        return register_configuration_from_module(self.model, model_module_name)
 
     def get_raw_units(self):
         """Include the settings for the units used by the instrument.

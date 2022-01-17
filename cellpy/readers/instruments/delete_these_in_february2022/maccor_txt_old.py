@@ -14,7 +14,7 @@ from cellpy.readers.core import FileID, Cell
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.base import Loader
 from cellpy.readers.instruments.configurations import (
-    register_configuration,
+    register_configuration_from_module,
     ModelParameters,
 )
 from cellpy.readers.instruments.processors import pre_processors, post_processors
@@ -33,7 +33,7 @@ def configuration(name) -> ModelParameters:
     model_module_name = SUPPORTED_MODELS.get(name, None)
     if model_module_name is None:
         raise Exception(f"the model {name} does not have any defined configuration")
-    return register_configuration(name, model_module_name)
+    return register_configuration_from_module(name, model_module_name)
 
 
 # TODO: create a class that is a general CSV loader that can be subclassed

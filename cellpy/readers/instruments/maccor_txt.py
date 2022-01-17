@@ -18,8 +18,8 @@ SUPPORTED_MODELS = {
 class MaccorTxtLoader(TxtLoader):
     """Class for loading data from Maccor txt files."""
 
-    default_model = prms.Instruments.Maccor["default_model"]
-    supported_models = SUPPORTED_MODELS
+    default_model = prms.Instruments.Maccor["default_model"]  # Required
+    supported_models = SUPPORTED_MODELS  # Required
 
     @staticmethod
     def get_headers_aux(raw):

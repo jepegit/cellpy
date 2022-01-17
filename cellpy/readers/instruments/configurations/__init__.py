@@ -2,6 +2,14 @@
 from dataclasses import dataclass, field
 from importlib import import_module
 
+# TODO: make tests.
+# TODO: move this into its own module (not __init__).
+# TODO: make "readers" for yaml and json.
+# TODO: make a new "folder" in cellpy for json/yaml files for instruments for users.
+# TODO: refactor ``custom`` reader so that it uses this.
+# TODO: document for devs.
+# TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
+
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
 
 
@@ -24,7 +32,35 @@ class ModelParameters:
     post_processors: dict = field(default_factory=dict)
 
 
-def register_configuration(
+def register_configuration_from_yaml_file(
+    name: str = "one", module: str = "maccor_txt_one"
+) -> ModelParameters:
+    """register a module (.yml file) and return it.
+
+    This function will dynamically import the given module from the
+    cellpy.readers.instruments.configurations module and return it.
+
+    Returns: ModelParameters
+
+    """
+    raise NotImplementedError
+
+
+def register_configuration_from_json_file(
+    name: str = "one", module: str = "maccor_txt_one"
+) -> ModelParameters:
+    """register a module (.json file) and return it.
+
+    This function will dynamically import the given module from the
+    cellpy.readers.instruments.configurations module and return it.
+
+    Returns: ModelParameters
+
+    """
+    raise NotImplementedError
+
+
+def register_configuration_from_module(
     name: str = "one", module: str = "maccor_txt_one"
 ) -> ModelParameters:
     """register a python module (.py file) and return it.
