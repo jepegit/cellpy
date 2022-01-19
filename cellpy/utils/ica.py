@@ -328,7 +328,7 @@ class Converter:
 
         elif self.increment_method == "hist":
             logging.debug(" - diff using HIST")
-            # TODO: Asbjoern, maybe you can put your method here?
+            # TODO: Asbjoern, maybe you can put your method here? Yes
             raise NotImplementedError
 
     def post_process_data(
