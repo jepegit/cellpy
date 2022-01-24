@@ -328,8 +328,10 @@ class Converter:
 
         elif self.increment_method == "hist":
             logging.debug(" - diff using HIST")
-            # TODO: Asbjoern, maybe you can put your method here? Yes
             raise NotImplementedError
+            self.incremental_capacity = ()
+
+            # TODO: Asbjoern, maybe you can put your method here? Yes
 
     def post_process_data(
         self, voltage=None, incremental_capacity=None, voltage_step=None
