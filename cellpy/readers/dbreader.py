@@ -101,9 +101,9 @@ class Reader(object):
         units = {
             "int": np.int32,
             "float": np.float64,
-            "str": np.str,
-            "bol": np.bool,
-            "cat": np.str,
+            "str": str,
+            "bol": bool,
+            "cat": str,
         }
         return units.get(label.lower(), object)
 
