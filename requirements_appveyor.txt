@@ -14,3 +14,4 @@ pytest-benchmark
 pytest-timeout
 cookiecutter
 tqdm
+sqlalchemy
