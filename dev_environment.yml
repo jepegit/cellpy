@@ -36,6 +36,7 @@ dependencies:
   - ipykernel
   - ipywidgets
   - python-box
+  - sqlalchemy
   - pip:
     - pytest-benchmark
     - pytest-timeout

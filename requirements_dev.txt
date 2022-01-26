@@ -17,4 +17,5 @@ invoke
 requests
 cookiecutter
 tqdm
+sqlalchemy
 

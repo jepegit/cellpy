@@ -31,3 +31,4 @@ dependencies:
     - jupyter
     - jupyterlab
     - qgrid
+    - sqlalchemy
