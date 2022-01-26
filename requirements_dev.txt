@@ -18,4 +18,3 @@ requests
 cookiecutter
 tqdm
 sqlalchemy
-
