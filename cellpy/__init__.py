@@ -13,7 +13,7 @@ from cellpy.readers import cellreader
 from cellpy.readers import dbreader
 from cellpy.readers import filefinder
 from cellpy.parameters import prmreader
-from cellpy.parameters import prms
+from cellpy.parameters import prms  # TODO: this might give circular ref
 import cellpy._version
 
 __version__ = cellpy._version.__version__

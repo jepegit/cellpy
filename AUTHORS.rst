@@ -7,7 +7,6 @@ Development Lead
 
 * Jan Petter Maehlen <jepe@ife.no>
 * Muhammad Abdelhamid <muhammad.abdelhamid@ife.no>
-* Amund Midtgard Raniseth <amund.raniseth@gmail.com>
 * Asbjoern Ulvestad <asbjorn.ulbestad@ife.no>
 
 
@@ -18,4 +17,5 @@ Contributors
 * Ulrik Aalborg Eriksen <ulrikaer@stud.ntnu.no>
 * Julia Wind <julia.wind@ife.no>
 * Carl Erik Lie Foss <carl.foss@ife.no>
+* Amund Midtgard Raniseth <amund.raniseth@gmail.com>
 

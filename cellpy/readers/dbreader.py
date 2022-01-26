@@ -5,13 +5,13 @@ import tempfile
 import warnings
 import logging
 from dataclasses import asdict
+from datetime import datetime
+import re
 
 import pandas as pd
 import numpy as np
 
 from cellpy.parameters import prms
-
-
 # logger = logging.getLogger(__name__)
 
 
@@ -26,26 +26,15 @@ class DbSheetCols(object):
 
 
 class Reader(object):
-    def __init__(self, db_file=None, db_datadir=None, db_datadir_processed=None):
+    def __init__(self, db_file=None, db_datadir=None, db_datadir_processed=None, db_frame=None):
+        """Simple excel reader.
 
-        if not db_file:
-            self.db_path = prms.Paths.db_path
-            self.db_filename = prms.Paths.db_filename
-            self.db_file = os.path.join(self.db_path, self.db_filename)
-        else:
-            self.db_path = os.path.dirname(db_file)
-            self.db_filename = os.path.basename(db_file)
-            self.db_file = db_file
-
-        if not db_datadir:
-            self.db_datadir = prms.Paths.rawdatadir
-        else:
-            self.db_datadir = db_datadir
-
-        if not db_datadir_processed:
-            self.db_datadir_processed = prms.Paths.cellpydatadir
-        else:
-            self.db_datadir_processed = db_datadir_processed
+        Args:
+            db_file (str, pathlib.Path): xlsx-file to read.
+            db_datadir(str, pathlib.Path): path where raw date is located.
+            db_datadir_processed (str, pathlib.Path): path where cellpy files are located.
+            db_frame (pandas.DataFrame): use this instead of reading from xlsx-file.
+        """
 
         self.db_sheet_table = prms.Db.db_table_name
         self.db_header_row = prms.Db.db_header_row
@@ -57,11 +46,38 @@ class Reader(object):
         self.db_sheet_cols = DbSheetCols()
         self.db_sheet_cols_units = DbSheetCols(1)
 
-        self.skiprows, self.nrows = self._find_out_what_rows_to_skip()
+        if not db_datadir:
+            self.db_datadir = prms.Paths.rawdatadir
+        else:
+            self.db_datadir = db_datadir
+
+        if not db_datadir_processed:
+            self.db_datadir_processed = prms.Paths.cellpydatadir
+        else:
+            self.db_datadir_processed = db_datadir_processed
+
+        if not db_file:
+            self.db_path = prms.Paths.db_path
+            self.db_filename = prms.Paths.db_filename
+            self.db_file = os.path.join(self.db_path, self.db_filename)
+        else:
+            self.db_path = os.path.dirname(db_file)
+            self.db_filename = os.path.basename(db_file)
+            self.db_file = db_file
+
         self.dtypes_dict = self._create_dtypes_dict()
         self.headers = self.dtypes_dict.keys()
-        logging.debug("opening sheet")
-        self.table = self._open_sheet()
+
+        if db_frame is not None:
+            print("Using frame instead of file")
+            self.table = db_frame.copy()
+        else:
+
+            self.skiprows, self.nrows = self._find_out_what_rows_to_skip()
+            logging.debug("opening sheet")
+
+            self.table = self._open_sheet()
+
         logging.debug("got table")
         logging.debug(self.table)
 
@@ -71,6 +87,61 @@ class Reader(object):
         txt += "Reader.table.head():\n"
         txt += str(self.table.head())
         return txt
+
+    @staticmethod
+    def _extract_date_from_cell_name(cell_name, strf="%Y%m%d", regexp=None, splitter="_", position=0, start=0, end=12):
+        """Extract date given a cell name (or filename).
+
+        Uses regexp if given to find date txt, if not it uses splitter if splitter is not None or "",
+        else start-stop. Uses strf to parse for date in date txt.
+        if regexp is "auto", regexp is interpreted from strf
+
+        Args:
+            cell_name (str): extract date from.
+            strf (str): datetime string formatter.
+            regexp (str | "auto"): regular expression.
+            splitter (str): split parts into sub-parts.
+            position (int): selected sub-part.
+            start (int): number of first character in the date part.
+            end (int): number of last character in the date part.
+
+        Returns:
+            datetime.datetime object
+        """
+
+        if regexp is not None:
+            if regexp == "auto":
+                year_r = r"%Y"
+                month_r = r"%m"
+                day_r = r"%d"
+
+                regexp = strf.replace("\\", "\\\\").replace("-", r"\-")
+                regexp = regexp.replace(year_r, "[0-9]{4}").replace(month_r, "[0-9]{2}").replace(day_r, "[0-9]{2}")
+                regexp = f"({regexp})"
+
+            m = re.search(regexp, cell_name)
+            datestr = m[0]
+
+        elif splitter:
+            datestr = cell_name.split(splitter)[position]
+
+        else:
+            datestr = cell_name[start:end]
+
+        try:
+
+            date = datetime.strptime(datestr, strf)
+        except ValueError as e:
+            logging.debug(e)
+            return None
+
+        return date
+
+    def extract_date_from_cell_name(self, force=False):
+        if force or "date" not in self.table.columns:
+            self.table = (
+                self.table.assign(date=self.table.file_name_indicator.apply(self._extract_date_from_cell_name))
+            )
 
     # --------not fixed from here -------------------------------
 
