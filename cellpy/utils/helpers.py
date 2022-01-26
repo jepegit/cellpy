@@ -963,8 +963,8 @@ def select_summary_based_on_rate(
         on (str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         rate_std (float): allow for this inaccuracy in C-rate when selecting cycles
         rate_column (str): column header name of the rate column,
-        inverse (bool): select steps that does not have the given C-rate.
-        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        inverse (bool): select steps that do not have the given C-rate.
+        inverted (bool): select cycles that do not have the steps filtered by given C-rate.
         fix_index (bool): automatically set cycle indexes as the index for the summary dataframe if not already set.
 
     Returns:
