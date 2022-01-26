@@ -252,11 +252,11 @@ def get_cellpy_units():
 
 def get_headers_normal():
     """Returns a dictionary containing the header-strings for the normal data
-        (used as column headers for the main data pandas DataFrames)"""
+    (used as column headers for the main data pandas DataFrames)"""
     return headers_normal
 
 
 def get_headers_step_table():
     """Returns a dictionary containing the header-strings for the steps table
-        (used as column headers for the steps pandas DataFrames)"""
+    (used as column headers for the steps pandas DataFrames)"""
     return headers_step_table

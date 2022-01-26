@@ -24,11 +24,9 @@ from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.base import Loader
 from cellpy import prms
 
-# TODO: get more meta data from the SQL db
-# TODO: update the cellpy.get function
-# TODO: update the batch functionality (including filefinder)
-# TODO: make routine for "setting up the SQL Server" so that it is accessible and document it
-# TODO: make loader for csv-files exported from SQL Server using Arbin's GUI.
+# TODO: @muhammad - get more meta data from the SQL db
+# TODO: @jepe - update the batch functionality (including filefinder)
+# TODO: @muhammad - make routine for "setting up the SQL Server" so that it is accessible and document it
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
@@ -127,9 +125,9 @@ def from_arbin_to_datetime(n):
 
 
 class ArbinSQLLoader(Loader):
-    """ Class for loading arbin-data from MS SQL server."""
+    """Class for loading arbin-data from MS SQL server."""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
         self.arbin_headers_normal = (
             get_headers_normal()
@@ -344,10 +342,8 @@ class ArbinSQLLoader(Loader):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = (
-            "Driver={"
-            + SQL_DRIVER
-            + "}"
-            + f";Server={SQL_SERVER};UID={SQL_UID};PWD={SQL_PWD};Trusted_Connection=yes;"
+            f"Driver={{{SQL_DRIVER}}};"
+            + f"Server={SQL_SERVER};UID={SQL_UID};PWD={SQL_PWD};Trusted_Connection=yes;"
         )
         master_q = (
             "SELECT Database_Name, Test_Name FROM "
@@ -397,7 +393,7 @@ class ArbinSQLLoader(Loader):
         return data_df, stat_df
 
 
-def test_sql_loader(server: str = None, tests: list = None):
+def check_sql_loader(server: str = None, tests: list = None):
     test_name = tuple(tests) + ("",)  # neat trick :-)
     print(f"** test str: {test_name}")
     con_str = "Driver={SQL Server};Server=" + server + ";Trusted_Connection=yes;"
@@ -451,18 +447,18 @@ def test_sql_loader(server: str = None, tests: list = None):
     return data_df, stat_df
 
 
-def test_query():
+def check_query():
     import pathlib
 
     name = ["20201106_HC03B1W_1_cc_01"]
-    dd, ds = test_sql_loader(SQL_SERVER, name)
+    dd, ds = check_sql_loader(SQL_SERVER, name)
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     dd.to_clipboard()
     input("x")
     ds.to_clipboard()
 
 
-def test_loader():
+def check_loader():
     print(" Testing connection to arbin sql server ".center(80, "-"))
 
     sql_loader = ArbinSQLLoader()
@@ -472,7 +468,7 @@ def test_loader():
     return cell
 
 
-def test_loader_from_outside():
+def check_loader_from_outside():
     from cellpy import cellreader
     import matplotlib.pyplot as plt
 
@@ -488,9 +484,9 @@ def test_loader_from_outside():
     raw = c.cell.raw
     steps = c.cell.steps
     summary = c.cell.summary
-    raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
-    steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
-    summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
+    raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
+    steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
+    summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
 
     n = c.get_number_of_cycles()
     print(f"number of cycles: {n}")
@@ -501,7 +497,15 @@ def test_loader_from_outside():
     plt.show()
 
 
+def check_get():
+    import cellpy
+
+    name = "20200820_CoFBAT_slurry07B_01_cc_01"
+    c = cellpy.get(name, instrument="arbin_sql")
+    print(c)
+
+
 if __name__ == "__main__":
     # test_query()
     # cell = test_loader()
-    test_loader_from_outside()
+    check_get()

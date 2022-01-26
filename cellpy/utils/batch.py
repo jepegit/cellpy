@@ -8,16 +8,18 @@ import os
 import sys
 
 import pandas as pd
+from pandas import Index
 from tqdm.auto import tqdm
 
 from cellpy import prms
 from cellpy import log
 import cellpy.exceptions
 from cellpy.parameters.internal_settings import (
-    get_headers_step_table,
-    get_headers_journal,
-    get_headers_summary,
+    headers_journal,
+    headers_summary,
+    headers_step_table,
 )
+from cellpy.utils.batch_tools.batch_core import Data
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
@@ -30,14 +32,12 @@ from cellpy.utils.batch_tools.dumpers import ram_dumper
 
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
-hdr_journal = get_headers_journal()
-hdr_summary = get_headers_summary()
 
 COLUMNS_SELECTED_FOR_VIEW = [
-    hdr_journal.mass,
-    hdr_journal.total_mass,
-    hdr_journal.loading,
-    hdr_journal.nom_cap,
+    headers_journal.mass,
+    headers_journal.total_mass,
+    headers_journal.loading,
+    headers_journal.nom_cap,
 ]
 
 
@@ -135,7 +135,7 @@ class Batch:
         self.plotter = CyclingSummaryPlotter()
         self.plotter.assign(self.experiment)
         self._journal_name = self.journal_name
-        self.headers_step_table = get_headers_step_table()
+        self.headers_step_table = headers_step_table
 
     def __str__(self):
         return str(self.experiment)
@@ -156,6 +156,10 @@ class Batch:
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
         return pages
+
+    @property
+    def name(self):
+        return self.experiment.journal.name
 
     def _check_cell_raw(self, cell_id):
         try:
@@ -182,7 +186,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].max()
+            return s[headers_summary.charge_capacity].max()
 
         except Exception as e:
             return None
@@ -191,7 +195,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].min()
+            return s[headers_summary.charge_capacity].min()
 
         except Exception as e:
             return None
@@ -200,7 +204,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].mean()
+            return s[headers_summary.charge_capacity].mean()
 
         except Exception as e:
             return None
@@ -209,7 +213,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[hdr_summary.charge_capacity].std()
+            return s[headers_summary.charge_capacity].std()
 
         except Exception as e:
             return None
@@ -231,17 +235,19 @@ class Batch:
     def drop(self, cell_label=None):
         """Drop cells from the journal.
 
-        If cell_label is not given, cellpy will look into the journal for session
+        If ``cell_label`` is not given, ``cellpy`` will look into the journal for session
         info about bad cells, and if it finds it, it will remove those from the
         journal.
 
         Note! remember to save your journal again after modifying it.
+
         Note! this method has not been properly tested yet.
 
         Args:
             cell_label (str): the cell label of the cell you would like to remove.
 
-        Returns: cellpy.utils.batch object (returns a copy if `keep_old` is True).
+        Returns:
+            ``cellpy.utils.batch`` object (returns a copy if `keep_old` is ``True``).
 
         """
         if cell_label is None:
@@ -262,12 +268,12 @@ class Batch:
                 self.pages = self.pages.drop(cell_label)
 
     def report(self, stylize=True):
-        """ Create a report on all the cells in the batch object.
+        """Create a report on all the cells in the batch object.
 
         Remark! To perform a reporting, cellpy needs to access all the data (and it might take some time).
 
         Returns:
-            pandas.DataFrame
+            ``pandas.DataFrame``
         """
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW].copy()
@@ -344,7 +350,7 @@ class Batch:
 
     @property
     def summaries(self):
-        # should add link-mode?
+        """Concatenated summaries from all cells (multiindex dataframe)."""
         try:
             return self._concat_memory_dumped("summary_engine")
         except KeyError:
@@ -354,18 +360,19 @@ class Batch:
 
     @property
     def summary_headers(self):
+        """The column names of the concatenated summaries"""
         try:
             return self.summaries.columns.get_level_values(0)
         except AttributeError:
             logging.info("can't get any columns")
 
     @property
-    def cell_names(self):
+    def cell_names(self) -> list:
         return self.experiment.cell_names
 
     @property
     def labels(self):
-        # Plan: allow cells to both have a label and a cell_name, where that latter should be an unique
+        # Plan: allow cells to both have a label and a cell_name, where that latter should be a unique
         # identifier. Consider also to allow for a group-name.
         # The label and cell name can be the same. Consider allowing several cells to share the same label
         # thus returning several cellpy cell objects. Our use "group" for this purpose.
@@ -375,23 +382,28 @@ class Batch:
         return self.experiment.cell_names
 
     @property
-    def cells(self):
+    def cells(self) -> Data:
+        """access cells as a Data object (attribute lookup and automatic loading)"""
         return self.experiment.data
 
     @property
-    def raw_headers(self):
-        return self.experiment.data[0].cell.raw.columns
+    def cell_summary_headers(self) -> Index:
+        return self.experiment.data[self.experiment.cell_names[0]].cell.summary.columns
 
     @property
-    def step_headers(self):
-        return self.experiment.data[0].cell.steps.columns
+    def cell_raw_headers(self) -> Index:
+        return self.experiment.data[self.experiment.cell_names[0]].cell.raw.columns
 
     @property
-    def pages(self):
+    def cell_step_headers(self) -> Index:
+        return self.experiment.data[self.experiment.cell_names[0]].cell.steps.columns
+
+    @property
+    def pages(self) -> pd.DataFrame:
         return self.experiment.journal.pages
 
     @pages.setter
-    def pages(self, df):
+    def pages(self, df: pd.DataFrame):
         self.experiment.journal.pages = df
         all_cell_labels = set(self.experiment.cell_data_frames.keys())
         cell_labels_to_keep = set(self.journal.pages.index)
@@ -400,7 +412,7 @@ class Batch:
             del self.experiment.cell_data_frames[cell_label]
 
     @property
-    def journal(self):
+    def journal(self) -> LabJournal:
         return self.experiment.journal
 
     @journal.setter
@@ -421,17 +433,17 @@ class Batch:
         using the methods available in Journal for now.
 
         Args:
-            description: the information and meta-data needed to generate the journal pages.
-                "empty": create an empty journal
-                dictionary: create journal pages from a dictionary
-                pd.DataFrame: create  journal pages from a pandas DataFrame
-                filename.json: load cellpy batch file
-                filename.xlsx: create journal pages from an excel file
+            description: the information and meta-data needed to generate the journal pages ('empty': create an
+                empty journal; ``dict``: create journal pages from a dictionary; ``pd.DataFrame``: create journal pages
+                from a ``pandas.DataFrame``: 'filename.json': load cellpy batch file; 'filename.xlsx': create journal
+                pages from an Excel file).
             from_db (bool): Deprecation Warning: this parameter will be removed as it is
                 the default anyway. Generate the pages from a db (the default option).
                 This will be over-ridden if description is given.
 
-            **kwargs: sent to sub-function(s) (e.g. from_db -> simple_db_reader -> find_files -> filefinder.search_for_files)
+            **kwargs: sent to sub-function(s) (*e.g.* from_db -> simple_db_reader -> find_files ->
+                filefinder.search_for_files).
+
         """
 
         # TODO (jepe): create option to update journal without looking for files
@@ -553,18 +565,18 @@ class Batch:
             self.experiment.journal.paginate()
             self.duplicate_journal(prms.Paths.batchfiledir)
 
-    def create_folder_structure(self):
+    def create_folder_structure(self) -> None:
         warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
         self.experiment.journal.paginate()
         logging.info("created folders")
 
-    def paginate(self):
+    def paginate(self) -> None:
         """Create the folders where cellpy will put its output."""
 
         self.experiment.journal.paginate()
         logging.info("created folders")
 
-    def save_journal(self):
+    def save_journal(self) -> None:
         """Save the journal (json-format).
 
         The journal file will be saved in the project directory and in the
@@ -578,7 +590,7 @@ class Batch:
         self.duplicate_journal(prms.Paths.batchfiledir)
         logging.info("duplicating journal pages")
 
-    def duplicate_journal(self, folder=None):
+    def duplicate_journal(self, folder=None) -> None:
         """Copy the journal to folder.
 
         Args:
@@ -599,7 +611,9 @@ class Batch:
         except shutil.SameFileError:
             logging.debug("same file exception encountered")
 
-    def duplicate_cellpy_files(self, location="standard", selector=None, **kwargs):
+    def duplicate_cellpy_files(
+        self, location: str = "standard", selector: dict = None, **kwargs
+    ) -> None:
         """Copy the cellpy files and make a journal with the new names available in
         the current folder.
 
@@ -670,47 +684,62 @@ class Batch:
 
     # TODO: list_journals?
 
-    def link(self):
-        """Link journal content to the cellpy-files and load the step information."""
-        self.experiment.link()
+    def link(self, max_cycle=None, force_combine_summaries=False) -> None:
+        """Link journal content to the cellpy-files and load the step information.
 
-    def load(self):
+        Args:
+            max_cycle (int): set maximum cycle number to link to.
+            force_combine_summaries (bool): automatically run combine_summaries (set this to True
+                if you are re-linking without max_cycle for a batch that previously were linked
+                with max_cycle)
+
+        """
+
+        self.experiment.link(max_cycle=max_cycle)
+        if force_combine_summaries or max_cycle:
+            self.summary_collector.do(reset=True)
+
+    def load(self) -> None:
         # does the same as update
         warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> None:
         """Load cells as defined in the journal"""
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
 
-    def export_cellpy_files(self, path=None, **kwargs):
+    def export_cellpy_files(self, path=None, **kwargs) -> None:
         if path is None:
             path = pathlib.Path(".").resolve()
         self.experiment.errors["export_cellpy_files"] = []
         self.experiment.export_cellpy_files(path=path, **kwargs)
 
-    def recalc(self, **kwargs):
+    def recalc(self, **kwargs) -> None:
         self.experiment.errors["recalc"] = []
         self.experiment.recalc(**kwargs)
 
-    def make_summaries(self):
+    def make_summaries(self) -> None:
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
+
         self.exporter.do()
 
-    def combine_summaries(self, export_to_csv=True):
+    def combine_summaries(self, export_to_csv=True, **kwargs) -> None:
         """Combine selected columns from each of the cells into single frames"""
+
         if export_to_csv:
             self.exporter.do()
         else:
-            self.summary_collector.do()
+            self.summary_collector.do(**kwargs)
 
-    def plot_summaries(self, output_filename=None, backend=None):
+    def plot_summaries(
+        self, output_filename=None, backend=None, reload_data=False, **kwargs
+    ) -> None:
         """Plot the summaries"""
 
-        if "summary_engine" not in self.experiment.memory_dumped:
+        if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
             logging.debug("running summary_collector")
-            self.summary_collector.do()
+            self.summary_collector.do(reset=True)
 
         if backend is None:
             backend = prms.Batch.backend
@@ -736,23 +765,23 @@ class Batch:
                     "could not find the bokeh module -> using matplotlib instead"
                 )
 
-        self.plotter.do()
+        self.plotter.do(**kwargs)
 
 
-def init(*args, **kwargs):
+def init(*args, **kwargs) -> Batch:
     """Returns an initialized instance of the Batch class.
 
     Args:
         *args: passed directly to Batch()
-            name: name of batch
-            project: name of project
-            batch_col: batch column identifier
+            **name**: name of batch;
+            **project**: name of project;
+            **batch_col**: batch column identifier.
         **kwargs:
-            file_name: json file if loading from pages
-            default_log_level: "INFO" or "DEBUG"
-            The rest is passed directly to Batch()
+            **file_name**: json file if loading from pages;
+            **default_log_level**: "INFO" or "DEBUG";
+            the rest is passed directly to Batch().
 
-    Usage:
+    Examples:
         >>> empty_batch = Batch.init(db_reader=None)
         >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
         >>> normal_init_of_batch = Batch.init()
@@ -774,7 +803,7 @@ def init(*args, **kwargs):
     return Batch(*args, **kwargs)
 
 
-def from_journal(journal_file, autolink=True):
+def from_journal(journal_file, autolink=True) -> Batch:
     """Create a Batch from a journal file"""
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     b = init(db_reader=None, file_name=journal_file)
@@ -783,7 +812,7 @@ def from_journal(journal_file, autolink=True):
     return b
 
 
-def load_pages(file_name):
+def load_pages(file_name) -> pd.DataFrame:
     """Retrieve pages from a Journal file.
 
     This function is here to let you easily inspect a Journal file without
@@ -802,23 +831,21 @@ def load_pages(file_name):
     logging.info(f"Loading pages from {file_name}")
     try:
         pages, *_ = LabJournal.read_journal_jason_file(file_name)
+        return pages
     except cellpy.exceptions.UnderDefined:
         logging.critical("could not find any pages.")
-        return
-
-    return pages
 
 
-def process_batch(*args, **kwargs):
+def process_batch(*args, **kwargs) -> Batch:
     """Execute a batch run, either from a given file_name or by giving the name and project as input.
 
-    Usage:
-        process_batch(file_name | (name, project), **kwargs)
+    Examples:
+        >>> process_batch(file_name | (name, project), **kwargs)
 
     Args:
         *args: file_name or name and project (both string)
 
-    Optional keyword arguments:
+    Keyword Args:
         backend (str): what backend to use when plotting ('bokeh' or 'matplotlib').
             Defaults to 'matplotlib'.
         dpi (int): resolution used when saving matplotlib plot(s). Defaults to 300 dpi.
@@ -826,7 +853,7 @@ def process_batch(*args, **kwargs):
             'CRITICAL', 'DEBUG', or 'INFO'. The default is 'CRITICAL' (i.e. usually no log output to console).
 
     Returns:
-        cellpy.batch.Batch object
+        ``cellpy.batch.Batch`` object
     """
     silent = kwargs.pop("silent", False)
     backend = kwargs.pop("backend", None)
@@ -907,7 +934,7 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
         folder (str or pathlib.Path): folder containing the journal files.
         extension (str): extension for the journal files (used when creating a default glob-pattern).
         glob_pattern (str): optional glob pattern.
-        **kwargs: keyword arguments passed to ´batch.process_batch´.
+        **kwargs: keyword arguments passed to ``batch.process_batch``.
     """
 
     folder = pathlib.Path(folder)

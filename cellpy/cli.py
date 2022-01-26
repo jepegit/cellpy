@@ -1,4 +1,7 @@
+import base64
 import os
+import re
+import urllib
 from pathlib import Path
 import sys
 import subprocess
@@ -19,7 +22,6 @@ VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
 USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
-GITHUB_SIZE_LIMIT = 1_000_000
 
 
 def save_prm_file(prm_filename):
@@ -103,6 +105,7 @@ def cli():
     "--root-dir",
     "-d",
     default=None,
+    type=click.Path(),
     help="Use custom root dir. If not given, your home directory"
     " will be used as the top level where cellpy-folders"
     " will be put. The folder path must follow"
@@ -110,12 +113,20 @@ def cli():
     " $ cellpy setup -d 'MyDir'",
 )
 @click.option(
+    "--folder-name",
+    "-n",
+    default=None,
+    type=click.Path(),
+    help="",
+)
+@click.option(
     "--testuser", "-t", default=None, help="Fake name for fake user (for tesing)"
 )
-def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
+def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, testuser):
     """This will help you to setup cellpy."""
 
     click.echo("[cellpy] (setup)")
+    click.echo(f"[cellpy] root-dir: {root_dir}")
 
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
@@ -129,6 +140,10 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         click.echo(f" - dst_file: {dst_file}")
         click.echo(f" - not_relative: {not_relative}")
 
+    if root_dir and not interactive:
+        click.echo("[cellpy] custom root-dir can only be used in interactive mode")
+        click.echo("[cellpy] -> setting interactive mode")
+        interactive = True
     if not root_dir:
         root_dir = userdir
         # root_dir = pathlib.Path(os.getcwd())
@@ -145,17 +160,31 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, testuser):
         click.echo(f"[cellpy] (setup) DEV-MODE dst_file: {dst_file}")
 
     if not pathlib.Path(dst_file).is_file():
+        click.echo(f"[cellpy] {dst_file} not found -> I will make one for you!")
         reset = True
 
     if interactive:
         click.echo(" interactive mode ".center(80, "-"))
-        _update_paths(root_dir, not not_relative, dry_run=dry_run, reset=reset)
+        _update_paths(
+            custom_dir=root_dir,
+            relative_home=not not_relative,
+            default_dir=folder_name,
+            dry_run=dry_run,
+            reset=reset,
+        )
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
     else:
         if reset:
-            _update_paths(userdir, False, dry_run=dry_run, reset=True, silent=True)
+            _update_paths(
+                userdir,
+                False,
+                default_dir=folder_name,
+                dry_run=dry_run,
+                reset=True,
+                silent=True,
+            )
         _write_config_file(userdir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
@@ -165,11 +194,14 @@ def _update_paths(
     relative_home=True,
     reset=False,
     dry_run=False,
-    default_dir="cellpy_data",
+    default_dir=None,
     silent=False,
 ):
 
     h = prmreader.get_user_dir()
+
+    if default_dir is None:
+        default_dir = "cellpy_data"
 
     if dry_run:
         click.echo(f" - default_dir: {default_dir}")
@@ -193,6 +225,7 @@ def _update_paths(
         db_filename = prmreader.prms.Paths.db_filename
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
         batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
+        templatedir = pathlib.Path(prmreader.prms.Paths.templatedir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -203,6 +236,7 @@ def _update_paths(
         db_filename = "cellpy_db.xlsx"
         notebookdir = "notebooks"
         batchfiledir = "batchfiles"
+        templatedir = "templates"
 
     outdatadir = h / outdatadir
     rawdatadir = h / rawdatadir
@@ -212,6 +246,7 @@ def _update_paths(
     db_path = h / db_path
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
+    templatedir = h / templatedir
 
     if dry_run:
         click.echo(f" - base (h): {h}")
@@ -240,6 +275,7 @@ def _update_paths(
         )
 
         batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
+        templatedir = _ask_about_path("where to put your batch files", batchfiledir)
 
     # update folders based on suggestions
     for d in [
@@ -251,6 +287,7 @@ def _update_paths(
         notebookdir,
         db_path,
         batchfiledir,
+        templatedir,
     ]:
 
         if not dry_run:
@@ -268,19 +305,22 @@ def _update_paths(
     prmreader.prms.Paths.db_filename = str(db_filename)
     prmreader.prms.Paths.notebookdir = str(notebookdir)
     prmreader.prms.Paths.batchfiledir = str(batchfiledir)
+    prmreader.prms.Paths.templatedir = str(templatedir)
 
 
 def _ask_about_path(q, p):
-    click.echo(f"\n[cellpy] (setup) input {q}:\n[cellpy] (setup) [{p}]")
-    new_path = input("[cellpy] (setup) >>> ").strip()
+    click.echo(f"\n[cellpy] (setup) input {q}")
+    click.echo(f"[cellpy] (setup) current: {p}")
+    new_path = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
     if not new_path:
         new_path = p
     return pathlib.Path(new_path)
 
 
 def _ask_about_name(q, n):
-    click.echo(f"[cellpy] (setup) input {q}:\n[cellpy] (setup) [{n}]")
-    new_name = input("[cellpy] (setup) >>> ").strip()
+    click.echo(f"\n[cellpy] (setup) input {q}")
+    click.echo(f"[cellpy] (setup) current: {n}")
+    new_name = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
     if not new_name:
         new_name = n
     return new_name
@@ -294,7 +334,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         if confirm:
             if not o_parent.is_dir():
                 create_dir = input(
-                    f"[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
+                    f"\n[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
                 )
                 if not create_dir:
                     create_dir = True
@@ -480,6 +520,7 @@ def _check_config_file():
             "outdatadir",
             "rawdatadir",
             "batchfiledir",
+            "templatedir",
             "db_path",
         ]
         missing = 0
@@ -689,16 +730,26 @@ def info(version, configloc, params, check):
 )
 @click.option("--key", "-k", is_flag=True, help="Run a batch job defined by batch-name")
 @click.option(
-    "--batch",
-    "-b",
+    "--folder",
+    "-f",
     is_flag=True,
     help="Run all batch jobs iteratively in a given folder",
 )
+@click.option(
+    "--cellpy-project",
+    "-p",
+    is_flag=True,
+    help="Use PaperMill to run the notebook(s) within the given project folder "
+    "(will only work properly if the notebooks can be sorted in correct run-order by 'sorted'). "
+    "Warning! since we are using `click` - the NAME will be 'converted' when it is loaded "
+    "(same as print(name) does) - "
+    "so you can't use backslash ('\\') as normal in windows (use either '/' or '\\\\' instead).",
+)
 @click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
 @click.option("--silent", "-s", is_flag=True, help="Run in silent mode.")
-@click.option("--raw", "-r", is_flag=True, help="Force loading raw-file(s).")
-@click.option("--cellpyfile", "-c", is_flag=True, help="Force cellpy-file(s).")
-@click.option("--minimal", "-m", is_flag=True, help="Minimal processing.")
+@click.option("--raw", is_flag=True, help="Force loading raw-file(s).")
+@click.option("--cellpyfile", is_flag=True, help="Force cellpy-file(s).")
+@click.option("--minimal", is_flag=True, help="Minimal processing.")
 @click.option(
     "--nom-cap",
     default=None,
@@ -713,27 +764,27 @@ def info(version, configloc, params, check):
 )
 @click.option(
     "--project",
-    "-p",
     default=None,
     type=str,
-    help="project (if selecting running from db)",
+    help="name of the project (if selecting running from db)",
 )
 @click.option("--list", "-l", "list_", is_flag=True, help="List batch-files.")
 @click.argument("name", default="NONE")
 def run(
     journal,
     key,
-    batch,
+    folder,
+    cellpy_project,
     debug,
     silent,
     raw,
     cellpyfile,
     minimal,
     nom_cap,
-    name,
     batch_col,
     project,
     list_,
+    name,
 ):
     """Run a cellpy process.
 
@@ -755,7 +806,7 @@ def run(
         return
 
     if name == "NONE":
-        print(
+        click.echo(
             "Usage: cellpy run [OPTIONS] NAME\n"
             "Try 'cellpy run --help' for help.\n\n"
             "Error: Missing argument 'NAME'."
@@ -770,15 +821,26 @@ def run(
 
     click.echo("[cellpy]\n")
 
-    if journal:
+    if cellpy_project:
+        _run_project(name)
+
+    elif journal:
         _run_journal(name, debug, silent, raw, cellpyfile, minimal, nom_cap)
 
-    elif batch:
+    elif folder:
         _run_journals(name, debug, silent, raw, cellpyfile, minimal)
 
     elif key:
         _run_from_db(
-            name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project
+            name,
+            debug,
+            silent,
+            raw,
+            cellpyfile,
+            minimal,
+            nom_cap,
+            batch_col,
+            project,
         )
 
     elif name.lower() == "db":
@@ -789,7 +851,15 @@ def run(
 
 
 def _run_from_db(
-    name, debug, silent, raw, cellpyfile, minimal, nom_cap, batch_col, project
+    name,
+    debug,
+    silent,
+    raw,
+    cellpyfile,
+    minimal,
+    nom_cap,
+    batch_col,
+    project,
 ):
     click.echo(
         f"running from db \nkey={name}, batch_col={batch_col}, project={project}"
@@ -812,8 +882,11 @@ def _run_from_db(
     else:
         kwargs["project"] = project
 
+    click.echo("Warming up ...")
+
     from cellpy.utils import batch
 
+    click.echo("  - starting batch processing")
     b = batch.process_batch(
         force_raw_file=raw,
         force_cellpy=cellpyfile,
@@ -922,6 +995,24 @@ def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
         folder_name, force_raw_file=raw, force_cellpy=cellpyfile, silent=True, **kwargs
     )
     click.echo("---")
+
+
+def _run_project(our_new_project, **kwargs):
+    try:
+        import papermill as pm
+    except ImportError:
+        click.echo(
+            "[cellpy]: You need to install papermill for automatically execute the notebooks."
+        )
+        click.echo("[cellpy]: You can install it using pip like this:")
+        click.echo(" >> pip install papermill")
+        return
+    our_new_project = pathlib.Path(our_new_project)
+    click.echo(f"[cellpy]: trying to run notebooks in {our_new_project}")
+    notebooks = sorted(list(our_new_project.glob("*.ipynb")))
+    for notebook in notebooks:
+        click.echo(f"[cellpy - papermill] running {notebook.name}")
+        pm.execute_notebook(notebook, notebook, parameters=kwargs)
 
 
 def _run(name, debug, silent):
@@ -1061,18 +1152,6 @@ def _download_g_blob(name, local_path):
     click.echo(f"[cellpy] (pull) downloaded blob: {filename}")
 
 
-def _download_g_file(repo, name, local_path):
-    file_content = repo.get_file_contents(name)
-    dirs = local_path.parent
-
-    if not dirs.is_dir():
-        click.echo(f"[cellpy] (pull) creating dir: {dirs}")
-        dirs.mkdir(parents=True)
-    with local_path.open("wb") as ofile:
-        ofile.write(file_content.decoded_content)
-        click.echo(f"[cellpy] (pull) downloaded: {name}")
-
-
 def _parse_g_dir(repo, gdirpath):
     """parses a repo directory two-levels deep"""
     for f in repo.get_contents(gdirpath):
@@ -1134,11 +1213,7 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
         gfilename = pathlib.Path(gfile.path)
         nfilename = rootpath / gfilename
 
-        if gfile.size > GITHUB_SIZE_LIMIT:
-            _download_g_blob(gfile, nfilename)
-
-        else:
-            _download_g_file(repo, gfilename.as_posix(), nfilename)
+        _download_g_blob(gfile, nfilename)
 
 
 def _get_default_template():
@@ -1150,40 +1225,102 @@ def _get_default_template():
     return template
 
 
+def _read_local_templates(local_templates_path=None):
+    if local_templates_path is None:
+        local_templates_path = pathlib.Path(prmreader.prms.Paths.templatedir)
+    templates = {}
+    for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
+        label = p.stem.lstrip("cellpy_cookie_")
+        templates[label] = str(p)
+    logging.debug(f"Found the following templates: {templates}")
+    return templates
+
+
 @click.command()
+@click.option("--template", "-t", help="What template to use.")
+@click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
 @click.option(
-    "--template", "-t", help="what template to use ('standard', 'gitt', or 'single')."
+    "--local-user-template",
+    "-u",
+    is_flag=True,
+    default=False,
+    help="Use local template from the templates directory.",
 )
-@click.option("--directory", "-d", default=None, help="Create in custom directory DIR")
-@click.option("--serve", "-s", is_flag=True, help="Run Jupyter.")
-@click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
-def new(template, directory, serve, lab):
+@click.option("--serve", "-s", "serve_", is_flag=True, help="Run Jupyter.")
+@click.option(
+    "--run",
+    "-r",
+    "run_",
+    is_flag=True,
+    help="Use PaperMill to run the notebook(s) from the template "
+    "(will only work properly if the notebooks can be sorted in correct run-order by 'sorted'.",
+)
+@click.option(
+    "--lab",
+    "-j",
+    is_flag=True,
+    help="Use Jupyter Lab instead of Notebook when serving.",
+)
+@click.option(
+    "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
+)
+def new(template, directory, local_user_template, serve_, run_, lab, list_):
     """Set up a batch experiment."""
+    function_new(template, directory, local_user_template, serve_, run_, lab, list_)
+
+
+def function_new(template, directory, local_user_template, serve_, run_, lab, list_):
+    """Set up a batch experiment."""
+    from cellpy.parameters import prms
+
+    if list_:
+        click.echo(f"\n[cellpy] batch templates")
+
+        default_template = _get_default_template()
+        local_templates = _read_local_templates()
+        local_templates_path = prmreader.prms.Paths.templatedir
+        registered_templates = prms._registered_templates
+        click.echo(f"[cellpy] - default: {default_template}")
+        click.echo("[cellpy] - registered templates (on github):")
+        for label, link in registered_templates.items():
+            click.echo(f"\t\t{label:18s} {link}")
+
+        if local_templates:
+            click.echo(f"[cellpy] - local templates ({local_templates_path}):")
+            for label, link in local_templates.items():
+                click.echo(f"\t\t{label:18s} {link}")
+        else:
+            click.echo(f"[cellpy] - local templates ({local_templates_path}): none")
+
+        return
+
     if not template:
         template = _get_default_template()
+
     if lab:
         server = "lab"
     else:
         server = "notebook"
+
     try:
         import cookiecutter.main
         import cookiecutter.exceptions
         import cookiecutter.prompt
+
     except ModuleNotFoundError:
         click.echo("Could not import cookiecutter.")
         click.echo("Try installing it with. For example by writing:")
         click.echo("\npip install cookiecutter\n")
 
-    from cellpy.parameters import prms
-
-    templates = {
-        "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
-        "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
-    }
+    if not local_user_template:
+        templates = prms._registered_templates
+    else:
+        templates = _read_local_templates()
 
     click.echo(f"Template: {template}")
     if not template.lower() in templates.keys():
         click.echo("This template does not exist. Aborting.")
+        return
 
     if directory is None:
         logging.debug("no dir given")
@@ -1222,20 +1359,48 @@ def new(template, directory, serve, lab):
         except FileExistsError:
             click.echo("OK - but this directory already exists!")
 
-    os.chdir(directory / project_dir)
+    # get a list of all folders
+    selected_project_dir = directory / project_dir
+    existing_projects = os.listdir(selected_project_dir)
+
+    os.chdir(selected_project_dir)
 
     try:
+        selected_template = templates[template.lower()]
         cookiecutter.main.cookiecutter(
-            templates[template.lower()], extra_context={"project_name": project_dir}
+            selected_template, extra_context={"project_name": project_dir}
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")
         click.echo(" - cookiecutter refused to create the project")
         click.echo(e)
 
-    if serve:
+    if serve_:
         os.chdir(directory)
         _serve(server)
+
+    if run_:
+        try:
+            import papermill as pm
+        except ImportError:
+            click.echo(
+                "[cellpy]: You need to install papermill for automatically execute the notebooks."
+            )
+            click.echo("[cellpy]: You can install it using pip like this:")
+            click.echo(" >> pip install papermill")
+            return
+        new_existing_projects = os.listdir(selected_project_dir)
+        our_new_projects = list(set(new_existing_projects) - set(existing_projects))
+
+        if not len(our_new_projects):
+            click.echo(
+                "[cellpy]: Sorry, could not deiced what is the new project "
+                "- so I don't dare to try to execute automatically."
+            )
+            return
+        our_new_project = selected_project_dir / our_new_projects[0]
+
+        _run_project(our_new_project)
 
 
 def _serve(server):
@@ -1350,7 +1515,17 @@ def _cli_setup_interactive():
             click.echo(line.strip())
 
 
+def check_it(var=None):
+    import sys
+    import pathlib
+
+    p_env = pathlib.Path(sys.prefix)
+    print(p_env.name)
+    new(list_=True)
+
+
 if __name__ == "__main__":
-    click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
-    _main_pull()
-    click.echo("ok")
+    check_it()
+    # click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
+    # _main_pull()
+    # click.echo("ok")

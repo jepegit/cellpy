@@ -73,12 +73,12 @@ def _read_modules(fileobj):
 
 
 class MprLoader(Loader):
-    """ Class for loading biologics-data from mpr-files."""
+    """Class for loading biologics-data from mpr-files."""
 
     # Note: the class is sub-classing Loader. At the moment, Loader does
     # not really contain anything...
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.logger = logging.getLogger(__name__)
         self.headers_normal = get_headers_normal()
         self.current_chunk = 0  # use this to set chunks to load
@@ -150,8 +150,7 @@ class MprLoader(Loader):
         return new_rundata
 
     def inspect(self, run_data):
-        """inspect the file.
-        """
+        """inspect the file."""
         return run_data
 
     def repair(self, file_name):

@@ -78,7 +78,7 @@ DEFAULT_CONFIG = {
 
 
 class CustomLoader(Loader):
-    """ Class for loading cell data from custom formatted files.
+    """Class for loading cell data from custom formatted files.
 
     The file that contains the description of the custom data file
     should be given by issuing the
@@ -109,7 +109,7 @@ class CustomLoader(Loader):
     [doc not finished yet]
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """initiates the class"""
 
         self.logger = logging.getLogger(__name__)

@@ -50,32 +50,32 @@ def search_for_files(
     """Searches for files (raw-data files and cellpy-files).
 
 
-       Args:
-           run_name(str): run-file identification.
-           raw_extension(str): optional, extension of run-files (without the '.').
-           cellpy_file_extension(str): optional, extension for cellpy files
-               (without the '.').
-           raw_file_dir(path): optional, directory where to look for run-files
-               (default: read prm-file)
-           cellpy_file_dir(path): optional, directory where to look for
-               cellpy-files (default: read prm-file)
-           prm_filename(path): optional parameter file can be given.
-           file_name_format(str): format of raw-file names or a glob pattern
-               (default: YYYYMMDD_[name]EEE_CC_TT_RR).
-           reg_exp(str): use regular expression instead (defaults to None).
-           sub_folders (bool): perform search also in sub-folders.
-           file_list (list of str): perform the search within a given list
-               of filenames instead of searching the folder(s). The list should
-               not contain the full filepath (only the actual file names). If
-               you want to provide the full path, you will have to modify the
-               file_name_format or reg_exp accordingly.
-           pre_path (path or str): path to prepend the list of files selected
-                from the file_list.
+    Args:
+        run_name(str): run-file identification.
+        raw_extension(str): optional, extension of run-files (without the '.').
+        cellpy_file_extension(str): optional, extension for cellpy files
+            (without the '.').
+        raw_file_dir(path): optional, directory where to look for run-files
+            (default: read prm-file)
+        cellpy_file_dir(path): optional, directory where to look for
+            cellpy-files (default: read prm-file)
+        prm_filename(path): optional parameter file can be given.
+        file_name_format(str): format of raw-file names or a glob pattern
+            (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+        reg_exp(str): use regular expression instead (defaults to None).
+        sub_folders (bool): perform search also in sub-folders.
+        file_list (list of str): perform the search within a given list
+            of filenames instead of searching the folder(s). The list should
+            not contain the full filepath (only the actual file names). If
+            you want to provide the full path, you will have to modify the
+            file_name_format or reg_exp accordingly.
+        pre_path (path or str): path to prepend the list of files selected
+             from the file_list.
 
 
-       Returns:
-           run-file names (list) and cellpy-file-name (path).
-       """
+    Returns:
+        run-file names (list) and cellpy-file-name (path).
+    """
 
     # TODO: @jepe - use reg_exp
     # TODO: @jepe - allow for searching in cloud

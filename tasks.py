@@ -2,6 +2,7 @@ import sys
 import io
 import re
 import os
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -29,6 +30,18 @@ Examples:
     > invoke clean build
 
 """
+
+
+def sphinx_serve():
+    host = "0.0.0.0"
+    port = 8081
+    try:
+        httpd = HTTPServer((host, port), SimpleHTTPRequestHandler)
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print(" Keyboard interrupt received, exiting.")
+
+    return 0
 
 
 def get_platform():
@@ -283,11 +296,12 @@ def test(c):
 
 
 @task
-def build(c, docs=False, upload=True):
+def build(c, dist=True, docs=True, upload=False, serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")
-    c.run("python setup.py sdist")
+    if dist:
+        c.run("python setup.py sdist")
     if docs:
         print(" Building docs ".center(80, "-"))
         c.run("sphinx-build docs docs/_build")
@@ -298,6 +312,25 @@ def build(c, docs=False, upload=True):
         c.run("twine upload dist/*")
     else:
         print(" To upload to pypi: 'twine upload dist/*'")
+    if serve:
+        import pathlib
+
+        builds_path = pathlib.Path("docs") / "_build"
+        print(" Serving docs")
+        os.chdir(builds_path)
+        _location = r"localhost:8081"
+        if browser:
+            print(f" - opening browser in http://{_location}")
+            c.run(f"python -m webbrowser -t http://{_location}")
+        else:
+            print(f" - hint! you can open your browser by typing:\n       python -m webbrowser -t http://{_location}")
+        sphinx_serve()
+
+
+@task
+def serve(c):
+    _location = r"localhost:8081"
+    c.run(f"python -m webbrowser -t http://{_location}")
 
 
 @task

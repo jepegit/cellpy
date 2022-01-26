@@ -309,17 +309,17 @@ def get_cellpy_units() -> ValuesDict:
 
 def get_headers_normal() -> HeaderDict:
     """Returns a dictionary containing the header-strings for the normal data
-        (used as column headers for the main data pandas DataFrames)"""
+    (used as column headers for the main data pandas DataFrames)"""
     return headers_normal
 
 
 def get_headers_step_table() -> HeaderDict:
     """Returns a dictionary containing the header-strings for the steps table
-        (used as column headers for the steps pandas DataFrames)"""
+    (used as column headers for the steps pandas DataFrames)"""
     return headers_step_table
 
 
 def get_headers_journal() -> HeaderDict:
     """Returns a dictionary containing the header-strings for the journal (batch)
-            (used as column headers for the journal pandas DataFrames)"""
+    (used as column headers for the journal pandas DataFrames)"""
     return headers_journal

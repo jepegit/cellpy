@@ -4,8 +4,8 @@
 
 """
 
-__author__ = "Jan Petter Maehlen", "Asbjoern Ulvestad"
-__email__ = "jepe@ife.no", "Asbjorn.Ulvestad@ife.no"
+__author__ = "Jan Petter Maehlen", "Asbjoern Ulvestad", "Muhammad Abdelhamid"
+__email__ = "jepe@ife.no", "Asbjorn.Ulvestad@ife.no", "Muhammad.Abdelhamid@ife.no"
 
 import logging
 import warnings
@@ -18,8 +18,6 @@ import cellpy._version
 
 __version__ = cellpy._version.__version__
 
-__all__ = ["cellreader", "dbreader", "prmreader", "prms", "filefinder"]
-
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 try:
@@ -30,3 +28,4 @@ except UserWarning:
     warnings.warn("Could not read the config-file")
 
 get = cellreader.get
+__all__ = ["cellreader", "dbreader", "prmreader", "prms", "filefinder", "get"]

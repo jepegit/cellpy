@@ -3,7 +3,7 @@ Installation
 ============
 
 If you are (relatively) new to installing python packages, please jump to the
-getting started tutorial (:doc:`Tutorials/getting_started_tutorial`)
+getting started tutorial (:doc:`tutorials/getting_started_tutorial`)
 for an opinionated step-by-step procedure.
 
 Stable release
@@ -16,14 +16,14 @@ The preferred way to install ``cellpy`` is by using conda:
     $ conda install cellpy --channel conda-forge
 
 
-This will also install all of the dependencies, as well as ``jupyter``
+This will also install all of the critical dependencies, as well as ``jupyter``
 that comes in handy when working with ``cellpy``.
 
 If you would like to install only ``cellpy``, you should install using pip.
 You also need to take into account that ``cellpy`` uses several packages
 that are a bit cumbersome to install on
 windows. It is therefore recommended to install one of the ``anaconda``
-python packages (python 3.6 or above) before installing ``cellpy``.
+python packages (python 3.8 or above) before installing ``cellpy``.
 If you chose ``miniconda``, you should install
 ``scipy``, ``numpy`` and ``pytables`` using ``conda``:
 
@@ -57,6 +57,12 @@ or:
 
 .. _pyodbc: https://github.com/mkleehammer/pyodbc/
 
+Some of the utilities in ``cellpy`` have additional dependencies:
+
+- Using the ``ocv_rlx`` utilities requires ``lmfit`` and ``matplotlib``.
+- For using the ``batch`` utilities efficiently, ``holoviews`` is needed, as
+  well as ``bokeh`` and ``matplotlib`` for plotting.
+
 
 If this is the first time you install ``cellpy``, it is recommended
 that you run the setup script:
@@ -66,16 +72,22 @@ that you run the setup script:
     $ cellpy setup -i
 
 This will install a ``.cellpy_prms_USER.conf`` file in your home directory
-(USER = your user name) for posix systems and the documents folder in windows.
+(USER = your user name).
 Feel free to edit this to fit your needs.
 
-(It is probably best to run the command also if you are upgrading ``cellpy``)
+If you are OK with letting ``cellpy`` select your settings, you can omit
+the `-i` (interactive mode).
 
-You can restore your prms-file by running ``cellpy setup`` if needed
-(*i.e.* get a copy of the default file
-copied to your user folder).
+.. hint:: It is recommended to run the command also after
+    each time you upgrade ``cellpy``. It will keep the settings you already
+    have in your prms-file and, if the newer version
+    has introduced some new parameters, it will add those too.
 
-.. note:: Since Arbin (at least some versions) uses access database files, you
+
+.. hint:: You can restore your prms-file by running ``cellpy setup -r`` if needed
+    (*i.e.* get a copy of the default file copied to your user folder).
+
+.. caution:: Since Arbin (at least some versions) uses access database files, you
     will need to install ``pyodbc``, a python ODBC bridge that can talk to database
     files. On windows, at least if you don´t have a newer version of office 365,
     you  most likely need to use Microsoft's dll for handling access
@@ -114,7 +126,7 @@ Further reading
 ---------------
 
 You can find more information in the Tutorials, particularly
-in :doc:`Tutorials/getting_started_tutorial`.
+in :doc:`tutorials/getting_started_tutorial`.
 
 .. _Github repo: https://github.com/jepegit/cellpy
 

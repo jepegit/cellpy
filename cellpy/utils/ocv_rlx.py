@@ -36,35 +36,35 @@ def select_ocv_points(
 
     """Select points from the ocvrlx steps.
 
-        Args:
-            cellpydata: CellpyData-object
-            cycles: list of cycle numbers to process (optional)
-            selection_method: criteria for selecting points
-                martin: select first and last, and then last/2, last/2/2 etc.
-                    until you have reached the wanted number of points.
-                fixed_times: select first, and then
-            number_of_points: number of points you want.
-            interval: interval between each point (in use only for methods
-                where interval makes sense). If it is a list, then
-                number_of_points will be calculated as len(interval) + 1 (and
-                override the set number_of_points).
-            relative_voltage: set to True if you would like the voltage to be
-                relative to the voltage before starting the ocv rlx step.
-                Defaults to False. Remark that for the initial rxl step (when
-                you just have put your cell on the tester) does not have any
-                prior voltage. The relative voltage will then be versus the
-                first measurement point.
-            report_times: also report the ocv rlx total time if True (defaults
-                to False)
-            direction ("up", "down" or "both"): select "up" if you would like
-                to process only the ocv rlx steps where the voltage is relaxing
-                upwards and vice versa. Defaults to "both".
-            return_times (bool): return a DataFrame with information about times.
+    Args:
+        cellpydata: ``CellpyData-object``
+        cycles: list of cycle numbers to process (optional)
+        selection_method ('martin' | 'fixed_times'): criteria for selecting points ('martin': select first and last, and
+            then last/2, last/2/2 etc. until you have reached the wanted number of points; 'fixed_times': select first,
+            and then same interval between each subsequent point).
+        number_of_points: number of points you want.
+        interval: interval between each point (in use only for methods
+            where interval makes sense). If it is a list, then
+            number_of_points will be calculated as len(interval) + 1 (and
+            override the set number_of_points).
+        relative_voltage: set to True if you would like the voltage to be
+            relative to the voltage before starting the ocv rlx step.
+            Defaults to False. Remark that for the initial rxl step (when
+            you just have put your cell on the tester) does not have any
+            prior voltage. The relative voltage will then be versus the
+            first measurement point.
+        report_times: also report the ocv rlx total time if True (defaults
+            to False)
+        direction ("up", "down" or "both"): select "up" if you would like
+            to process only the ocv rlx steps where the voltage is relaxing
+            upwards and vice versa. Defaults to "both".
+        return_times (bool): return a DataFrame with information about times.
 
-        Returns:
-            pandas.DataFrame (and another pandas.DataFrame if return_times is True)
+    Returns:
+        ``pandas.DataFrame`` (and another ``pandas.DataFrame`` if return_times is True)
 
     """
+
     t0 = time.time()
     if cycles is None:
         cycles = cellpydata.get_cycle_numbers()
@@ -241,12 +241,12 @@ def select_ocv_points(
 
 class MultiCycleOcvFit(object):
     def __init__(self, cellpydata, cycles, circuits=3):
-        """
+        """Object for performing fitting of multiple cycles.
 
         Args:
-            cellpydata:
-            cycles:
-            circuits:
+            cellpydata: ``CellpyData-object``
+            cycles (list): cycles to fit.
+            circuits (int): number of circuits to use in fitting.
         """
         self.cycles = cycles
         self.data = cellpydata
@@ -272,10 +272,11 @@ class MultiCycleOcvFit(object):
         """
 
         Args:
-            direction:
-            weighted:
+            direction ('up' | 'down'): what type of ocv relaxation to fit
+            weighted (bool): use weighted fitting.
 
         Returns:
+            None
 
         """
         ocv_fitter = OcvFit()
@@ -476,7 +477,8 @@ class OcvFit(object):
         from the data set by set_data()
 
         r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
-        c is found from using tau / r --> err(c) = err(r) + err(tau)
+
+        c is found from using tau / r --> err(c) = err(r) + err(tau).
 
         Args:
             cellpydata (CellpyData): data object from cellreader
@@ -578,11 +580,12 @@ class OcvFit(object):
 
         r is found by calculating v0 / i_start --> err(r)= err(v0) + err(i_start).
 
-        c is found from using tau / r --> err(c) = err(r) + err(tau)
+        c is found from using tau / r --> err(c) = err(r) + err(tau).
+
+        The resulting best fit parameters are stored in self.result for the given cycles.
 
         Returns:
-            None: Resulting best fit parameters are
-                  stored in self.result for the given cycles
+            None
 
         """
 

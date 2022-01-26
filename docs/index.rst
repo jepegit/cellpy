@@ -26,9 +26,10 @@ Examples and tutorials
 ----------------------
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    basics
+   utils
    notebooks
    examples
    tips_and_tricks

@@ -2,6 +2,14 @@
 from dataclasses import dataclass, field
 from importlib import import_module
 
+# TODO: make tests.
+# TODO: move this into its own module (not __init__).
+# TODO: make "readers" for yaml and json.
+# TODO: make a new "folder" in cellpy for json/yaml files for instruments for users.
+# TODO: refactor ``custom`` reader so that it uses this.
+# TODO: document for devs.
+# TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
+
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
 
 
@@ -16,9 +24,43 @@ class ModelParameters:
     not_implemented_in_cellpy_yet_renaming_dict: dict = field(default_factory=dict)
     columns_to_keep: dict = field(default_factory=dict)
     states: dict = field(default_factory=dict)
+    raw_units: dict = field(default_factory=dict)
+    raw_limits: dict = field(default_factory=dict)
+    formatters: dict = field(default_factory=dict)
+    meta_keys: dict = field(default_factory=dict)
+    pre_processors: dict = field(default_factory=dict)
+    post_processors: dict = field(default_factory=dict)
 
 
-def register_configuration(
+def register_configuration_from_yaml_file(
+    name: str = "one", module: str = "maccor_txt_one"
+) -> ModelParameters:
+    """register a module (.yml file) and return it.
+
+    This function will dynamically import the given module from the
+    cellpy.readers.instruments.configurations module and return it.
+
+    Returns: ModelParameters
+
+    """
+    raise NotImplementedError
+
+
+def register_configuration_from_json_file(
+    name: str = "one", module: str = "maccor_txt_one"
+) -> ModelParameters:
+    """register a module (.json file) and return it.
+
+    This function will dynamically import the given module from the
+    cellpy.readers.instruments.configurations module and return it.
+
+    Returns: ModelParameters
+
+    """
+    raise NotImplementedError
+
+
+def register_configuration_from_module(
     name: str = "one", module: str = "maccor_txt_one"
 ) -> ModelParameters:
     """register a python module (.py file) and return it.
@@ -27,8 +69,31 @@ def register_configuration(
     cellpy.readers.instruments.configurations module and return it.
 
     Returns: ModelParameters
+
+    TODO: Either: expand this function so that it also reads from yaml files,
+        or use pydantic
     """
     m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
+    try:
+        formatters = m.formatters
+    except AttributeError:
+        formatters = dict()
+
+    try:
+        pre_processors = m.pre_processors
+    except AttributeError:
+        pre_processors = dict()
+
+    try:
+        post_processors = m.post_processors
+    except AttributeError:
+        post_processors = dict()
+
+    try:
+        meta_keys = m.meta_keys
+    except AttributeError:
+        meta_keys = dict()
+
     model_01 = ModelParameters(
         name=name,
         unit_labels=m.unit_labels,
@@ -37,5 +102,11 @@ def register_configuration(
         not_implemented_in_cellpy_yet_renaming_dict=m.not_implemented_in_cellpy_yet_renaming_dict,
         columns_to_keep=m.columns_to_keep,
         states=m.states,
+        raw_units=m.raw_units,
+        raw_limits=m.raw_limits,
+        meta_keys=meta_keys,
+        formatters=formatters,
+        pre_processors=pre_processors,
+        post_processors=post_processors,
     )
     return model_01

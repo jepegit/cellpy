@@ -798,7 +798,7 @@ class Graphite(PeakEnsemble):
 
 
 class CompositeEnsemble:
-    """ A collection of PeakEnsembles.
+    """A collection of PeakEnsembles.
 
     Note! All ensembles must have unique names.
 

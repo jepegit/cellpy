@@ -82,9 +82,9 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 
 
 class ArbinCsvLoader(Loader):
-    """ Class for loading arbin-data from MS SQL server."""
+    """Class for loading arbin-data from MS SQL server."""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
         self.arbin_headers_normal = (
             self.get_headers_normal()

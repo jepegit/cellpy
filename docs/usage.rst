@@ -5,61 +5,58 @@ Usage
 1. Simple usage as a python library
 -----------------------------------
 
-To use ``cellpy``, start with importing the needed modules::
+To use ``cellpy``, start with importing it::
 
-    >>> from cellpy import cellreader
+    >>> import cellpy
 
 Let us define some variables::
 
-    >>> file_name  = r"C:\data\20141030_CELL_6_cc_01.res"
-    >>> mass      = 0.982 # mass of active material in mg
+    >>> file_name = r"C:\data\20141030_CELL_6_cc_01.res"
+    >>> mass = 0.982 # mass of active material in mg
     >>> out_folder = r"C:\processed_data"
 
 Then load the data into the data-class (this is data obtained using an Arbin battery tester,
 for the moment we assume that you are using the default settings where the default
 data-format is the Arbin .res format)::
 
-    >>> d = cellreader.CellpyData()
-    >>> d.from_raw(file_name) # this tells cellpy to read the arbin data file (.res format)
-    >>> d.set_mass(mass)
+    >>> c = cellpy.get(file_name, mass=mass)
 
-Create a summary (for each cycle) and generate a step table (parsing the
-data and finding out what each step in each cycle is)::
+Here we are choosing to go for the default options, and cellpy will load the file (using the file-loader "arbin_res" since
+the filename extension is .res), create a summary (for each cycle) and generate a step table (parsing the
+data and finding out what each step in each cycle is).
 
-    >>> d.make_step_table()
-    >>> d.make_summary()
 
 You can now save your data as a tester agnostic cellpy-file (uses hdf5 file format, and will
 include your summary and step table)::
 
-   >>> d.save("cellpyfiles/20141030_CELL_6_cc_0.h5")
+   >>> c.save("cellpyfiles/20141030_CELL_6_cc_0.h5")
 
 You can also save your data in csv-format easily by::
 
-    >>> d.to_csv(out_folder)
+    >>> c.to_csv(out_folder)
 
 Or maybe you want to take a closer look at the capacities for
 the different cycles? No problem. Now you are set to extract data
 for specific cycles and steps::
 
-    >>> list_of_cycles = d.get_cycle_numbers()
+    >>> list_of_cycles = c.get_cycle_numbers()
     >>> number_of_cycles = len(list_of_cycles)
     >>> print(f"you have {number_of_cycles} cycles")
     you have 658 cycles
-    >>> current,voltage = d.get_cap(5) # current and voltage for cycle 5
+    >>> current,voltage = c.get_cap(5) # current and voltage for cycle 5
 
 You can also look for open circuit voltage steps::
 
     >>> cycle = 44
-    >>> time1, voltage1 = d.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
-    >>> time2, voltage2 = d.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
+    >>> time1, voltage1 = c.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
+    >>> time2, voltage2 = c.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
 There are many more methods available, including methods
 for selecting steps and cycles (``get_current``, ``get_voltage``, *etc.*)
 or tuning the data (*e.g.* ``split`` and ``merge``).
 
-Take a look at the index page (:doc:`modules <source/modules>) or some of
-the tutorials or examples (:doc:`tutorials <Tutorials/utils>`).
+Take a look at the index page (:doc:`modules <source/modules>`), some of
+the tutorials (:doc:`tutorials <basics>`) or notebook examples (:doc:`Example notebooks <notebooks>`).
 
 
 2. Convenience methods and tools

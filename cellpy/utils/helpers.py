@@ -12,22 +12,22 @@ from scipy import stats
 import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
-    get_headers_summary,
-    get_headers_step_table,
-    get_headers_normal,
-    get_headers_journal,
     ATTRS_CELLPYDATA,
     ATTRS_DATASET,
+    headers_summary,
+    headers_step_table,
+    headers_normal,
+    headers_journal,
 )
 
 from cellpy import prmreader
 from cellpy.readers.cellreader import CellpyData
 from cellpy.utils import batch, ica
 
-hdr_summary = get_headers_summary()
-hdr_steps = get_headers_step_table()
-hdr_normal = get_headers_normal()
-hdr_journal = get_headers_journal()
+hdr_summary = headers_summary
+hdr_steps = headers_step_table
+hdr_normal = headers_normal
+hdr_journal = headers_journal
 
 
 def _make_average(
@@ -466,8 +466,7 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
 
 
 def remove_last_cycles_from_summary(s, last=None):
-    """Remove last rows after given cycle number
-    """
+    """Remove last rows after given cycle number"""
 
     if last is not None:
         s = s.loc[s.index <= last, :]
@@ -475,8 +474,7 @@ def remove_last_cycles_from_summary(s, last=None):
 
 
 def remove_first_cycles_from_summary(s, first=None):
-    """Remove last rows after given cycle number
-    """
+    """Remove last rows after given cycle number"""
 
     if first is not None:
         s = s.loc[s.index >= first, :]
@@ -493,7 +491,7 @@ def yank_after(b, last=None, keep_old=False):
         keep_old (bool): keep the original batch object and return a copy instead.
 
     Returns:
-        batch object
+        batch object if keep_old is True, else None
     """
 
     if keep_old:
@@ -525,7 +523,7 @@ def yank_before(b, first=None, keep_old=False):
         keep_old (bool): keep the original batch object and return a copy instead.
 
     Returns:
-        batch object
+        batch object if keep_old is True, else None
     """
 
     if keep_old:
@@ -693,6 +691,8 @@ def concatenate_summaries(
     inverse=False,
     inverted=False,
     key_index_bounds=[1, -2],
+    melt=False,
+    cell_type_split_position="auto",
 ):
 
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -719,14 +719,24 @@ def concatenate_summaries(
         inverted (bool): select cycles that does not have the steps filtered by given C-rate.
         key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
             key_index_bound[0] to key_index_bound[1].
+        melt (bool): return frame as melted (long format).
+        cell_type_split_position (int | None | "auto"): list item number for creating a cell type identifier
+            after performing a split("_") on the cell names (only valid if melt==True). Set to None to not
+            include a cell_type col.
 
     Returns:
-        Multi-index pandas.DataFrame
-            top-level columns: cell-names (cell_name)
-            second-level columns: summary headers (summary_headers)
-            row-index: cycle number (cycle_index)
+        Multi-index ``pandas.DataFrame``
+
+    Notes:
+        The returned ``DataFrame`` has the following structure:
+
+        - top-level columns or second col for melted: cell-names (cell_name)
+        - second-level columns or first col for melted: summary headers (summary_headers)
+        - row-index or third col for melted: cycle number (cycle_index)
+        - cell_type on forth col for melted if cell_type_split_position is given
 
     """
+
     # TODO: refactor me
     # TODO: check if selecting normalize_cycles and group_it performs the operation in logical order
     if normalize_capacity_on is not None:
@@ -735,6 +745,8 @@ def concatenate_summaries(
         default_columns = ["charge_capacity"]
 
     import logging
+
+    reserved_cell_label_names = ["FC"]
 
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
@@ -757,11 +769,15 @@ def concatenate_summaries(
         else:
             columns = [hdr_summary[name] for name in columns]
     else:
-        columns = [hdr_summary[name] for name in default_columns]
+        columns = []
 
     if column_names is not None:
         columns += column_names
 
+    if len(columns) > 1:
+        columns = [hdr_summary[name] for name in default_columns]
+
+    logging.info(f"concatenating the following columns: {columns}")
     normalize_cycles_headers = []
 
     if normalize_cycles:
@@ -884,6 +900,35 @@ def concatenate_summaries(
             keys = new_keys
         cdf = pd.concat(frames, keys=keys, axis=1)
         cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
+        if melt:
+            cdf = cdf.reset_index(drop=False).melt(
+                id_vars=hdr_summary.cycle_index, value_name="value"
+            )
+            melted_column_order = [
+                "summary_header",
+                "cell_name",
+                hdr_summary.cycle_index,
+                "value",
+            ]
+
+            if cell_type_split_position == "auto":
+                cell_type_split_position = 1
+                _pp = cdf.cell_name.str.split("_", expand=True).values[0]
+                for _p in _pp[1:]:
+                    if _p not in reserved_cell_label_names:
+                        break
+                    cell_type_split_position += 1
+
+            if cell_type_split_position is not None:
+
+                cdf = cdf.assign(
+                    cell_type=cdf.cell_name.str.split("_", expand=True)[
+                        cell_type_split_position
+                    ]
+                )
+                melted_column_order.insert(-2, "cell_type")
+            cdf = cdf.reindex(columns=melted_column_order)
+
         return cdf
     else:
         logging.info("Empty - nothing to concatenate!")

@@ -41,7 +41,7 @@ interactive figure:
     plotutils.raw_plot(cell)
 
 
-.. image:: Tutorials/Utils/figures/tutorials_utils_plotting_fig1.png
+.. image::  utils/figures/tutorials_utils_plotting_fig1.png
 
 
 Sometimes it is necessary to have a look at some statistics for each
@@ -57,7 +57,7 @@ cycle and step. This can be done using the ``cycle_info_plot`` method:
 
 
 
-.. image:: Tutorials/Utils/figures/tutorials_utils_plotting_fig2.png
+.. image:: utils/figures/tutorials_utils_plotting_fig2.png
 
 .. note::
 

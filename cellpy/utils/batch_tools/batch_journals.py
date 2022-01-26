@@ -69,8 +69,8 @@ class LabJournal(BaseJournal):
             self.name = name
         logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
         if self.db_reader is not None:
-            srnos = self.db_reader.select_batch(name, batch_col)
-            self.pages = simple_db_engine(self.db_reader, srnos, **kwargs)
+            id_keys = self.db_reader.select_batch(name, batch_col)
+            self.pages = simple_db_engine(self.db_reader, id_keys, **kwargs)
             if self.pages.empty:
                 logging.critical(
                     f"EMPTY JOURNAL: are you sure you have provided correct input to batch?"
@@ -115,6 +115,7 @@ class LabJournal(BaseJournal):
         if pages.empty:
             logging.critical("could not find any pages in the journal")
             raise UnderDefined
+
         pages = cls._clean_pages(pages)
 
         if session is None:
@@ -252,7 +253,7 @@ class LabJournal(BaseJournal):
                 hdr_journal.cellpy_file_name
             ].apply(cls._fix_cellpy_paths)
         except KeyError:
-            # assumes it is a old type journal file
+            # assumes it is an old type journal file
             print(f"The key '{hdr_journal.cellpy_file_name}' is missing!")
             print(f"Assumes that this is an old-type journal file.")
             try:
@@ -261,7 +262,7 @@ class LabJournal(BaseJournal):
                     hdr_journal.cellpy_file_name
                 ].apply(cls._fix_cellpy_paths)
                 logging.warning("old journal file - updating")
-            except KeyError as e:
+            except KeyError:
                 print("Error! Could still not parse the pages.")
                 print(f"Missing key: {hdr_journal.cellpy_file_name}")
                 pages[hdr_journal.cellpy_file_name] = None
@@ -275,9 +276,12 @@ class LabJournal(BaseJournal):
             if column_name not in pages.columns:
                 logging.debug(f"wrong journal format - missing: {column_name}")
                 pages[column_name] = None
+
         for column_name in hdr_journal:
             if column_name not in pages.columns:
-                pages[column_name] = None
+                if column_name != hdr_journal.filename:
+                    pages[column_name] = None
+
         return pages
 
     def from_file(self, file_name=None, paginate=True, **kwargs):
@@ -376,7 +380,7 @@ class LabJournal(BaseJournal):
             try:
                 with pd.ExcelWriter(file_name, mode="w", engine="openpyxl") as writer:
                     pages.to_excel(writer, sheet_name="pages", engine="openpyxl")
-                    # no index is not supported for multi-index (update to index=False when pandas implements it):
+                    # no index is not supported for multi-index (update to index=False when pandas implement it):
                     df_session.to_excel(writer, sheet_name="session", engine="openpyxl")
                     df_meta.to_excel(
                         writer, sheet_name="meta", engine="openpyxl", index=False
@@ -503,7 +507,7 @@ class LabJournal(BaseJournal):
 
         out_data_dir = prms.Paths.outdatadir
         project_dir = os.path.join(out_data_dir, self.project)
-        file_name = "cellpy_batch_%s.json" % self.name
+        file_name = f"cellpy_batch_{self.name}.json"
         self.file_name = os.path.join(project_dir, file_name)
 
     # v.1.0.0:
@@ -514,7 +518,7 @@ class LabJournal(BaseJournal):
         """populate new column from db"""
         pass
 
-    def get_cell(self, srno):
+    def get_cell(self, id_key):
         """get additional cell info from db"""
         pass
 

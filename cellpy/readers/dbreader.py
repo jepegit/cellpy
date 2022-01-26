@@ -173,7 +173,7 @@ class Reader(object):
 
         Returns:
             True if OK, False if not.
-            """
+        """
         probably_good_to_go = True
         sheet = self.table
         identity = self.db_sheet_cols.id

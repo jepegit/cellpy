@@ -295,7 +295,8 @@ def plot_concatenated(
         print("The plotly backend might not work properly yet.")
         print("Fingers crossed.")
         print(
-            "(at least, make sure you are using the most recent versions of jupyter, holoviews and plotly)"
+            "(at least, make sure you are using the most "
+            "recent versions of jupyter, holoviews and plotly)"
         )
 
     try:
@@ -559,10 +560,10 @@ def cycle_info_plot(
         x (str): column header for the x-value (defaults to "Test_Time")
         y (str): column header for the y-value (defaults to "Voltage")
         info_level (int): how much information to display (defaults to 1)
-            0 - almost nothing
+            (0 - almost nothing
             1 - pretty much
             2 - something else
-            3 - not implemented yet
+            3 - not implemented yet).
         h_cycle: column header for the cycle number (defaults to "Cycle_Index")
         h_step: column header for the step number (defaults to "Step_Index")
         show_it (bool): show the figure (defaults to True). If not, return the figure.
@@ -573,7 +574,7 @@ def cycle_info_plot(
         **kwargs: parameters specific to either matplotlib or bokeh.
 
     Returns:
-
+        ``matplotlib.axes`` or None
     """
     # TODO: missing doc-string
     if use_bokeh and not bokeh_available:
@@ -1116,7 +1117,7 @@ def oplot(
         capacity_unit (str): select "gravimetric", or "areal"
 
     Returns:
-        hv.Overlay or hv.NdOverlay
+        ``hv.Overlay`` or ``hv.NdOverlay``
     """
 
     extension = kwargs.pop("extension", "bokeh")
@@ -1186,7 +1187,9 @@ def oplot(
         layout_opts = hv.opts.NdLayout
 
     # print("creating interactive plots")
-    oplot_ce = bplot(b, columns=["coulombic_efficiency"], **bplot_shared_opts).opts(
+    oplot_ce = bplot(
+        b, columns=["coulombic_efficiency"], **bplot_shared_opts, **kwargs
+    ).opts(
         hv.opts.Curve(ylim=ce_ylim),
         overlay_opts(
             title="",
@@ -1200,7 +1203,10 @@ def oplot(
     # print(" - created oplot_ce")
 
     oplot_dcap = bplot(
-        b, columns=[cap_colum_dict[capacity_unit]["discharge"]], **bplot_shared_opts
+        b,
+        columns=[cap_colum_dict[capacity_unit]["discharge"]],
+        **bplot_shared_opts,
+        **kwargs,
     ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
         overlay_opts(
@@ -1218,7 +1224,10 @@ def oplot(
     # print(" - created oplot_dcap")
 
     oplot_ccap = bplot(
-        b, columns=[cap_colum_dict[capacity_unit]["charge"]], **bplot_shared_opts
+        b,
+        columns=[cap_colum_dict[capacity_unit]["charge"]],
+        **bplot_shared_opts,
+        **kwargs,
     ).opts(
         hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
         overlay_opts(
@@ -1232,7 +1241,7 @@ def oplot(
     )
     # print(" - created oplot_ccap")
 
-    oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts).opts(
+    oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts, **kwargs).opts(
         hv.opts.Curve(ylim=ir_ylim),
         overlay_opts(
             title="",
@@ -1244,7 +1253,7 @@ def oplot(
         layout_opts(title="Internal Resistance (Ohm)", **layout_sensitive_opts["ird"]),
     )
 
-    oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts).opts(
+    oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts, **kwargs).opts(
         hv.opts.Curve(ylim=ir_ylim),
         overlay_opts(
             title="",
@@ -1275,7 +1284,9 @@ def bplot(b, individual=False, cols=1, **kwargs):
         individual (bool): in case of multiple columns, return a list of plots instaed of a hv.Layout
         cols (int): number of columns.
 
-    Keyword Args sent to concatenator:
+    Key-word arguments sent further to the concatenator:
+
+    Keyword Args:
         rate (float): filter on rate (C-rate)
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
@@ -1289,17 +1300,19 @@ def bplot(b, individual=False, cols=1, **kwargs):
         group_it (bool): if True, average pr group.
         rate_std (float): allow for this inaccuracy when selecting cycles based on rate
         rate_column (str): name of the column containing the C-rates.
-        inverse (bool): select steps that does not have the given C-rate.
-        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        inverse (bool): select steps that do not have the given C-rate.
+        inverted (bool): select cycles that do not have the steps filtered by given C-rate.
         journal (batch.journal object): the journal (will use the journal in b if not given).
 
-    Keyword Args sent to plotter:
+    Key-word arguments sent further to the plotter:
+
+    Keyword Args:
         width (int): width of plot.
         spread (bool): use error-spread instead of error-bars.
-        simple (bool): use hv.Overlay instead of hv.NdOverlay.
+        simple (bool): use ``hv.Overlay`` instead of ``hv.NdOverlay``.
 
     Returns:
-        holoviews plot
+        ``holoviews`` plot
     """
     width = kwargs.pop("width", 800)
     journal = kwargs.pop("journal", b.experiment.journal)

@@ -41,3 +41,4 @@ dependencies:
     - pytest-timeout
     - requests
     - nbsphinx
+    - sphinx-rtd-theme

@@ -61,6 +61,7 @@ from one of the authors' configuration file:
       filelogdir: C:\scripts\processing_cellpy\logs
       examplesdir: C:\scripts\processing_cellpy\examples
       notebookdir: C:\scripts\processing_cellpy\notebooks
+      templatedir: C:\scripting\processing_cellpy\templates
       batchfiledir: C:\scripts\processing_cellpy\batchfiles
       db_filename: 2020_Cell_Analysis_db_001.xlsx
 
@@ -116,44 +117,46 @@ You will also find the settings for the ``batch`` utility at the bottom.
 
     # settings related to the reader
     Reader:
-      diagnostics: false
-      filestatuschecker: size
-      force_step_table_creation: true
-      force_all: false
-      sep: ;
-      cycle_mode: anode
-      sorted_data: true
-      load_only_summary: false
-      select_minimal: false
-      limit_loaded_cycles:
-      ensure_step_table: false
-      daniel_number: 5
-      voltage_interpolation_step: 0.01
-      time_interpolation_step: 10.0
-      capacity_interpolation_step: 2.0
-      use_cellpy_stat_file: false
-      raw_datadir:
-      cellpy_datadir:
-      auto_dirs: true
-      chunk_size:
-      last_chunk:
-      max_chunks:
-      max_res_filesize: 400000000
+      Reader:
+        diagnostics: false
+        filestatuschecker: size
+        force_step_table_creation: true
+        force_all: false
+        sep: ;
+        cycle_mode: anode
+        sorted_data: true
+        load_only_summary: false
+        select_minimal: false
+        limit_loaded_cycles:
+        ensure_step_table: false
+        daniel_number: 5
+        voltage_interpolation_step: 0.01
+        time_interpolation_step: 10.0
+        capacity_interpolation_step: 2.0
+        use_cellpy_stat_file: false
+        auto_dirs: true
 
     # settings related to the instrument loader
     # (each instrument can have its own set of settings)
     Instruments:
       tester: arbin
       custom_instrument_definitions_file:
+
       Arbin:
+        max_res_filesize: 1000000000
         chunk_size:
-        detect_subprocess_need: false
         max_chunks:
-        max_res_filesize: 400000000
-        odbc_driver:
-        office_version: 64bit
-        sub_process_path:
         use_subprocess: false
+        detect_subprocess_need: false
+        sub_process_path:
+        office_version: 64bit
+        SQL_server: localhost
+        SQL_UID:
+        SQL_PWD:
+        SQL_Driver: ODBC Driver 17 for SQL Server
+        odbc_driver:
+      Maccor:
+        default_model: one
 
     # settings related to running the batch procedure
     Batch:

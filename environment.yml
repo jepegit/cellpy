@@ -3,7 +3,7 @@ channels:
     - conda-forge
     - pyviz
 dependencies:
-    - python >=3.7
+    - python >=3.8
     - pip
     - numpy
     - openpyxl
@@ -31,4 +31,3 @@ dependencies:
     - jupyter
     - jupyterlab
     - qgrid
-

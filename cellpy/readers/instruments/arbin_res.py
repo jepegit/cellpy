@@ -156,7 +156,7 @@ normal_headers_renaming_dict = {
 
 
 class ArbinLoader(Loader):
-    """ Class for loading arbin-data from res-files.
+    """Class for loading arbin-data from res-files.
 
     Implemented Cellpy params (prms.Instruments.Arbin):
         max_res_filesize
@@ -170,7 +170,7 @@ class ArbinLoader(Loader):
 
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """initiates the ArbinLoader class"""
         # could use __init__(self, cellpydata_object) and
         # set self.logger = cellpydata_object.logger etc.

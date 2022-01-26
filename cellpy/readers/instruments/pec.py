@@ -38,7 +38,7 @@ pec_headers_normal["test_id_txt"] = "Test"
 class PECLoader(Loader):
     """Main loading class"""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.headers_normal = (
             get_headers_normal()
         )  # should consider to move this to the Loader class
