@@ -82,6 +82,8 @@ def search_for_files(
     # TODO: @jepe - how to implement searching in db?
     # TODO: update prms and conf file to allow for setting if search should be done in
     #  sub-folders, several folders, db, cloud etc
+    # TODO: @jepe - find a way to implement automatic file_list creation in a top level func.
+
     version = 0.2
     t0 = time.time()
 

@@ -361,6 +361,10 @@ class Reader(object):
         insp = self._pick_info(serial_number, column_name)
         return insp
 
+    def get_by_column_label(self, column_name, serial_number):
+        insp = self._pick_info(serial_number, column_name)
+        return insp
+
     def get_group(self, serial_number):
         column_name = self.db_sheet_cols.group
         insp = self._pick_info(serial_number, column_name)
@@ -376,9 +380,6 @@ class Reader(object):
                 "Could not read the cycle mode (using value from prms instead)"
             )
             logging.debug(f"cycle mode: {prms.Reader.cycle_mode}")
-            import sys
-
-            sys.exit()
             return prms.Reader.cycle_mode
 
     def get_loading(self, serial_number):

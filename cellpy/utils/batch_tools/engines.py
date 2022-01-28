@@ -106,9 +106,23 @@ def dq_dv_engine(**kwargs):
 
 
 def simple_db_engine(
-    reader=None, srnos=None, file_list=None, pre_path=None, include_key=False, **kwargs
+    reader=None, srnos=None, file_list=None, pre_path=None, include_key=False, additional_column_names=None, **kwargs
 ):
-    """engine that gets values from the simple excel 'db'"""
+    """Engine that gets values from the simple excel 'db'
+
+    Args:
+        reader: a reader object (defaults to dbreader.Reader)
+        srnos: keys
+        file_list: file list to send to filefinder (instead of searching in folders for files).
+        pre_path: prepended path to send to filefinder.
+        include_key: include the key col in the pages.
+        additional_column_names: list of additional column names to include in the pages.
+        **kwargs: sent to filefinder
+
+    Returns:
+        pages (pandas.DataFrame)
+    """
+
     # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:
         reader = dbreader.Reader()
@@ -144,6 +158,13 @@ def simple_db_engine(
     info_dict[headers_journal["raw_file_names"]] = []
     info_dict[headers_journal["cellpy_file_name"]] = []
     info_dict[headers_journal["comment"]] = [reader.get_comment(srno) for srno in srnos]
+
+    if additional_column_names is not None:
+        for k in additional_column_names:
+            try:
+                info_dict[k] = [reader.get_by_column_label(k, srno) for srno in srnos]
+            except Exception as e:
+                logging.info(f"Could not retrieve from column {k} ({e})")
 
     # get id_key (not implemented yet
 
