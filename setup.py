@@ -17,7 +17,10 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-included_packages = find_packages(exclude=["build", "docs", "templates"])
+included_packages = find_packages(exclude=[
+    "build", "docs", "templates", "tests", "examples", "dev_data", "dev_utils", "testdata", "recipe",
+    ".github", ".pytest_cache"
+])
 
 requirements = [
     "scipy",

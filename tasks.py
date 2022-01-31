@@ -296,7 +296,7 @@ def test(c):
 
 
 @task
-def build(c, dist=True, docs=True, upload=False, serve=False, browser=False):
+def build(c, dist=True, docs=False, upload=True, serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")

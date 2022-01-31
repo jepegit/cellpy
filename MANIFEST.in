@@ -10,8 +10,9 @@ recursive-include cellpy/parameters *_default.conf
 recursive-include cellpy/utils/data/raw  *.res
 recursive-include cellpy/utils/data *.h5
 
-recursive-include tests *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
+exclude testdata
+exclude tests
 
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
