@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
@@ -31,6 +31,7 @@ jobs:
         run: conda list
 
       - name: Install mdbtools
+        shell: bash -l {0}
         run: |
           sudo apt-get update
           sudo apt-get install -y mdbtools
