@@ -23,6 +23,7 @@ dependencies:
   - PyGithub
   - watchdog
   - pytest
+  - black
   - twine
   - invoke
   - conda-build
@@ -43,3 +44,4 @@ dependencies:
     - requests
     - nbsphinx
     - sphinx-rtd-theme
+    - build

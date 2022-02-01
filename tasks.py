@@ -301,7 +301,7 @@ def build(c, dist=True, docs=False, upload=True, serve=False, browser=False):
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")
     if dist:
-        c.run("python setup.py sdist")
+        c.run("python -m build")
     if docs:
         print(" Building docs ".center(80, "-"))
         c.run("sphinx-build docs docs/_build")
@@ -309,9 +309,9 @@ def build(c, dist=True, docs=False, upload=True, serve=False, browser=False):
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
         print(" Trying with using username and password from keyring.")
-        c.run("twine upload dist/*")
+        c.run("python -m twine upload dist/*")
     else:
-        print(" To upload to pypi: 'twine upload dist/*'")
+        print(" To upload to pypi: 'python -m twine upload dist/*'")
     if serve:
         import pathlib
 

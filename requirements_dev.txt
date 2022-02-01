@@ -18,3 +18,5 @@ requests
 cookiecutter
 tqdm
 sqlalchemy
+build
+black
