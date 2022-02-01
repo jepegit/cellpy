@@ -16,4 +16,6 @@ jobs:
       - name: Conda list
         shell: bash -l {0}
         run: conda list
+      - name: pytest
+        run: pytest
 
