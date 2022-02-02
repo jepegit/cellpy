@@ -222,7 +222,6 @@ class TxtLoader(Loader):
                 that should be kept if keep_all_columns is False (default).
 
         """
-
         self.auto_register_config = True
         self.pre_init()
 

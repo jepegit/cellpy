@@ -1,22 +1,27 @@
 """ Very simple implementation of a plugin-like infrastructure"""
 from dataclasses import dataclass, field
 from importlib import import_module
+from pathlib import Path
+
+from ruamel import yaml
+
 
 # TODO: make tests.
 # TODO: move this into its own module (not __init__).
-# TODO: make "readers" for yaml and json.
-# TODO: make a new "folder" in cellpy for json/yaml files for instruments for users.
 # TODO: refactor ``custom`` reader so that it uses this.
 # TODO: document for devs.
 # TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
 
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
 OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
-        "formatters",
-        "pre_processors",
-        "post_processors",
-        "meta_keys"
-    ]
+    "formatters",
+    "pre_processors",
+    "post_processors",
+    "meta_keys",
+    "incremental_unit_labels",
+    "not_implemented_in_cellpy_yet_renaming_dict",
+]
+
 
 @dataclass
 class ModelParameters:
@@ -37,9 +42,7 @@ class ModelParameters:
     post_processors: dict = field(default_factory=dict)
 
 
-def register_configuration_from_yaml_file(
-    name: str = "one", module: str = "maccor_txt_one"
-) -> ModelParameters:
+def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
     """register a module (.yml file) and return it.
 
     This function will dynamically import the given module from the
@@ -48,37 +51,37 @@ def register_configuration_from_yaml_file(
     Returns: ModelParameters
 
     """
-    raise NotImplementedError
 
+    yml = yaml.YAML()
+    with open(instrument, "r") as ff:
+        settings = yml.load(ff.read())
 
-def register_local_configuration_from_yaml_file(
-    instrument
-) -> ModelParameters:
-    """register a module (.yml file) and return it.
+    name = Path(instrument).name
 
-    This function will dynamically import the given module from the
-    cellpy.readers.instruments.configurations module and return it.
+    optional_dictionary_attributes = {
+        key: settings.get(key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES
+    }
 
-    Returns: ModelParameters
-
-    """
-    print()
-    print(instrument)
-    raise NotImplementedError
-
-
-def register_configuration_from_json_file(
-    name: str = "one", module: str = "maccor_txt_one"
-) -> ModelParameters:
-    """register a module (.json file) and return it.
-
-    This function will dynamically import the given module from the
-    cellpy.readers.instruments.configurations module and return it.
-
-    Returns: ModelParameters
-
-    """
-    raise NotImplementedError
+    model_01 = ModelParameters(
+        name=name,
+        unit_labels=settings["unit_labels"],
+        incremental_unit_labels=optional_dictionary_attributes[
+            "incremental_unit_labels"
+        ],
+        normal_headers_renaming_dict=settings["normal_headers_renaming_dict"],
+        not_implemented_in_cellpy_yet_renaming_dict=optional_dictionary_attributes[
+            "not_implemented_in_cellpy_yet_renaming_dict"
+        ],
+        columns_to_keep=settings["columns_to_keep"],
+        states=settings["states"],
+        raw_units=settings["raw_units"],
+        raw_limits=settings["raw_limits"],
+        meta_keys=optional_dictionary_attributes["meta_keys"],
+        formatters=optional_dictionary_attributes["formatters"],
+        pre_processors=optional_dictionary_attributes["pre_processors"],
+        post_processors=optional_dictionary_attributes["post_processors"],
+    )
+    return model_01
 
 
 def register_configuration_from_module(
@@ -90,20 +93,24 @@ def register_configuration_from_module(
     cellpy.readers.instruments.configurations module and return it.
 
     Returns: ModelParameters
-
-    TODO: Either: expand this function so that it also reads from yaml files,
-        or use pydantic
     """
+
     m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
 
-    optional_dictionary_attributes = {key: getattr(m, key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES}
+    optional_dictionary_attributes = {
+        key: getattr(m, key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES
+    }
 
     model_01 = ModelParameters(
         name=name,
         unit_labels=m.unit_labels,
-        incremental_unit_labels=m.incremental_unit_labels,
+        incremental_unit_labels=optional_dictionary_attributes[
+            "incremental_unit_labels"
+        ],
         normal_headers_renaming_dict=m.normal_headers_renaming_dict,
-        not_implemented_in_cellpy_yet_renaming_dict=m.not_implemented_in_cellpy_yet_renaming_dict,
+        not_implemented_in_cellpy_yet_renaming_dict=optional_dictionary_attributes[
+            "not_implemented_in_cellpy_yet_renaming_dict"
+        ],
         columns_to_keep=m.columns_to_keep,
         states=m.states,
         raw_units=m.raw_units,

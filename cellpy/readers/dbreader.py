@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 
 from cellpy.parameters import prms
+
 # logger = logging.getLogger(__name__)
 
 
@@ -26,7 +27,9 @@ class DbSheetCols(object):
 
 
 class Reader(object):
-    def __init__(self, db_file=None, db_datadir=None, db_datadir_processed=None, db_frame=None):
+    def __init__(
+        self, db_file=None, db_datadir=None, db_datadir_processed=None, db_frame=None
+    ):
         """Simple excel reader.
 
         Args:
@@ -89,7 +92,9 @@ class Reader(object):
         return txt
 
     @staticmethod
-    def _extract_date_from_cell_name(cell_name, strf="%Y%m%d", regexp=None, splitter="_", position=0, start=0, end=12):
+    def _extract_date_from_cell_name(
+        cell_name, strf="%Y%m%d", regexp=None, splitter="_", position=0, start=0, end=12
+    ):
         """Extract date given a cell name (or filename).
 
         Uses regexp if given to find date txt, if not it uses splitter if splitter is not None or "",
@@ -116,7 +121,11 @@ class Reader(object):
                 day_r = r"%d"
 
                 regexp = strf.replace("\\", "\\\\").replace("-", r"\-")
-                regexp = regexp.replace(year_r, "[0-9]{4}").replace(month_r, "[0-9]{2}").replace(day_r, "[0-9]{2}")
+                regexp = (
+                    regexp.replace(year_r, "[0-9]{4}")
+                    .replace(month_r, "[0-9]{2}")
+                    .replace(day_r, "[0-9]{2}")
+                )
                 regexp = f"({regexp})"
 
             m = re.search(regexp, cell_name)
@@ -139,8 +148,10 @@ class Reader(object):
 
     def extract_date_from_cell_name(self, force=False):
         if force or "date" not in self.table.columns:
-            self.table = (
-                self.table.assign(date=self.table.file_name_indicator.apply(self._extract_date_from_cell_name))
+            self.table = self.table.assign(
+                date=self.table.file_name_indicator.apply(
+                    self._extract_date_from_cell_name
+                )
             )
 
     # --------not fixed from here -------------------------------

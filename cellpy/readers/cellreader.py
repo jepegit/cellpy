@@ -450,9 +450,26 @@ class CellpyData(object):
     def set_instrument(self, instrument=None, instrument_file=None, **kwargs):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
+        Three different modes of setting instruments are currently supported. You can
+        provide the already supported instrument names (see the documentation, e.g. "arbin",
+        "arbin_res",...). You can use the "custom" loader by providing the path to a yaml-file
+        describing the file format. This can be done either by setting instrument to
+        "instrument_name::instrument_definition_file_name", or by setting instrument to "custom" and
+        provide the definition file name through the instrument_file keyword argument. A last option
+        exists where you provide the yaml-file name directly to the instrument parameter. Cellpy
+        will then look into your local instrument folder and search for the yaml-file. Some
+        instrument types also supports a model key-word.
+
         Args:
-            instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]
-            instrument_file: (path) instrument definition file
+            instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]. If
+                instrument ends with ".yml" a local instrument file will be used. For example,
+                if instrument is "my_instrument.yml", cellpy will look into the local
+                instruments folders for a file called "my_instrument.yml" and then
+                use LocalTxtLoader to load after registering the instrument. If the instrument
+                name contains a '::' seperator, the part after the seperator will be interpreted
+                as 'instrument_file'.
+            instrument_file: (path) instrument definition file (uses currently the old "custom"
+                instrument format)
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
@@ -462,23 +479,30 @@ class CellpyData(object):
 
         custom_instrument_splitter = "::"
 
+        _override_local_instrument_path = kwargs.pop("_override_local_instrument_path", False)
+
         if instrument is None:
             instrument = self.tester
 
         logging.debug(f"Setting instrument: {instrument}")
         if instrument.endswith(".yml"):
-            print("I will look into your local instruments folder")
-            print("and check if I find the instrument definition")
-            instrument = Path(prms.Paths.instrumentdir) / instrument
+            if _override_local_instrument_path:
+                instrument = Path(instrument)
+            else:
+                instrument = Path(prms.Paths.instrumentdir) / instrument
             if instrument.is_file():
-                print("FOUND IT")
-                from cellpy.readers.instruments.local_instrument import LocalTxtLoader as RawLoader
+                from cellpy.readers.instruments.local_instrument import (
+                    LocalTxtLoader as RawLoader,
+                )
+
                 self._set_instrument(RawLoader, local_instrument_file=instrument)
                 self.tester = instrument
                 return
 
             else:
-                raise Exception(f"The needed instrument file does not exist: '{instrument}'")
+                raise Exception(
+                    f"The needed instrument file does not exist: '{instrument}'"
+                )
 
         if instrument in ["arbin", "arbin_res"]:
             from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader

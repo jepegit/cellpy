@@ -3,7 +3,6 @@ import shutil
 import pytest
 import logging
 from cellpy import log, get, prms
-from cellpy.parameters import prmreader
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -31,14 +30,10 @@ def test_set_instrument(cellpy_data_instance, parameters):
 
 def test_cellpy_get_model_one(parameters):
     instrument = "maccor_txt"
-    c = get(filename=parameters.mcc_file_path, instrument=instrument, model="one", mass=1.0)
+    c = get(
+        filename=parameters.mcc_file_path, instrument=instrument, model="one", mass=1.0
+    )
     assert len(c.cell.raw) == 6704
-
-
-def test_cellpy_get_model_one_yml(parameters):
-    instrument = "maccor_txt"
-    # c = get(filename=parameters.mcc_file_path, instrument=instrument, model="three", mass=1.0)
-    # assert len(c.cell.raw) == 6704
 
 
 def test_load_custom_yaml_file(parameters):
@@ -57,8 +52,8 @@ def test_cellpy_get_model_one_custom_instrument_file(parameters):
     instrument = parameters.custom_instrument
     definitions_file = parameters.custom_instrument_path
     prms.Paths.instrumentdir = parameters.instrument_dir
-    #c = get(filename=parameters.mcc_file_path, instrument=instrument, mass=1.0)
-    # assert len(c.cell.raw) == 6704
+    c = get(filename=parameters.mcc_file_path, instrument=instrument, mass=1.0)
+    assert len(c.cell.raw) == 6704
 
 
 def test_cellpy_get(parameters):
