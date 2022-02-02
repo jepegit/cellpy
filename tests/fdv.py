@@ -29,6 +29,8 @@ db_dir = os.path.join(data_dir, "db")
 journal_dir = os.path.join(data_dir, "journal")
 batch_file_dir = os.path.join(data_dir, "batchfiles")
 log_dir = os.path.join(data_dir, "log")
+instrument_dir = os.path.join(data_dir, "instruments")
+template_dir = os.path.join(data_dir, "templates")
 default_prm_file = os.path.abspath(os.path.join(data_dir, ".cellpy_prms_default.conf"))
 
 # -------- common files -----------------------------
@@ -129,6 +131,10 @@ journal_file_full_xlsx = "test_journal_full.xlsx"
 # -------- custom file format -----------------------
 custom_file_name = "custom_data_001.csv"
 custom_file_paths = os.path.join(raw_data_dir, custom_file_name)
+
+# -------- custom new file format -------------------
+custom_instrument = "maccor_one.yml"
+custom_instrument_path = os.path.join(instrument_dir, custom_instrument)
 
 if __name__ == "__main__":
     files = [

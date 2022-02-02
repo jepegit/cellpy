@@ -27,6 +27,11 @@ class CellPyConfig:
     ...
 
 
+# If updating this, you will have to do a lot of tweaks.
+#   .cellpy_prms_default.conf
+#   cli.py (_update_paths)
+#   test_cli_setup_interactive (NUMBER_OF_DIRS)
+#   test_prms.py (config_file_txt)
 @dataclass
 class PathsClass(CellPyConfig):
     outdatadir: Union[Path, str] = wdir
@@ -38,6 +43,7 @@ class PathsClass(CellPyConfig):
     notebookdir: Union[Path, str] = wdir
     templatedir: Union[Path, str] = wdir
     batchfiledir: Union[Path, str] = wdir
+    instrumentdir: Union[Path, str] = wdir
     db_filename: str = "cellpy_db.xlsx"
 
 

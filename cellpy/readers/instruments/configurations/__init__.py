@@ -11,7 +11,12 @@ from importlib import import_module
 # TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
 
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
-
+OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
+        "formatters",
+        "pre_processors",
+        "post_processors",
+        "meta_keys"
+    ]
 
 @dataclass
 class ModelParameters:
@@ -46,6 +51,22 @@ def register_configuration_from_yaml_file(
     raise NotImplementedError
 
 
+def register_local_configuration_from_yaml_file(
+    instrument
+) -> ModelParameters:
+    """register a module (.yml file) and return it.
+
+    This function will dynamically import the given module from the
+    cellpy.readers.instruments.configurations module and return it.
+
+    Returns: ModelParameters
+
+    """
+    print()
+    print(instrument)
+    raise NotImplementedError
+
+
 def register_configuration_from_json_file(
     name: str = "one", module: str = "maccor_txt_one"
 ) -> ModelParameters:
@@ -74,25 +95,8 @@ def register_configuration_from_module(
         or use pydantic
     """
     m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
-    try:
-        formatters = m.formatters
-    except AttributeError:
-        formatters = dict()
 
-    try:
-        pre_processors = m.pre_processors
-    except AttributeError:
-        pre_processors = dict()
-
-    try:
-        post_processors = m.post_processors
-    except AttributeError:
-        post_processors = dict()
-
-    try:
-        meta_keys = m.meta_keys
-    except AttributeError:
-        meta_keys = dict()
+    optional_dictionary_attributes = {key: getattr(m, key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES}
 
     model_01 = ModelParameters(
         name=name,
@@ -104,9 +108,9 @@ def register_configuration_from_module(
         states=m.states,
         raw_units=m.raw_units,
         raw_limits=m.raw_limits,
-        meta_keys=meta_keys,
-        formatters=formatters,
-        pre_processors=pre_processors,
-        post_processors=post_processors,
+        meta_keys=optional_dictionary_attributes["meta_keys"],
+        formatters=optional_dictionary_attributes["formatters"],
+        pre_processors=optional_dictionary_attributes["pre_processors"],
+        post_processors=optional_dictionary_attributes["post_processors"],
     )
     return model_01

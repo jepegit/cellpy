@@ -466,6 +466,19 @@ class CellpyData(object):
             instrument = self.tester
 
         logging.debug(f"Setting instrument: {instrument}")
+        if instrument.endswith(".yml"):
+            print("I will look into your local instruments folder")
+            print("and check if I find the instrument definition")
+            instrument = Path(prms.Paths.instrumentdir) / instrument
+            if instrument.is_file():
+                print("FOUND IT")
+                from cellpy.readers.instruments.local_instrument import LocalTxtLoader as RawLoader
+                self._set_instrument(RawLoader, local_instrument_file=instrument)
+                self.tester = instrument
+                return
+
+            else:
+                raise Exception(f"The needed instrument file does not exist: '{instrument}'")
 
         if instrument in ["arbin", "arbin_res"]:
             from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
@@ -5469,7 +5482,8 @@ def get(
     db_readers = ["arbin_sql"]
 
     if instrument_file is not None:
-        # TODO: make tests for this:
+        # TODO: make tests for this
+        # TODO: align this with the new format
         cellpy_instance.set_instrument(
             instrument="custom", instrument_file=instrument_file
         )

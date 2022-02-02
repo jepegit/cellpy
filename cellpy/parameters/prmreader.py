@@ -64,6 +64,7 @@ def get_user_dir():
 def _write_prm_file(file_name=None):
     logging.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
+
     try:
         with open(file_name, "w") as config_file:
             yaml.allow_unicode = True

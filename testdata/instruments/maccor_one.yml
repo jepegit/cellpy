@@ -1,0 +1,84 @@
+---
+formatters:
+    skiprows: 3  # 12 for other file
+    sep: "\t"
+    header: 0  # 0 for other file
+    encoding: ISO-8859-1  # options: ISO-8859-1 utf-8 cp1252
+    decimal: .
+    comment_chars:
+        - '#'
+        - '!'
+post_processors:
+    split_capacity: true
+    split_current: true
+    set_index: true
+    rename_headers: true
+    set_cycle_number_not_zero: true
+    convert_date_time_to_datetime: true
+    convert_step_time_to_timedelta: true
+    convert_test_time_to_timedelta: true
+normal_headers_renaming_dict:
+    data_point_txt: "Rec#"
+    datetime_txt: "DPt Time"
+    test_time_txt: "TestTime"
+    step_time_txt: "StepTime"
+    cycle_index_txt: "Cyc#"
+    step_index_txt: "Step"
+    current_txt: "Amps"
+    voltage_txt: "Volts"
+    power_txt: "Watt-hr"
+    charge_capacity_txt: "Amp-hr"
+    charge_energy_txt: "Watt-hr"
+    ac_impedance_txt: "ACImp/Ohms"
+    internal_resistance_txt: "DCIR/Ohms"
+unit_labels:
+    resistance: Ohms
+    time: s
+    current: A
+    voltage: V
+    power: W
+    capacity: Ah
+    energy: Wh
+    temperature: C
+units:
+    charge: 0.001
+    current: 0.001
+    mass: 0.001
+    specific: 1.0
+states:
+    column_name: State
+    charge_keys:
+        - C
+    discharge_keys:
+        - D
+    rest_keys:
+        - R
+raw_units:
+    current: 1.0
+    charge: 1.0
+    mass: 0.001
+columns_to_keep:
+    - TestTime
+    - "Rec#"
+    - "Cyc#"
+    - Step
+    - StepTime
+    - Amp-hr
+    - Watt-hr
+    - Amps
+    - Volts
+    - State
+    - ES
+    - DPt Time
+    - "ACImp/Ohms"
+    - "DCIR/Ohms"
+raw_limits:
+    current_hard: 1.0e-13
+    current_soft: 1.0e-05
+    ir_change: 1.0e-05
+    stable_charge_hard: 0.9
+    stable_charge_soft: 5.0
+    stable_current_hard: 2.0
+    stable_current_soft: 4.0
+    stable_voltage_hard: 2.0
+    stable_voltage_soft: 4.0

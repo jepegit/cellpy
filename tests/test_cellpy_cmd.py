@@ -4,7 +4,7 @@ import pytest
 import cellpy
 from cellpy import cli, prmreader
 
-NUMBER_OF_DIRS = 10
+NUMBER_OF_DIRS = 11
 
 
 def test_get_user_name():

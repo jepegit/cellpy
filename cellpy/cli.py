@@ -198,6 +198,8 @@ def _update_paths(
     silent=False,
 ):
 
+    # please, refactor me :-(
+
     h = prmreader.get_user_dir()
 
     if default_dir is None:
@@ -226,6 +228,7 @@ def _update_paths(
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
         batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
         templatedir = pathlib.Path(prmreader.prms.Paths.templatedir)
+        instrumentdir = pathlib.Path(prmreader.prms.Paths.instrumentsdir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -237,6 +240,7 @@ def _update_paths(
         notebookdir = "notebooks"
         batchfiledir = "batchfiles"
         templatedir = "templates"
+        instrumentdir = "instruments"
 
     outdatadir = h / outdatadir
     rawdatadir = h / rawdatadir
@@ -247,6 +251,7 @@ def _update_paths(
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
     templatedir = h / templatedir
+    instrumentdir = h / instrumentdir
 
     if dry_run:
         click.echo(f" - base (h): {h}")
@@ -275,7 +280,8 @@ def _update_paths(
         )
 
         batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
-        templatedir = _ask_about_path("where to put your batch files", batchfiledir)
+        templatedir = _ask_about_path("where to put your batch files", templatedir)
+        instrumentdir = _ask_about_path("where to put your batch files", instrumentdir)
 
     # update folders based on suggestions
     for d in [
@@ -288,6 +294,7 @@ def _update_paths(
         db_path,
         batchfiledir,
         templatedir,
+        instrumentdir,
     ]:
 
         if not dry_run:
@@ -306,6 +313,7 @@ def _update_paths(
     prmreader.prms.Paths.notebookdir = str(notebookdir)
     prmreader.prms.Paths.batchfiledir = str(batchfiledir)
     prmreader.prms.Paths.templatedir = str(templatedir)
+    prmreader.prms.Paths.instrumentdir = str(instrumentdir)
 
 
 def _ask_about_path(q, p):
