@@ -93,6 +93,7 @@ class Batch:
         db_reader = kwargs.pop("db_reader", "default")
 
         file_name = kwargs.pop("file_name", None)
+        frame = kwargs.pop("frame", None)
 
         logging.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
@@ -108,20 +109,22 @@ class Batch:
         self.experiment.nom_cap = kwargs.pop("nom_cap", None)
 
         if not file_name:
-            if len(args) > 0:
-                self.experiment.journal.name = args[0]
+            if frame is not None:
+                self.experiment.journal.from_frame(frame, **kwargs)
+            else:
+                if len(args) > 0:
+                    self.experiment.journal.name = args[0]
 
-            if len(args) > 1:
-                self.experiment.journal.project = args[1]
+                if len(args) > 1:
+                    self.experiment.journal.project = args[1]
 
-            for key in kwargs:
-                if key == "name":
-                    self.experiment.journal.name = kwargs[key]
-                elif key == "project":
-                    self.experiment.journal.project = kwargs[key]
-                elif key == "batch_col":
-                    self.experiment.journal.batch_col = kwargs[key]
-
+                for key in kwargs:
+                    if key == "name":
+                        self.experiment.journal.name = kwargs[key]
+                    elif key == "project":
+                        self.experiment.journal.project = kwargs[key]
+                    elif key == "batch_col":
+                        self.experiment.journal.batch_col = kwargs[key]
         else:
             self.experiment.journal.from_file(file_name=file_name, **kwargs)
 
@@ -791,6 +794,7 @@ def init(*args, **kwargs) -> Batch:
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", None)
     file_name = kwargs.pop("file_name", None)
+    frame = kwargs.pop("frame", None)
 
     log.setup_logging(
         default_level=default_log_level, testing=testing, reset_big_log=True
@@ -800,6 +804,10 @@ def init(*args, **kwargs) -> Batch:
     if file_name is not None:
         kwargs.pop("db_reader", None)
         return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
+    if frame is not None:
+        kwargs.pop("db_reader", None)
+        return Batch(*args, file_name=None, db_reader=None, frame=frame, **kwargs)
+
     return Batch(*args, **kwargs)
 
 

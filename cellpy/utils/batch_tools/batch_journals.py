@@ -313,6 +313,23 @@ class LabJournal(BaseJournal):
             self.generate_folder_names()
             self.paginate()
 
+    def from_frame(self, frame, name=None, project=None, paginate=None, **kwargs):
+        if name is not None:
+            self.name = name
+        if project is not None:
+            self.project = project
+
+        self.pages = frame  # TODO: include a check here to see if the pages are appropriate
+
+        if paginate is None:
+            if self.name and self.project:
+                paginate = True
+
+        if paginate:
+            logging.critical(f"paginating {project}/{name} ")
+            self.generate_folder_names()
+            self.paginate()
+
     def from_file_old(self, file_name=None):
         """Loads a DataFrame with all the needed info about the experiment"""
 
