@@ -6,6 +6,7 @@ import logging
 import warnings
 
 import numpy as np
+import pandas as pd
 from scipy import stats
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
@@ -330,8 +331,18 @@ class Converter:
 
         elif self.increment_method == "hist":
             logging.debug(" - diff using HIST")
-            raise NotImplementedError
-            self.incremental_capacity = ()
+            # raise NotImplementedError
+
+            df = pd.DataFrame({'Capacity': self.capacity_inverted, 'Voltage': self.voltage_inverted})
+            df['dQ'] = df.Capacity.diff()
+            df['Voltage'] = df.Voltage.round(decimals=4)
+            df = df.groupby(['Voltage'])['dQ'].agg('sum').to_frame().reset_index()
+            df['dV'] = (df.Voltage.diff().rolling(1).sum())
+            df['dQdV'] = df.dQ / df.dV
+            df = df[df.dQdV.notnull()]
+
+            self.incremental_capacity = df.dQdV
+            self.voltage_processed = df.Voltage
 
             # TODO: Asbjoern, maybe you can put your method here? Yes
 
@@ -595,7 +606,6 @@ def dqdv(
     max_points=None,
     **kwargs,
 ):
-
     """Convenience functions for creating dq-dv data from given capacity
     and voltage data.
 
