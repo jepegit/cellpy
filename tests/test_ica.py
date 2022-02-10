@@ -125,6 +125,21 @@ def test_pre_process_data_smoothing(converter):
     assert len(v) > 1
 
 
+def test_increment_hist_method(converter):
+    converter.inspect_data()
+    converter.pre_smoothing = True
+    converter.increment_method = "hist"
+    converter.pre_process_data()
+    converter.increment_data()
+    print(len(converter.incremental_capacity))
+    print(len(converter.voltage_processed))
+
+    # import matplotlib.pyplot as plt
+    # plt.plot(converter.voltage_processed, converter.incremental_capacity)
+    # plt.plot(converter.voltage_processed, converter.incremental_capacity)
+    # plt.show()
+
+
 def test_increment_data_smoothing(converter):
     converter.inspect_data()
     converter.pre_process_data()
