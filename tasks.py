@@ -323,7 +323,9 @@ def build(c, dist=True, docs=True, upload=False, serve=False, browser=False):
             print(f" - opening browser in http://{_location}")
             c.run(f"python -m webbrowser -t http://{_location}")
         else:
-            print(f" - hint! you can open your browser by typing:\n       python -m webbrowser -t http://{_location}")
+            print(
+                f" - hint! you can open your browser by typing:\n       python -m webbrowser -t http://{_location}"
+            )
         sphinx_serve()
 
 

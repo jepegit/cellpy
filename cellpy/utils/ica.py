@@ -333,13 +333,15 @@ class Converter:
             logging.debug(" - diff using HIST")
             # raise NotImplementedError
 
-            df = pd.DataFrame({'Capacity': self.capacity_inverted, 'Voltage': self.voltage_inverted})
-            df['dQ'] = df.Capacity.diff()
-            df['Voltage'] = df.Voltage.round(decimals=4)
-            df = df.groupby(['Voltage'])['dQ'].agg('sum').to_frame().reset_index()
-            df['dV'] = (df.Voltage.diff().rolling(1).sum())
-            df['dQdV'] = df.dQ / df.dV
-            df = df[df.dQdV.notnull()]
+            df = pd.DataFrame(
+                {"Capacity": self.capacity_inverted, "Voltage": self.voltage_inverted}
+            )
+            df["dQ"] = df.Capacity.diff()
+            df["Voltage"] = df.Voltage.round(decimals=4)
+            df = df.groupby(["Voltage"])["dQ"].sum().to_frame().reset_index()
+            df["dV"] = df.Voltage.diff().rolling(1).sum()
+            df["dQdV"] = df.dQ / df.dV
+            # df = df[df.dQdV.notnull()]  # Might be needed, but could introduce an artefact
 
             self.incremental_capacity = df.dQdV
             self.voltage_processed = df.Voltage
@@ -1031,11 +1033,15 @@ def _get_a_cell_to_play_with():
     return cell
 
 
-if __name__ == "__main__":
-    # check_class_ica()¨
+def _check_if_works():
     import pandas as pd
     from cellpy import cellreader
 
     cell = _get_a_cell_to_play_with()
 
     a = dqdv_frames(cell)
+    print("Hei")
+
+
+if __name__ == "__main__":
+    _check_if_works()
