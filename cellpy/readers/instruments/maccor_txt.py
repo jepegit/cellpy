@@ -12,6 +12,7 @@ SUPPORTED_MODELS = {
     "zero": "maccor_txt_zero",
     "one": "maccor_txt_one",
     "two": "maccor_txt_two",
+    "WMG_SIMBA": "maccor_txt_three",
 }
 
 

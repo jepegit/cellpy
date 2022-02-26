@@ -180,6 +180,7 @@ class CyclingExperiment(BaseExperiment):
                         nom_cap=row[hdr_journal.nom_cap],
                         cell_type=row[hdr_journal.cell_type],
                         instrument=row[hdr_journal.instrument],
+                        selector=selector,
                         **kwargs,
                     )
 

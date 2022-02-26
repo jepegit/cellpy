@@ -106,6 +106,7 @@ formatters = {
     "header": 0,  # 0 for other file
     "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
     "decimal": ",",
+    "thousands": None,
 }
 
 pre_processors = {

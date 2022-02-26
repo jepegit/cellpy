@@ -21,6 +21,7 @@ from cellpy.readers.instruments.configurations import (
     ModelParameters,
 )
 from cellpy.readers.instruments.processors import pre_processors, post_processors
+from cellpy.readers.instruments.processors.post_processors import ORDERED_POST_PROCESSING_STEPS
 
 MINIMUM_SELECTION = [
     "Data_Point",
@@ -41,7 +42,7 @@ MINIMUM_SELECTION = [
 def find_delimiter_and_start(
     file_name,
     separators=None,
-    checking_length_header=100,
+    checking_length_header=30,
     checking_length_whole=200,
 ):
     """function to automatically detect the delimiter and what line the first data appears on.
@@ -58,26 +59,40 @@ def find_delimiter_and_start(
         separators = [";", "\t", "|", ","]
     logging.debug(f"checking internals of the file {file_name}")
 
+    empty_lines = 0
     with open(file_name, "r") as fin:
         lines = []
         for j in range(checking_length_whole):
             line = fin.readline()
             if not line:
                 break
-            lines.append(line.strip())
+            if len(line.strip()):
+                lines.append(line)
+            else:
+                empty_lines += 1
 
+    checking_length_whole -= empty_lines
+    if checking_length_header - empty_lines < 1:
+        checking_length_header = checking_length_whole // 2
     separator, number_of_hits = _find_separator(
         checking_length_whole - checking_length_header, lines, separators
     )
 
-    if separator is not None:
-        first_index = _find_first_line_whit_delimiter(
-            checking_length_header, lines, number_of_hits, separator
-        )
-        logging.debug(f"First line with delimiter: {first_index}")
-        return separator, first_index
-    else:
+    if separator is None:
         raise IOError(f"could not decide delimiter in {file_name}")
+
+    if separator == "\t":
+        logging.debug("seperator = TAB")
+    elif separator == " ":
+        logging.debug("seperator = SPACE")
+    else:
+        logging.debug(f"seperator = {separator}")
+
+    first_index = _find_first_line_whit_delimiter(
+        checking_length_header, lines, number_of_hits, separator
+    )
+    logging.debug(f"First line with delimiter: {first_index}")
+    return separator, first_index
 
 
 def _find_first_line_whit_delimiter(
@@ -249,6 +264,7 @@ class TxtLoader(Loader):
             self.header = kwargs.pop("header", 0)
             self.encoding = kwargs.pop("encoding", "utf-8")
             self.decimal = kwargs.pop("decimal", ".")
+            self.thousands = kwargs.pop("thousands", None)
 
         else:
             self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
@@ -261,6 +277,9 @@ class TxtLoader(Loader):
             )
             self.decimal = kwargs.pop(
                 "decimal", self.config_params.formatters["decimal"]
+            )
+            self.thousands = kwargs.pop(
+                "thousands", self.config_params.formatters["thousands"]
             )
 
         self.pre_processors = kwargs.pop(
@@ -379,9 +398,6 @@ class TxtLoader(Loader):
             logging.debug("running pre-processing-hook")
             data_df = pre_processor_hook(data_df)
 
-        if not self.keep_all_columns:
-            data_df = data_df[self.config_params.columns_to_keep]
-
         data = core.Cell()
 
         # metadata
@@ -445,7 +461,7 @@ class TxtLoader(Loader):
         )
 
     def _query_csv(
-        self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None
+        self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None, thousands=None,
     ):
         logging.debug(f"parsing with pandas.read_csv: {name}")
         sep = sep or self.sep
@@ -453,6 +469,7 @@ class TxtLoader(Loader):
         header = header or self.header
         encoding = encoding or self.encoding
         decimal = decimal or self.decimal
+        thousands = thousands or self.thousands
         logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
         data_df = pd.read_csv(
             name,
@@ -461,6 +478,7 @@ class TxtLoader(Loader):
             header=header,
             encoding=encoding,
             decimal=decimal,
+            thousands=thousands,
         )
         return data_df
 
@@ -496,14 +514,13 @@ class TxtLoader(Loader):
 
     def _post_process(self, data):
         # ordered post-processing steps:
-        ordered_steps = ["rename_headers"]
-        for processor_name in ordered_steps:
+        for processor_name in ORDERED_POST_PROCESSING_STEPS:
             if processor_name in self.post_processors:
                 data = self._perform_post_process_step(data, processor_name)
 
         # non-ordered post-processing steps
         for processor_name in self.post_processors:
-            if processor_name not in ordered_steps:
+            if processor_name not in ORDERED_POST_PROCESSING_STEPS:
                 data = self._perform_post_process_step(data, processor_name)
         return data
 

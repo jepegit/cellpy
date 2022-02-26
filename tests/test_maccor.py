@@ -49,9 +49,13 @@ def test_load_custom_yaml_file(parameters):
 
 def test_cellpy_get_model_one_custom_instrument_file(parameters):
     """Use default location of user instrument files"""
+    # TODO: create defaults for missing parameters in the custom instrument file.
+
     instrument = parameters.custom_instrument
     definitions_file = parameters.custom_instrument_path
     prms.Paths.instrumentdir = parameters.instrument_dir
+    logging.debug(f"directory: {parameters.instrument_dir}")
+    logging.debug(f"instrument file: {parameters.custom_instrument}")
     c = get(filename=parameters.mcc_file_path, instrument=instrument, mass=1.0)
     assert len(c.cell.raw) == 6704
 

@@ -15,6 +15,7 @@ from ruamel import yaml
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
 OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
     "formatters",
+    "prefixes",
     "pre_processors",
     "post_processors",
     "meta_keys",
@@ -40,6 +41,7 @@ class ModelParameters:
     meta_keys: dict = field(default_factory=dict)
     pre_processors: dict = field(default_factory=dict)
     post_processors: dict = field(default_factory=dict)
+    prefixes: dict = field(default_factory=dict)
 
 
 def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
@@ -65,6 +67,7 @@ def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
     model_01 = ModelParameters(
         name=name,
         unit_labels=settings["unit_labels"],
+        prefixes=optional_dictionary_attributes["prefixes"],
         incremental_unit_labels=optional_dictionary_attributes[
             "incremental_unit_labels"
         ],
@@ -101,9 +104,11 @@ def register_configuration_from_module(
         key: getattr(m, key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES
     }
 
+
     model_01 = ModelParameters(
         name=name,
         unit_labels=m.unit_labels,
+        prefixes=optional_dictionary_attributes["prefixes"],
         incremental_unit_labels=optional_dictionary_attributes[
             "incremental_unit_labels"
         ],

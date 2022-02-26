@@ -4425,7 +4425,7 @@ class CellpyData(object):
             to_unit: (float) unit of input, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
               will be 0.001 / 1.0 = 0.001
-            from_unit: float) unit of output, f.ex. if unit of charge
+            from_unit: (float) unit of output, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
               will be 1.0 / 0.001 = 1000.0
 
@@ -5558,6 +5558,9 @@ def get(
         # raw file
         logging.info(f"Loading raw-file: {filename}")
         cellpy_instance.from_raw(filename, **kwargs)
+        logging.debug("raw:")
+        logging.debug(cellpy_instance.cell.raw.head())
+
         if not cellpy_instance:
             print("Could not load file: check log!")
             print("Returning None")

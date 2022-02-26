@@ -1,15 +1,26 @@
-# not updated yet
 unit_labels = {
     "resistance": "Ohms",
-    # not observed yet:
     "time": "s",
-    "current": "A",
-    "voltage": "V",
-    "power": "W",
-    "capacity": "Ah",
+    "current": "Amps",
+    "voltage": "Volts",
+    "power": "Watt-hr",
+    "capacity": "Amp-hr",
     "energy": "Wh",
     "temperature": "C",
 }
+
+prefixes = {
+        "G": 1000_000_000,
+        "M": 1000_000,
+        "k": 1000.0,
+        "h": 100.0,
+        "d": 10.0,
+        "c": 0.01,
+        "m": 0.001,
+        "micro": 0.000_001,
+        "n": 0.000_000_001,
+
+    }
 
 # not observed yet
 incremental_unit_labels = {
@@ -18,6 +29,7 @@ incremental_unit_labels = {
     "dv_dq": f"{unit_labels['voltage']}/{unit_labels['capacity']}",
 }
 
+
 normal_headers_renaming_dict = {
     "data_point_txt": f"Rec#",
     "datetime_txt": f"DPt Time",
@@ -25,13 +37,14 @@ normal_headers_renaming_dict = {
     "step_time_txt": f"StepTime",
     "cycle_index_txt": f"Cyc#",
     "step_index_txt": f"Step",
-    "current_txt": f"Amps",
+    "current_txt": None,
     "voltage_txt": f"Volts",
-    "power_txt": f"Watt-hr",
-    "charge_capacity_txt": f"Amp-hr",
-    "charge_energy_txt": f"Watt-hr",
+    "power_txt": f"mWatt-hr",
+    "charge_capacity_txt": f"mAmp-hr",
+    "charge_energy_txt": f"mWatt-hr",
     "ac_impedance_txt": f"ACImp/{unit_labels['resistance']}",
     "internal_resistance_txt": f"DCIR/{unit_labels['resistance']}",
+
     # not observed yet:
     "sub_step_index_txt": f"Sub_Step_Index",  # new
     "sub_step_time_txt": f"Sub_Step_Time",  # new
@@ -69,15 +82,13 @@ columns_to_keep = [
     "Cyc#",
     "Step",
     "StepTime",
-    "Amp-hr",
-    "Watt-hr",
-    "Amps",
+    "mAmp-hr",
+    "mWatt-hr",
+    "mAmps",
     "Volts",
     "State",
     "ES",
     "DPt Time",
-    "ACImp/Ohms",
-    "DCIR/Ohms",
 ]
 
 states = {
@@ -87,7 +98,7 @@ states = {
     "rest_keys": ["R"],
 }
 
-raw_units = {"current": 1.0, "charge": 1.0, "mass": 0.001}
+raw_units = {"current": 0.001, "charge": 1.0, "mass": 0.001, "voltage": 0.001}
 
 raw_limits = {
     "current_hard": 0.000_000_000_000_1,
@@ -107,17 +118,22 @@ formatters = {
     "header": 0,  # 0 for other file
     "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
     "decimal": ".",
-    "thousands": None,
+    "thousands": ",",
 }
 
+pre_processors = {
+}
 
 post_processors = {
+    "get_column_names": True,
     "split_capacity": True,
-    "split_current": True,
+    "split_current": False,
     "set_index": True,
     "rename_headers": True,
     "set_cycle_number_not_zero": True,
     "convert_date_time_to_datetime": True,
     "convert_step_time_to_timedelta": True,
     "convert_test_time_to_timedelta": True,
+    "convert_units": True,
+    "select_columns_to_keep": True
 }
