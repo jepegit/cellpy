@@ -2,7 +2,7 @@ import logging
 
 from cellpy.utils.batch_tools.batch_core import BaseExporter
 from cellpy.utils.batch_tools.dumpers import csv_dumper, screen_dumper
-from cellpy.utils.batch_tools.engines import summary_engine, cycles_engine
+from cellpy.utils.batch_tools.engines import cycles_engine, summary_engine
 
 
 class CSVExporter(BaseExporter):

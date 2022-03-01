@@ -1,13 +1,12 @@
 """arbin MS SQL Server csv data"""
 
+import pandas as pd
 from dateutil.parser import parse
 
-import pandas as pd
-
-from cellpy.readers.core import FileID, Cell
-from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.instruments.base import Loader
 from cellpy import prms
+from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
+from cellpy.readers.core import Cell, FileID
+from cellpy.readers.instruments.base import Loader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
@@ -228,9 +227,11 @@ def test_csv_loader():
 
 
 def test_loader_from_outside():
-    from cellpy import cellreader
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    from cellpy import cellreader
 
     datadir = pathlib.Path(
         r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709"
@@ -280,9 +281,11 @@ def test_loader_from_outside():
 
 
 def test_seamless_files():
-    from cellpy import cellreader, prms
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    from cellpy import cellreader, prms
 
     datadir = pathlib.Path(
         r"\\ad.ife.no\dfs\Org\MPT-BAT-LAB\Processed\Experiments\seamless\Raw data_excel"

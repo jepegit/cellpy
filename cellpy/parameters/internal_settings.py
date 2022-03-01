@@ -133,6 +133,7 @@ class HeadersNormal(BaseSettings):
     discharge_capacity_txt: str = "discharge_capacity"
     discharge_energy_txt: str = "discharge_energy"
     internal_resistance_txt: str = "internal_resistance"
+    power_txt: str = "power"
     is_fc_data_txt: str = "is_fc_data"
     step_index_txt: str = "step_index"
     sub_step_index_txt: str = "sub_step_index"

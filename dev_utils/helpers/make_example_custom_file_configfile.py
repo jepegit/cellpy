@@ -1,10 +1,10 @@
-import pathlib
 import logging
+import pathlib
 from pprint import pprint
+
 import yaml
 
 from cellpy.readers.instruments import custom
-
 
 default_config = custom.DEFAULT_CONFIG
 

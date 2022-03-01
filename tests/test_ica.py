@@ -1,9 +1,11 @@
-import pytest
 import logging
+
 import pandas as pd
+import pytest
+
 from cellpy import log
-from cellpy.utils import ica
 from cellpy.exceptions import NullData
+from cellpy.utils import ica
 
 # import warnings
 # warnings.simplefilter("ignore", FutureWarning)

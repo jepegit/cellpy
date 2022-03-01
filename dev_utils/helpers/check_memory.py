@@ -1,17 +1,15 @@
+import logging
 import os
-from psutil import Process
+import tempfile
+import time
 from pathlib import Path
 
 import pytest
-import tempfile
-import os
-import logging
-import time
+from psutil import Process
 
 import cellpy.readers.core
 import cellpy.utils.helpers
-from cellpy import log
-from cellpy import prms
+from cellpy import log, prms
 from cellpy.readers.core import humanize_bytes
 
 f_in = Path("../testdata/data/20160805_test001_45_cc_01.res")

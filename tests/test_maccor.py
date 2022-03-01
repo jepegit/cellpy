@@ -1,8 +1,10 @@
-import tempfile
-import shutil
-import pytest
 import logging
-from cellpy import log, get, prms
+import shutil
+import tempfile
+
+import pytest
+
+from cellpy import get, log, prms
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -38,8 +40,9 @@ def test_cellpy_get_model_one(parameters):
 
 def test_load_custom_yaml_file(parameters):
     definitions_file = parameters.custom_instrument_path
-    from ruamel import yaml
     from pprint import pprint
+
+    from ruamel import yaml
 
     yml = yaml.YAML()
     with open(definitions_file, "r") as ff:

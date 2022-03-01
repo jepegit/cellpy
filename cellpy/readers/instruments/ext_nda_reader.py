@@ -1,18 +1,13 @@
-import os
 import logging
+import os
 
 import pandas as pd
 
-from cellpy.readers.core import (
-    FileID,
-    Cell,
-    check64bit,
-    humanize_bytes,
-    xldate_as_datetime,
-)
-from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.instruments.base import Loader
 from cellpy import prms
+from cellpy.parameters.internal_settings import get_headers_normal
+from cellpy.readers.core import (Cell, FileID, check64bit, humanize_bytes,
+                                 xldate_as_datetime)
+from cellpy.readers.instruments.base import Loader
 
 try:
     from nda_reader import nda_reader

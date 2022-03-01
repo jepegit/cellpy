@@ -2,11 +2,11 @@ import logging
 
 import pandas as pd
 
-from cellpy.utils.batch_tools.batch_core import BaseAnalyzer
-from cellpy.utils.ocv_rlx import select_ocv_points
 from cellpy.exceptions import UnderDefined
-from cellpy.utils.batch_tools.engines import summary_engine
+from cellpy.utils.batch_tools.batch_core import BaseAnalyzer
 from cellpy.utils.batch_tools.dumpers import ram_dumper
+from cellpy.utils.batch_tools.engines import summary_engine
+from cellpy.utils.ocv_rlx import select_ocv_points
 
 
 class BaseSummaryAnalyzer(BaseAnalyzer):

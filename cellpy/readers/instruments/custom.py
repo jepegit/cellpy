@@ -1,16 +1,16 @@
 import logging
 import os
 import pathlib
-from ruamel import yaml
 
 import pandas as pd
+from ruamel import yaml
 
-from cellpy.parameters.internal_settings import get_headers_normal, ATTRS_CELLPYFILE
-
-from cellpy.readers.instruments.base import Loader
-from cellpy.readers.core import FileID, Cell, check64bit, humanize_bytes
-from cellpy.parameters import prms
 from cellpy.exceptions import FileNotFound
+from cellpy.parameters import prms
+from cellpy.parameters.internal_settings import (ATTRS_CELLPYFILE,
+                                                 get_headers_normal)
+from cellpy.readers.core import Cell, FileID, check64bit, humanize_bytes
+from cellpy.readers.instruments.base import Loader
 
 DEFAULT_CONFIG = {
     "structure": {

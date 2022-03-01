@@ -1,16 +1,14 @@
+import csv
+import itertools
 import logging
 import os
 import warnings
 
 import pandas as pd
 
-import csv
-import itertools
-
+import cellpy.parameters.internal_settings
 from cellpy import filefinder, prms
 from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
-import cellpy.parameters.internal_settings
-
 # logger = logging.getLogger(__name__)
 from cellpy.parameters.internal_settings import headers_step_table
 

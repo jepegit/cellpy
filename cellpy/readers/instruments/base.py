@@ -10,18 +10,18 @@ import logging
 import pathlib
 import shutil
 import tempfile
-from typing import Union, List
+from typing import List, Union
 
 import pandas as pd
 
 import cellpy.readers.core as core
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.readers.instruments.configurations import (
-    register_configuration_from_module,
-    ModelParameters,
-)
-from cellpy.readers.instruments.processors import pre_processors, post_processors
-from cellpy.readers.instruments.processors.post_processors import ORDERED_POST_PROCESSING_STEPS
+    ModelParameters, register_configuration_from_module)
+from cellpy.readers.instruments.processors import (post_processors,
+                                                   pre_processors)
+from cellpy.readers.instruments.processors.post_processors import \
+    ORDERED_POST_PROCESSING_STEPS
 
 MINIMUM_SELECTION = [
     "Data_Point",
@@ -306,7 +306,8 @@ class TxtLoader(Loader):
         model_module_name = self.supported_models.get(self.model, None)
         if model_module_name is None:
             raise Exception(
-                f"the model {self.model} does not have any defined configuration"
+                f"The model {self.model} does not have any defined configuration."
+                f"\nCurrent supported models are {[*self.supported_models.keys()]}"
             )
         return register_configuration_from_module(self.model, model_module_name)
 
@@ -461,7 +462,14 @@ class TxtLoader(Loader):
         )
 
     def _query_csv(
-        self, name, sep=None, skiprows=None, header=None, encoding=None, decimal=None, thousands=None,
+        self,
+        name,
+        sep=None,
+        skiprows=None,
+        header=None,
+        encoding=None,
+        decimal=None,
+        thousands=None,
     ):
         logging.debug(f"parsing with pandas.read_csv: {name}")
         sep = sep or self.sep

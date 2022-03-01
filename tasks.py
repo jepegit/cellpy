@@ -1,14 +1,13 @@
-import sys
 import io
-import re
 import os
+import re
+import sys
+from contextlib import contextmanager
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-from contextlib import contextmanager
 
-from invoke import task
 import requests
-
+from invoke import task
 
 """Tasks for cellpy development.
 
@@ -184,8 +183,9 @@ def clean(c, docs=False, bytecode=False, extra=""):
 @task
 def info(c, full=False):
     """Get info about your cellpy"""
-    import cellpy
     from pathlib import Path
+
+    import cellpy
 
     print()
     version_file_path = Path("cellpy") / "_version.py"

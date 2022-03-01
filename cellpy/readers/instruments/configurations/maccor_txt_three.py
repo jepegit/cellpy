@@ -10,25 +10,16 @@ unit_labels = {
 }
 
 prefixes = {
-        "G": 1000_000_000,
-        "M": 1000_000,
-        "k": 1000.0,
-        "h": 100.0,
-        "d": 10.0,
-        "c": 0.01,
-        "m": 0.001,
-        "micro": 0.000_001,
-        "n": 0.000_000_001,
-
-    }
-
-# not observed yet
-incremental_unit_labels = {
-    "dv_dt": f"{unit_labels['voltage']}/{unit_labels['time']}",
-    "dq_dv": f"{unit_labels['capacity']}/{unit_labels['voltage']}",
-    "dv_dq": f"{unit_labels['voltage']}/{unit_labels['capacity']}",
+    "G": 1000_000_000,
+    "M": 1000_000,
+    "k": 1000.0,
+    "h": 100.0,
+    "d": 10.0,
+    "c": 0.01,
+    "m": 0.001,
+    "micro": 0.000_001,
+    "n": 0.000_000_001,
 }
-
 
 normal_headers_renaming_dict = {
     "data_point_txt": f"Rec#",
@@ -37,59 +28,8 @@ normal_headers_renaming_dict = {
     "step_time_txt": f"StepTime",
     "cycle_index_txt": f"Cyc#",
     "step_index_txt": f"Step",
-    "current_txt": None,
-    "voltage_txt": f"Volts",
-    "power_txt": f"mWatt-hr",
-    "charge_capacity_txt": f"mAmp-hr",
-    "charge_energy_txt": f"mWatt-hr",
-    "ac_impedance_txt": f"ACImp/{unit_labels['resistance']}",
-    "internal_resistance_txt": f"DCIR/{unit_labels['resistance']}",
-
-    # not observed yet:
-    "sub_step_index_txt": f"Sub_Step_Index",  # new
-    "sub_step_time_txt": f"Sub_Step_Time",  # new
-    "discharge_capacity_txt": f"Discharge_Capacity({unit_labels['capacity']})",
-    "discharge_energy_txt": f"Discharge_Energy({unit_labels['energy']})",
-    "dv_dt_txt": f"dV/dt({incremental_unit_labels['dv_dt']})",  # TODO: include the new cols into internal settings
-    "dq_dv_txt": f"dV/dt({incremental_unit_labels['dq_dv']})",  # TODO: include the new cols into internal settings
-    "dv_dq_txt": f"dV/dt({incremental_unit_labels['dv_dq']})",  # TODO: include the new cols into internal settings
-    "acr_txt": f"Internal_Resistance({unit_labels['resistance']})",  # TODO: include the new cols into internal settings
-    "aci_phase_angle_txt": f"ACI_Phase_Angle",
-    "ref_aci_phase_angle_txt": f"Reference_ACI_Phase_Angle",
-    "ref_ac_impedance_txt": f"Reference_AC_Impedance",
-    "is_fc_data_txt": f"Is_FC_Data",
-    "test_id_txt": f"Test_ID",
-    "ref_voltage_txt": f"Reference_Voltage({unit_labels['resistance']})",  # new
-    "frequency_txt": f"Frequency",  # new
-    "amplitude_txt": f"Amplitude",  # new
-    "channel_id_txt": f"Channel_ID",  # new Arbin SQL Server
-    "data_flag_txt": f"Data_Flags",  # new Arbin SQL Server
-    "test_name_txt": f"Test_Name",  # new Arbin SQL Server
 }
 
-# not observed yet
-not_implemented_in_cellpy_yet_renaming_dict = {
-    f"Power({unit_labels['power']})": "power",
-    f"ACR({unit_labels['resistance']})": "acr",
-    f"dV/dt({incremental_unit_labels['dv_dt']})": "dv_dt",
-    f"dQ/dV({incremental_unit_labels['dq_dv']})": "dq_dv",
-    f"dV/dQ({incremental_unit_labels['dv_dq']})": "dv_dq",
-}
-
-columns_to_keep = [
-    "TestTime",
-    "Rec#",
-    "Cyc#",
-    "Step",
-    "StepTime",
-    "mAmp-hr",
-    "mWatt-hr",
-    "mAmps",
-    "Volts",
-    "State",
-    "ES",
-    "DPt Time",
-]
 
 states = {
     "column_name": "State",
@@ -98,19 +38,19 @@ states = {
     "rest_keys": ["R"],
 }
 
-raw_units = {"current": 0.001, "charge": 1.0, "mass": 0.001, "voltage": 0.001}
+raw_units = {}
 
-raw_limits = {
-    "current_hard": 0.000_000_000_000_1,
-    "current_soft": 0.000_01,
-    "stable_current_hard": 2.0,
-    "stable_current_soft": 4.0,
-    "stable_voltage_hard": 2.0,
-    "stable_voltage_soft": 4.0,
-    "stable_charge_hard": 0.001,
-    "stable_charge_soft": 5.0,
-    "ir_change": 0.00001,
-}
+# raw_limits = {
+#     "current_hard": 0.000_000_000_000_1,
+#     "current_soft": 0.000_01,
+#     "stable_current_hard": 2.0,
+#     "stable_current_soft": 4.0,
+#     "stable_voltage_hard": 2.0,
+#     "stable_voltage_soft": 4.0,
+#     "stable_charge_hard": 0.001,
+#     "stable_charge_soft": 5.0,
+#     "ir_change": 0.00001,
+# }
 
 formatters = {
     "skiprows": 3,  # 12 for other file
@@ -121,8 +61,7 @@ formatters = {
     "thousands": ",",
 }
 
-pre_processors = {
-}
+pre_processors = {}
 
 post_processors = {
     "get_column_names": True,
@@ -135,5 +74,5 @@ post_processors = {
     "convert_step_time_to_timedelta": True,
     "convert_test_time_to_timedelta": True,
     "convert_units": True,
-    "select_columns_to_keep": True
+    "select_columns_to_keep": True,
 }

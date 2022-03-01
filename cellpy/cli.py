@@ -1,22 +1,21 @@
 import base64
+import getpass
+import logging
 import os
+import pathlib
 import re
+import subprocess
+import sys
 import urllib
 from pathlib import Path
-import sys
-import subprocess
-import logging
-import getpass
+
 import click
 import pkg_resources
-import pathlib
-
 from github import Github
 
-from cellpy.parameters import prmreader
-from cellpy.exceptions import ConfigFileNotWritten
 import cellpy._version
-
+from cellpy.exceptions import ConfigFileNotWritten
+from cellpy.parameters import prmreader
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
@@ -371,8 +370,9 @@ def _check_import_cellpy():
 
 
 def _check_import_pyodbc():
-    from cellpy.parameters import prms
     import platform
+
+    from cellpy.parameters import prms
 
     ODBC = prms._odbc
     SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
@@ -925,8 +925,8 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
         kwargs["export_cycles"] = False
         kwargs["export_ica"] = False
 
-    from cellpy.utils import batch
     from cellpy import prms
+    from cellpy.utils import batch
 
     batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
     file = pathlib.Path(file_name)
@@ -1030,8 +1030,9 @@ def _run(name, debug, silent):
 
 
 def _run_db(debug, silent):
-    from cellpy import prms
     import platform
+
+    from cellpy import prms
 
     if not silent:
         click.echo(f"running database editor")
@@ -1311,8 +1312,8 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
         server = "notebook"
 
     try:
-        import cookiecutter.main
         import cookiecutter.exceptions
+        import cookiecutter.main
         import cookiecutter.prompt
 
     except ModuleNotFoundError:
@@ -1524,8 +1525,8 @@ def _cli_setup_interactive():
 
 
 def check_it(var=None):
-    import sys
     import pathlib
+    import sys
 
     p_env = pathlib.Path(sys.prefix)
     print(p_env.name)

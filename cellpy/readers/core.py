@@ -4,14 +4,14 @@ It also contains functions that are used by readers and utils. And it has the fi
 version definitions.
 """
 
+import collections
 import datetime
+import importlib
 import logging
 import os
-import collections
+import pickle
 import sys
 import time
-import importlib
-import pickle
 import warnings
 from functools import wraps
 
@@ -21,14 +21,11 @@ from scipy import interpolate
 
 from cellpy.exceptions import NullData
 from cellpy.parameters import prms
-from cellpy.parameters.internal_settings import (
-    ATTRS_CELLPYFILE,
-    cellpy_limits,
-    cellpy_units,
-    get_headers_summary,
-    get_headers_normal,
-    get_headers_step_table,
-)
+from cellpy.parameters.internal_settings import (ATTRS_CELLPYFILE,
+                                                 cellpy_limits, cellpy_units,
+                                                 get_headers_normal,
+                                                 get_headers_step_table,
+                                                 get_headers_summary)
 
 CELLPY_FILE_VERSION = 6
 MINIMUM_CELLPY_FILE_VERSION = 4

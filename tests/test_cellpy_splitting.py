@@ -1,10 +1,11 @@
-import pytest
 import logging
-import pandas as pd
-from cellpy import log
-from cellpy.utils import helpers
-from cellpy.exceptions import NullData
 
+import pandas as pd
+import pytest
+
+from cellpy import log
+from cellpy.exceptions import NullData
+from cellpy.utils import helpers
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 

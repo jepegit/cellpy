@@ -1,21 +1,20 @@
 """ica contains routines for creating and working with
 incremental capacity analysis data"""
 
-import os
 import logging
+import os
 import warnings
 
 import numpy as np
-from scipy import stats
-from scipy.interpolate import interp1d
-from scipy.signal import savgol_filter
-from scipy.integrate import simps
-from scipy.ndimage.filters import gaussian_filter1d
 import pandas as pd
+from scipy import stats
+from scipy.integrate import simps
+from scipy.interpolate import interp1d
+from scipy.ndimage.filters import gaussian_filter1d
+from scipy.signal import savgol_filter
 
 from cellpy.exceptions import NullData
 from cellpy.readers.core import collect_capacity_curves
-
 
 # TODO: @jepe - documentation and tests
 # TODO: @jepe - fitting of o-c curves and differentiation
@@ -1022,6 +1021,7 @@ def _get_a_cell_to_play_with():
 if __name__ == "__main__":
     # check_class_ica()¨
     import pandas as pd
+
     from cellpy import cellreader
 
     cell = _get_a_cell_to_play_with()

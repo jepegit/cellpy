@@ -1,10 +1,9 @@
-from pathlib import Path
 import os
-
-from cellpy import cellreader
-from cellpy import log
+from pathlib import Path
 
 from line_profiler import LineProfiler
+
+from cellpy import cellreader, log
 
 log.setup_logging(default_level="DEBUG")
 

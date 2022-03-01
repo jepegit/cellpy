@@ -1,20 +1,22 @@
-import logging
 import datetime
+import logging
 import time
 
 try:
-    from lmfit import Parameters, minimize, report_fit, Model, report_ci
+    from lmfit import Model, Parameters, minimize, report_ci, report_fit
 except ImportError as e:
     logging.warning(
         "Could not import lmfit. This is needed " "for fitting (run pip install lmfit)."
     )
     logging.debug(e)
 
-import numpy as np
 import math
+
 import matplotlib.pyplot as plt
-from cellpy import cellreader
+import numpy as np
 import pandas as pd
+
+from cellpy import cellreader
 
 # TODO: (28.05.2017 jepe) Docstrings are missing!!!!!!!! - AU: fix!
 
@@ -640,9 +642,11 @@ class OcvFit(object):
 
 
 def _main():
-    from cellpy import cellreader
     import os
+
     import matplotlib.pyplot as plt
+
+    from cellpy import cellreader
 
     print(50 * "=")
     print("FITTING OCV ROUTINES - TEST")

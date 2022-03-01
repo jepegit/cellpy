@@ -1,7 +1,7 @@
 import logging
 
-from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy import log
+from cellpy.parameters.internal_settings import get_headers_normal
 
 log.setup_logging(default_level="DEBUG", testing=True)
 

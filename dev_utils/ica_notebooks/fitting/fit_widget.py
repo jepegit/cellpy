@@ -1,9 +1,8 @@
 import logging
 
+import holoviews as hv
 import ipywidgets as widgets
 from IPython.display import display
-
-import holoviews as hv
 
 
 class SiliconPeaksFitWidget(widgets.VBox):

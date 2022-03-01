@@ -12,10 +12,15 @@ import logging
 import pandas as pd
 
 from cellpy.parameters.internal_settings import headers_normal
+from cellpy.parameters.prms import _minimum_columns_to_keep_for_raw_if_exists
 from cellpy.readers.core import Cell
 from cellpy.readers.instruments.configurations import ModelParameters
 
-ORDERED_POST_PROCESSING_STEPS = ["get_column_names", "select_columns_to_keep", "rename_headers"]
+ORDERED_POST_PROCESSING_STEPS = [
+    "get_column_names",
+    "rename_headers",
+    "select_columns_to_keep",
+]
 # TODO: refactor so that select_columns_to_keep can be done after rename_headers
 #  Things to think about:
 #    columns_to_keep must contain "cellpy" column names,
@@ -43,7 +48,15 @@ def set_cycle_number_not_zero(data: Cell, config_params: ModelParameters) -> Cel
 
 
 def select_columns_to_keep(data: Cell, config_params: ModelParameters) -> Cell:
-    columns_to_keep = [col for col in config_params.columns_to_keep if col in data.raw.columns]
+    config_params.columns_to_keep.extend(
+        headers_normal[h] for h in _minimum_columns_to_keep_for_raw_if_exists
+    )
+    if config_params.states:
+        config_params.columns_to_keep.append(config_params.states["column_name"])
+    config_params.columns_to_keep = list(set(config_params.columns_to_keep))
+    columns_to_keep = [
+        col for col in config_params.columns_to_keep if col in data.raw.columns
+    ]
     data.raw = data.raw[columns_to_keep]
     return data
 
@@ -60,25 +73,34 @@ def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
             "m": 0.001,
             "micro": 0.000_001,
             "n": 0.000_000_001,
+        }
 
+    if not config_params.raw_units:
+        config_params.raw_units = {
+            "current": 1.0,
+            "charge": 1.0,
+            "mass": 1.0,
+            "voltage": 1.0,
         }
 
     renaming = config_params.normal_headers_renaming_dict
-    units = config_params.unit_labels
+    unit_labels = config_params.unit_labels
     raw_units = config_params.raw_units
 
     for label in ["current", "voltage", "power", "capacity", "energy"]:
-        unit = units[label]
+        unit_label = unit_labels[label]
         prefix = None
         header = None
 
-        if h := data.raw.columns[data.raw.columns.str.endswith(unit)].values:
+        if h := data.raw.columns[data.raw.columns.str.endswith(unit_label)].values:
             header = h[0]
-            prefix, _ = header.split(unit)
-            renaming[f"{label}_txt"] = header
+            prefix, _ = header.split(unit_label)
+            if label == "capacity":
+                renaming[f"charge_{label}_txt"] = header
+            else:
+                renaming[f"{label}_txt"] = header
             if prefix and label not in raw_units:
                 raw_units[label] = config_params.prefixes[prefix]
-
     return data
 
 

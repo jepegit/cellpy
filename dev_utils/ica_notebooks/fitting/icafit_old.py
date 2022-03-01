@@ -1,23 +1,17 @@
-import os
 import logging
+import os
 import warnings
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+from lmfit import CompositeModel
+from lmfit.models import (ConstantModel, ExponentialGaussianModel,
+                          GaussianModel, LorentzianModel, PseudoVoigtModel,
+                          SkewedGaussianModel, SkewedVoigtModel)
+
 from cellpy import cellreader, log
 from cellpy.utils import ica
-
-from lmfit.models import (
-    GaussianModel,
-    PseudoVoigtModel,
-    ExponentialGaussianModel,
-    SkewedGaussianModel,
-    LorentzianModel,
-    SkewedVoigtModel,
-    ConstantModel,
-)
-from lmfit import CompositeModel
 
 # TODO: move to utils
 # TODO: backprop for CompositeEnsemble [x]

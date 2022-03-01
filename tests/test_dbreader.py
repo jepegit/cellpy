@@ -16,8 +16,8 @@ test_areal_loading = 0.0
 
 @pytest.fixture
 def db_reader(parameters):
-    from cellpy.readers import dbreader
     from cellpy.parameters import prms
+    from cellpy.readers import dbreader
 
     prms.Paths.outdatadir = parameters.output_dir
     prms.Paths.rawdatadir = parameters.raw_data_dir

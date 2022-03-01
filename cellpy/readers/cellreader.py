@@ -14,49 +14,41 @@ Example:
 
 """
 
-import os
-from pathlib import Path, PurePosixPath, PureWindowsPath
-import logging
-import sys
 import collections
-import warnings
+import copy
 import csv
 import itertools
+import logging
+import os
+import sys
 import time
-import copy
+import warnings
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import numpy as np
 import pandas as pd
 from pandas.errors import PerformanceWarning
 from scipy import interpolate
 
+from cellpy.exceptions import DeprecatedFeature, NullData, WrongFileVersion
 from cellpy.parameters import prms
+from cellpy.parameters.internal_settings import (ATTRS_CELLPYDATA,
+                                                 ATTRS_CELLPYFILE,
+                                                 ATTRS_DATASET,
+                                                 ATTRS_DATASET_DEEP,
+                                                 get_cellpy_units,
+                                                 get_headers_normal,
+                                                 get_headers_step_table,
+                                                 get_headers_summary,
+                                                 headers_normal,
+                                                 headers_step_table,
+                                                 headers_summary)
 from cellpy.parameters.legacy import internal_settings as old_settings
-from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
-from cellpy.parameters.internal_settings import (
-    get_headers_summary,
-    get_cellpy_units,
-    get_headers_normal,
-    get_headers_step_table,
-    ATTRS_CELLPYFILE,
-    ATTRS_DATASET,
-    ATTRS_DATASET_DEEP,
-    ATTRS_CELLPYDATA,
-    headers_normal,
-    headers_summary,
-    headers_step_table,
-)
-from cellpy.readers.core import (
-    FileID,
-    Cell,
-    CELLPY_FILE_VERSION,
-    MINIMUM_CELLPY_FILE_VERSION,
-    xldate_as_datetime,
-    interpolate_y_on_x,
-    identify_last_data_point,
-    pickle_protocol,
-    PICKLE_PROTOCOL,
-)
+from cellpy.readers.core import (CELLPY_FILE_VERSION,
+                                 MINIMUM_CELLPY_FILE_VERSION, PICKLE_PROTOCOL,
+                                 Cell, FileID, identify_last_data_point,
+                                 interpolate_y_on_x, pickle_protocol,
+                                 xldate_as_datetime)
 
 HEADERS_NORMAL = get_headers_normal()
 HEADERS_SUMMARY = get_headers_summary()
@@ -203,6 +195,7 @@ class CellpyData(object):
             initialize: create a dummy (empty) dataset; defaults to False.
         """
 
+        self.raw_units = get_cellpy_units()
         if tester is None:
             self.tester = prms.Instruments.tester
         else:
@@ -479,7 +472,9 @@ class CellpyData(object):
 
         custom_instrument_splitter = "::"
 
-        _override_local_instrument_path = kwargs.pop("_override_local_instrument_path", False)
+        _override_local_instrument_path = kwargs.pop(
+            "_override_local_instrument_path", False
+        )
 
         if instrument is None:
             instrument = self.tester
@@ -491,9 +486,8 @@ class CellpyData(object):
             else:
                 instrument = Path(prms.Paths.instrumentdir) / instrument
             if instrument.is_file():
-                from cellpy.readers.instruments.local_instrument import (
-                    LocalTxtLoader as RawLoader,
-                )
+                from cellpy.readers.instruments.local_instrument import \
+                    LocalTxtLoader as RawLoader
 
                 self._set_instrument(RawLoader, local_instrument_file=instrument)
                 self.tester = instrument
@@ -505,22 +499,23 @@ class CellpyData(object):
                 )
 
         if instrument in ["arbin", "arbin_res"]:
-            from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
+            from cellpy.readers.instruments.arbin_res import \
+                ArbinLoader as RawLoader
 
             self._set_instrument(RawLoader)
             self.tester = "arbin"
 
         elif instrument == "arbin_sql":
-            from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
+            from cellpy.readers.instruments.arbin_sql import \
+                ArbinSQLLoader as RawLoader
 
             logging.warning(f"{instrument} is experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "arbin_sql"
 
         elif instrument == "arbin_sql_csv":
-            from cellpy.readers.instruments.arbin_sql_csv import (
-                ArbinCsvLoader as RawLoader,
-            )
+            from cellpy.readers.instruments.arbin_sql_csv import \
+                ArbinCsvLoader as RawLoader
 
             logging.warning(f"{instrument} is experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
@@ -534,16 +529,16 @@ class CellpyData(object):
             self.tester = "pec"
 
         elif instrument in ["biologics", "biologics_mpr"]:
-            from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
+            from cellpy.readers.instruments.biologics_mpr import \
+                MprLoader as RawLoader
 
             logging.warning("Experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "biologic"
 
         elif instrument in ["maccor", "maccor_txt"]:
-            from cellpy.readers.instruments.maccor_txt import (
-                MaccorTxtLoader as RawLoader,
-            )
+            from cellpy.readers.instruments.maccor_txt import \
+                MaccorTxtLoader as RawLoader
 
             logging.warning("Experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
@@ -568,7 +563,8 @@ class CellpyData(object):
                 logging.debug(f"setting instrument file: {instrument_file}")
                 prms.Instruments.custom_instrument_definitions_file = instrument_file
 
-            from cellpy.readers.instruments.custom import CustomLoader as RawLoader
+            from cellpy.readers.instruments.custom import \
+                CustomLoader as RawLoader
 
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "custom"
@@ -579,7 +575,13 @@ class CellpyData(object):
     def _set_instrument(self, loader_class, **kwargs):
         self.loader_class = loader_class(**kwargs)
         # ----- get information --------------------------
+        # TODO: move this out of _set_instrument so that we can modify
+        #   it during parsing (in case units are automatically found from
+        #   the column headings in the file). It seems to not be needed
+        #   for the newly implemented (early 2022) TxtLoader, but the
+        #   tests fails for test_cell_readers and more if I remove it now:
         self.raw_units = self.loader_class.get_raw_units()
+
         self.raw_limits = self.loader_class.get_raw_limits()
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
@@ -1148,6 +1150,7 @@ class CellpyData(object):
 
         self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
+        self.raw_units = self.loader_class.get_raw_units()
         self._invent_a_name()
         return self
 
@@ -1286,6 +1289,7 @@ class CellpyData(object):
             logging.warning("No new datasets added!")
         self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
+        self.raw_units = self.loader_class.get_raw_units()
         self._invent_a_name()
         return self
 
@@ -4433,7 +4437,6 @@ class CellpyData(object):
             multiplier (float) from_unit/to_unit * mass
 
         """
-
         if not dataset:
             dataset_number = self._validate_dataset_number(None)
             if dataset_number is None:
@@ -5620,6 +5623,7 @@ def check_cellpy_file():
     print("running", end=" ")
     print(sys.argv[0])
     import logging
+
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")

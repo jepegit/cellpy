@@ -1,9 +1,11 @@
-import pytest
 import logging
+
 import pandas as pd
+import pytest
+
 from cellpy import log
-from cellpy.utils import ica
 from cellpy.exceptions import NullData
+from cellpy.utils import ica
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -16,4 +18,3 @@ def cell(dataset):
 
 def test_first_cycle_irreversible_capacity(cell):
     pass
-

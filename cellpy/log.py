@@ -1,12 +1,12 @@
 """Set up logger instance"""
 
-import os
-import shutil
 import datetime
-import pathlib
 import json
-import logging.config
 import logging
+import logging.config
+import os
+import pathlib
+import shutil
 import tempfile
 import warnings
 

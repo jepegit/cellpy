@@ -23,11 +23,9 @@ from matplotlib.ticker import FuncFormatter
 
 import cellpy
 from cellpy import log
+from cellpy.parameters.internal_settings import (get_headers_journal,
+                                                 keys_journal_session)
 from cellpy.utils.batch_tools.batch_journals import LabJournal
-from cellpy.parameters.internal_settings import (
-    get_headers_journal,
-    keys_journal_session,
-)
 
 hdr_journal = get_headers_journal()
 

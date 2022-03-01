@@ -1,6 +1,7 @@
 from pathlib import Path
-from cellpy import prms
+
 import cellpy
+from cellpy import prms
 
 raw_files = [
     [

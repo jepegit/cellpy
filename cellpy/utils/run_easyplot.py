@@ -2,8 +2,9 @@
 # This is a test file and will be replaced by a jupyter notebook example in the tutorial section when easyplot functionality is done.
 
 if __name__ == "__main__":
-    import cellpy
     import easyplot
+
+    import cellpy
 
     # easyplot.help()
 

@@ -1,15 +1,15 @@
 """pec csv-type data files"""
-import os
-from dateutil.parser import parse
-from datetime import datetime
 import logging
+import os
 import warnings
+from datetime import datetime
+
 import numpy as np
-
 import pandas as pd
+from dateutil.parser import parse
 
-from cellpy.readers.core import FileID, Cell, humanize_bytes
 from cellpy.parameters.internal_settings import get_headers_normal
+from cellpy.readers.core import Cell, FileID, humanize_bytes
 from cellpy.readers.instruments.base import Loader
 
 pec_headers_normal = dict()

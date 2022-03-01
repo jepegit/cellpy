@@ -1,26 +1,21 @@
 """arbin res-type data files"""
+import logging
 import os
+import platform
+import shutil
 import sys
 import tempfile
-import shutil
-import logging
-import platform
-import warnings
 import time
-import numpy as np
+import warnings
 
+import numpy as np
 import pandas as pd
 
-from cellpy.readers.core import (
-    FileID,
-    Cell,
-    check64bit,
-    humanize_bytes,
-    xldate_as_datetime,
-)
-from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.instruments.base import Loader, MINIMUM_SELECTION
 from cellpy import prms
+from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
+from cellpy.readers.core import (Cell, FileID, check64bit, humanize_bytes,
+                                 xldate_as_datetime)
+from cellpy.readers.instruments.base import MINIMUM_SELECTION, Loader
 
 # TODO: use InstrumentSettings (dataclass) from internal_settings instead of HeaderDict.
 
@@ -198,6 +193,7 @@ class ArbinLoader(Loader):
         raw_units["current"] = 1.0  # A
         raw_units["charge"] = 1.0  # Ah
         raw_units["mass"] = 0.001  # g
+        raw_units["voltage"] = 1.0  # V
         return raw_units
 
     @staticmethod
@@ -1429,6 +1425,7 @@ class ArbinLoader(Loader):
 
 def check_loader_aux():
     from pathlib import Path
+
     from cellpy import log
 
     log.setup_logging(default_level="CRITICAL")

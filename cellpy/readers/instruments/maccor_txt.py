@@ -129,9 +129,11 @@ def check_loader(name=None, number=1, model="one"):
 
 def check_loader_from_outside():
     # NOT EDITED YET!!!
-    from cellpy import cellreader
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    from cellpy import cellreader
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(
@@ -199,9 +201,11 @@ def check_loader_from_outside():
 
 
 def check_loader_from_outside_with_get():
-    import cellpy
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    import cellpy
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(
@@ -225,9 +229,11 @@ def check_loader_from_outside_with_get():
     summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
 
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
-    raw.plot(x="test_time", y="voltage", ax=ax1)
-    raw.plot(x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3)
-    raw.plot(x="test_time", y="current", ax=ax2)
+    raw.plot(x="test_time", y="voltage", ax=ax1, title="voltage")
+    raw.plot(
+        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, title="caps"
+    )
+    raw.plot(x="test_time", y="current", ax=ax2, title="current")
 
     n = c.get_number_of_cycles()
     print(f"number of cycles: {n}")
@@ -254,8 +260,57 @@ def check_loader_from_outside_with_get():
     ax6.plot(t, steps, label="steps")
 
     fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
-    raw.plot(x="test_time", y="voltage", ax=ax7)
-    raw.plot(x="test_time", y="step_index", ax=ax8)
+    raw.plot(x="test_time", y="voltage", ax=ax7, title="voltage")
+    raw.plot(x="test_time", y="step_index", ax=ax8, title="step index")
+
+    plt.legend()
+    plt.show()
+
+    outfile = out / "test_out"
+    c.save(outfile)
+
+
+def check_loader_from_outside_with_get2():
+    import pathlib
+
+    import matplotlib.pyplot as plt
+
+    import cellpy
+
+    pd.options.display.max_columns = 100
+    datadir = pathlib.Path(r"C:\scripting\processing_cellpy\notebooks\test\new\data")
+    name = datadir / "1047-ET-MaccorExport.txt"
+    out = pathlib.Path(r"C:\scripting\trash")
+    print(f"File exists? {name.is_file()}")
+    if not name.is_file():
+        print(f"could not find {name} ")
+        return
+
+    c = cellpy.get(filename=name, instrument="maccor_txt", model="WMG_SIMBA", mass=1.0)
+    print(f"loaded the file - now lets see what we got")
+    raw = c.cell.raw
+    print("Columns:")
+    print(raw.columns)
+    steps = c.cell.steps
+    summary = c.cell.summary
+
+    raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
+    steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
+    summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
+
+    fig_1, (ax1, ax2, ax3, ax4) = plt.subplots(
+        4, 1, figsize=(6, 10), constrained_layout=True
+    )
+    raw.plot(x="test_time", y="voltage", ax=ax1, xlabel="")
+    raw.plot(x="test_time", y="current", ax=ax2, xlabel="")
+    raw.plot(
+        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, xlabel=""
+    )
+    raw.plot(x="test_time", y="cycle_index", ax=ax4)
+    fig_1.suptitle(f"{name.name}", fontsize=16)
+
+    n = c.get_number_of_cycles()
+    print(f"Number of cycles: {n}")
 
     plt.legend()
     plt.show()
@@ -267,4 +322,4 @@ def check_loader_from_outside_with_get():
 if __name__ == "__main__":
     # check_dev_loader2(model="two")
     # check_loader(number=2, model="two")
-    check_loader_from_outside_with_get()
+    check_loader_from_outside_with_get2()

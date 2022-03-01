@@ -1,12 +1,13 @@
-import pytest
-import tempfile
-import os
-from pathlib import Path
 import io
 import logging
-from cellpy import log
-from cellpy import prms
-from cellpy import prmreader
+import os
+import tempfile
+from pathlib import Path
+
+import pytest
+
+from cellpy import log, prmreader, prms
+
 from . import fdv
 
 log.setup_logging(default_level="DEBUG", testing=True)

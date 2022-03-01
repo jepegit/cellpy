@@ -8,8 +8,9 @@ $ python setup.py sdist # create gzip distr (source dist)
 $ python setup.py bdist_wheel # create build
 $ twine upload dist/* # upload to PyPI
 """
-from setuptools import setup, find_packages
 import os
+
+from setuptools import find_packages, setup
 
 with open("README.rst") as readme_file:
     readme = readme_file.read()

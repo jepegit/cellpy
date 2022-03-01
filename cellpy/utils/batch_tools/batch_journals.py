@@ -1,24 +1,21 @@
 import json
 import logging
-import warnings
 import os
 import pathlib
 import platform
-import tempfile
 import shutil
+import tempfile
+import warnings
 
 import pandas as pd
 
 from cellpy.exceptions import UnderDefined
 from cellpy.parameters import prms
+from cellpy.parameters.internal_settings import (get_headers_journal,
+                                                 keys_journal_session)
+from cellpy.parameters.legacy.internal_settings import \
+    headers_journal_v0 as hdr_journal_old
 from cellpy.readers import dbreader
-from cellpy.parameters.internal_settings import (
-    get_headers_journal,
-    keys_journal_session,
-)
-from cellpy.parameters.legacy.internal_settings import (
-    headers_journal_v0 as hdr_journal_old,
-)
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine
 
@@ -319,7 +316,9 @@ class LabJournal(BaseJournal):
         if project is not None:
             self.project = project
 
-        self.pages = frame  # TODO: include a check here to see if the pages are appropriate
+        self.pages = (
+            frame  # TODO: include a check here to see if the pages are appropriate
+        )
 
         if paginate is None:
             if self.name and self.project:

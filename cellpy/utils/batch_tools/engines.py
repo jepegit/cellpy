@@ -4,8 +4,9 @@
     Returns: farms, barn
 """
 
-import time
 import logging
+import time
+
 import pandas as pd
 
 from cellpy import dbreader
