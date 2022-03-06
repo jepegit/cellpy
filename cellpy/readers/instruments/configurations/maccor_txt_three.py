@@ -38,7 +38,9 @@ states = {
     "rest_keys": ["R"],
 }
 
-raw_units = {}
+raw_units = {
+    "voltage": 0.001,
+}
 
 # raw_limits = {
 #     "current_hard": 0.000_000_000_000_1,

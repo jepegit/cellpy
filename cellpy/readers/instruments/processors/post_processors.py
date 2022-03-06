@@ -75,17 +75,15 @@ def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
             "n": 0.000_000_001,
         }
 
-    if not config_params.raw_units:
-        config_params.raw_units = {
-            "current": 1.0,
-            "charge": 1.0,
-            "mass": 1.0,
-            "voltage": 1.0,
-        }
+    DEFAULT_RAW_UNITS = {
+        "current": 1.0,
+        "charge": 1.0,
+        "mass": 1.0,
+        "voltage": 1.0,
+    }
 
     renaming = config_params.normal_headers_renaming_dict
     unit_labels = config_params.unit_labels
-    raw_units = config_params.raw_units
 
     for label in ["current", "voltage", "power", "capacity", "energy"]:
         unit_label = unit_labels[label]
@@ -97,10 +95,18 @@ def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
             prefix, _ = header.split(unit_label)
             if label == "capacity":
                 renaming[f"charge_{label}_txt"] = header
+                label = "charge"
             else:
                 renaming[f"{label}_txt"] = header
-            if prefix and label not in raw_units:
-                raw_units[label] = config_params.prefixes[prefix]
+
+            if label not in config_params.raw_units:
+                if prefix:
+                    config_params.raw_units[label] = config_params.prefixes[prefix]
+                else:
+                    config_params.raw_units[label] = 1.0
+
+        for k in DEFAULT_RAW_UNITS:
+            config_params.raw_units[k] = config_params.raw_units.get(k, DEFAULT_RAW_UNITS[k])
     return data
 
 
