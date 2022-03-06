@@ -11,12 +11,14 @@ from scipy import stats
 
 import cellpy
 from cellpy import prmreader, prms
-from cellpy.parameters.internal_settings import (ATTRS_CELLPYDATA,
-                                                 ATTRS_DATASET,
-                                                 headers_journal,
-                                                 headers_normal,
-                                                 headers_step_table,
-                                                 headers_summary)
+from cellpy.parameters.internal_settings import (
+    ATTRS_CELLPYDATA,
+    ATTRS_DATASET,
+    headers_journal,
+    headers_normal,
+    headers_step_table,
+    headers_summary,
+)
 from cellpy.readers.cellreader import CellpyData
 from cellpy.utils import batch, ica
 

@@ -11,10 +11,13 @@ import pandas as pd
 
 from cellpy.exceptions import UnderDefined
 from cellpy.parameters import prms
-from cellpy.parameters.internal_settings import (get_headers_journal,
-                                                 keys_journal_session)
-from cellpy.parameters.legacy.internal_settings import \
-    headers_journal_v0 as hdr_journal_old
+from cellpy.parameters.internal_settings import (
+    get_headers_journal,
+    keys_journal_session,
+)
+from cellpy.parameters.legacy.internal_settings import (
+    headers_journal_v0 as hdr_journal_old,
+)
 from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine

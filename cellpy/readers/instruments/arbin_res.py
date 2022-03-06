@@ -13,8 +13,13 @@ import pandas as pd
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import (Cell, FileID, check64bit, humanize_bytes,
-                                 xldate_as_datetime)
+from cellpy.readers.core import (
+    Cell,
+    FileID,
+    check64bit,
+    humanize_bytes,
+    xldate_as_datetime,
+)
 from cellpy.readers.instruments.base import MINIMUM_SELECTION, Loader
 
 # TODO: use InstrumentSettings (dataclass) from internal_settings instead of HeaderDict.

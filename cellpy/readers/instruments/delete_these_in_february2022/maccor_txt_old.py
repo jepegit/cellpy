@@ -14,9 +14,10 @@ from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import Cell, FileID
 from cellpy.readers.instruments.base import Loader
 from cellpy.readers.instruments.configurations import (
-    ModelParameters, register_configuration_from_module)
-from cellpy.readers.instruments.processors import (post_processors,
-                                                   pre_processors)
+    ModelParameters,
+    register_configuration_from_module,
+)
+from cellpy.readers.instruments.processors import post_processors, pre_processors
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 

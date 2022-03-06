@@ -17,11 +17,13 @@ from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.core import Cell, FileID, check64bit, humanize_bytes
 from cellpy.readers.instruments.base import Loader
-from cellpy.readers.instruments.biologic_file_format import (bl_dtypes,
-                                                             bl_flags,
-                                                             bl_log_pos_dtype,
-                                                             hdr_dtype,
-                                                             mpr_label)
+from cellpy.readers.instruments.biologic_file_format import (
+    bl_dtypes,
+    bl_flags,
+    bl_log_pos_dtype,
+    hdr_dtype,
+    mpr_label,
+)
 
 OLE_TIME_ZERO = datetime.datetime(1899, 12, 30, 0, 0, 0)
 SEEK_SET = 0  # from start

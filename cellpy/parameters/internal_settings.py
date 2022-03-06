@@ -251,6 +251,23 @@ headers_journal = HeadersJournal()
 headers_summary = HeadersSummary()
 headers_normal = HeadersNormal()
 
+base_columns_float = [
+    headers_normal.test_time_txt,
+    headers_normal.step_time_txt,
+    headers_normal.current_txt,
+    headers_normal.voltage_txt,
+    headers_normal.ref_voltage_txt,
+    headers_normal.charge_capacity_txt,
+    headers_normal.discharge_capacity_txt,
+    headers_normal.internal_resistance_txt,
+]
+
+base_columns_int = [
+    headers_normal.data_point_txt,
+    headers_normal.step_index_txt,
+    headers_normal.cycle_index_txt,
+]
+
 # cellpy attributes that should be loaded from cellpy-files:
 
 ATTRS_CELLPYFILE = [

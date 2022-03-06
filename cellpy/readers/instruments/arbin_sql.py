@@ -16,8 +16,13 @@ from dateutil.parser import parse
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import (Cell, FileID, check64bit, humanize_bytes,
-                                 xldate_as_datetime)
+from cellpy.readers.core import (
+    Cell,
+    FileID,
+    check64bit,
+    humanize_bytes,
+    xldate_as_datetime,
+)
 from cellpy.readers.instruments.base import Loader
 
 # TODO: @muhammad - get more meta data from the SQL db

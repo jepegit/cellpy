@@ -1,8 +1,9 @@
 """Local txt data"""
 
 from cellpy.readers.instruments.base import TxtLoader
-from cellpy.readers.instruments.configurations import \
-    register_local_configuration_from_yaml_file
+from cellpy.readers.instruments.configurations import (
+    register_local_configuration_from_yaml_file,
+)
 
 
 class LocalTxtLoader(TxtLoader):

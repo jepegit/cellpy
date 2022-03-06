@@ -7,8 +7,7 @@ from ruamel import yaml
 
 from cellpy.exceptions import FileNotFound
 from cellpy.parameters import prms
-from cellpy.parameters.internal_settings import (ATTRS_CELLPYFILE,
-                                                 get_headers_normal)
+from cellpy.parameters.internal_settings import ATTRS_CELLPYFILE, get_headers_normal
 from cellpy.readers.core import Cell, FileID, check64bit, humanize_bytes
 from cellpy.readers.instruments.base import Loader
 

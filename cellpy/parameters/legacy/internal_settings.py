@@ -4,9 +4,11 @@
 
 import logging
 
-from cellpy.parameters.internal_settings import (get_headers_normal,
-                                                 get_headers_step_table,
-                                                 get_headers_summary)
+from cellpy.parameters.internal_settings import (
+    get_headers_normal,
+    get_headers_step_table,
+    get_headers_summary,
+)
 
 HEADERS_NORMAL = get_headers_normal()
 HEADERS_SUMMARY = get_headers_summary()

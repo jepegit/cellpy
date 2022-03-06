@@ -1,3 +1,5 @@
+# Works for data from WMG and UBham (SIMBA project)
+
 unit_labels = {
     "resistance": "Ohms",
     "time": "s",
@@ -71,6 +73,7 @@ post_processors = {
     "split_current": False,
     "set_index": True,
     "rename_headers": True,
+    "remove_last_if_bad": True,
     "set_cycle_number_not_zero": True,
     "convert_date_time_to_datetime": True,
     "convert_step_time_to_timedelta": True,

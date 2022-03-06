@@ -32,23 +32,31 @@ from scipy import interpolate
 
 from cellpy.exceptions import DeprecatedFeature, NullData, WrongFileVersion
 from cellpy.parameters import prms
-from cellpy.parameters.internal_settings import (ATTRS_CELLPYDATA,
-                                                 ATTRS_CELLPYFILE,
-                                                 ATTRS_DATASET,
-                                                 ATTRS_DATASET_DEEP,
-                                                 get_cellpy_units,
-                                                 get_headers_normal,
-                                                 get_headers_step_table,
-                                                 get_headers_summary,
-                                                 headers_normal,
-                                                 headers_step_table,
-                                                 headers_summary)
+from cellpy.parameters.internal_settings import (
+    ATTRS_CELLPYDATA,
+    ATTRS_CELLPYFILE,
+    ATTRS_DATASET,
+    ATTRS_DATASET_DEEP,
+    get_cellpy_units,
+    get_headers_normal,
+    get_headers_step_table,
+    get_headers_summary,
+    headers_normal,
+    headers_step_table,
+    headers_summary,
+)
 from cellpy.parameters.legacy import internal_settings as old_settings
-from cellpy.readers.core import (CELLPY_FILE_VERSION,
-                                 MINIMUM_CELLPY_FILE_VERSION, PICKLE_PROTOCOL,
-                                 Cell, FileID, identify_last_data_point,
-                                 interpolate_y_on_x, pickle_protocol,
-                                 xldate_as_datetime)
+from cellpy.readers.core import (
+    CELLPY_FILE_VERSION,
+    MINIMUM_CELLPY_FILE_VERSION,
+    PICKLE_PROTOCOL,
+    Cell,
+    FileID,
+    identify_last_data_point,
+    interpolate_y_on_x,
+    pickle_protocol,
+    xldate_as_datetime,
+)
 
 HEADERS_NORMAL = get_headers_normal()
 HEADERS_SUMMARY = get_headers_summary()
@@ -486,8 +494,9 @@ class CellpyData(object):
             else:
                 instrument = Path(prms.Paths.instrumentdir) / instrument
             if instrument.is_file():
-                from cellpy.readers.instruments.local_instrument import \
-                    LocalTxtLoader as RawLoader
+                from cellpy.readers.instruments.local_instrument import (
+                    LocalTxtLoader as RawLoader,
+                )
 
                 self._set_instrument(RawLoader, local_instrument_file=instrument)
                 self.tester = instrument
@@ -499,23 +508,22 @@ class CellpyData(object):
                 )
 
         if instrument in ["arbin", "arbin_res"]:
-            from cellpy.readers.instruments.arbin_res import \
-                ArbinLoader as RawLoader
+            from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
 
             self._set_instrument(RawLoader)
             self.tester = "arbin"
 
         elif instrument == "arbin_sql":
-            from cellpy.readers.instruments.arbin_sql import \
-                ArbinSQLLoader as RawLoader
+            from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
 
             logging.warning(f"{instrument} is experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "arbin_sql"
 
         elif instrument == "arbin_sql_csv":
-            from cellpy.readers.instruments.arbin_sql_csv import \
-                ArbinCsvLoader as RawLoader
+            from cellpy.readers.instruments.arbin_sql_csv import (
+                ArbinCsvLoader as RawLoader,
+            )
 
             logging.warning(f"{instrument} is experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
@@ -529,16 +537,16 @@ class CellpyData(object):
             self.tester = "pec"
 
         elif instrument in ["biologics", "biologics_mpr"]:
-            from cellpy.readers.instruments.biologics_mpr import \
-                MprLoader as RawLoader
+            from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
 
             logging.warning("Experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "biologic"
 
         elif instrument in ["maccor", "maccor_txt"]:
-            from cellpy.readers.instruments.maccor_txt import \
-                MaccorTxtLoader as RawLoader
+            from cellpy.readers.instruments.maccor_txt import (
+                MaccorTxtLoader as RawLoader,
+            )
 
             logging.warning("Experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
@@ -563,8 +571,7 @@ class CellpyData(object):
                 logging.debug(f"setting instrument file: {instrument_file}")
                 prms.Instruments.custom_instrument_definitions_file = instrument_file
 
-            from cellpy.readers.instruments.custom import \
-                CustomLoader as RawLoader
+            from cellpy.readers.instruments.custom import CustomLoader as RawLoader
 
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "custom"

@@ -7,9 +7,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lmfit import CompositeModel, Parameters
-from lmfit.models import (ConstantModel, ExponentialGaussianModel,
-                          GaussianModel, LorentzianModel, PseudoVoigtModel,
-                          SkewedGaussianModel, SkewedVoigtModel)
+from lmfit.models import (
+    ConstantModel,
+    ExponentialGaussianModel,
+    GaussianModel,
+    LorentzianModel,
+    PseudoVoigtModel,
+    SkewedGaussianModel,
+    SkewedVoigtModel,
+)
 
 from cellpy import cellreader, log
 from cellpy.utils import ica

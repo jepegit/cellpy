@@ -13,10 +13,12 @@ import warnings
 from io import StringIO
 from pathlib import Path
 
-from cellpy.parameters.internal_settings import (get_headers_journal,
-                                                 get_headers_normal,
-                                                 get_headers_step_table,
-                                                 get_headers_summary)
+from cellpy.parameters.internal_settings import (
+    get_headers_journal,
+    get_headers_normal,
+    get_headers_step_table,
+    get_headers_summary,
+)
 from cellpy.utils import helpers
 
 try:

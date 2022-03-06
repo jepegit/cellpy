@@ -21,11 +21,14 @@ from scipy import interpolate
 
 from cellpy.exceptions import NullData
 from cellpy.parameters import prms
-from cellpy.parameters.internal_settings import (ATTRS_CELLPYFILE,
-                                                 cellpy_limits, cellpy_units,
-                                                 get_headers_normal,
-                                                 get_headers_step_table,
-                                                 get_headers_summary)
+from cellpy.parameters.internal_settings import (
+    ATTRS_CELLPYFILE,
+    cellpy_limits,
+    cellpy_units,
+    get_headers_normal,
+    get_headers_step_table,
+    get_headers_summary,
+)
 
 CELLPY_FILE_VERSION = 6
 MINIMUM_CELLPY_FILE_VERSION = 4

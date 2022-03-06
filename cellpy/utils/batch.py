@@ -13,11 +13,15 @@ from tqdm.auto import tqdm
 
 import cellpy.exceptions
 from cellpy import log, prms
-from cellpy.parameters.internal_settings import (headers_journal,
-                                                 headers_step_table,
-                                                 headers_summary)
-from cellpy.utils.batch_tools.batch_analyzers import (BaseSummaryAnalyzer,
-                                                      OCVRelaxationAnalyzer)
+from cellpy.parameters.internal_settings import (
+    headers_journal,
+    headers_step_table,
+    headers_summary,
+)
+from cellpy.utils.batch_tools.batch_analyzers import (
+    BaseSummaryAnalyzer,
+    OCVRelaxationAnalyzer,
+)
 from cellpy.utils.batch_tools.batch_core import Data
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter

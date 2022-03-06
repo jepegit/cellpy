@@ -5,8 +5,13 @@ import pandas as pd
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import (Cell, FileID, check64bit, humanize_bytes,
-                                 xldate_as_datetime)
+from cellpy.readers.core import (
+    Cell,
+    FileID,
+    check64bit,
+    humanize_bytes,
+    xldate_as_datetime,
+)
 from cellpy.readers.instruments.base import Loader
 
 try:

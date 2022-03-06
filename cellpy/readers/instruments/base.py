@@ -17,11 +17,13 @@ import pandas as pd
 import cellpy.readers.core as core
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.readers.instruments.configurations import (
-    ModelParameters, register_configuration_from_module)
-from cellpy.readers.instruments.processors import (post_processors,
-                                                   pre_processors)
-from cellpy.readers.instruments.processors.post_processors import \
-    ORDERED_POST_PROCESSING_STEPS
+    ModelParameters,
+    register_configuration_from_module,
+)
+from cellpy.readers.instruments.processors import post_processors, pre_processors
+from cellpy.readers.instruments.processors.post_processors import (
+    ORDERED_POST_PROCESSING_STEPS,
+)
 
 MINIMUM_SELECTION = [
     "Data_Point",

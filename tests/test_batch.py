@@ -10,9 +10,14 @@ import pytest
 from cellpy import log, prms
 from cellpy.utils import batch as batch
 from cellpy.utils import helpers
-from cellpy.utils.batch_tools import (batch_experiments, batch_exporters,
-                                      batch_journals, batch_plotters, dumpers,
-                                      engines)
+from cellpy.utils.batch_tools import (
+    batch_experiments,
+    batch_exporters,
+    batch_journals,
+    batch_plotters,
+    dumpers,
+    engines,
+)
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
