@@ -197,6 +197,7 @@ class TxtLoader(Loader):
         supported_models: dict = SUPPORTED_MODELS
 
     where SUPPORTED_MODELS is a dictionary with {NICK_NAME : CONFIGURATION_MODULE_NAME}  key-value pairs.
+    Remark! the NICK_NAME must be in upper-case!
 
     It is also possible to set these in a custom pre_init method:
 
@@ -305,7 +306,7 @@ class TxtLoader(Loader):
             self.model is None
         ):  # in case None was given as argument (model=None in initialisation)
             self.model = self.default_model
-        model_module_name = self.supported_models.get(self.model, None)
+        model_module_name = self.supported_models.get(self.model.upper(), None)
         if model_module_name is None:
             raise Exception(
                 f"The model {self.model} does not have any defined configuration."

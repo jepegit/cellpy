@@ -15,15 +15,15 @@ from cellpy.readers.instruments.base import TxtLoader
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
 SUPPORTED_MODELS = {
-    "zero": "maccor_txt_zero",
-    "one": "maccor_txt_one",
-    "two": "maccor_txt_two",
-    "three": "maccor_txt_three",
-    "four": "maccor_txt_four",
+    "ZERO": "maccor_txt_zero",
+    "ONE": "maccor_txt_one",
+    "TWO": "maccor_txt_two",
+    "THREE": "maccor_txt_three",
+    "FOUR": "maccor_txt_four",
     "WMG_SIMBA": "maccor_txt_three",
     "KIT_SIMBA": "maccor_txt_four",
-    "KIT_comma_SIMBA": "maccor_txt_two",
-    "UBham_SIMBA": "maccor_txt_three",
+    "KIT_COMMA_SIMBA": "maccor_txt_two",
+    "UBHAM_SIMBA": "maccor_txt_three",
 }
 
 
