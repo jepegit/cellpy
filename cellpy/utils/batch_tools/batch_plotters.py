@@ -1,16 +1,16 @@
+import itertools
 import logging
 import warnings
 from collections import defaultdict
-import itertools
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
+from cellpy import prms
+from cellpy.exceptions import UnderDefined
+from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
-from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
-from cellpy.exceptions import UnderDefined
-from cellpy import prms
 
 # TODO: add palette to prms.Batch
 

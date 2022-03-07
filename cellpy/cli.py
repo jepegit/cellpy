@@ -1,22 +1,21 @@
 import base64
+import getpass
+import logging
 import os
+import pathlib
 import re
+import subprocess
+import sys
 import urllib
 from pathlib import Path
-import sys
-import subprocess
-import logging
-import getpass
+
 import click
 import pkg_resources
-import pathlib
-
 from github import Github
 
-from cellpy.parameters import prmreader
-from cellpy.exceptions import ConfigFileNotWritten
 import cellpy._version
-
+from cellpy.exceptions import ConfigFileNotWritten
+from cellpy.parameters import prmreader
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
@@ -198,6 +197,8 @@ def _update_paths(
     silent=False,
 ):
 
+    # please, refactor me :-(
+
     h = prmreader.get_user_dir()
 
     if default_dir is None:
@@ -226,6 +227,7 @@ def _update_paths(
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
         batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
         templatedir = pathlib.Path(prmreader.prms.Paths.templatedir)
+        instrumentdir = pathlib.Path(prmreader.prms.Paths.instrumentsdir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -237,6 +239,7 @@ def _update_paths(
         notebookdir = "notebooks"
         batchfiledir = "batchfiles"
         templatedir = "templates"
+        instrumentdir = "instruments"
 
     outdatadir = h / outdatadir
     rawdatadir = h / rawdatadir
@@ -247,6 +250,7 @@ def _update_paths(
     notebookdir = h / notebookdir
     batchfiledir = h / batchfiledir
     templatedir = h / templatedir
+    instrumentdir = h / instrumentdir
 
     if dry_run:
         click.echo(f" - base (h): {h}")
@@ -275,7 +279,8 @@ def _update_paths(
         )
 
         batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
-        templatedir = _ask_about_path("where to put your batch files", batchfiledir)
+        templatedir = _ask_about_path("where to put your batch files", templatedir)
+        instrumentdir = _ask_about_path("where to put your batch files", instrumentdir)
 
     # update folders based on suggestions
     for d in [
@@ -288,6 +293,7 @@ def _update_paths(
         db_path,
         batchfiledir,
         templatedir,
+        instrumentdir,
     ]:
 
         if not dry_run:
@@ -306,6 +312,7 @@ def _update_paths(
     prmreader.prms.Paths.notebookdir = str(notebookdir)
     prmreader.prms.Paths.batchfiledir = str(batchfiledir)
     prmreader.prms.Paths.templatedir = str(templatedir)
+    prmreader.prms.Paths.instrumentdir = str(instrumentdir)
 
 
 def _ask_about_path(q, p):
@@ -363,8 +370,9 @@ def _check_import_cellpy():
 
 
 def _check_import_pyodbc():
-    from cellpy.parameters import prms
     import platform
+
+    from cellpy.parameters import prms
 
     ODBC = prms._odbc
     SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
@@ -917,8 +925,8 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
         kwargs["export_cycles"] = False
         kwargs["export_ica"] = False
 
-    from cellpy.utils import batch
     from cellpy import prms
+    from cellpy.utils import batch
 
     batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
     file = pathlib.Path(file_name)
@@ -1022,8 +1030,9 @@ def _run(name, debug, silent):
 
 
 def _run_db(debug, silent):
-    from cellpy import prms
     import platform
+
+    from cellpy import prms
 
     if not silent:
         click.echo(f"running database editor")
@@ -1303,8 +1312,8 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
         server = "notebook"
 
     try:
-        import cookiecutter.main
         import cookiecutter.exceptions
+        import cookiecutter.main
         import cookiecutter.prompt
 
     except ModuleNotFoundError:
@@ -1516,8 +1525,8 @@ def _cli_setup_interactive():
 
 
 def check_it(var=None):
-    import sys
     import pathlib
+    import sys
 
     p_env = pathlib.Path(sys.prefix)
     print(p_env.name)

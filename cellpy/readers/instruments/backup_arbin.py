@@ -1,26 +1,26 @@
 """arbin res-type data files"""
+import logging
 import os
+import platform
+import shutil
 import sys
 import tempfile
-import shutil
-import logging
-import platform
-import warnings
 import time
-import numpy as np
+import warnings
 
+import numpy as np
 import pandas as pd
 
+from cellpy import prms
+from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.core import (
-    FileID,
     Cell,
+    FileID,
     check64bit,
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.base import Loader
-from cellpy import prms
 
 DEBUG_MODE = prms.Reader.diagnostics
 ALLOW_MULTI_TEST_FILE = False
@@ -1182,6 +1182,7 @@ class ArbinLoader(Loader):
 
 if __name__ == "__main__":
     import logging
+
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")

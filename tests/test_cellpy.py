@@ -1,13 +1,14 @@
-import pytest
-import tempfile
-import os
 import logging
+import os
+import tempfile
 import time
+
+import pytest
 
 import cellpy.readers.core
 import cellpy.utils.helpers
-from cellpy import log
-from cellpy import prms
+from cellpy import log, prms
+
 from . import fdv
 
 log.setup_logging(default_level="DEBUG", testing=True)
@@ -114,6 +115,7 @@ def test_logger_advanced(clean_dir):
 @pytest.mark.timeout(5.0)
 def test_load_and_save_resfile(clean_dir):
     import os
+
     from cellpy import cellreader
 
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
@@ -132,8 +134,8 @@ def test_load_and_save_resfile(clean_dir):
 )
 def test_load_resfile_diagnostics(clean_dir, benchmark):
     import os
-    from cellpy import cellreader
-    from cellpy import prms
+
+    from cellpy import cellreader, prms
 
     prms.Reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)

@@ -1,8 +1,11 @@
-import tempfile
-import shutil
-import pytest
 import logging
+import shutil
+import tempfile
+
+import pytest
+
 from cellpy import log
+
 from . import fdv
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)

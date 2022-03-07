@@ -1,11 +1,11 @@
-import pathlib
 import os
+import pathlib
 import sys
 
+from cellpy.parameters.internal_settings import get_headers_journal
 from cellpy.parameters.legacy.internal_settings import (
     headers_journal_v0 as hdr_journal_old,
 )
-from cellpy.parameters.internal_settings import get_headers_journal
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 
 hdr_journal_new = get_headers_journal()

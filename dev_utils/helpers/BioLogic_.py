@@ -5,13 +5,13 @@
 # downloaded from
 #    https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py
 
-import sys
-import re
 import csv
-from os import SEEK_SET
+import re
+import sys
 import time
-from datetime import date, datetime, timedelta
 from collections import OrderedDict
+from datetime import date, datetime, timedelta
+from os import SEEK_SET
 
 import numpy as np
 

@@ -3,9 +3,9 @@ Collecting all nda-extractor functions to locate errors and create a more
 sensible structure
 """
 
-import pathlib
-import csv
 import binascii
+import csv
+import pathlib
 
 
 def process_subheader(subheader_bytes):

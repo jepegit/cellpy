@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-from dataclasses import asdict, dataclass
-from pprint import pprint
+import getpass
 import glob
+import logging
 import os
 import pathlib
 import sys
-from collections import OrderedDict
-import getpass
-import logging
 import warnings
+from collections import OrderedDict
+from dataclasses import asdict, dataclass
+from pprint import pprint
 
 import box
-from ruamel.yaml import YAML
 import ruamel
+from ruamel.yaml import YAML
 
-from cellpy.parameters import prms
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
+from cellpy.parameters import prms
 
 DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
@@ -64,6 +64,7 @@ def get_user_dir():
 def _write_prm_file(file_name=None):
     logging.debug("saving configuration to %s" % file_name)
     config_dict = _pack_prms()
+
     try:
         with open(file_name, "w") as config_file:
             yaml.allow_unicode = True

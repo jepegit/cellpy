@@ -1,10 +1,10 @@
 """cellpy parameters"""
 
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-import sys
-from typing import Union, Tuple, List
+from typing import List, Tuple, Union
 
 import box
 
@@ -27,6 +27,11 @@ class CellPyConfig:
     ...
 
 
+# If updating this, you will have to do a lot of tweaks.
+#   .cellpy_prms_default.conf
+#   cli.py (_update_paths)
+#   test_cli_setup_interactive (NUMBER_OF_DIRS)
+#   test_prms.py (config_file_txt)
 @dataclass
 class PathsClass(CellPyConfig):
     outdatadir: Union[Path, str] = wdir
@@ -38,6 +43,7 @@ class PathsClass(CellPyConfig):
     notebookdir: Union[Path, str] = wdir
     templatedir: Union[Path, str] = wdir
     batchfiledir: Union[Path, str] = wdir
+    instrumentdir: Union[Path, str] = wdir
     db_filename: str = "cellpy_db.xlsx"
 
 
@@ -259,6 +265,22 @@ _globals_status = ""
 _globals_errors = []
 _globals_message = []
 
+
+# general settings for loaders
+_minimum_columns_to_keep_for_raw_if_exists = [
+    "data_point_txt",
+    "datetime_txt",
+    "test_time_txt",
+    "step_time_txt",
+    "cycle_index_txt",
+    "step_time_txt",
+    "step_index_txt",
+    "current_txt",
+    "voltage_txt",
+    "charge_capacity_txt",
+    "discharge_capacity_txt",
+    "power_txt",
+]
 
 # used during development for testing new features
 

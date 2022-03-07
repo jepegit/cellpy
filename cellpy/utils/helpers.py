@@ -1,8 +1,8 @@
-import os
+import collections
 import logging
+import os
 import pathlib
 import warnings
-import collections
 from copy import deepcopy
 
 import numpy as np
@@ -10,17 +10,15 @@ import pandas as pd
 from scipy import stats
 
 import cellpy
-from cellpy import prms
+from cellpy import prmreader, prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
     ATTRS_DATASET,
-    headers_summary,
-    headers_step_table,
-    headers_normal,
     headers_journal,
+    headers_normal,
+    headers_step_table,
+    headers_summary,
 )
-
-from cellpy import prmreader
 from cellpy.readers.cellreader import CellpyData
 from cellpy.utils import batch, ica
 

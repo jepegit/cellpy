@@ -1,4 +1,5 @@
 from __future__ import print_function
+
 import os
 import time
 from collections import OrderedDict
@@ -211,7 +212,8 @@ def _load_mpr(file_name):
 
 
 if __name__ == "__main__":
-    import sys, os
+    import os
+    import sys
 
     print("Length of the header line:", hdr_dtype.itemsize)
     print("Length of the filestamp line:", len(mpr_label))

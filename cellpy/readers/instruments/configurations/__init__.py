@@ -1,16 +1,44 @@
 """ Very simple implementation of a plugin-like infrastructure"""
 from dataclasses import dataclass, field
 from importlib import import_module
+from pathlib import Path
+
+from ruamel import yaml
 
 # TODO: make tests.
 # TODO: move this into its own module (not __init__).
-# TODO: make "readers" for yaml and json.
-# TODO: make a new "folder" in cellpy for json/yaml files for instruments for users.
 # TODO: refactor ``custom`` reader so that it uses this.
 # TODO: document for devs.
 # TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
 
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
+OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
+    "formatters",
+    "prefixes",
+    "pre_processors",
+    "post_processors",
+    "meta_keys",
+    "incremental_unit_labels",
+    "not_implemented_in_cellpy_yet_renaming_dict",
+    "raw_units",
+    "raw_limits",
+]
+OPTIONAL_LIST_ATTRIBUTE_NAMES = [
+    "columns_to_keep",
+]
+
+
+RAW_LIMITS = {
+    "current_hard": 0.000_000_000_000_1,
+    "current_soft": 0.000_01,
+    "stable_current_hard": 2.0,
+    "stable_current_soft": 4.0,
+    "stable_voltage_hard": 2.0,
+    "stable_voltage_soft": 4.0,
+    "stable_charge_hard": 0.001,
+    "stable_charge_soft": 5.0,
+    "ir_change": 0.00001,
+}
 
 
 @dataclass
@@ -22,7 +50,7 @@ class ModelParameters:
     incremental_unit_labels: dict = field(default_factory=dict)
     normal_headers_renaming_dict: dict = field(default_factory=dict)
     not_implemented_in_cellpy_yet_renaming_dict: dict = field(default_factory=dict)
-    columns_to_keep: dict = field(default_factory=dict)
+    columns_to_keep: list = field(default_factory=list)
     states: dict = field(default_factory=dict)
     raw_units: dict = field(default_factory=dict)
     raw_limits: dict = field(default_factory=dict)
@@ -30,11 +58,10 @@ class ModelParameters:
     meta_keys: dict = field(default_factory=dict)
     pre_processors: dict = field(default_factory=dict)
     post_processors: dict = field(default_factory=dict)
+    prefixes: dict = field(default_factory=dict)
 
 
-def register_configuration_from_yaml_file(
-    name: str = "one", module: str = "maccor_txt_one"
-) -> ModelParameters:
+def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
     """register a module (.yml file) and return it.
 
     This function will dynamically import the given module from the
@@ -43,21 +70,48 @@ def register_configuration_from_yaml_file(
     Returns: ModelParameters
 
     """
-    raise NotImplementedError
 
+    yml = yaml.YAML()
+    with open(instrument, "r") as ff:
+        settings = yml.load(ff.read())
 
-def register_configuration_from_json_file(
-    name: str = "one", module: str = "maccor_txt_one"
-) -> ModelParameters:
-    """register a module (.json file) and return it.
+    name = Path(instrument).name
 
-    This function will dynamically import the given module from the
-    cellpy.readers.instruments.configurations module and return it.
+    optional_dictionary_attributes = {
+        key: settings.get(key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES
+    }
 
-    Returns: ModelParameters
+    optional_list_attributes = {
+        key: settings.get(key, list()) for key in OPTIONAL_LIST_ATTRIBUTE_NAMES
+    }
 
-    """
-    raise NotImplementedError
+    # special hacks
+    # -- raw limits (this should be moved to internal settings, prms or something like that
+    raw_limits = optional_dictionary_attributes["raw_limits"]
+    if not raw_limits:
+        raw_limits = RAW_LIMITS
+
+    model_01 = ModelParameters(
+        name=name,
+        unit_labels=settings["unit_labels"],
+        prefixes=optional_dictionary_attributes["prefixes"],
+        incremental_unit_labels=optional_dictionary_attributes[
+            "incremental_unit_labels"
+        ],
+        normal_headers_renaming_dict=settings["normal_headers_renaming_dict"],
+        not_implemented_in_cellpy_yet_renaming_dict=optional_dictionary_attributes[
+            "not_implemented_in_cellpy_yet_renaming_dict"
+        ],
+        columns_to_keep=optional_list_attributes["columns_to_keep"],
+        states=settings["states"],
+        raw_units=optional_dictionary_attributes["raw_units"],
+        raw_limits=raw_limits,
+        meta_keys=optional_dictionary_attributes["meta_keys"],
+        formatters=optional_dictionary_attributes["formatters"],
+        pre_processors=optional_dictionary_attributes["pre_processors"],
+        post_processors=optional_dictionary_attributes["post_processors"],
+    )
+    return model_01
 
 
 def register_configuration_from_module(
@@ -69,44 +123,42 @@ def register_configuration_from_module(
     cellpy.readers.instruments.configurations module and return it.
 
     Returns: ModelParameters
-
-    TODO: Either: expand this function so that it also reads from yaml files,
-        or use pydantic
     """
+
     m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
-    try:
-        formatters = m.formatters
-    except AttributeError:
-        formatters = dict()
 
-    try:
-        pre_processors = m.pre_processors
-    except AttributeError:
-        pre_processors = dict()
+    optional_dictionary_attributes = {
+        key: getattr(m, key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES
+    }
 
-    try:
-        post_processors = m.post_processors
-    except AttributeError:
-        post_processors = dict()
+    optional_list_attributes = {
+        key: getattr(m, key, list()) for key in OPTIONAL_LIST_ATTRIBUTE_NAMES
+    }
 
-    try:
-        meta_keys = m.meta_keys
-    except AttributeError:
-        meta_keys = dict()
+    # special hacks
+    # -- raw limits (this should be moved to internal settings, prms or something like that
+    raw_limits = optional_dictionary_attributes["raw_limits"]
+    if not raw_limits:
+        raw_limits = RAW_LIMITS
 
     model_01 = ModelParameters(
         name=name,
         unit_labels=m.unit_labels,
-        incremental_unit_labels=m.incremental_unit_labels,
+        prefixes=optional_dictionary_attributes["prefixes"],
+        incremental_unit_labels=optional_dictionary_attributes[
+            "incremental_unit_labels"
+        ],
         normal_headers_renaming_dict=m.normal_headers_renaming_dict,
-        not_implemented_in_cellpy_yet_renaming_dict=m.not_implemented_in_cellpy_yet_renaming_dict,
-        columns_to_keep=m.columns_to_keep,
+        not_implemented_in_cellpy_yet_renaming_dict=optional_dictionary_attributes[
+            "not_implemented_in_cellpy_yet_renaming_dict"
+        ],
+        columns_to_keep=optional_list_attributes["columns_to_keep"],
         states=m.states,
-        raw_units=m.raw_units,
-        raw_limits=m.raw_limits,
-        meta_keys=meta_keys,
-        formatters=formatters,
-        pre_processors=pre_processors,
-        post_processors=post_processors,
+        raw_units=optional_dictionary_attributes["raw_units"],
+        raw_limits=raw_limits,
+        meta_keys=optional_dictionary_attributes["meta_keys"],
+        formatters=optional_dictionary_attributes["formatters"],
+        pre_processors=optional_dictionary_attributes["pre_processors"],
+        post_processors=optional_dictionary_attributes["post_processors"],
     )
     return model_01

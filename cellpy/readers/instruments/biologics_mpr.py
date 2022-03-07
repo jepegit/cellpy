@@ -1,28 +1,29 @@
 """This file contains methods for importing Bio-Logic mpr-type files"""
 # This is based on the work by Chris Kerr
 # (https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
-import os
-import tempfile
-import shutil
-import logging
-import warnings
-import time
-from collections import OrderedDict
 import datetime
-import pandas as pd
-import numpy as np
+import logging
+import os
+import shutil
+import tempfile
+import time
+import warnings
+from collections import OrderedDict
 
+import numpy as np
+import pandas as pd
+
+from cellpy.parameters import prms
+from cellpy.parameters.internal_settings import get_headers_normal
+from cellpy.readers.core import Cell, FileID, check64bit, humanize_bytes
+from cellpy.readers.instruments.base import Loader
 from cellpy.readers.instruments.biologic_file_format import (
     bl_dtypes,
+    bl_flags,
+    bl_log_pos_dtype,
     hdr_dtype,
     mpr_label,
-    bl_log_pos_dtype,
-    bl_flags,
 )
-from cellpy.readers.core import FileID, Cell, check64bit, humanize_bytes
-from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.instruments.base import Loader
-from cellpy.parameters import prms
 
 OLE_TIME_ZERO = datetime.datetime(1899, 12, 30, 0, 0, 0)
 SEEK_SET = 0  # from start
@@ -547,10 +548,10 @@ class MprLoader(Loader):
 
 if __name__ == "__main__":
     import logging
-    import sys
     import os
-    from cellpy import log
-    from cellpy import cellreader
+    import sys
+
+    from cellpy import cellreader, log
 
     # -------- defining overall path-names etc ----------
     current_file_path = os.path.dirname(os.path.realpath(__file__))

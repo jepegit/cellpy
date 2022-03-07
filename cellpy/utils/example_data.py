@@ -1,10 +1,9 @@
 """Tools for getting some data to play with"""
+import logging
 import os
 from pathlib import Path
-import logging
 
 import cellpy
-
 
 logging.info("Ready to help you to get some data to play with.")
 CURRENT_PATH = Path(os.path.dirname(os.path.realpath(__file__)))

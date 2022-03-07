@@ -1,28 +1,29 @@
 """arbin MS SQL Server data"""
-import os
 import datetime
-from dateutil.parser import parse
+import logging
+import os
+import platform
+import shutil
 import sys
 import tempfile
-import shutil
-import logging
-import platform
-import warnings
 import time
-import numpy as np
-import pyodbc
-import pandas as pd
+import warnings
 
+import numpy as np
+import pandas as pd
+import pyodbc
+from dateutil.parser import parse
+
+from cellpy import prms
+from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import (
-    FileID,
     Cell,
+    FileID,
     check64bit,
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.instruments.base import Loader
-from cellpy import prms
 
 # TODO: @muhammad - get more meta data from the SQL db
 # TODO: @jepe - update the batch functionality (including filefinder)
@@ -469,8 +470,9 @@ def check_loader():
 
 
 def check_loader_from_outside():
-    from cellpy import cellreader
     import matplotlib.pyplot as plt
+
+    from cellpy import cellreader
 
     name = "20200820_CoFBAT_slurry07B_01_cc_01"
     c = cellreader.CellpyData()

@@ -1,7 +1,9 @@
 # import tempfile
 # import shutil
-import pytest
 import logging
+
+import pytest
+
 from cellpy import log
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)

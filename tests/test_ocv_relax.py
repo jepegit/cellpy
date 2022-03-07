@@ -1,5 +1,7 @@
-import pytest
 import logging
+
+import pytest
+
 from cellpy import log
 from cellpy.utils import ocv_rlx
 

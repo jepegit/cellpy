@@ -8,8 +8,7 @@ from pathlib import Path
 print(f"running {sys.argv[0]}")
 
 import cellpy
-from cellpy import log
-from cellpy import cellreader
+from cellpy import cellreader, log
 from cellpy.parameters import prms
 
 prms.Reader.use_cellpy_stat_file = False

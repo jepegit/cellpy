@@ -20,6 +20,14 @@ cellpy.utils.batch module
     :show-inheritance:
     :exclude-members: check_iterate, check_new, check_standard
 
+cellpy.utils.diagnostics module
+-------------------------------
+
+.. automodule:: cellpy.utils.diagnostics
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 cellpy.utils.helpers module
 ---------------------------
 

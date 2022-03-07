@@ -1,9 +1,10 @@
-import tempfile
-import shutil
-import pytest
 import logging
-from cellpy import log, get
+import shutil
+import tempfile
 
+import pytest
+
+from cellpy import get, log, prms
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -27,6 +28,39 @@ def test_set_instrument(cellpy_data_instance, parameters):
     cellpy_data_instance.to_csv(datadir=temp_dir)
     assert len(os.listdir(temp_dir)) > 0
     shutil.rmtree(temp_dir)
+
+
+def test_cellpy_get_model_one(parameters):
+    instrument = "maccor_txt"
+    c = get(
+        filename=parameters.mcc_file_path, instrument=instrument, model="one", mass=1.0
+    )
+    assert len(c.cell.raw) == 6704
+
+
+def test_load_custom_yaml_file(parameters):
+    definitions_file = parameters.custom_instrument_path
+    from pprint import pprint
+
+    from ruamel import yaml
+
+    yml = yaml.YAML()
+    with open(definitions_file, "r") as ff:
+        settings = yml.load(ff.read())
+    pprint(settings)
+
+
+def test_cellpy_get_model_one_custom_instrument_file(parameters):
+    """Use default location of user instrument files"""
+    # TODO: create defaults for missing parameters in the custom instrument file.
+
+    instrument = parameters.custom_instrument
+    definitions_file = parameters.custom_instrument_path
+    prms.Paths.instrumentdir = parameters.instrument_dir
+    logging.debug(f"directory: {parameters.instrument_dir}")
+    logging.debug(f"instrument file: {parameters.custom_instrument}")
+    c = get(filename=parameters.mcc_file_path, instrument=instrument, mass=1.0)
+    assert len(c.cell.raw) == 6704
 
 
 def test_cellpy_get(parameters):

@@ -1,14 +1,15 @@
-import os
-import tempfile
-import shutil
 import datetime
-import pytest
 import logging
+import os
 import pathlib
+import shutil
+import tempfile
+
+import pytest
 
 import cellpy.readers.core
-from cellpy.exceptions import DeprecatedFeature
 from cellpy import log, prms
+from cellpy.exceptions import DeprecatedFeature
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -326,6 +327,7 @@ def test_check64bit():
 
 def test_search_for_files(parameters):
     import os
+
     from cellpy import filefinder
 
     run_files, cellpy_file = filefinder.search_for_files(

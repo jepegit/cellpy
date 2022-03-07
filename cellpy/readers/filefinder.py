@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import os
-import glob
 import fnmatch
-import pathlib
-import warnings
-import time
-
-from cellpy.parameters import prms
-import cellpy.exceptions
+import glob
 import logging
+import os
+import pathlib
+import time
+import warnings
+
+import cellpy.exceptions
+from cellpy.parameters import prms
 
 # logger = logging.getLogger(__name__)
 

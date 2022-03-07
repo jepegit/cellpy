@@ -1,10 +1,9 @@
-import pathlib
 import os
+import pathlib
 import sys
 
 import cellpy
-from cellpy import cellreader
-from cellpy import log
+from cellpy import cellreader, log
 
 log.setup_logging(default_level="DEBUG")
 

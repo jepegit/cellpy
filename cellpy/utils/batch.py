@@ -1,33 +1,32 @@
 """Routines for batch processing of cells (v2)."""
 
 import logging
+import os
 import pathlib
 import shutil
-import warnings
-import os
 import sys
+import warnings
 
 import pandas as pd
 from pandas import Index
 from tqdm.auto import tqdm
 
-from cellpy import prms
-from cellpy import log
 import cellpy.exceptions
+from cellpy import log, prms
 from cellpy.parameters.internal_settings import (
     headers_journal,
-    headers_summary,
     headers_step_table,
+    headers_summary,
+)
+from cellpy.utils.batch_tools.batch_analyzers import (
+    BaseSummaryAnalyzer,
+    OCVRelaxationAnalyzer,
 )
 from cellpy.utils.batch_tools.batch_core import Data
-from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
-from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
-from cellpy.utils.batch_tools.batch_analyzers import (
-    OCVRelaxationAnalyzer,
-    BaseSummaryAnalyzer,
-)
+from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_journals import LabJournal
+from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 
 # logger = logging.getLogger(__name__)
@@ -93,6 +92,7 @@ class Batch:
         db_reader = kwargs.pop("db_reader", "default")
 
         file_name = kwargs.pop("file_name", None)
+        frame = kwargs.pop("frame", None)
 
         logging.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
@@ -108,20 +108,22 @@ class Batch:
         self.experiment.nom_cap = kwargs.pop("nom_cap", None)
 
         if not file_name:
-            if len(args) > 0:
-                self.experiment.journal.name = args[0]
+            if frame is not None:
+                self.experiment.journal.from_frame(frame, **kwargs)
+            else:
+                if len(args) > 0:
+                    self.experiment.journal.name = args[0]
 
-            if len(args) > 1:
-                self.experiment.journal.project = args[1]
+                if len(args) > 1:
+                    self.experiment.journal.project = args[1]
 
-            for key in kwargs:
-                if key == "name":
-                    self.experiment.journal.name = kwargs[key]
-                elif key == "project":
-                    self.experiment.journal.project = kwargs[key]
-                elif key == "batch_col":
-                    self.experiment.journal.batch_col = kwargs[key]
-
+                for key in kwargs:
+                    if key == "name":
+                        self.experiment.journal.name = kwargs[key]
+                    elif key == "project":
+                        self.experiment.journal.project = kwargs[key]
+                    elif key == "batch_col":
+                        self.experiment.journal.batch_col = kwargs[key]
         else:
             self.experiment.journal.from_file(file_name=file_name, **kwargs)
 
@@ -791,6 +793,7 @@ def init(*args, **kwargs) -> Batch:
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", None)
     file_name = kwargs.pop("file_name", None)
+    frame = kwargs.pop("frame", None)
 
     log.setup_logging(
         default_level=default_log_level, testing=testing, reset_big_log=True
@@ -800,6 +803,10 @@ def init(*args, **kwargs) -> Batch:
     if file_name is not None:
         kwargs.pop("db_reader", None)
         return Batch(*args, file_name=file_name, db_reader=None, **kwargs)
+    if frame is not None:
+        kwargs.pop("db_reader", None)
+        return Batch(*args, file_name=None, db_reader=None, frame=frame, **kwargs)
+
     return Batch(*args, **kwargs)
 
 

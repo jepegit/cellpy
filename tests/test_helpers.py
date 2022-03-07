@@ -1,9 +1,10 @@
-import pytest
 import logging
-from cellpy import log
-from cellpy.utils import helpers
-from cellpy.exceptions import NullData
 
+import pytest
+
+from cellpy import log
+from cellpy.exceptions import NullData
+from cellpy.utils import helpers
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 

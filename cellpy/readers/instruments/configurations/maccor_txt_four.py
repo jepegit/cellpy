@@ -1,4 +1,4 @@
-# Works for data from KIT (SIMBA project) with ',' as decimal and dropping bad last rows.
+# Works for data from KIT (SIMBA project)
 
 unit_labels = {
     "resistance": "Ohms",
@@ -65,6 +65,5 @@ post_processors = {
     "set_index": True,
     "rename_headers": True,
     "remove_last_if_bad": True,
-    "set_cycle_number_not_zero": True,
     "convert_date_time_to_datetime": True,
 }

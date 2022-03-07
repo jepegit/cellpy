@@ -1,11 +1,15 @@
-import pytest
-import tempfile
-import pathlib
-import os
 import logging
+import os
+import pathlib
+import tempfile
 import time
-import pandas
 
+import pandas
+import pytest
+
+from cellpy import log, prms
+from cellpy.utils import batch as batch
+from cellpy.utils import helpers
 from cellpy.utils.batch_tools import (
     batch_experiments,
     batch_exporters,
@@ -14,12 +18,6 @@ from cellpy.utils.batch_tools import (
     dumpers,
     engines,
 )
-
-from cellpy import log
-from cellpy import prms
-
-from cellpy.utils import batch as batch
-from cellpy.utils import helpers
 
 log.setup_logging(default_level="DEBUG", testing=True)
 

@@ -107,6 +107,7 @@ formatters = {
     "header": 0,  # 0 for other file
     "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
     "decimal": ".",
+    "thousands": None,
 }
 
 
@@ -117,6 +118,6 @@ post_processors = {
     "rename_headers": True,
     "set_cycle_number_not_zero": True,
     "convert_date_time_to_datetime": True,
-    "convert_step_time_to_timedelta": True,
-    "convert_test_time_to_timedelta": True,
+    # "convert_step_time_to_timedelta": True,
+    # "convert_test_time_to_timedelta": True,
 }

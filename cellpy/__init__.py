@@ -9,12 +9,11 @@ __email__ = "jepe@ife.no", "Asbjorn.Ulvestad@ife.no", "Muhammad.Abdelhamid@ife.n
 
 import logging
 import warnings
-from cellpy.readers import cellreader
-from cellpy.readers import dbreader
-from cellpy.readers import filefinder
-from cellpy.parameters import prmreader
-from cellpy.parameters import prms  # TODO: this might give circular ref
+
 import cellpy._version
+from cellpy.parameters import prms  # TODO: this might give circular ref
+from cellpy.parameters import prmreader
+from cellpy.readers import cellreader, dbreader, filefinder
 
 __version__ = cellpy._version.__version__
 

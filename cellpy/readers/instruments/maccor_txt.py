@@ -3,7 +3,13 @@
 import pandas as pd
 
 from cellpy import prms
-from cellpy.parameters.internal_settings import HeaderDict
+from cellpy import exceptions
+from cellpy.parameters.internal_settings import (
+    HeaderDict,
+    base_columns_float,
+    base_columns_int,
+    headers_normal,
+)
 from cellpy.readers.instruments.base import TxtLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
@@ -12,7 +18,25 @@ SUPPORTED_MODELS = {
     "zero": "maccor_txt_zero",
     "one": "maccor_txt_one",
     "two": "maccor_txt_two",
+    "three": "maccor_txt_three",
+    "four": "maccor_txt_four",
+    "WMG_SIMBA": "maccor_txt_three",
+    "KIT_SIMBA": "maccor_txt_four",
+    "KIT_comma_SIMBA": "maccor_txt_two",
+    "UBham_SIMBA": "maccor_txt_three",
 }
+
+
+MUST_HAVE_RAW_COLUMNS = [
+    headers_normal.test_time_txt,
+    headers_normal.step_time_txt,
+    headers_normal.current_txt,
+    headers_normal.voltage_txt,
+    headers_normal.step_index_txt,
+    headers_normal.cycle_index_txt,
+    headers_normal.charge_capacity_txt,
+    headers_normal.discharge_capacity_txt,
+]
 
 
 class MaccorTxtLoader(TxtLoader):
@@ -33,6 +57,34 @@ class MaccorTxtLoader(TxtLoader):
                 headers[col] = ncol.lower()
 
         return headers
+
+    def validate(self, data):
+        """A simple check that all the needed columns has been successfully loaded and that they get the correct type"""
+        missing_must_have_columns = []
+
+        # validating the float-type raw data
+        for col in base_columns_float:
+            if col in data.raw.columns:
+                data.raw[col] = pd.to_numeric(data.raw[col], errors="coerce")
+            else:
+                if col in MUST_HAVE_RAW_COLUMNS:
+                    missing_must_have_columns.append(col)
+
+        # validating the integer-type raw data
+        for col in base_columns_int:
+            if col in data.raw.columns:
+                data.raw[col] = pd.to_numeric(
+                    data.raw[col], errors="coerce", downcast="integer"
+                )
+            else:
+                if col in MUST_HAVE_RAW_COLUMNS:
+                    missing_must_have_columns.append(col)
+
+        if missing_must_have_columns:
+            raise exceptions.IOError(
+                f"Missing needed columns: {missing_must_have_columns}\nAborting!"
+            )
+        return data
 
 
 def check_retrieve_file(n=1):
@@ -128,9 +180,11 @@ def check_loader(name=None, number=1, model="one"):
 
 def check_loader_from_outside():
     # NOT EDITED YET!!!
-    from cellpy import cellreader
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    from cellpy import cellreader
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(
@@ -198,9 +252,11 @@ def check_loader_from_outside():
 
 
 def check_loader_from_outside_with_get():
-    import cellpy
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    import cellpy
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(
@@ -224,9 +280,11 @@ def check_loader_from_outside_with_get():
     summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
 
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
-    raw.plot(x="test_time", y="voltage", ax=ax1)
-    raw.plot(x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3)
-    raw.plot(x="test_time", y="current", ax=ax2)
+    raw.plot(x="test_time", y="voltage", ax=ax1, title="voltage")
+    raw.plot(
+        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, title="caps"
+    )
+    raw.plot(x="test_time", y="current", ax=ax2, title="current")
 
     n = c.get_number_of_cycles()
     print(f"number of cycles: {n}")
@@ -253,8 +311,99 @@ def check_loader_from_outside_with_get():
     ax6.plot(t, steps, label="steps")
 
     fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
-    raw.plot(x="test_time", y="voltage", ax=ax7)
-    raw.plot(x="test_time", y="step_index", ax=ax8)
+    raw.plot(x="test_time", y="voltage", ax=ax7, title="voltage")
+    raw.plot(x="test_time", y="step_index", ax=ax8, title="step index")
+
+    plt.legend()
+    plt.show()
+
+    outfile = out / "test_out"
+    c.save(outfile)
+
+
+def check_loader_from_outside_with_get2():
+    import pathlib
+
+    import matplotlib.pyplot as plt
+
+    import cellpy
+    from cellpy.parameters.internal_settings import headers_normal
+
+    keep = [
+        headers_normal.data_point_txt,
+        headers_normal.test_time_txt,
+        headers_normal.step_time_txt,
+        headers_normal.step_index_txt,
+        headers_normal.cycle_index_txt,
+        headers_normal.current_txt,
+        headers_normal.voltage_txt,
+        headers_normal.ref_voltage_txt,
+        headers_normal.charge_capacity_txt,
+        headers_normal.discharge_capacity_txt,
+        headers_normal.internal_resistance_txt,
+        # "ir_pct_change"
+    ]
+
+    # zero: auto
+    # one:
+    # two: KIT
+    # three | WMB_SIMBA: WMG new
+    INSTRUMENT = "maccor_txt"
+    # MODEL = "WMG_SIMBA"
+    # MODEL = "two"
+    # MODEL = None
+    MODEL = "KIT_SIMBA"
+    # FILENAME = "1044-CT-MaccorExport.txt"  # WMG_SIMBA
+    # FILENAME = "01_UBham_M50_Validation_0deg_01.txt"  # WMG_SIMBA and NONE
+    # FILENAME = "KIT-Full-cell-PW-HC-CT-cell002.txt"
+    # FILENAME = "KIT-Full-cell-PW-HC-CT-cell016.txt"
+    # FILENAME = "KIT-Full-cell-PW-HC-CT-cell013.txt"  # Two
+    # FILENAME = "KIT-Full-cell-PW-HC-CT-cell009.txt"  # FAILS in convert_date_time_to_datetime!
+    FILENAME = "maccor_002_full.txt"
+    DATADIR = r"C:\scripting\processing_cellpy\notebooks\test\new\data"
+
+    pd.options.display.max_columns = 100
+    datadir = pathlib.Path(DATADIR)
+    name = datadir / FILENAME
+    out = pathlib.Path(r"C:\scripting\trash")
+    print(f"File exists? {name.is_file()}")
+    if not name.is_file():
+        print(f"could not find {name} ")
+        return
+
+    c = cellpy.get(
+        filename=name, instrument=INSTRUMENT, model=MODEL, mass=1.0, auto_summary=False
+    )
+    print(f"loaded the file - now lets see what we got")
+    raw = c.cell.raw
+    raw.to_clipboard()
+    print(raw.head())
+    c.make_step_table()
+
+    steps = c.cell.steps
+    summary = c.cell.summary
+
+    raw.to_csv(out / "raw.csv", sep=";")
+    steps.to_csv(out / "steps.csv", sep=";")
+    summary.to_csv(out / "summary.csv", sep=";")
+
+    fig_1, (ax1, ax2, ax3, ax4) = plt.subplots(
+        4,
+        1,
+        figsize=(6, 10),
+        constrained_layout=True,
+        sharex=True,
+    )
+    raw.plot(x="test_time", y="voltage", ax=ax1, xlabel="")
+    raw.plot(x="test_time", y="current", ax=ax2, xlabel="")
+    raw.plot(
+        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, xlabel=""
+    )
+    raw.plot(x="test_time", y="cycle_index", ax=ax4)
+    fig_1.suptitle(f"{name.name}", fontsize=16)
+
+    n = c.get_number_of_cycles()
+    print(f"Number of cycles: {n}")
 
     plt.legend()
     plt.show()
@@ -266,4 +415,4 @@ def check_loader_from_outside_with_get():
 if __name__ == "__main__":
     # check_dev_loader2(model="two")
     # check_loader(number=2, model="two")
-    check_loader_from_outside_with_get()
+    check_loader_from_outside_with_get2()

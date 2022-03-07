@@ -1,12 +1,12 @@
 """python file for test-running of new features"""
 
 import os
-import sys
 import pathlib
+import sys
 
-from cellpy import cellreader
-from cellpy import prms
 import box
+
+from cellpy import cellreader, prms
 
 
 def set_temp(tempdir="/temp"):

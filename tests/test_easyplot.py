@@ -1,12 +1,13 @@
-import pytest
 import logging
 from pathlib import Path
 
 import pandas as pd
+import pytest
+
 from cellpy import log
+from cellpy.exceptions import NullData
 from cellpy.utils import easyplot
 from cellpy.utils.batch_tools.batch_journals import LabJournal
-from cellpy.exceptions import NullData
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 

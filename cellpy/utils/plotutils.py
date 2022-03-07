@@ -3,23 +3,22 @@
 Utilities for helping to plot cellpy-data.
 """
 
+import collections
+import importlib
+import itertools
+import logging
 import os
-from io import StringIO
 import sys
 import warnings
-import importlib
-import logging
-import itertools
-import collections
+from io import StringIO
 from pathlib import Path
 
 from cellpy.parameters.internal_settings import (
-    get_headers_summary,
+    get_headers_journal,
     get_headers_normal,
     get_headers_step_table,
-    get_headers_journal,
+    get_headers_summary,
 )
-
 from cellpy.utils import helpers
 
 try:
@@ -30,8 +29,8 @@ except ImportError:
     plt_available = False
 
 try:
-    from holoviews import opts
     import holoviews as hv
+    from holoviews import opts
     from holoviews.plotting.links import RangeToolLink
 
     hv_available = True
@@ -673,9 +672,8 @@ def _cycle_info_plot_bokeh(
 
     try:
         from bokeh.io import output_notebook, show
-        from bokeh.layouts import row, column
-        from bokeh.models import ColumnDataSource, LabelSet
-        from bokeh.models import HoverTool
+        from bokeh.layouts import column, row
+        from bokeh.models import ColumnDataSource, HoverTool, LabelSet
         from bokeh.models.annotations import Span
         from bokeh.models.widgets import Slider, TextInput
         from bokeh.plotting import figure

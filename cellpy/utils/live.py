@@ -1,8 +1,8 @@
 """Routines for streaming cell data"""
 
+import logging
 import os
 import warnings
-import logging
 
 logging.captureWarnings(True)
 

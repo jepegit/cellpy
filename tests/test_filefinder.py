@@ -1,6 +1,6 @@
 import pytest
-from cellpy import filefinder
-from cellpy import log
+
+from cellpy import filefinder, log
 
 log.setup_logging(default_level="DEBUG", testing=True)
 

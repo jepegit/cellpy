@@ -10,14 +10,14 @@ from typing import Union
 import pandas as pd
 
 from cellpy import prms
-from cellpy.readers.core import FileID, Cell
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
+from cellpy.readers.core import Cell, FileID
 from cellpy.readers.instruments.base import Loader
 from cellpy.readers.instruments.configurations import (
-    register_configuration_from_module,
     ModelParameters,
+    register_configuration_from_module,
 )
-from cellpy.readers.instruments.processors import pre_processors, post_processors
+from cellpy.readers.instruments.processors import post_processors, pre_processors
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 
@@ -642,9 +642,11 @@ def check_loader(name=None, number=1, model="one"):
 
 def check_loader_from_outside():
     # NOT EDITED YET!!!
-    from cellpy import cellreader
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    from cellpy import cellreader
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(
@@ -712,9 +714,11 @@ def check_loader_from_outside():
 
 
 def check_loader_from_outside_with_get():
-    import cellpy
-    import matplotlib.pyplot as plt
     import pathlib
+
+    import matplotlib.pyplot as plt
+
+    import cellpy
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(

@@ -14,48 +14,48 @@ Example:
 
 """
 
-import os
-from pathlib import Path, PurePosixPath, PureWindowsPath
-import logging
-import sys
 import collections
-import warnings
+import copy
 import csv
 import itertools
+import logging
+import os
+import sys
 import time
-import copy
+import warnings
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import numpy as np
 import pandas as pd
 from pandas.errors import PerformanceWarning
 from scipy import interpolate
 
+from cellpy.exceptions import DeprecatedFeature, NullData, WrongFileVersion
 from cellpy.parameters import prms
-from cellpy.parameters.legacy import internal_settings as old_settings
-from cellpy.exceptions import WrongFileVersion, DeprecatedFeature, NullData
 from cellpy.parameters.internal_settings import (
-    get_headers_summary,
-    get_cellpy_units,
-    get_headers_normal,
-    get_headers_step_table,
+    ATTRS_CELLPYDATA,
     ATTRS_CELLPYFILE,
     ATTRS_DATASET,
     ATTRS_DATASET_DEEP,
-    ATTRS_CELLPYDATA,
+    get_cellpy_units,
+    get_headers_normal,
+    get_headers_step_table,
+    get_headers_summary,
     headers_normal,
-    headers_summary,
     headers_step_table,
+    headers_summary,
 )
+from cellpy.parameters.legacy import internal_settings as old_settings
 from cellpy.readers.core import (
-    FileID,
-    Cell,
     CELLPY_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
-    xldate_as_datetime,
-    interpolate_y_on_x,
-    identify_last_data_point,
-    pickle_protocol,
     PICKLE_PROTOCOL,
+    Cell,
+    FileID,
+    identify_last_data_point,
+    interpolate_y_on_x,
+    pickle_protocol,
+    xldate_as_datetime,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -203,6 +203,7 @@ class CellpyData(object):
             initialize: create a dummy (empty) dataset; defaults to False.
         """
 
+        self.raw_units = get_cellpy_units()
         if tester is None:
             self.tester = prms.Instruments.tester
         else:
@@ -450,9 +451,26 @@ class CellpyData(object):
     def set_instrument(self, instrument=None, instrument_file=None, **kwargs):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
+        Three different modes of setting instruments are currently supported. You can
+        provide the already supported instrument names (see the documentation, e.g. "arbin",
+        "arbin_res",...). You can use the "custom" loader by providing the path to a yaml-file
+        describing the file format. This can be done either by setting instrument to
+        "instrument_name::instrument_definition_file_name", or by setting instrument to "custom" and
+        provide the definition file name through the instrument_file keyword argument. A last option
+        exists where you provide the yaml-file name directly to the instrument parameter. Cellpy
+        will then look into your local instrument folder and search for the yaml-file. Some
+        instrument types also supports a model key-word.
+
         Args:
-            instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]
-            instrument_file: (path) instrument definition file
+            instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]. If
+                instrument ends with ".yml" a local instrument file will be used. For example,
+                if instrument is "my_instrument.yml", cellpy will look into the local
+                instruments folders for a file called "my_instrument.yml" and then
+                use LocalTxtLoader to load after registering the instrument. If the instrument
+                name contains a '::' seperator, the part after the seperator will be interpreted
+                as 'instrument_file'.
+            instrument_file: (path) instrument definition file (uses currently the old "custom"
+                instrument format)
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
@@ -462,10 +480,32 @@ class CellpyData(object):
 
         custom_instrument_splitter = "::"
 
+        _override_local_instrument_path = kwargs.pop(
+            "_override_local_instrument_path", False
+        )
+
         if instrument is None:
             instrument = self.tester
 
         logging.debug(f"Setting instrument: {instrument}")
+        if instrument.endswith(".yml"):
+            if _override_local_instrument_path:
+                instrument = Path(instrument)
+            else:
+                instrument = Path(prms.Paths.instrumentdir) / instrument
+            if instrument.is_file():
+                from cellpy.readers.instruments.local_instrument import (
+                    LocalTxtLoader as RawLoader,
+                )
+
+                self._set_instrument(RawLoader, local_instrument_file=instrument)
+                self.tester = instrument
+                return
+
+            else:
+                raise Exception(
+                    f"The needed instrument file does not exist: '{instrument}'"
+                )
 
         if instrument in ["arbin", "arbin_res"]:
             from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
@@ -542,7 +582,13 @@ class CellpyData(object):
     def _set_instrument(self, loader_class, **kwargs):
         self.loader_class = loader_class(**kwargs)
         # ----- get information --------------------------
+        # TODO: move this out of _set_instrument so that we can modify
+        #   it during parsing (in case units are automatically found from
+        #   the column headings in the file). It seems to not be needed
+        #   for the newly implemented (early 2022) TxtLoader, but the
+        #   tests fails for test_cell_readers and more if I remove it now:
         self.raw_units = self.loader_class.get_raw_units()
+
         self.raw_limits = self.loader_class.get_raw_limits()
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
@@ -1111,6 +1157,7 @@ class CellpyData(object):
 
         self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
+        self.raw_units = self.loader_class.get_raw_units()
         self._invent_a_name()
         return self
 
@@ -1249,6 +1296,7 @@ class CellpyData(object):
             logging.warning("No new datasets added!")
         self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
+        self.raw_units = self.loader_class.get_raw_units()
         self._invent_a_name()
         return self
 
@@ -4388,7 +4436,7 @@ class CellpyData(object):
             to_unit: (float) unit of input, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
               will be 0.001 / 1.0 = 0.001
-            from_unit: float) unit of output, f.ex. if unit of charge
+            from_unit: (float) unit of output, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
               will be 1.0 / 0.001 = 1000.0
 
@@ -4396,7 +4444,6 @@ class CellpyData(object):
             multiplier (float) from_unit/to_unit * mass
 
         """
-
         if not dataset:
             dataset_number = self._validate_dataset_number(None)
             if dataset_number is None:
@@ -5469,7 +5516,8 @@ def get(
     db_readers = ["arbin_sql"]
 
     if instrument_file is not None:
-        # TODO: make tests for this:
+        # TODO: make tests for this
+        # TODO: align this with the new format
         cellpy_instance.set_instrument(
             instrument="custom", instrument_file=instrument_file
         )
@@ -5520,6 +5568,9 @@ def get(
         # raw file
         logging.info(f"Loading raw-file: {filename}")
         cellpy_instance.from_raw(filename, **kwargs)
+        logging.debug("raw:")
+        logging.debug(cellpy_instance.cell.raw.head())
+
         if not cellpy_instance:
             print("Could not load file: check log!")
             print("Returning None")
@@ -5579,6 +5630,7 @@ def check_cellpy_file():
     print("running", end=" ")
     print(sys.argv[0])
     import logging
+
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")

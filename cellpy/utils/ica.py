@@ -6,7 +6,6 @@ import logging
 import warnings
 
 import numpy as np
-import pandas as pd
 from scipy import stats
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
@@ -331,22 +330,8 @@ class Converter:
 
         elif self.increment_method == "hist":
             logging.debug(" - diff using HIST")
-            # raise NotImplementedError
-
-            df = pd.DataFrame(
-                {"Capacity": self.capacity_inverted, "Voltage": self.voltage_inverted}
-            )
-            df["dQ"] = df.Capacity.diff()
-            df["Voltage"] = df.Voltage.round(decimals=4)
-            df = df.groupby(["Voltage"])["dQ"].sum().to_frame().reset_index()
-            df["dV"] = df.Voltage.diff().rolling(1).sum()
-            df["dQdV"] = df.dQ / df.dV
-            # df = df[df.dQdV.notnull()]  # Might be needed, but could introduce an artefact
-
-            self.incremental_capacity = df.dQdV
-            self.voltage_processed = df.Voltage
-
-            # TODO: Asbjoern, maybe you can put your method here? Yes
+            # TODO: Asbjoern, maybe you can put your method here?
+            raise NotImplementedError
 
     def post_process_data(
         self, voltage=None, incremental_capacity=None, voltage_step=None
@@ -608,6 +593,7 @@ def dqdv(
     max_points=None,
     **kwargs,
 ):
+
     """Convenience functions for creating dq-dv data from given capacity
     and voltage data.
 
@@ -1033,15 +1019,11 @@ def _get_a_cell_to_play_with():
     return cell
 
 
-def _check_if_works():
+if __name__ == "__main__":
+    # check_class_ica()¨
     import pandas as pd
     from cellpy import cellreader
 
     cell = _get_a_cell_to_play_with()
 
     a = dqdv_frames(cell)
-    print("Hei")
-
-
-if __name__ == "__main__":
-    _check_if_works()

@@ -4,8 +4,7 @@ import sys
 import time
 
 import cellpy
-from cellpy import log
-from cellpy import cellreader
+from cellpy import cellreader, log
 from cellpy.parameters import prms
 
 print(f"running {sys.argv[0]}")

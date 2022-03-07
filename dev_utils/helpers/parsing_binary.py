@@ -1,9 +1,10 @@
-import os
-import sys
 import datetime
 import math
-from struct import unpack
+import os
 import struct
+import sys
+from struct import unpack
+
 import numpy as np
 
 OLE_TIME_ZERO = datetime.datetime(1899, 12, 30, 0, 0, 0)
