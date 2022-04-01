@@ -7,7 +7,7 @@ Development Lead
 
 * Jan Petter Maehlen <jepe@ife.no>
 * Muhammad Abdelhamid <muhammad.abdelhamid@ife.no>
-* Asbjoern Ulvestad <asbjorn.ulbestad@ife.no>
+* Asbjoern Ulvestad <asbjorn.ulvestad@ife.no>
 
 
 Contributors

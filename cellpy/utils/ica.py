@@ -367,7 +367,7 @@ class Converter:
 
             sigma = np.amax([1, points_fwhm / 2])
 
-            self.incremental_capacity = gaussian_filter1d(
+            incremental_capacity = gaussian_filter1d(
                 incremental_capacity,
                 sigma=sigma,
                 order=self.gaussian_order,
@@ -379,9 +379,11 @@ class Converter:
         if self.normalize:
             logging.debug(" - normalizing")
             area = simps(incremental_capacity, voltage)
-            self.incremental_capacity = (
+            incremental_capacity = (
                 incremental_capacity * self.normalizing_factor / abs(area)
             )
+
+        self.incremental_capacity = incremental_capacity
 
         fixed_range = False
         if isinstance(self.fixed_voltage_range, np.ndarray):
@@ -395,12 +397,11 @@ class Converter:
             v = np.linspace(v1, v2, number_of_points)
             f = interp1d(
                 x=self.voltage_processed,
-                y=self.incremental_capacity,
+                y=incremental_capacity,
                 kind=self.interpolation_method,
                 bounds_error=False,
                 fill_value=np.NaN,
             )
-
             self.incremental_capacity = f(v)
             self.voltage_processed = v
 
