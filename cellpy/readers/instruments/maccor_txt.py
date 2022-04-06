@@ -349,17 +349,18 @@ def check_loader_from_outside_with_get2():
     # two: KIT
     # three | WMB_SIMBA: WMG new
     INSTRUMENT = "maccor_txt"
-    # MODEL = "WMG_SIMBA"
+    MODEL = "WMG_SIMBA"
     # MODEL = "two"
     # MODEL = None
-    MODEL = "KIT_SIMBA"
+    # MODEL = "KIT_SIMBA"
     # FILENAME = "1044-CT-MaccorExport.txt"  # WMG_SIMBA
     # FILENAME = "01_UBham_M50_Validation_0deg_01.txt"  # WMG_SIMBA and NONE
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell002.txt"
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell016.txt"
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell013.txt"  # Two
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell009.txt"  # FAILS in convert_date_time_to_datetime!
-    FILENAME = "maccor_002_full.txt"
+    FILENAME = "SIM-A7-1039 - 073.txt"
+    # FILENAME = "SIM-A7-1047-ET - 079.txt"
     DATADIR = r"C:\scripting\processing_cellpy\notebooks\test\new\data"
 
     pd.options.display.max_columns = 100
