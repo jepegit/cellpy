@@ -1,0 +1,17 @@
+[bumpver]
+current_version = "0.4.2b3"
+version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = true
+
+[bumpver.file_patterns]
+"cellpy/_version.py" = [
+    '__version__ = "{version}"',
+]
+
+"bumpver.toml" = [
+    'current_version = "{version}"',
+]
+
