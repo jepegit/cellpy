@@ -1,8 +1,8 @@
 [bumpver]
-current_version = "0.4.2b4"
+current_version = "0.4.2b3"
 version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
 commit_message = "bump version {old_version} -> {new_version}"
-commit = false
+commit = true
 tag = true
 push = false
 
