@@ -296,10 +296,35 @@ def test(c):
 
 
 @task
-def build(c, dist=True, docs=False, upload=True, serve=False, browser=False):
+def build(c, bump=True, dist=True, docs=False, upload=True, serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
     print(" Creating distribution ".center(80, "="))
     print("Running python setup.py sdist")
+    bump_tags = {
+        "nano": "tag-num",
+        "micro": "tag",
+        "minor": "minor",
+        "major": "major"
+    }
+    if bump:
+        regex_old = re.compile("- Old Version: (.*)")
+        regex_new = re.compile("- New Version: (.*)")
+        out = c.run(f"bumpver update --{bump_tags.get(bump, 'tag-num')}")
+        try:
+            old_version = regex_old.search(out.stderr).group(1)
+            new_version = regex_new.search(out.stderr).group(1)
+        except Exception as e:
+            print(e)
+            print("could not read bumping")
+            return
+
+        c.run(f"git add .")
+        print("RUNNING:")
+        message = f"bump version {old_version} -> {new_version}"
+        commit(c, push=False, comment=message)
+        #c.run(f"git commit . -m 'bump version {old_version} -> {new_version}'")
+        #print(f"git tag {new_version}")
+        return
     if dist:
         c.run("python -m build")
     if docs:
