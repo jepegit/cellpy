@@ -322,8 +322,7 @@ def build(c, bump=True, dist=True, docs=False, upload=True, serve=False, browser
         print("RUNNING:")
         message = f"bump version {old_version} -> {new_version}"
         commit(c, push=False, comment=message)
-        #c.run(f"git commit . -m 'bump version {old_version} -> {new_version}'")
-        #print(f"git tag {new_version}")
+        c.run(f"git tag {new_version}")
         return
     if dist:
         c.run("python -m build")
