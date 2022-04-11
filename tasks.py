@@ -311,8 +311,8 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
     }
     default_bumper = "tag-num"
 
-    if bump:
-        if isinstance(bump, bool):
+    if bump is not "keep":
+        if bump is None:
             bumper = default_bumper
         else:
             if bump.startswith("v."):
@@ -339,6 +339,8 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
         if not dry:
             c.run(f"git add .")
         message = f"bump version {old_version} -> {new_version}"
+        if build and upload:
+            message += "[published]"
         if not dry:
             commit(c, push=False, comment=message)
             c.run(f"git tag {new_version}")
