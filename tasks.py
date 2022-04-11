@@ -368,8 +368,9 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
         try:
             username = os.environ["PYPI_USER"]
             password = os.environ["PYPI_PWD"]
-            print("GOT NAMES")
-            c.run(f"python -m twine upload dist/* -u%{username}% -p%{password}%")
+            print(f"username: {username}")
+            print(f"password: {password}")
+            c.run(f"python -m twine upload dist/* -u {username} -p {password}")
         except:
             print("NO")
         return
