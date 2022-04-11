@@ -311,7 +311,7 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
     }
     default_bumper = "tag-num"
 
-    if bump is not "keep":
+    if bump != "keep":
         if bump is None:
             bumper = default_bumper
         else:
@@ -340,7 +340,7 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
             c.run(f"git add .")
         message = f"bump version {old_version} -> {new_version}"
         if build and upload:
-            message += "[published]"
+            message += " [published]"
         if not dry:
             commit(c, push=False, comment=message)
             c.run(f"git tag {new_version}")
@@ -366,7 +366,7 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
     if upload:
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
-        print(" Trying with using username and password from keyring.")
+        print(" Trying with using username and password from environment.")
         try:
             username = os.environ["PYPI_USER"]
             password = os.environ["PYPI_PWD"]
