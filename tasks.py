@@ -295,21 +295,40 @@ def test(c):
     c.run("pytest --cov=cellpy tests/")
 
 
-@task
-def build(c, bump=True, dist=True, docs=False, upload=True, serve=False, browser=False):
+@task(optional=['bump'])
+def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
-    print(" Creating distribution ".center(80, "="))
-    print("Running python setup.py sdist")
     bump_tags = {
         "nano": "tag-num",
-        "micro": "tag",
+        "micro": "patch",
         "minor": "minor",
-        "major": "major"
+        "major": "major",
+        "alpha": "tag alpha",
+        "beta": "tag beta",
+        "rc": "tag rc",
+        "post": "tag post",
+        "final": "tag final",
     }
+    default_bumper = "tag-num"
+
     if bump:
+        if isinstance(bump, bool):
+            bumper = default_bumper
+        else:
+            if bump.startswith("v."):
+                bumper = f"set-version {bump[2:]}"
+            elif bump not in ["p", "patch", "m", "minor", "major", "t", "tag"]:
+                bumper = bump_tags.get(bump, default_bumper)
+            else:
+                bumper = bump
+
+        print(f" Bumping version ({bumper}) ".center(80, "="))
         regex_old = re.compile("- Old Version: (.*)")
         regex_new = re.compile("- New Version: (.*)")
-        out = c.run(f"bumpver update --{bump_tags.get(bump, 'tag-num')}")
+        if dry:
+            out = c.run(f"bumpver update --{bumper} --dry")
+        else:
+            out = c.run(f"bumpver update --{bumper}")
         try:
             old_version = regex_old.search(out.stderr).group(1)
             new_version = regex_new.search(out.stderr).group(1)
@@ -317,12 +336,27 @@ def build(c, bump=True, dist=True, docs=False, upload=True, serve=False, browser
             print(e)
             print("could not read bumping")
             return
-
-        c.run(f"git add .")
+        if not dry:
+            c.run(f"git add .")
         message = f"bump version {old_version} -> {new_version}"
-        commit(c, push=False, comment=message)
-        c.run(f"git tag {new_version}")
+        if not dry:
+            commit(c, push=False, comment=message)
+            c.run(f"git tag {new_version}")
+        else:
+            print(message)
+
+    if dry:
+        print("running in dry mode - only supported for bumpver")
+        print(f"bumping={bump}")
+        print("exiting....")
+        return
+
+    if _clean:
+        clean(c)
+
     if dist:
+        print(" Creating distribution ".center(80, "="))
+        print("Running python setup.py sdist")
         c.run("python -m build")
     if docs:
         print(" Building docs ".center(80, "-"))
@@ -331,10 +365,18 @@ def build(c, bump=True, dist=True, docs=False, upload=True, serve=False, browser
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
         print(" Trying with using username and password from keyring.")
+        try:
+            username = os.environ["PYPI_USER"]
+            password = os.environ["PYPI_PWD"]
+            print("GOT NAMES")
+            c.run(f"python -m twine upload dist/* -u%{username}% -p%{password}%")
+        except:
+            print("NO")
+        return
         c.run("python -m twine upload dist/*")
     else:
         print(" To upload to pypi: 'python -m twine upload dist/*'")
-    if serve:
+    if _serve:
         import pathlib
 
         builds_path = pathlib.Path("docs") / "_build"
