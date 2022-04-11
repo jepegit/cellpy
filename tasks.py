@@ -369,12 +369,15 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
             username = os.environ["PYPI_USER"]
             password = os.environ["PYPI_PWD"]
             print(f"username: {username}")
-            print(f"password: {password}")
             c.run(f"python -m twine upload dist/* -u {username} -p {password}")
-        except:
-            print("NO")
-        return
-        c.run("python -m twine upload dist/*")
+        except Exception:
+            print("Could not extract user and password from environment")
+            print("For it to work you need to export")
+            print("PYPI_USER and PYPI_PWD")
+            print("e.g.  export PYPI_USER=jepe")
+            print("Running upload (insert username and password when prompted)")
+            c.run("python -m twine upload dist/*")
+
     else:
         print(" To upload to pypi: 'python -m twine upload dist/*'")
     if _serve:
