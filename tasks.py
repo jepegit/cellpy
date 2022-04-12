@@ -391,8 +391,6 @@ def autobuild(c, _bump=None, _clean=True, upload=True):
         out = c.run(f"bumpver show")
         new_version = create_commit_message_from_output(out.stdout, regex_current)
         commit_message = f"version {new_version}"
-    if upload:
-        commit_message += " [published]"
 
     print(80*"=")
     print(f"bump: {_bump}")
