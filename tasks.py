@@ -333,14 +333,48 @@ def create_commit_message_from_output(output, regexp):
     return txt
 
 
+@task
+def bump(c, bumper=None):
+    """Bump version.
+
+        bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+
+    """
+    bumper = _get_bump_tag(bumper)
+    if not bumper:
+        regex_current = re.compile("Current Version: (.*)")
+        print("only checking current version (no bumping)")
+        out = c.run(f"bumpver show")
+        version = create_commit_message_from_output(out.stdout, regex_current)
+        print(f"Current version: {version}")
+        return
+
+    regex_old = re.compile("- Old Version: (.*)")
+    regex_new = re.compile("- New Version: (.*)")
+    print(f" running bumpver ({bumper} --dry) ".center(80, "-"))
+    out = c.run(f"bumpver update --{bumper} --dry")
+    old_version = create_commit_message_from_output(out.stderr, regex_old)
+    new_version = create_commit_message_from_output(out.stderr, regex_new)
+    commit_message = f"bump version {old_version} -> {new_version}"
+    print(f"{commit_message}")
+    is_ok = input("> continue? [y]/n: ") or "y"
+
+    if not is_ok.lower() in ["y", "yes", "ok", "sure"]:
+        print("Aborting!")
+        return
+
+    c.run(f"bumpver update --{bumper} --dry")
+    print("DONE")
+
+
 @task(optional=['bump'])
-def autobuild(c, bump=None, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False):
+def autobuild(c, _bump=None, _clean=True, upload=True):
     """Create distribution and upload to PyPI.
 
     bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
 
     """
-    bumper = _get_bump_tag(bump)
+    bumper = _get_bump_tag(_bump)
 
     regex_old = re.compile("- Old Version: (.*)")
     regex_new = re.compile("- New Version: (.*)")
@@ -361,7 +395,7 @@ def autobuild(c, bump=None, _clean=True, dist=True, docs=False, upload=True, _se
         commit_message += " [published]"
 
     print(80*"=")
-    print(f"bump: {bump}")
+    print(f"bump: {_bump}")
     print(commit_message)
     print(f"clean: {_clean}")
     print(f"upload: {upload}")
@@ -372,7 +406,6 @@ def autobuild(c, bump=None, _clean=True, dist=True, docs=False, upload=True, _se
 
     print(" Processing ".center(80, "="))
     if _clean:
-        print(" Cleaning ".center(80, "-"))
         clean(c)
 
     if bumper:
@@ -385,7 +418,7 @@ def autobuild(c, bump=None, _clean=True, dist=True, docs=False, upload=True, _se
     if upload:
         commit_message += " [published]"
 
-    print(" committing changes ".center(80, "-"))
+    print(" -> committing changes ")
     c.run(f"git add .")
     commit(c, push=False, comment=commit_message)
     c.run(f"git tag {new_version}")
@@ -411,64 +444,8 @@ def autobuild(c, bump=None, _clean=True, dist=True, docs=False, upload=True, _se
         print(" To upload to pypi: 'python -m twine upload dist/*'")
 
 
-@task(optional=['bump'])
-def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False):
+def build(c, _clean=True, dist=True, docs=False, upload=False, _serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
-    bump_tags = {
-        "nano": "tag-num",
-        "micro": "patch",
-        "minor": "minor",
-        "major": "major",
-        "alpha": "tag alpha",
-        "beta": "tag beta",
-        "rc": "tag rc",
-        "post": "tag post",
-        "final": "tag final",
-    }
-    default_bumper = "tag-num"
-
-
-    if bump != "keep":
-        if bump is None:
-            bumper = default_bumper
-        else:
-            if bump.startswith("v."):
-                bumper = f"set-version {bump[2:]}"
-            elif bump not in ["p", "patch", "m", "minor", "major", "t", "tag"]:
-                bumper = bump_tags.get(bump, default_bumper)
-            else:
-                bumper = bump
-
-        print(f" Bumping version ({bumper}) ".center(80, "="))
-        regex_old = re.compile("- Old Version: (.*)")
-        regex_new = re.compile("- New Version: (.*)")
-        if dry:
-            out = c.run(f"bumpver update --{bumper} --dry")
-        else:
-            out = c.run(f"bumpver update --{bumper}")
-        try:
-            old_version = regex_old.search(out.stderr).group(1)
-            new_version = regex_new.search(out.stderr).group(1)
-        except Exception as e:
-            print(e)
-            print("could not read bumping")
-            return
-        if not dry:
-            c.run(f"git add .")
-        message = f"bump version {old_version} -> {new_version}"
-        if build and upload:
-            message += " [published]"
-        if not dry:
-            commit(c, push=False, comment=message)
-            c.run(f"git tag {new_version}")
-        else:
-            print(message)
-
-    if dry:
-        print("running in dry mode - only supported for bumpver")
-        print(f"bumping={bump}")
-        print("exiting....")
-        return
 
     if _clean:
         clean(c)
