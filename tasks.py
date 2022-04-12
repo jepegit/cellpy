@@ -295,6 +295,122 @@ def test(c):
     c.run("pytest --cov=cellpy tests/")
 
 
+def _get_bump_tag(bump):
+    bump_tags = {
+        "nano": "tag-num",
+        "micro": "patch",
+        "minor": "minor",
+        "major": "major",
+        "alpha": "tag alpha",
+        "beta": "tag beta",
+        "rc": "tag rc",
+        "post": "tag post",
+        "final": "tag final",
+    }
+    default_bumper = "tag-num"
+
+    if bump in ["false", "keep", "skip", "no", "no-chance", "nope", "n"] or bump is False:
+        return False
+    if bump is None or bump is True:
+        return default_bumper
+
+    if bump.startswith("v."):
+        bumper = f"set-version {bump[2:]}"
+    elif bump not in ["p", "patch", "m", "minor", "major", "t", "tag"]:
+        bumper = bump_tags.get(bump, default_bumper)
+    else:
+        bumper = bump
+    return bumper
+
+
+def create_commit_message_from_output(output, regexp):
+    try:
+        txt = regexp.search(output).group(1)
+    except Exception as e:
+        print(e)
+        print("could not read bumping")
+        return
+    return txt
+
+
+@task(optional=['bump'])
+def autobuild(c, bump=None, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False):
+    """Create distribution and upload to PyPI.
+
+    bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+
+    """
+    bumper = _get_bump_tag(bump)
+
+    regex_old = re.compile("- Old Version: (.*)")
+    regex_new = re.compile("- New Version: (.*)")
+    regex_current = re.compile("Current Version: (.*)")
+
+    if bumper:
+        print(f" running bumpver ({bumper} --dry) ".center(80, "-"))
+        out = c.run(f"bumpver update --{bumper} --dry")
+
+        old_version = create_commit_message_from_output(out.stderr, regex_old)
+        new_version = create_commit_message_from_output(out.stderr, regex_new)
+        commit_message = f"bump version {old_version} -> {new_version}"
+    else:
+        out = c.run(f"bumpver show")
+        new_version = create_commit_message_from_output(out.stdout, regex_current)
+        commit_message = f"version {new_version}"
+    if upload:
+        commit_message += " [published]"
+
+    print(80*"=")
+    print(f"bump: {bump}")
+    print(commit_message)
+    print(f"clean: {_clean}")
+    print(f"upload: {upload}")
+    is_ok = input("> continue? [y]/n: ") or "y"
+    if not is_ok.lower() in ["y", "yes", "ok", "sure"]:
+        print("Aborting!")
+        return
+
+    print(" Processing ".center(80, "="))
+    if _clean:
+        print(" Cleaning ".center(80, "-"))
+        clean(c)
+
+    if bumper:
+        print(f" Bumping version ({bumper}) ".center(80, "-"))
+        c.run(f"bumpver update --{bumper}")
+
+    print(" Creating distribution ".center(80, "-"))
+    c.run("python -m build")
+
+    if upload:
+        commit_message += " [published]"
+
+    print(" committing changes ".center(80, "-"))
+    c.run(f"git add .")
+    commit(c, push=False, comment=commit_message)
+    c.run(f"git tag {new_version}")
+
+    if upload:
+        print(" uploading to PyPI ".center(80, "-"))
+        print(" Running 'twine upload dist/*'")
+        print(" Trying with using username and password from environment.")
+        try:
+            username = os.environ["PYPI_USER"]
+            password = os.environ["PYPI_PWD"]
+            print(f"username: {username}")
+            c.run(f"python -m twine upload dist/* -u {username} -p {password}")
+        except Exception:
+            print("Could not extract user and password from environment")
+            print("For it to work you need to export")
+            print("PYPI_USER and PYPI_PWD")
+            print("e.g.  export PYPI_USER=jepe")
+            print("Running upload (insert username and password when prompted)")
+            c.run("python -m twine upload dist/*")
+
+    else:
+        print(" To upload to pypi: 'python -m twine upload dist/*'")
+
+
 @task(optional=['bump'])
 def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
@@ -310,6 +426,7 @@ def build(c, dry=False, bump=None, _clean=True, dist=True, docs=False, upload=Tr
         "final": "tag final",
     }
     default_bumper = "tag-num"
+
 
     if bump != "keep":
         if bump is None:
