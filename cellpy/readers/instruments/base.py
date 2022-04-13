@@ -136,9 +136,8 @@ def _find_separator(checking_length, lines, separators):
     return separator, number_of_hits
 
 
-class AtomicLoad(object):
+class AtomicLoad:
     """Atomic loading class"""
-
     pass
 
 

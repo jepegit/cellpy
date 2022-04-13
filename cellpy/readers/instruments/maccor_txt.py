@@ -12,7 +12,6 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.readers.instruments.base import TxtLoader
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
 
 SUPPORTED_MODELS = {
     "ZERO": "maccor_txt_zero",
