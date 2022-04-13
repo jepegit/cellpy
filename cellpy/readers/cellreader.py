@@ -479,6 +479,7 @@ class CellpyData(object):
         """
 
         custom_instrument_splitter = "::"
+        maccor_model_splitter = "::"
 
         _override_local_instrument_path = kwargs.pop(
             "_override_local_instrument_path", False
@@ -549,7 +550,19 @@ class CellpyData(object):
             )
 
             logging.warning("Experimental! Not ready for production!")
-            self._set_instrument(RawLoader, **kwargs)
+            model = kwargs.pop("model", None)
+            if not model:
+                _model = instrument.split(maccor_model_splitter)
+                try:
+                    model = _model[1]
+                    logging.debug(
+                        f"provided model through instrument splitter: {model}"
+                    )
+                except IndexError:
+                    logging.debug("no model provided")
+                    logging.debug(instrument)
+                    model = None
+            self._set_instrument(RawLoader, model=model, **kwargs)
             self.tester = "maccor"
 
         elif instrument.startswith("custom"):
