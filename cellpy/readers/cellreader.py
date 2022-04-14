@@ -447,6 +447,12 @@ class CellpyData(object):
         cells.append(old_cell)
         return cells
 
+    def __register_external_readers(self):
+        logging.debug("Not implemented yet. Should allow registering readers "
+                      "for example installed as plug-ins.")
+        self.__external_readers = dict()
+        return
+
     # TODO: @jepe - merge the _set_xxinstrument methods into one method
     def set_instrument(self, instrument=None, instrument_file=None, **kwargs):
         """Set the instrument (i.e. tell cellpy the file-type you use).
@@ -467,7 +473,7 @@ class CellpyData(object):
                 if instrument is "my_instrument.yml", cellpy will look into the local
                 instruments folders for a file called "my_instrument.yml" and then
                 use LocalTxtLoader to load after registering the instrument. If the instrument
-                name contains a '::' seperator, the part after the seperator will be interpreted
+                name contains a '::' separator, the part after the separator will be interpreted
                 as 'instrument_file'.
             instrument_file: (path) instrument definition file (uses currently the old "custom"
                 instrument format)
@@ -484,6 +490,8 @@ class CellpyData(object):
         _override_local_instrument_path = kwargs.pop(
             "_override_local_instrument_path", False
         )
+
+        self.__register_external_readers()
 
         if instrument is None:
             instrument = self.tester
@@ -565,8 +573,42 @@ class CellpyData(object):
             self._set_instrument(RawLoader, model=model, **kwargs)
             self.tester = "maccor"
 
+        # new custom loader:
         elif instrument.startswith("custom"):
+            print("NEW CUSTOM LOADER")
+            from cellpy.readers.instruments.custom_instrument import (
+                CustomTxtLoader as RawLoader,
+            )
+            model = kwargs.pop("model", None)
+            if model:
+                logging.debug(f"the model key word is not "
+                              f"supported for custom loader - removing it")
+            logging.warning("Experimental! Not ready for production!")
             logging.debug(f"using custom instrument: {instrument}")
+            if not instrument_file:
+                _instrument = instrument.split(custom_instrument_splitter)
+                try:
+                    instrument_file = _instrument[1]
+                    logging.debug(
+                        f"provided instrument file through instrument splitter: {instrument_file}"
+                    )
+
+                except IndexError:
+                    logging.debug("no definition file provided")
+                    logging.debug(instrument)
+                    instrument_file = None
+
+            self._set_instrument(RawLoader, instrument_file=instrument_file, **kwargs)
+            self.tester = "custom"
+
+        # old custom loader:
+        elif instrument.startswith("old_custom"):
+            print("OLD CUSTOM LOADER")
+            logging.debug(f"using custom instrument: {instrument}")
+            model = kwargs.pop("model", None)
+            if model:
+                logging.debug(f"the model key word is not "
+                              f"supported for custom loader - removing it")
             if not instrument_file:
                 _instrument = instrument.split(custom_instrument_splitter)
                 try:
@@ -587,7 +629,12 @@ class CellpyData(object):
             from cellpy.readers.instruments.custom import CustomLoader as RawLoader
 
             self._set_instrument(RawLoader, **kwargs)
-            self.tester = "custom"
+            self.tester = "old_custom"
+
+        elif instrument in self.__external_readers.keys():
+            logging.debug(f"Using plug-in reader")
+            logging.debug(f"Unfortunately, not implemented yet!")
+            raise Exception(f"...so this option does not exist: '{instrument}'")
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")

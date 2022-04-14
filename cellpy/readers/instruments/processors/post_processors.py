@@ -8,7 +8,6 @@ All methods should return None (i.e. nothing).
 """
 
 import logging
-import sys
 
 import pandas as pd
 
@@ -23,11 +22,17 @@ ORDERED_POST_PROCESSING_STEPS = [
     "select_columns_to_keep",
     "remove_last_if_bad",
 ]
-# TODO: refactor so that select_columns_to_keep can be done after rename_headers
-#  Things to think about:
-#    columns_to_keep must contain "cellpy" column names,
-#    got a KeyError: 'cycle_index' for split_capacity
-# ORDERED_POST_PROCESSING_STEPS = ["get_column_names", "rename_headers", "select_columns_to_keep"]
+
+# TODO: implement from old custom
+#  1. add a format key-word (csv, xlsx, xls, json, etc.)
+#  2. parse top part (meta)
+#     a. add key-word for format of meta data (key_value_pairs, etc.)
+#     b. load meta-part and pares it (use the ATTRS_CELLPYFILE and setattr)
+#  3. the old custom loader has methods for parsing csv, xls,
+#     and xlsx - implement them if needed.
+#  4. Consider adding x_time_conversion key-words and methods from old custom.
+#  5. Check if CustomTxtLoader properly implements inspect() and
+#     _generate_fid().
 
 
 def remove_last_if_bad(data: Cell, config_params: ModelParameters) -> Cell:

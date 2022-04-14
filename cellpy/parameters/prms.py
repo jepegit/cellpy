@@ -205,7 +205,6 @@ Arbin = {
 Arbin = box.Box(Arbin)
 
 Maccor = {"default_model": "one"}
-
 Maccor = box.Box(Maccor)
 
 
@@ -219,7 +218,7 @@ class InstrumentsClass(CellPyConfig):
 
 
 Instruments = InstrumentsClass(
-    tester="arbin", custom_instrument_definitions_file=None, Arbin=Arbin, Maccor=Maccor
+    tester="arbin", custom_instrument_definitions_file=None, Arbin=Arbin, Maccor=Maccor,
 )
 
 

@@ -1,4 +1,5 @@
-"""Local txt data"""
+"""This module is used for loading data using the corresponding Local
+yaml file with definitions on how the data should be loaded."""
 
 from cellpy.readers.instruments.base import TxtLoader
 from cellpy.readers.instruments.configurations import (

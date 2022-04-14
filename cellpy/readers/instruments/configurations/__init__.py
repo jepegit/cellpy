@@ -22,6 +22,7 @@ OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
     "not_implemented_in_cellpy_yet_renaming_dict",
     "raw_units",
     "raw_limits",
+    "states",
 ]
 OPTIONAL_LIST_ATTRIBUTE_NAMES = [
     "columns_to_keep",
@@ -103,7 +104,7 @@ def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
             "not_implemented_in_cellpy_yet_renaming_dict"
         ],
         columns_to_keep=optional_list_attributes["columns_to_keep"],
-        states=settings["states"],
+        states=optional_dictionary_attributes["states"],
         raw_units=optional_dictionary_attributes["raw_units"],
         raw_limits=raw_limits,
         meta_keys=optional_dictionary_attributes["meta_keys"],
@@ -153,7 +154,7 @@ def register_configuration_from_module(
             "not_implemented_in_cellpy_yet_renaming_dict"
         ],
         columns_to_keep=optional_list_attributes["columns_to_keep"],
-        states=m.states,
+        states=optional_dictionary_attributes["states"],
         raw_units=optional_dictionary_attributes["raw_units"],
         raw_limits=raw_limits,
         meta_keys=optional_dictionary_attributes["meta_keys"],
