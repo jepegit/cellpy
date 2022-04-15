@@ -286,6 +286,7 @@ class CellpyData(object):
         self.headers_step_table = headers_step_table
 
         self.table_names = None  # dictionary defined in set_instruments
+        self.__register_external_readers()
         self.set_instrument()
 
         # - units used by cellpy
@@ -453,8 +454,7 @@ class CellpyData(object):
         self.__external_readers = dict()
         return
 
-    # TODO: @jepe - merge the _set_xxinstrument methods into one method
-    def set_instrument(self, instrument=None, instrument_file=None, **kwargs):
+    def set_instrument(self, instrument=None, instrument_file=None, reload_external_readers=False, **kwargs):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Three different modes of setting instruments are currently supported. You can
@@ -477,6 +477,9 @@ class CellpyData(object):
                 as 'instrument_file'.
             instrument_file: (path) instrument definition file (uses currently the old "custom"
                 instrument format)
+            reload_external_readers (bool): Set True if you want to search for external reader plugins.
+                This is typically not needed, as ``cellpy`` automatically does it when the ``CellpyData``
+                object is created.
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
@@ -490,31 +493,13 @@ class CellpyData(object):
         _override_local_instrument_path = kwargs.pop(
             "_override_local_instrument_path", False
         )
-
-        self.__register_external_readers()
+        if reload_external_readers:
+            self.__register_external_readers()
 
         if instrument is None:
             instrument = self.tester
 
         logging.debug(f"Setting instrument: {instrument}")
-        if instrument.endswith(".yml"):
-            if _override_local_instrument_path:
-                instrument = Path(instrument)
-            else:
-                instrument = Path(prms.Paths.instrumentdir) / instrument
-            if instrument.is_file():
-                from cellpy.readers.instruments.local_instrument import (
-                    LocalTxtLoader as RawLoader,
-                )
-
-                self._set_instrument(RawLoader, local_instrument_file=instrument)
-                self.tester = instrument
-                return
-
-            else:
-                raise Exception(
-                    f"The needed instrument file does not exist: '{instrument}'"
-                )
 
         if instrument in ["arbin", "arbin_res"]:
             from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
@@ -575,14 +560,14 @@ class CellpyData(object):
 
         # new custom loader:
         elif instrument.startswith("custom"):
-            print("NEW CUSTOM LOADER")
+            logging.debug(" --> NEW CUSTOM LOADER")
             from cellpy.readers.instruments.custom_instrument import (
                 CustomTxtLoader as RawLoader,
             )
             model = kwargs.pop("model", None)
             if model:
-                logging.debug(f"the model key word is not "
-                              f"supported for custom loader - removing it")
+                logging.debug("the model key word is not "
+                              "supported for custom loader - removing it")
             logging.warning("Experimental! Not ready for production!")
             logging.debug(f"using custom instrument: {instrument}")
             if not instrument_file:
@@ -631,15 +616,43 @@ class CellpyData(object):
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "old_custom"
 
+        elif instrument.endswith(".yml"):
+            if _override_local_instrument_path:
+                instrument = Path(instrument)
+            else:
+                instrument = Path(prms.Paths.instrumentdir) / instrument
+            if instrument.is_file():
+                from cellpy.readers.instruments.local_instrument import (
+                    LocalTxtLoader as RawLoader,
+                )
+
+                self._set_instrument(RawLoader, local_instrument_file=instrument)
+                self.tester = instrument
+                return
+
+            else:
+                raise Exception(
+                    f"The needed instrument file does not exist: '{instrument}'"
+                )
+
         elif instrument in self.__external_readers.keys():
             logging.debug(f"Using plug-in reader")
             logging.debug(f"Unfortunately, not implemented yet!")
+            # RawLoader = self.__external_readers[instrument]
+            # self._set_instrument(RawLoader, is_external=True, **kwargs)
             raise Exception(f"...so this option does not exist: '{instrument}'")
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")
 
-    def _set_instrument(self, loader_class, **kwargs):
+    def _set_instrument(self, loader_class, is_external=False, **kwargs):
+        if is_external:
+            logging.info(f"Using external reader plug-in ({repr(loader_class)})")
+            try:
+                logging.info(f"{loader_class.__doc__}")
+            except AttributeError:
+                logging.debug("No documentation found for this loader.")
+
         self.loader_class = loader_class(**kwargs)
         # ----- get information --------------------------
         # TODO: move this out of _set_instrument so that we can modify

@@ -4,6 +4,8 @@ of the :: separator), the default instrument file (yaml) will be used."""
 
 # This module is currently almost equal to the local_instrument module
 # It might be best to merge them into one (tweak set_instrument)
+import logging
+from pathlib import Path
 
 from cellpy import prms
 from cellpy.readers.instruments.base import TxtLoader
@@ -30,10 +32,23 @@ class CustomTxtLoader(TxtLoader):
 
     def __init__(self, instrument_file=None):
         if instrument_file is None:
+            logging.debug("No instrument_file provided - checking default")
             instrument_file = prms.Instruments.custom_instrument_definitions_file
         if not instrument_file:
             raise FileExistsError("Missing instrument definition file "
                                   "(not given and not defined in config)")
+        if not Path(instrument_file).is_file():
+            # searching in the Instruments folder:
+            instrument_dir = Path(prms.Paths.instrumentdir)
+            logging.debug(f"Looking for file in {instrument_dir}")
+            instrument_file_in_instrument_dir = instrument_dir / instrument_file
+            if not instrument_file_in_instrument_dir.is_file():
+                logging.debug(f"Could not find {instrument_file_in_instrument_dir}")
+                raise FileExistsError("Instrument definition file not found! "
+                                      f"({instrument_file})")
+            instrument_file = instrument_file_in_instrument_dir
+
+        logging.debug(f"Instrument definition file: {instrument_file}")
         self.local_instrument_file = instrument_file
         super().__init__()
 
