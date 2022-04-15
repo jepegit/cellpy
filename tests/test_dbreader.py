@@ -1,4 +1,11 @@
+import logging
+
 import pytest
+
+from cellpy import log
+
+log.setup_logging(default_level=logging.DEBUG, testing=True)
+
 
 # parameters and variables specific for this module
 test_serial_number_one = 614
