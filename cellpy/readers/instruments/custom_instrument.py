@@ -15,7 +15,6 @@ from cellpy.readers.instruments.configurations import (
 
 
 # TODO:
-#  0. check what happens if no instrument file is given
 #  1. fix tests
 #  2. implement from old custom
 #  3. check with round robin data
@@ -60,6 +59,9 @@ class CustomTxtLoader(TxtLoader):
         self.config_params = register_local_configuration_from_yaml_file(
             self.local_instrument_file
         )
+
+    # TODO: override query_file if not csv or even better, refactor TxtLoader so that it uses
+    #   a query_file that is in the module scope. Or make an intermediate class.
 
 
 def check_loader_from_outside_with_get():

@@ -395,7 +395,7 @@ class TxtLoader(Loader):
         if self.sep is None:
             self._auto_formatter()
 
-        data_df = self._query_csv(self._file_path)
+        data_df = self.query_file(self._file_path)
 
         if pre_processor_hook is not None:
             logging.debug("running pre-processing-hook")
@@ -463,7 +463,7 @@ class TxtLoader(Loader):
             f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
         )
 
-    def _query_csv(
+    def query_file(
         self,
         name,
         sep=None,
