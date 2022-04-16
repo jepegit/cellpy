@@ -45,6 +45,7 @@ def remove_last_if_bad(data: Cell, config_params: ModelParameters) -> Cell:
 
 
 def convert_units(data: Cell, config_params: ModelParameters) -> Cell:
+    # TODO: implement all
     if x := config_params.raw_units.get("voltage", None):
         logging.debug(f"converting voltage ({x})")
         data.raw[headers_normal.voltage_txt] = data.raw[headers_normal.voltage_txt] * x
@@ -54,6 +55,10 @@ def convert_units(data: Cell, config_params: ModelParameters) -> Cell:
 
     if config_params.raw_units.get("charge", None):
         logging.debug("converting charge - not implemented yet")
+
+    # TODO: add time as raw unit
+    if config_params.raw_units.get("time", None):
+        logging.debug("converting time - not implemented yet")
 
     return data
 
@@ -78,6 +83,8 @@ def select_columns_to_keep(data: Cell, config_params: ModelParameters) -> Cell:
 
 
 def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
+    # TODO: add custom "splitter"
+    # TODO: test
     if not config_params.prefixes:
         config_params.prefixes = {
             "G": 1000_000_000,

@@ -20,9 +20,8 @@ from cellpy.readers.instruments.configurations import (
 #  1. fix tests
 #  2. implement from old custom
 #  3. check with round robin data
-#  4. check units vs raw_units
-#  5. method for generating column headers from units etc (might already be
-#     implemented somewhere, maybe in the configuration module?)
+#  4. check units vs raw_units [DONE]
+#  5. update method for generating column headers from units etc (postprocessor)
 #  6. check if it is possible to use CustomTxtLoader for loading
 #     arbin txt files.
 #  7. implement registering plug-ins and loaders

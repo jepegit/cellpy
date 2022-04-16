@@ -7,7 +7,6 @@ from ruamel import yaml
 
 # TODO: make tests.
 # TODO: move this into its own module (not __init__).
-# TODO: refactor ``custom`` reader so that it uses this.
 # TODO: document for devs.
 # TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
 
@@ -23,6 +22,7 @@ OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
     "raw_units",
     "raw_limits",
     "states",
+    "unit_labels",
 ]
 OPTIONAL_LIST_ATTRIBUTE_NAMES = [
     "columns_to_keep",
@@ -47,8 +47,12 @@ class ModelParameters:
     """Dataclass to store sub-model specific parameters."""
 
     name: str
+    # The unit labels are only used when generating new headers
+    # (normal_headers_renaming_dict)
+    # with units (post_processor: get_column_names):
     unit_labels: dict = field(default_factory=dict)
     incremental_unit_labels: dict = field(default_factory=dict)
+
     normal_headers_renaming_dict: dict = field(default_factory=dict)
     not_implemented_in_cellpy_yet_renaming_dict: dict = field(default_factory=dict)
     columns_to_keep: list = field(default_factory=list)
@@ -59,6 +63,7 @@ class ModelParameters:
     meta_keys: dict = field(default_factory=dict)
     pre_processors: dict = field(default_factory=dict)
     post_processors: dict = field(default_factory=dict)
+    # used for defining e.g. M, k, etc. - probably not needed:
     prefixes: dict = field(default_factory=dict)
 
 
@@ -94,12 +99,12 @@ def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
 
     model_01 = ModelParameters(
         name=name,
-        unit_labels=settings["unit_labels"],
+        normal_headers_renaming_dict=settings["normal_headers_renaming_dict"],
+        unit_labels=optional_dictionary_attributes["unit_labels"],
         prefixes=optional_dictionary_attributes["prefixes"],
         incremental_unit_labels=optional_dictionary_attributes[
             "incremental_unit_labels"
         ],
-        normal_headers_renaming_dict=settings["normal_headers_renaming_dict"],
         not_implemented_in_cellpy_yet_renaming_dict=optional_dictionary_attributes[
             "not_implemented_in_cellpy_yet_renaming_dict"
         ],
@@ -144,12 +149,12 @@ def register_configuration_from_module(
 
     model_01 = ModelParameters(
         name=name,
-        unit_labels=m.unit_labels,
+        normal_headers_renaming_dict=m.normal_headers_renaming_dict,
+        unit_labels=optional_dictionary_attributes["unit_labels"],
         prefixes=optional_dictionary_attributes["prefixes"],
         incremental_unit_labels=optional_dictionary_attributes[
             "incremental_unit_labels"
         ],
-        normal_headers_renaming_dict=m.normal_headers_renaming_dict,
         not_implemented_in_cellpy_yet_renaming_dict=optional_dictionary_attributes[
             "not_implemented_in_cellpy_yet_renaming_dict"
         ],

@@ -38,15 +38,11 @@ unit_labels:
     capacity: mAh
     energy: Wh
     temperature: C
-units:
-    charge: 0.001
-    current: 0.001
-    mass: 0.001
-    specific: 1.0
 raw_units:
     current: 1.0
     charge: 1.0
     mass: 0.001
+    time: 1.0
 raw_limits:
     current_hard: 1.0e-13
     current_soft: 1.0e-05

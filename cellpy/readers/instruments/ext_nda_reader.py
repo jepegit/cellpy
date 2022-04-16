@@ -115,7 +115,7 @@ class NdaLoader(Loader):
 
         length_of_test, normal_df = load_nda()
 
-        data.summary = empty_df
+        data.summary = pd.DataFrame()
 
         data.raw = normal_df
         data.raw_data_files_length.append(length_of_test)
