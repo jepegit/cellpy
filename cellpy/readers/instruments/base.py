@@ -786,9 +786,6 @@ class OldTxtLoader(Loader):
         logging.debug(f"tmp file: {temp_filename}")
         self._file_path = temp_filename
 
-        # pre-processors to run self.pre_processors
-        # pre-processors available: pre_processors
-
         for processor_name in self.pre_processors:
             if self.pre_processors[processor_name]:
                 if hasattr(pre_processors, processor_name):
