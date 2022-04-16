@@ -131,51 +131,40 @@ class CustomTxtLoader(AutoLoader, ABC):
 
 def check_loader_from_outside_with_get():
     import pathlib
-    import sys
-
-    import matplotlib.pyplot as plt
-    import pandas as pd
 
     import cellpy
-    from cellpy.parameters.internal_settings import headers_normal
-
-    keep = [
-        headers_normal.data_point_txt,
-        headers_normal.test_time_txt,
-        headers_normal.step_time_txt,
-        headers_normal.step_index_txt,
-        headers_normal.cycle_index_txt,
-        headers_normal.current_txt,
-        headers_normal.voltage_txt,
-        headers_normal.ref_voltage_txt,
-        headers_normal.charge_capacity_txt,
-        headers_normal.discharge_capacity_txt,
-        headers_normal.internal_resistance_txt,
-        # "ir_pct_change"
-    ]
-
-    print("NEED TO FIX ABSOLUTE NAMES")
-    sys.exit()
-    INSTRUMENT = "custom"
-    INSTRUMENT_FILE = "/Users/jepe/scripting/cellpy/testdata/data/custom_instrument_001.yml"
-    FILENAME = "custom_data_001.csv"
-    DATADIR = r"/Users/jepe/scripting/cellpy/testdata/data"
 
     pd.options.display.max_columns = 100
-    datadir = pathlib.Path(DATADIR)
-    name = datadir / FILENAME
-    out = pathlib.Path("/Users/jepe/tmp")
+
+
+    instrument = "custom"
+    instrument_file = "C:/scripting/cellpy/testdata/data/custom_instrument_001.yml"
+    filename = "custom_data_001.csv"
+    data_dir = r"C:/scripting/cellpy/testdata/data"
+    out = pathlib.Path(r"C:\scripting\trash")  # "/Users/jepe/tmp"
+
+    data_dir = pathlib.Path(data_dir)
+    name = data_dir / filename
+
     print(f"File exists? {name.is_file()}")
     if not name.is_file():
         print(f"could not find {name} ")
         return
 
-    print("RUNNING CELLPY GET")
-    print(f"{INSTRUMENT=}")
+    print(" RUNNING CELLPY GET ".center(80, "="))
+    print(f"{instrument=}")
+    instrument_file = pathlib.Path(instrument_file)
     c = cellpy.get(
-        filename=name, instrument=INSTRUMENT, instrument_file=INSTRUMENT_FILE,
+        filename=name, instrument=instrument, instrument_file=instrument_file,
         mass=1.0, auto_summary=False
     )
+    _process_cellpy_object(name, c, out)
+
+
+def _process_cellpy_object(name, c, out):
+    import matplotlib.pyplot as plt
+
+    pd.options.display.max_columns = 100
 
     print(f"loaded the file - now lets see what we got")
     raw = c.cell.raw

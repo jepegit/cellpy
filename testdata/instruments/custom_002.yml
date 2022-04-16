@@ -1,0 +1,62 @@
+---
+headers:
+  charge_capacity_txt: Capacity/mAh
+  current_txt: Current/mA
+  cycle_index_txt: Cycle-Index
+  data_point_txt: Record
+  discharge_capacity_txt: nan
+  step_index_txt: Step-Index
+  step_time_txt: StepTime/Sec
+  test_time_txt: TestTime/Sec
+  voltage_txt: Voltage/V
+limits:
+  current_hard: 1.0e-13
+  current_soft: 1.0e-05
+  ir_change: 1.0e-05
+  stable_charge_hard: 0.9
+  stable_charge_soft: 5.0
+  stable_current_hard: 2.0
+  stable_current_soft: 4.0
+  stable_voltage_hard: 2.0
+  stable_voltage_soft: 4.0
+structure:
+  comment_chars: !!python/tuple
+  - '#'
+  - '!'
+  format: xlsx
+  header_definitions: labels
+  locate_end_data_by: EOF
+  locate_start_data_by: line_number
+  locate_vars_by: key_value_pairs
+  sep: ;
+  start_data: 0
+  table_name: Record-Tab
+  capacity_structure: one_col_state
+  state_col: Step-State
+  charge_key: RateC
+  discharge_key: RateD
+units:
+  charge: 0.001
+  current: 0.001
+  mass: 0.001
+  specific: 1.0
+variables:
+  cell_name: cell
+  channel_index: channel_index
+  channel_number: channel_number
+  counter_electrode: counter
+  creator: operator
+  fid_last_accessed: last_accessed
+  fid_last_modification_time: last_modified
+  fid_size: size
+  item_ID: instrument
+  loaded_from: loaded_from
+  mass: mass
+  material: material
+  reference_electrode: reference
+  schedule: schedule
+  schedule_file: schedule_file
+  start_datetime: date
+  test_ID: test_name
+  total_mass: total_mass
+...

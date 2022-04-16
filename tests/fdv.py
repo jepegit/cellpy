@@ -130,9 +130,17 @@ journal_file_full_xlsx = "test_journal_full.xlsx"
 
 # -------- custom file format -----------------------
 custom_file_name = "custom_data_001.csv"
-custom_instrument_2 = "custom_instrument_001.yml"
 custom_file_paths = os.path.join(raw_data_dir, custom_file_name)
-custom_instrument_definitions_file = os.path.join(raw_data_dir, custom_instrument_2)
+
+custom_instrument_1 = "custom_instrument_001.yml"
+custom_instrument_definitions_file = os.path.join(raw_data_dir, custom_instrument_1)
+
+custom_instrument_2 = "custom_instrument_002.yml"
+custom_file_paths_2 = os.path.join(raw_data_dir, "custom_data_002.csv")
+
+custom_instrument_3 = "custom_instrument_003.yml"
+custom_file_paths_3 = os.path.join(raw_data_dir, "custom_data_002.csv")
+
 
 # -------- custom new file format -------------------
 custom_instrument = "maccor_one.yml"
