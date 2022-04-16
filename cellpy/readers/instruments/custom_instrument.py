@@ -3,6 +3,7 @@ If no `instrument_file` is given (either directly or through the use
 of the :: separator), the default instrument file (yaml) will be used."""
 
 import logging
+import sys
 from abc import ABC
 from pathlib import Path
 
@@ -136,14 +137,35 @@ def check_loader_from_outside_with_get():
 
     pd.options.display.max_columns = 100
 
+    base_path_win = pathlib.Path("C:/scripting")
+    base_path_mac = pathlib.Path("/Users/jepe/scripting")
+
+    if sys.platform == "win32":
+        base_path = base_path_win
+        out = pathlib.Path(r"C:\scripting\trash")
+    else:
+        base_path = base_path_mac
+        out = pathlib.Path("/Users/jepe/tmp")
 
     instrument = "custom"
-    instrument_file = "C:/scripting/cellpy/testdata/data/custom_instrument_001.yml"
-    filename = "custom_data_001.csv"
-    data_dir = r"C:/scripting/cellpy/testdata/data"
-    out = pathlib.Path(r"C:\scripting\trash")  # "/Users/jepe/tmp"
 
-    data_dir = pathlib.Path(data_dir)
+    file_number = 1
+
+    if file_number == 1:
+        filename = "custom_data_001.csv"
+        instrument_file = "cellpy/testdata/data/custom_instrument_001.yml"
+    elif file_number == 2:
+        filename = "custom_data_002.xlsx"
+        instrument_file = "cellpy/testdata/instruments/custom_002.yml"
+    elif file_number == 3:
+        filename = "custom_data_003.xlsx"
+        instrument_file = "cellpy/testdata/instruments/custom_003.yml"
+    else:
+        print("not implemented")
+        return
+
+    instrument_file = base_path / instrument_file
+    data_dir = base_path / "cellpy/testdata/data"
     name = data_dir / filename
 
     print(f"File exists? {name.is_file()}")
@@ -153,7 +175,7 @@ def check_loader_from_outside_with_get():
 
     print(" RUNNING CELLPY GET ".center(80, "="))
     print(f"{instrument=}")
-    instrument_file = pathlib.Path(instrument_file)
+
     c = cellpy.get(
         filename=name, instrument=instrument, instrument_file=instrument_file,
         mass=1.0, auto_summary=False
