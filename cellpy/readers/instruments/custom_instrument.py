@@ -2,13 +2,14 @@
 If no `instrument_file` is given (either directly or through the use
 of the :: separator), the default instrument file (yaml) will be used."""
 
-# This module is currently almost equal to the local_instrument module
-# It might be best to merge them into one (tweak set_instrument)
 import logging
+from abc import ABC
 from pathlib import Path
 
+import pandas as pd
+
 from cellpy import prms
-from cellpy.readers.instruments.base import TxtLoader
+from cellpy.readers.instruments.base import find_delimiter_and_start, AutoLoader
 from cellpy.readers.instruments.configurations import (
     register_local_configuration_from_yaml_file,
 )
@@ -26,7 +27,7 @@ from cellpy.readers.instruments.configurations import (
 #  7. implement registering plug-ins and loaders
 
 
-class CustomTxtLoader(TxtLoader):
+class CustomTxtLoader(AutoLoader, ABC):
     """Class for loading data from txt files."""
 
     def __init__(self, instrument_file=None):
@@ -60,8 +61,72 @@ class CustomTxtLoader(TxtLoader):
             self.local_instrument_file
         )
 
-    # TODO: override query_file if not csv or even better, refactor TxtLoader so that it uses
-    #   a query_file that is in the module scope. Or make an intermediate class.
+    # TODO: rewrite this:
+    def parse_loader_parameters(self, **kwargs):
+        sep = kwargs.get("sep", None)
+        if sep is not None:
+            self.sep = sep
+        if self.sep is None:
+            self._auto_formatter()
+
+    # TODO: rewrite this:
+    def parse_formatter_parameters(self, **kwargs):
+        if not self.config_params.formatters:
+            # check for "over-rides" from arguments in class initialization
+            self.sep = kwargs.pop("sep", None)
+            self.skiprows = kwargs.pop("skiprows", 0)
+            self.header = kwargs.pop("header", 0)
+            self.encoding = kwargs.pop("encoding", "utf-8")
+            self.decimal = kwargs.pop("decimal", ".")
+            self.thousands = kwargs.pop("thousands", None)
+
+        else:
+            self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
+            self.skiprows = kwargs.pop(
+                "skiprows", self.config_params.formatters["skiprows"]
+            )
+            self.header = kwargs.pop("header", self.config_params.formatters["header"])
+            self.encoding = kwargs.pop(
+                "encoding", self.config_params.formatters["encoding"]
+            )
+            self.decimal = kwargs.pop(
+                "decimal", self.config_params.formatters["decimal"]
+            )
+            self.thousands = kwargs.pop(
+                "thousands", self.config_params.formatters["thousands"]
+            )
+
+    # TODO: consider rewriting this:
+    def _auto_formatter(self):
+        separator, first_index = find_delimiter_and_start(
+            self.name,
+            separators=None,
+            checking_length_header=100,
+            checking_length_whole=200,
+        )
+        self.encoding = "UTF-8"  # consider adding a find_encoding function
+        self.sep = separator
+        self.skiprows = first_index - 1  # consider adding a find_rows_to_skip function
+        self.header = 0  # consider adding a find_header function
+
+        logging.critical(
+            f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
+        )
+
+    # TODO: rewrite this so that the query_file method can use other functions than pd.read_csv:
+    def query_file(self, name):
+        logging.debug(f"parsing with pandas.read_csv: {name}")
+        logging.critical(f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}")
+        data_df = pd.read_csv(
+            name,
+            sep=self.sep,
+            skiprows=self.skiprows,
+            header=self.header,
+            encoding=self.encoding,
+            decimal=self.decimal,
+            thousands=self.thousands,
+        )
+        return data_df
 
 
 def check_loader_from_outside_with_get():
@@ -89,6 +154,8 @@ def check_loader_from_outside_with_get():
         # "ir_pct_change"
     ]
 
+    print("NEED TO FIX ABSOLUTE NAMES")
+    sys.exit()
     INSTRUMENT = "custom"
     INSTRUMENT_FILE = "/Users/jepe/scripting/cellpy/testdata/data/custom_instrument_001.yml"
     FILENAME = "custom_data_001.csv"
