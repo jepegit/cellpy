@@ -72,16 +72,15 @@ class CustomTxtLoader(AutoLoader, ABC):
 
     # TODO: rewrite this:
     def parse_formatter_parameters(self, **kwargs):
-        if not self.config_params.formatters:
-            # check for "over-rides" from arguments in class initialization
-            self.sep = kwargs.pop("sep", None)
-            self.skiprows = kwargs.pop("skiprows", 0)
-            self.header = kwargs.pop("header", 0)
-            self.encoding = kwargs.pop("encoding", "utf-8")
-            self.decimal = kwargs.pop("decimal", ".")
-            self.thousands = kwargs.pop("thousands", None)
+        file_format_from_config = self.config_params.formatters.get("file_format", "csv")
 
-        else:
+        self.file_format = kwargs.pop("file_format", file_format_from_config)
+
+        print("FORMATTERS".center(80, "="))
+        print(self.config_params.formatters)
+
+        # rewrite this on a later stage to use functions and dict lookup instead of if - else
+        if self.file_format == "csv":
             self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
             self.skiprows = kwargs.pop(
                 "skiprows", self.config_params.formatters["skiprows"]
@@ -96,6 +95,22 @@ class CustomTxtLoader(AutoLoader, ABC):
             self.thousands = kwargs.pop(
                 "thousands", self.config_params.formatters["thousands"]
             )
+        elif self.file_format == "xlsx":
+            # TODO: continue from here
+            print("xlsx not implemented yet")
+            sys.exit()
+
+        elif self.file_format == "xls":
+            print("xls not implemented yet")
+            sys.exit()
+
+        elif self.file_format == "json":
+            print("json not implemented yet")
+            sys.exit()
+
+        else:
+            print(f"{self.file_format} not implemented yet")
+            sys.exit()
 
     # TODO: consider rewriting this:
     def _auto_formatter(self):
@@ -114,19 +129,27 @@ class CustomTxtLoader(AutoLoader, ABC):
             f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
         )
 
-    # TODO: rewrite this so that the query_file method can use other functions than pd.read_csv:
     def query_file(self, name):
-        logging.debug(f"parsing with pandas.read_csv: {name}")
-        logging.critical(f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}")
-        data_df = pd.read_csv(
-            name,
-            sep=self.sep,
-            skiprows=self.skiprows,
-            header=self.header,
-            encoding=self.encoding,
-            decimal=self.decimal,
-            thousands=self.thousands,
-        )
+        # rewrite this on a later stage to use functions and dict lookup instead of if - else
+        if self.file_format == "csv":
+            logging.debug(f"parsing with pandas.read_csv: {name}")
+            logging.critical(f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}")
+            data_df = pd.read_csv(
+                name,
+                sep=self.sep,
+                skiprows=self.skiprows,
+                header=self.header,
+                encoding=self.encoding,
+                decimal=self.decimal,
+                thousands=self.thousands,
+            )
+        elif self.file_format == "xls":
+            return
+        elif self.file_format == "xlsx":
+            return
+        elif self.file_format == "json":
+            return
+
         return data_df
 
 
@@ -149,7 +172,7 @@ def check_loader_from_outside_with_get():
 
     instrument = "custom"
 
-    file_number = 1
+    file_number = 2
 
     if file_number == 1:
         filename = "custom_data_001.csv"
