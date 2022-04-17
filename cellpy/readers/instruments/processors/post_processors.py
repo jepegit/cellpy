@@ -6,8 +6,9 @@ All methods must implement the following parameters/arguments:
 All methods should return None (i.e. nothing).
 
 """
-
+import datetime
 import logging
+import sys
 
 import pandas as pd
 
@@ -24,7 +25,12 @@ ORDERED_POST_PROCESSING_STEPS = [
 ]
 
 # TODO: implement from old custom
-#  1. add a format key-word (csv, xlsx, xls, json, etc.)
+#  1. implement proper unit conversion
+#     a. find out how it works now
+#     b. make sure that the user can define preferred units (config)
+#     c. make sure the used units are stored in the cellpy files
+#     d. make sure the loaded data is converted to the expected units
+#     e. implement parser for finding units based on headers or meta-data
 #  2. parse top part (meta)
 #     a. add key-word for format of meta data (key_value_pairs, etc.)
 #     b. load meta-part and pares it (use the ATTRS_CELLPYFILE and setattr)
@@ -141,12 +147,24 @@ def convert_date_time_to_datetime(data: Cell, config_params: ModelParameters) ->
     return data
 
 
+def date_time_from_test_time(data: Cell, config_params: ModelParameters) -> Cell:
+    """add a date_time column (based on the test_time column)."""
+    hdr_date_time = headers_normal.datetime_txt
+    hdr_test_time = headers_normal.test_time_txt
+
+    # replace this with something that can parse a date-string if implementing start_date in config_params.
+    # currently, it will always use current date-time as start date.
+    start_date = config_params.meta_keys.get("start_date", datetime.datetime.now())
+    start_time = data.raw[hdr_test_time].iloc[0]
+    data.raw[hdr_date_time] = pd.to_timedelta(data.raw[hdr_test_time] - start_time) + start_date
+    return data
+
+
 def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_step_time = headers_normal.step_time_txt
     data.raw[hdr_step_time] = pd.to_timedelta(
         data.raw[hdr_step_time]
     ).dt.total_seconds()
-
     return data
 
 

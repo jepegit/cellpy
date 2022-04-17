@@ -8,31 +8,17 @@ formatters:
     header_unit_sep: "/"
 
 pre_processors:
-    generate_headers_from_units: true  # to be implemented soon
+#    generate_headers_from_units: true  # to be implemented soon
 
 post_processors:
     split_capacity: true
-    split_current: true
+    split_current: false
     set_index: true
     rename_headers: true
     set_cycle_number_not_zero: true
-    convert_date_time_to_datetime: true
+    convert_date_time_to_datetime: false
     convert_step_time_to_timedelta: true
     convert_test_time_to_timedelta: true
-
-#structure:
-#  format: xlsx
-#  header_definitions: labels
-#  locate_end_data_by: EOF
-#  locate_start_data_by: line_number
-#  locate_vars_by: key_value_pairs
-#  sep: ;
-#  start_data: 0
-#
-#  capacity_structure: one_col_state
-#  state_col: Step-State
-#  charge_key: RateC
-#  discharge_key: RateD
 
 states:
     column_name: Step-State
@@ -42,6 +28,7 @@ states:
         - RateD
     rest_keys:
         - R
+
 unit_labels:
     resistance: Ohms
     time: Sec
@@ -51,6 +38,7 @@ unit_labels:
     capacity: mAh
     energy: Wh
     temperature: dC.
+
 normal_headers_renaming_dict:
   charge_capacity_txt: Capacity/mAh
   current_txt: Current/mA
@@ -61,6 +49,7 @@ normal_headers_renaming_dict:
   step_time_txt: StepTime/Sec
   test_time_txt: TestTime/Sec
   voltage_txt: Voltage/V
+  datetime_txt: SysTime
 
 raw_limits:
   current_hard: 1.0e-13
@@ -73,13 +62,13 @@ raw_limits:
   stable_voltage_hard: 2.0
   stable_voltage_soft: 4.0
 
-units:
+raw_units:
   charge: 0.001
   current: 0.001
   mass: 0.001
   specific: 1.0
 
-variables:
+meta_keys:
   cell_name: cell
   channel_index: channel_index
   channel_number: channel_number

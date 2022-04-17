@@ -63,41 +63,31 @@ class CustomTxtLoader(AutoLoader, ABC):
 
     # TODO: rewrite this:
     def parse_loader_parameters(self, **kwargs):
-        sep = kwargs.get("sep", None)
-        if sep is not None:
-            self.sep = sep
-        if self.sep is None:
+        auto_format = kwargs.get("auto_format", False)
+        if auto_format:
             self._auto_formatter()
+
+    def _config_sub_parser(self, key_label, default_value=None, **kwargs):
+        # ternary lookup (kwarg or config_param.formatter-value or default value)
+        return kwargs.pop(key_label, self.config_params.formatters.get(key_label, default_value))
 
     # TODO: rewrite this:
     def parse_formatter_parameters(self, **kwargs):
-        file_format_from_config = self.config_params.formatters.get("file_format", "csv")
-
-        self.file_format = kwargs.pop("file_format", file_format_from_config)
-
-        print("FORMATTERS".center(80, "="))
-        print(self.config_params.formatters)
+        self.file_format = self._config_sub_parser("file_format", default_value="csv", **kwargs)
+        # print("FORMATTERS".center(80, "="))
+        # print(self.config_params.formatters)
 
         # rewrite this on a later stage to use functions and dict lookup instead of if - else
         if self.file_format == "csv":
-            self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
-            self.skiprows = kwargs.pop(
-                "skiprows", self.config_params.formatters["skiprows"]
-            )
-            self.header = kwargs.pop("header", self.config_params.formatters["header"])
-            self.encoding = kwargs.pop(
-                "encoding", self.config_params.formatters["encoding"]
-            )
-            self.decimal = kwargs.pop(
-                "decimal", self.config_params.formatters["decimal"]
-            )
-            self.thousands = kwargs.pop(
-                "thousands", self.config_params.formatters["thousands"]
-            )
+            self.sep = self._config_sub_parser("sep", default_value=None, **kwargs)
+            self.skiprows = self._config_sub_parser("skiprows", default_value=0, **kwargs)
+            self.header = self._config_sub_parser("header", default_value=0, **kwargs)
+            self.encoding = self._config_sub_parser("encoding", default_value="utf-8", **kwargs)
+            self.decimal = self._config_sub_parser("decimal", default_value=".", **kwargs)
+            self.thousands = self._config_sub_parser("thousands", default_value=None, **kwargs)
+
         elif self.file_format == "xlsx":
-            # TODO: continue from here
-            print("xlsx not implemented yet")
-            sys.exit()
+            self.table_name = self._config_sub_parser("table_name", default_value="sheet 1", **kwargs)
 
         elif self.file_format == "xls":
             print("xls not implemented yet")
@@ -143,11 +133,25 @@ class CustomTxtLoader(AutoLoader, ABC):
                 thousands=self.thousands,
             )
         elif self.file_format == "xls":
-            return
+            # similar as xlsx but need to replace the engine (I think)
+            raise IOError(f"Could not read {name}, {self.file_format} not supported yet")
+
         elif self.file_format == "xlsx":
-            return
+            logging.debug(f"parsing with pandas.read_excel: {name}")
+            sheet_name = self.table_name
+            raw_frame = pd.read_excel(
+                name, engine="openpyxl", sheet_name=None
+            )  # TODO: replace this with pd.ExcelReader
+            matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+            if matching:
+                logging.debug(f"read sheet: {sheet_name}")
+                return raw_frame[matching[0]]
+            raise IOError(f"Could not find the sheet {sheet_name} in {name}")
+
         elif self.file_format == "json":
-            return
+            raise IOError(f"Could not read {name}, {self.file_format} not supported yet")
+        else:
+            raise IOError(f"Could not read {name}, {self.file_format} not supported yet")
 
         return data_df
 
@@ -171,7 +175,7 @@ def check_loader_from_outside_with_get():
 
     instrument = "custom"
 
-    file_number = 2
+    file_number = 3
 
     if file_number == 1:
         filename = "custom_data_001.csv"
@@ -180,7 +184,7 @@ def check_loader_from_outside_with_get():
         filename = "custom_data_002.xlsx"
         instrument_file = "cellpy/testdata/instruments/custom_002.yml"
     elif file_number == 3:
-        filename = "custom_data_003.xlsx"
+        filename = "custom_data_003.xls"
         instrument_file = "cellpy/testdata/instruments/custom_003.yml"
     else:
         print("not implemented")

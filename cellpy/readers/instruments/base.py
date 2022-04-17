@@ -504,24 +504,34 @@ class AutoLoader(Loader):
 
 
 class TxtLoader(AutoLoader, ABC):
-    """Main txt loading class.
-        constructor **kwargs:
-            model (str): short name of the (already implemented) sub-model.
-            sep (str): delimiter.
-            skiprows (int): number of lines to skip.
-            header (int): number of the header lines.
-            encoding (str): encoding.
-            decimal (str): character used for decimal in the raw data, defaults to '.'.
-            processors (dict): pre-processing steps to take (before loading with pandas).
-            post_processors (dict): post-processing steps to make after loading the data, but before
-                returning them to the caller.
-            include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
-            keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
-                Remark that the configuration settings for the sub-model must include a list of column header names
-                that should be kept if keep_all_columns is False (default).
-        loader **kwargs:
-            sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
-                start of data (skiprows).
+    """Main txt loading class (for sub-classing).
+
+    The subclass of a TxtLoader gets its information by loading model specifications from its respective module
+    (``cellpy.readers.instruments.configurations.<module>``) or configuration file (yaml).
+
+    Remark that if you implement automatic loading of the formatter, the module / yaml-file must include all
+    the required formatter parameters (sep, skiprows, header, encoding, decimal, thousands).
+
+    If you need more flexibility, try using the CustomTxtLoader or subclass directly from AutoLoader or Loader.
+
+    Constructor **kwargs:
+        model (str): short name of the (already implemented) sub-model.
+        sep (str): delimiter.
+        skiprows (int): number of lines to skip.
+        header (int): number of the header lines.
+        encoding (str): encoding.
+        decimal (str): character used for decimal in the raw data, defaults to '.'.
+        processors (dict): pre-processing steps to take (before loading with pandas).
+        post_processors (dict): post-processing steps to make after loading the data, but before
+            returning them to the caller.
+        include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
+        keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
+            Remark that the configuration settings for the sub-model must include a list of column header names
+            that should be kept if keep_all_columns is False (default).
+
+    Module - loader **kwargs:
+        sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
+            start of data (skiprows)).
 
         """
 
@@ -536,7 +546,7 @@ class TxtLoader(AutoLoader, ABC):
     # override this if needed
     def parse_formatter_parameters(self, **kwargs):
         if not self.config_params.formatters:
-            # check for "over-rides" from arguments in class initialization
+            # Setting defaults if formatter is not loaded
             self.sep = kwargs.pop("sep", None)
             self.skiprows = kwargs.pop("skiprows", 0)
             self.header = kwargs.pop("header", 0)
@@ -545,6 +555,8 @@ class TxtLoader(AutoLoader, ABC):
             self.thousands = kwargs.pop("thousands", None)
 
         else:
+            # Remark! This will break if one of these parameters are missing
+            # (not a keyword argument and not within the configuration):
             self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
             self.skiprows = kwargs.pop(
                 "skiprows", self.config_params.formatters["skiprows"]
