@@ -4,8 +4,8 @@ Structure of the ``cellpy`` package
 Folder structure
 ----------------
 
-
 .. code-block:: batch
+
     +---tests
     +---test_data
     +---docs
