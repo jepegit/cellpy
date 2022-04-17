@@ -1,84 +1,72 @@
 Structure of the ``cellpy`` package
 ===================================
 
+Folder structure
+----------------
 
 .. code-block:: batch
-
+    +---tests
+    +---test_data
+    +---docs
+    +---examples
     +---cellpy
+    |   |   __init__.py
     |   |   cli.py
     |   |   exceptions.py
     |   |   log.py
     |   |   logging.json
     |   |   _version.py
-    |   |   __init__.py
     |   |
     |   +---parameters
+    |   |   |   __init__.py
     |   |   |   .cellpy_prms_default.conf
     |   |   |   internal_settings.py
-    |   |   |   internal_settings_old.py
     |   |   |   prmreader.py
     |   |   |   prms.py
-    |   |   |   __init__.py
-    |   |   |
-    |   |   +---legacy
-    |   |   |   |   internal_settings.py
-    |   |   |   |   __init__.py
-    |   |   |   |
-    |   |   |   \---__pycache__
-    |   |   |           internal_settings.cpython-310.pyc
-    |   |   |           internal_settings.cpython-39.pyc
-    |   |   |           __init__.cpython-310.pyc
-    |   |   |           __init__.cpython-39.pyc
     |   |
     |   +---readers
+    |   |   |   __init__.py
     |   |   |   cellreader.py
     |   |   |   core.py
     |   |   |   dbreader.py
     |   |   |   filefinder.py
-    |   |   |   __init__.py
     |   |   |
     |   |   +---instruments
+    |   |   |   |   __init__.py
     |   |   |   |   arbin_res.py
     |   |   |   |   arbin_sql.py
     |   |   |   |   arbin_sql_csv.py
-    |   |   |   |   backup_arbin.py
     |   |   |   |   base.py
-    |   |   |   |   biologics_mpr.py
-    |   |   |   |   biologic_file_format.py
-    |   |   |   |   custom.py
     |   |   |   |   custom_instrument.py
-    |   |   |   |   ext_nda_reader.py
     |   |   |   |   local_instrument.py
     |   |   |   |   maccor_txt.py
     |   |   |   |   pec.py
-    |   |   |   |   __init__.py
     |   |   |   |
     |   |   |   +---configurations
+    |   |   |   |   |   __init__.py
     |   |   |   |   |   maccor_txt_four.py
     |   |   |   |   |   maccor_txt_one.py
     |   |   |   |   |   maccor_txt_three.py
     |   |   |   |   |   maccor_txt_two.py
     |   |   |   |   |   maccor_txt_zero.py
-    |   |   |   |   |   __init__.py
     |   |   |   +---processors
+    |   |   |   |   |   __init__.py
     |   |   |   |   |   post_processors.py
     |   |   |   |   |   pre_processors.py
-    |   |   |   |   |   __init__.py
     |   |   |   |
     |   +---utils
-    |   |   |   batch.py
+    |   |   |   __init__.py
     |   |   |   diagnostics.py
     |   |   |   easyplot.py
     |   |   |   example_data.py
     |   |   |   helpers.py
     |   |   |   ica.py
-    |   |   |   live.py
     |   |   |   ocv_rlx.py
     |   |   |   plotutils.py
-    |   |   |   run_easyplot.py
-    |   |   |   __init__.py
+    |   |   |   batch.py
     |   |   |
     |   |   +---batch_tools
+    |   |   |   |   __init__.py
     |   |   |   |   batch_analyzers.py
     |   |   |   |   batch_core.py
     |   |   |   |   batch_experiments.py
@@ -89,14 +77,52 @@ Structure of the ``cellpy`` package
     |   |   |   |   batch_reporters.py
     |   |   |   |   dumpers.py
     |   |   |   |   engines.py
-    |   |   |   |   __init__.py
     |   |   |
     |   |   +---data
     |   |   |   |   20160805_test001_45_cc.h5
     |   |   |   |
     |   |   |   \---raw
     |   |   |           20160805_test001_45_cc_01.res
+    setup.py
+    ...
+
+Handling of parameters
+----------------------
 
 
+Logging
+-------
+
+
+Readers
+-------
+
+
+Instrument readers
+..................
+
+
+Internal basic readers
+______________________
+
+
+Internal txt-readers
+____________________
+
+
+Custom readers
+______________
+
+
+Database readers
+................
+
+
+Other
+.....
+
+
+Utilities
+---------
 
 
