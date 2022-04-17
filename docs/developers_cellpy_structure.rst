@@ -4,6 +4,7 @@ Structure of the ``cellpy`` package
 Folder structure
 ----------------
 
+
 .. code-block:: batch
     +---tests
     +---test_data
@@ -85,6 +86,7 @@ Folder structure
     |   |   |           20160805_test001_45_cc_01.res
     setup.py
     ...
+
 
 Handling of parameters
 ----------------------
