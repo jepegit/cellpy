@@ -34,6 +34,15 @@ Examples and tutorials
    examples
    tips_and_tricks
 
+Developers guide
+----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   developers
+   developers_cellpy_structure
+
 
 Indices and tables
 ==================
