@@ -40,9 +40,7 @@ Developers guide
 .. toctree::
    :maxdepth: 2
 
-   developers
-   developers_cellpy_structure
-   dev_cellpy_data_structure
+   developers_guide
 
 
 Indices and tables
