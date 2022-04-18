@@ -42,6 +42,7 @@ Developers guide
 
    developers
    developers_cellpy_structure
+   dev_cellpy_data_structure
 
 
 Indices and tables
