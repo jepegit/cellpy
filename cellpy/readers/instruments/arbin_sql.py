@@ -346,6 +346,9 @@ class ArbinSQLLoader(Loader):
             f"Driver={{{SQL_DRIVER}}};"
             + f"Server={SQL_SERVER};UID={SQL_UID};PWD={SQL_PWD};Trusted_Connection=yes;"
         )
+
+        # TODO: use variable for the name of the main db (ArbinPro8....)
+        # TODO: consider making a function that searches for correct ArbinPro version
         master_q = (
             "SELECT Database_Name, Test_Name FROM "
             "ArbinPro8MasterInfo.dbo.TestList_Table WHERE "
@@ -359,6 +362,8 @@ class ArbinSQLLoader(Loader):
         stats_df = []
 
         for index, row in sql_query.iterrows():
+            # TODO: use variables - see above
+            # TODO: consider to use f-strings
             data_query = (
                 "SELECT "
                 + str(row["Database_Name"])
