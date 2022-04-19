@@ -2063,7 +2063,7 @@ class CellpyData(object):
                     fidtable["raw_data_last_modified"].append(fid.last_modified)
                     fidtable["raw_data_last_accessed"].append(fid.last_accessed)
                     fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-                except:
+                except Exception:
                     logging.debug("this is probably not from a file")
                     fidtable["raw_data_name"].append("db")
                     fidtable["raw_data_full_name"].append("db")
