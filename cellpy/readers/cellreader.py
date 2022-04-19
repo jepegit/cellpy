@@ -4174,7 +4174,7 @@ class CellpyData(object):
                             _nan = pd.DataFrame(
                                 {"capacity": [np.nan], "voltage": [np.nan]}
                             )
-                            _first_df = _first_df.append(_nan)
+                            _first_df = pd.concat([_first_df, _nan])
                         if categorical_column:
                             _first_df["direction"] = -1
 
@@ -4194,7 +4194,7 @@ class CellpyData(object):
                                 direction=last_interpolation_direction,
                             )
                         if insert_nan:
-                            _last_df = _last_df.append(_nan)
+                            _last_df = pd.concat([_last_df, _nan])
                         if categorical_column:
                             _last_df["direction"] = 1
 
@@ -4276,7 +4276,7 @@ class CellpyData(object):
             try:
                 voltage = pd.concat(_v, axis=0)
                 cap = pd.concat(_c, axis=0)
-            except:
+            except Exception:
                 logging.debug("could not find any steps for this cycle")
                 raise NullData(f"no steps found (c:{cycle} s:{step} type:{cap_type})")
         else:
