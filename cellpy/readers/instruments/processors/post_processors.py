@@ -11,6 +11,7 @@ import logging
 import sys
 
 import pandas as pd
+import numpy as np
 
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.parameters.prms import _minimum_columns_to_keep_for_raw_if_exists
@@ -162,6 +163,11 @@ def date_time_from_test_time(data: Cell, config_params: ModelParameters) -> Cell
 
 def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_step_time = headers_normal.step_time_txt
+    if data.raw[hdr_step_time].dtype == "datetime64[ns]":
+        logging.debug("already datetime64[ns] - need to convert to back first")
+        data.raw[hdr_step_time] = data.raw[hdr_step_time].view("int64")
+        data.raw[hdr_step_time] = data.raw[hdr_step_time] - data.raw[hdr_step_time].iloc[0]
+
     data.raw[hdr_step_time] = pd.to_timedelta(
         data.raw[hdr_step_time]
     ).dt.total_seconds()
@@ -170,6 +176,10 @@ def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -
 
 def convert_test_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_test_time = headers_normal.test_time_txt
+    if data.raw[hdr_test_time].dtype == "datetime64[ns]":
+        logging.debug("already datetime64[ns] - need to convert to back first")
+        data.raw[hdr_test_time] = data.raw[hdr_test_time].view("int64")
+        data.raw[hdr_test_time] = data.raw[hdr_test_time] - data.raw[hdr_test_time].iloc[0]
     data.raw[hdr_test_time] = pd.to_timedelta(
         data.raw[hdr_test_time]
     ).dt.total_seconds()
@@ -185,6 +195,19 @@ def set_index(data: Cell, config_params: ModelParameters) -> Cell:
 
 def rename_headers(data: Cell, config_params: ModelParameters) -> Cell:
     columns = {}
+    renaming_dict = config_params.normal_headers_renaming_dict
+    # ---- special cases ----
+    # 1. datetime_txt and test_time_txt same column
+    if "datetime_txt" in renaming_dict and "test_time_txt" in renaming_dict:
+        datetime_hdr = renaming_dict["datetime_txt"]
+        test_time_hdr = renaming_dict["test_time_txt"]
+        if datetime_hdr == test_time_hdr:
+            logging.debug("both test_time and datetime assigned to same column")
+            logging.debug("duplicating the column")
+            new_test_time_hdr = f"_{test_time_hdr}_cellpy_temporary_col_name_for_test_time"
+            data.raw[new_test_time_hdr] = data.raw[datetime_hdr]
+            renaming_dict["test_time_txt"] = new_test_time_hdr
+
     for key in headers_normal:
         if key in config_params.normal_headers_renaming_dict:
             old_header = config_params.normal_headers_renaming_dict[key]

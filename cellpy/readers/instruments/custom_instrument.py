@@ -90,8 +90,7 @@ class CustomTxtLoader(AutoLoader, ABC):
             self.table_name = self._config_sub_parser("table_name", default_value="sheet 1", **kwargs)
 
         elif self.file_format == "xls":
-            print("xls not implemented yet")
-            sys.exit()
+            self.table_name = self._config_sub_parser("table_name", default_value="sheet 1", **kwargs)
 
         elif self.file_format == "json":
             print("json not implemented yet")
@@ -133,8 +132,16 @@ class CustomTxtLoader(AutoLoader, ABC):
                 thousands=self.thousands,
             )
         elif self.file_format == "xls":
-            # similar as xlsx but need to replace the engine (I think)
-            raise IOError(f"Could not read {name}, {self.file_format} not supported yet")
+            logging.debug(f"parsing with pandas.read_excel using xlrd (old format): {name}")
+            sheet_name = self.table_name
+
+            raw_frame = pd.read_excel(
+                name, engine="xlrd", sheet_name=None
+            )
+            matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+            if matching:
+                return raw_frame[matching[0]]
+            raise IOError(f"Could not find the sheet {sheet_name} in {name}")
 
         elif self.file_format == "xlsx":
             logging.debug(f"parsing with pandas.read_excel: {name}")
@@ -189,6 +196,8 @@ def check_loader_from_outside_with_get():
     else:
         print("not implemented")
         return
+
+    # NEXT: test hooks and make tests
 
     instrument_file = base_path / instrument_file
     data_dir = base_path / "cellpy/testdata/data"
