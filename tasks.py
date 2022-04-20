@@ -334,6 +334,13 @@ def create_commit_message_from_output(output, regexp):
         return
     return txt
 
+@task
+def requirements(c, check=True):
+    if check:
+        # Should check that all the different requirement files (including
+        # conda environment files) are in synch.
+        print("check requirements - not implemented yet")
+
 
 @task
 def bump(c, bumper=None):
