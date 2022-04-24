@@ -121,7 +121,8 @@ def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
 
 
 def register_configuration_from_module(
-    name: str = "one", module: str = "maccor_txt_one"
+    name: str = "one", module: str = "maccor_txt_one", _module_path=None,
+    _m=None,
 ) -> ModelParameters:
     """register a python module (.py file) and return it.
 
@@ -131,14 +132,18 @@ def register_configuration_from_module(
     Returns: ModelParameters
     """
 
-    m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
+    if _m is None:
+        if _module_path is None:
+            _m = import_module(f"{HARD_CODED_MODULE_PATH}.{module}")
+        else:
+            _m = import_module(f"{_module_path}.{module}")
 
     optional_dictionary_attributes = {
-        key: getattr(m, key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES
+        key: getattr(_m, key, dict()) for key in OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES
     }
 
     optional_list_attributes = {
-        key: getattr(m, key, list()) for key in OPTIONAL_LIST_ATTRIBUTE_NAMES
+        key: getattr(_m, key, list()) for key in OPTIONAL_LIST_ATTRIBUTE_NAMES
     }
 
     # special hacks
@@ -147,9 +152,9 @@ def register_configuration_from_module(
     if not raw_limits:
         raw_limits = RAW_LIMITS
 
-    model_01 = ModelParameters(
+    return ModelParameters(
         name=name,
-        normal_headers_renaming_dict=m.normal_headers_renaming_dict,
+        normal_headers_renaming_dict=_m.normal_headers_renaming_dict,
         unit_labels=optional_dictionary_attributes["unit_labels"],
         prefixes=optional_dictionary_attributes["prefixes"],
         incremental_unit_labels=optional_dictionary_attributes[
@@ -167,4 +172,3 @@ def register_configuration_from_module(
         pre_processors=optional_dictionary_attributes["pre_processors"],
         post_processors=optional_dictionary_attributes["post_processors"],
     )
-    return model_01

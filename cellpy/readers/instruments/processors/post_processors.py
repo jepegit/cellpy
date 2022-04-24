@@ -1,9 +1,13 @@
 """Post-processing methods for instrument loaders.
 
 All methods must implement the following parameters/arguments:
-    filename: Union[str, pathlib.Path], *args: str, **kwargs: str
+    data: Cell object
+    config_params: ModelParameters
 
-All methods should return None (i.e. nothing).
+All methods should return the modified Cell object.
+
+You can access the individual parameters for the post processor from
+the config_params.post_processor[<name of post processor>].
 
 """
 import datetime
@@ -36,7 +40,7 @@ ORDERED_POST_PROCESSING_STEPS = [
 #     a. add key-word for format of meta data (key_value_pairs, etc.)
 #     b. load meta-part and pares it (use the ATTRS_CELLPYFILE and setattr)
 #  3. the old custom loader has methods for parsing csv, xls,
-#     and xlsx - implement them if needed.
+#     and xlsx - implement them if needed. [DONE]
 #  4. Consider adding x_time_conversion key-words and methods from old custom.
 #  5. Check if CustomTxtLoader properly implements inspect() and
 #     _generate_fid().
@@ -191,6 +195,12 @@ def set_index(data: Cell, config_params: ModelParameters) -> Cell:
     if data.raw.index.name != hdr_data_point:
         data.raw = data.raw.set_index(hdr_data_point, drop=False)
     return data
+
+
+def replace(data: Cell, config_params: ModelParameters) -> Cell:
+    print("NOT IMPLEMENTED")
+    print("input:")
+    print(config_params.post_processors["replace"])
 
 
 def rename_headers(data: Cell, config_params: ModelParameters) -> Cell:

@@ -1,8 +1,41 @@
 import logging
+from abc import ABC
 
 import pytest
-
+from cellpy.readers.instruments.configurations import register_configuration_from_module
+from cellpy.readers.instruments.base import AutoLoader
 from cellpy import log, prms
+
+from . import instrument_configuration_module
+
+
+class MockLoader(AutoLoader, ABC):
+    """This is a minimal subclass of AutoLoader that
+    reads its configuration from the 'instrument_configuration_module'
+    located in the 'tests' directory.
+    """
+    def pre_init(self):
+        self.supported_models = None
+        self.default_model = None
+        self.auto_register_config = False
+        self.config_params = register_configuration_from_module(
+            name="test",
+            _m=instrument_configuration_module,
+        )
+
+    def parse_formatter_parameters(self):
+        pass
+
+    def parse_loader_parameters(self):
+        pass
+
+    def query_file(self):
+        pass
+
+    @staticmethod
+    def return_42():
+        return 42
+
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -36,5 +69,17 @@ def test_set_instrument_missing_file(cellpy_data_instance, parameters):
 def test_set_instrument_by_filename(cellpy_data_instance, parameters):
     instrument = "maccor_txt"
     cellpy_data_instance.set_instrument(instrument=instrument)
+
+
+def test_registering_module():
+    mloader = MockLoader()
+    assert mloader.config_params.unit_labels["resistance"] == "Ohms"
+    assert mloader.return_42() == 42
+
+
+def test_registering_module_post_processors():
+    mloader = MockLoader()
+    assert mloader.config_params.post_processors["replace"]["one"] == "two"
+
 
 
