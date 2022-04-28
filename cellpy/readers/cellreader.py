@@ -523,6 +523,15 @@ class CellpyData(object):
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "arbin_sql_csv"
 
+        elif instrument == "arbin_sql_xlsx":
+            from cellpy.readers.instruments.arbin_sql_xlsx import (
+                ArbinXLSXLoader as RawLoader,
+            )
+
+            logging.warning(f"{instrument} is experimental! Not ready for production!")
+            self._set_instrument(RawLoader, **kwargs)
+            self.tester = "arbin_sql_xlsx"
+
         elif instrument in ["pec", "pec_csv"]:
             logging.warning("Experimental! Not ready for production!")
             from cellpy.readers.instruments.pec import PECLoader as RawLoader
@@ -1033,6 +1042,7 @@ class CellpyData(object):
         use_cellpy_stat_file=None,
         nom_cap=None,
         selector=None,
+        **kwargs,
     ):
 
         logging.info("Started cellpy.cellreader.loadcell")
@@ -1046,7 +1056,7 @@ class CellpyData(object):
 
         if similar is None:
             # forcing to load only raw_files
-            self.from_raw(raw_files)
+            self.from_raw(raw_files, **kwargs)
             if self.status_datasets:
                 if mass:
                     self.set_mass(mass)
@@ -1249,7 +1259,12 @@ class CellpyData(object):
                 runs will be merged together.
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
-                cellpy.dataset object after initial loading.
+                cellpy.Dataset object after initial loading.
+
+        Keyword Args for merging:
+            recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
+                and time (e.g. add last cycle number from previous file to the cycle numbers
+                in the next file).
 
         Other keywords depending on loader:
             [ArbinLoader]:
@@ -1315,7 +1330,8 @@ class CellpyData(object):
                 # appending cell data file to existing
                 else:
                     logging.debug("continuing reading files...")
-                    _cells = self._append(cells[set_number], new_cells[set_number])
+                    recalc = kwargs.get("recalc", True)
+                    _cells = self._append(cells[set_number], new_cells[set_number], recalc=recalc)
 
                     if not _cells:
                         logging.warning(f"NO CELLS FOUND: {file_name}")
@@ -1332,8 +1348,8 @@ class CellpyData(object):
                     logging.debug("added the data set - merging file info")
                     # TODO: include this into prms (and config-file):
                     max_raw_files_to_merge = 20
-                    for j in range(len(new_cells[set_number].raw_data_files)):
-                        raw_data_file = new_cells[set_number].raw_data_files[j]
+                    # TODO: legacy code - please fix me
+                    for j, raw_data_file in enumerate(new_cells[set_number].raw_data_files):
                         file_size = new_cells[set_number].raw_data_files_length[j]
                         cells[set_number].raw_data_files.append(raw_data_file)
                         cells[set_number].raw_data_files_length.append(file_size)
@@ -2139,62 +2155,72 @@ class CellpyData(object):
             self.number_of_datasets = 1
         return self
 
-    def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
+    def _append(self, t1, t2, merge_summary=True, merge_step_table=True, recalc=True):
         logging.debug(
             f"merging two datasets\n(merge summary = {merge_summary})\n"
             f"(merge step table = {merge_step_table})"
         )
         if t1.raw.empty:
             logging.debug("OBS! the first dataset is empty")
+            logging.debug(" -> merged contains only second")
+            return t2
 
         if t2.raw.empty:
             t1.merged = True
-            logging.debug("the second dataset was empty")
+            logging.debug("OBS! the second dataset was empty")
             logging.debug(" -> merged contains only first")
             return t1
-        test = t1
-        # finding diff of time
-        start_time_1 = t1.start_datetime
-        start_time_2 = t2.start_datetime
-        if self.tester in ["arbin", "arbin_res"]:
-            diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
-                start_time_1
-            )
-        else:
-            diff_time = start_time_2 - start_time_1
-        diff_time = diff_time.total_seconds()
 
-        if diff_time < 0:
-            logging.warning("Wow! your new dataset is older than the old!")
-        logging.debug(f"diff time: {diff_time}")
-
-        sort_key = self.headers_normal.datetime_txt  # DateTime
-        # mod data points for set 2
-        data_point_header = self.headers_normal.data_point_txt
-        try:
-            last_data_point = max(t1.raw[data_point_header])
-        except ValueError:
-            logging.debug("ValueError when getting last data point for r1")
-            last_data_point = 0
-
-        t2.raw[data_point_header] = t2.raw[data_point_header] + last_data_point
-        logging.debug("No error getting last data point for r2")
-        # mod cycle index for set 2
         cycle_index_header = self.headers_summary.cycle_index
-        try:
-            last_cycle = max(t1.raw[cycle_index_header])
-        except ValueError:
-            logging.debug("ValueError when getting last cycle index for r1")
-            last_cycle = 0
-        t2.raw[cycle_index_header] = t2.raw[cycle_index_header] + last_cycle
-        # mod test time for set 2
-        test_time_header = self.headers_normal.test_time_txt
-        t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
-        # merging
-        if not t1.raw.empty:
-            logging.debug("r1 is not empty - performing concat")
-            raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
+        cell = t1
 
+        if recalc:
+            # finding diff of time
+            start_time_1 = t1.start_datetime
+            start_time_2 = t2.start_datetime
+
+            if self.tester in ["arbin", "arbin_res"]:
+                diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
+                    start_time_1
+                )
+            else:
+                diff_time = start_time_2 - start_time_1
+            diff_time = diff_time.total_seconds()
+
+            if diff_time < 0:
+                logging.warning("Wow! your new dataset is older than the old!")
+            logging.debug(f"diff time: {diff_time}")
+
+            sort_key = self.headers_normal.datetime_txt  # DateTime
+            # mod data points for set 2
+            data_point_header = self.headers_normal.data_point_txt
+            try:
+                last_data_point = max(t1.raw[data_point_header])
+            except ValueError:
+                logging.debug("ValueError when getting last data point for r1")
+                last_data_point = 0
+
+            t2.raw[data_point_header] = t2.raw[data_point_header] + last_data_point
+            logging.debug("No error getting last data point for r2")
+            # mod cycle index for set 2
+
+            try:
+                last_cycle = max(t1.raw[cycle_index_header])
+            except ValueError:
+                logging.debug("ValueError when getting last cycle index for r1")
+                last_cycle = 0
+            t2.raw[cycle_index_header] = t2.raw[cycle_index_header] + last_cycle
+            # mod test time for set 2
+            test_time_header = self.headers_normal.test_time_txt
+            t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
+
+        # merging
+        logging.debug("performing concat")
+        raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
+        cell.raw = raw
+        cell.no_cycles = max(raw[cycle_index_header])
+
+        if merge_summary:
             # checking if we already have made a summary file of these datasets
             # (to be used if merging summaries (but not properly implemented yet))
             if t1.summary.empty or t2.summary.empty:
@@ -2219,28 +2245,28 @@ class CellpyData(object):
             else:
                 step_table_made = False
 
-            if merge_summary and summary_made:
+            if summary_made:
                 # check if (self-made) summary exists.
                 logging.debug("merge summaries")
+                if recalc:
+                    # This part of the code is seldom ran. Careful!
+                    # mod cycle index for set 2
+                    last_cycle = max(t1.summary[cycle_index_header])
+                    t2.summary[cycle_index_header] = (
+                        t2.summary[cycle_index_header] + last_cycle
+                    )
+                    # mod test time for set 2
+                    t2.summary[test_time_header] = t2.summary[test_time_header] + diff_time
+                    # to-do: mod all the cumsum stuff in the summary (best to make
+                    # summary after merging) merging
 
-                # This part of the code is seldom ran. Careful!
-                # mod cycle index for set 2
-                last_cycle = max(t1.summary[cycle_index_header])
-                t2.summary[cycle_index_header] = (
-                    t2.summary[cycle_index_header] + last_cycle
-                )
-                # mod test time for set 2
-                t2.summary[test_time_header] = t2.summary[test_time_header] + diff_time
-                # to-do: mod all the cumsum stuff in the summary (best to make
-                # summary after merging) merging
-
-                t2.summary[data_point_header] = (
-                    t2.summary[data_point_header] + last_data_point
-                )
+                    t2.summary[data_point_header] = (
+                        t2.summary[data_point_header] + last_data_point
+                    )
 
                 summary2 = pd.concat([t1.summary, t2.summary], ignore_index=True)
 
-                test.summary = summary2
+                cell.summary = summary2
             else:
                 logging.debug(
                     "could not merge summary tables "
@@ -2248,31 +2274,28 @@ class CellpyData(object):
                     "create them first!"
                 )
 
-            if merge_step_table:
-                if step_table_made:
-                    cycle_index_header = self.headers_normal.cycle_index_txt
-                    t2.steps[self.headers_step_table.cycle] = (
-                        t2.raw[self.headers_step_table.cycle] + last_cycle
-                    )
+        if merge_step_table:
+            if step_table_made:
+                cycle_index_header = self.headers_normal.cycle_index_txt
+                t2.steps[self.headers_step_table.cycle] = (
+                    t2.raw[self.headers_step_table.cycle] + last_cycle
+                )
 
-                    steps2 = pd.concat([t1.steps, t2.steps], ignore_index=True)
-                    test.steps = steps2
-                else:
-                    logging.debug(
-                        "could not merge step tables "
-                        "(non-existing) -"
-                        "create them first!"
-                    )
+                steps2 = pd.concat([t1.steps, t2.steps], ignore_index=True)
+                cell.steps = steps2
+            else:
+                logging.debug(
+                    "could not merge step tables "
+                    "(non-existing) -"
+                    "create them first!"
+                )
 
-            test.no_cycles = max(raw2[cycle_index_header])
-            test.raw = raw2
-        else:
-            test.no_cycles = max(t2.raw[cycle_index_header])
-            test = t2
-        test.merged = True
+
+
+        cell.merged = True
         logging.debug(" -> merged with new dataset")
         # TODO: @jepe -  update merging for more variables
-        return test
+        return cell
 
     # --------------iterate-and-find-in-data-----------------------------------
     # TODO: make this obsolete (somehow)
