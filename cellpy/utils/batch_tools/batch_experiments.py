@@ -90,7 +90,12 @@ class CyclingExperiment(BaseExperiment):
                 False)
 
             kwargs:
-                instrument (str):
+                transferred all the way to the instrument loader, if not
+                picked up earlier.
+
+                Merging:
+                    recalc (Bool): set to False if you don't want automatic "recalc" of
+                        cycle numbers etc when merging several data-sets.
 
         """
 
