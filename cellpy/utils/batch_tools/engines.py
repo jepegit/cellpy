@@ -106,23 +106,35 @@ def dq_dv_engine(**kwargs):
     raise NotImplementedError
 
 
+def _query(f, srnos, k=None):
+    if k is None:
+        return [f(srno) for srno in srnos]
+    return [f(k, srno) for srno in srnos]
+
+
 def simple_db_engine(
     reader=None,
     srnos=None,
     file_list=None,
     pre_path=None,
     include_key=False,
+    include_individual_arguments=False,
     additional_column_names=None,
     **kwargs,
 ):
-    """Engine that gets values from the simple excel 'db'
+    """Engine that gets values from the db for given set of cell IDs.
+
+    The simple_db_engine looks up values for mass, names, etc. from
+    the db using the reader object. In addition, it searches for the
+    corresponding raw files / data.
 
     Args:
         reader: a reader object (defaults to dbreader.Reader)
-        srnos: keys
+        srnos: keys (cell IDs)
         file_list: file list to send to filefinder (instead of searching in folders for files).
         pre_path: prepended path to send to filefinder.
-        include_key: include the key col in the pages.
+        include_key: include the key col in the pages (the cell IDs).
+        include_individual_arguments: include the arguments col in the pages.
         additional_column_names: list of additional column names to include in the pages.
         **kwargs: sent to filefinder
 
@@ -136,40 +148,30 @@ def simple_db_engine(
         logging.debug("No reader provided. Creating one myself.")
 
     info_dict = dict()
-    info_dict[headers_journal["filename"]] = [
-        reader.get_cell_name(srno) for srno in srnos
-    ]
+    info_dict[headers_journal["filename"]] = _query(reader.get_cell_name, srnos)
     if include_key:
         info_dict[headers_journal["id_key"]] = srnos
-    info_dict[headers_journal["mass"]] = [reader.get_mass(srno) for srno in srnos]
-    info_dict[headers_journal["total_mass"]] = [
-        reader.get_total_mass(srno) for srno in srnos
-    ]
-    info_dict[headers_journal["loading"]] = [reader.get_loading(srno) for srno in srnos]
 
-    info_dict[headers_journal["nom_cap"]] = [reader.get_nom_cap(srno) for srno in srnos]
-    info_dict[headers_journal["experiment"]] = [
-        reader.get_experiment_type(srno) for srno in srnos
-    ]
+    if include_individual_arguments:
+        info_dict[headers_journal["args"]] = _query(reader.get_args, srnos)
 
-    info_dict[headers_journal["fixed"]] = [
-        reader.inspect_hd5f_fixed(srno) for srno in srnos
-    ]
-    info_dict[headers_journal["label"]] = [reader.get_label(srno) for srno in srnos]
-    info_dict[headers_journal["cell_type"]] = [
-        reader.get_cell_type(srno) for srno in srnos
-    ]
-    info_dict[headers_journal["instrument"]] = [
-        reader.get_instrument(srno) for srno in srnos
-    ]
+    info_dict[headers_journal["mass"]] = _query(reader.get_mass, srnos)
+    info_dict[headers_journal["total_mass"]] = _query(reader.get_total_mass, srnos)
+    info_dict[headers_journal["loading"]] = _query(reader.get_loading, srnos)
+    info_dict[headers_journal["nom_cap"]] = _query(reader.get_nom_cap, srnos)
+    info_dict[headers_journal["experiment"]] = _query(reader.get_experiment_type, srnos)
+    info_dict[headers_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, srnos)
+    info_dict[headers_journal["label"]] = _query(reader.get_label, srnos)
+    info_dict[headers_journal["cell_type"]] = _query(reader.get_cell_type, srnos)
+    info_dict[headers_journal["instrument"]] = _query(reader.get_instrument, srnos)
     info_dict[headers_journal["raw_file_names"]] = []
     info_dict[headers_journal["cellpy_file_name"]] = []
-    info_dict[headers_journal["comment"]] = [reader.get_comment(srno) for srno in srnos]
+    info_dict[headers_journal["comment"]] = _query(reader.get_comment, srnos)
 
     if additional_column_names is not None:
         for k in additional_column_names:
             try:
-                info_dict[k] = [reader.get_by_column_label(k, srno) for srno in srnos]
+                info_dict[k] = _query(reader.get_by_column_label, srnos, k)
             except Exception as e:
                 logging.info(f"Could not retrieve from column {k} ({e})")
 
@@ -181,7 +183,8 @@ def simple_db_engine(
     for key in list(info_dict.keys()):
         logging.debug("%s: %s" % (key, str(info_dict[key])))
 
-    _groups = [reader.get_group(srno) for srno in srnos]
+    _groups = _query(reader.get_group, srnos)
+
     logging.debug(">\ngroups: %s" % str(_groups))
     groups = helper.fix_groups(_groups)
     info_dict[headers_journal["group"]] = groups

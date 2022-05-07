@@ -34,13 +34,32 @@ for key in hdr_journal:
 
 
 class LabJournal(BaseJournal):
-    def __init__(self, db_reader="default"):
+    def __init__(self, db_reader="default", engine=None):
+        """Journal for selected batch.
+
+        The journal contains pages (pandas.DataFrame) with prms for
+        each cells (one cell pr row).
+
+        Args:
+            db_reader: either default (a simple excel reader already
+                implemented in cellpy) or other db readers that implement
+                the needed API.
+            engine: defaults to simple_db_engine for parsing db using the
+                db_reader
+                    self.pages = simple_db_engine(
+                        self.db_reader, id_keys, **kwargs
+                    )
+        """
+
         super().__init__()
         if db_reader == "default":
             self.db_reader = dbreader.Reader()
+            self.engine = simple_db_engine
         else:
             logging.debug(f"Remark! db_reader: {db_reader}")
             self.db_reader = db_reader
+            if engine is None:
+                self.engine = engine
         self.batch_col = "b01"
 
     def _check_file_name(self, file_name, to_project_folder=False):
