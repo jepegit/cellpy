@@ -351,8 +351,17 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
                     create_dir = False
 
         if create_dir:
-            o.mkdir(parents=parents, exist_ok=exist_ok)
-            click.echo(f"[cellpy] (setup) Created {o}")
+            try:
+                o.mkdir(parents=parents, exist_ok=exist_ok)
+                click.echo(f"[cellpy] (setup) Created {o}")
+            except FileExistsError:
+                click.echo(f"[cellpy] (setup) {o} already exists.")
+            except FileNotFoundError:
+                click.echo(f"[cellpy] (setup) {o} not available.")
+            except Exception as e:
+                click.echo(f"[cellpy] (setup) WARNING! Could not create {o}.")
+                logging.debug(e)
+                click.echo(f"[cellpy] (setup) ...continuing anyway.")
         else:
             click.echo(f"[cellpy] (setup) Could not create {o}")
     return o
