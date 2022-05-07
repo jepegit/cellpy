@@ -89,7 +89,7 @@ class LabJournal(BaseJournal):
         logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
         if self.db_reader is not None:
             id_keys = self.db_reader.select_batch(name, batch_col)
-            self.pages = simple_db_engine(self.db_reader, id_keys, **kwargs)
+            self.pages = self.engine(self.db_reader, id_keys, **kwargs)
             if self.pages.empty:
                 logging.critical(
                     f"EMPTY JOURNAL: are you sure you have provided correct input to batch?"

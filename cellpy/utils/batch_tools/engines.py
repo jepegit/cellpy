@@ -106,15 +106,22 @@ def dq_dv_engine(**kwargs):
     raise NotImplementedError
 
 
-def _query(f, srnos, k=None):
-    if k is None:
-        return [f(srno) for srno in srnos]
-    return [f(k, srno) for srno in srnos]
+def _query(reader_method, cell_ids, column_name=None):
+    try:
+        if column_name is None:
+            result = [reader_method(cell_id) for cell_id in cell_ids]
+        else:
+            result = [reader_method(column_name, cell_id) for cell_id in cell_ids]
+    except Exception as e:
+        logging.debug(f"Error in querying db.")
+        logging.debug(e)
+        result = [None for _ in range(len(cell_ids))]
+    return result
 
 
 def simple_db_engine(
     reader=None,
-    srnos=None,
+    cell_ids=None,
     file_list=None,
     pre_path=None,
     include_key=False,
@@ -130,7 +137,7 @@ def simple_db_engine(
 
     Args:
         reader: a reader object (defaults to dbreader.Reader)
-        srnos: keys (cell IDs)
+        cell_ids: keys (cell IDs)
         file_list: file list to send to filefinder (instead of searching in folders for files).
         pre_path: prepended path to send to filefinder.
         include_key: include the key col in the pages (the cell IDs).
@@ -147,31 +154,31 @@ def simple_db_engine(
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
 
-    info_dict = dict()
-    info_dict[headers_journal["filename"]] = _query(reader.get_cell_name, srnos)
+    pages_dict = dict()
+    pages_dict[headers_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
     if include_key:
-        info_dict[headers_journal["id_key"]] = srnos
+        pages_dict[headers_journal["id_key"]] = cell_ids
 
     if include_individual_arguments:
-        info_dict[headers_journal["args"]] = _query(reader.get_args, srnos)
+        pages_dict[headers_journal["args"]] = _query(reader.get_args, cell_ids)
 
-    info_dict[headers_journal["mass"]] = _query(reader.get_mass, srnos)
-    info_dict[headers_journal["total_mass"]] = _query(reader.get_total_mass, srnos)
-    info_dict[headers_journal["loading"]] = _query(reader.get_loading, srnos)
-    info_dict[headers_journal["nom_cap"]] = _query(reader.get_nom_cap, srnos)
-    info_dict[headers_journal["experiment"]] = _query(reader.get_experiment_type, srnos)
-    info_dict[headers_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, srnos)
-    info_dict[headers_journal["label"]] = _query(reader.get_label, srnos)
-    info_dict[headers_journal["cell_type"]] = _query(reader.get_cell_type, srnos)
-    info_dict[headers_journal["instrument"]] = _query(reader.get_instrument, srnos)
-    info_dict[headers_journal["raw_file_names"]] = []
-    info_dict[headers_journal["cellpy_file_name"]] = []
-    info_dict[headers_journal["comment"]] = _query(reader.get_comment, srnos)
+    pages_dict[headers_journal["mass"]] = _query(reader.get_mass, cell_ids)
+    pages_dict[headers_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
+    pages_dict[headers_journal["loading"]] = _query(reader.get_loading, cell_ids)
+    pages_dict[headers_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
+    pages_dict[headers_journal["experiment"]] = _query(reader.get_experiment_type, cell_ids)
+    pages_dict[headers_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
+    pages_dict[headers_journal["label"]] = _query(reader.get_label, cell_ids)
+    pages_dict[headers_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
+    pages_dict[headers_journal["instrument"]] = _query(reader.get_instrument, cell_ids)
+    pages_dict[headers_journal["raw_file_names"]] = []
+    pages_dict[headers_journal["cellpy_file_name"]] = []
+    pages_dict[headers_journal["comment"]] = _query(reader.get_comment, cell_ids)
 
     if additional_column_names is not None:
         for k in additional_column_names:
             try:
-                info_dict[k] = _query(reader.get_by_column_label, srnos, k)
+                pages_dict[k] = _query(reader.get_by_column_label, cell_ids, k)
             except Exception as e:
                 logging.info(f"Could not retrieve from column {k} ({e})")
 
@@ -180,18 +187,18 @@ def simple_db_engine(
     logging.debug(f"created info-dict from {reader.db_file}:")
     # logging.debug(info_dict)
 
-    for key in list(info_dict.keys()):
-        logging.debug("%s: %s" % (key, str(info_dict[key])))
+    for key in list(pages_dict.keys()):
+        logging.debug("%s: %s" % (key, str(pages_dict[key])))
 
-    _groups = _query(reader.get_group, srnos)
+    _groups = _query(reader.get_group, cell_ids)
 
     logging.debug(">\ngroups: %s" % str(_groups))
     groups = helper.fix_groups(_groups)
-    info_dict[headers_journal["group"]] = groups
+    pages_dict[headers_journal["group"]] = groups
 
     my_timer_start = time.time()
-    info_dict = helper.find_files(
-        info_dict, file_list=file_list, pre_path=pre_path, **kwargs
+    pages_dict = helper.find_files(
+        pages_dict, file_list=file_list, pre_path=pre_path, **kwargs
     )
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
@@ -201,36 +208,36 @@ def simple_db_engine(
             "You can load it again using the from_journal(journal_name) method."
         )
 
-    info_df = pd.DataFrame(info_dict)
+    pages = pd.DataFrame(pages_dict)
     try:
-        info_df = info_df.sort_values([headers_journal.group, headers_journal.filename])
+        pages = pages.sort_values([headers_journal.group, headers_journal.filename])
     except TypeError as e:
-        logging.warning("could not sort the values")
-        logging.warning(f"{info_df[[headers_journal.group, headers_journal.filename]]}")
-        logging.warning("maybe you have a corrupted db?")
-        logging.warning(
-            "typically happens if the srno is not unique (several rows or records in "
-            "your db has the same srno or key)"
-        )
-        logging.warning(e)
+        _report_suspected_duplicate_id(e, "sort the values", pages[[headers_journal.group, headers_journal.filename]])
 
-    info_df = helper.make_unique_groups(info_df)
+    pages = helper.make_unique_groups(pages)
+
     try:
-        info_df[headers_journal.label] = info_df[headers_journal.filename].apply(
+        pages[headers_journal.label] = pages[headers_journal.filename].apply(
             helper.create_labels
         )
     except AttributeError as e:
-        logging.warning("could not make labels")
-        logging.warning("maybe you have a corrupted db?")
-        logging.warning(
-            "typically happens if the srno is not unique (several rows or records in "
-            "your db has the same srno or key)"
-        )
-        logging.warning(e)
+        _report_suspected_duplicate_id(e, "make labels", pages[[headers_journal.label, headers_journal.filename]])
+
     else:
         # TODO: check if drop=False works [#index]
-        info_df.set_index(
+        pages.set_index(
             headers_journal["filename"], inplace=True
         )  # edit this to allow for
         # non-numeric index-names (for tab completion and python-box)
-    return info_df
+    return pages
+
+
+def _report_suspected_duplicate_id(e, what="do it", on=None):
+    logging.warning(f"could not {what}")
+    logging.warning(f"{on}")
+    logging.warning("maybe you have a corrupted db?")
+    logging.warning(
+        "typically happens if the cell_id is not unique (several rows or records in "
+        "your db has the same cell_id or key)"
+    )
+    logging.warning(e)
