@@ -82,20 +82,36 @@ class CyclingExperiment(BaseExperiment):
 
         self.selected_summaries = None
 
-    def update(self, all_in_memory=None, **kwargs):
-        """Updates the selected datasets.
+    @staticmethod
+    def _get_cell_spec_from_page(indx, row):
+        # TODO: make me!
+        logging.debug(f"getting cell_spec from journal pages ({indx}: {row})")
+        cell_spec = {}
+        return cell_spec
+
+    def update(self, all_in_memory=None, cell_specs=None, **kwargs):
+        f"""Updates the selected datasets.
 
         Args:
-            all_in_memory (bool): store the cellpydata in memory (default
+            all_in_memory (bool): store the `cellpydata` in memory (default
                 False)
+            cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
+                dictionary will override the **kwargs and the parameters from the journal pages
+                for the indicated cell.
 
             kwargs:
                 transferred all the way to the instrument loader, if not
-                picked up earlier.
+                picked up earlier. Remark that you can obtain the same pr. cell by
+                providing a `cellspecs` dictionary. The kwargs have precedence over the
+                parameters given in the journal pages, but will be overridden by parameters
+                given by `cellspecs`.
 
                 Merging:
                     recalc (Bool): set to False if you don't want automatic "recalc" of
-                        cycle numbers etc when merging several data-sets.
+                        cycle numbers etc. when merging several data-sets.
+                Loading:
+                    selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
+                    loading from raw is not necessary (or turned off).
 
         """
 
@@ -147,6 +163,18 @@ class CyclingExperiment(BaseExperiment):
             h_txt = f"{indx}"
             n_txt = f"loading {counter}"
             l_txt = f"starting to process file # {counter} ({indx})"
+
+            # TO BE IMPLEMENTED (parameters already in the journal pages):
+            cell_spec_page = self._get_cell_spec_from_page(indx, row)
+
+            if cell_specs is not None:
+                cell_spec = cell_specs.get(indx, dict())
+            else:
+                cell_spec = dict()
+
+            cell_spec = {**cell_spec_page, **kwargs, **cell_spec}
+
+            l_txt += f" cell_spec: {cell_spec}"
             logging.debug(l_txt)
             pbar.set_description(n_txt)
             pbar.set_postfix_str(s=h_txt, refresh=True)
@@ -186,7 +214,7 @@ class CyclingExperiment(BaseExperiment):
                         cell_type=row[hdr_journal.cell_type],
                         instrument=row[hdr_journal.instrument],
                         selector=selector,
-                        **kwargs,
+                        **cell_spec,
                     )
 
                 except Exception as e:
