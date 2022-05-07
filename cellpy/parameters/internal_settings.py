@@ -240,6 +240,7 @@ class HeadersJournal(BaseSettings):
     group: str = "group"
     sub_group: str = "sub_group"
     comment: str = "comment"
+    argument: str = "argument"
 
 
 keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]

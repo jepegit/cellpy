@@ -141,7 +141,7 @@ def simple_db_engine(
         file_list: file list to send to filefinder (instead of searching in folders for files).
         pre_path: prepended path to send to filefinder.
         include_key: include the key col in the pages (the cell IDs).
-        include_individual_arguments: include the arguments col in the pages.
+        include_individual_arguments: include the argument column in the pages.
         additional_column_names: list of additional column names to include in the pages.
         **kwargs: sent to filefinder
 
@@ -160,7 +160,7 @@ def simple_db_engine(
         pages_dict[headers_journal["id_key"]] = cell_ids
 
     if include_individual_arguments:
-        pages_dict[headers_journal["args"]] = _query(reader.get_args, cell_ids)
+        pages_dict[headers_journal["argument"]] = _query(reader.get_args, cell_ids)
 
     pages_dict[headers_journal["mass"]] = _query(reader.get_mass, cell_ids)
     pages_dict[headers_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)

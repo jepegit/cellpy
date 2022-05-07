@@ -4,6 +4,7 @@ import pathlib
 import sys
 import warnings
 
+import pandas as pd
 from tqdm.auto import tqdm
 
 from cellpy import prms
@@ -83,10 +84,18 @@ class CyclingExperiment(BaseExperiment):
         self.selected_summaries = None
 
     @staticmethod
-    def _get_cell_spec_from_page(indx, row):
-        # TODO: make me!
+    def _get_cell_spec_from_page(indx: int, row: pd.Series) -> dict:
+        # Edit this if we decide to make "argument families", e.g. loader_split or merger_recalc.
         logging.debug(f"getting cell_spec from journal pages ({indx}: {row})")
-        cell_spec = {}
+        try:
+            cell_spec = row[hdr_journal.argument]
+            if not isinstance(cell_spec, dict):
+                raise TypeError("the cell spec argument is not a dictionary")
+        except Exception as e:
+            logging.warning(f"could not get cell spec for {indx}")
+            logging.warning(f"row: {row}")
+            logging.warning(f"error message: {e}")
+            return {}
         return cell_spec
 
     def update(self, all_in_memory=None, cell_specs=None, **kwargs):
