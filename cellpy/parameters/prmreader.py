@@ -13,6 +13,7 @@ from pprint import pprint
 import box
 import ruamel
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
@@ -72,7 +73,7 @@ def _write_prm_file(file_name=None):
             yaml.explicit_start = True
             yaml.explicit_end = True
             yaml.dump(config_dict, config_file)
-    except ruamel.yaml.YAMLError:
+    except YAMLError:
         raise ConfigFileNotWritten
 
 
@@ -139,7 +140,7 @@ def _read_prm_file(prm_filename):
         with open(prm_filename, "r") as config_file:
             prm_dict = yaml.load(config_file)
 
-    except yaml.YAMLError as e:
+    except YAMLError as e:
         raise ConfigFileNotRead from e
     else:
         if isinstance(prm_dict, dict):
@@ -155,7 +156,7 @@ def _read_prm_file_without_updating(prm_filename):
         with open(prm_filename, "r") as config_file:
             prm_dict = yaml.load(config_file)
 
-    except yaml.YAMLError as e:
+    except YAMLError as e:
         raise ConfigFileNotRead from e
     return prm_dict
 
