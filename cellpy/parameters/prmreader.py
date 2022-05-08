@@ -83,8 +83,16 @@ def _update_prms(config_dict):
     for key in config_dict:
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
+            is_path = isinstance(_config_attr, prms.PathsClass)
             for k in config_dict[key]:
                 z = config_dict[key][k]
+                if is_path:
+                    _txt = f"{k}: {z}"
+                    if not k.lower() == "db_filename":  # special hack because it is a filename and not a path
+                        z = pathlib.Path(z).resolve()
+                    _txt += f" -> {z}"
+                    logging.debug("converting to pathlib.Path")
+                    logging.debug(_txt)
                 if isinstance(z, dict):
                     y = getattr(_config_attr, k)
                     z = box.Box({**y, **z})
@@ -116,12 +124,21 @@ def _convert_to_dict(x):
     return dictionary
 
 
+def _convert_paths_to_dict(x):
+    try:
+        dictionary = x.to_dict()
+    except AttributeError:
+        dictionary = asdict(x)
+    dictionary = {k: str(dictionary[k]) for k in dictionary}
+    return dictionary
+
+
 def _pack_prms():
     """if you introduce new 'save-able' parameter dictionaries, then you have
     to include them here"""
 
     config_dict = {
-        "Paths": _convert_to_dict(prms.Paths),
+        "Paths": _convert_paths_to_dict(prms.Paths),
         "FileNames": _convert_to_dict(prms.FileNames),
         "Db": _convert_to_dict(prms.Db),
         "DbCols": _convert_to_dict(prms.DbCols),
