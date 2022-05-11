@@ -94,12 +94,16 @@ class Reader:
     @staticmethod
     def _parse_argument_str(argument_str: str) -> dict:
         # the argument str must be on the form:
-        # "keyword-1:value-1;keyword-2:value2"
+        # "keyword-1=value-1;keyword-2=value2"
+
         sep = ";"
         parts = [part.strip() for part in argument_str.split(sep=sep)]
-        sep = ":"
-        argument = {key.strip(): value.strip() for key, value in parts.split(sep=sep)}
-        return argument
+        sep = "="
+        arguments = {}
+        for p in parts:
+            k, v = p.split(sep=sep)
+            arguments[k.strip()] = v.strip()
+        return arguments
 
     @staticmethod
     def _extract_date_from_cell_name(

@@ -125,7 +125,7 @@ def simple_db_engine(
     file_list=None,
     pre_path=None,
     include_key=False,
-    include_individual_arguments=False,
+    include_individual_arguments=True,
     additional_column_names=None,
     **kwargs,
 ):
