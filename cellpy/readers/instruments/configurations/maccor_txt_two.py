@@ -11,6 +11,10 @@ unit_labels = {
     "temperature": "C",
 }
 
+file_info = {
+    "raw_extension": "txt"
+}
+
 normal_headers_renaming_dict = {
     "data_point_txt": "Rec",
     "cycle_index_txt": "Cycle C",

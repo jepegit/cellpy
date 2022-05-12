@@ -89,6 +89,7 @@ class CyclingExperiment(BaseExperiment):
         logging.debug(f"getting cell_spec from journal pages ({indx}: {row})")
         try:
             cell_spec = row[hdr_journal.argument]
+            logging.debug(cell_spec)
             if not isinstance(cell_spec, dict):
                 raise TypeError("the cell spec argument is not a dictionary")
         except Exception as e:
@@ -96,6 +97,17 @@ class CyclingExperiment(BaseExperiment):
             logging.warning(f"row: {row}")
             logging.warning(f"error message: {e}")
             return {}
+
+        # converting from str if needed
+        for spec in cell_spec:
+            if isinstance(cell_spec[spec], str):
+                if cell_spec[spec].lower() == "true":
+                    cell_spec[spec] = True
+                elif cell_spec[spec].lower() == "false":
+                    cell_spec[spec] = False
+                elif cell_spec[spec].lower() == "none":
+                    cell_spec[spec] = None
+
         return cell_spec
 
     def update(self, all_in_memory=None, cell_specs=None, **kwargs):

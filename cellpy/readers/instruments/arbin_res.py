@@ -176,6 +176,7 @@ class ArbinLoader(Loader):
         # set self.logger = cellpydata_object.logger etc.
         # then remember to include that as prm in "out of class" functions
         # self.prms = prms
+        self.raw_ext = "res"
         self.logger = logging.getLogger(__name__)
         # use the following prm to limit to loading only
         # one cycle or from cycle>x to cycle<x+n
@@ -200,6 +201,14 @@ class ArbinLoader(Loader):
         raw_units["mass"] = 0.001  # g
         raw_units["voltage"] = 1.0  # V
         return raw_units
+
+    @staticmethod
+    def get_params(parameter=None):
+        params = dict()
+        params["raw_ext"] = "res"
+        if parameter is not None:
+            return params[parameter]
+        return params
 
     @staticmethod
     def get_headers_normal():

@@ -4,6 +4,7 @@ from abc import ABC
 import pytest
 from cellpy.readers.instruments.configurations import register_configuration_from_module
 from cellpy.readers.instruments.base import AutoLoader
+from cellpy.readers import core
 from cellpy import log, prms
 
 from . import instrument_configuration_module
@@ -81,5 +82,18 @@ def test_registering_module_post_processors():
     mloader = MockLoader()
     assert mloader.config_params.post_processors["replace"]["one"] == "two"
 
+
+def test_query_instrument():
+    raw_ext = core.query_instrument("raw_ext", "arbin")
+    something = core.query_instrument("something", "arbin")
+    raw_ext = core.query_instrument("raw_ext", "arbin_sql")
+    raw_ext = core.query_instrument("raw_ext", "arbin_sql_csv")
+    raw_ext = core.query_instrument("raw_ext", "arbin_sql_xlsx")
+    raw_ext = core.query_instrument("raw_ext", "maccor_txt")
+    raw_ext = core.query_instrument("raw_ext", "pec")
+    raw_ext = core.query_instrument("raw_ext", "custom")
+    raw_ext = core.query_instrument("raw_ext", "biologics")
+    raw_ext = core.query_instrument("raw_ext", "old_custom")
+    raw_ext = core.query_instrument("raw_ext", "my-instrument.yml")
 
 

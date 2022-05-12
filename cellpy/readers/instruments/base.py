@@ -206,6 +206,16 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def get_params(parameter: Union[str, None]) -> dict:
+        """Retrieves parameters needed for facilitating working with the instrument without registering it.
+
+        Typically, it should include the raw_ext.
+
+        Return: parameters or a selected parameter
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def loader(self, *args, **kwargs) -> list:
         """Loads data into a Cell object and returns it"""

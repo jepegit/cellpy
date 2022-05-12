@@ -96,6 +96,14 @@ class ArbinXLSXLoader(Loader):
         )  # the column headers defined by cellpy
 
     @staticmethod
+    def get_params(parameter=None):
+        params = dict()
+        params["raw_ext"] = "xlsx"
+        if parameter is not None:
+            return params[parameter]
+        return params
+
+    @staticmethod
     def get_headers_normal():
         """Defines the so-called normal column headings for Arbin SQL Server csv"""
         # covered by cellpy at the moment
@@ -150,9 +158,7 @@ class ArbinXLSXLoader(Loader):
             new_tests (list of data objects)
         """
         new_tests = []
-
         data_df = self._parse_xlsx_data(name)
-
         data = Cell()
 
         # metadata is unfortunately not available for csv dumps
@@ -232,6 +238,7 @@ class ArbinXLSXLoader(Loader):
     def _parse_xlsx_data(self, file_name):
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
         sheet_name = self._get_sheet_name(file_name)
+        file_name = pathlib.Path(file_name)
         raw_frame = pd.read_excel(
             file_name, engine="openpyxl", sheet_name=None, parse_dates=[date_time_col]
         )  # TODO: replace this with pd.ExcelReader
@@ -239,6 +246,8 @@ class ArbinXLSXLoader(Loader):
 
         if matching:
             return raw_frame[matching[0]]
+        else:
+            return raw_frame[raw_frame.keys()[0]]
 
 
 if __name__ == "__main__":

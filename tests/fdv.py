@@ -59,6 +59,7 @@ short_step_table_file_path = os.path.join(raw_data_dir, short_step_table_file_na
 
 run_name = "20160805_test001_45_cc"
 run_name_2 = "20160805_test001_46_cc"
+run_name_maccor = "maccor_001"
 
 # -------- experiment specific files ----------------
 

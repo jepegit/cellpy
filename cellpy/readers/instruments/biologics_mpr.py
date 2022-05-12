@@ -89,6 +89,14 @@ class MprLoader(Loader):
         self.cellpy_headers = get_headers_normal()
 
     @staticmethod
+    def get_params(parameter=None):
+        params = dict()
+        params["raw_ext"] = "mpr"
+        if parameter is not None:
+            return params[parameter]
+        return params
+
+    @staticmethod
     def get_raw_units():
         """Include the settings for the units used by the instrument.
 

@@ -398,6 +398,75 @@ class Cell(object):
         return empty
 
 
+# instrument handling -> plan for future is to use for example the factory pattern
+def __look_up_instrument(instrument):
+    if instrument in ["arbin", "arbin_res"]:
+        from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
+        instrument_id = "arbin"
+    elif instrument == "arbin_sql":
+        from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
+        instrument_id = "arbin_sql"
+    elif instrument == "arbin_sql_csv":
+        from cellpy.readers.instruments.arbin_sql_csv import (
+            ArbinCsvLoader as RawLoader,
+        )
+        instrument_id = "arbin_sql_csv"
+    elif instrument == "arbin_sql_xlsx":
+        from cellpy.readers.instruments.arbin_sql_xlsx import (
+            ArbinXLSXLoader as RawLoader,
+        )
+        instrument_id = "arbin_sql_xlsx"
+
+    elif instrument in ["pec", "pec_csv"]:
+        from cellpy.readers.instruments.pec import PECLoader as RawLoader
+        instrument_id = "pec"
+
+    elif instrument in ["biologics", "biologics_mpr"]:
+        from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
+        instrument_id = "biologics"
+
+    elif instrument in ["maccor", "maccor_txt"]:
+        from cellpy.readers.instruments.maccor_txt import (
+            MaccorTxtLoader as RawLoader,
+        )
+        instrument_id = "maccor"
+        # need more here (model etc)
+
+    elif instrument.startswith("custom"):
+        from cellpy.readers.instruments.custom_instrument import (
+            CustomTxtLoader as RawLoader,
+        )
+        instrument_id = "custom"
+
+    elif instrument.startswith("old_custom"):
+        print("OLD CUSTOM LOADER")
+        from cellpy.readers.instruments.custom import CustomLoader as RawLoader
+        instrument_id = "old_custom"
+
+    elif instrument.endswith(".yml"):
+        from cellpy.readers.instruments.local_instrument import (
+                LocalTxtLoader as RawLoader,
+            )
+        instrument_id = instrument
+        # fix this
+
+    else:
+        raise Exception(f"option does not exist: '{instrument}'")
+
+    return RawLoader, instrument_id
+
+
+def query_instrument(variable, instrument=None, instrument_file=None, **kwargs):
+    RawLoader, instrument_id = __look_up_instrument(instrument)
+    try:
+        value = RawLoader.get_params(variable)
+        logging.debug(f"GOT {variable}={value} for {instrument}")
+        return value
+
+    except (AttributeError, NotImplementedError, KeyError):
+        logging.debug(f"COULD NOT RETRIEVE {variable} for {instrument}")
+
+
 def identify_last_data_point(data):
     """Find the last data point and store it in the fid instance"""
 

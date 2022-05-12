@@ -93,6 +93,14 @@ class ArbinCsvLoader(Loader):
         )  # the column headers defined by cellpy
 
     @staticmethod
+    def get_params(parameter=None):
+        params = dict()
+        params["raw_ext"] = "csv"
+        if parameter is not None:
+            return params[parameter]
+        return params
+
+    @staticmethod
     def get_headers_normal():
         """Defines the so-called normal column headings for Arbin SQL Server csv"""
         # covered by cellpy at the moment
