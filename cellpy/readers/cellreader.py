@@ -3994,6 +3994,7 @@ class CellpyData(object):
         ignore_errors=True,
         dynamic=False,
         inter_cycle_shift=True,
+        interpolate_along_cap=False,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -4032,6 +4033,8 @@ class CellpyData(object):
                 [NOT IMPLEMENTED YET]
             inter_cycle_shift (bool): cumulative shifts between consecutive
                 cycles. Defaults to True.
+            interpolate_along_cap (bool): interpolate along capacity axis instead
+                of along the voltage axis. Defaults to False.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -4164,7 +4167,10 @@ class CellpyData(object):
                         logging.debug("no first charge step found")
 
                     # prev_end = np.amax(_last_step_c)
-                    prev_end = _last_step_c.iat[-1]
+                    if inter_cycle_shift:
+                        prev_end = _last_step_c.iat[-1]
+                    else:
+                        prev_end = 0.0
 
                 elif method == "forth-and-forth":
                     if _last_step_c is not None:
@@ -4177,6 +4183,10 @@ class CellpyData(object):
                         logging.debug("no first charge step found")
 
                 if return_dataframe:
+                    x_col = "voltage"
+                    y_col = "capacity"
+                    if interpolate_along_cap:
+                        x_col, y_col = y_col, x_col
 
                     try:
                         _first_df = pd.DataFrame(
@@ -4186,10 +4196,11 @@ class CellpyData(object):
                             }
                         )
                         if interpolated:
+
                             _first_df = interpolate_y_on_x(
                                 _first_df,
-                                y="capacity",
-                                x="voltage",
+                                y=y_col,
+                                x=x_col,
                                 dx=dx,
                                 number_of_points=number_of_points,
                                 direction=first_interpolation_direction,
@@ -4211,8 +4222,8 @@ class CellpyData(object):
                         if interpolated:
                             _last_df = interpolate_y_on_x(
                                 _last_df,
-                                y="capacity",
-                                x="voltage",
+                                y=y_col,
+                                x=x_col,
                                 dx=dx,
                                 number_of_points=number_of_points,
                                 direction=last_interpolation_direction,
@@ -4221,6 +4232,13 @@ class CellpyData(object):
                             _last_df = pd.concat([_last_df, _nan])
                         if categorical_column:
                             _last_df["direction"] = 1
+
+                        if interpolate_along_cap:
+                            if method == "forth":
+                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
+                            elif method == "back-and-forth":
+                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
+                                _last_df = _last_df.loc[::-1].reset_index(drop=True)
 
                     except AttributeError:
                         logging.info(f"Could not extract cycle {current_cycle}")

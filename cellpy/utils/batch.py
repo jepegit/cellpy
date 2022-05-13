@@ -707,7 +707,30 @@ class Batch:
         self.experiment.update()
 
     def update(self, **kwargs) -> None:
-        """Load cells as defined in the journal"""
+        """Updates the selected datasets.
+
+        Args:
+            all_in_memory (bool): store the `cellpydata` in memory (default
+                False)
+            cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
+                dictionary will override the **kwargs and the parameters from the journal pages
+                for the indicated cell.
+
+        kwargs:
+            transferred all the way to the instrument loader, if not
+            picked up earlier. Remark that you can obtain the same pr. cell by
+            providing a `cellspecs` dictionary. The kwargs have precedence over the
+            parameters given in the journal pages, but will be overridden by parameters
+            given by `cellspecs`.
+
+            Merging:
+                recalc (Bool): set to False if you don't want automatic "recalc" of
+                    cycle numbers etc. when merging several data-sets.
+            Loading:
+                selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
+                loading from raw is not necessary (or turned off).
+
+                """
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
 

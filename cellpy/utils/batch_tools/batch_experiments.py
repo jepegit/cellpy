@@ -111,7 +111,7 @@ class CyclingExperiment(BaseExperiment):
         return cell_spec
 
     def update(self, all_in_memory=None, cell_specs=None, **kwargs):
-        f"""Updates the selected datasets.
+        """Updates the selected datasets.
 
         Args:
             all_in_memory (bool): store the `cellpydata` in memory (default
