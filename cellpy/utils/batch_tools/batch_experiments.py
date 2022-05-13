@@ -100,6 +100,7 @@ class CyclingExperiment(BaseExperiment):
 
         # converting from str if needed
         for spec in cell_spec:
+
             if isinstance(cell_spec[spec], str):
                 if cell_spec[spec].lower() == "true":
                     cell_spec[spec] = True
@@ -107,7 +108,6 @@ class CyclingExperiment(BaseExperiment):
                     cell_spec[spec] = False
                 elif cell_spec[spec].lower() == "none":
                     cell_spec[spec] = None
-
         return cell_spec
 
     def update(self, all_in_memory=None, cell_specs=None, **kwargs):

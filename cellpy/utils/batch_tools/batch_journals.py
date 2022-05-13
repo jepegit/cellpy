@@ -264,9 +264,28 @@ class LabJournal(BaseJournal):
 
     @classmethod
     def _clean_pages(cls, pages):
+        import ast
         logging.debug("removing empty rows")
         pages = pages.dropna(how="all")
         logging.debug("checking path-names")
+        try:
+            p = pages[hdr_journal.raw_file_names]
+            new_p = []
+            for f in p:
+                if isinstance(f, str):
+                    try:
+                        new_f = ast.literal_eval(f)
+                        if isinstance(new_f, list):
+                            f = new_f
+                    except Exception as e:
+                        warnings.warn(e)
+                        warnings.warn(f"Could not evaluate {f}")
+
+                new_p.append(f)
+            pages[hdr_journal.raw_file_names] = new_p
+
+        except KeyError:
+            print("Tried but failed in converting raw_file_names into an appropriate list")
         try:
             pages[hdr_journal.cellpy_file_name] = pages[
                 hdr_journal.cellpy_file_name

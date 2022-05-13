@@ -62,7 +62,7 @@ def pickle_protocol(level):
     return PickleProtocol(level)
 
 
-class FileID(object):
+class FileID:
     """class for storing information about the raw-data files.
 
     This class is used for storing and handling raw-data file information.
@@ -172,7 +172,7 @@ class FileID(object):
         return self.last_modified
 
 
-class Cell(object):
+class Cell:
     """Object to store data for a test.
 
     This class is used for storing all the relevant data for a 'run', i.e. all

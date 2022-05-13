@@ -588,9 +588,18 @@ class Batch:
 
         # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file(to_project_folder=True, paginate=False)
-        logging.info("saving journal pages")
+        logging.info("saved journal pages to project folder")
         self.duplicate_journal(prms.Paths.batchfiledir)
-        logging.info("duplicating journal pages")
+        logging.info("duplicated journal pages to batch dir")
+        self.duplicate_journal()
+        logging.info("duplicated journal pages to current dir")
+
+    def export_journal(self, filename=None) -> None:
+        """Export the journal to xlsx."""
+        if filename is None:
+            filename = self.experiment.journal.file_name
+        filename = pathlib.Path(filename).with_suffix(".xlsx")
+        self.experiment.journal.to_file(file_name=filename, to_project_folder=False, paginate=False)
 
     def duplicate_journal(self, folder=None) -> None:
         """Copy the journal to folder.

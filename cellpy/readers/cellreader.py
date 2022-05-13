@@ -78,7 +78,7 @@ pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 module_logger = logging.getLogger(__name__)
 
 
-class CellpyData(object):
+class CellpyData:
     """Main class for working and storing data.
 
     This class is the main work-horse for cellpy where all the functions for
@@ -5608,7 +5608,7 @@ def get(
     Args:
         filename (str, os.PathLike, or list of raw-file names): path to file(s)
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
-        instrument (str): instrument to use (defaults to the one in your cellpy config file) (arbin_res, arbin_sql, arbin_sql_csv, arbin_sql_xlxs)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file)
         instrument_file (str or path): yaml file for custom file type
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
         logging_mode (str): "INFO" or "DEBUG"

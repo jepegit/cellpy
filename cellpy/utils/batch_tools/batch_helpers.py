@@ -220,17 +220,19 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     if not summary_frames:
         raise NullData("No summaries available to join")
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
+    out = []
     frames = []
     keys = []  # test-name
+
     for key in summary_frames:
         keys.append(key)
         if summary_frames[key].empty:
             logging.debug("Empty summary_frame encountered")
+
         frames.append(summary_frames[key])
 
-    out = []
+    summary_df = pd.concat(frames, keys=keys, axis=1, sort=True)
 
-    summary_df = pd.concat(frames, keys=keys, axis=1)
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[
             :, summary_df.columns.get_level_values(1) == value
