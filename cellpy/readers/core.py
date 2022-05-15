@@ -9,6 +9,7 @@ import datetime
 import importlib
 import logging
 import os
+import pathlib
 import pickle
 import sys
 import time
@@ -396,6 +397,69 @@ class Cell:
         except AttributeError:
             empty = True
         return empty
+
+
+class ObjectFactory:
+    def __init__(self):
+        self._builders = {}
+
+    def register_builder(self, key, builder):
+        self._builders[key] = builder
+
+    def create(self, key, **kwargs):
+        builder = self._builders.get(key)
+        if not builder:
+            raise ValueError(key)
+        return builder(**kwargs)
+
+
+def register_instruments():
+    # Example for future use
+    # This should be moved to cellreader
+    factory = ObjectFactory()
+    from cellpy.readers.instruments.arbin_res import ArbinLoader
+    factory.register_builder("arbin_res", ArbinLoader)
+
+
+def find_all_instruments():
+    # Example for future use
+    from importlib.machinery import SourceFileLoader
+    import cellpy.readers.instruments.configurations as site_1
+    import cellpy.readers.instruments as site_2
+
+    print("Modules in configurations folder:")
+
+    site_1 = pathlib.Path(site_1.__file__).parent
+    modules_in_site_1 = [
+        s
+        for s in site_1.glob("*.py")
+        if not str(s.name).startswith("_")
+    ]
+
+    for module in modules_in_site_1:
+        module_name = module.name.rstrip(".py")
+        foo = SourceFileLoader(module_name, str(module)).load_module()
+        print(foo.__name__)
+
+    print("\nModules in base instrument folder:")
+
+    site_2 = pathlib.Path(site_2.__file__).parent
+    modules_in_site_2 = [
+        s
+        for s in site_2.glob("*.py")
+        if not str(s.name).startswith("_") or not str(s.name).startswith("dev_")
+    ]
+
+    for module in modules_in_site_2:
+        module_name = module.name.rstrip(".py")
+        foo = SourceFileLoader(module_name, str(module)).load_module()
+        print(foo.__name__)
+
+    print("\nModule configurations in user instrument folder:")
+    print("Not made yet")
+
+    print("\nModules through plug-ins:")
+    print("Not made yet")
 
 
 # instrument handling -> plan for future is to use for example the factory pattern
@@ -836,3 +900,7 @@ def group_by_interpolate(
     time_01 = time.time() - time_00
     logging.debug(f"duration: {time_01} seconds")
     return new_df
+
+
+if __name__ == "__main__":
+    find_all_instruments()

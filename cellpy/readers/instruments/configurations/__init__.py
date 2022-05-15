@@ -8,7 +8,8 @@ from ruamel import yaml
 # TODO: make tests.
 # TODO: move this into its own module (not __init__).
 # TODO: document for devs.
-# TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
+# TODO: Bonus - make a python package/pre-commit hook that
+# turns TODO-statements into issues.
 
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
 OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
