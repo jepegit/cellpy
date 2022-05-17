@@ -402,9 +402,12 @@ class Cell:
 class ObjectFactory:
     def __init__(self):
         self._builders = {}
+        self._kwargs = {}
 
-    def register_builder(self, key, builder):
+    def register_builder(self, key, builder, **kwargs):
+        logging.debug(f"Registering instrument {key}")
         self._builders[key] = builder
+        self._kwargs = kwargs
 
     def create(self, key, **kwargs):
         builder = self._builders.get(key)
@@ -417,17 +420,25 @@ def register_instruments():
     # Example for future use
     # This should be moved to cellreader
     factory = ObjectFactory()
-    from cellpy.readers.instruments.arbin_res import ArbinLoader
-    factory.register_builder("arbin_res", ArbinLoader)
+    instruments = find_all_instruments()
+    for instrument_id, instrument in instruments.items():
+        factory.register_builder(instrument_id, instrument)
 
 
 def find_all_instruments():
-    # Example for future use
+    # Example for future use.
+    # Keeping imports here so that it will simplify future
+    #   refactoring.
+    # In addition, this functions needs to implement a way to
+    # get appropriate names of the different loaders. Or maybe
+    # tweak the base loader etc so that it can get the appropriate
+    # name from foo.__name__.
     from importlib.machinery import SourceFileLoader
     import cellpy.readers.instruments.configurations as site_1
     import cellpy.readers.instruments as site_2
 
-    print("Modules in configurations folder:")
+    instruments = {}
+    logging.debug("Searches for modules in configurations folder:")
 
     site_1 = pathlib.Path(site_1.__file__).parent
     modules_in_site_1 = [
@@ -439,30 +450,41 @@ def find_all_instruments():
     for module in modules_in_site_1:
         module_name = module.name.rstrip(".py")
         foo = SourceFileLoader(module_name, str(module)).load_module()
-        print(foo.__name__)
+        instruments[foo.__name__] = foo
+        logging.debug(foo.__name__)
 
-    print("\nModules in base instrument folder:")
+    logging.debug("Searching for modules in base instrument folder:")
 
     site_2 = pathlib.Path(site_2.__file__).parent
     modules_in_site_2 = [
         s
         for s in site_2.glob("*.py")
-        if not str(s.name).startswith("_") or not str(s.name).startswith("dev_")
+        if not (
+            str(s.name).startswith("_") or
+            str(s.name).startswith("dev_") or
+            str(s.name).startswith("base") or
+            str(s.name).startswith("backup")
+        )
     ]
 
     for module in modules_in_site_2:
         module_name = module.name.rstrip(".py")
         foo = SourceFileLoader(module_name, str(module)).load_module()
-        print(foo.__name__)
+        logging.debug(foo.__name__)
+        instruments[foo.__name__] = foo
 
-    print("\nModule configurations in user instrument folder:")
-    print("Not made yet")
+    logging.debug("Searching for module configurations "
+                  "in user instrument folder:")
+    # These are only yaml-files and should ideally import the appropriate
+    #    custom loader class
+    logging.debug("- Not implemented yet")
 
-    print("\nModules through plug-ins:")
-    print("Not made yet")
+    logging.debug("Searching for modules through plug-ins:")
+    # Not sure how to do this yet. Probably also some importlib trick.
+    logging.debug("- Not implemented yet")
+    return instruments
 
 
-# instrument handling -> plan for future is to use for example the factory pattern
 def __look_up_instrument(instrument):
     if instrument in ["arbin", "arbin_res"]:
         from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
@@ -521,6 +543,15 @@ def __look_up_instrument(instrument):
 
 
 def query_instrument(variable, instrument=None, instrument_file=None, **kwargs):
+    """Retrieve information from a loader class without instantiating it.
+
+    Remark! This function uses the .get_params method for the loader class and
+        not all loaders have this method implemented. This function will catch
+        several exceptions (`AttributeError`, `NotImplementedError`, `KeyError`)
+        without propagating it. Thus, it is usually OK to use this function, but
+        you might not get anything else than `None` from it.
+    """
+
     RawLoader, instrument_id = __look_up_instrument(instrument)
     try:
         value = RawLoader.get_params(variable)
@@ -903,4 +934,6 @@ def group_by_interpolate(
 
 
 if __name__ == "__main__":
-    find_all_instruments()
+    logging.getLogger().setLevel(logging.DEBUG)
+    register_instruments()
+    # find_all_instruments()

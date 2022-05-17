@@ -169,6 +169,8 @@ class ArbinLoader(Loader):
         SQL_server
 
     """
+    name = "arbin_res"
+    raw_ext = "res"
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinLoader class"""
@@ -201,14 +203,6 @@ class ArbinLoader(Loader):
         raw_units["mass"] = 0.001  # g
         raw_units["voltage"] = 1.0  # V
         return raw_units
-
-    @staticmethod
-    def get_params(parameter=None):
-        params = dict()
-        params["raw_ext"] = "res"
-        if parameter is not None:
-            return params[parameter]
-        return params
 
     @staticmethod
     def get_headers_normal():

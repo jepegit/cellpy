@@ -78,6 +78,8 @@ class MprLoader(Loader):
 
     # Note: the class is sub-classing Loader. At the moment, Loader does
     # not really contain anything...
+    name = "biologics_mpr"
+    raw_ext = "mpr"
 
     def __init__(self, *args, **kwargs):
         self.logger = logging.getLogger(__name__)
@@ -87,14 +89,6 @@ class MprLoader(Loader):
         self.mpr_log = None
         self.mpr_settings = None
         self.cellpy_headers = get_headers_normal()
-
-    @staticmethod
-    def get_params(parameter=None):
-        params = dict()
-        params["raw_ext"] = "mpr"
-        if parameter is not None:
-            return params[parameter]
-        return params
 
     @staticmethod
     def get_raw_units():

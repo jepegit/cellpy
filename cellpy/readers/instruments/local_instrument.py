@@ -10,6 +10,8 @@ from cellpy.readers.instruments.configurations import (
 class LocalTxtLoader(TxtLoader):
     """Class for loading data from txt files."""
 
+    name = "local"
+
     def __init__(self, local_instrument_file=None):
         self.local_instrument_file = local_instrument_file
         super().__init__()

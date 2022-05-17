@@ -29,6 +29,8 @@ from cellpy.readers.instruments.configurations import (
 
 class CustomTxtLoader(AutoLoader, ABC):
     """Class for loading data from txt files."""
+    name = "custom"
+    raw_ext = "*"
 
     def __init__(self, instrument_file=None):
         if instrument_file is None:

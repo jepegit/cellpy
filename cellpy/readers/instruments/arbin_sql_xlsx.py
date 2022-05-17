@@ -85,6 +85,8 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 
 class ArbinXLSXLoader(Loader):
     """Class for loading arbin-data from MS SQL server."""
+    name = "arbin_sql_xlsx"
+    raw_ext = "xlsx"
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
@@ -94,14 +96,6 @@ class ArbinXLSXLoader(Loader):
         self.cellpy_headers_normal = (
             get_headers_normal()
         )  # the column headers defined by cellpy
-
-    @staticmethod
-    def get_params(parameter=None):
-        params = dict()
-        params["raw_ext"] = "xlsx"
-        if parameter is not None:
-            return params[parameter]
-        return params
 
     @staticmethod
     def get_headers_normal():
