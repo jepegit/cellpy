@@ -34,13 +34,32 @@ for key in hdr_journal:
 
 
 class LabJournal(BaseJournal):
-    def __init__(self, db_reader="default"):
+    def __init__(self, db_reader="default", engine=None):
+        """Journal for selected batch.
+
+        The journal contains pages (pandas.DataFrame) with prms for
+        each cells (one cell pr row).
+
+        Args:
+            db_reader: either default (a simple excel reader already
+                implemented in cellpy) or other db readers that implement
+                the needed API.
+            engine: defaults to simple_db_engine for parsing db using the
+                db_reader
+                    self.pages = simple_db_engine(
+                        self.db_reader, id_keys, **kwargs
+                    )
+        """
+
         super().__init__()
         if db_reader == "default":
             self.db_reader = dbreader.Reader()
+            self.engine = simple_db_engine
         else:
             logging.debug(f"Remark! db_reader: {db_reader}")
             self.db_reader = db_reader
+            if engine is None:
+                self.engine = engine
         self.batch_col = "b01"
 
     def _check_file_name(self, file_name, to_project_folder=False):
@@ -70,7 +89,7 @@ class LabJournal(BaseJournal):
         logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
         if self.db_reader is not None:
             id_keys = self.db_reader.select_batch(name, batch_col)
-            self.pages = simple_db_engine(self.db_reader, id_keys, **kwargs)
+            self.pages = self.engine(self.db_reader, id_keys, **kwargs)
             if self.pages.empty:
                 logging.critical(
                     f"EMPTY JOURNAL: are you sure you have provided correct input to batch?"
@@ -245,9 +264,28 @@ class LabJournal(BaseJournal):
 
     @classmethod
     def _clean_pages(cls, pages):
+        import ast
         logging.debug("removing empty rows")
         pages = pages.dropna(how="all")
         logging.debug("checking path-names")
+        try:
+            p = pages[hdr_journal.raw_file_names]
+            new_p = []
+            for f in p:
+                if isinstance(f, str):
+                    try:
+                        new_f = ast.literal_eval(f)
+                        if isinstance(new_f, list):
+                            f = new_f
+                    except Exception as e:
+                        warnings.warn(e)
+                        warnings.warn(f"Could not evaluate {f}")
+
+                new_p.append(f)
+            pages[hdr_journal.raw_file_names] = new_p
+
+        except KeyError:
+            print("Tried but failed in converting raw_file_names into an appropriate list")
         try:
             pages[hdr_journal.cellpy_file_name] = pages[
                 hdr_journal.cellpy_file_name

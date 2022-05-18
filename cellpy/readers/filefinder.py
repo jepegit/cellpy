@@ -87,25 +87,41 @@ def search_for_files(
     version = 0.2
     t0 = time.time()
 
+    if reg_exp is None:
+        reg_exp = prms.FileNames.reg_exp
+
+    if raw_extension is None:
+        raw_extension = prms.FileNames.raw_extension
+
+    if raw_extension is None:
+        raw_extension = prms.FileNames.raw_extension
+
+    if cellpy_file_extension is None:
+        cellpy_file_extension = prms.FileNames.cellpy_file_extension
+
+    # backward compatibility check
+    if cellpy_file_extension.startswith("."):
+        warnings.warn("Deprecation warning: cellpy_file_extension should not include the '.'")
+        cellpy_file_extension = cellpy_file_extension[1:]
+        warnings.warn(f"Removing it -> {cellpy_file_extension}")
+
     if raw_file_dir is None:
         raw_file_dir = prms.Paths.rawdatadir
+
+    if file_name_format is None:
+        file_name_format = prms.FileNames.file_name_format
 
     if not isinstance(raw_file_dir, (list, tuple)):
         raw_file_dir = [pathlib.Path(raw_file_dir)]
     else:
         raw_file_dir = [pathlib.Path(d) for d in raw_file_dir]
 
-    if reg_exp is not None:
+    if reg_exp:
+        logging.warning(f"Got reg_exp: {reg_exp}")
         logging.warning("Sorry, but using reg exp is not implemented yet.")
 
-    if raw_extension is None:
-        raw_extension = ".res"
-
-    if cellpy_file_extension is None:
-        cellpy_file_extension = ".h5"
-
     if prm_filename is not None:
-        logging.debug("reading prm file disabled")
+        logging.debug("Sorry, reading prm file is not implemented yet.")
 
     if cellpy_file_dir is None:
         cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
@@ -120,8 +136,13 @@ def search_for_files(
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
 
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
+        # backward compatibility check
+        if raw_extension.startswith("."):
+            warnings.warn("Deprecation warning: raw_extension should not include the '.'")
+            raw_extension = raw_extension[1:]
+            warnings.warn(f"Removing it -> {raw_extension}")
         # TODO: give warning/error-message if run_name contains more than one file (due to duplicate in db)
-        glob_text_raw = f"{run_name}*{raw_extension}"
+        glob_text_raw = f"{run_name}*.{raw_extension}"
     else:
         glob_text_raw = file_name_format
 
@@ -129,7 +150,7 @@ def search_for_files(
     logging.debug(f"searching for {run_name}")
     logging.debug(f"using glob {glob_text_raw}")
 
-    cellpy_file = f"{run_name}{cellpy_file_extension}"
+    cellpy_file = f"{run_name}.{cellpy_file_extension}"
     cellpy_file = cellpy_file_dir / cellpy_file
 
     logging.debug(f"generated cellpy filename {cellpy_file}")

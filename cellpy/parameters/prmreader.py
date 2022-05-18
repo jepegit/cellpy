@@ -13,6 +13,7 @@ from pprint import pprint
 import box
 import ruamel
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
@@ -72,7 +73,7 @@ def _write_prm_file(file_name=None):
             yaml.explicit_start = True
             yaml.explicit_end = True
             yaml.dump(config_dict, config_file)
-    except ruamel.yaml.YAMLError:
+    except YAMLError:
         raise ConfigFileNotWritten
 
 
@@ -82,8 +83,16 @@ def _update_prms(config_dict):
     for key in config_dict:
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
+            is_path = isinstance(_config_attr, prms.PathsClass)
             for k in config_dict[key]:
                 z = config_dict[key][k]
+                if is_path:
+                    _txt = f"{k}: {z}"
+                    if not k.lower() == "db_filename":  # special hack because it is a filename and not a path
+                        z = pathlib.Path(z).resolve()
+                    _txt += f" -> {z}"
+                    logging.debug("converting to pathlib.Path")
+                    logging.debug(_txt)
                 if isinstance(z, dict):
                     y = getattr(_config_attr, k)
                     z = box.Box({**y, **z})
@@ -115,12 +124,21 @@ def _convert_to_dict(x):
     return dictionary
 
 
+def _convert_paths_to_dict(x):
+    try:
+        dictionary = x.to_dict()
+    except AttributeError:
+        dictionary = asdict(x)
+    dictionary = {k: str(dictionary[k]) for k in dictionary}
+    return dictionary
+
+
 def _pack_prms():
     """if you introduce new 'save-able' parameter dictionaries, then you have
     to include them here"""
 
     config_dict = {
-        "Paths": _convert_to_dict(prms.Paths),
+        "Paths": _convert_paths_to_dict(prms.Paths),
         "FileNames": _convert_to_dict(prms.FileNames),
         "Db": _convert_to_dict(prms.Db),
         "DbCols": _convert_to_dict(prms.DbCols),
@@ -139,7 +157,7 @@ def _read_prm_file(prm_filename):
         with open(prm_filename, "r") as config_file:
             prm_dict = yaml.load(config_file)
 
-    except yaml.YAMLError as e:
+    except YAMLError as e:
         raise ConfigFileNotRead from e
     else:
         if isinstance(prm_dict, dict):
@@ -155,7 +173,7 @@ def _read_prm_file_without_updating(prm_filename):
         with open(prm_filename, "r") as config_file:
             prm_dict = yaml.load(config_file)
 
-    except yaml.YAMLError as e:
+    except YAMLError as e:
         raise ConfigFileNotRead from e
     return prm_dict
 
@@ -240,9 +258,9 @@ def _save_current_prms_to_user_dir():
 def info():
     """this function will show only the 'box'-type
     attributes and their content in the cellpy.prms module"""
-    print("convenience function for listing prms")
+    print("Convenience function for listing prms")
     print(prms.__name__)
-    print(f"prm file: {_get_prm_file()}")
+    print(f"prm file (for current user): {_get_prm_file()}")
     print()
 
     for key, current_object in prms.__dict__.items():

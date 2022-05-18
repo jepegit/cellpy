@@ -4,6 +4,7 @@ from abc import ABC
 import pytest
 from cellpy.readers.instruments.configurations import register_configuration_from_module
 from cellpy.readers.instruments.base import AutoLoader
+from cellpy.readers import core
 from cellpy import log, prms
 
 from . import instrument_configuration_module
@@ -82,4 +83,29 @@ def test_registering_module_post_processors():
     assert mloader.config_params.post_processors["replace"]["one"] == "two"
 
 
+def test_list_available_instruments():
+    pass
 
+
+@pytest.mark.parametrize('parameter, loader, expected', [
+    ("raw_ext", "arbin", "res"),
+    ("name", "arbin", "arbin_res"),
+    ("raw_ext", "arbin_sql", None),
+    ("name", "arbin_sql", "arbin_sql"),
+    ("raw_ext", "arbin_sql_csv", "csv"),
+    ("name", "arbin_sql_csv", "arbin_sql_csv"),
+    ("raw_ext", "arbin_sql_xlsx", "xlsx"),
+    ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
+    ("name", "custom", "custom"),
+    ("raw_ext", "custom", "*"),
+    ("name", "maccor_txt", "maccor_txt"),
+    ("raw_ext", "maccor_txt", "txt"),
+    ("name", "pec", "pec_csv"),
+    ("raw_ext", "pec", "csv"),
+    ("name", "biologics", "biologics_mpr"),
+    ("raw_ext", "biologics", "mpr"),
+    ("name", "old_custom", "old_custom"),
+    ("raw_ext", "old_custom", "*"),
+])
+def test_query_instrument(parameter, loader, expected):
+    assert core.query_instrument(parameter, loader) == expected

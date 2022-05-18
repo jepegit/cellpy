@@ -78,7 +78,7 @@ pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 module_logger = logging.getLogger(__name__)
 
 
-class CellpyData(object):
+class CellpyData:
     """Main class for working and storing data.
 
     This class is the main work-horse for cellpy where all the functions for
@@ -323,7 +323,7 @@ class CellpyData(object):
 
     @property
     def empty(self):
-        """gives False if the CellpyData object is empty (or un-functional)"""
+        """gives True if the CellpyData object is empty (or un-functional)"""
         return not self.check()
 
     @classmethod
@@ -500,6 +500,8 @@ class CellpyData(object):
             instrument = self.tester
 
         logging.debug(f"Setting instrument: {instrument}")
+
+        # TODO: refactor this (use __look_up_instrument etc from core)
 
         if instrument in ["arbin", "arbin_res"]:
             from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
@@ -1216,7 +1218,6 @@ class CellpyData(object):
         test = None
 
         logging.debug("start iterating through file(s)")
-        print(self.file_names)
 
         for f in self.file_names:
             logging.debug("loading raw file:")
@@ -1306,7 +1307,7 @@ class CellpyData(object):
         cells = None
         counter = 0
         logging.debug("start iterating through file(s)")
-
+        recalc = kwargs.pop("recalc", True)
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
@@ -1330,7 +1331,6 @@ class CellpyData(object):
                 # appending cell data file to existing
                 else:
                     logging.debug("continuing reading files...")
-                    recalc = kwargs.get("recalc", True)
                     _cells = self._append(cells[set_number], new_cells[set_number], recalc=recalc)
 
                     if not _cells:
@@ -2125,7 +2125,7 @@ class CellpyData(object):
             logging.debug("info about raw files missing")
         return fids, lengths
 
-    def merge(self, datasets=None, separate_datasets=False):
+    def merge(self, datasets=None, separate_datasets=False, **kwargs):
         """This function merges datasets into one set."""
 
         logging.info("Merging")
@@ -2144,7 +2144,7 @@ class CellpyData(object):
                     dataset = self.cells[dataset_number]
                     first = False
                 else:
-                    dataset = self._append(dataset, self.cells[dataset_number])
+                    dataset = self._append(dataset, self.cells[dataset_number], **kwargs)
                     for raw_data_file, file_size in zip(
                         self.cells[dataset_number].raw_data_files,
                         self.cells[dataset_number].raw_data_files_length,
@@ -2155,7 +2155,7 @@ class CellpyData(object):
             self.number_of_datasets = 1
         return self
 
-    def _append(self, t1, t2, merge_summary=True, merge_step_table=True, recalc=True):
+    def _append(self, t1, t2, merge_summary=False, merge_step_table=False, recalc=True):
         logging.debug(
             f"merging two datasets\n(merge summary = {merge_summary})\n"
             f"(merge step table = {merge_step_table})"
@@ -2173,7 +2173,6 @@ class CellpyData(object):
 
         cycle_index_header = self.headers_summary.cycle_index
         cell = t1
-
         if recalc:
             # finding diff of time
             start_time_1 = t1.start_datetime
@@ -2213,12 +2212,14 @@ class CellpyData(object):
             # mod test time for set 2
             test_time_header = self.headers_normal.test_time_txt
             t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
-
+        else:
+            logging.debug("not doing recalc")
         # merging
         logging.debug("performing concat")
         raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
         cell.raw = raw
         cell.no_cycles = max(raw[cycle_index_header])
+        step_table_made = False
 
         if merge_summary:
             # checking if we already have made a summary file of these datasets
@@ -3993,6 +3994,7 @@ class CellpyData(object):
         ignore_errors=True,
         dynamic=False,
         inter_cycle_shift=True,
+        interpolate_along_cap=False,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -4031,6 +4033,8 @@ class CellpyData(object):
                 [NOT IMPLEMENTED YET]
             inter_cycle_shift (bool): cumulative shifts between consecutive
                 cycles. Defaults to True.
+            interpolate_along_cap (bool): interpolate along capacity axis instead
+                of along the voltage axis. Defaults to False.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -4163,7 +4167,10 @@ class CellpyData(object):
                         logging.debug("no first charge step found")
 
                     # prev_end = np.amax(_last_step_c)
-                    prev_end = _last_step_c.iat[-1]
+                    if inter_cycle_shift:
+                        prev_end = _last_step_c.iat[-1]
+                    else:
+                        prev_end = 0.0
 
                 elif method == "forth-and-forth":
                     if _last_step_c is not None:
@@ -4176,6 +4183,10 @@ class CellpyData(object):
                         logging.debug("no first charge step found")
 
                 if return_dataframe:
+                    x_col = "voltage"
+                    y_col = "capacity"
+                    if interpolate_along_cap:
+                        x_col, y_col = y_col, x_col
 
                     try:
                         _first_df = pd.DataFrame(
@@ -4185,10 +4196,11 @@ class CellpyData(object):
                             }
                         )
                         if interpolated:
+
                             _first_df = interpolate_y_on_x(
                                 _first_df,
-                                y="capacity",
-                                x="voltage",
+                                y=y_col,
+                                x=x_col,
                                 dx=dx,
                                 number_of_points=number_of_points,
                                 direction=first_interpolation_direction,
@@ -4210,8 +4222,8 @@ class CellpyData(object):
                         if interpolated:
                             _last_df = interpolate_y_on_x(
                                 _last_df,
-                                y="capacity",
-                                x="voltage",
+                                y=y_col,
+                                x=x_col,
                                 dx=dx,
                                 number_of_points=number_of_points,
                                 direction=last_interpolation_direction,
@@ -4220,6 +4232,13 @@ class CellpyData(object):
                             _last_df = pd.concat([_last_df, _nan])
                         if categorical_column:
                             _last_df["direction"] = 1
+
+                        if interpolate_along_cap:
+                            if method == "forth":
+                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
+                            elif method == "back-and-forth":
+                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
+                                _last_df = _last_df.loc[::-1].reset_index(drop=True)
 
                     except AttributeError:
                         logging.info(f"Could not extract cycle {current_cycle}")
@@ -5589,7 +5608,7 @@ def get(
     Args:
         filename (str, os.PathLike, or list of raw-file names): path to file(s)
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
-        instrument (str): instrument to use (defaults to the one in your cellpy config file) (arbin_res, arbin_sql, arbin_sql_csv, arbin_sql_xlxs)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file)
         instrument_file (str or path): yaml file for custom file type
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
         logging_mode (str): "INFO" or "DEBUG"

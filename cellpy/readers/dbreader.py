@@ -16,7 +16,7 @@ from cellpy.parameters import prms
 # logger = logging.getLogger(__name__)
 
 
-class DbSheetCols(object):
+class DbSheetCols:
     def __init__(self, level=0):
         db_cols_from_prms = asdict(prms.DbCols)
         for table_key, values in db_cols_from_prms.items():
@@ -26,7 +26,7 @@ class DbSheetCols(object):
         return f"<DbCols: {self.__dict__}>"
 
 
-class Reader(object):
+class Reader:
     def __init__(
         self, db_file=None, db_datadir=None, db_datadir_processed=None, db_frame=None
     ):
@@ -90,6 +90,20 @@ class Reader(object):
         txt += "Reader.table.head():\n"
         txt += str(self.table.head())
         return txt
+
+    @staticmethod
+    def _parse_argument_str(argument_str: str) -> dict:
+        # the argument str must be on the form:
+        # "keyword-1=value-1;keyword-2=value2"
+
+        sep = ";"
+        parts = [part.strip() for part in argument_str.split(sep=sep)]
+        sep = "="
+        arguments = {}
+        for p in parts:
+            k, v = p.split(sep=sep)
+            arguments[k.strip()] = v.strip()
+        return arguments
 
     @staticmethod
     def _extract_date_from_cell_name(
@@ -401,6 +415,19 @@ class Reader(object):
     def get_areal_loading(self, serial_number):
         raise NotImplementedError
 
+    def get_args(self, serial_number: int) -> dict:
+        column_name = self.db_sheet_cols.argument
+        argument_str = self._pick_info(serial_number, column_name)
+        try:
+            argument = self._parse_argument_str(argument_str)
+        except Exception as e:
+            logging.warning(f"could not parse argument str:")
+            logging.warning(f"{argument_str}")
+            logging.warning(f"Error message: {e}")
+            return {}
+
+        return argument
+
     def get_mass(self, serial_number):
         column_name_mass = self.db_sheet_cols.active_material
         mass = self._pick_info(serial_number, column_name_mass)
@@ -426,13 +453,13 @@ class Reader(object):
     def get_all(self):
         return self.filter_by_col([self.db_sheet_cols.id, self.db_sheet_cols.exists])
 
-    def get_fileid(self, serialno, full_path=True):
+    def get_fileid(self, serial_number, full_path=True):
         column_name = self.db_sheet_cols.file_name_indicator
         if not full_path:
-            filename = self._pick_info(serialno, column_name)
+            filename = self._pick_info(serial_number, column_name)
         else:
             filename = os.path.join(
-                self.db_datadir_processed, self._pick_info(serialno, column_name)
+                self.db_datadir_processed, self._pick_info(serial_number, column_name)
             )
         return filename
 

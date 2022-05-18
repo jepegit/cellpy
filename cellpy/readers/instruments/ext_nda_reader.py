@@ -47,6 +47,14 @@ class NdaLoader(Loader):
         self.headers_global = self.get_headers_global()
         self.current_chunk = 0  # use this to set chunks to load
 
+    @staticmethod
+    def get_params(parameter=None):
+        params = dict()
+        params["raw_ext"] = "nda"
+        if parameter is not None:
+            return params[parameter]
+        return params
+
     def get_raw_units(self):
         """Include the settings for the units used by the instrument.
 

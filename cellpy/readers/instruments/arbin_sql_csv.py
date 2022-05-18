@@ -82,6 +82,8 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 
 class ArbinCsvLoader(Loader):
     """Class for loading arbin-data from MS SQL server."""
+    name = "arbin_sql_csv"
+    raw_ext = "csv"
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
@@ -94,13 +96,15 @@ class ArbinCsvLoader(Loader):
 
     @staticmethod
     def get_headers_normal():
-        """Defines the so-called normal column headings for Arbin SQL Server csv"""
+        """Defines the so-called normal column headings
+        for Arbin SQL Server csv"""
         # covered by cellpy at the moment
         return get_headers_normal()
 
     @staticmethod
     def get_headers_aux(df):
-        """Defines the so-called auxiliary table column headings for Arbin SQL Server csv"""
+        """Defines the so-called auxiliary table column headings
+        for Arbin SQL Server csv"""
         headers = HeaderDict()
         for col in df.columns:
             if col.startswith("Aux_"):

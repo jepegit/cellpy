@@ -11,6 +11,10 @@ unit_labels = {
     "temperature": "C",
 }
 
+file_info = {
+    "raw_extension": "txt"
+}
+
 # not observed yet
 incremental_unit_labels = {
     "dv_dt": f"{unit_labels['voltage']}/{unit_labels['time']}",

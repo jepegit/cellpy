@@ -588,9 +588,18 @@ class Batch:
 
         # Remark! Got an recursive error when running on mac.
         self.experiment.journal.to_file(to_project_folder=True, paginate=False)
-        logging.info("saving journal pages")
+        logging.info("saved journal pages to project folder")
         self.duplicate_journal(prms.Paths.batchfiledir)
-        logging.info("duplicating journal pages")
+        logging.info("duplicated journal pages to batch dir")
+        self.duplicate_journal()
+        logging.info("duplicated journal pages to current dir")
+
+    def export_journal(self, filename=None) -> None:
+        """Export the journal to xlsx."""
+        if filename is None:
+            filename = self.experiment.journal.file_name
+        filename = pathlib.Path(filename).with_suffix(".xlsx")
+        self.experiment.journal.to_file(file_name=filename, to_project_folder=False, paginate=False)
 
     def duplicate_journal(self, folder=None) -> None:
         """Copy the journal to folder.
@@ -707,7 +716,30 @@ class Batch:
         self.experiment.update()
 
     def update(self, **kwargs) -> None:
-        """Load cells as defined in the journal"""
+        """Updates the selected datasets.
+
+        Args:
+            all_in_memory (bool): store the `cellpydata` in memory (default
+                False)
+            cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
+                dictionary will override the **kwargs and the parameters from the journal pages
+                for the indicated cell.
+
+        kwargs:
+            transferred all the way to the instrument loader, if not
+            picked up earlier. Remark that you can obtain the same pr. cell by
+            providing a `cellspecs` dictionary. The kwargs have precedence over the
+            parameters given in the journal pages, but will be overridden by parameters
+            given by `cellspecs`.
+
+            Merging:
+                recalc (Bool): set to False if you don't want automatic "recalc" of
+                    cycle numbers etc. when merging several data-sets.
+            Loading:
+                selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
+                loading from raw is not necessary (or turned off).
+
+                """
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
 

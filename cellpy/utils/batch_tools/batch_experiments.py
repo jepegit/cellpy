@@ -4,6 +4,7 @@ import pathlib
 import sys
 import warnings
 
+import pandas as pd
 from tqdm.auto import tqdm
 
 from cellpy import prms
@@ -82,15 +83,56 @@ class CyclingExperiment(BaseExperiment):
 
         self.selected_summaries = None
 
-    def update(self, all_in_memory=None, **kwargs):
+    @staticmethod
+    def _get_cell_spec_from_page(indx: int, row: pd.Series) -> dict:
+        # Edit this if we decide to make "argument families", e.g. loader_split or merger_recalc.
+        logging.debug(f"getting cell_spec from journal pages ({indx}: {row})")
+        try:
+            cell_spec = row[hdr_journal.argument]
+            logging.debug(cell_spec)
+            if not isinstance(cell_spec, dict):
+                raise TypeError("the cell spec argument is not a dictionary")
+        except Exception as e:
+            logging.warning(f"could not get cell spec for {indx}")
+            logging.warning(f"row: {row}")
+            logging.warning(f"error message: {e}")
+            return {}
+
+        # converting from str if needed
+        for spec in cell_spec:
+
+            if isinstance(cell_spec[spec], str):
+                if cell_spec[spec].lower() == "true":
+                    cell_spec[spec] = True
+                elif cell_spec[spec].lower() == "false":
+                    cell_spec[spec] = False
+                elif cell_spec[spec].lower() == "none":
+                    cell_spec[spec] = None
+        return cell_spec
+
+    def update(self, all_in_memory=None, cell_specs=None, **kwargs):
         """Updates the selected datasets.
 
         Args:
-            all_in_memory (bool): store the cellpydata in memory (default
+            all_in_memory (bool): store the `cellpydata` in memory (default
                 False)
+            cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
+                dictionary will override the **kwargs and the parameters from the journal pages
+                for the indicated cell.
 
             kwargs:
-                instrument (str):
+                transferred all the way to the instrument loader, if not
+                picked up earlier. Remark that you can obtain the same pr. cell by
+                providing a `cellspecs` dictionary. The kwargs have precedence over the
+                parameters given in the journal pages, but will be overridden by parameters
+                given by `cellspecs`.
+
+                Merging:
+                    recalc (Bool): set to False if you don't want automatic "recalc" of
+                        cycle numbers etc. when merging several data-sets.
+                Loading:
+                    selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
+                    loading from raw is not necessary (or turned off).
 
         """
 
@@ -142,6 +184,18 @@ class CyclingExperiment(BaseExperiment):
             h_txt = f"{indx}"
             n_txt = f"loading {counter}"
             l_txt = f"starting to process file # {counter} ({indx})"
+
+            # TO BE IMPLEMENTED (parameters already in the journal pages):
+            cell_spec_page = self._get_cell_spec_from_page(indx, row)
+
+            if cell_specs is not None:
+                cell_spec = cell_specs.get(indx, dict())
+            else:
+                cell_spec = dict()
+
+            cell_spec = {**cell_spec_page, **kwargs, **cell_spec}
+
+            l_txt += f" cell_spec: {cell_spec}"
             logging.debug(l_txt)
             pbar.set_description(n_txt)
             pbar.set_postfix_str(s=h_txt, refresh=True)
@@ -181,7 +235,7 @@ class CyclingExperiment(BaseExperiment):
                         cell_type=row[hdr_journal.cell_type],
                         instrument=row[hdr_journal.instrument],
                         selector=selector,
-                        **kwargs,
+                        **cell_spec,
                     )
 
                 except Exception as e:

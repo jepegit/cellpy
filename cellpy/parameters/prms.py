@@ -53,6 +53,12 @@ Paths = PathsClass()
 @dataclass
 class FileNamesClass(CellPyConfig):
     file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
+    raw_extension: str = "res"
+    reg_exp: str = None
+    file_list_location: str = None
+    file_list_type: str = None
+    file_list_name: str = None
+    cellpy_file_extension: str = "h5"
 
 
 FileNames = FileNamesClass()
@@ -139,6 +145,7 @@ class DbColsClass(CellPyConfig):
     comment_cell: Tuple[str, str] = ("comment_cell", "str")
     comment_general: Tuple[str, str] = ("comment_general", "str")
     freeze: Tuple[str, str] = ("freeze", "bol")
+    argument: Tuple[str, str] = ("argument", "str")  # e.g. 'max_cycle:100;recalc:false'
 
 
 DbCols = DbColsClass()

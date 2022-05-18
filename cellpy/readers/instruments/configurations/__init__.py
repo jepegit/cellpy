@@ -8,10 +8,12 @@ from ruamel import yaml
 # TODO: make tests.
 # TODO: move this into its own module (not __init__).
 # TODO: document for devs.
-# TODO: Bonus - make a python package/pre-commit hook that turns TODO-statements into issues.
+# TODO: Bonus - make a python package/pre-commit hook that
+# turns TODO-statements into issues.
 
 HARD_CODED_MODULE_PATH = "cellpy.readers.instruments.configurations"
 OPTIONAL_DICTIONARY_ATTRIBUTE_NAMES = [
+    "file_info",
     "formatters",
     "prefixes",
     "pre_processors",
@@ -50,6 +52,7 @@ class ModelParameters:
     # The unit labels are only used when generating new headers
     # (normal_headers_renaming_dict)
     # with units (post_processor: get_column_names):
+    file_info: dict = field(default_factory=dict)
     unit_labels: dict = field(default_factory=dict)
     incremental_unit_labels: dict = field(default_factory=dict)
 
@@ -99,6 +102,7 @@ def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
 
     model_01 = ModelParameters(
         name=name,
+        file_info=optional_dictionary_attributes["file_info"],
         normal_headers_renaming_dict=settings["normal_headers_renaming_dict"],
         unit_labels=optional_dictionary_attributes["unit_labels"],
         prefixes=optional_dictionary_attributes["prefixes"],
@@ -154,6 +158,7 @@ def register_configuration_from_module(
 
     return ModelParameters(
         name=name,
+        file_info=optional_dictionary_attributes["file_info"],
         normal_headers_renaming_dict=_m.normal_headers_renaming_dict,
         unit_labels=optional_dictionary_attributes["unit_labels"],
         prefixes=optional_dictionary_attributes["prefixes"],

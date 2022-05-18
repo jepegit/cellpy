@@ -85,6 +85,8 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 
 class ArbinXLSXLoader(Loader):
     """Class for loading arbin-data from MS SQL server."""
+    name = "arbin_sql_xlsx"
+    raw_ext = "xlsx"
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
@@ -150,9 +152,7 @@ class ArbinXLSXLoader(Loader):
             new_tests (list of data objects)
         """
         new_tests = []
-
         data_df = self._parse_xlsx_data(name)
-
         data = Cell()
 
         # metadata is unfortunately not available for csv dumps
@@ -232,6 +232,7 @@ class ArbinXLSXLoader(Loader):
     def _parse_xlsx_data(self, file_name):
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
         sheet_name = self._get_sheet_name(file_name)
+        file_name = pathlib.Path(file_name)
         raw_frame = pd.read_excel(
             file_name, engine="openpyxl", sheet_name=None, parse_dates=[date_time_col]
         )  # TODO: replace this with pd.ExcelReader
@@ -239,6 +240,8 @@ class ArbinXLSXLoader(Loader):
 
         if matching:
             return raw_frame[matching[0]]
+        else:
+            return raw_frame[raw_frame.keys()[0]]
 
 
 if __name__ == "__main__":

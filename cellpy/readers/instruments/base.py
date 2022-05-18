@@ -169,11 +169,13 @@ def query_csv(
 
 class AtomicLoad:
     """Atomic loading class"""
+    name = "atomic_loader"
     pass
 
 
 class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
+    name = "base_loader"
 
     # TODO: should also include the functions for getting cellpy headers etc
     #  here
@@ -205,6 +207,18 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
 
         """
         raise NotImplementedError
+
+    @classmethod
+    def get_params(cls, parameter: Union[str, None]) -> dict:
+        """Retrieves parameters needed for facilitating working with the
+        instrument without registering it.
+
+        Typically, it should include the name and raw_ext.
+
+        Return: parameters or a selected parameter
+        """
+
+        return getattr(cls, parameter)
 
     @abc.abstractmethod
     def loader(self, *args, **kwargs) -> list:
@@ -246,6 +260,7 @@ class AutoLoader(Loader):
     provided in the CONFIGURATION_MODULE.py located in the cellpy.readers.instruments.configurations folder/package.
 
     """
+    name = "auto_loader"
 
     def __init__(self, *args, **kwargs):
         """Attributes can be set during initialization of the class as **kwargs that are then handled by the
@@ -445,30 +460,6 @@ class AutoLoader(Loader):
         )
         return dict()
 
-    # copy-paste from custom loader in an effort to combine the classes
-    # def _parse_xls_data(self, file_name):
-    #     sheet_name = self.structure["table_name"]
-    #
-    #     raw_frame = pd.read_excel(
-    #         file_name, engine="xlrd", sheet_name=None
-    #     )  # TODO: replace this with pd.ExcelReader
-    #     matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
-    #     if matching:
-    #         return raw_frame[matching[0]]
-    #
-    # def _parse_xlsx_data(self, file_name):
-    #     sheet_name = self.structure["table_name"]
-    #     raw_frame = pd.read_excel(
-    #         file_name, engine="openpyxl", sheet_name=None
-    #     )  # TODO: replace this with pd.ExcelReader
-    #     matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
-    #     if matching:
-    #         return raw_frame[matching[0]]
-    #
-    # def _parse_csv_data(self, file_name, sep, header_row):
-    #     raw = pd.read_csv(file_name, sep=sep, header=header_row, skip_blank_lines=False)
-    #     return raw
-
     def _post_rename_headers(self, data):
         if self.include_aux:
             new_aux_headers = self.get_headers_aux(data.raw)
@@ -534,6 +525,9 @@ class TxtLoader(AutoLoader, ABC):
             start of data (skiprows)).
 
         """
+
+    name = "txt_loader"
+    raw_ext = "*"
 
     # override this if needed
     def parse_loader_parameters(self, **kwargs):
