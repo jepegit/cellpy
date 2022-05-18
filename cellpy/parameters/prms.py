@@ -9,8 +9,9 @@ from typing import List, Tuple, Union
 import box
 
 # When adding prms, please
-#   1) check / update the internal_settings.py file as well to ensure that copying / splitting cellpy objects
-#   behaves properly.
+#   1) check / update the internal_settings.py file as well to
+#      ensure that copying / splitting cellpy objects
+#      behaves properly.
 #   2) check / update the .cellpy_prms_default.conf file
 
 # locations etc. for reading custom parameters
