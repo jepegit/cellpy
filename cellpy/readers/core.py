@@ -425,6 +425,11 @@ def register_instruments():
         factory.register_builder(instrument_id, instrument)
 
 
+def _extract_loader_class_from_module(module):
+    # insert some magic here (find sub-class of BaseLoader)
+    return module
+
+
 def find_all_instruments():
     # Example for future use.
     # Keeping imports here so that it will simplify future
@@ -433,6 +438,18 @@ def find_all_instruments():
     # get appropriate names of the different loaders. Or maybe
     # tweak the base loader etc so that it can get the appropriate
     # name from foo.__name__.
+
+    # This function is not ready for use yet. One important part
+    # still missing is to find the actual class inside the module
+    # (the .py file) that should be loaded. It is probably not
+    # very difficult to implement (since it is a subclass of BaseLoader).
+
+    # Another missing part is how to find externally installed loaders
+    # (plugins). Of obvious reasons; plugins are not supported yet.
+
+    # Also, need to properly utilise and propagate the instrument loader
+    # names etc (using query_instrument).
+
     from importlib.machinery import SourceFileLoader
     import cellpy.readers.instruments.configurations as site_1
     import cellpy.readers.instruments as site_2
@@ -450,8 +467,10 @@ def find_all_instruments():
     for module in modules_in_site_1:
         module_name = module.name.rstrip(".py")
         foo = SourceFileLoader(module_name, str(module)).load_module()
-        instruments[foo.__name__] = foo
-        logging.debug(foo.__name__)
+        instrument_name = foo.__name__
+        instrument_class = _extract_loader_class_from_module(foo)
+        instruments[instrument_name] = instrument_class
+        logging.debug(instrument_name)
 
     logging.debug("Searching for modules in base instrument folder:")
 
@@ -470,8 +489,10 @@ def find_all_instruments():
     for module in modules_in_site_2:
         module_name = module.name.rstrip(".py")
         foo = SourceFileLoader(module_name, str(module)).load_module()
-        logging.debug(foo.__name__)
-        instruments[foo.__name__] = foo
+        instrument_name = foo.__name__
+        instrument_class = _extract_loader_class_from_module(foo)
+        instruments[instrument_name] = instrument_class
+        logging.debug(instrument_name)
 
     logging.debug("Searching for module configurations "
                   "in user instrument folder:")

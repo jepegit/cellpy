@@ -2,6 +2,13 @@
 If no `instrument_file` is given (either directly or through the use
 of the :: separator), the default instrument file (yaml) will be used."""
 
+# This module works, but is by no means finished. The module is meant to
+# be developed further allowing for example
+# to provide custom parsers. At the moment, we anticipate that it only should
+# work with txt-files (so the class is called CustomTxtLoader), however, it is
+# possible to extend the scope to allow for providing parsers that also can read
+# binary files. The future will show.
+
 import logging
 import sys
 from abc import ABC
@@ -14,17 +21,6 @@ from cellpy.readers.instruments.base import find_delimiter_and_start, AutoLoader
 from cellpy.readers.instruments.configurations import (
     register_local_configuration_from_yaml_file,
 )
-
-
-# TODO:
-#  1. fix tests
-#  2. implement from old custom
-#  3. check with round robin data
-#  4. check units vs raw_units [DONE]
-#  5. update method for generating column headers from units etc (postprocessor)
-#  6. check if it is possible to use CustomTxtLoader for loading
-#     arbin txt files.
-#  7. implement registering plug-ins and loaders
 
 
 class CustomTxtLoader(AutoLoader, ABC):
@@ -70,7 +66,6 @@ class CustomTxtLoader(AutoLoader, ABC):
             self._auto_formatter()
 
     def _config_sub_parser(self, key_label, default_value=None, **kwargs):
-        # ternary lookup (kwarg or config_param.formatter-value or default value)
         return kwargs.pop(key_label, self.config_params.formatters.get(key_label, default_value))
 
     # TODO: rewrite this:

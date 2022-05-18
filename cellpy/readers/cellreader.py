@@ -323,7 +323,7 @@ class CellpyData:
 
     @property
     def empty(self):
-        """gives False if the CellpyData object is empty (or un-functional)"""
+        """gives True if the CellpyData object is empty (or un-functional)"""
         return not self.check()
 
     @classmethod

@@ -98,33 +98,14 @@ def test_list_available_instruments():
     ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
     ("name", "custom", "custom"),
     ("raw_ext", "custom", "*"),
+    ("name", "maccor_txt", "maccor_txt"),
+    ("raw_ext", "maccor_txt", "txt"),
+    ("name", "pec", "pec_csv"),
+    ("raw_ext", "pec", "csv"),
+    ("name", "biologics", "biologics_mpr"),
+    ("raw_ext", "biologics", "mpr"),
+    ("name", "old_custom", "old_custom"),
+    ("raw_ext", "old_custom", "*"),
 ])
 def test_query_instrument(parameter, loader, expected):
-    # missing several assert statements here - should fix it later
-    # when proper factory pattern is implemented
-    raw_ext = core.query_instrument(parameter, loader)
-    assert raw_ext == expected
-
-#
-# def test_query_instrument2():
-#     # missing several assert statements here - should fix it later
-#     # when proper factory pattern is implemented
-#     name = core.query_instrument("name", "arbin_sql")
-#     raw_ext = core.query_instrument("raw_ext", "arbin")
-#     assert raw_ext == "res"
-#     something = core.query_instrument("something", "arbin")
-#     assert something is None
-#     raw_ext = core.query_instrument("raw_ext", "arbin_sql")
-#     raw_ext = core.query_instrument("raw_ext", "arbin_sql_csv")
-#     assert raw_ext == "csv"
-#     raw_ext = core.query_instrument("raw_ext", "arbin_sql_xlsx")
-#     assert raw_ext == "xlsx"
-#     raw_ext = core.query_instrument("name", "arbin_sql_xlsx")
-#     raw_ext = core.query_instrument("raw_ext", "maccor_txt")
-#     raw_ext = core.query_instrument("raw_ext", "pec")
-#     raw_ext = core.query_instrument("raw_ext", "custom")
-#     raw_ext = core.query_instrument("raw_ext", "biologics")
-#     raw_ext = core.query_instrument("raw_ext", "old_custom")
-#     raw_ext = core.query_instrument("raw_ext", "my-instrument.yml")
-
-
+    assert core.query_instrument(parameter, loader) == expected

@@ -107,7 +107,8 @@ class CustomLoader(Loader):
 
     [doc not finished yet]
     """
-    name = "custom_old"
+    name = "old_custom"
+    raw_ext = "*"
 
     def __init__(self, *args, **kwargs):
         """initiates the class"""
