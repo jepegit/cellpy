@@ -341,7 +341,7 @@ class ArbinSQLLoader(Loader):
 
         return data
 
-    def _query_sql(self, name, ):
+    def _query_sql(self, name):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = (
