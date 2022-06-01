@@ -169,6 +169,8 @@ class ArbinLoader(Loader):
         SQL_server
 
     """
+    name = "arbin_res"
+    raw_ext = "res"
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinLoader class"""
@@ -176,6 +178,7 @@ class ArbinLoader(Loader):
         # set self.logger = cellpydata_object.logger etc.
         # then remember to include that as prm in "out of class" functions
         # self.prms = prms
+        self.raw_ext = "res"
         self.logger = logging.getLogger(__name__)
         # use the following prm to limit to loading only
         # one cycle or from cycle>x to cycle<x+n

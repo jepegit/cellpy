@@ -78,7 +78,7 @@ pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 module_logger = logging.getLogger(__name__)
 
 
-class CellpyData(object):
+class CellpyData:
     """Main class for working and storing data.
 
     This class is the main work-horse for cellpy where all the functions for
@@ -286,6 +286,7 @@ class CellpyData(object):
         self.headers_step_table = headers_step_table
 
         self.table_names = None  # dictionary defined in set_instruments
+        self.__register_external_readers()
         self.set_instrument()
 
         # - units used by cellpy
@@ -322,7 +323,7 @@ class CellpyData(object):
 
     @property
     def empty(self):
-        """gives False if the CellpyData object is empty (or un-functional)"""
+        """gives True if the CellpyData object is empty (or un-functional)"""
         return not self.check()
 
     @classmethod
@@ -447,8 +448,13 @@ class CellpyData(object):
         cells.append(old_cell)
         return cells
 
-    # TODO: @jepe - merge the _set_xxinstrument methods into one method
-    def set_instrument(self, instrument=None, instrument_file=None, **kwargs):
+    def __register_external_readers(self):
+        logging.debug("Not implemented yet. Should allow registering readers "
+                      "for example installed as plug-ins.")
+        self.__external_readers = dict()
+        return
+
+    def set_instrument(self, instrument=None, instrument_file=None, reload_external_readers=False, **kwargs):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Three different modes of setting instruments are currently supported. You can
@@ -467,10 +473,13 @@ class CellpyData(object):
                 if instrument is "my_instrument.yml", cellpy will look into the local
                 instruments folders for a file called "my_instrument.yml" and then
                 use LocalTxtLoader to load after registering the instrument. If the instrument
-                name contains a '::' seperator, the part after the seperator will be interpreted
+                name contains a '::' separator, the part after the separator will be interpreted
                 as 'instrument_file'.
             instrument_file: (path) instrument definition file (uses currently the old "custom"
                 instrument format)
+            reload_external_readers (bool): Set True if you want to search for external reader plugins.
+                This is typically not needed, as ``cellpy`` automatically does it when the ``CellpyData``
+                object is created.
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
@@ -479,33 +488,20 @@ class CellpyData(object):
         """
 
         custom_instrument_splitter = "::"
+        maccor_model_splitter = "::"
 
         _override_local_instrument_path = kwargs.pop(
             "_override_local_instrument_path", False
         )
+        if reload_external_readers:
+            self.__register_external_readers()
 
         if instrument is None:
             instrument = self.tester
 
         logging.debug(f"Setting instrument: {instrument}")
-        if instrument.endswith(".yml"):
-            if _override_local_instrument_path:
-                instrument = Path(instrument)
-            else:
-                instrument = Path(prms.Paths.instrumentdir) / instrument
-            if instrument.is_file():
-                from cellpy.readers.instruments.local_instrument import (
-                    LocalTxtLoader as RawLoader,
-                )
 
-                self._set_instrument(RawLoader, local_instrument_file=instrument)
-                self.tester = instrument
-                return
-
-            else:
-                raise Exception(
-                    f"The needed instrument file does not exist: '{instrument}'"
-                )
+        # TODO: refactor this (use __look_up_instrument etc from core)
 
         if instrument in ["arbin", "arbin_res"]:
             from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
@@ -529,6 +525,15 @@ class CellpyData(object):
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "arbin_sql_csv"
 
+        elif instrument == "arbin_sql_xlsx":
+            from cellpy.readers.instruments.arbin_sql_xlsx import (
+                ArbinXLSXLoader as RawLoader,
+            )
+
+            logging.warning(f"{instrument} is experimental! Not ready for production!")
+            self._set_instrument(RawLoader, **kwargs)
+            self.tester = "arbin_sql_xlsx"
+
         elif instrument in ["pec", "pec_csv"]:
             logging.warning("Experimental! Not ready for production!")
             from cellpy.readers.instruments.pec import PECLoader as RawLoader
@@ -549,11 +554,57 @@ class CellpyData(object):
             )
 
             logging.warning("Experimental! Not ready for production!")
-            self._set_instrument(RawLoader, **kwargs)
+            model = kwargs.pop("model", None)
+            if not model:
+                _model = instrument.split(maccor_model_splitter)
+                try:
+                    model = _model[1]
+                    logging.debug(
+                        f"provided model through instrument splitter: {model}"
+                    )
+                except IndexError:
+                    logging.debug("no model provided")
+                    logging.debug(instrument)
+                    model = None
+            self._set_instrument(RawLoader, model=model, **kwargs)
             self.tester = "maccor"
 
+        # new custom loader:
         elif instrument.startswith("custom"):
+            logging.debug(" --> NEW CUSTOM LOADER")
+            from cellpy.readers.instruments.custom_instrument import (
+                CustomTxtLoader as RawLoader,
+            )
+            model = kwargs.pop("model", None)
+            if model:
+                logging.debug("the model key word is not "
+                              "supported for custom loader - removing it")
+            logging.warning("Experimental! Not ready for production!")
             logging.debug(f"using custom instrument: {instrument}")
+            if not instrument_file:
+                _instrument = instrument.split(custom_instrument_splitter)
+                try:
+                    instrument_file = _instrument[1]
+                    logging.debug(
+                        f"provided instrument file through instrument splitter: {instrument_file}"
+                    )
+
+                except IndexError:
+                    logging.debug("no definition file provided")
+                    logging.debug(instrument)
+                    instrument_file = None
+
+            self._set_instrument(RawLoader, instrument_file=instrument_file, **kwargs)
+            self.tester = "custom"
+
+        # old custom loader:
+        elif instrument.startswith("old_custom"):
+            print("OLD CUSTOM LOADER")
+            logging.debug(f"using custom instrument: {instrument}")
+            model = kwargs.pop("model", None)
+            if model:
+                logging.debug(f"the model key word is not "
+                              f"supported for custom loader - removing it")
             if not instrument_file:
                 _instrument = instrument.split(custom_instrument_splitter)
                 try:
@@ -574,12 +625,45 @@ class CellpyData(object):
             from cellpy.readers.instruments.custom import CustomLoader as RawLoader
 
             self._set_instrument(RawLoader, **kwargs)
-            self.tester = "custom"
+            self.tester = "old_custom"
+
+        elif instrument.endswith(".yml"):
+            if _override_local_instrument_path:
+                instrument = Path(instrument)
+            else:
+                instrument = Path(prms.Paths.instrumentdir) / instrument
+            if instrument.is_file():
+                from cellpy.readers.instruments.local_instrument import (
+                    LocalTxtLoader as RawLoader,
+                )
+
+                self._set_instrument(RawLoader, local_instrument_file=instrument)
+                self.tester = instrument
+                return
+
+            else:
+                raise Exception(
+                    f"The needed instrument file does not exist: '{instrument}'"
+                )
+
+        elif instrument in self.__external_readers.keys():
+            logging.debug(f"Using plug-in reader")
+            logging.debug(f"Unfortunately, not implemented yet!")
+            # RawLoader = self.__external_readers[instrument]
+            # self._set_instrument(RawLoader, is_external=True, **kwargs)
+            raise Exception(f"...so this option does not exist: '{instrument}'")
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")
 
-    def _set_instrument(self, loader_class, **kwargs):
+    def _set_instrument(self, loader_class, is_external=False, **kwargs):
+        if is_external:
+            logging.info(f"Using external reader plug-in ({repr(loader_class)})")
+            try:
+                logging.info(f"{loader_class.__doc__}")
+            except AttributeError:
+                logging.debug("No documentation found for this loader.")
+
         self.loader_class = loader_class(**kwargs)
         # ----- get information --------------------------
         # TODO: move this out of _set_instrument so that we can modify
@@ -960,6 +1044,7 @@ class CellpyData(object):
         use_cellpy_stat_file=None,
         nom_cap=None,
         selector=None,
+        **kwargs,
     ):
 
         logging.info("Started cellpy.cellreader.loadcell")
@@ -973,7 +1058,7 @@ class CellpyData(object):
 
         if similar is None:
             # forcing to load only raw_files
-            self.from_raw(raw_files)
+            self.from_raw(raw_files, **kwargs)
             if self.status_datasets:
                 if mass:
                     self.set_mass(mass)
@@ -1133,7 +1218,6 @@ class CellpyData(object):
         test = None
 
         logging.debug("start iterating through file(s)")
-        print(self.file_names)
 
         for f in self.file_names:
             logging.debug("loading raw file:")
@@ -1176,7 +1260,12 @@ class CellpyData(object):
                 runs will be merged together.
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
-                cellpy.dataset object after initial loading.
+                cellpy.Dataset object after initial loading.
+
+        Keyword Args for merging:
+            recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
+                and time (e.g. add last cycle number from previous file to the cycle numbers
+                in the next file).
 
         Other keywords depending on loader:
             [ArbinLoader]:
@@ -1218,7 +1307,7 @@ class CellpyData(object):
         cells = None
         counter = 0
         logging.debug("start iterating through file(s)")
-
+        recalc = kwargs.pop("recalc", True)
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
@@ -1242,7 +1331,7 @@ class CellpyData(object):
                 # appending cell data file to existing
                 else:
                     logging.debug("continuing reading files...")
-                    _cells = self._append(cells[set_number], new_cells[set_number])
+                    _cells = self._append(cells[set_number], new_cells[set_number], recalc=recalc)
 
                     if not _cells:
                         logging.warning(f"NO CELLS FOUND: {file_name}")
@@ -1259,8 +1348,8 @@ class CellpyData(object):
                     logging.debug("added the data set - merging file info")
                     # TODO: include this into prms (and config-file):
                     max_raw_files_to_merge = 20
-                    for j in range(len(new_cells[set_number].raw_data_files)):
-                        raw_data_file = new_cells[set_number].raw_data_files[j]
+                    # TODO: legacy code - please fix me
+                    for j, raw_data_file in enumerate(new_cells[set_number].raw_data_files):
                         file_size = new_cells[set_number].raw_data_files_length[j]
                         cells[set_number].raw_data_files.append(raw_data_file)
                         cells[set_number].raw_data_files_length.append(file_size)
@@ -1990,7 +2079,7 @@ class CellpyData(object):
                     fidtable["raw_data_last_modified"].append(fid.last_modified)
                     fidtable["raw_data_last_accessed"].append(fid.last_accessed)
                     fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-                except:
+                except Exception:
                     logging.debug("this is probably not from a file")
                     fidtable["raw_data_name"].append("db")
                     fidtable["raw_data_full_name"].append("db")
@@ -2036,7 +2125,7 @@ class CellpyData(object):
             logging.debug("info about raw files missing")
         return fids, lengths
 
-    def merge(self, datasets=None, separate_datasets=False):
+    def merge(self, datasets=None, separate_datasets=False, **kwargs):
         """This function merges datasets into one set."""
 
         logging.info("Merging")
@@ -2055,7 +2144,7 @@ class CellpyData(object):
                     dataset = self.cells[dataset_number]
                     first = False
                 else:
-                    dataset = self._append(dataset, self.cells[dataset_number])
+                    dataset = self._append(dataset, self.cells[dataset_number], **kwargs)
                     for raw_data_file, file_size in zip(
                         self.cells[dataset_number].raw_data_files,
                         self.cells[dataset_number].raw_data_files_length,
@@ -2066,62 +2155,73 @@ class CellpyData(object):
             self.number_of_datasets = 1
         return self
 
-    def _append(self, t1, t2, merge_summary=True, merge_step_table=True):
+    def _append(self, t1, t2, merge_summary=False, merge_step_table=False, recalc=True):
         logging.debug(
             f"merging two datasets\n(merge summary = {merge_summary})\n"
             f"(merge step table = {merge_step_table})"
         )
         if t1.raw.empty:
             logging.debug("OBS! the first dataset is empty")
+            logging.debug(" -> merged contains only second")
+            return t2
 
         if t2.raw.empty:
             t1.merged = True
-            logging.debug("the second dataset was empty")
+            logging.debug("OBS! the second dataset was empty")
             logging.debug(" -> merged contains only first")
             return t1
-        test = t1
-        # finding diff of time
-        start_time_1 = t1.start_datetime
-        start_time_2 = t2.start_datetime
-        if self.tester in ["arbin", "arbin_res"]:
-            diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
-                start_time_1
-            )
-        else:
-            diff_time = start_time_2 - start_time_1
-        diff_time = diff_time.total_seconds()
 
-        if diff_time < 0:
-            logging.warning("Wow! your new dataset is older than the old!")
-        logging.debug(f"diff time: {diff_time}")
-
-        sort_key = self.headers_normal.datetime_txt  # DateTime
-        # mod data points for set 2
-        data_point_header = self.headers_normal.data_point_txt
-        try:
-            last_data_point = max(t1.raw[data_point_header])
-        except ValueError:
-            logging.debug("ValueError when getting last data point for r1")
-            last_data_point = 0
-
-        t2.raw[data_point_header] = t2.raw[data_point_header] + last_data_point
-        logging.debug("No error getting last data point for r2")
-        # mod cycle index for set 2
         cycle_index_header = self.headers_summary.cycle_index
-        try:
-            last_cycle = max(t1.raw[cycle_index_header])
-        except ValueError:
-            logging.debug("ValueError when getting last cycle index for r1")
-            last_cycle = 0
-        t2.raw[cycle_index_header] = t2.raw[cycle_index_header] + last_cycle
-        # mod test time for set 2
-        test_time_header = self.headers_normal.test_time_txt
-        t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
-        # merging
-        if not t1.raw.empty:
-            logging.debug("r1 is not empty - performing concat")
-            raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
+        cell = t1
+        if recalc:
+            # finding diff of time
+            start_time_1 = t1.start_datetime
+            start_time_2 = t2.start_datetime
 
+            if self.tester in ["arbin", "arbin_res"]:
+                diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
+                    start_time_1
+                )
+            else:
+                diff_time = start_time_2 - start_time_1
+            diff_time = diff_time.total_seconds()
+
+            if diff_time < 0:
+                logging.warning("Wow! your new dataset is older than the old!")
+            logging.debug(f"diff time: {diff_time}")
+
+            sort_key = self.headers_normal.datetime_txt  # DateTime
+            # mod data points for set 2
+            data_point_header = self.headers_normal.data_point_txt
+            try:
+                last_data_point = max(t1.raw[data_point_header])
+            except ValueError:
+                logging.debug("ValueError when getting last data point for r1")
+                last_data_point = 0
+
+            t2.raw[data_point_header] = t2.raw[data_point_header] + last_data_point
+            logging.debug("No error getting last data point for r2")
+            # mod cycle index for set 2
+
+            try:
+                last_cycle = max(t1.raw[cycle_index_header])
+            except ValueError:
+                logging.debug("ValueError when getting last cycle index for r1")
+                last_cycle = 0
+            t2.raw[cycle_index_header] = t2.raw[cycle_index_header] + last_cycle
+            # mod test time for set 2
+            test_time_header = self.headers_normal.test_time_txt
+            t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
+        else:
+            logging.debug("not doing recalc")
+        # merging
+        logging.debug("performing concat")
+        raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
+        cell.raw = raw
+        cell.no_cycles = max(raw[cycle_index_header])
+        step_table_made = False
+
+        if merge_summary:
             # checking if we already have made a summary file of these datasets
             # (to be used if merging summaries (but not properly implemented yet))
             if t1.summary.empty or t2.summary.empty:
@@ -2146,28 +2246,28 @@ class CellpyData(object):
             else:
                 step_table_made = False
 
-            if merge_summary and summary_made:
+            if summary_made:
                 # check if (self-made) summary exists.
                 logging.debug("merge summaries")
+                if recalc:
+                    # This part of the code is seldom ran. Careful!
+                    # mod cycle index for set 2
+                    last_cycle = max(t1.summary[cycle_index_header])
+                    t2.summary[cycle_index_header] = (
+                        t2.summary[cycle_index_header] + last_cycle
+                    )
+                    # mod test time for set 2
+                    t2.summary[test_time_header] = t2.summary[test_time_header] + diff_time
+                    # to-do: mod all the cumsum stuff in the summary (best to make
+                    # summary after merging) merging
 
-                # This part of the code is seldom ran. Careful!
-                # mod cycle index for set 2
-                last_cycle = max(t1.summary[cycle_index_header])
-                t2.summary[cycle_index_header] = (
-                    t2.summary[cycle_index_header] + last_cycle
-                )
-                # mod test time for set 2
-                t2.summary[test_time_header] = t2.summary[test_time_header] + diff_time
-                # to-do: mod all the cumsum stuff in the summary (best to make
-                # summary after merging) merging
-
-                t2.summary[data_point_header] = (
-                    t2.summary[data_point_header] + last_data_point
-                )
+                    t2.summary[data_point_header] = (
+                        t2.summary[data_point_header] + last_data_point
+                    )
 
                 summary2 = pd.concat([t1.summary, t2.summary], ignore_index=True)
 
-                test.summary = summary2
+                cell.summary = summary2
             else:
                 logging.debug(
                     "could not merge summary tables "
@@ -2175,31 +2275,28 @@ class CellpyData(object):
                     "create them first!"
                 )
 
-            if merge_step_table:
-                if step_table_made:
-                    cycle_index_header = self.headers_normal.cycle_index_txt
-                    t2.steps[self.headers_step_table.cycle] = (
-                        t2.raw[self.headers_step_table.cycle] + last_cycle
-                    )
+        if merge_step_table:
+            if step_table_made:
+                cycle_index_header = self.headers_normal.cycle_index_txt
+                t2.steps[self.headers_step_table.cycle] = (
+                    t2.raw[self.headers_step_table.cycle] + last_cycle
+                )
 
-                    steps2 = pd.concat([t1.steps, t2.steps], ignore_index=True)
-                    test.steps = steps2
-                else:
-                    logging.debug(
-                        "could not merge step tables "
-                        "(non-existing) -"
-                        "create them first!"
-                    )
+                steps2 = pd.concat([t1.steps, t2.steps], ignore_index=True)
+                cell.steps = steps2
+            else:
+                logging.debug(
+                    "could not merge step tables "
+                    "(non-existing) -"
+                    "create them first!"
+                )
 
-            test.no_cycles = max(raw2[cycle_index_header])
-            test.raw = raw2
-        else:
-            test.no_cycles = max(t2.raw[cycle_index_header])
-            test = t2
-        test.merged = True
+
+
+        cell.merged = True
         logging.debug(" -> merged with new dataset")
         # TODO: @jepe -  update merging for more variables
-        return test
+        return cell
 
     # --------------iterate-and-find-in-data-----------------------------------
     # TODO: make this obsolete (somehow)
@@ -3897,6 +3994,7 @@ class CellpyData(object):
         ignore_errors=True,
         dynamic=False,
         inter_cycle_shift=True,
+        interpolate_along_cap=False,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -3935,6 +4033,8 @@ class CellpyData(object):
                 [NOT IMPLEMENTED YET]
             inter_cycle_shift (bool): cumulative shifts between consecutive
                 cycles. Defaults to True.
+            interpolate_along_cap (bool): interpolate along capacity axis instead
+                of along the voltage axis. Defaults to False.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -4067,7 +4167,10 @@ class CellpyData(object):
                         logging.debug("no first charge step found")
 
                     # prev_end = np.amax(_last_step_c)
-                    prev_end = _last_step_c.iat[-1]
+                    if inter_cycle_shift:
+                        prev_end = _last_step_c.iat[-1]
+                    else:
+                        prev_end = 0.0
 
                 elif method == "forth-and-forth":
                     if _last_step_c is not None:
@@ -4080,6 +4183,10 @@ class CellpyData(object):
                         logging.debug("no first charge step found")
 
                 if return_dataframe:
+                    x_col = "voltage"
+                    y_col = "capacity"
+                    if interpolate_along_cap:
+                        x_col, y_col = y_col, x_col
 
                     try:
                         _first_df = pd.DataFrame(
@@ -4089,10 +4196,11 @@ class CellpyData(object):
                             }
                         )
                         if interpolated:
+
                             _first_df = interpolate_y_on_x(
                                 _first_df,
-                                y="capacity",
-                                x="voltage",
+                                y=y_col,
+                                x=x_col,
                                 dx=dx,
                                 number_of_points=number_of_points,
                                 direction=first_interpolation_direction,
@@ -4101,7 +4209,7 @@ class CellpyData(object):
                             _nan = pd.DataFrame(
                                 {"capacity": [np.nan], "voltage": [np.nan]}
                             )
-                            _first_df = _first_df.append(_nan)
+                            _first_df = pd.concat([_first_df, _nan])
                         if categorical_column:
                             _first_df["direction"] = -1
 
@@ -4114,16 +4222,23 @@ class CellpyData(object):
                         if interpolated:
                             _last_df = interpolate_y_on_x(
                                 _last_df,
-                                y="capacity",
-                                x="voltage",
+                                y=y_col,
+                                x=x_col,
                                 dx=dx,
                                 number_of_points=number_of_points,
                                 direction=last_interpolation_direction,
                             )
                         if insert_nan:
-                            _last_df = _last_df.append(_nan)
+                            _last_df = pd.concat([_last_df, _nan])
                         if categorical_column:
                             _last_df["direction"] = 1
+
+                        if interpolate_along_cap:
+                            if method == "forth":
+                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
+                            elif method == "back-and-forth":
+                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
+                                _last_df = _last_df.loc[::-1].reset_index(drop=True)
 
                     except AttributeError:
                         logging.info(f"Could not extract cycle {current_cycle}")
@@ -4203,7 +4318,7 @@ class CellpyData(object):
             try:
                 voltage = pd.concat(_v, axis=0)
                 cap = pd.concat(_c, axis=0)
-            except:
+            except Exception:
                 logging.debug("could not find any steps for this cycle")
                 raise NullData(f"no steps found (c:{cycle} s:{step} type:{cap_type})")
         else:
@@ -5493,7 +5608,7 @@ def get(
     Args:
         filename (str, os.PathLike, or list of raw-file names): path to file(s)
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
-        instrument (str): instrument to use (defaults to the one in your cellpy config file) (arbin_res, arbin_sql, arbin_sql_csv, arbin_sql_xlxs)
+        instrument (str): instrument to use (defaults to the one in your cellpy config file)
         instrument_file (str or path): yaml file for custom file type
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
         logging_mode (str): "INFO" or "DEBUG"

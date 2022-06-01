@@ -34,6 +34,14 @@ Examples and tutorials
    examples
    tips_and_tricks
 
+Developers guide
+----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   developers_guide
+
 
 Indices and tables
 ==================

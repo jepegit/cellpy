@@ -1,0 +1,90 @@
+---
+formatters:
+    file_format: xlsx
+    comment_chars:
+        - '#'
+        - '!'
+    table_name: Record-Tab
+    header_unit_sep: "/"
+
+pre_processors:
+#    generate_headers_from_units: true  # to be implemented soon
+
+post_processors:
+    split_capacity: true
+    split_current: false
+    set_index: true
+    rename_headers: true
+    set_cycle_number_not_zero: true
+    convert_date_time_to_datetime: false
+    convert_step_time_to_timedelta: true
+    convert_test_time_to_timedelta: true
+
+states:
+    column_name: Step-State
+    charge_keys:
+        - RateC
+    discharge_keys:
+        - RateD
+    rest_keys:
+        - R
+
+unit_labels:
+    resistance: Ohms
+    time: Sec
+    current: mA
+    voltage: V
+    power: W
+    capacity: mAh
+    energy: Wh
+    temperature: dC.
+
+normal_headers_renaming_dict:
+  charge_capacity_txt: Capacity/mAh
+  current_txt: Current/mA
+  cycle_index_txt: Cycle-Index
+  data_point_txt: Record
+  discharge_capacity_txt: nan
+  step_index_txt: Step-Index
+  step_time_txt: StepTime/Sec
+  test_time_txt: TestTime/Sec
+  voltage_txt: Voltage/V
+  datetime_txt: SysTime
+
+raw_limits:
+  current_hard: 1.0e-13
+  current_soft: 1.0e-05
+  ir_change: 1.0e-05
+  stable_charge_hard: 0.9
+  stable_charge_soft: 5.0
+  stable_current_hard: 2.0
+  stable_current_soft: 4.0
+  stable_voltage_hard: 2.0
+  stable_voltage_soft: 4.0
+
+raw_units:
+  charge: 0.001
+  current: 0.001
+  mass: 0.001
+  specific: 1.0
+
+meta_keys:
+  cell_name: cell
+  channel_index: channel_index
+  channel_number: channel_number
+  counter_electrode: counter
+  creator: operator
+  fid_last_accessed: last_accessed
+  fid_last_modification_time: last_modified
+  fid_size: size
+  item_ID: instrument
+  loaded_from: loaded_from
+  mass: mass
+  material: material
+  reference_electrode: reference
+  schedule: schedule
+  schedule_file: schedule_file
+  start_datetime: date
+  test_ID: test_name
+  total_mass: total_mass
+...

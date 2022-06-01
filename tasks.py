@@ -324,6 +324,8 @@ def _get_bump_tag(bump):
 
 
 def create_commit_message_from_output(output, regexp):
+    # MIGHT-DO: consider changing from try-except to if statement
+    # since re.search returns None if nothing is found.
     try:
         txt = regexp.search(output).group(1)
     except Exception as e:
@@ -331,6 +333,13 @@ def create_commit_message_from_output(output, regexp):
         print("could not read bumping")
         return
     return txt
+
+@task
+def requirements(c, check=True):
+    if check:
+        # Should check that all the different requirement files (including
+        # conda environment files) are in synch.
+        print("check requirements - not implemented yet")
 
 
 @task

@@ -12,7 +12,6 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.readers.instruments.base import TxtLoader
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
 
 SUPPORTED_MODELS = {
     "ZERO": "maccor_txt_zero",
@@ -41,6 +40,8 @@ MUST_HAVE_RAW_COLUMNS = [
 
 class MaccorTxtLoader(TxtLoader):
     """Class for loading data from Maccor txt files."""
+    name = "maccor_txt"
+    raw_ext = "txt"
 
     default_model = prms.Instruments.Maccor["default_model"]  # Required
     supported_models = SUPPORTED_MODELS  # Required
@@ -59,7 +60,8 @@ class MaccorTxtLoader(TxtLoader):
         return headers
 
     def validate(self, data):
-        """A simple check that all the needed columns has been successfully loaded and that they get the correct type"""
+        """A simple check that all the needed columns has been successfully
+         loaded and that they get the correct type"""
         missing_must_have_columns = []
 
         # validating the float-type raw data

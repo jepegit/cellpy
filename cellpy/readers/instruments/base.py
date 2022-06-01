@@ -10,6 +10,7 @@ import logging
 import pathlib
 import shutil
 import tempfile
+from abc import ABC
 from typing import List, Union
 
 import pandas as pd
@@ -136,14 +137,45 @@ def _find_separator(checking_length, lines, separators):
     return separator, number_of_hits
 
 
-class AtomicLoad(object):
-    """Atomic loading class"""
+def query_csv(
+    self,
+    name,
+    sep=None,
+    skiprows=None,
+    header=None,
+    encoding=None,
+    decimal=None,
+    thousands=None,
+):
+    logging.debug(f"parsing with pandas.read_csv: {name}")
+    sep = sep or self.sep
+    skiprows = skiprows or self.skiprows
+    header = header or self.header
+    encoding = encoding or self.encoding
+    decimal = decimal or self.decimal
+    thousands = thousands or self.thousands
+    logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
+    data_df = pd.read_csv(
+        name,
+        sep=sep,
+        skiprows=skiprows,
+        header=header,
+        encoding=encoding,
+        decimal=decimal,
+        thousands=thousands,
+    )
+    return data_df
 
+
+class AtomicLoad:
+    """Atomic loading class"""
+    name = "atomic_loader"
     pass
 
 
 class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
+    name = "base_loader"
 
     # TODO: should also include the functions for getting cellpy headers etc
     #  here
@@ -176,6 +208,18 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @classmethod
+    def get_params(cls, parameter: Union[str, None]) -> dict:
+        """Retrieves parameters needed for facilitating working with the
+        instrument without registering it.
+
+        Typically, it should include the name and raw_ext.
+
+        Return: parameters or a selected parameter
+        """
+
+        return getattr(cls, parameter)
+
     @abc.abstractmethod
     def loader(self, *args, **kwargs) -> list:
         """Loads data into a Cell object and returns it"""
@@ -187,11 +231,12 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
         return core.identify_last_data_point(data)
 
 
-class TxtLoader(Loader):
-    """Main txt loading class.
+class AutoLoader(Loader):
+    """Main autoload class.
 
-    This class can be sub-classed if you want to make a data-reader for csv-type files. The subclass needs to have
-    at least one associated CONFIGURATION_MODULE defined and must have the following attributes as minimum:
+    This class can be sub-classed if you want to make a data-reader for different type of "easily parsed" files
+    (for example csv-files). The subclass needs to have at least one
+    associated CONFIGURATION_MODULE defined and must have the following attributes as minimum:
 
         default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
         supported_models: dict = SUPPORTED_MODELS
@@ -215,31 +260,17 @@ class TxtLoader(Loader):
     provided in the CONFIGURATION_MODULE.py located in the cellpy.readers.instruments.configurations folder/package.
 
     """
+    name = "auto_loader"
 
     def __init__(self, *args, **kwargs):
-        """initiates the TxtLoader class.
+        """Attributes can be set during initialization of the class as **kwargs that are then handled by the
+        ``parse_formatter_parameters`` method.
 
-        Several attributes can be set during initialization of the class as **kwargs. Remark that some also
-        can be provided as arguments to the ``loader`` method and will then automatically be "transparent"
-        to the ``cellpy.get`` function. So if you would like to give the user access to modify these arguments,
-        you should implement them in the ``loader`` method.
-
-        Keyword Args:
-            model (str): short name of the (already implemented) sub-model.
-            sep (str): delimiter.
-            skiprows (int): number of lines to skip.
-            header (int): number of the header lines.
-            encoding (str): encoding.
-            decimal (str): character used for decimal in the raw data, defaults to '.'.
-            processors (dict): pre-processing steps to take (before loading with pandas).
-            post_processors (dict): post-processing steps to make after loading the data, but before
-                returning them to the caller.
-            include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
-            keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
-                Remark that the configuration settings for the sub-model must include a list of column header names
-                that should be kept if keep_all_columns is False (default).
-
+        Remark that some also can be provided as arguments to the ``loader`` method and will then automatically
+        be "transparent" to the ``cellpy.get`` function. So if you would like to give the user access to modify
+        these arguments, you should implement them in the ``parse_loader_parameters`` method.
         """
+
         self.auto_register_config = True
         self.pre_init()
 
@@ -252,38 +283,17 @@ class TxtLoader(Loader):
                 f"missing attribute in sub-class of TxtLoader: default_model"
             )
 
+        # in case model is given as argument
         self.model = kwargs.pop(
             "model", self.default_model
-        )  # in case model is given as argument
+        )
         if self.auto_register_config:
             self.config_params = self.register_configuration()
+
         self.name = None
         self._file_path = None
 
-        if not self.config_params.formatters:
-            # check for "over-rides" from arguments in class initialization
-            self.sep = kwargs.pop("sep", None)
-            self.skiprows = kwargs.pop("skiprows", 0)
-            self.header = kwargs.pop("header", 0)
-            self.encoding = kwargs.pop("encoding", "utf-8")
-            self.decimal = kwargs.pop("decimal", ".")
-            self.thousands = kwargs.pop("thousands", None)
-
-        else:
-            self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
-            self.skiprows = kwargs.pop(
-                "skiprows", self.config_params.formatters["skiprows"]
-            )
-            self.header = kwargs.pop("header", self.config_params.formatters["header"])
-            self.encoding = kwargs.pop(
-                "encoding", self.config_params.formatters["encoding"]
-            )
-            self.decimal = kwargs.pop(
-                "decimal", self.config_params.formatters["decimal"]
-            )
-            self.thousands = kwargs.pop(
-                "thousands", self.config_params.formatters["thousands"]
-            )
+        self.parse_formatter_parameters(**kwargs)
 
         self.pre_processors = kwargs.pop(
             "pre_processors", self.config_params.pre_processors
@@ -297,7 +307,19 @@ class TxtLoader(Loader):
             headers_normal  # the column headers defined by cellpy
         )
 
-    def pre_init(self):
+    @abc.abstractmethod
+    def parse_formatter_parameters(self, **kwargs) -> None:
+        ...
+
+    @abc.abstractmethod
+    def parse_loader_parameters(self, **kwargs):
+        ...
+
+    @abc.abstractmethod
+    def query_file(self, file_path:  Union[str, pathlib.Path]) -> pd.DataFrame:
+        ...
+
+    def pre_init(self) -> None:
         ...
 
     def register_configuration(self) -> ModelParameters:
@@ -353,9 +375,6 @@ class TxtLoader(Loader):
         logging.debug(f"tmp file: {temp_filename}")
         self._file_path = temp_filename
 
-        # pre-processors to run self.pre_processors
-        # pre-processors available: pre_processors
-
         for processor_name in self.pre_processors:
             if self.pre_processors[processor_name]:
                 if hasattr(pre_processors, processor_name):
@@ -376,10 +395,6 @@ class TxtLoader(Loader):
             name (str, pathlib.Path): name of the file.
             kwargs (dict): key-word arguments from raw_loader.
 
-        **kwargs:
-            sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
-                start of data (skiprows).
-
         Returns:
             new_tests (list of data objects)
         """
@@ -387,16 +402,13 @@ class TxtLoader(Loader):
         self.name = pathlib.Path(name)
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
         new_tests = []
-        sep = kwargs.get("sep", None)
 
         if self.pre_processors:
             self._pre_process()
-        if sep is not None:
-            self.sep = sep
-        if self.sep is None:
-            self._auto_formatter()
 
-        data_df = self._query_csv(self._file_path)
+        self.parse_loader_parameters(**kwargs)
+
+        data_df = self.query_file(self._file_path)
 
         if pre_processor_hook is not None:
             logging.debug("running pre-processing-hook")
@@ -448,75 +460,6 @@ class TxtLoader(Loader):
         )
         return dict()
 
-    def _auto_formatter(self):
-        separator, first_index = find_delimiter_and_start(
-            self.name,
-            separators=None,
-            checking_length_header=100,
-            checking_length_whole=200,
-        )
-        self.encoding = "UTF-8"  # consider adding a find_encoding function
-        self.sep = separator
-        self.skiprows = first_index - 1  # consider adding a find_rows_to_skip function
-        self.header = 0  # consider adding a find_header function
-
-        logging.critical(
-            f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
-        )
-
-    def _query_csv(
-        self,
-        name,
-        sep=None,
-        skiprows=None,
-        header=None,
-        encoding=None,
-        decimal=None,
-        thousands=None,
-    ):
-        logging.debug(f"parsing with pandas.read_csv: {name}")
-        sep = sep or self.sep
-        skiprows = skiprows or self.skiprows
-        header = header or self.header
-        encoding = encoding or self.encoding
-        decimal = decimal or self.decimal
-        thousands = thousands or self.thousands
-        logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
-        data_df = pd.read_csv(
-            name,
-            sep=sep,
-            skiprows=skiprows,
-            header=header,
-            encoding=encoding,
-            decimal=decimal,
-            thousands=thousands,
-        )
-        return data_df
-
-    # copy-paste from custom loader in an effort to combine the classes
-    # def _parse_xls_data(self, file_name):
-    #     sheet_name = self.structure["table_name"]
-    #
-    #     raw_frame = pd.read_excel(
-    #         file_name, engine="xlrd", sheet_name=None
-    #     )  # TODO: replace this with pd.ExcelReader
-    #     matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
-    #     if matching:
-    #         return raw_frame[matching[0]]
-    #
-    # def _parse_xlsx_data(self, file_name):
-    #     sheet_name = self.structure["table_name"]
-    #     raw_frame = pd.read_excel(
-    #         file_name, engine="openpyxl", sheet_name=None
-    #     )  # TODO: replace this with pd.ExcelReader
-    #     matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
-    #     if matching:
-    #         return raw_frame[matching[0]]
-    #
-    # def _parse_csv_data(self, file_name, sep, header_row):
-    #     raw = pd.read_csv(file_name, sep=sep, header=header_row, skip_blank_lines=False)
-    #     return raw
-
     def _post_rename_headers(self, data):
         if self.include_aux:
             new_aux_headers = self.get_headers_aux(data.raw)
@@ -549,3 +492,107 @@ class TxtLoader(Loader):
                     f"{processor_name} is not currently supported - aborting!"
                 )
         return data
+
+
+class TxtLoader(AutoLoader, ABC):
+    """Main txt loading class (for sub-classing).
+
+    The subclass of a TxtLoader gets its information by loading model specifications from its respective module
+    (``cellpy.readers.instruments.configurations.<module>``) or configuration file (yaml).
+
+    Remark that if you implement automatic loading of the formatter, the module / yaml-file must include all
+    the required formatter parameters (sep, skiprows, header, encoding, decimal, thousands).
+
+    If you need more flexibility, try using the CustomTxtLoader or subclass directly from AutoLoader or Loader.
+
+    Constructor **kwargs:
+        model (str): short name of the (already implemented) sub-model.
+        sep (str): delimiter.
+        skiprows (int): number of lines to skip.
+        header (int): number of the header lines.
+        encoding (str): encoding.
+        decimal (str): character used for decimal in the raw data, defaults to '.'.
+        processors (dict): pre-processing steps to take (before loading with pandas).
+        post_processors (dict): post-processing steps to make after loading the data, but before
+            returning them to the caller.
+        include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
+        keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
+            Remark that the configuration settings for the sub-model must include a list of column header names
+            that should be kept if keep_all_columns is False (default).
+
+    Module - loader **kwargs:
+        sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
+            start of data (skiprows)).
+
+        """
+
+    name = "txt_loader"
+    raw_ext = "*"
+
+    # override this if needed
+    def parse_loader_parameters(self, **kwargs):
+        sep = kwargs.get("sep", None)
+        if sep is not None:
+            self.sep = sep
+        if self.sep is None:
+            self._auto_formatter()
+
+    # override this if needed
+    def parse_formatter_parameters(self, **kwargs):
+        if not self.config_params.formatters:
+            # Setting defaults if formatter is not loaded
+            self.sep = kwargs.pop("sep", None)
+            self.skiprows = kwargs.pop("skiprows", 0)
+            self.header = kwargs.pop("header", 0)
+            self.encoding = kwargs.pop("encoding", "utf-8")
+            self.decimal = kwargs.pop("decimal", ".")
+            self.thousands = kwargs.pop("thousands", None)
+
+        else:
+            # Remark! This will break if one of these parameters are missing
+            # (not a keyword argument and not within the configuration):
+            self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
+            self.skiprows = kwargs.pop(
+                "skiprows", self.config_params.formatters["skiprows"]
+            )
+            self.header = kwargs.pop("header", self.config_params.formatters["header"])
+            self.encoding = kwargs.pop(
+                "encoding", self.config_params.formatters["encoding"]
+            )
+            self.decimal = kwargs.pop(
+                "decimal", self.config_params.formatters["decimal"]
+            )
+            self.thousands = kwargs.pop(
+                "thousands", self.config_params.formatters["thousands"]
+            )
+
+    def _auto_formatter(self):
+        separator, first_index = find_delimiter_and_start(
+            self.name,
+            separators=None,
+            checking_length_header=100,
+            checking_length_whole=200,
+        )
+        self.encoding = "UTF-8"  # consider adding a find_encoding function
+        self.sep = separator
+        self.skiprows = first_index - 1  # consider adding a find_rows_to_skip function
+        self.header = 0  # consider adding a find_header function
+
+        logging.critical(
+            f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
+        )
+
+    # override this if using other query functions
+    def query_file(self, name):
+        logging.debug(f"parsing with pandas.read_csv: {name}")
+        logging.critical(f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}")
+        data_df = pd.read_csv(
+            name,
+            sep=self.sep,
+            skiprows=self.skiprows,
+            header=self.header,
+            encoding=self.encoding,
+            decimal=self.decimal,
+            thousands=self.thousands,
+        )
+        return data_df

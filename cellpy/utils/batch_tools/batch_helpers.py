@@ -8,6 +8,7 @@ import pandas as pd
 
 import cellpy.parameters.internal_settings
 from cellpy import filefinder, prms
+from cellpy.readers import core
 from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
 
 # logger = logging.getLogger(__name__)
@@ -101,7 +102,15 @@ def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
     # searches for the raw data files and the cellpyfile-name
     # TODO: implement faster file searching
     # TODO: implement option for not searching for raw-file names if force_cellpy is True
-    for run_name in info_dict[hdr_journal["filename"]]:
+    for i, run_name in enumerate(info_dict[hdr_journal["filename"]]):
+        try:
+            instrument = info_dict[hdr_journal["instrument"]][i]
+            raw_ext = core.query_instrument("raw_ext", instrument)
+            if raw_ext:
+                prms.FileNames.raw_extension = raw_ext
+        except IndexError:
+            warnings.warn(f"no instrument given for {run_name}")
+
         logging.debug(f"checking for {run_name}")
         raw_files, cellpyfile = filefinder.search_for_files(
             run_name, file_list=file_list, pre_path=pre_path, **kwargs
@@ -211,17 +220,19 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     if not summary_frames:
         raise NullData("No summaries available to join")
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
+    out = []
     frames = []
     keys = []  # test-name
+
     for key in summary_frames:
         keys.append(key)
         if summary_frames[key].empty:
             logging.debug("Empty summary_frame encountered")
+
         frames.append(summary_frames[key])
 
-    out = []
+    summary_df = pd.concat(frames, keys=keys, axis=1, sort=True)
 
-    summary_df = pd.concat(frames, keys=keys, axis=1)
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[
             :, summary_df.columns.get_level_values(1) == value

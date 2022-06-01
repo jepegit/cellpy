@@ -351,8 +351,17 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
                     create_dir = False
 
         if create_dir:
-            o.mkdir(parents=parents, exist_ok=exist_ok)
-            click.echo(f"[cellpy] (setup) Created {o}")
+            try:
+                o.mkdir(parents=parents, exist_ok=exist_ok)
+                click.echo(f"[cellpy] (setup) Created {o}")
+            except FileExistsError:
+                click.echo(f"[cellpy] (setup) {o} already exists.")
+            except FileNotFoundError:
+                click.echo(f"[cellpy] (setup) {o} not available.")
+            except Exception as e:
+                click.echo(f"[cellpy] (setup) WARNING! Could not create {o}.")
+                logging.debug(e)
+                click.echo(f"[cellpy] (setup) ...continuing anyway.")
         else:
             click.echo(f"[cellpy] (setup) Could not create {o}")
     return o
@@ -1318,15 +1327,24 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
 
     except ModuleNotFoundError:
         click.echo("Could not import cookiecutter.")
-        click.echo("Try installing it with. For example by writing:")
+        click.echo("Try installing it, for example by writing:")
         click.echo("\npip install cookiecutter\n")
 
-    if not local_user_template:
-        templates = prms._registered_templates
-    else:
-        templates = _read_local_templates()
-
     click.echo(f"Template: {template}")
+    if local_user_template:
+        # forcing using local template
+        templates = _read_local_templates()
+        if not templates:
+            click.echo(
+                "You asked me to use a local template, "
+                "but you have none. Aborting."
+            )
+            return
+    else:
+        templates = prms._registered_templates
+        if local_templates := _read_local_templates():
+            templates.update(local_templates)
+
     if not template.lower() in templates.keys():
         click.echo("This template does not exist. Aborting.")
         return

@@ -1,5 +1,9 @@
 # Works for data from KIT (SIMBA project)
 
+file_info = {
+    "raw_extension": "txt"
+}
+
 unit_labels = {
     "resistance": "Ohms",
     "time": "s",

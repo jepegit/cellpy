@@ -47,6 +47,14 @@ class NdaLoader(Loader):
         self.headers_global = self.get_headers_global()
         self.current_chunk = 0  # use this to set chunks to load
 
+    @staticmethod
+    def get_params(parameter=None):
+        params = dict()
+        params["raw_ext"] = "nda"
+        if parameter is not None:
+            return params[parameter]
+        return params
+
     def get_raw_units(self):
         """Include the settings for the units used by the instrument.
 
@@ -115,7 +123,7 @@ class NdaLoader(Loader):
 
         length_of_test, normal_df = load_nda()
 
-        data.summary = empty_df
+        data.summary = pd.DataFrame()
 
         data.raw = normal_df
         data.raw_data_files_length.append(length_of_test)

@@ -9,8 +9,9 @@ from typing import List, Tuple, Union
 import box
 
 # When adding prms, please
-#   1) check / update the internal_settings.py file as well to ensure that copying / splitting cellpy objects
-#   behaves properly.
+#   1) check / update the internal_settings.py file as well to
+#      ensure that copying / splitting cellpy objects
+#      behaves properly.
 #   2) check / update the .cellpy_prms_default.conf file
 
 # locations etc. for reading custom parameters
@@ -53,6 +54,12 @@ Paths = PathsClass()
 @dataclass
 class FileNamesClass(CellPyConfig):
     file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
+    raw_extension: str = "res"
+    reg_exp: str = None
+    file_list_location: str = None
+    file_list_type: str = None
+    file_list_name: str = None
+    cellpy_file_extension: str = "h5"
 
 
 FileNames = FileNamesClass()
@@ -139,6 +146,7 @@ class DbColsClass(CellPyConfig):
     comment_cell: Tuple[str, str] = ("comment_cell", "str")
     comment_general: Tuple[str, str] = ("comment_general", "str")
     freeze: Tuple[str, str] = ("freeze", "bol")
+    argument: Tuple[str, str] = ("argument", "str")  # e.g. 'max_cycle:100;recalc:false'
 
 
 DbCols = DbColsClass()
@@ -205,7 +213,6 @@ Arbin = {
 Arbin = box.Box(Arbin)
 
 Maccor = {"default_model": "one"}
-
 Maccor = box.Box(Maccor)
 
 
@@ -219,7 +226,7 @@ class InstrumentsClass(CellPyConfig):
 
 
 Instruments = InstrumentsClass(
-    tester="arbin", custom_instrument_definitions_file=None, Arbin=Arbin, Maccor=Maccor
+    tester="arbin", custom_instrument_definitions_file=None, Arbin=Arbin, Maccor=Maccor,
 )
 
 

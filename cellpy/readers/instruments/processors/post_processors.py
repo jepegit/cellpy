@@ -1,16 +1,21 @@
 """Post-processing methods for instrument loaders.
 
 All methods must implement the following parameters/arguments:
-    filename: Union[str, pathlib.Path], *args: str, **kwargs: str
+    data: Cell object
+    config_params: ModelParameters
 
-All methods should return None (i.e. nothing).
+All methods should return the modified Cell object.
+
+You can access the individual parameters for the post processor from
+the config_params.post_processor[<name of post processor>].
 
 """
-
+import datetime
 import logging
 import sys
 
 import pandas as pd
+import numpy as np
 
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.parameters.prms import _minimum_columns_to_keep_for_raw_if_exists
@@ -23,11 +28,22 @@ ORDERED_POST_PROCESSING_STEPS = [
     "select_columns_to_keep",
     "remove_last_if_bad",
 ]
-# TODO: refactor so that select_columns_to_keep can be done after rename_headers
-#  Things to think about:
-#    columns_to_keep must contain "cellpy" column names,
-#    got a KeyError: 'cycle_index' for split_capacity
-# ORDERED_POST_PROCESSING_STEPS = ["get_column_names", "rename_headers", "select_columns_to_keep"]
+
+# TODO: implement from old custom
+#  1. implement proper unit conversion
+#     a. find out how it works now
+#     b. make sure that the user can define preferred units (config)
+#     c. make sure the used units are stored in the cellpy files
+#     d. make sure the loaded data is converted to the expected units
+#     e. implement parser for finding units based on headers or meta-data
+#  2. parse top part (meta)
+#     a. add key-word for format of meta data (key_value_pairs, etc.)
+#     b. load meta-part and pares it (use the ATTRS_CELLPYFILE and setattr)
+#  3. the old custom loader has methods for parsing csv, xls,
+#     and xlsx - implement them if needed. [DONE]
+#  4. Consider adding x_time_conversion key-words and methods from old custom.
+#  5. Check if CustomTxtLoader properly implements inspect() and
+#     _generate_fid().
 
 
 def remove_last_if_bad(data: Cell, config_params: ModelParameters) -> Cell:
@@ -40,6 +56,7 @@ def remove_last_if_bad(data: Cell, config_params: ModelParameters) -> Cell:
 
 
 def convert_units(data: Cell, config_params: ModelParameters) -> Cell:
+    # TODO: implement all
     if x := config_params.raw_units.get("voltage", None):
         logging.debug(f"converting voltage ({x})")
         data.raw[headers_normal.voltage_txt] = data.raw[headers_normal.voltage_txt] * x
@@ -49,6 +66,10 @@ def convert_units(data: Cell, config_params: ModelParameters) -> Cell:
 
     if config_params.raw_units.get("charge", None):
         logging.debug("converting charge - not implemented yet")
+
+    # TODO: add time as raw unit
+    if config_params.raw_units.get("time", None):
+        logging.debug("converting time - not implemented yet")
 
     return data
 
@@ -73,6 +94,8 @@ def select_columns_to_keep(data: Cell, config_params: ModelParameters) -> Cell:
 
 
 def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
+    # TODO: add custom "splitter"
+    # TODO: test
     if not config_params.prefixes:
         config_params.prefixes = {
             "G": 1000_000_000,
@@ -129,17 +152,38 @@ def convert_date_time_to_datetime(data: Cell, config_params: ModelParameters) ->
     return data
 
 
+def date_time_from_test_time(data: Cell, config_params: ModelParameters) -> Cell:
+    """add a date_time column (based on the test_time column)."""
+    hdr_date_time = headers_normal.datetime_txt
+    hdr_test_time = headers_normal.test_time_txt
+
+    # replace this with something that can parse a date-string if implementing start_date in config_params.
+    # currently, it will always use current date-time as start date.
+    start_date = config_params.meta_keys.get("start_date", datetime.datetime.now())
+    start_time = data.raw[hdr_test_time].iloc[0]
+    data.raw[hdr_date_time] = pd.to_timedelta(data.raw[hdr_test_time] - start_time) + start_date
+    return data
+
+
 def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_step_time = headers_normal.step_time_txt
+    if data.raw[hdr_step_time].dtype == "datetime64[ns]":
+        logging.debug("already datetime64[ns] - need to convert to back first")
+        data.raw[hdr_step_time] = data.raw[hdr_step_time].view("int64")
+        data.raw[hdr_step_time] = data.raw[hdr_step_time] - data.raw[hdr_step_time].iloc[0]
+
     data.raw[hdr_step_time] = pd.to_timedelta(
         data.raw[hdr_step_time]
     ).dt.total_seconds()
-
     return data
 
 
 def convert_test_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
     hdr_test_time = headers_normal.test_time_txt
+    if data.raw[hdr_test_time].dtype == "datetime64[ns]":
+        logging.debug("already datetime64[ns] - need to convert to back first")
+        data.raw[hdr_test_time] = data.raw[hdr_test_time].view("int64")
+        data.raw[hdr_test_time] = data.raw[hdr_test_time] - data.raw[hdr_test_time].iloc[0]
     data.raw[hdr_test_time] = pd.to_timedelta(
         data.raw[hdr_test_time]
     ).dt.total_seconds()
@@ -153,8 +197,27 @@ def set_index(data: Cell, config_params: ModelParameters) -> Cell:
     return data
 
 
+def replace(data: Cell, config_params: ModelParameters) -> Cell:
+    print("NOT IMPLEMENTED")
+    print("input:")
+    print(config_params.post_processors["replace"])
+
+
 def rename_headers(data: Cell, config_params: ModelParameters) -> Cell:
     columns = {}
+    renaming_dict = config_params.normal_headers_renaming_dict
+    # ---- special cases ----
+    # 1. datetime_txt and test_time_txt same column
+    if "datetime_txt" in renaming_dict and "test_time_txt" in renaming_dict:
+        datetime_hdr = renaming_dict["datetime_txt"]
+        test_time_hdr = renaming_dict["test_time_txt"]
+        if datetime_hdr == test_time_hdr:
+            logging.debug("both test_time and datetime assigned to same column")
+            logging.debug("duplicating the column")
+            new_test_time_hdr = f"_{test_time_hdr}_cellpy_temporary_col_name_for_test_time"
+            data.raw[new_test_time_hdr] = data.raw[datetime_hdr]
+            renaming_dict["test_time_txt"] = new_test_time_hdr
+
     for key in headers_normal:
         if key in config_params.normal_headers_renaming_dict:
             old_header = config_params.normal_headers_renaming_dict[key]

@@ -2,22 +2,21 @@
 # This is based on the work by Chris Kerr
 # (https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
 import datetime
-import logging
-import os
 import shutil
 import tempfile
 import time
 import warnings
+import logging
+import os
 from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
 
-from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import Cell, FileID, check64bit, humanize_bytes
+from cellpy.readers.core import Cell, FileID, humanize_bytes
 from cellpy.readers.instruments.base import Loader
-from cellpy.readers.instruments.biologic_file_format import (
+from cellpy.readers.instruments.loader_specific_modules.biologic_file_format import (
     bl_dtypes,
     bl_flags,
     bl_log_pos_dtype,
@@ -78,6 +77,8 @@ class MprLoader(Loader):
 
     # Note: the class is sub-classing Loader. At the moment, Loader does
     # not really contain anything...
+    name = "biologics_mpr"
+    raw_ext = "mpr"
 
     def __init__(self, *args, **kwargs):
         self.logger = logging.getLogger(__name__)

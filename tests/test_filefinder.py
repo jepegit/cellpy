@@ -49,6 +49,18 @@ def test_search_for_res_files(parameters):
     assert parameters.res_file_path in raw_files
 
 
+def test_search_for_files_using_prms(parameters):
+    from cellpy import prms
+    prms.FileNames.reg_exp = ""
+    prms.FileNames.raw_extension = "txt"
+    raw_files, cellpy_file = filefinder.search_for_files(
+        parameters.run_name_maccor,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.output_dir,
+    )
+    assert parameters.mcc_file_path in raw_files
+
+
 def test_search_for_strange_files(parameters):
     raw_files, cellpy_file = filefinder.search_for_files(
         parameters.run_name,

@@ -79,6 +79,14 @@ def updated_cycling_experiment(cycling_experiment):
     return cycling_experiment
 
 
+def test_reading_db(batch_instance):
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
+    )
+
+    b.create_journal()
+
+
 def test_csv_exporter(updated_cycling_experiment):
     logging.info(f"using pandas {pandas.__version__}")
     exporter = batch_exporters.CSVExporter()
