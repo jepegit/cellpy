@@ -95,7 +95,8 @@ class Reader:
     def _parse_argument_str(argument_str: str) -> dict:
         # the argument str must be on the form:
         # "keyword-1=value-1;keyword-2=value2"
-
+        if argument_str is None:
+            return
         sep = ";"
         parts = [part.strip() for part in argument_str.split(sep=sep)]
         sep = "="

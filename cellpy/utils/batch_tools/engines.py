@@ -107,6 +107,10 @@ def dq_dv_engine(**kwargs):
 
 
 def _query(reader_method, cell_ids, column_name=None):
+    if not any(cell_ids):
+        logging.debug("Received empty cell_ids")
+        return []
+
     try:
         if column_name is None:
             result = [reader_method(cell_id) for cell_id in cell_ids]
@@ -153,7 +157,6 @@ def simple_db_engine(
     if reader is None:
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
-
     pages_dict = dict()
     pages_dict[headers_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
     if include_key:

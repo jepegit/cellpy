@@ -18,6 +18,9 @@ hdr_summary = cellpy.parameters.internal_settings.get_headers_summary()
 hdr_journal = cellpy.parameters.internal_settings.get_headers_journal()
 
 
+CELL_TYPE_IDS = ["cc", "ec", "eth"]
+
+
 def look_up_and_get(cellpy_file_name, table_name, root=None, max_cycle=None):
     """Extracts table from cellpy hdf5-file."""
 
@@ -171,7 +174,7 @@ def _remove_date_and_celltype(
 ):
     parts = label.split("_")
     parts.pop(0)
-    if parts[-1] in ["cc", "ec", "eth"]:
+    if parts[-1] in CELL_TYPE_IDS:
         parts.pop(-1)
     return "_".join(parts)
 
