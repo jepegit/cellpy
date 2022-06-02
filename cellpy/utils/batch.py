@@ -599,7 +599,9 @@ class Batch:
         if filename is None:
             filename = self.experiment.journal.file_name
         filename = pathlib.Path(filename).with_suffix(".xlsx")
-        self.experiment.journal.to_file(file_name=filename, to_project_folder=False, paginate=False)
+        self.experiment.journal.to_file(
+            file_name=filename, to_project_folder=False, paginate=False
+        )
 
     def duplicate_journal(self, folder=None) -> None:
         """Copy the journal to folder.
@@ -739,7 +741,7 @@ class Batch:
                 selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
                 loading from raw is not necessary (or turned off).
 
-                """
+        """
         self.experiment.errors["update"] = []
         self.experiment.update(**kwargs)
 

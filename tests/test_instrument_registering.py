@@ -15,6 +15,7 @@ class MockLoader(AutoLoader, ABC):
     reads its configuration from the 'instrument_configuration_module'
     located in the 'tests' directory.
     """
+
     def pre_init(self):
         self.supported_models = None
         self.default_model = None
@@ -48,12 +49,17 @@ def test_set_instrument_selecting_default_not_defined(cellpy_data_instance):
 
 
 def test_set_instrument_selecting_default(cellpy_data_instance, parameters):
-    prms.Instruments.custom_instrument_definitions_file = parameters.custom_instrument_definitions_file
+    prms.Instruments.custom_instrument_definitions_file = (
+        parameters.custom_instrument_definitions_file
+    )
     cellpy_data_instance.set_instrument(instrument="custom")
 
 
 def test_set_instrument_and_instrument_file(cellpy_data_instance, parameters):
-    cellpy_data_instance.set_instrument(instrument="custom", instrument_file=parameters.custom_instrument_definitions_file)
+    cellpy_data_instance.set_instrument(
+        instrument="custom",
+        instrument_file=parameters.custom_instrument_definitions_file,
+    )
 
 
 def test_set_instrument_and_instrument_file_using_sep(cellpy_data_instance, parameters):
@@ -63,7 +69,9 @@ def test_set_instrument_and_instrument_file_using_sep(cellpy_data_instance, para
 
 @pytest.mark.xfail
 def test_set_instrument_missing_file(cellpy_data_instance, parameters):
-    prms.Instruments.custom_instrument_definitions_file = "a-file-that-should-not-exist.yml"
+    prms.Instruments.custom_instrument_definitions_file = (
+        "a-file-that-should-not-exist.yml"
+    )
     cellpy_data_instance.set_instrument(instrument="custom")
 
 
@@ -87,25 +95,28 @@ def test_list_available_instruments():
     pass
 
 
-@pytest.mark.parametrize('parameter, loader, expected', [
-    ("raw_ext", "arbin", "res"),
-    ("name", "arbin", "arbin_res"),
-    ("raw_ext", "arbin_sql", None),
-    ("name", "arbin_sql", "arbin_sql"),
-    ("raw_ext", "arbin_sql_csv", "csv"),
-    ("name", "arbin_sql_csv", "arbin_sql_csv"),
-    ("raw_ext", "arbin_sql_xlsx", "xlsx"),
-    ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
-    ("name", "custom", "custom"),
-    ("raw_ext", "custom", "*"),
-    ("name", "maccor_txt", "maccor_txt"),
-    ("raw_ext", "maccor_txt", "txt"),
-    ("name", "pec", "pec_csv"),
-    ("raw_ext", "pec", "csv"),
-    ("name", "biologics", "biologics_mpr"),
-    ("raw_ext", "biologics", "mpr"),
-    ("name", "old_custom", "old_custom"),
-    ("raw_ext", "old_custom", "*"),
-])
+@pytest.mark.parametrize(
+    "parameter, loader, expected",
+    [
+        ("raw_ext", "arbin", "res"),
+        ("name", "arbin", "arbin_res"),
+        ("raw_ext", "arbin_sql", None),
+        ("name", "arbin_sql", "arbin_sql"),
+        ("raw_ext", "arbin_sql_csv", "csv"),
+        ("name", "arbin_sql_csv", "arbin_sql_csv"),
+        ("raw_ext", "arbin_sql_xlsx", "xlsx"),
+        ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
+        ("name", "custom", "custom"),
+        ("raw_ext", "custom", "*"),
+        ("name", "maccor_txt", "maccor_txt"),
+        ("raw_ext", "maccor_txt", "txt"),
+        ("name", "pec", "pec_csv"),
+        ("raw_ext", "pec", "csv"),
+        ("name", "biologics", "biologics_mpr"),
+        ("raw_ext", "biologics", "mpr"),
+        ("name", "old_custom", "old_custom"),
+        ("raw_ext", "old_custom", "*"),
+    ],
+)
 def test_query_instrument(parameter, loader, expected):
     assert core.query_instrument(parameter, loader) == expected

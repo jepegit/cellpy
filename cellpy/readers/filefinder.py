@@ -101,7 +101,9 @@ def search_for_files(
 
     # backward compatibility check
     if cellpy_file_extension.startswith("."):
-        warnings.warn("Deprecation warning: cellpy_file_extension should not include the '.'")
+        warnings.warn(
+            "Deprecation warning: cellpy_file_extension should not include the '.'"
+        )
         cellpy_file_extension = cellpy_file_extension[1:]
         warnings.warn(f"Removing it -> {cellpy_file_extension}")
 
@@ -138,7 +140,9 @@ def search_for_files(
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
         # backward compatibility check
         if raw_extension.startswith("."):
-            warnings.warn("Deprecation warning: raw_extension should not include the '.'")
+            warnings.warn(
+                "Deprecation warning: raw_extension should not include the '.'"
+            )
             raw_extension = raw_extension[1:]
             warnings.warn(f"Removing it -> {raw_extension}")
         # TODO: give warning/error-message if run_name contains more than one file (due to duplicate in db)

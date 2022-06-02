@@ -161,7 +161,9 @@ def date_time_from_test_time(data: Cell, config_params: ModelParameters) -> Cell
     # currently, it will always use current date-time as start date.
     start_date = config_params.meta_keys.get("start_date", datetime.datetime.now())
     start_time = data.raw[hdr_test_time].iloc[0]
-    data.raw[hdr_date_time] = pd.to_timedelta(data.raw[hdr_test_time] - start_time) + start_date
+    data.raw[hdr_date_time] = (
+        pd.to_timedelta(data.raw[hdr_test_time] - start_time) + start_date
+    )
     return data
 
 
@@ -170,7 +172,9 @@ def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -
     if data.raw[hdr_step_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
         data.raw[hdr_step_time] = data.raw[hdr_step_time].view("int64")
-        data.raw[hdr_step_time] = data.raw[hdr_step_time] - data.raw[hdr_step_time].iloc[0]
+        data.raw[hdr_step_time] = (
+            data.raw[hdr_step_time] - data.raw[hdr_step_time].iloc[0]
+        )
 
     data.raw[hdr_step_time] = pd.to_timedelta(
         data.raw[hdr_step_time]
@@ -183,7 +187,9 @@ def convert_test_time_to_timedelta(data: Cell, config_params: ModelParameters) -
     if data.raw[hdr_test_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
         data.raw[hdr_test_time] = data.raw[hdr_test_time].view("int64")
-        data.raw[hdr_test_time] = data.raw[hdr_test_time] - data.raw[hdr_test_time].iloc[0]
+        data.raw[hdr_test_time] = (
+            data.raw[hdr_test_time] - data.raw[hdr_test_time].iloc[0]
+        )
     data.raw[hdr_test_time] = pd.to_timedelta(
         data.raw[hdr_test_time]
     ).dt.total_seconds()
@@ -214,7 +220,9 @@ def rename_headers(data: Cell, config_params: ModelParameters) -> Cell:
         if datetime_hdr == test_time_hdr:
             logging.debug("both test_time and datetime assigned to same column")
             logging.debug("duplicating the column")
-            new_test_time_hdr = f"_{test_time_hdr}_cellpy_temporary_col_name_for_test_time"
+            new_test_time_hdr = (
+                f"_{test_time_hdr}_cellpy_temporary_col_name_for_test_time"
+            )
             data.raw[new_test_time_hdr] = data.raw[datetime_hdr]
             renaming_dict["test_time_txt"] = new_test_time_hdr
 

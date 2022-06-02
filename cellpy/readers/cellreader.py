@@ -449,12 +449,20 @@ class CellpyData:
         return cells
 
     def __register_external_readers(self):
-        logging.debug("Not implemented yet. Should allow registering readers "
-                      "for example installed as plug-ins.")
+        logging.debug(
+            "Not implemented yet. Should allow registering readers "
+            "for example installed as plug-ins."
+        )
         self.__external_readers = dict()
         return
 
-    def set_instrument(self, instrument=None, instrument_file=None, reload_external_readers=False, **kwargs):
+    def set_instrument(
+        self,
+        instrument=None,
+        instrument_file=None,
+        reload_external_readers=False,
+        **kwargs,
+    ):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Three different modes of setting instruments are currently supported. You can
@@ -575,10 +583,13 @@ class CellpyData:
             from cellpy.readers.instruments.custom_instrument import (
                 CustomTxtLoader as RawLoader,
             )
+
             model = kwargs.pop("model", None)
             if model:
-                logging.debug("the model key word is not "
-                              "supported for custom loader - removing it")
+                logging.debug(
+                    "the model key word is not "
+                    "supported for custom loader - removing it"
+                )
             logging.warning("Experimental! Not ready for production!")
             logging.debug(f"using custom instrument: {instrument}")
             if not instrument_file:
@@ -603,8 +614,10 @@ class CellpyData:
             logging.debug(f"using custom instrument: {instrument}")
             model = kwargs.pop("model", None)
             if model:
-                logging.debug(f"the model key word is not "
-                              f"supported for custom loader - removing it")
+                logging.debug(
+                    f"the model key word is not "
+                    f"supported for custom loader - removing it"
+                )
             if not instrument_file:
                 _instrument = instrument.split(custom_instrument_splitter)
                 try:
@@ -1331,7 +1344,9 @@ class CellpyData:
                 # appending cell data file to existing
                 else:
                     logging.debug("continuing reading files...")
-                    _cells = self._append(cells[set_number], new_cells[set_number], recalc=recalc)
+                    _cells = self._append(
+                        cells[set_number], new_cells[set_number], recalc=recalc
+                    )
 
                     if not _cells:
                         logging.warning(f"NO CELLS FOUND: {file_name}")
@@ -1349,7 +1364,9 @@ class CellpyData:
                     # TODO: include this into prms (and config-file):
                     max_raw_files_to_merge = 20
                     # TODO: legacy code - please fix me
-                    for j, raw_data_file in enumerate(new_cells[set_number].raw_data_files):
+                    for j, raw_data_file in enumerate(
+                        new_cells[set_number].raw_data_files
+                    ):
                         file_size = new_cells[set_number].raw_data_files_length[j]
                         cells[set_number].raw_data_files.append(raw_data_file)
                         cells[set_number].raw_data_files_length.append(file_size)
@@ -2144,7 +2161,9 @@ class CellpyData:
                     dataset = self.cells[dataset_number]
                     first = False
                 else:
-                    dataset = self._append(dataset, self.cells[dataset_number], **kwargs)
+                    dataset = self._append(
+                        dataset, self.cells[dataset_number], **kwargs
+                    )
                     for raw_data_file, file_size in zip(
                         self.cells[dataset_number].raw_data_files,
                         self.cells[dataset_number].raw_data_files_length,
@@ -2257,7 +2276,9 @@ class CellpyData:
                         t2.summary[cycle_index_header] + last_cycle
                     )
                     # mod test time for set 2
-                    t2.summary[test_time_header] = t2.summary[test_time_header] + diff_time
+                    t2.summary[test_time_header] = (
+                        t2.summary[test_time_header] + diff_time
+                    )
                     # to-do: mod all the cumsum stuff in the summary (best to make
                     # summary after merging) merging
 
@@ -2290,8 +2311,6 @@ class CellpyData:
                     "(non-existing) -"
                     "create them first!"
                 )
-
-
 
         cell.merged = True
         logging.debug(" -> merged with new dataset")

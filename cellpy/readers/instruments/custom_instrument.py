@@ -25,6 +25,7 @@ from cellpy.readers.instruments.configurations import (
 
 class CustomTxtLoader(AutoLoader, ABC):
     """Class for loading data from txt files."""
+
     name = "custom"
     raw_ext = "*"
 
@@ -33,8 +34,10 @@ class CustomTxtLoader(AutoLoader, ABC):
             logging.debug("No instrument_file provided - checking default")
             instrument_file = prms.Instruments.custom_instrument_definitions_file
         if not instrument_file:
-            raise FileExistsError("Missing instrument definition file "
-                                  "(not given and not defined in config)")
+            raise FileExistsError(
+                "Missing instrument definition file "
+                "(not given and not defined in config)"
+            )
         if not Path(instrument_file).is_file():
             # searching in the Instruments folder:
             instrument_dir = Path(prms.Paths.instrumentdir)
@@ -42,8 +45,9 @@ class CustomTxtLoader(AutoLoader, ABC):
             instrument_file_in_instrument_dir = instrument_dir / instrument_file
             if not instrument_file_in_instrument_dir.is_file():
                 logging.debug(f"Could not find {instrument_file_in_instrument_dir}")
-                raise FileExistsError("Instrument definition file not found! "
-                                      f"({instrument_file})")
+                raise FileExistsError(
+                    "Instrument definition file not found! " f"({instrument_file})"
+                )
             instrument_file = instrument_file_in_instrument_dir
 
         logging.debug(f"Instrument definition file: {instrument_file}")
@@ -66,28 +70,44 @@ class CustomTxtLoader(AutoLoader, ABC):
             self._auto_formatter()
 
     def _config_sub_parser(self, key_label, default_value=None, **kwargs):
-        return kwargs.pop(key_label, self.config_params.formatters.get(key_label, default_value))
+        return kwargs.pop(
+            key_label, self.config_params.formatters.get(key_label, default_value)
+        )
 
     # TODO: rewrite this:
     def parse_formatter_parameters(self, **kwargs):
-        self.file_format = self._config_sub_parser("file_format", default_value="csv", **kwargs)
+        self.file_format = self._config_sub_parser(
+            "file_format", default_value="csv", **kwargs
+        )
         # print("FORMATTERS".center(80, "="))
         # print(self.config_params.formatters)
 
         # rewrite this on a later stage to use functions and dict lookup instead of if - else
         if self.file_format == "csv":
             self.sep = self._config_sub_parser("sep", default_value=None, **kwargs)
-            self.skiprows = self._config_sub_parser("skiprows", default_value=0, **kwargs)
+            self.skiprows = self._config_sub_parser(
+                "skiprows", default_value=0, **kwargs
+            )
             self.header = self._config_sub_parser("header", default_value=0, **kwargs)
-            self.encoding = self._config_sub_parser("encoding", default_value="utf-8", **kwargs)
-            self.decimal = self._config_sub_parser("decimal", default_value=".", **kwargs)
-            self.thousands = self._config_sub_parser("thousands", default_value=None, **kwargs)
+            self.encoding = self._config_sub_parser(
+                "encoding", default_value="utf-8", **kwargs
+            )
+            self.decimal = self._config_sub_parser(
+                "decimal", default_value=".", **kwargs
+            )
+            self.thousands = self._config_sub_parser(
+                "thousands", default_value=None, **kwargs
+            )
 
         elif self.file_format == "xlsx":
-            self.table_name = self._config_sub_parser("table_name", default_value="sheet 1", **kwargs)
+            self.table_name = self._config_sub_parser(
+                "table_name", default_value="sheet 1", **kwargs
+            )
 
         elif self.file_format == "xls":
-            self.table_name = self._config_sub_parser("table_name", default_value="sheet 1", **kwargs)
+            self.table_name = self._config_sub_parser(
+                "table_name", default_value="sheet 1", **kwargs
+            )
 
         elif self.file_format == "json":
             print("json not implemented yet")
@@ -118,7 +138,9 @@ class CustomTxtLoader(AutoLoader, ABC):
         # rewrite this on a later stage to use functions and dict lookup instead of if - else
         if self.file_format == "csv":
             logging.debug(f"parsing with pandas.read_csv: {name}")
-            logging.critical(f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}")
+            logging.critical(
+                f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
+            )
             data_df = pd.read_csv(
                 name,
                 sep=self.sep,
@@ -129,12 +151,12 @@ class CustomTxtLoader(AutoLoader, ABC):
                 thousands=self.thousands,
             )
         elif self.file_format == "xls":
-            logging.debug(f"parsing with pandas.read_excel using xlrd (old format): {name}")
+            logging.debug(
+                f"parsing with pandas.read_excel using xlrd (old format): {name}"
+            )
             sheet_name = self.table_name
 
-            raw_frame = pd.read_excel(
-                name, engine="xlrd", sheet_name=None
-            )
+            raw_frame = pd.read_excel(name, engine="xlrd", sheet_name=None)
             matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
             if matching:
                 return raw_frame[matching[0]]
@@ -153,9 +175,13 @@ class CustomTxtLoader(AutoLoader, ABC):
             raise IOError(f"Could not find the sheet {sheet_name} in {name}")
 
         elif self.file_format == "json":
-            raise IOError(f"Could not read {name}, {self.file_format} not supported yet")
+            raise IOError(
+                f"Could not read {name}, {self.file_format} not supported yet"
+            )
         else:
-            raise IOError(f"Could not read {name}, {self.file_format} not supported yet")
+            raise IOError(
+                f"Could not read {name}, {self.file_format} not supported yet"
+            )
 
         return data_df
 
@@ -209,8 +235,11 @@ def check_loader_from_outside_with_get():
     print(f"{instrument=}")
 
     c = cellpy.get(
-        filename=name, instrument=instrument, instrument_file=instrument_file,
-        mass=1.0, auto_summary=False
+        filename=name,
+        instrument=instrument,
+        instrument_file=instrument_file,
+        mass=1.0,
+        auto_summary=False,
     )
     _process_cellpy_object(name, c, out)
 
@@ -242,9 +271,7 @@ def _process_cellpy_object(name, c, out):
     )
     raw.plot(x="test_time", y="voltage", ax=ax1)
     raw.plot(x="test_time", y="current", ax=ax2)
-    raw.plot(
-        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3
-    )
+    raw.plot(x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3)
     raw.plot(x="test_time", y="cycle_index", ax=ax4)
     fig_1.suptitle(f"{name.name}", fontsize=16)
 

@@ -1248,7 +1248,7 @@ def _read_local_templates(local_templates_path=None):
         local_templates_path = pathlib.Path(prmreader.prms.Paths.templatedir)
     templates = {}
     for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
-        label = p.stem.strip()[len("cellpy_cookie_"):]
+        label = p.stem.strip()[len("cellpy_cookie_") :]
         templates[label] = str(p)
     logging.debug(f"Found the following templates: {templates}")
     return templates
@@ -1336,8 +1336,7 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
         templates = _read_local_templates()
         if not templates:
             click.echo(
-                "You asked me to use a local template, "
-                "but you have none. Aborting."
+                "You asked me to use a local template, " "but you have none. Aborting."
             )
             return
     else:

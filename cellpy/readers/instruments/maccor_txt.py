@@ -40,6 +40,7 @@ MUST_HAVE_RAW_COLUMNS = [
 
 class MaccorTxtLoader(TxtLoader):
     """Class for loading data from Maccor txt files."""
+
     name = "maccor_txt"
     raw_ext = "txt"
 
@@ -61,7 +62,7 @@ class MaccorTxtLoader(TxtLoader):
 
     def validate(self, data):
         """A simple check that all the needed columns has been successfully
-         loaded and that they get the correct type"""
+        loaded and that they get the correct type"""
         missing_must_have_columns = []
 
         # validating the float-type raw data
