@@ -301,6 +301,7 @@ class ArbinSQLLoader(Loader):
         if rename_headers:
             columns = {}
             for key in self.arbin_headers_normal:
+                # TODO: check what actually happens here (old_header = None -> columns[None] ?)
                 old_header = normal_headers_renaming_dict.get(key,
                                                               None)  # changed from normal_headers_renaming_dict[key] to get around the KeyError
                 new_header = self.cellpy_headers_normal[key]
