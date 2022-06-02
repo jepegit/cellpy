@@ -75,6 +75,11 @@ taper_cell_path = os.path.join(raw_data_dir, taper_cell_name)
 gitt_cell_name = "gitt_cell.res"
 gitt_cell_path = os.path.join(raw_data_dir, gitt_cell_name)
 
+# -------- mock data files  -------------------------
+
+mock_file_name = "mock_data_001.xlsx"
+mock_file_path = os.path.join(raw_data_dir, mock_file_name)
+
 # -------- arbin specific files ---------------------
 
 res_file_name = "20160805_test001_45_cc_01.res"

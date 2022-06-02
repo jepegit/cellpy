@@ -107,6 +107,7 @@ class CustomLoader(Loader):
 
     [doc not finished yet]
     """
+
     name = "old_custom"
     raw_ext = "*"
 

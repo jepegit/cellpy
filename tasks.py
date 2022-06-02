@@ -309,7 +309,10 @@ def _get_bump_tag(bump):
     }
     default_bumper = "tag-num"
 
-    if bump in ["false", "keep", "skip", "no", "no-chance", "nope", "n"] or bump is False:
+    if (
+        bump in ["false", "keep", "skip", "no", "no-chance", "nope", "n"]
+        or bump is False
+    ):
         return False
     if bump is None or bump is True:
         return default_bumper
@@ -334,6 +337,7 @@ def create_commit_message_from_output(output, regexp):
         return
     return txt
 
+
 @task
 def requirements(c, check=True):
     if check:
@@ -346,7 +350,7 @@ def requirements(c, check=True):
 def bump(c, bumper=None):
     """Bump version.
 
-        bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+    bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
 
     """
     bumper = _get_bump_tag(bumper)
@@ -376,7 +380,7 @@ def bump(c, bumper=None):
     print("DONE")
 
 
-@task(optional=['bump'])
+@task(optional=["bump"])
 def autobuild(c, _bump=None, _clean=True, upload=True):
     """Create distribution and upload to PyPI.
 
@@ -401,7 +405,7 @@ def autobuild(c, _bump=None, _clean=True, upload=True):
         new_version = create_commit_message_from_output(out.stdout, regex_current)
         commit_message = f"version {new_version}"
 
-    print(80*"=")
+    print(80 * "=")
     print(f"bump: {_bump}")
     print(commit_message)
     print(f"clean: {_clean}")
@@ -451,7 +455,9 @@ def autobuild(c, _bump=None, _clean=True, upload=True):
         print(" To upload to pypi: 'python -m twine upload dist/*'")
 
 
-def build(c, _clean=True, dist=True, docs=False, upload=False, _serve=False, browser=False):
+def build(
+    c, _clean=True, dist=True, docs=False, upload=False, _serve=False, browser=False
+):
     """Create distribution (and optionally upload to PyPI)"""
 
     if _clean:

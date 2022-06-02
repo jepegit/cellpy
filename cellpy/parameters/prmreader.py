@@ -88,7 +88,9 @@ def _update_prms(config_dict):
                 z = config_dict[key][k]
                 if is_path:
                     _txt = f"{k}: {z}"
-                    if not k.lower() == "db_filename":  # special hack because it is a filename and not a path
+                    if (
+                        not k.lower() == "db_filename"
+                    ):  # special hack because it is a filename and not a path
                         z = pathlib.Path(z).resolve()
                     _txt += f" -> {z}"
                     logging.debug("converting to pathlib.Path")

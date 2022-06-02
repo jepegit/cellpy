@@ -252,12 +252,8 @@ def test_cli_new_list():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
-        result = runner.invoke(
-            cli.cli,
-            ["new", "--list"]
-        )
-    assert "https://github.com/jepegit/cellpy_cookie_standard.git" \
-           in result.output
+        result = runner.invoke(cli.cli, ["new", "--list"])
+    assert "https://github.com/jepegit/cellpy_cookie_standard.git" in result.output
 
 
 def test_cli_new(tmp_path):
@@ -267,17 +263,9 @@ def test_cli_new(tmp_path):
     notebookdir.mkdir(parents=True, exist_ok=True)
     prms.Paths.notebookdir = notebookdir
 
-    interactive_prms = [
-        "1",
-        "another_project",
-        "yes"
-    ]
+    interactive_prms = ["1", "another_project", "yes"]
     with runner.isolated_filesystem():
-        result = runner.invoke(
-            cli.cli,
-            ["new"],
-            "\n".join(interactive_prms)
-        )
+        result = runner.invoke(cli.cli, ["new"], "\n".join(interactive_prms))
     assert "[another_project]:" in result.output
     output_paths = str(list(notebookdir.glob("**/*.ipynb")))
     assert "NOTEBOOKS/another_project" in output_paths
@@ -290,16 +278,10 @@ def test_cli_new_with_dir_as_input(tmp_path):
     notebookdir = tmp_path / "CUSTOM_NOTEBOOK_DIR"
     notebookdir.mkdir(parents=True, exist_ok=True)
 
-    interactive_prms = [
-        "1",
-        "another_project",
-        "yes"
-    ]
+    interactive_prms = ["1", "another_project", "yes"]
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli.cli,
-            ["new", "-d", str(notebookdir)],
-            "\n".join(interactive_prms)
+            cli.cli, ["new", "-d", str(notebookdir)], "\n".join(interactive_prms)
         )
     assert "[another_project]:" in result.output
     output_paths = str(list(notebookdir.glob("**/*.ipynb")))
@@ -317,4 +299,3 @@ def test_cli_new_different_and_missing_default(tmp_path):
             ["new"],
         )
     assert "This template does not exist" in result.output
-

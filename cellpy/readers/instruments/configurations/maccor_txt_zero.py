@@ -11,9 +11,7 @@ unit_labels = {
     "temperature": "C",
 }
 
-file_info = {
-    "raw_extension": "txt"
-}
+file_info = {"raw_extension": "txt"}
 
 # not observed yet
 incremental_unit_labels = {

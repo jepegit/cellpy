@@ -125,7 +125,9 @@ def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
 
 
 def register_configuration_from_module(
-    name: str = "one", module: str = "maccor_txt_one", _module_path=None,
+    name: str = "one",
+    module: str = "maccor_txt_one",
+    _module_path=None,
     _m=None,
 ) -> ModelParameters:
     """register a python module (.py file) and return it.

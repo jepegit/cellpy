@@ -85,6 +85,7 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 
 class ArbinXLSXLoader(Loader):
     """Class for loading arbin-data from MS SQL server."""
+
     name = "arbin_sql_xlsx"
     raw_ext = "xlsx"
 
@@ -207,7 +208,9 @@ class ArbinXLSXLoader(Loader):
         if set_index:
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
             if data.raw.index.name != hdr_data_point:
-                data.raw = data.raw.set_index(hdr_data_point, drop=False)  # TODO: check if this is standard
+                data.raw = data.raw.set_index(
+                    hdr_data_point, drop=False
+                )  # TODO: check if this is standard
 
         if forward_fill_ir:
             logging.debug("forward filling ir")

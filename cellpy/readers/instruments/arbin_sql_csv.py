@@ -82,6 +82,7 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 
 class ArbinCsvLoader(Loader):
     """Class for loading arbin-data from MS SQL server."""
+
     name = "arbin_sql_csv"
     raw_ext = "csv"
 

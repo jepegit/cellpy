@@ -127,6 +127,7 @@ def from_arbin_to_datetime(n):
 
 class ArbinSQLLoader(Loader):
     """Class for loading arbin-data from MS SQL server."""
+
     name = "arbin_sql"
 
     def __init__(self, *args, **kwargs):
@@ -286,10 +287,13 @@ class ArbinSQLLoader(Loader):
 
         return new_tests
 
-    def _post_process(self, data):
-        fix_datetime = True
-        set_index = True
-        rename_headers = True
+    def _post_process(self, data, **kwargs):
+        # TODO: move this to parent
+
+        fix_datetime = kwargs.pop("fix_datetime", True)
+        set_index = kwargs.pop("set_index", True)
+        rename_headers = kwargs.pop("rename_headers", True)
+        extract_start_datetime = kwargs.pop("extract_start_datetime", True)
 
         # TODO:  insert post-processing and div tests here
         #    - check dtypes
@@ -301,12 +305,15 @@ class ArbinSQLLoader(Loader):
         if rename_headers:
             columns = {}
             for key in self.arbin_headers_normal:
-                # TODO: check what actually happens here (old_header = None -> columns[None] ?)
-                old_header = normal_headers_renaming_dict.get(key,
-                                                              None)  # changed from normal_headers_renaming_dict[key] to get around the KeyError
+                old_header = normal_headers_renaming_dict.get(key, None)
                 new_header = self.cellpy_headers_normal[key]
-                columns[old_header] = new_header
-
+                if old_header:
+                    columns[old_header] = new_header
+                logging.debug(
+                    f"processing cellpy normal header key '{key}':"
+                    f" old_header='{old_header}' -> new_header='{new_header}'"
+                )
+            logging.debug(f"renaming dict: {columns}")
             data.raw.rename(index=str, columns=columns, inplace=True)
             try:
                 columns = {}
@@ -337,8 +344,9 @@ class ArbinSQLLoader(Loader):
             if data.raw.index.name != hdr_data_point:
                 data.raw = data.raw.set_index(hdr_data_point, drop=False)
 
-        hdr_date_time = self.arbin_headers_normal.datetime_txt
-        data.start_datetime = parse("20" + data.raw[hdr_date_time].iat[0][:-7])
+        if extract_start_datetime:
+            hdr_date_time = self.arbin_headers_normal.datetime_txt
+            data.start_datetime = parse("20" + data.raw[hdr_date_time].iat[0][:-7])
 
         return data
 
