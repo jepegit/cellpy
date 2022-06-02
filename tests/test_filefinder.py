@@ -51,6 +51,7 @@ def test_search_for_res_files(parameters):
 
 def test_search_for_files_using_prms(parameters):
     from cellpy import prms
+
     prms.FileNames.reg_exp = ""
     prms.FileNames.raw_extension = "txt"
     raw_files, cellpy_file = filefinder.search_for_files(

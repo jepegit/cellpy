@@ -32,9 +32,7 @@ normal_headers_renaming_dict = {
     "step_index_txt": f"Step",
 }
 
-file_info = {
-    "raw_extension": "txt"
-}
+file_info = {"raw_extension": "txt"}
 
 states = {
     "column_name": "State",

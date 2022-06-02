@@ -459,9 +459,7 @@ def find_all_instruments():
 
     site_1 = pathlib.Path(site_1.__file__).parent
     modules_in_site_1 = [
-        s
-        for s in site_1.glob("*.py")
-        if not str(s.name).startswith("_")
+        s for s in site_1.glob("*.py") if not str(s.name).startswith("_")
     ]
 
     for module in modules_in_site_1:
@@ -479,10 +477,10 @@ def find_all_instruments():
         s
         for s in site_2.glob("*.py")
         if not (
-            str(s.name).startswith("_") or
-            str(s.name).startswith("dev_") or
-            str(s.name).startswith("base") or
-            str(s.name).startswith("backup")
+            str(s.name).startswith("_")
+            or str(s.name).startswith("dev_")
+            or str(s.name).startswith("base")
+            or str(s.name).startswith("backup")
         )
     ]
 
@@ -494,8 +492,7 @@ def find_all_instruments():
         instruments[instrument_name] = instrument_class
         logging.debug(instrument_name)
 
-    logging.debug("Searching for module configurations "
-                  "in user instrument folder:")
+    logging.debug("Searching for module configurations " "in user instrument folder:")
     # These are only yaml-files and should ideally import the appropriate
     #    custom loader class
     logging.debug("- Not implemented yet")
@@ -509,33 +506,40 @@ def find_all_instruments():
 def __look_up_instrument(instrument):
     if instrument in ["arbin", "arbin_res"]:
         from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
+
         instrument_id = "arbin"
     elif instrument == "arbin_sql":
         from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
+
         instrument_id = "arbin_sql"
     elif instrument == "arbin_sql_csv":
         from cellpy.readers.instruments.arbin_sql_csv import (
             ArbinCsvLoader as RawLoader,
         )
+
         instrument_id = "arbin_sql_csv"
     elif instrument == "arbin_sql_xlsx":
         from cellpy.readers.instruments.arbin_sql_xlsx import (
             ArbinXLSXLoader as RawLoader,
         )
+
         instrument_id = "arbin_sql_xlsx"
 
     elif instrument in ["pec", "pec_csv"]:
         from cellpy.readers.instruments.pec import PECLoader as RawLoader
+
         instrument_id = "pec"
 
     elif instrument in ["biologics", "biologics_mpr"]:
         from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
+
         instrument_id = "biologics"
 
     elif instrument in ["maccor", "maccor_txt"]:
         from cellpy.readers.instruments.maccor_txt import (
             MaccorTxtLoader as RawLoader,
         )
+
         instrument_id = "maccor"
         # need more here (model etc)
 
@@ -543,17 +547,20 @@ def __look_up_instrument(instrument):
         from cellpy.readers.instruments.custom_instrument import (
             CustomTxtLoader as RawLoader,
         )
+
         instrument_id = "custom"
 
     elif instrument.startswith("old_custom"):
         print("OLD CUSTOM LOADER")
         from cellpy.readers.instruments.custom import CustomLoader as RawLoader
+
         instrument_id = "old_custom"
 
     elif instrument.endswith(".yml"):
         from cellpy.readers.instruments.local_instrument import (
-                LocalTxtLoader as RawLoader,
-            )
+            LocalTxtLoader as RawLoader,
+        )
+
         instrument_id = instrument
         # fix this
 

@@ -51,7 +51,6 @@ if DEBUG_MODE:
     logging.debug(f"detect_subprocess_need: {detect_subprocess_need}")
     logging.debug(f"current_platform: {current_platform}")
 
-# TODO: refactor to mixin
 if detect_subprocess_need:
     logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
@@ -169,6 +168,7 @@ class ArbinLoader(Loader):
         SQL_server
 
     """
+
     name = "arbin_res"
     raw_ext = "res"
 

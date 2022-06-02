@@ -169,7 +169,9 @@ def simple_db_engine(
     pages_dict[headers_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
     pages_dict[headers_journal["loading"]] = _query(reader.get_loading, cell_ids)
     pages_dict[headers_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
-    pages_dict[headers_journal["experiment"]] = _query(reader.get_experiment_type, cell_ids)
+    pages_dict[headers_journal["experiment"]] = _query(
+        reader.get_experiment_type, cell_ids
+    )
     pages_dict[headers_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
     pages_dict[headers_journal["label"]] = _query(reader.get_label, cell_ids)
     pages_dict[headers_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
@@ -215,7 +217,11 @@ def simple_db_engine(
     try:
         pages = pages.sort_values([headers_journal.group, headers_journal.filename])
     except TypeError as e:
-        _report_suspected_duplicate_id(e, "sort the values", pages[[headers_journal.group, headers_journal.filename]])
+        _report_suspected_duplicate_id(
+            e,
+            "sort the values",
+            pages[[headers_journal.group, headers_journal.filename]],
+        )
 
     pages = helper.make_unique_groups(pages)
 
@@ -224,7 +230,9 @@ def simple_db_engine(
             helper.create_labels
         )
     except AttributeError as e:
-        _report_suspected_duplicate_id(e, "make labels", pages[[headers_journal.label, headers_journal.filename]])
+        _report_suspected_duplicate_id(
+            e, "make labels", pages[[headers_journal.label, headers_journal.filename]]
+        )
 
     else:
         # TODO: check if drop=False works [#index]

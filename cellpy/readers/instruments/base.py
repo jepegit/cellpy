@@ -169,12 +169,14 @@ def query_csv(
 
 class AtomicLoad:
     """Atomic loading class"""
+
     name = "atomic_loader"
     pass
 
 
 class Loader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
+
     name = "base_loader"
 
     # TODO: should also include the functions for getting cellpy headers etc
@@ -260,6 +262,7 @@ class AutoLoader(Loader):
     provided in the CONFIGURATION_MODULE.py located in the cellpy.readers.instruments.configurations folder/package.
 
     """
+
     name = "auto_loader"
 
     def __init__(self, *args, **kwargs):
@@ -284,9 +287,7 @@ class AutoLoader(Loader):
             )
 
         # in case model is given as argument
-        self.model = kwargs.pop(
-            "model", self.default_model
-        )
+        self.model = kwargs.pop("model", self.default_model)
         if self.auto_register_config:
             self.config_params = self.register_configuration()
 
@@ -316,7 +317,7 @@ class AutoLoader(Loader):
         ...
 
     @abc.abstractmethod
-    def query_file(self, file_path:  Union[str, pathlib.Path]) -> pd.DataFrame:
+    def query_file(self, file_path: Union[str, pathlib.Path]) -> pd.DataFrame:
         ...
 
     def pre_init(self) -> None:
@@ -524,7 +525,7 @@ class TxtLoader(AutoLoader, ABC):
         sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
             start of data (skiprows)).
 
-        """
+    """
 
     name = "txt_loader"
     raw_ext = "*"
@@ -585,7 +586,9 @@ class TxtLoader(AutoLoader, ABC):
     # override this if using other query functions
     def query_file(self, name):
         logging.debug(f"parsing with pandas.read_csv: {name}")
-        logging.critical(f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}")
+        logging.critical(
+            f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
+        )
         data_df = pd.read_csv(
             name,
             sep=self.sep,
