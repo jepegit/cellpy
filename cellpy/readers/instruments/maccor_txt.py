@@ -358,7 +358,8 @@ def check_loader_from_outside_with_get2():
     # MODEL = "WMG_SIMBA"
     # MODEL = "two"
     # MODEL = None
-    MODEL = "KIT_SIMBA"
+    # MODEL = "KIT_SIMBA"
+    MODEL = "S4000-WMG"
     # FILENAME = "1044-CT-MaccorExport.txt"  # WMG_SIMBA
     # FILENAME = "01_UBham_M50_Validation_0deg_01.txt"  # WMG_SIMBA and NONE
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell002.txt"

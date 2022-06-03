@@ -540,8 +540,10 @@ class TxtLoader(AutoLoader, ABC):
 
     # override this if needed
     def parse_formatter_parameters(self, **kwargs):
+        logging.debug(f"model: {self.model}")
         if not self.config_params.formatters:
             # Setting defaults if formatter is not loaded
+            logging.debug("No formatter given - using default values.")
             self.sep = kwargs.pop("sep", None)
             self.skiprows = kwargs.pop("skiprows", 0)
             self.header = kwargs.pop("header", 0)
@@ -566,6 +568,10 @@ class TxtLoader(AutoLoader, ABC):
             self.thousands = kwargs.pop(
                 "thousands", self.config_params.formatters["thousands"]
             )
+        logging.debug(f"Formatters: self.sep={self.sep} self.skiprows={self.skiprows} self.header={self.header} self.encoding={self.encoding}")
+        logging.debug(
+            f"Formatters (cont.): self.decimal={self.decimal} self.thousands={self.thousands}"
+        )
 
     def _auto_formatter(self):
         separator, first_index = find_delimiter_and_start(
@@ -576,8 +582,8 @@ class TxtLoader(AutoLoader, ABC):
         )
         self.encoding = "UTF-8"  # consider adding a find_encoding function
         self.sep = separator
-        self.skiprows = first_index - 1  # consider adding a find_rows_to_skip function
-        self.header = 0  # consider adding a find_header function
+        self.skiprows = first_index - 1
+        self.header = 0
 
         logging.critical(
             f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"

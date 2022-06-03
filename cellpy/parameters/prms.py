@@ -18,13 +18,18 @@ import box
 script_dir = os.path.abspath(os.path.dirname(__file__))
 cur_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 user_dir = os.path.expanduser("~")
-
-
 wdir = Path(cur_dir)
 
 
 @dataclass
+class CellPyDataConfig:
+    """Settings that can be unique for each CellpyData instance."""
+    ...
+
+
+@dataclass
 class CellPyConfig:
+    """Session settings (global)."""
     ...
 
 
@@ -33,6 +38,8 @@ class CellPyConfig:
 #   cli.py (_update_paths)
 #   test_cli_setup_interactive (NUMBER_OF_DIRS)
 #   test_prms.py (config_file_txt)
+
+# This can stay global:
 @dataclass
 class PathsClass(CellPyConfig):
     outdatadir: Union[Path, str] = wdir
@@ -48,9 +55,26 @@ class PathsClass(CellPyConfig):
     db_filename: str = "cellpy_db.xlsx"
 
 
-Paths = PathsClass()
+# This can stay global:
+@dataclass
+class BatchClass(CellPyConfig):
+    template: str = "standard"
+    fig_extension: str = "png"
+    backend: str = "bokeh"
+    notebook: bool = True
+    dpi: int = 300
+    markersize: int = 4
+    symbol_label: str = "simple"
+    color_style_label: str = "seaborn-deep"
+    figure_type: str = "unlimited"
+    summary_plot_width: int = 900
+    summary_plot_height: int = 800
+    summary_plot_height_fractions: List[float] = field(
+        default_factory=lambda: [0.2, 0.5, 0.3]
+    )
 
 
+# This can stay global:
 @dataclass
 class FileNamesClass(CellPyConfig):
     file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
@@ -62,9 +86,7 @@ class FileNamesClass(CellPyConfig):
     cellpy_file_extension: str = "h5"
 
 
-FileNames = FileNamesClass()
-
-
+# This can stay global:
 @dataclass
 class ReaderClass(CellPyConfig):
     diagnostics: bool = False
@@ -88,19 +110,7 @@ class ReaderClass(CellPyConfig):
     auto_dirs: bool = True  # search in prm-file for res and hdf5 dirs in loadcell
 
 
-Reader = ReaderClass()
-
-
-@dataclass
-class DataSetClass(CellPyConfig):
-    """Values used when processing the data (will be deprecated)"""
-
-    nom_cap: float = 3579
-
-
-DataSet = DataSetClass()
-
-
+# This can stay global:
 @dataclass
 class DbClass(CellPyConfig):
     db_type: str = "simple_excel_reader"
@@ -112,9 +122,7 @@ class DbClass(CellPyConfig):
     db_search_end_row: int = -1
 
 
-Db = DbClass()
-
-
+# This can stay global:
 @dataclass
 class DbColsClass(CellPyConfig):
     id: Tuple[str, str] = ("id", "int")
@@ -149,11 +157,16 @@ class DbColsClass(CellPyConfig):
     argument: Tuple[str, str] = ("argument", "str")  # e.g. 'max_cycle:100;recalc:false'
 
 
-DbCols = DbColsClass()
-
-
+# TODO: This should not stay global:
 @dataclass
-class MaterialsClass(CellPyConfig):
+class DataSetClass(CellPyDataConfig):
+    """Values used when processing the data (will be deprecated)"""
+    nom_cap: float = 3579
+
+
+# TODO: This should not stay global:
+@dataclass
+class MaterialsClass(CellPyDataConfig):
     """Default material-specific values used in processing the data."""
 
     cell_class: str = "Li-Ion"
@@ -162,27 +175,13 @@ class MaterialsClass(CellPyConfig):
     default_nom_cap: float = 1.0  # not used yet - should replace the DataSet class
 
 
+Paths = PathsClass()
+FileNames = FileNamesClass()
+Reader = ReaderClass()
+Db = DbClass()
+DbCols = DbColsClass()
+DataSet = DataSetClass()
 Materials = MaterialsClass()
-
-
-@dataclass
-class BatchClass(CellPyConfig):
-    template: str = "standard"
-    fig_extension: str = "png"
-    backend: str = "bokeh"
-    notebook: bool = True
-    dpi: int = 300
-    markersize: int = 4
-    symbol_label: str = "simple"
-    color_style_label: str = "seaborn-deep"
-    figure_type: str = "unlimited"
-    summary_plot_width: int = 900
-    summary_plot_height: int = 800
-    summary_plot_height_fractions: List[float] = field(
-        default_factory=lambda: [0.2, 0.5, 0.3]
-    )
-
-
 Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 
 
@@ -194,8 +193,18 @@ Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 #  so maybe replace later  using e.g. pydantic
 # ------------------------------------------------------------------------------
 
-# Pre-defined instruments:
+# This can stay global:
+# remark! using box.Box for each instrument
+@dataclass
+class InstrumentsClass(CellPyConfig):
+    tester: str
+    custom_instrument_definitions_file: Union[str, None]
+    Arbin: box.Box
+    Maccor: box.Box
 
+
+# Pre-defined instruments:
+# These can stay global:
 Arbin = {
     "max_res_filesize": 150_000_000,
     "chunk_size": None,
@@ -212,21 +221,11 @@ Arbin = {
 
 Arbin = box.Box(Arbin)
 
-Maccor = {"default_model": "one"}
+Maccor = {"default_model": "four"}
 Maccor = box.Box(Maccor)
 
-
-# remark! using box.Box for each instrument
-@dataclass
-class InstrumentsClass(CellPyConfig):
-    tester: str
-    custom_instrument_definitions_file: Union[str, None]
-    Arbin: box.Box
-    Maccor: box.Box
-
-
 Instruments = InstrumentsClass(
-    tester="arbin",
+    tester="arbin",  # TODO: moving this to DataSetClass (deprecate)
     custom_instrument_definitions_file=None,
     Arbin=Arbin,
     Maccor=Maccor,
