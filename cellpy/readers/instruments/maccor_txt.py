@@ -23,7 +23,10 @@ SUPPORTED_MODELS = {
     "KIT_SIMBA": "maccor_txt_four",
     "KIT_COMMA_SIMBA": "maccor_txt_two",
     "UBHAM_SIMBA": "maccor_txt_three",
-}
+    "S4000-WMG": "maccor_txt_four",
+    "S4000-KIT": "maccor_txt_four",
+    "S4000-UBHAM": "maccor_txt_three",
+    }
 
 
 MUST_HAVE_RAW_COLUMNS = [
@@ -352,19 +355,23 @@ def check_loader_from_outside_with_get2():
     # two: KIT
     # three | WMB_SIMBA: WMG new
     INSTRUMENT = "maccor_txt"
-    MODEL = "WMG_SIMBA"
+    # MODEL = "WMG_SIMBA"
     # MODEL = "two"
     # MODEL = None
-    # MODEL = "KIT_SIMBA"
+    MODEL = "KIT_SIMBA"
     # FILENAME = "1044-CT-MaccorExport.txt"  # WMG_SIMBA
     # FILENAME = "01_UBham_M50_Validation_0deg_01.txt"  # WMG_SIMBA and NONE
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell002.txt"
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell016.txt"
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell013.txt"  # Two
     # FILENAME = "KIT-Full-cell-PW-HC-CT-cell009.txt"  # FAILS in convert_date_time_to_datetime!
-    FILENAME = "SIM-A7-1039 - 073.txt"
+    # FILENAME = "SIM-A7-1039 - 073.txt"
     # FILENAME = "SIM-A7-1047-ET - 079.txt"
-    DATADIR = r"C:\scripting\processing_cellpy\notebooks\test\new\data"
+    FILENAME = "1039_Data from File.txt"
+    # FILENAME = "1044_Data from File.txt"
+    # FILENAME = "1475_Data from File.txt"
+
+    DATADIR = r"C:\scripting\cellpy_dev_resources\2021_leafs_data\Data from File"
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(DATADIR)
