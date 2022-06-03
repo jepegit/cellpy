@@ -221,7 +221,7 @@ Arbin = {
 
 Arbin = box.Box(Arbin)
 
-Maccor = {"default_model": "four"}
+Maccor = {"default_model": "one"}
 Maccor = box.Box(Maccor)
 
 Instruments = InstrumentsClass(
