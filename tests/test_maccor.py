@@ -19,7 +19,7 @@ def test_set_instrument(cellpy_data_instance, parameters):
 
     instrument = "maccor_txt"
     cellpy_data_instance.set_instrument(instrument=instrument)
-    cellpy_data_instance.from_raw(parameters.mcc_file_path, sep="\t")
+    cellpy_data_instance.from_raw(parameters.mcc_file_path, model="one",  sep="\t")
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
     assert len(cellpy_data_instance.cell.raw) == 6704
