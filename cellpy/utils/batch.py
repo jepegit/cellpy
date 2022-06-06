@@ -62,6 +62,7 @@ class Batch:
             file_name (str or pathlib.Path): journal file name to load.
             db_reader (str): data-base reader to use (defaults to "default" as given
                 in the config-file or prm-class).
+            frame (pandas.DataFrame): load from given dataframe.
         Args:
             *args: name (str) (project (str))
 

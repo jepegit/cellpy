@@ -18,9 +18,11 @@ from cellpy.utils.batch_tools import (
     dumpers,
     engines,
 )
+from cellpy.utils.batch_tools.batch_core import get_headers_journal
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
+hdr_journal = get_headers_journal()
 
 # TODO: I think these tests saves new versions of cellpyfiles each time. Fix that.
 # TODO: Most likely some of these tests also saves an updated batch json file. Fix that.
@@ -85,6 +87,58 @@ def test_reading_db(batch_instance):
     )
 
     b.create_journal()
+
+
+def test_reading_cell_specs(batch_instance):
+    # For the simple excel dbreader, cell specs are given in the
+    # columns "argument" as str.
+    # The argument str must be on the form:
+    #    "keyword-1=value-1;keyword-2=value2"
+
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b02", testing=True
+    )
+    b.create_journal()
+    hdr = hdr_journal["argument"]
+    with_argument = b.pages.iloc[0][hdr]
+    with_several_arguments = b.pages.iloc[1][hdr]
+    without_argument = b.pages.iloc[2][hdr]
+    assert with_argument["recalc"].upper() == "TRUE"
+    assert with_several_arguments["recalc"].upper() == "FALSE"
+    # TODO: find out what second parameter can be used that does not destroy other tests
+    # assert int(with_several_arguments["dataset_number"]) == 1
+    assert not without_argument
+
+
+# TODO: make this test
+def test_update_with_cellspecs(batch_instance):
+    # from journal and as argument (see batch_experiment.py, update).
+    pass
+
+
+# TODO: make this test
+def test_load_save_journal_roundtrip_cell_specs(batch_instance):
+    pass
+
+
+# TODO: make this test
+def test_load_save_journal_roundtrip_excel(batch_instance):
+    pass
+
+
+# TODO: make this test
+def test_load_save_journal_roundtrip_json(batch_instance):
+    pass
+
+
+# TODO: make this test
+def test_load_journal_dataframe(batch_instance):
+    pass
+
+
+# TODO: make this test
+def test_load_journal_custom_db_reader(batch_instance):
+    pass
 
 
 def test_csv_exporter(updated_cycling_experiment):

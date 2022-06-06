@@ -134,6 +134,14 @@ class CyclingExperiment(BaseExperiment):
                     selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
                     loading from raw is not necessary (or turned off).
 
+        Examples:
+            >>> # Don't perform recalculation of cycle numbers etc. when merging
+            >>> # All cells:
+            >>> b.update(recalc=False)
+            >>> # For specific cell(s):
+            >>> cell_specs_cell_01 = {"name_of_cell_01": {"recalc": False}}
+            >>> b.update(cell_specs=cell_specs_cell_01)
+
         """
 
         # TODO: implement experiment.last_cycle
