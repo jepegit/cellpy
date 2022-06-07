@@ -63,6 +63,13 @@
             "test004": "arbin_res",
             "test005": "arbin_res"
         },
+        "argument": {
+            "test001": "recalc=False",
+            "test002": "data_points=(1, 10000)",
+            "test003": "recalc=True;data_points=(1, 10000)",
+            "test004": "",
+            "test005": ""
+        },
         "comment": {
             "test001": "test",
             "test002": "test",

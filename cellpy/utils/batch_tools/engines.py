@@ -15,7 +15,6 @@ from cellpy.utils.batch_tools import batch_helpers as helper
 
 # logger = logging.getLogger(__name__)
 
-
 SELECTED_SUMMARIES = [
     "discharge_capacity",
     "charge_capacity",

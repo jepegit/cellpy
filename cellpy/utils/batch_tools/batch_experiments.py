@@ -1,3 +1,4 @@
+import ast
 import logging
 import os
 import pathlib
@@ -86,6 +87,16 @@ class CyclingExperiment(BaseExperiment):
     @staticmethod
     def _get_cell_spec_from_page(indx: int, row: pd.Series) -> dict:
         # Edit this if we decide to make "argument families", e.g. loader_split or merger_recalc.
+
+        PRM_SPLITTER = ";"
+        EQUAL_SIGN = "="
+
+        def _arg_parser(text: str) -> None:
+            individual_specs = text.split(PRM_SPLITTER)
+            for p in individual_specs:
+                p, a = p.split(EQUAL_SIGN)
+
+
         logging.debug(f"getting cell_spec from journal pages ({indx}: {row})")
         try:
             cell_spec = row[hdr_journal.argument]
@@ -100,7 +111,6 @@ class CyclingExperiment(BaseExperiment):
 
         # converting from str if needed
         for spec in cell_spec:
-
             if isinstance(cell_spec[spec], str):
                 if cell_spec[spec].lower() == "true":
                     cell_spec[spec] = True
@@ -108,6 +118,13 @@ class CyclingExperiment(BaseExperiment):
                     cell_spec[spec] = False
                 elif cell_spec[spec].lower() == "none":
                     cell_spec[spec] = None
+                else:
+                    try:
+                        logging.debug(f"Using ast.literal_eval to convert cell-spec value from str '{cell_spec[spec]}'")
+                        cell_spec[spec] = ast.literal_eval(cell_spec[spec])
+                    except ValueError as e:
+                        logging.warning(f"ERROR! Could not convert from str to python object!")
+                        logging.debug(e)
         return cell_spec
 
     def update(self, all_in_memory=None, cell_specs=None, **kwargs):

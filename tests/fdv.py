@@ -134,6 +134,10 @@ journal_file_json = "test_journal.json"
 journal_file_xlsx = "test_journal.xlsx"
 journal_file_full_xlsx = "test_journal_full.xlsx"
 
+journal_file_json_path = os.path.join(journal_dir, journal_file_json)
+journal_file_xlsx_path = os.path.join(journal_dir, journal_file_xlsx)
+journal_file_full_xlsx_path = os.path.join(journal_dir, journal_file_full_xlsx)
+
 # -------- custom file format -----------------------
 custom_file_name = "custom_data_001.csv"
 custom_file_paths = os.path.join(raw_data_dir, custom_file_name)

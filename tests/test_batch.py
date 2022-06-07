@@ -1,3 +1,4 @@
+import ast
 import logging
 import os
 import pathlib
@@ -105,20 +106,33 @@ def test_reading_cell_specs(batch_instance):
     without_argument = b.pages.iloc[2][hdr]
     assert with_argument["recalc"].upper() == "TRUE"
     assert with_several_arguments["recalc"].upper() == "FALSE"
-    # TODO: find out what second parameter can be used that does not destroy other tests
-    # assert int(with_several_arguments["dataset_number"]) == 1
+    assert ast.literal_eval(with_several_arguments["data_points"]) == (1, 10_000)
     assert not without_argument
 
 
+def test_load_journal_json(parameters, batch_instance):
+    b = batch_instance.from_journal(parameters.journal_file_json_path)
+    assert len(b.pages) == 5
+    assert hdr_journal["argument"] in b.pages.columns
+
+
 # TODO: make this test
-def test_update_with_cellspecs(batch_instance):
+def test_update_with_cellspecs(parameters, batch_instance):
     # from journal and as argument (see batch_experiment.py, update).
     pass
 
 
-# TODO: make this test
-def test_load_save_journal_roundtrip_cell_specs(batch_instance):
-    pass
+def test_load_save_journal_roundtrip_cell_specs(parameters, clean_dir, batch_instance):
+    b = batch_instance.from_journal(parameters.journal_file_json_path)
+    out = pathlib.Path(clean_dir) / "j.json"
+    b.experiment.journal.to_file(file_name=out)
+    spec_1 = b.pages[hdr_journal["argument"]].iloc[0]
+    assert spec_1 == "recalc=False"
+    assert out.is_file()
+    b2 = batch_instance.from_journal(out)
+    assert len(b.pages) == 5
+    assert hdr_journal["argument"] in b.pages.columns
+    assert b2.pages[hdr_journal["argument"]].iloc[0] == spec_1
 
 
 # TODO: make this test
@@ -146,6 +160,21 @@ def test_csv_exporter(updated_cycling_experiment):
     exporter = batch_exporters.CSVExporter()
     exporter.assign(updated_cycling_experiment)
     exporter.do()
+
+
+def test_query():
+    def mock_reader_method(cell_id):
+        spec = {
+            1: "recalc=True",
+            2: "recalc=False;other=12",
+        }
+        return spec[cell_id]
+
+    from cellpy.utils.batch_tools import engines
+    cell_ids = [1, 2]
+    out = engines._query(mock_reader_method, cell_ids)
+    assert "=" in out[0]
+    assert ";" in out[1]
 
 
 # TODO: fix me
