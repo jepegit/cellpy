@@ -33,3 +33,5 @@ dependencies:
     - jupyterlab
     - qgrid
     - sqlalchemy
+    - pip:
+        - sqlalchemy-access

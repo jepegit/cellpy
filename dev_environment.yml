@@ -40,6 +40,7 @@ dependencies:
   - python-box
   - sqlalchemy
   - pip:
+    - sqlalchemy-access
     - pytest-benchmark
     - pytest-timeout
     - requests

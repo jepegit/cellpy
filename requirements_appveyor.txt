@@ -17,3 +17,4 @@ pytest-timeout
 cookiecutter
 tqdm
 sqlalchemy
+sqlalchemy-access

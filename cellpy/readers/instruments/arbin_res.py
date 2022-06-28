@@ -10,6 +10,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import sqlalchemy as sa
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
@@ -26,6 +27,7 @@ from cellpy.readers.instruments.base import MINIMUM_SELECTION, Loader
 
 DEBUG_MODE = prms.Reader.diagnostics
 ALLOW_MULTI_TEST_FILE = False
+USE_SQLALCHEMY_ACCESS_ENGINE = True
 
 # Select odbc module
 ODBC = prms._odbc
@@ -83,7 +85,7 @@ use_ado = False
 
 if ODBC == "ado":
     use_ado = True
-    logging.debug("Trying to use adodbapi as ado loader")
+    warnings.warn("Using ado (adobapi) will be removed from cellpy very soon", DeprecationWarning)
     try:
         import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
     except ImportError:
@@ -319,15 +321,15 @@ class ArbinLoader(Loader):
 
     def _get_res_connector(self, temp_filename):
 
-        if use_ado:
+        if use_ado:  # deprecated
             is64bit_python = check64bit(current_system="python")
             if is64bit_python:
                 constr = (
-                    "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=%s" % temp_filename
+                    f"Provider=Microsoft.ACE.OLEDB.12.0; DataSource={temp_filename}"
                 )
             else:
                 constr = (
-                    "Provider=Microsoft.Jet.OLEDB.4.0; Data Source=%s" % temp_filename
+                    f"Provider=Microsoft.Jet.OLEDB.4.0; Data Source={temp_filename}"
                 )
             return constr
 
@@ -383,12 +385,30 @@ class ArbinLoader(Loader):
                 driver = "{Microsoft Access Driver (*.mdb, *.accdb)}"
             else:
                 driver = "Microsoft Access Driver (*.mdb)"
-            self.logger.debug("odbc constr: {}".format(driver))
-        constr = "Driver=%s;Dbq=%s" % (driver, temp_filename)
+            self.logger.debug(f"odbc constr: {driver}")
 
+        constr = f"Driver={driver};Dbq={temp_filename};ExtendedAnsiSQL=1;"
         logging.debug(f"constr: {constr}")
 
         return constr
+
+    def _get_connection_or_engine(self, temp_filename):
+        # updated to use sqlalchemy - needs sqlalchemy-access
+        constr = self._get_res_connector(temp_filename)
+        self.logger.debug(f"constr str: {constr}")
+        if use_ado:
+            conn = dbloader.connect(constr)
+        else:
+            if USE_SQLALCHEMY_ACCESS_ENGINE:
+                connection_url = sa.engine.URL.create(
+                    "access+pyodbc",
+                    query={"odbc_connect": constr}
+                )
+                engine = sa.create_engine(connection_url)
+                conn = engine
+            else:
+                conn = dbloader.connect(constr, autocommit=True)
+        return conn
 
     def _clean_up_loadres(self, cur, conn, filename):
         if cur is not None:
@@ -518,11 +538,10 @@ class ArbinLoader(Loader):
         temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
         shutil.copy2(file_name, temp_dir)
         constr = self._get_res_connector(temp_filename)
-
         if use_ado:
             conn = dbloader.connect(constr)
         else:
-            conn = dbloader.connect(constr, autocommit=True)
+             conn = dbloader.connect(constr, autocommit=True)
 
         self.logger.debug("tmp file: %s" % temp_filename)
         self.logger.debug("constr str: %s" % constr)
@@ -783,15 +802,16 @@ class ArbinLoader(Loader):
         if DEBUG_MODE:
             time_0 = time.time()
 
-        constr = self._get_res_connector(temp_filename)
+        conn = self._get_connection_or_engine(temp_filename)
 
-        if use_ado:
-            conn = dbloader.connect(constr)
-        else:
-            conn = dbloader.connect(constr, autocommit=True)
+
+        # if use_ado:
+        #     conn = dbloader.connect(constr)
+        # else:
+        #     conn = dbloader.connect(constr, autocommit=True)
 
         self.logger.debug("reading global data table")
-        self.logger.debug(f"constr str: {constr}")
+
         global_data_df = self._query_table(table_name=table_name_global, conn=conn)
         tests = global_data_df[self.arbin_headers_normal.test_id_txt]
         number_of_sets = len(tests)
