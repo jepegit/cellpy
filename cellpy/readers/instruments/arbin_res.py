@@ -497,7 +497,7 @@ class ArbinLoader(Loader):
                 checked_rundata.append(data)
             return checked_rundata
 
-    def _iterdump(self, file_name, headers=None):
+    def _iterdump(self, file_name, headers=None):  # Deprecated - use on own risk
         """
         Function for dumping values from a file.
 
@@ -541,7 +541,7 @@ class ArbinLoader(Loader):
         if use_ado:
             conn = dbloader.connect(constr)
         else:
-             conn = dbloader.connect(constr, autocommit=True)
+            conn = dbloader.connect(constr, autocommit=True)
 
         self.logger.debug("tmp file: %s" % temp_filename)
         self.logger.debug("constr str: %s" % constr)
@@ -614,7 +614,7 @@ class ArbinLoader(Loader):
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
 
-    def investigate(self, file_name):
+    def investigate(self, file_name): # Deprecated - use on own risk
         """Investigate a .res file.
 
         Args:
