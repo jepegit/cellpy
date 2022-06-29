@@ -307,6 +307,7 @@ def plot_cycle_life_summary_bokeh(
         height_fractions = [0.3, 0.4, 0.3]
     logging.debug(f"   * stacking and plotting")
     logging.debug(f"      backend: {prms.Batch.backend}")
+    logging.debug(f"      received kwargs: {kwargs}")
 
     idx = pd.IndexSlice
     all_legend_items = []
@@ -448,33 +449,32 @@ def plot_cycle_life_summary_bokeh(
         )
         renderer_list.extend(legend_items_dict[legend])
 
-    comment = "Legends"
+    legend_title = "Legends"
 
-    dum_fig = bokeh.plotting.figure(
+    dummy_figure_for_legend = bokeh.plotting.figure(
         plot_width=300,
         plot_height=height,
         outline_line_alpha=0,
         toolbar_location=None,
         width_policy="min",
         min_width=300,
-        title=comment,
+        title=legend_title,
     )
     # set the components of the figure invisible
     for fig_component in [
-        dum_fig.grid[0],
-        dum_fig.ygrid[0],
-        dum_fig.xaxis[0],
-        dum_fig.yaxis[0],
+        dummy_figure_for_legend.grid[0],
+        dummy_figure_for_legend.ygrid[0],
+        dummy_figure_for_legend.xaxis[0],
+        dummy_figure_for_legend.yaxis[0],
     ]:
         fig_component.visible = False
 
-    dum_fig.renderers += renderer_list
+    dummy_figure_for_legend.renderers += renderer_list
 
-    # set the figure range outside of the range of all
-    # glyphs (need to double check this)
-    dum_fig.x_range.end = width + 5
-    dum_fig.x_range.start = width
-    dum_fig.add_layout(
+    # set the figure range outside the range of all
+    # glyphs (assuming that negative cycle numbers never happen)
+    dummy_figure_for_legend.x_range.start, dummy_figure_for_legend.x_range.end = (-10, -9)
+    dummy_figure_for_legend.add_layout(
         bokeh.models.Legend(
             click_policy="hide",
             location="top_left",
@@ -482,7 +482,7 @@ def plot_cycle_life_summary_bokeh(
             items=legend_items,
         )
     )
-    dum_fig.title.align = "center"
+    dummy_figure_for_legend.title.align = "center"
 
     grid_layout = [p_eff, p_cap]
     if not ir_charge.empty:
@@ -496,7 +496,7 @@ def plot_cycle_life_summary_bokeh(
         p_cap.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
 
     final_figure = bokeh.layouts.row(
-        children=[fig_grid, dum_fig], sizing_mode="stretch_width"
+        children=[fig_grid, dummy_figure_for_legend], sizing_mode="stretch_width"
     )
     return bokeh.plotting.show(final_figure)
 
@@ -512,6 +512,10 @@ def plot_cycle_life_summary_matplotlib(
 ):
 
     import matplotlib.pyplot as plt
+
+    logging.debug(f"   * stacking and plotting")
+    logging.debug(f"      backend: {prms.Batch.backend}")
+    logging.debug(f"      received kwargs: {kwargs}")
 
     # Not used (yet?) - requires a more advanced generation of sub-plots
     if height_fractions is None:
