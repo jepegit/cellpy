@@ -9,7 +9,8 @@ History
 * Updated loaders with hooks and additional base class TxtLoader with configuration mechanism
 * Support for Maccor txt files
 * Supports only python 3.8 and up
-* Several bug fixes
+* Optional parameters through batch and pages
+* Several bug fixes and minor improvements / adjustments
 
 
 0.4.1 (2021)
