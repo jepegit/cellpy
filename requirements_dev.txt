@@ -21,3 +21,4 @@ sqlalchemy
 sqlalchemy-access
 build
 black
+python-dotenv

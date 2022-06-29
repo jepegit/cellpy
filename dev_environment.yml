@@ -47,3 +47,4 @@ dependencies:
     - nbsphinx
     - sphinx-rtd-theme
     - build
+    - python-dotenv

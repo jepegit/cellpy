@@ -5,9 +5,12 @@ import sys
 from contextlib import contextmanager
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+from dotenv import load_dotenv
 
 import requests
 from invoke import task
+
+load_dotenv()
 
 """Tasks for cellpy development.
 
