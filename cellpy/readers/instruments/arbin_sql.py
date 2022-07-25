@@ -114,14 +114,14 @@ normal_headers_renaming_dict = {
 
 
 def from_arbin_to_datetime(n):
-    # This is a hack that I have not verified yet
-    # (what is so special with 1976.08.23? I have only encountered 1900.01.01 and 1970.01.01 before)
-    # (or is the internal clock in our arbin machine set to 2014?)
-    n /= 1_000_000_000_000
-    temp = datetime.datetime(1976, 8, 23)
-    delta = datetime.timedelta(days=n)
-    time_object = temp + delta
-    time_in_str = time_object.strftime("%y-%m-%d %H:%M:%S:%f")
+    if isinstance(n, int):
+        n = str(n)
+
+    ms_component = n[-7:]
+    date_time_component = n[:-7]
+    temp = f"{date_time_component}.{ms_component}"
+    datetime_object = datetime.datetime.fromtimestamp(float(temp))
+    time_in_str = datetime_object.strftime("%y-%m-%d %H:%M:%S:%f")
     return time_in_str
 
 
