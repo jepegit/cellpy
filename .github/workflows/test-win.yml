@@ -1,1 +1,12 @@
+name: test setup exe on win
+on:
+  workflow_dispatch:
+
+jobs:
+  Install-exe:
+    runs-on: windows-latest
+    steps:
+      - name: Install 7Zip PowerShell Module
+        shell: powershell
+        run: Install-Module 7Zip4PowerShell -Force -Verbose 
 
