@@ -1,1 +1,33 @@
+name: Run pytest on win
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  Install-miniconda-and-run-pytest:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          activate-environment: cellpy_dev
+          environment-file: dev_environment.yml
+          python-version: ${{ matrix.python-version }}
+
+      - name: Conda info
+        run: conda info
+
+      - name: Conda list
+        run: conda list
+
+      - name: pytest
+        run: pytest
 
