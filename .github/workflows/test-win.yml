@@ -1,4 +1,4 @@
-name: test setup exe on win
+name: test setup exe on win - DID NOT WORK
 on:
   workflow_dispatch:
 
