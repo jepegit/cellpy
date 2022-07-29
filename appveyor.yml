@@ -1,10 +1,12 @@
 build: false
 
 environment:
+  MINICONDA: C:\Miniconda3
+  PYTHON_ARC: "64"
   matrix:
+    - PYTHON_VERSION: 3.8
     - PYTHON_VERSION: 3.9
-      MINICONDA: C:\Miniconda3
-      PYTHON_ARC: "64"
+    - PYTHON_VERSION: 3.10
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA% %PYTHON_ARC%"
@@ -15,7 +17,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda env create -f dev_environment.yml
+  - conda env create -f dev_environment.yml python=%PYTHON_VERSION%
   - activate cellpy_dev
   - pip install coverage
 
