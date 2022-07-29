@@ -6,7 +6,12 @@ jobs:
   Install-exe:
     runs-on: windows-latest
     steps:
-      - name: Install 7Zip PowerShell Module
+      - uses: actions/checkout@v2
+      - name: find out where we are
+        shell: cmd
+        run: dir
+      - name: Install AccessDatabaseEngine
         shell: powershell
-        run: Install-Module accessdatabaseengine_X64.exe -Force -Verbose 
+        run: Start-Process -Wait -FilePath "C:\bin\AccessDatabaseEngine.exe" -ArgumentList "/S" -PassThru
+
 
