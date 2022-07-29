@@ -116,7 +116,6 @@ normal_headers_renaming_dict = {
 def from_arbin_to_datetime(n):
     if isinstance(n, int):
         n = str(n)
-
     ms_component = n[-7:]
     date_time_component = n[:-7]
     temp = f"{date_time_component}.{ms_component}"
