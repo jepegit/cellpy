@@ -7,7 +7,7 @@ lmfit>=0.9.7
 setuptools>=35.0.1
 pandas>=1.0
 ruamel.yaml
-pyodbc>=4.0.16
+pyodbc>=4.0.32
 python-box
 PyGithub>=1.43
 numpy>=1.16.4
