@@ -80,6 +80,10 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# My own notes
+notes.md
+
 cellpy/utils/testscripts_ocv_rlx/lmfit_example.py
 cellpy/parametres/_cellpy_prms_devel.ini
 
