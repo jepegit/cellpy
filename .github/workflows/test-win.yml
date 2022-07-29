@@ -12,6 +12,6 @@ jobs:
         run: dir
       - name: Install AccessDatabaseEngine
         shell: powershell
-        run: Start-Process -Wait -FilePath "bin\AccessDatabaseEngine.exe" -ArgumentList "/S" -PassThru
+        run: Start-Process -Wait -FilePath "D:\a\cellpy\cellpybin\AccessDatabaseEngine.exe" -ArgumentList "/S" -PassThru
 
 
