@@ -98,29 +98,34 @@ def test_registering_module_post_processors():
 def test_list_available_instruments():
     pass
 
-#
-# @pytest.mark.parametrize(
-#     "parameter, loader, expected",
-#     [
-#         ("raw_ext", "arbin_res", "res"),
-#         ("name", "arbin_res", "arbin_res"),
-#         ("raw_ext", "arbin_sql", None),
-#         ("name", "arbin_sql", "arbin_sql"),
-#         ("raw_ext", "arbin_sql_csv", "csv"),
-#         ("name", "arbin_sql_csv", "arbin_sql_csv"),
-#         ("raw_ext", "arbin_sql_xlsx", "xlsx"),
-#         ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
-#         ("name", "custom", "custom"),
-#         ("raw_ext", "custom", "*"),
-#         ("name", "maccor_txt", "maccor_txt"),
-#         ("raw_ext", "maccor_txt", "txt"),
-#         ("name", "pec_csv", "pec_csv"),
-#         ("raw_ext", "pec_csv", "csv"),
-#         ("name", "biologics_mpr", "biologics_mpr"),
-#         ("raw_ext", "biologics_mpr", "mpr"),
-#         ("name", "old_custom", "old_custom"),
-#         ("raw_ext", "old_custom", "*"),
-#     ],
-# )
-# def test_query_instrument(parameter, loader, expected):
-#     assert core.query_instrument(parameter, loader) == expected
+
+@pytest.mark.parametrize(
+    "parameter, loader, expected",
+    [
+        ("raw_ext", "arbin_res", "res"),
+        ("name", "arbin_res", "arbin_res"),
+        ("raw_ext", "arbin_sql", None),
+        ("name", "arbin_sql", "arbin_sql"),
+        ("raw_ext", "arbin_sql_csv", "csv"),
+        ("name", "arbin_sql_csv", "arbin_sql_csv"),
+        ("raw_ext", "arbin_sql_xlsx", "xlsx"),
+        ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
+        # ("name", "custom", "custom"),
+        # ("raw_ext", "custom", "*"),
+        ("name", "maccor_txt", "maccor_txt"),
+        ("raw_ext", "maccor_txt", "txt"),
+        ("name", "pec_csv", "pec_csv"),
+        ("raw_ext", "pec_csv", "csv"),
+        ("name", "biologics_mpr", "biologics_mpr"),
+        ("raw_ext", "biologics_mpr", "mpr"),
+        ("name", "old_custom", "old_custom"),
+        ("raw_ext", "old_custom", "*"),
+    ],
+)
+def test_query_instrument(parameter, loader, expected):
+    instrument_factory = core.InstrumentFactory()
+    instruments = core.find_all_instruments()
+    for instrument_id, instrument in instruments.items():
+        instrument_factory.register_builder(instrument_id, instrument)
+
+    assert instrument_factory.query(loader, parameter) == expected

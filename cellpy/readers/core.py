@@ -410,9 +410,10 @@ class InstrumentFactory:
     def create(self, key, **kwargs):
         """Create the instrument loader module and initialize the loader class."""
 
-        module_name, instrument_class, module_path = self._builders.get(
-            key, (None, None, None)
+        module_name, module_path = self._builders.get(
+            key, (None,  None)
         )
+        instrument_class = "DataLoader"
         if not module_name:
             raise ValueError(key)
         spec = importlib.util.spec_from_file_location(module_name, module_path)
@@ -422,34 +423,19 @@ class InstrumentFactory:
         cls = getattr(loader_module, instrument_class)
         return cls(**kwargs)
 
-    def query(self):
-        pass
+    def query(self, key, variable):
+        loader = self.create(key)
+        try:
+            value = loader.get_params(variable)
+            logging.debug(f"GOT {variable}={value} for {key}")
+            return value
 
-
-def query_instrument(variable, instrument=None, instrument_file=None, **kwargs):
-    """Retrieve information from a loader class without instantiating it.
-
-    Remark! This function uses the .get_params method for the loader class and
-        not all loaders have this method implemented. This function will catch
-        several exceptions (`AttributeError`, `NotImplementedError`, `KeyError`)
-        without propagating it. Thus, it is usually OK to use this function, but
-        you might not get anything else than `None` from it.
-    """
-
-    RawLoader, instrument_id = __look_up_instrument(instrument)
-    try:
-        value = RawLoader.get_params(variable)
-        logging.debug(f"GOT {variable}={value} for {instrument}")
-        return value
-
-    except (AttributeError, NotImplementedError, KeyError):
-        logging.debug(f"COULD NOT RETRIEVE {variable} for {instrument}")
+        except (AttributeError, NotImplementedError, KeyError):
+            logging.debug(f"COULD NOT RETRIEVE {variable} for {key}")
+        return
 
 
 def find_all_instruments():
-    from cellpy.readers.instruments.registered_loaders import (
-        instruments as instruments_registered,
-    )
     import cellpy.readers.instruments as hard_coded_instruments_site
 
     instruments_found = {}
@@ -473,14 +459,14 @@ def find_all_instruments():
     for module_path in modules_in_hard_coded_instruments_site:
         module_name = module_path.name.rstrip(".py")
         logging.debug(module_name)
-        if module_name in instruments_registered:
-            instrument_class = instruments_registered[module_name]
-            instruments_found[module_name] = (
-                module_name,
-                instrument_class,
-                module_path,
-            )
-            logging.debug("registered")
+        # if module_name in instruments_registered:
+        #     instrument_class = instruments_registered[module_name]
+        instruments_found[module_name] = (
+            module_name,
+            #instrument_class,
+            module_path,
+        )
+        logging.debug("registered")
 
     logging.debug("Searching for module configurations in user instrument folder:")
     # These are only yaml-files and should ideally import the appropriate
@@ -491,73 +477,6 @@ def find_all_instruments():
     # Not sure how to do this yet. Probably also some importlib trick.
     logging.debug("- Not implemented yet")
     return instruments_found
-
-
-def __look_up_instrument(instrument):
-    if instrument == "arbin_res":
-        from cellpy.readers.instruments.arbin_res import DataLoader as RawLoader
-
-        instrument_id = "arbin_res"
-    elif instrument == "arbin_sql":
-        from cellpy.readers.instruments.arbin_sql import DataLoader as RawLoader
-
-        instrument_id = "arbin_sql"
-    elif instrument == "arbin_sql_csv":
-        from cellpy.readers.instruments.arbin_sql_csv import (
-            DataLoader as RawLoader,
-        )
-
-        instrument_id = "arbin_sql_csv"
-    elif instrument == "arbin_sql_xlsx":
-        from cellpy.readers.instruments.arbin_sql_xlsx import (
-            DataLoader as RawLoader,
-        )
-
-        instrument_id = "arbin_sql_xlsx"
-
-    elif instrument == "pec_csv":
-        from cellpy.readers.instruments.pec_csv import DataLoader as RawLoader
-
-        instrument_id = "pec_csv"
-
-    elif instrument == "biologics_mpr":
-        from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
-
-        instrument_id = "biologics_mpr"
-
-    elif instrument == "maccor_txt":
-        from cellpy.readers.instruments.maccor_txt import (
-            DataLoader as RawLoader,
-        )
-
-        instrument_id = "maccor_txt"
-        # need more here (model etc)
-
-    elif instrument.startswith("custom"):
-        from cellpy.readers.instruments.custom_instrument import (
-            CustomTxtLoader as RawLoader,
-        )
-
-        instrument_id = "custom"
-
-    elif instrument.startswith("old_custom"):
-        print("OLD CUSTOM LOADER")
-        from cellpy.readers.instruments.custom import CustomLoader as RawLoader
-
-        instrument_id = "old_custom"
-
-    elif instrument.endswith(".yml"):
-        from cellpy.readers.instruments.local_instrument import (
-            DataLoader as RawLoader,
-        )
-
-        instrument_id = instrument
-        # fix this
-
-    else:
-        raise Exception(f"option does not exist: '{instrument}'")
-
-    return RawLoader, instrument_id
 
 
 def identify_last_data_point(data):

@@ -90,6 +90,14 @@ def create_folder_structure(project_name, batch_name):
     return info_file, (project_dir, batch_dir, raw_dir)
 
 
+def create_factory():
+    instrument_factory = core.InstrumentFactory()
+    instruments = core.find_all_instruments()
+    for instrument_id, instrument in instruments.items():
+        instrument_factory.register_builder(instrument_id, instrument)
+    return instrument_factory
+
+
 def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
     """Find files using cellpy.filefinder.
 
@@ -102,13 +110,14 @@ def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
     Returns:
         info_dict
     """
+    instrument_factory = create_factory()
     # searches for the raw data files and the cellpyfile-name
     # TODO: implement faster file searching
     # TODO: implement option for not searching for raw-file names if force_cellpy is True
     for i, run_name in enumerate(info_dict[hdr_journal["filename"]]):
         try:
             instrument = info_dict[hdr_journal["instrument"]][i]
-            raw_ext = core.query_instrument("raw_ext", instrument)
+            raw_ext = instrument_factory.query(instrument, "raw_ext")
             if raw_ext:
                 prms.FileNames.raw_extension = raw_ext
         except IndexError:
