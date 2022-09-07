@@ -21,7 +21,7 @@ from cellpy.readers.core import (
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.readers.instruments.base import MINIMUM_SELECTION, Loader
+from cellpy.readers.instruments.base import MINIMUM_SELECTION, BaseLoader
 
 # TODO: use InstrumentSettings (dataclass) from internal_settings instead of HeaderDict.
 
@@ -158,7 +158,7 @@ normal_headers_renaming_dict = {
 }
 
 
-class ArbinLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading arbin-data from res-files.
 
     Implemented Cellpy params (prms.Instruments.Arbin):
@@ -1462,7 +1462,7 @@ def check_loader_aux():
     f2 = p / "BIT_LFP50_12S1P_SOP_0_97_T5_cyc200_3500W_20191231.res"
     f3 = p / "TJP_LR1865SZ_OCV_19_Cyc150_T25_201105.res"
 
-    n = ArbinLoader().loader(f1)
+    n = DataLoader().loader(f1)
     print(n[0].raw.tail())
 
 
@@ -1471,7 +1471,7 @@ def check_loader_empty_normal():
 
     log.setup_logging(default_level="CRITICAL")
 
-    a = ArbinLoader()
+    a = DataLoader()
     cols = a.arbin_headers_normal
     df = pd.DataFrame(columns=cols.values())
     print(df)

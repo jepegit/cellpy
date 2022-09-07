@@ -2,14 +2,14 @@
 """
 
 instruments = {
-    "arbin_res": "ArbinLoader",
-    "arbin_sql": "ArbinSQLLoader",
-    "arbin_sql_csv": "ArbinCsvLoader",
-    "arbin_sql_xlsx": "ArbinXLSXLoader",
-    "pec_csv": "PECLoader",
-    "biologics_mpr": "MprLoader",
-    "maccor_txt": "MaccorTxtLoader",
-    "custom": "CustomTxtLoader",
-    "old_custom": "CustomLoader",
-    "local_instrument": "LocalTxtLoader",
+    "arbin_res": "DataLoader",
+    "arbin_sql": "DataLoader",
+    "arbin_sql_csv": "DataLoader",
+    "arbin_sql_xlsx": "DataLoader",
+    "pec_csv": "DataLoader",
+    "biologics_mpr": "DataLoader",
+    "maccor_txt": "DataLoader",
+    "custom": "DataLoader",
+    "old_custom": "DataLoader",
+    "local_instrument": "DataLoader",
 }

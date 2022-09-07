@@ -23,7 +23,7 @@ from cellpy.readers.core import (
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 
 # TODO: @muhammad - get more meta data from the SQL db
 # TODO: @jepe - update the batch functionality (including filefinder)
@@ -124,7 +124,7 @@ def from_arbin_to_datetime(n):
     return time_in_str
 
 
-class ArbinSQLLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
     name = "arbin_sql"
@@ -476,7 +476,7 @@ def check_query():
 def check_loader():
     print(" Testing connection to arbin sql server ".center(80, "-"))
 
-    sql_loader = ArbinSQLLoader()
+    sql_loader = DataLoader()
     name = "20201106_HC03B1W_1_cc_01"
     cell = sql_loader.loader(name)
 

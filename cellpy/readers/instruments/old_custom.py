@@ -9,7 +9,7 @@ from cellpy.exceptions import FileNotFound
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import ATTRS_CELLPYFILE, get_headers_normal
 from cellpy.readers.core import Cell, FileID, check64bit, humanize_bytes
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 
 DEFAULT_CONFIG = {
     "structure": {
@@ -76,7 +76,7 @@ DEFAULT_CONFIG = {
 }
 
 
-class CustomLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading cell data from custom formatted files.
 
     The file that contains the description of the custom data file
@@ -530,7 +530,7 @@ def load_paal():
     )
     prms.Instruments.custom_instrument_definitions_file = elkem_tester
     print("running this")
-    loader = CustomLoader()
+    loader = DataLoader()
     # loader.pick_definition_file()
     datadir = r"C:\scripts\tasks\sibanode\2021_08_11_round_robbin\data\raw\elkem\elkem"
     datadir = pathlib.Path(datadir)
@@ -546,7 +546,7 @@ def load_example_file():
     from pprint import pprint
 
     print("running this")
-    loader = CustomLoader()
+    loader = DataLoader()
     # loader.pick_definition_file()
     datadir = "/Users/jepe/scripting/cellpy/test_data"
     datadir = pathlib.Path(datadir)

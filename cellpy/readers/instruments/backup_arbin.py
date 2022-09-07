@@ -20,7 +20,7 @@ from cellpy.readers.core import (
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 
 DEBUG_MODE = prms.Reader.diagnostics
 ALLOW_MULTI_TEST_FILE = False
@@ -156,7 +156,7 @@ normal_headers_renaming_dict = {
 }
 
 
-class ArbinLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading arbin-data from res-files."""
 
     def __init__(self, *args, **kwargs):

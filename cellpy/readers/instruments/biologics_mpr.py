@@ -15,7 +15,7 @@ import pandas as pd
 
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.core import Cell, FileID, humanize_bytes
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.loader_specific_modules.biologic_file_format import (
     bl_dtypes,
     bl_flags,
@@ -72,7 +72,7 @@ def _read_modules(fileobj):
     return hdr_dict
 
 
-class MprLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading biologics-data from mpr-files."""
 
     # Note: the class is sub-classing Loader. At the moment, Loader does

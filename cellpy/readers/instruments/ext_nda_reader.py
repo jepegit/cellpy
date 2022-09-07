@@ -12,7 +12,7 @@ from cellpy.readers.core import (
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 
 try:
     from nda_reader import nda_reader
@@ -32,7 +32,7 @@ def load_nda(*args, **kwargs):
     print(kwargs)
 
 
-class NdaLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for using the NDA loader by Frederik Huld (Beyonder)."""
 
     def __init__(self, *args, **kwargs):

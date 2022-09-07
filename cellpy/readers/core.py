@@ -495,28 +495,28 @@ def find_all_instruments():
 
 def __look_up_instrument(instrument):
     if instrument == "arbin_res":
-        from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
+        from cellpy.readers.instruments.arbin_res import DataLoader as RawLoader
 
         instrument_id = "arbin_res"
     elif instrument == "arbin_sql":
-        from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
+        from cellpy.readers.instruments.arbin_sql import DataLoader as RawLoader
 
         instrument_id = "arbin_sql"
     elif instrument == "arbin_sql_csv":
         from cellpy.readers.instruments.arbin_sql_csv import (
-            ArbinCsvLoader as RawLoader,
+            DataLoader as RawLoader,
         )
 
         instrument_id = "arbin_sql_csv"
     elif instrument == "arbin_sql_xlsx":
         from cellpy.readers.instruments.arbin_sql_xlsx import (
-            ArbinXLSXLoader as RawLoader,
+            DataLoader as RawLoader,
         )
 
         instrument_id = "arbin_sql_xlsx"
 
     elif instrument == "pec_csv":
-        from cellpy.readers.instruments.pec_csv import PECLoader as RawLoader
+        from cellpy.readers.instruments.pec_csv import DataLoader as RawLoader
 
         instrument_id = "pec_csv"
 
@@ -527,7 +527,7 @@ def __look_up_instrument(instrument):
 
     elif instrument == "maccor_txt":
         from cellpy.readers.instruments.maccor_txt import (
-            MaccorTxtLoader as RawLoader,
+            DataLoader as RawLoader,
         )
 
         instrument_id = "maccor_txt"
@@ -548,7 +548,7 @@ def __look_up_instrument(instrument):
 
     elif instrument.endswith(".yml"):
         from cellpy.readers.instruments.local_instrument import (
-            LocalTxtLoader as RawLoader,
+            DataLoader as RawLoader,
         )
 
         instrument_id = instrument

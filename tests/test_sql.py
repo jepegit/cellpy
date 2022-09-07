@@ -17,8 +17,8 @@ def raw_mock(parameters):
 
 
 def test_import_arbin_sql():
-    loader = arbin_sql.ArbinSQLLoader()
-    assert isinstance(loader, base.Loader)
+    loader = arbin_sql.DataLoader()
+    assert isinstance(loader, base.BaseLoader)
 
 
 def test_post_process_rename_headers_defined():
@@ -28,7 +28,7 @@ def test_post_process_rename_headers_defined():
         "rename_headers": True,
         "extract_start_datetime": False,
     }
-    loader = arbin_sql.ArbinSQLLoader()
+    loader = arbin_sql.DataLoader()
 
     # creating a mock raw data
     data = Cell()
@@ -45,7 +45,7 @@ def test_post_process_rename_headers_from_file(raw_mock):
         "rename_headers": True,
         "extract_start_datetime": True,
     }
-    loader = arbin_sql.ArbinSQLLoader()
+    loader = arbin_sql.DataLoader()
 
     data = Cell()
     data.raw = raw_mock

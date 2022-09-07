@@ -8,7 +8,7 @@ from cellpy.readers.instruments.configurations import (
 )
 
 
-class LocalTxtLoader(TxtLoader):
+class DataLoader(TxtLoader):
     """Class for loading data from txt files."""
 
     name = "local"

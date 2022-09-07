@@ -23,7 +23,7 @@ from cellpy.readers.instruments.configurations import (
 )
 
 
-class CustomTxtLoader(AutoLoader, ABC):
+class DataLoader(AutoLoader, ABC):
     """Class for loading data from txt files."""
 
     name = "custom"
