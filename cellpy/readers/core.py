@@ -410,7 +410,9 @@ class InstrumentFactory:
     def create(self, key, **kwargs):
         """Create the instrument loader module and initialize the loader class."""
 
-        module_name, instrument_class, module_path = self._builders.get(key, (None, None, None))
+        module_name, instrument_class, module_path = self._builders.get(
+            key, (None, None, None)
+        )
         if not module_name:
             raise ValueError(key)
         spec = importlib.util.spec_from_file_location(module_name, module_path)
@@ -445,13 +447,17 @@ def query_instrument(variable, instrument=None, instrument_file=None, **kwargs):
 
 
 def find_all_instruments():
-    from cellpy.readers.instruments.registered_loaders import instruments as instruments_registered
+    from cellpy.readers.instruments.registered_loaders import (
+        instruments as instruments_registered,
+    )
     import cellpy.readers.instruments as hard_coded_instruments_site
 
     instruments_found = {}
     logging.debug("Searching for modules in base instrument folder:")
 
-    hard_coded_instruments_site = pathlib.Path(hard_coded_instruments_site.__file__).parent
+    hard_coded_instruments_site = pathlib.Path(
+        hard_coded_instruments_site.__file__
+    ).parent
     modules_in_hard_coded_instruments_site = [
         s
         for s in hard_coded_instruments_site.glob("*.py")
@@ -469,7 +475,11 @@ def find_all_instruments():
         logging.debug(module_name)
         if module_name in instruments_registered:
             instrument_class = instruments_registered[module_name]
-            instruments_found[module_name] = (module_name, instrument_class, module_path)
+            instruments_found[module_name] = (
+                module_name,
+                instrument_class,
+                module_path,
+            )
             logging.debug("registered")
 
     logging.debug("Searching for module configurations in user instrument folder:")
@@ -919,4 +929,3 @@ def group_by_interpolate(
     time_01 = time.time() - time_00
     logging.debug(f"duration: {time_01} seconds")
     return new_df
-

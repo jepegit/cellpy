@@ -13,8 +13,8 @@ class LocalTxtLoader(TxtLoader):
 
     name = "local"
 
-    def __init__(self, local_instrument_file=None):
-        self.local_instrument_file = local_instrument_file
+    def __init__(self, instrument_file=None, **kwargs):
+        self.local_instrument_file = instrument_file
         super().__init__()
 
     default_model = None
