@@ -171,6 +171,7 @@ def test_query():
         return spec[cell_id]
 
     from cellpy.utils.batch_tools import engines
+
     cell_ids = [1, 2]
     out = engines._query(mock_reader_method, cell_ids)
     assert "=" in out[0]

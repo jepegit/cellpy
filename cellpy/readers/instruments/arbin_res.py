@@ -85,7 +85,9 @@ use_ado = False
 
 if ODBC == "ado":
     use_ado = True
-    warnings.warn("Using ado (adobapi) will be removed from cellpy very soon", DeprecationWarning)
+    warnings.warn(
+        "Using ado (adobapi) will be removed from cellpy very soon", DeprecationWarning
+    )
     try:
         import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
     except ImportError:
@@ -401,8 +403,7 @@ class ArbinLoader(Loader):
         else:
             if USE_SQLALCHEMY_ACCESS_ENGINE:
                 connection_url = sa.engine.URL.create(
-                    "access+pyodbc",
-                    query={"odbc_connect": constr}
+                    "access+pyodbc", query={"odbc_connect": constr}
                 )
                 engine = sa.create_engine(connection_url)
                 conn = engine
@@ -614,7 +615,7 @@ class ArbinLoader(Loader):
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
 
-    def investigate(self, file_name): # Deprecated - use on own risk
+    def investigate(self, file_name):  # Deprecated - use on own risk
         """Investigate a .res file.
 
         Args:
@@ -803,7 +804,6 @@ class ArbinLoader(Loader):
             time_0 = time.time()
 
         conn = self._get_connection_or_engine(temp_filename)
-
 
         # if use_ado:
         #     conn = dbloader.connect(constr)

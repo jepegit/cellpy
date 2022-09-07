@@ -353,8 +353,7 @@ class ArbinSQLLoader(Loader):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = (
-            f"Driver={{{SQL_DRIVER}}};"
-            + f"Server={SQL_SERVER};Trusted_Connection=yes;"
+            f"Driver={{{SQL_DRIVER}}};" + f"Server={SQL_SERVER};Trusted_Connection=yes;"
         )
 
         # TODO: use variable for the name of the main db (ArbinPro8....)

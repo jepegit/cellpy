@@ -24,12 +24,14 @@ wdir = Path(cur_dir)
 @dataclass
 class CellPyDataConfig:
     """Settings that can be unique for each CellpyData instance."""
+
     ...
 
 
 @dataclass
 class CellPyConfig:
     """Session settings (global)."""
+
     ...
 
 
@@ -161,6 +163,7 @@ class DbColsClass(CellPyConfig):
 @dataclass
 class DataSetClass(CellPyDataConfig):
     """Values used when processing the data (will be deprecated)"""
+
     nom_cap: float = 3579
 
 

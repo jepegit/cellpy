@@ -399,7 +399,7 @@ class Cell:
         return empty
 
 
-class ObjectFactory:
+class InstrumentFactory:
     def __init__(self):
         self._builders = {}
         self._kwargs = {}
@@ -419,7 +419,7 @@ class ObjectFactory:
 def register_instruments():
     # Example for future use
     # This should be moved to cellreader
-    factory = ObjectFactory()
+    factory = InstrumentFactory()
     instruments = find_all_instruments()
     for instrument_id, instrument in instruments.items():
         factory.register_builder(instrument_id, instrument)
@@ -492,7 +492,7 @@ def find_all_instruments():
         instruments[instrument_name] = instrument_class
         logging.debug(instrument_name)
 
-    logging.debug("Searching for module configurations " "in user instrument folder:")
+    logging.debug("Searching for module configurations in user instrument folder:")
     # These are only yaml-files and should ideally import the appropriate
     #    custom loader class
     logging.debug("- Not implemented yet")

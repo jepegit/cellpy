@@ -456,11 +456,35 @@ class CellpyData:
         self.__external_readers = dict()
         return
 
+    def new_set_instrument(
+        self,
+        instrument=None,
+        instrument_file=None,
+        reload_external_readers=False,
+        **kwargs,
+    ):
+        pass
+
+    def _parse_instrument_str(self, instrument, custom_instrument_splitter="::"):
+        _instrument = instrument.split(custom_instrument_splitter)
+        try:
+            instrument_file = _instrument[1]
+            logging.debug(
+                f"provided instrument file through instrument splitter: {instrument_file}"
+            )
+
+        except IndexError:
+            logging.debug("no definition file provided")
+            logging.debug(instrument)
+            instrument_file = None
+        return instrument_file
+
     def set_instrument(
         self,
         instrument=None,
         instrument_file=None,
         reload_external_readers=False,
+        experimental=False,
         **kwargs,
     ):
         """Set the instrument (i.e. tell cellpy the file-type you use).
@@ -494,6 +518,8 @@ class CellpyData:
         Sets the instrument used for obtaining the data (i.e. sets file-format)
 
         """
+        if experimental:
+            self.new_set_instrument()
 
         custom_instrument_splitter = "::"
         maccor_model_splitter = "::"
@@ -564,16 +590,7 @@ class CellpyData:
             logging.warning("Experimental! Not ready for production!")
             model = kwargs.pop("model", None)
             if not model:
-                _model = instrument.split(maccor_model_splitter)
-                try:
-                    model = _model[1]
-                    logging.debug(
-                        f"provided model through instrument splitter: {model}"
-                    )
-                except IndexError:
-                    logging.debug("no model provided")
-                    logging.debug(instrument)
-                    model = None
+                model = self._parse_instrument_str(instrument, maccor_model_splitter)
             self._set_instrument(RawLoader, model=model, **kwargs)
             self.tester = "maccor"
 
@@ -593,18 +610,7 @@ class CellpyData:
             logging.warning("Experimental! Not ready for production!")
             logging.debug(f"using custom instrument: {instrument}")
             if not instrument_file:
-                _instrument = instrument.split(custom_instrument_splitter)
-                try:
-                    instrument_file = _instrument[1]
-                    logging.debug(
-                        f"provided instrument file through instrument splitter: {instrument_file}"
-                    )
-
-                except IndexError:
-                    logging.debug("no definition file provided")
-                    logging.debug(instrument)
-                    instrument_file = None
-
+                instrument_file = self._parse_instrument_str(instrument, custom_instrument_splitter)
             self._set_instrument(RawLoader, instrument_file=instrument_file, **kwargs)
             self.tester = "custom"
 
@@ -619,17 +625,7 @@ class CellpyData:
                     f"supported for custom loader - removing it"
                 )
             if not instrument_file:
-                _instrument = instrument.split(custom_instrument_splitter)
-                try:
-                    instrument_file = _instrument[1]
-                    logging.debug(
-                        f"provided instrument file through instrument splitter: {instrument_file}"
-                    )
-
-                except IndexError:
-                    logging.debug("no definition file provided")
-                    logging.debug(instrument)
-                    instrument_file = None
+                instrument_file = self._parse_instrument_str(instrument, custom_instrument_splitter)
 
             if instrument_file:
                 logging.debug(f"setting instrument file: {instrument_file}")

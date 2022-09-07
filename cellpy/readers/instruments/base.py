@@ -568,7 +568,9 @@ class TxtLoader(AutoLoader, ABC):
             self.thousands = kwargs.pop(
                 "thousands", self.config_params.formatters["thousands"]
             )
-        logging.debug(f"Formatters: self.sep={self.sep} self.skiprows={self.skiprows} self.header={self.header} self.encoding={self.encoding}")
+        logging.debug(
+            f"Formatters: self.sep={self.sep} self.skiprows={self.skiprows} self.header={self.header} self.encoding={self.encoding}"
+        )
         logging.debug(
             f"Formatters (cont.): self.decimal={self.decimal} self.thousands={self.thousands}"
         )

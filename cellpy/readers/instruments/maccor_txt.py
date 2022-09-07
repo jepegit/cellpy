@@ -26,7 +26,7 @@ SUPPORTED_MODELS = {
     "S4000-WMG": "maccor_txt_four",
     "S4000-KIT": "maccor_txt_four",
     "S4000-UBHAM": "maccor_txt_three",
-    }
+}
 
 
 MUST_HAVE_RAW_COLUMNS = [
