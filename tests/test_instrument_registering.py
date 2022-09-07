@@ -42,6 +42,10 @@ class MockLoader(AutoLoader, ABC):
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
+def test_2_set_instrument(cellpy_data_instance):
+    cellpy_data_instance.set_instrument(instrument="arbin_res", experimental=True)
+
+
 @pytest.mark.xfail
 def test_set_instrument_selecting_default_not_defined(cellpy_data_instance):
     prms.Instruments.custom_instrument_definitions_file = None
@@ -98,8 +102,8 @@ def test_list_available_instruments():
 @pytest.mark.parametrize(
     "parameter, loader, expected",
     [
-        ("raw_ext", "arbin", "res"),
-        ("name", "arbin", "arbin_res"),
+        ("raw_ext", "arbin_res", "res"),
+        ("name", "arbin_res", "arbin_res"),
         ("raw_ext", "arbin_sql", None),
         ("name", "arbin_sql", "arbin_sql"),
         ("raw_ext", "arbin_sql_csv", "csv"),
@@ -110,10 +114,10 @@ def test_list_available_instruments():
         ("raw_ext", "custom", "*"),
         ("name", "maccor_txt", "maccor_txt"),
         ("raw_ext", "maccor_txt", "txt"),
-        ("name", "pec", "pec_csv"),
-        ("raw_ext", "pec", "csv"),
-        ("name", "biologics", "biologics_mpr"),
-        ("raw_ext", "biologics", "mpr"),
+        ("name", "pec_csv", "pec_csv"),
+        ("raw_ext", "pec_csv", "csv"),
+        ("name", "biologics_mpr", "biologics_mpr"),
+        ("raw_ext", "biologics_mpr", "mpr"),
         ("name", "old_custom", "old_custom"),
         ("raw_ext", "old_custom", "*"),
     ],

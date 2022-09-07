@@ -228,7 +228,7 @@ Maccor = {"default_model": "one"}
 Maccor = box.Box(Maccor)
 
 Instruments = InstrumentsClass(
-    tester="arbin",  # TODO: moving this to DataSetClass (deprecate)
+    tester="arbin_res",  # TODO: moving this to DataSetClass (deprecate)
     custom_instrument_definitions_file=None,
     Arbin=Arbin,
     Maccor=Maccor,

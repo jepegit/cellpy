@@ -144,7 +144,7 @@ Reader:
   use_cellpy_stat_file: false
   auto_dirs: true
 Instruments:
-  tester: arbin
+  tester: arbin_res
   custom_instrument_definitions_file:
   Arbin:
     chunk_size:

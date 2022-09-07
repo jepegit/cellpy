@@ -3,8 +3,6 @@
 It also contains functions that are used by readers and utils. And it has the file-
 version definitions.
 """
-
-import collections
 import datetime
 import importlib
 import logging
@@ -13,8 +11,6 @@ import pathlib
 import pickle
 import sys
 import time
-import warnings
-from functools import wraps
 
 import numpy as np
 import pandas as pd
@@ -405,92 +401,76 @@ class InstrumentFactory:
         self._kwargs = {}
 
     def register_builder(self, key, builder, **kwargs):
+        """register an instrument loader module"""
+
         logging.debug(f"Registering instrument {key}")
         self._builders[key] = builder
-        self._kwargs = kwargs
+        self._kwargs[key] = kwargs
 
     def create(self, key, **kwargs):
-        builder = self._builders.get(key)
-        if not builder:
+        """Create the instrument loader module and initialize the loader class."""
+
+        module_name, instrument_class, module_path = self._builders.get(key, (None, None, None))
+        if not module_name:
             raise ValueError(key)
-        return builder(**kwargs)
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        loader_module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = loader_module
+        spec.loader.exec_module(loader_module)
+        cls = getattr(loader_module, instrument_class)
+        return cls(**kwargs)
+
+    def query(self):
+        pass
 
 
-def register_instruments():
-    # Example for future use
-    # This should be moved to cellreader
-    factory = InstrumentFactory()
-    instruments = find_all_instruments()
-    for instrument_id, instrument in instruments.items():
-        factory.register_builder(instrument_id, instrument)
+def query_instrument(variable, instrument=None, instrument_file=None, **kwargs):
+    """Retrieve information from a loader class without instantiating it.
 
+    Remark! This function uses the .get_params method for the loader class and
+        not all loaders have this method implemented. This function will catch
+        several exceptions (`AttributeError`, `NotImplementedError`, `KeyError`)
+        without propagating it. Thus, it is usually OK to use this function, but
+        you might not get anything else than `None` from it.
+    """
 
-def _extract_loader_class_from_module(module):
-    # insert some magic here (find sub-class of BaseLoader)
-    return module
+    RawLoader, instrument_id = __look_up_instrument(instrument)
+    try:
+        value = RawLoader.get_params(variable)
+        logging.debug(f"GOT {variable}={value} for {instrument}")
+        return value
+
+    except (AttributeError, NotImplementedError, KeyError):
+        logging.debug(f"COULD NOT RETRIEVE {variable} for {instrument}")
 
 
 def find_all_instruments():
-    # Example for future use.
-    # Keeping imports here so that it will simplify future
-    #   refactoring.
-    # In addition, this functions needs to implement a way to
-    # get appropriate names of the different loaders. Or maybe
-    # tweak the base loader etc so that it can get the appropriate
-    # name from foo.__name__.
+    from cellpy.readers.instruments.registered_loaders import instruments as instruments_registered
+    import cellpy.readers.instruments as hard_coded_instruments_site
 
-    # This function is not ready for use yet. One important part
-    # still missing is to find the actual class inside the module
-    # (the .py file) that should be loaded. It is probably not
-    # very difficult to implement (since it is a subclass of BaseLoader).
-
-    # Another missing part is how to find externally installed loaders
-    # (plugins). Of obvious reasons; plugins are not supported yet.
-
-    # Also, need to properly utilise and propagate the instrument loader
-    # names etc (using query_instrument).
-
-    from importlib.machinery import SourceFileLoader
-    import cellpy.readers.instruments.configurations as site_1
-    import cellpy.readers.instruments as site_2
-
-    instruments = {}
-    logging.debug("Searches for modules in configurations folder:")
-
-    site_1 = pathlib.Path(site_1.__file__).parent
-    modules_in_site_1 = [
-        s for s in site_1.glob("*.py") if not str(s.name).startswith("_")
-    ]
-
-    for module in modules_in_site_1:
-        module_name = module.name.rstrip(".py")
-        foo = SourceFileLoader(module_name, str(module)).load_module()
-        instrument_name = foo.__name__
-        instrument_class = _extract_loader_class_from_module(foo)
-        instruments[instrument_name] = instrument_class
-        logging.debug(instrument_name)
-
+    instruments_found = {}
     logging.debug("Searching for modules in base instrument folder:")
 
-    site_2 = pathlib.Path(site_2.__file__).parent
-    modules_in_site_2 = [
+    hard_coded_instruments_site = pathlib.Path(hard_coded_instruments_site.__file__).parent
+    modules_in_hard_coded_instruments_site = [
         s
-        for s in site_2.glob("*.py")
+        for s in hard_coded_instruments_site.glob("*.py")
         if not (
             str(s.name).startswith("_")
             or str(s.name).startswith("dev_")
             or str(s.name).startswith("base")
             or str(s.name).startswith("backup")
+            or str(s.name).startswith("registered_loaders")
         )
     ]
 
-    for module in modules_in_site_2:
-        module_name = module.name.rstrip(".py")
-        foo = SourceFileLoader(module_name, str(module)).load_module()
-        instrument_name = foo.__name__
-        instrument_class = _extract_loader_class_from_module(foo)
-        instruments[instrument_name] = instrument_class
-        logging.debug(instrument_name)
+    for module_path in modules_in_hard_coded_instruments_site:
+        module_name = module_path.name.rstrip(".py")
+        logging.debug(module_name)
+        if module_name in instruments_registered:
+            instrument_class = instruments_registered[module_name]
+            instruments_found[module_name] = (module_name, instrument_class, module_path)
+            logging.debug("registered")
 
     logging.debug("Searching for module configurations in user instrument folder:")
     # These are only yaml-files and should ideally import the appropriate
@@ -500,14 +480,14 @@ def find_all_instruments():
     logging.debug("Searching for modules through plug-ins:")
     # Not sure how to do this yet. Probably also some importlib trick.
     logging.debug("- Not implemented yet")
-    return instruments
+    return instruments_found
 
 
 def __look_up_instrument(instrument):
-    if instrument in ["arbin", "arbin_res"]:
+    if instrument == "arbin_res":
         from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
 
-        instrument_id = "arbin"
+        instrument_id = "arbin_res"
     elif instrument == "arbin_sql":
         from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
 
@@ -525,22 +505,22 @@ def __look_up_instrument(instrument):
 
         instrument_id = "arbin_sql_xlsx"
 
-    elif instrument in ["pec", "pec_csv"]:
-        from cellpy.readers.instruments.pec import PECLoader as RawLoader
+    elif instrument == "pec_csv":
+        from cellpy.readers.instruments.pec_csv import PECLoader as RawLoader
 
-        instrument_id = "pec"
+        instrument_id = "pec_csv"
 
-    elif instrument in ["biologics", "biologics_mpr"]:
+    elif instrument == "biologics_mpr":
         from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
 
-        instrument_id = "biologics"
+        instrument_id = "biologics_mpr"
 
-    elif instrument in ["maccor", "maccor_txt"]:
+    elif instrument == "maccor_txt":
         from cellpy.readers.instruments.maccor_txt import (
             MaccorTxtLoader as RawLoader,
         )
 
-        instrument_id = "maccor"
+        instrument_id = "maccor_txt"
         # need more here (model etc)
 
     elif instrument.startswith("custom"):
@@ -568,26 +548,6 @@ def __look_up_instrument(instrument):
         raise Exception(f"option does not exist: '{instrument}'")
 
     return RawLoader, instrument_id
-
-
-def query_instrument(variable, instrument=None, instrument_file=None, **kwargs):
-    """Retrieve information from a loader class without instantiating it.
-
-    Remark! This function uses the .get_params method for the loader class and
-        not all loaders have this method implemented. This function will catch
-        several exceptions (`AttributeError`, `NotImplementedError`, `KeyError`)
-        without propagating it. Thus, it is usually OK to use this function, but
-        you might not get anything else than `None` from it.
-    """
-
-    RawLoader, instrument_id = __look_up_instrument(instrument)
-    try:
-        value = RawLoader.get_params(variable)
-        logging.debug(f"GOT {variable}={value} for {instrument}")
-        return value
-
-    except (AttributeError, NotImplementedError, KeyError):
-        logging.debug(f"COULD NOT RETRIEVE {variable} for {instrument}")
 
 
 def identify_last_data_point(data):
@@ -960,8 +920,3 @@ def group_by_interpolate(
     logging.debug(f"duration: {time_01} seconds")
     return new_df
 
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
-    register_instruments()
-    # find_all_instruments()

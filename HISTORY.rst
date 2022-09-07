@@ -2,7 +2,7 @@
 History
 =======
 
-0.4.2 (2021)
+0.4.2 (2022)
 ------------
 
 * Changed definition of Coulombic Difference (negative of previous)
@@ -11,6 +11,7 @@ History
 * Supports only python 3.8 and up
 * Optional parameters through batch and pages
 * Several bug fixes and minor improvements / adjustments
+* Restrict use of instrument label to only one option
 
 
 0.4.1 (2021)

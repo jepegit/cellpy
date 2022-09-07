@@ -55,7 +55,7 @@ from cellpy.readers.core import (
     identify_last_data_point,
     interpolate_y_on_x,
     pickle_protocol,
-    xldate_as_datetime,
+    xldate_as_datetime, InstrumentFactory, find_all_instruments,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -202,7 +202,6 @@ class CellpyData:
                default).
             initialize: create a dummy (empty) dataset; defaults to False.
         """
-
         self.raw_units = get_cellpy_units()
         if tester is None:
             self.tester = prms.Instruments.tester
@@ -286,7 +285,8 @@ class CellpyData:
         self.headers_step_table = headers_step_table
 
         self.table_names = None  # dictionary defined in set_instruments
-        self.__register_external_readers()
+        self.instrument_factory = None
+        self.register_instrument_readers()
         self.set_instrument()
 
         # - units used by cellpy
@@ -456,16 +456,40 @@ class CellpyData:
         self.__external_readers = dict()
         return
 
+    def register_instrument_readers(self):
+        self.instrument_factory = InstrumentFactory()
+        instruments = find_all_instruments()
+        for instrument_id, instrument in instruments.items():
+            self.instrument_factory.register_builder(instrument_id, instrument)
+
     def new_set_instrument(
         self,
         instrument=None,
         instrument_file=None,
-        reload_external_readers=False,
         **kwargs,
     ):
-        pass
+        print("IN NEW SET INSTRUMENTS")
+        print(f"{instrument=}")
+        print(f"{instrument_file=}")
+        print(f"{kwargs=}")
+        # constants:
+        custom_instrument_splitter = "::"
 
-    def _parse_instrument_str(self, instrument, custom_instrument_splitter="::"):
+        # consume keyword arguments:
+        _override_local_instrument_path = kwargs.pop(
+            "_override_local_instrument_path", False
+        )
+        # parse input (need instrument, instrument_file and model)
+
+        #    default instrument:
+        if instrument is None and instrument_file is None:
+            print("NOTHING GIVEN - USE DEFAULT")
+            print(self.tester)
+
+        factory = self.instrument_factory
+
+    @staticmethod
+    def _parse_instrument_str(instrument, custom_instrument_splitter="::"):
         _instrument = instrument.split(custom_instrument_splitter)
         try:
             instrument_file = _instrument[1]
@@ -500,7 +524,7 @@ class CellpyData:
         instrument types also supports a model key-word.
 
         Args:
-            instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]. If
+            instrument: (str) in ["arbin_res", "maccor_txt",...]. If
                 instrument ends with ".yml" a local instrument file will be used. For example,
                 if instrument is "my_instrument.yml", cellpy will look into the local
                 instruments folders for a file called "my_instrument.yml" and then
@@ -519,7 +543,13 @@ class CellpyData:
 
         """
         if experimental:
-            self.new_set_instrument()
+            self.new_set_instrument(
+                instrument=None,
+                instrument_file=None,
+                reload_external_readers=False,
+                **kwargs
+            )
+            return
 
         custom_instrument_splitter = "::"
         maccor_model_splitter = "::"
@@ -537,11 +567,11 @@ class CellpyData:
 
         # TODO: refactor this (use __look_up_instrument etc from core)
 
-        if instrument in ["arbin", "arbin_res"]:
+        if instrument == "arbin_res":
             from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
 
             self._set_instrument(RawLoader)
-            self.tester = "arbin"
+            self.tester = "arbin_res"
 
         elif instrument == "arbin_sql":
             from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
@@ -568,21 +598,21 @@ class CellpyData:
             self._set_instrument(RawLoader, **kwargs)
             self.tester = "arbin_sql_xlsx"
 
-        elif instrument in ["pec", "pec_csv"]:
+        elif instrument == "pec_csv":
             logging.warning("Experimental! Not ready for production!")
-            from cellpy.readers.instruments.pec import PECLoader as RawLoader
+            from cellpy.readers.instruments.pec_csv import PECLoader as RawLoader
 
             self._set_instrument(RawLoader, **kwargs)
-            self.tester = "pec"
+            self.tester = "pec_csv"
 
-        elif instrument in ["biologics", "biologics_mpr"]:
+        elif instrument == "biologics_mpr":
             from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
 
             logging.warning("Experimental! Not ready for production!")
             self._set_instrument(RawLoader, **kwargs)
-            self.tester = "biologic"
+            self.tester = "biologics_mpr"
 
-        elif instrument in ["maccor", "maccor_txt"]:
+        elif instrument == "maccor_txt":
             from cellpy.readers.instruments.maccor_txt import (
                 MaccorTxtLoader as RawLoader,
             )
@@ -592,7 +622,7 @@ class CellpyData:
             if not model:
                 model = self._parse_instrument_str(instrument, maccor_model_splitter)
             self._set_instrument(RawLoader, model=model, **kwargs)
-            self.tester = "maccor"
+            self.tester = "maccor_txt"
 
         # new custom loader:
         elif instrument.startswith("custom"):
@@ -655,12 +685,12 @@ class CellpyData:
                     f"The needed instrument file does not exist: '{instrument}'"
                 )
 
-        elif instrument in self.__external_readers.keys():
-            logging.debug(f"Using plug-in reader")
-            logging.debug(f"Unfortunately, not implemented yet!")
-            # RawLoader = self.__external_readers[instrument]
-            # self._set_instrument(RawLoader, is_external=True, **kwargs)
-            raise Exception(f"...so this option does not exist: '{instrument}'")
+        # elif instrument in self.__external_readers.keys():
+        #     logging.debug(f"Using plug-in reader")
+        #     logging.debug(f"Unfortunately, not implemented yet!")
+        #     # RawLoader = self.__external_readers[instrument]
+        #     # self._set_instrument(RawLoader, is_external=True, **kwargs)
+        #     raise Exception(f"...so this option does not exist: '{instrument}'")
 
         else:
             raise Exception(f"option does not exist: '{instrument}'")
@@ -2193,7 +2223,7 @@ class CellpyData:
             start_time_1 = t1.start_datetime
             start_time_2 = t2.start_datetime
 
-            if self.tester in ["arbin", "arbin_res"]:
+            if self.tester in ["arbin_res"]:
                 diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
                     start_time_1
                 )

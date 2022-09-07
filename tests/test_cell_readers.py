@@ -707,7 +707,7 @@ def test_group_by_interpolate(dataset):
 def test_get(parameters):
     c_h5 = cellpy.get(parameters.cellpy_file_path, testing=True)
     c_res = cellpy.get(
-        parameters.res_file_path, instrument="arbin", mass=0.045, testing=True
+        parameters.res_file_path, instrument="arbin_res", mass=0.045, testing=True
     )
 
 
