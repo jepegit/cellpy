@@ -55,15 +55,6 @@ def test_cellpy_get_model_one_custom_instrument_file(parameters):
     # TODO: create defaults for missing parameters in the custom instrument file.
 
     instrument = parameters.custom_instrument
-    definitions_file = parameters.custom_instrument_path
-    print()
-    print(80 * "*")
-    print(f"{instrument=}")
-    print(f"{definitions_file=}")
-    print(f"{parameters.mcc_file_path=}")
-    print(f"{parameters.instrument_dir=}")
-    print(f"{parameters.custom_instrument=}")
-    print(80 * "*")
     prms.Paths.instrumentdir = parameters.instrument_dir
     logging.debug(f"directory: {parameters.instrument_dir}")
     logging.debug(f"instrument file: {parameters.custom_instrument}")

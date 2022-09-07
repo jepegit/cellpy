@@ -508,10 +508,7 @@ class CellpyData:
         Sets the instrument used for obtaining the data (i.e. sets file-format)
 
         """
-        print("IN NEW SET INSTRUMENTS")
-        print(f"{instrument=}")
-        print(f"{instrument_file=}")
-        print(f"{kwargs=}")
+
         # constants:
         custom_instrument_splitter = "::"
 
@@ -533,23 +530,15 @@ class CellpyData:
             instrument, model = self._parse_instrument_str(instrument, custom_instrument_splitter)
 
         if instrument and instrument.endswith(".yml"):
-            print()
-            print("==========================")
-            print("INSTRUMENT ENDS WITH YML")
-            print(f"{instrument=}")
-            print(f"{instrument_file=}")
-            print(f"{kwargs=}")
-            print("==========================")
-
             instrument_file = instrument
             instrument = "local_instrument"
             prms.Instruments.custom_instrument_definitions_file = instrument_file
             if _override_local_instrument_path:
-                local_instrument_file = Path(instrument_file)
+                instrument_file = Path(instrument_file)
             else:
-                local_instrument_file = Path(prms.Paths.instrumentdir) / instrument_file
+                instrument_file = Path(prms.Paths.instrumentdir) / instrument_file
 
-            if not local_instrument_file.is_file():
+            if not instrument_file.is_file():
                 raise FileNotFoundError(f"Could not locate {instrument_file}")
 
         self._set_instrument(
