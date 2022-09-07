@@ -3982,7 +3982,7 @@ class CellpyData:
         """Returns charge_capacity (in mAh/g), and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
-        #   but remark that we then have to update e.g. batch_helpers.py
+        #   (but remark that we then have to update e.g. batch_helpers.py)
         #  TODO - jepe: change needed: should not use
         #   dataset_number as parameter
 
