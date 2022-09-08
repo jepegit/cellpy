@@ -24,12 +24,14 @@ wdir = Path(cur_dir)
 @dataclass
 class CellPyDataConfig:
     """Settings that can be unique for each CellpyData instance."""
+
     ...
 
 
 @dataclass
 class CellPyConfig:
     """Session settings (global)."""
+
     ...
 
 
@@ -161,6 +163,7 @@ class DbColsClass(CellPyConfig):
 @dataclass
 class DataSetClass(CellPyDataConfig):
     """Values used when processing the data (will be deprecated)"""
+
     nom_cap: float = 3579
 
 
@@ -225,7 +228,7 @@ Maccor = {"default_model": "one"}
 Maccor = box.Box(Maccor)
 
 Instruments = InstrumentsClass(
-    tester="arbin",  # TODO: moving this to DataSetClass (deprecate)
+    tester="arbin_res",  # TODO: moving this to DataSetClass (deprecate)
     custom_instrument_definitions_file=None,
     Arbin=Arbin,
     Maccor=Maccor,

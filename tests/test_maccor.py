@@ -19,7 +19,7 @@ def test_set_instrument(cellpy_data_instance, parameters):
 
     instrument = "maccor_txt"
     cellpy_data_instance.set_instrument(instrument=instrument)
-    cellpy_data_instance.from_raw(parameters.mcc_file_path, model="one",  sep="\t")
+    cellpy_data_instance.from_raw(parameters.mcc_file_path, model="one", sep="\t")
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
     assert len(cellpy_data_instance.cell.raw) == 6704
@@ -55,7 +55,6 @@ def test_cellpy_get_model_one_custom_instrument_file(parameters):
     # TODO: create defaults for missing parameters in the custom instrument file.
 
     instrument = parameters.custom_instrument
-    definitions_file = parameters.custom_instrument_path
     prms.Paths.instrumentdir = parameters.instrument_dir
     logging.debug(f"directory: {parameters.instrument_dir}")
     logging.debug(f"instrument file: {parameters.custom_instrument}")

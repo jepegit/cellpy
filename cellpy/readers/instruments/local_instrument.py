@@ -8,13 +8,14 @@ from cellpy.readers.instruments.configurations import (
 )
 
 
-class LocalTxtLoader(TxtLoader):
+class DataLoader(TxtLoader):
     """Class for loading data from txt files."""
 
-    name = "local"
+    name = "local_instrument"
+    raw_ext = "*"
 
-    def __init__(self, local_instrument_file=None):
-        self.local_instrument_file = local_instrument_file
+    def __init__(self, instrument_file=None, **kwargs):
+        self.local_instrument_file = instrument_file
         super().__init__()
 
     default_model = None
@@ -22,6 +23,9 @@ class LocalTxtLoader(TxtLoader):
 
     def pre_init(self):
         self.auto_register_config = False
+        print("---------------------------")
+        print(f"{self.local_instrument_file}")
+        print("---------------------------")
         self.config_params = register_local_configuration_from_yaml_file(
             self.local_instrument_file
         )

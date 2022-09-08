@@ -12,7 +12,7 @@ import pandas as pd
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import Cell, FileID
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.configurations import (
     ModelParameters,
     register_configuration_from_module,
@@ -37,7 +37,7 @@ def configuration(name) -> ModelParameters:
 
 
 # TODO: create a class that is a general CSV loader that can be subclassed
-class MaccorTxtLoader(Loader):
+class MaccorTxtLoader(BaseLoader):
     """Class for loading data from Maccor txt files."""
 
     def __init__(self, **kwargs):

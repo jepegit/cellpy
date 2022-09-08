@@ -56,6 +56,9 @@ from cellpy.readers.core import (
     interpolate_y_on_x,
     pickle_protocol,
     xldate_as_datetime,
+    InstrumentFactory,
+    find_all_instruments,
+    generate_default_factory,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -202,7 +205,6 @@ class CellpyData:
                default).
             initialize: create a dummy (empty) dataset; defaults to False.
         """
-
         self.raw_units = get_cellpy_units()
         if tester is None:
             self.tester = prms.Instruments.tester
@@ -286,7 +288,8 @@ class CellpyData:
         self.headers_step_table = headers_step_table
 
         self.table_names = None  # dictionary defined in set_instruments
-        self.__register_external_readers()
+        self.instrument_factory = None
+        self.register_instrument_readers()
         self.set_instrument()
 
         # - units used by cellpy
@@ -456,18 +459,32 @@ class CellpyData:
         self.__external_readers = dict()
         return
 
+    def register_instrument_readers(self):
+        self.instrument_factory = generate_default_factory()
+        # instruments = find_all_instruments()
+        # for instrument_id, instrument in instruments.items():
+        #     self.instrument_factory.register_builder(instrument_id, instrument)
+
+    def _set_instrument(self, instrument, **kwargs):
+        logging.debug(f"Setting new instrument: {instrument}")
+        self.loader_class = self.instrument_factory.create(instrument, **kwargs)
+        self.raw_units = self.loader_class.get_raw_units()
+        self.raw_limits = self.loader_class.get_raw_limits()
+        # ----- create the loader ------------------------
+        self.loader = self.loader_class.loader
+
     def set_instrument(
         self,
         instrument=None,
+        model=None,
         instrument_file=None,
-        reload_external_readers=False,
         **kwargs,
     ):
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Three different modes of setting instruments are currently supported. You can
-        provide the already supported instrument names (see the documentation, e.g. "arbin",
-        "arbin_res",...). You can use the "custom" loader by providing the path to a yaml-file
+        provide the already supported instrument names (see the documentation, e.g. "arbin_res").
+        You can use the "custom" loader by providing the path to a yaml-file
         describing the file format. This can be done either by setting instrument to
         "instrument_name::instrument_definition_file_name", or by setting instrument to "custom" and
         provide the definition file name through the instrument_file keyword argument. A last option
@@ -476,219 +493,77 @@ class CellpyData:
         instrument types also supports a model key-word.
 
         Args:
-            instrument: (str) in ["arbin", "bio-logic-csv", "bio-logic-bin",...]. If
+            instrument: (str) in ["arbin_res", "maccor_txt",...]. If
                 instrument ends with ".yml" a local instrument file will be used. For example,
                 if instrument is "my_instrument.yml", cellpy will look into the local
                 instruments folders for a file called "my_instrument.yml" and then
                 use LocalTxtLoader to load after registering the instrument. If the instrument
                 name contains a '::' separator, the part after the separator will be interpreted
                 as 'instrument_file'.
-            instrument_file: (path) instrument definition file (uses currently the old "custom"
-                instrument format)
-            reload_external_readers (bool): Set True if you want to search for external reader plugins.
-                This is typically not needed, as ``cellpy`` automatically does it when the ``CellpyData``
-                object is created.
+            model: (str) optionally specify if the instrument loader supports handling several models
+                (some instruments allow for exporting data in slightly different formats depending on
+                the choices made during the export or the model of the instrument, e.g. different number of
+                header lines, different encoding).
+            instrument_file: (path) instrument definition file,
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
-        Sets the instrument used for obtaining the data (i.e. sets file-format)
+        Notes:
+            If you are using a local instrument loader, you will have to register it first to the loader factory.
+            >>> c = CellpyData()  # this will automatically register the already implemented loaders
+            >>> c.instrument_factory.register_builder(instrument_id, (module_name, path_to_instrument_loader_file))
 
+            It is highly recommended using the module_name as the instrument_id.
         """
 
+        # constants:
         custom_instrument_splitter = "::"
-        maccor_model_splitter = "::"
 
+        # consume keyword arguments:
         _override_local_instrument_path = kwargs.pop(
             "_override_local_instrument_path", False
         )
-        if reload_external_readers:
-            self.__register_external_readers()
 
-        if instrument is None:
+        # parse input (need instrument, instrument_file and model)
+        if instrument is None and instrument_file is None:
             instrument = self.tester
 
-        logging.debug(f"Setting instrument: {instrument}")
-
-        # TODO: refactor this (use __look_up_instrument etc from core)
-
-        if instrument in ["arbin", "arbin_res"]:
-            from cellpy.readers.instruments.arbin_res import ArbinLoader as RawLoader
-
-            self._set_instrument(RawLoader)
-            self.tester = "arbin"
-
-        elif instrument == "arbin_sql":
-            from cellpy.readers.instruments.arbin_sql import ArbinSQLLoader as RawLoader
-
-            logging.warning(f"{instrument} is experimental! Not ready for production!")
-            self._set_instrument(RawLoader, **kwargs)
-            self.tester = "arbin_sql"
-
-        elif instrument == "arbin_sql_csv":
-            from cellpy.readers.instruments.arbin_sql_csv import (
-                ArbinCsvLoader as RawLoader,
+        if not instrument_file:
+            instrument, instrument_file = self._parse_instrument_str(
+                instrument, custom_instrument_splitter
             )
 
-            logging.warning(f"{instrument} is experimental! Not ready for production!")
-            self._set_instrument(RawLoader, **kwargs)
-            self.tester = "arbin_sql_csv"
-
-        elif instrument == "arbin_sql_xlsx":
-            from cellpy.readers.instruments.arbin_sql_xlsx import (
-                ArbinXLSXLoader as RawLoader,
+        if instrument_file and not model:
+            instrument, model = self._parse_instrument_str(
+                instrument, custom_instrument_splitter
             )
 
-            logging.warning(f"{instrument} is experimental! Not ready for production!")
-            self._set_instrument(RawLoader, **kwargs)
-            self.tester = "arbin_sql_xlsx"
-
-        elif instrument in ["pec", "pec_csv"]:
-            logging.warning("Experimental! Not ready for production!")
-            from cellpy.readers.instruments.pec import PECLoader as RawLoader
-
-            self._set_instrument(RawLoader, **kwargs)
-            self.tester = "pec"
-
-        elif instrument in ["biologics", "biologics_mpr"]:
-            from cellpy.readers.instruments.biologics_mpr import MprLoader as RawLoader
-
-            logging.warning("Experimental! Not ready for production!")
-            self._set_instrument(RawLoader, **kwargs)
-            self.tester = "biologic"
-
-        elif instrument in ["maccor", "maccor_txt"]:
-            from cellpy.readers.instruments.maccor_txt import (
-                MaccorTxtLoader as RawLoader,
-            )
-
-            logging.warning("Experimental! Not ready for production!")
-            model = kwargs.pop("model", None)
-            if not model:
-                _model = instrument.split(maccor_model_splitter)
-                try:
-                    model = _model[1]
-                    logging.debug(
-                        f"provided model through instrument splitter: {model}"
-                    )
-                except IndexError:
-                    logging.debug("no model provided")
-                    logging.debug(instrument)
-                    model = None
-            self._set_instrument(RawLoader, model=model, **kwargs)
-            self.tester = "maccor"
-
-        # new custom loader:
-        elif instrument.startswith("custom"):
-            logging.debug(" --> NEW CUSTOM LOADER")
-            from cellpy.readers.instruments.custom_instrument import (
-                CustomTxtLoader as RawLoader,
-            )
-
-            model = kwargs.pop("model", None)
-            if model:
-                logging.debug(
-                    "the model key word is not "
-                    "supported for custom loader - removing it"
-                )
-            logging.warning("Experimental! Not ready for production!")
-            logging.debug(f"using custom instrument: {instrument}")
-            if not instrument_file:
-                _instrument = instrument.split(custom_instrument_splitter)
-                try:
-                    instrument_file = _instrument[1]
-                    logging.debug(
-                        f"provided instrument file through instrument splitter: {instrument_file}"
-                    )
-
-                except IndexError:
-                    logging.debug("no definition file provided")
-                    logging.debug(instrument)
-                    instrument_file = None
-
-            self._set_instrument(RawLoader, instrument_file=instrument_file, **kwargs)
-            self.tester = "custom"
-
-        # old custom loader:
-        elif instrument.startswith("old_custom"):
-            print("OLD CUSTOM LOADER")
-            logging.debug(f"using custom instrument: {instrument}")
-            model = kwargs.pop("model", None)
-            if model:
-                logging.debug(
-                    f"the model key word is not "
-                    f"supported for custom loader - removing it"
-                )
-            if not instrument_file:
-                _instrument = instrument.split(custom_instrument_splitter)
-                try:
-                    instrument_file = _instrument[1]
-                    logging.debug(
-                        f"provided instrument file through instrument splitter: {instrument_file}"
-                    )
-
-                except IndexError:
-                    logging.debug("no definition file provided")
-                    logging.debug(instrument)
-                    instrument_file = None
-
-            if instrument_file:
-                logging.debug(f"setting instrument file: {instrument_file}")
-                prms.Instruments.custom_instrument_definitions_file = instrument_file
-
-            from cellpy.readers.instruments.custom import CustomLoader as RawLoader
-
-            self._set_instrument(RawLoader, **kwargs)
-            self.tester = "old_custom"
-
-        elif instrument.endswith(".yml"):
+        if instrument and instrument.endswith(".yml"):
+            instrument_file = instrument
+            instrument = "local_instrument"
+            prms.Instruments.custom_instrument_definitions_file = instrument_file
             if _override_local_instrument_path:
-                instrument = Path(instrument)
+                instrument_file = Path(instrument_file)
             else:
-                instrument = Path(prms.Paths.instrumentdir) / instrument
-            if instrument.is_file():
-                from cellpy.readers.instruments.local_instrument import (
-                    LocalTxtLoader as RawLoader,
-                )
+                instrument_file = Path(prms.Paths.instrumentdir) / instrument_file
 
-                self._set_instrument(RawLoader, local_instrument_file=instrument)
-                self.tester = instrument
-                return
+            if not instrument_file.is_file():
+                raise FileNotFoundError(f"Could not locate {instrument_file}")
 
-            else:
-                raise Exception(
-                    f"The needed instrument file does not exist: '{instrument}'"
-                )
+        self._set_instrument(
+            instrument, instrument_file=instrument_file, model=model, **kwargs
+        )
 
-        elif instrument in self.__external_readers.keys():
-            logging.debug(f"Using plug-in reader")
-            logging.debug(f"Unfortunately, not implemented yet!")
-            # RawLoader = self.__external_readers[instrument]
-            # self._set_instrument(RawLoader, is_external=True, **kwargs)
-            raise Exception(f"...so this option does not exist: '{instrument}'")
+    @staticmethod
+    def _parse_instrument_str(instrument, custom_instrument_splitter="::"):
+        if not instrument:
+            return None, None
 
-        else:
-            raise Exception(f"option does not exist: '{instrument}'")
+        _instrument = instrument.split(custom_instrument_splitter)
+        if len(_instrument) < 2:
+            return instrument, None
 
-    def _set_instrument(self, loader_class, is_external=False, **kwargs):
-        if is_external:
-            logging.info(f"Using external reader plug-in ({repr(loader_class)})")
-            try:
-                logging.info(f"{loader_class.__doc__}")
-            except AttributeError:
-                logging.debug("No documentation found for this loader.")
-
-        self.loader_class = loader_class(**kwargs)
-        # ----- get information --------------------------
-        # TODO: move this out of _set_instrument so that we can modify
-        #   it during parsing (in case units are automatically found from
-        #   the column headings in the file). It seems to not be needed
-        #   for the newly implemented (early 2022) TxtLoader, but the
-        #   tests fails for test_cell_readers and more if I remove it now:
-        self.raw_units = self.loader_class.get_raw_units()
-
-        self.raw_limits = self.loader_class.get_raw_limits()
-        # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
+        return _instrument
 
     def _create_logger(self):
         from cellpy import log
@@ -2197,7 +2072,7 @@ class CellpyData:
             start_time_1 = t1.start_datetime
             start_time_2 = t2.start_datetime
 
-            if self.tester in ["arbin", "arbin_res"]:
+            if self.tester in ["arbin_res"]:
                 diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
                     start_time_1
                 )
@@ -3982,7 +3857,7 @@ class CellpyData:
         """Returns charge_capacity (in mAh/g), and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
-        #   but remark that we then have to update e.g. batch_helpers.py
+        #   (but remark that we then have to update e.g. batch_helpers.py)
         #  TODO - jepe: change needed: should not use
         #   dataset_number as parameter
 

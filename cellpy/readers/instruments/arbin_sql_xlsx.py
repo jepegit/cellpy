@@ -9,7 +9,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import Cell, FileID
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
@@ -83,7 +83,7 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 }
 
 
-class ArbinXLSXLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
     name = "arbin_sql_xlsx"

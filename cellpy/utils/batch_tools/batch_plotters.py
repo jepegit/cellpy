@@ -473,7 +473,10 @@ def plot_cycle_life_summary_bokeh(
 
     # set the figure range outside the range of all
     # glyphs (assuming that negative cycle numbers never happen)
-    dummy_figure_for_legend.x_range.start, dummy_figure_for_legend.x_range.end = (-10, -9)
+    dummy_figure_for_legend.x_range.start, dummy_figure_for_legend.x_range.end = (
+        -10,
+        -9,
+    )
     dummy_figure_for_legend.add_layout(
         bokeh.models.Legend(
             click_policy="hide",

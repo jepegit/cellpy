@@ -174,7 +174,7 @@ class AtomicLoad:
     pass
 
 
-class Loader(AtomicLoad, metaclass=abc.ABCMeta):
+class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
 
     name = "base_loader"
@@ -233,7 +233,7 @@ class Loader(AtomicLoad, metaclass=abc.ABCMeta):
         return core.identify_last_data_point(data)
 
 
-class AutoLoader(Loader):
+class AutoLoader(BaseLoader):
     """Main autoload class.
 
     This class can be sub-classed if you want to make a data-reader for different type of "easily parsed" files
@@ -568,7 +568,9 @@ class TxtLoader(AutoLoader, ABC):
             self.thousands = kwargs.pop(
                 "thousands", self.config_params.formatters["thousands"]
             )
-        logging.debug(f"Formatters: self.sep={self.sep} self.skiprows={self.skiprows} self.header={self.header} self.encoding={self.encoding}")
+        logging.debug(
+            f"Formatters: self.sep={self.sep} self.skiprows={self.skiprows} self.header={self.header} self.encoding={self.encoding}"
+        )
         logging.debug(
             f"Formatters (cont.): self.decimal={self.decimal} self.thousands={self.thousands}"
         )

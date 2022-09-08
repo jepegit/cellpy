@@ -6,7 +6,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import Cell, FileID
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
@@ -80,7 +80,7 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 }
 
 
-class ArbinCsvLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
     name = "arbin_sql_csv"
@@ -226,7 +226,7 @@ def test_csv_loader():
         r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709"
     )
     name = datadir / "2021_02_02_standardageing_1C_25dC_1_Channel_1_Wb_1.CSV"
-    loader = ArbinCsvLoader()
+    loader = DataLoader()
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     dd = loader.loader(name)
 

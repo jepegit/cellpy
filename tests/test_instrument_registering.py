@@ -42,6 +42,10 @@ class MockLoader(AutoLoader, ABC):
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
+def test_2_set_instrument(cellpy_data_instance):
+    cellpy_data_instance.set_instrument(instrument="arbin_res")
+
+
 @pytest.mark.xfail
 def test_set_instrument_selecting_default_not_defined(cellpy_data_instance):
     prms.Instruments.custom_instrument_definitions_file = None
@@ -98,25 +102,32 @@ def test_list_available_instruments():
 @pytest.mark.parametrize(
     "parameter, loader, expected",
     [
-        ("raw_ext", "arbin", "res"),
-        ("name", "arbin", "arbin_res"),
+        ("raw_ext", "arbin_res", "res"),
+        ("name", "arbin_res", "arbin_res"),
         ("raw_ext", "arbin_sql", None),
         ("name", "arbin_sql", "arbin_sql"),
         ("raw_ext", "arbin_sql_csv", "csv"),
         ("name", "arbin_sql_csv", "arbin_sql_csv"),
         ("raw_ext", "arbin_sql_xlsx", "xlsx"),
         ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
-        ("name", "custom", "custom"),
-        ("raw_ext", "custom", "*"),
+        # ("name", "custom", "custom"),  # requires an instrument file (not supported for .query yet)
+        # ("raw_ext", "custom", "*"),  # requires an instrument file (not supported for .query yet)
+        # ("name", "local_instrument", "custom"),  # requires an instrument file (not supported for .query yet)
+        # ("raw_ext", "local_instrument", "*"),  # requires an instrument file (not supported for .query yet)
         ("name", "maccor_txt", "maccor_txt"),
         ("raw_ext", "maccor_txt", "txt"),
-        ("name", "pec", "pec_csv"),
-        ("raw_ext", "pec", "csv"),
-        ("name", "biologics", "biologics_mpr"),
-        ("raw_ext", "biologics", "mpr"),
-        ("name", "old_custom", "old_custom"),
-        ("raw_ext", "old_custom", "*"),
+        ("name", "pec_csv", "pec_csv"),
+        ("raw_ext", "pec_csv", "csv"),
+        ("name", "biologics_mpr", "biologics_mpr"),
+        ("raw_ext", "biologics_mpr", "mpr"),
+        # ("name", "old_custom", "old_custom"),  # requires an instrument file (not supported for .query yet)
+        # ("raw_ext", "old_custom", "*"),  # requires an instrument file (not supported for .query yet)
     ],
 )
 def test_query_instrument(parameter, loader, expected):
-    assert core.query_instrument(parameter, loader) == expected
+    instrument_factory = core.InstrumentFactory()
+    instruments = core.find_all_instruments()
+    for instrument_id, instrument in instruments.items():
+        instrument_factory.register_builder(instrument_id, instrument)
+
+    assert instrument_factory.query(loader, parameter) == expected

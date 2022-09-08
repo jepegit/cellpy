@@ -10,7 +10,7 @@ from dateutil.parser import parse
 
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.core import Cell, FileID, humanize_bytes
-from cellpy.readers.instruments.base import Loader
+from cellpy.readers.instruments.base import BaseLoader
 
 pec_headers_normal = dict()
 
@@ -35,7 +35,7 @@ pec_headers_normal["test_id_txt"] = "Test"
 #  3. find user-defined variables
 
 
-class PECLoader(Loader):
+class DataLoader(BaseLoader):
     """Main loading class"""
 
     name = "pec_csv"

@@ -26,7 +26,7 @@ SUPPORTED_MODELS = {
     "S4000-WMG": "maccor_txt_four",
     "S4000-KIT": "maccor_txt_four",
     "S4000-UBHAM": "maccor_txt_three",
-    }
+}
 
 
 MUST_HAVE_RAW_COLUMNS = [
@@ -41,7 +41,7 @@ MUST_HAVE_RAW_COLUMNS = [
 ]
 
 
-class MaccorTxtLoader(TxtLoader):
+class DataLoader(TxtLoader):
     """Class for loading data from Maccor txt files."""
 
     name = "maccor_txt"
@@ -120,10 +120,10 @@ def check_dev_loader(name=None, model=None):
     # prms.Reader.sep = "\t"
 
     sep = "\t"
-    loader1 = MaccorTxtLoader(sep=sep, model=model)
-    loader2 = MaccorTxtLoader(model="one")
-    loader3 = MaccorTxtLoader(model="zero")
-    loader4 = MaccorTxtLoader(model="zero")
+    loader1 = DataLoader(sep=sep, model=model)
+    loader2 = DataLoader(model="one")
+    loader3 = DataLoader(model="zero")
+    loader4 = DataLoader(model="zero")
     dd = loader1.loader(name)
     dd = loader2.loader(name)
     dd = loader3.loader(name)
@@ -139,11 +139,11 @@ def check_dev_loader2(name=None, model=None, sep=None, number=2):
     pd.options.display.max_columns = 100
 
     if sep is not None and sep != "none":
-        loader3 = MaccorTxtLoader(sep=sep, model=model)
+        loader3 = DataLoader(sep=sep, model=model)
     elif sep == "none":
-        loader3 = MaccorTxtLoader(sep=None, model=model)
+        loader3 = DataLoader(sep=None, model=model)
     else:
-        loader3 = MaccorTxtLoader(model=model)
+        loader3 = DataLoader(model=model)
 
     dd = loader3.loader(name)
 
@@ -161,7 +161,7 @@ def check_loader(name=None, number=1, model="one"):
     pd.options.display.max_columns = 100
     # prms.Reader.sep = "\t"
 
-    loader = MaccorTxtLoader(sep="\t", model=model)
+    loader = DataLoader(sep="\t", model=model)
     dd = loader.loader(name)
     raw = dd[0].raw
     raw.plot(x="data_point", y="current", title="current vs data-point")

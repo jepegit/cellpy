@@ -21,7 +21,7 @@ from cellpy.readers.core import (
     humanize_bytes,
     xldate_as_datetime,
 )
-from cellpy.readers.instruments.base import MINIMUM_SELECTION, Loader
+from cellpy.readers.instruments.base import MINIMUM_SELECTION, BaseLoader
 
 # TODO: use InstrumentSettings (dataclass) from internal_settings instead of HeaderDict.
 
@@ -85,7 +85,9 @@ use_ado = False
 
 if ODBC == "ado":
     use_ado = True
-    warnings.warn("Using ado (adobapi) will be removed from cellpy very soon", DeprecationWarning)
+    warnings.warn(
+        "Using ado (adobapi) will be removed from cellpy very soon", DeprecationWarning
+    )
     try:
         import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
     except ImportError:
@@ -156,7 +158,7 @@ normal_headers_renaming_dict = {
 }
 
 
-class ArbinLoader(Loader):
+class DataLoader(BaseLoader):
     """Class for loading arbin-data from res-files.
 
     Implemented Cellpy params (prms.Instruments.Arbin):
@@ -401,8 +403,7 @@ class ArbinLoader(Loader):
         else:
             if USE_SQLALCHEMY_ACCESS_ENGINE:
                 connection_url = sa.engine.URL.create(
-                    "access+pyodbc",
-                    query={"odbc_connect": constr}
+                    "access+pyodbc", query={"odbc_connect": constr}
                 )
                 engine = sa.create_engine(connection_url)
                 conn = engine
@@ -614,7 +615,7 @@ class ArbinLoader(Loader):
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
 
-    def investigate(self, file_name): # Deprecated - use on own risk
+    def investigate(self, file_name):  # Deprecated - use on own risk
         """Investigate a .res file.
 
         Args:
@@ -803,7 +804,6 @@ class ArbinLoader(Loader):
             time_0 = time.time()
 
         conn = self._get_connection_or_engine(temp_filename)
-
 
         # if use_ado:
         #     conn = dbloader.connect(constr)
@@ -1462,7 +1462,7 @@ def check_loader_aux():
     f2 = p / "BIT_LFP50_12S1P_SOP_0_97_T5_cyc200_3500W_20191231.res"
     f3 = p / "TJP_LR1865SZ_OCV_19_Cyc150_T25_201105.res"
 
-    n = ArbinLoader().loader(f1)
+    n = DataLoader().loader(f1)
     print(n[0].raw.tail())
 
 
@@ -1471,7 +1471,7 @@ def check_loader_empty_normal():
 
     log.setup_logging(default_level="CRITICAL")
 
-    a = ArbinLoader()
+    a = DataLoader()
     cols = a.arbin_headers_normal
     df = pd.DataFrame(columns=cols.values())
     print(df)

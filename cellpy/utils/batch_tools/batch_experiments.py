@@ -96,7 +96,6 @@ class CyclingExperiment(BaseExperiment):
             for p in individual_specs:
                 p, a = p.split(EQUAL_SIGN)
 
-
         logging.debug(f"getting cell_spec from journal pages ({indx}: {row})")
         try:
             cell_spec = row[hdr_journal.argument]
@@ -120,10 +119,14 @@ class CyclingExperiment(BaseExperiment):
                     cell_spec[spec] = None
                 else:
                     try:
-                        logging.debug(f"Using ast.literal_eval to convert cell-spec value from str '{cell_spec[spec]}'")
+                        logging.debug(
+                            f"Using ast.literal_eval to convert cell-spec value from str '{cell_spec[spec]}'"
+                        )
                         cell_spec[spec] = ast.literal_eval(cell_spec[spec])
                     except ValueError as e:
-                        logging.warning(f"ERROR! Could not convert from str to python object!")
+                        logging.warning(
+                            f"ERROR! Could not convert from str to python object!"
+                        )
                         logging.debug(e)
         return cell_spec
 
