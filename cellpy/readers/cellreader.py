@@ -57,7 +57,7 @@ from cellpy.readers.core import (
     pickle_protocol,
     xldate_as_datetime,
     InstrumentFactory,
-    find_all_instruments,
+    find_all_instruments, generate_default_factory,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -459,10 +459,10 @@ class CellpyData:
         return
 
     def register_instrument_readers(self):
-        self.instrument_factory = InstrumentFactory()
-        instruments = find_all_instruments()
-        for instrument_id, instrument in instruments.items():
-            self.instrument_factory.register_builder(instrument_id, instrument)
+        self.instrument_factory = generate_default_factory()
+        # instruments = find_all_instruments()
+        # for instrument_id, instrument in instruments.items():
+        #     self.instrument_factory.register_builder(instrument_id, instrument)
 
     def _set_instrument(self, instrument, **kwargs):
         logging.debug(f"Setting new instrument: {instrument}")
@@ -482,8 +482,8 @@ class CellpyData:
         """Set the instrument (i.e. tell cellpy the file-type you use).
 
         Three different modes of setting instruments are currently supported. You can
-        provide the already supported instrument names (see the documentation, e.g. "arbin",
-        "arbin_res",...). You can use the "custom" loader by providing the path to a yaml-file
+        provide the already supported instrument names (see the documentation, e.g. "arbin_res").
+        You can use the "custom" loader by providing the path to a yaml-file
         describing the file format. This can be done either by setting instrument to
         "instrument_name::instrument_definition_file_name", or by setting instrument to "custom" and
         provide the definition file name through the instrument_file keyword argument. A last option
@@ -499,14 +499,20 @@ class CellpyData:
                 use LocalTxtLoader to load after registering the instrument. If the instrument
                 name contains a '::' separator, the part after the separator will be interpreted
                 as 'instrument_file'.
-            model: (str) a model
-            instrument_file: (path) instrument definition file (uses currently the old "custom"
-                instrument format)
+            model: (str) optionally specify if the instrument loader supports handling several models
+                (some instruments allow for exporting data in slightly different formats depending on
+                the choices made during the export or the model of the instrument, e.g. different number of
+                header lines, different encoding).
+            instrument_file: (path) instrument definition file,
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
-        Sets the instrument used for obtaining the data (i.e. sets file-format)
+        Notes:
+            If you are using a local instrument loader, you will have to register it first to the loader factory.
+            >>> c = CellpyData()  # this will automatically register the already implemented loaders
+            >>> c.instrument_factory.register_builder(instrument_id, (module_name, path_to_instrument_loader_file))
 
+            It is highly recommended using the module_name as the instrument_id.
         """
 
         # constants:

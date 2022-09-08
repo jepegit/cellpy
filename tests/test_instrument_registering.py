@@ -110,16 +110,18 @@ def test_list_available_instruments():
         ("name", "arbin_sql_csv", "arbin_sql_csv"),
         ("raw_ext", "arbin_sql_xlsx", "xlsx"),
         ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
-        # ("name", "custom", "custom"),
-        # ("raw_ext", "custom", "*"),
+        # ("name", "custom", "custom"),  # requires an instrument file (not supported for .query yet)
+        # ("raw_ext", "custom", "*"),  # requires an instrument file (not supported for .query yet)
+        # ("name", "local_instrument", "custom"),  # requires an instrument file (not supported for .query yet)
+        # ("raw_ext", "local_instrument", "*"),  # requires an instrument file (not supported for .query yet)
         ("name", "maccor_txt", "maccor_txt"),
         ("raw_ext", "maccor_txt", "txt"),
         ("name", "pec_csv", "pec_csv"),
         ("raw_ext", "pec_csv", "csv"),
         ("name", "biologics_mpr", "biologics_mpr"),
         ("raw_ext", "biologics_mpr", "mpr"),
-        ("name", "old_custom", "old_custom"),
-        ("raw_ext", "old_custom", "*"),
+        # ("name", "old_custom", "old_custom"),  # requires an instrument file (not supported for .query yet)
+        # ("raw_ext", "old_custom", "*"),  # requires an instrument file (not supported for .query yet)
     ],
 )
 def test_query_instrument(parameter, loader, expected):

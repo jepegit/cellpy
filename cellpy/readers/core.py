@@ -11,6 +11,7 @@ import pathlib
 import pickle
 import sys
 import time
+from typing import Any, Tuple, Dict
 
 import numpy as np
 import pandas as pd
@@ -400,30 +401,62 @@ class InstrumentFactory:
         self._builders = {}
         self._kwargs = {}
 
-    def register_builder(self, key, builder, **kwargs):
-        """register an instrument loader module"""
+    def register_builder(self, key: str, builder: Tuple[str, Any], **kwargs) -> None:
+        """register an instrument loader module.
+
+        Args:
+            key: instrument id
+            builder: (module_name, module_path)
+            **kwargs: stored in the factory (will be used in the future for allowing to set
+               defaults to the builders to allow for using .query).
+        """
 
         logging.debug(f"Registering instrument {key}")
         self._builders[key] = builder
         self._kwargs[key] = kwargs
 
-    def create(self, key, **kwargs):
-        """Create the instrument loader module and initialize the loader class."""
+    def create(self, key: str, **kwargs):
+        """Create the instrument loader module and initialize the loader class.
+
+        Args:
+            key: instrument id
+            **kwargs: sent to the initializer of the loader class.
+
+        Returns:
+            instance of loader class.
+        """
 
         module_name, module_path = self._builders.get(
             key, (None,  None)
         )
+
+        # constant:
         instrument_class = "DataLoader"
+
         if not module_name:
             raise ValueError(key)
+
         spec = importlib.util.spec_from_file_location(module_name, module_path)
         loader_module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = loader_module
         spec.loader.exec_module(loader_module)
         cls = getattr(loader_module, instrument_class)
+
+        # TODO: get stored kwargs from self.__kwargs and merge them with the supplied kwargs
+        #  (supplied should have preference)
+
         return cls(**kwargs)
 
-    def query(self, key, variable):
+    def query(self, key: str, variable: str) -> Any:
+        """performs a get_params lookup for the instrument loader.
+
+        Args:
+            key: instrument id.
+            variable: the variable you want to lookup.
+
+        Returns:
+            The value of the variable if the loaders get_params method supports it.
+        """
         loader = self.create(key)
         try:
             value = loader.get_params(variable)
@@ -435,7 +468,17 @@ class InstrumentFactory:
         return
 
 
-def find_all_instruments():
+def generate_default_factory():
+    instrument_factory = InstrumentFactory()
+    instruments = find_all_instruments()
+    for instrument_id, instrument in instruments.items():
+        instrument_factory.register_builder(instrument_id, instrument)
+    return instrument_factory
+
+
+def find_all_instruments() -> Dict[str, Tuple[str, str]]:
+    """finds all the supported instruments"""
+
     import cellpy.readers.instruments as hard_coded_instruments_site
 
     instruments_found = {}
@@ -459,11 +502,8 @@ def find_all_instruments():
     for module_path in modules_in_hard_coded_instruments_site:
         module_name = module_path.name.rstrip(".py")
         logging.debug(module_name)
-        # if module_name in instruments_registered:
-        #     instrument_class = instruments_registered[module_name]
         instruments_found[module_name] = (
             module_name,
-            #instrument_class,
             module_path,
         )
         logging.debug("registered")
@@ -471,6 +511,7 @@ def find_all_instruments():
     logging.debug("Searching for module configurations in user instrument folder:")
     # These are only yaml-files and should ideally import the appropriate
     #    custom loader class
+    # Might not be needed.
     logging.debug("- Not implemented yet")
 
     logging.debug("Searching for modules through plug-ins:")
