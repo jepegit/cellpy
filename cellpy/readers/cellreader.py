@@ -57,7 +57,8 @@ from cellpy.readers.core import (
     pickle_protocol,
     xldate_as_datetime,
     InstrumentFactory,
-    find_all_instruments, generate_default_factory,
+    find_all_instruments,
+    generate_default_factory,
 )
 
 HEADERS_NORMAL = get_headers_normal()
@@ -533,7 +534,9 @@ class CellpyData:
             )
 
         if instrument_file and not model:
-            instrument, model = self._parse_instrument_str(instrument, custom_instrument_splitter)
+            instrument, model = self._parse_instrument_str(
+                instrument, custom_instrument_splitter
+            )
 
         if instrument and instrument.endswith(".yml"):
             instrument_file = instrument

@@ -426,9 +426,7 @@ class InstrumentFactory:
             instance of loader class.
         """
 
-        module_name, module_path = self._builders.get(
-            key, (None,  None)
-        )
+        module_name, module_path = self._builders.get(key, (None, None))
 
         # constant:
         instrument_class = "DataLoader"
