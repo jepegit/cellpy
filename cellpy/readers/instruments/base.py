@@ -184,7 +184,7 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def get_raw_units():
+    def get_raw_units() -> dict:
         """Include the settings for the units used by the instrument.
 
         The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
@@ -193,11 +193,24 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
 
         Returns: dictionary containing the unit-fractions for current, charge, and mass
 
+        Example:
+
+            @staticmethod
+            def get_raw_units():
+                raw_units = {
+                    "current": 1.0, # A
+                    "charge": 1.0, # Ah
+                    "mass": 0.001, # g (i.e. units are given in mg)
+                    "voltage": 1.0  # V
+                }
+                return raw_units
+
         """
+        # TODO: make sure the set of units is complete (missing for example time, area or length and temperature)
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_raw_limits(self):
+    def get_raw_limits(self) -> dict:
         """Include the settings for how to decide what kind of step you are examining here.
 
         The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
