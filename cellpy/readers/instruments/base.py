@@ -193,6 +193,9 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
 
         Returns: dictionary containing the unit-fractions for current, charge, and mass
 
+        Comments to me:
+            This will be used to convert all values to the internal set cellpy units (given in xxxx).
+            The units used by cellpy will be stored in the cellpy file. The original units will not be stored.
         Example:
 
             @staticmethod
@@ -201,9 +204,18 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
                     "current": 1.0, # A
                     "charge": 1.0, # Ah
                     "mass": 0.001, # g (i.e. units are given in mg)
-                    "voltage": 1.0  # V
+                    "voltage": 1.0,  # V
+                    "time": 1.0, # sec
+                    "resistance": 1.0, # Ohms
+                    "power": 1.0, # W
+                    "energy": 1.0, # Wh
+                    "length": 1.0, # m
+                    "area": 1.0, # m2
+                    "temperature": 1.0, # C
                 }
                 return raw_units
+
+        The internal cellpy units are given in the
 
         """
         # TODO: make sure the set of units is complete (missing for example time, area or length and temperature)

@@ -205,6 +205,7 @@ class CellpyData:
                default).
             initialize: create a dummy (empty) dataset; defaults to False.
         """
+        # - units used in raw data
         self.raw_units = get_cellpy_units()
         if tester is None:
             self.tester = prms.Instruments.tester
@@ -1211,7 +1212,7 @@ class CellpyData:
                 # retrieving the first cell data (e.g. first file)
                 if cells is None:
                     logging.debug("getting data from first file")
-                    if new_cells[set_number].no_data:
+                    if not new_cells[set_number].has_data:
                         logging.debug("NO DATA")
                     else:
                         cells = new_cells
@@ -1260,7 +1261,7 @@ class CellpyData:
 
         test_exists = False
         if cells:
-            if cells[0].no_data:
+            if not cells[0].has_data:
                 logging.debug(
                     "the first dataset (or only dataset) loaded from the raw data file is empty"
                 )
@@ -2135,7 +2136,7 @@ class CellpyData:
                 logging.info("The summary is not complete - run make_summary()")
 
             # checking if we already have made step tables for these datasets
-            if t1.steps_made and t2.steps_made:
+            if t1.has_steps and t2.has_steps:
                 step_table_made = True
             else:
                 step_table_made = False
@@ -2233,7 +2234,7 @@ class CellpyData:
         d = self.cells[dataset_number].raw
         s = self.cells[dataset_number].steps
 
-        if not self.cells[dataset_number].steps_made:
+        if not self.cells[dataset_number].has_steps:
             return False
 
         no_cycles_raw = np.amax(d[self.headers_normal.cycle_index_txt])
@@ -2348,7 +2349,7 @@ class CellpyData:
                 self._report_empty_dataset()
                 return
 
-            if not self.cells[dataset_number].steps_made:
+            if not self.cells[dataset_number].has_steps:
                 logging.debug("steps is not made")
 
                 if self.force_step_table_creation or self.force_all:
@@ -3204,7 +3205,7 @@ class CellpyData:
                 if raw:
                     outname_normal = firstname + "_normal.csv"
                     self._export_normal(data, outname=outname_normal, sep=sep)
-                    if data.steps_made is True:
+                    if data.has_steps is True:
                         outname_steps = firstname + "_steps.csv"
                         self._export_steptable(data, outname=outname_steps, sep=sep)
                     else:
@@ -3266,14 +3267,14 @@ class CellpyData:
             return
 
         test = self.get_cell(dataset_number)
-        summary_made = test.summary_made
+        summary_made = test.has_summary
 
         if not summary_made and not force:
             logging.info("You should not save datasets without making a summary first!")
             logging.info("If you really want to do it, use save with force=True")
             return
 
-        step_table_made = test.steps_made
+        step_table_made = test.has_steps
         if not step_table_made and not force and not ensure_step_table:
             logging.info(
                 "You should not save datasets without making a step-table first!"
@@ -3302,7 +3303,7 @@ class CellpyData:
 
         if ensure_step_table:
             logging.debug("ensure_step_table is on")
-            if not test.steps_made:
+            if not test.has_steps:
                 logging.debug("save: creating step table")
                 self.make_step_table(dataset_number=dataset_number)
 
@@ -4648,7 +4649,7 @@ class CellpyData:
         # It is most likely never
         # used anymore. And will most probably be deleted.
         if use_summary_made:
-            summary_made = test.summary_made
+            summary_made = test.has_summary
         else:
             summary_made = True
 
@@ -4919,7 +4920,7 @@ class CellpyData:
 
         if ensure_step_table and not self.load_only_summary:
             logging.debug("ensuring existence of step-table")
-            if not dataset.steps_made:
+            if not dataset.has_steps:
                 logging.debug("dataset.step_table_made is not True")
                 logging.info("running make_step_table")
                 if nom_cap is not None:
@@ -5577,13 +5578,14 @@ def get(
         # raw file
         logging.info(f"Loading raw-file: {filename}")
         cellpy_instance.from_raw(filename, **kwargs)
-        logging.debug("raw:")
-        logging.debug(cellpy_instance.cell.raw.head())
 
         if not cellpy_instance:
             print("Could not load file: check log!")
             print("Returning None")
             return
+
+        logging.debug("raw:")
+        logging.debug(cellpy_instance.cell.raw.head())
 
         if mass is not None:
             logging.info(f"Setting mass: {mass}")

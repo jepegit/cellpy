@@ -254,6 +254,8 @@ class Cell:
         self.name = None
 
         # new meta data
+        self.voltage_lim_low = None
+        self.voltage_lim_high = None
         self.cycle_mode = prms.Reader.cycle_mode
         self.active_electrode_area = None  # [cm2]
         self.active_electrode_thickness = None  # [micron]
@@ -286,15 +288,9 @@ class Cell:
         self.raw_units = cellpy_units
         self.raw_limits = cellpy_limits
 
-        # self.data = collections.OrderedDict()  # not used
-        # self.summary = collections.OrderedDict()  # not used
-
         self.raw = pd.DataFrame()
         self.summary = pd.DataFrame()
-        # self.summary_made = False  # Should be removed
         self.steps = pd.DataFrame()  # is this used? - check!
-        # self.step_table_made = False  # Should be removed
-        # self.parameter_table = collections.OrderedDict()
         self.summary_table_version = SUMMARY_TABLE_VERSION
         self.step_table_version = STEP_TABLE_VERSION
         self.cellpy_file_version = CELLPY_FILE_VERSION
@@ -368,7 +364,7 @@ class Cell:
         return txt
 
     @property
-    def summary_made(self):
+    def has_summary(self):
         """check if the summary table exists"""
         try:
             empty = self.summary.empty
@@ -377,7 +373,7 @@ class Cell:
         return not empty
 
     @property
-    def steps_made(self):
+    def has_steps(self):
         """check if the step table exists"""
         try:
             empty = self.steps.empty
@@ -386,14 +382,12 @@ class Cell:
         return not empty
 
     @property
-    def no_data(self):
-        # TODO: @jepe should consider renaming this to be in-line with "steps_made" etc. (or renaming steps_made and
-        #   summary_made to e.g. no_steps, no_summary)
+    def has_data(self):
         try:
             empty = self.raw.empty
         except AttributeError:
             empty = True
-        return empty
+        return not empty
 
 
 class InstrumentFactory:

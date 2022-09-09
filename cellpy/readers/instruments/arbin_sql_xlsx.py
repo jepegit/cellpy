@@ -2,17 +2,21 @@
 import logging
 import pathlib
 import sys
+import warnings
 
 import pandas as pd
 from dateutil.parser import parse
 
 from cellpy import prms
+from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import Cell, FileID
 from cellpy.readers.instruments.base import BaseLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
+
+SHEET_NAME_KEYWORD = "Channel"
 
 # Not used yet - only supporting loading raw data (normal)
 FILE_NAME_POST_LABEL = {
@@ -179,7 +183,6 @@ class DataLoader(BaseLoader):
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
         new_tests.append(data)
-
         return new_tests
 
     def _post_process(self, data):
@@ -228,23 +231,23 @@ class DataLoader(BaseLoader):
 
         return data
 
-    def _get_sheet_name(self, file_name):
-        file_name = pathlib.Path(file_name)
-        return file_name.name[0:10]
-
     def _parse_xlsx_data(self, file_name):
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
-        sheet_name = self._get_sheet_name(file_name)
         file_name = pathlib.Path(file_name)
-        raw_frame = pd.read_excel(
-            file_name, engine="openpyxl", sheet_name=None, parse_dates=[date_time_col]
-        )  # TODO: replace this with pd.ExcelReader
-        matching = [s for s in raw_frame.keys() if s.startswith(sheet_name)]
+        xlsx_file = pd.ExcelFile(file_name)
+        sheet_names = [sheet for sheet in xlsx_file.sheet_names if SHEET_NAME_KEYWORD.upper() in sheet.upper()]
 
-        if matching:
-            return raw_frame[matching[0]]
-        else:
-            return raw_frame[raw_frame.keys()[0]]
+        if not sheet_names:
+            raise WrongFileVersion(f"Could not locate the correct sheet (should contain {SHEET_NAME_KEYWORD})")
+
+        if len(sheet_names) > 1:
+            logging.critical(f"Found several matching sheet-names: {sheet_names} - will perform a simple merge")
+
+        raw_frames = pd.read_excel(
+            file_name, engine="openpyxl", sheet_name=sheet_names, parse_dates=[date_time_col]
+        )
+        raw_frame = pd.concat(raw_frames)
+        return raw_frame
 
 
 if __name__ == "__main__":
