@@ -517,7 +517,7 @@ def test_make_summary(cellpy_data_instance, parameters):
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
     s1 = cellpy_data_instance.cells[0].summary
-    s2 = cellpy_data_instance.get_cell().summary
+    s2 = cellpy_data_instance.cell.summary
     s3 = cellpy_data_instance.get_summary()
     assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()

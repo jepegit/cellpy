@@ -44,7 +44,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_summary,
     headers_normal,
     headers_step_table,
-    headers_summary,
+    headers_summary, get_default_raw_units,
 )
 from cellpy.parameters.legacy import internal_settings as old_settings
 from cellpy.readers.core import (
@@ -207,8 +207,6 @@ class CellpyData:
                default).
             initialize: create a dummy (empty) dataset; defaults to False.
         """
-        # - units used in raw data
-        self.raw_units = get_cellpy_units()
         if tester is None:
             self.tester = prms.Instruments.tester
         else:
@@ -304,6 +302,10 @@ class CellpyData:
     def initialize(self):
         logging.debug("Initializing...")
         self.cells.append(Cell())
+
+    @property
+    def raw_units(self):
+        return self.cell.raw_units
 
     @property
     def cell(self):
@@ -468,10 +470,19 @@ class CellpyData:
         # for instrument_id, instrument in instruments.items():
         #     self.instrument_factory.register_builder(instrument_id, instrument)
 
+    def _set_raw_units(self):
+        raw_units = get_default_raw_units()
+        new_raw_units = self.loader_class.get_raw_units()
+        for key in new_raw_units:
+            if key in raw_units:
+                raw_units[key] = new_raw_units[key]
+            else:
+                logging.debug(f"Got unconventional raw-unit label: {key}")
+        return raw_units
+
     def _set_instrument(self, instrument, **kwargs):
         logging.debug(f"Setting new instrument: {instrument}")
         self.loader_class = self.instrument_factory.create(instrument, **kwargs)
-        self.raw_units = self.loader_class.get_raw_units()
         self.raw_limits = self.loader_class.get_raw_limits()
         # ----- create the loader ------------------------
         self.loader = self.loader_class.loader
@@ -1106,7 +1117,7 @@ class CellpyData:
         raw_file_loader = self.loader
 
         set_number = 0
-        test = None
+        cell = None
 
         logging.debug("start iterating through file(s)")
 
@@ -1115,7 +1126,7 @@ class CellpyData:
             logging.debug(f"{f}")
 
             # get a list of cellpy.readers.core.Cell objects
-            test = raw_file_loader(f, data_points=data_points, **kwargs)
+            cell = raw_file_loader(f, data_points=data_points, **kwargs)
             # remark that the bounds are included (i.e. the first datapoint
             # is 5000.
 
@@ -1127,12 +1138,11 @@ class CellpyData:
             # test[set_number].raw_data_files.append(raw_data_file)
             # test[set_number].raw_data_files_length.append(file_size)
             # return test
-
-        self.cells.append(test[set_number])
+        cell[set_number].raw_units = self._set_raw_units()
+        self.cells.append(cell[set_number])
 
         self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
-        self.raw_units = self.loader_class.get_raw_units()
         self._invent_a_name()
         return self
 
@@ -1275,12 +1285,12 @@ class CellpyData:
                 logging.debug("sorting data")
                 cells[set_number] = self._sort_data(cells[set_number])
             # REMARK! If you want to allow for more than one cell pr instance, this needs to be replaced (for example using .extend)
+            cells[set_number].raw_units = self._set_raw_units()
             self.cells.append(cells[set_number])
         else:
             logging.warning("No new datasets added!")
         self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_datasets()
-        self.raw_units = self.loader_class.get_raw_units()
         self._invent_a_name()
         return self
 
@@ -1861,7 +1871,6 @@ class CellpyData:
         # how cellpy works.
 
         for attribute in ATTRS_CELLPYFILE:
-            print(attribute)
             value = self._extract_from_dict(meta_table, attribute)
             # some fixes due to errors propagated into the cellpy-files
             if attribute == "creator":
@@ -1893,14 +1902,13 @@ class CellpyData:
 
         except KeyError:
             logging.debug(f"missing key in meta table: {name}")
-            print(meta_table)
-            warnings.warn("OLD-TYPE: Recommend to save in new format!")
+            # warnings.warn("OLD-TYPE: Recommend to save in new format!")
             try:
                 name = self._extract_from_dict(meta_table, "test_name")
             except Exception as e:
                 name = "no_name"
                 logging.debug("name set to 'no_name")
-                warnings.warn(f"Unhandled exception raised: {e}")
+                # warnings.warn(f"Unhandled exception raised: {e}")
             data.name = name
 
         # unpacking the raw data limits
@@ -1911,7 +1919,7 @@ class CellpyData:
                 data.raw_limits[key] = self._extract_from_dict_hard(meta_table, h5_key)
             except KeyError:
                 logging.debug(f"missing key in meta_table: {h5_key}")
-                warnings.warn("OLD-TYPE: Recommend to save in new format!")
+                # warnings.warn("OLD-TYPE: Recommend to save in new format!")
 
         # unpacking the raw data units
         # TODO: check if they end up at the correct level (cellpydata or cell)
@@ -1921,7 +1929,7 @@ class CellpyData:
                 data.raw_units[key] = self._extract_from_dict_hard(meta_table, h5_key)
             except KeyError:
                 logging.critical(f"missing key in meta_table: {h5_key}")
-                warnings.warn("OLD-TYPE: Recommend to save in new format!")
+                # warnings.warn("OLD-TYPE: Recommend to save in new format!")
 
     @staticmethod
     def _extract_from_dict(t, x, default_value=None):
@@ -1948,23 +1956,23 @@ class CellpyData:
             self._report_empty_dataset()
             return
 
-        test = self.get_cell(dataset_number)
+        cell = self.cell
 
         infotable = collections.OrderedDict()
 
         for attribute in ATTRS_CELLPYFILE:
-            value = getattr(test, attribute)
+            value = getattr(cell, attribute)
             infotable[attribute] = [value]
 
         infotable["cellpy_file_version"] = [CELLPY_FILE_VERSION]
         infotable["cycle_mode"] = [self.cycle_mode]
 
-        limits = test.raw_limits
+        limits = cell.raw_limits
         for key in limits:
             h5_key = key
             infotable[key] = limits[h5_key]
 
-        units = test.raw_units
+        units = cell.raw_units
         for key in units:
             h5_key = f"raw_unit_{key}"
             infotable[h5_key] = units[key]
@@ -1982,10 +1990,10 @@ class CellpyData:
         fidtable["raw_data_location"] = []
         fidtable["raw_data_files_length"] = []
         fidtable["last_data_point"] = []
-        fids = test.raw_data_files
+        fids = cell.raw_data_files
         fidtable["raw_data_fid"] = fids
         if fids:
-            for fid, length in zip(fids, test.raw_data_files_length):
+            for fid, length in zip(fids, cell.raw_data_files_length):
                 try:
                     fidtable["raw_data_name"].append(str(Path(fid.name).name))
                     fidtable["raw_data_full_name"].append(str(Path(fid.full_name)))
@@ -3287,7 +3295,7 @@ class CellpyData:
             self._report_empty_dataset()
             return
 
-        test = self.get_cell(dataset_number)
+        test = self.cell
         summary_made = test.has_summary
 
         if not summary_made and not force:
@@ -4459,20 +4467,20 @@ class CellpyData:
     def get_converter_to_specific(
         self, dataset=None, mass=None, to_unit=None, from_unit=None
     ):
-        """get the conversion values
+        """get the conversion value to use when calculating specific values (e.g mAh/g).
 
         Args:
             dataset: DataSet object
             mass: mass of electrode (for example active material in mg)
             to_unit: (float) unit of input, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
-              will be 0.001 / 1.0 = 0.001
+              will be 0.001 * 1.0 = 0.001
             from_unit: (float) unit of output, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
               will be 1.0 / 0.001 = 1000.0
 
         Returns:
-            multiplier (float) from_unit/to_unit * mass
+            multiplier (float) from_unit / to_unit / mass
 
         """
         if not dataset:
@@ -4491,7 +4499,7 @@ class CellpyData:
             to_unit = to_unit_cap / to_unit_mass
         if not from_unit:
             from_unit_cap = self.raw_units["charge"]
-            from_unit_mass = self.raw_units["mass"]
+            from_unit_mass = self.cellpy_units["mass"]
             from_unit = from_unit_cap / from_unit_mass
         logging.debug(f"from-unit: {from_unit}")
         logging.debug(f"to-unit: {to_unit}")
@@ -4662,7 +4670,7 @@ class CellpyData:
             self._report_empty_dataset()
             return None
 
-        test = self.get_cell(dataset_number)
+        cell = self.cell
 
         # This is a bit convoluted; in the old days, we used an attribute
         # called summary_made,
@@ -4670,7 +4678,7 @@ class CellpyData:
         # It is most likely never
         # used anymore. And will most probably be deleted.
         if use_summary_made:
-            summary_made = test.has_summary
+            summary_made = cell.has_summary
         else:
             summary_made = True
 
@@ -4679,7 +4687,7 @@ class CellpyData:
             return None
         else:
             logging.info("Returning datasets[test_no].summary")
-            return test.summary
+            return cell.summary
 
     # -----------internal-helpers-----------------------------------------------
 
@@ -4930,8 +4938,6 @@ class CellpyData:
             self._report_empty_dataset()
             return
         dataset = self.cells[dataset_number]
-        #        if test.merged == True:
-        #            use_cellpy_stat_file=False
 
         if not mass:
             mass = dataset.mass or 1.0

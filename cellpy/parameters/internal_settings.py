@@ -98,11 +98,11 @@ class InstrumentSettings(DictLikeClass):
 
 @dataclass
 class CellpyUnits(BaseSettings):
-    current: float = 0.001
-    charge: float = 0.001
-    mass: float = 0.001
-    specific: float = 1.0
-    voltage: float = 1.0
+    current: float = 1.0  # Ah
+    charge: float = 0.001  # Ah
+    mass: float = 0.001  # g for mass
+    specific: float = 1.0  # g in specific capacity etc
+    voltage: float = 1.0  # V
     time: float = 1.0  # sec
     resistance: float = 1.0  # Ohms
     power: float = 1.0  # W
@@ -253,7 +253,13 @@ class HeadersJournal(BaseSettings):
 keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
 
 cellpy_units = CellpyUnits()
+raw_units = CellpyUnits(
+    charge=1.0,
+    mass=0.001,
+)
+output_units = CellpyLimits()
 cellpy_limits = CellpyLimits()
+raw_limits = CellpyLimits()
 headers_step_table = HeadersStepTable()
 headers_journal = HeadersJournal()
 headers_summary = HeadersSummary()
@@ -327,7 +333,6 @@ ATTRS_CELLPYDATA = [
     "profile",
     "raw_datadir",
     "raw_limits",
-    "raw_units",
     "select_minimal",
     "selected_cell_number",
     "selected_scans",
@@ -385,6 +390,24 @@ def get_headers_summary() -> BaseSettings:
 def get_cellpy_units() -> CellpyUnits:
     """Returns a dictionary with units"""
     return cellpy_units
+
+
+def get_default_cellpy_file_raw_units() -> CellpyUnits:
+    """Returns a dictionary with units to use as default for old versions of cellpy files"""
+    return CellpyUnits(
+        charge=0.001,
+        mass=0.001,
+    )
+
+
+def get_default_raw_units() -> CellpyUnits:
+    """Returns a dictionary with units as default for raw data"""
+    return raw_units
+
+
+def get_default_raw_limits() -> CellpyUnits:
+    """Returns a dictionary with units as default for raw data"""
+    return raw_limits
 
 
 def get_headers_normal() -> HeadersNormal:
