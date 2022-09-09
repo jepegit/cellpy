@@ -252,14 +252,6 @@ class HeadersJournal(BaseSettings):
 
 keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
 
-cellpy_units = CellpyUnits()
-raw_units = CellpyUnits(
-    charge=1.0,
-    mass=0.001,
-)
-output_units = CellpyLimits()
-cellpy_limits = CellpyLimits()
-raw_limits = CellpyLimits()
 headers_step_table = HeadersStepTable()
 headers_journal = HeadersJournal()
 headers_summary = HeadersSummary()
@@ -387,9 +379,16 @@ def get_headers_summary() -> BaseSettings:
     return headers_summary
 
 
+cellpy_units = CellpyUnits()
+raw_units = CellpyUnits(
+    charge=1.0,
+    mass=0.001,
+)
+
+
 def get_cellpy_units() -> CellpyUnits:
     """Returns a dictionary with units"""
-    return cellpy_units
+    return CellpyUnits()
 
 
 def get_default_cellpy_file_raw_units() -> CellpyUnits:
@@ -402,12 +401,15 @@ def get_default_cellpy_file_raw_units() -> CellpyUnits:
 
 def get_default_raw_units() -> CellpyUnits:
     """Returns a dictionary with units as default for raw data"""
-    return raw_units
+    return CellpyUnits(
+        charge=1.0,
+        mass=0.001,
+    )
 
 
 def get_default_raw_limits() -> CellpyUnits:
     """Returns a dictionary with units as default for raw data"""
-    return raw_limits
+    return CellpyLimits()
 
 
 def get_headers_normal() -> HeadersNormal:

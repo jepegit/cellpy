@@ -295,6 +295,7 @@ class CellpyData:
 
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()
+        self.output_units = get_cellpy_units()
 
         if initialize:
             self.initialize()
