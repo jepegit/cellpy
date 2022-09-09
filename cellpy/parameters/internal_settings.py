@@ -103,18 +103,13 @@ class CellpyUnits(BaseSettings):
     mass: float = 0.001
     specific: float = 1.0
     voltage: float = 1.0
-
-    # "current": 1.0,  # A
-    # "charge": 1.0,  # Ah
-    # "mass": 0.001,  # g (i.e. units are given in mg)
-    # "voltage": 1.0,  # V
-    # "time": 1.0,  # sec
-    # "resistance": 1.0,  # Ohms
-    # "power": 1.0,  # W
-    # "energy": 1.0,  # Wh
-    # "length": 1.0,  # m
-    # "area": 1.0,  # m2
-    # "temperature": 1.0,  # C
+    time: float = 1.0  # sec
+    resistance: float = 1.0  # Ohms
+    power: float = 1.0  # W
+    energy: float = 1.0  # Wh
+    length: float = 1.0  # m
+    area: float = 1.0  # m2
+    temperature: float = 1.0  # C
 
 
 @dataclass

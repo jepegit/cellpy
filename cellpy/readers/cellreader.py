@@ -24,6 +24,7 @@ import sys
 import time
 import warnings
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -182,13 +183,15 @@ class CellpyData:
         else:
             return False
 
+    def __len__(self):
+        return len(self.cells)
+
     def __init__(
         self,
         filenames=None,
         selected_scans=None,
         profile=False,
         filestatuschecker=None,  # "modified"
-        fetch_one_liners=False,
         tester=None,
         initialize=False,
     ):
@@ -200,8 +203,7 @@ class CellpyData:
             profile: experimental feature.
             filestatuschecker: property to compare cellpy and raw-files;
                default read from prms-file.
-            fetch_one_liners: experimental feature.
-            tester: instrument used (e.g. "arbin") (checks prms-file as
+            tester: instrument used (e.g. "arbin_res") (checks prms-file as
                default).
             initialize: create a dummy (empty) dataset; defaults to False.
         """
@@ -1851,14 +1853,15 @@ class CellpyData:
             fid_table_selected = False
         return fid_table, fid_table_selected
 
-    def _extract_meta_from_cellpy_file(self, data, meta_table, filename):
+    def _extract_meta_from_cellpy_file(self, data: Cell, meta_table: pd.DataFrame, filename: Union[Path, str]) -> None:
         # get attributes from meta table
         # remark! could also utilise the pandas to dictionary method directly
         # for example: meta_table.T.to_dict()
         # Maybe a good task for someone who would like to learn more about
-        # how cellpy works..
+        # how cellpy works.
 
         for attribute in ATTRS_CELLPYFILE:
+            print(attribute)
             value = self._extract_from_dict(meta_table, attribute)
             # some fixes due to errors propagated into the cellpy-files
             if attribute == "creator":
@@ -1901,11 +1904,23 @@ class CellpyData:
             data.name = name
 
         # unpacking the raw data limits
+        # TODO: check if they end up at the correct level (cellpydata or cell)
         for key in data.raw_limits:
+            h5_key = key
             try:
-                data.raw_limits[key] = self._extract_from_dict_hard(meta_table, key)
+                data.raw_limits[key] = self._extract_from_dict_hard(meta_table, h5_key)
             except KeyError:
-                logging.debug(f"missing key in meta_table: {key}")
+                logging.debug(f"missing key in meta_table: {h5_key}")
+                warnings.warn("OLD-TYPE: Recommend to save in new format!")
+
+        # unpacking the raw data units
+        # TODO: check if they end up at the correct level (cellpydata or cell)
+        for key in data.raw_units:
+            h5_key = f"raw_unit_{key}"
+            try:
+                data.raw_units[key] = self._extract_from_dict_hard(meta_table, h5_key)
+            except KeyError:
+                logging.critical(f"missing key in meta_table: {h5_key}")
                 warnings.warn("OLD-TYPE: Recommend to save in new format!")
 
     @staticmethod
@@ -1946,7 +1961,13 @@ class CellpyData:
 
         limits = test.raw_limits
         for key in limits:
-            infotable[key] = limits[key]
+            h5_key = key
+            infotable[key] = limits[h5_key]
+
+        units = test.raw_units
+        for key in units:
+            h5_key = f"raw_unit_{key}"
+            infotable[h5_key] = units[key]
 
         infotable = pd.DataFrame(infotable)
 
