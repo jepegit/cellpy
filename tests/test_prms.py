@@ -192,6 +192,7 @@ def test_set_prm_inside_cellpy(cellpy_data_instance):
 
 
 def test_save_prm_file(clean_dir):
+    logging.debug("OBS! PRMS CHANGED")
     tmp_config_file_name = os.path.join(clean_dir, "cellpy_test_config_1.yml")
     with open(tmp_config_file_name, "w") as f:
         f.write(config_file_txt)
