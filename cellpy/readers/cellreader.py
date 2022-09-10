@@ -31,7 +31,7 @@ import pandas as pd
 from pandas.errors import PerformanceWarning
 from scipy import interpolate
 
-from cellpy.exceptions import DeprecatedFeature, NullData, WrongFileVersion
+from cellpy.exceptions import DeprecatedFeature, NullData, WrongFileVersion, NoCellFound
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
@@ -44,7 +44,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_summary,
     headers_normal,
     headers_step_table,
-    headers_summary, get_default_raw_units,
+    headers_summary, get_default_raw_units, get_default_output_units,
 )
 from cellpy.parameters.legacy import internal_settings as old_settings
 from cellpy.readers.core import (
@@ -295,7 +295,7 @@ class CellpyData:
 
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()
-        self.output_units = get_cellpy_units()
+        self.output_units = get_default_output_units()
 
         if initialize:
             self.initialize()
@@ -311,8 +311,11 @@ class CellpyData:
     @property
     def cell(self):
         """returns the DataSet instance"""
-        # could insert a try-except thingy here...
-        cell = self.cells[self.selected_cell_number]
+        try:
+            cell = self.cells[self.selected_cell_number]
+        except IndexError as e:
+            logging.critical("Sorry, I don't have any cells to give you!")
+            raise NoCellFound from e
         return cell
 
     @cell.setter
@@ -591,7 +594,7 @@ class CellpyData:
         try:
             cell = self.cell
             return cell.cycle_mode
-        except IndexError:
+        except NoCellFound:
             return self._cycle_mode
 
     @cycle_mode.setter
@@ -601,7 +604,7 @@ class CellpyData:
             cell = self.cell
             cell.cycle_mode = cycle_mode
             self._cycle_mode = cycle_mode
-        except IndexError:
+        except NoCellFound:
             self._cycle_mode = cycle_mode
 
     def set_raw_datadir(self, directory=None):
@@ -5550,10 +5553,12 @@ def get(
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyData()
-
+    logging.debug(f"created CellpyData instance")
     db_readers = ["arbin_sql"]
 
+    logging.debug(f"checking instrument and instrument_file")
     if instrument_file is not None:
+        logging.debug(f"got instrument file {instrument_file=}")
         # TODO: make tests for this
         # TODO: align this with the new format
         cellpy_instance.set_instrument(
@@ -5562,6 +5567,7 @@ def get(
         # prms.Instruments.custom_instrument_definitions_file = instrument_file
 
     elif instrument is not None:
+        logging.debug(f"got instrument in stead of instrument file, {instrument=}")
         model = kwargs.pop("model", None)
         cellpy_instance.set_instrument(instrument=instrument, model=model)
 
@@ -5571,9 +5577,11 @@ def get(
         file_needed = True
 
     if cycle_mode is not None:
+        logging.debug("Setting cycle mode")
         cellpy_instance.cycle_mode = cycle_mode
 
     if filename is not None:
+        logging.debug(f"{filename=}")
         if file_needed:
             if not isinstance(filename, (list, tuple)):
                 filename = Path(filename)

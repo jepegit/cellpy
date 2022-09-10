@@ -113,7 +113,7 @@ def test_logger_advanced(clean_dir):
 
 
 @pytest.mark.timeout(5.0)
-def test_load_and_save_resfile(clean_dir):
+def test_load_and_save_res_file(clean_dir):
     import os
 
     from cellpy import cellreader
@@ -132,7 +132,7 @@ def test_load_and_save_resfile(clean_dir):
     disable_gc=True,
     warmup=False,
 )
-def test_load_resfile_diagnostics(clean_dir, benchmark):
+def test_load_arbin_res_file_diagnostics(clean_dir, benchmark):
     import os
 
     from cellpy import cellreader, prms
@@ -145,32 +145,47 @@ def test_load_resfile_diagnostics(clean_dir, benchmark):
     assert os.path.isfile(new_file)
 
 
-def test_get():
-    # TODO: split into units and make more
-    #   different filetypes
-    #   pre and post processor hooks
-    #   optional kwargs
+def test_get_pec():
+    print()
+    print(" load pec file ".center(80, "-"))
+    print(fdv.pec_file_path)
+    cellpy.get(
+        filename=fdv.pec_file_path,
+        logging_mode="DEBUG",
+        instrument="pec_csv",
+        mass=50_000,
+        cycle_mode="cathode",
+        testing=True,
+    )
 
-    import cellpy
+
+def test_get_cellpy():
+    cellpy.get(filename=fdv.cellpy_file_path, testing=True)
+
+
+def test_get_empty():
+    cellpy.get(testing=True)
+
+
+def test_get_cellpy_with_post_processor_hook():
 
     def _my_post_processor(c):
         print(c)
         return c
 
     cellpy.get(
-        filename=fdv.pec_file_path,
-        instrument="pec_csv",
-        mass=50_000,
-        cycle_mode="cathode",
-        testing=True,
-    )
-    cellpy.get(filename=fdv.cellpy_file_path, testing=True)
-    cellpy.get(testing=True)
-    cellpy.get(
         filename=fdv.cellpy_file_path,
         post_processor_hook=_my_post_processor,
         testing=True,
     )  # should only give a warning
+
+
+def test_get_arbin_res_with_postprocessor_hook():
+
+    def _my_post_processor(c):
+        print(c)
+        return c
+
     cellpy.get(
         filename=fdv.res_file_path, post_processor_hook=_my_post_processor, testing=True
     )  # should print

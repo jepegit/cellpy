@@ -55,6 +55,12 @@ class NullData(Error):
     pass
 
 
+class NoCellFound(Error):
+    """Raised when there are no cells, but a cell is needed."""
+
+    pass
+
+
 class UnderDefined(Error):
     """Raised when trying something that requires you to set
     a missing prm first"""

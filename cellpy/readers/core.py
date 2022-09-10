@@ -496,7 +496,7 @@ def find_all_instruments() -> Dict[str, Tuple[str, str]]:
             module_name,
             module_path,
         )
-        logging.debug("registered")
+        logging.debug(" -> added")
 
     logging.debug("Searching for module configurations in user instrument folder:")
     # These are only yaml-files and should ideally import the appropriate

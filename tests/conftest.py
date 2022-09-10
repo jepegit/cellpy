@@ -25,8 +25,9 @@ def parameters():
     return fdv
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def cellpy_data_instance():
+    logging.debug("******* Created a cellpydata-instance *******")
     from cellpy import cellreader, log
 
     log.setup_logging(default_level="DEBUG", testing=True)

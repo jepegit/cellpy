@@ -1,4 +1,5 @@
 """Internal settings and definitions and functions for getting them."""
+import logging
 from collections import UserDict
 from dataclasses import dataclass, fields
 
@@ -75,7 +76,12 @@ class BaseSettings(DictLikeClass):
 
     """
 
-    ...
+    def get(self, key):
+        if key not in self.keys():
+            logging.critical(f"{key} not found")
+            return
+        else:
+            return self[key]
 
 
 @dataclass
@@ -256,6 +262,7 @@ headers_step_table = HeadersStepTable()
 headers_journal = HeadersJournal()
 headers_summary = HeadersSummary()
 headers_normal = HeadersNormal()
+cellpy_units = CellpyUnits()
 
 base_columns_float = [
     headers_normal.test_time_txt,
@@ -371,23 +378,13 @@ ATTRS_DATASET = [
 ATTRS_DATASET_DEEP = ["raw_data_files"]
 
 
-def get_headers_summary() -> BaseSettings:
-    """Returns a dictionary containing the header-strings for the summary
-    (used as column headers for the summary pandas DataFrames)"""
-    # maybe I can do some tricks in here so that tab completion works?
-    # ctrl + space works
-    return headers_summary
-
-
-cellpy_units = CellpyUnits()
-raw_units = CellpyUnits(
-    charge=1.0,
-    mass=0.001,
-)
-
-
 def get_cellpy_units() -> CellpyUnits:
-    """Returns a dictionary with units"""
+    """Returns an augmented global dictionary with units"""
+    return cellpy_units
+
+
+def get_default_output_units() -> CellpyUnits:
+    """Returns an augmented dictionary with units to use as default."""
     return CellpyUnits()
 
 
@@ -408,23 +405,41 @@ def get_default_raw_units() -> CellpyUnits:
 
 
 def get_default_raw_limits() -> CellpyUnits:
-    """Returns a dictionary with units as default for raw data"""
+    """Returns an augmented dictionary with units as default for raw data"""
     return CellpyLimits()
 
 
 def get_headers_normal() -> HeadersNormal:
-    """Returns a dictionary containing the header-strings for the normal data
+    """Returns an augmented global dictionary containing the header-strings for the normal data
     (used as column headers for the main data pandas DataFrames)"""
     return headers_normal
 
 
 def get_headers_step_table() -> HeadersStepTable:
-    """Returns a dictionary containing the header-strings for the steps table
+    """Returns an augmented global dictionary containing the header-strings for the steps table
     (used as column headers for the steps pandas DataFrames)"""
     return headers_step_table
 
 
 def get_headers_journal() -> HeadersJournal:
-    """Returns a dictionary containing the header-strings for the journal (batch)
+    """Returns an augmented global dictionary containing the header-strings for the journal (batch)
     (used as column headers for the journal pandas DataFrames)"""
     return headers_journal
+
+
+def get_headers_summary() -> HeadersSummary:
+    """Returns an augmented global dictionary containing the header-strings for the summary
+    (used as column headers for the summary pandas DataFrames)"""
+    return headers_summary
+
+
+def get_default_custom_headers_summary() -> HeadersSummary:
+    """Returns an augmented dictionary that can be used to create custom header-strings for the summary
+    (used as column headers for the summary pandas DataFrames)
+
+    This function is mainly implemented to provide an example.
+
+    """
+    # maybe I can do some tricks in here so that tab completion works in pycharm?
+    # solution: ctrl + space works
+    return HeadersSummary()

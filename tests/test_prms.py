@@ -197,11 +197,11 @@ def test_save_prm_file(clean_dir):
         f.write(config_file_txt)
 
     prmreader._read_prm_file(tmp_config_file_name)
-    prms.Instruments.tester = "biologics"
+    prms.Instruments.tester = "biologics_mpr"
     prms.Reader.cycle_mode = "cathode"
     prmreader._write_prm_file(tmp_config_file_name)
     prmreader._read_prm_file(tmp_config_file_name)
-    assert prms.Instruments.tester == "biologics"
+    assert prms.Instruments.tester == "biologics_mpr"
 
     # with open(tmp_config_file_name, "r") as f:
     #     lines = f.readlines()
