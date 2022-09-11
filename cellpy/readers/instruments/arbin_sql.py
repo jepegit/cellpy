@@ -215,7 +215,8 @@ class DataLoader(BaseLoader):
         raw_units = dict()
         raw_units["current"] = 1.0  # A
         raw_units["charge"] = 1.0  # Ah
-        raw_units["mass"] = 0.001  # g
+        raw_units["mass"] = 1.0  # g
+        raw_units["voltage"] = 1.0  # V
         return raw_units
 
     @staticmethod

@@ -152,8 +152,7 @@ class DataLoader(BaseLoader):
         raw_units["charge"] = 1.0  # Ah
         raw_units["mass"] = 0.001  # g
         raw_units["energy"] = 1.0  # Wh
-        raw_units["total_time"] = 1.0  # s
-        raw_units["step_time"] = 1.0  # s
+        raw_units["time"] = 1.0  # s
 
         return raw_units
 
@@ -354,10 +353,10 @@ class DataLoader(BaseLoader):
         for x in relevant_times:
             if isinstance(pec_times[x], (int, float)):
                 if x == relevant_times[0]:
-                    _tt = pec_times["total_time"] / raw_units["total_time"]
+                    _tt = pec_times["total_time"] / raw_units["time"]
                     self.pec_data[self.headers_normal.test_time_txt] *= _tt
                 elif x == relevant_times[1]:
-                    _st = pec_times["step_time"] / raw_units["step_time"]
+                    _st = pec_times["step_time"] / raw_units["time"]
                     self.pec_data[self.headers_normal.step_time_txt] *= _st
             elif callable(pec_times[x]):
                 # EDIT jepe 18.06.2020: change to .apply(func) instead of for-loop

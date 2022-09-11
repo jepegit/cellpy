@@ -185,7 +185,19 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     @staticmethod
     @abc.abstractmethod
     def get_raw_units() -> dict:
-        """Include the settings for the units used by the instrument.
+        """Include the settings for the units used by the instrument. This is needed for example when
+        converting the capacity to a specific capacity. So far, it has been difficult to get any kind of
+        consensus on what the most optimal units are for storing cycling data. Therefore, cellpy implements three
+        levels of units: 1) the raw units that the data is loaded in already has and 2) the cellpy units used by cellpy
+        when generating summaries and related information, and 3) output units that can be set to get the data
+        in a specif unit when exporting or creating specific outputs such as ICA.
+
+        Comment 2022.09.11: still not sure if we should use raw units or cellpy units in the cellpy-files (.h5).
+            Currently, the summary is in cellpy units and the raw and step data is in raw units. If
+            you have any input on this topic, let us know. What (at least I, i.e. jepe) would like to implement is
+            to only use raw units in the cellpy-files. And rename the summary headers so that they don't contain
+            any reference to their units (e.g. renaming `discharge_capacity_u_mAh_g` to `specific_discharge_capacity`
+            or `discharge_capacity_specific`). This will be a breaking change.
 
         The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
         Si units can be used). For example, for current defined in mA, the value for the
@@ -218,7 +230,6 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
         The internal cellpy units are given in the
 
         """
-        # TODO: make sure the set of units is complete (missing for example time, area or length and temperature)
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -227,8 +238,9 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
 
         The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
         for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
+        If the (accumulated) change is less than 'epsilon', then cellpy interpret it to be stable.
         It is expected that different instruments (with different resolution etc.) have different
-        'epsilons'.
+        resolutions and noice levels, thus different 'epsilons'.
 
         Returns: the raw limits (dict)
 
