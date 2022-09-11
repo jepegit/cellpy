@@ -178,9 +178,29 @@ def clean(c, docs=False, bytecode=False, extra=""):
         patterns.append(extra)
     for pattern in patterns:
         print(".", end="")
-        c.run("rm -rf {}".format(pattern))
+        try:
+            cmd = delete_stuff(pattern)
+            c.run(cmd)
+        except Exception:
+            print(f"(could not remove {pattern}")
     print()
     print(f"Cleaned {patterns}")
+
+
+def delete_stuff(pattern):
+    platforms = {
+        "linux1": "Linux",
+        "linux2": "Linux",
+        "darwin": "OS X",
+        "win32": "Windows",
+        "win64": "Windows",
+    }
+    platform = get_platform()
+    if platform == "Windows":
+        cmd = f'rd /s /q "{pattern}"'
+    else:
+        cmd = "rm -rf {}".format(pattern)
+    return cmd
 
 
 @task
@@ -254,8 +274,26 @@ def man(c):
     print("> jupyter labextension build")
     print("> jupyter labextension list")
 
+    print("""
+    ----------------------------
+    Some pycharm tips and tricks
+    ----------------------------
+    Multiple Selections
+
+        Set multiple cursors in the editor area: Alt + Mouse Click (Option + Mouse Click for Mac OS X).
+        Select/unselect the next occurrence: Alt + J / Shift + Alt + J (Ctrl + G / Shift + Ctrl +G for Mac OS X)
+        Select all occurrences: Shift + Ctrl + Alt + J (Ctrl + Cmd + G for Mac OS X)
+        Clone caret above/below (the shortcuts are not mapped yet)
+        Remove all selections: Esc
+        You can redefine these shortcuts in Settings -> Keymap -> Editor Actions if necessary.
+
+    """)
+
     print(
         """
+    ---------------------------
+    Conda forge tips and tricks
+    ---------------------------
     This is a short description in how to update the conda-forge recipe:
     - (If not done): make a fork of https://github.com/conda-forge/cellpy-feedstock
     - (if not done): clone the repo (jepegit/cellpy-feedstock)
@@ -353,7 +391,25 @@ def requirements(c, check=True):
 def bump(c, bumper=None):
     """Bump version.
 
-    bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+    Args:
+        bumper (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+
+    The following bumpers are allowed:
+        nano: tag-num, increment from e.g. 0.4.2b2 to 0.4.2b3
+        final: tag final, increment from e.g. 0.4.2b2 to 0.4.2
+        micro: patch, increment from e.g. 0.4.2b3 to 0.4.3b or 0.4.2 to 0.4.3
+        minor: minor, increment from e.g. 0.4.2b3 to 0.5.0b or 0.4.2 to 0.5.0
+        major: major, increment from e.g. 0.4.2b3 to 1.0.0b or 0.4.2 to 1.0.0
+        alpha: tag alpha
+        beta: tag beta
+        rc: tag rc
+        post: tag post
+        keep: don't change it
+
+    Typically, you would use 'nano' until you are satisfied with your packaage, and then
+    use a 'final'. And then start again with new features by first using an 'alpha' then
+    start all over with 'nano'.
+
 
     """
     bumper = _get_bump_tag(bumper)
@@ -387,7 +443,32 @@ def bump(c, bumper=None):
 def autobuild(c, _bump=None, _clean=True, upload=True):
     """Create distribution and upload to PyPI.
 
-    bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+    Args:
+        bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+        clean (bool): clean up directories first.
+        upload (bool): publish to PyPI.
+
+    Args:
+        bumper (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
+
+    The following bumpers are allowed:
+        nano: tag-num, increment from e.g. 0.4.2b2 to 0.4.2b3
+        final: tag final, increment from e.g. 0.4.2b2 to 0.4.2
+        micro: patch, increment from e.g. 0.4.2b3 to 0.4.3b or 0.4.2 to 0.4.3
+        minor: minor, increment from e.g. 0.4.2b3 to 0.5.0b or 0.4.2 to 0.5.0
+        major: major, increment from e.g. 0.4.2b3 to 1.0.0b or 0.4.2 to 1.0.0
+        alpha: tag alpha
+        beta: tag beta
+        rc: tag rc
+        post: tag post
+        keep: don't change it
+
+    Typically, you would use 'nano' until you are satisfied with your packaage, and then
+    use a 'final'. And then start again with new features by first using an 'alpha' then
+    start all over with 'nano'.
+
+    It might be advisable to run without uploading the first time:
+        inv autobuild -b nano --no-upload
 
     """
     bumper = _get_bump_tag(_bump)
@@ -575,3 +656,7 @@ def help(c):
             if not line:
                 break
     print(" bye ".center(80, "-"))
+
+
+if __name__ == '__main__':
+    delete_stuff(pattern="NOTHING")
