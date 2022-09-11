@@ -274,7 +274,8 @@ def man(c):
     print("> jupyter labextension build")
     print("> jupyter labextension list")
 
-    print("""
+    print(
+        """
     ----------------------------
     Some pycharm tips and tricks
     ----------------------------
@@ -287,7 +288,8 @@ def man(c):
         Remove all selections: Esc
         You can redefine these shortcuts in Settings -> Keymap -> Editor Actions if necessary.
 
-    """)
+    """
+    )
 
     print(
         """
@@ -661,5 +663,5 @@ def help(c):
     print(" bye ".center(80, "-"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     delete_stuff(pattern="NOTHING")

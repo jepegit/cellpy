@@ -23,7 +23,9 @@ from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYFILE,
     get_headers_normal,
     get_headers_step_table,
-    get_headers_summary, get_default_raw_units, get_default_raw_limits,
+    get_headers_summary,
+    get_default_raw_units,
+    get_default_raw_limits,
 )
 
 CELLPY_FILE_VERSION = 6

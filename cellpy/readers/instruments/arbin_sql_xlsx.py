@@ -237,16 +237,27 @@ class DataLoader(BaseLoader):
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
         file_name = pathlib.Path(file_name)
         xlsx_file = pd.ExcelFile(file_name)
-        sheet_names = [sheet for sheet in xlsx_file.sheet_names if SHEET_NAME_KEYWORD.upper() in sheet.upper()]
+        sheet_names = [
+            sheet
+            for sheet in xlsx_file.sheet_names
+            if SHEET_NAME_KEYWORD.upper() in sheet.upper()
+        ]
 
         if not sheet_names:
-            raise WrongFileVersion(f"Could not locate the correct sheet (should contain {SHEET_NAME_KEYWORD})")
+            raise WrongFileVersion(
+                f"Could not locate the correct sheet (should contain {SHEET_NAME_KEYWORD})"
+            )
 
         if len(sheet_names) > 1:
-            logging.critical(f"Found several matching sheet-names: {sheet_names} - will perform a simple merge")
+            logging.critical(
+                f"Found several matching sheet-names: {sheet_names} - will perform a simple merge"
+            )
 
         raw_frames = pd.read_excel(
-            file_name, engine="openpyxl", sheet_name=sheet_names, parse_dates=[date_time_col]
+            file_name,
+            engine="openpyxl",
+            sheet_name=sheet_names,
+            parse_dates=[date_time_col],
         )
         raw_frame = pd.concat(raw_frames)
         return raw_frame

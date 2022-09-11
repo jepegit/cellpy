@@ -532,10 +532,9 @@ def test_make_summary_new_version(cellpy_data_instance, parameters):
     s1 = cellpy_data_instance.cells[0].summary
     s2 = cellpy_data_instance.cell.summary
     s3 = cellpy_data_instance.get_summary()
-    assert s1.columns.tolist() == s2.columns.tolist()
-    assert s2.columns.tolist() == s3.columns.tolist()
+    assert sorted(s1.columns.tolist()) == sorted(s2.columns.tolist())
+    assert sorted(s2.columns.tolist()) == sorted(s3.columns.tolist())
     assert s2.iloc[:, 3].size == 18
-    assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
 def test_make_summary_with_c_rate(cellpy_data_instance, parameters):
@@ -553,9 +552,8 @@ def test_summary_from_cellpyfile(cellpy_data_instance, parameters):
         find_ocv=False, find_ir=True, find_end_voltage=True
     )
     s2 = cellpy_data_instance.get_summary()
-    assert s1.columns.tolist() == s2.columns.tolist()
+    assert sorted(s1.columns.tolist()) == sorted(s2.columns.tolist())
     assert s2.iloc[:, 3].size == 18
-    assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
 def test_load_cellpyfile(cellpy_data_instance, parameters):

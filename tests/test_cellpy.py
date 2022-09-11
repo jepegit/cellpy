@@ -168,7 +168,6 @@ def test_get_empty():
 
 
 def test_get_cellpy_with_post_processor_hook():
-
     def _my_post_processor(c):
         print(c)
         return c
@@ -181,7 +180,6 @@ def test_get_cellpy_with_post_processor_hook():
 
 
 def test_get_arbin_res_with_postprocessor_hook():
-
     def _my_post_processor(c):
         print(c)
         return c
