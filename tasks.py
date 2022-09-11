@@ -182,7 +182,7 @@ def clean(c, docs=False, bytecode=False, extra=""):
             cmd = delete_stuff(pattern)
             c.run(cmd)
         except Exception:
-            print(f"(could not remove {pattern}")
+            print(f"(could not remove {pattern}", end="")
     print()
     print(f"Cleaned {patterns}")
 
