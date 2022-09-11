@@ -435,7 +435,7 @@ def bump(c, bumper=None):
         print("Aborting!")
         return
 
-    c.run(f"bumpver update --{bumper} --dry")
+    c.run(f"bumpver update --{bumper}")
     print("DONE")
 
 
@@ -464,12 +464,14 @@ def autobuild(c, _bump=None, _clean=True, upload=True):
         keep: don't change it
 
     Typically, you would use 'nano' until you are satisfied with your packaage, and then
-    use a 'final'. And then start again with new features by first using an 'alpha' then
+    use a 'final'. And then start again with new features by first using "micro" and 'alpha' then
     start all over with 'nano'.
 
-    It might be advisable to run without uploading the first time:
-        inv autobuild -b nano --no-upload
-
+    For me, the most effective way to proceed after a proper release (no tag-nums etc) is to:
+        0) merge master into your (new) development branch
+        1) manually set version to next.
+        2) first time you publish, use "inv autobuild -b keep"
+        3) then proceed as usual
     """
     bumper = _get_bump_tag(_bump)
 
