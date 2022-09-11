@@ -5004,15 +5004,15 @@ class CellpyData:
             raw = cell.raw
             if use_cellpy_stat_file:
                 try:
-                    summary_requirment = raw[self.headers_normal.data_point_txt].isin(
+                    summary_requirement = raw[self.headers_normal.data_point_txt].isin(
                         summary_df[self.headers_normal.data_point_txt]
                     )
                 except KeyError:
                     logging.info("Error in stat_file (?) - using _select_last")
-                    summary_requirment = self._select_last(raw)
+                    summary_requirement = self._select_last(raw)
             else:
-                summary_requirment = self._select_last(raw)
-            summary = raw[summary_requirment].copy()
+                summary_requirement = self._select_last(raw)
+            summary = raw[summary_requirement].copy()
         else:
             summary = summary_df
             cell.summary = summary
