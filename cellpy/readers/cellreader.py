@@ -4936,16 +4936,16 @@ class CellpyData:
         # capacity_modifier = None,
         # test=None
     ):
-        # ---------------- discharge loss ---------------------
+        # ---------------- discharge loss --------------------------------------
         # Assume that both charge and discharge is defined as positive.
         # The gain for cycle n (compared to cycle n-1)
         # is then cap[n] - cap[n-1]. The loss is the negative of gain.
         # discharge loss = discharge_cap[n-1] - discharge_cap[n]
 
-        # ---------------- charge loss ------------------------
+        # ---------------- charge loss -----------------------------------------
         # charge loss = charge_cap[n-1] - charge_cap[n]
 
-        # --------------- D.L. --------------------------------
+        # --------------- D.L. -------------------------------------------------
         # NH_n: high level at cycle n. The slope NHn=f(n) is linked to SEI loss
         # NB_n: low level (summation of irreversible capacities) at cycle n
         # Ref_n: sum[i=1 to ref](Q_charge_i - Q_discharge_i) + Q_charge_ref
@@ -4957,16 +4957,20 @@ class CellpyData:
         # NH = 100%  ok if NH<120 at n=200
         # NB = 20% stable (or less)
 
-        # --------- shifted capacities ----------------------------
+        # --------- shifted capacities ------------------------------------------
         #  as defined by J. Dahn et al.
         # Note! Should double-check this (including checking
         # if it is valid in cathode mode).
 
-        # --------- relative irreversible capacities ---------------
+        # --------- relative irreversible capacities -----------------------------
         #  as defined by Gauthier et al.
         # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
         # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
         # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
+
+        # --------- notes --------------------------------------------------------
+        # @jepe 2022.09.11: trying to use .assign from now on
+        #   as it is recommended (but this will likely increase memory usage)
 
         cycle_index_as_index = True
         time_00 = time.time()
