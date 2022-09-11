@@ -469,7 +469,8 @@ def autobuild(c, _bump=None, _clean=True, upload=True):
 
     For me, the most effective way to proceed after a proper release (no tag-nums etc) is to:
         0) merge master into your (new) development branch
-        1) manually set version to next.
+        1) instead of "inv autobuild -b something --no-upload", just "inv bump -b micro", then "alpha"
+           If you encounter problems, change it manually (and check the bumpver.toml file).
         2) first time you publish, use "inv autobuild -b keep"
         3) then proceed as usual
     """
