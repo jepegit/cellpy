@@ -4932,100 +4932,45 @@ class CellpyData:
         # test=None
     ):
         cycle_index_as_index = True
-
         time_00 = time.time()
-
         dataset_number = self._validate_dataset_number(dataset_number)
-
         logging.debug("start making summary")
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        dataset = self.cells[dataset_number]
+
+        cell = self.cell
 
         if not mass:
-            mass = dataset.mass or 1.0
+            mass = cell.mass or 1.0
         else:
             if update_it:
-                dataset.mass = mass
+                cell.mass = mass
 
         if ensure_step_table and not self.load_only_summary:
             logging.debug("ensuring existence of step-table")
-            if not dataset.has_steps:
+            if not cell.has_steps:
                 logging.debug("dataset.step_table_made is not True")
                 logging.info("running make_step_table")
                 if nom_cap is not None:
-                    dataset.nom_cap = nom_cap
+                    cell.nom_cap = nom_cap
                 self.make_step_table(dataset_number=dataset_number)
 
         # Retrieve the converters etc.
-        specific_converter = self.get_converter_to_specific(dataset=dataset, mass=mass)
-
-        hdr_normal = self.headers_normal
-
-        # TODO @jepe: don't "unpack" these (replace all occurrences with the unpacked ones)
-        #  (even though that will slow the code a little bit)
-
-        # TODO @jepe: rename from xxx_txt to xxx in the internal_settings
-        #  (careful - this needs to be done step-by-step combined with frequent testing)
-        dt_txt = hdr_normal.datetime_txt
-        tt_txt = hdr_normal.test_time_txt
-        st_txt = hdr_normal.step_time_txt
-        c_txt = hdr_normal.cycle_index_txt
-        d_txt = hdr_normal.data_point_txt
-        s_txt = hdr_normal.step_index_txt
-        voltage_header = hdr_normal.voltage_txt
-        charge_txt = hdr_normal.charge_capacity_txt
-        discharge_txt = hdr_normal.discharge_capacity_txt
-        ir_txt = hdr_normal.internal_resistance_txt
-        test_id_txt = hdr_normal.test_id_txt
-        i_txt = hdr_normal.current_txt
-
-        hdr_summary = self.headers_summary
-        discharge_title = hdr_summary.discharge_capacity
-        charge_title = hdr_summary.charge_capacity
-        cumcharge_title = hdr_summary.cumulated_charge_capacity
-        cumdischarge_title = hdr_summary.cumulated_discharge_capacity
-        coulomb_title = hdr_summary.coulombic_efficiency
-        cumcoulomb_title = hdr_summary.cumulated_coulombic_efficiency
-        coulomb_diff_title = hdr_summary.coulombic_difference
-        cumcoulomb_diff_title = hdr_summary.cumulated_coulombic_difference
-        col_discharge_loss_title = hdr_summary.discharge_capacity_loss
-        col_charge_loss_title = hdr_summary.charge_capacity_loss
-        dcloss_cumsum_title = hdr_summary.cumulated_discharge_capacity_loss
-        closs_cumsum_title = hdr_summary.cumulated_charge_capacity_loss
-        endv_charge_title = hdr_summary.end_voltage_charge
-        endv_discharge_title = hdr_summary.end_voltage_discharge
-        ocv_1_v_min_title = hdr_summary.ocv_first_min
-        ocv_1_v_max_title = hdr_summary.ocv_first_max
-        ocv_2_v_min_title = hdr_summary.ocv_second_min
-        ocv_2_v_max_title = hdr_summary.ocv_second_max
-        ir_discharge_title = hdr_summary.ir_discharge
-        ir_charge_title = hdr_summary.ir_charge
-
-        ric_disconnect_title = hdr_summary.cumulated_ric_disconnect
-        ric_sei_title = hdr_summary.cumulated_ric_sei
-        ric_title = hdr_summary.cumulated_ric
-        high_level_at_cycle_n_txt = hdr_summary.high_level
-        low_level_at_cycle_n_txt = hdr_summary.low_level
-        shifted_charge_capacity_title = hdr_summary.shifted_charge_capacity
-        shifted_discharge_capacity_title = hdr_summary.shifted_discharge_capacity
-
-        h_normalized_cycle = hdr_summary.normalized_cycle_index
-
-        hdr_steps = self.headers_step_table
+        specific_converter = self.get_converter_to_specific(dataset=cell, mass=mass)
 
         # Here are the two main DataFrames for the test
         # (raw-data and summary-data)
-        summary_df = dataset.summary
+        summary_df = cell.summary
         if not self.load_only_summary:
             # Can't find summary from raw data if raw data is not loaded.
-            raw = dataset.raw
+            raw = cell.raw
             if use_cellpy_stat_file:
                 # This should work even if raw does not
                 # contain all data from the test
                 try:
-                    summary_requirment = raw[d_txt].isin(summary_df[d_txt])
+                    summary_requirment = raw[self.headers_normal.data_point_txt].isin(
+                        summary_df[self.headers_normal.data_point_txt])
                 except KeyError:
                     logging.info("Error in stat_file (?) - using _select_last")
                     summary_requirment = self._select_last(raw)
@@ -5033,9 +4978,9 @@ class CellpyData:
                 summary_requirment = self._select_last(raw)
             summary = raw[summary_requirment].copy()
         else:
-            # summary_requirment = self._reloadrows_raw(summary_df[d_txt])
+            # summary_requirment = self._reloadrows_raw(summary_df[self.headers_normal.data_point_txt])
             summary = summary_df
-            dataset.summary = summary
+            cell.summary = summary
             logging.warning("not implemented yet")
             return
 
@@ -5046,7 +4991,10 @@ class CellpyData:
         # indexes = summary.index
 
         if select_columns:
-            columns_to_keep = [charge_txt, c_txt, d_txt, dt_txt, discharge_txt, tt_txt]
+            columns_to_keep = [self.headers_normal.charge_capacity_txt, self.headers_normal.cycle_index_txt,
+                               self.headers_normal.data_point_txt, self.headers_normal.datetime_txt,
+                               self.headers_normal.discharge_capacity_txt,
+                               self.headers_normal.test_time_txt]
             for cn in column_names:
                 if not columns_to_keep.count(cn):
                     summary.pop(cn)
@@ -5060,41 +5008,46 @@ class CellpyData:
             logging.info(
                 "Assuming cycling in anode half-cell (discharge before charge) mode"
             )
-            _first_step_txt = discharge_title
-            _second_step_txt = charge_title
+            _first_step_txt = self.headers_summary.discharge_capacity
+            _second_step_txt = self.headers_summary.charge_capacity
         else:
             logging.info("Assuming cycling in full-cell / cathode mode")
-            _first_step_txt = charge_title
-            _second_step_txt = discharge_title
+            _first_step_txt = self.headers_summary.charge_capacity
+            _second_step_txt = self.headers_summary.discharge_capacity
 
         # TODO @jepe: replace these with DataFrame.assign:
         # logging.debug("Creates summary: specific discharge ('%s')"
-        #                   % discharge_title)
-        summary[discharge_title] = summary[discharge_txt] * specific_converter
+        #                   % self.headers_summary.discharge_capacity)
+        summary[self.headers_summary.discharge_capacity] = summary[
+                                                               self.headers_normal.discharge_capacity_txt] * specific_converter
 
         # logging.debug("Creates summary: specific scharge ('%s')" %
-        #                   charge_title)
-        summary[charge_title] = summary[charge_txt] * specific_converter
+        #                   self.headers_summary.charge_capacity)
+        summary[self.headers_summary.charge_capacity] = summary[
+                                                            self.headers_normal.charge_capacity_txt] * specific_converter
 
         # logging.debug("Creates summary: cumulated specific charge ('%s')" %
-        #                   cumdischarge_title)
-        summary[cumdischarge_title] = summary[discharge_title].cumsum()
+        #                   self.headers_summary.cumulated_discharge_capacity)
+        summary[self.headers_summary.cumulated_discharge_capacity] = summary[
+            self.headers_summary.discharge_capacity].cumsum()
 
         # logging.debug("Creates summary: cumulated specific charge ('%s')" %
-        #                   cumcharge_title)
-        summary[cumcharge_title] = summary[charge_title].cumsum()
+        #                   self.headers_summary.cumulated_charge_capacity)
+        summary[self.headers_summary.cumulated_charge_capacity] = summary[self.headers_summary.charge_capacity].cumsum()
 
-        summary[coulomb_title] = (
+        summary[self.headers_summary.coulombic_efficiency] = (
             100.0 * summary[_second_step_txt] / summary[_first_step_txt]
         )
 
-        summary[coulomb_diff_title] = (
+        summary[self.headers_summary.coulombic_difference] = (
             summary[_first_step_txt] - summary[_second_step_txt]
         )
 
-        summary[cumcoulomb_title] = summary[coulomb_title].cumsum()
+        summary[self.headers_summary.cumulated_coulombic_efficiency] = summary[
+            self.headers_summary.coulombic_efficiency].cumsum()
 
-        summary[cumcoulomb_diff_title] = summary[coulomb_diff_title].cumsum()
+        summary[self.headers_summary.cumulated_coulombic_difference] = summary[
+            self.headers_summary.coulombic_difference].cumsum()
 
         # ---------------- discharge loss ---------------------
         # Assume that both charge and discharge is defined as positive.
@@ -5102,19 +5055,21 @@ class CellpyData:
         # is then cap[n] - cap[n-1]. The loss is the negative of gain.
         # discharge loss = discharge_cap[n-1] - discharge_cap[n]
         # logging.debug("Creates summary: calculates DL")
-        summary[col_discharge_loss_title] = (
-            summary[discharge_title].shift(1) - summary[discharge_title]
+        summary[self.headers_summary.discharge_capacity_loss] = (
+            summary[self.headers_summary.discharge_capacity].shift(1) - summary[self.headers_summary.discharge_capacity]
         )
 
-        summary[dcloss_cumsum_title] = summary[col_discharge_loss_title].cumsum()
+        summary[self.headers_summary.cumulated_discharge_capacity_loss] = summary[
+            self.headers_summary.discharge_capacity_loss].cumsum()
 
         # ---------------- charge loss ------------------------
         # charge loss = charge_cap[n-1] - charge_cap[n]
-        summary[col_charge_loss_title] = (
-            summary[charge_title].shift(1) - summary[charge_title]
+        summary[self.headers_summary.charge_capacity_loss] = (
+            summary[self.headers_summary.charge_capacity].shift(1) - summary[self.headers_summary.charge_capacity]
         )
 
-        summary[closs_cumsum_title] = summary[col_charge_loss_title].cumsum()
+        summary[self.headers_summary.cumulated_charge_capacity_loss] = summary[
+            self.headers_summary.charge_capacity_loss].cumsum()
 
         # --------------- D.L. --------------------------------
         # NH_n: high level at cycle n. The slope NHn=f(n) is linked to SEI loss
@@ -5130,21 +5085,21 @@ class CellpyData:
 
         # TODO @jepe: refactor this to method:
         n = self.daniel_number
-        cap_ref = summary.loc[summary[c_txt] == n, _first_step_txt]
+        cap_ref = summary.loc[summary[self.headers_normal.cycle_index_txt] == n, _first_step_txt]
         if not cap_ref.empty:
             cap_ref = cap_ref.values[0]
 
             ref = (
-                summary.loc[summary[c_txt] < n, _second_step_txt].sum()
-                + summary.loc[summary[c_txt] < n, _first_step_txt].sum()
+                summary.loc[summary[self.headers_normal.cycle_index_txt] < n, _second_step_txt].sum()
+                + summary.loc[summary[self.headers_normal.cycle_index_txt] < n, _first_step_txt].sum()
                 + cap_ref
             )
 
-            summary[low_level_at_cycle_n_txt] = (100 / ref) * (
+            summary[self.headers_summary.low_level] = (100 / ref) * (
                 summary[_first_step_txt].cumsum() - summary[_second_step_txt].cumsum()
             )
 
-            summary[high_level_at_cycle_n_txt] = (100 / ref) * (
+            summary[self.headers_summary.high_level] = (100 / ref) * (
                 summary[_first_step_txt]
                 + summary[_first_step_txt].cumsum()
                 - summary[_second_step_txt].cumsum()
@@ -5155,8 +5110,8 @@ class CellpyData:
                 "could not extract low-high levels (ref cycle number does not exist)"
             )
             # logging.info(txt)
-            summary[low_level_at_cycle_n_txt] = np.nan
-            summary[high_level_at_cycle_n_txt] = np.nan
+            summary[self.headers_summary.low_level] = np.nan
+            summary[self.headers_summary.high_level] = np.nan
 
         # --------------relative irreversible capacities
         #  as defined by Gauthier et al.---
@@ -5164,35 +5119,35 @@ class CellpyData:
         RIC = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[
             _second_step_txt
         ].shift(1)
-        summary[ric_title] = RIC.cumsum()
+        summary[self.headers_summary.cumulated_ric] = RIC.cumsum()
 
         # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
         RIC_SEI = (
-            summary[_first_step_txt] - summary[_second_step_txt].shift(1)
-        ) / summary[_second_step_txt].shift(1)
-        summary[ric_sei_title] = RIC_SEI.cumsum()
+                      summary[_first_step_txt] - summary[_second_step_txt].shift(1)
+                  ) / summary[_second_step_txt].shift(1)
+        summary[self.headers_summary.cumulated_ric_sei] = RIC_SEI.cumsum()
 
         # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
         RIC_disconnect = (
-            summary[_second_step_txt].shift(1) - summary[_second_step_txt]
-        ) / summary[_second_step_txt].shift(1)
-        summary[ric_disconnect_title] = RIC_disconnect.cumsum()
+                             summary[_second_step_txt].shift(1) - summary[_second_step_txt]
+                         ) / summary[_second_step_txt].shift(1)
+        summary[self.headers_summary.cumulated_ric_disconnect] = RIC_disconnect.cumsum()
 
         # -------------- shifted capacities as defined by J. Dahn et al. -----
         # need to double check this (including checking
         # if it is valid in cathode mode).
         individual_edge_movement = summary[_first_step_txt] - summary[_second_step_txt]
 
-        summary[shifted_charge_capacity_title] = individual_edge_movement.cumsum()
-        summary[shifted_discharge_capacity_title] = (
-            summary[shifted_charge_capacity_title] + summary[_first_step_txt]
+        summary[self.headers_summary.shifted_charge_capacity] = individual_edge_movement.cumsum()
+        summary[self.headers_summary.shifted_discharge_capacity] = (
+            summary[self.headers_summary.shifted_charge_capacity] + summary[_first_step_txt]
         )
 
         # if convert_date:
         #     # TODO: should move this to the instrument reader procedure
         #     logging.debug("converting date from xls-type")
         #     summary[date_time_txt_title] = \
-        #         summary[dt_txt].apply(xldate_as_datetime)  # , option="to_string")
+        #         summary[self.headers_normal.datetime_txt].apply(xldate_as_datetime)  # , option="to_string")
 
         # TODO @jepe: refactor this to method:
         if find_ocv and not self.load_only_summary:
@@ -5215,19 +5170,19 @@ class CellpyData:
                 ocv1_type = "ocvrlx_down"
 
             ocv_1 = self._get_ocv(
-                ocv_steps=dataset.ocv_steps,
+                ocv_steps=cell.ocv_steps,
                 ocv_type=ocv1_type,
                 dataset_number=dataset_number,
             )
 
             ocv_2 = self._get_ocv(
-                ocv_steps=dataset.ocv_steps,
+                ocv_steps=cell.ocv_steps,
                 ocv_type=ocv2_type,
                 dataset_number=dataset_number,
             )
 
             if do_ocv_1:
-                only_zeros = summary[discharge_txt] * 0.0
+                only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
                 ocv_1_indexes = []
                 ocv_1_v_min = []
                 ocv_1_v_max = []
@@ -5237,7 +5192,7 @@ class CellpyData:
                 for j in ocv_1:
                     cycle = j["Cycle_Index"].values[0]  # jepe fix
                     # try to find inxed
-                    index = summary[(summary[c_txt] == cycle)].index
+                    index = summary[(summary[self.headers_normal.cycle_index_txt] == cycle)].index
                     # print cycle, index,
                     v_min = j["Voltage"].min()  # jepe fix
                     v_max = j["Voltage"].max()  # jepe fix
@@ -5246,11 +5201,11 @@ class CellpyData:
                     ocvcol_min.iloc[index] = v_min
                     ocvcol_max.iloc[index] = v_max
 
-                summary.insert(0, column=ocv_1_v_min_title, value=ocvcol_min)
-                summary.insert(0, column=ocv_1_v_max_title, value=ocvcol_max)
+                summary.insert(0, column=self.headers_summary.ocv_first_min, value=ocvcol_min)
+                summary.insert(0, column=self.headers_summary.ocv_first_max, value=ocvcol_max)
 
             if do_ocv_2:
-                only_zeros = summary[discharge_txt] * 0.0
+                only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
                 ocv_2_indexes = []
                 ocv_2_v_min = []
                 ocv_2_v_max = []
@@ -5260,14 +5215,14 @@ class CellpyData:
                 for j in ocv_2:
                     cycle = j["Cycle_Index"].values[0]  # jepe fix
                     # try to find inxed
-                    index = summary[(summary[c_txt] == cycle)].index
+                    index = summary[(summary[self.headers_normal.cycle_index_txt] == cycle)].index
                     v_min = j["Voltage"].min()  # jepe fix
                     v_max = j["Voltage"].max()  # jepe fix
                     dv = v_max - v_min
                     ocvcol_min.iloc[index] = v_min
                     ocvcol_max.iloc[index] = v_max
-                summary.insert(0, column=ocv_2_v_min_title, value=ocvcol_min)
-                summary.insert(0, column=ocv_2_v_max_title, value=ocvcol_max)
+                summary.insert(0, column=self.headers_summary.ocv_second_min, value=ocvcol_min)
+                summary.insert(0, column=self.headers_summary.ocv_second_max, value=ocvcol_max)
 
         # TODO @jepe: refactor this to method:
         if find_end_voltage and not self.load_only_summary:
@@ -5276,25 +5231,25 @@ class CellpyData:
             ev_t0 = time.time()
             logging.debug("finding end-voltage")
             logging.debug(f"dt: {time.time() - ev_t0}")
-            only_zeros_discharge = summary[discharge_txt] * 0.0
-            only_zeros_charge = summary[charge_txt] * 0.0
-            if not dataset.discharge_steps:
+            only_zeros_discharge = summary[self.headers_normal.discharge_capacity_txt] * 0.0
+            only_zeros_charge = summary[self.headers_normal.charge_capacity_txt] * 0.0
+            if not cell.discharge_steps:
                 logging.debug("need to collect discharge steps")
                 discharge_steps = self.get_step_numbers(
                     steptype="discharge", allctypes=False, dataset_number=dataset_number
                 )
                 logging.debug(f"dt: {time.time() - ev_t0}")
             else:
-                discharge_steps = dataset.discharge_steps
+                discharge_steps = cell.discharge_steps
                 logging.debug("  already have discharge_steps")
-            if not dataset.charge_steps:
+            if not cell.charge_steps:
                 logging.debug("need to collect charge steps")
                 charge_steps = self.get_step_numbers(
                     steptype="charge", allctypes=False, dataset_number=dataset_number
                 )
                 logging.debug(f"dt: {time.time() - ev_t0}")
             else:
-                charge_steps = dataset.charge_steps
+                charge_steps = cell.charge_steps
                 logging.debug("  already have charge_steps")
 
             endv_indexes = []
@@ -5311,7 +5266,7 @@ class CellpyData:
                 # txt = "index in summary.index: %i" % i
                 # logging.debug(txt)
                 # selecting the appropriate cycle
-                cycle = summary.iloc[i][c_txt]
+                cycle = summary.iloc[i][self.headers_normal.cycle_index_txt]
                 # txt = "cycle: %i" % cycle
                 # logging.debug(txt)
                 step = discharge_steps[cycle]
@@ -5321,8 +5276,9 @@ class CellpyData:
                     # TODO: @jepe - use pd.loc[row,column]
                     # for col or pd.loc[(pd.["step"]==1),"x"]
                     end_voltage_dc = raw[
-                        (raw[c_txt] == cycle) & (dataset.raw[s_txt] == step[-1])
-                    ][voltage_header]
+                        (raw[self.headers_normal.cycle_index_txt] == cycle) & (
+                                cell.raw[self.headers_normal.step_index_txt] == step[-1])
+                        ][self.headers_normal.voltage_txt]
                     # This will not work if there are more than one item in step
                     end_voltage_dc = end_voltage_dc.values[-1]  # selecting
                     # last (could also select amax)
@@ -5333,8 +5289,9 @@ class CellpyData:
                 step2 = charge_steps[cycle]
                 if step2[-1]:
                     end_voltage_c = raw[
-                        (raw[c_txt] == cycle) & (dataset.raw[s_txt] == step2[-1])
-                    ][voltage_header]
+                        (raw[self.headers_normal.cycle_index_txt] == cycle) & (
+                                cell.raw[self.headers_normal.step_index_txt] == step2[-1])
+                        ][self.headers_normal.voltage_txt]
                     end_voltage_c = end_voltage_c.values[-1]
                     # end_voltage_c = np.amax(end_voltage_c)
                 else:
@@ -5346,31 +5303,32 @@ class CellpyData:
             logging.debug(f"find end V took: {time.time() - ev_t0} s")
             ir_frame_dc = only_zeros_discharge + endv_values_dc
             ir_frame_c = only_zeros_charge + endv_values_c
-            summary.insert(0, column=endv_discharge_title, value=ir_frame_dc)
-            summary.insert(0, column=endv_charge_title, value=ir_frame_c)
+            summary.insert(0, column=self.headers_summary.end_voltage_discharge, value=ir_frame_dc)
+            summary.insert(0, column=self.headers_summary.end_voltage_charge, value=ir_frame_c)
 
         # TODO @jepe: refactor this to method:
-        if find_ir and (not self.load_only_summary) and (ir_txt in dataset.raw.columns):
+        if find_ir and (not self.load_only_summary) and (
+            self.headers_normal.internal_resistance_txt in cell.raw.columns):
             # should check:  test.charge_steps = None,
             # test.discharge_steps = None
             # THIS DOES NOT WORK PROPERLY!!!!
             # Found a file where it writes IR for cycle n on cycle n+1
             # This only picks out the data on the last IR step before
             logging.debug("finding ir")
-            only_zeros = summary[discharge_txt] * 0.0
-            if not dataset.discharge_steps:
+            only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
+            if not cell.discharge_steps:
                 discharge_steps = self.get_step_numbers(
                     steptype="discharge", allctypes=False, dataset_number=dataset_number
                 )
             else:
-                discharge_steps = dataset.discharge_steps
+                discharge_steps = cell.discharge_steps
                 logging.debug("  already have discharge_steps")
-            if not dataset.charge_steps:
+            if not cell.charge_steps:
                 charge_steps = self.get_step_numbers(
                     steptype="charge", allctypes=False, dataset_number=dataset_number
                 )
             else:
-                charge_steps = dataset.charge_steps
+                charge_steps = cell.charge_steps
                 logging.debug("  already have charge_steps")
 
             ir_indexes = []
@@ -5387,13 +5345,15 @@ class CellpyData:
                 # txt = "index in summary.index: %i" % i
                 # logging.debug(txt)
                 # selecting the appropriate cycle
-                cycle = summary.iloc[i][c_txt]  # "Cycle_Index" = i + 1
+                cycle = summary.iloc[i][self.headers_normal.cycle_index_txt]  # "Cycle_Index" = i + 1
                 # txt = "cycle: %i" % cycle
                 # logging.debug(txt)
                 step = discharge_steps[cycle]
                 if step[0]:
                     ir = raw.loc[
-                        (raw[c_txt] == cycle) & (dataset.raw[s_txt] == step[0]), ir_txt
+                        (raw[self.headers_normal.cycle_index_txt] == cycle) & (
+                                cell.raw[self.headers_normal.step_index_txt] == step[
+                                0]), self.headers_normal.internal_resistance_txt
                     ]
                     # This will not work if there are more than one item in step
                     ir = ir.values[0]
@@ -5402,8 +5362,9 @@ class CellpyData:
                 step2 = charge_steps[cycle]
                 if step2[0]:
 
-                    ir2 = raw[(raw[c_txt] == cycle) & (dataset.raw[s_txt] == step2[0])][
-                        ir_txt
+                    ir2 = raw[(raw[self.headers_normal.cycle_index_txt] == cycle) & (
+                            cell.raw[self.headers_normal.step_index_txt] == step2[0])][
+                        self.headers_normal.internal_resistance_txt
                     ].values[0]
                 else:
                     ir2 = 0
@@ -5413,8 +5374,8 @@ class CellpyData:
 
             ir_frame = only_zeros + ir_values
             ir_frame2 = only_zeros + ir_values2
-            summary.insert(0, column=ir_discharge_title, value=ir_frame)
-            summary.insert(0, column=ir_charge_title, value=ir_frame2)
+            summary.insert(0, column=self.headers_summary.ir_discharge, value=ir_frame)
+            summary.insert(0, column=self.headers_summary.ir_charge, value=ir_frame2)
 
         # TODO @jepe: refactor this to method:
         if add_normalized_cycle_index:
@@ -5426,7 +5387,7 @@ class CellpyData:
                     normalization_cycles = [normalization_cycles]
 
                 cap_ref = summary.loc[
-                    summary[c_txt].isin(normalization_cycles), _first_step_txt
+                    summary[self.headers_normal.cycle_index_txt].isin(normalization_cycles), _first_step_txt
                 ]
                 if not cap_ref.empty:
                     nom_cap = cap_ref.mean()
@@ -5437,51 +5398,53 @@ class CellpyData:
                 logging.debug(f"No nom_cap given")
                 nom_cap = self.cell.nom_cap
             logging.info(f"Using the following nominal capacity: {nom_cap}")
-            summary[h_normalized_cycle] = summary[cumcharge_title] / nom_cap
+            summary[self.headers_summary.normalized_cycle_index] = summary[
+                                                                       self.headers_summary.cumulated_charge_capacity] / nom_cap
 
         # TODO @jepe: refactor this to method:
         if add_c_rate:
             logging.debug("Extracting C-rates")
             steps = self.cell.steps
 
-            # if hdr_summary.cycle_index not in summary.columns:
+            # if self.headers_summary.cycle_index not in summary.columns:
             #     summary = summary.reset_index()
 
             charge_steps = steps.loc[
-                steps.type == "charge", [hdr_steps.cycle, "rate_avr"]
-            ].rename(columns={"rate_avr": hdr_summary.charge_c_rate})
+                steps.type == "charge", [self.headers_step_table.cycle, "rate_avr"]
+            ].rename(columns={"rate_avr": self.headers_summary.charge_c_rate})
 
             summary = summary.merge(
-                charge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep="first"),
-                left_on=hdr_summary.cycle_index,
-                right_on=hdr_steps.cycle,
+                charge_steps.drop_duplicates(subset=[self.headers_step_table.cycle], keep="first"),
+                left_on=self.headers_summary.cycle_index,
+                right_on=self.headers_step_table.cycle,
                 how="left",
-            ).drop(columns=hdr_steps.cycle)
+            ).drop(columns=self.headers_step_table.cycle)
 
             discharge_steps = steps.loc[
-                steps.type == "discharge", [hdr_steps.cycle, "rate_avr"]
-            ].rename(columns={"rate_avr": hdr_summary.discharge_c_rate})
+                steps.type == "discharge", [self.headers_step_table.cycle, "rate_avr"]
+            ].rename(columns={"rate_avr": self.headers_summary.discharge_c_rate})
 
             summary = summary.merge(
-                discharge_steps.drop_duplicates(subset=[hdr_steps.cycle], keep="first"),
-                left_on=hdr_summary.cycle_index,
-                right_on=hdr_steps.cycle,
+                discharge_steps.drop_duplicates(subset=[self.headers_step_table.cycle], keep="first"),
+                left_on=self.headers_summary.cycle_index,
+                right_on=self.headers_step_table.cycle,
                 how="left",
-            ).drop(columns=hdr_steps.cycle)
+            ).drop(columns=self.headers_step_table.cycle)
 
         if sort_my_columns:
             logging.debug("sorting columns")
-            new_first_col_list = [dt_txt, tt_txt, d_txt, c_txt]
+            new_first_col_list = [self.headers_normal.datetime_txt, self.headers_normal.test_time_txt,
+                                  self.headers_normal.data_point_txt, self.headers_normal.cycle_index_txt]
             summary = self.set_col_first(summary, new_first_col_list)
 
         if cycle_index_as_index:
-            index_col = hdr_summary.cycle_index
+            index_col = self.headers_summary.cycle_index
             try:
                 summary.set_index(index_col, inplace=True)
             except KeyError:
                 logging.debug("Setting cycle_index as index failed")
 
-        dataset.summary = summary
+        cell.summary = summary
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def inspect_nominal_capacity(self, cycles=None):

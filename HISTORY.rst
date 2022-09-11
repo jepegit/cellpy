@@ -2,6 +2,14 @@
 History
 =======
 
+0.4.3 (2022) [under development]
+--------------------------------
+
+* Unit handling: renaming summary headers
+* Unit handling: new cellpy-file-format version
+* Unit handling: tool for converting old to new format
+
+
 0.4.2 (2022)
 ------------
 

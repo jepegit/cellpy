@@ -288,11 +288,11 @@ class Cell:
 
         self.raw = pd.DataFrame()
         self.summary = pd.DataFrame()
-        self.steps = pd.DataFrame()  # is this used? - check!
-        self.summary_table_version = SUMMARY_TABLE_VERSION
-        self.step_table_version = STEP_TABLE_VERSION
+        self.steps = pd.DataFrame()
+        self.summary_table_version = SUMMARY_TABLE_VERSION  # not used yet
+        self.step_table_version = STEP_TABLE_VERSION  # not used yet
         self.cellpy_file_version = CELLPY_FILE_VERSION
-        self.raw_table_version = RAW_TABLE_VERSION
+        self.raw_table_version = RAW_TABLE_VERSION  # not used yet
 
     @staticmethod
     def _header_str(hdr):
