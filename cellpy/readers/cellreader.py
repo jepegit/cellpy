@@ -1340,7 +1340,7 @@ class CellpyData:
             return True
         return False
 
-    # TODO: maybe consider being a bit more concice (re-implement)
+    # TODO: maybe consider being a bit more concise (re-implement)
     def _is_not_empty_dataset(self, dataset):
         if dataset is self._empty_dataset():
             return False
