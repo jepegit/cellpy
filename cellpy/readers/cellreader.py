@@ -5287,14 +5287,14 @@ class CellpyData:
                 ocvcol_max = only_zeros.copy()
 
                 for j in ocv_1:
-                    cycle = j["Cycle_Index"].values[0]  # jepe fix
+                    cycle = j[self.headers_normal.cycle_index_txt].values[0]
                     # try to find inxed
                     index = summary[
                         (summary[self.headers_normal.cycle_index_txt] == cycle)
                     ].index
                     # print cycle, index,
-                    v_min = j["Voltage"].min()  # jepe fix
-                    v_max = j["Voltage"].max()  # jepe fix
+                    v_min = j[self.headers_normal.voltage_txt].min()
+                    v_max = j[self.headers_normal.voltage_txt].max()
                     # print v_min,v_max
                     dv = v_max - v_min
                     ocvcol_min.iloc[index] = v_min
@@ -5316,13 +5316,12 @@ class CellpyData:
                 ocvcol_max = only_zeros.copy()
 
                 for j in ocv_2:
-                    cycle = j["Cycle_Index"].values[0]  # jepe fix
-                    # try to find inxed
+                    cycle = j[self.headers_normal.cycle_index_txt].values[0]
                     index = summary[
                         (summary[self.headers_normal.cycle_index_txt] == cycle)
                     ].index
-                    v_min = j["Voltage"].min()  # jepe fix
-                    v_max = j["Voltage"].max()  # jepe fix
+                    v_min = j[self.headers_normal.voltage_txt].min()
+                    v_max = j[self.headers_normal.voltage_txt].max()
                     dv = v_max - v_min
                     ocvcol_min.iloc[index] = v_min
                     ocvcol_max.iloc[index] = v_max
