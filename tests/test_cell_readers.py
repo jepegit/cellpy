@@ -46,6 +46,7 @@ def test_xldate_as_datetime(xldate, datemode, option, expected):
 
 
 def test_raw_bad_data_cycle_and_step(cellpy_data_instance, parameters):
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     cycle = 5
     step = 10
     step_left = 11
@@ -61,6 +62,7 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance, parameters):
 
 
 def test_raw_data_from_data_point(cellpy_data_instance, parameters):
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     data_point_header = "data_point"
     cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, None))
 
@@ -69,6 +71,7 @@ def test_raw_data_from_data_point(cellpy_data_instance, parameters):
 
 
 def test_raw_data_data_point(cellpy_data_instance, parameters):
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     data_point_header = "data_point"
     cellpy_data_instance.from_raw(
         parameters.res_file_path, data_points=(10_000, 10_200)
@@ -113,6 +116,7 @@ def test_cellpy_version_5(cellpy_data_instance, parameters):
 
 
 def test_merge(cellpy_data_instance, parameters):
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     f1 = parameters.res_file_path
     f2 = parameters.res_file_path2
     assert os.path.isfile(f1)
@@ -139,6 +143,7 @@ def test_merge(cellpy_data_instance, parameters):
 
 
 def test_merge_auto_from_list(parameters):
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     from cellpy import cellreader
 
     cdi1 = cellreader.CellpyData()
@@ -189,6 +194,7 @@ def test_print_step_table(dataset):
 
 
 def test_c_rate_calc(dataset):
+    # TODO @jepe: refactor and use col names directly from HeadersStepTable instead
     table = dataset.cell.steps
     assert 0.09 in table["rate_avr"].unique()
 

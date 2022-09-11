@@ -173,6 +173,7 @@ def find_column(columns, label=None, end="cycle_index"):
     Returns:
         column header, label
     """
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     hdr = None
     lab = None
     for col in columns:
@@ -277,6 +278,7 @@ def plot_concatenated(
 
     """
     # TODO: add option for using labels from journal in the legend
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
 
     if keys is None:
         keys = dict()

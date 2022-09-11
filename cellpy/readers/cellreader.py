@@ -5181,7 +5181,7 @@ class CellpyData:
         if add_c_rate:
             logging.debug("Extracting C-rates")
             steps = self.cell.steps
-
+            # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
             charge_steps = steps.loc[
                 steps.type == "charge", [self.headers_step_table.cycle, "rate_avr"]
             ].rename(columns={"rate_avr": self.headers_summary.charge_c_rate})
@@ -5195,6 +5195,7 @@ class CellpyData:
                 how="left",
             ).drop(columns=self.headers_step_table.cycle)
 
+            # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
             discharge_steps = steps.loc[
                 steps.type == "discharge", [self.headers_step_table.cycle, "rate_avr"]
             ].rename(columns={"rate_avr": self.headers_summary.discharge_c_rate})

@@ -67,6 +67,8 @@ def select_ocv_points(
 
     """
 
+    # TODO @jepe: refactor and use col names directly from HeadersNormal instead:
+
     t0 = time.time()
     if cycles is None:
         cycles = cellpydata.get_cycle_numbers()
@@ -281,6 +283,9 @@ class MultiCycleOcvFit(object):
             None
 
         """
+
+        # TODO @jepe: refactor and use col names directly from HeadersNormal instead:
+
         ocv_fitter = OcvFit()
         ocv_fitter.set_circuits(self.circuits)
         time_voltage = self.data.get_ocv(direction=direction, cycles=self.cycles[0])

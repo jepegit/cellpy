@@ -338,6 +338,9 @@ class CyclingExperiment(BaseExperiment):
                 #    raw - data_point (already implemented I think)
                 #    summary - not sure
                 logging.debug("Setting index to Cycle_Index")
+
+                # TODO @jepe: refactor and use col names directly from HeadersNormal instead
+
                 # check if it is a byte-string
                 if b"Cycle_Index" in summary_tmp.columns:
                     logging.debug("Seems to be a byte-string in the column-headers")
