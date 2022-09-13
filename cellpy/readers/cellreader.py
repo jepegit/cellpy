@@ -44,7 +44,9 @@ from cellpy.parameters.internal_settings import (
     get_headers_summary,
     headers_normal,
     headers_step_table,
-    headers_summary, get_default_raw_units, get_default_output_units,
+    headers_summary,
+    get_default_raw_units,
+    get_default_output_units,
 )
 from cellpy.parameters.legacy import internal_settings as old_settings
 from cellpy.readers.core import (
@@ -1867,7 +1869,9 @@ class CellpyData:
             fid_table_selected = False
         return fid_table, fid_table_selected
 
-    def _extract_meta_from_cellpy_file(self, data: Cell, meta_table: pd.DataFrame, filename: Union[Path, str]) -> None:
+    def _extract_meta_from_cellpy_file(
+        self, data: Cell, meta_table: pd.DataFrame, filename: Union[Path, str]
+    ) -> None:
         # get attributes from meta table
         # remark! could also utilise the pandas to dictionary method directly
         # for example: meta_table.T.to_dict()

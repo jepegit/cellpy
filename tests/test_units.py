@@ -29,7 +29,7 @@ def test_set_cellpy_unit_and_use(dataset):
     dataset.make_summary()
     new_value = dataset.cell.summary["discharge_capacity_u_mAh_g"].values[10]
 
-    assert new_value == pytest.approx(initial_value/1000, 0.0001)
+    assert new_value == pytest.approx(initial_value / 1000, 0.0001)
 
 
 def test_set_output_unit_and_use(dataset):
@@ -44,5 +44,3 @@ def test_set_output_unit_and_use(dataset):
     # new_value = dataset.cell.summary["discharge_capacity_u_mAh_g"].values[10]
     #
     # assert new_value == pytest.approx(initial_value/1000, 0.0001)
-
-
