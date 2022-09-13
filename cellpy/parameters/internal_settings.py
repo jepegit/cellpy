@@ -4,6 +4,14 @@ from collections import UserDict
 from dataclasses import dataclass, fields
 
 
+CELLPY_FILE_VERSION = 6
+MINIMUM_CELLPY_FILE_VERSION = 4
+STEP_TABLE_VERSION = 5
+RAW_TABLE_VERSION = 5
+SUMMARY_TABLE_VERSION = 5
+PICKLE_PROTOCOL = 4
+
+
 # TODO: remove import of this
 class HeaderDict(UserDict):
     """Sub-classing dict to allow for tab-completion."""
@@ -28,6 +36,12 @@ class DictLikeClass:
     """
 
     def __getitem__(self, key):
+        if key not in self._field_names:
+            logging.debug(
+                f"*** used DictLikeClass.__getitem__({key}) NOT IN FIELD_NAMES"
+            )
+        else:
+            logging.debug(f"*** used DictLikeClass.__getitem__({key})")
         try:
             v = getattr(self, key)
             return v
@@ -75,13 +89,18 @@ class BaseSettings(DictLikeClass):
             var2: int = 12
 
     """
-
     def get(self, key):
         if key not in self.keys():
             logging.critical(f"{key} not found")
             return
         else:
+            print(f"*** used BaseSettings.get({key})")
             return self[key]
+
+
+@dataclass
+class BaseHeaders(BaseSettings):
+    mode = "gravimetric"
 
 
 @dataclass
@@ -165,7 +184,76 @@ class HeadersNormal(BaseSettings):
 
 
 @dataclass
-class HeadersSummary(BaseSettings):
+class HeadersSummary(BaseHeaders):
+    cycle_index: str = "cycle_index"
+    data_point: str = "data_point"
+    test_time: str = "test_time"
+    datetime: str = "date_time"
+    discharge_capacity_raw: str = "discharge_capacity"
+    charge_capacity_raw: str = "charge_capacity"
+    test_name: str = "test_name"
+    data_flag: str = "data_flag"
+    channel_id: str = "channel_id"
+
+    coulombic_efficiency: str = "coulombic_efficiency"
+    cumulated_coulombic_efficiency: str = "cumulated_coulombic_efficiency"
+
+    # discharge_capacity: str = "discharge_capacity_gravimetric"
+    charge_capacity: str = "charge_capacity_gravimetric"
+    cumulated_charge_capacity: str = "cumulated_charge_capacity_gravimetric"
+    cumulated_discharge_capacity: str = "cumulated_discharge_capacity_gravimetric"
+
+    coulombic_difference: str = "coulombic_difference_gravimetric"
+    cumulated_coulombic_difference: str = "cumulated_coulombic_difference_gravimetric"
+    discharge_capacity_loss: str = "discharge_capacity_loss_gravimetric"
+    charge_capacity_loss: str = "charge_capacity_loss_gravimetric"
+    cumulated_discharge_capacity_loss: str = (
+        "cumulated_discharge_capacity_loss_gravimetric"
+    )
+    cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss_gravimetric"
+
+    areal_charge_capacity: str = "charge_capacity_areal"
+    areal_discharge_capacity: str = "discharge_capacity_areal"
+
+    shifted_charge_capacity: str = "shifted_charge_capacity_gravimetric"
+    shifted_discharge_capacity: str = "shifted_discharge_capacity_gravimetric"
+
+    ir_discharge: str = "ir_discharge"
+    ir_charge: str = "ir_charge"
+    ocv_first_min: str = "ocv_first_min"
+    ocv_second_min: str = "ocv_second_min"
+    ocv_first_max: str = "ocv_first_max"
+    ocv_second_max: str = "ocv_second_max"
+    end_voltage_discharge: str = "end_voltage_discharge"
+    end_voltage_charge: str = "end_voltage_charge"
+    cumulated_ric_disconnect: str = "cumulated_ric_disconnect"
+    cumulated_ric_sei: str = "cumulated_ric_sei"
+    cumulated_ric: str = "cumulated_ric"
+    normalized_cycle_index: str = "normalized_cycle_index"
+    normalized_charge_capacity: str = "normalized_charge_capacity"
+    normalized_discharge_capacity: str = "normalized_discharge_capacity"
+    low_level: str = "low_level"
+    high_level: str = "high_level"
+
+    temperature_last: str = "temperature_last"
+    temperature_mean: str = "temperature_mean"
+
+    charge_c_rate: str = "charge_c_rate"
+    discharge_c_rate: str = "discharge_c_rate"
+    pre_aux: str = "aux_"
+
+    @property
+    def discharge_capacity(self) -> str:
+        if self.mode == "gravimetric":
+            return "discharge_capacity_gravimetric"
+        elif self.mode == "areal":
+            return "discharge_capacity_areal"
+        else:
+            return "discharge_capacity"
+
+
+@dataclass
+class HeadersSummaryV5(BaseHeaders):
     cycle_index: str = "cycle_index"
     data_point: str = "data_point"
     test_time: str = "test_time"
@@ -215,7 +303,7 @@ class HeadersSummary(BaseSettings):
 
 
 @dataclass
-class HeadersStepTable(BaseSettings):
+class HeadersStepTable(BaseHeaders):
     test: str = "test"
     ustep: str = "ustep"
     cycle: str = "cycle"
@@ -237,7 +325,7 @@ class HeadersStepTable(BaseSettings):
 
 
 @dataclass
-class HeadersJournal(BaseSettings):
+class HeadersJournal(BaseHeaders):
     filename: str = "filename"
     mass: str = "mass"
     total_mass: str = "total_mass"

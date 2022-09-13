@@ -531,16 +531,14 @@ def test_make_summary(cellpy_data_instance, parameters):
     assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
-def test_make_summary_new_version(cellpy_data_instance, parameters):
-    cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
-    cellpy_data_instance.make_summary()
-    s1 = cellpy_data_instance.cells[0].summary
-    s2 = cellpy_data_instance.cell.summary
-    s3 = cellpy_data_instance.get_summary()
-    assert sorted(s1.columns.tolist()) == sorted(s2.columns.tolist())
-    assert sorted(s2.columns.tolist()) == sorted(s3.columns.tolist())
-    assert s2.iloc[:, 3].size == 18
+def test_make_summary_new_version(parameters):
+    c_raw = cellpy.get(logging_mode="DEBUG")
+    c_raw.from_raw(parameters.res_file_path)
+    c_raw.set_mass(1.0)
+    c_raw.make_summary()
+    s1 = c_raw.cell.summary
+    print(s1.columns)
+    assert s1.iloc[:, 3].size == 18
 
 
 def test_make_summary_with_c_rate(cellpy_data_instance, parameters):
@@ -549,15 +547,14 @@ def test_make_summary_with_c_rate(cellpy_data_instance, parameters):
     cellpy_data_instance.make_summary(add_c_rate=True)
 
 
-def test_summary_from_cellpyfile(cellpy_data_instance, parameters):
-    cellpy_data_instance.load(parameters.cellpy_file_path)
-    s1 = cellpy_data_instance.get_summary()
-    mass = cellpy_data_instance.get_mass()
-    cellpy_data_instance.set_mass(mass)
-    cellpy_data_instance.make_summary(
-        find_ocv=False, find_ir=True, find_end_voltage=True
-    )
-    s2 = cellpy_data_instance.get_summary()
+def test_summary_from_cellpyfile(parameters):
+    c_cellpy = cellpy.get()
+    c_cellpy.load(parameters.cellpy_file_path)
+    s1 = c_cellpy.get_summary()
+    mass = c_cellpy.get_mass()
+    c_cellpy.set_mass(mass)
+    c_cellpy.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    s2 = c_cellpy.get_summary()
     assert sorted(s1.columns.tolist()) == sorted(s2.columns.tolist())
     assert s2.iloc[:, 3].size == 18
 

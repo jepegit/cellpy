@@ -47,26 +47,24 @@ from cellpy.parameters.internal_settings import (
     headers_summary,
     get_default_raw_units,
     get_default_output_units,
-)
-from cellpy.parameters.legacy import internal_settings as old_settings
-from cellpy.readers.core import (
     CELLPY_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
     PICKLE_PROTOCOL,
+)
+from cellpy.parameters.legacy import internal_settings as old_settings
+from cellpy.readers.core import (
     Cell,
     FileID,
     identify_last_data_point,
     interpolate_y_on_x,
     pickle_protocol,
     xldate_as_datetime,
-    InstrumentFactory,
-    find_all_instruments,
     generate_default_factory,
 )
 
-HEADERS_NORMAL = get_headers_normal()
-HEADERS_SUMMARY = get_headers_summary()
-HEADERS_STEP_TABLE = get_headers_step_table()
+HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
+HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
+HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
 
 # TODO: @jepe - new feature - method for assigning new cycle numbers and step numbers
 #   - Sometimes the user forgets to increment the cycle number and it would be good
@@ -4997,8 +4995,6 @@ class CellpyData:
                     cell.nom_cap = nom_cap
                 self.make_step_table(dataset_number=dataset_number)
 
-        specific_converter = self.get_converter_to_specific(dataset=cell, mass=mass)
-
         summary_df = cell.summary
         if not self.load_only_summary:
             raw = cell.raw
@@ -5039,117 +5035,17 @@ class CellpyData:
 
         if not use_cellpy_stat_file:
             logging.debug("not using cellpy statfile")
-
-        if self.cycle_mode == "anode":
-            logging.info(
-                "Assuming cycling in anode half-cell (discharge before charge) mode"
-            )
-            _first_step_txt = self.headers_summary.discharge_capacity
-            _second_step_txt = self.headers_summary.charge_capacity
-        else:
-            logging.info("Assuming cycling in full-cell / cathode mode")
-            _first_step_txt = self.headers_summary.charge_capacity
-            _second_step_txt = self.headers_summary.discharge_capacity
-
-        capacity_columns = {
-            self.headers_summary.charge_capacity: specific_converter
-            * summary[self.headers_normal.charge_capacity_txt],
-            self.headers_summary.discharge_capacity: specific_converter
-            * summary[self.headers_normal.discharge_capacity_txt],
-        }
-
-        summary = summary.assign(**capacity_columns)
-
-        coulombic_efficiency_columns = {
-            self.headers_summary.coulombic_efficiency: 100
-            * summary[_second_step_txt]
-            / summary[_first_step_txt],
-            self.headers_summary.coulombic_difference: summary[_first_step_txt]
-            - summary[_second_step_txt],
-        }
-
-        summary = summary.assign(**coulombic_efficiency_columns)
-
-        # TODO @jepe: check if using lambda expression speeds up things:
-        calculated_from_capacity_columns = {
-            self.headers_summary.cumulated_charge_capacity: summary[
-                self.headers_summary.charge_capacity
-            ].cumsum(),
-            self.headers_summary.cumulated_discharge_capacity: summary[
-                self.headers_summary.discharge_capacity
-            ].cumsum(),
-            self.headers_summary.discharge_capacity_loss: (
-                summary[self.headers_summary.discharge_capacity].shift(1)
-                - summary[self.headers_summary.discharge_capacity]
-            ),
-            self.headers_summary.charge_capacity_loss: (
-                summary[self.headers_summary.charge_capacity].shift(1)
-                - summary[self.headers_summary.charge_capacity]
-            ),
-        }
-
-        calculated_from_coulombic_efficiency_columns = {
-            self.headers_summary.cumulated_coulombic_efficiency: summary[
-                self.headers_summary.coulombic_efficiency
-            ].cumsum(),
-            self.headers_summary.cumulated_coulombic_difference: summary[
-                self.headers_summary.coulombic_difference
-            ].cumsum(),
-        }
-
-        summary = summary.assign(**calculated_from_capacity_columns)
-        summary = summary.assign(**calculated_from_coulombic_efficiency_columns)
-
-        calculated_from_capacity_loss_columns = {
-            self.headers_summary.cumulated_discharge_capacity_loss: summary[
-                self.headers_summary.discharge_capacity_loss
-            ].cumsum(),
-            self.headers_summary.cumulated_charge_capacity_loss: summary[
-                self.headers_summary.charge_capacity_loss
-            ].cumsum(),
-        }
-        summary = summary.assign(**calculated_from_capacity_loss_columns)
-
-        individual_edge_movement = summary[_first_step_txt] - summary[_second_step_txt]
-
-        shifted_charge_capacity_column = {
-            self.headers_summary.shifted_charge_capacity: individual_edge_movement.cumsum(),
-        }
-        summary = summary.assign(**shifted_charge_capacity_column)
-
-        shifted_discharge_capacity_column = {
-            self.headers_summary.shifted_discharge_capacity: summary[
-                self.headers_summary.shifted_charge_capacity
-            ]
-            + summary[_first_step_txt],
-        }
-        summary = summary.assign(**shifted_discharge_capacity_column)
-
-        ric = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[
-            _second_step_txt
-        ].shift(1)
-
-        ric_column = {self.headers_summary.cumulated_ric: ric.cumsum()}
-        summary = summary.assign(**ric_column)
-
-        summary[self.headers_summary.cumulated_ric] = ric.cumsum()
-
-        ric_sei = (
-            summary[_first_step_txt] - summary[_second_step_txt].shift(1)
-        ) / summary[_second_step_txt].shift(1)
-
-        ric_sei_column = {self.headers_summary.cumulated_ric_sei: ric_sei.cumsum()}
-        summary = summary.assign(**ric_sei_column)
-
-        ric_disconnect = (
-            summary[_second_step_txt].shift(1) - summary[_second_step_txt]
-        ) / summary[_second_step_txt].shift(1)
-
-        ric_disconnect_column = {
-            self.headers_summary.cumulated_ric_disconnect: ric_disconnect.cumsum()
-        }
-        summary = summary.assign(**ric_disconnect_column)
-
+        ##############################################
+        # TODO: implement mode here:
+        # remember to set correct HeadersSummary version in internal_settings
+        # remember to make routine for loading old .h5 files.
+        specific_converter = self.get_converter_to_specific(dataset=cell, mass=mass)
+        (
+            _first_step_txt,
+            _second_step_txt,
+            summary,
+        ) = self._generate_main_summary_columns(summary, specific_converter)
+        ###############################################
         if add_normalized_cycle_index:
             if normalization_cycles is not None:
                 logging.info(
@@ -5492,6 +5388,100 @@ class CellpyData:
 
         cell.summary = summary
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+
+    def _generate_main_summary_columns(self, summary, specific_converter):
+        if self.cycle_mode == "anode":
+            logging.info(
+                "Assuming cycling in anode half-cell (discharge before charge) mode"
+            )
+            _first_step_txt = self.headers_summary.discharge_capacity
+            _second_step_txt = self.headers_summary.charge_capacity
+        else:
+            logging.info("Assuming cycling in full-cell / cathode mode")
+            _first_step_txt = self.headers_summary.charge_capacity
+            _second_step_txt = self.headers_summary.discharge_capacity
+        capacity_columns = {
+            self.headers_summary.charge_capacity: specific_converter
+            * summary[self.headers_normal.charge_capacity_txt],
+            self.headers_summary.discharge_capacity: specific_converter
+            * summary[self.headers_normal.discharge_capacity_txt],
+        }
+        summary = summary.assign(**capacity_columns)
+        coulombic_efficiency_columns = {
+            self.headers_summary.coulombic_efficiency: 100
+            * summary[_second_step_txt]
+            / summary[_first_step_txt],
+            self.headers_summary.coulombic_difference: summary[_first_step_txt]
+            - summary[_second_step_txt],
+        }
+        summary = summary.assign(**coulombic_efficiency_columns)
+        # TODO @jepe: check if using lambda expression speeds up things:
+        calculated_from_capacity_columns = {
+            self.headers_summary.cumulated_charge_capacity: summary[
+                self.headers_summary.charge_capacity
+            ].cumsum(),
+            self.headers_summary.cumulated_discharge_capacity: summary[
+                self.headers_summary.discharge_capacity
+            ].cumsum(),
+            self.headers_summary.discharge_capacity_loss: (
+                summary[self.headers_summary.discharge_capacity].shift(1)
+                - summary[self.headers_summary.discharge_capacity]
+            ),
+            self.headers_summary.charge_capacity_loss: (
+                summary[self.headers_summary.charge_capacity].shift(1)
+                - summary[self.headers_summary.charge_capacity]
+            ),
+        }
+        calculated_from_coulombic_efficiency_columns = {
+            self.headers_summary.cumulated_coulombic_efficiency: summary[
+                self.headers_summary.coulombic_efficiency
+            ].cumsum(),
+            self.headers_summary.cumulated_coulombic_difference: summary[
+                self.headers_summary.coulombic_difference
+            ].cumsum(),
+        }
+        summary = summary.assign(**calculated_from_capacity_columns)
+        summary = summary.assign(**calculated_from_coulombic_efficiency_columns)
+        calculated_from_capacity_loss_columns = {
+            self.headers_summary.cumulated_discharge_capacity_loss: summary[
+                self.headers_summary.discharge_capacity_loss
+            ].cumsum(),
+            self.headers_summary.cumulated_charge_capacity_loss: summary[
+                self.headers_summary.charge_capacity_loss
+            ].cumsum(),
+        }
+        summary = summary.assign(**calculated_from_capacity_loss_columns)
+        individual_edge_movement = summary[_first_step_txt] - summary[_second_step_txt]
+        shifted_charge_capacity_column = {
+            self.headers_summary.shifted_charge_capacity: individual_edge_movement.cumsum(),
+        }
+        summary = summary.assign(**shifted_charge_capacity_column)
+        shifted_discharge_capacity_column = {
+            self.headers_summary.shifted_discharge_capacity: summary[
+                self.headers_summary.shifted_charge_capacity
+            ]
+            + summary[_first_step_txt],
+        }
+        summary = summary.assign(**shifted_discharge_capacity_column)
+        ric = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[
+            _second_step_txt
+        ].shift(1)
+        ric_column = {self.headers_summary.cumulated_ric: ric.cumsum()}
+        summary = summary.assign(**ric_column)
+        summary[self.headers_summary.cumulated_ric] = ric.cumsum()
+        ric_sei = (
+            summary[_first_step_txt] - summary[_second_step_txt].shift(1)
+        ) / summary[_second_step_txt].shift(1)
+        ric_sei_column = {self.headers_summary.cumulated_ric_sei: ric_sei.cumsum()}
+        summary = summary.assign(**ric_sei_column)
+        ric_disconnect = (
+            summary[_second_step_txt].shift(1) - summary[_second_step_txt]
+        ) / summary[_second_step_txt].shift(1)
+        ric_disconnect_column = {
+            self.headers_summary.cumulated_ric_disconnect: ric_disconnect.cumsum()
+        }
+        summary = summary.assign(**ric_disconnect_column)
+        return _first_step_txt, _second_step_txt, summary
 
     def inspect_nominal_capacity(self, cycles=None):
         """Method for estimating the nominal capacity

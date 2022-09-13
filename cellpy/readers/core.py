@@ -20,24 +20,20 @@ from scipy import interpolate
 from cellpy.exceptions import NullData
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
-    ATTRS_CELLPYFILE,
     get_headers_normal,
     get_headers_step_table,
     get_headers_summary,
     get_default_raw_units,
     get_default_raw_limits,
+    CELLPY_FILE_VERSION,
+    STEP_TABLE_VERSION,
+    RAW_TABLE_VERSION,
+    SUMMARY_TABLE_VERSION,
 )
 
-CELLPY_FILE_VERSION = 6
-MINIMUM_CELLPY_FILE_VERSION = 4
-STEP_TABLE_VERSION = 5
-RAW_TABLE_VERSION = 5
-SUMMARY_TABLE_VERSION = 5
-PICKLE_PROTOCOL = 4
-
-HEADERS_NORMAL = get_headers_normal()
-HEADERS_SUMMARY = get_headers_summary()
-HEADERS_STEP_TABLE = get_headers_step_table()
+HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
+HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
+HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
 
 
 # https://stackoverflow.com/questions/60067953/
