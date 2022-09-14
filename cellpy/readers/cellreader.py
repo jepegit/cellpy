@@ -24,7 +24,7 @@ import sys
 import time
 import warnings
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -1615,6 +1615,57 @@ class CellpyData:
         ]  # but cellpy is ready when that time comes (if it ever happens)
         return new_tests
 
+    def _load_hdf5_v6(self, filename, selector=None):
+        parent_level = "CellpyData"
+        raw_dir = "/raw"
+        step_dir = "/steps"
+        summary_dir = "/summary"
+        fid_dir = "/fid"
+        meta_dir = "/info"
+
+        with pd.HDFStore(filename) as store:
+            data, meta_table = self._create_initial_data_set_from_cellpy_file(
+                meta_dir, parent_level, store
+            )
+            self._check_keys_in_cellpy_file(
+                meta_dir, parent_level, raw_dir, store, summary_dir
+            )
+            self._extract_summary_from_cellpy_file(
+                data,
+                parent_level,
+                store,
+                summary_dir,
+                selector=selector,
+                upgrade_from_to=(6, CELLPY_FILE_VERSION),
+            )
+            self._extract_raw_from_cellpy_file(
+                data, parent_level, raw_dir, store, selector=selector
+            )
+            self._extract_steps_from_cellpy_file(
+                data, parent_level, step_dir, store, selector=selector
+            )
+            fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
+                fid_dir, parent_level, store
+            )
+
+        self._extract_meta_from_cellpy_file(data, meta_table, filename)
+
+        if fid_table_selected:
+            (
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ) = self._convert2fid_list(fid_table)
+        else:
+            data.raw_data_files = []
+            data.raw_data_files_length = []
+
+        # this does not yet allow multiple sets
+        logging.debug("loaded new test")
+        new_tests = [
+            data
+        ]  # but cellpy is ready when that time comes (if it ever happens)
+        return new_tests
+
     def _load_hdf5_v5(self, filename, selector=None):
         parent_level = "CellpyData"
         raw_dir = "/raw"
@@ -1666,6 +1717,9 @@ class CellpyData:
             new_data = self._load_old_hdf5_v3_to_v4(filename)
         elif cellpy_file_version == 5:
             new_data = self._load_hdf5_v5(filename)
+
+        elif cellpy_file_version == 6:
+            new_data = self._load_hdf5_v6(filename)
         else:
             raise WrongFileVersion(f"version {cellpy_file_version} is not supported")
 
@@ -1674,16 +1728,6 @@ class CellpyData:
             new_data = old_settings.translate_headers(new_data, cellpy_file_version)
             # self.__check_loaded_data(new_data)
         return new_data
-
-    def __check_loaded_data(self, new_data):
-        print("Checking loaded data".center(80, "="))
-        print("file names:")
-        print(self.file_names)
-        print("new data sets:")
-        print(len(new_data))
-        print("first data set:")
-        first = new_data[0]
-        print(first)
 
     def _load_old_hdf5_v3_to_v4(self, filename):
         parent_level = "CellpyData"
@@ -1709,7 +1753,7 @@ class CellpyData:
         )
         self._extract_meta_from_cellpy_file(data, meta_table, filename)
         warnings.warn(
-            "Loaded old cellpy-file version (<5). " "Please update and save again."
+            "Loaded old cellpy-file version (<5). Please update and save again."
         )
         if fid_table_selected:
             (
@@ -1772,11 +1816,16 @@ class CellpyData:
         self, table_name, max_cycle, parent_level, store, child_level
     ):
         if table_name == prms._cellpyfile_step:
-            _cycle_header = headers_step_table.cycle
+            _cycle_header = self.headers_step_table.cycle
             table_path = parent_level + child_level
         elif table_name == prms._cellpyfile_raw:
-            _cycle_header = headers_normal.cycle_index_txt
+            _cycle_header = self.headers_normal.cycle_index_txt
             table_path = parent_level + child_level
+        else:
+            raise IOError(
+                f"provided wrong table name: {table_name} "
+                f"(valid options: ({prms._cellpyfile_step}, {prms._cellpyfile_raw}))"
+            )
 
         cycles = store.select(table_path, where="columns=[_cycle_header]")
         return cycles[_cycle_header] <= max_cycle
@@ -1805,7 +1854,13 @@ class CellpyData:
         return selector
 
     def _extract_summary_from_cellpy_file(
-        self, data, parent_level, store, summary_dir, selector=None
+        self,
+        data: Cell,
+        parent_level: str,
+        store: pd.HDFStore,
+        summary_dir: str,
+        selector: Union[None, str] = None,
+        upgrade_from_to: tuple = None,
     ):
         if selector is not None:
             cycle_filter = []
@@ -1820,6 +1875,17 @@ class CellpyData:
             cycle_filter = self._hdf5_cycle_filter("summary")
 
         data.summary = store.select(parent_level + summary_dir, where=cycle_filter)
+        if upgrade_from_to is not None:
+            print("NEED TO UPGRADE")
+            logging.debug(
+                f"upgrading from {upgrade_from_to[0]} to {upgrade_from_to[1]}"
+            )
+            print(type(data))
+            print(type(store))
+
+            print(data.summary.columns)
+            print("_________________")
+            print(self.headers_summary)
 
         # TODO: max data point should be an attribute
         max_data_point = data.summary["data_point"].max()

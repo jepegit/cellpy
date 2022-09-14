@@ -4,11 +4,11 @@ from collections import UserDict
 from dataclasses import dataclass, fields
 
 
-CELLPY_FILE_VERSION = 6
+CELLPY_FILE_VERSION = 7
 MINIMUM_CELLPY_FILE_VERSION = 4
 STEP_TABLE_VERSION = 5
 RAW_TABLE_VERSION = 5
-SUMMARY_TABLE_VERSION = 5
+SUMMARY_TABLE_VERSION = 7
 PICKLE_PROTOCOL = 4
 
 
@@ -89,12 +89,12 @@ class BaseSettings(DictLikeClass):
             var2: int = 12
 
     """
+
     def get(self, key):
         if key not in self.keys():
-            logging.critical(f"{key} not found")
+            logging.critical(f"the column header '{key}' not found")
             return
         else:
-            print(f"*** used BaseSettings.get({key})")
             return self[key]
 
 
