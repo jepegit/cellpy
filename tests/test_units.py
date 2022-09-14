@@ -21,6 +21,7 @@ def test_set_units(cellpy_data_instance):
     assert cellpy_data_instance.cellpy_units["charge"] == 0.001
 
 
+# TODO: this might break when updating cellpy format - fix it using HeadersSummary etc.:
 def test_set_cellpy_unit_and_use(dataset):
     cellpy_unit_charge = dataset.cellpy_units["charge"]
     initial_value = dataset.cell.summary["discharge_capacity_u_mAh_g"].values[10]
