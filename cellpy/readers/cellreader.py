@@ -33,6 +33,7 @@ from scipy import interpolate
 
 from cellpy.exceptions import DeprecatedFeature, NullData, WrongFileVersion, NoCellFound
 from cellpy.parameters import prms
+from cellpy.parameters.cellpy_file_upgrade_settings import rename_summary_columns
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
     ATTRS_CELLPYFILE,
@@ -1876,16 +1877,9 @@ class CellpyData:
 
         data.summary = store.select(parent_level + summary_dir, where=cycle_filter)
         if upgrade_from_to is not None:
-            print("NEED TO UPGRADE")
-            logging.debug(
-                f"upgrading from {upgrade_from_to[0]} to {upgrade_from_to[1]}"
-            )
-            print(type(data))
-            print(type(store))
-
-            print(data.summary.columns)
-            print("_________________")
-            print(self.headers_summary)
+            old, new = upgrade_from_to
+            logging.debug(f"upgrading from {old} to {new}")
+            data.summary = rename_summary_columns(data.summary, old, new)
 
         # TODO: max data point should be an attribute
         max_data_point = data.summary["data_point"].max()
