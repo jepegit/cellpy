@@ -77,7 +77,7 @@ class DataLoader(BaseLoader):
 
     def _get_pec_units(self):  # Fetches units from a csv file
         # Mapping prefixes to values
-        prefix = {"µ": 10 ** -6, "m": 10 ** -3, "": 1}
+        prefix = {"µ": 10**-6, "m": 10**-3, "": 1}
 
         # Adding the non-variable units to the return value
         pec_units = {"charge": 0.001, "mass": 0.001, "energy": 0.001}  # Ah  # g  # Wh

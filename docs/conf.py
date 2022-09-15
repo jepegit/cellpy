@@ -108,8 +108,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"cellpy"
-copyright = u"2022, Jan Petter Maehlen"
+project = "cellpy"
+copyright = "2022, Jan Petter Maehlen"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -260,7 +260,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
 latex_documents = [
-    ("index", "cellpy.tex", u"cellpy Documentation", u"Jan Petter Maehlen", "manual")
+    ("index", "cellpy.tex", "cellpy Documentation", "Jan Petter Maehlen", "manual")
 ]
 
 # The name of an image file (relative to this directory) to place at
@@ -288,7 +288,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "cellpy", u"cellpy Documentation", [u"Jan Petter Maehlen"], 1)]
+man_pages = [("index", "cellpy", "cellpy Documentation", ["Jan Petter Maehlen"], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -303,8 +303,8 @@ texinfo_documents = [
     (
         "index",
         "cellpy",
-        u"cellpy Documentation",
-        u"Jan Petter Maehlen",
+        "cellpy Documentation",
+        "Jan Petter Maehlen",
         "cellpy",
         "Utilities for handling data from battery cell cycling.",
         "Miscellaneous",

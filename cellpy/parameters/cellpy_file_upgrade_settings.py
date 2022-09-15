@@ -171,7 +171,7 @@ def rename_summary_columns(
 
 def get_column_name_mapper(
     old_columns: BaseHeaders, new_columns: BaseHeaders
-) -> tuple[dict[str, str], list[str], list[str]]:
+) -> Tuple[Dict[str, str], List[str], List[str]]:
     """Create a dictionary that maps old column names to new column names.
 
     Args:
