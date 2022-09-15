@@ -64,16 +64,6 @@ class HeadersSummaryV7(BaseHeaders):
 
     charge_c_rate: str = "charge_c_rate"
     discharge_c_rate: str = "discharge_c_rate"
-    # pre_aux: str = "aux_"
-
-    # @property
-    # def discharge_capacity(self) -> str:
-    #     if self.mode == "gravimetric":
-    #         return "discharge_capacity_gravimetric"
-    #     elif self.mode == "areal":
-    #         return "discharge_capacity_areal"
-    #     else:
-    #         return "discharge_capacity"
 
 
 @dataclass
