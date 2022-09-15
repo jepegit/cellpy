@@ -227,14 +227,14 @@ class Cell:
 
         # meta-data
         self.cell_no = None
-        self.mass = prms.Materials.default_mass  # active material (in mg)
-        self.tot_mass = prms.Materials.default_mass  # total material (in mg)
+        self.mass = prms.Materials.default_mass  # active material
+        self.tot_mass = prms.Materials.default_mass  # total material
         self.no_cycles = 0.0
         self.charge_steps = None
         self.discharge_steps = None
         self.ir_steps = None
         self.ocv_steps = None
-        self.nom_cap = prms.DataSet.nom_cap  # mAh/g (for finding c-rates)
+        self.nom_cap = prms.DataSet.nom_cap  # (for finding c-rates) TODO: implement proper unit handling
         self.mass_given = False
         self.material = prms.Materials.default_material
         self.merged = False

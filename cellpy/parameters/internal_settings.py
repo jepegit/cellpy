@@ -40,8 +40,6 @@ class DictLikeClass:
             logging.debug(
                 f"*** used DictLikeClass.__getitem__({key}) NOT IN FIELD_NAMES"
             )
-        else:
-            logging.debug(f"*** used DictLikeClass.__getitem__({key})")
         try:
             v = getattr(self, key)
             return v
@@ -134,6 +132,7 @@ class CellpyUnits(BaseSettings):
     energy: float = 1.0  # Wh
     length: float = 1.0  # m
     area: float = 1.0  # m2
+    volume: float = 1.0  # m3
     temperature: float = 1.0  # C
 
 

@@ -605,22 +605,6 @@ def test_get_capacity(dataset):
     assert len(df) == 438
 
 
-@pytest.mark.parametrize(
-    "test_input,expected",
-    [
-        ((1.0, 1.0), 1.0),
-        ((1.0, 0.1), 0.1),
-        ((0.1, 1.0), 10.0),
-        pytest.param((1.0, 0.001), 1.0, marks=pytest.mark.xfail),
-    ],
-)
-def test_get_converter_to_specific(dataset, test_input, expected):
-    c = dataset.get_converter_to_specific(
-        mass=1.0, to_unit=test_input[0], from_unit=test_input[1]
-    )
-    assert c == expected
-
-
 def test_save_cellpyfile_with_extension(cellpy_data_instance, parameters):
     cellpy_data_instance.loadcell(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)

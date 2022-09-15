@@ -4,6 +4,7 @@ import pathlib
 
 import pytest
 
+from cellpy.readers.core import Cell
 from . import fdv
 
 # NOTE: all tests can now use the parameters fixture instead of importing fdv directly.
@@ -36,7 +37,7 @@ def cellpy_data_instance():
 
 
 @pytest.fixture
-def dataset(cellpy_data_instance):
+def dataset(cellpy_data_instance) -> Cell:
     from cellpy import cellreader
 
     p = pathlib.Path(fdv.cellpy_file_path)

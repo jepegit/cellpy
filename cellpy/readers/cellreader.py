@@ -31,7 +31,13 @@ import pandas as pd
 from pandas.errors import PerformanceWarning
 from scipy import interpolate
 
-from cellpy.exceptions import DeprecatedFeature, NullData, WrongFileVersion, NoCellFound
+from cellpy.exceptions import (
+    DeprecatedFeature,
+    NullData,
+    WrongFileVersion,
+    NoCellFound,
+    UnderDefined,
+)
 from cellpy.parameters import prms
 from cellpy.parameters.cellpy_file_upgrade_settings import rename_summary_columns
 from cellpy.parameters.internal_settings import (
@@ -4531,22 +4537,31 @@ class CellpyData:
         raise DeprecatedFeature
 
     def get_converter_to_specific(
-        self, dataset=None, mass=None, to_unit=None, from_unit=None
-    ):
-        """get the conversion value to use when calculating specific values (e.g mAh/g).
+        self,
+        dataset: Cell = None,
+        value: float = None,
+        to_unit: float = None,
+        from_unit: float = None,
+        mode: str = "gravimetric",
+        for_output: bool = False,
+    ) -> Union[float, None]:
+        """get the conversion value to use when calculating specific values (e.g. mAh/g).
 
         Args:
             dataset: DataSet object
-            mass: mass of electrode (for example active material in mg)
+            value: the specific value of electrode (for example active material mass or area)
             to_unit: (float) unit of input, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
               will be 0.001 * 1.0 = 0.001
             from_unit: (float) unit of output, f.ex. if unit of charge
               is mAh and unit of mass is g, then to_unit for charge/mass
               will be 1.0 / 0.001 = 1000.0
+            mode (str): gravimetric, areal or absolute
+            for_output (str): set to True if you want to get a conversion factor to be used
+                when generating data only for output (i.e. not for the internal summary etc).
 
         Returns:
-            multiplier (float) from_unit / to_unit / mass
+            multiplier (float) from_unit / to_unit / value
 
         """
         if not dataset:
@@ -4556,21 +4571,54 @@ class CellpyData:
                 return
             dataset = self.cells[dataset_number]
 
-        if not mass:
-            mass = dataset.mass
+        allowed_modes = {
+            "gravimetric": dataset.mass,
+            "areal": dataset.active_electrode_area,
+            "absolute": 1.0
+        }
 
+        if not value:
+            if mode not in allowed_modes:
+                raise ValueError(f"mode='{mode}' is not allowed!")
+            value = allowed_modes[mode]
+            if not value:
+                raise UnderDefined(f"Missing value for calculating conversion factor for {mode} capacity")
         if not to_unit:
+            if for_output:
+                new_units = self.output_units
+            else:
+                new_units = self.cellpy_units
+
+            if mode == "gravimetric":
+                to_unit_specific = new_units["specific"]
+            elif mode == "areal":
+                to_unit_specific = new_units["area"]
+            elif mode == "absolute":
+                to_unit_specific = 1.0
+            else:
+                raise ValueError(f"mode='{mode}' is not allowed!")
+
             to_unit_cap = self.cellpy_units["charge"]
-            to_unit_mass = self.cellpy_units["specific"]
-            to_unit = to_unit_cap / to_unit_mass
+            to_unit = to_unit_cap / to_unit_specific
+
         if not from_unit:
+            if mode == "gravimetric":
+                from_unit_specific = self.cellpy_units["mass"]
+            elif mode == "areal":
+                from_unit_specific = self.cellpy_units["area"]
+            elif mode == "absolute":
+                from_unit_specific = 1.0
+            else:
+                raise ValueError(f"mode='{mode}' is not allowed!")
+
             from_unit_cap = self.raw_units["charge"]
-            from_unit_mass = self.cellpy_units["mass"]
-            from_unit = from_unit_cap / from_unit_mass
+            from_unit = from_unit_cap / from_unit_specific
+
         logging.debug(f"from-unit: {from_unit}")
         logging.debug(f"to-unit: {to_unit}")
-        logging.debug(f"mass: {mass}")
-        conversion_factor = from_unit / to_unit / mass
+        logging.debug(f"specific value: {value}")
+
+        conversion_factor = from_unit / to_unit / value
         logging.debug(f"conversion factor: {conversion_factor}")
 
         return conversion_factor
@@ -5095,11 +5143,19 @@ class CellpyData:
 
         if not use_cellpy_stat_file:
             logging.debug("not using cellpy statfile")
+
         ##############################################
-        # TODO: implement mode here:
-        # remember to set correct HeadersSummary version in internal_settings
-        # remember to make routine for loading old .h5 files.
-        specific_converter = self.get_converter_to_specific(dataset=cell, mass=mass)
+        # Implemented units, conversion factor calc, renaming headers
+        # TODO: make sure we get area, mass, etc
+        # TODO: loop through gravimetric, areal, and absolute (based on selection/prm)
+        # TODO: save cellpy-file with new summary (new headers)
+        # TODO: implement features needed for using "modified raw"
+        # TODO: maybe create all cols with absolute first and check saving and loading?
+
+        # gravimetric
+        specific_converter = self.get_converter_to_specific(
+            dataset=cell, value=mass, mode="gravimetric"
+        )
         (
             _first_step_txt,
             _second_step_txt,
