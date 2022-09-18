@@ -5176,7 +5176,6 @@ class CellpyData:
         ##############################################
         # Implemented units, conversion factor calc, renaming headers
         # TODO: make sure we get area, mass, etc
-        # TODO: loop through gravimetric, areal, and absolute (based on selection/prm)
         # TODO: save cellpy-file with new summary (new headers)
         # TODO: implement features needed for using "modified raw"
         # TODO: maybe create all cols with absolute first and check saving and loading?
