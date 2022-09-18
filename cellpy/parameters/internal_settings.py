@@ -184,6 +184,9 @@ class HeadersNormal(BaseSettings):
 
 @dataclass
 class HeadersSummary(BaseHeaders):
+    """In addition to the headers defined here, the summary might also contain
+    specific headers (ending in _gravimetric or _areal).
+    """
     cycle_index: str = "cycle_index"
     data_point: str = "data_point"
     test_time: str = "test_time"
@@ -197,25 +200,23 @@ class HeadersSummary(BaseHeaders):
     coulombic_efficiency: str = "coulombic_efficiency"
     cumulated_coulombic_efficiency: str = "cumulated_coulombic_efficiency"
 
-    # discharge_capacity: str = "discharge_capacity_gravimetric"
-    charge_capacity: str = "charge_capacity_gravimetric"
-    cumulated_charge_capacity: str = "cumulated_charge_capacity_gravimetric"
-    cumulated_discharge_capacity: str = "cumulated_discharge_capacity_gravimetric"
+    discharge_capacity: str = "discharge_capacity"
+    charge_capacity: str = "charge_capacity"
+    cumulated_charge_capacity: str = "cumulated_charge_capacity"
+    cumulated_discharge_capacity: str = "cumulated_discharge_capacity"
 
-    coulombic_difference: str = "coulombic_difference_gravimetric"
-    cumulated_coulombic_difference: str = "cumulated_coulombic_difference_gravimetric"
-    discharge_capacity_loss: str = "discharge_capacity_loss_gravimetric"
-    charge_capacity_loss: str = "charge_capacity_loss_gravimetric"
-    cumulated_discharge_capacity_loss: str = (
-        "cumulated_discharge_capacity_loss_gravimetric"
-    )
-    cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss_gravimetric"
+    coulombic_difference: str = "coulombic_difference"
+    cumulated_coulombic_difference: str = "cumulated_coulombic_difference"
+    discharge_capacity_loss: str = "discharge_capacity_loss"
+    charge_capacity_loss: str = "charge_capacity_loss"
+    cumulated_discharge_capacity_loss: str = "cumulated_discharge_capacity_loss"
+    cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss"
 
-    areal_charge_capacity: str = "charge_capacity_areal"
-    areal_discharge_capacity: str = "discharge_capacity_areal"
+    normalized_charge_capacity: str = "normalized_charge_capacity"
+    normalized_discharge_capacity: str = "normalized_discharge_capacity"
 
-    shifted_charge_capacity: str = "shifted_charge_capacity_gravimetric"
-    shifted_discharge_capacity: str = "shifted_discharge_capacity_gravimetric"
+    shifted_charge_capacity: str = "shifted_charge_capacity"
+    shifted_discharge_capacity: str = "shifted_discharge_capacity"
 
     ir_discharge: str = "ir_discharge"
     ir_charge: str = "ir_charge"
@@ -229,8 +230,6 @@ class HeadersSummary(BaseHeaders):
     cumulated_ric_sei: str = "cumulated_ric_sei"
     cumulated_ric: str = "cumulated_ric"
     normalized_cycle_index: str = "normalized_cycle_index"
-    normalized_charge_capacity: str = "normalized_charge_capacity"
-    normalized_discharge_capacity: str = "normalized_discharge_capacity"
     low_level: str = "low_level"
     high_level: str = "high_level"
 
@@ -242,13 +241,25 @@ class HeadersSummary(BaseHeaders):
     pre_aux: str = "aux_"
 
     @property
-    def discharge_capacity(self) -> str:
-        if self.mode == "gravimetric":
-            return "discharge_capacity_gravimetric"
-        elif self.mode == "areal":
-            return "discharge_capacity_areal"
-        else:
-            return "discharge_capacity"
+    def specific_columns(self):
+        return [
+            self.discharge_capacity,
+            self.charge_capacity,
+            self.cumulated_charge_capacity,
+            self.cumulated_discharge_capacity,
+            self.coulombic_difference,
+            self.cumulated_coulombic_difference,
+            self.discharge_capacity_loss,
+            self.charge_capacity_loss,
+            self.cumulated_discharge_capacity_loss,
+            self.cumulated_charge_capacity_loss,
+            self.shifted_charge_capacity,
+            self.shifted_discharge_capacity,
+            self.cumulated_ric_disconnect,
+            self.cumulated_ric_sei,
+            self.cumulated_ric,
+            self.normalized_cycle_index,
+        ]
 
 
 @dataclass

@@ -208,7 +208,7 @@ def test_example_data():
     a = example_data.arbin_file(testing=True)
     c = example_data.cellpy_file(testing=True)
 
-    assert a.cell.summary.size == 522
+    assert a.cell.summary.size == 1026
     assert c.cell.summary.size == 1044
 
 

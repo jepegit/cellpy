@@ -1153,7 +1153,7 @@ class CellpyData:
         self.cells.append(cell[set_number])
 
         self.number_of_datasets = len(self.cells)
-        self.status_datasets = self._validate_datasets()
+        self.status_datasets = self._validate_cells()
         self._invent_a_name()
         return self
 
@@ -1301,7 +1301,7 @@ class CellpyData:
         else:
             logging.warning("No new datasets added!")
         self.number_of_datasets = len(self.cells)
-        self.status_datasets = self._validate_datasets()
+        self.status_datasets = self._validate_cells()
         self._invent_a_name()
         return self
 
@@ -1319,19 +1319,20 @@ class CellpyData:
         """
         raise DeprecatedFeature
 
-    def _validate_datasets(self, level=0):
+    def _validate_cells(self, level=0):
         logging.debug("validating test")
         level = 0
         # simple validation for finding empty datasets - should be expanded to
         # find not-complete datasets, datasets with missing prms etc
         v = []
         if level == 0:
-            for test in self.cells:
+            for cell in self.cells:
                 # check that it contains all the necessary headers
-                # (and add missing ones)
-                # test = self._clean_up_normal_table(test)
+                # (and add missing ones):
+                # cell = self._clean_up_normal_table(cell)
                 # check that the test is not empty
-                v.append(self._is_not_empty_dataset(test))
+                v.append(self._is_not_empty_dataset(cell))
+                v.append(cell.populate_defaults())
             logging.debug(f"validation array: {v}")
         return v
 
@@ -1441,7 +1442,7 @@ class CellpyData:
             logging.warning(str(cellpy_file))
 
         self.number_of_datasets = len(self.cells)
-        self.status_datasets = self._validate_datasets()
+        self.status_datasets = self._validate_cells()
         self._invent_a_name(cellpy_file)
         if return_cls:
             return self
@@ -1484,7 +1485,7 @@ class CellpyData:
             logging.warning(str(cellpy_file))
 
         self.number_of_datasets = len(self.cells)
-        self.status_datasets = self._validate_datasets()
+        self.status_datasets = self._validate_cells()
         self._invent_a_name(cellpy_file)
         if return_cls:
             return self
@@ -4574,7 +4575,7 @@ class CellpyData:
         allowed_modes = {
             "gravimetric": dataset.mass,
             "areal": dataset.active_electrode_area,
-            "absolute": 1.0
+            "absolute": 1.0,
         }
 
         if not value:
@@ -4582,7 +4583,9 @@ class CellpyData:
                 raise ValueError(f"mode='{mode}' is not allowed!")
             value = allowed_modes[mode]
             if not value:
-                raise UnderDefined(f"Missing value for calculating conversion factor for {mode} capacity")
+                raise UnderDefined(
+                    f"Missing value for calculating conversion factor for {mode} capacity"
+                )
         if not to_unit:
             if for_output:
                 new_units = self.output_units
@@ -4946,6 +4949,7 @@ class CellpyData:
         add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
+        nom_cap_specifics="gravimetric",
         from_cycle=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
@@ -4955,7 +4959,7 @@ class CellpyData:
         #  from_cycle (only calculate summary from a given cycle number).
         #  Probably best to keep the old summary and make
         #  a new one for the rest, then use pandas.concat to merge them.
-        #  Might have to create the culumative cols etc after merging?
+        #  Might have to create the cummulative cols etc after merging?
 
         # first - check if we need some "instrument-specific" prms
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -4996,10 +5000,10 @@ class CellpyData:
                     find_end_voltage=find_end_voltage,
                     use_cellpy_stat_file=use_cellpy_stat_file,
                     ensure_step_table=ensure_step_table,
-                    add_normalized_cycle_index=add_normalized_cycle_index,
                     add_c_rate=add_c_rate,
                     normalization_cycles=normalization_cycles,
                     nom_cap=nom_cap,
+                    nom_cap_specifics="gravimetric",
                 )
         else:
             logging.debug("creating summary for only one test")
@@ -5014,12 +5018,16 @@ class CellpyData:
                 find_end_voltage=find_end_voltage,
                 use_cellpy_stat_file=use_cellpy_stat_file,
                 ensure_step_table=ensure_step_table,
-                add_normalized_cycle_index=add_normalized_cycle_index,
                 add_c_rate=add_c_rate,
                 normalization_cycles=normalization_cycles,
                 nom_cap=nom_cap,
+                nom_cap_specifics="gravimetric",
             )
         return self
+
+    def _from_specific_to_absolute(self, value, specific):
+        absolute_value = value * specific
+        return absolute_value
 
     def _make_summary(
         self,
@@ -5034,11 +5042,11 @@ class CellpyData:
         # TODO: @jepe - include option for omitting steps
         sort_my_columns=True,
         use_cellpy_stat_file=False,
-        add_normalized_cycle_index=True,
-        add_c_rate=False,
+        add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
-        add_daniel_columns=True,
+        nom_cap_specifics="gravimetric",
+        add_daniel_columns=False,
         # capacity_modifier = None,
         # test=None
     ):
@@ -5078,10 +5086,13 @@ class CellpyData:
         # @jepe 2022.09.11: trying to use .assign from now on
         #   as it is recommended (but this will likely increase memory usage)
 
+        # TODO: add this to arguments and possible prms:
+        specifics = ["gravimetric", "areal"]
         cycle_index_as_index = True
         time_00 = time.time()
         dataset_number = self._validate_dataset_number(dataset_number)
         logging.debug("start making summary")
+
         if dataset_number is None:
             self._report_empty_dataset()
             return
@@ -5093,6 +5104,25 @@ class CellpyData:
         else:
             if update_it:
                 cell.mass = mass
+
+        if not use_cellpy_stat_file:
+            logging.debug("not using cellpy statfile")
+
+        if nom_cap is None:
+            logging.debug(f"No nom_cap given")
+            nom_cap = self.cell.nom_cap
+
+        logging.info(f"Using the following nominal capacity: {nom_cap}")
+
+        # cellpy has historically assumed that the nominal capacity (nom_cap) is specific gravimetric
+        # (i.e. in units of for example mAh/g), but now we need it in absolute units (e.g. Ah). The plan
+        # is to set stuff like this during initiation of the cell (but not yet):
+        if nom_cap_specifics == "gravimetric":
+            nom_cap = self._from_specific_to_absolute(nom_cap, mass)
+        elif nom_cap_specifics == "areal":
+            nom_cap = self._from_specific_to_absolute(
+                nom_cap, cell.active_electrode_area
+            )
 
         if ensure_step_table and not self.load_only_summary:
             logging.debug("ensuring existence of step-table")
@@ -5129,6 +5159,7 @@ class CellpyData:
         summary.index = list(range(summary_length))
 
         if select_columns:
+            logging.debug("keeping only selected set of columns")
             columns_to_keep = [
                 self.headers_normal.charge_capacity_txt,
                 self.headers_normal.cycle_index_txt,
@@ -5141,9 +5172,7 @@ class CellpyData:
                 if not columns_to_keep.count(cn):
                     summary.pop(cn)
 
-        if not use_cellpy_stat_file:
-            logging.debug("not using cellpy statfile")
-
+        cell.summary = summary
         ##############################################
         # Implemented units, conversion factor calc, renaming headers
         # TODO: make sure we get area, mass, etc
@@ -5151,361 +5180,6 @@ class CellpyData:
         # TODO: save cellpy-file with new summary (new headers)
         # TODO: implement features needed for using "modified raw"
         # TODO: maybe create all cols with absolute first and check saving and loading?
-
-        # gravimetric
-        specific_converter = self.get_converter_to_specific(
-            dataset=cell, value=mass, mode="gravimetric"
-        )
-        (
-            _first_step_txt,
-            _second_step_txt,
-            summary,
-        ) = self._generate_main_summary_columns(summary, specific_converter)
-        ###############################################
-        if add_normalized_cycle_index:
-            if normalization_cycles is not None:
-                logging.info(
-                    f"Using these cycles for finding the nominal capacity: {normalization_cycles}"
-                )
-                if not isinstance(normalization_cycles, (list, tuple)):
-                    normalization_cycles = [normalization_cycles]
-
-                cap_ref = summary.loc[
-                    summary[self.headers_normal.cycle_index_txt].isin(
-                        normalization_cycles
-                    ),
-                    _first_step_txt,
-                ]
-                if not cap_ref.empty:
-                    nom_cap = cap_ref.mean()
-                else:
-                    logging.info(f"Empty reference cycle(s)")
-
-            if nom_cap is None:
-                logging.debug(f"No nom_cap given")
-                nom_cap = self.cell.nom_cap
-            logging.info(f"Using the following nominal capacity: {nom_cap}")
-
-            normalized_cycle_index_column = {
-                self.headers_summary.normalized_cycle_index: summary[
-                    self.headers_summary.cumulated_charge_capacity
-                ]
-                / nom_cap
-            }
-            summary = summary.assign(**normalized_cycle_index_column)
-
-        if add_c_rate:
-            logging.debug("Extracting C-rates")
-            steps = self.cell.steps
-            # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
-            charge_steps = steps.loc[
-                steps.type == "charge", [self.headers_step_table.cycle, "rate_avr"]
-            ].rename(columns={"rate_avr": self.headers_summary.charge_c_rate})
-
-            summary = summary.merge(
-                charge_steps.drop_duplicates(
-                    subset=[self.headers_step_table.cycle], keep="first"
-                ),
-                left_on=self.headers_summary.cycle_index,
-                right_on=self.headers_step_table.cycle,
-                how="left",
-            ).drop(columns=self.headers_step_table.cycle)
-
-            # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
-            discharge_steps = steps.loc[
-                steps.type == "discharge", [self.headers_step_table.cycle, "rate_avr"]
-            ].rename(columns={"rate_avr": self.headers_summary.discharge_c_rate})
-
-            summary = summary.merge(
-                discharge_steps.drop_duplicates(
-                    subset=[self.headers_step_table.cycle], keep="first"
-                ),
-                left_on=self.headers_summary.cycle_index,
-                right_on=self.headers_step_table.cycle,
-                how="left",
-            ).drop(columns=self.headers_step_table.cycle)
-
-        # TODO @jepe: refactor this to method:
-        if add_daniel_columns:
-            n = self.daniel_number
-            cap_ref = summary.loc[
-                summary[self.headers_normal.cycle_index_txt] == n, _first_step_txt
-            ]
-            if not cap_ref.empty:
-                cap_ref = cap_ref.values[0]
-
-                ref = (
-                    summary.loc[
-                        summary[self.headers_normal.cycle_index_txt] < n,
-                        _second_step_txt,
-                    ].sum()
-                    + summary.loc[
-                        summary[self.headers_normal.cycle_index_txt] < n,
-                        _first_step_txt,
-                    ].sum()
-                    + cap_ref
-                )
-
-                summary[self.headers_summary.low_level] = (100 / ref) * (
-                    summary[_first_step_txt].cumsum()
-                    - summary[_second_step_txt].cumsum()
-                )
-
-                summary[self.headers_summary.high_level] = (100 / ref) * (
-                    summary[_first_step_txt]
-                    + summary[_first_step_txt].cumsum()
-                    - summary[_second_step_txt].cumsum()
-                )
-            else:
-                logging.info(
-                    "could not extract low-high levels (ref cycle number does not exist)"
-                )
-                summary[self.headers_summary.low_level] = np.nan
-                summary[self.headers_summary.high_level] = np.nan
-
-        # TODO @jepe: refactor this to method:
-        if find_ocv and not self.load_only_summary:
-            warnings.warn(DeprecationWarning("this option will be removed in v.0.4.0"))
-            # should remove this option
-            logging.info("CONGRATULATIONS")
-            logging.info("-thought this would never be run!")
-            logging.info("-find_ocv in make_summary")
-            logging.info(
-                "  this is a stupid routine that can be implemented much better!"
-            )
-            do_ocv_1 = True
-            do_ocv_2 = True
-
-            ocv1_type = "ocvrlx_up"
-            ocv2_type = "ocvrlx_down"
-
-            if not self.cycle_mode == "anode":
-                ocv2_type = "ocvrlx_up"
-                ocv1_type = "ocvrlx_down"
-
-            ocv_1 = self._get_ocv(
-                ocv_steps=cell.ocv_steps,
-                ocv_type=ocv1_type,
-                dataset_number=dataset_number,
-            )
-
-            ocv_2 = self._get_ocv(
-                ocv_steps=cell.ocv_steps,
-                ocv_type=ocv2_type,
-                dataset_number=dataset_number,
-            )
-
-            if do_ocv_1:
-                only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
-                ocv_1_indexes = []
-                ocv_1_v_min = []
-                ocv_1_v_max = []
-                ocvcol_min = only_zeros.copy()
-                ocvcol_max = only_zeros.copy()
-
-                for j in ocv_1:
-                    cycle = j[self.headers_normal.cycle_index_txt].values[0]
-                    # try to find inxed
-                    index = summary[
-                        (summary[self.headers_normal.cycle_index_txt] == cycle)
-                    ].index
-                    # print cycle, index,
-                    v_min = j[self.headers_normal.voltage_txt].min()
-                    v_max = j[self.headers_normal.voltage_txt].max()
-                    # print v_min,v_max
-                    dv = v_max - v_min
-                    ocvcol_min.iloc[index] = v_min
-                    ocvcol_max.iloc[index] = v_max
-
-                summary.insert(
-                    0, column=self.headers_summary.ocv_first_min, value=ocvcol_min
-                )
-                summary.insert(
-                    0, column=self.headers_summary.ocv_first_max, value=ocvcol_max
-                )
-
-            if do_ocv_2:
-                only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
-                ocv_2_indexes = []
-                ocv_2_v_min = []
-                ocv_2_v_max = []
-                ocvcol_min = only_zeros.copy()
-                ocvcol_max = only_zeros.copy()
-
-                for j in ocv_2:
-                    cycle = j[self.headers_normal.cycle_index_txt].values[0]
-                    index = summary[
-                        (summary[self.headers_normal.cycle_index_txt] == cycle)
-                    ].index
-                    v_min = j[self.headers_normal.voltage_txt].min()
-                    v_max = j[self.headers_normal.voltage_txt].max()
-                    dv = v_max - v_min
-                    ocvcol_min.iloc[index] = v_min
-                    ocvcol_max.iloc[index] = v_max
-                summary.insert(
-                    0, column=self.headers_summary.ocv_second_min, value=ocvcol_min
-                )
-                summary.insert(
-                    0, column=self.headers_summary.ocv_second_max, value=ocvcol_max
-                )
-
-        # TODO @jepe: refactor this to method:
-        if find_end_voltage and not self.load_only_summary:
-            # needs to be fixed so that end-voltage also can be extracted
-            # from the summary
-            ev_t0 = time.time()
-            logging.debug("finding end-voltage")
-            logging.debug(f"dt: {time.time() - ev_t0}")
-            only_zeros_discharge = (
-                summary[self.headers_normal.discharge_capacity_txt] * 0.0
-            )
-            only_zeros_charge = summary[self.headers_normal.charge_capacity_txt] * 0.0
-            if not cell.discharge_steps:
-                logging.debug("need to collect discharge steps")
-                discharge_steps = self.get_step_numbers(
-                    steptype="discharge", allctypes=False, dataset_number=dataset_number
-                )
-                logging.debug(f"dt: {time.time() - ev_t0}")
-            else:
-                discharge_steps = cell.discharge_steps
-                logging.debug("  already have discharge_steps")
-            if not cell.charge_steps:
-                logging.debug("need to collect charge steps")
-                charge_steps = self.get_step_numbers(
-                    steptype="charge", allctypes=False, dataset_number=dataset_number
-                )
-                logging.debug(f"dt: {time.time() - ev_t0}")
-            else:
-                charge_steps = cell.charge_steps
-                logging.debug("  already have charge_steps")
-
-            endv_indexes = []
-            endv_values_dc = []
-            endv_values_c = []
-            logging.debug("starting iterating through the index")
-            for i in summary.index:
-                cycle = summary.iloc[i][self.headers_normal.cycle_index_txt]
-                step = discharge_steps[cycle]
-
-                # finding end voltage for discharge
-                if step[-1]:  # selecting last
-                    end_voltage_dc = raw[
-                        (raw[self.headers_normal.cycle_index_txt] == cycle)
-                        & (cell.raw[self.headers_normal.step_index_txt] == step[-1])
-                    ][self.headers_normal.voltage_txt]
-                    # This will not work if there are more than one item in step
-                    end_voltage_dc = end_voltage_dc.values[-1]  # selecting
-                else:
-                    end_voltage_dc = 0  # could also use numpy.nan
-
-                # finding end voltage for charge
-                step2 = charge_steps[cycle]
-                if step2[-1]:
-                    end_voltage_c = raw[
-                        (raw[self.headers_normal.cycle_index_txt] == cycle)
-                        & (cell.raw[self.headers_normal.step_index_txt] == step2[-1])
-                    ][self.headers_normal.voltage_txt]
-                    end_voltage_c = end_voltage_c.values[-1]
-                else:
-                    end_voltage_c = 0
-                endv_indexes.append(i)
-                endv_values_dc.append(end_voltage_dc)
-                endv_values_c.append(end_voltage_c)
-            logging.debug("finished iterating")
-            logging.debug(f"find end V took: {time.time() - ev_t0} s")
-            ir_frame_dc = only_zeros_discharge + endv_values_dc
-            ir_frame_c = only_zeros_charge + endv_values_c
-            summary.insert(
-                0, column=self.headers_summary.end_voltage_discharge, value=ir_frame_dc
-            )
-            summary.insert(
-                0, column=self.headers_summary.end_voltage_charge, value=ir_frame_c
-            )
-
-        # TODO @jepe: refactor this to method:
-        if (
-            find_ir
-            and (not self.load_only_summary)
-            and (self.headers_normal.internal_resistance_txt in cell.raw.columns)
-        ):
-            # should check:  test.charge_steps = None,
-            # test.discharge_steps = None
-            # THIS DOES NOT WORK PROPERLY!!!!
-            # Found a file where it writes IR for cycle n on cycle n+1
-            # This only picks out the data on the last IR step before
-            logging.debug("finding ir")
-            only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
-            if not cell.discharge_steps:
-                discharge_steps = self.get_step_numbers(
-                    steptype="discharge", allctypes=False, dataset_number=dataset_number
-                )
-            else:
-                discharge_steps = cell.discharge_steps
-                logging.debug("  already have discharge_steps")
-            if not cell.charge_steps:
-                charge_steps = self.get_step_numbers(
-                    steptype="charge", allctypes=False, dataset_number=dataset_number
-                )
-            else:
-                charge_steps = cell.charge_steps
-                logging.debug("  already have charge_steps")
-
-            ir_indexes = []
-            ir_values = []
-            ir_values2 = []
-            for i in summary.index:
-                # selecting the appropriate cycle
-                cycle = summary.iloc[i][self.headers_normal.cycle_index_txt]
-                step = discharge_steps[cycle]
-                if step[0]:
-                    ir = raw.loc[
-                        (raw[self.headers_normal.cycle_index_txt] == cycle)
-                        & (cell.raw[self.headers_normal.step_index_txt] == step[0]),
-                        self.headers_normal.internal_resistance_txt,
-                    ]
-                    # This will not work if there are more than one item in step
-                    ir = ir.values[0]
-                else:
-                    ir = 0
-                step2 = charge_steps[cycle]
-                if step2[0]:
-
-                    ir2 = raw[
-                        (raw[self.headers_normal.cycle_index_txt] == cycle)
-                        & (cell.raw[self.headers_normal.step_index_txt] == step2[0])
-                    ][self.headers_normal.internal_resistance_txt].values[0]
-                else:
-                    ir2 = 0
-                ir_indexes.append(i)
-                ir_values.append(ir)
-                ir_values2.append(ir2)
-
-            ir_frame = only_zeros + ir_values
-            ir_frame2 = only_zeros + ir_values2
-            summary.insert(0, column=self.headers_summary.ir_discharge, value=ir_frame)
-            summary.insert(0, column=self.headers_summary.ir_charge, value=ir_frame2)
-
-        if sort_my_columns:
-            logging.debug("sorting columns")
-            new_first_col_list = [
-                self.headers_normal.datetime_txt,
-                self.headers_normal.test_time_txt,
-                self.headers_normal.data_point_txt,
-                self.headers_normal.cycle_index_txt,
-            ]
-            summary = self.set_col_first(summary, new_first_col_list)
-
-        if cycle_index_as_index:
-            index_col = self.headers_summary.cycle_index
-            try:
-                summary.set_index(index_col, inplace=True)
-            except KeyError:
-                logging.debug("Setting cycle_index as index failed")
-
-        cell.summary = summary
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
-
-    def _generate_main_summary_columns(self, summary, specific_converter):
         if self.cycle_mode == "anode":
             logging.info(
                 "Assuming cycling in anode half-cell (discharge before charge) mode"
@@ -5516,22 +5190,79 @@ class CellpyData:
             logging.info("Assuming cycling in full-cell / cathode mode")
             _first_step_txt = self.headers_summary.charge_capacity
             _second_step_txt = self.headers_summary.discharge_capacity
+
+        # ---------------- absolute -------------------------------
+
+        cell = self._generate_absolute_summary_columns(
+            cell, _first_step_txt, _second_step_txt
+        )
+        cell = self._equivalent_cycles_to_summary(
+            cell, _first_step_txt, _second_step_txt, nom_cap, normalization_cycles
+        )
+
+        # getting the C-rates, using values from step-table (so it will not be changed
+        # even though you provide make_summary with a new nom_cap unfortunately):
+        cell = self._c_rates_to_summary(cell)
+
+        # ----------------- specifics ----------------------------------------
+        specific_columns = self.headers_summary.specific_columns
+        for mode in specifics:
+            cell = self._generate_specific_summary_columns(cell, mode, specific_columns)
+
+        if add_daniel_columns:
+            warnings.warn("Adding daniel columns is deprecated.", DeprecationWarning, stacklevel=2)
+
+        # TODO @jepe: refactor this to method:
+        if find_end_voltage and not self.load_only_summary:
+            cell = self._end_voltage_to_summary(cell)
+
+        if (
+            find_ir
+            and (not self.load_only_summary)
+            and (self.headers_normal.internal_resistance_txt in cell.raw.columns)
+        ):
+            cell = self._ir_to_summary(cell)
+
+        if sort_my_columns:
+            logging.debug("sorting columns")
+            new_first_col_list = [
+                self.headers_normal.datetime_txt,
+                self.headers_normal.test_time_txt,
+                self.headers_normal.data_point_txt,
+                self.headers_normal.cycle_index_txt,
+            ]
+            cell.summary = self.set_col_first(cell.summary, new_first_col_list)
+
+        if cycle_index_as_index:
+            index_col = self.headers_summary.cycle_index
+            try:
+                cell.summary.set_index(index_col, inplace=True)
+            except KeyError:
+                logging.debug("Setting cycle_index as index failed")
+
+        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+
+    def _generate_absolute_summary_columns(
+        self, cell, _first_step_txt, _second_step_txt
+    ) -> Cell:
+        summary = cell.summary
+        summary[self.headers_summary.coulombic_efficiency] = (
+            100 * summary[_second_step_txt] / summary[_first_step_txt]
+        )
+        summary[self.headers_summary.cumulated_coulombic_efficiency] = summary[
+            self.headers_summary.coulombic_efficiency
+        ].cumsum()
+
         capacity_columns = {
-            self.headers_summary.charge_capacity: specific_converter
-            * summary[self.headers_normal.charge_capacity_txt],
-            self.headers_summary.discharge_capacity: specific_converter
-            * summary[self.headers_normal.discharge_capacity_txt],
+            self.headers_summary.charge_capacity: summary[
+                self.headers_normal.charge_capacity_txt
+            ],
+            self.headers_summary.discharge_capacity: summary[
+                self.headers_normal.discharge_capacity_txt
+            ],
         }
         summary = summary.assign(**capacity_columns)
-        coulombic_efficiency_columns = {
-            self.headers_summary.coulombic_efficiency: 100
-            * summary[_second_step_txt]
-            / summary[_first_step_txt],
-            self.headers_summary.coulombic_difference: summary[_first_step_txt]
-            - summary[_second_step_txt],
-        }
-        summary = summary.assign(**coulombic_efficiency_columns)
-        # TODO @jepe: check if using lambda expression speeds up things:
+
         calculated_from_capacity_columns = {
             self.headers_summary.cumulated_charge_capacity: summary[
                 self.headers_summary.charge_capacity
@@ -5547,16 +5278,19 @@ class CellpyData:
                 summary[self.headers_summary.charge_capacity].shift(1)
                 - summary[self.headers_summary.charge_capacity]
             ),
+            self.headers_summary.coulombic_difference: (
+                summary[_first_step_txt] - summary[_second_step_txt]
+            ),
         }
+
+        summary = summary.assign(**calculated_from_capacity_columns)
+
         calculated_from_coulombic_efficiency_columns = {
-            self.headers_summary.cumulated_coulombic_efficiency: summary[
-                self.headers_summary.coulombic_efficiency
-            ].cumsum(),
             self.headers_summary.cumulated_coulombic_difference: summary[
                 self.headers_summary.coulombic_difference
             ].cumsum(),
         }
-        summary = summary.assign(**calculated_from_capacity_columns)
+
         summary = summary.assign(**calculated_from_coulombic_efficiency_columns)
         calculated_from_capacity_loss_columns = {
             self.headers_summary.cumulated_discharge_capacity_loss: summary[
@@ -5567,11 +5301,13 @@ class CellpyData:
             ].cumsum(),
         }
         summary = summary.assign(**calculated_from_capacity_loss_columns)
+
         individual_edge_movement = summary[_first_step_txt] - summary[_second_step_txt]
         shifted_charge_capacity_column = {
             self.headers_summary.shifted_charge_capacity: individual_edge_movement.cumsum(),
         }
         summary = summary.assign(**shifted_charge_capacity_column)
+
         shifted_discharge_capacity_column = {
             self.headers_summary.shifted_discharge_capacity: summary[
                 self.headers_summary.shifted_charge_capacity
@@ -5596,8 +5332,318 @@ class CellpyData:
         ric_disconnect_column = {
             self.headers_summary.cumulated_ric_disconnect: ric_disconnect.cumsum()
         }
+        cell.summary = summary.assign(**ric_disconnect_column)
+
+        return cell
+
+    def _generate_specific_summary_columns(self, cell, mode, specific_columns) -> Cell:
+        specific_converter = self.get_converter_to_specific(dataset=cell, mode=mode)
+        summary = cell.summary
+        for col in specific_columns:
+            logging.debug(f"generating specific column {col}_{mode}")
+            summary[f"{col}_{mode}"] = specific_converter * summary[col]
+        cell.summary = summary
+        return cell
+
+    def _generate_main_summary_columns(
+        self, cell, mode, _first_step_txt, _second_step_txt
+    ) -> Cell:
+        logging.debug(cell.summary.columns)
+
+        specific_converter = self.get_converter_to_specific(dataset=cell, mode=mode)
+        _first_step_txt += f"_{mode}"
+        _second_step_txt += f"_{mode}"
+
+        summary = cell.summary
+        capacity_columns = {
+            self.headers_summary.charge_capacity
+            + f"_{mode}": specific_converter
+            * summary[self.headers_normal.charge_capacity_txt],
+            self.headers_summary.discharge_capacity
+            + f"_{mode}": specific_converter
+            * summary[self.headers_normal.discharge_capacity_txt],
+        }
+        summary = summary.assign(**capacity_columns)
+
+        calculated_from_capacity_columns = {
+            self.headers_summary.cumulated_charge_capacity
+            + f"_{mode}": summary[
+                self.headers_summary.charge_capacity + f"_{mode}"
+            ].cumsum(),
+            self.headers_summary.cumulated_discharge_capacity
+            + f"_{mode}": summary[
+                self.headers_summary.discharge_capacity + f"_{mode}"
+            ].cumsum(),
+            self.headers_summary.discharge_capacity_loss
+            + f"_{mode}": (
+                summary[self.headers_summary.discharge_capacity + f"_{mode}"].shift(1)
+                - summary[self.headers_summary.discharge_capacity + f"_{mode}"]
+            ),
+            self.headers_summary.charge_capacity_loss
+            + f"_{mode}": (
+                summary[self.headers_summary.charge_capacity + f"_{mode}"].shift(1)
+                - summary[self.headers_summary.charge_capacity + f"_{mode}"]
+            ),
+            self.headers_summary.coulombic_difference
+            + f"_{mode}": (summary[_first_step_txt] - summary[_second_step_txt]),
+        }
+        calculated_from_coulombic_efficiency_columns = {
+            self.headers_summary.cumulated_coulombic_difference
+            + f"_{mode}": summary[
+                self.headers_summary.coulombic_difference + f"_{mode}"
+            ].cumsum(),
+        }
+        summary = summary.assign(**calculated_from_capacity_columns)
+        summary = summary.assign(**calculated_from_coulombic_efficiency_columns)
+        calculated_from_capacity_loss_columns = {
+            self.headers_summary.cumulated_discharge_capacity_loss
+            + f"_{mode}": summary[
+                self.headers_summary.discharge_capacity_loss + f"_{mode}"
+            ].cumsum(),
+            self.headers_summary.cumulated_charge_capacity_loss
+            + f"_{mode}": summary[
+                self.headers_summary.charge_capacity_loss + f"_{mode}"
+            ].cumsum(),
+        }
+        summary = summary.assign(**calculated_from_capacity_loss_columns)
+
+        individual_edge_movement = summary[_first_step_txt] - summary[_second_step_txt]
+        shifted_charge_capacity_column = {
+            self.headers_summary.shifted_charge_capacity
+            + f"_{mode}": individual_edge_movement.cumsum(),
+        }
+        summary = summary.assign(**shifted_charge_capacity_column)
+
+        shifted_discharge_capacity_column = {
+            self.headers_summary.shifted_discharge_capacity
+            + f"_{mode}": summary[
+                self.headers_summary.shifted_charge_capacity + f"_{mode}"
+            ]
+            + summary[_first_step_txt],
+        }
+        summary = summary.assign(**shifted_discharge_capacity_column)
+        ric = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[
+            _second_step_txt
+        ].shift(1)
+        ric_column = {self.headers_summary.cumulated_ric: ric.cumsum()}
+        summary = summary.assign(**ric_column)
+        summary[self.headers_summary.cumulated_ric] = ric.cumsum()
+        ric_sei = (
+            summary[_first_step_txt] - summary[_second_step_txt].shift(1)
+        ) / summary[_second_step_txt].shift(1)
+        ric_sei_column = {self.headers_summary.cumulated_ric_sei: ric_sei.cumsum()}
+        summary = summary.assign(**ric_sei_column)
+        ric_disconnect = (
+            summary[_second_step_txt].shift(1) - summary[_second_step_txt]
+        ) / summary[_second_step_txt].shift(1)
+        ric_disconnect_column = {
+            self.headers_summary.cumulated_ric_disconnect: ric_disconnect.cumsum()
+        }
         summary = summary.assign(**ric_disconnect_column)
-        return _first_step_txt, _second_step_txt, summary
+        cell.summary = summary
+        return cell
+
+    def _c_rates_to_summary(self, cell):
+        logging.debug("Extracting C-rates")
+        summary = cell.summary
+        steps = self.cell.steps
+
+        # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
+        charge_steps = steps.loc[
+            steps.type == "charge", [self.headers_step_table.cycle, "rate_avr"]
+        ].rename(columns={"rate_avr": self.headers_summary.charge_c_rate})
+        summary = summary.merge(
+            charge_steps.drop_duplicates(
+                subset=[self.headers_step_table.cycle], keep="first"
+            ),
+            left_on=self.headers_summary.cycle_index,
+            right_on=self.headers_step_table.cycle,
+            how="left",
+        ).drop(columns=self.headers_step_table.cycle)
+
+        # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
+        discharge_steps = steps.loc[
+            steps.type == "discharge", [self.headers_step_table.cycle, "rate_avr"]
+        ].rename(columns={"rate_avr": self.headers_summary.discharge_c_rate})
+        summary = summary.merge(
+            discharge_steps.drop_duplicates(
+                subset=[self.headers_step_table.cycle], keep="first"
+            ),
+            left_on=self.headers_summary.cycle_index,
+            right_on=self.headers_step_table.cycle,
+            how="left",
+        ).drop(columns=self.headers_step_table.cycle)
+        cell.summary = summary
+        return cell
+
+    def _equivalent_cycles_to_summary(
+        self, cell, _first_step_txt, _second_step_txt, nom_cap, normalization_cycles
+    ):
+        # The method currently uses the charge capacity for calculating equivalent cycles. This
+        # can be easily extended to also allow for choosing the discharge capacity later on if
+        # it turns out that it needed.
+
+        summary = cell.summary
+
+        if normalization_cycles is not None:
+            logging.info(
+                f"Using these cycles for finding the nominal capacity: {normalization_cycles}"
+            )
+            if not isinstance(normalization_cycles, (list, tuple)):
+                normalization_cycles = [normalization_cycles]
+
+            cap_ref = summary.loc[
+                summary[self.headers_normal.cycle_index_txt].isin(normalization_cycles),
+                _first_step_txt,
+            ]
+            if not cap_ref.empty:
+                nom_cap = cap_ref.mean()
+            else:
+                logging.info(f"Empty reference cycle(s)")
+
+        normalized_cycle_index_column = {
+            self.headers_summary.normalized_cycle_index: summary[
+                self.headers_summary.cumulated_charge_capacity
+            ]
+            / nom_cap
+        }
+        summary = summary.assign(**normalized_cycle_index_column)
+        cell.summary = summary
+        return cell
+
+    def _ir_to_summary(self, cell):
+        # should check:  test.charge_steps = None,
+        # test.discharge_steps = None
+        # THIS DOES NOT WORK PROPERLY!!!!
+        # Found a file where it writes IR for cycle n on cycle n+1
+        # This only picks out the data on the last IR step before
+        summary = cell.summary
+        raw = cell.raw
+
+        logging.debug("finding ir")
+        only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
+        if not cell.discharge_steps:
+            discharge_steps = self.get_step_numbers(
+                steptype="discharge", allctypes=False,
+            )
+        else:
+            discharge_steps = cell.discharge_steps
+            logging.debug("  already have discharge_steps")
+        if not cell.charge_steps:
+            charge_steps = self.get_step_numbers(
+                steptype="charge", allctypes=False,
+            )
+        else:
+            charge_steps = cell.charge_steps
+            logging.debug("  already have charge_steps")
+        ir_indexes = []
+        ir_values = []
+        ir_values2 = []
+        for i in summary.index:
+            # selecting the appropriate cycle
+            cycle = summary.iloc[i][self.headers_normal.cycle_index_txt]
+            step = discharge_steps[cycle]
+            if step[0]:
+                ir = raw.loc[
+                    (raw[self.headers_normal.cycle_index_txt] == cycle)
+                    & (cell.raw[self.headers_normal.step_index_txt] == step[0]),
+                    self.headers_normal.internal_resistance_txt,
+                ]
+                # This will not work if there are more than one item in step
+                ir = ir.values[0]
+            else:
+                ir = 0
+            step2 = charge_steps[cycle]
+            if step2[0]:
+
+                ir2 = raw[
+                    (raw[self.headers_normal.cycle_index_txt] == cycle)
+                    & (cell.raw[self.headers_normal.step_index_txt] == step2[0])
+                ][self.headers_normal.internal_resistance_txt].values[0]
+            else:
+                ir2 = 0
+            ir_indexes.append(i)
+            ir_values.append(ir)
+            ir_values2.append(ir2)
+        ir_frame = only_zeros + ir_values
+        ir_frame2 = only_zeros + ir_values2
+        summary.insert(0, column=self.headers_summary.ir_discharge, value=ir_frame)
+        summary.insert(0, column=self.headers_summary.ir_charge, value=ir_frame2)
+        cell.summary = summary
+        return cell
+
+    def _end_voltage_to_summary(self, cell):
+        # needs to be fixed so that end-voltage also can be extracted
+        # from the summary
+        ev_t0 = time.time()
+        raw = cell.raw
+        summary = cell.summary
+
+        logging.debug("finding end-voltage")
+        logging.debug(f"dt: {time.time() - ev_t0}")
+        only_zeros_discharge = summary[self.headers_normal.discharge_capacity_txt] * 0.0
+        only_zeros_charge = summary[self.headers_normal.charge_capacity_txt] * 0.0
+        if not cell.discharge_steps:
+            logging.debug("need to collect discharge steps")
+            discharge_steps = self.get_step_numbers(
+                steptype="discharge", allctypes=False
+            )
+            logging.debug(f"dt: {time.time() - ev_t0}")
+        else:
+            discharge_steps = cell.discharge_steps
+            logging.debug("  already have discharge_steps")
+        if not cell.charge_steps:
+            logging.debug("need to collect charge steps")
+            charge_steps = self.get_step_numbers(
+                steptype="charge", allctypes=False
+            )
+            logging.debug(f"dt: {time.time() - ev_t0}")
+        else:
+            charge_steps = cell.charge_steps
+            logging.debug("  already have charge_steps")
+        endv_indexes = []
+        endv_values_dc = []
+        endv_values_c = []
+        logging.debug("starting iterating through the index")
+        for i in summary.index:
+            cycle = summary.iloc[i][self.headers_normal.cycle_index_txt]
+            step = discharge_steps[cycle]
+
+            # finding end voltage for discharge
+            if step[-1]:  # selecting last
+                end_voltage_dc = raw[
+                    (raw[self.headers_normal.cycle_index_txt] == cycle)
+                    & (cell.raw[self.headers_normal.step_index_txt] == step[-1])
+                ][self.headers_normal.voltage_txt]
+                # This will not work if there are more than one item in step
+                end_voltage_dc = end_voltage_dc.values[-1]  # selecting
+            else:
+                end_voltage_dc = 0  # could also use numpy.nan
+
+            # finding end voltage for charge
+            step2 = charge_steps[cycle]
+            if step2[-1]:
+                end_voltage_c = raw[
+                    (raw[self.headers_normal.cycle_index_txt] == cycle)
+                    & (cell.raw[self.headers_normal.step_index_txt] == step2[-1])
+                ][self.headers_normal.voltage_txt]
+                end_voltage_c = end_voltage_c.values[-1]
+            else:
+                end_voltage_c = 0
+            endv_indexes.append(i)
+            endv_values_dc.append(end_voltage_dc)
+            endv_values_c.append(end_voltage_c)
+
+        ir_frame_dc = only_zeros_discharge + endv_values_dc
+        ir_frame_c = only_zeros_charge + endv_values_c
+        cell.summary.insert(
+            0, column=self.headers_summary.end_voltage_discharge, value=ir_frame_dc
+        )
+        cell.summary.insert(
+            0, column=self.headers_summary.end_voltage_charge, value=ir_frame_c
+        )
+
+        return cell
 
     def inspect_nominal_capacity(self, cycles=None):
         """Method for estimating the nominal capacity

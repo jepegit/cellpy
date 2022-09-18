@@ -234,7 +234,9 @@ class Cell:
         self.discharge_steps = None
         self.ir_steps = None
         self.ocv_steps = None
-        self.nom_cap = prms.DataSet.nom_cap  # (for finding c-rates) TODO: implement proper unit handling
+        self.nom_cap = (
+            prms.DataSet.nom_cap
+        )  # (for finding c-rates) TODO: implement proper unit handling
         self.mass_given = False
         self.material = prms.Materials.default_material
         self.merged = False
@@ -358,6 +360,28 @@ class Cell:
         except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
         return txt
+
+    def populate_defaults(self):
+        # modify this method upon need
+        logging.debug("checking and populating defaults for the cell")
+
+        if not self.active_electrode_area:
+            self.active_electrode_area = 1.0
+            logging.debug(
+                f"active_electrode_area not set -> setting to: {self.active_electrode_area}"
+            )
+
+        if not self.mass:
+            self.mass = 1.0
+            logging.debug(f"mass not set -> setting to: {self.mass}")
+
+        if not self.tot_mass:
+            self.tot_mass = self.mass
+            logging.debug(
+                f"total mass not set -> setting to same as mass: {self.tot_mass}"
+            )
+
+        return True
 
     @property
     def has_summary(self):

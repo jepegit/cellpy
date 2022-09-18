@@ -534,16 +534,22 @@ def test_make_summary(cellpy_data_instance, parameters):
 
 
 def test_make_summary_new_version(parameters):
-    # c_raw = cellpy.get(logging_mode="DEBUG")
-    # c_raw.from_raw(parameters.res_file_path)
-    # c_raw.set_mass(1.0)
-    # c_raw.make_summary()
-    # s1 = c_raw.cell.summary
-    # print(s1.columns)
-    # assert s1.iloc[:, 3].size == 18
+    c_raw = cellpy.get(logging_mode="DEBUG")
+    c_raw.from_raw(parameters.res_file_path)
+    c_raw.set_mass(1.0)
+    c_raw.make_summary()
 
+    s1 = c_raw.cell.summary
     c_h5 = cellpy.get(logging_mode="DEBUG")
     c_h5.load(parameters.cellpy_file_path_v6)
+    s2 = c_h5.cell.summary
+
+    print()
+    print(80* "=")
+    print("FROM RAW:")
+    print(s1.columns)
+    print("FROM H5:")
+    print(s2.columns)
 
 
 def test_make_summary_with_c_rate(cellpy_data_instance, parameters):

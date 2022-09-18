@@ -27,34 +27,26 @@ def test_get_converter_to_specific(dataset, test_input, expected):
 
 
 def test_get_converter_to_specific_absolute_with_mode(dataset):
-    c = dataset.get_converter_to_specific(
-        mode="absolute"
-    )
+    c = dataset.get_converter_to_specific(mode="absolute")
     assert c == pytest.approx(1000, 0.0001)
 
 
 def test_get_converter_to_specific_with_mode(dataset):
     area = 1.57  # cm2
     dataset.cell.active_electrode_area = area
-    c = dataset.get_converter_to_specific(
-        mode="areal"
-    )
-    assert c == pytest.approx(1000/area, 0.0001)
+    c = dataset.get_converter_to_specific(mode="areal")
+    assert c == pytest.approx(1000 / area, 0.0001)
 
 
 # This will only work when defaults are in place:
-# def test_get_converter_to_areal_specific(dataset):
-#     c = dataset.get_converter_to_specific(
-#         mode="areal"
-#     )
-#     assert c == pytest.approx(1000/dataset.cell.active_electrode_area, 0.0001)
+def test_get_converter_to_areal_specific(dataset):
+    c = dataset.get_converter_to_specific(mode="areal")
+    assert c == pytest.approx(1000 / dataset.cell.active_electrode_area, 0.0001)
 
 
 def test_get_converter_to_specific_with_wrong_mode(dataset):
     with pytest.raises(ValueError):
-        c = dataset.get_converter_to_specific(
-            value=1.0, mode="plasma"
-        )
+        c = dataset.get_converter_to_specific(value=1.0, mode="plasma")
 
 
 def test_that_raw_units_are_not_available_without_a_cell(cellpy_data_instance):
@@ -73,10 +65,11 @@ def test_set_units(cellpy_data_instance):
 def test_set_cellpy_unit_and_use(dataset):
     cellpy_unit_charge = dataset.cellpy_units["charge"]
     s_headers = get_headers_summary()
-    initial_value = dataset.cell.summary[s_headers.discharge_capacity].values[10]
+    h = f"{s_headers.discharge_capacity}_gravimetric"
+    initial_value = dataset.cell.summary[h].values[10]
 
     dataset.cellpy_units["charge"] = 1000 * cellpy_unit_charge
     dataset.make_summary()
-    new_value = dataset.cell.summary[s_headers.discharge_capacity].values[10]
+    new_value = dataset.cell.summary[h].values[10]
 
     assert new_value == pytest.approx(initial_value / 1000, 0.0001)
