@@ -234,9 +234,7 @@ class Cell:
         self.discharge_steps = None
         self.ir_steps = None
         self.ocv_steps = None
-        self.nom_cap = (
-            prms.DataSet.nom_cap
-        )  # (for finding c-rates) TODO: implement proper unit handling
+        self.nom_cap = prms.Materials.default_nom_cap  # nominal capacity
         self.mass_given = False
         self.material = prms.Materials.default_material
         self.merged = False
@@ -252,22 +250,22 @@ class Cell:
         self.name = None
 
         # new meta data
-        self.voltage_lim_low = None
-        self.voltage_lim_high = None
+        self.voltage_lim_low = prms.CellInfo.voltage_lim_low
+        self.voltage_lim_high = prms.CellInfo.voltage_lim_high
         self.cycle_mode = prms.Reader.cycle_mode
-        self.active_electrode_area = None  # [cm2]
-        self.active_electrode_thickness = None  # [micron]
-        self.electrolyte_type = None  #
-        self.electrolyte_volume = None  # [micro-liter]
-        self.active_electrode_type = None
-        self.counter_electrode_type = None
-        self.reference_electrode_type = None
-        self.experiment_type = None
-        self.cell_type = None
-        self.separator_type = None
-        self.active_electrode_current_collector = None
-        self.reference_electrode_current_collector = None
-        self.comment = None
+        self.active_electrode_area = prms.CellInfo.active_electrode_area  # [cm2]
+        self.active_electrode_thickness = prms.CellInfo.active_electrode_thickness  # [micron]
+        self.electrolyte_type = prms.CellInfo.electrolyte_type  #
+        self.electrolyte_volume = prms.CellInfo.electrolyte_volume  # [micro-liter]
+        self.active_electrode_type = prms.CellInfo.active_electrode_type
+        self.counter_electrode_type = prms.CellInfo.counter_electrode_type
+        self.reference_electrode_type = prms.CellInfo.reference_electrode_type
+        self.experiment_type = prms.CellInfo.experiment_type
+        self.cell_type = prms.CellInfo.cell_type
+        self.separator_type = prms.CellInfo.separator_type
+        self.active_electrode_current_collector = prms.CellInfo.active_electrode_current_collector
+        self.reference_electrode_current_collector = prms.CellInfo.reference_electrode_current_collector
+        self.comment = prms.CellInfo.comment
 
         # custom meta-data
         for k in kwargs:

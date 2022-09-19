@@ -144,8 +144,9 @@ def _pack_prms():
         "FileNames": _convert_to_dict(prms.FileNames),
         "Db": _convert_to_dict(prms.Db),
         "DbCols": _convert_to_dict(prms.DbCols),
-        "DataSet": _convert_to_dict(prms.DataSet),
+        "CellInfo": _convert_to_dict(prms.CellInfo),
         "Reader": _convert_to_dict(prms.Reader),
+        "Materials": _convert_to_dict(prms.Materials),
         "Instruments": _convert_instruments_to_dict(prms.Instruments),
         "Batch": _convert_to_dict(prms.Batch),
     }

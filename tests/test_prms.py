@@ -123,8 +123,22 @@ DbCols:
   freeze:
   - freeze
   - bol
-DataSet:
-  nom_cap: 3579
+CellInfo:
+  voltage_lim_low: 0.0
+  voltage_lim_high: 1.0
+  active_electrode_area: 1.0
+  active_electrode_thickness: 1.0
+  electrolyte_volume: 1.0
+  electrolyte_type: standard
+  active_electrode_type: standard
+  counter_electrode_type: standard
+  reference_electrode_type: standard
+  experiment_type: cycling
+  cell_type: standard
+  separator_type: standard
+  active_electrode_current_collector: standard
+  reference_electrode_current_collector: standard
+  comment: testing
 Reader:
   diagnostics: false
   filestatuschecker: size
@@ -159,7 +173,6 @@ Instruments:
     SQL_UID:
     SQL_PWD:
     SQL_Driver: ODBC Driver 17 for SQL Server
-
 Batch:
   template: standard
   fig_extension: png

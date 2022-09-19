@@ -3,7 +3,7 @@ import logging
 import warnings
 from collections import UserDict
 from dataclasses import dataclass, fields
-
+from typing import List
 
 CELLPY_FILE_VERSION = 7
 MINIMUM_CELLPY_FILE_VERSION = 4
@@ -102,12 +102,12 @@ class BaseHeaders(BaseSettings):
          >>> header["key_postfix"]  # returns "value_postfix"
     """
 
-    postfixes = ["gravimetric", "areal"]
+    postfixes = []
 
     def __getitem__(self, key):
         postfix = ""
         if key not in self._field_names:
-            # check postfix
+            # check postfix:
             subs = key.split("_")
             _key = "_".join(subs[:-1])
             _postfix = subs[-1]
@@ -207,6 +207,7 @@ class HeadersSummary(BaseHeaders):
     """In addition to the headers defined here, the summary might also contain
     specific headers (ending in _gravimetric or _areal).
     """
+    postfixes = ["gravimetric", "areal"]
 
     cycle_index: str = "cycle_index"
     data_point: str = "data_point"
@@ -262,7 +263,7 @@ class HeadersSummary(BaseHeaders):
     pre_aux: str = "aux_"
 
     @property
-    def areal_charge_capacity(self):
+    def areal_charge_capacity(self) -> str:
         warnings.warn(
             "using old-type look-up (areal_charge_capacity) -> will be deprecated soon",
             DeprecationWarning,
@@ -271,7 +272,7 @@ class HeadersSummary(BaseHeaders):
         return f"{self.charge_capacity}_areal"
 
     @property
-    def areal_discharge_capacity(self):
+    def areal_discharge_capacity(self) -> str:
         warnings.warn(
             "using old-type look-up (areal_discharge_capacity) -> will be deprecated soon",
             DeprecationWarning,
@@ -280,7 +281,7 @@ class HeadersSummary(BaseHeaders):
         return f"{self.discharge_capacity}_areal"
 
     @property
-    def specific_columns(self):
+    def specific_columns(self) -> List[str]:
         return [
             self.discharge_capacity,
             self.charge_capacity,

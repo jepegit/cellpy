@@ -5025,7 +5025,9 @@ class CellpyData:
             )
         return self
 
-    def _from_specific_to_absolute(self, value, specific):
+    @staticmethod
+    def _from_specific_to_absolute(value, specific):
+        # TODO: check if this is sufficient
         absolute_value = value * specific
         return absolute_value
 
@@ -5175,10 +5177,8 @@ class CellpyData:
         cell.summary = summary
         ##############################################
         # Implemented units, conversion factor calc, renaming headers
-        # TODO: make sure we get area, mass, etc
         # TODO: save cellpy-file with new summary (new headers)
         # TODO: implement features needed for using "modified raw"
-        # TODO: maybe create all cols with absolute first and check saving and loading?
         if self.cycle_mode == "anode":
             logging.info(
                 "Assuming cycling in anode half-cell (discharge before charge) mode"
@@ -5801,9 +5801,8 @@ def get(
     else:
         if mass:
             prms.Materials.default_mass = mass
-            prms.Materials.default_mass = mass
         if nominal_capacity:
-            prms.DataSet.nom_cap = nominal_capacity
+            prms.Materials.default_nom_cap = nominal_capacity
 
     logging.info("Created CellpyData object")
     return cellpy_instance

@@ -57,7 +57,6 @@ class PathsClass(CellPyConfig):
     db_filename: str = "cellpy_db.xlsx"
 
 
-# This can stay global:
 @dataclass
 class BatchClass(CellPyConfig):
     template: str = "standard"
@@ -76,7 +75,6 @@ class BatchClass(CellPyConfig):
     )
 
 
-# This can stay global:
 @dataclass
 class FileNamesClass(CellPyConfig):
     file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
@@ -88,7 +86,6 @@ class FileNamesClass(CellPyConfig):
     cellpy_file_extension: str = "h5"
 
 
-# This can stay global:
 @dataclass
 class ReaderClass(CellPyConfig):
     diagnostics: bool = False
@@ -112,7 +109,6 @@ class ReaderClass(CellPyConfig):
     auto_dirs: bool = True  # search in prm-file for res and hdf5 dirs in loadcell
 
 
-# This can stay global:
 @dataclass
 class DbClass(CellPyConfig):
     db_type: str = "simple_excel_reader"
@@ -124,7 +120,6 @@ class DbClass(CellPyConfig):
     db_search_end_row: int = -1
 
 
-# This can stay global:
 @dataclass
 class DbColsClass(CellPyConfig):
     id: Tuple[str, str] = ("id", "int")
@@ -159,15 +154,28 @@ class DbColsClass(CellPyConfig):
     argument: Tuple[str, str] = ("argument", "str")  # e.g. 'max_cycle:100;recalc:false'
 
 
-# TODO: This should not stay global:
 @dataclass
-class DataSetClass(CellPyDataConfig):
-    """Values used when processing the data (will be deprecated)"""
+class CellInfoClass(CellPyDataConfig):
+    """Values used for setting the parameters related to the cell and the cycling"""
 
-    nom_cap: float = 3579
+    voltage_lim_low: float = 0.0
+    voltage_lim_high: float = 1.0
+    active_electrode_area: float = 1.0
+    active_electrode_thickness: float = 1.0
+    electrolyte_volume: float = 1.0
+
+    electrolyte_type: str = "standard"
+    active_electrode_type: str = "standard"
+    counter_electrode_type: str = "standard"
+    reference_electrode_type: str = "standard"
+    experiment_type: str = "cycling"
+    cell_type: str = "standard"
+    separator_type: str = "standard"
+    active_electrode_current_collector: str = "standard"
+    reference_electrode_current_collector: str = "standard"
+    comment: str = ""
 
 
-# TODO: This should not stay global:
 @dataclass
 class MaterialsClass(CellPyDataConfig):
     """Default material-specific values used in processing the data."""
@@ -175,7 +183,7 @@ class MaterialsClass(CellPyDataConfig):
     cell_class: str = "Li-Ion"
     default_material: str = "silicon"
     default_mass: float = 1.0
-    default_nom_cap: float = 1.0  # not used yet - should replace the DataSet class
+    default_nom_cap: float = 1.0
 
 
 Paths = PathsClass()
@@ -183,7 +191,7 @@ FileNames = FileNamesClass()
 Reader = ReaderClass()
 Db = DbClass()
 DbCols = DbColsClass()
-DataSet = DataSetClass()
+CellInfo = CellInfoClass()
 Materials = MaterialsClass()
 Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 
