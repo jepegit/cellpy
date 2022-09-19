@@ -1,5 +1,6 @@
 """Internal settings and definitions and functions for getting them."""
 import logging
+import warnings
 from collections import UserDict
 from dataclasses import dataclass, fields
 
@@ -32,17 +33,13 @@ class DictLikeClass:
         setting new attributes (new keys) is not supported (raises KeyError
         if using the typical dict setting method) since it uses the
         dataclasses.fields method to find its members.
-
     """
 
     def __getitem__(self, key):
         if key not in self._field_names:
-            logging.debug(
-                f"*** used DictLikeClass.__getitem__({key}) NOT IN FIELD_NAMES"
-            )
+            logging.debug(f"{key} not in fields")
         try:
-            v = getattr(self, key)
-            return v
+            return getattr(self, key)
         except AttributeError:
             raise KeyError(f"missing key: {key}")
 
@@ -89,6 +86,7 @@ class BaseSettings(DictLikeClass):
     """
 
     def get(self, key):
+        """Get the value (postfixes not supported)."""
         if key not in self.keys():
             logging.critical(f"the column header '{key}' not found")
             return
@@ -98,7 +96,29 @@ class BaseSettings(DictLikeClass):
 
 @dataclass
 class BaseHeaders(BaseSettings):
-    mode = "gravimetric"
+    """Extending BaseSetting so that it's allowed to add postfixes.
+
+    Example:
+         >>> header["key_postfix"]  # returns "value_postfix"
+    """
+
+    postfixes = ["gravimetric", "areal"]
+
+    def __getitem__(self, key):
+        postfix = ""
+        if key not in self._field_names:
+            # check postfix
+            subs = key.split("_")
+            _key = "_".join(subs[:-1])
+            _postfix = subs[-1]
+            if _postfix in self.postfixes:
+                postfix = f"_{_postfix}"
+                key = _key
+        try:
+            v = getattr(self, key)
+            return f"{v}{postfix}"
+        except AttributeError:
+            raise KeyError(f"missing key: {key}")
 
 
 @dataclass
@@ -150,7 +170,7 @@ class CellpyLimits(BaseSettings):
 
 
 @dataclass
-class HeadersNormal(BaseSettings):
+class HeadersNormal(BaseHeaders):
     aci_phase_angle_txt: str = "aci_phase_angle"
     ref_aci_phase_angle_txt: str = "ref_aci_phase_angle"
     ac_impedance_txt: str = "ac_impedance"
@@ -187,6 +207,7 @@ class HeadersSummary(BaseHeaders):
     """In addition to the headers defined here, the summary might also contain
     specific headers (ending in _gravimetric or _areal).
     """
+
     cycle_index: str = "cycle_index"
     data_point: str = "data_point"
     test_time: str = "test_time"
@@ -239,6 +260,24 @@ class HeadersSummary(BaseHeaders):
     charge_c_rate: str = "charge_c_rate"
     discharge_c_rate: str = "discharge_c_rate"
     pre_aux: str = "aux_"
+
+    @property
+    def areal_charge_capacity(self):
+        warnings.warn(
+            "using old-type look-up (areal_charge_capacity) -> will be deprecated soon",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return f"{self.charge_capacity}_areal"
+
+    @property
+    def areal_discharge_capacity(self):
+        warnings.warn(
+            "using old-type look-up (areal_discharge_capacity) -> will be deprecated soon",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return f"{self.discharge_capacity}_areal"
 
     @property
     def specific_columns(self):

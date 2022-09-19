@@ -545,7 +545,7 @@ def test_make_summary_new_version(parameters):
     s2 = c_h5.cell.summary
 
     print()
-    print(80* "=")
+    print(80 * "=")
     print("FROM RAW:")
     print(s1.columns)
     print("FROM H5:")

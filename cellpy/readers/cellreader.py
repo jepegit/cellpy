@@ -5035,18 +5035,18 @@ class CellpyData:
         mass=None,
         update_it=False,
         select_columns=True,
-        find_ocv=False,
+        find_ocv=False,  # deprecated
         find_ir=False,
         find_end_voltage=False,
         ensure_step_table=True,
         # TODO: @jepe - include option for omitting steps
         sort_my_columns=True,
         use_cellpy_stat_file=False,
-        add_c_rate=True,
+        add_c_rate=True,  # deprecated
         normalization_cycles=None,
         nom_cap=None,
         nom_cap_specifics="gravimetric",
-        add_daniel_columns=False,
+        add_daniel_columns=False,  # deprecated
         # capacity_modifier = None,
         # test=None
     ):
@@ -5209,7 +5209,9 @@ class CellpyData:
             cell = self._generate_specific_summary_columns(cell, mode, specific_columns)
 
         if add_daniel_columns:
-            warnings.warn("Adding daniel columns is deprecated.", DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Adding daniel columns is deprecated.", DeprecationWarning, stacklevel=2
+            )
 
         # TODO @jepe: refactor this to method:
         if find_end_voltage and not self.load_only_summary:
@@ -5523,14 +5525,16 @@ class CellpyData:
         only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
         if not cell.discharge_steps:
             discharge_steps = self.get_step_numbers(
-                steptype="discharge", allctypes=False,
+                steptype="discharge",
+                allctypes=False,
             )
         else:
             discharge_steps = cell.discharge_steps
             logging.debug("  already have discharge_steps")
         if not cell.charge_steps:
             charge_steps = self.get_step_numbers(
-                steptype="charge", allctypes=False,
+                steptype="charge",
+                allctypes=False,
             )
         else:
             charge_steps = cell.charge_steps
@@ -5593,9 +5597,7 @@ class CellpyData:
             logging.debug("  already have discharge_steps")
         if not cell.charge_steps:
             logging.debug("need to collect charge steps")
-            charge_steps = self.get_step_numbers(
-                steptype="charge", allctypes=False
-            )
+            charge_steps = self.get_step_numbers(steptype="charge", allctypes=False)
             logging.debug(f"dt: {time.time() - ev_t0}")
         else:
             charge_steps = cell.charge_steps
