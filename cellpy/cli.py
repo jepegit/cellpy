@@ -66,6 +66,7 @@ def cli():
     pass
 
 
+# ----------------------- setup --------------------------------------
 @click.command()
 @click.option(
     "--interactive",
@@ -654,6 +655,7 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
         )
 
 
+# ----------------------- edit ---------------------------------------
 @click.command()
 @click.option(
     "--default-editor",
@@ -701,6 +703,7 @@ def edit(default_editor):
                 )
 
 
+# ----------------------- info ---------------------------------------
 @click.command()
 @click.option("--version", "-v", is_flag=True, help="Print version information.")
 @click.option(
@@ -738,6 +741,7 @@ def info(version, configloc, params, check):
         _configloc()
 
 
+# ----------------------- run ----------------------------------------
 @click.command()
 @click.option(
     "--journal",
@@ -803,7 +807,7 @@ def run(
     list_,
     name,
 ):
-    """Run a cellpy process.
+    """Run a cellpy process (batch-job, edit db, ...).
 
     You can use this to launch specific applications.
 
@@ -1075,6 +1079,7 @@ def _run_db(debug, silent):
         subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
 
 
+# ----------------------- pull ---------------------------------------
 @click.command()
 @click.option("--tests", "-t", is_flag=True, help="Download test-files from repo.")
 @click.option(
@@ -1254,6 +1259,7 @@ def _read_local_templates(local_templates_path=None):
     return templates
 
 
+# ----------------------- new ----------------------------------------
 @click.command()
 @click.option("--template", "-t", help="What template to use.")
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
@@ -1435,11 +1441,12 @@ def _serve(server):
     click.echo("Finished serving.")
 
 
+# ----------------------- serve ---------------------------------------
 @click.command()
 @click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
 @click.option("--directory", "-d", default=None, help="Start in custom directory DIR")
 def serve(lab, directory):
-    """Start a Jupyter server"""
+    """Start a Jupyter server."""
 
     from cellpy.parameters import prms
 
