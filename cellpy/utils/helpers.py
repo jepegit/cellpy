@@ -740,21 +740,21 @@ def concatenate_summaries(
     if normalize_capacity_on is not None:
         default_columns = ["normalized_charge_capacity"]
     else:
-        default_columns = ["charge_capacity"]
+        default_columns = ["charge_capacity_gravimetric"]
 
     import logging
 
     reserved_cell_label_names = ["FC"]
 
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
-    hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
+    hdr_cum_charge = hdr_summary["cumulated_charge_capacity_gravimetric"]
 
     cell_names_nest = []
     frames = []
     keys = []
 
     if columns is not None:
-        if any(s.startswith("areal_") for s in columns):
+        if any(s.endswith("_areal") for s in columns):
             add_areal = True
         if normalize_capacity_on is not None:
             _columns = []

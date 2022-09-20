@@ -5177,6 +5177,7 @@ class CellpyData:
         cell.summary = summary
         ##############################################
         # Implemented units, conversion factor calc, renaming headers
+        # TODO: fix batch helpers (concatenate etc)
         # TODO: save cellpy-file with new summary (new headers)
         # TODO: implement features needed for using "modified raw"
         if self.cycle_mode == "anode":
@@ -5346,103 +5347,6 @@ class CellpyData:
         cell.summary = summary
         return cell
 
-    def _generate_main_summary_columns(
-        self, cell, mode, _first_step_txt, _second_step_txt
-    ) -> Cell:
-        logging.debug(cell.summary.columns)
-
-        specific_converter = self.get_converter_to_specific(dataset=cell, mode=mode)
-        _first_step_txt += f"_{mode}"
-        _second_step_txt += f"_{mode}"
-
-        summary = cell.summary
-        capacity_columns = {
-            self.headers_summary.charge_capacity
-            + f"_{mode}": specific_converter
-            * summary[self.headers_normal.charge_capacity_txt],
-            self.headers_summary.discharge_capacity
-            + f"_{mode}": specific_converter
-            * summary[self.headers_normal.discharge_capacity_txt],
-        }
-        summary = summary.assign(**capacity_columns)
-
-        calculated_from_capacity_columns = {
-            self.headers_summary.cumulated_charge_capacity
-            + f"_{mode}": summary[
-                self.headers_summary.charge_capacity + f"_{mode}"
-            ].cumsum(),
-            self.headers_summary.cumulated_discharge_capacity
-            + f"_{mode}": summary[
-                self.headers_summary.discharge_capacity + f"_{mode}"
-            ].cumsum(),
-            self.headers_summary.discharge_capacity_loss
-            + f"_{mode}": (
-                summary[self.headers_summary.discharge_capacity + f"_{mode}"].shift(1)
-                - summary[self.headers_summary.discharge_capacity + f"_{mode}"]
-            ),
-            self.headers_summary.charge_capacity_loss
-            + f"_{mode}": (
-                summary[self.headers_summary.charge_capacity + f"_{mode}"].shift(1)
-                - summary[self.headers_summary.charge_capacity + f"_{mode}"]
-            ),
-            self.headers_summary.coulombic_difference
-            + f"_{mode}": (summary[_first_step_txt] - summary[_second_step_txt]),
-        }
-        calculated_from_coulombic_efficiency_columns = {
-            self.headers_summary.cumulated_coulombic_difference
-            + f"_{mode}": summary[
-                self.headers_summary.coulombic_difference + f"_{mode}"
-            ].cumsum(),
-        }
-        summary = summary.assign(**calculated_from_capacity_columns)
-        summary = summary.assign(**calculated_from_coulombic_efficiency_columns)
-        calculated_from_capacity_loss_columns = {
-            self.headers_summary.cumulated_discharge_capacity_loss
-            + f"_{mode}": summary[
-                self.headers_summary.discharge_capacity_loss + f"_{mode}"
-            ].cumsum(),
-            self.headers_summary.cumulated_charge_capacity_loss
-            + f"_{mode}": summary[
-                self.headers_summary.charge_capacity_loss + f"_{mode}"
-            ].cumsum(),
-        }
-        summary = summary.assign(**calculated_from_capacity_loss_columns)
-
-        individual_edge_movement = summary[_first_step_txt] - summary[_second_step_txt]
-        shifted_charge_capacity_column = {
-            self.headers_summary.shifted_charge_capacity
-            + f"_{mode}": individual_edge_movement.cumsum(),
-        }
-        summary = summary.assign(**shifted_charge_capacity_column)
-
-        shifted_discharge_capacity_column = {
-            self.headers_summary.shifted_discharge_capacity
-            + f"_{mode}": summary[
-                self.headers_summary.shifted_charge_capacity + f"_{mode}"
-            ]
-            + summary[_first_step_txt],
-        }
-        summary = summary.assign(**shifted_discharge_capacity_column)
-        ric = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[
-            _second_step_txt
-        ].shift(1)
-        ric_column = {self.headers_summary.cumulated_ric: ric.cumsum()}
-        summary = summary.assign(**ric_column)
-        summary[self.headers_summary.cumulated_ric] = ric.cumsum()
-        ric_sei = (
-            summary[_first_step_txt] - summary[_second_step_txt].shift(1)
-        ) / summary[_second_step_txt].shift(1)
-        ric_sei_column = {self.headers_summary.cumulated_ric_sei: ric_sei.cumsum()}
-        summary = summary.assign(**ric_sei_column)
-        ric_disconnect = (
-            summary[_second_step_txt].shift(1) - summary[_second_step_txt]
-        ) / summary[_second_step_txt].shift(1)
-        ric_disconnect_column = {
-            self.headers_summary.cumulated_ric_disconnect: ric_disconnect.cumsum()
-        }
-        summary = summary.assign(**ric_disconnect_column)
-        cell.summary = summary
-        return cell
 
     def _c_rates_to_summary(self, cell):
         logging.debug("Extracting C-rates")

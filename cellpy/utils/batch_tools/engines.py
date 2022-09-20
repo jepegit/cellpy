@@ -10,22 +10,23 @@ import time
 import pandas as pd
 
 from cellpy import dbreader
-from cellpy.parameters.internal_settings import headers_journal
+from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.utils.batch_tools import batch_helpers as helper
 
-# logger = logging.getLogger(__name__)
+hdr_journal = get_headers_journal()
+hdr_summary = get_headers_summary()
 
 SELECTED_SUMMARIES = [
-    "discharge_capacity",
-    "charge_capacity",
-    "coulombic_efficiency",
-    "cumulated_coulombic_efficiency",
-    "ir_discharge",
-    "ir_charge",
-    "end_voltage_discharge",
-    "end_voltage_charge",
-    "charge_c_rate",
-    "discharge_c_rate",
+    hdr_summary["discharge_capacity_gravimetric"],
+    hdr_summary["charge_capacity_gravimetric"],
+    hdr_summary["coulombic_efficiency"],
+    hdr_summary["cumulated_coulombic_efficiency"],
+    hdr_summary["ir_discharge"],
+    hdr_summary["ir_charge"],
+    hdr_summary["end_voltage_discharge"],
+    hdr_summary["end_voltage_charge"],
+    hdr_summary["charge_c_rate"],
+    hdr_summary["discharge_c_rate"],
 ]
 
 
@@ -157,27 +158,27 @@ def simple_db_engine(
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
     pages_dict = dict()
-    pages_dict[headers_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
+    pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
     if include_key:
-        pages_dict[headers_journal["id_key"]] = cell_ids
+        pages_dict[hdr_journal["id_key"]] = cell_ids
 
     if include_individual_arguments:
-        pages_dict[headers_journal["argument"]] = _query(reader.get_args, cell_ids)
+        pages_dict[hdr_journal["argument"]] = _query(reader.get_args, cell_ids)
 
-    pages_dict[headers_journal["mass"]] = _query(reader.get_mass, cell_ids)
-    pages_dict[headers_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
-    pages_dict[headers_journal["loading"]] = _query(reader.get_loading, cell_ids)
-    pages_dict[headers_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
-    pages_dict[headers_journal["experiment"]] = _query(
+    pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
+    pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
+    pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
+    pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
+    pages_dict[hdr_journal["experiment"]] = _query(
         reader.get_experiment_type, cell_ids
     )
-    pages_dict[headers_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
-    pages_dict[headers_journal["label"]] = _query(reader.get_label, cell_ids)
-    pages_dict[headers_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
-    pages_dict[headers_journal["instrument"]] = _query(reader.get_instrument, cell_ids)
-    pages_dict[headers_journal["raw_file_names"]] = []
-    pages_dict[headers_journal["cellpy_file_name"]] = []
-    pages_dict[headers_journal["comment"]] = _query(reader.get_comment, cell_ids)
+    pages_dict[hdr_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
+    pages_dict[hdr_journal["label"]] = _query(reader.get_label, cell_ids)
+    pages_dict[hdr_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
+    pages_dict[hdr_journal["instrument"]] = _query(reader.get_instrument, cell_ids)
+    pages_dict[hdr_journal["raw_file_names"]] = []
+    pages_dict[hdr_journal["cellpy_file_name"]] = []
+    pages_dict[hdr_journal["comment"]] = _query(reader.get_comment, cell_ids)
 
     if additional_column_names is not None:
         for k in additional_column_names:
@@ -198,7 +199,7 @@ def simple_db_engine(
 
     logging.debug(">\ngroups: %s" % str(_groups))
     groups = helper.fix_groups(_groups)
-    pages_dict[headers_journal["group"]] = groups
+    pages_dict[hdr_journal["group"]] = groups
 
     my_timer_start = time.time()
     pages_dict = helper.find_files(
@@ -214,29 +215,29 @@ def simple_db_engine(
 
     pages = pd.DataFrame(pages_dict)
     try:
-        pages = pages.sort_values([headers_journal.group, headers_journal.filename])
+        pages = pages.sort_values([hdr_journal.group, hdr_journal.filename])
     except TypeError as e:
         _report_suspected_duplicate_id(
             e,
             "sort the values",
-            pages[[headers_journal.group, headers_journal.filename]],
+            pages[[hdr_journal.group, hdr_journal.filename]],
         )
 
     pages = helper.make_unique_groups(pages)
 
     try:
-        pages[headers_journal.label] = pages[headers_journal.filename].apply(
+        pages[hdr_journal.label] = pages[hdr_journal.filename].apply(
             helper.create_labels
         )
     except AttributeError as e:
         _report_suspected_duplicate_id(
-            e, "make labels", pages[[headers_journal.label, headers_journal.filename]]
+            e, "make labels", pages[[hdr_journal.label, hdr_journal.filename]]
         )
 
     else:
         # TODO: check if drop=False works [#index]
         pages.set_index(
-            headers_journal["filename"], inplace=True
+            hdr_journal["filename"], inplace=True
         )  # edit this to allow for
         # non-numeric index-names (for tab completion and python-box)
     return pages

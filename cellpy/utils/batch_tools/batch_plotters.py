@@ -1,5 +1,6 @@
 import itertools
 import logging
+import sys
 import warnings
 from collections import defaultdict
 
@@ -185,6 +186,7 @@ def create_summary_plot_bokeh(
     if isinstance(charge_capacity.columns, pd.MultiIndex):
         cols = charge_capacity.columns.get_level_values(1)
         sub_cols_charge = charge_capacity.columns.get_level_values(0).unique()
+
         charge_capacity.columns = [
             f"{col[0]}_{col[1]}" for col in charge_capacity.columns.values
         ]
@@ -311,31 +313,31 @@ def plot_cycle_life_summary_bokeh(
 
     idx = pd.IndexSlice
     all_legend_items = []
-    if add_rate:
 
+    if add_rate:
         try:
             discharge_capacity = summaries.loc[
-                :, idx[["discharge_capacity", "discharge_c_rate"], :]
+                :, idx[[hdr_summary["discharge_capacity_gravimetric"], hdr_summary["discharge_c_rate"]], :]
             ]
         except AttributeError:
             warnings.warn(
                 "No discharge rate columns available - consider re-creating summary!"
             )
-            discharge_capacity = summaries.discharge_capacity
+            discharge_capacity = summaries[hdr_summary["discharge_capacity_gravimetric"]]
 
         try:
             charge_capacity = summaries.loc[
-                :, idx[["charge_capacity", "charge_c_rate"], :]
+                :, idx[[hdr_summary["charge_capacity_gravimetric"], hdr_summary["charge_c_rate"]], :]
             ]
         except AttributeError:
             warnings.warn(
                 "No charge rate columns available - consider re-creating summary!"
             )
-            charge_capacity = summaries.charge_capacity
+            charge_capacity = summaries[hdr_summary["charge_capacity_gravimetric"]]
 
         try:
             coulombic_efficiency = summaries.loc[
-                :, idx[["coulombic_efficiency", "charge_c_rate"], :]
+                :, idx[[hdr_summary.coulombic_efficiency, hdr_summary.charge_c_rate], :]
             ]
         except AttributeError:
             warnings.warn(
@@ -343,9 +345,9 @@ def plot_cycle_life_summary_bokeh(
             )
             coulombic_efficiency = summaries.coulombic_efficiency
 
-        if "ir_charge" in summaries.columns:
+        if hdr_summary.ir_charge in summaries.columns:
             try:
-                ir_charge = summaries.loc[:, idx[["ir_charge", "charge_c_rate"], :]]
+                ir_charge = summaries.loc[:, idx[[hdr_summary.ir_charge, hdr_summary.charge_c_rate], :]]
 
             except AttributeError:
                 warnings.warn(
@@ -355,10 +357,10 @@ def plot_cycle_life_summary_bokeh(
         else:
             ir_charge = pd.DataFrame()
     else:
-        discharge_capacity = summaries.discharge_capacity
-        charge_capacity = summaries.charge_capacity
-        coulombic_efficiency = summaries.coulombic_efficiency
-        ir_charge = summaries.ir_charge
+        discharge_capacity = summaries[hdr_summary["discharge_capacity_gravimetric"]]
+        charge_capacity = summaries[hdr_summary["charge_capacity_gravimetric"]]
+        coulombic_efficiency = summaries[hdr_summary["coulombic_efficiency"]]
+        ir_charge = summaries[hdr_summary["ir_charge"]]
 
     h_eff = int(height_fractions[0] * height)
     h_cap = int(height_fractions[1] * height)
@@ -665,7 +667,6 @@ def summary_plotting_engine(**kwargs):
 
 def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
-
     canvas = None
     if prms.Batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
@@ -698,7 +699,7 @@ def _preparing_data_and_plotting(**kwargs):
     for experiment in experiments:
         if not isinstance(experiment, CyclingExperiment):
             logging.info(
-                "No! This engine is only really good at" "processing CyclingExperiments"
+                "No! This engine is only really good at processing CyclingExperiments"
             )
             logging.info(experiment)
         else:
@@ -708,10 +709,10 @@ def _preparing_data_and_plotting(**kwargs):
                 summaries = pd.concat(
                     experiment.memory_dumped["summary_engine"], keys=keys, axis=1
                 )
-
                 canvas = _plotting_data(
                     pages, summaries, width, height, height_fractions, **kwargs
                 )
+
                 farms.append(canvas)
 
             except KeyError:
