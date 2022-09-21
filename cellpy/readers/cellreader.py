@@ -24,7 +24,7 @@ import sys
 import time
 import warnings
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Union, Optional
+from typing import Union, Optional, Iterable, List, Sequence
 
 import numpy as np
 import pandas as pd
@@ -5338,7 +5338,7 @@ class CellpyData:
 
         return cell
 
-    def _generate_specific_summary_columns(self, cell, mode, specific_columns) -> Cell:
+    def _generate_specific_summary_columns(self, cell: str, mode: str, specific_columns: Sequence) -> Cell:
         specific_converter = self.get_converter_to_specific(dataset=cell, mode=mode)
         summary = cell.summary
         for col in specific_columns:
@@ -5347,16 +5347,14 @@ class CellpyData:
         cell.summary = summary
         return cell
 
-
-    def _c_rates_to_summary(self, cell):
+    def _c_rates_to_summary(self, cell: Cell) -> Cell:
         logging.debug("Extracting C-rates")
         summary = cell.summary
         steps = self.cell.steps
 
-        # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
         charge_steps = steps.loc[
-            steps.type == "charge", [self.headers_step_table.cycle, "rate_avr"]
-        ].rename(columns={"rate_avr": self.headers_summary.charge_c_rate})
+            steps.type == "charge", [self.headers_step_table.cycle, self.headers_step_table.rate_avr]
+        ].rename(columns={self.headers_step_table.rate_avr: self.headers_summary.charge_c_rate})
         summary = summary.merge(
             charge_steps.drop_duplicates(
                 subset=[self.headers_step_table.cycle], keep="first"
@@ -5366,10 +5364,9 @@ class CellpyData:
             how="left",
         ).drop(columns=self.headers_step_table.cycle)
 
-        # TODO @jepe: use directly from HeadersStepTable instead (rate_avr):
         discharge_steps = steps.loc[
-            steps.type == "discharge", [self.headers_step_table.cycle, "rate_avr"]
-        ].rename(columns={"rate_avr": self.headers_summary.discharge_c_rate})
+            steps.type == "discharge", [self.headers_step_table.cycle, self.headers_step_table.rate_avr]
+        ].rename(columns={self.headers_step_table.rate_avr: self.headers_summary.discharge_c_rate})
         summary = summary.merge(
             discharge_steps.drop_duplicates(
                 subset=[self.headers_step_table.cycle], keep="first"
@@ -5382,8 +5379,8 @@ class CellpyData:
         return cell
 
     def _equivalent_cycles_to_summary(
-        self, cell, _first_step_txt, _second_step_txt, nom_cap, normalization_cycles
-    ):
+        self, cell: Cell, _first_step_txt: str, _second_step_txt: str, nom_cap: float, normalization_cycles: Union[Sequence, int, None]
+    ) -> Cell:
         # The method currently uses the charge capacity for calculating equivalent cycles. This
         # can be easily extended to also allow for choosing the discharge capacity later on if
         # it turns out that it needed.
