@@ -530,8 +530,8 @@ def plot_cycle_life_summary_matplotlib(
     # convert from bokeh to matplotlib - figsize - inch-ish
     width /= 80
     height /= 120
-    discharge_capacity = summaries.discharge_capacity
-    charge_capacity = summaries.charge_capacity
+    discharge_capacity = summaries[hdr_summary["discharge_capacity_gravimetric"]]
+    charge_capacity = summaries[hdr_summary["charge_capacity_gravimetric"]]
     coulombic_efficiency = summaries.coulombic_efficiency
     try:
         ir_charge = summaries.ir_charge
