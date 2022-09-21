@@ -168,14 +168,16 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             return len(c.cell.raw)
-        except Exception:
+        except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_steps(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
             return len(c.cell.steps)
-        except Exception:
+        except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_summary(self, cell_id):
@@ -183,42 +185,47 @@ class Batch:
             c = self.experiment.data[cell_id]
             return len(c.cell.summary)
         except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_max_cap(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[headers_summary.charge_capacity].max()
+            return s[headers_summary["charge_capacity_gravimetric"]].max()
 
         except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_min_cap(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[headers_summary.charge_capacity].min()
+            return s[headers_summary["charge_capacity_gravimetric"]].min()
 
         except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_avg_cap(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[headers_summary.charge_capacity].mean()
+            return s[headers_summary["charge_capacity_gravimetric"]].mean()
 
         except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_std_cap(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
             s = c.cell.summary
-            return s[headers_summary.charge_capacity].std()
+            return s[headers_summary["charge_capacity_gravimetric"]].std()
 
         except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_empty(self, cell_id):
@@ -226,6 +233,7 @@ class Batch:
             c = self.experiment.data[cell_id]
             return c.empty
         except Exception:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def _check_cell_cycles(self, cell_id):
@@ -233,6 +241,7 @@ class Batch:
             c = self.experiment.data[cell_id]
             return c.cell.steps[self.headers_step_table.cycle].max()
         except Exception:
+            logging.debug(f"Exception ignored: {e}")
             return None
 
     def drop(self, cell_label=None):

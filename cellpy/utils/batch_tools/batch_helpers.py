@@ -198,13 +198,13 @@ def create_selected_summaries_dict(summaries_list):
     """Creates a dictionary with summary column headers.
 
     Examples:
-        >>> summaries_to_output = ["discharge_capacity", "charge_capacity"]
+        >>> summaries_to_output = ["discharge_capacity_gravimetric", "charge_capacity_gravimetric"]
         >>> summaries_to_output_dict = create_selected_summaries_dict(
         >>>    summaries_to_output
         >>> )
         >>> print(summaries_to_output_dict)
-        {'discharge_capacity': "Discharge_Capacity(mAh/g)",
-               'charge_capacity': "Charge_Capacity(mAh/g)}
+        {'discharge_capacity_gravimetric': "discharge_capacity_gravimetric",
+               'charge_capacity_gravimetric': "discharge_capacity_gravimetric"}
 
     Args:
         summaries_list: list containing cellpy summary column id names

@@ -5156,7 +5156,8 @@ class CellpyData:
             return
 
         column_names = summary.columns
-        # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index)
+        # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first
+        #  figure out if this is really needed and why it was implemented in the first place.
         summary_length = len(summary[column_names[0]])
         summary.index = list(range(summary_length))
 
@@ -5175,11 +5176,7 @@ class CellpyData:
                     summary.pop(cn)
 
         cell.summary = summary
-        ##############################################
-        # Implemented units, conversion factor calc, renaming headers
-        # TODO: fix batch helpers (concatenate etc)
-        # TODO: save cellpy-file with new summary (new headers)
-        # TODO: implement features needed for using "modified raw"
+
         if self.cycle_mode == "anode":
             logging.info(
                 "Assuming cycling in anode half-cell (discharge before charge) mode"

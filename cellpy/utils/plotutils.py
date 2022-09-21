@@ -1124,14 +1124,14 @@ def oplot(
 
     cap_colum_dict = {
         "gravimetric": {
-            "discharge": "discharge_capacity",
-            "charge": "charge_capacity",
+            "discharge": "discharge_capacity_gravimetric",
+            "charge": "charge_capacity_gravimetric",
             "unit": "mAh/g(a.m.)",
             "ylim": (0, 5000),
         },
         "areal": {
-            "discharge": "areal_discharge_capacity",
-            "charge": "areal_charge_capacity",
+            "discharge": "discharge_capacity_areal",
+            "charge": "charge_capacity_areal",
             "unit": "mAh/cm2",
             "ylim": (0, 3),
         },
@@ -1272,11 +1272,11 @@ def bplot(b, individual=False, cols=1, **kwargs):
 
     This is wrapper around the two functions concatenate_summaries and plot_concatenated.
 
-    >>> p1 = bplot(b, columns=["charge_capacity"], journal=b.experiment.journal, group_it=True)
+    >>> p1 = bplot(b, columns=["charge_capacity_gravimetric"], journal=b.experiment.journal, group_it=True)
 
     is equivalent to:
 
-    >>> cs = helpers.concatenate_summaries(b, columns=["charge_capacity"], group_it=True)
+    >>> cs = helpers.concatenate_summaries(b, columns=["charge_capacity_gravimetric"], group_it=True)
     >>> p1 = plot_concatenated(cs, journal=journal)
 
     Args:
@@ -1289,7 +1289,7 @@ def bplot(b, individual=False, cols=1, **kwargs):
     Keyword Args:
         rate (float): filter on rate (C-rate)
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
-        columns (list): selected column(s) (using cellpy name) [defaults to "charge_capacity"]
+        columns (list): selected column(s) (using cellpy attribute name) [defaults to "charge_capacity_gravimetric"]
         column_names (list): selected column(s) (using exact column name)
         normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization
             (typically the first few cycles after formation)
