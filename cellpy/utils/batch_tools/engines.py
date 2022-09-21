@@ -169,9 +169,7 @@ def simple_db_engine(
     pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
     pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
     pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
-    pages_dict[hdr_journal["experiment"]] = _query(
-        reader.get_experiment_type, cell_ids
-    )
+    pages_dict[hdr_journal["experiment"]] = _query(reader.get_experiment_type, cell_ids)
     pages_dict[hdr_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
     pages_dict[hdr_journal["label"]] = _query(reader.get_label, cell_ids)
     pages_dict[hdr_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
@@ -236,9 +234,7 @@ def simple_db_engine(
 
     else:
         # TODO: check if drop=False works [#index]
-        pages.set_index(
-            hdr_journal["filename"], inplace=True
-        )  # edit this to allow for
+        pages.set_index(hdr_journal["filename"], inplace=True)  # edit this to allow for
         # non-numeric index-names (for tab completion and python-box)
     return pages
 

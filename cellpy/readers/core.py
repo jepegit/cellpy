@@ -254,7 +254,9 @@ class Cell:
         self.voltage_lim_high = prms.CellInfo.voltage_lim_high
         self.cycle_mode = prms.Reader.cycle_mode
         self.active_electrode_area = prms.CellInfo.active_electrode_area  # [cm2]
-        self.active_electrode_thickness = prms.CellInfo.active_electrode_thickness  # [micron]
+        self.active_electrode_thickness = (
+            prms.CellInfo.active_electrode_thickness
+        )  # [micron]
         self.electrolyte_type = prms.CellInfo.electrolyte_type  #
         self.electrolyte_volume = prms.CellInfo.electrolyte_volume  # [micro-liter]
         self.active_electrode_type = prms.CellInfo.active_electrode_type
@@ -263,8 +265,12 @@ class Cell:
         self.experiment_type = prms.CellInfo.experiment_type
         self.cell_type = prms.CellInfo.cell_type
         self.separator_type = prms.CellInfo.separator_type
-        self.active_electrode_current_collector = prms.CellInfo.active_electrode_current_collector
-        self.reference_electrode_current_collector = prms.CellInfo.reference_electrode_current_collector
+        self.active_electrode_current_collector = (
+            prms.CellInfo.active_electrode_current_collector
+        )
+        self.reference_electrode_current_collector = (
+            prms.CellInfo.reference_electrode_current_collector
+        )
         self.comment = prms.CellInfo.comment
 
         # custom meta-data

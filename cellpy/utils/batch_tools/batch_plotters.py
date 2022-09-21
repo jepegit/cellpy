@@ -317,17 +317,33 @@ def plot_cycle_life_summary_bokeh(
     if add_rate:
         try:
             discharge_capacity = summaries.loc[
-                :, idx[[hdr_summary["discharge_capacity_gravimetric"], hdr_summary["discharge_c_rate"]], :]
+                :,
+                idx[
+                    [
+                        hdr_summary["discharge_capacity_gravimetric"],
+                        hdr_summary["discharge_c_rate"],
+                    ],
+                    :,
+                ],
             ]
         except AttributeError:
             warnings.warn(
                 "No discharge rate columns available - consider re-creating summary!"
             )
-            discharge_capacity = summaries[hdr_summary["discharge_capacity_gravimetric"]]
+            discharge_capacity = summaries[
+                hdr_summary["discharge_capacity_gravimetric"]
+            ]
 
         try:
             charge_capacity = summaries.loc[
-                :, idx[[hdr_summary["charge_capacity_gravimetric"], hdr_summary["charge_c_rate"]], :]
+                :,
+                idx[
+                    [
+                        hdr_summary["charge_capacity_gravimetric"],
+                        hdr_summary["charge_c_rate"],
+                    ],
+                    :,
+                ],
             ]
         except AttributeError:
             warnings.warn(
@@ -347,7 +363,9 @@ def plot_cycle_life_summary_bokeh(
 
         if hdr_summary.ir_charge in summaries.columns:
             try:
-                ir_charge = summaries.loc[:, idx[[hdr_summary.ir_charge, hdr_summary.charge_c_rate], :]]
+                ir_charge = summaries.loc[
+                    :, idx[[hdr_summary.ir_charge, hdr_summary.charge_c_rate], :]
+                ]
 
             except AttributeError:
                 warnings.warn(

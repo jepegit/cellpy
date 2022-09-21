@@ -5338,7 +5338,9 @@ class CellpyData:
 
         return cell
 
-    def _generate_specific_summary_columns(self, cell: str, mode: str, specific_columns: Sequence) -> Cell:
+    def _generate_specific_summary_columns(
+        self, cell: str, mode: str, specific_columns: Sequence
+    ) -> Cell:
         specific_converter = self.get_converter_to_specific(dataset=cell, mode=mode)
         summary = cell.summary
         for col in specific_columns:
@@ -5353,8 +5355,13 @@ class CellpyData:
         steps = self.cell.steps
 
         charge_steps = steps.loc[
-            steps.type == "charge", [self.headers_step_table.cycle, self.headers_step_table.rate_avr]
-        ].rename(columns={self.headers_step_table.rate_avr: self.headers_summary.charge_c_rate})
+            steps.type == "charge",
+            [self.headers_step_table.cycle, self.headers_step_table.rate_avr],
+        ].rename(
+            columns={
+                self.headers_step_table.rate_avr: self.headers_summary.charge_c_rate
+            }
+        )
         summary = summary.merge(
             charge_steps.drop_duplicates(
                 subset=[self.headers_step_table.cycle], keep="first"
@@ -5365,8 +5372,13 @@ class CellpyData:
         ).drop(columns=self.headers_step_table.cycle)
 
         discharge_steps = steps.loc[
-            steps.type == "discharge", [self.headers_step_table.cycle, self.headers_step_table.rate_avr]
-        ].rename(columns={self.headers_step_table.rate_avr: self.headers_summary.discharge_c_rate})
+            steps.type == "discharge",
+            [self.headers_step_table.cycle, self.headers_step_table.rate_avr],
+        ].rename(
+            columns={
+                self.headers_step_table.rate_avr: self.headers_summary.discharge_c_rate
+            }
+        )
         summary = summary.merge(
             discharge_steps.drop_duplicates(
                 subset=[self.headers_step_table.cycle], keep="first"
@@ -5379,7 +5391,12 @@ class CellpyData:
         return cell
 
     def _equivalent_cycles_to_summary(
-        self, cell: Cell, _first_step_txt: str, _second_step_txt: str, nom_cap: float, normalization_cycles: Union[Sequence, int, None]
+        self,
+        cell: Cell,
+        _first_step_txt: str,
+        _second_step_txt: str,
+        nom_cap: float,
+        normalization_cycles: Union[Sequence, int, None],
     ) -> Cell:
         # The method currently uses the charge capacity for calculating equivalent cycles. This
         # can be easily extended to also allow for choosing the discharge capacity later on if

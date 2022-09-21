@@ -207,6 +207,7 @@ class HeadersSummary(BaseHeaders):
     """In addition to the headers defined here, the summary might also contain
     specific headers (ending in _gravimetric or _areal).
     """
+
     postfixes = ["gravimetric", "areal"]
 
     cycle_index: str = "cycle_index"
