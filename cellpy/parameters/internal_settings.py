@@ -299,7 +299,7 @@ class HeadersSummary(BaseHeaders):
             self.cumulated_ric_disconnect,
             self.cumulated_ric_sei,
             self.cumulated_ric,
-            self.normalized_cycle_index,
+            # self.normalized_cycle_index,
         ]
 
 

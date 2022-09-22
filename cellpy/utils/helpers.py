@@ -760,11 +760,13 @@ def concatenate_summaries(
         print(80 * "-")
         frames_sub = []
         keys_sub = []
+        print(normalize_cycles_headers)
 
         for cell_id in cell_names:
             print(f"Processing {cell_id}")
             logging.debug(f"Processing [{cell_id}]")
             c = b.experiment.data[cell_id]
+            print(c.cell.summary.columns.sort_values())
 
             if not c.empty:
                 if max_cycle is not None:
