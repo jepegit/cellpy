@@ -447,6 +447,44 @@ class Batch:
             **kwargs: sent to sub-function(s) (*e.g.* from_db -> simple_db_reader -> find_files ->
                 filefinder.search_for_files).
 
+        kwargs -> from_db:
+            project=None, name=None, batch_col=None
+
+
+        kwargs -> simple_db_reader:
+            reader: a reader object (defaults to dbreader.Reader)
+            cell_ids: keys (cell IDs)
+            file_list: file list to send to filefinder (instead of searching in folders for files).
+            pre_path: prepended path to send to filefinder.
+            include_key: include the key col in the pages (the cell IDs).
+            include_individual_arguments: include the argument column in the pages.
+            additional_column_names: list of additional column names to include in the pages.
+
+        kwargs -> filefinder.search_for_files:
+            run_name(str): run-file identification.
+            raw_extension(str): optional, extension of run-files (without the '.').
+            cellpy_file_extension(str): optional, extension for cellpy files
+                (without the '.').
+            raw_file_dir(path): optional, directory where to look for run-files
+                (default: read prm-file)
+            cellpy_file_dir(path): optional, directory where to look for
+                cellpy-files (default: read prm-file)
+            prm_filename(path): optional parameter file can be given.
+            file_name_format(str): format of raw-file names or a glob pattern
+                (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+            reg_exp(str): use regular expression instead (defaults to None).
+            sub_folders (bool): perform search also in sub-folders.
+            file_list (list of str): perform the search within a given list
+                of filenames instead of searching the folder(s). The list should
+                not contain the full filepath (only the actual file names). If
+                you want to provide the full path, you will have to modify the
+                file_name_format or reg_exp accordingly.
+            pre_path (path or str): path to prepend the list of files selected
+                 from the file_list.
+
+    Returns:
+        info_dict
+
         """
 
         # TODO (jepe): create option to update journal without looking for files

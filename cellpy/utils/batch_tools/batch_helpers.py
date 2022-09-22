@@ -105,7 +105,28 @@ def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
         info_dict: journal pages.
         file_list: list of files names to search through.
         pre_path: path to prepend found files from file_list (if file_list is given).
-        **kwargs: sent to filefinder.search_for_files.
+
+    **kwargs (filefinder.search_for_files):
+        run_name(str): run-file identification.
+        raw_extension(str): optional, extension of run-files (without the '.').
+        cellpy_file_extension(str): optional, extension for cellpy files
+            (without the '.').
+        raw_file_dir(path): optional, directory where to look for run-files
+            (default: read prm-file)
+        cellpy_file_dir(path): optional, directory where to look for
+            cellpy-files (default: read prm-file)
+        prm_filename(path): optional parameter file can be given.
+        file_name_format(str): format of raw-file names or a glob pattern
+            (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+        reg_exp(str): use regular expression instead (defaults to None).
+        sub_folders (bool): perform search also in sub-folders.
+        file_list (list of str): perform the search within a given list
+            of filenames instead of searching the folder(s). The list should
+            not contain the full filepath (only the actual file names). If
+            you want to provide the full path, you will have to modify the
+            file_name_format or reg_exp accordingly.
+        pre_path (path or str): path to prepend the list of files selected
+             from the file_list.
 
     Returns:
         info_dict
