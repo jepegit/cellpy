@@ -1089,7 +1089,7 @@ def _run_db(debug, silent):
 @click.option("--directory", "-d", default=None, help="Save into custom directory DIR")
 @click.option("--password", "-p", default=None, help="Password option for the repo")
 def pull(tests, examples, clone, directory, password):
-    """Download examples or tests from the big internet."""
+    """Download examples or tests from the big internet (needs git)."""
     if directory is not None:
         click.echo(f"[cellpy] (pull) custom directory: {directory}")
     else:
@@ -1289,7 +1289,7 @@ def _read_local_templates(local_templates_path=None):
     "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
 )
 def new(template, directory, local_user_template, serve_, run_, lab, list_):
-    """Set up a batch experiment."""
+    """Set up a batch experiment (might need git installed)."""
     function_new(template, directory, local_user_template, serve_, run_, lab, list_)
 
 
