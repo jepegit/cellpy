@@ -5025,10 +5025,14 @@ class CellpyData:
             )
         return self
 
-    @staticmethod
-    def _from_specific_to_absolute(value, specific):
-        # TODO: check if this is sufficient
-        absolute_value = value * specific
+    def _from_specific_nom_cap_to_absolute(self, value, specific, nom_cap_specifics="gravimetric"):
+        conversion_factor_charge = self.cellpy_units["charge"] / self.cell.raw_units["charge"]
+        if nom_cap_specifics == "gravimetric":
+            conversion_factor_specific = self.cellpy_units["mass"] / self.cellpy_units["specific"]
+        elif nom_cap_specifics == "areal":
+            conversion_factor_specific = self.cellpy_units["area"] / self.cellpy_units["specific"]
+
+        absolute_value = value * conversion_factor_charge * conversion_factor_specific * specific
         return absolute_value
 
     def _make_summary(
@@ -5041,7 +5045,7 @@ class CellpyData:
         find_ir=False,
         find_end_voltage=False,
         ensure_step_table=True,
-        # TODO: @jepe - include option for omitting steps
+        # TODO @jepe: - include option for omitting steps
         sort_my_columns=True,
         use_cellpy_stat_file=False,
         add_c_rate=True,  # deprecated
@@ -5119,15 +5123,13 @@ class CellpyData:
         # cellpy has historically assumed that the nominal capacity (nom_cap) is specific gravimetric
         # (i.e. in units of for example mAh/g), but now we need it in absolute units (e.g. Ah). The plan
         # is to set stuff like this during initiation of the cell (but not yet):
-        print(f"{nom_cap=}")
-        if nom_cap_specifics == "gravimetric":
-            nom_cap = self._from_specific_to_absolute(nom_cap, mass)
-        elif nom_cap_specifics == "areal":
-            nom_cap = self._from_specific_to_absolute(
-                nom_cap, cell.active_electrode_area
-            )
-        print(f"{nom_cap=}")
 
+        if nom_cap_specifics == "gravimetric":
+            nom_cap = self._from_specific_nom_cap_to_absolute(nom_cap, mass, nom_cap_specifics)
+        elif nom_cap_specifics == "areal":
+            nom_cap = self._from_specific_nom_cap_to_absolute(
+                nom_cap, cell.active_electrode_area, nom_cap_specifics
+            )
         if ensure_step_table and not self.load_only_summary:
             logging.debug("ensuring existence of step-table")
             if not cell.has_steps:
@@ -5418,7 +5420,7 @@ class CellpyData:
                 nom_cap = cap_ref.mean()
             else:
                 logging.info(f"Empty reference cycle(s)")
-        print(f"{nom_cap=}")
+
         normalized_cycle_index_column = {
             self.headers_summary.normalized_cycle_index: summary[
                 self.headers_summary.cumulated_charge_capacity

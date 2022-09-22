@@ -206,7 +206,17 @@ def test_example_data():
     from cellpy.utils import example_data
 
     a = example_data.arbin_file(testing=True)
+
+    print(a.cell.summary.columns)
+
+
     c = example_data.cellpy_file(testing=True)
+    c.make_summary()
+
+    print(c.cell.summary.columns)
+    print("---------------------")
+    print(a.cell.summary.shape)
+    print(c.cell.summary.shape)
 
     assert a.cell.summary.size == 1026
     assert c.cell.summary.size == 1044

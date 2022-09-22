@@ -296,9 +296,9 @@ class HeadersSummary(BaseHeaders):
             self.cumulated_charge_capacity_loss,
             self.shifted_charge_capacity,
             self.shifted_discharge_capacity,
-            self.cumulated_ric_disconnect,
-            self.cumulated_ric_sei,
-            self.cumulated_ric,
+            # self.cumulated_ric_disconnect,
+            # self.cumulated_ric_sei,
+            # self.cumulated_ric,
             # self.normalized_cycle_index,
         ]
 
