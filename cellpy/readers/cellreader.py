@@ -2632,6 +2632,7 @@ class CellpyData:
         sort_rows=True,
         dataset_number=None,
         from_data_point=None,
+        nom_cap_specifics="gravimetric",
     ):
 
         """Create a table (v.4) that contains summary information for each step.
@@ -2661,8 +2662,9 @@ class CellpyData:
             skip_steps (list of integers): list of step numbers that should not
                 be processed (future feature - not used yet).
             sort_rows (bool): sort the rows after processing.
-            dataset_number: defaults to self.dataset_number
-            from_data_point (int): first data point to use
+            dataset_number: defaults to self.dataset_number.
+            from_data_point (int): first data point to use.
+            nom_cap_specifics (str): "gravimetric", "areal", or "absolute".
 
         Returns:
             None
@@ -2759,7 +2761,7 @@ class CellpyData:
         if profiling:
             time_01 = time.time()
 
-        # TODO: make sure that all columns are nummeric
+        # TODO: make sure that all columns are numeric
 
         gf = df.groupby(by=by)
         df_steps = gf.agg(
@@ -2772,19 +2774,26 @@ class CellpyData:
             print(f"*** groupby-agg: {time.time() - time_01} s")
             time_01 = time.time()
 
-        # new cols
-
         # column with C-rates:
         if add_c_rate:
+            logging.debug("adding c-rates")
             nom_cap = self.cells[dataset_number].nom_cap
-            mass = self.cells[dataset_number].mass
-            spec_conv_factor = self.get_converter_to_specific()
-            logging.debug(f"c-rate: nom_cap={nom_cap} spec_conv={spec_conv_factor}")
+
+            if nom_cap_specifics == "gravimetric":
+                mass = self.cells[dataset_number].mass
+                nom_cap = self._from_specific_nom_cap_to_absolute(
+                    nom_cap, mass, nom_cap_specifics
+                )
+
+            elif nom_cap_specifics == "areal":
+                area = self.cells[dataset_number].active_electrode_area
+                nom_cap = self._from_specific_nom_cap_to_absolute(
+                    nom_cap, area, nom_cap_specifics
+                )
 
             df_steps[shdr.rate_avr] = abs(
                 round(
-                    df_steps.loc[:, (shdr.current, "avr")]
-                    / (nom_cap / spec_conv_factor),
+                    df_steps.loc[:, (shdr.current, "avr")] / nom_cap,
                     2,
                 )
             )
@@ -5025,14 +5034,24 @@ class CellpyData:
             )
         return self
 
-    def _from_specific_nom_cap_to_absolute(self, value, specific, nom_cap_specifics="gravimetric"):
-        conversion_factor_charge = self.cellpy_units["charge"] / self.cell.raw_units["charge"]
+    def _from_specific_nom_cap_to_absolute(
+        self, value, specific, nom_cap_specifics="gravimetric"
+    ):
+        conversion_factor_charge = (
+            self.cellpy_units["charge"] / self.cell.raw_units["charge"]
+        )
         if nom_cap_specifics == "gravimetric":
-            conversion_factor_specific = self.cellpy_units["mass"] / self.cellpy_units["specific"]
+            conversion_factor_specific = (
+                self.cellpy_units["mass"] / self.cellpy_units["specific"]
+            )
         elif nom_cap_specifics == "areal":
-            conversion_factor_specific = self.cellpy_units["area"] / self.cellpy_units["specific"]
+            conversion_factor_specific = (
+                self.cellpy_units["area"] / self.cellpy_units["specific"]
+            )
 
-        absolute_value = value * conversion_factor_charge * conversion_factor_specific * specific
+        absolute_value = (
+            value * conversion_factor_charge * conversion_factor_specific * specific
+        )
         return absolute_value
 
     def _make_summary(
@@ -5125,7 +5144,9 @@ class CellpyData:
         # is to set stuff like this during initiation of the cell (but not yet):
 
         if nom_cap_specifics == "gravimetric":
-            nom_cap = self._from_specific_nom_cap_to_absolute(nom_cap, mass, nom_cap_specifics)
+            nom_cap = self._from_specific_nom_cap_to_absolute(
+                nom_cap, mass, nom_cap_specifics
+            )
         elif nom_cap_specifics == "areal":
             nom_cap = self._from_specific_nom_cap_to_absolute(
                 nom_cap, cell.active_electrode_area, nom_cap_specifics

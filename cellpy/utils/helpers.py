@@ -1153,6 +1153,7 @@ def concatenate_summaries_old(
         logging.info("Empty - nothing to concatenate!")
         return pd.DataFrame()
 
+
 def create_rate_column(df, nom_cap, spec_conv_factor, column="current_avr"):
     """Adds a rate column to the dataframe (steps)."""
 

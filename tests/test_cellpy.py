@@ -116,8 +116,6 @@ def test_logger_advanced(clean_dir):
 def test_load_and_save_res_file(clean_dir):
     import os
 
-    from cellpy import cellreader
-
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
     new_file = cellpy.utils.helpers.load_and_save_resfile(f_in, None, clean_dir)
     assert os.path.isfile(new_file)
@@ -135,7 +133,7 @@ def test_load_and_save_res_file(clean_dir):
 def test_load_arbin_res_file_diagnostics(clean_dir, benchmark):
     import os
 
-    from cellpy import cellreader, prms
+    from cellpy import prms
 
     prms.Reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
@@ -211,6 +209,17 @@ def test_example_data():
 
     assert a.cell.summary.shape == c.cell.summary.shape
     assert c.cell.summary.shape == (18, 49)
+
+
+def test_make_step_table():
+    c = cellpy.get(
+        fdv.res_file_path,
+        nominal_capacity=3600,
+        mass=0.74,
+        logging_mode="DEBUG",
+        auto_summary=False,
+    )
+    c.make_step_table()
 
 
 def teardown_module():
