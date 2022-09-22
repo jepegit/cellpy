@@ -53,3 +53,9 @@ def arbin_file_path():
     """Get the path to an example arbin res file"""
 
     return RAW_PATH / "20160805_test001_45_cc_01.res"
+
+
+if __name__ == '__main__':
+    a = arbin_file()
+    print("Saving new version of the cellpy file!")
+    a.save(cellpy_file_path())
