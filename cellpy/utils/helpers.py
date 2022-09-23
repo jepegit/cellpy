@@ -679,7 +679,7 @@ def concatenate_summaries(
     rate_column=None,
     inverse=False,
     inverted=False,
-    key_index_bounds=[1, -2],
+    key_index_bounds=None,
     melt=False,
     cell_type_split_position="auto",
 ):
@@ -727,6 +727,9 @@ def concatenate_summaries(
     reserved_cell_label_names = ["FC"]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
 
+    if key_index_bounds is None:
+        key_index_bounds = [1, -2]
+
     if columns is None:
         columns = []
 
@@ -740,6 +743,7 @@ def concatenate_summaries(
         columns = default_columns
 
     cell_names_nest = []
+    output_columns = columns.copy()
     frames = []
     keys = []
 
@@ -747,6 +751,21 @@ def concatenate_summaries(
     if normalize_cycles:
         if hdr_norm_cycle not in columns:
             normalize_cycles_headers.append(hdr_norm_cycle)
+        output_columns.extend(normalize_cycles_headers)
+
+    if normalize_capacity_on is not None:
+        normalize_capacity_headers = [
+            hdr_summary["normalized_charge_capacity"],
+            hdr_summary["normalized_discharge_capacity"]
+        ]
+        output_columns = [
+            col for col in output_columns
+            if col not in [
+                hdr_summary["charge_capacity"],
+                hdr_summary["discharge_capacity"],
+            ]
+        ]
+        output_columns.extend(normalize_capacity_headers)
 
     if group_it:
         g = b.pages.groupby("group")
@@ -754,27 +773,23 @@ def concatenate_summaries(
             cell_names_nest.append(list(b_sub.index))
     else:
         cell_names_nest.append(list(b.experiment.cell_names))
+
     for cell_names in cell_names_nest:
-        print("processing nest".center(80, "-"))
-        print(cell_names)
-        print(80 * "-")
+
         frames_sub = []
         keys_sub = []
-        print(normalize_cycles_headers)
 
         for cell_id in cell_names:
             print(f"Processing {cell_id}")
             logging.debug(f"Processing [{cell_id}]")
             c = b.experiment.data[cell_id]
-            print(c.cell.summary.columns.sort_values())
+            # print(c.cell.summary.columns.sort_values())
 
             if not c.empty:
                 if max_cycle is not None:
                     c = c.drop_from(max_cycle + 1)
-                # if add_areal:
-                #     c = add_areal_capacity(c, cell_id, b.experiment.journal)
-
                 if normalize_capacity_on is not None:
+                    print("normalizing capacity")
                     if scale_by == "nom_cap":
                         if nom_cap is None:
                             scale_by = c.cell.nom_cap
@@ -802,44 +817,36 @@ def concatenate_summaries(
                     s = c.cell.summary
 
                 if columns is not None:
-                    if normalize_cycles:
-                        s = s.loc[:, normalize_cycles_headers + columns].copy()
-                    else:
-                        s = s.loc[:, columns].copy()
+                    # output_columns = []
+                    # output_columns.extend(columns)
+                    # if normalize_cycles:
+                    #     output_columns.extend(normalize_cycles_headers)
+                    # if normalize_capacity_on is not None:
+                    #     print("here i am")
+                    #     output_columns = [
+                    #         col for col in output_columns
+                    #         if col not in [
+                    #             hdr_summary["charge_capacity"],
+                    #             hdr_summary["discharge_capacity"],
+                    #         ]
+                    #     ]
+                    #     output_columns.extend(normalize_capacity_headers)
+                    # print(f"{output_columns=}")
+                    s = s.loc[:, output_columns].copy()
 
-                if normalize_cycles:
-                    if nom_cap is None:
-                        _nom_cap = c.cell.nom_cap
-                    else:
-                        _nom_cap = nom_cap
-
-                    # if not group_it:
-                    #     print(hdr_cum_charge)
-                    #     s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
-                    #     if hdr_cum_charge not in columns:
-                    #         s = s.drop(columns=hdr_cum_charge)
-
-                    s = s.reset_index(drop=True)
+                # if normalize_cycles:
+                #     s = s.reset_index(drop=True)
 
                 frames_sub.append(s)
                 keys_sub.append(cell_id)
 
         if group_it:
+            print("grouping (making average)")
+            print("The _make_average methods needs to be updated so that normalized_cycle_index is handled properly.")
+            print("FIX THIS NOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             try:
-                # if normalize_cycles:
-                #     s, cell_id = _make_average(
-                #         frames_sub,
-                #         keys_sub,
-                #         normalize_cycles_headers + columns,
-                #         True,
-                #         key_index_bounds,
-                #     )
-                #     s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
-                #     # if hdr_cum_charge not in columns:
-                #     #     s = s.drop(columns=hdr_cum_charge)
-                # else:
                 s, cell_id = _make_average(
-                    frames_sub, keys_sub, columns, key_index_bounds=key_index_bounds
+                    frames_sub, keys_sub, output_columns, key_index_bounds=key_index_bounds
                 )
             except ValueError as e:
                 print("could not make average!")
