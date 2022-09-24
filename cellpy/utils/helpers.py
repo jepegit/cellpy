@@ -14,22 +14,25 @@ from cellpy import prmreader, prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
     ATTRS_DATASET,
-    headers_journal,
-    headers_normal,
-    headers_step_table,
-    headers_summary,
+    get_headers_journal,
+    get_headers_summary,
+    get_headers_step_table,
+    get_headers_normal,
 )
 from cellpy.readers.cellreader import CellpyData
-from cellpy.utils import batch, ica
 
-hdr_summary = headers_summary
-hdr_steps = headers_step_table
-hdr_normal = headers_normal
-hdr_journal = headers_journal
+hdr_summary = get_headers_summary()
+hdr_steps = get_headers_step_table()
+hdr_normal = get_headers_normal()
+hdr_journal = get_headers_journal()
 
 
 def _make_average(
-    frames, keys=None, columns=None, normalize_cycles=False, key_index_bounds=None
+    frames,
+    keys=None,
+    columns=None,
+    skip_st_dev_for_equivalent_cycle_index=True,
+    key_index_bounds=None,
 ):
     if key_index_bounds is None:
         key_index_bounds = [1, -2]
@@ -38,6 +41,7 @@ def _make_average(
     cell_id = ""
     not_a_number = np.NaN
     new_frames = []
+
     if columns is None:
         columns = frames[0].columns
 
@@ -59,7 +63,10 @@ def _make_average(
 
     for col in columns:
         number_of_cols = len(new_frame.columns)
-        if col in [hdr_norm_cycle, hdr_cum_charge] and normalize_cycles:
+        if (
+            col in [hdr_norm_cycle, hdr_cum_charge]
+            and skip_st_dev_for_equivalent_cycle_index
+        ):
             if number_of_cols > 1:
                 avg_frame = (
                     new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": col})
@@ -68,12 +75,10 @@ def _make_average(
                 avg_frame = new_frame[col].copy()
 
         else:
-
             new_col_name_mean = col + "_mean"
             new_col_name_std = col + "_std"
 
             if number_of_cols > 1:
-                # very slow:
                 avg_frame = (
                     new_frame[col]
                     .agg(["mean", "std"], axis=1)
@@ -696,13 +701,12 @@ def concatenate_summaries(
         normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization (typically the first few cycles after formation)
         scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap", or given value (defaults to one).
         nom_cap (float): nominal capacity of the cell
-        normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
-        add_areal (bool):  add areal capacity to the summary
+        normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
         group_it (bool): if True, average pr group.
         rate_std (float): allow for this inaccuracy when selecting cycles based on rate
         rate_column (str): name of the column containing the C-rates.
-        inverse (bool): select steps that does not have the given C-rate.
-        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
+        inverse (bool): select steps that do not have the given C-rate.
+        inverted (bool): select cycles that do not have the steps filtered by given C-rate.
         key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
             key_index_bound[0] to key_index_bound[1].
         melt (bool): return frame as melted (long format).
@@ -747,20 +751,20 @@ def concatenate_summaries(
     frames = []
     keys = []
 
-    normalize_cycles_headers = []
     if normalize_cycles:
         if hdr_norm_cycle not in columns:
-            normalize_cycles_headers.append(hdr_norm_cycle)
-        output_columns.extend(normalize_cycles_headers)
+            output_columns.insert(0, hdr_norm_cycle)
 
     if normalize_capacity_on is not None:
         normalize_capacity_headers = [
             hdr_summary["normalized_charge_capacity"],
-            hdr_summary["normalized_discharge_capacity"]
+            hdr_summary["normalized_discharge_capacity"],
         ]
         output_columns = [
-            col for col in output_columns
-            if col not in [
+            col
+            for col in output_columns
+            if col
+            not in [
                 hdr_summary["charge_capacity"],
                 hdr_summary["discharge_capacity"],
             ]
@@ -780,7 +784,6 @@ def concatenate_summaries(
         keys_sub = []
 
         for cell_id in cell_names:
-            print(f"Processing {cell_id}")
             logging.debug(f"Processing [{cell_id}]")
             c = b.experiment.data[cell_id]
             # print(c.cell.summary.columns.sort_values())
@@ -789,7 +792,6 @@ def concatenate_summaries(
                 if max_cycle is not None:
                     c = c.drop_from(max_cycle + 1)
                 if normalize_capacity_on is not None:
-                    print("normalizing capacity")
                     if scale_by == "nom_cap":
                         if nom_cap is None:
                             scale_by = c.cell.nom_cap
@@ -817,36 +819,22 @@ def concatenate_summaries(
                     s = c.cell.summary
 
                 if columns is not None:
-                    # output_columns = []
-                    # output_columns.extend(columns)
-                    # if normalize_cycles:
-                    #     output_columns.extend(normalize_cycles_headers)
-                    # if normalize_capacity_on is not None:
-                    #     print("here i am")
-                    #     output_columns = [
-                    #         col for col in output_columns
-                    #         if col not in [
-                    #             hdr_summary["charge_capacity"],
-                    #             hdr_summary["discharge_capacity"],
-                    #         ]
-                    #     ]
-                    #     output_columns.extend(normalize_capacity_headers)
-                    # print(f"{output_columns=}")
                     s = s.loc[:, output_columns].copy()
 
-                # if normalize_cycles:
-                #     s = s.reset_index(drop=True)
+                # somehow using normalized cycles (i.e. equivalent cycles) messes up the order of the index sometimes:
+                if normalize_cycles:
+                    s = s.reset_index()
 
                 frames_sub.append(s)
                 keys_sub.append(cell_id)
 
         if group_it:
-            print("grouping (making average)")
-            print("The _make_average methods needs to be updated so that normalized_cycle_index is handled properly.")
-            print("FIX THIS NOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             try:
                 s, cell_id = _make_average(
-                    frames_sub, keys_sub, output_columns, key_index_bounds=key_index_bounds
+                    frames_sub,
+                    keys_sub,
+                    output_columns,
+                    key_index_bounds=key_index_bounds,
                 )
             except ValueError as e:
                 print("could not make average!")
@@ -896,257 +884,6 @@ def concatenate_summaries(
 
             if cell_type_split_position is not None:
 
-                cdf = cdf.assign(
-                    cell_type=cdf.cell_name.str.split("_", expand=True)[
-                        cell_type_split_position
-                    ]
-                )
-                melted_column_order.insert(-2, "cell_type")
-            cdf = cdf.reindex(columns=melted_column_order)
-
-        return cdf
-    else:
-        logging.info("Empty - nothing to concatenate!")
-        return pd.DataFrame()
-
-
-def concatenate_summaries_old(
-    b,
-    max_cycle=None,
-    rate=None,
-    on="charge",
-    columns=None,
-    column_names=None,
-    normalize_capacity_on=None,
-    scale_by=None,
-    nom_cap=None,
-    normalize_cycles=False,
-    add_areal=False,
-    group_it=False,
-    rate_std=None,
-    rate_column=None,
-    inverse=False,
-    inverted=False,
-    key_index_bounds=[1, -2],
-    melt=False,
-    cell_type_split_position="auto",
-):
-    """Merge all summaries in a batch into a gigantic summary data frame.
-
-    TODO: Allow also dictionaries of cell objects.
-    TODO: Allow iterating through batch-objects (for id, name in b.iteritems() or similar)
-
-    Args:
-        b (cellpy.batch object): the batch with the cells.
-        max_cycle (int): drop all cycles above this value.
-        rate (float): filter on rate (C-rate)
-        on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
-        columns (list): selected column(s) (using cellpy attribute name) [defaults to "charge_capacity_gravimetric"]
-        column_names (list): selected column(s) (using exact column name)
-        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization (typically the first few cycles after formation)
-        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap", or given value (defaults to one).
-        nom_cap (float): nominal capacity of the cell
-        normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
-        add_areal (bool):  add areal capacity to the summary
-        group_it (bool): if True, average pr group.
-        rate_std (float): allow for this inaccuracy when selecting cycles based on rate
-        rate_column (str): name of the column containing the C-rates.
-        inverse (bool): select steps that does not have the given C-rate.
-        inverted (bool): select cycles that does not have the steps filtered by given C-rate.
-        key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
-            key_index_bound[0] to key_index_bound[1].
-        melt (bool): return frame as melted (long format).
-        cell_type_split_position (int | None | "auto"): list item number for creating a cell type identifier
-            after performing a split("_") on the cell names (only valid if melt==True). Set to None to not
-            include a cell_type col.
-
-    Returns:
-        Multi-index ``pandas.DataFrame``
-
-    Notes:
-        The returned ``DataFrame`` has the following structure:
-
-        - top-level columns or second col for melted: cell-names (cell_name)
-        - second-level columns or first col for melted: summary headers (summary_headers)
-        - row-index or third col for melted: cycle number (cycle_index)
-        - cell_type on forth col for melted if cell_type_split_position is given
-
-    """
-
-    if normalize_capacity_on is not None:
-        default_columns = ["normalized_charge_capacity"]
-    else:
-        default_columns = ["charge_capacity_gravimetric"]
-
-    reserved_cell_label_names = ["FC"]
-    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
-    cell_names_nest = []
-    frames = []
-    keys = []
-
-    if columns is not None:
-        if normalize_capacity_on is not None:
-            _columns = []
-            for name in columns:
-                if name.startswith("normalized_"):
-                    _columns.append(hdr_summary[name])
-                else:
-                    _columns.append(hdr_summary["normalized_" + name])
-            columns = _columns
-        else:
-            columns = [hdr_summary[name] for name in columns]
-    else:
-        columns = []
-
-    if column_names is not None:
-        columns += column_names
-
-    if len(columns) > 1:
-        columns = [hdr_summary[name] for name in default_columns]
-
-    logging.info(f"concatenating the following columns: {columns}")
-    normalize_cycles_headers = []
-
-    if normalize_cycles:
-        if hdr_norm_cycle not in columns:
-            normalize_cycles_headers.append(hdr_norm_cycle)
-        # if hdr_cum_charge not in columns:
-        #     normalize_cycles_headers.append(hdr_cum_charge)
-    if group_it:
-        g = b.pages.groupby("group")
-        for gno, b_sub in g:
-            cell_names_nest.append(list(b_sub.index))
-    else:
-        cell_names_nest.append(list(b.experiment.cell_names))
-
-    for cell_names in cell_names_nest:
-        frames_sub = []
-        keys_sub = []
-
-        for cell_id in cell_names:
-            logging.debug(f"Processing [{cell_id}]")
-            c = b.experiment.data[cell_id]
-
-            if not c.empty:
-                if max_cycle is not None:
-                    c = c.drop_from(max_cycle + 1)
-                # if add_areal:
-                #     c = add_areal_capacity(c, cell_id, b.experiment.journal)
-
-                if normalize_capacity_on is not None:
-                    if scale_by == "nom_cap":
-                        if nom_cap is None:
-                            scale_by = c.cell.nom_cap
-                        else:
-                            scale_by = nom_cap
-                    elif scale_by is None:
-                        scale_by = 1.0
-
-                    c = add_normalized_capacity(
-                        c, norm_cycles=normalize_capacity_on, scale=scale_by
-                    )
-
-                if rate is not None:
-                    s = select_summary_based_on_rate(
-                        c,
-                        rate=rate,
-                        on=on,
-                        rate_std=rate_std,
-                        rate_column=rate_column,
-                        inverse=inverse,
-                        inverted=inverted,
-                    )
-
-                else:
-                    s = c.cell.summary
-
-                if columns is not None:
-                    if normalize_cycles:
-                        s = s.loc[:, normalize_cycles_headers + columns].copy()
-                    else:
-                        s = s.loc[:, columns].copy()
-
-                if normalize_cycles:
-                    if nom_cap is None:
-                        _nom_cap = c.cell.nom_cap
-                    else:
-                        _nom_cap = nom_cap
-
-                    # if not group_it:
-                    #     print(hdr_cum_charge)
-                    #     s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
-                    #     if hdr_cum_charge not in columns:
-                    #         s = s.drop(columns=hdr_cum_charge)
-
-                    s = s.reset_index(drop=True)
-
-                frames_sub.append(s)
-                keys_sub.append(cell_id)
-
-        if group_it:
-            try:
-                if normalize_cycles:
-                    s, cell_id = _make_average(
-                        frames_sub,
-                        keys_sub,
-                        normalize_cycles_headers + columns,
-                        True,
-                        key_index_bounds,
-                    )
-                    s = add_normalized_cycle_index(s, nom_cap=_nom_cap)
-                    # if hdr_cum_charge not in columns:
-                    #     s = s.drop(columns=hdr_cum_charge)
-                else:
-                    s, cell_id = _make_average(
-                        frames_sub, keys_sub, columns, key_index_bounds=key_index_bounds
-                    )
-            except ValueError as e:
-                print("could not make average!")
-                print(e)
-            else:
-                frames.append(s)
-                keys.append(cell_id)
-        else:
-            frames.extend(frames_sub)
-            keys.extend(keys_sub)
-
-    if frames:
-        if len(set(keys)) != len(keys):
-            logging.info("Got several columns with same test-name")
-            logging.info("Renaming.")
-            used_names = []
-            new_keys = []
-            for name in keys:
-                while True:
-                    if name in used_names:
-                        name += "x"
-                    else:
-                        break
-                new_keys.append(name)
-                used_names.append(name)
-            keys = new_keys
-        cdf = pd.concat(frames, keys=keys, axis=1)
-        cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
-        if melt:
-            cdf = cdf.reset_index(drop=False).melt(
-                id_vars=hdr_summary.cycle_index, value_name="value"
-            )
-            melted_column_order = [
-                "summary_header",
-                "cell_name",
-                hdr_summary.cycle_index,
-                "value",
-            ]
-
-            if cell_type_split_position == "auto":
-                cell_type_split_position = 1
-                _pp = cdf.cell_name.str.split("_", expand=True).values[0]
-                for _p in _pp[1:]:
-                    if _p not in reserved_cell_label_names:
-                        break
-                    cell_type_split_position += 1
-
-            if cell_type_split_position is not None:
                 cdf = cdf.assign(
                     cell_type=cdf.cell_name.str.split("_", expand=True)[
                         cell_type_split_position

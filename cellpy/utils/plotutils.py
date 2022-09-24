@@ -1102,6 +1102,8 @@ def oplot(
     group_it=False,
     spread=True,
     capacity_unit="gravimetric",
+    capacity_unit_label=None,
+    internal_resistance_unit="Ohm",
     **kwargs,
 ):
     """create a holoviews-plot containing Coulombic Efficiency, Capacity, and IR.
@@ -1113,8 +1115,14 @@ def oplot(
         ir_ylim (tuple of two floats): scaling of y-axis for i.r. plots.
         simple (bool): if True, use hv.Overlay instead of hv.NdOverlay.
         group_it (bool): if True, average pr group.
-        spread (bool): if True, show spread instead of error-bars
-        capacity_unit (str): select "gravimetric", or "areal"
+        spread (bool): if True, show spread instead of error-bars.
+        capacity_unit (str): select "gravimetric", or "areal".
+        capacity_unit_label (str): shown in the plot title for the capacity plot
+            (defaults to mAh/g(a.m.) for gravimetric and mAh/cm2 for areal).
+        internal_resistance_unit (str): shown in the plot title for the ir plots (defaults to Ohm).
+
+    **kwargs:
+        Sent to plotutils.bplot.
 
     Returns:
         ``hv.Overlay`` or ``hv.NdOverlay``
@@ -1126,13 +1134,13 @@ def oplot(
         "gravimetric": {
             "discharge": "discharge_capacity_gravimetric",
             "charge": "charge_capacity_gravimetric",
-            "unit": "mAh/g(a.m.)",
+            "unit": capacity_unit_label or "mAh/g(a.m.)",
             "ylim": (0, 5000),
         },
         "areal": {
             "discharge": "discharge_capacity_areal",
             "charge": "charge_capacity_areal",
-            "unit": "mAh/cm2",
+            "unit": capacity_unit_label or "mAh/cm2",
             "ylim": (0, 3),
         },
     }
@@ -1250,7 +1258,10 @@ def oplot(
             ylabel="discharge",
             **overlay_sensitive_opts["ird"],
         ),
-        layout_opts(title="Internal Resistance (Ohm)", **layout_sensitive_opts["ird"]),
+        layout_opts(
+            title=f"Internal Resistance ({internal_resistance_unit})",
+            **layout_sensitive_opts["ird"],
+        ),
     )
 
     oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts, **kwargs).opts(
@@ -1310,6 +1321,7 @@ def bplot(b, individual=False, cols=1, **kwargs):
         width (int): width of plot.
         spread (bool): use error-spread instead of error-bars.
         simple (bool): use ``hv.Overlay`` instead of ``hv.NdOverlay``.
+        extension (str): plotting backend.
 
     Returns:
         ``holoviews`` plot
@@ -1318,8 +1330,12 @@ def bplot(b, individual=False, cols=1, **kwargs):
     journal = kwargs.pop("journal", b.experiment.journal)
     spread = kwargs.pop("spread", True)
     simple = kwargs.pop("simple", False)
-    columns = kwargs.pop("columns", ["charge_capacity"])
+    columns = kwargs.pop("columns", ["charge_capacity_gravimetric"])
     extension = kwargs.pop("extension", "bokeh")
+    if extension != "bokeh":
+        logging.critical(
+            f"Setting extension to {extension}. Remark that this will globally change the hv settings."
+        )
     p = collections.OrderedDict()
     i_width = width // cols
     for i, col in enumerate(columns):
