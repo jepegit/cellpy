@@ -1,4 +1,3 @@
-import collections
 import logging
 import os
 import pathlib
@@ -10,7 +9,7 @@ import pandas as pd
 from scipy import stats
 
 import cellpy
-from cellpy import prmreader, prms
+from cellpy import prms
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
     ATTRS_DATASET,
@@ -20,6 +19,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_normal,
 )
 from cellpy.readers.cellreader import CellpyData
+from cellpy.utils.batch import Batch
 
 hdr_summary = get_headers_summary()
 hdr_steps = get_headers_step_table()
@@ -542,7 +542,7 @@ def yank_before(b, first=None, keep_old=False):
 
 
 def yank_outliers(
-    b,
+    b: Batch,
     zscore_limit=None,
     low=0.0,
     high=7_000.0,
@@ -669,7 +669,7 @@ def yank_outliers(
 
 
 def concatenate_summaries(
-    b,
+    b: Batch,
     max_cycle=None,
     rate=None,
     on="charge",
@@ -687,7 +687,7 @@ def concatenate_summaries(
     key_index_bounds=None,
     melt=False,
     cell_type_split_position="auto",
-):
+) -> pd.DataFrame:
 
     """Merge all summaries in a batch into a gigantic summary data frame.
 

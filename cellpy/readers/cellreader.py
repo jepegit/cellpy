@@ -2530,7 +2530,7 @@ class CellpyData:
                 logging.info(
                     "Trimming taper steps is currently not"
                     "possible when returning pd.DataFrame. "
-                    "Do it manually insteaD."
+                    "Do it manually instead."
                 )
             out = st[st[shdr.type].isin(steptypes) & st[shdr.cycle].isin(cycle_numbers)]
             return out
@@ -3705,10 +3705,10 @@ class CellpyData:
         voltage_header = self.headers_normal.voltage_txt
         # step_index_header  = self.headers_normal.step_index_txt
 
-        test = self.cells[dataset_number].raw
+        data = self.cells[dataset_number].raw
         if cycle:
             logging.debug("getting voltage curve for cycle")
-            c = test[(test[cycle_index_header] == cycle)]
+            c = data[(data[cycle_index_header] == cycle)]
             if not self.is_empty(c):
                 v = c[voltage_header]
                 return v
@@ -3716,15 +3716,15 @@ class CellpyData:
             if not full:
                 logging.debug("getting list of voltage-curves for all cycles")
                 v = []
-                no_cycles = np.amax(test[cycle_index_header])
+                no_cycles = np.amax(data[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     logging.debug(txt)
-                    c = test[(test[cycle_index_header] == j)]
+                    c = data[(data[cycle_index_header] == j)]
                     v.append(c[voltage_header])
             else:
                 logging.debug("getting frame of all voltage-curves")
-                v = test[voltage_header]
+                v = data[voltage_header]
             return v
 
     def get_current(self, cycle=None, dataset_number=None, full=True):
@@ -3748,10 +3748,10 @@ class CellpyData:
         current_header = self.headers_normal.current_txt
         # step_index_header  = self.headers_normal.step_index_txt
 
-        test = self.cells[dataset_number].raw
+        data = self.cells[dataset_number].raw
         if cycle:
             logging.debug(f"getting current for cycle {cycle}")
-            c = test[(test[cycle_index_header] == cycle)]
+            c = data[(data[cycle_index_header] == cycle)]
             if not self.is_empty(c):
                 v = c[current_header]
                 return v
@@ -3759,15 +3759,15 @@ class CellpyData:
             if not full:
                 logging.debug("getting a list of current-curves for all cycles")
                 v = []
-                no_cycles = np.amax(test[cycle_index_header])
+                no_cycles = np.amax(data[cycle_index_header])
                 for j in range(1, no_cycles + 1):
                     txt = "Cycle  %i:  " % j
                     logging.debug(txt)
-                    c = test[(test[cycle_index_header] == j)]
+                    c = data[(data[cycle_index_header] == j)]
                     v.append(c[current_header])
             else:
                 logging.debug("getting all current-curves ")
-                v = test[current_header]
+                v = data[current_header]
             return v
 
     def sget_steptime(self, cycle, step, dataset_number=None):
@@ -4762,7 +4762,7 @@ class CellpyData:
               first, zero, beginning, default - first (index set to 0)
         """
         warnings.warn("Deprecated", DeprecationWarning)
-        logging.debug("***set_testnumber(n)")
+        logging.debug("***set_cellnumber(n)")
         if not isinstance(dataset_number, int):
             dataset_number_txt = dataset_number
             try:
