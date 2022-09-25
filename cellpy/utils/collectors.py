@@ -80,7 +80,10 @@ class BatchSummaryCollector(BatchCollector):
         self._set_docstrings()
 
         if data_collector_arguments is not None:
-            self.data_collector_arguments = {**self.data_collector_arguments, **data_collector_arguments}
+            self.data_collector_arguments = {
+                **self.data_collector_arguments,
+                **data_collector_arguments,
+            }
 
         if plotter_arguments is not None:
             self.plotter_arguments = {**self.plotter_arguments, **plotter_arguments}

@@ -143,6 +143,16 @@ class Batch:
     def __str__(self):
         return str(self.experiment)
 
+    def _repr_html_(self):
+
+        txt = f"<h2>Batch-object</h2> id={hex(id(self))}"
+        txt += f"<h3>batch.journal</h3>"
+        txt += f"<blockquote>{self.journal._repr_html_()}</blockquote>"
+        txt += f"<h3>batch.experiment</h3>"
+        txt += f"<blockquote>{self.experiment._repr_html_()}</blockquote>"
+
+        return txt
+
     def __len__(self):
         return len(self.experiment)
 
@@ -232,7 +242,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             return c.empty
-        except Exception:
+        except Exception as e:
             logging.debug(f"Exception ignored: {e}")
             return None
 
@@ -240,7 +250,7 @@ class Batch:
         try:
             c = self.experiment.data[cell_id]
             return c.cell.steps[self.headers_step_table.cycle].max()
-        except Exception:
+        except Exception as e:
             logging.debug(f"Exception ignored: {e}")
             return None
 
@@ -395,7 +405,12 @@ class Batch:
 
     @property
     def cells(self) -> Data:
-        """access cells as a Data object (attribute lookup and automatic loading)"""
+        """Access cells as a Data object (attribute lookup and automatic loading)
+
+        Usage (at least in jupyter notebook):
+            Write `b.cells.x` and press <TAB>. Then a pop-up will appear, and you can choose the
+            cell you would like to retrieve.
+        """
         return self.experiment.data
 
     @property

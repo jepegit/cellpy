@@ -1294,7 +1294,7 @@ class DataLoader(BaseLoader):
 
     def _init_data(self, file_name, global_data_df, test_no):
         data = Cell()
-        data.cell_no = test_no
+        data.cell_no = int(test_no)
         data.loaded_from = file_name
         fid = FileID(file_name)
         # name of the .res file it is loaded from:

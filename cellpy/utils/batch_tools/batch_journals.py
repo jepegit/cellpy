@@ -62,6 +62,43 @@ class LabJournal(BaseJournal):
                 self.engine = engine
         self.batch_col = "b01"
 
+    def _repr_html_(self):
+        txt = f"<h2>LabJournal-object</h2> id={hex(id(self))}"
+        txt += "<h3>Main attributes</h3>"
+        txt += f"""
+        <table>
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><b>name</b></td><td>{self.name}</td></tr>
+                <tr><td><b>project</b></td><td>{self.project}</td></tr>
+                <tr><td><b>file_name</b></td><td>{self.file_name}</td></tr>
+                <tr><td><b>db_reader</b></td><td>{self.db_reader}</td></tr>
+                <tr><td><b>batch_col</b></td><td>{self.batch_col}</td></tr>
+                <tr><td><b>time_stamp</b></td><td>{self.time_stamp}</td></tr>
+                <tr><td><b>project_dir</b></td><td>{self.project_dir}</td></tr>
+                <tr><td><b>raw_dir</b></td><td>{self.raw_dir}</td></tr>
+                <tr><td><b>batch_dir</b></td><td>{self.batch_dir}</td></tr>
+            </tbody>
+        </table>
+        """
+        txt += "<h3>Session info</h3>"
+        for key in self.session:
+            txt += f"<p><b>{key}</b>: {self.session[key]}</p>"
+
+        txt += "<h3>Pages</h3>"
+        try:
+            txt += self.pages._repr_html_()
+        except AttributeError:
+            txt += "<p><b>pages</b><br> not found!</p>"
+        except ValueError:
+            txt += "<p><b>pages</b><br> not readable!</p>"
+        return txt
+
     def _check_file_name(self, file_name, to_project_folder=False):
         if file_name is None:
             if not self.file_name:

@@ -117,8 +117,7 @@ class CellpyData:
 
     def _repr_html_(self):
         header = f"""
-         <p>
-            <h3>CellpyData-object</h3>
+            <h2>CellpyData-object</h2>
             <b>id</b>: {hex(id(self))} <br>
             <b>name</b>: {self.name} <br>
             <b>table names</b>: {self.table_names} <br>
@@ -129,7 +128,6 @@ class CellpyData:
             <b>daniel_number</b>: {self.daniel_number} <br>
             <b>cellpy_datadir</b>: {self.cellpy_datadir} <br>
             <b>raw_datadir</b>: {self.raw_datadir} <br>
-         </p>
         """
         all_vars = "<p>"
         all_vars += f"""
@@ -149,16 +147,13 @@ class CellpyData:
             <b>selected_scans</b>: {self.selected_scans} <br>
             <b>status_datasets</b>: {self.status_datasets} <br>
             <b>summary_exists (deprecated)</b>: {self.summary_exists} <br>
-
-
         """
         all_vars += "</p>"
 
         cell_txt = ""
         for i, cell in enumerate(self.cells):
-            cell_txt += f"<h4>cell {i + 1} of {len(self.cells)}</h4>"
-            cell_txt += cell._repr_html_()
-
+            cell_txt += f"<h3>cell {i + 1} of {len(self.cells)}</h3>"
+            cell_txt += f"<blockquote>{cell._repr_html_()}</blockquote>"
         return header + all_vars + cell_txt
 
     def __str__(self):

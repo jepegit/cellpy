@@ -108,7 +108,7 @@ class DataLoader(BaseLoader):
         self.logger.debug(txt)
 
         data = Cell()
-        data.cell_no = test_no
+        data.cell_no = int(test_no)
         data.loaded_from = file_name
         fid = FileID(file_name)
         data.channel_index = channel_index

@@ -183,8 +183,8 @@ class Cell:
     """
 
     def _repr_html_(self):
-        obj = f"<b>Cell-object</b> id={hex(id(self))}"
-        txt = "<p>"
+        txt = f"<h2>Cell-object</h2> id={hex(id(self))}"
+        txt += "<p>"
         for p in dir(self):
             if not p.startswith("_"):
                 if p not in ["raw", "summary", "steps", "logger"]:
@@ -219,7 +219,7 @@ class Cell:
                 "<p><b>steps data-frame </b><br> does not contain any columns!</p>"
             )
 
-        return obj + txt + summary_txt + steps_txt + raw_txt
+        return txt + summary_txt + steps_txt + raw_txt
 
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
