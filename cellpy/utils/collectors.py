@@ -1,5 +1,9 @@
+"""Collectors are used for simplifying plotting and exporting batch objects."""
+
+import textwrap
 from pathlib import Path
 from typing import Any
+import inspect
 
 import pandas as pd
 
@@ -60,6 +64,21 @@ class BatchSummaryCollector(BatchCollector):
         plotter_arguments: dict = None,
         **kwargs,
     ):
+        """Update both the collected data and the plot(s).
+        Args:
+            b (cellpy.utils.Batch): the batch object.
+            name (str or bool): name of the collector used for auto-generating filenames etc.
+            autorun (bool): run collector and plotter immediately if True.
+            data_collector_arguments (dict): keyword arguments sent to the data collector.
+            plotter_arguments (dict): keyword arguments sent to the plotter.
+            update_name (bool): update the name (using automatic name generation) based on new settings.
+            **kwargs: set BatchSummaryCollector attributes.
+        """
+
+        self.plotter = plot_concatenated
+        self.data_collector = concatenate_summaries
+        self._set_docstrings()
+
         if data_collector_arguments is not None:
             self.data_collector_arguments = {**self.data_collector_arguments, **data_collector_arguments}
 
@@ -76,6 +95,25 @@ class BatchSummaryCollector(BatchCollector):
 
         if autorun:
             self.update(update_name=False)
+
+    def _set_docstrings(self):
+        indenter = "    "
+        docstring_plotter = f"{inspect.getdoc(self.plotter)}"
+        docstring_data_collector = f"{inspect.getdoc(self.data_collector)}"
+        update_txt = inspect.getdoc(self.update)
+
+        update_hdr = f"plotter_arguments ({self.plotter.__name__}):\n"
+        update_hdr += len(update_hdr) * "-"
+        update_txt += f"\n\n{update_hdr}\n"
+        update_txt += textwrap.indent(docstring_plotter, indenter)
+
+        update_hdr = f"data_collector_arguments ({self.data_collector.__name__}):\n"
+        update_hdr += len(update_hdr) * "-"
+        update_txt += f"\n\n{update_hdr}\n"
+        update_txt += textwrap.indent(docstring_data_collector, indenter)
+
+        update_txt = textwrap.dedent(update_txt)
+        self.update.__func__.__doc__ = update_txt
 
     def _set_attributes(self, **kwargs):
         self.sep = kwargs.get("sep", ";")
@@ -100,11 +138,16 @@ class BatchSummaryCollector(BatchCollector):
         data_collector_arguments: dict = None,
         plotter_arguments: dict = None,
         update_name=True,
-        **kwargs,
     ):
-        self.data = concatenate_summaries(self.b, **self.data_collector_arguments)
+        """Update both the collected data and the plot(s).
+        Args:
+            data_collector_arguments (dict): keyword arguments sent to the data collector.
+            plotter_arguments (dict): keyword arguments sent to the plotter.
+            update_name (bool): update the name (using automatic name generation) based on new settings.
+        """
+        self.data = self.data_collector(self.b, **self.data_collector_arguments)
         if HOLOVIEWS_AVAILABLE:
-            self.figure = plot_concatenated(
+            self.figure = self.plotter(
                 self.data, journal=self.b.journal, **self.plotter_arguments
             )
         if update_name:
