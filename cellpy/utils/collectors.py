@@ -158,24 +158,30 @@ class BatchSummaryCollector(BatchCollector):
             return self.figure
 
     def to_csv(self):
+        filename = f"{self.data_directory}/{self.name}.csv"
         self.data.to_csv(
-            f"{self.data_directory}/{self.name}.csv",
+            filename,
             sep=self.sep,
             index=self.csv_include_index,
         )
+        print(f"saved csv file: {filename}")
 
     def to_html(self):
+        filename = f"{self.figure_directory}/{self.name}.html"
         hv.save(
             self.figure,
-            f"{self.figure_directory}/{self.name}.html",
+            filename,
             toolbar=self.toolbar,
         )
+        print(f"saved html file: {filename}")
 
     def save(self):
         if HOLOVIEWS_AVAILABLE:
+            filename = f"{self.figure_directory}/{self.name}.hvz"
             Pickler.save(
                 self.figure,
-                f"{self.figure_directory}/{self.name}.hvz",
+                filename,
             )
+            print(f"pickled holoviews file: {filename}")
         self.to_csv()
         self.to_html()
