@@ -137,7 +137,9 @@ class BatchSummaryCollector(BatchCollector):
         name = "_".join(names)
         return name
 
-    def _update_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
+    def _update_arguments(
+        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
+    ):
         if data_collector_arguments is not None:
             self.data_collector_arguments = {
                 **self.data_collector_arguments,
@@ -147,12 +149,14 @@ class BatchSummaryCollector(BatchCollector):
         if plotter_arguments is not None:
             self.plotter_arguments = {**self.plotter_arguments, **plotter_arguments}
 
-    def reset_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
+    def reset_arguments(
+        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
+    ):
         """Reset the arguments to the defaults.
-           Args:
-               data_collector_arguments (dict): optional additional keyword arguments for the data collector.
-               plotter_arguments (dict): optional additional keyword arguments for the plotter.
-           """
+        Args:
+            data_collector_arguments (dict): optional additional keyword arguments for the data collector.
+            plotter_arguments (dict): optional additional keyword arguments for the plotter.
+        """
         self.data_collector_arguments = self._data_collector_arguments.copy()
         self.plotter_arguments = self._plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)

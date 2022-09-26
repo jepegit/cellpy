@@ -235,7 +235,9 @@ class Cell:
         self.ir_steps = None
         self.ocv_steps = None
         self._nom_cap = prms.Materials.default_nom_cap  # nominal capacity
-        self._nom_cap_specifics = prms.Materials.default_nom_cap_specifics  # nominal capacity type
+        self._nom_cap_specifics = (
+            prms.Materials.default_nom_cap_specifics
+        )  # nominal capacity type
         self.mass_given = False
         self.material = prms.Materials.default_material
         self.merged = False
