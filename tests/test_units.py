@@ -26,6 +26,18 @@ def test_get_converter_to_specific(dataset, test_input, expected):
     assert c == expected
 
 
+def test_nominal_capacity(dataset):
+    nom_cap = dataset.cell.nom_cap
+    mass = dataset.cell.mass
+    specifics = dataset.cell._nom_cap_specifics
+
+    absolute_nom_cap = dataset._from_specific_nom_cap_to_absolute(
+        nom_cap, mass, specifics
+    )
+    print(nom_cap)
+    print(absolute_nom_cap)
+
+
 def test_get_converter_to_specific_absolute_with_mode(dataset):
     c = dataset.get_converter_to_specific(mode="absolute")
     assert c == pytest.approx(1000, 0.0001)

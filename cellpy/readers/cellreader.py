@@ -2795,11 +2795,11 @@ class CellpyData:
         shdr = self.headers_step_table
 
         if from_data_point is not None:
-            df = self.cells[dataset_number].raw.loc[
-                self.cells[dataset_number].raw[nhdr.data_point_txt] >= from_data_point
+            df = self.cell.raw.loc[
+                self.cell.raw[nhdr.data_point_txt] >= from_data_point
             ]
         else:
-            df = self.cells[dataset_number].raw
+            df = self.cell.raw
         # df[shdr.internal_resistance_change] = \
         #     df[nhdr.internal_resistance_txt].pct_change()
 
