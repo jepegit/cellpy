@@ -39,9 +39,11 @@ from cellpy.exceptions import (
     UnderDefined,
 )
 from cellpy.parameters import prms
-from cellpy.parameters.legacy.cellpy_file_upgrade_settings import (
-    rename_summary_columns, rename_raw_columns,
-    rename_fid_columns, rename_step_columns
+from cellpy.parameters.legacy.update_headers import (
+    rename_summary_columns,
+    rename_raw_columns,
+    rename_fid_columns,
+    rename_step_columns,
 )
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
@@ -61,7 +63,7 @@ from cellpy.parameters.internal_settings import (
     MINIMUM_CELLPY_FILE_VERSION,
     PICKLE_PROTOCOL,
 )
-from cellpy.parameters.legacy import internal_settings as old_settings
+
 from cellpy.readers.core import (
     Cell,
     FileID,
@@ -1649,11 +1651,19 @@ class CellpyData:
                 upgrade_from_to=(6, CELLPY_FILE_VERSION),
             )
             self._extract_raw_from_cellpy_file(
-                data, parent_level, raw_dir, store, selector=selector,
-                upgrade_from_to=(6, CELLPY_FILE_VERSION)
+                data,
+                parent_level,
+                raw_dir,
+                store,
+                selector=selector,
+                upgrade_from_to=(6, CELLPY_FILE_VERSION),
             )
             self._extract_steps_from_cellpy_file(
-                data, parent_level, step_dir, store, selector=selector,
+                data,
+                parent_level,
+                step_dir,
+                store,
+                selector=selector,
             )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
@@ -1701,8 +1711,12 @@ class CellpyData:
                 upgrade_from_to=(5, CELLPY_FILE_VERSION),
             )
             self._extract_raw_from_cellpy_file(
-                data, parent_level, raw_dir, store, selector=selector,
-                upgrade_from_to=(5, CELLPY_FILE_VERSION)
+                data,
+                parent_level,
+                raw_dir,
+                store,
+                selector=selector,
+                upgrade_from_to=(5, CELLPY_FILE_VERSION),
             )
             self._extract_steps_from_cellpy_file(
                 data, parent_level, step_dir, store, selector=selector
@@ -1771,10 +1785,20 @@ class CellpyData:
                 _summary_dir,
                 upgrade_from_to=(4, CELLPY_FILE_VERSION),
             )
-            self._extract_raw_from_cellpy_file(data, parent_level, _raw_dir, store,
-                upgrade_from_to=(4, CELLPY_FILE_VERSION),)
-            self._extract_steps_from_cellpy_file(data, parent_level, _step_dir, store,
-                upgrade_from_to=(4, CELLPY_FILE_VERSION),)
+            self._extract_raw_from_cellpy_file(
+                data,
+                parent_level,
+                _raw_dir,
+                store,
+                upgrade_from_to=(4, CELLPY_FILE_VERSION),
+            )
+            self._extract_steps_from_cellpy_file(
+                data,
+                parent_level,
+                _step_dir,
+                store,
+                upgrade_from_to=(4, CELLPY_FILE_VERSION),
+            )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 _fid_dir, parent_level, store
             )
@@ -1924,7 +1948,11 @@ class CellpyData:
         logging.debug(f"data-point max limit: {self.limit_data_points}")
 
     def _extract_raw_from_cellpy_file(
-        self, data, parent_level, raw_dir, store,
+        self,
+        data,
+        parent_level,
+        raw_dir,
+        store,
         selector: Union[None, str] = None,
         upgrade_from_to: tuple = None,
     ):
@@ -1939,7 +1967,11 @@ class CellpyData:
             data.raw = rename_raw_columns(data.raw, old, new)
 
     def _extract_steps_from_cellpy_file(
-        self, data, parent_level, step_dir, store,
+        self,
+        data,
+        parent_level,
+        step_dir,
+        store,
         selector: Union[None, str] = None,
         upgrade_from_to: tuple = None,
     ):
@@ -1960,8 +1992,9 @@ class CellpyData:
             data.steps = pd.DataFrame()
             warnings.warn(f"Unhandled exception raised: {e}")
 
-    def _extract_fids_from_cellpy_file(self, fid_dir, parent_level, store,
-        upgrade_from_to: tuple = None):
+    def _extract_fids_from_cellpy_file(
+        self, fid_dir, parent_level, store, upgrade_from_to: tuple = None
+    ):
         logging.debug(f"Extracting fid table from {fid_dir} in hdf5 store")
         try:
             fid_table = store.select(
@@ -1982,7 +2015,10 @@ class CellpyData:
         return fid_table, fid_table_selected
 
     def _extract_meta_from_cellpy_file(
-        self, data: Cell, meta_table: pd.DataFrame, filename: Union[Path, str],
+        self,
+        data: Cell,
+        meta_table: pd.DataFrame,
+        filename: Union[Path, str],
         upgrade_from_to: tuple = None,
     ) -> None:
         # get attributes from meta table

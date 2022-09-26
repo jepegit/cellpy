@@ -15,7 +15,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_journal,
     keys_journal_session,
 )
-from cellpy.parameters.legacy.internal_settings import (
+from cellpy.parameters.legacy.update_headers import (
     headers_journal_v0 as hdr_journal_old,
 )
 from cellpy.readers import dbreader

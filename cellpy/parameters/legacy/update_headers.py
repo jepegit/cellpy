@@ -403,6 +403,9 @@ journal_header_versions = {
 }
 
 
+headers_journal_v0 = HeadersJournalV5()
+
+
 def rename_step_columns(
     steps: pd.DataFrame,
     old_version: int,
@@ -477,7 +480,9 @@ def rename_fid_columns(
     **kwargs,
 ) -> pd.DataFrame:
     logging.debug("renaming headers")
-    logging.critical("RENAMING NOT IMPLEMENTED YET -> Please, create an issue on Github")
+    logging.critical(
+        "RENAMING NOT IMPLEMENTED YET -> Please, create an issue on Github"
+    )
     return fid_table
 
 
@@ -552,8 +557,40 @@ def _create_dummy_summary(columns):
     df.index.name = columns[0]
     return df
 
+
+# Use this as inspiration if you want to implement translation of step table headers:
+# HEADERS_KEYS_STEP_TABLE_EXTENDED = [
+#     "point",
+#     "test_time",
+#     "step_time",
+#     "current",
+#     "voltage",
+#     "charge",
+#     "discharge",
+#     "internal_resistance",
+# ]
+# HEADERS_STEP_TABLE_EXTENSIONS = ["min", "max", "avr", "first", "last", "delta", "std"]
 #
 #
+# headers_step_table_v5["test"] = "test"
+# headers_step_table_v5["ustep"] = "ustep"
+# headers_step_table_v5["cycle"] = "cycle"
+# headers_step_table_v5["step"] = "step"
+# headers_step_table_v5["test_time"] = "test_time"
+# headers_step_table_v5["step_time"] = "step_time"
+# headers_step_table_v5["sub_step"] = "sub_step"
+# headers_step_table_v5["type"] = "type"
+# headers_step_table_v5["sub_type"] = "sub_type"
+# headers_step_table_v5["info"] = "info"
+# headers_step_table_v5["voltage"] = "voltage"
+# headers_step_table_v5["current"] = "current"
+# headers_step_table_v5["charge"] = "charge"
+# headers_step_table_v5["discharge"] = "discharge"
+# headers_step_table_v5["point"] = "point"
+# headers_step_table_v5["internal_resistance"] = "ir"
+# headers_step_table_v5["internal_resistance_change"] = "ir_pct_change"
+# headers_step_table_v5["rate_avr"] = "rate_avr"
+
 # def translate_headers(data_sets, cellpy_file_version):
 #     # this works for upgrading to versions 6,
 #     # remark that the extensions for the step table is hard-coded
@@ -628,12 +665,5 @@ def check():
     print(df.head())
 
 
-def make_it_for_me():
-    from cellpy.parameters.legacy import internal_settings as int_set
-
-    for key, value in int_set.headers_journal_v0.items():
-        print(f'{key}: str = "{value}"')
-
-
 if __name__ == "__main__":
-    make_it_for_me()
+    check()
