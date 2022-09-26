@@ -234,7 +234,8 @@ class Cell:
         self.discharge_steps = None
         self.ir_steps = None
         self.ocv_steps = None
-        self.nom_cap = prms.Materials.default_nom_cap  # nominal capacity
+        self._nom_cap = prms.Materials.default_nom_cap  # nominal capacity
+        self._nom_cap_specifics = prms.Materials.default_nom_cap_specifics  # nominal capacity type
         self.mass_given = False
         self.material = prms.Materials.default_material
         self.merged = False
@@ -386,6 +387,14 @@ class Cell:
             )
 
         return True
+
+    @property
+    def nom_cap(self):
+        return self._nom_cap
+
+    @nom_cap.setter
+    def nom_cap(self, value):
+        self._nom_cap = value  # nominal capacity
 
     @property
     def has_summary(self):

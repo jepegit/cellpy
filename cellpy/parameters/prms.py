@@ -184,6 +184,7 @@ class MaterialsClass(CellPyDataConfig):
     default_material: str = "silicon"
     default_mass: float = 1.0
     default_nom_cap: float = 1.0
+    default_nom_cap_specifics: str = "gravimetric"
 
 
 Paths = PathsClass()

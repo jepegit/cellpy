@@ -1,6 +1,7 @@
 """Collectors are used for simplifying plotting and exporting batch objects."""
 
 import textwrap
+from pprint import pprint
 from pathlib import Path
 from typing import Any
 import inspect
@@ -47,10 +48,10 @@ class BatchCollector:
 
 
 class BatchSummaryCollector(BatchCollector):
-    data_collector_arguments = {
+    _data_collector_arguments = {
         "columns": ["charge_capacity_gravimetric"],
     }
-    plotter_arguments = {
+    _plotter_arguments = {
         "extension": "bokeh",
     }
 
@@ -77,17 +78,10 @@ class BatchSummaryCollector(BatchCollector):
 
         self.plotter = plot_concatenated
         self.data_collector = concatenate_summaries
+        self.data_collector_arguments = self._data_collector_arguments.copy()
+        self.plotter_arguments = self._plotter_arguments.copy()
         self._set_docstrings()
-
-        if data_collector_arguments is not None:
-            self.data_collector_arguments = {
-                **self.data_collector_arguments,
-                **data_collector_arguments,
-            }
-
-        if plotter_arguments is not None:
-            self.plotter_arguments = {**self.plotter_arguments, **plotter_arguments}
-
+        self._update_arguments(data_collector_arguments, plotter_arguments)
         self._set_attributes(**kwargs)
         self.b = b
         self.nick = nick
@@ -127,41 +121,91 @@ class BatchSummaryCollector(BatchCollector):
         names = ["collected_summaries"]
         cols = self.data_collector_arguments.get("columns")
         grouped = self.data_collector_arguments.get("group_it")
+        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
+        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
         if self.nick:
             names.insert(0, self.nick)
         if cols:
             names.extend(cols)
         if grouped:
             names.append("average")
+        if equivalent_cycles:
+            names.append("equivalents")
+        if len(normalized_cap):
+            names.append("norm")
+
         name = "_".join(names)
         return name
+
+    def _update_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
+        if data_collector_arguments is not None:
+            self.data_collector_arguments = {
+                **self.data_collector_arguments,
+                **data_collector_arguments,
+            }
+
+        if plotter_arguments is not None:
+            self.plotter_arguments = {**self.plotter_arguments, **plotter_arguments}
+
+    def reset_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
+        """Reset the arguments to the defaults.
+           Args:
+               data_collector_arguments (dict): optional additional keyword arguments for the data collector.
+               plotter_arguments (dict): optional additional keyword arguments for the plotter.
+           """
+        self.data_collector_arguments = self._data_collector_arguments.copy()
+        self.plotter_arguments = self._plotter_arguments.copy()
+        self._update_arguments(data_collector_arguments, plotter_arguments)
 
     def update(
         self,
         data_collector_arguments: dict = None,
         plotter_arguments: dict = None,
-        update_name=True,
+        reset: bool = False,
+        update_name: bool = False,
     ):
         """Update both the collected data and the plot(s).
         Args:
             data_collector_arguments (dict): keyword arguments sent to the data collector.
             plotter_arguments (dict): keyword arguments sent to the plotter.
+            reset (bool): reset the arguments first.
             update_name (bool): update the name (using automatic name generation) based on new settings.
         """
-        self.data = self.data_collector(self.b, **self.data_collector_arguments)
+        if reset:
+            self.reset_arguments(data_collector_arguments, plotter_arguments)
+        else:
+            self._update_arguments(data_collector_arguments, plotter_arguments)
+        try:
+            self.data = self.data_collector(self.b, **self.data_collector_arguments)
+        except TypeError as e:
+            print("Type error:", e)
+            print("Registered data_collector_arguments:")
+            pprint(self.data_collector_arguments)
+            print("Hint: fix it and then re-run using reset=True")
+            return
+
         if HOLOVIEWS_AVAILABLE:
-            self.figure = self.plotter(
-                self.data, journal=self.b.journal, **self.plotter_arguments
-            )
+            try:
+                self.figure = self.plotter(
+                    self.data, journal=self.b.journal, **self.plotter_arguments
+                )
+            except TypeError as e:
+                print("Type error:", e)
+                print("Registered plotter_arguments:")
+                pprint(self.plotter_arguments)
+                print("Hint: fix it and then re-run using reset=True")
+                return
+
         if update_name:
             self.name = self._generate_name()
 
-    def show(self):
+    def show(self, hv_opts=None):
+        print(f"figure name: {self.name}")
         if HOLOVIEWS_AVAILABLE:
             return self.figure
 
     def to_csv(self):
-        filename = f"{self.data_directory}/{self.name}.csv"
+        filename = (Path(self.data_directory) / self.name).with_suffix(".csv")
         self.data.to_csv(
             filename,
             sep=self.sep,
@@ -170,17 +214,18 @@ class BatchSummaryCollector(BatchCollector):
         print(f"saved csv file: {filename}")
 
     def to_html(self):
-        filename = f"{self.figure_directory}/{self.name}.html"
-        hv.save(
-            self.figure,
-            filename,
-            toolbar=self.toolbar,
-        )
-        print(f"saved html file: {filename}")
+        if HOLOVIEWS_AVAILABLE:
+            filename = (Path(self.figure_directory) / self.name).with_suffix(".html")
+            hv.save(
+                self.figure,
+                filename,
+                toolbar=self.toolbar,
+            )
+            print(f"saved html file: {filename}")
 
     def save(self):
         if HOLOVIEWS_AVAILABLE:
-            filename = f"{self.figure_directory}/{self.name}.hvz"
+            filename = (Path(self.figure_directory) / self.name).with_suffix(".hvz")
             Pickler.save(
                 self.figure,
                 filename,

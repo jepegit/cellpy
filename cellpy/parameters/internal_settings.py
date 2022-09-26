@@ -384,6 +384,7 @@ ATTRS_CELLPYFILE = [
     "cell_no",
     "name",
     "nom_cap",
+    "nom_cap_specifics",
     "material",
     "item_ID",
     "active_electrode_area",

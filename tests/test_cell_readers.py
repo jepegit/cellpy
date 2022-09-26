@@ -588,7 +588,6 @@ def test_load_cellpyfile(cellpy_data_instance, parameters):
     assert sum_test_time == pytest.approx(
         my_test.summary.loc[:, "test_time"].sum(), 0.1
     )
-    assert my_test.cell_no == run_number
 
 
 def test_get_current_voltage(dataset):
