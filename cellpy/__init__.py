@@ -14,6 +14,7 @@ import cellpy._version
 from cellpy.parameters import prms  # TODO: this might give circular ref
 from cellpy.parameters import prmreader
 from cellpy.readers import cellreader, dbreader, filefinder
+from cellpy.readers.core import Q, ureg
 
 __version__ = cellpy._version.__version__
 
@@ -26,5 +27,6 @@ except FileNotFoundError:
 except UserWarning:
     warnings.warn("Could not read the config-file")
 
+
 get = cellreader.get
-__all__ = ["cellreader", "dbreader", "prmreader", "prms", "filefinder", "get"]
+__all__ = ["cellreader", "dbreader", "prmreader", "prms", "filefinder", "get", "ureg", "Q"]

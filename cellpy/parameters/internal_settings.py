@@ -140,11 +140,13 @@ class InstrumentSettings(DictLikeClass):
 
 
 @dataclass
-class CellpyUnits(BaseSettings):
+class CellpyUnitsOld(BaseSettings):
     current: float = 1.0  # Ah
     charge: float = 0.001  # Ah
     mass: float = 0.001  # g for mass
-    specific: float = 1.0  # g in specific capacity etc
+    specific_gravimetric: float = 1.0  # g in specific capacity etc
+    specific_areal: float = 1.0  # m2 in specific capacity etc
+    specific_volumetric: float = 1.0  # m3 in specific capacity etc
     voltage: float = 1.0  # V
     time: float = 1.0  # sec
     resistance: float = 1.0  # Ohms
@@ -154,6 +156,28 @@ class CellpyUnits(BaseSettings):
     area: float = 1.0  # m2
     volume: float = 1.0  # m3
     temperature: float = 1.0  # C
+
+
+@dataclass
+class CellpyUnits(BaseSettings):
+    current: str = "A"
+    charge: str = "mAh"
+    voltage: str = "V"
+    time: str = "sec"
+    resistance: str = "Ohms"
+    power: str = "W"
+    energy: str = "Wh"
+    frequency: str = "hz"
+    mass: str = "mg"  # for mass
+    nominal_capacity: str = "mAh/g"
+    specific_gravimetric: str = "g"  # g in specific capacity etc
+    specific_areal: str = "cm**2"  # m2 in specific capacity etc
+    specific_volumetric: str = "cm**3"  # m3 in specific capacity etc
+
+    length: str = "m"
+    area: str = "m**2"
+    volume: str = "m**3"
+    temperature: str = "C"
 
 
 @dataclass
@@ -481,6 +505,14 @@ def get_default_output_units() -> CellpyUnits:
 def get_default_cellpy_file_raw_units() -> CellpyUnits:
     """Returns a dictionary with units to use as default for old versions of cellpy files"""
     return CellpyUnits(
+        charge="Ah",
+        mass="mg",
+    )
+
+
+def get_default_cellpy_file_raw_units_OLD() -> CellpyUnitsOld:
+    """Returns a dictionary with units to use as default for old versions of cellpy files"""
+    return CellpyUnitsOld(
         charge=0.001,
         mass=0.001,
     )
@@ -489,12 +521,20 @@ def get_default_cellpy_file_raw_units() -> CellpyUnits:
 def get_default_raw_units() -> CellpyUnits:
     """Returns a dictionary with units as default for raw data"""
     return CellpyUnits(
+        charge="Ah",
+        mass="mg",
+    )
+
+
+def get_default_raw_units_OLD() -> CellpyUnitsOld:
+    """Returns a dictionary with units as default for raw data"""
+    return CellpyUnitsOld(
         charge=1.0,
         mass=0.001,
     )
 
 
-def get_default_raw_limits() -> CellpyUnits:
+def get_default_raw_limits() -> CellpyLimits:
     """Returns an augmented dictionary with units as default for raw data"""
     return CellpyLimits()
 

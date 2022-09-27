@@ -15,6 +15,7 @@ from typing import Any, Tuple, Dict
 
 import numpy as np
 import pandas as pd
+import pint
 from scipy import interpolate
 
 from cellpy.exceptions import NullData
@@ -34,6 +35,10 @@ from cellpy.parameters.internal_settings import (
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
+
+# pint (https://pint.readthedocs.io/en/stable/)
+ureg = pint.UnitRegistry()
+Q = ureg.Quantity
 
 
 # https://stackoverflow.com/questions/60067953/

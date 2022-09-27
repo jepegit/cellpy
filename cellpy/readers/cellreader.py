@@ -61,7 +61,7 @@ from cellpy.parameters.internal_settings import (
     get_default_output_units,
     CELLPY_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
-    PICKLE_PROTOCOL,
+    PICKLE_PROTOCOL, CellpyUnits,
 )
 
 from cellpy.readers.core import (
@@ -72,6 +72,7 @@ from cellpy.readers.core import (
     pickle_protocol,
     xldate_as_datetime,
     generate_default_factory,
+    Q,
 )
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
@@ -2875,13 +2876,13 @@ class CellpyData:
             nom_cap = self.cell.nom_cap
             if nom_cap_specifics == "gravimetric":
                 mass = self.cell.mass
-                nom_cap = self._from_specific_nom_cap_to_absolute(
+                nom_cap = self.nominal_capacity_as_absolute(
                     nom_cap, mass, nom_cap_specifics
                 )
 
             elif nom_cap_specifics == "areal":
                 area = self.cell.active_electrode_area
-                nom_cap = self._from_specific_nom_cap_to_absolute(
+                nom_cap = self.nominal_capacity_as_absolute(
                     nom_cap, area, nom_cap_specifics
                 )
 
@@ -4640,7 +4641,140 @@ class CellpyData:
         """Get the IR data (Deprecated)."""
         raise DeprecatedFeature
 
+    def nominal_capacity_as_absolute(
+        self, value=None, specific=None, nom_cap_specifics=None, convert_charge_units=False
+    ):
+        # TODO: implement handling of edge-cases (i.e. the raw capacity is not in absolute values)
+        if nom_cap_specifics is None:
+            nom_cap_specifics = "gravimetric"
+
+        if specific is None:
+            if nom_cap_specifics == "gravimetric":
+                specific = self.cell.mass
+            elif nom_cap_specifics == "areal":
+                specific = self.cell.active_electrode_area
+
+        if value is None:
+            value = self.cell.nom_cap
+        value = Q(value, self.cellpy_units["nominal_capacity"])
+
+        if nom_cap_specifics == "gravimetric":
+            specific = Q(specific, self.cellpy_units["specific_gravimetric"])
+        elif nom_cap_specifics == "areal":
+            specific = Q(specific, self.cellpy_units["specific_areal"])
+
+        if convert_charge_units:
+            conversion_factor_charge = Q(1, self.cellpy_units["charge"]) / Q(1, self.cell.raw_units["charge"])
+        else:
+            conversion_factor_charge = 1.0
+
+        absolute_value = (
+            value * conversion_factor_charge * specific
+        ).to_reduced_units().to("Ah")
+        return absolute_value.m
+
+
+    #
+    # if value.check("[current]*[time]/[mass]"):
+    #     value_grav = value
+    #     value_abs = (value * mass).to_reduced_units().to("Ah")
+    #     value_areal = (value_abs / area).to_reduced_units().to("mAh/cm**2")
+    #
+    # elif value.check("[current]*[time]/[area]"):
+    #     value_areal = value
+    #     value_abs = (value * area).to_reduced_units().to("Ah")
+    #     value_grav = (value_abs / mass).to_reduced_units().to("mAh/g")
+    #
+    # else:
+    #     value_abs = value.to_reduced_units().to("Ah")
+    #     value_grav = (value_abs / mass).to_reduced_units().to("mAh/g")
+    #     value_areal = (value_abs / area).to_reduced_units().to("mAh/cm**2")
+
     def get_converter_to_specific(
+        self,
+        dataset: Cell = None,
+        value: float = None,
+        from_units: CellpyUnits = None,
+        to_units: CellpyUnits = None,
+        mode: str = "gravimetric",
+    ) -> float:
+        """Convert from absolute units to specific (areal or gravimetric).
+
+        Args:
+            dataset: cell instance
+            value: value used to scale on.
+            from_units: defaults to cell.raw_units.
+            to_units: defaults to cellpy_units.
+            mode (str): gravimetric, areal or absolute
+
+        Returns:
+            conversion factor (multiply with this to get your values into specific values).
+        """
+        # TODO @jepe: implement handling of edge-cases
+        # TODO @jepe: fix all the instrument readers (replace floats in raw_units with strings)
+        if dataset is None:
+            dataset = self.cell
+
+        new_units = to_units or self.cellpy_units
+        old_units = from_units or dataset.raw_units
+
+        from pprint import pprint
+        pprint(f"{old_units=}")
+
+        pprint(f"{new_units=}")
+
+        if mode == "gravimetric":
+            value = value or dataset.mass
+            value = Q(value, old_units["specific_gravimetric"])
+            to_unit_specific = Q(1.0, new_units["specific_gravimetric"])
+
+        elif mode == "areal":
+            value = value or dataset.active_electrode_area
+            value = Q(value, old_units["specific_areal"])
+            to_unit_specific = Q(1.0, new_units["specific_areal"])
+
+        elif mode == "absolute":
+            print("-> using absolute here does not make any sense.")
+            value = Q(1.0, None)
+            to_unit_specific = Q(1.0, None)
+
+        else:
+            logging.debug(f"mode={mode} not supported!")
+            return 1.0
+
+        from_unit_cap = Q(1.0, old_units["charge"])
+        to_unit_cap = Q(1.0, new_units["charge"])
+
+        from_unit = from_unit_cap
+        to_unit = to_unit_cap / to_unit_specific
+
+        conversion_factor = (from_unit / to_unit / value).to_reduced_units()
+        logging.debug(f"conversion factor: {conversion_factor}")
+
+        return conversion_factor.m
+
+        #
+        #def something:
+        #
+        # if nom_cap.check("[current]*[time]/[mass]"):
+        #     nom_cap_grav = nom_cap
+        #     nom_cap_abs = (nom_cap * mass).to_reduced_units().to("Ah")
+        #     nom_cap_areal = (nom_cap_abs / area).to_reduced_units().to("mAh/cm**2")
+        #
+        # elif nom_cap.check("[current]*[time]/[area]"):
+        #     nom_cap_areal = nom_cap
+        #     nom_cap_abs = (nom_cap * area).to_reduced_units().to("Ah")
+        #     nom_cap_grav = (nom_cap_abs / mass).to_reduced_units().to("mAh/g")
+        #
+        # else:
+        #     nom_cap_abs = nom_cap.to_reduced_units().to("Ah")
+        #     nom_cap_grav = (nom_cap_abs / mass).to_reduced_units().to("mAh/g")
+        #     nom_cap_areal = (nom_cap_abs / area).to_reduced_units().to("mAh/cm**2")
+        # logging.debug(f"conversion factor: {conversion_factor}")
+
+
+
+    def get_converter_to_specific_OLD(
         self,
         dataset: Cell = None,
         value: float = None,
@@ -5128,26 +5262,6 @@ class CellpyData:
             )
         return self
 
-    def _from_specific_nom_cap_to_absolute(
-        self, value, specific, nom_cap_specifics="gravimetric"
-    ):
-        conversion_factor_charge = (
-            self.cellpy_units["charge"] / self.cell.raw_units["charge"]
-        )
-        if nom_cap_specifics == "gravimetric":
-            conversion_factor_specific = (
-                self.cellpy_units["mass"] / self.cellpy_units["specific"]
-            )
-        elif nom_cap_specifics == "areal":
-            conversion_factor_specific = (
-                self.cellpy_units["area"] / self.cellpy_units["specific"]
-            )
-
-        absolute_value = (
-            value * conversion_factor_charge * conversion_factor_specific * specific
-        )
-        return absolute_value
-
     def _make_summary(
         self,
         dataset_number=None,
@@ -5238,11 +5352,11 @@ class CellpyData:
         # is to set stuff like this during initiation of the cell (but not yet):
 
         if nom_cap_specifics == "gravimetric":
-            nom_cap = self._from_specific_nom_cap_to_absolute(
+            nom_cap = self.nominal_capacity_as_absolute(
                 nom_cap, mass, nom_cap_specifics
             )
         elif nom_cap_specifics == "areal":
-            nom_cap = self._from_specific_nom_cap_to_absolute(
+            nom_cap = self.nominal_capacity_as_absolute(
                 nom_cap, cell.active_electrode_area, nom_cap_specifics
             )
         if ensure_step_table and not self.load_only_summary:
