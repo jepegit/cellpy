@@ -198,7 +198,7 @@ class DataLoader(BaseLoader):
 
         # div parameters and information (probably load this last)
         test_no = 1
-        data.cell_no = test_no
+        data.cell_no = int(test_no)
         data.loaded_from = file_name
 
         # some overall prms

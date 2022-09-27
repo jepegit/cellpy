@@ -26,6 +26,18 @@ def test_get_converter_to_specific(dataset, test_input, expected):
     assert c == expected
 
 
+def test_nominal_capacity(dataset):
+    nom_cap = dataset.cell.nom_cap
+    mass = dataset.cell.mass
+    specifics = dataset.cell._nom_cap_specifics
+
+    absolute_nom_cap = dataset._from_specific_nom_cap_to_absolute(
+        nom_cap, mass, specifics
+    )
+    print(nom_cap)
+    print(absolute_nom_cap)
+
+
 def test_get_converter_to_specific_absolute_with_mode(dataset):
     c = dataset.get_converter_to_specific(mode="absolute")
     assert c == pytest.approx(1000, 0.0001)
@@ -73,3 +85,47 @@ def test_set_cellpy_unit_and_use(dataset):
     new_value = dataset.cell.summary[h].values[10]
 
     assert new_value == pytest.approx(initial_value / 1000, 0.0001)
+
+#
+# @pytest.mark.parametrize(
+#     "nom_cap_tuple,expected",
+#     [
+#         ((1.0, "mAh/g"), 5.0e-07),
+#         ((1.0, "mAh/cm**2"), 0.0025),
+#         ((1.0, "Ah"), 1.0),
+#     ],
+# )
+# def test_pint_nom_cap_conversion(nom_cap_tuple, expected):
+#     import pint
+#     ureg = pint.UnitRegistry()
+#     Q = ureg.Quantity
+#     nom_cap = Q(*nom_cap_tuple)
+#     mass = Q(0.5, "mg")
+#     area = Q(2.5, "cm**2")
+#     print()
+#     print(80 * "-")
+#     print(f"{nom_cap=}")
+#
+#     if nom_cap.check('[current]*[time]/[mass]'):
+#         nom_cap_grav = nom_cap
+#         nom_cap_abs = (nom_cap * mass).to_reduced_units().to("Ah")
+#         nom_cap_areal = (nom_cap_abs / area).to_reduced_units().to("mAh/cm**2")
+#
+#     elif nom_cap.check('[current]*[time]/[area]'):
+#         nom_cap_areal = nom_cap
+#         nom_cap_abs = (nom_cap * area).to_reduced_units().to("Ah")
+#         nom_cap_grav = (nom_cap_abs / mass).to_reduced_units().to("mAh/g")
+#
+#     else:
+#         nom_cap_abs = nom_cap.to_reduced_units().to("Ah")
+#         nom_cap_grav = (nom_cap_abs / mass).to_reduced_units().to("mAh/g")
+#         nom_cap_areal = (nom_cap_abs / area).to_reduced_units().to("mAh/cm**2")
+#
+#     print(f"{nom_cap_abs=}")
+#     print(f"{nom_cap_grav=}")
+#     print(f"{nom_cap_areal=}")
+#     print(80 * "-")
+#     assert nom_cap_abs.m == pytest.approx(expected, 0.0001)
+#
+#
+#

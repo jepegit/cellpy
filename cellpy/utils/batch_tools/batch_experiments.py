@@ -84,6 +84,53 @@ class CyclingExperiment(BaseExperiment):
 
         self.selected_summaries = None
 
+    def _repr_html_(self):
+        txt = f"<h2>CyclingExperiment-object</h2> id={hex(id(self))}"
+        txt += "<h3>Main attributes</h3>"
+        txt += f"""
+        <table>
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><b>force_cellpy</b></td><td>{self.force_cellpy}</td></tr>
+                <tr><td><b>force_raw</b></td><td>{self.force_raw}</td></tr>
+                <tr><td><b>force_recalc</b></td><td>{self.force_recalc}</td></tr>
+                <tr><td><b>save_cellpy</b></td><td>{self.save_cellpy}</td></tr>
+                <tr><td><b>accept_errors</b></td><td>{self.accept_errors}</td></tr>
+                <tr><td><b>all_in_memory</b></td><td>{self.all_in_memory}</td></tr>
+                <tr><td><b>export_cycles</b></td><td>{self.export_cycles}</td></tr>
+                <tr><td><b>shifted_cycles</b></td><td>{self.shifted_cycles}</td></tr>
+                <tr><td><b>export_raw</b></td><td>{self.export_raw}</td></tr>
+                <tr><td><b>export_ica</b></td><td>{self.export_ica}</td></tr>
+                <tr><td><b>last_cycle</b></td><td>{self.last_cycle}</td></tr>
+                <tr><td><b>nom_cap</b></td><td>{self.nom_cap}</td></tr>
+                <tr><td><b>instrument</b></td><td>{self.instrument}</td></tr>
+                <tr><td><b>custom_data_folder</b></td><td>{self.custom_data_folder}</td></tr>
+                <tr><td><b>selected_summaries</b></td><td>{self.selected_summaries}</td></tr>
+            </tbody>
+        </table>
+        """
+        txt += "<h3>Cells</h3>"
+        if self._data is None:
+            txt += f"<p><b>data</b><br> contains {len(self)} cells [not linked!]</p>"
+        else:
+            txt += f"<p><b>data</b>: contains {len(self)} cells.</p>"
+        # for key in self.session:
+        #     txt += f"<p><b>{key}</b>: {self.session[key]}</p>"
+        #
+        # txt += "<h3>Pages</h3>"
+        # try:
+        #     txt += self.pages._repr_html_()
+        # except AttributeError:
+        #     txt += "<p><b>pages</b><br> not found!</p>"
+        # except ValueError:
+        #     txt += "<p><b>pages</b><br> not readable!</p>"
+        return txt
+
     @staticmethod
     def _get_cell_spec_from_page(indx: int, row: pd.Series) -> dict:
         # Edit this if we decide to make "argument families", e.g. loader_split or merger_recalc.

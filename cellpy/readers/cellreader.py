@@ -23,8 +23,8 @@ import os
 import sys
 import time
 import warnings
-from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Union, Optional, Iterable, List, Sequence
+from pathlib import Path
+from typing import Union, Sequence
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,12 @@ from cellpy.exceptions import (
     UnderDefined,
 )
 from cellpy.parameters import prms
-from cellpy.parameters.cellpy_file_upgrade_settings import rename_summary_columns
+from cellpy.parameters.legacy.update_headers import (
+    rename_summary_columns,
+    rename_raw_columns,
+    rename_fid_columns,
+    rename_step_columns,
+)
 from cellpy.parameters.internal_settings import (
     ATTRS_CELLPYDATA,
     ATTRS_CELLPYFILE,
@@ -58,7 +63,7 @@ from cellpy.parameters.internal_settings import (
     MINIMUM_CELLPY_FILE_VERSION,
     PICKLE_PROTOCOL,
 )
-from cellpy.parameters.legacy import internal_settings as old_settings
+
 from cellpy.readers.core import (
     Cell,
     FileID,
@@ -117,8 +122,7 @@ class CellpyData:
 
     def _repr_html_(self):
         header = f"""
-         <p>
-            <h3>CellpyData-object</h3>
+            <h2>CellpyData-object</h2>
             <b>id</b>: {hex(id(self))} <br>
             <b>name</b>: {self.name} <br>
             <b>table names</b>: {self.table_names} <br>
@@ -129,7 +133,6 @@ class CellpyData:
             <b>daniel_number</b>: {self.daniel_number} <br>
             <b>cellpy_datadir</b>: {self.cellpy_datadir} <br>
             <b>raw_datadir</b>: {self.raw_datadir} <br>
-         </p>
         """
         all_vars = "<p>"
         all_vars += f"""
@@ -149,16 +152,13 @@ class CellpyData:
             <b>selected_scans</b>: {self.selected_scans} <br>
             <b>status_datasets</b>: {self.status_datasets} <br>
             <b>summary_exists (deprecated)</b>: {self.summary_exists} <br>
-
-
         """
         all_vars += "</p>"
 
         cell_txt = ""
         for i, cell in enumerate(self.cells):
-            cell_txt += f"<h4>cell {i + 1} of {len(self.cells)}</h4>"
-            cell_txt += cell._repr_html_()
-
+            cell_txt += f"<h3>cell {i + 1} of {len(self.cells)}</h3>"
+            cell_txt += f"<blockquote>{cell._repr_html_()}</blockquote>"
         return header + all_vars + cell_txt
 
     def __str__(self):
@@ -1502,8 +1502,12 @@ class CellpyData:
                     "This file is VERY old - cannot read file version number"
                 )
         try:
-            cellpy_file_version = self._extract_from_dict(
-                meta_table, "cellpy_file_version"
+            # cellpy_file_version = self._extract_from_dict(
+            #     meta_table, "cellpy_file_version"
+            # )
+            meta_dict = meta_table.to_dict(orient="list")
+            cellpy_file_version = self._extract_from_meta_dictionary(
+                meta_dict, "cellpy_file_version"
             )
         except Exception as e:
             warnings.warn(f"Unhandled exception raised: {e}")
@@ -1647,10 +1651,19 @@ class CellpyData:
                 upgrade_from_to=(6, CELLPY_FILE_VERSION),
             )
             self._extract_raw_from_cellpy_file(
-                data, parent_level, raw_dir, store, selector=selector
+                data,
+                parent_level,
+                raw_dir,
+                store,
+                selector=selector,
+                upgrade_from_to=(6, CELLPY_FILE_VERSION),
             )
             self._extract_steps_from_cellpy_file(
-                data, parent_level, step_dir, store, selector=selector
+                data,
+                parent_level,
+                step_dir,
+                store,
+                selector=selector,
             )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
@@ -1690,10 +1703,20 @@ class CellpyData:
                 meta_dir, parent_level, raw_dir, store, summary_dir
             )
             self._extract_summary_from_cellpy_file(
-                data, parent_level, store, summary_dir, selector=selector
+                data,
+                parent_level,
+                store,
+                summary_dir,
+                selector=selector,
+                upgrade_from_to=(5, CELLPY_FILE_VERSION),
             )
             self._extract_raw_from_cellpy_file(
-                data, parent_level, raw_dir, store, selector=selector
+                data,
+                parent_level,
+                raw_dir,
+                store,
+                selector=selector,
+                upgrade_from_to=(5, CELLPY_FILE_VERSION),
             )
             self._extract_steps_from_cellpy_file(
                 data, parent_level, step_dir, store, selector=selector
@@ -1731,10 +1754,12 @@ class CellpyData:
         else:
             raise WrongFileVersion(f"version {cellpy_file_version} is not supported")
 
-        if cellpy_file_version < 6:
-            logging.debug("legacy cellpy file version needs translation")
-            new_data = old_settings.translate_headers(new_data, cellpy_file_version)
-            # self.__check_loaded_data(new_data)
+        # if cellpy_file_version < 6:
+        #     logging.debug("legacy cellpy file version needs translation")
+        #     # new_data.raw = cellpy_file_upgrade_settings()
+        #     new_data.raw = rename_raw_columns(new_data.raw, old, new)
+        #     # new_data = old_settings.translate_headers(new_data, cellpy_file_version)
+        #     # self.__check_loaded_data(new_data)
         return new_data
 
     def _load_old_hdf5_v3_to_v4(self, filename):
@@ -1750,15 +1775,33 @@ class CellpyData:
                 meta_dir, parent_level, store
             )
 
-        self._check_keys_in_cellpy_file(
-            meta_dir, parent_level, _raw_dir, store, _summary_dir
-        )
-        self._extract_summary_from_cellpy_file(data, parent_level, store, _summary_dir)
-        self._extract_raw_from_cellpy_file(data, parent_level, _raw_dir, store)
-        self._extract_steps_from_cellpy_file(data, parent_level, _step_dir, store)
-        fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
-            _fid_dir, parent_level, store
-        )
+            self._check_keys_in_cellpy_file(
+                meta_dir, parent_level, _raw_dir, store, _summary_dir
+            )
+            self._extract_summary_from_cellpy_file(
+                data,
+                parent_level,
+                store,
+                _summary_dir,
+                upgrade_from_to=(4, CELLPY_FILE_VERSION),
+            )
+            self._extract_raw_from_cellpy_file(
+                data,
+                parent_level,
+                _raw_dir,
+                store,
+                upgrade_from_to=(4, CELLPY_FILE_VERSION),
+            )
+            self._extract_steps_from_cellpy_file(
+                data,
+                parent_level,
+                _step_dir,
+                store,
+                upgrade_from_to=(4, CELLPY_FILE_VERSION),
+            )
+            fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
+                _fid_dir, parent_level, store
+            )
         self._extract_meta_from_cellpy_file(data, meta_table, filename)
         warnings.warn(
             "Loaded old cellpy-file version (<5). Please update and save again."
@@ -1793,8 +1836,12 @@ class CellpyData:
             return data, meta_table
 
         try:
-            data.cellpy_file_version = self._extract_from_dict(
-                meta_table, "cellpy_file_version"
+            # data.cellpy_file_version = self._extract_from_dict(
+            #     meta_table, "cellpy_file_version"
+            # )
+            meta_dict = meta_table.to_dict(orient="list")
+            data.cellpy_file_version = self._extract_from_meta_dictionary(
+                meta_dict, "cellpy_file_version"
             )
         except Exception as e:
             data.cellpy_file_version = 0
@@ -1809,6 +1856,7 @@ class CellpyData:
     ):
         required_keys = [raw_dir, summary_dir, meta_dir]
         required_keys = ["/" + parent_level + _ for _ in required_keys]
+
         for key in required_keys:
             if key not in store.keys():
                 logging.info(
@@ -1889,21 +1937,43 @@ class CellpyData:
             data.summary = rename_summary_columns(data.summary, old, new)
 
         # TODO: max data point should be an attribute
-        max_data_point = data.summary["data_point"].max()
+        try:
+            max_data_point = data.summary[self.headers_summary.data_point].max()
+        except KeyError as e:
+            raise KeyError(
+                f"You are most likely trying to open a too old cellpy file"
+            ) from e
+
         self.limit_data_points = int(max_data_point)
         logging.debug(f"data-point max limit: {self.limit_data_points}")
 
     def _extract_raw_from_cellpy_file(
-        self, data, parent_level, raw_dir, store, selector=None
+        self,
+        data,
+        parent_level,
+        raw_dir,
+        store,
+        selector: Union[None, str] = None,
+        upgrade_from_to: tuple = None,
     ):
         # selector is not implemented yet for only raw data
         # however, selector for max_cycle will still work since
         # the attribute self.limit_data_points is set while reading the summary
         cycle_filter = self._hdf5_cycle_filter(table="raw")
         data.raw = store.select(parent_level + raw_dir, where=cycle_filter)
+        if upgrade_from_to is not None:
+            old, new = upgrade_from_to
+            logging.debug(f"upgrading from {old} to {new}")
+            data.raw = rename_raw_columns(data.raw, old, new)
 
     def _extract_steps_from_cellpy_file(
-        self, data, parent_level, step_dir, store, selector=None
+        self,
+        data,
+        parent_level,
+        step_dir,
+        store,
+        selector: Union[None, str] = None,
+        upgrade_from_to: tuple = None,
     ):
         try:
             data.steps = store.select(parent_level + step_dir)
@@ -1912,13 +1982,19 @@ class CellpyData:
                     data.steps["point_last"] <= self.limit_data_points
                 ]
                 logging.debug(f"limited to data_point {self.limit_data_points}")
+            if upgrade_from_to is not None:
+                old, new = upgrade_from_to
+                logging.debug(f"upgrading from {old} to {new}")
+                data.steps = rename_step_columns(data.steps, old, new)
         except Exception as e:
             print(e)
             logging.debug("could not get steps from cellpy-file")
             data.steps = pd.DataFrame()
             warnings.warn(f"Unhandled exception raised: {e}")
 
-    def _extract_fids_from_cellpy_file(self, fid_dir, parent_level, store):
+    def _extract_fids_from_cellpy_file(
+        self, fid_dir, parent_level, store, upgrade_from_to: tuple = None
+    ):
         logging.debug(f"Extracting fid table from {fid_dir} in hdf5 store")
         try:
             fid_table = store.select(
@@ -1926,6 +2002,10 @@ class CellpyData:
             )  # remark! changed spelling from
             # lower letter to camel-case!
             fid_table_selected = True
+            if upgrade_from_to is not None:
+                old, new = upgrade_from_to
+                logging.debug(f"upgrading from {old} to {new}")
+                fid_table = rename_fid_columns(fid_table, old, new)
         except Exception as e:
             logging.debug(e)
             logging.debug("could not get fid from cellpy-file")
@@ -1935,16 +2015,21 @@ class CellpyData:
         return fid_table, fid_table_selected
 
     def _extract_meta_from_cellpy_file(
-        self, data: Cell, meta_table: pd.DataFrame, filename: Union[Path, str]
+        self,
+        data: Cell,
+        meta_table: pd.DataFrame,
+        filename: Union[Path, str],
+        upgrade_from_to: tuple = None,
     ) -> None:
         # get attributes from meta table
         # remark! could also utilise the pandas to dictionary method directly
         # for example: meta_table.T.to_dict()
         # Maybe a good task for someone who would like to learn more about
         # how cellpy works.
+        meta_dict = meta_table.to_dict(orient="list")
 
         for attribute in ATTRS_CELLPYFILE:
-            value = self._extract_from_dict(meta_table, attribute)
+            value = self._extract_from_meta_dictionary(meta_dict, attribute)
             # some fixes due to errors propagated into the cellpy-files
             if attribute == "creator":
                 if not isinstance(value, str):
@@ -1968,7 +2053,7 @@ class CellpyData:
 
         # hack to allow the renaming of tests to datasets
         try:
-            name = self._extract_from_dict_hard(meta_table, "name")
+            name = self._extract_from_meta_dictionary(meta_dict, "name", hard=True)
             if not isinstance(name, str):
                 name = "no_name"
             data.name = name
@@ -1977,11 +2062,10 @@ class CellpyData:
             logging.debug(f"missing key in meta table: {name}")
             # warnings.warn("OLD-TYPE: Recommend to save in new format!")
             try:
-                name = self._extract_from_dict(meta_table, "test_name")
-            except Exception as e:
+                name = self._extract_from_meta_dictionary(meta_dict, "test_name")
+            except Exception:
                 name = "no_name"
                 logging.debug("name set to 'no_name")
-                # warnings.warn(f"Unhandled exception raised: {e}")
             data.name = name
 
         # unpacking the raw data limits
@@ -1989,7 +2073,9 @@ class CellpyData:
         for key in data.raw_limits:
             h5_key = key
             try:
-                data.raw_limits[key] = self._extract_from_dict_hard(meta_table, h5_key)
+                data.raw_limits[key] = self._extract_from_meta_dictionary(
+                    meta_dict, h5_key, hard=True
+                )
             except KeyError:
                 logging.debug(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
@@ -1999,26 +2085,25 @@ class CellpyData:
         for key in data.raw_units:
             h5_key = f"raw_unit_{key}"
             try:
-                data.raw_units[key] = self._extract_from_dict_hard(meta_table, h5_key)
+                data.raw_units[key] = self._extract_from_meta_dictionary(
+                    meta_dict, h5_key, hard=True
+                )
             except KeyError:
                 logging.critical(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
 
     @staticmethod
-    def _extract_from_dict(t, x, default_value=None):
+    def _extract_from_meta_dictionary(
+        meta_dict, attribute, default_value=None, hard=False
+    ):
         try:
-            value = t[x].values
-            if value:
-                value = value[0]
-        except KeyError:
+            value = meta_dict[attribute][0]
+            if not value:
+                value = None
+        except KeyError as e:
+            if hard:
+                raise KeyError from e
             value = default_value
-        return value
-
-    @staticmethod
-    def _extract_from_dict_hard(t, x):
-        value = t[x].values
-        if value:
-            value = value[0]
         return value
 
     def _create_infotable(self, dataset_number=None):
@@ -2034,7 +2119,14 @@ class CellpyData:
         infotable = collections.OrderedDict()
 
         for attribute in ATTRS_CELLPYFILE:
-            value = getattr(cell, attribute)
+            try:
+                value = getattr(cell, attribute)
+            except AttributeError:
+                # TODO: this is a ugly fix due to adding new attributes to the ATTRS_CELLPYFILE - make it more beautiful
+                if attribute == "nom_cap_specifics":
+                    value = "gravimetric"
+                else:
+                    raise AttributeError
             infotable[attribute] = [value]
 
         infotable["cellpy_file_version"] = [CELLPY_FILE_VERSION]
@@ -2632,7 +2724,7 @@ class CellpyData:
         sort_rows=True,
         dataset_number=None,
         from_data_point=None,
-        nom_cap_specifics="gravimetric",
+        nom_cap_specifics=None,
     ):
 
         """Create a table (v.4) that contains summary information for each step.
@@ -2678,6 +2770,9 @@ class CellpyData:
             self._report_empty_dataset()
             return
 
+        if nom_cap_specifics is None:
+            nom_cap_specifics = prms.Materials.default_nom_cap_specifics
+
         if profiling:
             print("PROFILING MAKE_STEP_TABLE".center(80, "="))
 
@@ -2700,11 +2795,11 @@ class CellpyData:
         shdr = self.headers_step_table
 
         if from_data_point is not None:
-            df = self.cells[dataset_number].raw.loc[
-                self.cells[dataset_number].raw[nhdr.data_point_txt] >= from_data_point
+            df = self.cell.raw.loc[
+                self.cell.raw[nhdr.data_point_txt] >= from_data_point
             ]
         else:
-            df = self.cells[dataset_number].raw
+            df = self.cell.raw
         # df[shdr.internal_resistance_change] = \
         #     df[nhdr.internal_resistance_txt].pct_change()
 
@@ -2777,16 +2872,15 @@ class CellpyData:
         # column with C-rates:
         if add_c_rate:
             logging.debug("adding c-rates")
-            nom_cap = self.cells[dataset_number].nom_cap
-
+            nom_cap = self.cell.nom_cap
             if nom_cap_specifics == "gravimetric":
-                mass = self.cells[dataset_number].mass
+                mass = self.cell.mass
                 nom_cap = self._from_specific_nom_cap_to_absolute(
                     nom_cap, mass, nom_cap_specifics
                 )
 
             elif nom_cap_specifics == "areal":
-                area = self.cells[dataset_number].active_electrode_area
+                area = self.cell.active_electrode_area
                 nom_cap = self._from_specific_nom_cap_to_absolute(
                     nom_cap, area, nom_cap_specifics
                 )
@@ -2797,7 +2891,7 @@ class CellpyData:
                     2,
                 )
             )
-
+            print(f"{nom_cap=}")
         df_steps[shdr.type] = np.nan
         df_steps[shdr.sub_type] = np.nan
         df_steps[shdr.info] = np.nan
@@ -5777,7 +5871,6 @@ def check_raw():
 def check_cellpy_file():
     print("running", end=" ")
     print(sys.argv[0])
-    import logging
 
     from cellpy import log
 
