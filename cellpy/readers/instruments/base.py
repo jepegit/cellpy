@@ -210,24 +210,16 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
             The units used by cellpy will be stored in the cellpy file. The original units will not be stored.
         Example:
 
-            @staticmethod
-            def get_raw_units():
-                raw_units = {
-                    "current": 1.0, # A
-                    "charge": 1.0, # Ah
-                    "mass": 0.001, # g (i.e. units are given in mg)
-                    "voltage": 1.0,  # V
-                    "time": 1.0, # sec
-                    "resistance": 1.0, # Ohms
-                    "power": 1.0, # W
-                    "energy": 1.0, # Wh
-                    "length": 1.0, # m
-                    "area": 1.0, # m2
-                    "temperature": 1.0, # C
-                }
-                return raw_units
+             @staticmethod
+        def get_raw_units():
+            raw_units = dict()
+            raw_units["current"] = "A"
+            raw_units["charge"] = "Ah"
+            raw_units["mass"] = "g"
+            raw_units["voltage"] = "V"
+            return raw_units
 
-        The internal cellpy units are given in the
+        The internal cellpy units are given in the cellpy_units attribute.
 
         """
         raise NotImplementedError

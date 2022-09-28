@@ -34,7 +34,7 @@ states = {
 }
 
 
-raw_units = {"current": 1.0, "charge": 1.0, "mass": 1.0, "voltage": 1.0}
+raw_units = {"current": "A", "charge": "Ah", "mass": "g", "voltage": "V"}
 
 raw_limits = {
     "current_hard": 0.000_000_000_000_1,

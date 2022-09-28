@@ -3,7 +3,7 @@ import logging
 import pytest
 
 import cellpy.readers.core
-from cellpy import log, prms
+from cellpy import log, prms, Q
 from cellpy.exceptions import NoCellFound
 from cellpy.parameters.internal_settings import get_headers_summary
 
@@ -13,17 +13,21 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
 @pytest.mark.parametrize(
     "test_input,expected",
     [
-        ((1.0, 1.0), 1.0),  # (to_unit, from_unit), conversion-factor
-        ((1.0, 0.1), 0.1),
-        ((0.1, 1.0), 10.0),
-        pytest.param((1.0, 0.001), 1.0, marks=pytest.mark.xfail),
+        ((1.0, "gravimetric"), 1),  # (to_unit, from_unit), conversion-factor
+        ((1.0, "areal"), 1),
+        ((1.0, "absolute"), 1),
+        pytest.param((1.0, "other"), 2.0, marks=pytest.mark.xfail),
     ],
 )
 def test_get_converter_to_specific(dataset, test_input, expected):
+    raw_unit_charge = dataset.cell.raw_units["charge"]
+    cellpy_unit_charge = dataset.cellpy_units["charge"]
+
+    charge_conv = (Q(1, raw_unit_charge)/Q(1, cellpy_unit_charge)).to_reduced_units()
     c = dataset.get_converter_to_specific(
-        value=1.0, to_unit=test_input[0], from_unit=test_input[1], mode="gravimetric"
+        value=test_input[0], mode=test_input[1],
     )
-    assert c == expected
+    assert c == charge_conv.m * expected
 
 
 def test_nominal_capacity(dataset):
@@ -56,11 +60,6 @@ def test_get_converter_to_areal_specific(dataset):
     assert c == pytest.approx(1000 / dataset.cell.active_electrode_area, 0.0001)
 
 
-def test_get_converter_to_specific_with_wrong_mode(dataset):
-    with pytest.raises(ValueError):
-        c = dataset.get_converter_to_specific(value=1.0, mode="plasma")
-
-
 def test_that_raw_units_are_not_available_without_a_cell(cellpy_data_instance):
     with pytest.raises(NoCellFound):
         print(f"{cellpy_data_instance.raw_units=}")
@@ -75,20 +74,23 @@ def test_set_units(cellpy_data_instance):
 
 
 def test_set_cellpy_unit_and_use(dataset):
-    cellpy_unit_charge = dataset.cellpy_units["charge"]
     s_headers = get_headers_summary()
     h = f"{s_headers.discharge_capacity}_gravimetric"
+
+    dataset.cellpy_units["charge"] = "Ah"
+    dataset.make_summary()
     initial_value = dataset.cell.summary[h].values[10]
 
-    dataset.cellpy_units["charge"] = 1000 * cellpy_unit_charge
+    dataset.cellpy_units["charge"] = "mAh"
     dataset.make_summary()
     new_value = dataset.cell.summary[h].values[10]
 
-    assert new_value == pytest.approx(initial_value / 1000, 0.0001)
+    assert new_value == pytest.approx(initial_value * 1000, 0.0001)
 
 
 def test_using_internal_pint_methods():
     from cellpy import ureg, Q
+
     mass = Q(0.5, "mg")
     area = Q(2.5, "cm**2")
     print(f"mass: {mass}")

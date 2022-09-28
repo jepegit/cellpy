@@ -427,4 +427,4 @@ def check_loader_from_outside_with_get2():
 if __name__ == "__main__":
     # check_dev_loader2(model="two")
     # check_loader(number=2, model="two")
-    check_loader_from_outside_with_get2()
+    check_loader_from_outside_with_get()

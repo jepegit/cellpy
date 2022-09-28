@@ -41,11 +41,6 @@ unit_labels:
     capacity: Ah
     energy: Wh
     temperature: C
-units:
-    charge: 0.001
-    current: 0.001
-    mass: 0.001
-    specific: 1.0
 states:
     column_name: State
     charge_keys:
@@ -55,9 +50,9 @@ states:
     rest_keys:
         - R
 raw_units:
-    current: 1.0
-    charge: 1.0
-    mass: 0.001
+    current: "A"
+    charge: "Ah"
+    mass: "mg"
 columns_to_keep:
     - TestTime
     - "Rec#"

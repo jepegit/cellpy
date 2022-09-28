@@ -36,10 +36,11 @@ structure:
   charge_key: RateC
   discharge_key: RateD
 units:
-  charge: 0.001
-  current: 0.001
-  mass: 0.001
-  specific: 1.0
+  charge: mAh
+  current: mA
+  mass: g
+  specific_gravimetric: g
+  specific_areal: cm**2
 variables:
   cell_name: cell
   channel_index: channel_index

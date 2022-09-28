@@ -39,10 +39,11 @@ structure:
   time_conversion_test_time: date_time_to_sec
   time_conversion_date_time: test_time
 units:
-  charge: 0.001
-  current: 0.001
-  mass: 0.001
-  specific: 0.001
+  charge: mAh
+  current: mA
+  mass: mg
+  specific_gravimetric: mg
+  specific_areal: cm**2
 variables:
   cell_name: cell
   channel_index: channel_index

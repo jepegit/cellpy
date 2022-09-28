@@ -56,6 +56,7 @@ def remove_last_if_bad(data: Cell, config_params: ModelParameters) -> Cell:
 
 
 def convert_units(data: Cell, config_params: ModelParameters) -> Cell:
+    raise Exception("THIS FUNCTION NEEDS TO BE UPDATED")
     # TODO: implement all
     if x := config_params.raw_units.get("voltage", None):
         logging.debug(f"converting voltage ({x})")
@@ -96,6 +97,7 @@ def select_columns_to_keep(data: Cell, config_params: ModelParameters) -> Cell:
 def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
     # TODO: add custom "splitter"
     # TODO: test
+    raise Exception("THIS FUNCTION NEEDS TO BE UPDATED")
     if not config_params.prefixes:
         config_params.prefixes = {
             "G": 1000_000_000,

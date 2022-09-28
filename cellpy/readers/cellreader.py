@@ -61,7 +61,8 @@ from cellpy.parameters.internal_settings import (
     get_default_output_units,
     CELLPY_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
-    PICKLE_PROTOCOL, CellpyUnits,
+    PICKLE_PROTOCOL,
+    CellpyUnits,
 )
 
 from cellpy.readers.core import (
@@ -4040,8 +4041,8 @@ class CellpyData:
             v /= 60.0
         return v
 
-    def get_dcap(self, cycle=None, dataset_number=None, converter=None, **kwargs):
-        """Returns discharge_capacity (in mAh/g), and voltage."""
+    def get_dcap(self, cycle=None, dataset_number=None, converter=None, mode="gravimetric", **kwargs):
+        """Returns discharge_capacity and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
         #   but remark that we then have to update e.g. batch_helpers.py
@@ -4053,15 +4054,15 @@ class CellpyData:
             self._report_empty_dataset()
             return
         if converter is None:
-            converter = self.get_converter_to_specific()
+            converter = self.get_converter_to_specific(mode=mode)
 
         dc, v = self._get_cap(
             cycle, dataset_number, "discharge", converter=converter, **kwargs
         )
         return dc, v
 
-    def get_ccap(self, cycle=None, dataset_number=None, converter=None, **kwargs):
-        """Returns charge_capacity (in mAh/g), and voltage."""
+    def get_ccap(self, cycle=None, dataset_number=None, converter=None, mode="gravimetric", **kwargs):
+        """Returns charge_capacity and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
         #   (but remark that we then have to update e.g. batch_helpers.py)
@@ -4073,7 +4074,8 @@ class CellpyData:
             self._report_empty_dataset()
             return
         if converter is None:
-            converter = self.get_converter_to_specific()
+            print("CONVERTER IS NONE-----------------------------")
+            converter = self.get_converter_to_specific(mode=mode)
         cc, v = self._get_cap(
             cycle, dataset_number, "charge", converter=converter, **kwargs
         )
@@ -4464,7 +4466,7 @@ class CellpyData:
             A pandas.DataFrame with cycle-number, step-number, step-time, and
                 voltage columns.
         """
-
+        # TODO: use proper column header pickers
         if cycles is None:
             cycles = self.get_cycle_numbers()
         else:
@@ -4496,13 +4498,12 @@ class CellpyData:
         cycle_label = self.headers_normal.cycle_index_txt
         step_label = self.headers_normal.step_index_txt
 
-        selected_df = raw.where(
-            raw[cycle_label].isin(ocv_steps.cycle)
-            & raw[step_label].isin(ocv_steps.step)
-        ).dropna()
-
-        selected_df = selected_df.loc[
-            :, [cycle_label, step_label, step_time_label, voltage_label]
+        selected_df = raw.loc[
+            (
+                raw[cycle_label].isin(ocv_steps.cycle)
+                & raw[step_label].isin(ocv_steps.step)
+            ),
+            [cycle_label, step_label, step_time_label, voltage_label],
         ]
 
         if interpolated:
@@ -4642,7 +4643,11 @@ class CellpyData:
         raise DeprecatedFeature
 
     def nominal_capacity_as_absolute(
-        self, value=None, specific=None, nom_cap_specifics=None, convert_charge_units=False
+        self,
+        value=None,
+        specific=None,
+        nom_cap_specifics=None,
+        convert_charge_units=False,
     ):
         # TODO: implement handling of edge-cases (i.e. the raw capacity is not in absolute values)
         if nom_cap_specifics is None:
@@ -4664,31 +4669,16 @@ class CellpyData:
             specific = Q(specific, self.cellpy_units["specific_areal"])
 
         if convert_charge_units:
-            conversion_factor_charge = Q(1, self.cellpy_units["charge"]) / Q(1, self.cell.raw_units["charge"])
+            conversion_factor_charge = Q(1, self.cellpy_units["charge"]) / Q(
+                1, self.cell.raw_units["charge"]
+            )
         else:
             conversion_factor_charge = 1.0
 
         absolute_value = (
-            value * conversion_factor_charge * specific
-        ).to_reduced_units().to("Ah")
+            (value * conversion_factor_charge * specific).to_reduced_units().to("Ah")
+        )
         return absolute_value.m
-
-
-    #
-    # if value.check("[current]*[time]/[mass]"):
-    #     value_grav = value
-    #     value_abs = (value * mass).to_reduced_units().to("Ah")
-    #     value_areal = (value_abs / area).to_reduced_units().to("mAh/cm**2")
-    #
-    # elif value.check("[current]*[time]/[area]"):
-    #     value_areal = value
-    #     value_abs = (value * area).to_reduced_units().to("Ah")
-    #     value_grav = (value_abs / mass).to_reduced_units().to("mAh/g")
-    #
-    # else:
-    #     value_abs = value.to_reduced_units().to("Ah")
-    #     value_grav = (value_abs / mass).to_reduced_units().to("mAh/g")
-    #     value_areal = (value_abs / area).to_reduced_units().to("mAh/cm**2")
 
     def get_converter_to_specific(
         self,
@@ -4718,11 +4708,6 @@ class CellpyData:
         new_units = to_units or self.cellpy_units
         old_units = from_units or dataset.raw_units
 
-        from pprint import pprint
-        pprint(f"{old_units=}")
-
-        pprint(f"{new_units=}")
-
         if mode == "gravimetric":
             value = value or dataset.mass
             value = Q(value, old_units["specific_gravimetric"])
@@ -4734,9 +4719,11 @@ class CellpyData:
             to_unit_specific = Q(1.0, new_units["specific_areal"])
 
         elif mode == "absolute":
-            print("-> using absolute here does not make any sense.")
             value = Q(1.0, None)
             to_unit_specific = Q(1.0, None)
+
+        elif mode is None:
+            return 1.0
 
         else:
             logging.debug(f"mode={mode} not supported!")
@@ -4752,116 +4739,6 @@ class CellpyData:
         logging.debug(f"conversion factor: {conversion_factor}")
 
         return conversion_factor.m
-
-        #
-        #def something:
-        #
-        # if nom_cap.check("[current]*[time]/[mass]"):
-        #     nom_cap_grav = nom_cap
-        #     nom_cap_abs = (nom_cap * mass).to_reduced_units().to("Ah")
-        #     nom_cap_areal = (nom_cap_abs / area).to_reduced_units().to("mAh/cm**2")
-        #
-        # elif nom_cap.check("[current]*[time]/[area]"):
-        #     nom_cap_areal = nom_cap
-        #     nom_cap_abs = (nom_cap * area).to_reduced_units().to("Ah")
-        #     nom_cap_grav = (nom_cap_abs / mass).to_reduced_units().to("mAh/g")
-        #
-        # else:
-        #     nom_cap_abs = nom_cap.to_reduced_units().to("Ah")
-        #     nom_cap_grav = (nom_cap_abs / mass).to_reduced_units().to("mAh/g")
-        #     nom_cap_areal = (nom_cap_abs / area).to_reduced_units().to("mAh/cm**2")
-        # logging.debug(f"conversion factor: {conversion_factor}")
-
-
-
-    def get_converter_to_specific_OLD(
-        self,
-        dataset: Cell = None,
-        value: float = None,
-        to_unit: float = None,
-        from_unit: float = None,
-        mode: str = "gravimetric",
-        for_output: bool = False,
-    ) -> Union[float, None]:
-        """get the conversion value to use when calculating specific values (e.g. mAh/g).
-
-        Args:
-            dataset: DataSet object
-            value: the specific value of electrode (for example active material mass or area)
-            to_unit: (float) unit of input, f.ex. if unit of charge
-              is mAh and unit of mass is g, then to_unit for charge/mass
-              will be 0.001 * 1.0 = 0.001
-            from_unit: (float) unit of output, f.ex. if unit of charge
-              is mAh and unit of mass is g, then to_unit for charge/mass
-              will be 1.0 / 0.001 = 1000.0
-            mode (str): gravimetric, areal or absolute
-            for_output (str): set to True if you want to get a conversion factor to be used
-                when generating data only for output (i.e. not for the internal summary etc).
-
-        Returns:
-            multiplier (float) from_unit / to_unit / value
-
-        """
-        if not dataset:
-            dataset_number = self._validate_dataset_number(None)
-            if dataset_number is None:
-                self._report_empty_dataset()
-                return
-            dataset = self.cells[dataset_number]
-
-        allowed_modes = {
-            "gravimetric": dataset.mass,
-            "areal": dataset.active_electrode_area,
-            "absolute": 1.0,
-        }
-
-        if not value:
-            if mode not in allowed_modes:
-                raise ValueError(f"mode='{mode}' is not allowed!")
-            value = allowed_modes[mode]
-            if not value:
-                raise UnderDefined(
-                    f"Missing value for calculating conversion factor for {mode} capacity"
-                )
-        if not to_unit:
-            if for_output:
-                new_units = self.output_units
-            else:
-                new_units = self.cellpy_units
-
-            if mode == "gravimetric":
-                to_unit_specific = new_units["specific"]
-            elif mode == "areal":
-                to_unit_specific = new_units["area"]
-            elif mode == "absolute":
-                to_unit_specific = 1.0
-            else:
-                raise ValueError(f"mode='{mode}' is not allowed!")
-
-            to_unit_cap = self.cellpy_units["charge"]
-            to_unit = to_unit_cap / to_unit_specific
-
-        if not from_unit:
-            if mode == "gravimetric":
-                from_unit_specific = self.cellpy_units["mass"]
-            elif mode == "areal":
-                from_unit_specific = self.cellpy_units["area"]
-            elif mode == "absolute":
-                from_unit_specific = 1.0
-            else:
-                raise ValueError(f"mode='{mode}' is not allowed!")
-
-            from_unit_cap = self.raw_units["charge"]
-            from_unit = from_unit_cap / from_unit_specific
-
-        logging.debug(f"from-unit: {from_unit}")
-        logging.debug(f"to-unit: {to_unit}")
-        logging.debug(f"specific value: {value}")
-
-        conversion_factor = from_unit / to_unit / value
-        logging.debug(f"conversion factor: {conversion_factor}")
-
-        return conversion_factor
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False):
         raise DeprecatedFeature(
