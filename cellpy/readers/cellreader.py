@@ -4074,7 +4074,6 @@ class CellpyData:
             self._report_empty_dataset()
             return
         if converter is None:
-            print("CONVERTER IS NONE-----------------------------")
             converter = self.get_converter_to_specific(mode=mode)
         cc, v = self._get_cap(
             cycle, dataset_number, "charge", converter=converter, **kwargs
@@ -4710,12 +4709,13 @@ class CellpyData:
 
         if mode == "gravimetric":
             value = value or dataset.mass
-            value = Q(value, old_units["specific_gravimetric"])
+            value = Q(value, old_units["mass"])
+
             to_unit_specific = Q(1.0, new_units["specific_gravimetric"])
 
         elif mode == "areal":
             value = value or dataset.active_electrode_area
-            value = Q(value, old_units["specific_areal"])
+            value = Q(value, old_units["areal"])
             to_unit_specific = Q(1.0, new_units["specific_areal"])
 
         elif mode == "absolute":
@@ -4732,12 +4732,13 @@ class CellpyData:
         from_unit_cap = Q(1.0, old_units["charge"])
         to_unit_cap = Q(1.0, new_units["charge"])
 
+        # from unit is always in absolute values:
         from_unit = from_unit_cap
+
         to_unit = to_unit_cap / to_unit_specific
 
         conversion_factor = (from_unit / to_unit / value).to_reduced_units()
         logging.debug(f"conversion factor: {conversion_factor}")
-
         return conversion_factor.m
 
     def get_diagnostics_plots(self, dataset_number=None, scaled=False):
