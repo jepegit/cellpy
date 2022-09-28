@@ -160,6 +160,9 @@ class CellpyUnitsOld(BaseSettings):
 
 @dataclass
 class CellpyUnits(BaseSettings):
+    """These are the units used inside Cellpy.
+
+    """
     current: str = "A"
     charge: str = "mAh"
     voltage: str = "V"
@@ -174,9 +177,9 @@ class CellpyUnits(BaseSettings):
     specific_areal: str = "cm**2"  # m2 in specific capacity etc
     specific_volumetric: str = "cm**3"  # m3 in specific capacity etc
 
-    length: str = "m"
-    area: str = "m**2"
-    volume: str = "m**3"
+    length: str = "cm"
+    area: str = "cm**2"
+    volume: str = "cm**3"
     temperature: str = "C"
 
 

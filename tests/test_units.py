@@ -10,6 +10,25 @@ from cellpy.parameters.internal_settings import get_headers_summary
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
+def test_to_cellpy_unit_from_cellpy_instance(cellpy_data_instance):
+    value = Q(12.2, cellpy_data_instance.cellpy_units["length"])
+    expected_new_value = Q(12.2, cellpy_data_instance.cellpy_units["length"]).m
+    new_value = cellpy_data_instance.to_cellpy_unit(value, physical_property="length")
+    assert new_value == expected_new_value
+
+
+def test_to_cellpy_unit_from_cellpy_instance_with_cell(dataset):
+    value = 12.2
+    new_value = dataset.to_cellpy_unit(value, physical_property="length")
+    assert new_value == Q(12.2, dataset.cell.raw_units["length"]).to(dataset.cellpy_units["length"]).m
+
+    new_value = dataset.to_cellpy_unit(f"12.2 {dataset.cellpy_units['length']}", physical_property="length")
+    assert new_value == 12.2
+
+    new_value = dataset.to_cellpy_unit((12.2, dataset.cell.raw_units['length']), physical_property="length")
+    assert new_value == Q(12.2, dataset.cell.raw_units["length"]).to(dataset.cellpy_units["length"]).m
+
+
 @pytest.mark.parametrize(
     "test_input,expected",
     [
@@ -20,14 +39,32 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
     ],
 )
 def test_get_converter_to_specific(dataset, test_input, expected):
+    # This test is basically a reimplementation of what it is going to test.
+    # Dont think that is a too good and idea.
     raw_unit_charge = dataset.cell.raw_units["charge"]
     cellpy_unit_charge = dataset.cellpy_units["charge"]
+    value_unit = {
+        "gravimetric": dataset.cellpy_units["mass"],
+        "areal": dataset.cellpy_units["area"],
+        "absolute": None,
+    }
+    specific_unit = f"specific_{test_input[1]}"
+    physical_unit = value_unit[test_input[1]]
 
-    charge_conv = (Q(1, raw_unit_charge)/Q(1, cellpy_unit_charge)).to_reduced_units()
+    specific_conv = {
+        "gravimetric": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
+        "areal": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
+        "absolute": lambda x: x
+    }
+
+    conv = (Q(1, raw_unit_charge)/Q(1, cellpy_unit_charge)).to_reduced_units()
+
+    conv = conv.m/specific_conv[test_input[1]](1)
+
     c = dataset.get_converter_to_specific(
         value=test_input[0], mode=test_input[1],
     )
-    assert c == charge_conv.m * expected
+    assert c == conv * expected
 
 
 def test_nominal_capacity(dataset):
@@ -56,6 +93,13 @@ def test_get_converter_to_specific_with_mode(dataset):
 
 # This will only work when defaults are in place:
 def test_get_converter_to_areal_specific(dataset):
+    area = dataset.cell.active_electrode_area
+    print(f"{area=}")
+    print(f"{dataset.cellpy_units['area']=}")
+    print(f"{dataset.cell.raw_units['area']=}")
+    print(f"{dataset.cellpy_units['specific_areal']=}")
+    print(f"{dataset.cell.raw_units['specific_areal']=}")
+
     c = dataset.get_converter_to_specific(mode="areal")
     assert c == pytest.approx(1000 / dataset.cell.active_electrode_area, 0.0001)
 

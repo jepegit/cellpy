@@ -19,6 +19,7 @@ import copy
 import csv
 import itertools
 import logging
+import numbers
 import os
 import sys
 import time
@@ -29,6 +30,7 @@ from typing import Union, Sequence
 import numpy as np
 import pandas as pd
 from pandas.errors import PerformanceWarning
+from pint import Quantity
 from scipy import interpolate
 
 from cellpy.exceptions import (
@@ -4679,6 +4681,40 @@ class CellpyData:
         )
         return absolute_value.m
 
+    def to_cellpy_unit(self, value, physical_property):
+        """Convert value to cellpy units.
+
+        Args:
+            value (numeric, pint.Quantity or str): what you want to convert from
+            physical_property (str): What this value is a measure of
+                (must correspond to one of the keys in the CellpyUnits class).
+
+        Returns (numeric):
+            the value in cellpy units
+        """
+        logging.debug(f"value {value} is numeric? {isinstance(value, numbers.Number)}")
+        logging.debug(f"value {value} is a pint quantity? {isinstance(value, Quantity)}")
+
+        if not isinstance(value, Quantity):
+            if isinstance(value, numbers.Number):
+                try:
+                    value = Q(value, self.cell.raw_units[physical_property])
+                    logging.debug(f"With unit from raw-units: {value}")
+                except NoCellFound:
+                    raise NoCellFound("If you dont have any cells you cannot convert"
+                                      " values to cellpy units without providing what"
+                                      " unit to convert from!")
+                except KeyError as e:
+                    raise KeyError("You have to provide a valid physical_property") from e
+            elif isinstance(value, tuple):
+                value = Q(*value)
+            else:
+                value = Q(value)
+
+        value = value.to(self.cellpy_units[physical_property])
+
+        return value.m
+
     def get_converter_to_specific(
         self,
         dataset: Cell = None,
@@ -4709,13 +4745,13 @@ class CellpyData:
 
         if mode == "gravimetric":
             value = value or dataset.mass
-            value = Q(value, old_units["mass"])
+            value = Q(value, new_units["mass"])
 
             to_unit_specific = Q(1.0, new_units["specific_gravimetric"])
 
         elif mode == "areal":
             value = value or dataset.active_electrode_area
-            value = Q(value, old_units["areal"])
+            value = Q(value, new_units["area"])
             to_unit_specific = Q(1.0, new_units["specific_areal"])
 
         elif mode == "absolute":
