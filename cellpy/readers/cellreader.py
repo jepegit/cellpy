@@ -2892,10 +2892,9 @@ class CellpyData:
             df_steps[shdr.rate_avr] = abs(
                 round(
                     df_steps.loc[:, (shdr.current, "avr")] / nom_cap,
-                    2,
+                    3,
                 )
             )
-            print(f"{nom_cap=}")
         df_steps[shdr.type] = np.nan
         df_steps[shdr.sub_type] = np.nan
         df_steps[shdr.info] = np.nan
@@ -4665,9 +4664,9 @@ class CellpyData:
         value = Q(value, self.cellpy_units["nominal_capacity"])
 
         if nom_cap_specifics == "gravimetric":
-            specific = Q(specific, self.cellpy_units["specific_gravimetric"])
+            specific = Q(specific, self.cellpy_units["mass"])
         elif nom_cap_specifics == "areal":
-            specific = Q(specific, self.cellpy_units["specific_areal"])
+            specific = Q(specific, self.cellpy_units["area"])
 
         if convert_charge_units:
             conversion_factor_charge = Q(1, self.cellpy_units["charge"]) / Q(

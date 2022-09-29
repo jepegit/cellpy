@@ -33,10 +33,10 @@ def test_split_experiment_new(cell):
     assert list_of_all_cycles[-1] == list_of_last_cycles[-1]
 
 
-# def test_select_summary_based_on_rate(cell):
-#     cell.make_step_table()
-#     filtered_summary = helpers.select_summary_based_on_rate(cell, 0.04)
-#     assert len(filtered_summary) == 3
+def test_select_summary_based_on_rate(cell):
+    cell.make_step_table()
+    filtered_summary = helpers.select_summary_based_on_rate(cell, 0.04)
+    assert len(filtered_summary) == 3
 
 
 def test_remove_outliers_on_index(cell):
