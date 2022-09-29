@@ -147,13 +147,24 @@ class DataLoader(BaseLoader):
         """
 
         raw_units = dict()
-        raw_units["voltage"] = 1.0  # V
-        raw_units["current"] = 1.0  # A
-        raw_units["charge"] = 1.0  # Ah
-        raw_units["mass"] = 0.001  # g
-        raw_units["energy"] = 1.0  # Wh
-        raw_units["time"] = 1.0  # s
+        raw_units["current"] = "A"
+        raw_units["charge"] = "Ah"
+        raw_units["mass"] = "mg"
+        raw_units["voltage"] = "V"
+        raw_units["energy"] = "Wh"
+        raw_units["time"] = "s"
 
+        return raw_units
+
+    @staticmethod
+    def _raw_units_for_internal_calculations():
+        raw_units = dict()
+        raw_units["current"] = 1.0
+        raw_units["charge"] = 1.0
+        raw_units["mass"] = 0.001
+        raw_units["voltage"] = 1.0
+        raw_units["energy"] = 1.0
+        raw_units["time"] = 1.0
         return raw_units
 
     def get_raw_limits(self):
@@ -339,7 +350,7 @@ class DataLoader(BaseLoader):
         logging.debug("- cellpy units")
         pec_units = self._get_pec_units()
         pec_times = self._get_pec_times()
-        raw_units = self.get_raw_units()
+        raw_units = self._raw_units_for_internal_calculations()
         self._rename_headers()  # Had to run this again after fixing the headers, might be a better way to fix this
 
         _v = pec_units["voltage"] / raw_units["voltage"]

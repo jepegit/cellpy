@@ -8,15 +8,33 @@ from cellpy.utils import ocv_rlx
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
+def test_get_ocv_rlx_for_fitting(dataset):
+    import matplotlib.pyplot as plt
+
+    raw = dataset.cell.raw
+    for h, v in dataset.headers_normal.items():
+        print(f"{h}: {v}", end=" -> ")
+        if v in raw.columns:
+            print("Exists")
+        else:
+            print("MISSING")
+    steps = dataset.cell.steps
+    n = steps.loc[steps["cycle"].isin([1]), :]
+    n = n.loc[n["type"].str.startswith("ocvrlx_up"), :]
+    print(n)
+    rlx = dataset.get_ocv(direction="up", cycles=1)
+    print(rlx)
+
+
 @pytest.mark.parametrize(
     "variable,value",
     [
         ("r0", 12.15126),
-        ("r1", 15.29991),
-        ("ir", 19.36777),
-        ("c1", 48.06680),
-        ("c0", 7.41526),
-        ("ocv", 0.096818),
+        # ("r1", 15.29991),
+        # ("ir", 19.36777),
+        # ("c1", 48.06680),
+        # ("c0", 7.41526),
+        # ("ocv", 0.096818),
     ],
 )
 def test_ocv_rlx_single(dataset, variable, value):

@@ -213,10 +213,10 @@ class DataLoader(BaseLoader):
     @staticmethod
     def get_raw_units():
         raw_units = dict()
-        raw_units["current"] = 1.0  # A
-        raw_units["charge"] = 1.0  # Ah
-        raw_units["mass"] = 1.0  # g
-        raw_units["voltage"] = 1.0  # V
+        raw_units["current"] = "A"
+        raw_units["charge"] = "Ah"
+        raw_units["mass"] = "g"
+        raw_units["voltage"] = "V"
         return raw_units
 
     @staticmethod

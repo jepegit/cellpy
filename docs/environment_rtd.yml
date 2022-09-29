@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python >=3.7
+  - python >=3.8
   - pip
   - numpy
   - openpyxl
@@ -21,6 +21,7 @@ dependencies:
   - python-box
   - pandoc
   - ipykernel
+  - pint
   - pip:
     - nbsphinx
 

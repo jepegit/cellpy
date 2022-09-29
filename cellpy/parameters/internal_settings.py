@@ -141,19 +141,69 @@ class InstrumentSettings(DictLikeClass):
 
 @dataclass
 class CellpyUnits(BaseSettings):
-    current: float = 1.0  # Ah
-    charge: float = 0.001  # Ah
-    mass: float = 0.001  # g for mass
-    specific: float = 1.0  # g in specific capacity etc
-    voltage: float = 1.0  # V
-    time: float = 1.0  # sec
-    resistance: float = 1.0  # Ohms
-    power: float = 1.0  # W
-    energy: float = 1.0  # Wh
-    length: float = 1.0  # m
-    area: float = 1.0  # m2
-    volume: float = 1.0  # m3
-    temperature: float = 1.0  # C
+    """These are the units used inside Cellpy.
+
+    At least two sets of units needs to be defined; `cellpy_units` and `raw_units`.
+    The `cell.raw` dataframe is given in `raw_units` where the units are defined
+    inside the instrument loader used. Since the `cell.steps` dataframe is a summary of
+    the step statistics from the `cell.raw` dataframe, this also uses the `raw_units`.
+    The `cell.summary` dataframe contains columns with values directly from the `cell.raw` dataframe
+    given in `raw_units` as well as calculated columns given in `cellpy_units`.
+
+    Remark that all input to cellpy through user interaction (or utils) should be in `cellpy_units`.
+    This is also true for meta-data collected from the raw files. The instrument loader needs to
+    take care of the translation from its raw units to `cellpy_units` during loading the raw data
+    file for the meta-data (remark that this is not necessary and not recommended for the actual
+    "raw" data that is going to be stored in the `cell.raw` dataframe).
+
+    As of 2022.09.29, cellpy does not automatically ensure unit conversion for input of meta-data,
+    but has an internal method (`CellPyData.to_cellpy_units`) that can be used.
+
+    These are the different attributes currently supported for data in the dataframes:
+
+        current: str = "A"
+        charge: str = "mAh"
+        voltage: str = "V"
+        time: str = "sec"
+        resistance: str = "Ohms"
+        power: str = "W"
+        energy: str = "Wh"
+        frequency: str = "hz"
+
+    And here are the different attributes currently supported for meta-data:
+
+        # output-units for specific capacity etc.
+        specific_gravimetric: str = "g"
+        specific_areal: str = "cm**2"  # used for calculating specific capacity etc.
+        specific_volumetric: str = "cm**3"  # used for calculating specific capacity etc.
+
+        # other meta-data
+        nominal_capacity: str = "mAh/g"  # used for calculating rates etc.
+        mass: str = "mg"
+        length: str = "cm"
+        area: str = "cm**2"
+        volume: str = "cm**3"
+        temperature: str = "C"
+
+    """
+    current: str = "A"
+    charge: str = "mAh"
+    voltage: str = "V"
+    time: str = "sec"
+    resistance: str = "Ohms"
+    power: str = "W"
+    energy: str = "Wh"
+    frequency: str = "hz"
+    mass: str = "mg"  # for mass
+    nominal_capacity: str = "mAh/g"
+    specific_gravimetric: str = "g"  # g in specific capacity etc
+    specific_areal: str = "cm**2"  # m2 in specific capacity etc
+    specific_volumetric: str = "cm**3"  # m3 in specific capacity etc
+
+    length: str = "cm"
+    area: str = "cm**2"
+    volume: str = "cm**3"
+    temperature: str = "C"
 
 
 @dataclass
@@ -481,20 +531,20 @@ def get_default_output_units() -> CellpyUnits:
 def get_default_cellpy_file_raw_units() -> CellpyUnits:
     """Returns a dictionary with units to use as default for old versions of cellpy files"""
     return CellpyUnits(
-        charge=0.001,
-        mass=0.001,
+        charge="Ah",
+        mass="mg",
     )
 
 
 def get_default_raw_units() -> CellpyUnits:
     """Returns a dictionary with units as default for raw data"""
     return CellpyUnits(
-        charge=1.0,
-        mass=0.001,
+        charge="Ah",
+        mass="mg",
     )
 
 
-def get_default_raw_limits() -> CellpyUnits:
+def get_default_raw_limits() -> CellpyLimits:
     """Returns an augmented dictionary with units as default for raw data"""
     return CellpyLimits()
 

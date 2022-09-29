@@ -783,14 +783,14 @@ class Batch:
     def update(self, **kwargs) -> None:
         """Updates the selected datasets.
 
-        Args:
+        Keyword Args (to experiment-instance):
             all_in_memory (bool): store the `cellpydata` in memory (default
                 False)
             cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
                 dictionary will override the **kwargs and the parameters from the journal pages
                 for the indicated cell.
 
-        kwargs:
+        Additional kwargs:
             transferred all the way to the instrument loader, if not
             picked up earlier. Remark that you can obtain the same pr. cell by
             providing a `cellspecs` dictionary. The kwargs have precedence over the
@@ -815,6 +815,19 @@ class Batch:
         self.experiment.export_cellpy_files(path=path, **kwargs)
 
     def recalc(self, **kwargs) -> None:
+        """Run make_step_table and make_summary on all cells.
+
+        Keyword Args:
+            save (bool): Save updated cellpy-files if True (defaults to True).
+            step_opts (dict): parameters to inject to make_steps (defaults to None).
+            summary_opts (dict): parameters to inject to make_summary (defaults to None).
+            indexes (list): Only recalculate for given indexes (i.e. list of cell-names) (defaults to None).
+            calc_steps (bool): Run make_steps before making the summary (defaults to True).
+            testing (bool): Only for testing purposes (defaults to False).
+
+        Returns:
+            None
+        """
         self.experiment.errors["recalc"] = []
         self.experiment.recalc(**kwargs)
 

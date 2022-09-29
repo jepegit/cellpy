@@ -34,7 +34,7 @@ def test_split_experiment_new(cell):
 
 
 def test_select_summary_based_on_rate(cell):
-    cell.make_step_table(add_c_rate=True)
+    cell.make_step_table()
     filtered_summary = helpers.select_summary_based_on_rate(cell, 0.04)
     assert len(filtered_summary) == 3
 

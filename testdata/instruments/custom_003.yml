@@ -65,10 +65,11 @@ raw_limits:
   stable_voltage_soft: 4.0
 
 raw_units:
-  charge: 0.001
-  current: 0.001
-  mass: 0.001
-  specific: 0.001
+  charge: mAh
+  current: mA
+  mass: mg
+  specific_gravimetric: mg
+  specific_areal: cm**2
 
 meta_keys:
   cell_name: cell

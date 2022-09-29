@@ -67,7 +67,7 @@ def test_ica_value_bounds_simple():
 
 
 def test_ica_value_bounds(dataset):
-    capacity, voltage = dataset.get_ccap(5)
+    capacity, voltage = dataset.get_ccap(5, mode="gravimetric")
     c = ica.value_bounds(capacity)
     v = ica.value_bounds(voltage)
     assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)

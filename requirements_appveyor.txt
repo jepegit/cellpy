@@ -18,3 +18,4 @@ cookiecutter
 tqdm
 sqlalchemy
 sqlalchemy-access
+pint

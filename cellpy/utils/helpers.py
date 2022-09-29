@@ -933,7 +933,6 @@ def select_summary_based_on_rate(
     Returns:
         filtered summary (Pandas.DataFrame).
     """
-
     if on is None:
         on = ["charge"]
     else:

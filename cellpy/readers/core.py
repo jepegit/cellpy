@@ -15,6 +15,7 @@ from typing import Any, Tuple, Dict
 
 import numpy as np
 import pandas as pd
+import pint
 from scipy import interpolate
 
 from cellpy.exceptions import NullData
@@ -34,6 +35,10 @@ from cellpy.parameters.internal_settings import (
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
+
+# pint (https://pint.readthedocs.io/en/stable/)
+ureg = pint.UnitRegistry()
+Q = ureg.Quantity
 
 
 # https://stackoverflow.com/questions/60067953/
@@ -226,42 +231,44 @@ class Cell:
         self.logger.debug("created DataSet instance")
 
         # meta-data
-        self.cell_no = None
-        self.mass = prms.Materials.default_mass  # active material
-        self.tot_mass = prms.Materials.default_mass  # total material
-        self.no_cycles = 0.0
-        self.charge_steps = None
-        self.discharge_steps = None
-        self.ir_steps = None
-        self.ocv_steps = None
-        self._nom_cap = prms.Materials.default_nom_cap  # nominal capacity
-        self._nom_cap_specifics = (
-            prms.Materials.default_nom_cap_specifics
-        )  # nominal capacity type
-        self.mass_given = False
+        self.ir_steps = None  # check if this is needed
+        self.ocv_steps = None  # check if this is needed
+        self.cell_no = None  # check if this is needed
+        self.no_cycles = 0.0  # check if this is needed
+        self.charge_steps = None  # check if this is needed
+        self.discharge_steps = None  # check if this is needed
         self.material = prms.Materials.default_material
-        self.merged = False
+        self.merged = False  # check if this is needed
         self.file_errors = None  # not in use at the moment
         self.loaded_from = None  # loaded from (can be list if merged)
         self.channel_index = None
         self.channel_number = None
         self.creator = None
-        self.item_ID = None
+        self.item_ID = None  # check if this is needed
         self.schedule_file_name = None
         self.start_datetime = None
         self.test_ID = None
         self.name = None
+        self.cycle_mode = prms.Reader.cycle_mode
+        self.mass_given = False  # check if this is needed
+        self.comment = prms.CellInfo.comment
 
-        # new meta data
+        # TODO @jepe: Maybe we should use values with units here instead (pint)?
+        self.mass = prms.Materials.default_mass  # active material
+        self.tot_mass = prms.Materials.default_mass  # total material
+        self._nom_cap = prms.Materials.default_nom_cap  # nominal capacity
+        self._nom_cap_specifics = (
+            prms.Materials.default_nom_cap_specifics
+        )  # nominal capacity type
         self.voltage_lim_low = prms.CellInfo.voltage_lim_low
         self.voltage_lim_high = prms.CellInfo.voltage_lim_high
-        self.cycle_mode = prms.Reader.cycle_mode
-        self.active_electrode_area = prms.CellInfo.active_electrode_area  # [cm2]
+        self.active_electrode_area = prms.CellInfo.active_electrode_area
         self.active_electrode_thickness = (
             prms.CellInfo.active_electrode_thickness
-        )  # [micron]
-        self.electrolyte_type = prms.CellInfo.electrolyte_type  #
-        self.electrolyte_volume = prms.CellInfo.electrolyte_volume  # [micro-liter]
+        )
+        self.electrolyte_volume = prms.CellInfo.electrolyte_volume
+
+        self.electrolyte_type = prms.CellInfo.electrolyte_type
         self.active_electrode_type = prms.CellInfo.active_electrode_type
         self.counter_electrode_type = prms.CellInfo.counter_electrode_type
         self.reference_electrode_type = prms.CellInfo.reference_electrode_type
@@ -274,7 +281,6 @@ class Cell:
         self.reference_electrode_current_collector = (
             prms.CellInfo.reference_electrode_current_collector
         )
-        self.comment = prms.CellInfo.comment
 
         # custom meta-data
         for k in kwargs:

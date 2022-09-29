@@ -39,10 +39,10 @@ unit_labels:
     energy: Wh
     temperature: C
 raw_units:
-    current: 1.0
-    charge: 1.0
-    mass: 0.001
-    time: 1.0
+    current: A
+    charge: Ah
+    mass: mg
+    time: s
 raw_limits:
     current_hard: 1.0e-13
     current_soft: 1.0e-05
