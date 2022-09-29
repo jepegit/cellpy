@@ -140,25 +140,6 @@ class InstrumentSettings(DictLikeClass):
 
 
 @dataclass
-class CellpyUnitsOld(BaseSettings):
-    current: float = 1.0  # Ah
-    charge: float = 0.001  # Ah
-    mass: float = 0.001  # g for mass
-    specific_gravimetric: float = 1.0  # g in specific capacity etc
-    specific_areal: float = 1.0  # m2 in specific capacity etc
-    specific_volumetric: float = 1.0  # m3 in specific capacity etc
-    voltage: float = 1.0  # V
-    time: float = 1.0  # sec
-    resistance: float = 1.0  # Ohms
-    power: float = 1.0  # W
-    energy: float = 1.0  # Wh
-    length: float = 1.0  # m
-    area: float = 1.0  # m2
-    volume: float = 1.0  # m3
-    temperature: float = 1.0  # C
-
-
-@dataclass
 class CellpyUnits(BaseSettings):
     """These are the units used inside Cellpy.
 
@@ -555,27 +536,11 @@ def get_default_cellpy_file_raw_units() -> CellpyUnits:
     )
 
 
-def get_default_cellpy_file_raw_units_OLD() -> CellpyUnitsOld:
-    """Returns a dictionary with units to use as default for old versions of cellpy files"""
-    return CellpyUnitsOld(
-        charge=0.001,
-        mass=0.001,
-    )
-
-
 def get_default_raw_units() -> CellpyUnits:
     """Returns a dictionary with units as default for raw data"""
     return CellpyUnits(
         charge="Ah",
         mass="mg",
-    )
-
-
-def get_default_raw_units_OLD() -> CellpyUnitsOld:
-    """Returns a dictionary with units as default for raw data"""
-    return CellpyUnitsOld(
-        charge=1.0,
-        mass=0.001,
     )
 
 
