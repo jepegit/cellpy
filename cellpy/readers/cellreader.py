@@ -4680,6 +4680,33 @@ class CellpyData:
         )
         return absolute_value.m
 
+    def with_cellpy_unit(self, parameter, as_str=False):
+        """Return quantity as `pint.Quantity` object."""
+        _look_up = {
+            "nom_cap": "nominal_capacity",
+            "active_electrode_area": "area",
+        }
+        _parameter = parameter
+        if parameter in _look_up.keys():
+            _parameter = _look_up[parameter]
+
+        try:
+            _unit = self.cellpy_units[_parameter]
+        except KeyError:
+            print(f"Did not find any units registered for {parameter}")
+            return
+
+        try:
+            _value = getattr(self.cell, parameter)
+        except AttributeError:
+            print(f"{parameter} is not a valid cellpy cell attribute (but the unit is {_unit})")
+            return
+
+        if as_str:
+            return f"{_value} {_unit}"
+
+        return Q(_value, _unit)
+
     def to_cellpy_unit(self, value, physical_property):
         """Convert value to cellpy units.
 
@@ -5182,7 +5209,7 @@ class CellpyData:
         update_it=False,
         select_columns=True,
         find_ocv=False,  # deprecated
-        find_ir=False,
+        find_ir=True,
         find_end_voltage=False,
         ensure_step_table=True,
         # TODO @jepe: - include option for omitting steps

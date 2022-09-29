@@ -10,6 +10,10 @@ from cellpy.parameters.internal_settings import get_headers_summary
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
+def test_with_cellpy_unit(dataset):
+    n = dataset.with_cellpy_unit("nom_cap")
+
+
 def test_to_cellpy_unit_from_cellpy_instance(cellpy_data_instance):
     value = Q(12.2, cellpy_data_instance.cellpy_units["length"])
     expected_new_value = Q(12.2, cellpy_data_instance.cellpy_units["length"]).m
