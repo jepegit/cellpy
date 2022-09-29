@@ -247,7 +247,7 @@ def test_cli_setup_custom_dir():
         assert result.exit_code == 0
 
 
-@pytest.mark.slowtest
+# @pytest.mark.slowtest
 def test_cli_new_list():
     logging.debug("\nSTARTING TEST")
     runner = CliRunner()
@@ -257,7 +257,7 @@ def test_cli_new_list():
     assert "https://github.com/jepegit/cellpy_cookie_standard.git" in result.output
 
 
-@pytest.mark.slowtest
+# @pytest.mark.slowtest
 def test_cli_new(tmp_path):
     logging.debug("\nSTARTING TEST")
     runner = CliRunner()
@@ -274,7 +274,7 @@ def test_cli_new(tmp_path):
     assert "_life.ipynb" in output_paths
 
 
-@pytest.mark.slowtest
+# @pytest.mark.slowtest
 def test_cli_new_with_dir_as_input(tmp_path):
     logging.debug("\nSTARTING TEST")
     runner = CliRunner()
@@ -292,7 +292,7 @@ def test_cli_new_with_dir_as_input(tmp_path):
     assert "_life.ipynb" in output_paths
 
 
-@pytest.mark.slowtest
+# @pytest.mark.slowtest
 def test_cli_new_different_and_missing_default(tmp_path):
     logging.debug("\nSTARTING TEST")
     runner = CliRunner()
