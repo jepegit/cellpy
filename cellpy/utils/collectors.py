@@ -66,6 +66,9 @@ class BatchCollector:
         self._update_arguments(data_collector_arguments, plotter_arguments)
         self._set_attributes(**kwargs)
 
+        if nick is None:
+            self.nick = b.name
+
         if name is None:
             name = self.generate_name()
         self.name = name
@@ -166,6 +169,7 @@ class BatchCollector:
         print(f"saved csv file: {filename}")
 
     def to_html(self):
+        # TODO: include png and call it something else
         if HOLOVIEWS_AVAILABLE:
             filename = (Path(self.figure_directory) / self.name).with_suffix(".html")
             hv.save(
@@ -200,6 +204,62 @@ class BatchSummaryCollector(BatchCollector):
 
     def generate_name(self):
         names = ["collected_summaries"]
+        cols = self.data_collector_arguments.get("columns")
+        grouped = self.data_collector_arguments.get("group_it")
+        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
+        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
+        if self.nick:
+            names.insert(0, self.nick)
+        if cols:
+            names.extend(cols)
+        if grouped:
+            names.append("average")
+        if equivalent_cycles:
+            names.append("equivalents")
+        if len(normalized_cap):
+            names.append("norm")
+
+        name = "_".join(names)
+        return name
+
+
+def cycles_collector(b, cycles=None, interpolated=True, number_of_points=100, max_cycle=50, abort_on_missing=False):
+    if cycles is None:
+        cycles = list(range(1, max_cycle + 1))
+    all_curves = []
+    keys = []
+    for c in b:
+        curves = c.get_cap(cycle=cycles, label_cycle_number=True, interpolated=interpolated,
+                           number_of_points=number_of_points)
+        if not curves.empty:
+            all_curves.append(curves)
+            keys.append(c.name)
+        else:
+            if abort_on_missing:
+                raise ValueError(f"{c.name} is empty - aborting!")
+            print(f"[{c.name} empty]")
+    collected_curves = pd.concat(all_curves, keys=keys, axis=0, names=["cell", "point"]).reset_index(level="cell")
+    return collected_curves
+
+
+def cycles_plotter(collected_curves, journal=None, **kwargs):
+    p = hv.Curve(collected_curves, kdims="capacity", vdims=["voltage", "cycle", "cell"]).groupby("cell")
+    return p
+
+
+class BatchCyclesCollector(BatchCollector):
+    _data_collector_arguments = {
+        "interpolated": True, "number_of_points": 100, "max_cycle": 50, "abort_on_missing": False,
+    }
+    _plotter_arguments = {
+        # "extension": "bokeh",
+    }
+
+    def __init__(self, b, *args, **kwargs):
+        super().__init__(b, plotter=cycles_plotter, data_collector=cycles_collector, *args, **kwargs)
+
+    def generate_name(self):
+        names = ["collected_cycles"]
         cols = self.data_collector_arguments.get("columns")
         grouped = self.data_collector_arguments.get("group_it")
         equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")

@@ -115,20 +115,7 @@ class CyclingExperiment(BaseExperiment):
         </table>
         """
         txt += "<h3>Cells</h3>"
-        if self._data is None:
-            txt += f"<p><b>data</b><br> contains {len(self)} cells [not linked!]</p>"
-        else:
-            txt += f"<p><b>data</b>: contains {len(self)} cells.</p>"
-        # for key in self.session:
-        #     txt += f"<p><b>{key}</b>: {self.session[key]}</p>"
-        #
-        # txt += "<h3>Pages</h3>"
-        # try:
-        #     txt += self.pages._repr_html_()
-        # except AttributeError:
-        #     txt += "<p><b>pages</b><br> not found!</p>"
-        # except ValueError:
-        #     txt += "<p><b>pages</b><br> not readable!</p>"
+        txt += f"<p><b>data</b>: contains {len(self)} cells.</p>"
         return txt
 
     @staticmethod
