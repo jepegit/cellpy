@@ -9,7 +9,7 @@ tqdm==4.62.3
 lmfit==1.0.3
 pygithub==1.55
 pint==0.19.2
-dataclasses==0.8
+# dataclasses==0.8
 python-dateutil==2.8.2
 sqlalchemy==1.4.31
 pyodbc==4.0.32

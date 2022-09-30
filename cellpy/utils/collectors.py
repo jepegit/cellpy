@@ -24,40 +24,22 @@ except ImportError:
 
 
 class BatchCollector:
-    b: Batch = None
     data: pd.DataFrame = None
     figure: Any = None
     name: str = None
+    nick: str = None
+    autorun: bool = True
     figure_directory: Path = Path("out")
     data_directory: Path = Path("data/processed/")
-
-    def update(self):
-        pass
-
-    def show(self):
-        pass
-
-    def to_csv(self):
-        pass
-
-    def to_html(self):
-        pass
-
-    def save(self):
-        pass
-
-
-class BatchSummaryCollector(BatchCollector):
-    _data_collector_arguments = {
-        "columns": ["charge_capacity_gravimetric"],
-    }
-    _plotter_arguments = {
-        "extension": "bokeh",
-    }
+    # defaults when resetting:
+    _data_collector_arguments = {}
+    _plotter_arguments = {}
 
     def __init__(
         self,
-        b: Batch,
+        b,
+        data_collector,
+        plotter,
         name=None,
         nick=None,
         autorun=True,
@@ -73,67 +55,33 @@ class BatchSummaryCollector(BatchCollector):
             data_collector_arguments (dict): keyword arguments sent to the data collector.
             plotter_arguments (dict): keyword arguments sent to the plotter.
             update_name (bool): update the name (using automatic name generation) based on new settings.
-            **kwargs: set BatchSummaryCollector attributes.
+            **kwargs: set Collector attributes.
         """
-
-        self.plotter = plot_concatenated
-        self.data_collector = concatenate_summaries
+        self.b = b
+        self.data_collector = data_collector
+        self.plotter = plotter
+        self.nick = nick
         self.data_collector_arguments = self._data_collector_arguments.copy()
         self.plotter_arguments = self._plotter_arguments.copy()
-        self._set_docstrings()
         self._update_arguments(data_collector_arguments, plotter_arguments)
         self._set_attributes(**kwargs)
-        self.b = b
-        self.nick = nick
 
         if name is None:
-            name = self._generate_name()
+            name = self.generate_name()
         self.name = name
 
         if autorun:
             self.update(update_name=False)
-
-    def _set_docstrings(self):
-        indenter = "    "
-        docstring_plotter = f"{inspect.getdoc(self.plotter)}"
-        docstring_data_collector = f"{inspect.getdoc(self.data_collector)}"
-        update_txt = inspect.getdoc(self.update)
-
-        update_hdr = f"plotter_arguments ({self.plotter.__name__}):\n"
-        update_hdr += len(update_hdr) * "-"
-        update_txt += f"\n\n{update_hdr}\n"
-        update_txt += textwrap.indent(docstring_plotter, indenter)
-
-        update_hdr = f"data_collector_arguments ({self.data_collector.__name__}):\n"
-        update_hdr += len(update_hdr) * "-"
-        update_txt += f"\n\n{update_hdr}\n"
-        update_txt += textwrap.indent(docstring_data_collector, indenter)
-
-        update_txt = textwrap.dedent(update_txt)
-        self.update.__func__.__doc__ = update_txt
 
     def _set_attributes(self, **kwargs):
         self.sep = kwargs.get("sep", ";")
         self.csv_include_index = kwargs.get("csv_include_index", True)
         self.toolbar = kwargs.get("toolbar", True)
 
-    def _generate_name(self):
-        names = ["collected_summaries"]
-        cols = self.data_collector_arguments.get("columns")
-        grouped = self.data_collector_arguments.get("group_it")
-        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
-        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
+    def generate_name(self):
+        names = [f"collector{self}"]
         if self.nick:
             names.insert(0, self.nick)
-        if cols:
-            names.extend(cols)
-        if grouped:
-            names.append("average")
-        if equivalent_cycles:
-            names.append("equivalents")
-        if len(normalized_cap):
-            names.append("norm")
-
         name = "_".join(names)
         return name
 
@@ -201,7 +149,7 @@ class BatchSummaryCollector(BatchCollector):
                 return
 
         if update_name:
-            self.name = self._generate_name()
+            self.name = self.generate_name()
 
     def show(self, hv_opts=None):
         print(f"figure name: {self.name}")
@@ -237,3 +185,35 @@ class BatchSummaryCollector(BatchCollector):
             print(f"pickled holoviews file: {filename}")
         self.to_csv()
         self.to_html()
+
+
+class BatchSummaryCollector(BatchCollector):
+    _data_collector_arguments = {
+        "columns": ["charge_capacity_gravimetric"],
+    }
+    _plotter_arguments = {
+        "extension": "bokeh",
+    }
+
+    def __init__(self, b, *args, **kwargs):
+        super().__init__(b, plotter=plot_concatenated, data_collector=concatenate_summaries, *args, **kwargs)
+
+    def generate_name(self):
+        names = ["collected_summaries"]
+        cols = self.data_collector_arguments.get("columns")
+        grouped = self.data_collector_arguments.get("group_it")
+        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
+        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
+        if self.nick:
+            names.insert(0, self.nick)
+        if cols:
+            names.extend(cols)
+        if grouped:
+            names.append("average")
+        if equivalent_cycles:
+            names.append("equivalents")
+        if len(normalized_cap):
+            names.append("norm")
+
+        name = "_".join(names)
+        return name
