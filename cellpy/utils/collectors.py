@@ -157,7 +157,10 @@ class BatchCollector:
     def show(self, hv_opts=None):
         print(f"figure name: {self.name}")
         if HOLOVIEWS_AVAILABLE:
-            return self.figure
+            if hv_opts is not None:
+                return self.figure.opts(hv_opts)
+            else:
+                return self.figure
 
     def to_csv(self):
         filename = (Path(self.data_directory) / self.name).with_suffix(".csv")
@@ -168,16 +171,17 @@ class BatchCollector:
         )
         print(f"saved csv file: {filename}")
 
-    def to_html(self):
-        # TODO: include png and call it something else
+    def to_image_files(self):
+        # TODO: include png
+        filename_pre = (Path(self.figure_directory) / self.name)
         if HOLOVIEWS_AVAILABLE:
-            filename = (Path(self.figure_directory) / self.name).with_suffix(".html")
+            filename_hv = filename_pre.with_suffix(".html")
             hv.save(
                 self.figure,
-                filename,
+                filename_hv,
                 toolbar=self.toolbar,
             )
-            print(f"saved html file: {filename}")
+            print(f"saved file: {filename_pre}")
 
     def save(self):
         if HOLOVIEWS_AVAILABLE:
@@ -188,7 +192,7 @@ class BatchCollector:
             )
             print(f"pickled holoviews file: {filename}")
         self.to_csv()
-        self.to_html()
+        self.to_image_files()
 
 
 class BatchSummaryCollector(BatchCollector):
