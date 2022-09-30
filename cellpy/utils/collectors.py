@@ -173,7 +173,7 @@ class BatchCollector:
 
     def to_image_files(self):
         # TODO: include png
-        filename_pre = (Path(self.figure_directory) / self.name)
+        filename_pre = Path(self.figure_directory) / self.name
         if HOLOVIEWS_AVAILABLE:
             filename_hv = filename_pre.with_suffix(".html")
             hv.save(
@@ -204,7 +204,13 @@ class BatchSummaryCollector(BatchCollector):
     }
 
     def __init__(self, b, *args, **kwargs):
-        super().__init__(b, plotter=plot_concatenated, data_collector=concatenate_summaries, *args, **kwargs)
+        super().__init__(
+            b,
+            plotter=plot_concatenated,
+            data_collector=concatenate_summaries,
+            *args,
+            **kwargs,
+        )
 
     def generate_name(self):
         names = ["collected_summaries"]
@@ -227,14 +233,27 @@ class BatchSummaryCollector(BatchCollector):
         return name
 
 
-def cycles_collector(b, cycles=None, interpolated=True, number_of_points=100, max_cycle=50, abort_on_missing=False):
+def cycles_collector(
+    b,
+    cycles=None,
+    interpolated=True,
+    number_of_points=100,
+    max_cycle=50,
+    abort_on_missing=False,
+    method="back-and-forth",
+):
     if cycles is None:
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
     for c in b:
-        curves = c.get_cap(cycle=cycles, label_cycle_number=True, interpolated=interpolated,
-                           number_of_points=number_of_points)
+        curves = c.get_cap(
+            cycle=cycles,
+            label_cycle_number=True,
+            interpolated=interpolated,
+            number_of_points=number_of_points,
+            method=method,
+        )
         if not curves.empty:
             all_curves.append(curves)
             keys.append(c.name)
@@ -242,25 +261,73 @@ def cycles_collector(b, cycles=None, interpolated=True, number_of_points=100, ma
             if abort_on_missing:
                 raise ValueError(f"{c.name} is empty - aborting!")
             print(f"[{c.name} empty]")
-    collected_curves = pd.concat(all_curves, keys=keys, axis=0, names=["cell", "point"]).reset_index(level="cell")
+    collected_curves = pd.concat(
+        all_curves, keys=keys, axis=0, names=["cell", "point"]
+    ).reset_index(level="cell")
     return collected_curves
 
 
-def cycles_plotter(collected_curves, journal=None, **kwargs):
-    p = hv.Curve(collected_curves, kdims="capacity", vdims=["voltage", "cycle", "cell"]).groupby("cell")
+def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
+    p = hv.Curve(
+        collected_curves, kdims="capacity", vdims=["voltage", "cycle", "cell"]
+    ).groupby("cell")
+    return p
+
+
+def cycles_plotter(
+    collected_curves, journal=None, palette="Spectral", plot_method=None, **kwargs
+):
+    plot_method = plot_method or "fig_pr_cell"
+    if plot_method == "fig_pr_cell":
+        p = hv.NdLayout(
+            {
+                label: hv.Curve(df, kdims="capacity", vdims=["voltage", "cycle"])
+                .groupby("cycle")
+                .overlay()
+                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
+                for label, df in collected_curves.groupby("cell")
+            }
+        )
+    elif plot_method == "fig_pr_cycles":
+        cycles = kwargs.pop("cycles", [1, 10, 20])
+        cols = kwargs.pop("cols", 1)
+        width = kwargs.pop("width", int(800 / cols))
+        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        p = (
+            hv.NdLayout(
+                {
+                    cyc: hv.Curve(df, kdims="capacity", vdims=["voltage", "cell"])
+                    .groupby("cell")
+                    .overlay()
+                    .opts(
+                        hv.opts.Curve(
+                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
+                        )
+                    )
+                    for cyc, df in filtered_curves.groupby("cycle")
+                }
+            )
+            .cols(1)
+            .opts(hv.opts.NdOverlay(legend_position="right"))
+        )
     return p
 
 
 class BatchCyclesCollector(BatchCollector):
     _data_collector_arguments = {
-        "interpolated": True, "number_of_points": 100, "max_cycle": 50, "abort_on_missing": False,
+        "interpolated": True,
+        "number_of_points": 100,
+        "max_cycle": 50,
+        "abort_on_missing": False,
     }
     _plotter_arguments = {
         # "extension": "bokeh",
     }
 
     def __init__(self, b, *args, **kwargs):
-        super().__init__(b, plotter=cycles_plotter, data_collector=cycles_collector, *args, **kwargs)
+        super().__init__(
+            b, plotter=cycles_plotter, data_collector=cycles_collector, *args, **kwargs
+        )
 
     def generate_name(self):
         names = ["collected_cycles"]
