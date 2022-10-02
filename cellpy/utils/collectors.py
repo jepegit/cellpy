@@ -270,50 +270,6 @@ class BatchMultiFigureCollector(BatchCollector):
     pass
 
 
-class BatchSummaryCollector(BatchCollector):
-    _data_collector_arguments = {
-        "columns": ["charge_capacity_gravimetric"],
-    }
-    _plotter_arguments = {
-        "extension": "bokeh",
-    }
-
-    def __init__(self, b, *args, **kwargs):
-        super().__init__(
-            b,
-            plotter=plot_concatenated,
-            data_collector=concatenate_summaries,
-            collector_name="summary",
-            *args,
-            **kwargs,
-        )
-
-    def __str__(self):
-        # TODO: fix this:
-        print(self)
-        print(dir(self))
-
-    def generate_name(self):
-        names = ["collected_summaries"]
-        cols = self.data_collector_arguments.get("columns")
-        grouped = self.data_collector_arguments.get("group_it")
-        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
-        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
-        if self.nick:
-            names.insert(0, self.nick)
-        if cols:
-            names.extend(cols)
-        if grouped:
-            names.append("average")
-        if equivalent_cycles:
-            names.append("equivalents")
-        if len(normalized_cap):
-            names.append("norm")
-
-        name = "_".join(names)
-        return name
-
-
 def cycles_collector(
     b,
     cycles=None,
@@ -454,25 +410,71 @@ def ica_plotter(collected_curves, journal=None, palette="Spectral", **kwargs):
         cycles = kwargs.pop("cycles", [1, 10, 20])
         cols = kwargs.pop("cols", 1)
         width = kwargs.pop("width", int(800 / cols))
+        z = "cell"
+        g = "cycle"
         filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         p = (
             hv.NdLayout(
                 {
-                    cyc: hv.Curve(df, kdims="capacity", vdims=["voltage", "cell"])
-                    .groupby("cell")
+                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
+                    .groupby(z)
                     .overlay()
                     .opts(
                         hv.opts.Curve(
                             color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
                         )
                     )
-                    for cyc, df in filtered_curves.groupby("cycle")
+                    for cyc, df in filtered_curves.groupby(g)
                 }
             )
             .cols(cols)
             .opts(hv.opts.NdOverlay(legend_position="right"))
         )
     return p
+
+
+class BatchSummaryCollector(BatchCollector):
+    _data_collector_arguments = {
+        "columns": ["charge_capacity_gravimetric"],
+    }
+    _plotter_arguments = {
+        "extension": "bokeh",
+    }
+
+    def __init__(self, b, *args, **kwargs):
+        super().__init__(
+            b,
+            plotter=plot_concatenated,
+            data_collector=concatenate_summaries,
+            collector_name="summary",
+            *args,
+            **kwargs,
+        )
+
+    def __str__(self):
+        # TODO: fix this:
+        print(self)
+        print(dir(self))
+
+    def generate_name(self):
+        names = ["collected_summaries"]
+        cols = self.data_collector_arguments.get("columns")
+        grouped = self.data_collector_arguments.get("group_it")
+        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
+        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
+        if self.nick:
+            names.insert(0, self.nick)
+        if cols:
+            names.extend(cols)
+        if grouped:
+            names.append("average")
+        if equivalent_cycles:
+            names.append("equivalents")
+        if len(normalized_cap):
+            names.append("norm")
+
+        name = "_".join(names)
+        return name
 
 
 class BatchICACollector(BatchCollector):
@@ -483,6 +485,8 @@ class BatchICACollector(BatchCollector):
     }
 
     def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
+        """Create a collection of ica (dQ/dV) plots."""
+
         self._plotter_arguments["method"] = plot_type
         super().__init__(
             b,
@@ -515,16 +519,8 @@ class BatchCyclesCollector(BatchCollector):
         *args,
         **kwargs,
     ):
-        """Create a collection of capacity plots.
+        """Create a collection of capacity plots."""
 
-        Args:
-            b (Batch): cellpy batch instance.
-            plot_type: selected plot type
-                fig_pr_cell:
-                fig_pr_cycles:
-            *args:
-            **kwargs:
-        """
         self._data_collector_arguments["method"] = collector_type
         self._plotter_arguments["method"] = plot_type
         super().__init__(
