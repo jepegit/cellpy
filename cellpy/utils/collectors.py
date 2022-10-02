@@ -120,6 +120,46 @@ class BatchCollector:
         if autorun:
             self.update(update_name=False)
 
+    def __str__(self):
+        class_name = self.__class__.__name__
+
+        txt = f"{class_name}\n{len(class_name) * '='}\n\n"
+        txt += "Attributes:\n"
+        txt += "-----------\n"
+        txt += f" -collector_name: {self.collector_name}\n"
+        txt += f" -autorun: {self.autorun}\n"
+        txt += f" -name: {self.name}\n"
+        txt += f" -nick: {self.nick}\n"
+        txt += f" -csv_include_index: {self.csv_include_index}\n"
+        txt += f" -csv_layout: {self.csv_layout}\n"
+        txt += f" -sep: {self.sep}\n"
+        txt += f" -toolbar: {self.toolbar}\n"
+        txt += f" -figure_directory: {self.figure_directory}\n"
+        txt += f" -data_directory: {self.data_directory}\n"
+        txt += f" -batch-instance: {self.b.name}\n"
+        txt += f" -data_collector_arguments: {self.data_collector_arguments}\n"
+        txt += f" -plotter_arguments: {self.plotter_arguments}\n"
+
+        txt += "\nData collector:\n"
+        txt += "---------------\n"
+        data_name = self.data_collector.__name__
+        data_sig = inspect.signature(self.data_collector)
+        data_doc = inspect.getdoc(self.data_collector)
+        txt = f"{txt}{data_name}"
+        txt = f"{txt}{data_sig}\n"
+        txt = f"{txt}\n{data_doc}\n"
+
+        txt += "\nPlotter:\n"
+        txt += "--------\n"
+        plotter_name = self.plotter.__name__
+        plotter_sig = inspect.signature(self.plotter)
+        plotter_doc = inspect.getdoc(self.plotter)
+        txt = f"{txt}{plotter_name}"
+        txt = f"{txt}{plotter_sig}\n"
+        txt = f"{txt}\n{plotter_doc}\n"
+
+        return txt
+
     def _set_attributes(self, **kwargs):
         self.sep = kwargs.get("sep", ";")
         self.csv_include_index = kwargs.get("csv_include_index", True)
@@ -162,6 +202,7 @@ class BatchCollector:
         data_collector_arguments: dict = None,
         plotter_arguments: dict = None,
         reset: bool = False,
+        update_data: bool = False,
         update_name: bool = False,
     ):
         """Update both the collected data and the plot(s).
@@ -169,20 +210,22 @@ class BatchCollector:
             data_collector_arguments (dict): keyword arguments sent to the data collector.
             plotter_arguments (dict): keyword arguments sent to the plotter.
             reset (bool): reset the arguments first.
+            update_data (bool): update the data before updating the plot even if data has been collected before.
             update_name (bool): update the name (using automatic name generation) based on new settings.
         """
         if reset:
             self.reset_arguments(data_collector_arguments, plotter_arguments)
         else:
             self._update_arguments(data_collector_arguments, plotter_arguments)
-        try:
-            self.data = self.data_collector(self.b, **self.data_collector_arguments)
-        except TypeError as e:
-            print("Type error:", e)
-            print("Registered data_collector_arguments:")
-            pprint(self.data_collector_arguments)
-            print("Hint: fix it and then re-run using reset=True")
-            return
+        if update_data or self.data is None:
+            try:
+                self.data = self.data_collector(self.b, **self.data_collector_arguments)
+            except TypeError as e:
+                print("Type error:", e)
+                print("Registered data_collector_arguments:")
+                pprint(self.data_collector_arguments)
+                print("Hint: fix it and then re-run using reset=True")
+                return
 
         if HOLOVIEWS_AVAILABLE:
             try:
@@ -450,11 +493,6 @@ class BatchSummaryCollector(BatchCollector):
             *args,
             **kwargs,
         )
-
-    def __str__(self):
-        # TODO: fix this:
-        print(self)
-        print(dir(self))
 
     def generate_name(self):
         names = ["collected_summaries"]
