@@ -74,8 +74,8 @@ class BatchCollector:
     data_directory: Path = Path("data/processed/")
 
     # defaults when resetting:
-    _data_collector_arguments = {}
-    _plotter_arguments = {}
+    _default_data_collector_arguments = {}
+    _default_plotter_arguments = {}
 
     def __init__(
         self,
@@ -105,8 +105,8 @@ class BatchCollector:
         self.plotter = plotter
         self.nick = nick
         self.collector_name = collector_name or "base"
-        self.data_collector_arguments = self._data_collector_arguments.copy()
-        self.plotter_arguments = self._plotter_arguments.copy()
+        self._data_collector_arguments = self._default_data_collector_arguments.copy()
+        self._plotter_arguments = self._default_plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)
         self._set_attributes(**kwargs)
 
@@ -119,6 +119,27 @@ class BatchCollector:
 
         if autorun:
             self.update(update_name=False)
+
+    @property
+    def data_collector_arguments(self):
+        return self._data_collector_arguments
+
+    @data_collector_arguments.setter
+    def data_collector_arguments(self, argument_dict: dict):
+        if argument_dict is not None:
+            self._data_collector_arguments = {
+                **self._data_collector_arguments,
+                **argument_dict,
+            }
+
+    @property
+    def plotter_arguments(self):
+        return self._plotter_arguments
+
+    @plotter_arguments.setter
+    def plotter_arguments(self, argument_dict: dict):
+        if argument_dict is not None:
+            self._plotter_arguments = {**self._plotter_arguments, **argument_dict}
 
     def __str__(self):
         class_name = self.__class__.__name__
@@ -160,6 +181,14 @@ class BatchCollector:
 
         return txt
 
+    def _repr_html_(self):
+        class_name = self.__class__.__name__
+        txt = f"<h2>{class_name}</h2> id={hex(id(self))}"
+        _txt = self.__str__().replace("\n", "<br>")
+        txt += f"<blockquote>{_txt}</blockquote>"
+
+        return txt
+
     def _set_attributes(self, **kwargs):
         self.sep = kwargs.get("sep", ";")
         self.csv_include_index = kwargs.get("csv_include_index", True)
@@ -176,14 +205,8 @@ class BatchCollector:
     def _update_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
     ):
-        if data_collector_arguments is not None:
-            self.data_collector_arguments = {
-                **self.data_collector_arguments,
-                **data_collector_arguments,
-            }
-
-        if plotter_arguments is not None:
-            self.plotter_arguments = {**self.plotter_arguments, **plotter_arguments}
+        self.data_collector_arguments = data_collector_arguments
+        self.plotter_arguments = plotter_arguments
 
     def reset_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
@@ -193,8 +216,8 @@ class BatchCollector:
             data_collector_arguments (dict): optional additional keyword arguments for the data collector.
             plotter_arguments (dict): optional additional keyword arguments for the plotter.
         """
-        self.data_collector_arguments = self._data_collector_arguments.copy()
-        self.plotter_arguments = self._plotter_arguments.copy()
+        self._data_collector_arguments = self._default_data_collector_arguments.copy()
+        self._plotter_arguments = self._default_plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)
 
     def update(
@@ -354,17 +377,75 @@ def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
     return p
 
 
-def cycles_plotter(collected_curves, journal=None, palette="Spectral", **kwargs):
-    method = kwargs.get("method", "fig_pr_cell")
-    extension = kwargs.get("extension", "bokeh")
-    # Should check current extension and 'set' it here if needed
-    x = "capacity"
-    y = "voltage"
+def ica_plotter(
+    collected_curves,
+    journal=None,
+    palette="Spectral",
+    method="fig_pr_cell",
+    extension="bokeh",
+    cycles=None,
+    cols=1,
+    width=None,
+):
+    return sequence_plotter(
+        collected_curves,
+        x="voltage",
+        y="dq",
+        z="cycle",
+        g="cell",
+        journal=journal,
+        palette=palette,
+        method=method,
+        extension=extension,
+        cycles=cycles,
+        cols=cols,
+        width=width,
+    )
+
+
+def cycles_plotter(
+    collected_curves,
+    journal=None,
+    palette="Spectral",
+    method="fig_pr_cell",
+    extension="bokeh",
+    cycles=None,
+    cols=1,
+    width=None,
+):
+    return sequence_plotter(
+        collected_curves,
+        x="capacity",
+        y="voltage",
+        z="cycle",
+        g="cell",
+        journal=journal,
+        palette=palette,
+        method=method,
+        extension=extension,
+        cycles=cycles,
+        cols=cols,
+        width=width,
+    )
+
+
+def ica_plotter2(
+    collected_curves,
+    journal=None,
+    palette="Spectral",
+    method="fig_pr_cell",
+    extension="bokeh",
+    cycles=None,
+    cols=1,
+    width=None,
+):
+    x = "voltage"
+    y = "dq"
     z = "cycle"
     g = "cell"
+    # Should check current extension and 'set' it here if needed
+
     if method == "fig_pr_cell":
-        z = "cycle"
-        g = "cell"
         p = hv.NdLayout(
             {
                 label: hv.Curve(df, kdims=x, vdims=[y, z])
@@ -375,9 +456,131 @@ def cycles_plotter(collected_curves, journal=None, palette="Spectral", **kwargs)
             }
         )
     elif method == "fig_pr_cycle":
-        cycles = kwargs.pop("cycles", [1, 10, 20])
-        cols = kwargs.pop("cols", 1)
-        width = kwargs.pop("width", int(800 / cols))
+        if cycles is None:
+            cycles = [1, 10, 20]
+        if width is None:
+            width = int(800 / cols)
+        z = "cell"
+        g = "cycle"
+        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        p = (
+            hv.NdLayout(
+                {
+                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
+                    .groupby(z)
+                    .overlay()
+                    .opts(
+                        hv.opts.Curve(
+                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
+                        )
+                    )
+                    for cyc, df in filtered_curves.groupby(g)
+                }
+            )
+            .cols(cols)
+            .opts(hv.opts.NdOverlay(legend_position="right"))
+        )
+    return p
+
+
+def sequence_plotter(
+    collected_curves,
+    x,
+    y,
+    z,
+    g,
+    journal=None,
+    palette="Spectral",
+    method="fig_pr_cell",
+    extension="bokeh",
+    cycles=None,
+    cols=1,
+    width=None,
+):
+    # Should check current extension and 'set' it here if needed
+    if method == "fig_pr_cell":
+        if cycles is not None:
+            filtered_curves = collected_curves.loc[
+                collected_curves.cycle.isin(cycles), :
+            ]
+        else:
+            filtered_curves = collected_curves
+        p = hv.NdLayout(
+            {
+                label: hv.Curve(df, kdims=x, vdims=[y, z])
+                .groupby(z)
+                .overlay()
+                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
+                for label, df in filtered_curves.groupby(g)
+            }
+        )
+    elif method == "fig_pr_cycle":
+        if cycles is None:
+            cycles = [1, 10, 20]
+        if width is None:
+            width = int(800 / cols)
+
+        z, g = g, z
+        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        p = (
+            hv.NdLayout(
+                {
+                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
+                    .groupby(z)
+                    .overlay()
+                    .opts(
+                        hv.opts.Curve(
+                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
+                        )
+                    )
+                    for cyc, df in filtered_curves.groupby(g)
+                }
+            )
+            .cols(cols)
+            .opts(hv.opts.NdOverlay(legend_position="right"))
+        )
+    return p
+
+
+def cycles_plotter2(
+    collected_curves,
+    journal=None,
+    palette="Spectral",
+    method="fig_pr_cell",
+    extension="bokeh",
+    cycles=None,
+    cols=1,
+    width=None,
+):
+    # Should check current extension and 'set' it here if needed
+    x = "capacity"
+    y = "voltage"
+    z = "cycle"
+    g = "cell"
+    if method == "fig_pr_cell":
+        z = "cycle"
+        g = "cell"
+        if cycles is not None:
+            filtered_curves = collected_curves.loc[
+                collected_curves.cycle.isin(cycles), :
+            ]
+        else:
+            filtered_curves = collected_curves
+        p = hv.NdLayout(
+            {
+                label: hv.Curve(df, kdims=x, vdims=[y, z])
+                .groupby(z)
+                .overlay()
+                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
+                for label, df in filtered_curves.groupby(g)
+            }
+        )
+    elif method == "fig_pr_cycle":
+        if cycles is None:
+            cycles = [1, 10, 20]
+        if width is None:
+            width = int(800 / cols)
+
         z = "cell"
         g = "cycle"
         filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
@@ -430,57 +633,11 @@ def ica_collector(
     return collected_curves
 
 
-def ica_plotter(collected_curves, journal=None, palette="Spectral", **kwargs):
-    method = kwargs.get("method", "fig_pr_cell")
-    extension = kwargs.get("extension", "bokeh")
-    x = "voltage"
-    y = "dq"
-    z = "cycle"
-    g = "cell"
-    # Should check current extension and 'set' it here if needed
-
-    if method == "fig_pr_cell":
-        p = hv.NdLayout(
-            {
-                label: hv.Curve(df, kdims=x, vdims=[y, z])
-                .groupby(z)
-                .overlay()
-                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
-                for label, df in collected_curves.groupby(g)
-            }
-        )
-    elif method == "fig_pr_cycle":
-        cycles = kwargs.pop("cycles", [1, 10, 20])
-        cols = kwargs.pop("cols", 1)
-        width = kwargs.pop("width", int(800 / cols))
-        z = "cell"
-        g = "cycle"
-        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        p = (
-            hv.NdLayout(
-                {
-                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
-                    .groupby(z)
-                    .overlay()
-                    .opts(
-                        hv.opts.Curve(
-                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
-                        )
-                    )
-                    for cyc, df in filtered_curves.groupby(g)
-                }
-            )
-            .cols(cols)
-            .opts(hv.opts.NdOverlay(legend_position="right"))
-        )
-    return p
-
-
 class BatchSummaryCollector(BatchCollector):
-    _data_collector_arguments = {
+    _default_data_collector_arguments = {
         "columns": ["charge_capacity_gravimetric"],
     }
-    _plotter_arguments = {
+    _default_plotter_arguments = {
         "extension": "bokeh",
     }
 
@@ -516,16 +673,15 @@ class BatchSummaryCollector(BatchCollector):
 
 
 class BatchICACollector(BatchCollector):
-    _data_collector_arguments = {}
-    _plotter_arguments = {
+    _default_data_collector_arguments = {}
+    _default_plotter_arguments = {
         "extension": "bokeh",
-        "selected_cycles": [1, 2, 10, 20],
     }
 
     def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
         """Create a collection of ica (dQ/dV) plots."""
 
-        self._plotter_arguments["method"] = plot_type
+        self._default_plotter_arguments["method"] = plot_type
         super().__init__(
             b,
             plotter=ica_plotter,
@@ -537,16 +693,15 @@ class BatchICACollector(BatchCollector):
 
 
 class BatchCyclesCollector(BatchCollector):
-    _data_collector_arguments = {
+    _default_data_collector_arguments = {
         "interpolated": True,
         "number_of_points": 100,
         "max_cycle": 50,
         "abort_on_missing": False,
         "method": "back-and-forth",
     }
-    _plotter_arguments = {
+    _default_plotter_arguments = {
         "extension": "bokeh",
-        "selected_cycles": [1, 2, 10, 20],
     }
 
     def __init__(
@@ -559,8 +714,8 @@ class BatchCyclesCollector(BatchCollector):
     ):
         """Create a collection of capacity plots."""
 
-        self._data_collector_arguments["method"] = collector_type
-        self._plotter_arguments["method"] = plot_type
+        self._default_data_collector_arguments["method"] = collector_type
+        self._default_plotter_arguments["method"] = plot_type
         super().__init__(
             b,
             plotter=cycles_plotter,
