@@ -12,6 +12,7 @@ import cellpy
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concatenate_summaries
 from cellpy.utils.plotutils import plot_concatenated
+from cellpy.utils import ica
 
 try:
     import holoviews as hv
@@ -42,7 +43,7 @@ def _register_holoviews_renderers(extensions=None):
         if extensions is None:
             extensions = "bokeh", "matplotlib"
         print(
-            f"Registering Holoviews extensions {extensions} for the cellpy collectors:"
+            f"Registering Holoviews extensions {extensions} for the cellpy collectors."
         )
         hv.extension(*extensions)
     else:
@@ -63,7 +64,7 @@ _setup()
 
 
 class BatchCollector:
-
+    collector_name: str = None
     data: pd.DataFrame = None
     figure: Any = None
     name: str = None
@@ -81,6 +82,7 @@ class BatchCollector:
         b,
         data_collector,
         plotter,
+        collector_name=None,
         name=None,
         nick=None,
         autorun=True,
@@ -102,6 +104,7 @@ class BatchCollector:
         self.data_collector = data_collector
         self.plotter = plotter
         self.nick = nick
+        self.collector_name = collector_name or "base"
         self.data_collector_arguments = self._data_collector_arguments.copy()
         self.plotter_arguments = self._plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)
@@ -124,7 +127,7 @@ class BatchCollector:
         self.toolbar = kwargs.get("toolbar", True)
 
     def generate_name(self):
-        names = [f"collector{self}"]
+        names = ["collector", self.collector_name]
         if self.nick:
             names.insert(0, self.nick)
         name = "_".join(names)
@@ -280,11 +283,13 @@ class BatchSummaryCollector(BatchCollector):
             b,
             plotter=plot_concatenated,
             data_collector=concatenate_summaries,
+            collector_name="summary",
             *args,
             **kwargs,
         )
 
     def __str__(self):
+        # TODO: fix this:
         print(self)
         print(dir(self))
 
@@ -411,7 +416,7 @@ def ica_collector(
     keys = []
     for c in b:
         curves = ica.dqdv_frames(
-            d, cycle=cycles, voltage_resolution=voltage_resolution, **kwargs
+            c, cycle=cycles, voltage_resolution=voltage_resolution, **kwargs
         )
         if not curves.empty:
             all_curves.append(curves)
@@ -480,7 +485,12 @@ class BatchICACollector(BatchCollector):
     def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
         self._plotter_arguments["method"] = plot_type
         super().__init__(
-            b, plotter=ica_plotter, data_collector=ica_collector, *args, **kwargs
+            b,
+            plotter=ica_plotter,
+            data_collector=ica_collector,
+            collector_name="ica",
+            *args,
+            **kwargs,
         )
 
 
@@ -518,7 +528,12 @@ class BatchCyclesCollector(BatchCollector):
         self._data_collector_arguments["method"] = collector_type
         self._plotter_arguments["method"] = plot_type
         super().__init__(
-            b, plotter=cycles_plotter, data_collector=cycles_collector, *args, **kwargs
+            b,
+            plotter=cycles_plotter,
+            data_collector=cycles_collector,
+            collector_name="cycles",
+            *args,
+            **kwargs,
         )
 
     def generate_name(self):

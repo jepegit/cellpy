@@ -566,6 +566,10 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
     # Converter using the key-word arguments
     #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
 
+    if len(cycles) < 1:
+        logging.debug("The food was without nutrition")
+        return pd.DataFrame()
+
     ica_dfs = list()
     cycle_group = cycles.groupby("cycle")
     keys = list()
@@ -845,6 +849,7 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
         label_cycle_number=True,
         insert_nan=False,
     )
+
     ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
 
     if not tidy:
