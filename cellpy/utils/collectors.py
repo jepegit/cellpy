@@ -8,6 +8,7 @@ import inspect
 
 import pandas as pd
 
+import cellpy
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concatenate_summaries
 from cellpy.utils.plotutils import plot_concatenated
@@ -22,8 +23,47 @@ except ImportError:
     print("Could not import holoviews. Plotting will be disabled.")
     HOLOVIEWS_AVAILABLE = False
 
+CELLPY_MINIMUM_VERSION = "0.4.3"
+
+
+def _setup():
+    _welcome_message()
+    _register_holoviews_renderers()
+
+
+def _welcome_message():
+    cellpy_version = cellpy.__version__
+    print(f"cellpy version: {cellpy_version}")
+    print(f"collectors need at least: {CELLPY_MINIMUM_VERSION}")
+
+
+def _register_holoviews_renderers(extensions=None):
+    if HOLOVIEWS_AVAILABLE:
+        if extensions is None:
+            extensions = "bokeh", "matplotlib"
+        print(
+            f"Registering Holoviews extensions {extensions} for the cellpy collectors:"
+        )
+        hv.extension(*extensions)
+    else:
+        print(
+            "Could not import Holoviews. Your collectors will not be able to make figures."
+        )
+
+
+def _set_holoviews_renderer(extension=None):
+    # TODO: finalize this and implement into the BaseCollector
+    if HOLOVIEWS_AVAILABLE:
+        pass
+        # check what we got at the moment
+        # then change if needed
+
+
+_setup()
+
 
 class BatchCollector:
+
     data: pd.DataFrame = None
     figure: Any = None
     name: str = None
@@ -31,6 +71,7 @@ class BatchCollector:
     autorun: bool = True
     figure_directory: Path = Path("out")
     data_directory: Path = Path("data/processed/")
+
     # defaults when resetting:
     _data_collector_arguments = {}
     _plotter_arguments = {}
@@ -79,6 +120,7 @@ class BatchCollector:
     def _set_attributes(self, **kwargs):
         self.sep = kwargs.get("sep", ";")
         self.csv_include_index = kwargs.get("csv_include_index", True)
+        self.csv_layout = kwargs.get("csv_layout", "long")
         self.toolbar = kwargs.get("toolbar", True)
 
     def generate_name(self):
@@ -162,18 +204,28 @@ class BatchCollector:
             else:
                 return self.figure
 
-    def to_csv(self):
-        filename = (Path(self.data_directory) / self.name).with_suffix(".csv")
-        self.data.to_csv(
+    def preprocess_data_for_csv(self):
+        print(f"the data layout {self.csv_layout} is not supported yet!")
+        return self.data
+
+    def to_csv(self, serial_number=None):
+        filename = self._output_path(serial_number)
+        filename = filename.with_suffix(".csv")
+        if self.csv_layout != "long":
+            data = self.preprocess_data_for_csv()
+        else:
+            data = self.data
+
+        data.to_csv(
             filename,
             sep=self.sep,
             index=self.csv_include_index,
         )
         print(f"saved csv file: {filename}")
 
-    def to_image_files(self):
+    def to_image_files(self, serial_number=None):
         # TODO: include png
-        filename_pre = Path(self.figure_directory) / self.name
+        filename_pre = self._output_path(serial_number)
         if HOLOVIEWS_AVAILABLE:
             filename_hv = filename_pre.with_suffix(".html")
             hv.save(
@@ -183,16 +235,36 @@ class BatchCollector:
             )
             print(f"saved file: {filename_pre}")
 
-    def save(self):
+    def save(self, serial_number=None):
         if HOLOVIEWS_AVAILABLE:
-            filename = (Path(self.figure_directory) / self.name).with_suffix(".hvz")
+            filename = self._output_path(serial_number)
+            filename = filename.with_suffix(".hvz")
             Pickler.save(
                 self.figure,
                 filename,
             )
             print(f"pickled holoviews file: {filename}")
-        self.to_csv()
-        self.to_image_files()
+        self.to_csv(serial_number=serial_number)
+        self.to_image_files(serial_number=serial_number)
+
+    def _output_path(self, serial_number=None):
+        d = Path(self.figure_directory)
+        n = self.name
+        if serial_number is not None:
+            n = f"{n}_{serial_number:03}"
+        f = d / n
+        return f
+
+
+# TODO: allow for storing more than one figure setup pr collector
+#    It is time-consuming and memory demanding to re-collect the data
+#    for each time we need a new figure for the collector. We should
+#    allow for creating multiple figures within one collector or for
+#    sharing (passing) collected data. One solution might be to extend
+#    the capabilities of the base class. Another solution might be to
+#    add another sub-class in the chain from the base class to the actual one:
+class BatchMultiFigureCollector(BatchCollector):
+    pass
 
 
 class BatchSummaryCollector(BatchCollector):
@@ -211,6 +283,10 @@ class BatchSummaryCollector(BatchCollector):
             *args,
             **kwargs,
         )
+
+    def __str__(self):
+        print(self)
+        print(dir(self))
 
     def generate_name(self):
         names = ["collected_summaries"]
@@ -274,21 +350,102 @@ def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
     return p
 
 
-def cycles_plotter(
-    collected_curves, journal=None, palette="Spectral", plot_method=None, **kwargs
-):
-    plot_method = plot_method or "fig_pr_cell"
-    if plot_method == "fig_pr_cell":
+def cycles_plotter(collected_curves, journal=None, palette="Spectral", **kwargs):
+    method = kwargs.get("method", "fig_pr_cell")
+    extension = kwargs.get("extension", "bokeh")
+    # Should check current extension and 'set' it here if needed
+    x = "capacity"
+    y = "voltage"
+    z = "cycle"
+    g = "cell"
+    if method == "fig_pr_cell":
+        z = "cycle"
+        g = "cell"
         p = hv.NdLayout(
             {
-                label: hv.Curve(df, kdims="capacity", vdims=["voltage", "cycle"])
-                .groupby("cycle")
+                label: hv.Curve(df, kdims=x, vdims=[y, z])
+                .groupby(z)
                 .overlay()
                 .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
-                for label, df in collected_curves.groupby("cell")
+                for label, df in collected_curves.groupby(g)
             }
         )
-    elif plot_method == "fig_pr_cycles":
+    elif method == "fig_pr_cycle":
+        cycles = kwargs.pop("cycles", [1, 10, 20])
+        cols = kwargs.pop("cols", 1)
+        width = kwargs.pop("width", int(800 / cols))
+        z = "cell"
+        g = "cycle"
+        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        p = (
+            hv.NdLayout(
+                {
+                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
+                    .groupby(z)
+                    .overlay()
+                    .opts(
+                        hv.opts.Curve(
+                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
+                        )
+                    )
+                    for cyc, df in filtered_curves.groupby(g)
+                }
+            )
+            .cols(cols)
+            .opts(hv.opts.NdOverlay(legend_position="right"))
+        )
+    return p
+
+
+def ica_collector(
+    b,
+    cycles=None,
+    voltage_resolution=0.005,
+    max_cycle=50,
+    abort_on_missing=False,
+    **kwargs,
+):
+    if cycles is None:
+        cycles = list(range(1, max_cycle + 1))
+    all_curves = []
+    keys = []
+    for c in b:
+        curves = ica.dqdv_frames(
+            d, cycle=cycles, voltage_resolution=voltage_resolution, **kwargs
+        )
+        if not curves.empty:
+            all_curves.append(curves)
+            keys.append(c.name)
+        else:
+            if abort_on_missing:
+                raise ValueError(f"{c.name} is empty - aborting!")
+            print(f"[{c.name} empty]")
+    collected_curves = pd.concat(
+        all_curves, keys=keys, axis=0, names=["cell", "point"]
+    ).reset_index(level="cell")
+    return collected_curves
+
+
+def ica_plotter(collected_curves, journal=None, palette="Spectral", **kwargs):
+    method = kwargs.get("method", "fig_pr_cell")
+    extension = kwargs.get("extension", "bokeh")
+    x = "voltage"
+    y = "dq"
+    z = "cycle"
+    g = "cell"
+    # Should check current extension and 'set' it here if needed
+
+    if method == "fig_pr_cell":
+        p = hv.NdLayout(
+            {
+                label: hv.Curve(df, kdims=x, vdims=[y, z])
+                .groupby(z)
+                .overlay()
+                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
+                for label, df in collected_curves.groupby(g)
+            }
+        )
+    elif method == "fig_pr_cycle":
         cycles = kwargs.pop("cycles", [1, 10, 20])
         cols = kwargs.pop("cols", 1)
         width = kwargs.pop("width", int(800 / cols))
@@ -307,10 +464,24 @@ def cycles_plotter(
                     for cyc, df in filtered_curves.groupby("cycle")
                 }
             )
-            .cols(1)
+            .cols(cols)
             .opts(hv.opts.NdOverlay(legend_position="right"))
         )
     return p
+
+
+class BatchICACollector(BatchCollector):
+    _data_collector_arguments = {}
+    _plotter_arguments = {
+        "extension": "bokeh",
+        "selected_cycles": [1, 2, 10, 20],
+    }
+
+    def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
+        self._plotter_arguments["method"] = plot_type
+        super().__init__(
+            b, plotter=ica_plotter, data_collector=ica_collector, *args, **kwargs
+        )
 
 
 class BatchCyclesCollector(BatchCollector):
@@ -319,32 +490,58 @@ class BatchCyclesCollector(BatchCollector):
         "number_of_points": 100,
         "max_cycle": 50,
         "abort_on_missing": False,
+        "method": "back-and-forth",
     }
     _plotter_arguments = {
-        # "extension": "bokeh",
+        "extension": "bokeh",
+        "selected_cycles": [1, 2, 10, 20],
     }
 
-    def __init__(self, b, *args, **kwargs):
+    def __init__(
+        self,
+        b,
+        plot_type="fig_pr_cell",
+        collector_type="back-and-forth",
+        *args,
+        **kwargs,
+    ):
+        """Create a collection of capacity plots.
+
+        Args:
+            b (Batch): cellpy batch instance.
+            plot_type: selected plot type
+                fig_pr_cell:
+                fig_pr_cycles:
+            *args:
+            **kwargs:
+        """
+        self._data_collector_arguments["method"] = collector_type
+        self._plotter_arguments["method"] = plot_type
         super().__init__(
             b, plotter=cycles_plotter, data_collector=cycles_collector, *args, **kwargs
         )
 
     def generate_name(self):
         names = ["collected_cycles"]
-        cols = self.data_collector_arguments.get("columns")
-        grouped = self.data_collector_arguments.get("group_it")
-        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
-        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
+
+        if self.data_collector_arguments.get("interpolated"):
+            names.append("intp")
+            if n := self.data_collector_arguments.get("number_of_points"):
+                names.append(f"p{n}")
+        cm = self.data_collector_arguments.get("method")
+        if cm.startswith("b"):
+            names.append("bf")
+        else:
+            names.append("ff")
+
+        pm = self.plotter_arguments.get("method")
+        if pm == "fig_pr_cell":
+            names.append("pr_cell")
+        elif pm == "fig_pr_cycle":
+            names.append("pr_cyc")
+
         if self.nick:
             names.insert(0, self.nick)
-        if cols:
-            names.extend(cols)
-        if grouped:
-            names.append("average")
-        if equivalent_cycles:
-            names.append("equivalents")
-        if len(normalized_cap):
-            names.append("norm")
 
         name = "_".join(names)
         return name

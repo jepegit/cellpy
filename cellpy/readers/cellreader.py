@@ -4042,7 +4042,14 @@ class CellpyData:
             v /= 60.0
         return v
 
-    def get_dcap(self, cycle=None, dataset_number=None, converter=None, mode="gravimetric", **kwargs):
+    def get_dcap(
+        self,
+        cycle=None,
+        dataset_number=None,
+        converter=None,
+        mode="gravimetric",
+        **kwargs,
+    ):
         """Returns discharge_capacity and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
@@ -4062,7 +4069,14 @@ class CellpyData:
         )
         return dc, v
 
-    def get_ccap(self, cycle=None, dataset_number=None, converter=None, mode="gravimetric", **kwargs):
+    def get_ccap(
+        self,
+        cycle=None,
+        dataset_number=None,
+        converter=None,
+        mode="gravimetric",
+        **kwargs,
+    ):
         """Returns charge_capacity and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
@@ -4699,7 +4713,9 @@ class CellpyData:
         try:
             _value = getattr(self.cell, parameter)
         except AttributeError:
-            print(f"{parameter} is not a valid cellpy cell attribute (but the unit is {_unit})")
+            print(
+                f"{parameter} is not a valid cellpy cell attribute (but the unit is {_unit})"
+            )
             return
 
         if as_str:
@@ -4719,7 +4735,9 @@ class CellpyData:
             the value in cellpy units
         """
         logging.debug(f"value {value} is numeric? {isinstance(value, numbers.Number)}")
-        logging.debug(f"value {value} is a pint quantity? {isinstance(value, Quantity)}")
+        logging.debug(
+            f"value {value} is a pint quantity? {isinstance(value, Quantity)}"
+        )
 
         if not isinstance(value, Quantity):
             if isinstance(value, numbers.Number):
@@ -4727,11 +4745,15 @@ class CellpyData:
                     value = Q(value, self.cell.raw_units[physical_property])
                     logging.debug(f"With unit from raw-units: {value}")
                 except NoCellFound:
-                    raise NoCellFound("If you dont have any cells you cannot convert"
-                                      " values to cellpy units without providing what"
-                                      " unit to convert from!")
+                    raise NoCellFound(
+                        "If you dont have any cells you cannot convert"
+                        " values to cellpy units without providing what"
+                        " unit to convert from!"
+                    )
                 except KeyError as e:
-                    raise KeyError("You have to provide a valid physical_property") from e
+                    raise KeyError(
+                        "You have to provide a valid physical_property"
+                    ) from e
             elif isinstance(value, tuple):
                 value = Q(*value)
             else:

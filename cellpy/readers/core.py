@@ -263,9 +263,7 @@ class Cell:
         self.voltage_lim_low = prms.CellInfo.voltage_lim_low
         self.voltage_lim_high = prms.CellInfo.voltage_lim_high
         self.active_electrode_area = prms.CellInfo.active_electrode_area
-        self.active_electrode_thickness = (
-            prms.CellInfo.active_electrode_thickness
-        )
+        self.active_electrode_thickness = prms.CellInfo.active_electrode_thickness
         self.electrolyte_volume = prms.CellInfo.electrolyte_volume
 
         self.electrolyte_type = prms.CellInfo.electrolyte_type

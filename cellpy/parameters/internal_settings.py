@@ -186,6 +186,7 @@ class CellpyUnits(BaseSettings):
         temperature: str = "C"
 
     """
+
     current: str = "A"
     charge: str = "mAh"
     voltage: str = "V"
