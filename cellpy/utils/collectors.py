@@ -82,6 +82,13 @@ class BatchCollector:
     _default_data_collector_arguments = {}
     _default_plotter_arguments = {}
 
+    # TODO: refactor this (and _set_hv_opts) so that its possible to append options in subclasses of subclasses etc.
+    _templates = {
+        "bokeh": {},
+        "matplotlib": {},
+        "plotly": {},
+    }
+
     def __init__(
         self,
         b,
@@ -124,6 +131,7 @@ class BatchCollector:
 
         if autorun:
             self.update(update_name=False)
+            self.apply_template()
 
     @property
     def data_collector_arguments(self):
@@ -206,6 +214,7 @@ class BatchCollector:
         self.sep = kwargs.get("sep", ";")
         self.csv_include_index = kwargs.get("csv_include_index", True)
         self.csv_layout = kwargs.get("csv_layout", "long")
+        self.dpi = kwargs.get("dpi", 200)
         self.toolbar = kwargs.get("toolbar", True)
 
     def generate_name(self):
@@ -279,39 +288,59 @@ class BatchCollector:
         if update_name:
             self.name = self.generate_name()
 
-    def show(self, hv_opts=None):
+    def apply_template(self):
+        # This method should apply a template to the figure
+        if not self._figure_valid():
+            return
+        extension = _get_current_holoviews_renderer()
+        templates = self._templates
+
+        # templates is a dict of dicts.
+        # e.g.
+        # >>> matplotlib_template = templates["matplotlib"]
+        # >>> self.figure = self._set_hv_opts(matplotlib_template)
+        # The template is either a dict of dicts or a list of hv.opts.xxx instances.
+        # Remark that there is only one set of templates pr. plotter.
+        # Also, we must make sure that the hv opts contains the backend="matplotlib" kwarg.
+        # Since this is a bit tricky (I think) to achieve for the hv.opts.Xxx instances,
+        # I make it a rule for the developer to make sure that each instance contains the backend keyword.
+        pass
+
+    def _figure_valid(self):
+        # TODO: create a decorator
         if self.figure is None:
             print("No figure to show!")
-            return
-
+            return False
         if not HOLOVIEWS_AVAILABLE:
             print("Requires Holoviews - please install it first!")
+            return False
+        return True
+
+    def _set_hv_opts(self, hv_opts):
+        if hv_opts is None:
+            return self.figure
+
+        if isinstance(hv_opts, tuple):
+            return self.figure.opts(*hv_opts)
+        else:
+            return self.figure.opts(hv_opts)
+
+    def show(self, hv_opts=None):
+        if not self._figure_valid():
             return
 
         print(f"figure name: {self.name}")
-        if hv_opts is not None:
-            return self.figure.opts(hv_opts)
-        else:
-            return self.figure
+        return self._set_hv_opts(hv_opts)
 
     def redraw(self, hv_opts=None, extension=None):
-        if self.figure is None:
-            print("No figure to redraw!")
-            return
-
-        if not HOLOVIEWS_AVAILABLE:
-            print("Requires Holoviews - please install it first!")
+        if not self._figure_valid():
             return
 
         if extension is not None:
             _set_holoviews_renderer(extension)
 
         print(f"figure name: {self.name}")
-        if hv_opts is not None:
-            if isinstance(hv_opts, tuple):
-                self.figure = self.figure.opts(*hv_opts)
-            else:
-                self.figure = self.figure.opts(hv_opts)
+        self.figure = self._set_hv_opts(hv_opts)
         return self.figure
 
     def preprocess_data_for_csv(self):
@@ -334,19 +363,38 @@ class BatchCollector:
         print(f"saved csv file: {filename}")
 
     def to_image_files(self, serial_number=None):
-        # TODO: include png
+        if not self._figure_valid():
+            return
         filename_pre = self._output_path(serial_number)
-        if HOLOVIEWS_AVAILABLE:
-            filename_hv = filename_pre.with_suffix(".html")
+
+        filename_hv = filename_pre.with_suffix(".html")
+        hv.save(
+            self.figure,
+            filename_hv,
+            toolbar=self.toolbar,
+        )
+        print(f"saved file: {filename_pre}")
+
+        filename_png = filename_pre.with_suffix(".png")
+        try:
+            current_renderer = _get_current_holoviews_renderer()
+            _set_holoviews_renderer("matplotlib")
             hv.save(
                 self.figure,
-                filename_hv,
-                toolbar=self.toolbar,
+                filename_png,
+                dpi=300,
             )
             print(f"saved file: {filename_pre}")
+        except Exception as e:
+            print("Could not save png-file.")
+            print(e)
+        finally:
+            _set_holoviews_renderer(current_renderer)
 
     def save(self, serial_number=None):
-        if HOLOVIEWS_AVAILABLE:
+        self.to_csv(serial_number=serial_number)
+
+        if self._figure_valid():
             filename = self._output_path(serial_number)
             filename = filename.with_suffix(".hvz")
             Pickler.save(
@@ -354,8 +402,7 @@ class BatchCollector:
                 filename,
             )
             print(f"pickled holoviews file: {filename}")
-        self.to_csv(serial_number=serial_number)
-        self.to_image_files(serial_number=serial_number)
+            self.to_image_files(serial_number=serial_number)
 
     def _output_path(self, serial_number=None):
         d = Path(self.figure_directory)
@@ -615,6 +662,8 @@ class BatchICACollector(BatchCollector):
             *args,
             **kwargs,
         )
+
+        self._templates["bokeh"] = hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh", )
 
 
 class BatchCyclesCollector(BatchCollector):
