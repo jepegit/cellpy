@@ -53,11 +53,16 @@ def _register_holoviews_renderers(extensions=None):
 
 
 def _set_holoviews_renderer(extension=None):
-    # TODO: finalize this and implement into the BaseCollector
     if HOLOVIEWS_AVAILABLE:
-        pass
-        # check what we got at the moment
-        # then change if needed
+        extension = extension.lower()
+        current_backend = hv.Store.current_backend
+        if not extension == current_backend:
+            print(f"switching backend to {extension}")
+            hv.extension(extension)
+
+
+def _get_current_holoviews_renderer():
+    return hv.Store.current_backend
 
 
 _setup()
@@ -161,6 +166,14 @@ class BatchCollector:
         txt += f" -data_collector_arguments: {self.data_collector_arguments}\n"
         txt += f" -plotter_arguments: {self.plotter_arguments}\n"
 
+        txt += "\nfigure:\n"
+        txt += ".......\n"
+        txt += f"{self.figure}\n"
+
+        txt += "\ndata:\n"
+        txt += ".....\n"
+        txt += f"{self.data}\n"
+
         txt += "\nData collector:\n"
         txt += "---------------\n"
         data_name = self.data_collector.__name__
@@ -185,7 +198,7 @@ class BatchCollector:
         class_name = self.__class__.__name__
         txt = f"<h2>{class_name}</h2> id={hex(id(self))}"
         _txt = self.__str__().replace("\n", "<br>")
-        txt += f"<blockquote>{_txt}</blockquote>"
+        txt += f"<blockquote><code>{_txt}</></blockquote>"
 
         return txt
 
@@ -251,6 +264,7 @@ class BatchCollector:
                 return
 
         if HOLOVIEWS_AVAILABLE:
+            _set_holoviews_renderer(self.plotter_arguments.get("extension"))
             try:
                 self.figure = self.plotter(
                     self.data, journal=self.b.journal, **self.plotter_arguments
@@ -266,12 +280,39 @@ class BatchCollector:
             self.name = self.generate_name()
 
     def show(self, hv_opts=None):
+        if self.figure is None:
+            print("No figure to show!")
+            return
+
+        if not HOLOVIEWS_AVAILABLE:
+            print("Requires Holoviews - please install it first!")
+            return
+
         print(f"figure name: {self.name}")
-        if HOLOVIEWS_AVAILABLE:
-            if hv_opts is not None:
-                return self.figure.opts(hv_opts)
+        if hv_opts is not None:
+            return self.figure.opts(hv_opts)
+        else:
+            return self.figure
+
+    def redraw(self, hv_opts=None, extension=None):
+        if self.figure is None:
+            print("No figure to redraw!")
+            return
+
+        if not HOLOVIEWS_AVAILABLE:
+            print("Requires Holoviews - please install it first!")
+            return
+
+        if extension is not None:
+            _set_holoviews_renderer(extension)
+
+        print(f"figure name: {self.name}")
+        if hv_opts is not None:
+            if isinstance(hv_opts, tuple):
+                self.figure = self.figure.opts(*hv_opts)
             else:
-                return self.figure
+                self.figure = self.figure.opts(hv_opts)
+        return self.figure
 
     def preprocess_data_for_csv(self):
         print(f"the data layout {self.csv_layout} is not supported yet!")
@@ -429,60 +470,6 @@ def cycles_plotter(
     )
 
 
-def ica_plotter2(
-    collected_curves,
-    journal=None,
-    palette="Spectral",
-    method="fig_pr_cell",
-    extension="bokeh",
-    cycles=None,
-    cols=1,
-    width=None,
-):
-    x = "voltage"
-    y = "dq"
-    z = "cycle"
-    g = "cell"
-    # Should check current extension and 'set' it here if needed
-
-    if method == "fig_pr_cell":
-        p = hv.NdLayout(
-            {
-                label: hv.Curve(df, kdims=x, vdims=[y, z])
-                .groupby(z)
-                .overlay()
-                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
-                for label, df in collected_curves.groupby(g)
-            }
-        )
-    elif method == "fig_pr_cycle":
-        if cycles is None:
-            cycles = [1, 10, 20]
-        if width is None:
-            width = int(800 / cols)
-        z = "cell"
-        g = "cycle"
-        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        p = (
-            hv.NdLayout(
-                {
-                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
-                    .groupby(z)
-                    .overlay()
-                    .opts(
-                        hv.opts.Curve(
-                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
-                        )
-                    )
-                    for cyc, df in filtered_curves.groupby(g)
-                }
-            )
-            .cols(cols)
-            .opts(hv.opts.NdOverlay(legend_position="right"))
-        )
-    return p
-
-
 def sequence_plotter(
     collected_curves,
     x,
@@ -510,7 +497,7 @@ def sequence_plotter(
                 label: hv.Curve(df, kdims=x, vdims=[y, z])
                 .groupby(z)
                 .overlay()
-                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
+                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label, backend=extension))
                 for label, df in filtered_curves.groupby(g)
             }
         )
@@ -530,76 +517,14 @@ def sequence_plotter(
                     .overlay()
                     .opts(
                         hv.opts.Curve(
-                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
+                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width, backend=extension
                         )
                     )
                     for cyc, df in filtered_curves.groupby(g)
                 }
             )
             .cols(cols)
-            .opts(hv.opts.NdOverlay(legend_position="right"))
-        )
-    return p
-
-
-def cycles_plotter2(
-    collected_curves,
-    journal=None,
-    palette="Spectral",
-    method="fig_pr_cell",
-    extension="bokeh",
-    cycles=None,
-    cols=1,
-    width=None,
-):
-    # Should check current extension and 'set' it here if needed
-    x = "capacity"
-    y = "voltage"
-    z = "cycle"
-    g = "cell"
-    if method == "fig_pr_cell":
-        z = "cycle"
-        g = "cell"
-        if cycles is not None:
-            filtered_curves = collected_curves.loc[
-                collected_curves.cycle.isin(cycles), :
-            ]
-        else:
-            filtered_curves = collected_curves
-        p = hv.NdLayout(
-            {
-                label: hv.Curve(df, kdims=x, vdims=[y, z])
-                .groupby(z)
-                .overlay()
-                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label))
-                for label, df in filtered_curves.groupby(g)
-            }
-        )
-    elif method == "fig_pr_cycle":
-        if cycles is None:
-            cycles = [1, 10, 20]
-        if width is None:
-            width = int(800 / cols)
-
-        z = "cell"
-        g = "cycle"
-        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        p = (
-            hv.NdLayout(
-                {
-                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
-                    .groupby(z)
-                    .overlay()
-                    .opts(
-                        hv.opts.Curve(
-                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width
-                        )
-                    )
-                    for cyc, df in filtered_curves.groupby(g)
-                }
-            )
-            .cols(cols)
-            .opts(hv.opts.NdOverlay(legend_position="right"))
+            .opts(hv.opts.NdOverlay(legend_position="right", backend=extension))
         )
     return p
 
