@@ -21,7 +21,7 @@ try:
 
     HOLOVIEWS_AVAILABLE = True
 except ImportError:
-    print("Could not import holoviews. Plotting will be disabled.")
+    print("Could not import Holoviews. Plotting will be disabled.")
     HOLOVIEWS_AVAILABLE = False
 
 CELLPY_MINIMUM_VERSION = "0.4.3"
@@ -81,12 +81,10 @@ class BatchCollector:
     # defaults when resetting:
     _default_data_collector_arguments = {}
     _default_plotter_arguments = {}
-
-    # TODO: refactor this (and _set_hv_opts) so that its possible to append options in subclasses of subclasses etc.
     _templates = {
-        "bokeh": {},
-        "matplotlib": {},
-        "plotly": {},
+        "bokeh": [],
+        "matplotlib": [],
+        "plotly": [],
     }
 
     def __init__(
@@ -288,23 +286,46 @@ class BatchCollector:
         if update_name:
             self.name = self.generate_name()
 
+    def _dynamic_update_template_parameter(self, hv_opt, extension, *args, **kwargs):
+        return hv_opt
+
+    def _register_template(self, hv_opts, extension="bokeh", *args, **kwargs):
+        """Register template for given extension.
+
+        It is also possible to set the options directly in the constructor of the
+        class. But it is recommended to use this method instead to allow for
+        sanitation of the options in the templates
+
+        Args:
+            hv_opts: list of holoviews.core.options.Options- instances
+                e.g. [hv.opts.Curve(xlim=(0,2)), hv.opts.NdLayout(title="Super plot")]
+            extension: Holoviews backend ("matplotlib", "bokeh", or "plotly")
+
+        Returns:
+            None
+        """
+        if extension not in ["bokeh", "matplotlib", "plotly"]:
+            print(f"extension='{extension}' is not supported.")
+        if not isinstance(hv_opts, (list, tuple)):
+            hv_opts = [hv_opts]
+
+        # ensure all options are registered with correct backend:
+        cleaned_hv_opts = []
+        for o in hv_opts:
+            o = self._dynamic_update_template_parameter(o, extension, *args, **kwargs)
+            o.kwargs["backend"] = extension
+            cleaned_hv_opts.append(o)
+
+        self._templates[extension] = cleaned_hv_opts
+
     def apply_template(self):
-        # This method should apply a template to the figure
         if not self._figure_valid():
             return
-        extension = _get_current_holoviews_renderer()
-        templates = self._templates
 
-        # templates is a dict of dicts.
-        # e.g.
-        # >>> matplotlib_template = templates["matplotlib"]
-        # >>> self.figure = self._set_hv_opts(matplotlib_template)
-        # The template is either a dict of dicts or a list of hv.opts.xxx instances.
-        # Remark that there is only one set of templates pr. plotter.
-        # Also, we must make sure that the hv opts contains the backend="matplotlib" kwarg.
-        # Since this is a bit tricky (I think) to achieve for the hv.opts.Xxx instances,
-        # I make it a rule for the developer to make sure that each instance contains the backend keyword.
-        pass
+        for backend, hv_opt in self._templates.items():
+            if len(hv_opt):
+                print(f"Applying template for {backend}:{hv_opt}")
+                self.figure = self._set_hv_opts(hv_opt)
 
     def _figure_valid(self):
         # TODO: create a decorator
@@ -320,7 +341,7 @@ class BatchCollector:
         if hv_opts is None:
             return self.figure
 
-        if isinstance(hv_opts, tuple):
+        if isinstance(hv_opts, (tuple, list)):
             return self.figure.opts(*hv_opts)
         else:
             return self.figure.opts(hv_opts)
@@ -373,7 +394,7 @@ class BatchCollector:
             filename_hv,
             toolbar=self.toolbar,
         )
-        print(f"saved file: {filename_pre}")
+        print(f"saved file: {filename_hv}")
 
         filename_png = filename_pre.with_suffix(".png")
         try:
@@ -384,7 +405,7 @@ class BatchCollector:
                 filename_png,
                 dpi=300,
             )
-            print(f"saved file: {filename_pre}")
+            print(f"saved file: {filename_png}")
         except Exception as e:
             print("Could not save png-file.")
             print(e)
@@ -468,7 +489,8 @@ def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
 def ica_plotter(
     collected_curves,
     journal=None,
-    palette="Spectral",
+    palette="Blues",
+    palette_range=(0.2, 1.0),
     method="fig_pr_cell",
     extension="bokeh",
     cycles=None,
@@ -483,6 +505,7 @@ def ica_plotter(
         g="cell",
         journal=journal,
         palette=palette,
+        palette_range=palette_range,
         method=method,
         extension=extension,
         cycles=cycles,
@@ -494,7 +517,8 @@ def ica_plotter(
 def cycles_plotter(
     collected_curves,
     journal=None,
-    palette="Spectral",
+    palette="Blues",
+    palette_range=(0.2, 1.0),
     method="fig_pr_cell",
     extension="bokeh",
     cycles=None,
@@ -509,6 +533,7 @@ def cycles_plotter(
         g="cell",
         journal=journal,
         palette=palette,
+        palette_range=palette_range,
         method=method,
         extension=extension,
         cycles=cycles,
@@ -524,14 +549,14 @@ def sequence_plotter(
     z,
     g,
     journal=None,
-    palette="Spectral",
+    palette="Blues",
+    palette_range=(0.2, 1.0),
     method="fig_pr_cell",
     extension="bokeh",
     cycles=None,
     cols=1,
     width=None,
 ):
-    # Should check current extension and 'set' it here if needed
     if method == "fig_pr_cell":
         if cycles is not None:
             filtered_curves = collected_curves.loc[
@@ -544,7 +569,7 @@ def sequence_plotter(
                 label: hv.Curve(df, kdims=x, vdims=[y, z])
                 .groupby(z)
                 .overlay()
-                .opts(hv.opts.Curve(color=hv.Palette(palette), title=label, backend=extension))
+                .opts(hv.opts.Curve(color=hv.Palette(palette, range=palette_range), title=label, backend=extension))
                 for label, df in filtered_curves.groupby(g)
             }
         )
@@ -612,8 +637,13 @@ class BatchSummaryCollector(BatchCollector):
     _default_plotter_arguments = {
         "extension": "bokeh",
     }
+    summary_collector_matplotlib_template = [
+        hv.opts.Curve(fontsize={'title': 'medium'}, show_frame=True),
+        hv.opts.NdOverlay(legend_position="right"),
+    ]
 
     def __init__(self, b, *args, **kwargs):
+        self._register_template(self.summary_collector_matplotlib_template, extension="matplotlib")
         super().__init__(
             b,
             plotter=plot_concatenated,
@@ -678,6 +708,22 @@ class BatchCyclesCollector(BatchCollector):
         "extension": "bokeh",
     }
 
+    matplotlib_template = [
+        hv.opts.Curve(
+            show_legend=False,
+            show_frame=True,
+            fontsize={"title": "medium"},
+            xlabel="Capacity (mAh/g)",
+            ylabel="Voltage (V)",
+            ylim=(0, 1),
+            color=hv.Palette("Blues", range=(0.2, 1))
+        ),
+        hv.opts.NdLayout(
+            fig_inches=3,
+            tight=True,
+        ),
+    ]
+
     def __init__(
         self,
         b,
@@ -687,9 +733,11 @@ class BatchCyclesCollector(BatchCollector):
         **kwargs,
     ):
         """Create a collection of capacity plots."""
-
+        self._max_letters_in_cell_names = max(len(x) for x in b.cell_names)
+        self._register_template(self.matplotlib_template, extension="matplotlib")
         self._default_data_collector_arguments["method"] = collector_type
         self._default_plotter_arguments["method"] = plot_type
+
         super().__init__(
             b,
             plotter=cycles_plotter,
@@ -698,6 +746,12 @@ class BatchCyclesCollector(BatchCollector):
             *args,
             **kwargs,
         )
+
+    def _dynamic_update_template_parameter(self, hv_opt, extension, *args, **kwargs):
+        k = hv_opt.key
+        if k == "NdLayout" and extension == "matplotlib":
+            hv_opt.kwargs["fig_inches"] = self._max_letters_in_cell_names * 0.14
+        return hv_opt
 
     def generate_name(self):
         names = ["collected_cycles"]
