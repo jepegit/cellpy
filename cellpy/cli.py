@@ -1396,11 +1396,14 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
     existing_projects = os.listdir(selected_project_dir)
 
     os.chdir(selected_project_dir)
-
+    cellpy_version = cellpy.__version__
     try:
         selected_template = templates[template.lower()]
         cookiecutter.main.cookiecutter(
-            selected_template, extra_context={"project_name": project_dir}
+            selected_template, extra_context={
+                "project_name": project_dir,
+                "cellpy_version": cellpy_version,
+            }
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")
