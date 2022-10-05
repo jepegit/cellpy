@@ -58,7 +58,7 @@ def _set_holoviews_renderer(extension=None):
         current_backend = hv.Store.current_backend
         if not extension == current_backend:
             print(f"switching backend to {extension}")
-            hv.extension(extension)
+            hv.Store.set_current_backend(extension)
 
 
 def _get_current_holoviews_renderer():
@@ -77,6 +77,7 @@ class BatchCollector:
     autorun: bool = True
     figure_directory: Path = Path("out")
     data_directory: Path = Path("data/processed/")
+    renderer: Any = None
 
     # defaults when resetting:
     _default_data_collector_arguments = {}
@@ -129,7 +130,7 @@ class BatchCollector:
 
         if autorun:
             self.update(update_name=False)
-            # self.apply_template()
+            self.apply_templates()
 
     @property
     def data_collector_arguments(self):
@@ -318,8 +319,7 @@ class BatchCollector:
 
         self._templates[extension] = cleaned_hv_opts
 
-    def apply_template(self):
-        print("THIS MIGHT NOT WORK PROPERLY YET")
+    def apply_templates(self):
         if not self._figure_valid():
             return
 
@@ -341,11 +341,10 @@ class BatchCollector:
     def _set_hv_opts(self, hv_opts):
         if hv_opts is None:
             return self.figure
-        print("THIS MIGHT NOT WORK PROPERLY YET")
         if isinstance(hv_opts, (tuple, list)):
-            return self.figure.opts(*hv_opts)
+            return self.figure.options(*hv_opts)
         else:
-            return self.figure.opts(hv_opts)
+            return self.figure.options(hv_opts)
 
     def show(self, hv_opts=None):
         if not self._figure_valid():
@@ -355,7 +354,7 @@ class BatchCollector:
         return self._set_hv_opts(hv_opts)
 
     def redraw(self, hv_opts=None, extension=None):
-        print("THIS MIGHT NOT WORK PROPERLY YET")
+        print("EXPERIMENTAL FEATURE! THIS MIGHT NOT WORK PROPERLY YET")
         if not self._figure_valid():
             return
 
@@ -365,6 +364,9 @@ class BatchCollector:
         print(f"figure name: {self.name}")
         self.figure = self._set_hv_opts(hv_opts)
         return self.figure
+
+    def render(self):
+        print("Not implemented yet!")
 
     def preprocess_data_for_csv(self):
         print(f"the data layout {self.csv_layout} is not supported yet!")
