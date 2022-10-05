@@ -129,7 +129,7 @@ class BatchCollector:
 
         if autorun:
             self.update(update_name=False)
-            self.apply_template()
+            # self.apply_template()
 
     @property
     def data_collector_arguments(self):
@@ -309,16 +309,17 @@ class BatchCollector:
         if not isinstance(hv_opts, (list, tuple)):
             hv_opts = [hv_opts]
 
-        # ensure all options are registered with correct backend:
         cleaned_hv_opts = []
         for o in hv_opts:
             o = self._dynamic_update_template_parameter(o, extension, *args, **kwargs)
+            # ensure all options are registered with correct backend:
             o.kwargs["backend"] = extension
             cleaned_hv_opts.append(o)
 
         self._templates[extension] = cleaned_hv_opts
 
     def apply_template(self):
+        print("THIS MIGHT NOT WORK PROPERLY YET")
         if not self._figure_valid():
             return
 
@@ -338,6 +339,7 @@ class BatchCollector:
         return True
 
     def _set_hv_opts(self, hv_opts):
+        print("THIS MIGHT NOT WORK PROPERLY YET")
         if hv_opts is None:
             return self.figure
 
@@ -354,6 +356,7 @@ class BatchCollector:
         return self._set_hv_opts(hv_opts)
 
     def redraw(self, hv_opts=None, extension=None):
+        print("THIS MIGHT NOT WORK PROPERLY YET")
         if not self._figure_valid():
             return
 
@@ -637,13 +640,14 @@ class BatchSummaryCollector(BatchCollector):
     _default_plotter_arguments = {
         "extension": "bokeh",
     }
-    summary_collector_matplotlib_template = [
-        hv.opts.Curve(fontsize={'title': 'medium'}, show_frame=True),
-        hv.opts.NdOverlay(legend_position="right"),
+
+    _bokeh_template = [
+        hv.opts.Curve(fontsize={'title': 'medium'}, width=800, backend="bokeh"),
+        hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
     ]
 
     def __init__(self, b, *args, **kwargs):
-        self._register_template(self.summary_collector_matplotlib_template, extension="matplotlib")
+        self._register_template(self._bokeh_template, extension="bokeh")
         super().__init__(
             b,
             plotter=plot_concatenated,
@@ -693,7 +697,7 @@ class BatchICACollector(BatchCollector):
             **kwargs,
         )
 
-        self._templates["bokeh"] = hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh", )
+        self._templates["bokeh"] = hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh")
 
 
 class BatchCyclesCollector(BatchCollector):
@@ -716,11 +720,13 @@ class BatchCyclesCollector(BatchCollector):
             xlabel="Capacity (mAh/g)",
             ylabel="Voltage (V)",
             ylim=(0, 1),
-            color=hv.Palette("Blues", range=(0.2, 1))
+            color=hv.Palette("Blues", range=(0.2, 1)),
+            backend="matplotlib"
         ),
         hv.opts.NdLayout(
             fig_inches=3,
             tight=True,
+            backend="matplotlib"
         ),
     ]
 
