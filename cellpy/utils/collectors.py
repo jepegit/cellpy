@@ -339,10 +339,9 @@ class BatchCollector:
         return True
 
     def _set_hv_opts(self, hv_opts):
-        print("THIS MIGHT NOT WORK PROPERLY YET")
         if hv_opts is None:
             return self.figure
-
+        print("THIS MIGHT NOT WORK PROPERLY YET")
         if isinstance(hv_opts, (tuple, list)):
             return self.figure.opts(*hv_opts)
         else:
