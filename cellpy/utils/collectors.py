@@ -573,7 +573,13 @@ def sequence_plotter(
                 label: hv.Curve(df, kdims=x, vdims=[y, z])
                 .groupby(z)
                 .overlay()
-                .opts(hv.opts.Curve(color=hv.Palette(palette, range=palette_range), title=label, backend=extension))
+                .opts(
+                    hv.opts.Curve(
+                        color=hv.Palette(palette, range=palette_range),
+                        title=label,
+                        backend=extension,
+                    )
+                )
                 for label, df in filtered_curves.groupby(g)
             }
         )
@@ -593,7 +599,10 @@ def sequence_plotter(
                     .overlay()
                     .opts(
                         hv.opts.Curve(
-                            color=hv.Palette(palette), title=f"cycle-{cyc}", width=width, backend=extension
+                            color=hv.Palette(palette),
+                            title=f"cycle-{cyc}",
+                            width=width,
+                            backend=extension,
                         )
                     )
                     for cyc, df in filtered_curves.groupby(g)
@@ -643,7 +652,7 @@ class BatchSummaryCollector(BatchCollector):
     }
 
     _bokeh_template = [
-        hv.opts.Curve(fontsize={'title': 'medium'}, width=800, backend="bokeh"),
+        hv.opts.Curve(fontsize={"title": "medium"}, width=800, backend="bokeh"),
         hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
     ]
 
@@ -722,13 +731,9 @@ class BatchCyclesCollector(BatchCollector):
             ylabel="Voltage (V)",
             ylim=(0, 1),
             color=hv.Palette("Blues", range=(0.2, 1)),
-            backend="matplotlib"
+            backend="matplotlib",
         ),
-        hv.opts.NdLayout(
-            fig_inches=3,
-            tight=True,
-            backend="matplotlib"
-        ),
+        hv.opts.NdLayout(fig_inches=3, tight=True, backend="matplotlib"),
     ]
 
     def __init__(

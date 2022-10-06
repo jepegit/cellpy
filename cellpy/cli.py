@@ -6,6 +6,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from typing import Union
 import urllib
 from pathlib import Path
 
@@ -1290,11 +1291,47 @@ def _read_local_templates(local_templates_path=None):
 )
 def new(template, directory, local_user_template, serve_, run_, lab, list_):
     """Set up a batch experiment (might need git installed)."""
-    function_new(template, directory, local_user_template, serve_, run_, lab, list_)
+    _new(
+        template,
+        directory=directory,
+        local_user_template=local_user_template,
+        serve_=serve_,
+        run_=run_,
+        lab=lab,
+        list_=list_,
+    )
 
 
-def function_new(template, directory, local_user_template, serve_, run_, lab, list_):
-    """Set up a batch experiment."""
+def _new(
+    template: str,
+    directory: Union[Path, str, None] = None,
+    local_user_template: bool = False,
+    serve_: bool = False,
+    run_: bool = False,
+    lab: bool = False,
+    list_: bool = False,
+    project_dir: Union[str, None] = None,
+    session_id: str = "experiment_001",
+    no_input: bool = False,
+):
+    """Set up a batch experiment (might need git installed).
+
+    Args:
+        template: short-name of template.
+        directory: the directory for your cellpy projects.
+        local_user_template: use local template if True.
+        serve_: serve the notebook after creation if True.
+        run_: run the notebooks using papermill if True.
+        lab: use jupyter-lab instead of jupyter notebook if True.
+        list_: list all available templates and return if True.
+        project_dir: your project directory.
+        session_id: the lookup value.
+        no_input: accept defaults if True (only valid when providing project_dir and session_id)
+
+    Returns:
+        None
+    """
+
     from cellpy.parameters import prms
 
     if list_:
@@ -1317,6 +1354,9 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
             click.echo(f"[cellpy] - local templates ({local_templates_path}): none")
 
         return
+
+    if project_dir is None or session_id is None:
+        no_input = False
 
     if not template:
         template = _get_default_template()
@@ -1365,31 +1405,36 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
 
     directory = Path(directory)
 
-    project_dirs = [
-        d.name for d in directory.iterdir() if d.is_dir() and not d.name.startswith(".")
-    ]
-    project_dirs.insert(0, "[create new dir]")
+    if project_dir is None:
+        project_dirs = [
+            d.name
+            for d in directory.iterdir()
+            if d.is_dir() and not d.name.startswith(".")
+        ]
+        project_dirs.insert(0, "[create new dir]")
 
-    project_dir = cookiecutter.prompt.read_user_choice(
-        "Select project folder?", project_dirs
-    )
+        project_dir = cookiecutter.prompt.read_user_choice(
+            "Select project folder?", project_dirs
+        )
 
-    if project_dir == "[create new dir]":
-        default_name = "cellpy_project"
-        temp_default_name = default_name
-        for j in range(999):
-            if temp_default_name in project_dirs:
-                temp_default_name = default_name + str(j + 1).zfill(3)
-            else:
-                default_name = temp_default_name
-                break
+        if project_dir == "[create new dir]":
+            default_name = "cellpy_project"
+            temp_default_name = default_name
+            for j in range(999):
+                if temp_default_name in project_dirs:
+                    temp_default_name = default_name + str(j + 1).zfill(3)
+                else:
+                    default_name = temp_default_name
+                    break
 
-        project_dir = cookiecutter.prompt.read_user_variable("New name", default_name)
-        try:
-            os.mkdir(directory / project_dir)
-            click.echo(f"created {project_dir}")
-        except FileExistsError:
-            click.echo("OK - but this directory already exists!")
+            project_dir = cookiecutter.prompt.read_user_variable(
+                "New name", default_name
+            )
+            try:
+                os.mkdir(directory / project_dir)
+                click.echo(f"created {project_dir}")
+            except FileExistsError:
+                click.echo("OK - but this directory already exists!")
 
     # get a list of all folders
     selected_project_dir = directory / project_dir
@@ -1400,10 +1445,14 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
     try:
         selected_template = templates[template.lower()]
         cookiecutter.main.cookiecutter(
-            selected_template, extra_context={
+            selected_template,
+            extra_context={
+                "author_name": os.getlogin(),
                 "project_name": project_dir,
                 "cellpy_version": cellpy_version,
-            }
+                "session_id": session_id,
+            },
+            no_input=no_input,
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")
@@ -1561,7 +1610,14 @@ def check_it(var=None):
 
 
 if __name__ == "__main__":
-    check_it()
+    u1 = os.getlogin()
+    u2 = os.path.expanduser("~")
+    u3 = os.environ.get("USERNAME")
+
+    print(u1)
+    print(u2)
+    print(u3)
+    # check_it()
     # click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
     # _main_pull()
     # click.echo("ok")
