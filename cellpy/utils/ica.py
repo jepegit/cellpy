@@ -419,7 +419,7 @@ def index_bounds(x):
         return x[0], x[-1]
 
 
-def dqdv_cycle(cycle, splitter=True, **kwargs):
+def dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycle.
 
@@ -429,6 +429,7 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
     Args:
         cycle (pandas.DataFrame): the cycle data ('voltage', 'capacity', 'direction' (1 or -1)).
         splitter (bool): insert a np.NaN row between charge and discharge.
+        label_direction (bool):
 
     Returns:
         List of step numbers corresponding to the selected steptype.
@@ -476,6 +477,7 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
     c_last = cycle.loc[cycle["direction"] == 1]
 
     converter = Converter(**kwargs)
+
     converter.set_data(c_first["capacity"], c_first["voltage"])
     converter.inspect_data()
     converter.pre_process_data()
@@ -489,6 +491,7 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
         incremental_capacity_first = np.append(incremental_capacity_first, np.NaN)
 
     converter = Converter(**kwargs)
+
     converter.set_data(c_last["capacity"], c_last["voltage"])
     converter.inspect_data()
     converter.pre_process_data()
@@ -496,15 +499,22 @@ def dqdv_cycle(cycle, splitter=True, **kwargs):
     converter.post_process_data()
     voltage_last = converter.voltage_processed[::-1]
     incremental_capacity_last = converter.incremental_capacity[::-1]
+
     voltage = np.concatenate((voltage_first, voltage_last))
     incremental_capacity = np.concatenate(
         (incremental_capacity_first, incremental_capacity_last)
     )
 
+    if label_direction:
+        direction_first = -np.ones(len(voltage_first))
+        direction_last = np.ones(len(voltage_last))
+        direction = np.concatenate((direction_first, direction_last))
+        return voltage, incremental_capacity, direction
+
     return voltage, incremental_capacity
 
 
-def dqdv_cycles(cycles, not_merged=False, **kwargs):
+def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
     """Convenience functions for creating dq-dv data from given capacity and
     voltage cycles.
 
@@ -516,9 +526,10 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
              'capacity', 'direction' (1 or -1)).
         not_merged (bool): return list of frames instead of concatenating (
             defaults to False).
+        label_direction (bool): include 'direction' (1 or -1).
 
     Returns:
-        ``pandas.DataFrame`` with columns 'cycle', 'voltage', 'dq'.
+        ``pandas.DataFrame`` with columns 'cycle', 'voltage', 'dq' (and 'direction' if label_direction is True).
 
     Additional key-word arguments are sent to Converter:
 
@@ -575,14 +586,23 @@ def dqdv_cycles(cycles, not_merged=False, **kwargs):
     keys = list()
     for cycle_number, cycle in cycle_group:
         cycle = cycle.dropna()
-        v, dq = dqdv_cycle(cycle, splitter=True, **kwargs)
-        _ica_df = pd.DataFrame({"voltage": v, "dq": dq})
+        if label_direction:
+            v, dq, direction = dqdv_cycle(cycle, splitter=True, label_direction=True, **kwargs)
+            _d = {"voltage": v, "dq": dq, "direction": direction}
+            _cols = ["voltage", "dq", "direction"]
+        else:
+            v, dq = dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs)
+            _d = {"voltage": v, "dq": dq}
+            _cols = ["voltage", "dq"]
+
+        _ica_df = pd.DataFrame(_d)
         if not not_merged:
+            _cols.insert(0, "cycle")
             _ica_df["cycle"] = cycle_number
-            _ica_df = _ica_df[["cycle", "voltage", "dq"]]
+            _ica_df = _ica_df[_cols]
         else:
             keys.append(cycle_number)
-            _ica_df = _ica_df[["voltage", "dq"]]
+            _ica_df = _ica_df[_cols]
         ica_dfs.append(_ica_df)
 
     if not_merged:
@@ -720,7 +740,7 @@ def dqdv(
     return converter.voltage_processed, converter.incremental_capacity
 
 
-def dqdv_frames(cell, split=False, tidy=True, **kwargs):
+def dqdv_frames(cell, split=False, tidy=True, label_direction=False, **kwargs):
     """Returns dqdv data as pandas.DataFrame(s) for all cycles.
 
     Args:
@@ -785,7 +805,7 @@ def dqdv_frames(cell, split=False, tidy=True, **kwargs):
     if split:
         return _dqdv_split_frames(cell, tidy=tidy, **kwargs)
     else:
-        return _dqdv_combinded_frame(cell, tidy=tidy, **kwargs)
+        return _dqdv_combinded_frame(cell, tidy=tidy, label_direction=label_direction, **kwargs)
 
 
 def _constrained_dq_dv_using_dataframes(capacity, minimum_v, maximum_v, **kwargs):
@@ -829,7 +849,7 @@ def _make_ica_charge_curves(cycles_dfs, cycle_numbers, minimum_v, maximum_v, **k
     return incremental_charge_list
 
 
-def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
+def _dqdv_combinded_frame(cell, tidy=True, label_direction=False, **kwargs):
     """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
 
     Args:
@@ -849,8 +869,7 @@ def _dqdv_combinded_frame(cell, tidy=True, **kwargs):
         label_cycle_number=True,
         insert_nan=False,
     )
-
-    ica_df = dqdv_cycles(cycles, not_merged=not tidy, **kwargs)
+    ica_df = dqdv_cycles(cycles, not_merged=not tidy, label_direction=label_direction, **kwargs)
 
     if not tidy:
         # dqdv_cycles returns a list of cycle numbers and a list of DataFrames

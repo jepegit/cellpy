@@ -620,6 +620,7 @@ def ica_collector(
     voltage_resolution=0.005,
     max_cycle=50,
     abort_on_missing=False,
+    label_direction=True,
     **kwargs,
 ):
     if cycles is None:
@@ -628,7 +629,7 @@ def ica_collector(
     keys = []
     for c in b:
         curves = ica.dqdv_frames(
-            c, cycle=cycles, voltage_resolution=voltage_resolution, **kwargs
+            c, cycle=cycles, voltage_resolution=voltage_resolution, label_direction=label_direction, **kwargs
         )
         if not curves.empty:
             all_curves.append(curves)
