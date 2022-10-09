@@ -9,6 +9,7 @@ import inspect
 import pandas as pd
 
 import cellpy
+from cellpy.readers.core import group_by_interpolate
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concatenate_summaries
 from cellpy.utils.plotutils import plot_concatenated
@@ -324,9 +325,12 @@ class BatchCollector:
             return
 
         for backend, hv_opt in self._templates.items():
-            if len(hv_opt):
-                print(f"Applying template for {backend}:{hv_opt}")
-                self.figure = self._set_hv_opts(hv_opt)
+            try:
+                if len(hv_opt):
+                    print(f"Applying template for {backend}:{hv_opt}")
+                    self.figure = self._set_hv_opts(hv_opt)
+            except TypeError:
+                print("possible bug in apply_template experienced")
 
     def _figure_valid(self):
         # TODO: create a decorator
@@ -422,11 +426,14 @@ class BatchCollector:
         if self._figure_valid():
             filename = self._output_path(serial_number)
             filename = filename.with_suffix(".hvz")
-            Pickler.save(
-                self.figure,
-                filename,
-            )
-            print(f"pickled holoviews file: {filename}")
+            try:
+                Pickler.save(
+                    self.figure,
+                    filename,
+                )
+                print(f"pickled holoviews file: {filename}")
+            except TypeError as e:
+                print("could not save as hvz file")
             self.to_image_files(serial_number=serial_number)
 
     def _output_path(self, serial_number=None):
@@ -500,21 +507,108 @@ def ica_plotter(
     cycles=None,
     cols=1,
     width=None,
+    xlim_charge=(None, None),
+    xlim_discharge=(None, None),
 ):
-    return sequence_plotter(
-        collected_curves,
-        x="voltage",
-        y="dq",
-        z="cycle",
-        g="cell",
-        journal=journal,
-        palette=palette,
-        palette_range=palette_range,
-        method=method,
-        extension=extension,
-        cycles=cycles,
-        cols=cols,
-        width=width,
+    if method == "film":
+        return ica_plotter_film(
+            collected_curves,
+            journal=journal,
+            palette=palette,
+            extension=extension,
+            cycles=cycles,
+            xlim_charge=xlim_charge,
+            xlim_discharge=xlim_discharge,
+            # width=width,
+        )
+    else:
+        return sequence_plotter(
+            collected_curves,
+            x="voltage",
+            y="dq",
+            z="cycle",
+            g="cell",
+            journal=journal,
+            palette=palette,
+            palette_range=palette_range,
+            method=method,
+            extension=extension,
+            cycles=cycles,
+            cols=cols,
+            width=width,
+        )
+
+
+def ica_plotter_film(
+    collected_curves,
+    journal=None,
+    palette="Blues",
+    extension="bokeh",
+    cycles=None,
+    xlim_charge=(None, None),
+    xlim_discharge=(None, None),
+    ylim=(None, None),
+    shared_axes=True,
+    width=400,
+    cformatter="%02.0e",
+):
+    if cycles is not None:
+        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+    else:
+        filtered_curves = collected_curves
+
+    options = {
+        "xlabel": "Voltage (V)",
+        "ylabel": "Cycle",
+        "ylim": ylim,
+        "tools": ["hover"],
+        "width": width,
+        "cmap": palette,
+        "cformatter": cformatter,
+        "cnorm": "eq_hist",
+        "shared_axes": shared_axes,
+        "colorbar_opts": {
+            "title": "dQ/dV",
+        },
+    }
+
+    all_charge_plots = {}
+    all_discharge_plots = {}
+    for label, df in filtered_curves.groupby("cell"):
+        _charge = df.query("direction==1")
+        _discharge = df.query("direction==-1")
+        _dq_charge = group_by_interpolate(
+            _charge, x="voltage", y="dq", group_by="cycle", number_of_points=400
+        )
+        _dq_discharge = group_by_interpolate(
+            _discharge, x="voltage", y="dq", group_by="cycle", number_of_points=400
+        )
+
+        _v_charge = _dq_charge.index.values.ravel()
+        _v_discharge = _dq_discharge.index.values.ravel()
+
+        _cycles_charge = _charge.cycle.unique().ravel()
+        _cycles_discharge = _discharge.cycle.unique().ravel()
+
+        _dq_charge = -_dq_charge.values.T
+        _dq_discharge = _dq_discharge.values.T
+        charge_plot = hv.Image(
+            (_v_charge, _cycles_charge, _dq_charge), group="ica", label="charge"
+        ).opts(title=f"{label}", xlim=xlim_charge, colorbar=True, **options)
+        discharge_plot = hv.Image(
+            (_v_discharge, _cycles_discharge, _dq_discharge),
+            group="ica",
+            label="discharge",
+        ).opts(title=f"{label}", xlim=xlim_discharge, colorbar=True, **options)
+
+        all_charge_plots[f"{label}_charge"] = charge_plot
+        all_discharge_plots[f"{label}_discharge"] = discharge_plot
+
+    all_plots = {**all_charge_plots, **all_discharge_plots}
+    return (
+        hv.NdLayout(all_plots)
+        .opts(title="Incremental Capacity Analysis Film-plots")
+        .cols(2)
     )
 
 
@@ -621,6 +715,7 @@ def ica_collector(
     max_cycle=50,
     abort_on_missing=False,
     label_direction=True,
+    number_of_points=None,
     **kwargs,
 ):
     if cycles is None:
@@ -629,7 +724,12 @@ def ica_collector(
     keys = []
     for c in b:
         curves = ica.dqdv_frames(
-            c, cycle=cycles, voltage_resolution=voltage_resolution, label_direction=label_direction, **kwargs
+            c,
+            cycle=cycles,
+            voltage_resolution=voltage_resolution,
+            label_direction=label_direction,
+            number_of_points=number_of_points,
+            **kwargs,
         )
         if not curves.empty:
             all_curves.append(curves)
@@ -709,6 +809,23 @@ class BatchICACollector(BatchCollector):
         )
 
         self._templates["bokeh"] = hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh")
+
+    def generate_name(self):
+        names = ["collected_ica"]
+
+        pm = self.plotter_arguments.get("method")
+        if pm == "fig_pr_cell":
+            names.append("pr_cell")
+        elif pm == "fig_pr_cycle":
+            names.append("pr_cyc")
+        elif pm == "film":
+            names.append("film")
+
+        if self.nick:
+            names.insert(0, self.nick)
+
+        name = "_".join(names)
+        return name
 
 
 class BatchCyclesCollector(BatchCollector):

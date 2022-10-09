@@ -587,7 +587,9 @@ def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
     for cycle_number, cycle in cycle_group:
         cycle = cycle.dropna()
         if label_direction:
-            v, dq, direction = dqdv_cycle(cycle, splitter=True, label_direction=True, **kwargs)
+            v, dq, direction = dqdv_cycle(
+                cycle, splitter=True, label_direction=True, **kwargs
+            )
             _d = {"voltage": v, "dq": dq, "direction": direction}
             _cols = ["voltage", "dq", "direction"]
         else:
@@ -805,7 +807,9 @@ def dqdv_frames(cell, split=False, tidy=True, label_direction=False, **kwargs):
     if split:
         return _dqdv_split_frames(cell, tidy=tidy, **kwargs)
     else:
-        return _dqdv_combinded_frame(cell, tidy=tidy, label_direction=label_direction, **kwargs)
+        return _dqdv_combinded_frame(
+            cell, tidy=tidy, label_direction=label_direction, **kwargs
+        )
 
 
 def _constrained_dq_dv_using_dataframes(capacity, minimum_v, maximum_v, **kwargs):
@@ -862,14 +866,18 @@ def _dqdv_combinded_frame(cell, tidy=True, label_direction=False, **kwargs):
             dq: the incremental capacity
     """
     cycle = kwargs.pop("cycle", None)
+    number_of_points = kwargs.pop("number_of_points", None)
     cycles = cell.get_cap(
         cycle=cycle,
         method="forth-and-forth",
         categorical_column=True,
         label_cycle_number=True,
         insert_nan=False,
+        number_of_points=number_of_points,
     )
-    ica_df = dqdv_cycles(cycles, not_merged=not tidy, label_direction=label_direction, **kwargs)
+    ica_df = dqdv_cycles(
+        cycles, not_merged=not tidy, label_direction=label_direction, **kwargs
+    )
 
     if not tidy:
         # dqdv_cycles returns a list of cycle numbers and a list of DataFrames
