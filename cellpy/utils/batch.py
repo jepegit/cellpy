@@ -451,6 +451,28 @@ class Batch:
             "the journal.pages instead."
         )
 
+    def duplicate_journal(self, folder=None) -> None:
+        """Copy the journal to folder.
+
+        Args:
+            folder (str or pathlib.Path): folder to copy to (defaults to the
+            current folder).
+        """
+        self.experiment.journal.duplicate_journal(folder)
+        #
+        # logging.debug(f"duplicating journal to folder {folder}")
+        # journal_name = pathlib.Path(self.experiment.journal.file_name)
+        # if not journal_name.is_file():
+        #     logging.info("No journal saved")
+        #     return
+        # new_journal_name = journal_name.name
+        # if folder is not None:
+        #     new_journal_name = pathlib.Path(folder) / new_journal_name
+        # try:
+        #     shutil.copy(journal_name, new_journal_name)
+        # except shutil.SameFileError:
+        #     logging.debug("same file exception encountered")
+
     def create_journal(self, description=None, from_db=True, **kwargs):
         """Create journal pages.
 
@@ -525,6 +547,7 @@ class Batch:
         if from_db:
             self.experiment.journal.from_db(**kwargs)
             self.experiment.journal.to_file()
+            self.experiment.journal.duplicate_journal()
             self.duplicate_journal(prms.Paths.batchfiledir)
 
         else:

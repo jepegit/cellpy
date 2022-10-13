@@ -386,7 +386,7 @@ class BaseJournal:
         self.session = None  # dictionary
         self.name = None
         self.project = None
-        self.file_name = None
+        self.file_name = None  # This is the file-path to the "True" journal file
         self.time_stamp = None
         self.project_dir = None
         self.batch_dir = None

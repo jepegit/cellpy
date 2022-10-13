@@ -296,6 +296,15 @@ def test_report(populated_batch):
     print(populated_batch.report)
 
 
+def test_batch_update(parameters, batch_instance):
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
+    )
+    b.create_journal()
+    b.paginate()
+    b.update()
+
+
 # def test_iterate_folder(batch_instance):
 # # Since the batch-files contains full paths I need to figure out how to make a custom json-file for the test.
 #     folder_name = prms.Paths.batchfiledir
