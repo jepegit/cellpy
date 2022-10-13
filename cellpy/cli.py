@@ -1313,6 +1313,7 @@ def _new(
     project_dir: Union[str, None] = None,
     session_id: str = "experiment_001",
     no_input: bool = False,
+    cookie_directory: str = "",
 ):
     """Set up a batch experiment (might need git installed).
 
@@ -1327,7 +1328,7 @@ def _new(
         project_dir: your project directory.
         session_id: the lookup value.
         no_input: accept defaults if True (only valid when providing project_dir and session_id)
-
+        cookie_directory: name of template directory.
     Returns:
         None
     """
@@ -1442,8 +1443,17 @@ def _new(
 
     os.chdir(selected_project_dir)
     cellpy_version = cellpy.__version__
+
     try:
-        selected_template = templates[template.lower()]
+        selected_template, _cookie_directory = templates[template.lower()]
+
+        # sub-templates not implemented for local cellpy cookies:
+        if local_user_template:
+            cookie_directory = ""
+
+        elif not cookie_directory:
+            cookie_directory = _cookie_directory
+
         cookiecutter.main.cookiecutter(
             selected_template,
             extra_context={
@@ -1453,6 +1463,7 @@ def _new(
                 "session_id": session_id,
             },
             no_input=no_input,
+            directory=cookie_directory,
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")

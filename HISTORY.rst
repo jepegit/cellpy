@@ -2,12 +2,16 @@
 History
 =======
 
-0.4.3 (2022) [under development]
+0.5.0(2022) [under development]
 --------------------------------
 
 * Unit handling: renaming summary headers
 * Unit handling: new cellpy-file-format version
 * Unit handling: tool for converting old to new format
+* Templates: using one repository with sub-folders
+* Batch plotting: collectors for both data collection, plotting and saving
+* Internals: allow for only one Cell pr CellpyData object (TODO)
+* Internals: rename main classes (CellpyData -> Cell, Cell -> Data)
 
 
 0.4.2 (2022)
