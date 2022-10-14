@@ -106,12 +106,13 @@ class LabJournal(BaseJournal):
             file_name = pathlib.Path(self.file_name)
         else:
             file_name = pathlib.Path(file_name)
-
         if to_project_folder:
             file_name = file_name.with_suffix(".json").name
             project_dir = pathlib.Path(self.project_dir)
+
             file_name = project_dir / file_name
         self.file_name = file_name  # updates object (maybe not smart)
+
         return file_name
 
     def from_db(self, project=None, name=None, batch_col=None, **kwargs):
