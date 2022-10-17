@@ -44,6 +44,7 @@ Q = ureg.Quantity
 # https://stackoverflow.com/questions/60067953/
 # 'is-it-possible-to-specify-the-pickle-protocol-when-writing-pandas-to-hdf5
 class PickleProtocol:
+    """Context for using a specific pickle protocol."""
     def __init__(self, level):
         self.previous = pickle.HIGHEST_PROTOCOL
         self.level = level
@@ -500,6 +501,12 @@ class InstrumentFactory:
 
 
 def generate_default_factory():
+    """This function searches for all available instrument readers
+    and registers them in an InstrumentFactory instance.
+
+    Returns:
+        InstrumentFactory
+    """
     instrument_factory = InstrumentFactory()
     instruments = find_all_instruments()
     for instrument_id, instrument in instruments.items():
