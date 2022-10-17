@@ -36,7 +36,7 @@ class CSVExporter(BaseExporter):
             self._assign_dumper(screen_dumper)
         self.current_engine = None
 
-    def run_engine(self, engine):
+    def run_engine(self, engine, **kwargs):
         """run engine (once pr. experiment).
 
         Args:

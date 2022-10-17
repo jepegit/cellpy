@@ -69,6 +69,20 @@ class Doer(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def run_engine(self, engine, **kwargs):
+        """Set the current_engine and run it.
+
+        The method sets and engages the engine (callable) and provide
+        appropriate binding to at least the class attributes self.farms and
+        self.barn.
+
+        Example:
+            self.current_engine = engine
+            self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms, **kwargs)
+
+        Args:
+            engine (callable): the function that should be called.
+            **kwargs: additional keyword arguments sent to the callable.
+        """
         pass
 
     @abc.abstractmethod
@@ -142,6 +156,7 @@ class Data(collections.UserDict):
 
     # TODO (jepe): decide if we should included querying functionality here.
     # TODO (jepe): implement experiment.last_cycle
+    # TODO (jepe): consider renaming for v1.0.0 (Cell will be renamed to Data).
 
     def __init__(self, experiment, *args):
         super().__init__(*args)
@@ -464,7 +479,7 @@ class BaseExporter(Doer, metaclass=abc.ABCMeta):
         self._use_dir = None
         self.current_engine = None
 
-    def run_engine(self, engine):
+    def run_engine(self, engine, **kwargs):
         logging.debug(f"start engine::{engine.__name__}")
         self.current_engine = engine
         self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms)
