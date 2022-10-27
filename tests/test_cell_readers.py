@@ -534,13 +534,13 @@ def test_make_summary(cellpy_data_instance, parameters):
 
 
 def test_make_summary_new_version(parameters):
-    c_raw = cellpy.get(logging_mode="DEBUG")
+    c_raw = cellpy.get(logging_mode="DEBUG", testing=True)
     c_raw.from_raw(parameters.res_file_path)
     c_raw.set_mass(1.0)
     c_raw.make_summary()
 
     s1 = c_raw.cell.summary
-    c_h5 = cellpy.get(logging_mode="DEBUG")
+    c_h5 = cellpy.get(logging_mode="DEBUG", testing=True)
     c_h5.load(parameters.cellpy_file_path_v6)
     s2 = c_h5.cell.summary
 
@@ -559,7 +559,7 @@ def test_make_summary_with_c_rate(cellpy_data_instance, parameters):
 
 
 def test_summary_from_cellpyfile(parameters):
-    c_cellpy = cellpy.get()
+    c_cellpy = cellpy.get(testing=True)
     c_cellpy.load(parameters.cellpy_file_path)
     s1 = c_cellpy.get_summary()
     mass = c_cellpy.get_mass()

@@ -543,6 +543,7 @@ class Batch:
         logging.debug(f"from_db: {from_db}")
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
+        to_project_folder = kwargs.pop("to_project_folder", True)
         duplicate_to_local_folder = kwargs.pop("duplicate_to_local_folder", True)
 
         if description is not None:
@@ -551,8 +552,12 @@ class Batch:
         if from_db:
             self.experiment.journal.from_db(**kwargs)
             self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
-            self.experiment.journal.duplicate_journal()
-            self.duplicate_journal(prms.Paths.batchfiledir)
+
+            # TODO: remove these:
+            if duplicate_to_local_folder:
+                self.experiment.journal.duplicate_journal()
+            if to_project_folder:
+                self.duplicate_journal(prms.Paths.batchfiledir)
 
         else:
             is_str = isinstance(description, str)
@@ -928,10 +933,9 @@ def init(*args, **kwargs) -> Batch:
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
-    testing = kwargs.pop("testing", None)
+    testing = kwargs.pop("testing", False)
     file_name = kwargs.pop("file_name", None)
     frame = kwargs.pop("frame", None)
-
     log.setup_logging(
         default_level=default_log_level, testing=testing, reset_big_log=True
     )
@@ -947,10 +951,10 @@ def init(*args, **kwargs) -> Batch:
     return Batch(*args, **kwargs)
 
 
-def from_journal(journal_file, autolink=True) -> Batch:
+def from_journal(journal_file, autolink=True, testing=False) -> Batch:
     """Create a Batch from a journal file"""
     # TODO: add option for setting max cycle number (experiment.last_cycle)
-    b = init(db_reader=None, file_name=journal_file)
+    b = init(db_reader=None, file_name=journal_file, testing=testing)
     if autolink:
         b.link()
     return b
@@ -1014,8 +1018,8 @@ def process_batch(*args, **kwargs) -> Batch:
         file_name = args[0]
     else:
         file_name = kwargs.pop("file_name", None)
-
-    log.setup_logging(default_level=default_log_level, reset_big_log=True)
+    testing = kwargs.pop("testing", False)
+    log.setup_logging(default_level=default_log_level, reset_big_log=True, testing=testing)
     logging.debug(f"creating Batch(kwargs: {kwargs})")
 
     if file_name is not None:
