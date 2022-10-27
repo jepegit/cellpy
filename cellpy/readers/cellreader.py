@@ -2,15 +2,12 @@
 """Datareader for cell testers and potentiostats.
 
 This module is used for loading data and databases created by different cell
-testers. Currently it only accepts arbin-type res-files (access) data as
-raw data files, but we intend to implement more types soon. It also creates
-processed files in the hdf5-format.
+testers and exporing them in a common hdf5-format.
 
 Example:
-    >>> d = CellpyData()
-    >>> d.loadcell(names = [file1.res, file2.res]) # loads and merges the runs
-    >>> voltage_curves = d.get_cap()
-    >>> d.save("mytest.hdf")
+    >>> c = cellpy.get(["super_battery_run_01.res", "super_battery_run_02.res"]) # loads and merges the runs
+    >>> voltage_curves = c.get_cap()
+    >>> c.save("super_battery_run.hdf")
 
 """
 

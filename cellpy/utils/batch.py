@@ -527,6 +527,9 @@ class Batch:
                     file_name_format or reg_exp accordingly.
                 pre_path (path or str): path to prepend the list of files selected
                      from the file_list.
+            kwargs -> journal.to_file:
+                duplicate_to_local_folder (bool): default True.
+
 
         Returns:
             info_dict
@@ -540,13 +543,14 @@ class Batch:
         logging.debug(f"from_db: {from_db}")
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
+        duplicate_to_local_folder = kwargs.pop("duplicate_to_local_folder", True)
 
         if description is not None:
             from_db = False
 
         if from_db:
             self.experiment.journal.from_db(**kwargs)
-            self.experiment.journal.to_file()
+            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
             self.experiment.journal.duplicate_journal()
             self.duplicate_journal(prms.Paths.batchfiledir)
 
@@ -648,7 +652,7 @@ class Batch:
                     )
 
             # finally
-            self.experiment.journal.to_file()
+            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
             self.duplicate_journal(prms.Paths.batchfiledir)

@@ -104,6 +104,7 @@ class LabJournal(BaseJournal):
             if not self.file_name:
                 self.generate_file_name()
             file_name = pathlib.Path(self.file_name)
+
         else:
             file_name = pathlib.Path(file_name)
         if to_project_folder:
@@ -112,7 +113,6 @@ class LabJournal(BaseJournal):
 
             file_name = project_dir / file_name
         self.file_name = file_name  # updates object (maybe not smart)
-
         return file_name
 
     def from_db(self, project=None, name=None, batch_col=None, **kwargs):
@@ -514,6 +514,7 @@ class LabJournal(BaseJournal):
         file_name = self._check_file_name(
             file_name, to_project_folder=to_project_folder
         )
+
         pages = self.pages
         session = self.session
         meta = self._prm_packer()
