@@ -39,7 +39,7 @@ dependencies:
   - ipywidgets
   - python-box
   - sqlalchemy
-  - pint
+  - pint>=0.20.1
   - pip:
     - sqlalchemy-access
     - pytest-benchmark
