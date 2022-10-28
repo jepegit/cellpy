@@ -146,8 +146,7 @@ class CellpyData:
             <b>limit_loaded_cycles</b>: {self.limit_loaded_cycles} <br>
             <b>load_only_summary</b>: {self.load_only_summary} <br>
             <b>profile</b>: {self.profile} <br>
-            <b>raw_limits</b>: {self.raw_limits} <br>
-            <b>raw_units</b>: {self.raw_units} <br>
+            <b>cellpy_units</b>: {self.cellpy_units} <br>
             <b>select_minimal</b>: {self.select_minimal} <br>
             <b>selected_cell_number</b>: {self.selected_cell_number} <br>
             <b>selected_scans</b>: {self.selected_scans} <br>
