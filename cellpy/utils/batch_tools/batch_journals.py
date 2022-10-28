@@ -499,7 +499,13 @@ class LabJournal(BaseJournal):
         except shutil.SameFileError:
             logging.debug("same file exception encountered")
 
-    def to_file(self, file_name=None, paginate=True, to_project_folder=True, duplicate_to_local_folder=True):
+    def to_file(
+        self,
+        file_name=None,
+        paginate=True,
+        to_project_folder=True,
+        duplicate_to_local_folder=True,
+    ):
         """Saves a DataFrame with all the needed info about the experiment.
 
         Args:

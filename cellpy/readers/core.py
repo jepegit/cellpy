@@ -45,6 +45,7 @@ Q = ureg.Quantity
 # 'is-it-possible-to-specify-the-pickle-protocol-when-writing-pandas-to-hdf5
 class PickleProtocol:
     """Context for using a specific pickle protocol."""
+
     def __init__(self, level):
         self.previous = pickle.HIGHEST_PROTOCOL
         self.level = level

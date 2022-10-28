@@ -551,7 +551,9 @@ class Batch:
 
         if from_db:
             self.experiment.journal.from_db(**kwargs)
-            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
+            self.experiment.journal.to_file(
+                duplicate_to_local_folder=duplicate_to_local_folder
+            )
 
             # TODO: remove these:
             if duplicate_to_local_folder:
@@ -657,7 +659,9 @@ class Batch:
                     )
 
             # finally
-            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
+            self.experiment.journal.to_file(
+                duplicate_to_local_folder=duplicate_to_local_folder
+            )
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
             self.duplicate_journal(prms.Paths.batchfiledir)
@@ -1019,7 +1023,9 @@ def process_batch(*args, **kwargs) -> Batch:
     else:
         file_name = kwargs.pop("file_name", None)
     testing = kwargs.pop("testing", False)
-    log.setup_logging(default_level=default_log_level, reset_big_log=True, testing=testing)
+    log.setup_logging(
+        default_level=default_log_level, reset_big_log=True, testing=testing
+    )
     logging.debug(f"creating Batch(kwargs: {kwargs})")
 
     if file_name is not None:

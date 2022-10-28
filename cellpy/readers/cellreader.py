@@ -4389,7 +4389,13 @@ class CellpyData:
         steps_to_skip=None,
         steptable=None,
         converter=None,
+        usteps=False,
     ):
+        if usteps:
+            print(
+                "Unfortunately, the ustep functionality is not implemented in this version of cellpy"
+            )
+            raise NotImplementedError("ustep == True not allowed!")
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: @jepe - does not allow for constant voltage yet?
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -4414,7 +4420,6 @@ class CellpyData:
             steps_to_skip=steps_to_skip,
             steptable=steptable,
         )
-
         if cap_type == "charge":
             column_txt = self.headers_normal.charge_capacity_txt
         else:
@@ -4423,7 +4428,8 @@ class CellpyData:
             steps = cycles[cycle]
             _v = []
             _c = []
-
+            if len(set(steps)) < len(steps) and not usteps:
+                raise ValueError(f"You have duplicate step numbers!")
             for step in sorted(steps):
                 selected_step = self._select_step(cycle, step, dataset_number)
                 if not self.is_empty(selected_step):
@@ -4443,7 +4449,6 @@ class CellpyData:
             raise NotImplementedError(
                 "Not yet possible to extract without giving cycle numbers (use get_cap instead)"
             )
-
         return cap, voltage
 
     def get_ocv(
