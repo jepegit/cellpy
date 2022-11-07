@@ -213,6 +213,7 @@ class InstrumentsClass(CellPyConfig):
     custom_instrument_definitions_file: Union[str, None]
     Arbin: box.Box
     Maccor: box.Box
+    Neware: box.Box
 
 
 # Pre-defined instruments:
@@ -236,11 +237,15 @@ Arbin = box.Box(Arbin)
 Maccor = {"default_model": "one"}
 Maccor = box.Box(Maccor)
 
+Neware = {"default_model": "one"}
+Neware = box.Box(Neware)
+
 Instruments = InstrumentsClass(
     tester="arbin_res",  # TODO: moving this to DataSetClass (deprecate)
     custom_instrument_definitions_file=None,
     Arbin=Arbin,
     Maccor=Maccor,
+    Neware=Neware
 )
 
 
