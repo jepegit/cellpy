@@ -115,20 +115,7 @@ class CyclingExperiment(BaseExperiment):
         </table>
         """
         txt += "<h3>Cells</h3>"
-        if self._data is None:
-            txt += f"<p><b>data</b><br> contains {len(self)} cells [not linked!]</p>"
-        else:
-            txt += f"<p><b>data</b>: contains {len(self)} cells.</p>"
-        # for key in self.session:
-        #     txt += f"<p><b>{key}</b>: {self.session[key]}</p>"
-        #
-        # txt += "<h3>Pages</h3>"
-        # try:
-        #     txt += self.pages._repr_html_()
-        # except AttributeError:
-        #     txt += "<p><b>pages</b><br> not found!</p>"
-        # except ValueError:
-        #     txt += "<p><b>pages</b><br> not readable!</p>"
+        txt += f"<p><b>data</b>: contains {len(self)} cells.</p>"
         return txt
 
     @staticmethod
@@ -213,6 +200,7 @@ class CyclingExperiment(BaseExperiment):
 
         # TODO: implement experiment.last_cycle
 
+        # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
 
         logging.info("[update experiment]")
@@ -246,6 +234,15 @@ class CyclingExperiment(BaseExperiment):
         if pages.empty:
             raise Exception("your journal is empty")
 
+        # Note:
+        #  Case 1 - force cellpy
+        #  Case 2 - force raw
+        #  Case 3 - check
+        #  if 1:  _load_cellpy_file()
+        #  if 2:  _load_raw_file()
+        #  if 3:  _check_for_changes_and_existence(), then 1 or 2
+
+        # --- init ---
         summary_frames = dict()
         cell_data_frames = dict()
         number_of_runs = len(pages)
@@ -254,6 +251,7 @@ class CyclingExperiment(BaseExperiment):
 
         pbar = tqdm(list(pages.iterrows()), file=sys.stdout, leave=False)
 
+        # --- iterating ---
         for indx, row in pbar:
             counter += 1
             h_txt = f"{indx}"

@@ -2,15 +2,12 @@
 """Datareader for cell testers and potentiostats.
 
 This module is used for loading data and databases created by different cell
-testers. Currently it only accepts arbin-type res-files (access) data as
-raw data files, but we intend to implement more types soon. It also creates
-processed files in the hdf5-format.
+testers and exporing them in a common hdf5-format.
 
 Example:
-    >>> d = CellpyData()
-    >>> d.loadcell(names = [file1.res, file2.res]) # loads and merges the runs
-    >>> voltage_curves = d.get_cap()
-    >>> d.save("mytest.hdf")
+    >>> c = cellpy.get(["super_battery_run_01.res", "super_battery_run_02.res"]) # loads and merges the runs
+    >>> voltage_curves = c.get_cap()
+    >>> c.save("super_battery_run.hdf")
 
 """
 
@@ -149,8 +146,7 @@ class CellpyData:
             <b>limit_loaded_cycles</b>: {self.limit_loaded_cycles} <br>
             <b>load_only_summary</b>: {self.load_only_summary} <br>
             <b>profile</b>: {self.profile} <br>
-            <b>raw_limits</b>: {self.raw_limits} <br>
-            <b>raw_units</b>: {self.raw_units} <br>
+            <b>cellpy_units</b>: {self.cellpy_units} <br>
             <b>select_minimal</b>: {self.select_minimal} <br>
             <b>selected_cell_number</b>: {self.selected_cell_number} <br>
             <b>selected_scans</b>: {self.selected_scans} <br>
@@ -4042,7 +4038,14 @@ class CellpyData:
             v /= 60.0
         return v
 
-    def get_dcap(self, cycle=None, dataset_number=None, converter=None, mode="gravimetric", **kwargs):
+    def get_dcap(
+        self,
+        cycle=None,
+        dataset_number=None,
+        converter=None,
+        mode="gravimetric",
+        **kwargs,
+    ):
         """Returns discharge_capacity and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
@@ -4062,7 +4065,14 @@ class CellpyData:
         )
         return dc, v
 
-    def get_ccap(self, cycle=None, dataset_number=None, converter=None, mode="gravimetric", **kwargs):
+    def get_ccap(
+        self,
+        cycle=None,
+        dataset_number=None,
+        converter=None,
+        mode="gravimetric",
+        **kwargs,
+    ):
         """Returns charge_capacity and voltage."""
 
         #  TODO - jepe: should return a DataFrame as default
@@ -4378,7 +4388,13 @@ class CellpyData:
         steps_to_skip=None,
         steptable=None,
         converter=None,
+        usteps=False,
     ):
+        if usteps:
+            print(
+                "Unfortunately, the ustep functionality is not implemented in this version of cellpy"
+            )
+            raise NotImplementedError("ustep == True not allowed!")
         # used when extracting capacities (get_ccap, get_dcap)
         # TODO: @jepe - does not allow for constant voltage yet?
         dataset_number = self._validate_dataset_number(dataset_number)
@@ -4403,7 +4419,6 @@ class CellpyData:
             steps_to_skip=steps_to_skip,
             steptable=steptable,
         )
-
         if cap_type == "charge":
             column_txt = self.headers_normal.charge_capacity_txt
         else:
@@ -4412,7 +4427,8 @@ class CellpyData:
             steps = cycles[cycle]
             _v = []
             _c = []
-
+            if len(set(steps)) < len(steps) and not usteps:
+                raise ValueError(f"You have duplicate step numbers!")
             for step in sorted(steps):
                 selected_step = self._select_step(cycle, step, dataset_number)
                 if not self.is_empty(selected_step):
@@ -4432,7 +4448,6 @@ class CellpyData:
             raise NotImplementedError(
                 "Not yet possible to extract without giving cycle numbers (use get_cap instead)"
             )
-
         return cap, voltage
 
     def get_ocv(
@@ -4699,7 +4714,9 @@ class CellpyData:
         try:
             _value = getattr(self.cell, parameter)
         except AttributeError:
-            print(f"{parameter} is not a valid cellpy cell attribute (but the unit is {_unit})")
+            print(
+                f"{parameter} is not a valid cellpy cell attribute (but the unit is {_unit})"
+            )
             return
 
         if as_str:
@@ -4719,7 +4736,9 @@ class CellpyData:
             the value in cellpy units
         """
         logging.debug(f"value {value} is numeric? {isinstance(value, numbers.Number)}")
-        logging.debug(f"value {value} is a pint quantity? {isinstance(value, Quantity)}")
+        logging.debug(
+            f"value {value} is a pint quantity? {isinstance(value, Quantity)}"
+        )
 
         if not isinstance(value, Quantity):
             if isinstance(value, numbers.Number):
@@ -4727,11 +4746,15 @@ class CellpyData:
                     value = Q(value, self.cell.raw_units[physical_property])
                     logging.debug(f"With unit from raw-units: {value}")
                 except NoCellFound:
-                    raise NoCellFound("If you dont have any cells you cannot convert"
-                                      " values to cellpy units without providing what"
-                                      " unit to convert from!")
+                    raise NoCellFound(
+                        "If you dont have any cells you cannot convert"
+                        " values to cellpy units without providing what"
+                        " unit to convert from!"
+                    )
                 except KeyError as e:
-                    raise KeyError("You have to provide a valid physical_property") from e
+                    raise KeyError(
+                        "You have to provide a valid physical_property"
+                    ) from e
             elif isinstance(value, tuple):
                 value = Q(*value)
             else:

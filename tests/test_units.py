@@ -24,13 +24,27 @@ def test_to_cellpy_unit_from_cellpy_instance(cellpy_data_instance):
 def test_to_cellpy_unit_from_cellpy_instance_with_cell(dataset):
     value = 12.2
     new_value = dataset.to_cellpy_unit(value, physical_property="length")
-    assert new_value == Q(12.2, dataset.cell.raw_units["length"]).to(dataset.cellpy_units["length"]).m
+    assert (
+        new_value
+        == Q(12.2, dataset.cell.raw_units["length"])
+        .to(dataset.cellpy_units["length"])
+        .m
+    )
 
-    new_value = dataset.to_cellpy_unit(f"12.2 {dataset.cellpy_units['length']}", physical_property="length")
+    new_value = dataset.to_cellpy_unit(
+        f"12.2 {dataset.cellpy_units['length']}", physical_property="length"
+    )
     assert new_value == 12.2
 
-    new_value = dataset.to_cellpy_unit((12.2, dataset.cell.raw_units['length']), physical_property="length")
-    assert new_value == Q(12.2, dataset.cell.raw_units["length"]).to(dataset.cellpy_units["length"]).m
+    new_value = dataset.to_cellpy_unit(
+        (12.2, dataset.cell.raw_units["length"]), physical_property="length"
+    )
+    assert (
+        new_value
+        == Q(12.2, dataset.cell.raw_units["length"])
+        .to(dataset.cellpy_units["length"])
+        .m
+    )
 
 
 @pytest.mark.parametrize(
@@ -56,17 +70,24 @@ def test_get_converter_to_specific(dataset, test_input, expected):
     physical_unit = value_unit[test_input[1]]
 
     specific_conv = {
-        "gravimetric": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
-        "areal": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
-        "absolute": lambda x: x
+        "gravimetric": lambda x: Q(x, physical_unit)
+        .to(dataset.cellpy_units[specific_unit])
+        .to_reduced_units()
+        .m,
+        "areal": lambda x: Q(x, physical_unit)
+        .to(dataset.cellpy_units[specific_unit])
+        .to_reduced_units()
+        .m,
+        "absolute": lambda x: x,
     }
 
-    conv = (Q(1, raw_unit_charge)/Q(1, cellpy_unit_charge)).to_reduced_units()
+    conv = (Q(1, raw_unit_charge) / Q(1, cellpy_unit_charge)).to_reduced_units()
 
-    conv = conv.m/specific_conv[test_input[1]](1)
+    conv = conv.m / specific_conv[test_input[1]](1)
 
     c = dataset.get_converter_to_specific(
-        value=test_input[0], mode=test_input[1],
+        value=test_input[0],
+        mode=test_input[1],
     )
     assert c == conv * expected
 

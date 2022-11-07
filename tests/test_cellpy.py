@@ -218,6 +218,7 @@ def test_make_step_table():
         mass=0.74,
         logging_mode="DEBUG",
         auto_summary=False,
+        testing=True,
     )
     c.make_step_table()
 

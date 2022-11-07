@@ -451,6 +451,28 @@ class Batch:
             "the journal.pages instead."
         )
 
+    def duplicate_journal(self, folder=None) -> None:
+        """Copy the journal to folder.
+
+        Args:
+            folder (str or pathlib.Path): folder to copy to (defaults to the
+            current folder).
+        """
+        self.experiment.journal.duplicate_journal(folder)
+        #
+        # logging.debug(f"duplicating journal to folder {folder}")
+        # journal_name = pathlib.Path(self.experiment.journal.file_name)
+        # if not journal_name.is_file():
+        #     logging.info("No journal saved")
+        #     return
+        # new_journal_name = journal_name.name
+        # if folder is not None:
+        #     new_journal_name = pathlib.Path(folder) / new_journal_name
+        # try:
+        #     shutil.copy(journal_name, new_journal_name)
+        # except shutil.SameFileError:
+        #     logging.debug("same file exception encountered")
+
     def create_journal(self, description=None, from_db=True, **kwargs):
         """Create journal pages.
 
@@ -505,6 +527,9 @@ class Batch:
                     file_name_format or reg_exp accordingly.
                 pre_path (path or str): path to prepend the list of files selected
                      from the file_list.
+            kwargs -> journal.to_file:
+                duplicate_to_local_folder (bool): default True.
+
 
         Returns:
             info_dict
@@ -518,14 +543,23 @@ class Batch:
         logging.debug(f"from_db: {from_db}")
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
+        to_project_folder = kwargs.pop("to_project_folder", True)
+        duplicate_to_local_folder = kwargs.pop("duplicate_to_local_folder", True)
 
         if description is not None:
             from_db = False
 
         if from_db:
             self.experiment.journal.from_db(**kwargs)
-            self.experiment.journal.to_file()
-            self.duplicate_journal(prms.Paths.batchfiledir)
+            self.experiment.journal.to_file(
+                duplicate_to_local_folder=duplicate_to_local_folder
+            )
+
+            # TODO: remove these:
+            if duplicate_to_local_folder:
+                self.experiment.journal.duplicate_journal()
+            if to_project_folder:
+                self.duplicate_journal(prms.Paths.batchfiledir)
 
         else:
             is_str = isinstance(description, str)
@@ -625,7 +659,9 @@ class Batch:
                     )
 
             # finally
-            self.experiment.journal.to_file()
+            self.experiment.journal.to_file(
+                duplicate_to_local_folder=duplicate_to_local_folder
+            )
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
             self.duplicate_journal(prms.Paths.batchfiledir)
@@ -901,10 +937,9 @@ def init(*args, **kwargs) -> Batch:
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
-    testing = kwargs.pop("testing", None)
+    testing = kwargs.pop("testing", False)
     file_name = kwargs.pop("file_name", None)
     frame = kwargs.pop("frame", None)
-
     log.setup_logging(
         default_level=default_log_level, testing=testing, reset_big_log=True
     )
@@ -920,10 +955,10 @@ def init(*args, **kwargs) -> Batch:
     return Batch(*args, **kwargs)
 
 
-def from_journal(journal_file, autolink=True) -> Batch:
+def from_journal(journal_file, autolink=True, testing=False) -> Batch:
     """Create a Batch from a journal file"""
     # TODO: add option for setting max cycle number (experiment.last_cycle)
-    b = init(db_reader=None, file_name=journal_file)
+    b = init(db_reader=None, file_name=journal_file, testing=testing)
     if autolink:
         b.link()
     return b
@@ -987,8 +1022,10 @@ def process_batch(*args, **kwargs) -> Batch:
         file_name = args[0]
     else:
         file_name = kwargs.pop("file_name", None)
-
-    log.setup_logging(default_level=default_log_level, reset_big_log=True)
+    testing = kwargs.pop("testing", False)
+    log.setup_logging(
+        default_level=default_log_level, reset_big_log=True, testing=testing
+    )
     logging.debug(f"creating Batch(kwargs: {kwargs})")
 
     if file_name is not None:

@@ -276,9 +276,25 @@ _cellpyfile_infotable_format = "fixed"
 _cellpyfile_fidtable_format = "fixed"
 
 # templates
+# _standard_template_uri = "https://github.com/jepegit/cellpy_cookies.git"  # v.1.0
+_standard_template_uri = (
+    "https://github.com/jepegit/cellpy_cookie_dev.git"  # v.0.5 remove this
+)
 _registered_templates = {
-    "standard": "https://github.com/jepegit/cellpy_cookie_standard.git",
-    "ife": "https://github.com/jepegit/cellpy_cookie_ife.git",
+    "standard": (
+        "https://github.com/jepegit/cellpy_cookie_standard.git",
+        "",
+    ),  # v.0.5 remove this
+    "ife": (
+        "https://github.com/jepegit/cellpy_cookie_ife.git",
+        "",
+    ),  # v.0.5 remove this
+    "dev": (
+        "https://github.com/jepegit/cellpy_cookie_dev.git",
+        "standard",
+    ),  # v.0.5 remove this
+    "dev_standard": (_standard_template_uri, "standard"),  # v.0.5
+    "dev_ife": (_standard_template_uri, "ife"),  # v.0.5
 }
 
 # used as global variables

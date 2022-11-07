@@ -50,7 +50,7 @@ requirements = [
     'pyodbc;platform_system=="windows"',
     'sqlalchemy;platform_system=="windows"',
     'sqlalchemy-access;platform_system=="windows"',
-    # 'pytables', # not available by pip
+    # 'tables', # not available by pip
 ]
 
 test_requirements = [

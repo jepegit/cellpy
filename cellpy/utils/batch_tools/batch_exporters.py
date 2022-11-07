@@ -36,7 +36,7 @@ class CSVExporter(BaseExporter):
             self._assign_dumper(screen_dumper)
         self.current_engine = None
 
-    def run_engine(self, engine):
+    def run_engine(self, engine, **kwargs):
         """run engine (once pr. experiment).
 
         Args:
@@ -51,7 +51,7 @@ class CSVExporter(BaseExporter):
 
         The barns attribute is a pre-defined string used for picking what
         folder(s) the file(s) should be exported to.
-        For example, if barn equals "batch_dir", the the file(s) will be saved
+        For example, if barn equals "batch_dir", the file(s) will be saved
         to the experiments batch directory.
         """
 

@@ -54,7 +54,7 @@ def populated_batch(batch_instance):
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
 
-    b.create_journal()
+    b.create_journal(duplicate_to_local_folder=False)
     b.paginate()
     b.update()
     return b
@@ -87,7 +87,7 @@ def test_reading_db(batch_instance):
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
 
-    b.create_journal()
+    b.create_journal(duplicate_to_local_folder=False)
 
 
 def test_reading_cell_specs(batch_instance):
@@ -99,7 +99,7 @@ def test_reading_cell_specs(batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b02", testing=True
     )
-    b.create_journal()
+    b.create_journal(duplicate_to_local_folder=False)
     hdr = hdr_journal["argument"]
     with_argument = b.pages.iloc[0][hdr]
     with_several_arguments = b.pages.iloc[1][hdr]
@@ -111,7 +111,7 @@ def test_reading_cell_specs(batch_instance):
 
 
 def test_load_journal_json(parameters, batch_instance):
-    b = batch_instance.from_journal(parameters.journal_file_json_path)
+    b = batch_instance.from_journal(parameters.journal_file_json_path, testing=True)
     assert len(b.pages) == 5
     assert hdr_journal["argument"] in b.pages.columns
 
@@ -123,13 +123,13 @@ def test_update_with_cellspecs(parameters, batch_instance):
 
 
 def test_load_save_journal_roundtrip_cell_specs(parameters, clean_dir, batch_instance):
-    b = batch_instance.from_journal(parameters.journal_file_json_path)
+    b = batch_instance.from_journal(parameters.journal_file_json_path, testing=True)
     out = pathlib.Path(clean_dir) / "j.json"
-    b.experiment.journal.to_file(file_name=out)
+    b.experiment.journal.to_file(file_name=out, to_project_folder=False, duplicate_to_local_folder=False)
     spec_1 = b.pages[hdr_journal["argument"]].iloc[0]
     assert spec_1 == "recalc=False"
     assert out.is_file()
-    b2 = batch_instance.from_journal(out)
+    b2 = batch_instance.from_journal(out, testing=True)
     assert len(b.pages) == 5
     assert hdr_journal["argument"] in b.pages.columns
     assert b2.pages[hdr_journal["argument"]].iloc[0] == spec_1
@@ -248,7 +248,7 @@ def test_lab_journal(batch_instance):
 
 
 def test_cycling_experiment_to_file(cycling_experiment):
-    cycling_experiment.journal.to_file()
+    cycling_experiment.journal.to_file(duplicate_to_local_folder=False)
 
 
 def test_interact_with_cellpydata_get_cap(updated_cycling_experiment, parameters):
@@ -294,6 +294,15 @@ def test_concatinator_yanked(populated_batch):
 
 def test_report(populated_batch):
     print(populated_batch.report)
+
+
+def test_batch_update(parameters, batch_instance):
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
+    )
+    b.create_journal(duplicate_to_local_folder=False)
+    b.paginate()
+    b.update()
 
 
 # def test_iterate_folder(batch_instance):

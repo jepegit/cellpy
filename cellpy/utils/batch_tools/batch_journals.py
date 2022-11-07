@@ -104,12 +104,14 @@ class LabJournal(BaseJournal):
             if not self.file_name:
                 self.generate_file_name()
             file_name = pathlib.Path(self.file_name)
+
         else:
             file_name = pathlib.Path(file_name)
-
         if to_project_folder:
-            file_name = file_name.with_suffix(".json")
-            file_name = pathlib.Path(self.project_dir) / file_name
+            file_name = file_name.with_suffix(".json").name
+            project_dir = pathlib.Path(self.project_dir)
+
+            file_name = project_dir / file_name
         self.file_name = file_name  # updates object (maybe not smart)
         return file_name
 
@@ -476,20 +478,49 @@ class LabJournal(BaseJournal):
         pages.set_index(hdr_journal.filename, inplace=True)
         return pages
 
-    def to_file(self, file_name=None, paginate=True, to_project_folder=True):
+    def duplicate_journal(self, folder=None) -> None:
+        """Copy the journal to folder.
+
+        Args:
+            folder (str or pathlib.Path): folder to copy to (defaults to the
+            current folder).
+        """
+
+        logging.debug(f"duplicating journal to folder {folder}")
+        journal_name = pathlib.Path(self.file_name)
+        if not journal_name.is_file():
+            logging.info("No journal saved")
+            return
+        new_journal_name = journal_name.name
+        if folder is not None:
+            new_journal_name = pathlib.Path(folder) / new_journal_name
+        try:
+            shutil.copy(journal_name, new_journal_name)
+        except shutil.SameFileError:
+            logging.debug("same file exception encountered")
+
+    def to_file(
+        self,
+        file_name=None,
+        paginate=True,
+        to_project_folder=True,
+        duplicate_to_local_folder=True,
+    ):
         """Saves a DataFrame with all the needed info about the experiment.
 
         Args:
             file_name (str or pathlib.Path): journal file name
             paginate (bool): make project folders
             to_project_folder (bool): save journal file to the folder containing your cellpy projects
+            duplicate_to_local_folder (bool): save journal file to the folder you are in now also
 
         Returns:
-
+            None
         """
         file_name = self._check_file_name(
             file_name, to_project_folder=to_project_folder
         )
+
         pages = self.pages
         session = self.session
         meta = self._prm_packer()
@@ -535,6 +566,9 @@ class LabJournal(BaseJournal):
 
         if paginate:
             self.paginate()
+
+        if duplicate_to_local_folder:
+            self.duplicate_journal()
 
     @staticmethod
     def _pack_session(session):
@@ -635,7 +669,6 @@ class LabJournal(BaseJournal):
         """generate a suitable file name for the experiment"""
         if not self.project:
             raise UnderDefined("project name not given")
-
         out_data_dir = prms.Paths.outdatadir
         project_dir = os.path.join(out_data_dir, self.project)
         file_name = f"cellpy_batch_{self.name}.json"
