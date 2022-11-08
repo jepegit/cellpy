@@ -1,7 +1,7 @@
 """Neware txt data - with explanations.txt
 
 
-1. Update SUPPORTED_MODELS and raw_ext
+1. Update SUPPORTED_MODELS, raw_ext and default_model
 2. Add instrument to prms.py
     a. create the boxed item:
 
@@ -74,7 +74,7 @@ class DataLoader(TxtLoader):
     name = "neware_txt"
     raw_ext = "csv"
 
-    default_model = prms.Instruments.Maccor["default_model"]  # Required
+    default_model = prms.Instruments.Neware["default_model"]  # Required
     supported_models = SUPPORTED_MODELS  # Required
 
     @staticmethod
@@ -149,38 +149,99 @@ def check_dev_loader(name=None, model=None):
     print(raw.columns)
 
 
-
-def check_loader(name=None, number=1, model="one"):
+def check_loader(name=None, model="UIO"):
     import matplotlib.pyplot as plt
 
     if name is None:
-        name = check_retrieve_file(number)
+        name = check_retrieve_file()
     print(name)
     pd.options.display.max_columns = 100
     # prms.Reader.sep = "\t"
-
-    loader = DataLoader(sep="\t", model=model)
+    sep = ","
+    loader = DataLoader(sep=sep, model=model)
     dd = loader.loader(name)
     raw = dd[0].raw
-    raw.plot(x="data_point", y="current", title="current vs data-point")
+    return raw
+
+
+def check_loader_from_outside_with_get():
+    import pathlib
+
+    import matplotlib.pyplot as plt
+
+    import cellpy
+
+    pd.options.display.max_columns = 100
+    data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources\dev_data\agnieszka")
+    name = data_root / r"Si80Gr20-3.csv"
+    out = pathlib.Path(r"C:\scripting\trash")
+    print(f"File exists? {name.is_file()}")
+    if not name.is_file():
+        print(f"could not find {name} ")
+        return
+
+    c = cellpy.get(filename=name, instrument="neware_txt", model="UIO", mass=1.0, post_processors={
+        "cumulate_capacity_within_cycle": 12,
+    })
+    print("loaded")
+    raw = c.cell.raw
+    steps = c.cell.steps
+    summary = c.cell.summary
+
+    raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
+    steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
+    summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
+
+    fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
+    raw.plot(x="test_time", y="voltage", ax=ax1, title="voltage")
     raw.plot(
-        x="data_point",
-        y=["charge_capacity", "discharge_capacity"],
-        title="capacity vs data-point",
+        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, title="caps"
     )
-    raw.plot(
-        x="test_time",
-        y=["charge_capacity", "discharge_capacity"],
-        title="capacity vs test-time",
-    )
-    raw.plot(
-        x="step_time",
-        y=["charge_capacity", "discharge_capacity"],
-        title="capacity vs step-time",
-    )
-    print(raw.head())
+    # raw.plot(
+    #     x="test_time", y=["charge_capacity2", "discharge_capacity2"], ax=ax3, title="caps2"
+    # )
+    raw.plot(x="test_time", y="current", ax=ax2, title="current")
+    #
+    # n = c.get_number_of_cycles()
+    # print(f"number of cycles: {n}")
+    #
+    # cycle = c.get_cap(1, method="forth-and-forth")
+    #
+    # fig_2, (ax4, ax5, ax6) = plt.subplots(1, 3)
+    # # cycle.plot(x="capacity", y="voltage", ax=ax4)
+    # s = c.get_step_numbers()
+    # t = c.sget_timestamp(1, s[1])
+    # v = c.sget_voltage(1, s[1])
+    # steps = c.sget_step_numbers(1, s[1])
+    #
+    # print("step numbers:")
+    # print(s)
+    # print("sget step numbers:")
+    # print(steps)
+    # print("\ntesttime:")
+    # print(t)
+    # print("\nvoltage")
+    # print(v)
+    #
+    # ax5.plot(t, v, label="voltage")
+    # ax6.plot(t, steps, label="steps")
+    #
+    # fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
+    # raw.plot(x="test_time", y="voltage", ax=ax7, title="voltage")
+    # raw.plot(x="test_time", y="step_index", ax=ax8, title="step index")
+
+    plt.legend()
     plt.show()
+
+    outfile = out / "test_out"
+    c.save(outfile)
+    return c
+
+
+def main():
+    c = check_loader_from_outside_with_get()
+    return c
 
 
 if __name__ == "__main__":
-    check_dev_loader(model="UIO")
+    main()

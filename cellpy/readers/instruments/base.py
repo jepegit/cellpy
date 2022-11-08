@@ -565,6 +565,7 @@ class TxtLoader(AutoLoader, ABC):
         if sep is not None:
             self.sep = sep
         if self.sep is None:
+
             self._auto_formatter()
 
     # override this if needed

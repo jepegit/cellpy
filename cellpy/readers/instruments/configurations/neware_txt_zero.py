@@ -6,32 +6,17 @@ normal_headers_renaming_dict = {
     "step_index_txt": f"Step Index",
     "current_txt": f"Current(A)",
     "voltage_txt": f"Voltage(V)",
-    "charge_capacity_txt": f"Capacity(Ah)",
-    "charge_energy_txt": f"Energy(Wh)",
+    "charge_capacity_txt": f"Chg. Cap.(Ah)",
+    "charge_energy_txt": f"Chg. Energy(Wh)",
+    "discharge_capacity_txt": f"DChg. Cap.(Ah)",
+    "discharge_energy_txt": f"DChg. Energy(Wh)",
     "datetime_txt": f"Date",
     "step_time_txt": f"Time",
-    # "dq_dv_txt": f"dQ/dV(mAh/V)",
+    "dq_dv_txt": f"dQ/dV(mAh/V)",
     "internal_resistance_txt": f"Contact resistance(mO)",
     "power_txt": f"Power(W)",
     "test_time_txt": f"Cumulative Time",
 }
-
-# discharge capacity: DChg. Cap.(Ah)
-#
-# columns_to_keep = [
-#     "DataPoint",
-#     "Cycle Index",
-#     "Step Index",
-#     "Current(A)",
-#     "Voltage(V)",
-#     "Capacity(Ah)",
-#     "Energy(Wh)",
-#     "Date",
-#     "Time",
-#     "Contact resistance(mO)",
-#     "Power(W)",
-#     "Cumulative Time",
-# ]
 
 states = {
     "column_name": "Step Type",
@@ -55,22 +40,23 @@ raw_limits = {
 }
 
 formatters = {
-    "skiprows": 0,  # 12 for other file
-    "sep": ",",
+    "skiprows": 0,  # will not be used since auto is on
+    "sep": None,  # comma for UiO at the moment, but using auto instead
     "header": 0,  # 0 for other file
-    "encoding": "ISO-8859-1",  # options: "ISO-8859-1", "utf-8", "cp1252"
+    "encoding": "ISO-8859-1",  # will not be used since auto is on
     "decimal": ".",
     "thousands": None,
 }
 
 
 post_processors = {
-    "split_capacity": True,
-    "split_current": True,
+    "split_capacity": False,
+    "split_current": False,
+    "cumulate_capacity_within_cycle": True,
     "set_index": True,
     "rename_headers": True,
-    # "set_cycle_number_not_zero": True,
+    "set_cycle_number_not_zero": False,
     "convert_date_time_to_datetime": True,
-    # "convert_step_time_to_timedelta": True,
-    # "convert_test_time_to_timedelta": True,
+    "convert_step_time_to_timedelta": True,
+    "convert_test_time_to_timedelta": True,
 }
