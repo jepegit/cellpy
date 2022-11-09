@@ -48,7 +48,7 @@ formatters = {
     "thousands": None,
 }
 
-
+# note to self: adjust so that it is possible to override these using cellpy.get
 post_processors = {
     "split_capacity": False,
     "split_current": False,

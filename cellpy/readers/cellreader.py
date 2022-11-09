@@ -385,10 +385,12 @@ class CellpyData:
         logging.warning(
             f"splitting cycles at {data_points} -re-run make_step_table and make_summary to propagate change!"
         )
+        print("WARNING - THIS DOES NOT WORK PROPERLY YET (missing resetting of caps etc)")
 
     def _mod_raw_split_cycle(self, data_point: int) -> None:
         print(f"splitting on {data_point=}")
         r = self.cell.raw
+        # modifying cycle number
         r.loc[
             r[self.headers_normal.data_point_txt] >= data_point,
             self.headers_normal.cycle_index_txt,
@@ -399,6 +401,9 @@ class CellpyData:
                 self.headers_normal.cycle_index_txt,
             ]
         )
+        # resetting capacities (note: also forgot to recalc energies etc when cumulating cycles)
+        # self.headers_normal.charge_capacity_txt
+        # self.headers_normal.discharge_capacity_txt
 
     def split(self, cycle=None):
         """Split experiment (CellpyData object) into two sub-experiments. if cycle
