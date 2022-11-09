@@ -22,7 +22,7 @@ import sys
 import time
 import warnings
 from pathlib import Path
-from typing import Union, Sequence
+from typing import Union, Sequence, List
 
 import numpy as np
 import pandas as pd
@@ -371,6 +371,34 @@ class CellpyData:
                 setattr(new_cell, attr, value)
 
         return new_cell
+
+    def mod_raw_split_cycle(self, data_points: List) -> None:
+        """Split cycle(s) into several cycles.
+
+        Args:
+            data_points: list of the first data point(s) for additional cycle(s).
+        """
+
+        logging.info(f"splitting cycles at {data_points}")
+        for data_point in data_points:
+            self._mod_raw_split_cycle(data_point)
+        logging.warning(
+            f"splitting cycles at {data_points} -re-run make_step_table and make_summary to propagate change!"
+        )
+
+    def _mod_raw_split_cycle(self, data_point: int) -> None:
+        print(f"splitting on {data_point=}")
+        r = self.cell.raw
+        r.loc[
+            r[self.headers_normal.data_point_txt] >= data_point,
+            self.headers_normal.cycle_index_txt,
+        ] = (
+            1
+            + r.loc[
+                r[self.headers_normal.data_point_txt] >= data_point,
+                self.headers_normal.cycle_index_txt,
+            ]
+        )
 
     def split(self, cycle=None):
         """Split experiment (CellpyData object) into two sub-experiments. if cycle

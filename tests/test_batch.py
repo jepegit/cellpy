@@ -125,7 +125,9 @@ def test_update_with_cellspecs(parameters, batch_instance):
 def test_load_save_journal_roundtrip_cell_specs(parameters, clean_dir, batch_instance):
     b = batch_instance.from_journal(parameters.journal_file_json_path, testing=True)
     out = pathlib.Path(clean_dir) / "j.json"
-    b.experiment.journal.to_file(file_name=out, to_project_folder=False, duplicate_to_local_folder=False)
+    b.experiment.journal.to_file(
+        file_name=out, to_project_folder=False, duplicate_to_local_folder=False
+    )
     spec_1 = b.pages[hdr_journal["argument"]].iloc[0]
     assert spec_1 == "recalc=False"
     assert out.is_file()

@@ -33,7 +33,11 @@ def test_set_instrument(cellpy_data_instance, parameters):
 def test_cellpy_get_model_one(parameters):
     instrument = "maccor_txt"
     c = get(
-        filename=parameters.mcc_file_path, instrument=instrument, model="one", mass=1.0, testing=True,
+        filename=parameters.mcc_file_path,
+        instrument=instrument,
+        model="one",
+        mass=1.0,
+        testing=True,
     )
     assert len(c.cell.raw) == 6704
 
@@ -58,7 +62,9 @@ def test_cellpy_get_model_one_custom_instrument_file(parameters):
     prms.Paths.instrumentdir = parameters.instrument_dir
     logging.debug(f"directory: {parameters.instrument_dir}")
     logging.debug(f"instrument file: {parameters.custom_instrument}")
-    c = get(filename=parameters.mcc_file_path, instrument=instrument, mass=1.0, testing=True)
+    c = get(
+        filename=parameters.mcc_file_path, instrument=instrument, mass=1.0, testing=True
+    )
     assert len(c.cell.raw) == 6704
 
 

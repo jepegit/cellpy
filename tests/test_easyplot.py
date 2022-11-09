@@ -84,7 +84,12 @@ def test_journal_saving_xlsx(parameters):
     assert "bad_cycles" in journal.session.keys()
     assert "notes" in journal.session.keys()
 
-    journal.to_file(journal_file_out_xlsx, to_project_folder=False, paginate=False, duplicate_to_local_folder=False)
+    journal.to_file(
+        journal_file_out_xlsx,
+        to_project_folder=False,
+        paginate=False,
+        duplicate_to_local_folder=False,
+    )
 
 
 def test_journal_saving():

@@ -180,9 +180,15 @@ def check_loader_from_outside_with_get():
         print(f"could not find {name} ")
         return
 
-    c = cellpy.get(filename=name, instrument="neware_txt", model="UIO", mass=1.0, post_processors={
-        "cumulate_capacity_within_cycle": 12,
-    })
+    c = cellpy.get(
+        filename=name,
+        instrument="neware_txt",
+        model="UIO",
+        mass=1.0,
+        post_processors={
+            "cumulate_capacity_within_cycle": 12,
+        },
+    )
     print("loaded")
     raw = c.cell.raw
     steps = c.cell.steps

@@ -245,7 +245,7 @@ Instruments = InstrumentsClass(
     custom_instrument_definitions_file=None,
     Arbin=Arbin,
     Maccor=Maccor,
-    Neware=Neware
+    Neware=Neware,
 )
 
 

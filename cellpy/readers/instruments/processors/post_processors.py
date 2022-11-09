@@ -210,7 +210,7 @@ def cumulate_capacity_within_cycle(data: Cell, config_params: ModelParameters) -
     # state_column = config_params.states["column_name"]
     # is_charge = config_params.states["charge_keys"]
     # is_discharge = config_params.states["discharge_keys"]
-    cycles = data.raw.groupby(["cycle_index"])
+    cycles = data.raw.groupby("cycle_index")
     cumulated = []
     charge_hdr = "charge_capacity"
     discharge_hdr = "discharge_capacity"
