@@ -385,25 +385,33 @@ class CellpyData:
         logging.warning(
             f"splitting cycles at {data_points} -re-run make_step_table and make_summary to propagate change!"
         )
-        print("WARNING - THIS DOES NOT WORK PROPERLY YET (missing resetting of caps etc)")
 
     def _mod_raw_split_cycle(self, data_point: int) -> None:
-        print(f"splitting on {data_point=}")
         r = self.cell.raw
-        # modifying cycle number
-        r.loc[
-            r[self.headers_normal.data_point_txt] >= data_point,
-            self.headers_normal.cycle_index_txt,
-        ] = (
-            1
-            + r.loc[
-                r[self.headers_normal.data_point_txt] >= data_point,
-                self.headers_normal.cycle_index_txt,
-            ]
-        )
-        # resetting capacities (note: also forgot to recalc energies etc when cumulating cycles)
-        # self.headers_normal.charge_capacity_txt
-        # self.headers_normal.discharge_capacity_txt
+
+        hdr_data_point = self.headers_normal.data_point_txt
+        hdr_cycle = self.headers_normal.cycle_index_txt
+        hdr_c_cap = self.headers_normal.charge_capacity_txt
+        hdr_d_cap = self.headers_normal.discharge_capacity_txt
+        hdr_c_energy = self.headers_normal.charge_energy_txt
+        hdr_d_energy = self.headers_normal.discharge_energy_txt
+
+        # modifying cycle numbers
+        c_mask = r[hdr_data_point] >= data_point
+        r.loc[c_mask, hdr_cycle] = r.loc[c_mask, hdr_cycle] + 1
+
+        # resetting capacities
+        initial_values = r.loc[r[hdr_data_point] == data_point - 1, :]
+        cycle = r.loc[r[hdr_data_point] == data_point, hdr_cycle].values[0]
+
+        c_cap, d_cap, c_energy, d_energy = initial_values[
+            [hdr_c_cap, hdr_d_cap, hdr_c_energy, hdr_d_energy]
+        ].values[0]
+        cycle_mask = r[hdr_cycle] == cycle
+        r.loc[cycle_mask, hdr_c_cap] = r.loc[cycle_mask, hdr_c_cap] - c_cap
+        r.loc[cycle_mask, hdr_d_cap] = r.loc[cycle_mask, hdr_d_cap] - d_cap
+        r.loc[cycle_mask, hdr_c_energy] = r.loc[cycle_mask, hdr_c_energy] - c_energy
+        r.loc[cycle_mask, hdr_d_energy] = r.loc[cycle_mask, hdr_d_energy] - d_energy
 
     def split(self, cycle=None):
         """Split experiment (CellpyData object) into two sub-experiments. if cycle
