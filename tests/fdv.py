@@ -117,6 +117,13 @@ mcc_file_path2 = os.path.join(raw_data_dir, mcc_file_name2)
 mcc_cellpy_file_name2 = "maccor_002.h5"
 mcc_cellpy_file_path2 = os.path.join(cellpy_data_dir, mcc_cellpy_file_name2)
 
+# -------- neware specific files --------------------
+nw_file_name = "neware_uio.csv"
+nw_file_path = os.path.join(raw_data_dir, nw_file_name)
+
+nw_cellpy_file_name = "neware_uio.h5"
+nw_cellpy_file_path = os.path.join(cellpy_data_dir, nw_cellpy_file_name)
+
 # -------- pec specific files -----------------------
 pec_file_name = "pec.csv"
 pec_file_path = os.path.join(raw_data_dir, pec_file_name)
