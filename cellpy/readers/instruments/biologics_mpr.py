@@ -77,7 +77,7 @@ class DataLoader(BaseLoader):
 
     # Note: the class is sub-classing Loader. At the moment, Loader does
     # not really contain anything...
-    name = "biologics_mpr"
+    instrument_name = "biologics_mpr"
     raw_ext = "mpr"
 
     def __init__(self, *args, **kwargs):

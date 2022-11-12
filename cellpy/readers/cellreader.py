@@ -1254,6 +1254,10 @@ class CellpyData:
             self.set_instrument(instrument)
 
         raw_file_loader = self.loader
+        try:
+            self.tester = self.loader_class.instrument_name
+        except AttributeError:
+            logging.debug(f"could not set instrument name")
         # test is currently a list of tests - this option will be removed in the future
         # so set_number is hard-coded to 0, i.e. actual-test is always test[0]
         set_number = 0

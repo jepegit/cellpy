@@ -127,7 +127,7 @@ def from_arbin_to_datetime(n):
 class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
-    name = "arbin_sql"
+    instrument_name = "arbin_sql"
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""

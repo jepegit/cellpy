@@ -108,7 +108,7 @@ class DataLoader(BaseLoader):
     [doc not finished yet]
     """
 
-    name = "old_custom"
+    instrument_name = "old_custom"
     raw_ext = "*"
 
     def __init__(self, *args, **kwargs):

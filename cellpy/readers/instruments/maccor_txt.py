@@ -44,7 +44,7 @@ MUST_HAVE_RAW_COLUMNS = [
 class DataLoader(TxtLoader):
     """Class for loading data from Maccor txt files."""
 
-    name = "maccor_txt"
+    instrument_name = "maccor_txt"
     raw_ext = "txt"
 
     default_model = prms.Instruments.Maccor["default_model"]  # Required

@@ -60,5 +60,3 @@ post_processors = {
     "convert_step_time_to_timedelta": True,
     "convert_test_time_to_timedelta": True,
 }
-
-# TODO: fix so that tester attribute is correct (now it is always "arbin_res")

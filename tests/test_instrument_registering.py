@@ -103,24 +103,24 @@ def test_list_available_instruments():
     "parameter, loader, expected",
     [
         ("raw_ext", "arbin_res", "res"),
-        ("name", "arbin_res", "arbin_res"),
+        ("instrument_name", "arbin_res", "arbin_res"),
         ("raw_ext", "arbin_sql", None),
-        ("name", "arbin_sql", "arbin_sql"),
+        ("instrument_name", "arbin_sql", "arbin_sql"),
         ("raw_ext", "arbin_sql_csv", "csv"),
-        ("name", "arbin_sql_csv", "arbin_sql_csv"),
+        ("instrument_name", "arbin_sql_csv", "arbin_sql_csv"),
         ("raw_ext", "arbin_sql_xlsx", "xlsx"),
-        ("name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
-        # ("name", "custom", "custom"),  # requires an instrument file (not supported for .query yet)
+        ("instrument_name", "arbin_sql_xlsx", "arbin_sql_xlsx"),
+        # ("instrument_name", "custom", "custom"),  # requires an instrument file (not supported for .query yet)
         # ("raw_ext", "custom", "*"),  # requires an instrument file (not supported for .query yet)
-        # ("name", "local_instrument", "custom"),  # requires an instrument file (not supported for .query yet)
+        # ("instrument_name", "local_instrument", "custom"),  # requires an instrument file (not supported for .query yet)
         # ("raw_ext", "local_instrument", "*"),  # requires an instrument file (not supported for .query yet)
-        ("name", "maccor_txt", "maccor_txt"),
+        ("instrument_name", "maccor_txt", "maccor_txt"),
         ("raw_ext", "maccor_txt", "txt"),
-        ("name", "pec_csv", "pec_csv"),
+        ("instrument_name", "pec_csv", "pec_csv"),
         ("raw_ext", "pec_csv", "csv"),
-        ("name", "biologics_mpr", "biologics_mpr"),
+        ("instrument_name", "biologics_mpr", "biologics_mpr"),
         ("raw_ext", "biologics_mpr", "mpr"),
-        # ("name", "old_custom", "old_custom"),  # requires an instrument file (not supported for .query yet)
+        # ("instrument_name", "old_custom", "old_custom"),  # requires an instrument file (not supported for .query yet)
         # ("raw_ext", "old_custom", "*"),  # requires an instrument file (not supported for .query yet)
     ],
 )

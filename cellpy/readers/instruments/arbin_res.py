@@ -173,7 +173,7 @@ class DataLoader(BaseLoader):
 
     """
 
-    name = "arbin_res"
+    instrument_name = "arbin_res"
     raw_ext = "res"
 
     def __init__(self, *args, **kwargs):

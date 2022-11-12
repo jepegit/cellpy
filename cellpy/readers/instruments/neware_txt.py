@@ -71,7 +71,7 @@ MUST_HAVE_RAW_COLUMNS = [
 class DataLoader(TxtLoader):
     """Class for loading data from Neware txt files."""
 
-    name = "neware_txt"
+    instrument_name = "neware_txt"
     raw_ext = "csv"
 
     default_model = prms.Instruments.Neware["default_model"]  # Required
@@ -190,57 +190,7 @@ def check_loader_from_outside_with_get():
         },
     )
     print("loaded")
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
-
-    raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
-    steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
-    summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
-
-    fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
-    raw.plot(x="test_time", y="voltage", ax=ax1, title="voltage")
-    raw.plot(
-        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, title="caps"
-    )
-    # raw.plot(
-    #     x="test_time", y=["charge_capacity2", "discharge_capacity2"], ax=ax3, title="caps2"
-    # )
-    raw.plot(x="test_time", y="current", ax=ax2, title="current")
-    #
-    # n = c.get_number_of_cycles()
-    # print(f"number of cycles: {n}")
-    #
-    # cycle = c.get_cap(1, method="forth-and-forth")
-    #
-    # fig_2, (ax4, ax5, ax6) = plt.subplots(1, 3)
-    # # cycle.plot(x="capacity", y="voltage", ax=ax4)
-    # s = c.get_step_numbers()
-    # t = c.sget_timestamp(1, s[1])
-    # v = c.sget_voltage(1, s[1])
-    # steps = c.sget_step_numbers(1, s[1])
-    #
-    # print("step numbers:")
-    # print(s)
-    # print("sget step numbers:")
-    # print(steps)
-    # print("\ntesttime:")
-    # print(t)
-    # print("\nvoltage")
-    # print(v)
-    #
-    # ax5.plot(t, v, label="voltage")
-    # ax6.plot(t, steps, label="steps")
-    #
-    # fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
-    # raw.plot(x="test_time", y="voltage", ax=ax7, title="voltage")
-    # raw.plot(x="test_time", y="step_index", ax=ax8, title="step index")
-
-    plt.legend()
-    plt.show()
-
-    outfile = out / "test_out"
-    c.save(outfile)
+    print(c.tester)
     return c
 
 

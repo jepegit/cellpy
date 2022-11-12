@@ -11,7 +11,7 @@ from cellpy.readers.instruments.configurations import (
 class DataLoader(TxtLoader):
     """Class for loading data from txt files."""
 
-    name = "local_instrument"
+    instrument_name = "local_instrument"
     raw_ext = "*"
 
     def __init__(self, instrument_file=None, **kwargs):

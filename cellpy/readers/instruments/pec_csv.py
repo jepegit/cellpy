@@ -38,7 +38,7 @@ pec_headers_normal["test_id_txt"] = "Test"
 class DataLoader(BaseLoader):
     """Main loading class"""
 
-    name = "pec_csv"
+    instrument_name = "pec_csv"
     raw_ext = "csv"
 
     def __init__(self, *args, **kwargs):

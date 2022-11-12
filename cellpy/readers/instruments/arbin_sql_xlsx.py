@@ -90,7 +90,7 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
-    name = "arbin_sql_xlsx"
+    instrument_name = "arbin_sql_xlsx"
     raw_ext = "xlsx"
 
     def __init__(self, *args, **kwargs):

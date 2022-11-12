@@ -170,14 +170,14 @@ def query_csv(
 class AtomicLoad:
     """Atomic loading class"""
 
-    name = "atomic_loader"
+    instrument_name = "atomic_loader"
     pass
 
 
 class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
 
-    name = "base_loader"
+    instrument_name = "base_loader"
 
     # TODO: should also include the functions for getting cellpy headers etc
     #  here
@@ -292,7 +292,7 @@ class AutoLoader(BaseLoader):
 
     """
 
-    name = "auto_loader"
+    instrument_name = "auto_loader"
 
     def __init__(self, *args, **kwargs):
         """Attributes can be set during initialization of the class as **kwargs that are then handled by the
@@ -302,7 +302,6 @@ class AutoLoader(BaseLoader):
         be "transparent" to the ``cellpy.get`` function. So if you would like to give the user access to modify
         these arguments, you should implement them in the ``parse_loader_parameters`` method.
         """
-
         self.auto_register_config = True
         self.pre_init()
 
@@ -556,7 +555,7 @@ class TxtLoader(AutoLoader, ABC):
 
     """
 
-    name = "txt_loader"
+    instrument_name = "txt_loader"
     raw_ext = "*"
 
     # override this if needed
