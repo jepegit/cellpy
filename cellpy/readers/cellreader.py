@@ -5887,7 +5887,7 @@ def get(
     elif instrument is not None:
         logging.debug(f"got instrument in stead of instrument file, {instrument=}")
         model = kwargs.pop("model", None)
-        cellpy_instance.set_instrument(instrument=instrument, model=model)
+        cellpy_instance.set_instrument(instrument=instrument, model=model, **kwargs)
 
     if cellpy_instance.tester in db_readers:
         file_needed = False

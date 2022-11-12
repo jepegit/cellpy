@@ -34,6 +34,7 @@ def load_nda(*args, **kwargs):
 
 class DataLoader(BaseLoader):
     """Class for using the NDA loader by Frederik Huld (Beyonder)."""
+
     instrument_name = "neware_nda"
 
     def __init__(self, *args, **kwargs):

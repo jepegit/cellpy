@@ -327,9 +327,15 @@ class AutoLoader(BaseLoader):
         self.pre_processors = kwargs.pop(
             "pre_processors", self.config_params.pre_processors
         )
-        self.post_processors = kwargs.pop(
-            "post_processors", self.config_params.post_processors
-        )
+
+        self.post_processors = self.config_params.post_processors
+        additional_post_processor_args = kwargs.pop(
+            "post_processors", None
+        )  # could replace None with an empty dict to get rid of the if-clause:
+        if additional_post_processor_args:
+            for key in additional_post_processor_args:
+                self.post_processors[key] = additional_post_processor_args[key]
+
         self.include_aux = kwargs.pop("include_aux", False)
         self.keep_all_columns = kwargs.pop("keep_all_columns", False)
         self.cellpy_headers_normal = (

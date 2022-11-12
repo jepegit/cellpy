@@ -186,7 +186,7 @@ def check_loader_from_outside_with_get():
         model="UIO",
         mass=1.0,
         post_processors={
-            "cumulate_capacity_within_cycle": 12,
+            "cumulate_capacity_within_cycle": False,
         },
     )
     print("loaded")
