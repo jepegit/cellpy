@@ -1,20 +1,30 @@
 file_info = {"raw_extension": "csv"}
 
+raw_units = {
+    "current": "A",
+    "charge": "Ah",
+    "mass": "g",
+    "voltage": "V",
+    "energy": "Wh",
+    "power": "W",
+    "resistance": "Ohm",
+}
+
 normal_headers_renaming_dict = {
     "data_point_txt": f"DataPoint",
     "cycle_index_txt": f"Cycle Index",
     "step_index_txt": f"Step Index",
-    "current_txt": f"Current(A)",
-    "voltage_txt": f"Voltage(V)",
-    "charge_capacity_txt": f"Chg. Cap.(Ah)",
-    "charge_energy_txt": f"Chg. Energy(Wh)",
-    "discharge_capacity_txt": f"DChg. Cap.(Ah)",
-    "discharge_energy_txt": f"DChg. Energy(Wh)",
+    "current_txt": f"Current({raw_units['current']})",
+    "voltage_txt": f"Voltage({raw_units['voltage']})",
+    "charge_capacity_txt": f"Chg. Cap.({raw_units['charge']})",
+    "charge_energy_txt": f"Chg. Energy({raw_units['energy']})",
+    "discharge_capacity_txt": f"DChg. Cap.({raw_units['charge']})",
+    "discharge_energy_txt": f"DChg. Energy({raw_units['energy']})",
     "datetime_txt": f"Date",
     "step_time_txt": f"Time",
     "dq_dv_txt": f"dQ/dV(mAh/V)",
     "internal_resistance_txt": f"Contact resistance(mO)",
-    "power_txt": f"Power(W)",
+    "power_txt": f"Power({raw_units['power']})",
     "test_time_txt": f"Cumulative Time",
 }
 
@@ -25,7 +35,6 @@ states = {
     "rest_keys": ["Rest"],
 }
 
-raw_units = {"current": "A", "charge": "Ah", "mass": "g", "voltage": "V"}
 
 raw_limits = {
     "current_hard": 0.000_000_000_000_1,
