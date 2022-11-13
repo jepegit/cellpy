@@ -65,7 +65,7 @@ if detect_subprocess_need:
 if use_subprocess and not is_posix:
     # The windows users most likely have a strange custom path to mdbtools etc.
     logging.debug(
-        "using subprocess (most lilkely mdbtools) " "on non-posix (most likely windows)"
+        "using subprocess (most likely mdbtools) on non-posix (most likely windows)"
     )
     if not prms.Instruments.Arbin.sub_process_path:
         sub_process_path = str(prms._sub_process_path)
@@ -1179,8 +1179,13 @@ class DataLoader(BaseLoader):
         # executing cmds
         for table_name, tmp_file in mdb_prms:
             with open(tmp_file, "w") as f:
-                subprocess.call([sub_process_path, temp_filename, table_name], stdout=f)
-                self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
+                try:
+                    subprocess.call([sub_process_path, temp_filename, table_name], stdout=f)
+                    self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
+                except FileNotFoundError as e:
+                    logging.critical(f"Could not run {sub_process_path} on {temp_filename}")
+                    logging.critical(f"Possible work-around: install mdbtools")
+                    raise e
         return (
             temp_csv_filename_global,
             temp_csv_filename_normal,
@@ -1213,8 +1218,6 @@ class DataLoader(BaseLoader):
                     bad_cycle,
                 )
                 sql_4 += "AND %s=%i) " % (self.headers_normal.step_index_txt, bad_step)
-
-
 
         """
         # should include a more efficient to load the csv (maybe a loop where

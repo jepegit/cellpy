@@ -1,5 +1,4 @@
-"""Neware txt data - with explanations.txt
-
+"""Neware txt data - with explanations how it was implemented.
 
 1. Update SUPPORTED_MODELS, raw_ext and default_model
 2. Add instrument to prms.py
@@ -36,6 +35,7 @@
     raw_units
     post_processors
 
+5. Put a file in test_data and create at least one test.
 """
 
 import pandas as pd
@@ -118,86 +118,3 @@ class DataLoader(TxtLoader):
                 f"Missing needed columns: {missing_must_have_columns}\nAborting!"
             )
         return data
-
-
-def check_retrieve_file():
-    import pathlib
-
-    pd.options.display.max_columns = 100
-    data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources\dev_data\agnieszka")
-    name = data_root / r"Si80Gr20-3.csv"
-    print(name)
-    print(f"Exists? {name.is_file()}")
-    if name.is_file():
-        return name
-    else:
-        raise IOError(f"could not locate the file {name}")
-
-
-def check_dev_loader(name=None, model=None):
-    if name is None:
-        name = check_retrieve_file()
-
-    pd.options.display.max_columns = 100
-
-    sep = ","
-    loader1 = DataLoader(sep=sep, model=model)
-    dd = loader1.loader(name)
-
-    raw = dd[0].raw
-    print(len(raw))
-    print(raw.columns)
-
-
-def check_loader(name=None, model="UIO"):
-    import matplotlib.pyplot as plt
-
-    if name is None:
-        name = check_retrieve_file()
-    print(name)
-    pd.options.display.max_columns = 100
-    # prms.Reader.sep = "\t"
-    sep = ","
-    loader = DataLoader(sep=sep, model=model)
-    dd = loader.loader(name)
-    raw = dd[0].raw
-    return raw
-
-
-def check_loader_from_outside_with_get():
-    import pathlib
-
-    import matplotlib.pyplot as plt
-
-    import cellpy
-
-    pd.options.display.max_columns = 100
-    data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources\dev_data\agnieszka")
-    name = data_root / r"Si80Gr20-3.csv"
-    out = pathlib.Path(r"C:\scripting\trash")
-    print(f"File exists? {name.is_file()}")
-    if not name.is_file():
-        print(f"could not find {name} ")
-        return
-
-    c = cellpy.get(
-        filename=name,
-        instrument="neware_txt",
-        model="UIO",
-        mass=1.0,
-        post_processors={
-            "cumulate_capacity_within_cycle": False,
-        },
-    )
-    print("loaded")
-    print(c.tester)
-    return c
-
-
-def main():
-    c = check_loader_from_outside_with_get()
-    return c
-
-
-if __name__ == "__main__":
-    main()

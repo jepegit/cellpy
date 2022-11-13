@@ -324,9 +324,13 @@ class AutoLoader(BaseLoader):
 
         self.parse_formatter_parameters(**kwargs)
 
-        self.pre_processors = kwargs.pop(
-            "pre_processors", self.config_params.pre_processors
-        )
+        self.pre_processors = self.config_params.pre_processors
+        additional_pre_processor_args = kwargs.pop(
+            "pre_processors", None
+        )  # could replace None with an empty dict to get rid of the if-clause:
+        if additional_pre_processor_args:
+            for key in additional_pre_processor_args:
+                self.pre_processors[key] = additional_pre_processor_args[key]
 
         self.post_processors = self.config_params.post_processors
         additional_post_processor_args = kwargs.pop(

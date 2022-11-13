@@ -51,7 +51,7 @@ raw_limits = {
 formatters = {
     "skiprows": 0,  # will not be used since auto is on
     "sep": None,  # comma for UiO at the moment, but using auto instead
-    "header": 0,  # 0 for other file
+    "header": 0,  # will not be used since auto is on
     "encoding": "ISO-8859-1",  # will not be used since auto is on
     "decimal": ".",
     "thousands": None,
