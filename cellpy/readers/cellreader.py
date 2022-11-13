@@ -1093,6 +1093,7 @@ class CellpyData:
         print("and finally, lets update the summary")
         self.dev_update_make_summary()
 
+    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
     def dev_update_merge(self):
         print("NOT FINISHED YET - but very close")
         number_of_tests = len(self.cells)
@@ -1198,6 +1199,7 @@ class CellpyData:
         self._invent_a_name()
         return self
 
+    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
     def from_raw(
         self,
         file_names=None,
@@ -2257,6 +2259,7 @@ class CellpyData:
             logging.debug("info about raw files missing")
         return fids, lengths
 
+    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
     def merge(self, datasets=None, separate_datasets=False, **kwargs):
         """This function merges datasets into one set."""
 
@@ -2289,6 +2292,7 @@ class CellpyData:
             self.number_of_datasets = 1
         return self
 
+    # TODO @jepe (v.1.0.0): update/check this - single data instances (i.e. to cell from cells)
     def _append(self, t1, t2, merge_summary=False, merge_step_table=False, recalc=True):
         logging.debug(
             f"merging two datasets\n(merge summary = {merge_summary})\n"
@@ -5204,7 +5208,7 @@ class CellpyData:
         #  from_cycle (only calculate summary from a given cycle number).
         #  Probably best to keep the old summary and make
         #  a new one for the rest, then use pandas.concat to merge them.
-        #  Might have to create the cummulative cols etc after merging?
+        #  Might have to create the cumulative cols etc after merging?
 
         # first - check if we need some "instrument-specific" prms
         dataset_number = self._validate_dataset_number(dataset_number)

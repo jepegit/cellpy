@@ -163,15 +163,15 @@ def test_merge_auto_from_list(parameters):
     cdi3.from_raw(files)
 
     len_first = len(cdi1.cells)
-    table_first = cdi1.cells[0].raw.describe()
+    table_first = cdi1.cell.raw.describe()
     count_first = table_first.loc["count", "data_point"]
 
     len_second = len(cdi2.cells)
-    table_second = cdi2.cells[0].raw.describe()
+    table_second = cdi2.cell.raw.describe()
     count_second = table_second.loc["count", "data_point"]
 
     len_all = len(cdi3.cells)
-    table_all = cdi3.cells[0].raw.describe()
+    table_all = cdi3.cell.raw.describe()
     count_all = table_all.loc["count", "data_point"]
 
     assert len_first == 1
@@ -465,11 +465,10 @@ def test_load_arbin_res_aux_multiple(cellpy_data_instance, parameters):
 
 def test_loadcell_raw(cellpy_data_instance, parameters):
     cellpy_data_instance.loadcell(parameters.res_file_path)
-    run_number = 0
     data_point = 2283
     step_time = 1500.05
     sum_discharge_time = 362198.12
-    my_test = cellpy_data_instance.cells[run_number]
+    my_test = cellpy_data_instance.cell
     summary = my_test.summary
     # print(summary.head())
     assert my_test.summary.loc["1", "data_point"] == data_point
@@ -477,7 +476,6 @@ def test_loadcell_raw(cellpy_data_instance, parameters):
     assert sum_discharge_time == pytest.approx(
         my_test.summary.loc[:, "discharge_time"].sum(), 0.1
     )
-    assert my_test.cell_no == run_number
 
     # cellpy_data_instance.make_summary(find_ir=True)
     # cellpy_data_instance.make_step_table()
@@ -524,13 +522,10 @@ def test_make_summary(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
-    s1 = cellpy_data_instance.cells[0].summary
     s2 = cellpy_data_instance.cell.summary
     s3 = cellpy_data_instance.get_summary()
-    assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()
     assert s2.iloc[:, 3].size == 18
-    assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
 def test_make_summary_new_version(parameters):
@@ -574,12 +569,11 @@ def test_summary_from_cellpyfile(parameters):
 
 def test_load_cellpyfile(cellpy_data_instance, parameters):
     cellpy_data_instance.load(parameters.cellpy_file_path)
-    run_number = 0
     cycle_number = 1
     data_point = 1457
     step_time = 1500.05
     sum_test_time = 9301719.457
-    my_test = cellpy_data_instance.cells[run_number]
+    my_test = cellpy_data_instance.cell
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     unique_cycles_read = my_test.steps.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
