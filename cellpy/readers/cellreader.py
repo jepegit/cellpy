@@ -2470,10 +2470,10 @@ class CellpyData:
 
         step_index_header = self.headers_normal.step_index_txt
         logging.debug("-validating step table")
-        d = self.cells[dataset_number].raw
-        s = self.cells[dataset_number].steps
+        d = self.cell.raw
+        s = self.cell.steps
 
-        if not self.cells[dataset_number].has_steps:
+        if not self.cell.has_steps:
             return False
 
         no_cycles_raw = np.amax(d[self.headers_normal.cycle_index_txt])
@@ -2528,7 +2528,7 @@ class CellpyData:
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        st = self.cells[dataset_number].steps
+        st = self.cell.steps
         print(st)
 
     def get_step_numbers(
@@ -2588,12 +2588,12 @@ class CellpyData:
                 self._report_empty_dataset()
                 return
 
-            if not self.cells[dataset_number].has_steps:
+            if not self.cell.has_steps:
                 logging.debug("steps is not made")
 
                 if self.force_step_table_creation or self.force_all:
                     logging.debug("creating step_table for")
-                    logging.debug(self.cells[dataset_number].loaded_from)
+                    logging.debug(self.cell.loaded_from)
                     self.make_step_table(dataset_number=dataset_number)
 
                 else:
@@ -2642,7 +2642,7 @@ class CellpyData:
         # logging.debug(steptypes)
 
         if steptable is None:
-            st = self.cells[dataset_number].steps
+            st = self.cell.steps
         else:
             st = steptable
         shdr = self.headers_step_table
@@ -3132,7 +3132,7 @@ class CellpyData:
         if from_data_point is not None:
             return df_steps
         else:
-            self.cells[dataset_number].steps = df_steps
+            self.cell.steps = df_steps
             return self
 
     def select_steps(self, step_dict, append_df=False, dataset_number=None):
@@ -3145,7 +3145,7 @@ class CellpyData:
         if dataset_number is None:
             self._report_empty_dataset()
             return
-        test = self.cells[dataset_number]
+        test = self.cell
 
         # check if columns exist
         c_txt = self.headers_normal.cycle_index_txt
@@ -3710,7 +3710,7 @@ class CellpyData:
         charge_index_header = self.headers_normal.charge_capacity_txt
         charge_energy_index_header = self.headers_normal.charge_energy_txt
 
-        raw = self.cells[dataset_number].raw
+        raw = self.cell.raw
 
         chargecap = 0.0
         dischargecap = 0.0
@@ -3843,7 +3843,7 @@ class CellpyData:
         voltage_header = self.headers_normal.voltage_txt
         # step_index_header  = self.headers_normal.step_index_txt
 
-        data = self.cells[dataset_number].raw
+        data = self.cell.raw
         if cycle:
             logging.debug("getting voltage curve for cycle")
             c = data[(data[cycle_index_header] == cycle)]
@@ -3886,7 +3886,7 @@ class CellpyData:
         current_header = self.headers_normal.current_txt
         # step_index_header  = self.headers_normal.step_index_txt
 
-        data = self.cells[dataset_number].raw
+        data = self.cell.raw
         if cycle:
             logging.debug(f"getting current for cycle {cycle}")
             c = data[(data[cycle_index_header] == cycle)]
@@ -3951,7 +3951,7 @@ class CellpyData:
             )
             return
 
-        test = self.cells[dataset_number].raw
+        test = self.cell.raw
 
         if not isinstance(step, (list, tuple)):
             step = [step]
@@ -4013,7 +4013,7 @@ class CellpyData:
         datetime_header = self.headers_normal.datetime_txt
 
         v = pd.Series()
-        test = self.cells[dataset_number].raw
+        test = self.cell.raw
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
@@ -4058,7 +4058,7 @@ class CellpyData:
         timestamp_header = self.headers_normal.test_time_txt
 
         v = pd.Series()
-        test = self.cells[dataset_number].raw
+        test = self.cell.raw
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
             if not self.is_empty(c):
@@ -4596,7 +4596,7 @@ class CellpyData:
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
-            d = self.cells[dataset_number].raw
+            d = self.cell.raw
             no_cycles = np.amax(d[self.headers_normal.cycle_index_txt])
         else:
             no_cycles = np.amax(steptable[self.headers_step_table.cycle])
@@ -4610,7 +4610,7 @@ class CellpyData:
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
-            d = self.cells[dataset_number].raw
+            d = self.cell.raw
             cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
         else:
             logging.debug("steptable is not none")
@@ -4650,9 +4650,9 @@ class CellpyData:
             if dataset_number is None:
                 self._report_empty_dataset()
                 return
-            d = self.cells[dataset_number].raw
+            d = self.cell.raw
             cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
-            steptable = self.cells[dataset_number].steps
+            steptable = self.cell.steps
         else:
             logging.debug("steptable is given as input parameter")
             cycles = steptable[self.headers_step_table.cycle].dropna().unique()
@@ -4879,22 +4879,22 @@ class CellpyData:
 
     def _set_mass(self, dataset_number, value):
         try:
-            self.cells[dataset_number].mass = value
-            self.cells[dataset_number].mass_given = True
+            self.cell.mass = value
+            self.cell.mass_given = True
         except AttributeError as e:
             logging.info("This test is empty")
             logging.info(e)
 
     def _set_tot_mass(self, dataset_number, value):
         try:
-            self.cells[dataset_number].tot_mass = value
+            self.cell.tot_mass = value
         except AttributeError as e:
             logging.info("This test is empty")
             logging.info(e)
 
     def _set_nom_cap(self, dataset_number, value):
         try:
-            self.cells[dataset_number].nom_cap = value
+            self.cell.nom_cap = value
         except AttributeError as e:
             logging.info("This test is empty")
             logging.info(e)
@@ -5166,13 +5166,13 @@ class CellpyData:
         step_table_txt_step = self.headers_step_table.step
 
         # modifying steps
-        st = self.cells[dataset_number].steps
+        st = self.cell.steps
         st[step_table_txt_cycle][
             (st[step_table_txt_cycle] == from_tuple[0])
             & (st[step_table_txt_step] == from_tuple[1])
         ] = to_cycle
         # modifying normal_table
-        nt = self.cells[dataset_number].raw
+        nt = self.cell.raw
         nt[cycle_index_header][
             (nt[cycle_index_header] == from_tuple[0])
             & (nt[step_index_header] == from_tuple[1])
