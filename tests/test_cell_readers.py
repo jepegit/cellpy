@@ -20,6 +20,8 @@ log.setup_logging(default_level="DEBUG", testing=True)
 def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     # create a cellpy file from the res-file (used for testing)
     cellpy_data_instance.from_raw(parameters.res_file_path)
+    print()
+    print(cellpy_data_instance)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary(
         find_ocv=False, find_ir=True, find_end_voltage=True
@@ -128,7 +130,7 @@ def test_merge(cellpy_data_instance, parameters):
 
     assert len(cellpy_data_instance.datasets) == 2
 
-    table_first = cellpy_data_instance.datasets[0].raw.describe()
+    table_first = cellpy_data_instance.cell.raw.describe()
     count_first = table_first.loc["count", "data_point"]
 
     table_second = cellpy_data_instance.datasets[1].raw.describe()

@@ -327,7 +327,7 @@ class CellpyData:
 
     @cell.setter
     def cell(self, new_cell):
-        self.cells[self.selected_cell_number] = new_cell
+        self.cells = [new_cell]
 
     @property
     def dataset(self):
@@ -1199,7 +1199,14 @@ class CellpyData:
         self._invent_a_name()
         return self
 
-    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
+    # TODO: (v1.0.0) remove me
+    @staticmethod
+    def _convert_to_v_1_0_0_from_old_pick_data_from_list(_new_data):
+        if isinstance(_new_data, (list, tuple)):
+            return _new_data[0]
+        else:
+            return _new_data
+
     def from_raw(
         self,
         file_names=None,
@@ -1260,112 +1267,72 @@ class CellpyData:
             self.tester = self.loader_class.instrument_name
         except AttributeError:
             logging.debug(f"could not set instrument name")
-        # test is currently a list of tests - this option will be removed in the future
-        # so set_number is hard-coded to 0, i.e. actual-test is always test[0]
-        set_number = 0
-        cells = None
-        counter = 0
+
+        # TODO: include this into prms (and config-file):
+        max_raw_files_to_merge = 20
+        if len(self.file_names) > max_raw_files_to_merge:
+            logging.debug("ERROR? Too many files to merge")
+            raise ValueError(
+                "Too many files to merge - "
+                "could be a p2-p3 zip thing"
+            )
+
         logging.debug("start iterating through file(s)")
         recalc = kwargs.pop("recalc", True)
+        data = None
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
-            new_cells = raw_file_loader(
+
+            _new_data = raw_file_loader(
                 file_name, pre_processor_hook=pre_processor_hook, **kwargs
             )  # list of tests
+
+            if _new_data is None:
+                raise IOError(f"Could not read {file_name}. Loader returned None. Aborting.")
+
+            new_data = self._convert_to_v_1_0_0_from_old_pick_data_from_list(_new_data)
+            if not new_data.has_data:
+                raise IOError(f"Could not read any data from {file_name}. Aborting.")
+
             if post_processor_hook is not None:
                 # REMARK! this needs to be changed if we stop returning the datasets in a list
                 # (i.e. if we chose to remove option for having more than one test pr instance)
-                new_cells = [post_processor_hook(n) for n in new_cells]
+                new_data = post_processor_hook(new_data)
 
-            if new_cells:
+            if data is None:
                 # retrieving the first cell data (e.g. first file)
-                if cells is None:
-                    logging.debug("getting data from first file")
-                    if not new_cells[set_number].has_data:
-                        logging.debug("NO DATA")
-                    else:
-                        cells = new_cells
-
-                # appending cell data file to existing
-                else:
-                    logging.debug("continuing reading files...")
-                    _cells = self._append(
-                        cells[set_number], new_cells[set_number], recalc=recalc
-                    )
-
-                    if not _cells:
-                        logging.warning(f"NO CELLS FOUND: {file_name}")
-                        continue
-
-                    cells[set_number] = _cells
-
-                    # retrieving file info in a for-loop in case of multiple files
-                    # Remark!
-                    #    - the raw_data_files attribute is a list
-                    #    - the raw_data_files_length attribute is a list
-                    # The reason for this choice is not clear anymore, but
-                    # let us keep it like this for now
-                    logging.debug("added the data set - merging file info")
-                    # TODO: include this into prms (and config-file):
-                    max_raw_files_to_merge = 20
-                    # TODO: legacy code - please fix me
-                    for j, raw_data_file in enumerate(
-                        new_cells[set_number].raw_data_files
-                    ):
-                        file_size = new_cells[set_number].raw_data_files_length[j]
-                        cells[set_number].raw_data_files.append(raw_data_file)
-                        cells[set_number].raw_data_files_length.append(file_size)
-                        counter += 1
-                        if counter > max_raw_files_to_merge:
-                            logging.debug("ERROR? Too many files to merge")
-                            raise ValueError(
-                                "Too many files to merge - "
-                                "could be a p2-p3 zip thing"
-                            )
-
+                logging.debug("getting data from first file")
+                data = new_data
             else:
-                logging.debug("NOTHING LOADED")
+                # appending cell data file to existing
+                logging.debug("continuing reading files...")
+                data = self._append(data, new_data, recalc=recalc)
+
+                # retrieving file info in a for-loop in case of multiple files
+                # Remark!
+                #    - the raw_data_files attribute is a list
+                #    - the raw_data_files_length attribute is a list
+
+                logging.debug("added the data set - merging file info")
+
+                data.raw_data_files.extend(new_data.raw_data_files)
+                data.raw_data_files_length.extend(new_data.raw_data_files_length)
 
         logging.debug("finished loading the raw-files")
 
-        test_exists = False
-        if cells:
-            if not cells[0].has_data:
-                logging.debug(
-                    "the first dataset (or only dataset) loaded from the raw data file is empty"
-                )
-            else:
-                test_exists = True
+        if not prms.Reader.sorted_data:
+            logging.debug("sorting data")
+            data = self._sort_data(data)
+            data.raw_units = self._set_raw_units()
 
-        if test_exists:
-            if not prms.Reader.sorted_data:
-                logging.debug("sorting data")
-                cells[set_number] = self._sort_data(cells[set_number])
-            # REMARK! If you want to allow for more than one cell pr instance, this needs to be replaced (for example using .extend)
-            cells[set_number].raw_units = self._set_raw_units()
-            self.cells.append(cells[set_number])
-        else:
-            logging.warning("No new datasets added!")
-        self.number_of_datasets = len(self.cells)
-        self.status_datasets = self._validate_cells()
-        self._invent_a_name()
+        self.cell = data
+        self.number_of_datasets = 1  # TODO (v1.0.0): remove me
+        self.status_datasets = True  # TODO (v1.0.0): fix me (add validator)
+        self._invent_a_name()  # TODO (v1.0.0): fix me
         return self
 
-    def from_res(self, filenames=None, check_file_type=True):
-        """Convenience function for loading arbin-type data into the
-        datastructure.
-
-        Args:
-            filenames: ((lists of) list of raw-file names): uses
-                cellpy.file_names if None.
-                If list-of-list, it loads each list into separate datasets.
-                The files in the inner list will be merged.
-            check_file_type (bool): check file type if True
-                (res-, or cellpy-format)
-        """
-        raise DeprecatedFeature
-
+    # TODO: rewrite me
     def _validate_cells(self, level=0):
         logging.debug("validating test")
         level = 0
@@ -1383,15 +1350,33 @@ class CellpyData:
             logging.debug(f"validation array: {v}")
         return v
 
+    def from_res(self, filenames=None, check_file_type=True):
+        """Convenience function for loading arbin-type data into the
+        datastructure.
+
+        Args:
+            filenames: ((lists of) list of raw-file names): uses
+                cellpy.file_names if None.
+                If list-of-list, it loads each list into separate datasets.
+                The files in the inner list will be merged.
+            check_file_type (bool): check file type if True
+                (res-, or cellpy-format)
+        """
+        raise DeprecatedFeature
+
+    # TODO: fix me (v1.0.0)
     def check(self):
         """Returns False if no datasets exists or if one or more of the datasets
         are empty"""
-
-        if len(self.status_datasets) == 0:
+        if isinstance(self.status_datasets, (list, tuple)):
+            warnings.warn("OLD VERSION ENCOUNTERED")
+            if len(self.status_datasets) == 0:
+                return False
+            if all(self.status_datasets):
+                return True
             return False
-        if all(self.status_datasets):
-            return True
-        return False
+        else:
+            return self.status_datasets
 
     # TODO: maybe consider being a bit more concise (re-implement)
     def _is_not_empty_dataset(self, dataset):
@@ -2259,38 +2244,24 @@ class CellpyData:
             logging.debug("info about raw files missing")
         return fids, lengths
 
-    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
-    def merge(self, datasets=None, separate_datasets=False, **kwargs):
-        """This function merges datasets into one set."""
-
-        logging.info("Merging")
-        if separate_datasets:
-            warnings.warn(
-                "The option separate_datasets=True is"
-                "not implemented yet. Performing merging, but"
-                "neglecting the option."
-            )
-        else:
-            if datasets is None:
-                datasets = list(range(len(self.cells)))
-            first = True
-            for dataset_number in datasets:
-                if first:
-                    dataset = self.cells[dataset_number]
-                    first = False
-                else:
-                    dataset = self._append(
-                        dataset, self.cells[dataset_number], **kwargs
-                    )
-                    for raw_data_file, file_size in zip(
-                        self.cells[dataset_number].raw_data_files,
-                        self.cells[dataset_number].raw_data_files_length,
-                    ):
-                        dataset.raw_data_files.append(raw_data_file)
-                        dataset.raw_data_files_length.append(file_size)
-            self.cells = [dataset]
-            self.number_of_datasets = 1
-        return self
+    # # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
+    # def merge(self, datasets: list, **kwargs):
+    #     """This function merges datasets into one set."""
+    #     logging.info("Merging")
+    #
+    #     self.cell = datasets.pop(0)
+    #     for data in datasets:
+    #         self.cell = self._append(
+    #                 self.cell, data, **kwargs
+    #             )
+    #         for raw_data_file, file_size in zip(
+    #             data.raw_data_files,
+    #             data.raw_data_files_length,
+    #         ):
+    #             self.cell.raw_data_files.append(raw_data_file)
+    #             self.cell.raw_data_files_length.append(file_size)
+    #     self.number_of_datasets = 1
+    #     return self
 
     # TODO @jepe (v.1.0.0): update/check this - single data instances (i.e. to cell from cells)
     def _append(self, t1, t2, merge_summary=False, merge_step_table=False, recalc=True):
