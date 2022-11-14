@@ -1203,6 +1203,7 @@ class CellpyData:
     @staticmethod
     def _convert_to_v_1_0_0_from_old_pick_data_from_list(_new_data):
         if isinstance(_new_data, (list, tuple)):
+            warnings.warn("OLD VERSION ENCOUNTERED")
             return _new_data[0]
         else:
             return _new_data
