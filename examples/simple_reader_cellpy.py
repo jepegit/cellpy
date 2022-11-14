@@ -51,5 +51,5 @@ summary = d.cell.summary
 print(summary.head())
 
 fig, ax = plt.subplots(1, 1)
-ax.plot(summary["Cycle_Index"], summary["Cumulated_Coulombic_Difference(mAh/g)"])
+ax.plot(summary.index, summary["cumulated_coulombic_difference_u_mAh_g"])
 plt.show()
