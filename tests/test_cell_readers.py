@@ -97,11 +97,6 @@ def test_raw_limited_loaded_cycles_prm(cellpy_data_instance, parameters):
     assert all(cycles == [3, 4, 5])
 
 
-@pytest.mark.parametrize("number", [0, pytest.param(2, marks=pytest.mark.xfail)])
-def test_validate_dataset_number(dataset, number):
-    dataset._validate_dataset_number(number)
-
-
 @pytest.mark.xfail(WrongFileVersion)
 def test_cellpy_version_4(cellpy_data_instance, parameters):
     f_old = parameters.cellpy_file_path_v4
@@ -251,7 +246,6 @@ def test_get_step_numbers(dataset):
         allctypes=True,
         pdtype=True,
         cycle_number=None,
-        dataset_number=None,
         steptable=None,
     )
 
@@ -317,15 +311,6 @@ def test_get_ir(dataset):
 @pytest.mark.xfail(raises=DeprecatedFeature)
 def test_get_diagnostics_plot(dataset):
     dataset.get_diagnostics_plots()
-
-
-def test_set_cellnumber(dataset):
-    dataset.set_cellnumber(0)
-    n1 = dataset.selected_cell_number
-    assert n1 == 0
-    dataset.set_cellnumber(1)
-    n2 = dataset.selected_cell_number
-    assert n2 == -1
 
 
 def test_check64bit():
@@ -731,7 +716,7 @@ def test_get_empty():
     c_empty = cellpy.get(testing=True)
 
 
-@pytest.mark.parametrize("val,validated", [(2.3, None), ([2.3], None), ([2.3], [True])])
+@pytest.mark.parametrize("val,validated", [(2.3, None), (2.3, True)])
 def test_set_total_mass(dataset, val, validated):
     dataset.set_tot_mass(val, validated=validated)
     assert dataset.cell.tot_mass == 2.3
@@ -741,29 +726,13 @@ def test_set_total_mass(dataset, val, validated):
     "val,validated",
     [
         (372.3, None),
-        ([372.3], None),
-        ([372.3], [True]),
+        (372.3, True),
         pytest.param(372.5, None, marks=pytest.mark.xfail),
     ],
 )
 def test_set_nominal_capacity(dataset, val, validated):
     dataset.set_nom_cap(val, validated=validated)
     assert dataset.cell.nom_cap == 372.3
-
-
-@pytest.mark.parametrize(
-    "n,s",
-    [
-        (0, 0),
-        (2, -1),
-        ("first", 0),
-        ("last", -1),
-        pytest.param(-1, -1, marks=pytest.mark.xfail),
-    ],
-)
-def test_set_testnumbers(dataset, n, s):
-    dataset.set_cellnumber(n)
-    assert dataset.selected_cell_number == s
 
 
 @pytest.mark.xfail
