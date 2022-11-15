@@ -23,9 +23,7 @@ def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     print()
     print(cellpy_data_instance)
     cellpy_data_instance.set_mass(1.0)
-    cellpy_data_instance.make_summary(
-        find_ocv=False, find_ir=True, find_end_voltage=True
-    )
+    cellpy_data_instance.make_summary(find_ir=True, find_end_voltage=True)
     name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     logging.info(f"trying to save the cellpy file to {name}")
     cellpy_data_instance.save(name)
@@ -534,19 +532,13 @@ def test_make_summary_new_version(parameters):
     print(s2.columns)
 
 
-def test_make_summary_with_c_rate(cellpy_data_instance, parameters):
-    cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
-    cellpy_data_instance.make_summary(add_c_rate=True)
-
-
 def test_summary_from_cellpyfile(parameters):
     c_cellpy = cellpy.get(testing=True)
     c_cellpy.load(parameters.cellpy_file_path)
     s1 = c_cellpy.get_summary()
     mass = c_cellpy.get_mass()
     c_cellpy.set_mass(mass)
-    c_cellpy.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    c_cellpy.make_summary(find_ir=True, find_end_voltage=True)
     s2 = c_cellpy.get_summary()
 
     # TODO: this might break when updating cellpy format (should probably remove it):
@@ -659,14 +651,14 @@ def test_cellpyfile_roundtrip(tmp_path, parameters):
     # create a cellpy file from the res-file
     cdi.from_raw(parameters.res_file_path)
     cdi.set_mass(1.0)
-    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    cdi.make_summary(find_ir=True, find_end_voltage=True)
     cdi.save(cellpy_file_name)
 
     # load the cellpy file
     cdi = cellreader.CellpyData()
     cdi.load(cellpy_file_name)
     cdi.make_step_table()
-    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    cdi.make_summary(find_ir=True, find_end_voltage=True)
 
 
 def test_load_custom_default(cellpy_data_instance, parameters):

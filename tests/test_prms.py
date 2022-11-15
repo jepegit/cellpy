@@ -151,7 +151,6 @@ Reader:
   select_minimal: false
   limit_loaded_cycles:
   ensure_step_table: false
-  daniel_number: 5
   voltage_interpolation_step: 0.01
   time_interpolation_step: 10.0
   capacity_interpolation_step: 2.0

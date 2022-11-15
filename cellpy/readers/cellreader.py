@@ -105,6 +105,7 @@ class CellpyData:
     several cell-tests and each test is stored in a list. If you see what I mean...
 
     Attributes:
+        # TODO v.1.0.1: update this
         cells (list): list of DataSet objects.
     """
 
@@ -116,7 +117,7 @@ class CellpyData:
             txt += f"\ntable_names: {self.table_names}"
         if self.tester:
             txt += f"\ntester: {self.tester}"
-
+        # TODO v.1.0.1: update this
         number_of_cells = len(self.cells)
         txt += f"\ncells: {number_of_cells}"
         return txt
@@ -128,10 +129,8 @@ class CellpyData:
             <b>name</b>: {self.name} <br>
             <b>table names</b>: {self.table_names} <br>
             <b>tester</b>: {self.tester} <br>
-            <b>cells</b>: {len(self.cells)} <br>
             <b>cycle_mode</b>: {self.cycle_mode} <br>
             <b>sep</b>: {self.sep} <br>
-            <b>daniel_number</b>: {self.daniel_number} <br>
             <b>cellpy_datadir</b>: {self.cellpy_datadir} <br>
             <b>raw_datadir</b>: {self.raw_datadir} <br>
         """
@@ -144,7 +143,6 @@ class CellpyData:
             <b>force_step_table_creation</b>: {self.force_step_table_creation} <br>
             <b>forced_errors</b>: {self.forced_errors} <br>
             <b>limit_loaded_cycles</b>: {self.limit_loaded_cycles} <br>
-            <b>load_only_summary</b>: {self.load_only_summary} <br>
             <b>profile</b>: {self.profile} <br>
             <b>cellpy_units</b>: {self.cellpy_units} <br>
             <b>select_minimal</b>: {self.select_minimal} <br>
@@ -155,6 +153,7 @@ class CellpyData:
         """
         all_vars += "</p>"
 
+        # TODO v.1.0.1: update this
         cell_txt = ""
         for i, cell in enumerate(self.cells):
             cell_txt += f"<h3>cell {i + 1} of {len(self.cells)}</h3>"
@@ -169,29 +168,29 @@ class CellpyData:
             txt += f"table_names: {self.table_names}\n"
         if self.tester:
             txt += f"tester: {self.tester}\n"
-        if self.cells:
-            txt += "datasets: [ ->\n"
-            for i, d in enumerate(self.cells):
-                txt += f"   ({i})\n"
-                for t in str(d).split("\n"):
-                    txt += "     "
-                    txt += t
-                    txt += "\n"
+        if self.cell:
+            txt += "data:\n"
+            for t in str(self.cell).split("\n"):
+                txt += "     "
+                txt += t
                 txt += "\n"
-            txt += "]"
+            txt += "\n"
         else:
-            txt += "datasets: []"
+            txt += "datasets: EMPTY"
         txt += "\n"
         return txt
 
     def __bool__(self):
-        if self.cells:
+        if self.cell:
             return True
         else:
             return False
 
     def __len__(self):
-        return len(self.cells)
+        if self.cell:
+            return 1
+        else:
+            return 0
 
     def __init__(
         self,
@@ -244,10 +243,11 @@ class CellpyData:
             if not self._is_listtype(self.selected_scans):
                 self.selected_scans = [self.selected_scans]
 
-        self.cells = []
-        self.status_datasets = []
-        self.selected_cell_number = 0
-        self.number_of_datasets = 0
+        self.cells = []  # TODO v.1.0.0: remove
+        self._cell = None
+        self.status_datasets = []  # TODO v.1.0.0: change to False
+        self.selected_cell_number = 0  # TODO v.1.0.0: remove
+        self.number_of_datasets = 0  # TODO v.1.0.0: remove
         self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
         self.capacity_modifiers = ["reset"]
@@ -273,7 +273,6 @@ class CellpyData:
         self.sep = prms.Reader.sep
         self._cycle_mode = None
         # self.max_res_filesize = prms.Reader.max_res_filesize
-        self.load_only_summary = prms.Reader.load_only_summary
         self.select_minimal = prms.Reader.select_minimal
         # self.chunk_size = prms.Reader.chunk_size  # 100000
         # self.max_chunks = prms.Reader.max_chunks
@@ -282,7 +281,6 @@ class CellpyData:
         self.limit_data_points = None
         # self.load_until_error = prms.Reader.load_until_error
         self.ensure_step_table = prms.Reader.ensure_step_table
-        self.daniel_number = prms.Reader.daniel_number
         # self.raw_datadir = prms.Reader.raw_datadir
         self.raw_datadir = prms.Paths.rawdatadir
         # self.cellpy_datadir = prms.Reader.cellpy_datadir
@@ -309,36 +307,30 @@ class CellpyData:
 
     def initialize(self):
         logging.debug("Initializing...")
+        # TODO: v.1.0.0: replace this
         self.cells.append(Cell())
 
     @property
     def raw_units(self):
         return self.cell.raw_units
 
+    # TODO: v.1.0.0: replace this
     @property
     def cell(self):
         """returns the DataSet instance"""
         try:
             cell = self.cells[self.selected_cell_number]
+            # cell = self._cell
         except IndexError as e:
             logging.critical("Sorry, I don't have any cells to give you!")
             raise NoCellFound from e
         return cell
 
+    # TODO: v.1.0.0: replace this
     @cell.setter
     def cell(self, new_cell):
         self.cells = [new_cell]
-
-    @property
-    def dataset(self):
-        """returns the DataSet instance"""
-        # could insert a try-except thingy here...
-        warnings.warn(
-            "The .dataset property is deprecated, please use .cell instead.",
-            DeprecationWarning,
-        )
-        cell = self.cells[self.selected_cell_number]
-        return cell
+        # self._cell = new_cell
 
     @property
     def empty(self):
@@ -879,9 +871,7 @@ class CellpyData:
         mass=None,
         summary_on_raw=False,
         summary_ir=True,
-        summary_ocv=False,
         summary_end_v=True,
-        only_summary=False,
         force_raw=False,
         use_cellpy_stat_file=None,
         cell_type=None,
@@ -897,9 +887,7 @@ class CellpyData:
             mass (float): mass of electrode or active material
             summary_on_raw (bool): use raw-file for summary
             summary_ir (bool): summarize ir
-            summary_ocv (bool): summarize ocv steps
             summary_end_v (bool): summarize end voltage
-            only_summary (bool): get only the summary of the runs
             force_raw (bool): only use raw-files
             use_cellpy_stat_file (bool): use stat file if creating summary
                 from raw
@@ -942,11 +930,6 @@ class CellpyData:
             similar = self.check_file_ids(raw_files, cellpy_file)
         logging.debug("checked if the files were similar")
 
-        if only_summary:
-            self.load_only_summary = True
-        else:
-            self.load_only_summary = False
-
         if not similar:
             logging.debug("cellpy file(s) needs updating - loading raw")
             logging.info("Loading raw-file")
@@ -965,12 +948,10 @@ class CellpyData:
                     if nom_cap is not None:
                         self.set_nom_cap(nom_cap)
                     self.make_summary(
-                        all_tests=False,
-                        find_ocv=summary_ocv,
                         find_ir=summary_ir,
                         find_end_voltage=summary_end_v,
                         use_cellpy_stat_file=use_cellpy_stat_file,
-                        # nom_cap=nom_cap,
+                        nom_cap=nom_cap,
                     )
             else:
                 logging.warning("Empty run!")
@@ -992,7 +973,6 @@ class CellpyData:
         mass=None,
         summary_on_raw=False,
         summary_ir=True,
-        summary_ocv=False,
         summary_end_v=True,
         force_raw=False,
         use_cellpy_stat_file=None,
@@ -1018,8 +998,6 @@ class CellpyData:
                     self.set_mass(mass)
                 if summary_on_raw:
                     self.make_summary(
-                        all_tests=False,
-                        find_ocv=summary_ocv,
                         find_ir=summary_ir,
                         find_end_voltage=summary_end_v,
                         use_cellpy_stat_file=use_cellpy_stat_file,
@@ -1066,8 +1044,8 @@ class CellpyData:
 
         self.dev_update_make_steps()
         self.dev_update_make_summary(
-            all_tests=False,
-            find_ocv=summary_ocv,
+            # all_tests=False,
+            # find_ocv=summary_ocv,
             find_ir=summary_ir,
             find_end_voltage=summary_end_v,
             use_cellpy_stat_file=use_cellpy_stat_file,
@@ -4909,18 +4887,17 @@ class CellpyData:
     # ----------making-summary------------------------------------------------------
     def make_summary(
         self,
-        find_ocv=False,
+        # find_ocv=False,
         find_ir=False,
         find_end_voltage=True,
         use_cellpy_stat_file=None,
-        all_tests=True,
+        # all_tests=True,
         ensure_step_table=True,
-        add_normalized_cycle_index=True,
-        add_c_rate=True,
+        # add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
         nom_cap_specifics="gravimetric",
-        from_cycle=None,
+        # from_cycle=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
 
@@ -4939,46 +4916,49 @@ class CellpyData:
             use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
             logging.debug("using use_cellpy_stat_file from prms")
             logging.debug(f"use_cellpy_stat_file: {use_cellpy_stat_file}")
-            txt = "creating summary for file "
-            test = self.cell
-            if not self._is_not_empty_dataset(test):
-                logging.info(f"Empty test {j})")
-                return
-            if isinstance(test.loaded_from, (list, tuple)):
-                for f in test.loaded_from:
-                    txt += f"{f}\n"
-            else:
-                txt += str(test.loaded_from)
 
-            if not test.mass_given:
-                txt += f" mass is not given"
-                txt += f" setting it to {test.mass} mg"
-            logging.debug(txt)
+        txt = "creating summary for file "
+        test = self.cell
+        if not self._is_not_empty_dataset(test):
+            logging.info(f"Empty test {test})")
+            return
 
-            self._make_summary(
-                find_ocv=find_ocv,
-                find_ir=find_ir,
-                find_end_voltage=find_end_voltage,
-                use_cellpy_stat_file=use_cellpy_stat_file,
-                ensure_step_table=ensure_step_table,
-                add_c_rate=add_c_rate,
-                normalization_cycles=normalization_cycles,
-                nom_cap=nom_cap,
-                nom_cap_specifics="gravimetric",
-            )
+        if isinstance(test.loaded_from, (list, tuple)):
+            for f in test.loaded_from:
+                txt += f"{f}\n"
         else:
-            logging.debug("creating summary for only one test")
-            self._make_summary(
-                find_ocv=find_ocv,
-                find_ir=find_ir,
-                find_end_voltage=find_end_voltage,
-                use_cellpy_stat_file=use_cellpy_stat_file,
-                ensure_step_table=ensure_step_table,
-                add_c_rate=add_c_rate,
-                normalization_cycles=normalization_cycles,
-                nom_cap=nom_cap,
-                nom_cap_specifics="gravimetric",
-            )
+            txt += str(test.loaded_from)
+
+        if not test.mass_given:
+            txt += f" mass is not given"
+            txt += f" setting it to {test.mass} mg"
+
+        logging.debug(txt)
+
+        self._make_summary(
+            # find_ocv=find_ocv,
+            find_ir=find_ir,
+            find_end_voltage=find_end_voltage,
+            use_cellpy_stat_file=use_cellpy_stat_file,
+            ensure_step_table=ensure_step_table,
+            # add_c_rate=add_c_rate,
+            normalization_cycles=normalization_cycles,
+            nom_cap=nom_cap,
+            nom_cap_specifics=nom_cap_specifics,
+        )
+        # else:
+        #     logging.debug("creating summary for only one test")
+        #     self._make_summary(
+        #         find_ocv=find_ocv,
+        #         find_ir=find_ir,
+        #         find_end_voltage=find_end_voltage,
+        #         use_cellpy_stat_file=use_cellpy_stat_file,
+        #         ensure_step_table=ensure_step_table,
+        #         add_c_rate=add_c_rate,
+        #         normalization_cycles=normalization_cycles,
+        #         nom_cap=nom_cap,
+        #         nom_cap_specifics="gravimetric",
+        #     )
         return self
 
     def _make_summary(
@@ -4986,14 +4966,14 @@ class CellpyData:
         mass=None,
         update_it=False,
         select_columns=True,
-        find_ocv=False,  # deprecated
+        # find_ocv=False,  # deprecated
         find_ir=True,
         find_end_voltage=False,
         ensure_step_table=True,
         # TODO @jepe: - include option for omitting steps
         sort_my_columns=True,
         use_cellpy_stat_file=False,
-        add_c_rate=True,  # deprecated
+        # add_c_rate=True,  # deprecated
         normalization_cycles=None,
         nom_cap=None,
         nom_cap_specifics="gravimetric",
@@ -5072,7 +5052,7 @@ class CellpyData:
             nom_cap = self.nominal_capacity_as_absolute(
                 nom_cap, cell.active_electrode_area, nom_cap_specifics
             )
-        if ensure_step_table and not self.load_only_summary:
+        if ensure_step_table:
             logging.debug("ensuring existence of step-table")
             if not cell.has_steps:
                 logging.debug("dataset.step_table_made is not True")
@@ -5082,25 +5062,19 @@ class CellpyData:
                 self.make_step_table()
 
         summary_df = cell.summary
-        if not self.load_only_summary:
-            raw = cell.raw
-            if use_cellpy_stat_file:
-                try:
-                    summary_requirement = raw[self.headers_normal.data_point_txt].isin(
-                        summary_df[self.headers_normal.data_point_txt]
-                    )
-                except KeyError:
-                    logging.info("Error in stat_file (?) - using _select_last")
-                    summary_requirement = self._select_last(raw)
-            else:
-                summary_requirement = self._select_last(raw)
-            summary = raw[summary_requirement].copy()
-        else:
-            summary = summary_df
-            cell.summary = summary
-            logging.warning("not implemented yet")
-            return
 
+        raw = cell.raw
+        if use_cellpy_stat_file:
+            try:
+                summary_requirement = raw[self.headers_normal.data_point_txt].isin(
+                    summary_df[self.headers_normal.data_point_txt]
+                )
+            except KeyError:
+                logging.info("Error in stat_file (?) - using _select_last")
+                summary_requirement = self._select_last(raw)
+        else:
+            summary_requirement = self._select_last(raw)
+        summary = raw[summary_requirement].copy()
         column_names = summary.columns
         # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first
         #  figure out if this is really needed and why it was implemented in the first place.
@@ -5158,12 +5132,11 @@ class CellpyData:
             )
 
         # TODO @jepe: refactor this to method:
-        if find_end_voltage and not self.load_only_summary:
+        if find_end_voltage:
             cell = self._end_voltage_to_summary(cell)
 
         if (
             find_ir
-            and (not self.load_only_summary)
             and (self.headers_normal.internal_resistance_txt in cell.raw.columns)
         ):
             cell = self._ir_to_summary(cell)
@@ -5675,11 +5648,11 @@ def check_raw():
     cellpy_data_instance = CellpyData()
     res_file_path = example_data.arbin_file_path()
     cellpy_data_instance.loadcell(res_file_path)
-    run_number = 0
+
     data_point = 2283
     step_time = 1500.05
     sum_discharge_time = 362198.12
-    my_test = cellpy_data_instance.cells[run_number]
+    my_test = cellpy_data_instance.cell
 
     summary = my_test.summary
     raw = my_test.raw
