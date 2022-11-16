@@ -74,7 +74,6 @@ ATTRS_CELLPYDATA = [
     "force_step_table_creation",
     "forced_errors",
     "limit_loaded_cycles",
-    "load_only_summary",
     "minimum_selection",
     "name",
     "number_of_datasets",

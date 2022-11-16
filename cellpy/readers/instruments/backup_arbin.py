@@ -836,10 +836,7 @@ class DataLoader(BaseLoader):
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
-        if (
-            filesize > prms.Instruments.Arbin.max_res_filesize
-            and not prms.Reader.load_only_summary
-        ):
+        if filesize > prms.Instruments.Arbin.max_res_filesize:
             error_message = "\nERROR (loader):\n"
             error_message += "%s > %s - File is too big!\n" % (
                 hfilesize,
@@ -1078,9 +1075,6 @@ class DataLoader(BaseLoader):
         self.logger.debug(f"bad steps:  {bad_steps}")
 
         table_name_normal = TABLE_NAMES["normal"]
-
-        if prms.Reader.load_only_summary:  # SETTING
-            warnings.warn("not implemented")
 
         if prms.Reader.select_minimal:  # SETTING
             columns = MINIMUM_SELECTION

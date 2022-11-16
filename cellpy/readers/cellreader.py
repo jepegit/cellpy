@@ -1245,10 +1245,7 @@ class CellpyData:
         max_raw_files_to_merge = 20
         if len(self.file_names) > max_raw_files_to_merge:
             logging.debug("ERROR? Too many files to merge")
-            raise ValueError(
-                "Too many files to merge - "
-                "could be a p2-p3 zip thing"
-            )
+            raise ValueError("Too many files to merge - " "could be a p2-p3 zip thing")
 
         logging.debug("start iterating through file(s)")
         recalc = kwargs.pop("recalc", True)
@@ -1262,7 +1259,9 @@ class CellpyData:
             )  # list of tests
 
             if _new_data is None:
-                raise IOError(f"Could not read {file_name}. Loader returned None. Aborting.")
+                raise IOError(
+                    f"Could not read {file_name}. Loader returned None. Aborting."
+                )
 
             new_data = self._convert_to_v_1_0_0_from_old_pick_data_from_list(_new_data)
             if not new_data.has_data:
@@ -3089,9 +3088,7 @@ class CellpyData:
                 if shifted and c is not None:
                     shift = _last
                     # print(f"shifted = {shift}, first={_first}")
-                df = self.get_cap(
-                    cycle, method=method, shift=shift
-                )
+                df = self.get_cap(cycle, method=method, shift=shift)
                 if df.empty:
                     logging.debug("NoneType from get_cap")
                 else:
@@ -3168,9 +3165,7 @@ class CellpyData:
                 if shifted and c is not None:
                     shift = _last
                     # print(f"shifted = {shift}, first={_first}")
-                c, v = self.get_cap(
-                    cycle, method=method, shift=shift
-                )
+                c, v = self.get_cap(cycle, method=method, shift=shift)
                 if c is None:
                     logging.debug("NoneType from get_cap")
                 else:
@@ -3551,9 +3546,7 @@ class CellpyData:
         return summary
 
     # TODO: check if this is useful and if it is rename, if not delete
-    def _cap_mod_normal(
-        self, capacity_modifier="reset", allctypes=True
-    ):
+    def _cap_mod_normal(self, capacity_modifier="reset", allctypes=True):
         # modifies the normal table
         time_00 = time.time()
         logging.debug("Not properly checked yet! Use with caution!")
@@ -3577,9 +3570,7 @@ class CellpyData:
                 e_header = discharge_energy_index_header
                 cap_header = discharge_index_header
                 discharge_cycles = self.get_step_numbers(
-                    steptype=cap_type,
-                    allctypes=allctypes,
-                    cycle_number=j
+                    steptype=cap_type, allctypes=allctypes, cycle_number=j
                 )
 
                 steps = discharge_cycles[j]
@@ -3599,9 +3590,7 @@ class CellpyData:
                 e_header = charge_energy_index_header
                 cap_header = charge_index_header
                 charge_cycles = self.get_step_numbers(
-                    steptype=cap_type,
-                    allctypes=allctypes,
-                    cycle_number=j
+                    steptype=cap_type, allctypes=allctypes, cycle_number=j
                 )
                 steps = charge_cycles[j]
                 txt = "Cycle  %i (charge):  " % j
@@ -3646,9 +3635,7 @@ class CellpyData:
             pandas.Series or None if empty
         """
         header = self.headers_normal.voltage_txt
-        return self._sget(
-            cycle, step, header, usteps=False
-        )
+        return self._sget(cycle, step, header, usteps=False)
 
     def sget_current(self, cycle, step):
         """Returns current for cycle, step.
@@ -3665,11 +3652,9 @@ class CellpyData:
             pandas.Series or None if empty
         """
         header = self.headers_normal.current_txt
-        return self._sget(
-            cycle, step, header, usteps=False
-        )
+        return self._sget(cycle, step, header, usteps=False)
 
-    def get_voltage(self, cycle=None,full=True):
+    def get_voltage(self, cycle=None, full=True):
         """Returns voltage (in V).
 
         Args:
@@ -3761,9 +3746,7 @@ class CellpyData:
         """
 
         header = self.headers_normal.step_time_txt
-        return self._sget(
-            cycle, step, header, usteps=False
-        )
+        return self._sget(cycle, step, header, usteps=False)
 
     def _sget(self, cycle, step, header, usteps=False):
         logging.debug(f"searching for {header}")
@@ -3809,9 +3792,7 @@ class CellpyData:
         """
 
         header = self.headers_normal.test_time_txt
-        return self._sget(
-            cycle, step, header, usteps=False
-        )
+        return self._sget(cycle, step, header, usteps=False)
 
     def sget_step_numbers(self, cycle, step):
         """Returns step number for cycle, step.
@@ -3829,9 +3810,7 @@ class CellpyData:
         """
 
         header = self.headers_normal.step_index_txt
-        return self._sget(
-            cycle, step, header, usteps=False
-        )
+        return self._sget(cycle, step, header, usteps=False)
 
     def get_datetime(self, cycle=None, full=True):
         cycle_index_header = self.headers_normal.cycle_index_txt
@@ -3859,9 +3838,7 @@ class CellpyData:
                 v = test[datetime_header]
         return v
 
-    def get_timestamp(
-        self, cycle=None, in_minutes=False, full=True
-    ):
+    def get_timestamp(self, cycle=None, in_minutes=False, full=True):
         """Returns timestamps (in sec or minutes (if in_minutes==True)).
 
         Args:
@@ -3918,9 +3895,7 @@ class CellpyData:
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
 
-        dc, v = self._get_cap(
-            cycle, "discharge", converter=converter, **kwargs
-        )
+        dc, v = self._get_cap(cycle, "discharge", converter=converter, **kwargs)
         return dc, v
 
     def get_ccap(
@@ -3937,9 +3912,7 @@ class CellpyData:
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
-        cc, v = self._get_cap(
-            cycle, "charge", converter=converter, **kwargs
-        )
+        cc, v = self._get_cap(cycle, "charge", converter=converter, **kwargs)
         return cc, v
 
     def get_cap(
@@ -4647,7 +4620,7 @@ class CellpyData:
         logging.debug(f"conversion factor: {conversion_factor}")
         return conversion_factor.m
 
-    def get_diagnostics_plots(self,scaled=False):
+    def get_diagnostics_plots(self, scaled=False):
         raise DeprecatedFeature(
             "This feature is deprecated. "
             "Extract diagnostics from the summary instead."
@@ -4668,7 +4641,7 @@ class CellpyData:
             logging.info("This test is empty")
             logging.info(e)
 
-    def _set_nom_cap(self,  value):
+    def _set_nom_cap(self, value):
         try:
             self.cell.nom_cap = value
         except AttributeError as e:
@@ -4703,19 +4676,13 @@ class CellpyData:
 
     def set_mass(self, mass, validated=None):
         """Sets the mass (masses) for the test (datasets)."""
-        self._set_run_attribute(
-            "mass", mass, validated=validated
-        )
+        self._set_run_attribute("mass", mass, validated=validated)
 
     def set_tot_mass(self, mass, validated=None):
-        self._set_run_attribute(
-            "tot_mass", mass, validated=validated
-        )
+        self._set_run_attribute("tot_mass", mass, validated=validated)
 
     def set_nom_cap(self, nom_cap, validated=None):
-        self._set_run_attribute(
-            "nom_cap", nom_cap, validated=validated
-        )
+        self._set_run_attribute("nom_cap", nom_cap, validated=validated)
 
     @staticmethod
     def set_col_first(df, col_names):
@@ -4853,7 +4820,9 @@ class CellpyData:
 
     # TODO: find out what this is for and probably delete it
     def _modify_cycle_number_using_cycle_step(
-        self, from_tuple=None, to_cycle=44,
+        self,
+        from_tuple=None,
+        to_cycle=44,
     ):
         # modify step-cycle tuple to new step-cycle tuple
         # from_tuple = [old cycle_number, old step_number]
@@ -5135,9 +5104,8 @@ class CellpyData:
         if find_end_voltage:
             cell = self._end_voltage_to_summary(cell)
 
-        if (
-            find_ir
-            and (self.headers_normal.internal_resistance_txt in cell.raw.columns)
+        if find_ir and (
+            self.headers_normal.internal_resistance_txt in cell.raw.columns
         ):
             cell = self._ir_to_summary(cell)
 

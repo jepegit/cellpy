@@ -147,7 +147,6 @@ Reader:
   sep: ;
   cycle_mode: anode
   sorted_data: true
-  load_only_summary: false
   select_minimal: false
   limit_loaded_cycles:
   ensure_step_table: false
