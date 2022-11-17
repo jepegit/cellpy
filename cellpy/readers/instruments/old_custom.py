@@ -208,7 +208,6 @@ class DataLoader(BaseLoader):
             List of cellpy Cell objects.
         """
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
-        new_tests = []
         var_dict = dict()
 
         cycle_index_hdr = self.headers_normal["cycle_index_txt"]
@@ -419,8 +418,7 @@ class DataLoader(BaseLoader):
         data.raw_data_files_length.append(raw.shape[0])
         data.summary = None
         data.raw = raw
-        new_tests.append(data)
-        return new_tests
+        return data
 
     def _select_cols(self, raw):
         selected = [

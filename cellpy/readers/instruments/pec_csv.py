@@ -192,7 +192,6 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def loader(self, file_name, bad_steps=None, **kwargs):
-        new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
@@ -240,9 +239,8 @@ class DataLoader(BaseLoader):
         data.raw = self.pec_data
 
         data.raw_data_files_length.append(length_of_test)
-        new_tests.append(data)
 
-        return new_tests
+        return data
 
     def _load_pec_data(self, file_name, bad_steps):
         number_of_header_lines = self.number_of_header_lines

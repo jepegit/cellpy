@@ -425,10 +425,10 @@ class AutoLoader(BaseLoader):
                         f"{processor_name} is not currently supported - aborting!"
                     )
 
-    def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> List[core.Cell]:
+    def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> core.Cell:
         """returns a Cell object with loaded data.
 
-        Loads data from Maccor txt file (csv-ish).
+        Loads data from a txt file (csv-ish).
 
         Args:
             name (str, pathlib.Path): name of the file.
@@ -482,8 +482,7 @@ class AutoLoader(BaseLoader):
             data.start_datetime = data.raw[headers_normal.datetime_txt].iat[0]
 
         data = self.validate(data)
-        new_tests.append(data)
-        return new_tests
+        return data
 
     def validate(self, data: core.Cell) -> core.Cell:
         """validation of the loaded data, should raise an appropriate exception if it fails."""

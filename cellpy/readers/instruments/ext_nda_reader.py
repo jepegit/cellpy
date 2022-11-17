@@ -84,9 +84,6 @@ class DataLoader(BaseLoader):
 
     def loader(self, file_name, *args, **kwargs):
         """Loads data into a DataSet object and returns it"""
-
-        new_tests = []
-
         test_no = 1
         channel_index = 1
         channel_number = 1
@@ -133,6 +130,4 @@ class DataLoader(BaseLoader):
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
 
-        new_tests.append(data)
-
-        return new_tests
+        return data

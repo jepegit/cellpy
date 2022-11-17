@@ -189,9 +189,8 @@ class DataLoader(BaseLoader):
              (in cycle c) to skip loading.
 
         Returns:
-            new_tests (list of data objects)
+            new test
         """
-        new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
@@ -253,10 +252,8 @@ class DataLoader(BaseLoader):
         data.raw = self.mpr_data
 
         data.raw_data_files_length.append(length_of_test)
-        new_tests.append(data)
-
         self._clean_up(temp_filename)
-        return new_tests
+        return data
 
     def _parse_mpr_log_data(self):
         for value in bl_log_pos_dtype:

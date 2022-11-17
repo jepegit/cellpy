@@ -155,9 +155,9 @@ class DataLoader(BaseLoader):
             name (str): name of the file
 
         Returns:
-            new_tests (list of data objects)
+            data object
         """
-        new_tests = []
+
         data_df = self._parse_xlsx_data(name)
         data = Cell()
 
@@ -183,8 +183,7 @@ class DataLoader(BaseLoader):
         )  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
-        new_tests.append(data)
-        return new_tests
+        return data
 
     def _post_process(self, data):
         set_index = True

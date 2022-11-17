@@ -247,8 +247,6 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        new_tests = []
-
         data_df, stat_df = self._query_sql(name)
         aux_data_df = None  # Needs to be implemented
         meta_data = None  # Should be implemented
@@ -283,9 +281,8 @@ class DataLoader(BaseLoader):
         data.summary = stat_df
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
-        new_tests.append(data)
 
-        return new_tests
+        return data
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
