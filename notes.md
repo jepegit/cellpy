@@ -58,7 +58,7 @@ Step 1: replace all occurrences of cells[0] with .cell property
     - modify .cell property so that it sets and gets the cell object directly to self._cell
         -done
     - instruments: work on single cell instead of cells (list) - replace both in from_raw and the individual instrument loaders
-
+        - done
 
 Step 2: rename the .cell property to .data
 Step 3: rename the Cell object to Data
