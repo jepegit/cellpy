@@ -241,7 +241,6 @@ class CellpyData:
         self._cell = None
         self.status_datasets = []  # TODO v.1.0.0: change to False
         self.selected_cell_number = 0  # TODO v.1.0.0: remove
-        self.number_of_datasets = 0  # TODO v.1.0.0: remove
         self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
         self.capacity_modifiers = ["reset"]
@@ -1159,8 +1158,6 @@ class CellpyData:
             # return test
         # cell[set_number].raw_units = self._set_raw_units()
         # self.cells.append(cell[set_number])
-        #
-        # self.number_of_datasets = len(self.cells)
         # self.status_datasets = self._validate_cells()
         # self._invent_a_name()
         return self
@@ -1168,11 +1165,7 @@ class CellpyData:
     # TODO: (v1.0.0) remove me
     @staticmethod
     def _convert_to_v_1_0_0_from_old_pick_data_from_list(_new_data):
-        if isinstance(_new_data, (list, tuple)):
-            warnings.warn("OLD VERSION ENCOUNTERED")
-            return _new_data[0]
-        else:
-            return _new_data
+        return _new_data
 
     def from_raw(
         self,
@@ -1287,8 +1280,7 @@ class CellpyData:
             data.raw_units = self._set_raw_units()
 
         self.cell = data
-        self.number_of_datasets = 1  # TODO (v1.0.0): remove me
-        self.status_datasets = True  # TODO (v1.0.0): fix me (add validator)
+        self.status_datasets = self._validate_cells()
         self._invent_a_name()  # TODO (v1.0.0): fix me
         return self
 
@@ -1432,7 +1424,6 @@ class CellpyData:
             logging.warning("Could not load")
             logging.warning(str(cellpy_file))
 
-        # self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_cells()
         self._invent_a_name(cellpy_file)
         if return_cls:
@@ -2173,7 +2164,6 @@ class CellpyData:
     #         ):
     #             self.cell.raw_data_files.append(raw_data_file)
     #             self.cell.raw_data_files_length.append(file_size)
-    #     self.number_of_datasets = 1
     #     return self
 
     # TODO @jepe (v.1.0.0): update/check this - single data instances (i.e. to cell from cells)
@@ -3554,10 +3544,6 @@ class CellpyData:
                     raw.loc[selection, cap_header] = raw.loc[selection, cap_header] - c0
                     raw.loc[selection, e_header] = raw.loc[selection, e_header] - e0
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
-
-    def get_number_of_tests(self):
-        warnings.warn("OLD VERSION")
-        return self.number_of_datasets
 
     def get_mass(self):
         if not self.cell.mass_given:

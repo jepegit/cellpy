@@ -467,7 +467,6 @@ ATTRS_CELLPYDATA = [
     "limit_loaded_cycles",
     "minimum_selection",
     "name",
-    "number_of_datasets",
     "profile",
     "raw_datadir",
     "raw_limits",
