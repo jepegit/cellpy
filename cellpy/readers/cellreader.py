@@ -1162,11 +1162,6 @@ class CellpyData:
         # self._invent_a_name()
         return self
 
-    # TODO: (v1.0.0) remove me
-    @staticmethod
-    def _convert_to_v_1_0_0_from_old_pick_data_from_list(_new_data):
-        return _new_data
-
     def from_raw(
         self,
         file_names=None,
@@ -1235,16 +1230,14 @@ class CellpyData:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
 
-            _new_data = raw_file_loader(
+            new_data = raw_file_loader(
                 file_name, pre_processor_hook=pre_processor_hook, **kwargs
             )  # list of tests
 
-            if _new_data is None:
+            if new_data is None:
                 raise IOError(
                     f"Could not read {file_name}. Loader returned None. Aborting."
                 )
-
-            new_data = self._convert_to_v_1_0_0_from_old_pick_data_from_list(_new_data)
             if not new_data.has_data:
                 raise IOError(f"Could not read any data from {file_name}. Aborting.")
 
