@@ -458,7 +458,6 @@ class DataLoader(BaseLoader):
                     f"cellpy headers normal type {type(self.cellpy_headers_normal)}"
                 )
                 raise Exception(txt)
-                logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:
             h_datetime = self.cellpy_headers_normal.datetime_txt
@@ -488,15 +487,12 @@ class DataLoader(BaseLoader):
             return run_data
 
         if DEBUG_MODE:
-            checked_rundata = []
-            for data in run_data:
-                new_cols = data.raw.columns
-                for col in self.arbin_headers_normal:
-                    if col not in new_cols:
-                        logging.debug(f"Missing col: {col}")
-                        # data.raw[col] = np.nan
-                checked_rundata.append(data)
-            return checked_rundata
+            new_cols = run_data.raw.columns
+            for col in self.arbin_headers_normal:
+                if col not in new_cols:
+                    logging.debug(f"Missing col: {col}")
+                    # data.raw[col] = np.nan
+            return run_data
 
     def _iterdump(self, file_name, headers=None):  # Deprecated - use on own risk
         """
@@ -791,7 +787,6 @@ class DataLoader(BaseLoader):
         **kwargs,
     ):
 
-        new_tests = []
         conn = None
 
         table_name_global = TABLE_NAMES["global"]
@@ -805,11 +800,6 @@ class DataLoader(BaseLoader):
 
         conn = self._get_connection_or_engine(temp_filename)
 
-        # if use_ado:
-        #     conn = dbloader.connect(constr)
-        # else:
-        #     conn = dbloader.connect(constr, autocommit=True)
-
         self.logger.debug("reading global data table")
 
         global_data_df = self._query_table(table_name=table_name_global, conn=conn)
@@ -820,60 +810,54 @@ class DataLoader(BaseLoader):
         if dataset_number is not None:
             self.logger.info(f"Dataset number given: {dataset_number}")
             self.logger.info(f"Available dataset numbers: {tests}")
-            test_nos = [dataset_number]
+
         else:
-            test_nos = range(number_of_sets)
+            dataset_number = 0
 
-        for counter, test_no in enumerate(test_nos):
-            if counter > 0:
-                self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
-                if not ALLOW_MULTI_TEST_FILE:
-                    break
-            data = self._init_data(file_name, global_data_df, test_no)
-            test_id = data.test_ID
-            self.logger.debug("reading raw-data")
+        data = self._init_data(file_name, global_data_df, dataset_number)
+        test_id = data.test_ID
+        self.logger.debug("reading raw-data")
 
-            # --------- read raw-data (normal-data) ------------------------
-            length_of_test, normal_df = self._load_res_normal_table(
-                conn, test_id, bad_steps, data_points
+        # --------- read raw-data (normal-data) ------------------------
+        length_of_test, normal_df = self._load_res_normal_table(
+            conn, test_id, bad_steps, data_points
+        )
+        # --------- read auxiliary data (aux-data) ---------------------
+        normal_df = self._load_win_res_auxiliary_table(
+            conn, normal_df, table_name_aux, table_name_aux_global, test_id
+        )
+
+        # --------- read stats-data (summary-data) ---------------------
+        sql = "select * from %s where %s=%s order by %s" % (
+            table_name_stats,
+            self.arbin_headers_normal.test_id_txt,
+            data.test_ID,
+            self.arbin_headers_normal.data_point_txt,
+        )
+        summary_df = pd.read_sql_query(sql, conn)
+
+        if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+            txt = "\nCould not find any summary (stats-file)!"
+            txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+            logging.debug(txt)
+            # TODO: Enforce creating a summary df or modify renaming summary df (post process part)
+        # normal_df = normal_df.set_index("Data_Point")
+
+        data.summary = summary_df
+        if DEBUG_MODE:
+            mem_usage = normal_df.memory_usage()
+            logging.debug(
+                f"memory usage for "
+                f"loaded data: \n{mem_usage}"
+                f"\ntotal: {humanize_bytes(mem_usage.sum())}"
             )
-            # --------- read auxiliary data (aux-data) ---------------------
-            normal_df = self._load_win_res_auxiliary_table(
-                conn, normal_df, table_name_aux, table_name_aux_global, test_id
-            )
+            logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
 
-            # --------- read stats-data (summary-data) ---------------------
-            sql = "select * from %s where %s=%s order by %s" % (
-                table_name_stats,
-                self.arbin_headers_normal.test_id_txt,
-                data.test_ID,
-                self.arbin_headers_normal.data_point_txt,
-            )
-            summary_df = pd.read_sql_query(sql, conn)
-
-            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
-                txt = "\nCould not find any summary (stats-file)!"
-                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-                logging.debug(txt)
-                # TODO: Enforce creating a summary df or modify renaming summary df (post process part)
-            # normal_df = normal_df.set_index("Data_Point")
-
-            data.summary = summary_df
-            if DEBUG_MODE:
-                mem_usage = normal_df.memory_usage()
-                logging.debug(
-                    f"memory usage for "
-                    f"loaded data: \n{mem_usage}"
-                    f"\ntotal: {humanize_bytes(mem_usage.sum())}"
-                )
-                logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
-
-            data.raw = normal_df
-            data.raw_data_files_length.append(length_of_test)
-            data = self._post_process(data)
-            data = self.identify_last_data_point(data)
-            new_tests.append(data)
-        return new_tests
+        data.raw = normal_df
+        data.raw_data_files_length.append(length_of_test)
+        data = self._post_process(data)
+        data = self.identify_last_data_point(data)
+        return data
 
     def _load_win_res_auxiliary_table(
         self, conn, normal_df, table_name_aux, table_name_aux_global, test_id
@@ -967,8 +951,6 @@ class DataLoader(BaseLoader):
         table_name_aux_global = TABLE_NAMES["aux_global"]
         table_name_aux = TABLE_NAMES["aux"]
 
-        new_tests = []
-
         if is_posix:
             if is_macos:
                 self.logger.debug("\nMAC OSX USING MDBTOOLS")
@@ -1005,64 +987,57 @@ class DataLoader(BaseLoader):
         if dataset_number is not None:
             self.logger.info(f"Dataset number given: {dataset_number}")
             self.logger.info(f"Available dataset numbers: {tests}")
-            test_nos = [dataset_number]
         else:
-            test_nos = range(number_of_sets)
+            dataset_number = 0
 
-        for counter, test_no in enumerate(test_nos):
-            if counter > 0:
-                self.logger.warning("** WARNING ** MULTI-TEST-FILE (not recommended)")
-                if not ALLOW_MULTI_TEST_FILE:
-                    break
-            data = self._init_data(file_name, global_data_df, test_no)
+        data = self._init_data(file_name, global_data_df, dataset_number)
 
-            self.logger.debug("reading raw-data")
+        self.logger.debug("reading raw-data")
 
-            (
-                length_of_test,
-                normal_df,
-                summary_df,
-                aux_global_data_df,
-                aux_df,
-            ) = self._load_from_tmp_files(
-                data,
-                tmp_name_global,
-                tmp_name_raw,
-                tmp_name_stats,
-                tmp_name_aux_global,
-                tmp_name_aux,
-                temp_filename,
-                bad_steps,
-                data_points,
+        (
+            length_of_test,
+            normal_df,
+            summary_df,
+            aux_global_data_df,
+            aux_df,
+        ) = self._load_from_tmp_files(
+            data,
+            tmp_name_global,
+            tmp_name_raw,
+            tmp_name_stats,
+            tmp_name_aux_global,
+            tmp_name_aux,
+            temp_filename,
+            bad_steps,
+            data_points,
+        )
+
+        # --------- read auxiliary data (aux-data) ---------------------
+        normal_df = self._load_posix_res_auxiliary_table(
+            aux_global_data_df, aux_df, normal_df
+        )
+
+        if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+            txt = "\nCould not find any summary (stats-file)!"
+            txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+            logging.debug(txt)
+        # normal_df = normal_df.set_index("Data_Point")
+
+        data.summary = summary_df
+        if DEBUG_MODE:
+            mem_usage = normal_df.memory_usage()
+            logging.debug(
+                f"memory usage for "
+                f"loaded data: \n{mem_usage}"
+                f"\ntotal: {humanize_bytes(mem_usage.sum())}"
             )
+            logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
 
-            # --------- read auxiliary data (aux-data) ---------------------
-            normal_df = self._load_posix_res_auxiliary_table(
-                aux_global_data_df, aux_df, normal_df
-            )
-
-            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
-                txt = "\nCould not find any summary (stats-file)!"
-                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-                logging.debug(txt)
-            # normal_df = normal_df.set_index("Data_Point")
-
-            data.summary = summary_df
-            if DEBUG_MODE:
-                mem_usage = normal_df.memory_usage()
-                logging.debug(
-                    f"memory usage for "
-                    f"loaded data: \n{mem_usage}"
-                    f"\ntotal: {humanize_bytes(mem_usage.sum())}"
-                )
-                logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
-
-            data.raw = normal_df
-            data.raw_data_files_length.append(length_of_test)
-            data = self._post_process(data)
-            data = self.identify_last_data_point(data)
-            new_tests.append(data)
-        return new_tests
+        data.raw = normal_df
+        data.raw_data_files_length.append(length_of_test)
+        data = self._post_process(data)
+        data = self.identify_last_data_point(data)
+        return data
 
     def loader(
         self,
