@@ -117,9 +117,6 @@ class CellpyData:
             txt += f"\ntable_names: {self.table_names}"
         if self.tester:
             txt += f"\ntester: {self.tester}"
-        # TODO v.1.0.1: update this
-        number_of_cells = len(self.cells)
-        txt += f"\ncells: {number_of_cells}"
         return txt
 
     def _repr_html_(self):
@@ -153,11 +150,9 @@ class CellpyData:
         """
         all_vars += "</p>"
 
-        # TODO v.1.0.1: update this
         cell_txt = ""
-        for i, cell in enumerate(self.cells):
-            cell_txt += f"<h3>cell {i + 1} of {len(self.cells)}</h3>"
-            cell_txt += f"<blockquote>{cell._repr_html_()}</blockquote>"
+        cell_txt += f"<h3>cell</h3>"
+        cell_txt += f"<blockquote>{cell._repr_html_()}</blockquote>"
         return header + all_vars + cell_txt
 
     def __str__(self):
@@ -243,7 +238,6 @@ class CellpyData:
             if not self._is_listtype(self.selected_scans):
                 self.selected_scans = [self.selected_scans]
 
-        self.cells = []  # TODO v.1.0.0: remove
         self._cell = None
         self.status_datasets = []  # TODO v.1.0.0: change to False
         self.selected_cell_number = 0  # TODO v.1.0.0: remove
@@ -308,7 +302,7 @@ class CellpyData:
     def initialize(self):
         logging.debug("Initializing...")
         # TODO: v.1.0.0: replace this
-        self.cells.append(Cell())
+        self.cell = Cell()
 
     @property
     def raw_units(self):
@@ -318,19 +312,16 @@ class CellpyData:
     @property
     def cell(self):
         """returns the DataSet instance"""
-        try:
-            cell = self.cells[self.selected_cell_number]
-            # cell = self._cell
-        except IndexError as e:
-            logging.critical("Sorry, I don't have any cells to give you!")
-            raise NoCellFound from e
-        return cell
+        if not self._cell:
+            logging.critical("Sorry, I don't have any cell to give you!")
+            raise NoCellFound
+        else:
+            return self._cell
 
     # TODO: v.1.0.0: replace this
     @cell.setter
     def cell(self, new_cell):
-        self.cells = [new_cell]
-        # self._cell = new_cell
+        self._cell = new_cell
 
     @property
     def empty(self):
@@ -1072,13 +1063,8 @@ class CellpyData:
         self.dev_update_make_summary()
 
     # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
-    def dev_update_merge(self):
+    def dev_update_merge(self, t1, t2):
         print("NOT FINISHED YET - but very close")
-        number_of_tests = len(self.cells)
-        if number_of_tests != 2:
-            logging.warning("Cannot merge if you do not have exactly two cell-objects")
-            return
-        t1, t2 = self.cells
 
         if t1.raw.empty:
             logging.debug("OBS! the first dataset is empty")
@@ -1157,11 +1143,13 @@ class CellpyData:
             logging.debug(f"{f}")
 
             # get a list of cellpy.readers.core.Cell objects
-            cell = raw_file_loader(f, data_points=data_points, **kwargs)
+            # cell = raw_file_loader(f, data_points=data_points, **kwargs)
             # remark that the bounds are included (i.e. the first datapoint
             # is 5000.
 
-            logging.debug("added the data set - merging file info")
+            logging.debug(
+                "added the data set - merging file info  - oh no; I am not implemented yet"
+            )
 
             # raw_data_file = copy.deepcopy(test[set_number].raw_data_files[0])
             # file_size = test[set_number].raw_data_files_length[0]
@@ -1169,12 +1157,12 @@ class CellpyData:
             # test[set_number].raw_data_files.append(raw_data_file)
             # test[set_number].raw_data_files_length.append(file_size)
             # return test
-        cell[set_number].raw_units = self._set_raw_units()
-        self.cells.append(cell[set_number])
-
-        self.number_of_datasets = len(self.cells)
-        self.status_datasets = self._validate_cells()
-        self._invent_a_name()
+        # cell[set_number].raw_units = self._set_raw_units()
+        # self.cells.append(cell[set_number])
+        #
+        # self.number_of_datasets = len(self.cells)
+        # self.status_datasets = self._validate_cells()
+        # self._invent_a_name()
         return self
 
     # TODO: (v1.0.0) remove me
@@ -1312,13 +1300,9 @@ class CellpyData:
         # find not-complete datasets, datasets with missing prms etc
         v = []
         if level == 0:
-            for cell in self.cells:
-                # check that it contains all the necessary headers
-                # (and add missing ones):
-                # cell = self._clean_up_normal_table(cell)
-                # check that the test is not empty
-                v.append(self._is_not_empty_dataset(cell))
-                v.append(cell.populate_defaults())
+            cell = self.cell
+            v.append(self._is_not_empty_dataset(cell))
+            v.append(cell.populate_defaults())
             logging.debug(f"validation array: {v}")
         return v
 
@@ -1425,70 +1409,30 @@ class CellpyData:
             logging.debug(cellpy_file)
 
             with pickle_protocol(PICKLE_PROTOCOL):
-                new_datasets = self._load_hdf5(
+                data = self._load_hdf5(
                     cellpy_file, parent_level, accept_old, selector=selector
                 )
             logging.debug("cellpy-file loaded")
 
         except AttributeError:
-            new_datasets = []
+            data = None
             logging.warning(
                 "This cellpy-file version is not supported by"
                 "current reader (try to update cellpy)."
             )
 
-        if new_datasets:
-            for dataset in new_datasets:
-                self.cells.append(dataset)
+        # if new_datasets:
+        #     for dataset in new_datasets:
+        #         self.cells.append(dataset)
+
+        if data:
+            self.cell = data
         else:
             # raise LoadError
             logging.warning("Could not load")
             logging.warning(str(cellpy_file))
 
-        self.number_of_datasets = len(self.cells)
-        self.status_datasets = self._validate_cells()
-        self._invent_a_name(cellpy_file)
-        if return_cls:
-            return self
-
-    def old_load(
-        self, cellpy_file, parent_level=None, return_cls=True, accept_old=False
-    ):
-        """Loads a cellpy file.
-
-        Args:
-            cellpy_file (path, str): Full path to the cellpy file.
-            parent_level (str, optional): Parent level. Warning! Deprecating this soon!
-            return_cls (bool): Return the class.
-            accept_old (bool): Accept loading old cellpy-file versions.
-                Instead of raising WrongFileVersion it only issues a warning.
-
-        Returns:
-            cellpy.CellPyData class if return_cls is True
-        """
-
-        try:
-            logging.debug("loading cellpy-file (hdf5):")
-            logging.debug(cellpy_file)
-            with pickle_protocol(PICKLE_PROTOCOL):
-                new_datasets = self._load_hdf5(cellpy_file, parent_level, accept_old)
-            logging.debug("cellpy-file loaded")
-        except AttributeError:
-            new_datasets = []
-            logging.warning(
-                "This cellpy-file version is not supported by"
-                "current reader (try to update cellpy)."
-            )
-
-        if new_datasets:
-            for dataset in new_datasets:
-                self.cells.append(dataset)
-        else:
-            # raise LoadError
-            logging.warning("Could not load")
-            logging.warning(str(cellpy_file))
-
-        self.number_of_datasets = len(self.cells)
+        # self.number_of_datasets = len(self.cells)
         self.status_datasets = self._validate_cells()
         self._invent_a_name(cellpy_file)
         if return_cls:
@@ -1625,11 +1569,12 @@ class CellpyData:
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
-        # this does not yet allow multiple sets
-        new_tests = [
-            data
-        ]  # but cellpy is ready when that time comes (if it ever happens)
-        return new_tests
+        # # this does not yet allow multiple sets
+        # new_tests = [
+        #     data
+        # ]  # but cellpy is ready when that time comes (if it ever happens)
+        # return new_tests
+        return data
 
     def _load_hdf5_v6(self, filename, selector=None):
         parent_level = "CellpyData"
@@ -1686,10 +1631,11 @@ class CellpyData:
 
         # this does not yet allow multiple sets
         logging.debug("loaded new test")
-        new_tests = [
-            data
-        ]  # but cellpy is ready when that time comes (if it ever happens)
-        return new_tests
+        # new_tests = [
+        #     data
+        # ]  # but cellpy is ready when that time comes (if it ever happens)
+        # return new_tests
+        return data
 
     def _load_hdf5_v5(self, filename, selector=None):
         parent_level = "CellpyData"
@@ -1742,29 +1688,30 @@ class CellpyData:
 
         # this does not yet allow multiple sets
         logging.debug("loaded new test")
-        new_tests = [
-            data
-        ]  # but cellpy is ready when that time comes (if it ever happens)
-        return new_tests
+        # new_tests = [
+        #     data
+        # ]  # but cellpy is ready when that time comes (if it ever happens)
+        # return new_tests
+        return data
 
     def _load_old_hdf5(self, filename, cellpy_file_version):
         if cellpy_file_version < 5:
-            new_data = self._load_old_hdf5_v3_to_v4(filename)
+            data = self._load_old_hdf5_v3_to_v4(filename)
         elif cellpy_file_version == 5:
-            new_data = self._load_hdf5_v5(filename)
+            data = self._load_hdf5_v5(filename)
 
         elif cellpy_file_version == 6:
-            new_data = self._load_hdf5_v6(filename)
+            data = self._load_hdf5_v6(filename)
         else:
             raise WrongFileVersion(f"version {cellpy_file_version} is not supported")
 
         # if cellpy_file_version < 6:
         #     logging.debug("legacy cellpy file version needs translation")
-        #     # new_data.raw = cellpy_file_upgrade_settings()
-        #     new_data.raw = rename_raw_columns(new_data.raw, old, new)
-        #     # new_data = old_settings.translate_headers(new_data, cellpy_file_version)
-        #     # self.__check_loaded_data(new_data)
-        return new_data
+        #     # data.raw = cellpy_file_upgrade_settings()
+        #     data.raw = rename_raw_columns(data.raw, old, new)
+        #     # data = old_settings.translate_headers(data, cellpy_file_version)
+        #     # self.__check_loaded_data(data)
+        return data
 
     def _load_old_hdf5_v3_to_v4(self, filename):
         parent_level = "CellpyData"
@@ -1819,8 +1766,9 @@ class CellpyData:
             data.raw_data_files = []
             data.raw_data_files_length = []
 
-        new_tests = [data]
-        return new_tests
+        # new_tests = [data]
+        # return new_tests
+        return data
 
     def _create_initial_data_set_from_cellpy_file(self, meta_dir, parent_level, store):
         # Remark that this function is run before selecting loading method
@@ -3615,10 +3563,6 @@ class CellpyData:
         if not self.cell.mass_given:
             logging.info("No mass")
         return self.cell.mass
-
-    def get_cell(self, n=0):
-        # TODO: remove me
-        return self.cells[n]
 
     def sget_voltage(self, cycle, step):
         """Returns voltage for cycle, step.
@@ -5540,10 +5484,6 @@ def get(
     else:
         file_needed = True
 
-    if cycle_mode is not None:
-        logging.debug("Setting cycle mode")
-        cellpy_instance.cycle_mode = cycle_mode
-
     if filename is not None:
         logging.debug(f"{filename=}")
         if file_needed:
@@ -5583,6 +5523,10 @@ def get(
             print("Could not load file: check log!")
             print("Returning None")
             return
+
+        if cycle_mode is not None:
+            logging.debug("Setting cycle mode")
+            cellpy_instance.cycle_mode = cycle_mode
 
         logging.debug("raw:")
         logging.debug(cellpy_instance.cell.raw.head())

@@ -157,21 +157,14 @@ def test_merge_auto_from_list(parameters):
     cdi2.from_raw(f2)
     cdi3.from_raw(files)
 
-    len_first = len(cdi1.cells)
     table_first = cdi1.cell.raw.describe()
     count_first = table_first.loc["count", "data_point"]
 
-    len_second = len(cdi2.cells)
     table_second = cdi2.cell.raw.describe()
     count_second = table_second.loc["count", "data_point"]
 
-    len_all = len(cdi3.cells)
     table_all = cdi3.cell.raw.describe()
     count_all = table_all.loc["count", "data_point"]
-
-    assert len_first == 1
-    assert len_second == 1
-    assert len_all == 1
 
     assert pytest.approx(count_all, 0.001) == (count_first + count_second)
 
@@ -225,11 +218,6 @@ def test_cap_mod_summary_fail(dataset):
 
 def test_cap_mod_normal(dataset):
     dataset._cap_mod_normal()
-
-
-def test_get_number_of_tests(dataset):
-    n = dataset.get_number_of_tests()
-    assert n == 1
 
 
 def test_get_step_numbers(dataset):
