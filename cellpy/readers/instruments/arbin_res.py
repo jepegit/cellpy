@@ -1097,7 +1097,7 @@ class DataLoader(BaseLoader):
             use_mdbtools = True
 
         if use_mdbtools:
-            new_tests = self._loader_posix(
+            new_test = self._loader_posix(
                 file_name,
                 temp_filename,
                 temp_dir,
@@ -1108,7 +1108,7 @@ class DataLoader(BaseLoader):
                 **kwargs,
             )
         else:
-            new_tests = self._loader_win(
+            new_test = self._loader_win(
                 file_name,
                 temp_filename,
                 *args,
@@ -1118,9 +1118,9 @@ class DataLoader(BaseLoader):
                 **kwargs,
             )
 
-        new_tests = self._inspect(new_tests)
+        new_test = self._inspect(new_test)
 
-        return new_tests
+        return new_test
 
     def _create_tmp_files(
         self,
