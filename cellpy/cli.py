@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 import pathlib
+from pprint import pprint
 import re
 import subprocess
 import sys
@@ -1255,7 +1256,7 @@ def _read_local_templates(local_templates_path=None):
     templates = {}
     for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
         label = p.stem.strip()[len("cellpy_cookie_"):]
-        templates[label] = str(p)
+        templates[label] = (str(p), None)
     logging.debug(f"Found the following templates: {templates}")
     return templates
 
@@ -1445,7 +1446,10 @@ def _new(
     cellpy_version = cellpy.__version__
 
     try:
-        print(templates)
+        print()
+        pprint(templates)
+        print()
+        pprint(templates[template.lower()])
         selected_template, _cookie_directory = templates[template.lower()]
 
         # sub-templates not implemented for local cellpy cookies:
