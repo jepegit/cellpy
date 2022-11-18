@@ -136,15 +136,15 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
             for cell_label in experiment.cell_data_frames:
                 logging.info(f"Analyzing {cell_label}")
                 if experiment.all_in_memory:
-                    logging.debug("CellpyData picked from memory")
+                    logging.debug("CellpyCell picked from memory")
                     cell = experiment.cell_data_frames[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyData-object")
+                        logging.warning("Oh-no! Empty CellpyCell-object")
                 else:
-                    logging.debug("CellpyData loaded from Cellpy-file")
+                    logging.debug("CellpyCell loaded from Cellpy-file")
                     cell = experiment.data[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyData-object")
+                        logging.warning("Oh-no! Empty CellpyCell-object")
 
                 df = select_ocv_points(
                     cell,
@@ -164,15 +164,15 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
             for cell_label in experiment.cell_data_frames:
                 logging.info(f"Analyzing {cell_label}")
                 if experiment.all_in_memory:
-                    logging.debug("CellpyData picked from memory")
+                    logging.debug("CellpyCell picked from memory")
                     cell = experiment.cell_data_frames[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyData-object")
+                        logging.warning("Oh-no! Empty CellpyCell-object")
                 else:
-                    logging.debug("CellpyData loaded from Cellpy-file")
+                    logging.debug("CellpyCell loaded from Cellpy-file")
                     cell = experiment.data[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyData-object")
+                        logging.warning("Oh-no! Empty CellpyCell-object")
 
                 df = select_ocv_points(
                     cell,

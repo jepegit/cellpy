@@ -39,7 +39,7 @@ def select_ocv_points(
     """Select points from the ocvrlx steps.
 
     Args:
-        cellpydata: ``CellpyData-object``
+        cellpydata: ``CellpyCell-object``
         cycles: list of cycle numbers to process (optional)
         selection_method ('martin' | 'fixed_times'): criteria for selecting points ('martin': select first and last, and
             then last/2, last/2/2 etc. until you have reached the wanted number of points; 'fixed_times': select first,
@@ -248,7 +248,7 @@ class MultiCycleOcvFit(object):
         """Object for performing fitting of multiple cycles.
 
         Args:
-            cellpydata: ``CellpyData-object``
+            cellpydata: ``CellpyCell-object``
             cycles (list): cycles to fit.
             circuits (int): number of circuits to use in fitting.
         """
@@ -263,7 +263,7 @@ class MultiCycleOcvFit(object):
         self.best_fit_parameters_translated = []
 
     def set_data(self, cellpydata):
-        """Sets the CellpyData."""
+        """Sets the CellpyCell."""
 
         self.data = cellpydata
 
@@ -488,8 +488,8 @@ class OcvFit(object):
         c is found from using tau / r --> err(c) = err(r) + err(tau).
 
         Args:
-            cellpydata (CellpyData): data object from cellreader
-            cycle (int): cycle number to get from CellpyData object
+            cellpydata (CellpyCell): data object from cellreader
+            cycle (int): cycle number to get from CellpyCell object
 
         Returns:
             None
@@ -688,7 +688,7 @@ def _main():
     print(resfilename)
 
     # Loading dataframe
-    d = cellreader.CellpyData()
+    d = cellreader.CellpyCell()
     # noinspection PyDeprecation
     d.from_raw(os.path.join(datafolder_in, resfilename))
     d.set_mass(mass)

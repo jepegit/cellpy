@@ -24,13 +24,13 @@ like this:
 
 .. parsed-literal::
 
-    (cellpy) - Making CellpyData class and setting prms
+    (cellpy) - Making CellpyCell class and setting prms
     (cellpy) - Loading cellpy-file: ../testdata/hdf5/20160805_test001_45_cc.h5
     (cellpy) - Setting mass: 0.8
     (cellpy) - Creating step table
     (cellpy) - Creating summary data
     (cellpy) - assuming cycling in anode half-cell (discharge before charge) mode
-    (cellpy) - Created CellpyData object
+    (cellpy) - Created CellpyCell object
 
 
 If you have ``holoviews`` installed, you can conjure an

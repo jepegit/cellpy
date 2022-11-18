@@ -10,8 +10,8 @@ History
 * Unit handling: tool for converting old to new format
 * Templates: using one repository with sub-folders
 * Batch plotting: collectors for both data collection, plotting and saving
-* Internals: allow for only one Cell pr CellpyData object (TODO)
-* Internals: rename main classes (CellpyData -> Cell, Cell -> Data)
+* Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
+* Internals: allow for only one Data-object pr CellpyCell object
 
 
 0.4.2 (2022)

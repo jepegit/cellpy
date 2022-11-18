@@ -19,7 +19,7 @@ def arbin_file(auto_summary=True, testing=False):
         testing (bool): run in test mode
 
     Returns:
-        cellpy.CellpyData object with the arbin data loaded
+        cellpy.CellpyCell object with the arbin data loaded
 
     """
     file_path = RAW_PATH / "20160805_test001_45_cc_01.res"
@@ -36,7 +36,7 @@ def cellpy_file(testing=False):
         testing (bool): run in test mode
 
     Returns:
-        cellpy.CellpyData object with the arbin data loaded
+        cellpy.CellpyCell object with the arbin data loaded
     """
 
     file_path = H5_PATH / "20160805_test001_45_cc.h5"

@@ -23,7 +23,7 @@ wdir = Path(cur_dir)
 
 @dataclass
 class CellPyDataConfig:
-    """Settings that can be unique for each CellpyData instance."""
+    """Settings that can be unique for each CellpyCell instance."""
 
     ...
 

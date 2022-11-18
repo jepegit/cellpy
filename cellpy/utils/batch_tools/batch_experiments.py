@@ -285,7 +285,7 @@ class CyclingExperiment(BaseExperiment):
             else:
                 logging.info(f"Processing {indx}")
 
-            cell_data = cellreader.CellpyData()
+            cell_data = cellreader.CellpyCell()
 
             logging.info("loading cell")
             if not force_cellpy:
@@ -403,7 +403,7 @@ class CyclingExperiment(BaseExperiment):
             if self.all_in_memory:
                 cell_data_frames[indx] = cell_data
             else:
-                cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
+                cell_data_frames[indx] = cellreader.CellpyCell(initialize=True)
                 cell_data_frames[indx].data.steps = cell_data.data.steps
                 # cell_data_frames[indx].dataset.steps_made = True
 
@@ -518,7 +518,7 @@ class CyclingExperiment(BaseExperiment):
         """Ensure that an appropriate link to the cellpy-files exists for
         each cell.
 
-        The experiment will then contain a CellpyData object for each cell
+        The experiment will then contain a CellpyCell object for each cell
         (in the cell_data_frames attribute) with only the step-table stored.
 
         Remark that running update persists the summary frames instead (or

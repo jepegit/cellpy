@@ -200,7 +200,7 @@ def check_loader_from_outside():
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     print(f"Exists? {name.is_file()}")
 
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("maccor_txt", sep="\t")
 
     c.from_raw(name)

@@ -279,7 +279,7 @@ class Data:
             if hasattr(self, k):
                 setattr(self, k, kwargs[k])
 
-        # methods in CellpyData to update if adding new attributes:
+        # methods in CellpyCell to update if adding new attributes:
         # ATTRS_CELLPYFILE
 
         # place to put "checks" etc:
@@ -683,7 +683,7 @@ def collect_capacity_curves(
 
     The DataFrames are named by its cycle number.
 
-    Input: CellpyData
+    Input: CellpyCell
     Returns: list of pandas.DataFrames,
         list of cycle numbers,
         minimum voltage value,

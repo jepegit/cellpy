@@ -329,10 +329,10 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
 
 
 def export_dqdv(cell_data, savedir, sep, last_cycle=None):
-    """Exports dQ/dV data from a CellpyData instance.
+    """Exports dQ/dV data from a CellpyCell instance.
 
     Args:
-        cell_data: CellpyData instance
+        cell_data: CellpyCell instance
         savedir: path to the folder where the files should be saved
         sep: separator for the .csv-files.
         last_cycle: only export up to this cycle (if not None)

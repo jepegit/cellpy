@@ -143,9 +143,9 @@ def test_merge_auto_from_list(parameters):
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     from cellpy import cellreader
 
-    cdi1 = cellreader.CellpyData()
-    cdi2 = cellreader.CellpyData()
-    cdi3 = cellreader.CellpyData()
+    cdi1 = cellreader.CellpyCell()
+    cdi2 = cellreader.CellpyCell()
+    cdi3 = cellreader.CellpyCell()
 
     f1 = parameters.res_file_path
     f2 = parameters.res_file_path2
@@ -634,7 +634,7 @@ def test_cellpyfile_roundtrip(tmp_path, parameters):
     cellpy_file_name = (
         pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     )
-    cdi = cellreader.CellpyData()
+    cdi = cellreader.CellpyCell()
 
     # create a cellpy file from the res-file
     cdi.from_raw(parameters.res_file_path)
@@ -643,7 +643,7 @@ def test_cellpyfile_roundtrip(tmp_path, parameters):
     cdi.save(cellpy_file_name)
 
     # load the cellpy file
-    cdi = cellreader.CellpyData()
+    cdi = cellreader.CellpyCell()
     cdi.load(cellpy_file_name)
     cdi.make_step_table()
     cdi.make_summary(find_ir=True, find_end_voltage=True)

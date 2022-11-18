@@ -487,7 +487,7 @@ def check_loader_from_outside():
     from cellpy import cellreader
 
     name = "20200820_CoFBAT_slurry07B_01_cc_01"
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("arbin_sql")
     # print(c)
     c.from_raw(name)

@@ -95,7 +95,7 @@ pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 module_logger = logging.getLogger(__name__)
 
 
-class CellpyData:
+class CellpyCell:
     """Main class for working and storing data.
 
     This class is the main work-horse for cellpy where all the functions for
@@ -110,7 +110,7 @@ class CellpyData:
     """
 
     def __repr__(self):
-        txt = f"CellpyData-object (id={hex(id(self))})"
+        txt = f"CellpyCell-object (id={hex(id(self))})"
         if self.name:
             txt += f"\nname: {self.name}"
         if self.table_names:
@@ -121,7 +121,7 @@ class CellpyData:
 
     def _repr_html_(self):
         header = f"""
-            <h2>CellpyData-object</h2>
+            <h2>CellpyCell-object</h2>
             <b>id</b>: {hex(id(self))} <br>
             <b>name</b>: {self.name} <br>
             <b>table names</b>: {self.table_names} <br>
@@ -156,7 +156,7 @@ class CellpyData:
         return header + all_vars + cell_txt
 
     def __str__(self):
-        txt = "<CellpyData>\n"
+        txt = "<CellpyCell>\n"
         if self.name:
             txt += f"name: {self.name}\n"
         if self.table_names:
@@ -196,7 +196,7 @@ class CellpyData:
         tester=None,
         initialize=False,
     ):
-        """CellpyData object
+        """CellpyCell object
 
         Args:
             filenames: list of files to load.
@@ -214,7 +214,7 @@ class CellpyData:
             self.tester = tester
         self.loader = None  # this will be set in the function set_instrument
         self.logger = logging.getLogger(__name__)
-        logging.debug("created CellpyData instance")
+        logging.debug("created CellpyCell instance")
         self.name = None
         self.profile = profile
         self.minimum_selection = {}
@@ -324,18 +324,18 @@ class CellpyData:
 
     @property
     def empty(self):
-        """gives True if the CellpyData object is empty (or un-functional)"""
+        """gives True if the CellpyCell object is empty (or un-functional)"""
         return not self.check()
 
     @classmethod
     def vacant(cls, cell=None):
-        """Create a CellpyData instance.
+        """Create a CellpyCell instance.
         Args:
-            cell (CellpyData instance): the attributes from the data will be copied
+            cell (CellpyCell instance): the attributes from the data will be copied
                 to the new Cellpydata instance.
 
          Returns:
-            CellpyData instance.
+            CellpyCell instance.
         """
 
         new_cell = cls(initialize=True)
@@ -396,28 +396,28 @@ class CellpyData:
         r.loc[cycle_mask, hdr_d_energy] = r.loc[cycle_mask, hdr_d_energy] - d_energy
 
     def split(self, cycle=None):
-        """Split experiment (CellpyData object) into two sub-experiments. if cycle
+        """Split experiment (CellpyCell object) into two sub-experiments. if cycle
         is not give, it will split on the median cycle number"""
 
         if isinstance(cycle, int) or cycle is None:
             return self.split_many(base_cycles=cycle)
 
     def drop_from(self, cycle=None):
-        """Select first part of experiment (CellpyData object) up to cycle number
+        """Select first part of experiment (CellpyCell object) up to cycle number
         'cycle'"""
         if isinstance(cycle, int):
             c1, c2 = self.split_many(base_cycles=cycle)
             return c1
 
     def drop_to(self, cycle=None):
-        """Select last part of experiment (CellpyData object) from cycle number
+        """Select last part of experiment (CellpyCell object) from cycle number
         'cycle'"""
         if isinstance(cycle, int):
             c1, c2 = self.split_many(base_cycles=cycle)
             return c2
 
     def drop_edges(self, start, end):
-        """Select middle part of experiment (CellpyData object) from cycle
+        """Select middle part of experiment (CellpyCell object) from cycle
         number 'start' to 'end"""
 
         if end < start:
@@ -427,13 +427,13 @@ class CellpyData:
         return self.split_many([start, end])[1]
 
     def split_many(self, base_cycles=None):
-        """Split experiment (CellpyData object) into several sub-experiments.
+        """Split experiment (CellpyCell object) into several sub-experiments.
 
         Args:
             base_cycles (int or list of ints): cycle(s) to do the split on.
 
         Returns:
-            List of CellpyData objects
+            List of CellpyCell objects
         """
         h_summary_index = HEADERS_SUMMARY.cycle_index
         h_raw_index = HEADERS_NORMAL.cycle_index_txt
@@ -470,8 +470,8 @@ class CellpyData:
                 summary[summary[h_summary_index] >= b_cycle],
             ]
 
-            new_cell = CellpyData.vacant(cell=self)
-            old_cell = CellpyData.vacant(cell=self)
+            new_cell = CellpyCell.vacant(cell=self)
+            old_cell = CellpyCell.vacant(cell=self)
 
             summary0 = summary0.set_index(h_summary_index)
 
@@ -558,7 +558,7 @@ class CellpyData:
 
         Notes:
             If you are using a local instrument loader, you will have to register it first to the loader factory.
-            >>> c = CellpyData()  # this will automatically register the already implemented loaders
+            >>> c = CellpyCell()  # this will automatically register the already implemented loaders
             >>> c.instrument_factory.register_builder(instrument_id, (module_name, path_to_instrument_loader_file))
 
             It is highly recommended using the module_name as the instrument_id.
@@ -647,7 +647,7 @@ class CellpyData:
             directory (str): path to res-directory
 
         Example:
-            >>> d = CellpyData()
+            >>> d = CellpyCell()
             >>> directory = "MyData/Arbindata"
             >>> d.set_raw_datadir(directory)
 
@@ -672,7 +672,7 @@ class CellpyData:
             directory (str): path to hdf5-directory
 
         Example:
-            >>> d = CellpyData()
+            >>> d = CellpyCell()
             >>> directory = "MyData/HDF5"
             >>> d.set_raw_datadir(directory)
 
@@ -895,7 +895,7 @@ class CellpyData:
             >>> ... mass = my_dbreader.get_mass(srno)
             >>> ... rawfiles, cellpyfiles = \
             >>> ...     filefinder.search_for_files(my_run_name)
-            >>> ... cell_data = cellreader.CellpyData()
+            >>> ... cell_data = cellreader.CellpyCell()
             >>> ... cell_data.loadcell(raw_files=rawfiles,
             >>> ...                    cellpy_file=cellpyfiles)
             >>> ... cell_data.set_mass(mass)
@@ -1172,7 +1172,7 @@ class CellpyData:
         """Load a raw data-file.
 
         Args:
-            file_names (list of raw-file names): uses CellpyData.file_names if
+            file_names (list of raw-file names): uses CellpyCell.file_names if
                 None. If the list contains more than one file name, then the
                 runs will be merged together.
             pre_processor_hook (callable): function that will be applied to the data within the loader.
@@ -1357,7 +1357,7 @@ class CellpyData:
         """Create a link to a cellpy file.
 
         If the file is very big, it is sometimes better to work with the data
-        out of memory (i.e. on disk). A CellpyData object with a linked file
+        out of memory (i.e. on disk). A CellpyCell object with a linked file
         will in most cases work as a normal object. However, some of the methods
         might be disabled. And it will be slower.
 
@@ -1386,7 +1386,7 @@ class CellpyData:
             selector (): under development
 
         Returns:
-            cellpy.CellPyData class if return_cls is True
+            cellpy.CellPyCellpy class if return_cls is True
         """
 
         try:
@@ -2389,7 +2389,7 @@ class CellpyData:
                 (i.e. all the same columns, only filtered by rows).
 
         Example:
-            >>> my_charge_steps = CellpyData.get_step_numbers(
+            >>> my_charge_steps = CellpyCell.get_step_numbers(
             >>>    "charge",
             >>>    cycle_number = 3
             >>> )
@@ -3199,7 +3199,7 @@ class CellpyData:
             datadir: folder where to save the data (uses current folder if not
                 given).
             sep: the separator to use in the csv file
-                (defaults to CellpyData.sep).
+                (defaults to CellpyCell.sep).
             cycles: (bool) export voltage-capacity curves if True.
             raw: (bool) export raw-data if True.
             summary: (bool) export summary if True.
@@ -5416,7 +5416,7 @@ def get(
     testing=False,
     **kwargs,
 ):
-    """Create a CellpyData object
+    """Create a CellpyCell object
 
     Args:
         filename (str, os.PathLike, or list of raw-file names): path to file(s)
@@ -5431,7 +5431,7 @@ def get(
         **kwargs: sent to the loader
 
     Returns:
-        CellpyData object (if successful, None if not)
+        CellpyCell object (if successful, None if not)
 
     """
 
@@ -5439,8 +5439,8 @@ def get(
 
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
-    cellpy_instance = CellpyData()
-    logging.debug(f"created CellpyData instance")
+    cellpy_instance = CellpyCell()
+    logging.debug(f"created CellpyCell instance")
     db_readers = ["arbin_sql"]
 
     logging.debug(f"checking instrument and instrument_file")
@@ -5491,7 +5491,7 @@ def get(
                             cellpy_instance.make_step_table()
                             logging.info("Creating summary data")
                             cellpy_instance.make_summary()
-                    logging.info("Created CellpyData object")
+                    logging.info("Created CellpyCell object")
                     return cellpy_instance
 
         # raw file
@@ -5529,14 +5529,14 @@ def get(
         if nominal_capacity:
             prms.Materials.default_nom_cap = nominal_capacity
 
-    logging.info("Created CellpyData object")
+    logging.info("Created CellpyCell object")
     return cellpy_instance
 
 
 def check_raw():
     from cellpy.utils import example_data
 
-    cellpy_data_instance = CellpyData()
+    cellpy_data_instance = CellpyCell()
     res_file_path = example_data.arbin_file_path()
     cellpy_data_instance.loadcell(res_file_path)
 
@@ -5572,7 +5572,7 @@ def check_cellpy_file():
     f = example_data.cellpy_file_path()
     print(f)
     print(f.is_file())
-    c = CellpyData()
+    c = CellpyCell()
     c.dev_load(f, accept_old=True)
     c.make_step_table()
     c.make_summary()

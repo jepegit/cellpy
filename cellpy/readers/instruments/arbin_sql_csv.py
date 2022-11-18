@@ -240,7 +240,7 @@ def test_loader_from_outside():
         r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709"
     )
     name = datadir / "2021_02_02_standardageing_1C_25dC_1_Channel_1_Wb_1.CSV"
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("arbin_sql_csv")
 
     c.from_raw(name)
@@ -302,7 +302,7 @@ def test_seamless_files():
         / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
     )
 
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("arbin_sql_csv")
 
     prms.Reader.sep = ";"
@@ -314,7 +314,7 @@ def test_seamless_files():
     c.make_summary()
 
     names = [name1, name2]
-    cell_data = cellreader.CellpyData()
+    cell_data = cellreader.CellpyCell()
     cell_data.set_instrument("arbin_sql_csv")
     cell_data.loadcell(names, mass=0.016569)
 

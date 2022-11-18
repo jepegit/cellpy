@@ -746,7 +746,7 @@ def dqdv_frames(cell, split=False, tidy=True, label_direction=False, **kwargs):
     """Returns dqdv data as pandas.DataFrame(s) for all cycles.
 
     Args:
-        cell (CellpyData-object).
+        cell (CellpyCell-object).
         split (bool): return one frame for charge and one for
             discharge if True (defaults to False).
         tidy (bool): returns the split frames in wide format (defaults
@@ -857,7 +857,7 @@ def _dqdv_combinded_frame(cell, tidy=True, label_direction=False, **kwargs):
     """Returns full cycle dqdv data for all cycles as one pd.DataFrame.
 
     Args:
-        cell: CellpyData-object
+        cell: CellpyCell-object
 
     Returns:
         pandas.DataFrame with the following columns:
@@ -902,7 +902,7 @@ def _dqdv_split_frames(
     """Returns dqdv data as pandas.DataFrames for all cycles.
 
     Args:
-        cell (CellpyData-object).
+        cell (CellpyCell-object).
         tidy (bool): return in wide format if False (default),
             long (tidy) format if True.
 
@@ -1057,7 +1057,7 @@ def _get_a_cell_to_play_with():
     # mass = 0.078609164
 
     # ---------- loading test-data ----------------------
-    cell = cellreader.CellpyData()
+    cell = cellreader.CellpyCell()
     cell.load(test_cellpy_file_full)
     list_of_cycles = cell.get_cycle_numbers()
     number_of_cycles = len(list_of_cycles)

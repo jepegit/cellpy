@@ -45,7 +45,7 @@ Status: implemented - but missing documentation
 
 Step 1: replace all occurrences of cells[0] with .data property
     - cellreader: need to fix merge
-        - removed it for now (used in dev_update.. but that must be changed anyway)
+        - removed it for now (used in dev_update... but that must be changed anyway)
     - cellreader: need to fix from_raw
         - done with still some clean up left
         - add uid / hash?
@@ -56,11 +56,18 @@ Step 1: replace all occurrences of cells[0] with .data property
     - cellreader: replace list with data object for load and save cellpy-files
         - done
     - modify .data property so that it sets and gets the data object directly to self._cell
-        -done
+        - done
     - instruments: work on single data instead of cells (list) - replace both in from_raw and the individual instrument loaders
         - done
 
-Step 2: rename the .data property to .data
-Step 3: rename the Cell object to Data
+Step 2: rename the Cell object to Data
+    - done
+
+Step 3: rename the .data property to .data
+    - rename in cellpy
+        - done
+    - rename in notebooks
+
+Step 4: rename CellpyCell to CellpyCell
 
 Step 5: rewrite merging / appending

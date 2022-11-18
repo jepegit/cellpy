@@ -18,7 +18,7 @@ from cellpy.parameters.internal_settings import (
     get_headers_step_table,
     get_headers_normal,
 )
-from cellpy.readers.cellreader import CellpyData
+from cellpy.readers.cellreader import CellpyCell
 from cellpy.utils.batch import Batch
 
 hdr_summary = get_headers_summary()
@@ -132,11 +132,11 @@ def update_journal_cellpy_data_dir(
 
 
 def make_new_cell():
-    """create an empty CellpyData object."""
+    """create an empty CellpyCell object."""
     warnings.warn(
-        "make_new_cell is deprecated, use CellpyData.vacant instead", DeprecationWarning
+        "make_new_cell is deprecated, use CellpyCell.vacant instead", DeprecationWarning
     )
-    new_cell = cellpy.cellreader.CellpyData(initialize=True)
+    new_cell = cellpy.cellreader.CellpyCell(initialize=True)
     return new_cell
 
 
@@ -144,14 +144,14 @@ def split_experiment(cell, base_cycles=None):
     """Split experiment (CellpyData object) into several sub-experiments.
 
     Args:
-        cell (CellpyData): original cell
+        cell (CellpyCell): original cell
         base_cycles (int or list of ints): cycle(s) to do the split on.
 
     Returns:
         List of CellpyData objects
     """
     warnings.warn(
-        "split_experiment is deprecated, use CellpyData.split_many instead",
+        "split_experiment is deprecated, use CellpyCell.split_many instead",
         DeprecationWarning,
     )
 
@@ -182,14 +182,14 @@ def split_experiment(cell, base_cycles=None):
             summary[summary.index >= b_cycle],
         ]
 
-        new_cell = CellpyData.vacant()
+        new_cell = CellpyCell.vacant()
 
         new_cell.data.steps = steptable0
 
         new_cell.data.raw = data0
         new_cell.data.summary = summary0
 
-        old_cell = CellpyData.vacant()
+        old_cell = CellpyCell.vacant()
         old_cell.data.steps = steptable
 
         old_cell.data.raw = data
@@ -249,7 +249,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
     C-rates.
 
     Args:
-        cell (CellpyData): cell object
+        cell (CellpyCell): cell object
         nom_cap (float): nominal capacity to use for estimating C-rates.
             Defaults to the nominal capacity defined in the cell object
             (this is typically set during creation of the CellpyData object
@@ -918,7 +918,7 @@ def select_summary_based_on_rate(
     """Select only cycles charged or discharged with a given rate.
 
     Parameters:
-        cell (cellpy.CellpyData)
+        cell (cellpy.CellpyCell)
         rate (float): the rate to filter on. Remark that it should be given
             as a float, i.e. you will have to convert from C-rate to
             the actual numeric value. For example, use rate=0.05 if you want
@@ -1003,7 +1003,7 @@ def add_normalized_capacity(
     """Add normalized capacity to the summary.
 
     Args:
-        cell (CellpyData): cell to add normalized capacity to.
+        cell (CellpyCell): cell to add normalized capacity to.
         norm_cycles (list of ints): the cycles that will be used to find
             the normalization factor from (averaging their capacity)
         individual_normalization (bool): find normalization factor for both
@@ -1063,7 +1063,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
         out_file_name (str): name of saved file.
     """
     warnings.warn(DeprecationWarning("This option will be removed in v.0.4.0"))
-    d = CellpyData()
+    d = CellpyCell()
 
     if not outdir:
         outdir = prms.Paths.cellpydatadir

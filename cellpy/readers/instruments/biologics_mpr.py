@@ -589,7 +589,7 @@ if __name__ == "__main__":
     print(f"Test-file: {raw_file_name}")
     log.setup_logging(default_level="DEBUG")
     instrument = "biologics_mpr"
-    cellpy_data_instance = cellreader.CellpyData()
+    cellpy_data_instance = cellreader.CellpyCell()
     cellpy_data_instance.set_instrument(instrument=instrument)
     print("starting to load the file")
     cellpy_data_instance.from_raw(raw_file_name)
