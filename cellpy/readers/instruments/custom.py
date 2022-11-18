@@ -250,13 +250,13 @@ def _process_cellpy_object(name, c, out):
     pd.options.display.max_columns = 100
 
     print(f"loaded the file - now lets see what we got")
-    raw = c.cell.raw
+    raw = c.data.raw
     raw.to_clipboard()
     print(raw.head())
     c.make_step_table()
 
-    steps = c.cell.steps
-    summary = c.cell.summary
+    steps = c.data.steps
+    summary = c.data.summary
 
     raw.to_csv(out / "raw.csv", sep=";")
     steps.to_csv(out / "steps.csv", sep=";")

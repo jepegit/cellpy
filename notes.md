@@ -43,7 +43,7 @@ Status: implemented - but missing documentation
 
 ### 225-remove-completely-option-for-having-multiple-cells
 
-Step 1: replace all occurrences of cells[0] with .cell property
+Step 1: replace all occurrences of cells[0] with .data property
     - cellreader: need to fix merge
         - removed it for now (used in dev_update.. but that must be changed anyway)
     - cellreader: need to fix from_raw
@@ -53,14 +53,14 @@ Step 1: replace all occurrences of cells[0] with .cell property
         - done
     - cellreader: remove for-loops for cells in all methods (summary, xxx)
         - done
-    - cellreader: replace list with cell object for load and save cellpy-files
+    - cellreader: replace list with data object for load and save cellpy-files
         - done
-    - modify .cell property so that it sets and gets the cell object directly to self._cell
+    - modify .data property so that it sets and gets the data object directly to self._cell
         -done
-    - instruments: work on single cell instead of cells (list) - replace both in from_raw and the individual instrument loaders
+    - instruments: work on single data instead of cells (list) - replace both in from_raw and the individual instrument loaders
         - done
 
-Step 2: rename the .cell property to .data
+Step 2: rename the .data property to .data
 Step 3: rename the Cell object to Data
 
 Step 5: rewrite merging / appending

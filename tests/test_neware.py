@@ -21,10 +21,10 @@ def test_get_neware_from_csv(parameters):
         model="UIO",
         mass=2.08,
     )
-    assert len(c.cell.raw) == 9065
-    assert len(c.cell.summary) == 4
+    assert len(c.data.raw) == 9065
+    assert len(c.data.summary) == 4
 
 
 def test_get_neware_from_h5(neware_cell):
-    assert len(neware_cell.cell.raw) == 9065
-    assert len(neware_cell.cell.summary) == 4
+    assert len(neware_cell.data.raw) == 9065
+    assert len(neware_cell.data.summary) == 4

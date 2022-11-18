@@ -631,7 +631,7 @@ class EasyPlot:
 
             if self.kwargs["cyclelife_coulombic_efficiency"]:
                 # Get CE for cyc_nums
-                coulombic_efficiency = cpobj.cell.summary[
+                coulombic_efficiency = cpobj.data.summary[
                     "coulombic_efficiency_u_percentage"
                 ]
                 cycs = []
@@ -649,9 +649,9 @@ class EasyPlot:
                 self.kwargs["cyclelife_charge_c_rate"]
                 or self.kwargs["cyclelife_discharge_c_rate"]
             ):
-                # charge_c_rate = cpobj.cell.summary["charge_c_rate"] #This gives incorrect c-rates.
+                # charge_c_rate = cpobj.data.summary["charge_c_rate"] #This gives incorrect c-rates.
 
-                stepstable = cpobj.cell.steps
+                stepstable = cpobj.data.steps
                 chg_c_rates, dchg_c_rates = get_effective_C_rates(stepstable)
 
                 selected_chg_c_rates = []
@@ -1481,7 +1481,7 @@ class EasyPlot:
                 Line2D([0], [0], marker="o", color=color, label=filename, linestyle="")
             )
 
-            stepstable = cpobj.cell.steps
+            stepstable = cpobj.data.steps
             chglist, dchglist = get_effective_C_rates_and_caps(stepstable)
 
             # Remove all cycles which are not in cyc_nums by looking at the 0th element (cyc num) of every sublist in chglist

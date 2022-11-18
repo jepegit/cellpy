@@ -22,7 +22,7 @@ def test_set_instrument(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.mcc_file_path, model="one", sep="\t")
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
-    assert len(cellpy_data_instance.cell.raw) == 6704
+    assert len(cellpy_data_instance.data.raw) == 6704
     temp_dir = tempfile.mkdtemp()
     logging.debug(f"created a temporary directory and dumping csv there ({temp_dir})")
     cellpy_data_instance.to_csv(datadir=temp_dir)
@@ -39,7 +39,7 @@ def test_cellpy_get_model_one(parameters):
         mass=1.0,
         testing=True,
     )
-    assert len(c.cell.raw) == 6704
+    assert len(c.data.raw) == 6704
 
 
 def test_load_custom_yaml_file(parameters):
@@ -65,7 +65,7 @@ def test_cellpy_get_model_one_custom_instrument_file(parameters):
     c = get(
         filename=parameters.mcc_file_path, instrument=instrument, mass=1.0, testing=True
     )
-    assert len(c.cell.raw) == 6704
+    assert len(c.data.raw) == 6704
 
 
 def test_cellpy_get(parameters):
@@ -77,7 +77,7 @@ def test_cellpy_get(parameters):
         logging_mode="DEBUG",
         testing=True,
     )
-    assert len(c.cell.raw) == 6704
+    assert len(c.data.raw) == 6704
 
 
 # def test_cellpy_get_2(parameters):
@@ -86,4 +86,4 @@ def test_cellpy_get(parameters):
 #     prms.Instruments.Maccor.format_params = "two"
 #     instrument = "maccor_txt"
 #     c = get(parameters.mcc_file_path2, instrument=instrument)
-#     assert len(c.cell.raw) == 6704
+#     assert len(c.data.raw) == 6704

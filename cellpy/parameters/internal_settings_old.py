@@ -90,7 +90,7 @@ ATTRS_CELLPYDATA = [
     "tester",
 ]
 
-# current attributes used for the cellpy.cell objects
+# current attributes used for the cellpy.data objects
 ATTRS_DATASET = [
     "cellpy_file_version",
     "channel_index",

@@ -26,7 +26,7 @@ def test_to_cellpy_unit_from_cellpy_instance_with_cell(dataset):
     new_value = dataset.to_cellpy_unit(value, physical_property="length")
     assert (
         new_value
-        == Q(12.2, dataset.cell.raw_units["length"])
+        == Q(12.2, dataset.data.raw_units["length"])
         .to(dataset.cellpy_units["length"])
         .m
     )
@@ -37,11 +37,11 @@ def test_to_cellpy_unit_from_cellpy_instance_with_cell(dataset):
     assert new_value == 12.2
 
     new_value = dataset.to_cellpy_unit(
-        (12.2, dataset.cell.raw_units["length"]), physical_property="length"
+        (12.2, dataset.data.raw_units["length"]), physical_property="length"
     )
     assert (
         new_value
-        == Q(12.2, dataset.cell.raw_units["length"])
+        == Q(12.2, dataset.data.raw_units["length"])
         .to(dataset.cellpy_units["length"])
         .m
     )
@@ -59,7 +59,7 @@ def test_to_cellpy_unit_from_cellpy_instance_with_cell(dataset):
 def test_get_converter_to_specific(dataset, test_input, expected):
     # This test is basically a reimplementation of what it is going to test.
     # Dont think that is a too good and idea.
-    raw_unit_charge = dataset.cell.raw_units["charge"]
+    raw_unit_charge = dataset.data.raw_units["charge"]
     cellpy_unit_charge = dataset.cellpy_units["charge"]
     value_unit = {
         "gravimetric": dataset.cellpy_units["mass"],
@@ -93,9 +93,9 @@ def test_get_converter_to_specific(dataset, test_input, expected):
 
 
 def test_nominal_capacity(dataset):
-    nom_cap = dataset.cell.nom_cap
+    nom_cap = dataset.data.nom_cap
     mass = 0.47
-    nom_cap_specifics = None  # dataset.cell._nom_cap_specifics
+    nom_cap_specifics = None  # dataset.data._nom_cap_specifics
 
     absolute_nom_cap = dataset.nominal_capacity_as_absolute(
         nom_cap, mass, nom_cap_specifics
@@ -111,22 +111,22 @@ def test_get_converter_to_specific_absolute_with_mode(dataset):
 
 def test_get_converter_to_specific_with_mode(dataset):
     area = 1.57  # cm2
-    dataset.cell.active_electrode_area = area
+    dataset.data.active_electrode_area = area
     c = dataset.get_converter_to_specific(mode="areal")
     assert c == pytest.approx(1000 / area, 0.0001)
 
 
 # This will only work when defaults are in place:
 def test_get_converter_to_areal_specific(dataset):
-    area = dataset.cell.active_electrode_area
+    area = dataset.data.active_electrode_area
     print(f"{area=}")
     print(f"{dataset.cellpy_units['area']=}")
-    print(f"{dataset.cell.raw_units['area']=}")
+    print(f"{dataset.data.raw_units['area']=}")
     print(f"{dataset.cellpy_units['specific_areal']=}")
-    print(f"{dataset.cell.raw_units['specific_areal']=}")
+    print(f"{dataset.data.raw_units['specific_areal']=}")
 
     c = dataset.get_converter_to_specific(mode="areal")
-    assert c == pytest.approx(1000 / dataset.cell.active_electrode_area, 0.0001)
+    assert c == pytest.approx(1000 / dataset.data.active_electrode_area, 0.0001)
 
 
 def test_that_raw_units_are_not_available_without_a_cell(cellpy_data_instance):
@@ -148,11 +148,11 @@ def test_set_cellpy_unit_and_use(dataset):
 
     dataset.cellpy_units["charge"] = "Ah"
     dataset.make_summary()
-    initial_value = dataset.cell.summary[h].values[10]
+    initial_value = dataset.data.summary[h].values[10]
 
     dataset.cellpy_units["charge"] = "mAh"
     dataset.make_summary()
-    new_value = dataset.cell.summary[h].values[10]
+    new_value = dataset.data.summary[h].values[10]
 
     assert new_value == pytest.approx(initial_value * 1000, 0.0001)
 

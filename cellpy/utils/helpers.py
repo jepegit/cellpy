@@ -163,7 +163,7 @@ def split_experiment(cell, base_cycles=None):
     if not isinstance(base_cycles, (list, tuple)):
         base_cycles = [base_cycles]
 
-    dataset = cell.cell
+    dataset = cell.data
     steptable = dataset.steps
     data = dataset.raw
     summary = dataset.summary
@@ -184,21 +184,21 @@ def split_experiment(cell, base_cycles=None):
 
         new_cell = CellpyData.vacant()
 
-        new_cell.cell.steps = steptable0
+        new_cell.data.steps = steptable0
 
-        new_cell.cell.raw = data0
-        new_cell.cell.summary = summary0
+        new_cell.data.raw = data0
+        new_cell.data.summary = summary0
 
         old_cell = CellpyData.vacant()
-        old_cell.cell.steps = steptable
+        old_cell.data.steps = steptable
 
-        old_cell.cell.raw = data
-        old_cell.cell.summary = summary
+        old_cell.data.raw = data
+        old_cell.data.summary = summary
 
         for attr in ATTRS_DATASET:
-            value = getattr(cell.cell, attr)
-            setattr(new_cell.cell, attr, value)
-            setattr(old_cell.cell, attr, value)
+            value = getattr(cell.data, attr)
+            setattr(new_cell.data, attr, value)
+            setattr(old_cell.data, attr, value)
 
         for attr in ATTRS_CELLPYDATA:
             value = getattr(cell, attr)
@@ -221,13 +221,13 @@ def add_normalized_cycle_index(summary, nom_cap, column_name=None):
     capacity or if you would like to have more than one normalized cycle index.
 
     Args:
-        summary (pandas.DataFrame): cell summary
+        summary (pandas.DataFrame): data summary
         nom_cap (float): nominal capacity to use when normalizing.
         column_name (str): name of the new column. Uses the name defined in
             cellpy.parameters.internal_settings as default.
 
     Returns:
-        cell object now with normalized cycle index in its summary.
+        data object now with normalized cycle index in its summary.
     """
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity_gravimetric"]
@@ -258,7 +258,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
             cellpy.parameters.internal_settings as default.
 
     Returns:
-        cell object.
+        data object.
     """
 
     # now also included in step_table
@@ -266,11 +266,11 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
     if column_name is None:
         column_name = hdr_steps["rate_avr"]
     if nom_cap is None:
-        nom_cap = cell.cell.nom_cap
+        nom_cap = cell.data.nom_cap
 
     spec_conv_factor = cell.get_converter_to_specific()
-    cell.cell.steps[column_name] = abs(
-        round(cell.cell.steps.current_avr / (nom_cap / spec_conv_factor), 2)
+    cell.data.steps[column_name] = abs(
+        round(cell.data.steps.current_avr / (nom_cap / spec_conv_factor), 2)
     )
 
     return cell
@@ -281,11 +281,11 @@ def add_areal_capacity(cell, cell_id, journal):
 
     loading = journal.pages.loc[cell_id, hdr_journal["loading"]]
 
-    cell.cell.summary[hdr_summary["areal_charge_capacity"]] = (
-        cell.cell.summary[hdr_summary["charge_capacity"]] * loading / 1000
+    cell.data.summary[hdr_summary["areal_charge_capacity"]] = (
+        cell.data.summary[hdr_summary["charge_capacity"]] * loading / 1000
     )
-    cell.cell.summary[hdr_summary["areal_discharge_capacity"]] = (
-        cell.cell.summary[hdr_summary["discharge_capacity"]] * loading / 1000
+    cell.data.summary[hdr_summary["areal_discharge_capacity"]] = (
+        cell.data.summary[hdr_summary["discharge_capacity"]] * loading / 1000
     )
     return cell
 
@@ -498,13 +498,13 @@ def yank_after(b, last=None, keep_old=False):
 
     for cell_number, cell_label in enumerate(b.experiment.cell_names):
         c = b.experiment.data[cell_label]
-        s = c.cell.summary
+        s = c.data.summary
         if isinstance(last, dict):
             last_this_cell = last.get(cell_label, None)
         else:
             last_this_cell = last
         s = remove_last_cycles_from_summary(s, last_this_cell)
-        c.cell.summary = s
+        c.data.summary = s
     if keep_old:
         return b
 
@@ -530,13 +530,13 @@ def yank_before(b, first=None, keep_old=False):
 
     for cell_number, cell_label in enumerate(b.experiment.cell_names):
         c = b.experiment.data[cell_label]
-        s = c.cell.summary
+        s = c.data.summary
         if isinstance(first, dict):
             first_this_cell = first.get(cell_label, None)
         else:
             first_this_cell = first
         s = remove_first_cycles_from_summary(s, first_this_cell)
-        c.cell.summary = s
+        c.data.summary = s
     if keep_old:
         return b
 
@@ -592,7 +592,7 @@ def yank_outliers(
     for cell_number, cell_label in enumerate(b.experiment.cell_names):
         logging.debug(f"yanking {cell_label} ")
         c = b.experiment.data[cell_label]
-        s = c.cell.summary
+        s = c.data.summary
         before = set(s.index)
         if remove_indexes is not None:
             logging.debug("removing indexes")
@@ -625,7 +625,7 @@ def yank_outliers(
                 filter_cols=filter_cols,
                 freeze_indexes=freeze_indexes,
             )
-            c.cell.summary = s
+            c.data.summary = s
 
         if window_size is not None:
             s = remove_outliers_from_summary_on_window(
@@ -637,7 +637,7 @@ def yank_outliers(
             )
 
         removed = before - set(s.index)
-        c.cell.summary = s
+        c.data.summary = s
         if removed:
             removed_cycles[cell_label] = list(removed)
 
@@ -647,9 +647,9 @@ def yank_outliers(
             tot_rows_removed = 0
             for cell_number, cell_label in enumerate(b.experiment.cell_names):
                 c = b.experiment.data[cell_label]
-                n1 = len(c.cell.summary)
+                n1 = len(c.data.summary)
                 s = remove_outliers_from_summary_on_zscore(
-                    c.cell.summary,
+                    c.data.summary,
                     filter_cols=filter_cols,
                     zscore_limit=zscore_limit,
                     freeze_indexes=freeze_indexes,
@@ -657,7 +657,7 @@ def yank_outliers(
                 # TODO: populate removed_cycles
                 rows_removed = n1 - len(s)
                 tot_rows_removed += rows_removed
-                c.cell.summary = s
+                c.data.summary = s
             if tot_rows_removed == 0:
                 break
             zscore_limit *= zscore_multiplyer
@@ -786,7 +786,7 @@ def concatenate_summaries(
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
             c = b.experiment.data[cell_id]
-            # print(c.cell.summary.columns.sort_values())
+            # print(c.data.summary.columns.sort_values())
 
             if not c.empty:
                 if max_cycle is not None:
@@ -794,7 +794,7 @@ def concatenate_summaries(
                 if normalize_capacity_on is not None:
                     if scale_by == "nom_cap":
                         if nom_cap is None:
-                            scale_by = c.cell.nom_cap
+                            scale_by = c.data.nom_cap
                         else:
                             scale_by = nom_cap
                     elif scale_by is None:
@@ -816,7 +816,7 @@ def concatenate_summaries(
                     )
 
                 else:
-                    s = c.cell.summary
+                    s = c.data.summary
 
                 if columns is not None:
                     s = s.loc[:, output_columns].copy()
@@ -953,8 +953,8 @@ def select_summary_based_on_rate(
 
     cycle_number_header = hdr_summary["cycle_index"]
 
-    step_table = cell.cell.steps
-    summary = cell.cell.summary
+    step_table = cell.data.steps
+    summary = cell.data.summary
 
     if summary.index.name != cycle_number_header:
         warnings.warn(
@@ -1025,14 +1025,14 @@ def add_normalized_capacity(
     col_name_norm_discharge = hdr_summary["normalized_discharge_capacity"]
 
     try:
-        norm_val_charge = cell.cell.summary.loc[norm_cycles, col_name_charge].mean()
+        norm_val_charge = cell.data.summary.loc[norm_cycles, col_name_charge].mean()
     except KeyError as e:
         print(f"Oh no! Are you sure these cycle indexes exist?")
         print(f"  norm_cycles: {norm_cycles}")
-        print(f"  cycle indexes: {list(cell.cell.summary.index)}")
+        print(f"  cycle indexes: {list(cell.data.summary.index)}")
         raise KeyError from e
     if individual_normalization:
-        norm_val_discharge = cell.cell.summary.loc[
+        norm_val_discharge = cell.data.summary.loc[
             norm_cycles, col_name_discharge
         ].mean()
     else:
@@ -1043,8 +1043,8 @@ def add_normalized_capacity(
         [col_name_norm_charge, col_name_norm_discharge],
         [norm_val_charge, norm_val_discharge],
     ):
-        cell.cell.summary[norm_col_name] = (
-            scale * cell.cell.summary[col_name] / norm_value
+        cell.data.summary[norm_col_name] = (
+            scale * cell.data.summary[col_name] / norm_value
         )
 
     return cell

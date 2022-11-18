@@ -81,8 +81,8 @@ def select_ocv_points(
 
     ocv_rlx_id = "ocvrlx"
 
-    step_table = cellpydata.cell.steps
-    dfdata = cellpydata.cell.raw
+    step_table = cellpydata.data.steps
+    dfdata = cellpydata.data.raw
 
     ocv_steps = step_table.loc[step_table["cycle"].isin(cycles), :]
 
@@ -309,7 +309,7 @@ class MultiCycleOcvFit(object):
             voltage = time_voltage.voltage
 
             if voltage is not None:
-                step_table = self.data.cell.steps
+                step_table = self.data.data.steps
                 hdr = self.data.headers_step_table
                 if direction == "up":
                     end_voltage = step_table[
@@ -496,7 +496,7 @@ class OcvFit(object):
 
         """
         self.data = cellpydata
-        self.steps = self.data.cell  # hope it works...
+        self.steps = self.data.data  # hope it works...
         time_voltage = self.data.get_ocv(direction="up", cycles=cycle)
         time = time_voltage.step_time
         voltage = time_voltage.voltage

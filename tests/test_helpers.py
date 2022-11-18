@@ -41,9 +41,9 @@ def test_select_summary_based_on_rate(cell):
 
 def test_remove_outliers_on_index(cell):
     last = cell.get_cycle_numbers()[-1]
-    s1 = helpers.remove_outliers_from_summary_on_index(cell.cell.summary, indexes=[15])
+    s1 = helpers.remove_outliers_from_summary_on_index(cell.data.summary, indexes=[15])
     s2 = helpers.remove_outliers_from_summary_on_index(
-        cell.cell.summary, indexes=[15], remove_last=True
+        cell.data.summary, indexes=[15], remove_last=True
     )
     assert 14 in s1.index
     assert 15 not in s1.index

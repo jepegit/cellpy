@@ -665,9 +665,9 @@ def check_loader_from_outside():
     c.make_step_table()
     c.make_summary()
 
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
+    raw = c.data.raw
+    steps = c.data.steps
+    summary = c.data.summary
     raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
@@ -733,9 +733,9 @@ def check_loader_from_outside_with_get():
 
     c = cellpy.get(filename=name, instrument="maccor_txt", sep="\t", mass=1.0)
 
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
+    raw = c.data.raw
+    steps = c.data.steps
+    summary = c.data.summary
 
     raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")

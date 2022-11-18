@@ -338,7 +338,7 @@ def export_dqdv(cell_data, savedir, sep, last_cycle=None):
         last_cycle: only export up to this cycle (if not None)
     """
     logging.debug("exporting dqdv")
-    filename = cell_data.cell.loaded_from
+    filename = cell_data.data.loaded_from
     no_merged_sets = ""
     firstname, extension = os.path.splitext(filename)
     firstname += no_merged_sets

@@ -354,10 +354,10 @@ class CyclingExperiment(BaseExperiment):
             logging.info("...loaded successfully...")
             h_txt += " [OK]"
             pbar.set_postfix_str(s=h_txt, refresh=True)
-            summary_tmp = cell_data.cell.summary
+            summary_tmp = cell_data.data.summary
             logging.info("Trying to get summary_data")
 
-            if cell_data.cell.steps is None or self.force_recalc:
+            if cell_data.data.steps is None or self.force_recalc:
                 logging.info("Running make_step_table")
                 n_txt = f"steps {counter}"
                 pbar.set_description(n_txt, refresh=True)
@@ -404,7 +404,7 @@ class CyclingExperiment(BaseExperiment):
                 cell_data_frames[indx] = cell_data
             else:
                 cell_data_frames[indx] = cellreader.CellpyData(initialize=True)
-                cell_data_frames[indx].cell.steps = cell_data.cell.steps
+                cell_data_frames[indx].data.steps = cell_data.data.steps
                 # cell_data_frames[indx].dataset.steps_made = True
 
             if self.save_cellpy:

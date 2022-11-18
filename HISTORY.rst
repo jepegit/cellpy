@@ -83,7 +83,7 @@ History
 * Refactoring - renaming from dfsummary to summary
 * Refactoring - renaming from step_table to steps
 * Refactoring - renaming from dfdata to raw
-* Refactoring - renaming cellpy.cell to cellpy.get
+* Refactoring - renaming cellpy.data to cellpy.get
 * Updated save and load cellpy files allowing for new naming
 * Implemented cellpy new and cellpy serve cli functionality
 

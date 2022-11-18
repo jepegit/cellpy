@@ -216,7 +216,7 @@ class Data(collections.UserDict):
 
     def __look_up__(self, cell_id):
         try:
-            if not self.experiment.cell_data_frames[cell_id].cell.raw.empty:
+            if not self.experiment.cell_data_frames[cell_id].data.raw.empty:
                 return self.experiment.cell_data_frames[cell_id]
             else:
                 raise AttributeError
@@ -316,7 +316,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         if max_cycle:
             cellpy_object.overwrite_able = False
             self.max_cycle = max_cycle
-        cellpy_object.cell.steps = step_table
+        cellpy_object.data.steps = step_table
         self._data = None
         self.cell_data_frames[cell_label] = cellpy_object
 

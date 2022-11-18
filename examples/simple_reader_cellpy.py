@@ -47,7 +47,7 @@ d.set_mass(mass)
 d.make_step_table()
 d.make_summary()
 
-summary = d.cell.summary
+summary = d.data.summary
 print(summary.head())
 
 fig, ax = plt.subplots(1, 1)

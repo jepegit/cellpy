@@ -90,7 +90,7 @@ version_ns = {}
 with open(os.path.join(here, name, "_version.py")) as f:
     exec(f.read(), {}, version_ns)
 
-description = "Extract and manipulate data from battery cell testers."
+description = "Extract and manipulate data from battery data testers."
 
 setup(
     name=name,

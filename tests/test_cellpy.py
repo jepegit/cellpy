@@ -207,8 +207,8 @@ def test_example_data():
     c = example_data.cellpy_file(testing=True)
     c.make_summary()
 
-    assert a.cell.summary.shape == c.cell.summary.shape
-    assert c.cell.summary.shape == (18, 49)
+    assert a.data.summary.shape == c.data.summary.shape
+    assert c.data.summary.shape == (18, 49)
 
 
 def test_make_step_table():
