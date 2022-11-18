@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import Cell, FileID, humanize_bytes
+from cellpy.readers.core import Data, FileID, humanize_bytes
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.loader_specific_modules.biologic_file_format import (
     bl_dtypes,
@@ -208,7 +208,7 @@ class DataLoader(BaseLoader):
         self.logger.debug("tmp file: %s" % temp_filename)
         self.logger.debug("HERE WE LOAD THE DATA")
 
-        data = Cell()
+        data = Data()
         fid = FileID(file_name)
 
         # div parameters and information (probably load this last)

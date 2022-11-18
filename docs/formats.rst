@@ -38,7 +38,7 @@ The class contains several attributes that can be assigned directly:
 The data for the experiment(s)/runs(s) are stored in the class attribute
 ``CellpyData.cells``
 This attribute is just a list of runs (each run is a
-``cellpy.cellreader.Cell`` instance).
+``cellpy.cellreader.Data`` instance).
 This implies that you can store many runs in one ``CellpyData`` instance.
 Sometimes this can be necessary, but it is recommended to only store one
 run in one instance. Most of the functions (the class methods) automatically
@@ -46,7 +46,7 @@ selects the 0-th item in ``CellpyData.cells`` if the ``test_number`` is not
 explicitly given.
 
 You may already have figured it out: in cellpy, data for a given cell
-is usually named a run. And each run is a ``cellpy.cellreader.Cell`` instance.
+is usually named a run. And each run is a ``cellpy.cellreader.Data`` instance.
 
 Here is a list of other important class attributes in ``CellpyData``:
 
@@ -373,7 +373,7 @@ Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyData
 Cells
 ~~~~~
 
-Each run is a ``cellpy.cellreader.Cell`` instance.
+Each run is a ``cellpy.cellreader.Data`` instance.
 The instance contain general information about
 the run-settings (such as mass etc.).
 The measurement data, information, and summary is stored
@@ -386,7 +386,7 @@ in three ``pandas.DataFrames``:
       the ``CellpyData.make_summary`` method.
 
 The headers (columns) for the different DataFrames were given earlier in this chapter.
-As mentioned above, the ``Cell`` object also contains metadata for the run.
+As mentioned above, the ``Data`` object also contains metadata for the run.
 
 metadata
 ........
@@ -431,7 +431,7 @@ metadata
     comment = None
 
 
-The ``Cell`` object can also take custom metadata if provieded as keyword arguments (for developers).
+The ``Data`` object can also take custom metadata if provieded as keyword arguments (for developers).
 
 FileID
 ~~~~~~

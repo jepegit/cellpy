@@ -10,7 +10,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Cell, FileID
+from cellpy.readers.core import Data, FileID
 from cellpy.readers.instruments.base import BaseLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
@@ -147,7 +147,7 @@ class DataLoader(BaseLoader):
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
-        """returns a Cell object with loaded data.
+        """returns a Data object with loaded data.
 
         Loads data from arbin SQL server db.
 
@@ -159,7 +159,7 @@ class DataLoader(BaseLoader):
         """
 
         data_df = self._parse_xlsx_data(name)
-        data = Cell()
+        data = Data()
 
         # metadata is unfortunately not available for csv dumps
         data.loaded_from = name

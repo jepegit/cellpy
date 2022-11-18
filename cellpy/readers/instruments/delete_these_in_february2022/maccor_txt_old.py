@@ -11,7 +11,7 @@ import pandas as pd
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Cell, FileID
+from cellpy.readers.core import Data, FileID
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.configurations import (
     ModelParameters,
@@ -209,7 +209,7 @@ class MaccorTxtLoader(BaseLoader):
         if not self.keep_all_columns:
             data_df = data_df[self.config_params.columns_to_keep]
 
-        data = Cell()
+        data = Data()
 
         # metadata is unfortunately not available for csv dumps
         data.loaded_from = name

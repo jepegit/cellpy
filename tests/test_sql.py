@@ -4,7 +4,7 @@ import pytest
 from cellpy import log
 from cellpy.readers.instruments import arbin_sql
 from cellpy.readers.instruments import base
-from cellpy.readers.core import Cell
+from cellpy.readers.core import Data
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -31,7 +31,7 @@ def test_post_process_rename_headers_defined():
     loader = arbin_sql.DataLoader()
 
     # creating a mock raw data
-    data = Cell()
+    data = Data()
     n = arbin_sql.normal_headers_renaming_dict
     raw = pd.DataFrame(columns=n.values())
     data.raw = raw
@@ -47,6 +47,6 @@ def test_post_process_rename_headers_from_file(raw_mock):
     }
     loader = arbin_sql.DataLoader()
 
-    data = Cell()
+    data = Data()
     data.raw = raw_mock
     loader._post_process(data, **keywords)

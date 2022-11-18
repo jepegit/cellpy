@@ -9,7 +9,7 @@ import pandas as pd
 from dateutil.parser import parse
 
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import Cell, FileID, humanize_bytes
+from cellpy.readers.core import Data, FileID, humanize_bytes
 from cellpy.readers.instruments.base import BaseLoader
 
 pec_headers_normal = dict()
@@ -203,7 +203,7 @@ class DataLoader(BaseLoader):
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         logging.debug(txt)
 
-        data = Cell()
+        data = Data()
         fid = FileID(file_name)
 
         # div parameters and information (probably load this last)

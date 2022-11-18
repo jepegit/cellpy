@@ -253,11 +253,11 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def loader(self, *args, **kwargs) -> list:
-        """Loads data into a Cell object and returns it"""
+        """Loads data into a Data object and returns it"""
         pass
 
     @staticmethod
-    def identify_last_data_point(data: core.Cell) -> core.Cell:
+    def identify_last_data_point(data: core.Data) -> core.Data:
         """This method is used to find the last record in the data."""
         return core.identify_last_data_point(data)
 
@@ -425,8 +425,8 @@ class AutoLoader(BaseLoader):
                         f"{processor_name} is not currently supported - aborting!"
                     )
 
-    def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> core.Cell:
-        """returns a Cell object with loaded data.
+    def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> core.Data:
+        """returns a Data object with loaded data.
 
         Loads data from a txt file (csv-ish).
 
@@ -453,7 +453,7 @@ class AutoLoader(BaseLoader):
             logging.debug("running pre-processing-hook")
             data_df = pre_processor_hook(data_df)
 
-        data = core.Cell()
+        data = core.Data()
 
         # metadata
         meta = self.parse_meta()
@@ -484,7 +484,7 @@ class AutoLoader(BaseLoader):
         data = self.validate(data)
         return data
 
-    def validate(self, data: core.Cell) -> core.Cell:
+    def validate(self, data: core.Data) -> core.Data:
         """validation of the loaded data, should raise an appropriate exception if it fails."""
 
         logging.debug(f"no validation of defined in this sub-class of TxtLoader")

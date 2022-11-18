@@ -65,7 +65,7 @@ from cellpy.parameters.internal_settings import (
 )
 
 from cellpy.readers.core import (
-    Cell,
+    Data,
     FileID,
     identify_last_data_point,
     interpolate_y_on_x,
@@ -301,7 +301,7 @@ class CellpyData:
     def initialize(self):
         logging.debug("Initializing...")
         # TODO: v.1.0.0: replace this
-        self.cell = Cell()
+        self.cell = Data()
 
     @property
     def raw_units(self):
@@ -1141,7 +1141,7 @@ class CellpyData:
             logging.debug("loading raw file:")
             logging.debug(f"{f}")
 
-            # get a list of cellpy.readers.core.Cell objects
+            # get a list of cellpy.readers.core.Data objects
             # cell = raw_file_loader(f, data_points=data_points, **kwargs)
             # remark that the bounds are included (i.e. the first datapoint
             # is 5000.
@@ -1760,7 +1760,7 @@ class CellpyData:
         # "/info" it will most likely fail.
         # Remark! Used for versions 3, 4, 5
 
-        data = Cell()
+        data = Data()
         meta_table = None
 
         try:
@@ -1847,7 +1847,7 @@ class CellpyData:
 
     def _extract_summary_from_cellpy_file(
         self,
-        data: Cell,
+        data: Data,
         parent_level: str,
         store: pd.HDFStore,
         summary_dir: str,
@@ -1952,7 +1952,7 @@ class CellpyData:
 
     def _extract_meta_from_cellpy_file(
         self,
-        data: Cell,
+        data: Data,
         meta_table: pd.DataFrame,
         filename: Union[Path, str],
         upgrade_from_to: tuple = None,
@@ -4483,7 +4483,7 @@ class CellpyData:
 
     def get_converter_to_specific(
         self,
-        dataset: Cell = None,
+        dataset: Data = None,
         value: float = None,
         from_units: CellpyUnits = None,
         to_units: CellpyUnits = None,
@@ -5053,7 +5053,7 @@ class CellpyData:
 
     def _generate_absolute_summary_columns(
         self, cell, _first_step_txt, _second_step_txt
-    ) -> Cell:
+    ) -> Data:
         summary = cell.summary
         summary[self.headers_summary.coulombic_efficiency] = (
             100 * summary[_second_step_txt] / summary[_first_step_txt]
@@ -5147,7 +5147,7 @@ class CellpyData:
 
     def _generate_specific_summary_columns(
         self, cell: str, mode: str, specific_columns: Sequence
-    ) -> Cell:
+    ) -> Data:
         specific_converter = self.get_converter_to_specific(dataset=cell, mode=mode)
         summary = cell.summary
         for col in specific_columns:
@@ -5156,7 +5156,7 @@ class CellpyData:
         cell.summary = summary
         return cell
 
-    def _c_rates_to_summary(self, cell: Cell) -> Cell:
+    def _c_rates_to_summary(self, cell: Data) -> Data:
         logging.debug("Extracting C-rates")
         summary = cell.summary
         steps = self.cell.steps
@@ -5199,12 +5199,12 @@ class CellpyData:
 
     def _equivalent_cycles_to_summary(
         self,
-        cell: Cell,
+        cell: Data,
         _first_step_txt: str,
         _second_step_txt: str,
         nom_cap: float,
         normalization_cycles: Union[Sequence, int, None],
-    ) -> Cell:
+    ) -> Data:
         # The method currently uses the charge capacity for calculating equivalent cycles. This
         # can be easily extended to also allow for choosing the discharge capacity later on if
         # it turns out that it needed.

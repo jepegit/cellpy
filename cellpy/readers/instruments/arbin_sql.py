@@ -17,7 +17,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import (
-    Cell,
+    Data,
     FileID,
     check64bit,
     humanize_bytes,
@@ -237,7 +237,7 @@ class DataLoader(BaseLoader):
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
-        """returns a Cell object with loaded data.
+        """returns a Data object with loaded data.
 
         Loads data from arbin SQL server db.
 
@@ -259,7 +259,7 @@ class DataLoader(BaseLoader):
 
         channel_id = data_df["Channel_ID"].iloc[0]
 
-        data = Cell()
+        data = Data()
         data.loaded_from = id_name
         data.channel_index = channel_id
         data.test_ID = test_id

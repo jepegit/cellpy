@@ -8,7 +8,7 @@ from ruamel import yaml
 from cellpy.exceptions import FileNotFound
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import ATTRS_CELLPYFILE, get_headers_normal
-from cellpy.readers.core import Cell, FileID, check64bit, humanize_bytes
+from cellpy.readers.core import Data, FileID, check64bit, humanize_bytes
 from cellpy.readers.instruments.base import BaseLoader
 
 DEFAULT_CONFIG = {
@@ -205,7 +205,7 @@ class DataLoader(BaseLoader):
                     the data (run after renaming the cols but before changing the structure)
 
         Returns:
-            List of cellpy Cell objects.
+            List of cellpy Data objects.
         """
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
         var_dict = dict()
@@ -269,7 +269,7 @@ class DataLoader(BaseLoader):
             else:
                 raise NotImplementedError
 
-        data = Cell()
+        data = Data()
         data.loaded_from = file_name
         fid = self._generate_fid(file_name, var_dict)
 

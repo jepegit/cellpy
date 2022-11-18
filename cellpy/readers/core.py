@@ -173,24 +173,16 @@ class FileID:
         return self.last_modified
 
 
-class Cell:
-    """Object to store data for a test.
+class Data:
+    """Object to store data for a cell-test.
 
-    This class is used for storing all the relevant data for a 'run', i.e. all
-    the data collected by the tester as stored in the raw-files.
-
-    Attributes:
-        test_no (int): test number.
-        mass (float): mass of electrode [mg].
-        dfdata (pandas.DataFrame): contains the experimental data points.
-        dfsummary (pandas.DataFrame): contains summary of the data pr. cycle.
-        step_table (pandas.DataFrame): information for each step, used for
-            defining type of step (charge, discharge, etc.)
-
+    This class is used for storing all the relevant data for a cell-test, i.e. all
+    the data collected by the tester as stored in the raw-files, and user-provided
+    metadata about the cell-test.
     """
 
     def _repr_html_(self):
-        txt = f"<h2>Cell-object</h2> id={hex(id(self))}"
+        txt = f"<h2>Data-object</h2> id={hex(id(self))}"
         txt += "<p>"
         for p in dir(self):
             if not p.startswith("_"):

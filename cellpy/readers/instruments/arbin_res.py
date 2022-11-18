@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import (
-    Cell,
+    Data,
     FileID,
     check64bit,
     humanize_bytes,
@@ -1272,7 +1272,7 @@ class DataLoader(BaseLoader):
         return length_of_test, normal_df, summary_df, aux_global_df, aux_df
 
     def _init_data(self, file_name, global_data_df, test_no):
-        data = Cell()
+        data = Data()
         data.cell_no = int(test_no)
         data.loaded_from = file_name
         fid = FileID(file_name)
