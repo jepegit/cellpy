@@ -1787,8 +1787,9 @@ class CellpyCell:
         logging.debug(f"cellpy file version. {data.cellpy_file_version}")
         return data, meta_table
 
+    @staticmethod
     def _check_keys_in_cellpy_file(
-        self, meta_dir, parent_level, raw_dir, store, summary_dir
+        meta_dir, parent_level, raw_dir, store, summary_dir
     ):
         required_keys = [raw_dir, summary_dir, meta_dir]
         required_keys = ["/" + parent_level + _ for _ in required_keys]

@@ -66,8 +66,11 @@ Step 2: rename the Cell object to Data
 Step 3: rename the .data property to .data
     - rename in cellpy
         - done
-    - rename in notebooks
+    - rename in notebooks TODO
 
 Step 4: rename CellpyCell to CellpyCell
+    - rename in cellpy
+        - done
+    - rename in notebooks TODO
 
-Step 5: rewrite merging / appending
+Step 5: rewrite merging / appending TODO
