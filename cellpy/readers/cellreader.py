@@ -1788,9 +1788,7 @@ class CellpyCell:
         return data, meta_table
 
     @staticmethod
-    def _check_keys_in_cellpy_file(
-        meta_dir, parent_level, raw_dir, store, summary_dir
-    ):
+    def _check_keys_in_cellpy_file(meta_dir, parent_level, raw_dir, store, summary_dir):
         required_keys = [raw_dir, summary_dir, meta_dir]
         required_keys = ["/" + parent_level + _ for _ in required_keys]
 
@@ -2149,9 +2147,7 @@ class CellpyCell:
 
         self.data = datasets.pop(0)
         for data in datasets:
-            self.data = self._append(
-                    self.data, data, **kwargs
-                )
+            self.data = self._append(self.data, data, **kwargs)
             for raw_data_file, file_size in zip(
                 data.raw_data_files,
                 data.raw_data_files_length,
@@ -2648,7 +2644,7 @@ class CellpyCell:
         if from_data_point is not None:
             df = self.data.raw.loc[
                 self.data.raw[nhdr.data_point_txt] >= from_data_point
-                ]
+            ]
         else:
             df = self.data.raw
         # df[shdr.internal_resistance_change] = \
