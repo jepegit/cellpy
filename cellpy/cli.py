@@ -1254,7 +1254,7 @@ def _read_local_templates(local_templates_path=None):
         local_templates_path = pathlib.Path(prmreader.prms.Paths.templatedir)
     templates = {}
     for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
-        label = p.stem.strip()[len("cellpy_cookie_") :]
+        label = p.stem.strip()[len("cellpy_cookie_"):]
         templates[label] = str(p)
     logging.debug(f"Found the following templates: {templates}")
     return templates
@@ -1445,6 +1445,7 @@ def _new(
     cellpy_version = cellpy.__version__
 
     try:
+        print(templates)
         selected_template, _cookie_directory = templates[template.lower()]
 
         # sub-templates not implemented for local cellpy cookies:

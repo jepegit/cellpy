@@ -2,15 +2,17 @@
 History
 =======
 
-0.5.0(2022) [under development]
+1.0.0(2022) [under development]
 --------------------------------
 
 * Unit handling: renaming summary headers
 * Unit handling: new cellpy-file-format version
 * Unit handling: tool for converting old to new format
 * Templates: using one repository with sub-folders
+* Readers: neware.txt (one version/model)
 * Batch plotting: collectors for both data collection, plotting and saving
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
+* Internals: rename .cell property to .data
 * Internals: allow for only one Data-object pr CellpyCell object
 
 
@@ -24,6 +26,7 @@ History
 * Optional parameters through batch and pages
 * Several bug fixes and minor improvements / adjustments
 * Restrict use of instrument label to only one option
+* Fix bug in example file (@kevinsmia1939)
 
 
 0.4.1 (2021)

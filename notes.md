@@ -42,36 +42,16 @@ Status: Implemented - but missing documentation.
 Status: implemented - but missing documentation
 
 ### 225-remove-completely-option-for-having-multiple-cells
+Status: implemented - but missing documentation
 
-Step 1: replace all occurrences of cells[0] with .data property
-    - cellreader: need to fix merge
-        - removed it for now (used in dev_update... but that must be changed anyway)
-    - cellreader: need to fix from_raw
-        - done with still some clean up left
-        - add uid / hash?
-    - cellreader: remove dataset_number as an argument
-        - done
-    - cellreader: remove for-loops for cells in all methods (summary, xxx)
-        - done
-    - cellreader: replace list with data object for load and save cellpy-files
-        - done
-    - modify .data property so that it sets and gets the data object directly to self._cell
-        - done
-    - instruments: work on single data instead of cells (list) - replace both in from_raw and the individual instrument loaders
-        - done
+### 233-multi-template-system
 
-Step 2: rename the Cell object to Data
-    - done
+All templates must start with "cellpy_cookie"
 
-Step 3: rename the .data property to .data
-    - rename in cellpy
-        - done
-    - rename in notebooks TODO
-
-Step 4: rename CellpyCell to CellpyCell
-    - rename in cellpy
-        - done
-    - rename in notebooks TODO
-
-Step 5: rewrite merging / appending TODO
-    - done
+default template:
+    default is "standard", but can also be read from the configuration file (prms.Batch.template)
+local template:
+    path default given in config file (prms.Paths.templatedir)
+    filename must end in ".zip"
+registered templates:
+    prms._registered_templates
