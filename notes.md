@@ -45,13 +45,7 @@ Status: implemented - but missing documentation
 Status: implemented - but missing documentation
 
 ### 233-multi-template-system
+Made new repository (cellpy_cookies)
+Populated with two templates (standard and ife)
+Not checked and updated to code in templates for v1.0.0 yet (TODO)
 
-All templates must start with "cellpy_cookie"
-
-default template:
-    default is "standard", but can also be read from the configuration file (prms.Batch.template)
-local template:
-    path default given in config file (prms.Paths.templatedir)
-    filename must end in ".zip"
-registered templates:
-    prms._registered_templates

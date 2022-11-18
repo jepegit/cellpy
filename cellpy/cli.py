@@ -1446,19 +1446,7 @@ def _new(
     cellpy_version = cellpy.__version__
 
     try:
-        print()
-        pprint(templates)
-        print()
-        pprint(templates[template.lower()])
-        selected_template, _cookie_directory = templates[template.lower()]
-
-        # sub-templates not implemented for local cellpy cookies:
-        if local_user_template:
-            cookie_directory = ""
-
-        elif not cookie_directory:
-            cookie_directory = _cookie_directory
-
+        selected_template, cookie_directory = templates[template.lower()]
         cookiecutter.main.cookiecutter(
             selected_template,
             extra_context={
