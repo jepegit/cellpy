@@ -74,3 +74,4 @@ Step 4: rename CellpyCell to CellpyCell
     - rename in notebooks TODO
 
 Step 5: rewrite merging / appending TODO
+    - done
