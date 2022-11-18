@@ -11,14 +11,14 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
 def test_get_ocv_rlx_for_fitting(dataset):
     import matplotlib.pyplot as plt
 
-    raw = dataset.cell.raw
+    raw = dataset.data.raw
     for h, v in dataset.headers_normal.items():
         print(f"{h}: {v}", end=" -> ")
         if v in raw.columns:
             print("Exists")
         else:
             print("MISSING")
-    steps = dataset.cell.steps
+    steps = dataset.data.steps
     n = steps.loc[steps["cycle"].isin([1]), :]
     n = n.loc[n["type"].str.startswith("ocvrlx_up"), :]
     print(n)

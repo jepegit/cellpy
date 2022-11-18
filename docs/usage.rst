@@ -76,7 +76,7 @@ There also exists a method that takes the raw-file name and the cellpy-file name
 as input and only loads the raw-file if the cellpy-file is older than the
 raw-file::
 
-    >>> c = cellreader.CellpyData()
+    >>> c = cellreader.CellpyCell()
     >>> raw_files = [rawfile_01, rawfile_02]
     >>> c.loadcell(raw_files, cellpy_file)
 

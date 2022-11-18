@@ -11,7 +11,7 @@ import pandas as pd
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Cell, FileID
+from cellpy.readers.core import Data, FileID
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.configurations import (
     ModelParameters,
@@ -209,7 +209,7 @@ class MaccorTxtLoader(BaseLoader):
         if not self.keep_all_columns:
             data_df = data_df[self.config_params.columns_to_keep]
 
-        data = Cell()
+        data = Data()
 
         # metadata is unfortunately not available for csv dumps
         data.loaded_from = name
@@ -656,7 +656,7 @@ def check_loader_from_outside():
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     print(f"Exists? {name.is_file()}")
 
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("maccor_txt", sep="\t")
 
     c.from_raw(name)
@@ -665,9 +665,9 @@ def check_loader_from_outside():
     c.make_step_table()
     c.make_summary()
 
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
+    raw = c.data.raw
+    steps = c.data.steps
+    summary = c.data.summary
     raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
@@ -733,9 +733,9 @@ def check_loader_from_outside_with_get():
 
     c = cellpy.get(filename=name, instrument="maccor_txt", sep="\t", mass=1.0)
 
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
+    raw = c.data.raw
+    steps = c.data.steps
+    summary = c.data.summary
 
     raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")

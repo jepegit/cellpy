@@ -200,7 +200,7 @@ def check_loader_from_outside():
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     print(f"Exists? {name.is_file()}")
 
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("maccor_txt", sep="\t")
 
     c.from_raw(name)
@@ -209,9 +209,9 @@ def check_loader_from_outside():
     c.make_step_table()
     c.make_summary()
 
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
+    raw = c.data.raw
+    steps = c.data.steps
+    summary = c.data.summary
     raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
@@ -277,9 +277,9 @@ def check_loader_from_outside_with_get():
 
     c = cellpy.get(filename=name, instrument="maccor_txt", model="one", mass=1.0)
     print("loaded")
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
+    raw = c.data.raw
+    steps = c.data.steps
+    summary = c.data.summary
 
     raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
@@ -387,13 +387,13 @@ def check_loader_from_outside_with_get2():
         filename=name, instrument=INSTRUMENT, model=MODEL, mass=1.0, auto_summary=False
     )
     print(f"loaded the file - now lets see what we got")
-    raw = c.cell.raw
+    raw = c.data.raw
     raw.to_clipboard()
     print(raw.head())
     c.make_step_table()
 
-    steps = c.cell.steps
-    summary = c.cell.summary
+    steps = c.data.steps
+    summary = c.data.summary
 
     raw.to_csv(out / "raw.csv", sep=";")
     steps.to_csv(out / "steps.csv", sep=";")

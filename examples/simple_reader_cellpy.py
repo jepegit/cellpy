@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """simple script for reading .res-files from arbin
 
-This script uses the cellpy.cellreader.CellpyData object.
+This script uses the cellpy.cellreader.CellpyCell object.
 """
 
 import os
@@ -42,12 +42,12 @@ for f in rawfiles:
 
 print(80 * "-")
 
-d = cellreader.CellpyData().from_raw(rawfiles)
+d = cellreader.CellpyCell().from_raw(rawfiles)
 d.set_mass(mass)
 d.make_step_table()
 d.make_summary()
 
-summary = d.cell.summary
+summary = d.data.summary
 print(summary.head())
 
 fig, ax = plt.subplots(1, 1)

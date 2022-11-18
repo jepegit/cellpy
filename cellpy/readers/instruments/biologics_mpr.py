@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import Cell, FileID, humanize_bytes
+from cellpy.readers.core import Data, FileID, humanize_bytes
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.loader_specific_modules.biologic_file_format import (
     bl_dtypes,
@@ -189,9 +189,8 @@ class DataLoader(BaseLoader):
              (in cycle c) to skip loading.
 
         Returns:
-            new_tests (list of data objects)
+            new test
         """
-        new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
@@ -209,7 +208,7 @@ class DataLoader(BaseLoader):
         self.logger.debug("tmp file: %s" % temp_filename)
         self.logger.debug("HERE WE LOAD THE DATA")
 
-        data = Cell()
+        data = Data()
         fid = FileID(file_name)
 
         # div parameters and information (probably load this last)
@@ -253,10 +252,8 @@ class DataLoader(BaseLoader):
         data.raw = self.mpr_data
 
         data.raw_data_files_length.append(length_of_test)
-        new_tests.append(data)
-
         self._clean_up(temp_filename)
-        return new_tests
+        return data
 
     def _parse_mpr_log_data(self):
         for value in bl_log_pos_dtype:
@@ -592,7 +589,7 @@ if __name__ == "__main__":
     print(f"Test-file: {raw_file_name}")
     log.setup_logging(default_level="DEBUG")
     instrument = "biologics_mpr"
-    cellpy_data_instance = cellreader.CellpyData()
+    cellpy_data_instance = cellreader.CellpyCell()
     cellpy_data_instance.set_instrument(instrument=instrument)
     print("starting to load the file")
     cellpy_data_instance.from_raw(raw_file_name)

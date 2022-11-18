@@ -56,7 +56,7 @@ class NullData(Error):
 
 
 class NoCellFound(Error):
-    """Raised when there are no cells, but a cell is needed."""
+    """Raised when there are no cells, but a data is needed."""
 
     pass
 

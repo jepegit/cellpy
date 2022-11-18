@@ -6,7 +6,7 @@ import pandas as pd
 from cellpy import prms
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.core import (
-    Cell,
+    Data,
     FileID,
     check64bit,
     humanize_bytes,
@@ -84,9 +84,6 @@ class DataLoader(BaseLoader):
 
     def loader(self, file_name, *args, **kwargs):
         """Loads data into a DataSet object and returns it"""
-
-        new_tests = []
-
         test_no = 1
         channel_index = 1
         channel_number = 1
@@ -109,7 +106,7 @@ class DataLoader(BaseLoader):
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
 
-        data = Cell()
+        data = Data()
         data.cell_no = int(test_no)
         data.loaded_from = file_name
         fid = FileID(file_name)
@@ -133,6 +130,4 @@ class DataLoader(BaseLoader):
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
 
-        new_tests.append(data)
-
-        return new_tests
+        return data

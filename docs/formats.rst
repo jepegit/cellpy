@@ -17,7 +17,7 @@ repository https://github.com/jepegit/cellpy.
 Data Structures
 ---------------
 
-CellpyData - main structure
+CellpyCell - main structure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This class is the main work-horse for cellpy where all the functions
@@ -30,25 +30,25 @@ The class contains several attributes that can be assigned directly:
 
 .. code-block:: python
 
-    CellpyData.tester = "arbin_res"
-    CellpyData.auto_dirs = True
-    print(CellpyData.cellpy_datadir)
+    CellpyCell.tester = "arbin_res"
+    CellpyCell.auto_dirs = True
+    print(CellpyCell.cellpy_datadir)
 
 
 The data for the experiment(s)/runs(s) are stored in the class attribute
-``CellpyData.cells``
+``CellpyCell.cells``
 This attribute is just a list of runs (each run is a
-``cellpy.cellreader.Cell`` instance).
-This implies that you can store many runs in one ``CellpyData`` instance.
+``cellpy.cellreader.Data`` instance).
+This implies that you can store many runs in one ``CellpyCell`` instance.
 Sometimes this can be necessary, but it is recommended to only store one
 run in one instance. Most of the functions (the class methods) automatically
-selects the 0-th item in ``CellpyData.cells`` if the ``test_number`` is not
+selects the 0-th item in ``CellpyCell.cells`` if the ``test_number`` is not
 explicitly given.
 
 You may already have figured it out: in cellpy, data for a given cell
-is usually named a run. And each run is a ``cellpy.cellreader.Cell`` instance.
+is usually named a run. And each run is a ``cellpy.cellreader.Data`` instance.
 
-Here is a list of other important class attributes in ``CellpyData``:
+Here is a list of other important class attributes in ``CellpyCell``:
 
 Column headings
 ...............
@@ -206,7 +206,7 @@ column headings - journal pages
         comment: str = "comment"
 
 
-    CellpyData.keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
+    CellpyCell.keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
 
 step types
 ..........
@@ -227,7 +227,7 @@ For each type of testers that are supported by ``cellpy``,
 a set of column headings and
 other different settings/attributes must be provided. These definitions stored in the
 ``cellpy.parameters.internal_settings`` module and are also injected into
-the CellpyData class upon initiation.
+the CellpyCell class upon initiation.
 
 Supported testers are:
 
@@ -343,12 +343,12 @@ Maccor .txt
 TODO...
 
 
-CellpyData - methods
+CellpyCell - methods
 ~~~~~~~~~~~~~~~~~~~~
 
-The ``CellpyData`` object contains lots of methods for manipulating, extracting
+The ``CellpyCell`` object contains lots of methods for manipulating, extracting
 and summarising the data from the run(s). Two methods are typically automatically run when
-you create your ``CellpyData`` object when running ``cellpy.get(filename)``:
+you create your ``CellpyCell`` object when running ``cellpy.get(filename)``:
 
     - ``make_step_table``: creates a statistical summary of all the steps in the run(s) and categorizes
       the step type from that. It is also possible to give the step types directly (step_specifications).
@@ -368,12 +368,12 @@ Other methods worth mentioning are (based on what I typically use):
 
     - ``get_ocv``: get the rest steps after each charge and discharge step.
 
-Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyData``) for more info.
+Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyCell``) for more info.
 
 Cells
 ~~~~~
 
-Each run is a ``cellpy.cellreader.Cell`` instance.
+Each run is a ``cellpy.cellreader.Data`` instance.
 The instance contain general information about
 the run-settings (such as mass etc.).
 The measurement data, information, and summary is stored
@@ -381,12 +381,12 @@ in three ``pandas.DataFrames``:
 
     - ``raw``: raw data from the run.
     - ``steps``: stats from each step (and step type), created using the
-      ``CellpyData.make_step_table`` method.
+      ``CellpyCell.make_step_table`` method.
     - ``summary``: summary data vs. cycle number (e.g. coulombic coulombic efficiency), created using
-      the ``CellpyData.make_summary`` method.
+      the ``CellpyCell.make_summary`` method.
 
 The headers (columns) for the different DataFrames were given earlier in this chapter.
-As mentioned above, the ``Cell`` object also contains metadata for the run.
+As mentioned above, the ``Data`` object also contains metadata for the run.
 
 metadata
 ........
@@ -431,7 +431,7 @@ metadata
     comment = None
 
 
-The ``Cell`` object can also take custom metadata if provieded as keyword arguments (for developers).
+The ``Data`` object can also take custom metadata if provieded as keyword arguments (for developers).
 
 FileID
 ~~~~~~

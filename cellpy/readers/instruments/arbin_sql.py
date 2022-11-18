@@ -17,7 +17,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import (
-    Cell,
+    Data,
     FileID,
     check64bit,
     humanize_bytes,
@@ -237,7 +237,7 @@ class DataLoader(BaseLoader):
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
-        """returns a Cell object with loaded data.
+        """returns a Data object with loaded data.
 
         Loads data from arbin SQL server db.
 
@@ -247,8 +247,6 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        new_tests = []
-
         data_df, stat_df = self._query_sql(name)
         aux_data_df = None  # Needs to be implemented
         meta_data = None  # Should be implemented
@@ -261,7 +259,7 @@ class DataLoader(BaseLoader):
 
         channel_id = data_df["Channel_ID"].iloc[0]
 
-        data = Cell()
+        data = Data()
         data.loaded_from = id_name
         data.channel_index = channel_id
         data.test_ID = test_id
@@ -283,9 +281,8 @@ class DataLoader(BaseLoader):
         data.summary = stat_df
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
-        new_tests.append(data)
 
-        return new_tests
+        return data
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
@@ -490,7 +487,7 @@ def check_loader_from_outside():
     from cellpy import cellreader
 
     name = "20200820_CoFBAT_slurry07B_01_cc_01"
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("arbin_sql")
     # print(c)
     c.from_raw(name)
@@ -498,9 +495,9 @@ def check_loader_from_outside():
     c.make_step_table()
     c.make_summary()
     # print(c)
-    raw = c.cell.raw
-    steps = c.cell.steps
-    summary = c.cell.summary
+    raw = c.data.raw
+    steps = c.data.steps
+    summary = c.data.summary
     raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
     steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")

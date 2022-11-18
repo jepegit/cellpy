@@ -74,10 +74,8 @@ ATTRS_CELLPYDATA = [
     "force_step_table_creation",
     "forced_errors",
     "limit_loaded_cycles",
-    "load_only_summary",
     "minimum_selection",
     "name",
-    "number_of_datasets",
     "profile",
     "raw_datadir",
     "raw_limits",
@@ -92,7 +90,7 @@ ATTRS_CELLPYDATA = [
     "tester",
 ]
 
-# current attributes used for the cellpy.cell objects
+# current attributes used for the cellpy.data objects
 ATTRS_DATASET = [
     "cellpy_file_version",
     "channel_index",

@@ -107,7 +107,7 @@ You can get the names of the different datasets (cells) by issuing:
 
     b.experiment.cell_names
 
-You can get the CellpyData-object for a given cell by writing:
+You can get the CellpyCell-object for a given cell by writing:
 
 .. code-block:: python
 

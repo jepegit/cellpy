@@ -1,10 +1,10 @@
 """Post-processing methods for instrument loaders.
 
 All methods must implement the following parameters/arguments:
-    data: Cell object
+    data: Data object
     config_params: ModelParameters
 
-All methods should return the modified Cell object.
+All methods should return the modified Data object.
 
 You can access the individual parameters for the post processor from
 the config_params.post_processor[<name of post processor>].
@@ -19,7 +19,7 @@ import numpy as np
 
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.parameters.prms import _minimum_columns_to_keep_for_raw_if_exists
-from cellpy.readers.core import Cell
+from cellpy.readers.core import Data
 from cellpy.readers.instruments.configurations import ModelParameters
 
 ORDERED_POST_PROCESSING_STEPS = [
@@ -46,7 +46,7 @@ ORDERED_POST_PROCESSING_STEPS = [
 #     _generate_fid().
 
 
-def remove_last_if_bad(data: Cell, config_params: ModelParameters) -> Cell:
+def remove_last_if_bad(data: Data, config_params: ModelParameters) -> Data:
     """Drop the last row if it contains more NaNs than second to last."""
     number_of_nans_2nd_last = data.raw.iloc[-2].isna().sum()
     number_of_nans_last = data.raw.iloc[-1].isna().sum()
@@ -55,7 +55,7 @@ def remove_last_if_bad(data: Cell, config_params: ModelParameters) -> Cell:
     return data
 
 
-def convert_units(data: Cell, config_params: ModelParameters) -> Cell:
+def convert_units(data: Data, config_params: ModelParameters) -> Data:
     raise Exception("THIS FUNCTION NEEDS TO BE UPDATED")
     # TODO: implement all
     if x := config_params.raw_units.get("voltage", None):
@@ -75,12 +75,12 @@ def convert_units(data: Cell, config_params: ModelParameters) -> Cell:
     return data
 
 
-def set_cycle_number_not_zero(data: Cell, config_params: ModelParameters) -> Cell:
+def set_cycle_number_not_zero(data: Data, config_params: ModelParameters) -> Data:
     data.raw[headers_normal.cycle_index_txt] += 1
     return data
 
 
-def select_columns_to_keep(data: Cell, config_params: ModelParameters) -> Cell:
+def select_columns_to_keep(data: Data, config_params: ModelParameters) -> Data:
     config_params.columns_to_keep.extend(
         headers_normal[h] for h in _minimum_columns_to_keep_for_raw_if_exists
     )
@@ -94,7 +94,7 @@ def select_columns_to_keep(data: Cell, config_params: ModelParameters) -> Cell:
     return data
 
 
-def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
+def get_column_names(data: Data, config_params: ModelParameters) -> Data:
     # TODO: add custom "splitter"
     # TODO: test
     raise Exception("THIS FUNCTION NEEDS TO BE UPDATED")
@@ -148,13 +148,13 @@ def get_column_names(data: Cell, config_params: ModelParameters) -> Cell:
     return data
 
 
-def convert_date_time_to_datetime(data: Cell, config_params: ModelParameters) -> Cell:
+def convert_date_time_to_datetime(data: Data, config_params: ModelParameters) -> Data:
     hdr_date_time = headers_normal.datetime_txt
     data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
     return data
 
 
-def date_time_from_test_time(data: Cell, config_params: ModelParameters) -> Cell:
+def date_time_from_test_time(data: Data, config_params: ModelParameters) -> Data:
     """add a date_time column (based on the test_time column)."""
     hdr_date_time = headers_normal.datetime_txt
     hdr_test_time = headers_normal.test_time_txt
@@ -169,7 +169,7 @@ def date_time_from_test_time(data: Cell, config_params: ModelParameters) -> Cell
     return data
 
 
-def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
+def convert_step_time_to_timedelta(data: Data, config_params: ModelParameters) -> Data:
     hdr_step_time = headers_normal.step_time_txt
     if data.raw[hdr_step_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
@@ -184,7 +184,7 @@ def convert_step_time_to_timedelta(data: Cell, config_params: ModelParameters) -
     return data
 
 
-def convert_test_time_to_timedelta(data: Cell, config_params: ModelParameters) -> Cell:
+def convert_test_time_to_timedelta(data: Data, config_params: ModelParameters) -> Data:
     hdr_test_time = headers_normal.test_time_txt
     if data.raw[hdr_test_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
@@ -198,14 +198,14 @@ def convert_test_time_to_timedelta(data: Cell, config_params: ModelParameters) -
     return data
 
 
-def set_index(data: Cell, config_params: ModelParameters) -> Cell:
+def set_index(data: Data, config_params: ModelParameters) -> Data:
     hdr_data_point = headers_normal.data_point_txt
     if data.raw.index.name != hdr_data_point:
         data.raw = data.raw.set_index(hdr_data_point, drop=False)
     return data
 
 
-def cumulate_capacity_within_cycle(data: Cell, config_params: ModelParameters) -> Cell:
+def cumulate_capacity_within_cycle(data: Data, config_params: ModelParameters) -> Data:
     """Cumulates the capacity within each cycle"""
     # state_column = config_params.states["column_name"]
     # is_charge = config_params.states["charge_keys"]
@@ -229,13 +229,13 @@ def cumulate_capacity_within_cycle(data: Cell, config_params: ModelParameters) -
     return data
 
 
-def replace(data: Cell, config_params: ModelParameters) -> Cell:
+def replace(data: Data, config_params: ModelParameters) -> Data:
     print("NOT IMPLEMENTED")
     print("input:")
     print(config_params.post_processors["replace"])
 
 
-def rename_headers(data: Cell, config_params: ModelParameters) -> Cell:
+def rename_headers(data: Data, config_params: ModelParameters) -> Data:
     columns = {}
     renaming_dict = config_params.normal_headers_renaming_dict
     # ---- special cases ----
@@ -375,7 +375,7 @@ def _state_splitter(
     return raw
 
 
-def split_current(data: Cell, config_params: ModelParameters) -> Cell:
+def split_current(data: Data, config_params: ModelParameters) -> Data:
     """Split current into positive and negative"""
     data.raw = _state_splitter(
         data.raw,
@@ -392,7 +392,7 @@ def split_current(data: Cell, config_params: ModelParameters) -> Cell:
     return data
 
 
-def split_capacity(data: Cell, config_params: ModelParameters) -> Cell:
+def split_capacity(data: Data, config_params: ModelParameters) -> Data:
     """split capacity into charge and discharge"""
     data.raw = _state_splitter(
         data.raw,

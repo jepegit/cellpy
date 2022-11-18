@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from cellpy.readers.core import Cell
+from cellpy.readers.core import Data
 from . import fdv
 
 # NOTE: all tests can now use the parameters fixture instead of importing fdv directly.
@@ -33,11 +33,11 @@ def cellpy_data_instance():
 
     log.setup_logging(default_level="DEBUG", testing=True)
 
-    return cellreader.CellpyData()
+    return cellreader.CellpyCell()
 
 
 @pytest.fixture
-def dataset(cellpy_data_instance) -> Cell:
+def dataset(cellpy_data_instance) -> Data:
     from cellpy import cellreader
 
     p = pathlib.Path(fdv.cellpy_file_path)
@@ -46,7 +46,7 @@ def dataset(cellpy_data_instance) -> Cell:
         logging.info(
             f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
         )
-        a = cellreader.CellpyData()
+        a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.set_mass(1.0)
         a.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)

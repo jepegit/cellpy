@@ -144,17 +144,17 @@ class CellpyUnits(BaseSettings):
     """These are the units used inside Cellpy.
 
     At least two sets of units needs to be defined; `cellpy_units` and `raw_units`.
-    The `cell.raw` dataframe is given in `raw_units` where the units are defined
-    inside the instrument loader used. Since the `cell.steps` dataframe is a summary of
-    the step statistics from the `cell.raw` dataframe, this also uses the `raw_units`.
-    The `cell.summary` dataframe contains columns with values directly from the `cell.raw` dataframe
+    The `data.raw` dataframe is given in `raw_units` where the units are defined
+    inside the instrument loader used. Since the `data.steps` dataframe is a summary of
+    the step statistics from the `data.raw` dataframe, this also uses the `raw_units`.
+    The `data.summary` dataframe contains columns with values directly from the `data.raw` dataframe
     given in `raw_units` as well as calculated columns given in `cellpy_units`.
 
     Remark that all input to cellpy through user interaction (or utils) should be in `cellpy_units`.
     This is also true for meta-data collected from the raw files. The instrument loader needs to
     take care of the translation from its raw units to `cellpy_units` during loading the raw data
     file for the meta-data (remark that this is not necessary and not recommended for the actual
-    "raw" data that is going to be stored in the `cell.raw` dataframe).
+    "raw" data that is going to be stored in the `data.raw` dataframe).
 
     As of 2022.09.29, cellpy does not automatically ensure unit conversion for input of meta-data,
     but has an internal method (`CellPyData.to_cellpy_units`) that can be used.
@@ -453,12 +453,11 @@ ATTRS_CELLPYFILE = [
 
 # Attributes that should be copied when duplicating cellpy objects:
 
-# current attributes for the cellpy.cellpydata objects
+# current attributes for the cellpy.data objects
 ATTRS_CELLPYDATA = [
     "auto_dirs",
     "capacity_modifiers",
     "cellpy_datadir",
-    "daniel_number",
     "ensure_step_table",
     "file_names",
     "filestatuschecker",
@@ -466,10 +465,8 @@ ATTRS_CELLPYDATA = [
     "force_step_table_creation",
     "forced_errors",
     "limit_loaded_cycles",
-    "load_only_summary",
     "minimum_selection",
     "name",
-    "number_of_datasets",
     "profile",
     "raw_datadir",
     "raw_limits",
@@ -483,7 +480,7 @@ ATTRS_CELLPYDATA = [
     "tester",
 ]
 
-# current attributes used for the cellpy.cell objects
+# current attributes used for the cellpy.data objects
 ATTRS_DATASET = [
     "cellpy_file_version",
     "channel_index",
@@ -491,7 +488,6 @@ ATTRS_DATASET = [
     "charge_steps",
     "creator",
     "cycle_mode",
-    # "data",
     "discharge_steps",
     "file_errors",
     "ir_steps",
@@ -510,7 +506,6 @@ ATTRS_DATASET = [
     "raw_units",
     "schedule_file_name",
     "start_datetime",
-    # "summary",
     "test_ID",
     "cell_no",
     "tot_mass",

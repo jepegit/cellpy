@@ -8,7 +8,7 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 # TODO: finish this
 def test_header(dataset):
-    h = dataset.cell.summary.columns
+    h = dataset.data.summary.columns
     print(h)
 
     summary_headers = get_headers_summary()

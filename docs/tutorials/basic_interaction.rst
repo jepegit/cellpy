@@ -19,7 +19,7 @@ The easiest way to load data is to use the
     electrode_mass = 0.658 # active mass of electrode in mg
     cell_data = cellpy.get("20170101_ife01_cc_01.res", mass=electrode_mass, cycle_mode="anode")
 
-If you prefer, you can obtain the same by using ``cellpy.cellreader.CellpyData`` object directly:
+If you prefer, you can obtain the same by using ``cellpy.cellreader.CellpyCell`` object directly:
 First, import the cellreader-object from ``cellpy``:
 
 .. code-block:: python
@@ -27,13 +27,13 @@ First, import the cellreader-object from ``cellpy``:
     import os
     from cellpy import cellreader
 
-Then define some settings and variables and create the CellpyData-object:
+Then define some settings and variables and create the CellpyCell-object:
 
 .. code-block:: python
 
     raw_data_dir = r"C:\raw_data"
     out_data_dir = r"C:\processed_data"
-    cellpy_data_dir = r"C:\CellpyData"
+    cellpy_data_dir = r"C:\CellpyCell"
     cycle_mode = "anode" # default is usually "anode", but...
     # These can also be set in the configuration file
 
@@ -46,8 +46,8 @@ Then define some settings and variables and create the CellpyData-object:
     # list consisting of file names with full path
     raw_files = [os.path.join(raw_data_dir, f) for f in raw_file]
 
-    # creating the CellpyData object and sets the cycle mode:
-    cell_data = cellreader.CellpyData()
+    # creating the CellpyCell object and sets the cycle mode:
+    cell_data = cellreader.CellpyCell()
     cell_data.cycle_mode = cycle_mode
 
 Now we will read the files, merge them, and create a summary:
@@ -149,10 +149,10 @@ yaml-file:
 Extract current-voltage graphs
 ------------------------------
 
-If you have loaded your data into a CellpyData-object,
+If you have loaded your data into a CellpyCell-object,
 let's now consider how to extract current-voltage graphs
 from your data. We assume that the name of your
-CellpyData-object is ``cell_data``:
+CellpyCell-object is ``cell_data``:
 
 
 .. code-block:: python
@@ -170,7 +170,7 @@ You can also get the capacity-voltage curves with both charge and discharge:
     # the second capacity (charge (delithiation) for typical anode half-cell experiments)
     # will be given "in reverse".
 
-The ``CellpyData`` object has several get-methods, including getting current,
+The ``CellpyCell`` object has several get-methods, including getting current,
 timestamps, etc.
 
 Extract summaries of runs
@@ -212,9 +212,9 @@ the ``cellpy.utils.ica`` module.
 Save / export data
 ------------------
 
-Saving data to cellpy format is done by the ``CellpyData.save`` method.
+Saving data to cellpy format is done by the ``CellpyCell.save`` method.
 To export data to csv format,
-``CellpyData`` has a method called ``to_csv``.
+``CellpyCell`` has a method called ``to_csv``.
 
 .. code-block:: python
 

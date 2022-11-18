@@ -149,7 +149,7 @@ class Data(collections.UserDict):
     loaded in memory. In future version, it could be that the Data object
     will return a link allowing querying instead to save memory usage...
 
-    Remark that some cellpy (cellreader.CellpyData) function might not work if
+    Remark that some cellpy (cellreader.CellpyCell) function might not work if
     you have the raw-data in memory, but not summary data (if the cellpy function
     requires summary data or other settings not set as default).
     """
@@ -216,7 +216,7 @@ class Data(collections.UserDict):
 
     def __look_up__(self, cell_id):
         try:
-            if not self.experiment.cell_data_frames[cell_id].cell.raw.empty:
+            if not self.experiment.cell_data_frames[cell_id].data.raw.empty:
                 return self.experiment.cell_data_frames[cell_id]
             else:
                 raise AttributeError
@@ -249,7 +249,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self.summary_frames = None
         self.cell_data_frames = dict()
         self.memory_dumped = dict()
-        self.parent_level = "CellpyData"
+        self.parent_level = "CellpyCell"
         self.log_level = "CRITICAL"
         self._data = None
         self._store_data_object = True
@@ -307,7 +307,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         if not os.path.isfile(cellpy_file_name):
             raise IOError
 
-        cellpy_object = cellreader.CellpyData(initialize=True)
+        cellpy_object = cellreader.CellpyCell(initialize=True)
         step_table = helper.look_up_and_get(
             cellpy_file_name, prms._cellpyfile_step, max_cycle=max_cycle
         )
@@ -316,14 +316,14 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         if max_cycle:
             cellpy_object.overwrite_able = False
             self.max_cycle = max_cycle
-        cellpy_object.cell.steps = step_table
+        cellpy_object.data.steps = step_table
         self._data = None
         self.cell_data_frames[cell_label] = cellpy_object
 
     def _load_cellpy_file(self, file_name):
         # TODO: modify this so that it can select parts of the data (max_cycle etc)
         selector = dict()
-        cellpy_data = cellreader.CellpyData()
+        cellpy_data = cellreader.CellpyCell()
         if self.max_cycle:
             cellpy_data.overwrite_able = False
             selector["max_cycle"] = self.max_cycle

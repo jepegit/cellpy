@@ -279,7 +279,7 @@ def test_concatinator_yanked(populated_batch):
     )
     print(removed)
     c1 = populated_batch.experiment.data[populated_batch.cell_names[0]]
-    print(c1.cell.summary.head(10))
+    print(c1.data.summary.head(10))
     cf1 = helpers.concatenate_summaries(
         populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True
     )

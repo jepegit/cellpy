@@ -5,7 +5,7 @@ from dateutil.parser import parse
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Cell, FileID
+from cellpy.readers.core import Data, FileID
 from cellpy.readers.instruments.base import BaseLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
@@ -142,7 +142,7 @@ class DataLoader(BaseLoader):
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
-        """returns a Cell object with loaded data.
+        """returns a Data object with loaded data.
 
         Loads data from arbin SQL server db.
 
@@ -152,11 +152,9 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        new_tests = []
-
         data_df = self._query_csv(name)
 
-        data = Cell()
+        data = Data()
 
         # metadata is unfortunately not available for csv dumps
         data.loaded_from = name
@@ -180,9 +178,8 @@ class DataLoader(BaseLoader):
         )  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
-        new_tests.append(data)
 
-        return new_tests
+        return data
 
     def _post_process(self, data):
         set_index = True
@@ -243,7 +240,7 @@ def test_loader_from_outside():
         r"C:\scripts\cellpy\dev_data\arbin_new\2021_02_02_standardageing_1C_25dC_1_2021_02_02_130709"
     )
     name = datadir / "2021_02_02_standardageing_1C_25dC_1_Channel_1_Wb_1.CSV"
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("arbin_sql_csv")
 
     c.from_raw(name)
@@ -252,9 +249,9 @@ def test_loader_from_outside():
     c.make_step_table()
     c.make_summary()
 
-    # raw = c.cell.raw
-    # steps = c.cell.steps
-    # summary = c.cell.summary
+    # raw = c.data.raw
+    # steps = c.data.steps
+    # summary = c.data.summary
     # raw.to_csv(r"C:\scripts\notebooks\Div\trash\raw.csv", sep=";")
     # steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
     # summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
@@ -305,7 +302,7 @@ def test_seamless_files():
         / r"20210430_seam10_01_01_cc_01_2021_04_30_172207\20210430_seam10_01_01_cc_01_Channel_48_Wb_1.csv"
     )
 
-    c = cellreader.CellpyData()
+    c = cellreader.CellpyCell()
     c.set_instrument("arbin_sql_csv")
 
     prms.Reader.sep = ";"
@@ -317,7 +314,7 @@ def test_seamless_files():
     c.make_summary()
 
     names = [name1, name2]
-    cell_data = cellreader.CellpyData()
+    cell_data = cellreader.CellpyCell()
     cell_data.set_instrument("arbin_sql_csv")
     cell_data.loadcell(names, mass=0.016569)
 

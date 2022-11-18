@@ -9,7 +9,7 @@ import pandas as pd
 from dateutil.parser import parse
 
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import Cell, FileID, humanize_bytes
+from cellpy.readers.core import Data, FileID, humanize_bytes
 from cellpy.readers.instruments.base import BaseLoader
 
 pec_headers_normal = dict()
@@ -192,7 +192,6 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def loader(self, file_name, bad_steps=None, **kwargs):
-        new_tests = []
         if not os.path.isfile(file_name):
             self.logger.info("Missing file_\n   %s" % file_name)
             return None
@@ -204,7 +203,7 @@ class DataLoader(BaseLoader):
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         logging.debug(txt)
 
-        data = Cell()
+        data = Data()
         fid = FileID(file_name)
 
         # div parameters and information (probably load this last)
@@ -240,9 +239,8 @@ class DataLoader(BaseLoader):
         data.raw = self.pec_data
 
         data.raw_data_files_length.append(length_of_test)
-        new_tests.append(data)
 
-        return new_tests
+        return data
 
     def _load_pec_data(self, file_name, bad_steps):
         number_of_header_lines = self.number_of_header_lines

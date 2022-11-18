@@ -10,8 +10,8 @@ History
 * Unit handling: tool for converting old to new format
 * Templates: using one repository with sub-folders
 * Batch plotting: collectors for both data collection, plotting and saving
-* Internals: allow for only one Cell pr CellpyData object (TODO)
-* Internals: rename main classes (CellpyData -> Cell, Cell -> Data)
+* Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
+* Internals: allow for only one Data-object pr CellpyCell object
 
 
 0.4.2 (2022)
@@ -83,7 +83,7 @@ History
 * Refactoring - renaming from dfsummary to summary
 * Refactoring - renaming from step_table to steps
 * Refactoring - renaming from dfdata to raw
-* Refactoring - renaming cellpy.cell to cellpy.get
+* Refactoring - renaming cellpy.data to cellpy.get
 * Updated save and load cellpy files allowing for new naming
 * Implemented cellpy new and cellpy serve cli functionality
 

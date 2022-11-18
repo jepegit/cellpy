@@ -2,25 +2,25 @@
 Main ``cellpy`` objects
 =======================
 
-The ``CellpyData`` object
+The ``CellpyCell`` object
 -------------------------
 
-The ``CellpyData`` object contains the main methods as well as the actual data::
+The ``CellpyCell`` object contains the main methods as well as the actual data::
 
-    cellpy_instance = CellpyData(...)
+    cellpy_instance = CellpyCell(...)
 
-Data is stored as ``Cell`` instances within the list ``cells``.
-Even though one ``CellpyData`` instance can contain several ``Cell`` instances,
+Data is stored as ``Data`` instances within the list ``cells``.
+Even though one ``CellpyCell`` instance can contain several ``Data`` instances,
 it is (currently) recommended to only use one.
 
-The ``Cell`` instance can be reached using the ``cell`` property::
+The ``Data`` instance can be reached using the ``data`` property::
 
-    cell_instance = cellpy_instance.cell
+    cell_instance = cellpy_instance.data
 
-The ``Cell`` object
+The ``Data`` object
 -------------------
 
-The ``Cell`` object contains the data and the meta-data for the cell characterisation experiment(s).
+The ``Data`` object contains the data and the meta-data for the cell characterisation experiment(s).
 
 
 The cellpy file format

@@ -20,10 +20,10 @@ log.setup_logging(default_level="DEBUG", testing=True)
 def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     # create a cellpy file from the res-file (used for testing)
     cellpy_data_instance.from_raw(parameters.res_file_path)
+    print()
+    print(cellpy_data_instance)
     cellpy_data_instance.set_mass(1.0)
-    cellpy_data_instance.make_summary(
-        find_ocv=False, find_ir=True, find_end_voltage=True
-    )
+    cellpy_data_instance.make_summary(find_ir=True, find_end_voltage=True)
     name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     logging.info(f"trying to save the cellpy file to {name}")
     cellpy_data_instance.save(name)
@@ -56,7 +56,7 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance, parameters):
 
     cellpy_data_instance.from_raw(parameters.res_file_path, bad_steps=((cycle, step),))
 
-    r = cellpy_data_instance.cell.raw
+    r = cellpy_data_instance.data.raw
     steps = r.loc[r[cycle_header] == cycle, step_header].unique()
     assert step not in steps
     assert step_left in steps
@@ -67,7 +67,7 @@ def test_raw_data_from_data_point(cellpy_data_instance, parameters):
     data_point_header = "data_point"
     cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, None))
 
-    p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
+    p1 = cellpy_data_instance.data.raw[data_point_header].iloc[0]
     assert p1 == 10_000
 
 
@@ -78,8 +78,8 @@ def test_raw_data_data_point(cellpy_data_instance, parameters):
         parameters.res_file_path, data_points=(10_000, 10_200)
     )
 
-    p1 = cellpy_data_instance.cell.raw[data_point_header].iloc[0]
-    p2 = cellpy_data_instance.cell.raw[data_point_header].iloc[-1]
+    p1 = cellpy_data_instance.data.raw[data_point_header].iloc[0]
+    p2 = cellpy_data_instance.data.raw[data_point_header].iloc[-1]
     assert p1 == 10_000
     assert p2 == 10_200
 
@@ -95,16 +95,11 @@ def test_raw_limited_loaded_cycles_prm(cellpy_data_instance, parameters):
     assert all(cycles == [3, 4, 5])
 
 
-@pytest.mark.parametrize("number", [0, pytest.param(2, marks=pytest.mark.xfail)])
-def test_validate_dataset_number(dataset, number):
-    dataset._validate_dataset_number(number)
-
-
 @pytest.mark.xfail(WrongFileVersion)
 def test_cellpy_version_4(cellpy_data_instance, parameters):
     f_old = parameters.cellpy_file_path_v4
     d = cellpy_data_instance.load(f_old, accept_old=True)
-    v = d.cell.cellpy_file_version
+    v = d.data.cellpy_file_version
     print(f"\nfile name: {f_old}")
     print(f"cellpy version: {v}")
 
@@ -112,7 +107,7 @@ def test_cellpy_version_4(cellpy_data_instance, parameters):
 def test_cellpy_version_5(cellpy_data_instance, parameters):
     f_old = parameters.cellpy_file_path_v5
     d = cellpy_data_instance.load(f_old, accept_old=True)
-    v = d.cell.cellpy_file_version
+    v = d.data.cellpy_file_version
     print(f"\nfile name: {f_old}")
     print(f"cellpy version: {v}")
 
@@ -128,7 +123,7 @@ def test_merge(cellpy_data_instance, parameters):
 
     assert len(cellpy_data_instance.datasets) == 2
 
-    table_first = cellpy_data_instance.datasets[0].raw.describe()
+    table_first = cellpy_data_instance.data.raw.describe()
     count_first = table_first.loc["count", "data_point"]
 
     table_second = cellpy_data_instance.datasets[1].raw.describe()
@@ -148,9 +143,9 @@ def test_merge_auto_from_list(parameters):
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     from cellpy import cellreader
 
-    cdi1 = cellreader.CellpyData()
-    cdi2 = cellreader.CellpyData()
-    cdi3 = cellreader.CellpyData()
+    cdi1 = cellreader.CellpyCell()
+    cdi2 = cellreader.CellpyCell()
+    cdi3 = cellreader.CellpyCell()
 
     f1 = parameters.res_file_path
     f2 = parameters.res_file_path2
@@ -162,21 +157,14 @@ def test_merge_auto_from_list(parameters):
     cdi2.from_raw(f2)
     cdi3.from_raw(files)
 
-    len_first = len(cdi1.cells)
-    table_first = cdi1.cells[0].raw.describe()
+    table_first = cdi1.data.raw.describe()
     count_first = table_first.loc["count", "data_point"]
 
-    len_second = len(cdi2.cells)
-    table_second = cdi2.cells[0].raw.describe()
+    table_second = cdi2.data.raw.describe()
     count_second = table_second.loc["count", "data_point"]
 
-    len_all = len(cdi3.cells)
-    table_all = cdi3.cells[0].raw.describe()
+    table_all = cdi3.data.raw.describe()
     count_all = table_all.loc["count", "data_point"]
-
-    assert len_first == 1
-    assert len_second == 1
-    assert len_all == 1
 
     assert pytest.approx(count_all, 0.001) == (count_first + count_second)
 
@@ -197,7 +185,7 @@ def test_print_step_table(dataset):
 
 def test_c_rate_calc(dataset):
     # TODO @jepe: refactor and use col names directly from HeadersStepTable instead
-    table = dataset.cell.steps
+    table = dataset.data.steps
     assert 0.09 in table["rate_avr"].unique()
 
 
@@ -218,23 +206,18 @@ def test_from_res(dataset):
 
 
 def test_cap_mod_summary(dataset):
-    summary = dataset.cell.summary
+    summary = dataset.data.summary
     dataset._cap_mod_summary(summary, "reset")
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_cap_mod_summary_fail(dataset):
-    summary = dataset.cell.summary
+    summary = dataset.data.summary
     dataset._cap_mod_summary(summary, "fix")
 
 
 def test_cap_mod_normal(dataset):
     dataset._cap_mod_normal()
-
-
-def test_get_number_of_tests(dataset):
-    n = dataset.get_number_of_tests()
-    assert n == 1
 
 
 def test_get_step_numbers(dataset):
@@ -249,7 +232,6 @@ def test_get_step_numbers(dataset):
         allctypes=True,
         pdtype=True,
         cycle_number=None,
-        dataset_number=None,
         steptable=None,
     )
 
@@ -317,15 +299,6 @@ def test_get_diagnostics_plot(dataset):
     dataset.get_diagnostics_plots()
 
 
-def test_set_cellnumber(dataset):
-    dataset.set_cellnumber(0)
-    n1 = dataset.selected_cell_number
-    assert n1 == 0
-    dataset.set_cellnumber(1)
-    n2 = dataset.selected_cell_number
-    assert n2 == -1
-
-
 def test_check64bit():
     a = cellpy.readers.core.check64bit()
     b = cellpy.readers.core.check64bit("os")
@@ -386,7 +359,7 @@ def test_merge(dataset):
 
 def test_fid(cellpy_data_instance, parameters):
     cellpy_data_instance.loadcell(parameters.res_file_path)
-    my_test = cellpy_data_instance.cell
+    my_test = cellpy_data_instance.data
     assert len(my_test.raw_data_files) == 1
     fid_object = my_test.raw_data_files[0]
     print(fid_object)
@@ -424,7 +397,7 @@ def test_load_step_specs_short(
     file_name = parameters.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
-    step_table = cellpy_data_instance.cell.steps
+    step_table = cellpy_data_instance.data.steps
     t = step_table.loc[
         (step_table.cycle == cycle) & (step_table.step == step), "type"
     ].values[0]
@@ -442,7 +415,7 @@ def test_load_step_specs(cellpy_data_instance, parameters):
     file_name = parameters.step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name)
-    step_table = cellpy_data_instance.cell.steps
+    step_table = cellpy_data_instance.data.steps
     t = step_table.loc[(step_table.cycle == 1) & (step_table.step == 8), "type"].values[
         0
     ]
@@ -451,25 +424,24 @@ def test_load_step_specs(cellpy_data_instance, parameters):
 
 def test_load_arbin_res_aux_single(cellpy_data_instance, parameters):
     cellpy_data_instance.loadcell(parameters.res_file_path4)
-    assert "aux_0_u_C" in cellpy_data_instance.cell.raw.columns
-    assert "aux_d_0_dt_u_dC_dt" in cellpy_data_instance.cell.raw.columns
-    assert cellpy_data_instance.cell.raw.size == 195345
+    assert "aux_0_u_C" in cellpy_data_instance.data.raw.columns
+    assert "aux_d_0_dt_u_dC_dt" in cellpy_data_instance.data.raw.columns
+    assert cellpy_data_instance.data.raw.size == 195345
 
 
 def test_load_arbin_res_aux_multiple(cellpy_data_instance, parameters):
     cellpy_data_instance.loadcell(parameters.res_file_path3)
-    assert "aux_0_u_V" in cellpy_data_instance.cell.raw.columns
-    assert "aux_11_u_V" in cellpy_data_instance.cell.raw.columns
-    assert cellpy_data_instance.cell.raw.size == 134976
+    assert "aux_0_u_V" in cellpy_data_instance.data.raw.columns
+    assert "aux_11_u_V" in cellpy_data_instance.data.raw.columns
+    assert cellpy_data_instance.data.raw.size == 134976
 
 
 def test_loadcell_raw(cellpy_data_instance, parameters):
     cellpy_data_instance.loadcell(parameters.res_file_path)
-    run_number = 0
     data_point = 2283
     step_time = 1500.05
     sum_discharge_time = 362198.12
-    my_test = cellpy_data_instance.cells[run_number]
+    my_test = cellpy_data_instance.data
     summary = my_test.summary
     # print(summary.head())
     assert my_test.summary.loc["1", "data_point"] == data_point
@@ -477,7 +449,6 @@ def test_loadcell_raw(cellpy_data_instance, parameters):
     assert sum_discharge_time == pytest.approx(
         my_test.summary.loc[:, "discharge_time"].sum(), 0.1
     )
-    assert my_test.cell_no == run_number
 
     # cellpy_data_instance.make_summary(find_ir=True)
     # cellpy_data_instance.make_step_table()
@@ -494,7 +465,7 @@ def test_make_new_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True)
-    assert len(cellpy_data_instance.cell.steps) == 103
+    assert len(cellpy_data_instance.data.steps) == 103
 
 
 def test_make_step_table_all_steps(cellpy_data_instance, parameters):
@@ -502,35 +473,32 @@ def test_make_step_table_all_steps(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, all_steps=True)
-    assert len(cellpy_data_instance.cell.steps) == 103
+    assert len(cellpy_data_instance.data.steps) == 103
 
 
 def test_make_step_table_no_rate(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, add_c_rate=False)
-    assert "rate_avr" not in cellpy_data_instance.cell.steps.columns
+    assert "rate_avr" not in cellpy_data_instance.data.steps.columns
 
 
 def test_make_step_table_skip_steps(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, skip_steps=[1, 10])
-    print(cellpy_data_instance.cell.steps)
-    assert len(cellpy_data_instance.cell.steps) == 87
+    print(cellpy_data_instance.data.steps)
+    assert len(cellpy_data_instance.data.steps) == 87
 
 
 def test_make_summary(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_summary()
-    s1 = cellpy_data_instance.cells[0].summary
-    s2 = cellpy_data_instance.cell.summary
+    s2 = cellpy_data_instance.data.summary
     s3 = cellpy_data_instance.get_summary()
-    assert s1.columns.tolist() == s2.columns.tolist()
     assert s2.columns.tolist() == s3.columns.tolist()
     assert s2.iloc[:, 3].size == 18
-    assert s2.iloc[5, 3] == s1.iloc[5, 3]
 
 
 def test_make_summary_new_version(parameters):
@@ -539,10 +507,10 @@ def test_make_summary_new_version(parameters):
     c_raw.set_mass(1.0)
     c_raw.make_summary()
 
-    s1 = c_raw.cell.summary
+    s1 = c_raw.data.summary
     c_h5 = cellpy.get(logging_mode="DEBUG", testing=True)
     c_h5.load(parameters.cellpy_file_path_v6)
-    s2 = c_h5.cell.summary
+    s2 = c_h5.data.summary
 
     print()
     print(80 * "=")
@@ -552,19 +520,13 @@ def test_make_summary_new_version(parameters):
     print(s2.columns)
 
 
-def test_make_summary_with_c_rate(cellpy_data_instance, parameters):
-    cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
-    cellpy_data_instance.make_summary(add_c_rate=True)
-
-
 def test_summary_from_cellpyfile(parameters):
     c_cellpy = cellpy.get(testing=True)
     c_cellpy.load(parameters.cellpy_file_path)
     s1 = c_cellpy.get_summary()
     mass = c_cellpy.get_mass()
     c_cellpy.set_mass(mass)
-    c_cellpy.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    c_cellpy.make_summary(find_ir=True, find_end_voltage=True)
     s2 = c_cellpy.get_summary()
 
     # TODO: this might break when updating cellpy format (should probably remove it):
@@ -574,12 +536,11 @@ def test_summary_from_cellpyfile(parameters):
 
 def test_load_cellpyfile(cellpy_data_instance, parameters):
     cellpy_data_instance.load(parameters.cellpy_file_path)
-    run_number = 0
     cycle_number = 1
     data_point = 1457
     step_time = 1500.05
     sum_test_time = 9301719.457
-    my_test = cellpy_data_instance.cells[run_number]
+    my_test = cellpy_data_instance.data
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     unique_cycles_read = my_test.steps.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
@@ -658,8 +619,8 @@ def test_save_cvs(cellpy_data_instance, parameters):
 
 
 def test_str_cellpy_data_object(dataset):
-    assert str(dataset.cell).find("silicon") >= 0
-    assert str(dataset.cell).find("rosenborg") < 0
+    assert str(dataset.data).find("silicon") >= 0
+    assert str(dataset.data).find("rosenborg") < 0
 
 
 def test_check_cellpy_file(cellpy_data_instance, parameters):
@@ -673,19 +634,19 @@ def test_cellpyfile_roundtrip(tmp_path, parameters):
     cellpy_file_name = (
         pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     )
-    cdi = cellreader.CellpyData()
+    cdi = cellreader.CellpyCell()
 
     # create a cellpy file from the res-file
     cdi.from_raw(parameters.res_file_path)
     cdi.set_mass(1.0)
-    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    cdi.make_summary(find_ir=True, find_end_voltage=True)
     cdi.save(cellpy_file_name)
 
     # load the cellpy file
-    cdi = cellreader.CellpyData()
+    cdi = cellreader.CellpyCell()
     cdi.load(cellpy_file_name)
     cdi.make_step_table()
-    cdi.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+    cdi.make_summary(find_ir=True, find_end_voltage=True)
 
 
 def test_load_custom_default(cellpy_data_instance, parameters):
@@ -700,14 +661,14 @@ def test_load_custom_default(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(file_name)
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
-    summary = cellpy_data_instance.cell.summary
+    summary = cellpy_data_instance.data.summary
     val = summary.loc[2, s_headers.shifted_discharge_capacity]
     # TODO: this breaks (gives 711 instead of 593)
     # assert 593.031 == pytest.approx(val, 0.1)
 
 
 def test_group_by_interpolate(dataset):
-    data = dataset.cell.raw
+    data = dataset.data.raw
     interpolated_data1 = cellpy.readers.core.group_by_interpolate(data)
     interpolated_data2 = cellpy.readers.core.group_by_interpolate(data, tidy=True)
     interpolated_data3 = cellpy.readers.core.group_by_interpolate(
@@ -735,39 +696,23 @@ def test_get_empty():
     c_empty = cellpy.get(testing=True)
 
 
-@pytest.mark.parametrize("val,validated", [(2.3, None), ([2.3], None), ([2.3], [True])])
+@pytest.mark.parametrize("val,validated", [(2.3, None), (2.3, True)])
 def test_set_total_mass(dataset, val, validated):
     dataset.set_tot_mass(val, validated=validated)
-    assert dataset.cell.tot_mass == 2.3
+    assert dataset.data.tot_mass == 2.3
 
 
 @pytest.mark.parametrize(
     "val,validated",
     [
         (372.3, None),
-        ([372.3], None),
-        ([372.3], [True]),
+        (372.3, True),
         pytest.param(372.5, None, marks=pytest.mark.xfail),
     ],
 )
 def test_set_nominal_capacity(dataset, val, validated):
     dataset.set_nom_cap(val, validated=validated)
-    assert dataset.cell.nom_cap == 372.3
-
-
-@pytest.mark.parametrize(
-    "n,s",
-    [
-        (0, 0),
-        (2, -1),
-        ("first", 0),
-        ("last", -1),
-        pytest.param(-1, -1, marks=pytest.mark.xfail),
-    ],
-)
-def test_set_testnumbers(dataset, n, s):
-    dataset.set_cellnumber(n)
-    assert dataset.selected_cell_number == s
+    assert dataset.data.nom_cap == 372.3
 
 
 @pytest.mark.xfail
