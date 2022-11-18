@@ -2142,23 +2142,23 @@ class CellpyCell:
             logging.debug("info about raw files missing")
         return fids, lengths
 
-    # # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
-    # def merge(self, datasets: list, **kwargs):
-    #     """This function merges datasets into one set."""
-    #     logging.info("Merging")
-    #
-    #     self.cell = datasets.pop(0)
-    #     for data in datasets:
-    #         self.cell = self._append(
-    #                 self.cell, data, **kwargs
-    #             )
-    #         for raw_data_file, file_size in zip(
-    #             data.raw_data_files,
-    #             data.raw_data_files_length,
-    #         ):
-    #             self.data.raw_data_files.append(raw_data_file)
-    #             self.data.raw_data_files_length.append(file_size)
-    #     return self
+    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
+    def merge(self, datasets: list, **kwargs):
+        """This function merges datasets into one set."""
+        logging.info("Merging")
+
+        self.data = datasets.pop(0)
+        for data in datasets:
+            self.data = self._append(
+                    self.data, data, **kwargs
+                )
+            for raw_data_file, file_size in zip(
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ):
+                self.data.raw_data_files.append(raw_data_file)
+                self.data.raw_data_files_length.append(file_size)
+        return self
 
     # TODO @jepe (v.1.0.0): update/check this - single data instances (i.e. to cell from cells)
     def _append(self, t1, t2, merge_summary=False, merge_step_table=False, recalc=True):
@@ -2178,7 +2178,7 @@ class CellpyCell:
             return t1
 
         cycle_index_header = self.headers_summary.cycle_index
-        cell = t1
+        data = t1
         if recalc:
             # finding diff of time
             start_time_1 = t1.start_datetime
@@ -2223,8 +2223,8 @@ class CellpyCell:
         # merging
         logging.debug("performing concat")
         raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
-        cell.raw = raw
-        cell.no_cycles = max(raw[cycle_index_header])
+        data.raw = raw
+        data.no_cycles = max(raw[cycle_index_header])
         step_table_made = False
 
         if merge_summary:
@@ -2275,7 +2275,7 @@ class CellpyCell:
 
                 summary2 = pd.concat([t1.summary, t2.summary], ignore_index=True)
 
-                cell.summary = summary2
+                data.summary = summary2
             else:
                 logging.debug(
                     "could not merge summary tables "
@@ -2291,7 +2291,7 @@ class CellpyCell:
                 )
 
                 steps2 = pd.concat([t1.steps, t2.steps], ignore_index=True)
-                cell.steps = steps2
+                data.steps = steps2
             else:
                 logging.debug(
                     "could not merge step tables "
@@ -2299,10 +2299,10 @@ class CellpyCell:
                     "create them first!"
                 )
 
-        cell.merged = True
+        data.merged = True
         logging.debug(" -> merged with new dataset")
         # TODO: @jepe -  update merging for more variables
-        return cell
+        return data
 
     # TODO: check if this can be moved to helpers
     def _validate_step_table(self, simple=False):
