@@ -1265,6 +1265,7 @@ def _read_local_templates(local_templates_path=None):
 @click.command()
 @click.option("--template", "-t", help="What template to use.")
 @click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
+@click.option("--project", "-p", default=None, help="Use DIR as project directory.")
 @click.option(
     "--local-user-template",
     "-u",
@@ -1290,11 +1291,12 @@ def _read_local_templates(local_templates_path=None):
 @click.option(
     "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
 )
-def new(template, directory, local_user_template, serve_, run_, lab, list_):
+def new(template, directory, project, local_user_template, serve_, run_, lab, list_):
     """Set up a batch experiment (might need git installed)."""
     _new(
         template,
         directory=directory,
+        project_dir=project,
         local_user_template=local_user_template,
         serve_=serve_,
         run_=run_,
@@ -1306,12 +1308,12 @@ def new(template, directory, local_user_template, serve_, run_, lab, list_):
 def _new(
     template: str,
     directory: Union[Path, str, None] = None,
+    project_dir: Union[str, None] = None,
     local_user_template: bool = False,
     serve_: bool = False,
     run_: bool = False,
     lab: bool = False,
     list_: bool = False,
-    project_dir: Union[str, None] = None,
     session_id: str = "experiment_001",
     no_input: bool = False,
     cookie_directory: str = "",
@@ -1406,8 +1408,20 @@ def _new(
         return
 
     directory = Path(directory)
+    selected_project_dir = None
 
-    if project_dir is None:
+    if project_dir:
+        selected_project_dir = directory / project_dir
+        if not selected_project_dir.is_dir():
+            if cookiecutter.prompt.read_user_yes_no(f"{project_dir} does not exist. Create?", "yes"):
+                os.mkdir(selected_project_dir)
+                click.echo(f"Created {selected_project_dir}")
+
+            else:
+                selected_project_dir = None
+                click.echo(f"Select another directory instead")
+
+    if not selected_project_dir:
         project_dirs = [
             d.name
             for d in directory.iterdir()
@@ -1416,7 +1430,7 @@ def _new(
         project_dirs.insert(0, "[create new dir]")
 
         project_dir = cookiecutter.prompt.read_user_choice(
-            "Select project folder?", project_dirs
+            "project folder", project_dirs
         )
 
         if project_dir == "[create new dir]":
@@ -1437,9 +1451,9 @@ def _new(
                 click.echo(f"created {project_dir}")
             except FileExistsError:
                 click.echo("OK - but this directory already exists!")
+        selected_project_dir = directory / project_dir
 
     # get a list of all folders
-    selected_project_dir = directory / project_dir
     existing_projects = os.listdir(selected_project_dir)
 
     os.chdir(selected_project_dir)
