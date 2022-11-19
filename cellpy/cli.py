@@ -1263,9 +1263,10 @@ def _read_local_templates(local_templates_path=None):
 
 # ----------------------- new ----------------------------------------
 @click.command()
-@click.option("--template", "-t", help="What template to use.")
-@click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
-@click.option("--project", "-p", default=None, help="Use DIR as project directory.")
+@click.option("--template", "-t", help="Provide template name.")
+@click.option("--directory", "-d", default=None, help="Create in custom directory.")
+@click.option("--project", "-p", default=None, help="Provide project name (i.e. sub-directory name).")
+@click.option("--experiment", "-e", default=None, help="Provide experiment name (i.e. lookup-value).")
 @click.option(
     "--local-user-template",
     "-u",
@@ -1291,12 +1292,13 @@ def _read_local_templates(local_templates_path=None):
 @click.option(
     "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
 )
-def new(template, directory, project, local_user_template, serve_, run_, lab, list_):
+def new(template, directory, project, experiment, local_user_template, serve_, run_, lab, list_):
     """Set up a batch experiment (might need git installed)."""
     _new(
         template,
         directory=directory,
         project_dir=project,
+        session_id=experiment,
         local_user_template=local_user_template,
         serve_=serve_,
         run_=run_,
