@@ -47,5 +47,6 @@ Status: implemented - but missing documentation
 ### 233-multi-template-system
 Made new repository (cellpy_cookies)
 Populated with two templates (standard and ife)
-Not checked and updated to code in templates for v1.0.0 yet (TODO)
+Checked and updated standard template, but needs more tweaking (functioning, thoubh)
+Not checked and updated code in ife template(TODO)
 
