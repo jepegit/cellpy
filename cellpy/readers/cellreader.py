@@ -2731,7 +2731,6 @@ class CellpyCell:
                 nom_cap = self.nominal_capacity_as_absolute(
                     nom_cap, area, nom_cap_specifics
                 )
-
             df_steps[shdr.rate_avr] = abs(
                 round(
                     df_steps.loc[:, (shdr.current, "avr")] / nom_cap,
