@@ -941,7 +941,6 @@ class CellpyCell:
                         find_ir=summary_ir,
                         find_end_voltage=summary_end_v,
                         use_cellpy_stat_file=use_cellpy_stat_file,
-                        nom_cap=nom_cap,
                     )
             else:
                 logging.warning("Empty run!")
@@ -4912,7 +4911,6 @@ class CellpyCell:
         logging.debug("start making summary")
 
         cell = self.data
-
         if not mass:
             mass = cell.mass or 1.0
         else:
@@ -4924,7 +4922,7 @@ class CellpyCell:
 
         if nom_cap is None:
             logging.debug(f"No nom_cap given")
-            nom_cap = self.data.nom_cap
+            nom_cap = cell.nom_cap
 
         logging.info(f"Using the following nominal capacity: {nom_cap}")
 
@@ -4932,21 +4930,25 @@ class CellpyCell:
         # (i.e. in units of for example mAh/g), but now we need it in absolute units (e.g. Ah). The plan
         # is to set stuff like this during initiation of the cell (but not yet):
 
+        # generating absolute nominal capacity:
         if nom_cap_specifics == "gravimetric":
-            nom_cap = self.nominal_capacity_as_absolute(
+            nom_cap_abs = self.nominal_capacity_as_absolute(
                 nom_cap, mass, nom_cap_specifics
             )
         elif nom_cap_specifics == "areal":
-            nom_cap = self.nominal_capacity_as_absolute(
+            nom_cap_abs = self.nominal_capacity_as_absolute(
                 nom_cap, cell.active_electrode_area, nom_cap_specifics
             )
+
+        # ensuring that a step table exists:
         if ensure_step_table:
             logging.debug("ensuring existence of step-table")
             if not cell.has_steps:
                 logging.debug("dataset.step_table_made is not True")
                 logging.info("running make_step_table")
-                if nom_cap is not None:
-                    cell.nom_cap = nom_cap
+
+                # update nom_cap in case it is given as argument to make_summary:
+                cell.nom_cap = nom_cap
                 self.make_step_table()
 
         summary_df = cell.summary
@@ -5002,7 +5004,7 @@ class CellpyCell:
             cell, _first_step_txt, _second_step_txt
         )
         cell = self._equivalent_cycles_to_summary(
-            cell, _first_step_txt, _second_step_txt, nom_cap, normalization_cycles
+            cell, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
         )
 
         # getting the C-rates, using values from step-table (so it will not be changed
@@ -5203,7 +5205,7 @@ class CellpyCell:
     ) -> Data:
         # The method currently uses the charge capacity for calculating equivalent cycles. This
         # can be easily extended to also allow for choosing the discharge capacity later on if
-        # it turns out that it needed.
+        # it turns out that to be needed.
 
         summary = data.summary
 

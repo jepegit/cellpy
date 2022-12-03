@@ -11,6 +11,7 @@ import pathlib
 import pickle
 import sys
 import time
+import warnings
 from typing import Any, Tuple, Dict
 
 import numpy as np
@@ -394,6 +395,8 @@ class Data:
 
     @nom_cap.setter
     def nom_cap(self, value):
+        if value < 1.0:
+            warnings.warn(f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 1.0 ({value}).", DeprecationWarning, stacklevel=2)
         self._nom_cap = value  # nominal capacity
 
     @property
