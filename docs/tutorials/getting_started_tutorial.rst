@@ -13,69 +13,23 @@ If you know what you are doing, and only need the most basic features
 of ``cellpy``, you should be able to get things up and running by
 issuing a simple
 
-.. code:: bash
-
-   pip install cellpy
+  .. code:: bash
+  
+    pip install cellpy
 
 It is recommended that you use a Python environment (or conda
-environment) and give it a easy to remember name *e.g.* ``cellpy``.
+environment) and give it an easy-to-remember name *e.g.* ``cellpy``.
 
-You also need the typical scientific python pack, including ``numpy``,
-``scipy``, and ``pandas``. It is recommended that you at least install
-``scipy`` before you install ``cellpy`` (the main benefit being that you
-can use ``conda`` so that you don’t have to hassle with missing
-C-compilers if you are on an Windows machine).
+To make sure your environment contains the correct packages and
+dependencies, you can create the environment based on the available
+`environment.yml <https://github.com/jepegit/cellpy/blob/master/environment.yml>`_
+file. For further information on depencencies and requirements for setting up
+``cellpy`` to read .res (Arbin) files, have a look at the *Install depencencies*
+part of the next section.
 
+For the installation of specific versions and pre-releases, see
+`Check your cellpy installation`_.
 
-Install a couple of other dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You should also install some additional dependencies:
-
-``pytables`` is needed for working with the hdf5 files (the cellpy-files):
-
-.. code:: bash
-
-   conda install -c conda-forge pytables
-
-If you would like to use some of the fitting routines in ``cellpy``, you
-will need to install ``lmfit``:
-
-.. code:: bash
-
-   conda install -c conda-forge lmfit
-
-
-Another tool that is really handy is Jupyter. And the plotting library
-bundle holoviz. You might already have them installed. If not, I recommend
-that you look at their documentation (google it) and install them. You can most
-likely use the same method as for pytables etc.
-
-Note! In addition to the requirements set in the ``setup.py`` file, you
-will also need a Python ODBC bridge for loading .res-files from Arbin
-testers. And possible also other *‘too-be-implemented’* file formats. I
-recommend `pyodbc <https://github.com/mkleehammer/pyodbc/wiki>`__ that
-can be installed from conda forge or using pip.
-
-.. code:: bash
-
-   conda install -c conda-forge pyodbc
-
-For reading .res-files
-(which actually are in a Microsoft Access format) you also need a driver
-or similar to help your ODBC bridge accessing it. A small hint for
-Windows users: if you don’t have one of the most recent Office version,
-you might not be allowed to install a driver of different bit than your
-office version is using (the installers can be found
-`here <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__).
-Also remark that the driver needs to be of the same bit as your Python
-(so, if you are using 32 bit Python, you will need the 32 bit driver).
-
-For POSIX systems, I have not found any suitable drivers. Instead,
-``cellpy`` will try to use ``mdbtools``\ to first export the data to
-temporary csv-files, and then import from those csv-file (using the
-``pandas`` library). You can install ``mdbtools`` using your systems
-preferred package manager (*e.g.* ``apt-get install mdbtools``).
 
 The tea spoon explanation
 -------------------------
@@ -86,66 +40,147 @@ percentage of us don’t feel exceedingly comfortable installing things by
 writing commands inside a small black window. Let’s face it; we belong
 to the *point-and-click* (or *double-click*) generation, not the
 *write-cryptic-commands* generation. So, hopefully without insulting the
-savvy, here is a “tea-spoon explanation”
+savvy, here is a “tea-spoon explanation”:
 
-Install a scientific stack of python 3.x
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Install a scientific stack of python 3.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the words “virtual environment” or “miniconda” don’t ring any bells,
+If the words “virtual environment” or “miniconda” do not ring any bells,
 you should install the Anaconda scientific Python distribution. Go to
 `www.anaconda.com <https://www.anaconda.com/>`__ and select the
-Anaconda distribution (press the ``Download Now`` button). And no, don´t
-select python 2.7. Use at least python 3.6. And select the 64 bit version
+Anaconda distribution (press the ``Download Now`` button).
+Use at least python 3.6, and select the 64 bit version
 (if you fail at installing the 64 bit version, then you can try the
 weaker 32 bit version). Download it and let it install.
 
-Create a virtual environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*Note:* The bin version matters sometimes, so try to make a mental note
+of what you selected. E.g., if you plan to use the Microsoft Access odbc
+driver (see below), and it is 32-bit, you probably should chose to install
+a 32-bit python version).
 
-This step can be omitted (but its not necessary very smart to do so).
-Create a virtual conda environment called ``my_cellpy`` (the name is not
-important, but it should be a name you are able to remember).
+2. Create a virtual environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This step can be omitted (but its not necessarily smart to do so).
+Create a virtual conda environment called ``cellpy`` (the name is not
+important, but it should be a name you are able to remember) by following
+the steps below:
 
-Open up a command window (you can find a command window on Windows by
-*e.g* pressing the Windows button + r and typing ``cmd.exe``), or even better,
-open up "anaconda prompt". Then type
+Open up the "Anaconda Prompt" (or use the command window) and type
 
-.. code:: bash
+  .. code:: bash
+  
+    conda create -n cellpy
 
-   conda create -n my_cellpy
+This creates your virtual environment (here called *cellpy*) in which ``cellpy``
+will be installed and used.
+
+To make sure your environment contains the correct packages and dependencies
+required for running cellpy, you can create an environment based on the available
+``environment.yml`` file. Download the
+`environment.yml <https://github.com/jepegit/cellpy/blob/master/environment.yml>`_
+file and place it in the directory shown in your Anaconda Prompt. If you want to
+change the name of the environment, you can do this by changing the first line of
+the file. Then type (in the Anaconda Prompt):
+
+  .. code:: bash
+  
+    	conda env create -f environment.yml
 
 Then activate your environment:
 
-.. code:: bash
+  .. code:: bash
+  
+     conda activate cellpy
 
-   conda activate my_cellpy
+3. Install depencencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``cellpy`` relies on a number of other python package and these need
+to be installed. Most of these packages are included when creating the environment
+based on the ``environment.yml`` file as outlined above.
 
-If you get an error message, then it could be that your Python version is
-not available for you (maybe you installed as root?). If you were using
-the command window on windows, try to locate the “anaconda prompt” program and run that
-instead.
+Basic dependencies
+::::::::::::::::::
 
-Install ``cellpy``
-~~~~~~~~~~~~~~~~~~
+In general, you need the typical scientific python pack, including
 
-.. code:: bash
+- ``numpy``
+- ``scipy``
+- ``pandas``.
 
-   conda install -c conda-forge cellpy
+It is recommended that you at least install ``scipy`` before you install
+``cellpy`` (the main benefit being that you can use ``conda`` so that you
+do not have to hassle with missing C-compilers if you are on an Windows
+machine).
+Additional dependencies are:
 
-Note that the bin version matters some times, so try
-to make a mental note of what you selected (for
-example, if you plan to use the Microsoft Access odbc driver, and it is
-32-bit, you probably should chose to install an 32-bit python version
-(see next sub-chapter)).
+- ``pytables`` is needed for working with the hdf5 files (the cellpy-files):
+  
+    .. code:: bash
+    
+       conda install -c conda-forge pytables
 
-If you don't have the newest office suit, you might need to install
-the Microsoft Access odbc driver which can be downloaded from `this
-page <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__
+- ``lmfit`` is required to use some of the fitting routines in ``cellpy``:
+
+    .. code:: bash
+  
+     conda install -c conda-forge lmfit
+
+- ``holoviz``: plotting library used in several of our example notebooks.
+
+- *Jupyter*: used for tutorial notebooks and in general very useful tool
+   for working with and sharing your ``cellpy`` results.
+
+For more details, I recommend that you look at the documentation of these
+packages (google it) and install them. You can most
+likely use the same method as for pytables etc.
+
+Additional requirments for .res files
+:::::::::::::::::::::::::::::::::::::
+
+.res files from Arbin testers actually are in a Microsoft Access format.
+For loading .res-files (possible also for other *‘to-be-implemented’* file
+formats) you will thus also need a *Python ODBC bridge* (in addition to the
+requirements set in the ``setup.py`` file).
+I recommend `pyodbc <https://github.com/mkleehammer/pyodbc/wiki>`__ that
+can be installed from conda forge or using pip.
+
+  .. code:: bash
+  
+     conda install -c conda-forge pyodbc
+
+Additionally, you need a driver or similar to help your ODBC bridge
+accessing it. 
+
+*For Windows users:* if you do not have one of the 
+most recent Office versions, you might not be allowed to install a driver
+of different bit than your office version is using (the installers can be found
+`here <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__).
+Also remark that the driver needs to be of the same bit as your Python
+(so, if you are using 32 bit Python, you will need the 32 bit driver).
+
+*For POSIX systems:* I have not found any suitable drivers. Instead,
+``cellpy`` will try to use ``mdbtools``\ to first export the data to
+temporary csv-files, and then import from those csv-file (using the
+``pandas`` library). You can install ``mdbtools`` using your systems
+preferred package manager (*e.g.* ``apt-get install mdbtools``).
+
+4. Install ``cellpy``
+~~~~~~~~~~~~~~~~~~~~~
+In your activated ``cellpy`` environment in the Anaconda Prompt run:
+
+  .. code:: bash
+  
+     conda install -c conda-forge cellpy
+
+Congratulations, you have (hopefully) successfully installed cellpy.
+
+If you run into problems, doublecheck that all your dependencies are 
+installed and check your Microsoft Access odbc drivers.
 
 
-Check your installation
-~~~~~~~~~~~~~~~~~~~~~~~
+Check your cellpy installation
+-------------------------------------
 
 The easiest way to check if ``cellpy`` has been installed, is to issue
 the command for printing the version number to the screen
@@ -157,7 +192,7 @@ the command for printing the version number to the screen
 If the program prints the expected version number, you probably
 succeeded. If it crashes, then you will have to retrace your steps, redo
 stuff and hope for the best. If it prints an older (lower) version
-number than you expect, it is a big chance that you have installed it
+number than you expect, there is a big chance that you have installed it
 earlier, and what you would like to do is to do an ``upgrade`` instead
 of an ``install``
 
@@ -165,10 +200,9 @@ of an ``install``
 
    pip install --upgrade cellpy
 
-It could also be that you want to install a pre-release (a version that
-is so bleeding edge that it ends with a alpha or beta release
-identification, *e.g.* ends with .b2). Then you will need to add the
-–pre modifier
+If you want to install a pre-release (a version that is so bleeding edge
+that it ends with a alpha or beta release identification, *e.g.* ends
+with .b2). Then you will need to add the –pre modifier
 
 .. code:: bash
 
@@ -186,9 +220,9 @@ The ``cellpy`` command to your rescue
 -------------------------------------
 
 To help installing and controlling your ``cellpy`` installation, a CLI
-is provided with four main commands, including ``info`` for getting
-information about your installation, and ``setup`` for helping you to
-set up your installation and writing a configuration file.
+(command-line-interface) is provided with four main commands, including
+- ``info`` for getting information about your installation, and 
+- ``setup`` for helping you to set up your installation and writing a configuration file.
 
 To get more information, you can issue
 
