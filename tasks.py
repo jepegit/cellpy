@@ -642,26 +642,5 @@ def conda_build(c, upload=False):
     )
 
 
-@task
-def help(c):
-    """Print some help"""
-    print(" available invoke tasks ".center(80, "-"))
-    c.run("invoke -l")
-    print()
-    print(" info from dev_testutils.py ".center(80, "-"))
-    dev_help_file_path = Path("dev_utils/helpers") / "dev_testutils.py"
-    with open(dev_help_file_path) as f:
-        while True:
-            line = f.readline()
-            parts = line.split()
-            if parts:
-                if parts[0].isupper():
-                    print(line.strip())
-
-            if not line:
-                break
-    print(" bye ".center(80, "-"))
-
-
 if __name__ == "__main__":
     delete_stuff(pattern="NOTHING")
