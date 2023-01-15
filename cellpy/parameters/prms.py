@@ -282,7 +282,7 @@ _cellpyfile_fidtable_format = "fixed"
 _standard_template_uri = "https://github.com/jepegit/cellpy_cookies.git"
 
 _registered_templates = {
-    "standard": (_standard_template_uri, "standard"),
+    "standard": (_standard_template_uri, "standard"),  # (repository, name-of-folder)
     "ife": (_standard_template_uri, "ife"),
 }
 

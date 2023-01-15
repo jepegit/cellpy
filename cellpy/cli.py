@@ -1318,7 +1318,7 @@ def _new(
     list_: bool = False,
     session_id: str = "experiment_001",
     no_input: bool = False,
-    cookie_directory: str = "",
+    cookie_directory: str = ""
 ):
     """Set up a batch experiment (might need git installed).
 
@@ -1333,7 +1333,7 @@ def _new(
         project_dir: your project directory.
         session_id: the lookup value.
         no_input: accept defaults if True (only valid when providing project_dir and session_id)
-        cookie_directory: name of template directory.
+        cookie_directory: name of the directory for your cookie (inside the repository or zip file).
     Returns:
         None
     """
@@ -1386,9 +1386,10 @@ def _new(
     if local_user_template:
         # forcing using local template
         templates = _read_local_templates()
+
         if not templates:
             click.echo(
-                "You asked me to use a local template, " "but you have none. Aborting."
+                "You asked me to use a local template, but you have none. Aborting."
             )
             return
     else:
@@ -1462,7 +1463,13 @@ def _new(
     cellpy_version = cellpy.__version__
 
     try:
-        selected_template, cookie_directory = templates[template.lower()]
+        selected_template, cookie_dir = templates[template.lower()]
+
+        if cookie_directory:
+            cookie_dir = cookie_directory
+        if not cookie_dir:
+            cookie_dir = template.lower()
+
         cookiecutter.main.cookiecutter(
             selected_template,
             extra_context={
@@ -1472,7 +1479,7 @@ def _new(
                 "session_id": session_id,
             },
             no_input=no_input,
-            directory=cookie_directory,
+            directory=cookie_dir,
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")
