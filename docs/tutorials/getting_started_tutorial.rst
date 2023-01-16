@@ -2,9 +2,7 @@ The getting started with ``cellpy`` tutorial (opinionated version)
 ==================================================================
 
 This tutorial will help you getting started with ``cellpy`` and
-tries to give you a step-by-step recipe. The information in this tutorial
-can also (most likely) be found elsewhere. For the novice users,
-jump directly to chapter 1.2.
+tries to give you a step-by-step recipe.
 
 How to install ``cellpy`` - the minimalistic explanation
 --------------------------------------------------------
@@ -31,8 +29,8 @@ For the installation of specific versions and pre-releases, see
 `Check your cellpy installation`_.
 
 
-The tea spoon explanation
--------------------------
+How to install ``cellpy`` - the tea spoon explanation
+-----------------------------------------------------
 
 If you are used to installing stuff from the command line (or shell),
 then things might very well run smoothly. However, a considerable
@@ -215,22 +213,92 @@ To run a more complete check of your installation, there exist a
 
    cellpy info --check
 
+Set up ``cellpy``
+-----------------
 
-The ``cellpy`` command to your rescue
+After you have installed ``cellpy`` it is highly recommended that you
+create an appropriate configuration file and folders for raw data,
+cellpy-files, logs, databases and output data (and inform
+``cellpy`` about it).
+
+To do this, run the setup command:
+
+  .. code:: bash
+  
+       cellpy setup
+
+To run the setup in interactive mode, use -i:
+
+  .. code:: bash
+  
+       cellpy setup -i
+
+This creates the cellpy configuration file ``_cellpy_prms_USERNAME.conf``
+in your home directory (USERNAME = your user name) and creates the standard
+cellpy_data folders (if they do not exist).
+The ``-i`` option makes sure that the setup is done interactively:
+The program will ask you about where specific folders are, *e.g.* where
+you would like to put your outputs and where your cell data files are
+located. If the folders do not exist, ``cellpy`` will try to create them.
+
+If you want to specify a root folder different from the default (your HOME
+folder), you can use the ``-d`` option *e.g.*
+``cellpy setup -i -d /Users/kingkong/cellpydir``
+
+.. hint::
+   You can always edit your configurations directly in the cellpy configuration
+   file ``_cellpy_prms_USER.conf``. This file should be located inside your
+   home directory, /~ in posix and c:\users\USERNAME in not-too-old windows.
+
+
+
+The cellpy configuration file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The paths to raw data, the cellpy data base file, file locations etc. are set in
+the ``_cellpy_prms_USER.conf`` file that is usually located in your home directory.
+
+To get the filepath to your config file (and other cellpy info), run:
+
+  .. code:: bash
+  
+       cellpy info -l
+
+The config file is written in YAML format and it should be relatively easy to
+edit it in a text editor.
+
+Within the config file, the paths are the most important parts that need to
+be set up correctly. This tells ``cellpy`` where to find (and save) different files,
+such as the database file and raw data.
+
+Furthermore, the config file contains details about the databasefile to be
+used for cell info and metadata (i.e. type and structure of the database file such
+as column headers etc.)
+
+
+The database file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The database file should contain information (cell name, type, mass loading etc.)
+on your cells, so that cellpy can find and link the test data to the provided
+metadata.
+
+The database file is also useful when working with the ``cellpy`` batch routine.
+
+
+Useful ``cellpy`` commands
 -------------------------------------
 
 To help installing and controlling your ``cellpy`` installation, a CLI
-(command-line-interface) is provided with four main commands, including
-- ``info`` for getting information about your installation, and 
-- ``setup`` for helping you to set up your installation and writing a configuration file.
+(command-line-interface) is provided with several commands (including the already
+mentioned ``info`` for getting information about your installation, and 
+``setup`` for helping you to set up your installation and writing a configuration file).
 
-To get more information, you can issue
+To get a list of these commands including some basic information, you can issue
 
 .. code:: bash
 
    cellpy --help
 
-This will out-put some (hopefully) helpful text
+This will output some (hopefully) helpful text
 
 .. code:: bash
 
@@ -268,39 +336,7 @@ gives
      -c, --check      Do a sanity check to see if things works as they should.
      --help           Show this message and exit.
 
-Using the ``cellpy`` command for your first time setup
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-After you have installed ``cellpy`` it is highly recommended that you
-create an appropriate configuration file and create folders for raw
-data, cellpy-files, logs, databases and output data (and inform
-``cellpy`` about it)
-
-.. code:: bash
-
-   cellpy setup -i
-
-The ``-i`` option makes sure that the setup is done interactively.
-The program will ask you about where specific folders are, *e.g.* where
-you would like to put your outputs and where your cell data files are
-located. If the folders don’t exist, ``cellpy`` will try to create them.
-
-If you want to specify a root folder different from the default (your HOME
-folder), you can use the ``-d`` option *e.g.*
-``cellpy setup -i -d /Users/kingkong/cellpydir``
-
-.. hint::
-
-    If you don't choose the ``-i`` option and goes for accepting all the defaults,
-    you can always edit your configurations
-    directly in the cellpy configuration file (that should be located inside your
-    home directory, /~ in posix and c:\users\NAME in not-too-old windows).
-
-When you have answered all your questions, a configuration file will be
-made and saved to your home directory. You can always issue
-``cellpy info -l`` to find out where your configuration file is located
-(it’s written in YAML format and it should be relatively easy to edit it
-in a text editor)
 
 Running your first script
 -------------------------
@@ -314,13 +350,15 @@ folder <https://github.com/jepegit/cellpy/tree/master/examples>`__).
     The ``cellpy pull`` command can assist in downloading
     both examples and tests.
 
-Let's start by a trying to import ``cellpy`` in an interactive Python session.
+Start by trying to import ``cellpy`` in an interactive Python session.
 If you have an icon to press to start up the Python in interactive mode,
-do that (it could also be for example an ipython console or a
-Jupyter Notebook).
-You can also start an interactive Python session
-if you are in your terminal window of command window by just writing ``python``
-and pressing enter.
+do that (it could also be for example an ipython console or a Jupyter
+Notebook). 
+You can also start an interactive Python session if you are in your
+terminal window of command window by just writing ``python`` and pressing
+enter.
+*Hint:* Remember to activate your cellpy (or whatever name you
+chose) environment.
 
 Once inside Python, try issuing ``import cellpy``. Hopefully you should not see
 any error-messages.
@@ -335,7 +373,7 @@ any error-messages.
 
 Nothing bad happened this time. If you got an error message, try to interpret
 it and check if you have skipped any steps in this tutorial. Maybe you are
-missing the ``box`` package? if so, go out of the Python interpreter if you
+missing the ``box`` package? If so, go out of the Python interpreter if you
 started it in your command window, or open another command window and write
 
 .. code:: bash
@@ -344,8 +382,8 @@ started it in your command window, or open another command window and write
 
 and try again.
 
-Now let's try to be a bit more ambitious. Start up python again if you not
-still running it and try this:
+Now let's try to be a bit more ambitious. Start up python again if you are
+not still running it and try this:
 
 .. code-block:: python
 
