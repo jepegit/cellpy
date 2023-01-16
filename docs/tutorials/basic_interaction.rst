@@ -46,7 +46,7 @@ Then define some settings and variables and create the CellpyCell-object:
     # list consisting of file names with full path
     raw_files = [os.path.join(raw_data_dir, f) for f in raw_file]
 
-    # creating the CellpyCell object and sets the cycle mode:
+    # creating the CellpyCell object and set the cycle mode:
     cell_data = cellreader.CellpyCell()
     cell_data.cycle_mode = cycle_mode
 
@@ -61,7 +61,7 @@ Now we will read the files, merge them, and create a summary:
     # Note: make_summary will automatically run the
     # make_step_table function if it does not exist.
 
-Then its probably best to save the data in the cellpy-format:
+Then it is probably best to save the data in the cellpy-format:
 
 .. code-block:: python
 

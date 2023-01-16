@@ -272,7 +272,7 @@ such as the database file and raw data.
 
 Furthermore, the config file contains details about the databasefile to be
 used for cell info and metadata (i.e. type and structure of the database file such
-as column headers etc.)
+as column headers etc.). For more details, see chapter on Configuring cellpy.
 
 
 The database file
