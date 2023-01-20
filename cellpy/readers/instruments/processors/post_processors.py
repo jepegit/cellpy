@@ -203,6 +203,30 @@ def set_index(data: Cell, config_params: ModelParameters) -> Cell:
     return data
 
 
+def cumulate_capacity_within_cycle(data: Cell, config_params: ModelParameters) -> Cell:
+    """Cumulates the capacity within each cycle"""
+    # state_column = config_params.states["column_name"]
+    # is_charge = config_params.states["charge_keys"]
+    # is_discharge = config_params.states["discharge_keys"]
+    cycles = data.raw.groupby("cycle_index")
+    cumulated = []
+    charge_hdr = "charge_capacity"
+    discharge_hdr = "discharge_capacity"
+
+    for i, (cycle_number, cycle) in enumerate(cycles):
+        steps = cycle.groupby("step_index")
+        last_charge = 0.0
+        last_discharge = 0.0
+        for step_number, step in steps:
+            step[charge_hdr] = step[charge_hdr] + last_charge
+            step[discharge_hdr] = step[discharge_hdr] + last_discharge
+            last_charge = step.at[step.index[-1], charge_hdr]
+            last_discharge = step.at[step.index[-1], discharge_hdr]
+            cumulated.append(step)
+    data.raw = pd.concat(cumulated)
+    return data
+
+
 def replace(data: Cell, config_params: ModelParameters) -> Cell:
     print("NOT IMPLEMENTED")
     print("input:")
