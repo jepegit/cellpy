@@ -430,60 +430,60 @@ class Batch:
     def create_journal(self, description=None, from_db=True, **kwargs):
         """Create journal pages.
 
-        This method is a wrapper for the different Journal methods for making
-        journal pages (Batch.experiment.journal.xxx). It is under development. If you
-        want to use 'advanced' options (i.e. not loading from a db), please consider
-        using the methods available in Journal for now.
+            This method is a wrapper for the different Journal methods for making
+            journal pages (Batch.experiment.journal.xxx). It is under development. If you
+            want to use 'advanced' options (i.e. not loading from a db), please consider
+            using the methods available in Journal for now.
 
-        Args:
-            description: the information and meta-data needed to generate the journal pages ('empty': create an
-                empty journal; ``dict``: create journal pages from a dictionary; ``pd.DataFrame``: create journal pages
-                from a ``pandas.DataFrame``: 'filename.json': load cellpy batch file; 'filename.xlsx': create journal
-                pages from an Excel file).
-            from_db (bool): Deprecation Warning: this parameter will be removed as it is
-                the default anyway. Generate the pages from a db (the default option).
-                This will be over-ridden if description is given.
+            Args:
+                description: the information and meta-data needed to generate the journal pages ('empty': create an
+                    empty journal; ``dict``: create journal pages from a dictionary; ``pd.DataFrame``: create journal pages
+                    from a ``pandas.DataFrame``: 'filename.json': load cellpy batch file; 'filename.xlsx': create journal
+                    pages from an Excel file).
+                from_db (bool): Deprecation Warning: this parameter will be removed as it is
+                    the default anyway. Generate the pages from a db (the default option).
+                    This will be over-ridden if description is given.
 
-            **kwargs: sent to sub-function(s) (*e.g.* from_db -> simple_db_reader -> find_files ->
-                filefinder.search_for_files).
+                **kwargs: sent to sub-function(s) (*e.g.* from_db -> simple_db_reader -> find_files ->
+                    filefinder.search_for_files).
 
-        kwargs -> from_db:
-            project=None, name=None, batch_col=None
+            kwargs -> from_db:
+                project=None, name=None, batch_col=None
 
 
-        kwargs -> simple_db_reader:
-            reader: a reader object (defaults to dbreader.Reader)
-            cell_ids: keys (cell IDs)
-            file_list: file list to send to filefinder (instead of searching in folders for files).
-            pre_path: prepended path to send to filefinder.
-            include_key: include the key col in the pages (the cell IDs).
-            include_individual_arguments: include the argument column in the pages.
-            additional_column_names: list of additional column names to include in the pages.
+            kwargs -> simple_db_reader:
+                reader: a reader object (defaults to dbreader.Reader)
+                cell_ids: keys (cell IDs)
+                file_list: file list to send to filefinder (instead of searching in folders for files).
+                pre_path: prepended path to send to filefinder.
+                include_key: include the key col in the pages (the cell IDs).
+                include_individual_arguments: include the argument column in the pages.
+                additional_column_names: list of additional column names to include in the pages.
 
-        kwargs -> filefinder.search_for_files:
-            run_name(str): run-file identification.
-            raw_extension(str): optional, extension of run-files (without the '.').
-            cellpy_file_extension(str): optional, extension for cellpy files
-                (without the '.').
-            raw_file_dir(path): optional, directory where to look for run-files
-                (default: read prm-file)
-            cellpy_file_dir(path): optional, directory where to look for
-                cellpy-files (default: read prm-file)
-            prm_filename(path): optional parameter file can be given.
-            file_name_format(str): format of raw-file names or a glob pattern
-                (default: YYYYMMDD_[name]EEE_CC_TT_RR).
-            reg_exp(str): use regular expression instead (defaults to None).
-            sub_folders (bool): perform search also in sub-folders.
-            file_list (list of str): perform the search within a given list
-                of filenames instead of searching the folder(s). The list should
-                not contain the full filepath (only the actual file names). If
-                you want to provide the full path, you will have to modify the
-                file_name_format or reg_exp accordingly.
-            pre_path (path or str): path to prepend the list of files selected
-                 from the file_list.
+            kwargs -> filefinder.search_for_files:
+                run_name(str): run-file identification.
+                raw_extension(str): optional, extension of run-files (without the '.').
+                cellpy_file_extension(str): optional, extension for cellpy files
+                    (without the '.').
+                raw_file_dir(path): optional, directory where to look for run-files
+                    (default: read prm-file)
+                cellpy_file_dir(path): optional, directory where to look for
+                    cellpy-files (default: read prm-file)
+                prm_filename(path): optional parameter file can be given.
+                file_name_format(str): format of raw-file names or a glob pattern
+                    (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+                reg_exp(str): use regular expression instead (defaults to None).
+                sub_folders (bool): perform search also in sub-folders.
+                file_list (list of str): perform the search within a given list
+                    of filenames instead of searching the folder(s). The list should
+                    not contain the full filepath (only the actual file names). If
+                    you want to provide the full path, you will have to modify the
+                    file_name_format or reg_exp accordingly.
+                pre_path (path or str): path to prepend the list of files selected
+                     from the file_list.
 
-    Returns:
-        info_dict
+        Returns:
+            info_dict
 
         """
 
