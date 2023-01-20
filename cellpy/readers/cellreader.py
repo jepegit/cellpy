@@ -3820,13 +3820,17 @@ class CellpyCell:
         self,
         cycle=None,
         converter=None,
-        mode="gravimetric",
+        mode="gravimetric",  # TODO @julia: add a argument for returning a dataframe instead of cap, voltage
         **kwargs,
     ):
-        """Returns charge_capacity and voltage."""
+        """Returns charge_capacity and voltage."""  # TODO @julia: update doc-string
 
         #  TODO - jepe: should return a DataFrame as default
         #   (but remark that we then have to update e.g. batch_helpers.py)
+
+        # TODO @julia: implement the needed code
+        # indx capacity voltage
+        # TODO @julia: make a test
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)

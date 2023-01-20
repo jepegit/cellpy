@@ -210,6 +210,13 @@ def test_cap_mod_summary(dataset):
     dataset._cap_mod_summary(summary, "reset")
 
 
+# TODO @julia: insert test here (and also run the tests using pytest)
+#   def test_return_df_get_ccap(dataset):
+#       df = dataset.get_ccap(whatever)
+#       cc, v = dataset.get_ccap(whatever)
+#       assert something
+
+
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_cap_mod_summary_fail(dataset):
     summary = dataset.data.summary
