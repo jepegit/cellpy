@@ -396,6 +396,9 @@ def bump(c, bumper=None):
     Args:
         bumper (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
 
+    Example:
+        inv bump --bumper nano
+
     The following bumpers are allowed:
         nano: tag-num, increment from e.g. 0.4.2b2 to 0.4.2b3
         final: tag final, increment from e.g. 0.4.2b2 to 0.4.2
@@ -408,7 +411,7 @@ def bump(c, bumper=None):
         post: tag post
         keep: don't change it
 
-    Typically, you would use 'nano' until you are satisfied with your packaage, and then
+    Typically, you would use 'nano' until you are satisfied with your package, and then
     use a 'final'. And then start again with new features by first using an 'alpha' then
     start all over with 'nano'.
 
