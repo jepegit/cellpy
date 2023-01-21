@@ -596,6 +596,34 @@ def build(
 
 
 @task
+def docs(
+    c, _clean=False, _serve=True, browser=True
+):
+    """Build and view docs"""
+
+    if _clean:
+        clean(c)
+    print(" Building docs ".center(80, "-"))
+    c.run("sphinx-build docs docs/_build")
+
+    if _serve:
+        import pathlib
+
+        builds_path = pathlib.Path("docs") / "_build"
+        print(" Serving docs")
+        os.chdir(builds_path)
+        _location = r"localhost:8081"
+        if browser:
+            print(f" - opening browser in http://{_location}")
+            c.run(f"python -m webbrowser -t http://{_location}")
+        else:
+            print(
+                f" - hint! you can open your browser by typing:\n       python -m webbrowser -t http://{_location}"
+            )
+        sphinx_serve()
+
+
+@task
 def serve(c):
     _location = r"localhost:8081"
     c.run(f"python -m webbrowser -t http://{_location}")
@@ -640,27 +668,6 @@ def conda_build(c, upload=False):
         r"C:\miniconda\envs\cellpy_dev\conda-bld\win-"
         r"64\cellpy-0.3.0.post1-py37_0.tar.bz2"
     )
-
-
-@task
-def help(c):
-    """Print some help"""
-    print(" available invoke tasks ".center(80, "-"))
-    c.run("invoke -l")
-    print()
-    print(" info from dev_testutils.py ".center(80, "-"))
-    dev_help_file_path = Path("dev_utils/helpers") / "dev_testutils.py"
-    with open(dev_help_file_path) as f:
-        while True:
-            line = f.readline()
-            parts = line.split()
-            if parts:
-                if parts[0].isupper():
-                    print(line.strip())
-
-            if not line:
-                break
-    print(" bye ".center(80, "-"))
 
 
 if __name__ == "__main__":

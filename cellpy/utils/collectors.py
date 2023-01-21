@@ -331,6 +331,7 @@ class BatchCollector:
                     self.figure = self._set_hv_opts(hv_opt)
             except TypeError:
                 print("possible bug in apply_template experienced")
+                print(self._templates)
 
     def _figure_valid(self):
         # TODO: create a decorator
@@ -407,7 +408,9 @@ class BatchCollector:
         filename_png = filename_pre.with_suffix(".png")
         try:
             current_renderer = _get_current_holoviews_renderer()
+
             _set_holoviews_renderer("matplotlib")
+            self.figure.opts(hv.opts.NdOverlay(legend_position="right"))
             hv.save(
                 self.figure,
                 filename_png,
@@ -679,12 +682,21 @@ def sequence_plotter(
         )
     elif method == "fig_pr_cycle":
         if cycles is None:
-            cycles = [1, 10, 20]
+            unique_cycles = list(collected_curves.cycle.unique())
+            if len(unique_cycles) > 10:
+                cycles = [1, 10, 20]
+        if cycles is not None:
+            filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        else:
+            filtered_curves = collected_curves
+
         if width is None:
             width = int(800 / cols)
-
+        backend_specific_kwargs = {}
+        if extension != "matplotlib":
+            backend_specific_kwargs["width"] = width
         z, g = g, z
-        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+
         p = (
             hv.NdLayout(
                 {
@@ -695,8 +707,8 @@ def sequence_plotter(
                         hv.opts.Curve(
                             color=hv.Palette(palette),
                             title=f"cycle-{cyc}",
-                            width=width,
                             backend=extension,
+                            **backend_specific_kwargs,
                         )
                     )
                     for cyc, df in filtered_curves.groupby(g)
@@ -808,7 +820,7 @@ class BatchICACollector(BatchCollector):
             **kwargs,
         )
 
-        self._templates["bokeh"] = hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh")
+        self._templates["bokeh"] = [hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"), ]
 
     def generate_name(self):
         names = ["collected_ica"]

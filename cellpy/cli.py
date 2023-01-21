@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 import pathlib
+from pprint import pprint
 import re
 import subprocess
 import sys
@@ -1254,16 +1255,18 @@ def _read_local_templates(local_templates_path=None):
         local_templates_path = pathlib.Path(prmreader.prms.Paths.templatedir)
     templates = {}
     for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
-        label = p.stem.strip()[len("cellpy_cookie_") :]
-        templates[label] = str(p)
+        label = p.stem.strip()[len("cellpy_cookie_"):]
+        templates[label] = (str(p), None)
     logging.debug(f"Found the following templates: {templates}")
     return templates
 
 
 # ----------------------- new ----------------------------------------
 @click.command()
-@click.option("--template", "-t", help="What template to use.")
-@click.option("--directory", "-d", default=None, help="Create in custom directory DIR.")
+@click.option("--template", "-t", help="Provide template name.")
+@click.option("--directory", "-d", default=None, help="Create in custom directory.")
+@click.option("--project", "-p", default=None, help="Provide project name (i.e. sub-directory name).")
+@click.option("--experiment", "-e", default=None, help="Provide experiment name (i.e. lookup-value).")
 @click.option(
     "--local-user-template",
     "-u",
@@ -1289,11 +1292,13 @@ def _read_local_templates(local_templates_path=None):
 @click.option(
     "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
 )
-def new(template, directory, local_user_template, serve_, run_, lab, list_):
+def new(template, directory, project, experiment, local_user_template, serve_, run_, lab, list_):
     """Set up a batch experiment (might need git installed)."""
     _new(
         template,
         directory=directory,
+        project_dir=project,
+        session_id=experiment,
         local_user_template=local_user_template,
         serve_=serve_,
         run_=run_,
@@ -1305,15 +1310,15 @@ def new(template, directory, local_user_template, serve_, run_, lab, list_):
 def _new(
     template: str,
     directory: Union[Path, str, None] = None,
+    project_dir: Union[str, None] = None,
     local_user_template: bool = False,
     serve_: bool = False,
     run_: bool = False,
     lab: bool = False,
     list_: bool = False,
-    project_dir: Union[str, None] = None,
     session_id: str = "experiment_001",
     no_input: bool = False,
-    cookie_directory: str = "",
+    cookie_directory: str = ""
 ):
     """Set up a batch experiment (might need git installed).
 
@@ -1328,7 +1333,7 @@ def _new(
         project_dir: your project directory.
         session_id: the lookup value.
         no_input: accept defaults if True (only valid when providing project_dir and session_id)
-        cookie_directory: name of template directory.
+        cookie_directory: name of the directory for your cookie (inside the repository or zip file).
     Returns:
         None
     """
@@ -1381,9 +1386,10 @@ def _new(
     if local_user_template:
         # forcing using local template
         templates = _read_local_templates()
+
         if not templates:
             click.echo(
-                "You asked me to use a local template, " "but you have none. Aborting."
+                "You asked me to use a local template, but you have none. Aborting."
             )
             return
     else:
@@ -1405,8 +1411,20 @@ def _new(
         return
 
     directory = Path(directory)
+    selected_project_dir = None
 
-    if project_dir is None:
+    if project_dir:
+        selected_project_dir = directory / project_dir
+        if not selected_project_dir.is_dir():
+            if cookiecutter.prompt.read_user_yes_no(f"{project_dir} does not exist. Create?", "yes"):
+                os.mkdir(selected_project_dir)
+                click.echo(f"Created {selected_project_dir}")
+
+            else:
+                selected_project_dir = None
+                click.echo(f"Select another directory instead")
+
+    if not selected_project_dir:
         project_dirs = [
             d.name
             for d in directory.iterdir()
@@ -1415,7 +1433,7 @@ def _new(
         project_dirs.insert(0, "[create new dir]")
 
         project_dir = cookiecutter.prompt.read_user_choice(
-            "Select project folder?", project_dirs
+            "project folder", project_dirs
         )
 
         if project_dir == "[create new dir]":
@@ -1436,23 +1454,21 @@ def _new(
                 click.echo(f"created {project_dir}")
             except FileExistsError:
                 click.echo("OK - but this directory already exists!")
+        selected_project_dir = directory / project_dir
 
     # get a list of all folders
-    selected_project_dir = directory / project_dir
     existing_projects = os.listdir(selected_project_dir)
 
     os.chdir(selected_project_dir)
     cellpy_version = cellpy.__version__
 
     try:
-        selected_template, _cookie_directory = templates[template.lower()]
+        selected_template, cookie_dir = templates[template.lower()]
 
-        # sub-templates not implemented for local cellpy cookies:
-        if local_user_template:
-            cookie_directory = ""
-
-        elif not cookie_directory:
-            cookie_directory = _cookie_directory
+        if cookie_directory:
+            cookie_dir = cookie_directory
+        if not cookie_dir:
+            cookie_dir = template.lower()
 
         cookiecutter.main.cookiecutter(
             selected_template,
@@ -1463,7 +1479,7 @@ def _new(
                 "session_id": session_id,
             },
             no_input=no_input,
-            directory=cookie_directory,
+            directory=cookie_dir,
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
         click.echo("Sorry. This did not work as expected!")
