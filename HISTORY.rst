@@ -2,7 +2,7 @@
 History
 =======
 
-0.5.0(2022) [under development]
+1.0.0(2023) [under development]
 --------------------------------
 
 * Unit handling: renaming summary headers
@@ -12,6 +12,12 @@ History
 * Batch plotting: collectors for both data collection, plotting and saving
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
 * Internals: allow for only one Data-object pr CellpyCell object
+
+
+0.4.3 (2023)
+------------
+
+* Neware txt loader (supports one specific format only, other formats will have to wait for v.1.0)
 
 
 0.4.2 (2022)
