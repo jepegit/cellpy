@@ -9,6 +9,7 @@ History
 * Unit handling: new cellpy-file-format version
 * Unit handling: tool for converting old to new format
 * Templates: using one repository with sub-folders
+* Templates: adding more documentation
 * Readers: neware.txt (one version/model)
 * Batch plotting: collectors for both data collection, plotting and saving
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
