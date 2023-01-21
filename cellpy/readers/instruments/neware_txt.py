@@ -53,6 +53,7 @@ from cellpy.readers.instruments.base import TxtLoader
 
 SUPPORTED_MODELS = {
     "UIO": "neware_txt_zero",
+    "VAJEE": "neware_txt_one",
 }
 
 

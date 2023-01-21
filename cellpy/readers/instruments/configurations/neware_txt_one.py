@@ -1,6 +1,6 @@
-# TODO: Edit to CENATE format
+# TODO: Edit to CENATE format (put on hold until exact format has been decided)
 
-file_info = {"raw_extension": "csv"}
+file_info = {"raw_extension": "txt"}
 
 # TODO: rename this to raw_units for v1.0.0 and copy the file to master
 raw_unit_labels = {
@@ -54,9 +54,9 @@ raw_limits = {
 }
 
 formatters = {
-    "skiprows": 0,  # will not be used since auto is on
-    "sep": None,  # comma for UiO at the moment, but using auto instead
-    "header": 0,  # will not be used since auto is on
+    "skiprows": 0,
+    "sep": "\t",  #
+    "header": 5,  # will not be used since auto is on
     "encoding": "ISO-8859-1",  # will not be used since auto is on
     "decimal": ".",
     "thousands": None,

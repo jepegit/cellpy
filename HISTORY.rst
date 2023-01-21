@@ -2,6 +2,12 @@
 History
 =======
 
+0.4.3 (2023)
+------------
+
+* Neware txt loader (supports one specific format only, other formats will have to wait for v.1.0)
+
+
 0.4.2 (2022)
 ------------
 
