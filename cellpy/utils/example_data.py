@@ -11,7 +11,7 @@ RAW_PATH = CURRENT_PATH / "data" / "raw"
 H5_PATH = CURRENT_PATH / "data"
 
 
-def arbin_file(auto_summary=True, testing=False):
+def raw_file(auto_summary=True, testing=False):
     """load an example data file (arbin).
 
     Args:
@@ -56,6 +56,6 @@ def arbin_file_path():
 
 
 if __name__ == "__main__":
-    a = arbin_file()
+    a = raw_file()
     print("Saving new version of the cellpy file!")
     a.save(cellpy_file_path())

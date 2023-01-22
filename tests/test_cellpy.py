@@ -203,7 +203,7 @@ def test_humanize_bytes():
 def test_example_data():
     from cellpy.utils import example_data
 
-    a = example_data.arbin_file(testing=True)
+    a = example_data.raw_file(testing=True)
     c = example_data.cellpy_file(testing=True)
     c.make_summary()
 
