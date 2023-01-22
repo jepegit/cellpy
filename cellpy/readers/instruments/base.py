@@ -461,9 +461,7 @@ class AutoLoader(BaseLoader):
         data.channel_index = meta.get("channel_index", None)
         data.test_ID = meta.get("test_ID", None)
         data.test_name = meta.get("test_name", None)
-        data.channel_number = meta.get("channel_number", None)
         data.creator = meta.get("creator", None)
-        data.item_ID = meta.get("item_ID", None)
         data.schedule_file_name = meta.get("schedule_file_name", None)
         data.start_datetime = meta.get("start_datetime", None)
 

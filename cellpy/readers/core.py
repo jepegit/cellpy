@@ -224,29 +224,46 @@ class Data:
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
         self.logger.debug("created DataSet instance")
+        self.raw_data_files = []
+        self.raw_data_files_length = []
+        self.raw_units = get_default_raw_units()
+        self.raw_limits = get_default_raw_limits()
 
-        # meta-data
-        self.ir_steps = None  # check if this is needed
-        self.ocv_steps = None  # check if this is needed
-        self.cell_no = None  # check if this is needed
-        self.no_cycles = 0.0  # check if this is needed
-        self.charge_steps = None  # check if this is needed
-        self.discharge_steps = None  # check if this is needed
-        self.material = prms.Materials.default_material
-        self.merged = False  # check if this is needed
-        self.file_errors = None  # not in use at the moment
+        self.raw = pd.DataFrame()
+        self.summary = pd.DataFrame()
+        self.steps = pd.DataFrame()
+        self.cellpy_file_version = CELLPY_FILE_VERSION
+
+        # ---------------------------------------------------------------
+        #               meta-data
+        # ---------------------------------------------------------------
+        # Remark! all this is set up so that each cell only has "one" test.
+        #   In the future, we should consider implementing that the cell
+        #   performs many tests in a row with different test meta-data
+
+        # ---------------- test dependent -------------------------------
         self.loaded_from = None  # loaded from (can be list if merged)
         self.channel_index = None
-        self.channel_number = None
         self.creator = None
-        self.item_ID = None  # check if this is needed
         self.schedule_file_name = None
+        self.test_type = None  # Not used (and might be put inside test_ID)
         self.start_datetime = None
-        self.test_ID = None
-        self.name = None
+
+        # ---------------- not sure if test dependent -------------------
+        self.voltage_lim_low = prms.CellInfo.voltage_lim_low
+        self.voltage_lim_high = prms.CellInfo.voltage_lim_high
         self.cycle_mode = prms.Reader.cycle_mode
-        self.mass_given = False  # check if this is needed
+        self.test_ID = None  # id for the test - currently just a number; could become a list or more in the future
+        # self.test_name  # This is used in arbin and in some loaders, but not implemented here (remove?)
+
+        # ---------------- overall (all tests) --------------------------
+        # about test
+        self.name = None
         self.comment = prms.CellInfo.comment
+        self.file_errors = None  # not in use at the moment
+
+        # about cell
+        self.material = prms.Materials.default_material
 
         # TODO @jepe: Maybe we should use values with units here instead (pint)?
         self.mass = prms.Materials.default_mass  # active material
@@ -255,8 +272,7 @@ class Data:
         self._nom_cap_specifics = (
             prms.Materials.default_nom_cap_specifics
         )  # nominal capacity type
-        self.voltage_lim_low = prms.CellInfo.voltage_lim_low
-        self.voltage_lim_high = prms.CellInfo.voltage_lim_high
+
         self.active_electrode_area = prms.CellInfo.active_electrode_area
         self.active_electrode_thickness = prms.CellInfo.active_electrode_thickness
         self.electrolyte_volume = prms.CellInfo.electrolyte_volume
@@ -286,19 +302,6 @@ class Data:
         # place to put "checks" etc:
         # _extract_meta_from_cellpy_file
         # _create_infotable()
-
-        self.raw_data_files = []
-        self.raw_data_files_length = []
-        self.raw_units = get_default_raw_units()
-        self.raw_limits = get_default_raw_limits()
-
-        self.raw = pd.DataFrame()
-        self.summary = pd.DataFrame()
-        self.steps = pd.DataFrame()
-        self.summary_table_version = SUMMARY_TABLE_VERSION  # not used yet
-        self.step_table_version = STEP_TABLE_VERSION  # not used yet
-        self.cellpy_file_version = CELLPY_FILE_VERSION
-        self.raw_table_version = RAW_TABLE_VERSION  # not used yet
 
     @staticmethod
     def _header_str(hdr):

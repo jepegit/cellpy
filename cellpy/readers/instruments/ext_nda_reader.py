@@ -86,9 +86,7 @@ class DataLoader(BaseLoader):
         """Loads data into a DataSet object and returns it"""
         test_no = 1
         channel_index = 1
-        channel_number = 1
         creator = "no name"
-        item_ID = 1
         schedule_file_name = "no name"
         start_datetime = "2020.02.24 14:58:00"
         test_ID = 1
@@ -107,13 +105,10 @@ class DataLoader(BaseLoader):
         self.logger.debug(txt)
 
         data = Data()
-        data.cell_no = int(test_no)
         data.loaded_from = file_name
         fid = FileID(file_name)
         data.channel_index = channel_index
-        data.channel_number = channel_number
         data.creator = creator
-        data.item_ID = item_ID
         data.schedule_file_name = schedule_file_name
         data.start_datetime = start_datetime
         data.test_ID = test_ID

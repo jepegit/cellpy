@@ -561,7 +561,7 @@ class DataLoader(BaseLoader):
         start_datetime = global_data_df[
             self.arbin_headers_global["start_datetime_txt"]
         ][test_no]
-        test_ID = int(
+        _internal_test_number = int(
             global_data_df[self.arbin_headers_normal.test_id_txt][test_no]
         )  # OBS
         test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][test_no]
@@ -575,7 +575,7 @@ class DataLoader(BaseLoader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, test_ID)
+        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, _internal_test_number)
         sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
         import time
 
@@ -670,7 +670,7 @@ class DataLoader(BaseLoader):
         start_datetime = global_data_df[
             self.arbin_headers_global["start_datetime_txt"]
         ][test_no]
-        test_ID = int(
+        _internal_test_number = int(
             global_data_df[self.arbin_headers_normal.test_id_txt][test_no]
         )  # OBS
         test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][test_no]
@@ -683,7 +683,7 @@ class DataLoader(BaseLoader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, test_ID)
+        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, _internal_test_number)
         sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
         import time
 
@@ -815,7 +815,7 @@ class DataLoader(BaseLoader):
             dataset_number = 0
 
         data = self._init_data(file_name, global_data_df, dataset_number)
-        test_id = data.test_ID
+        test_id = data._internal_test_number
         self.logger.debug("reading raw-data")
 
         # --------- read raw-data (normal-data) ------------------------
@@ -831,7 +831,7 @@ class DataLoader(BaseLoader):
         sql = "select * from %s where %s=%s order by %s" % (
             table_name_stats,
             self.arbin_headers_normal.test_id_txt,
-            data.test_ID,
+            data._internal_test_number,
             self.arbin_headers_normal.data_point_txt,
         )
         summary_df = pd.read_sql_query(sql, conn)
@@ -1202,7 +1202,7 @@ class DataLoader(BaseLoader):
         normal_df = pd.read_csv(temp_csv_filename_normal)
         # filter on test ID
         normal_df = normal_df[
-            normal_df[self.arbin_headers_normal.test_id_txt] == data.test_ID
+            normal_df[self.arbin_headers_normal.test_id_txt] == data._internal_test_number
         ]
         # sort on data point
         if prms._sort_if_subprocess:
@@ -1273,7 +1273,6 @@ class DataLoader(BaseLoader):
 
     def _init_data(self, file_name, global_data_df, test_no):
         data = Data()
-        data.cell_no = int(test_no)
         data.loaded_from = file_name
         fid = FileID(file_name)
         # name of the .res file it is loaded from:
@@ -1281,18 +1280,16 @@ class DataLoader(BaseLoader):
         data.channel_index = int(
             global_data_df[self.arbin_headers_global["channel_index_txt"]][test_no]
         )
-        data.channel_number = int(
-            global_data_df[self.arbin_headers_global["channel_number_txt"]][test_no]
-        )
+
         data.creator = global_data_df[self.arbin_headers_global["creator_txt"]][test_no]
-        data.item_ID = global_data_df[self.arbin_headers_global["item_id_txt"]][test_no]
+        data.test_ID = global_data_df[self.arbin_headers_global["item_id_txt"]][test_no]
         data.schedule_file_name = global_data_df[
             self.arbin_headers_global["schedule_file_name_txt"]
         ][test_no]
         data.start_datetime = global_data_df[
             self.arbin_headers_global["start_datetime_txt"]
         ][test_no]
-        data.test_ID = int(
+        data._internal_test_number = int(
             global_data_df[self.arbin_headers_normal.test_id_txt][test_no]
         )
         data.test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][
@@ -1304,9 +1301,9 @@ class DataLoader(BaseLoader):
     def _normal_table_generator(self, **kwargs):
         pass
 
-    def _load_res_normal_table(self, conn, test_ID, bad_steps, data_points):
+    def _load_res_normal_table(self, conn, _internal_test_number, bad_steps, data_points):
         self.logger.debug("starting loading raw-data")
-        self.logger.debug(f"connection: {conn} test-ID: {test_ID}")
+        self.logger.debug(f"connection: {conn} internal test-ID: {_internal_test_number}")
         self.logger.debug(f"bad steps:  {bad_steps}")
 
         table_name_normal = TABLE_NAMES["normal"]
@@ -1319,7 +1316,7 @@ class DataLoader(BaseLoader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, test_ID)
+        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, _internal_test_number)
         sql_4 = ""
 
         if bad_steps is not None:

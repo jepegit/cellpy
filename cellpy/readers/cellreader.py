@@ -1068,7 +1068,6 @@ class CellpyCell:
             logging.debug("OBS! the first dataset is empty")
 
         if t2.raw.empty:
-            t1.merged = True
             logging.debug("the second dataset was empty")
             logging.debug(" -> merged contains only first")
             return t1
@@ -1079,10 +1078,8 @@ class CellpyCell:
         if not t1.raw.empty:
             t1.raw = t1.raw.iloc[:-1]
             raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
-            test.no_cycles = max(raw2[cycle_index_header])
             test.raw = raw2
         else:
-            test.no_cycles = max(t2.raw[cycle_index_header])
             test = t2
         logging.debug(" -> merged with new dataset")
 
@@ -1757,7 +1754,7 @@ class CellpyCell:
         # Remark that this function is run before selecting loading method
         # based on version. If you change the meta_dir prm to something else than
         # "/info" it will most likely fail.
-        # Remark! Used for versions 3, 4, 5
+        # Remark! Used from versions 3
 
         data = Data()
         meta_table = None
@@ -1977,8 +1974,6 @@ class CellpyCell:
 
         if data.mass is None:
             data.mass = 1.0
-        else:
-            data.mass_given = True
 
         if data.cycle_mode is None:
             logging.critical("cycle mode not found")
@@ -2039,6 +2034,11 @@ class CellpyCell:
                 raise KeyError from e
             value = default_value
         return value
+
+    def _create_infotable_new(self):
+        data = self.data
+        meta_cellpydata = collections.OrderedDict()
+        meta_data = collections.OrderedDict()
 
     def _create_infotable(self):
         # needed for saving class/DataSet to hdf5
@@ -2167,7 +2167,6 @@ class CellpyCell:
             return t2
 
         if t2.raw.empty:
-            t1.merged = True
             logging.debug("OBS! the second dataset was empty")
             logging.debug(" -> merged contains only first")
             return t1
@@ -2219,7 +2218,6 @@ class CellpyCell:
         logging.debug("performing concat")
         raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
         data.raw = raw
-        data.no_cycles = max(raw[cycle_index_header])
         step_table_made = False
 
         if merge_summary:
@@ -2294,7 +2292,6 @@ class CellpyCell:
                     "create them first!"
                 )
 
-        data.merged = True
         logging.debug(" -> merged with new dataset")
         # TODO: @jepe -  update merging for more variables
         return data
@@ -3534,8 +3531,6 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def get_mass(self):
-        if not self.data.mass_given:
-            logging.info("No mass")
         return self.data.mass
 
     def sget_voltage(self, cycle, step):
@@ -4551,7 +4546,6 @@ class CellpyCell:
     def _set_mass(self, value):
         try:
             self.data.mass = value
-            self.data.mass_given = True
         except AttributeError as e:
             logging.info("This test is empty")
             logging.info(e)
@@ -4819,10 +4813,6 @@ class CellpyCell:
                 txt += f"{f}\n"
         else:
             txt += str(test.loaded_from)
-
-        if not test.mass_given:
-            txt += f" mass is not given"
-            txt += f" setting it to {test.mass} mg"
 
         logging.debug(txt)
 
@@ -5250,22 +5240,14 @@ class CellpyCell:
 
         logging.debug("finding ir")
         only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
-        if not data.discharge_steps:
-            discharge_steps = self.get_step_numbers(
-                steptype="discharge",
-                allctypes=False,
-            )
-        else:
-            discharge_steps = data.discharge_steps
-            logging.debug("  already have discharge_steps")
-        if not data.charge_steps:
-            charge_steps = self.get_step_numbers(
-                steptype="charge",
-                allctypes=False,
-            )
-        else:
-            charge_steps = data.charge_steps
-            logging.debug("  already have charge_steps")
+        discharge_steps = self.get_step_numbers(
+            steptype="discharge",
+            allctypes=False,
+        )
+        charge_steps = self.get_step_numbers(
+            steptype="charge",
+            allctypes=False,
+        )
         ir_indexes = []
         ir_values = []
         ir_values2 = []
@@ -5313,22 +5295,14 @@ class CellpyCell:
         logging.debug(f"dt: {time.time() - ev_t0}")
         only_zeros_discharge = summary[self.headers_normal.discharge_capacity_txt] * 0.0
         only_zeros_charge = summary[self.headers_normal.charge_capacity_txt] * 0.0
-        if not data.discharge_steps:
-            logging.debug("need to collect discharge steps")
-            discharge_steps = self.get_step_numbers(
-                steptype="discharge", allctypes=False
-            )
-            logging.debug(f"dt: {time.time() - ev_t0}")
-        else:
-            discharge_steps = data.discharge_steps
-            logging.debug("  already have discharge_steps")
-        if not data.charge_steps:
-            logging.debug("need to collect charge steps")
-            charge_steps = self.get_step_numbers(steptype="charge", allctypes=False)
-            logging.debug(f"dt: {time.time() - ev_t0}")
-        else:
-            charge_steps = data.charge_steps
-            logging.debug("  already have charge_steps")
+        logging.debug("need to collect discharge steps")
+        discharge_steps = self.get_step_numbers(
+            steptype="discharge", allctypes=False
+        )
+        logging.debug(f"dt: {time.time() - ev_t0}")
+        logging.debug("need to collect charge steps")
+        charge_steps = self.get_step_numbers(steptype="charge", allctypes=False)
+        logging.debug(f"dt: {time.time() - ev_t0}")
         endv_indexes = []
         endv_values_dc = []
         endv_values_c = []
@@ -5558,7 +5532,6 @@ def check_raw():
 
     print(raw.columns)
     # assert my_test.summary.loc["1", "data_point"] == data_point
-    assert my_test.cell_no == run_number
 
 
 def check_cellpy_file():

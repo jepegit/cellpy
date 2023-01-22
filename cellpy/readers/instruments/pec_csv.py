@@ -207,15 +207,11 @@ class DataLoader(BaseLoader):
         fid = FileID(file_name)
 
         # div parameters and information (probably load this last)
-        test_no = 1
-        data.cell_no = int(test_no)
         data.loaded_from = file_name
 
         # some overall prms
         data.channel_index = None
-        data.channel_number = None
         data.creator = None
-        data.item_ID = None
         data.schedule_file_name = None
         data.test_ID = None
         data.test_name = None

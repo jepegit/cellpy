@@ -421,23 +421,20 @@ base_columns_int = [
     headers_normal.cycle_index_txt,
 ]
 
-# cellpy attributes that should be loaded from cellpy-files:
 
+# cellpy attributes that should be loaded from cellpy-files:
 ATTRS_CELLPYFILE = [
     "mass",
     "channel_index",
-    "channel_number",
     "creator",
     "cycle_mode",
     "schedule_file_name",
     "start_datetime",
     "test_ID",
-    "cell_no",
     "name",
     "nom_cap",
     "nom_cap_specifics",
     "material",
-    "item_ID",
     "active_electrode_area",
     "active_electrode_thickness",
     "electrolyte_type",
@@ -484,30 +481,20 @@ ATTRS_CELLPYDATA = [
 ATTRS_DATASET = [
     "cellpy_file_version",
     "channel_index",
-    "channel_number",
-    "charge_steps",
     "creator",
     "cycle_mode",
-    "discharge_steps",
     "file_errors",
-    "ir_steps",
-    "item_ID",
     "loaded_from",
     "mass",
-    "mass_given",
     "material",
-    "merged",
     "name",
-    "no_cycles",
     "nom_cap",
-    "ocv_steps",
     "raw_data_files_length",
     "raw_limits",
     "raw_units",
     "schedule_file_name",
     "start_datetime",
     "test_ID",
-    "cell_no",
     "tot_mass",
 ]
 

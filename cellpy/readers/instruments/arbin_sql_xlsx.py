@@ -166,9 +166,7 @@ class DataLoader(BaseLoader):
         data.channel_index = None
         data.test_ID = None
         data.test_name = name  # should fix this
-        data.channel_number = None
         data.creator = None
-        data.item_ID = None
         data.schedule_file_name = None
         data.start_datetime = None
 

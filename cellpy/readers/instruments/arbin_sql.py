@@ -266,9 +266,7 @@ class DataLoader(BaseLoader):
         data.test_name = name
 
         # The following meta data is not implemented yet for SQL loader:
-        data.channel_number = None
         data.creator = None
-        data.item_ID = None
         data.schedule_file_name = None
         data.start_datetime = None
 
