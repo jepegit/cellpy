@@ -224,7 +224,6 @@ class CellpyCell:
             self.filestatuschecker = filestatuschecker
         self.forced_errors = 0
         self.summary_exists = False
-
         if not filenames:
             self.file_names = []
         else:
@@ -290,7 +289,6 @@ class CellpyCell:
         self.instrument_factory = None
         self.register_instrument_readers()
         self.set_instrument()
-
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()
         self.output_units = get_default_output_units()
@@ -566,7 +564,6 @@ class CellpyCell:
 
         # constants:
         custom_instrument_splitter = "::"
-
         # consume keyword arguments:
         _override_local_instrument_path = kwargs.pop(
             "_override_local_instrument_path", False
@@ -3805,10 +3802,20 @@ class CellpyCell:
         cycle=None,
         converter=None,
         mode="gravimetric",
+        return_dataframe=False,
         **kwargs,
     ):
-        """Returns discharge_capacity and voltage."""
+        """Returns discharge_capacity and voltage for the selected cycle
+        Args:
+            cycle (int): cycle number.
+            converter (string): defaults to None.
+            mode (string): defaults to "gravimetric".
+            return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+        Returns:
+            discharge_capacity, voltage (pd.Series).
 
+        """
+        # TODO: update docstring on purpose of "converter" and "mode"
         #  TODO - jepe: should return a DataFrame as default
         #   but remark that we then have to update e.g. batch_helpers.py
 
@@ -3816,28 +3823,43 @@ class CellpyCell:
             converter = self.get_converter_to_specific(mode=mode)
 
         dc, v = self._get_cap(cycle, "discharge", converter=converter, **kwargs)
-        return dc, v
+        if return_dataframe:
+            cycle_df = pd.concat([v, dc], axis=1)
+            return cycle_df
+        else:
+            return dc, v
 
     def get_ccap(
         self,
         cycle=None,
         converter=None,
-        mode="gravimetric",  # TODO @julia: add a argument for returning a dataframe instead of cap, voltage
+        mode="gravimetric",
+        return_dataframe=False,
         **kwargs,
     ):
-        """Returns charge_capacity and voltage."""  # TODO @julia: update doc-string
+        """Returns charge_capacity and voltage for the selected cycle.
+        Args:
+            cycle (int): cycle number.
+            converter (string): defaults to None.
+            mode (string): defaults to "gravimetric".
+            return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+        Returns:
+            charge_capacity, voltage (pd.Series).
 
-        #  TODO - jepe: should return a DataFrame as default
+        """
+        # TODO: update docstring on purpose of "converter" and "mode"
+        # TODO - jepe: should return a DataFrame as default
         #   (but remark that we then have to update e.g. batch_helpers.py)
-
-        # TODO @julia: implement the needed code
-        # indx capacity voltage
-        # TODO @julia: make a test
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
         cc, v = self._get_cap(cycle, "charge", converter=converter, **kwargs)
-        return cc, v
+
+        if return_dataframe:
+            cycle_df = pd.concat([v, cc], axis=1)
+            return cycle_df
+        else:
+            return cc, v
 
     def get_cap(
         self,
@@ -5443,7 +5465,6 @@ def get(
     cellpy_instance = CellpyCell()
     logging.debug(f"created CellpyCell instance")
     db_readers = ["arbin_sql"]
-
     logging.debug(f"checking instrument and instrument_file")
     if instrument_file is not None:
         logging.debug(f"got instrument file {instrument_file=}")
