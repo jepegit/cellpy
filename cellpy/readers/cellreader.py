@@ -157,10 +157,10 @@ class CellpyCell:
 
     def __str__(self):
         txt = "<CellpyCell>\n"
-        if self.name:
-            txt += f"name: {self.name}\n"
+        if self.session_name:
+            txt += f"session name: {self.session_name}\n"
         if self.table_names:
-            txt += f"table_names: {self.table_names}\n"
+            txt += f"table names: {self.table_names}\n"
         if self.tester:
             txt += f"tester: {self.tester}\n"
         if self.data:
@@ -208,15 +208,20 @@ class CellpyCell:
                default).
             initialize: create a dummy (empty) dataset; defaults to False.
         """
+
+        # TODO v 1.1: move to data (allow for multiple testers for same cell)
         if tester is None:
             self.tester = prms.Instruments.tester
         else:
             self.tester = tester
+
         self.loader = None  # this will be set in the function set_instrument
         self.logger = logging.getLogger(__name__)
         logging.debug("created CellpyCell instance")
-        self.name = None
+
+        self._session_name = None
         self.profile = profile
+
         self.minimum_selection = {}
         if filestatuschecker is None:
             self.filestatuschecker = prms.Reader.filestatuschecker
@@ -302,6 +307,31 @@ class CellpyCell:
         logging.debug("Initializing...")
         # TODO: v.1.0.0: replace this
         self.data = Data()
+
+    # the batch utility might be using session name
+    # the cycle and ica collector are using session name
+    # improvement suggestion: use data.cell_name instead
+    @property
+    def session_name(self):
+        if not self._session_name:
+            return self.data.cell_name
+        else:
+            return self._session_name
+
+    @session_name.setter
+    def session_name(self, n):
+        self._session_name = n
+        if not self.data.cell_name:
+            self.data.cell_name = n
+
+    def _invent_a_session_name(self, filename=None, override=False):
+        if filename is None:
+            self.session_name = "nameless"
+            return
+        if self.session_name and not override:
+            return
+        path = Path(filename)
+        self.session_name = path.with_suffix("").name
 
     @property
     def raw_units(self):
@@ -1155,7 +1185,7 @@ class CellpyCell:
         # cell[set_number].raw_units = self._set_raw_units()
         # self.cells.append(cell[set_number])
         # self.status_datasets = self._validate_cells()
-        # self._invent_a_name()
+        # self._invent_a_session_name()
         return self
 
     def from_raw(
@@ -1270,7 +1300,7 @@ class CellpyCell:
 
         self.data = data
         self.status_datasets = self._validate_cells()
-        self._invent_a_name()  # TODO (v1.0.0): fix me
+        self._invent_a_session_name()  # TODO (v1.0.0): fix me
         return self
 
     # TODO: rewrite me
@@ -1335,15 +1365,6 @@ class CellpyCell:
     @staticmethod
     def _empty_dataset():
         return None
-
-    def _invent_a_name(self, filename=None, override=False):
-        if filename is None:
-            self.name = "nameless"
-            return
-        if self.name and not override:
-            return
-        path = Path(filename)
-        self.name = path.with_suffix("").name
 
     def partial_load(self, **kwargs):
         """Load only a selected part of the cellpy file."""
@@ -1414,7 +1435,7 @@ class CellpyCell:
             logging.warning(str(cellpy_file))
 
         self.status_datasets = self._validate_cells()
-        self._invent_a_name(cellpy_file)
+        self._invent_a_session_name(cellpy_file)
         if return_cls:
             return self
 
@@ -1961,16 +1982,26 @@ class CellpyCell:
 
         for attribute in ATTRS_CELLPYFILE:
             value = self._extract_from_meta_dictionary(meta_dict, attribute)
-            # some fixes due to errors propagated into the cellpy-files
-            if attribute == "creator":
-                if not isinstance(value, str):
-                    value = "no_name"
 
-            if attribute == "test_no":
+            # some fixes due to errors propagated into the cellpy-files
+            if attribute in [
+                "creator",
+            ]:
+                if not isinstance(value, str):
+                    value = ""
+
+            if attribute in [
+                "test_no",
+            ]:
                 if not isinstance(value, (int, float)):
                     value = 0
 
-            setattr(data, attribute, value)
+            # some fixes due to change in attribute names
+            if attribute in ["name", "test_name"]:
+                setattr(data, "cell_name", value)
+
+            else:
+                setattr(data, attribute, value)
 
         if data.mass is None:
             data.mass = 1.0
@@ -1979,23 +2010,6 @@ class CellpyCell:
             logging.critical("cycle mode not found")
 
         data.loaded_from = str(filename)
-
-        # hack to allow the renaming of tests to datasets
-        try:
-            name = self._extract_from_meta_dictionary(meta_dict, "name", hard=True)
-            if not isinstance(name, str):
-                name = "no_name"
-            data.name = name
-
-        except KeyError:
-            logging.debug(f"missing key in meta table: {name}")
-            # warnings.warn("OLD-TYPE: Recommend to save in new format!")
-            try:
-                name = self._extract_from_meta_dictionary(meta_dict, "test_name")
-            except Exception:
-                name = "no_name"
-                logging.debug("name set to 'no_name")
-            data.name = name
 
         # unpacking the raw data limits
         # TODO: check if they end up at the correct level (cellpydata or data)
@@ -3345,7 +3359,7 @@ class CellpyCell:
             meta_dir = "/info"
             fid_dir = prms._cellpyfile_fid
 
-        else:
+        else:  # TODO: remove this (we are always above 4)
             raw_dir = "/raw"
             step_dir = "/step_table"
             summary_dir = "/dfsummary"
@@ -3358,7 +3372,7 @@ class CellpyCell:
 
         warnings.simplefilter("ignore", PerformanceWarning)
         try:
-            with pickle_protocol(4):
+            with pickle_protocol(PICKLE_PROTOCOL):
                 store = pd.HDFStore(
                     outfile_all,
                     complib=prms._cellpyfile_complib,
@@ -5296,9 +5310,7 @@ class CellpyCell:
         only_zeros_discharge = summary[self.headers_normal.discharge_capacity_txt] * 0.0
         only_zeros_charge = summary[self.headers_normal.charge_capacity_txt] * 0.0
         logging.debug("need to collect discharge steps")
-        discharge_steps = self.get_step_numbers(
-            steptype="discharge", allctypes=False
-        )
+        discharge_steps = self.get_step_numbers(steptype="discharge", allctypes=False)
         logging.debug(f"dt: {time.time() - ev_t0}")
         logging.debug("need to collect charge steps")
         charge_steps = self.get_step_numbers(steptype="charge", allctypes=False)

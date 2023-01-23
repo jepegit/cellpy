@@ -300,6 +300,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
             return cellpy_object
 
     def _link_cellpy_file(self, cell_label, max_cycle=None):
+        # creates a CellpyCell object and loads only the step-table
         logging.debug("linking cellpy file")
         cellpy_file_name = self.journal.pages.loc[
             cell_label, hdr_journal.cellpy_file_name

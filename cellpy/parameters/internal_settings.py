@@ -10,6 +10,10 @@ MINIMUM_CELLPY_FILE_VERSION = 4
 STEP_TABLE_VERSION = 5
 RAW_TABLE_VERSION = 5
 SUMMARY_TABLE_VERSION = 7
+# if you change this, remember that both loading and saving uses this
+# constant at the moment, and check that loading old files still works
+# - and possibly refactor so that the old-file loaders contain the
+# appropriate pickle protocol:
 PICKLE_PROTOCOL = 4
 
 
@@ -422,16 +426,21 @@ base_columns_int = [
 ]
 
 
-# cellpy attributes that should be loaded from cellpy-files:
+# cellpy attributes that should be saved and loaded from cellpy-files
+# (only uses the Data object):
 ATTRS_CELLPYFILE = [
-    "mass",
+    # -- about the test(s):
+    "test_ID",
     "channel_index",
     "creator",
     "cycle_mode",
     "schedule_file_name",
+    "experiment_type",
+    "comment",
+    # -- about the cell:
     "start_datetime",
-    "test_ID",
-    "name",
+    "cell_name",
+    "mass",
     "nom_cap",
     "nom_cap_specifics",
     "material",
@@ -442,15 +451,13 @@ ATTRS_CELLPYFILE = [
     "active_electrode_type",
     "counter_electrode_type",
     "reference_electrode_type",
-    "experiment_type",
     "active_electrode_current_collector",
     "reference_electrode_current_collector",
-    "comment",
 ]
 
 # Attributes that should be copied when duplicating cellpy objects:
 
-# current attributes for the cellpy.data objects
+# current attributes for the CellpyCell objects
 ATTRS_CELLPYDATA = [
     "auto_dirs",
     "capacity_modifiers",
@@ -463,7 +470,7 @@ ATTRS_CELLPYDATA = [
     "forced_errors",
     "limit_loaded_cycles",
     "minimum_selection",
-    "name",
+    "session_name",
     "profile",
     "raw_datadir",
     "raw_limits",
@@ -477,7 +484,7 @@ ATTRS_CELLPYDATA = [
     "tester",
 ]
 
-# current attributes used for the cellpy.data objects
+# current attributes used for the cellpy.Data objects
 ATTRS_DATASET = [
     "cellpy_file_version",
     "channel_index",
@@ -487,7 +494,7 @@ ATTRS_DATASET = [
     "loaded_from",
     "mass",
     "material",
-    "name",
+    "cell_name",
     "nom_cap",
     "raw_data_files_length",
     "raw_limits",

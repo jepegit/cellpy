@@ -258,7 +258,7 @@ class Data:
 
         # ---------------- overall (all tests) --------------------------
         # about test
-        self.name = None
+        self._cell_name = None
         self.comment = prms.CellInfo.comment
         self.file_errors = None  # not in use at the moment
 
@@ -303,6 +303,14 @@ class Data:
         # _extract_meta_from_cellpy_file
         # _create_infotable()
 
+    @property
+    def cell_name(self):
+        return self._cell_name
+
+    @cell_name.setter
+    def cell_name(self, n):
+        self._cell_name = n
+
     @staticmethod
     def _header_str(hdr):
         txt = "\n"
@@ -329,7 +337,7 @@ class Data:
         txt += f"mass (total):        {self.tot_mass}\n"
         txt += f"nominal capacity:    {self.nom_cap}\n"
         txt += f"channel index:       {self.channel_index}\n"
-        txt += f"DataSet name:        {self.name}\n"
+        # txt += f"DataSet name:        {self.name}\n"
         txt += f"creator:             {self.creator}\n"
         txt += f"schedule file name:  {self.schedule_file_name}\n"
 
@@ -399,7 +407,11 @@ class Data:
     @nom_cap.setter
     def nom_cap(self, value):
         if value < 1.0:
-            warnings.warn(f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 1.0 ({value}).", DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 1.0 ({value}).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self._nom_cap = value  # nominal capacity
 
     @property

@@ -331,7 +331,9 @@ class Converter:
 
         elif self.increment_method == "hist":
             logging.debug(" - diff using HIST")
-            logging.warning("Using the 'hist' method has not been thoroughly tested yet")
+            logging.warning(
+                "Using the 'hist' method has not been thoroughly tested yet"
+            )
             # raise NotImplementedError
 
             df = pd.DataFrame(

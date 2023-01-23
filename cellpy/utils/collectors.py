@@ -482,11 +482,11 @@ def cycles_collector(
         )
         if not curves.empty:
             all_curves.append(curves)
-            keys.append(c.name)
+            keys.append(c.session_name)
         else:
             if abort_on_missing:
-                raise ValueError(f"{c.name} is empty - aborting!")
-            print(f"[{c.name} empty]")
+                raise ValueError(f"{c.session_name} is empty - aborting!")
+            print(f"[{c.session_name} empty]")
     collected_curves = pd.concat(
         all_curves, keys=keys, axis=0, names=["cell", "point"]
     ).reset_index(level="cell")
@@ -686,7 +686,9 @@ def sequence_plotter(
             if len(unique_cycles) > 10:
                 cycles = [1, 10, 20]
         if cycles is not None:
-            filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+            filtered_curves = collected_curves.loc[
+                collected_curves.cycle.isin(cycles), :
+            ]
         else:
             filtered_curves = collected_curves
 
@@ -745,11 +747,11 @@ def ica_collector(
         )
         if not curves.empty:
             all_curves.append(curves)
-            keys.append(c.name)
+            keys.append(c.session_name)
         else:
             if abort_on_missing:
-                raise ValueError(f"{c.name} is empty - aborting!")
-            print(f"[{c.name} empty]")
+                raise ValueError(f"{c.session_name} is empty - aborting!")
+            print(f"[{c.session_name} empty]")
     collected_curves = pd.concat(
         all_curves, keys=keys, axis=0, names=["cell", "point"]
     ).reset_index(level="cell")
@@ -820,7 +822,9 @@ class BatchICACollector(BatchCollector):
             **kwargs,
         )
 
-        self._templates["bokeh"] = [hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"), ]
+        self._templates["bokeh"] = [
+            hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"),
+        ]
 
     def generate_name(self):
         names = ["collected_ica"]

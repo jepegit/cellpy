@@ -596,9 +596,7 @@ def build(
 
 
 @task
-def docs(
-    c, _clean=False, _serve=True, browser=True
-):
+def docs(c, _clean=False, _serve=True, browser=True):
     """Build and view docs"""
 
     if _clean:

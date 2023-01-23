@@ -575,7 +575,10 @@ class DataLoader(BaseLoader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, _internal_test_number)
+        sql_3 = "where %s=%s " % (
+            self.arbin_headers_normal.test_id_txt,
+            _internal_test_number,
+        )
         sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
         import time
 
@@ -683,7 +686,10 @@ class DataLoader(BaseLoader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, _internal_test_number)
+        sql_3 = "where %s=%s " % (
+            self.arbin_headers_normal.test_id_txt,
+            _internal_test_number,
+        )
         sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
         import time
 
@@ -1202,7 +1208,8 @@ class DataLoader(BaseLoader):
         normal_df = pd.read_csv(temp_csv_filename_normal)
         # filter on test ID
         normal_df = normal_df[
-            normal_df[self.arbin_headers_normal.test_id_txt] == data._internal_test_number
+            normal_df[self.arbin_headers_normal.test_id_txt]
+            == data._internal_test_number
         ]
         # sort on data point
         if prms._sort_if_subprocess:
@@ -1301,9 +1308,13 @@ class DataLoader(BaseLoader):
     def _normal_table_generator(self, **kwargs):
         pass
 
-    def _load_res_normal_table(self, conn, _internal_test_number, bad_steps, data_points):
+    def _load_res_normal_table(
+        self, conn, _internal_test_number, bad_steps, data_points
+    ):
         self.logger.debug("starting loading raw-data")
-        self.logger.debug(f"connection: {conn} internal test-ID: {_internal_test_number}")
+        self.logger.debug(
+            f"connection: {conn} internal test-ID: {_internal_test_number}"
+        )
         self.logger.debug(f"bad steps:  {bad_steps}")
 
         table_name_normal = TABLE_NAMES["normal"]
@@ -1316,7 +1327,10 @@ class DataLoader(BaseLoader):
 
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (self.arbin_headers_normal.test_id_txt, _internal_test_number)
+        sql_3 = "where %s=%s " % (
+            self.arbin_headers_normal.test_id_txt,
+            _internal_test_number,
+        )
         sql_4 = ""
 
         if bad_steps is not None:

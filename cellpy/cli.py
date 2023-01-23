@@ -1255,7 +1255,7 @@ def _read_local_templates(local_templates_path=None):
         local_templates_path = pathlib.Path(prmreader.prms.Paths.templatedir)
     templates = {}
     for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
-        label = p.stem.strip()[len("cellpy_cookie_"):]
+        label = p.stem.strip()[len("cellpy_cookie_") :]
         templates[label] = (str(p), None)
     logging.debug(f"Found the following templates: {templates}")
     return templates
@@ -1265,8 +1265,18 @@ def _read_local_templates(local_templates_path=None):
 @click.command()
 @click.option("--template", "-t", help="Provide template name.")
 @click.option("--directory", "-d", default=None, help="Create in custom directory.")
-@click.option("--project", "-p", default=None, help="Provide project name (i.e. sub-directory name).")
-@click.option("--experiment", "-e", default=None, help="Provide experiment name (i.e. lookup-value).")
+@click.option(
+    "--project",
+    "-p",
+    default=None,
+    help="Provide project name (i.e. sub-directory name).",
+)
+@click.option(
+    "--experiment",
+    "-e",
+    default=None,
+    help="Provide experiment name (i.e. lookup-value).",
+)
 @click.option(
     "--local-user-template",
     "-u",
@@ -1292,7 +1302,17 @@ def _read_local_templates(local_templates_path=None):
 @click.option(
     "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
 )
-def new(template, directory, project, experiment, local_user_template, serve_, run_, lab, list_):
+def new(
+    template,
+    directory,
+    project,
+    experiment,
+    local_user_template,
+    serve_,
+    run_,
+    lab,
+    list_,
+):
     """Set up a batch experiment (might need git installed)."""
     _new(
         template,
@@ -1318,7 +1338,7 @@ def _new(
     list_: bool = False,
     session_id: str = "experiment_001",
     no_input: bool = False,
-    cookie_directory: str = ""
+    cookie_directory: str = "",
 ):
     """Set up a batch experiment (might need git installed).
 
@@ -1416,7 +1436,9 @@ def _new(
     if project_dir:
         selected_project_dir = directory / project_dir
         if not selected_project_dir.is_dir():
-            if cookiecutter.prompt.read_user_yes_no(f"{project_dir} does not exist. Create?", "yes"):
+            if cookiecutter.prompt.read_user_yes_no(
+                f"{project_dir} does not exist. Create?", "yes"
+            ):
                 os.mkdir(selected_project_dir)
                 click.echo(f"Created {selected_project_dir}")
 
