@@ -437,6 +437,11 @@ ATTRS_CELLPYFILE = [
     "schedule_file_name",
     "experiment_type",
     "comment",
+    # -- new
+    "tester_ID",
+    "tester_server_software_version",
+    "tester_client_software_version",
+    "tester_calibration_date",
     # -- about the cell:
     "start_datetime",
     "cell_name",
@@ -453,6 +458,9 @@ ATTRS_CELLPYFILE = [
     "reference_electrode_type",
     "active_electrode_current_collector",
     "reference_electrode_current_collector",
+    # -- new
+    "time_zone",
+    "cell_type",
 ]
 
 # Attributes that should be copied when duplicating cellpy objects:
@@ -503,6 +511,7 @@ ATTRS_DATASET = [
     "start_datetime",
     "test_ID",
     "tot_mass",
+    "time_zone",
 ]
 
 ATTRS_DATASET_DEEP = ["raw_data_files"]

@@ -12,7 +12,7 @@ import pickle
 import sys
 import time
 import warnings
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -232,7 +232,6 @@ class Data:
         self.raw = pd.DataFrame()
         self.summary = pd.DataFrame()
         self.steps = pd.DataFrame()
-        self.cellpy_file_version = CELLPY_FILE_VERSION
 
         # ---------------------------------------------------------------
         #               meta-data
@@ -240,14 +239,21 @@ class Data:
         # Remark! all this is set up so that each cell only has "one" test.
         #   In the future, we should consider implementing that the cell
         #   performs many tests in a row with different test meta-data
+        #
+        # TODO @jepe: create a data-class for this (e.g. Meta)
+        self.cellpy_file_version = CELLPY_FILE_VERSION
 
         # ---------------- test dependent -------------------------------
         self.loaded_from = None  # loaded from (can be list if merged)
         self.channel_index = None
-        self.creator = None
+        self.creator: Optinal[str] = None
         self.schedule_file_name = None
         self.test_type = None  # Not used (and might be put inside test_ID)
-        self.start_datetime = None
+
+        self.tester_ID = None
+        self.tester_server_software_version = None
+        self.tester_client_software_version = None
+        self.tester_calibration_date = None
 
         # ---------------- not sure if test dependent -------------------
         self.voltage_lim_low = prms.CellInfo.voltage_lim_low
@@ -258,13 +264,16 @@ class Data:
 
         # ---------------- overall (all tests) --------------------------
         # about test
-        self._cell_name = None
+        self._cell_name: Optinal[
+            str
+        ] = None  # TODO @jepe: figure out how to handle properties (maybe add another data-class?)
+        self.start_datetime = None
+        self.time_zone: Optinal[str] = None
         self.comment = prms.CellInfo.comment
         self.file_errors = None  # not in use at the moment
 
         # about cell
         self.material = prms.Materials.default_material
-
         # TODO @jepe: Maybe we should use values with units here instead (pint)?
         self.mass = prms.Materials.default_mass  # active material
         self.tot_mass = prms.Materials.default_mass  # total material
