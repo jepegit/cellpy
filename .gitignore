@@ -35,6 +35,7 @@ dev_utils/.ipynb_checkpoints
 # Distribution / packaging
 .Python
 env/
+venv/
 build/
 develop-eggs/
 dist/

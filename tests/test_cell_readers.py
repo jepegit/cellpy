@@ -210,11 +210,16 @@ def test_cap_mod_summary(dataset):
     dataset._cap_mod_summary(summary, "reset")
 
 
-# TODO @julia: insert test here (and also run the tests using pytest)
-#   def test_return_df_get_ccap(dataset):
-#       df = dataset.get_ccap(whatever)
-#       cc, v = dataset.get_ccap(whatever)
-#       assert something
+def test_return_df_get_ccap(dataset):
+    df = dataset.get_ccap(cycle=1, return_dataframe=True)
+    cc, v = dataset.get_ccap(cycle=1, return_dataframe=False)
+    assert (df.columns == [v.name, cc.name]).all
+
+
+def test_return_df_get_dcap(dataset):
+    df = dataset.get_dcap(cycle=1, return_dataframe=True)
+    dc, v = dataset.get_dcap(cycle=1, return_dataframe=False)
+    assert (df.columns == [v.name, dc.name]).all
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
