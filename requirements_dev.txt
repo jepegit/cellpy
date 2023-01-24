@@ -23,3 +23,11 @@ build
 black
 python-dotenv
 pint
+xlrd
+openpyxl
+matplotlib>=1.5.3
+lmfit
+scipy
+pandas
+tables
+PyGithub>=1.43

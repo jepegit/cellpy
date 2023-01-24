@@ -212,6 +212,7 @@ class CellpyCell:
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
         if tester is None:
             self.tester = prms.Instruments.tester
+            logging.debug(f"reading instrument from prms: {prms.Instruments}")
         else:
             self.tester = tester
 

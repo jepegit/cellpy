@@ -48,3 +48,14 @@ The relevant files are located in the ``parameters`` folder:
             .cellpy_prms_default.conf
             prms.py
             internal_settings.py
+
+
+Installing `pyodbc` on Mac (no `conda`)
+---------------------------------------
+
+If you do not want to use `conda`, you might miss a couple of libraries.
+
+The easiest fix is to install `uniuxodbc` using `brew` as explained in
+`Stack Overflow #54302793 <https://stackoverflow.com/questions/54302793/
+dyld-library-not-loaded-usr-local-opt-unixodbc-lib-libodbc-2-dylib>`_.
+
