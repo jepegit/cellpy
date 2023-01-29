@@ -1,5 +1,5 @@
 .. image:: docs/figures/cellpy-icon-long.svg
-  :height: 200
+  :height: 100
   :alt: cellpy
 
 ===================================================================
