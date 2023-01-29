@@ -1,3 +1,7 @@
+.. image:: docs/figures/cellpy-icon.svg
+  :width: 400
+  :alt: Alternative text
+
 ===============================
 cellpy
 ===============================
