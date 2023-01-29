@@ -3,7 +3,7 @@ import logging
 import warnings
 from collections import UserDict
 from dataclasses import dataclass, fields
-from typing import List
+from typing import List, Optional
 
 CELLPY_FILE_VERSION = 7
 MINIMUM_CELLPY_FILE_VERSION = 4
@@ -15,6 +15,14 @@ SUMMARY_TABLE_VERSION = 7
 # - and possibly refactor so that the old-file loaders contain the
 # appropriate pickle protocol:
 PICKLE_PROTOCOL = 4
+
+
+@dataclass
+class CellpyMeta:
+    # TODO: #222
+    mass: Optional[float] = None
+    start_datetime: Optional[str] = None
+    time_zone: Optional[str] = None
 
 
 # TODO: remove import of this
@@ -512,6 +520,7 @@ ATTRS_DATASET = [
     "test_ID",
     "tot_mass",
     "time_zone",
+    "_raw_id",
 ]
 
 ATTRS_DATASET_DEEP = ["raw_data_files"]

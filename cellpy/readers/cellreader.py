@@ -1404,6 +1404,12 @@ class CellpyCell:
             cellpy.CellPyCellpy class if return_cls is True
         """
 
+        # This is what happens:
+        # 1) (this is not implemented yet, using only hdf5) chose what file format to load from
+        # 2) in reader (currently only _load_hdf5): check version and select sub-reader.
+        # 3) in sub-reader: read data
+        # 4) in this method: add data to CellpyCell object (i.e. self)
+
         try:
             logging.debug("loading cellpy-file (hdf5):")
             logging.debug(cellpy_file)
@@ -2047,14 +2053,11 @@ class CellpyCell:
             value = default_value
         return value
 
-    def _create_infotable_new(self):
-        data = self.data
-        meta_cellpydata = collections.OrderedDict()
-        meta_data = collections.OrderedDict()
-
     def _create_infotable(self):
+        # TODO: #222
         # needed for saving class/DataSet to hdf5
         cell = self.data
+
         infotable = collections.OrderedDict()
 
         for attribute in ATTRS_CELLPYFILE:
@@ -2082,8 +2085,13 @@ class CellpyCell:
             infotable[h5_key] = units[key]
 
         infotable = pd.DataFrame(infotable)
+        fidtable = self._convert2fid_table(cell)
+        fidtable = pd.DataFrame(fidtable)
+        return infotable, fidtable
 
-        logging.debug("_create_infotable: fid")
+    def _convert2fid_table(self, cell):
+        # used when saving cellpy-file
+        logging.debug("converting FileID object to fid-table that can be saved")
         fidtable = collections.OrderedDict()
         fidtable["raw_data_name"] = []
         fidtable["raw_data_full_name"] = []
@@ -2119,11 +2127,11 @@ class CellpyCell:
                 fidtable["last_data_point"].append(fid.last_data_point)
         else:
             warnings.warn("seems you lost info about your raw-data (missing fids)")
-        fidtable = pd.DataFrame(fidtable)
-        return infotable, fidtable
+        return fidtable
 
     def _convert2fid_list(self, tbl):
-        logging.debug("converting loaded fidtable to FileID object")
+        # used when reading cellpy-file
+        logging.debug("converting loaded fid-table to FileID object")
         fids = []
         lengths = []
         min_amount = 0
@@ -3273,6 +3281,237 @@ class CellpyCell:
                 last_cycle=last_cycle,
             )
 
+    def save_new(
+        self,
+        filename,
+        force=False,
+        overwrite=None,
+        extension="h5",
+        ensure_step_table=None,
+    ):
+        # TODO: #222
+        """Save the data structure to cellpy-format.
+
+        Args:
+            filename: (str or pathlib.Path) the name you want to give the file
+            force: (bool) save a file even if the summary is not made yet
+                (not recommended)
+            overwrite: (bool) save the new version of the file even if old one
+                exists.
+            extension: (str) filename extension.
+            ensure_step_table: (bool) make step-table if missing.
+
+        Returns: Nothing at all.
+        """
+        logging.debug(f"Trying to save cellpy-file to {filename}")
+        logging.info(f" -> {filename}")
+
+        # some checks to find out what you want
+        if overwrite is None:
+            overwrite = self.overwrite_able
+
+        if ensure_step_table is None:
+            ensure_step_table = self.ensure_step_table
+
+        my_data = self.data
+        summary_made = my_data.has_summary
+
+        if not summary_made and not force:
+            logging.info("You should not save datasets without making a summary first!")
+            logging.info("If you really want to do it, use save with force=True")
+            return
+
+        step_table_made = my_data.has_steps
+        if not step_table_made and not force and not ensure_step_table:
+            logging.info(
+                "You should not save datasets without making a step-table first!"
+            )
+            logging.info("If you really want to do it, use save with force=True")
+            return
+
+        outfile_all = Path(filename)
+        if not outfile_all.suffix:
+            outfile_all = outfile_all.with_suffix(f".{extension}")
+
+        if os.path.isfile(outfile_all):
+            logging.debug("Outfile exists")
+            if overwrite:
+                logging.debug("overwrite = True")
+                try:
+                    os.remove(outfile_all)
+                except PermissionError as e:
+                    logging.critical("Could not over write old file")
+                    logging.info(e)
+                    return
+            else:
+                logging.critical("Save (hdf5): file exist - did not save")
+                logging.info(outfile_all)
+                return
+
+        if ensure_step_table:
+            logging.debug("ensure_step_table is on")
+            if not my_data.has_steps:
+                logging.debug("save: creating step table")
+                self.make_step_table()
+
+        # --- saving to hdf5 -----------------------------------
+        logging.debug("trying to make infotable")
+        infotbl, fidtbl = self._create_infotable()
+
+        root = prms._cellpyfile_root
+        raw_dir = prms._cellpyfile_raw
+        step_dir = prms._cellpyfile_step
+        summary_dir = prms._cellpyfile_summary
+        meta_dir = "/info"
+        fid_dir = prms._cellpyfile_fid
+
+        logging.debug(f"trying to save to file: {outfile_all}")
+        warnings.simplefilter("ignore", PerformanceWarning)
+        try:
+            with pickle_protocol(PICKLE_PROTOCOL):
+                store = self._save_to_hdf5(
+                    fid_dir,
+                    fidtbl,
+                    infotbl,
+                    meta_dir,
+                    my_data,
+                    outfile_all,
+                    raw_dir,
+                    root,
+                    step_dir,
+                    summary_dir,
+                )
+        finally:
+            store.close()
+        logging.debug(" all -> hdf5 OK")
+        warnings.simplefilter("default", PerformanceWarning)
+        # del store
+        # --- finished saving to hdf5 -------------------------------
+
+    def _save_to_hdf5_old(
+        self,
+        fid_dir,
+        fidtbl,
+        infotbl,
+        meta_dir,
+        my_data,
+        outfile_all,
+        raw_dir,
+        root,
+        step_dir,
+        summary_dir,
+    ):
+        store = pd.HDFStore(
+            outfile_all,
+            complib=prms._cellpyfile_complib,
+            complevel=prms._cellpyfile_complevel,
+        )
+        logging.debug("trying to put raw data")
+        logging.debug(" - lets set Data_Point as index")
+        hdr_data_point = self.headers_normal.data_point_txt
+        if my_data.raw.index.name != hdr_data_point:
+            my_data.raw = my_data.raw.set_index(hdr_data_point, drop=False)
+        store.put(root + raw_dir, my_data.raw, format=prms._cellpyfile_raw_format)
+        logging.debug(" raw -> hdf5 OK")
+        logging.debug("trying to put summary")
+        store.put(
+            root + summary_dir,
+            my_data.summary,
+            format=prms._cellpyfile_summary_format,
+        )
+        logging.debug(" summary -> hdf5 OK")
+        logging.debug("trying to put meta data")
+        store.put(root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format)
+        logging.debug(" meta -> hdf5 OK")
+        logging.debug("trying to put fidtable")
+        store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
+        logging.debug(" fid -> hdf5 OK")
+        logging.debug("trying to put step")
+        try:
+            store.put(
+                root + step_dir,
+                my_data.steps,
+                format=prms._cellpyfile_stepdata_format,
+            )
+            logging.debug(" step -> hdf5 OK")
+        except TypeError:
+            my_data = self._fix_dtype_step_table(my_data)
+            store.put(
+                root + step_dir,
+                my_data.steps,
+                format=prms._cellpyfile_stepdata_format,
+            )
+            logging.debug(" fixed step -> hdf5 OK")
+        # creating indexes
+        # hdr_data_point = self.headers_normal.data_point_txt
+        # hdr_cycle_steptable = self.headers_step_table.cycle
+        # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+        # store.create_table_index(root + "/raw", columns=[hdr_data_point],
+        #                          optlevel=9, kind='full')
+        return store
+
+    def _save_to_hdf5(
+        self,
+        fid_dir,
+        fidtbl,
+        infotbl,
+        meta_dir,
+        my_data,
+        outfile_all,
+        raw_dir,
+        root,
+        step_dir,
+        summary_dir,
+    ):
+        store = pd.HDFStore(
+            outfile_all,
+            complib=prms._cellpyfile_complib,
+            complevel=prms._cellpyfile_complevel,
+        )
+        logging.debug("trying to put raw data")
+        logging.debug(" - lets set Data_Point as index")
+        hdr_data_point = self.headers_normal.data_point_txt
+        if my_data.raw.index.name != hdr_data_point:
+            my_data.raw = my_data.raw.set_index(hdr_data_point, drop=False)
+        store.put(root + raw_dir, my_data.raw, format=prms._cellpyfile_raw_format)
+        logging.debug(" raw -> hdf5 OK")
+        logging.debug("trying to put summary")
+        store.put(
+            root + summary_dir,
+            my_data.summary,
+            format=prms._cellpyfile_summary_format,
+        )
+        logging.debug(" summary -> hdf5 OK")
+        logging.debug("trying to put meta data")
+        store.put(root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format)
+        logging.debug(" meta -> hdf5 OK")
+        logging.debug("trying to put fidtable")
+        store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
+        logging.debug(" fid -> hdf5 OK")
+        logging.debug("trying to put step")
+        try:
+            store.put(
+                root + step_dir,
+                my_data.steps,
+                format=prms._cellpyfile_stepdata_format,
+            )
+            logging.debug(" step -> hdf5 OK")
+        except TypeError:
+            my_data = self._fix_dtype_step_table(my_data)
+            store.put(
+                root + step_dir,
+                my_data.steps,
+                format=prms._cellpyfile_stepdata_format,
+            )
+            logging.debug(" fixed step -> hdf5 OK")
+        # creating indexes
+        # hdr_data_point = self.headers_normal.data_point_txt
+        # hdr_cycle_steptable = self.headers_step_table.cycle
+        # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+        # store.create_table_index(root + "/raw", columns=[hdr_data_point],
+        #                          optlevel=9, kind='full')
+        return store
+
     def save(
         self,
         filename,
@@ -3334,7 +3573,7 @@ class CellpyCell:
                     logging.info(e)
                     return
             else:
-                logging.critical("Save (hdf5): file exist - did not save", end=" ")
+                logging.critical("Save (hdf5): file exist - did not save")
                 logging.info(outfile_all)
                 return
 
@@ -3371,68 +3610,18 @@ class CellpyCell:
         warnings.simplefilter("ignore", PerformanceWarning)
         try:
             with pickle_protocol(PICKLE_PROTOCOL):
-                store = pd.HDFStore(
+                store = self._save_to_hdf5_old(
+                    fid_dir,
+                    fidtbl,
+                    infotbl,
+                    meta_dir,
+                    test,
                     outfile_all,
-                    complib=prms._cellpyfile_complib,
-                    complevel=prms._cellpyfile_complevel,
+                    raw_dir,
+                    root,
+                    step_dir,
+                    summary_dir,
                 )
-
-                logging.debug("trying to put raw data")
-
-                logging.debug(" - lets set Data_Point as index")
-
-                hdr_data_point = self.headers_normal.data_point_txt
-
-                if test.raw.index.name != hdr_data_point:
-                    test.raw = test.raw.set_index(hdr_data_point, drop=False)
-
-                store.put(root + raw_dir, test.raw, format=prms._cellpyfile_raw_format)
-                logging.debug(" raw -> hdf5 OK")
-
-                logging.debug("trying to put summary")
-                store.put(
-                    root + summary_dir,
-                    test.summary,
-                    format=prms._cellpyfile_summary_format,
-                )
-                logging.debug(" summary -> hdf5 OK")
-
-                logging.debug("trying to put meta data")
-                store.put(
-                    root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format
-                )
-                logging.debug(" meta -> hdf5 OK")
-
-                logging.debug("trying to put fidtable")
-                store.put(
-                    root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format
-                )
-                logging.debug(" fid -> hdf5 OK")
-
-                logging.debug("trying to put step")
-                try:
-                    store.put(
-                        root + step_dir,
-                        test.steps,
-                        format=prms._cellpyfile_stepdata_format,
-                    )
-                    logging.debug(" step -> hdf5 OK")
-                except TypeError:
-                    test = self._fix_dtype_step_table(test)
-                    store.put(
-                        root + step_dir,
-                        test.steps,
-                        format=prms._cellpyfile_stepdata_format,
-                    )
-                    logging.debug(" fixed step -> hdf5 OK")
-
-                # creating indexes
-                # hdr_data_point = self.headers_normal.data_point_txt
-                # hdr_cycle_steptable = self.headers_step_table.cycle
-                # hdr_cycle_normal = self.headers_normal.cycle_index_txt
-
-                # store.create_table_index(root + "/raw", columns=[hdr_data_point],
-                #                          optlevel=9, kind='full')
         finally:
             store.close()
         logging.debug(" all -> hdf5 OK")

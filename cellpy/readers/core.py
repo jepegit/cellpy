@@ -246,7 +246,7 @@ class Data:
         # ---------------- test dependent -------------------------------
         self.loaded_from = None  # loaded from (can be list if merged)
         self.channel_index = None
-        self.creator: Optinal[str] = None
+        self.creator: Optional[str] = None
         self.schedule_file_name = None
         self.test_type = None  # Not used (and might be put inside test_ID)
 
@@ -264,14 +264,16 @@ class Data:
 
         # ---------------- overall (all tests) --------------------------
         # about test
-        self._cell_name: Optinal[
+        self._cell_name: Optional[
             str
         ] = None  # TODO @jepe: figure out how to handle properties (maybe add another data-class?)
         self.start_datetime = None
-        self.time_zone: Optinal[str] = None
+        self.time_zone: Optional[str] = None
         self.comment = prms.CellInfo.comment
         self.file_errors = None  # not in use at the moment
-
+        self._raw_id = (
+            None  # to be used for ensuring integrity of the raw data (v>.1.1+)
+        )
         # about cell
         self.material = prms.Materials.default_material
         # TODO @jepe: Maybe we should use values with units here instead (pint)?
