@@ -1,10 +1,10 @@
 .. image:: docs/figures/cellpy-icon.svg
-  :width: 400
-  :alt: Alternative text
+  :width: 200
+  :alt: cellpy
 
-===============================
-cellpy
-===============================
+===============================================
+cellpy - for analysing your batteries and cells
+===============================================
 
 
 .. image:: https://img.shields.io/pypi/v/cellpy.svg
