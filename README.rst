@@ -58,7 +58,8 @@ Licence
 Features
 --------
 
-* Load test-data and store in hdf5 format.
+* Load test-data and store in a common format.
+* Summarize and compare data.
 * Filter out the steps of interest.
 * Process and plot the data.
 * And more...
