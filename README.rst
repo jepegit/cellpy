@@ -1,6 +1,10 @@
-===============================
-cellpy
-===============================
+.. image:: docs/figures/cellpy-icon-long.svg
+  :height: 100
+  :alt: cellpy
+
+===================================================================
+cellpy - *a library for assisting in analysing batteries and cells*
+===================================================================
 
 
 .. image:: https://img.shields.io/pypi/v/cellpy.svg
@@ -21,6 +25,7 @@ This Python Package was developed to help the
 researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 batteries and cells.
+
 
 Documentation
 -------------
@@ -53,7 +58,8 @@ Licence
 Features
 --------
 
-* Load test-data and store in hdf5 format.
+* Load test-data and store in a common format.
+* Summarize and compare data.
 * Filter out the steps of interest.
 * Process and plot the data.
 * And more...
