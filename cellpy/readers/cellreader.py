@@ -1497,6 +1497,7 @@ class CellpyCell:
 
         cellpy_file_version = self._get_cellpy_file_version(filename)
         logging.debug(f"Cellpy file version {cellpy_file_version}; selector={selector}")
+
         if cellpy_file_version > CELLPY_FILE_VERSION:
             raise WrongFileVersion(
                 f"File format too new: {filename} :: version: {cellpy_file_version}"
@@ -1532,9 +1533,7 @@ class CellpyCell:
 
         return new_data
 
-    def _load_hdf5_current_version(
-        self, filename, meta_dir="/info", parent_level=None, selector=None
-    ):
+    def _load_hdf5_current_version(self, filename, parent_level=None, selector=None):
         if parent_level is None:
             parent_level = prms._cellpyfile_root
 
@@ -1542,9 +1541,63 @@ class CellpyCell:
         step_dir = prms._cellpyfile_step
         summary_dir = prms._cellpyfile_summary
         fid_dir = prms._cellpyfile_fid
+        common_meta_dir = prms._cellpyfile_common_meta
+        test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta
 
         logging.debug(f"filename: {filename}")
         logging.debug(f"selector: {selector}")
+        with pd.HDFStore(filename) as store:
+            data, meta_table, test_dependent_meta_table = self._create_initial_data_set_from_cellpy_file(
+                common_meta_dir,
+                parent_level,
+                store,
+                test_dependent_meta_dir=test_dependent_meta_dir,
+            )
+            self._check_keys_in_cellpy_file(
+                common_meta_dir, parent_level, raw_dir, store, summary_dir
+            )
+            self._extract_summary_from_cellpy_file(
+                data, parent_level, store, summary_dir, selector=selector
+            )
+            self._extract_raw_from_cellpy_file(
+                data, parent_level, raw_dir, store, selector=selector
+            )
+            self._extract_steps_from_cellpy_file(
+                data, parent_level, step_dir, store, selector=selector
+            )
+            fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
+                fid_dir, parent_level, store
+            )
+
+        self._extract_meta_from_cellpy_file(data, meta_table, test_dependent_meta_table, filename)
+
+        if fid_table_selected:
+            (
+                data.raw_data_files,
+                data.raw_data_files_length,
+            ) = self._convert2fid_list(fid_table)
+        else:
+            data.raw_data_files = []
+            data.raw_data_files_length = []
+        # # this does not yet allow multiple sets
+        # new_tests = [
+        #     data
+        # ]  # but cellpy is ready when that time comes (if it ever happens)
+        # return new_tests
+        return data
+
+    def _load_hdf5_v7(self, filename, selector=None, **kwargs):
+        print("--- loading v7")
+        meta_dir = "/info"
+        parent_level = kwargs.pop("parent_level", "CellpyData")
+        raw_dir = kwargs.pop("raw_dir", "/raw")
+        step_dir = kwargs.pop("step_dir", "/steps")
+        summary_dir = kwargs.pop("summary_dir", "/summary")
+        fid_dir = kwargs.pop("fid_dir", "/fid")
+
+        logging.debug(f"filename: {filename}")
+        logging.debug(f"selector: {selector}")
+
         with pd.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
                 meta_dir, parent_level, store
@@ -1565,7 +1618,9 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_cellpy_file(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file(
+            data, meta_table, filename, upgrade_from_to=(7, CELLPY_FILE_VERSION)
+        )
 
         if fid_table_selected:
             (
@@ -1575,14 +1630,10 @@ class CellpyCell:
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
-        # # this does not yet allow multiple sets
-        # new_tests = [
-        #     data
-        # ]  # but cellpy is ready when that time comes (if it ever happens)
-        # return new_tests
         return data
 
     def _load_hdf5_v6(self, filename, selector=None):
+        print("--- loading v6")
         parent_level = "CellpyData"
         raw_dir = "/raw"
         step_dir = "/steps"
@@ -1592,7 +1643,9 @@ class CellpyCell:
 
         with pd.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
-                meta_dir, parent_level, store
+                meta_dir,
+                parent_level,
+                store,
             )
             self._check_keys_in_cellpy_file(
                 meta_dir, parent_level, raw_dir, store, summary_dir
@@ -1624,7 +1677,9 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_cellpy_file(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file(
+            data, meta_table, filename, upgrade_from_to=(6, CELLPY_FILE_VERSION)
+        )
 
         if fid_table_selected:
             (
@@ -1681,7 +1736,7 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_cellpy_file(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file(data, meta_table, filename)
 
         if fid_table_selected:
             (
@@ -1708,6 +1763,8 @@ class CellpyCell:
 
         elif cellpy_file_version == 6:
             data = self._load_hdf5_v6(filename)
+        elif cellpy_file_version == 7:
+            data = self._load_hdf5_v7(filename)
         else:
             raise WrongFileVersion(f"version {cellpy_file_version} is not supported")
 
@@ -1759,7 +1816,7 @@ class CellpyCell:
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 _fid_dir, parent_level, store
             )
-        self._extract_meta_from_cellpy_file(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file(data, meta_table, filename)
         warnings.warn(
             "Loaded old cellpy-file version (<5). Please update and save again."
         )
@@ -1776,11 +1833,20 @@ class CellpyCell:
         # return new_tests
         return data
 
-    def _create_initial_data_set_from_cellpy_file(self, meta_dir, parent_level, store):
+    def _create_initial_data_set_from_cellpy_file(
+        self, meta_dir, parent_level, store, test_dependent_meta_dir=None
+    ):
         # Remark that this function is run before selecting loading method
-        # based on version. If you change the meta_dir prm to something else than
+        # based on version. If you change the common_meta_dir prm to something else than
         # "/info" it will most likely fail.
         # Remark! Used from versions 3
+        if test_dependent_meta_dir is not None:
+            print("READING V > 7")
+            common_meta_table = store.select(parent_level + meta_dir)
+            test_dependent_meta = store.select(parent_level + test_dependent_meta_dir)
+            data = Data()
+            data.cellpy_file_version = 8
+            return data, common_meta_table, test_dependent_meta
 
         data = Data()
         meta_table = None
@@ -1794,9 +1860,6 @@ class CellpyCell:
             return data, meta_table
 
         try:
-            # data.cellpy_file_version = self._extract_from_dict(
-            #     meta_table, "cellpy_file_version"
-            # )
             meta_dict = meta_table.to_dict(orient="list")
             data.cellpy_file_version = self._extract_from_meta_dictionary(
                 meta_dict, "cellpy_file_version"
@@ -1975,6 +2038,7 @@ class CellpyCell:
         self,
         data: Data,
         meta_table: pd.DataFrame,
+        test_dependent_meta_table: pd.DataFrame,
         filename: Union[Path, str],
         upgrade_from_to: tuple = None,
     ) -> None:
@@ -1983,6 +2047,89 @@ class CellpyCell:
         # for example: meta_table.T.to_dict()
         # Maybe a good task for someone who would like to learn more about
         # how cellpy works.
+        if upgrade_from_to is not None:
+            old, new = upgrade_from_to
+            print(f"upgrading meta from {old} to {new}")
+            logging.debug(f"upgrading meta from {old} to {new}")
+            # fid_table = rename_fid_columns(fid_table, old, new)
+
+        # TODO: #222 CONTINUE FROM HERE
+        meta_dict = meta_table.to_dict(orient="list")
+        test_dependent_meta_dict = test_dependent_meta_table.to_dict(orient="list")
+
+        for attribute in ATTRS_CELLPYFILE:
+            value = self._extract_from_meta_dictionary(meta_dict, attribute)
+
+            # some fixes due to errors propagated into the cellpy-files
+            if attribute in [
+                "creator",
+            ]:
+                if not isinstance(value, str):
+                    value = ""
+
+            if attribute in [
+                "test_no",
+            ]:
+                if not isinstance(value, (int, float)):
+                    value = 0
+
+            # some fixes due to change in attribute names
+            if attribute in ["name", "test_name"]:
+                setattr(data, "cell_name", value)
+
+            else:
+                setattr(data, attribute, value)
+
+        if data.mass is None:
+            data.mass = 1.0
+
+        if data.cycle_mode is None:
+            logging.critical("cycle mode not found")
+
+        data.loaded_from = str(filename)
+
+        # unpacking the raw data limits
+        # TODO: check if they end up at the correct level (cellpydata or data)
+        for key in data.raw_limits:
+            h5_key = key
+            try:
+                data.raw_limits[key] = self._extract_from_meta_dictionary(
+                    meta_dict, h5_key, hard=True
+                )
+            except KeyError:
+                logging.debug(f"missing key in meta_table: {h5_key}")
+                # warnings.warn("OLD-TYPE: Recommend to save in new format!")
+
+        # unpacking the raw data units
+        # TODO: check if they end up at the correct level (cellpydata or data)
+        for key in data.raw_units:
+            h5_key = f"raw_unit_{key}"
+            try:
+                data.raw_units[key] = self._extract_from_meta_dictionary(
+                    meta_dict, h5_key, hard=True
+                )
+            except KeyError:
+                logging.critical(f"missing key in meta_table: {h5_key}")
+                # warnings.warn("OLD-TYPE: Recommend to save in new format!")
+
+    def _extract_meta_from_old_cellpy_file(
+        self,
+        data: Data,
+        meta_table: pd.DataFrame,
+        filename: Union[Path, str],
+        upgrade_from_to: tuple = None,
+    ) -> None:
+        # get attributes from meta table
+        # remark! could also utilise the pandas to dictionary method directly
+        # for example: meta_table.T.to_dict()
+        # Maybe a good task for someone who would like to learn more about
+        # how cellpy works.
+        if upgrade_from_to is not None:
+            old, new = upgrade_from_to
+            print(f"upgrading meta from {old} to {new}")
+            logging.debug(f"upgrading meta from {old} to {new}")
+            # fid_table = rename_fid_columns(fid_table, old, new)
+
         meta_dict = meta_table.to_dict(orient="list")
 
         for attribute in ATTRS_CELLPYFILE:
@@ -2058,52 +2205,24 @@ class CellpyCell:
         # TODO: #222
         # needed for saving class/DataSet to hdf5
         cell = self.data
-
-        infotable = collections.OrderedDict()
-        for attribute in ATTRS_CELLPYFILE:
-            try:
-                value = getattr(cell, attribute)
-            except AttributeError:
-                # TODO: this is a ugly fix due to adding new attributes to the ATTRS_CELLPYFILE - make it more beautiful
-                if attribute == "nom_cap_specifics":
-                    value = "gravimetric"
-                else:
-                    raise AttributeError
-            infotable[attribute] = [value]
-
         new_info_table = asdict(cell.meta_common)
-        # TODO: consider adding pre-key here or save two meta-tables in the cellpy-file:
         new_info_table_test_dependent = asdict(cell.meta_test_dependent)
-
-        infotable["cellpy_file_version"] = [CELLPY_FILE_VERSION]
-        new_info_table["cellpy_file_version"] = [CELLPY_FILE_VERSION]
-
-        infotable["cycle_mode"] = [self.cycle_mode]
+        new_info_table["cellpy_file_version"] = CELLPY_FILE_VERSION
 
         limits = cell.raw_limits
         for key in limits:
             h5_key = key
-            infotable[key] = limits[h5_key]  # TODO: add pre-key here
             new_info_table[key] = limits[h5_key]
 
         units = cell.raw_units
         for key in units:
             h5_key = f"raw_unit_{key}"
-            infotable[h5_key] = units[key]
             new_info_table[h5_key] = units[key]
 
-        infotable = pd.DataFrame(infotable)
         # TODO: consider adding pre-key here or save two meta-tables in the cellpy-file (see above todo comment)
-        new_info_table_all = {**new_info_table, **new_info_table_test_dependent}
-        new_info_table = pd.DataFrame.from_records([new_info_table_all])
 
-        print(" old ".center(80, "-"))
-        print(infotable.columns)
-        print(infotable)
-
-        print(" new ".center(80, "-"))
-        print(new_info_table.columns)
-        print(new_info_table)
+        new_info_table = pd.DataFrame.from_records([new_info_table])
+        new_info_table_test_dependent = pd.DataFrame.from_records([new_info_table_test_dependent])
 
         fidtable = self._convert2fid_table(cell)
         fidtable = pd.DataFrame(fidtable)
@@ -2112,43 +2231,7 @@ class CellpyCell:
         # TODO: load old
         # TODO: find out if it is possible to initiate dataclasses with **kwargs (for loading)
         # TODO: update getters and setters (cell_name etc)
-
-        return infotable, fidtable
-
-    def _create_infotable_old(self):
-        # needed for saving class/DataSet to hdf5
-        cell = self.data
-
-        infotable = collections.OrderedDict()
-
-        for attribute in ATTRS_CELLPYFILE:
-            try:
-                value = getattr(cell, attribute)
-            except AttributeError:
-                # TODO: this is a ugly fix due to adding new attributes to the ATTRS_CELLPYFILE - make it more beautiful
-                if attribute == "nom_cap_specifics":
-                    value = "gravimetric"
-                else:
-                    raise AttributeError
-            infotable[attribute] = [value]
-
-        infotable["cellpy_file_version"] = [CELLPY_FILE_VERSION]
-        infotable["cycle_mode"] = [self.cycle_mode]
-
-        limits = cell.raw_limits
-        for key in limits:
-            h5_key = key
-            infotable[key] = limits[h5_key]
-
-        units = cell.raw_units
-        for key in units:
-            h5_key = f"raw_unit_{key}"
-            infotable[h5_key] = units[key]
-
-        infotable = pd.DataFrame(infotable)
-        fidtable = self._convert2fid_table(cell)
-        fidtable = pd.DataFrame(fidtable)
-        return infotable, fidtable
+        return new_info_table, new_info_table_test_dependent, fidtable
 
     def _convert2fid_table(self, cell):
         # used when saving cellpy-file
@@ -3418,7 +3501,11 @@ class CellpyCell:
                 self.make_step_table()
 
         logging.debug("trying to make infotable")
-        infotbl, fidtbl = self._create_infotable()
+        (
+            common_meta_table,
+            test_dependent_meta_table,
+            fid_table,
+        ) = self._create_infotable()
 
         logging.debug(f"trying to save to file: {outfile_all}")
         if cellpy_file_format == "hdf5":
@@ -3428,16 +3515,19 @@ class CellpyCell:
             raw_dir = prms._cellpyfile_raw
             step_dir = prms._cellpyfile_step
             summary_dir = prms._cellpyfile_summary
-            meta_dir = "/info"
+            common_meta_dir = prms._cellpyfile_common_meta
             fid_dir = prms._cellpyfile_fid
+            test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta
             warnings.simplefilter("ignore", PerformanceWarning)
             try:
                 with pickle_protocol(PICKLE_PROTOCOL):
                     store = self._save_to_hdf5(
                         fid_dir,
-                        fidtbl,
-                        infotbl,
-                        meta_dir,
+                        fid_table,
+                        common_meta_table,
+                        common_meta_dir,
+                        test_dependent_meta_table,
+                        test_dependent_meta_dir,
                         my_data,
                         outfile_all,
                         raw_dir,
@@ -3452,74 +3542,14 @@ class CellpyCell:
             # del store
         # --- finished saving to hdf5 -------------------------------
 
-    def _save_to_hdf5_old(
-        self,
-        fid_dir,
-        fidtbl,
-        infotbl,
-        meta_dir,
-        my_data,
-        outfile_all,
-        raw_dir,
-        root,
-        step_dir,
-        summary_dir,
-    ):
-        store = pd.HDFStore(
-            outfile_all,
-            complib=prms._cellpyfile_complib,
-            complevel=prms._cellpyfile_complevel,
-        )
-        logging.debug("trying to put raw data")
-        logging.debug(" - lets set Data_Point as index")
-        hdr_data_point = self.headers_normal.data_point_txt
-        if my_data.raw.index.name != hdr_data_point:
-            my_data.raw = my_data.raw.set_index(hdr_data_point, drop=False)
-        store.put(root + raw_dir, my_data.raw, format=prms._cellpyfile_raw_format)
-        logging.debug(" raw -> hdf5 OK")
-        logging.debug("trying to put summary")
-        store.put(
-            root + summary_dir,
-            my_data.summary,
-            format=prms._cellpyfile_summary_format,
-        )
-        logging.debug(" summary -> hdf5 OK")
-        logging.debug("trying to put meta data")
-        store.put(root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format)
-        logging.debug(" meta -> hdf5 OK")
-        logging.debug("trying to put fidtable")
-        store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
-        logging.debug(" fid -> hdf5 OK")
-        logging.debug("trying to put step")
-        try:
-            store.put(
-                root + step_dir,
-                my_data.steps,
-                format=prms._cellpyfile_stepdata_format,
-            )
-            logging.debug(" step -> hdf5 OK")
-        except TypeError:
-            my_data = self._fix_dtype_step_table(my_data)
-            store.put(
-                root + step_dir,
-                my_data.steps,
-                format=prms._cellpyfile_stepdata_format,
-            )
-            logging.debug(" fixed step -> hdf5 OK")
-        # creating indexes
-        # hdr_data_point = self.headers_normal.data_point_txt
-        # hdr_cycle_steptable = self.headers_step_table.cycle
-        # hdr_cycle_normal = self.headers_normal.cycle_index_txt
-        # store.create_table_index(root + "/raw", columns=[hdr_data_point],
-        #                          optlevel=9, kind='full')
-        return store
-
     def _save_to_hdf5(
         self,
         fid_dir,
-        fidtbl,
+        fid_table,
         infotbl,
         meta_dir,
+        test_dependent_meta_table,
+        test_dependent_meta_dir,
         my_data,
         outfile_all,
         raw_dir,
@@ -3548,9 +3578,15 @@ class CellpyCell:
         logging.debug(" summary -> hdf5 OK")
         logging.debug("trying to put meta data")
         store.put(root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format)
-        logging.debug(" meta -> hdf5 OK")
+        logging.debug(" common meta -> hdf5 OK")
+        store.put(
+            root + test_dependent_meta_dir,
+            test_dependent_meta_table,
+            format=prms._cellpyfile_infotable_format,
+        )
+        logging.debug(" test dependent meta -> hdf5 OK")
         logging.debug("trying to put fidtable")
-        store.put(root + fid_dir, fidtbl, format=prms._cellpyfile_fidtable_format)
+        store.put(root + fid_dir, fid_table, format=prms._cellpyfile_fidtable_format)
         logging.debug(" fid -> hdf5 OK")
         logging.debug("trying to put step")
         try:
@@ -3575,122 +3611,6 @@ class CellpyCell:
         # store.create_table_index(root + "/raw", columns=[hdr_data_point],
         #                          optlevel=9, kind='full')
         return store
-
-    def save_old(
-        self,
-        filename,
-        force=False,
-        overwrite=None,
-        extension="h5",
-        ensure_step_table=None,
-    ):
-        """Save the data structure to cellpy-format.
-
-        Args:
-            filename: (str or pathlib.Path) the name you want to give the file
-            force: (bool) save a file even if the summary is not made yet
-                (not recommended)
-            overwrite: (bool) save the new version of the file even if old one
-                exists.
-            extension: (str) filename extension.
-            ensure_step_table: (bool) make step-table if missing.
-
-        Returns: Nothing at all.
-        """
-        logging.debug(f"Trying to save cellpy-file to {filename}")
-        logging.info(f" -> {filename}")
-
-        if overwrite is None:
-            overwrite = self.overwrite_able
-
-        if ensure_step_table is None:
-            ensure_step_table = self.ensure_step_table
-
-        test = self.data
-        summary_made = test.has_summary
-
-        if not summary_made and not force:
-            logging.info("You should not save datasets without making a summary first!")
-            logging.info("If you really want to do it, use save with force=True")
-            return
-
-        step_table_made = test.has_steps
-        if not step_table_made and not force and not ensure_step_table:
-            logging.info(
-                "You should not save datasets without making a step-table first!"
-            )
-            logging.info("If you really want to do it, use save with force=True")
-            return
-
-        outfile_all = Path(filename)
-        if not outfile_all.suffix:
-            outfile_all = outfile_all.with_suffix(f".{extension}")
-
-        if os.path.isfile(outfile_all):
-            logging.debug("Outfile exists")
-            if overwrite:
-                logging.debug("overwrite = True")
-                try:
-                    os.remove(outfile_all)
-                except PermissionError as e:
-                    logging.critical("Could not over write old file")
-                    logging.info(e)
-                    return
-            else:
-                logging.critical("Save (hdf5): file exist - did not save")
-                logging.info(outfile_all)
-                return
-
-        if ensure_step_table:
-            logging.debug("ensure_step_table is on")
-            if not test.has_steps:
-                logging.debug("save: creating step table")
-                self.make_step_table()
-
-        # This method can probably be updated using pandas transpose trick
-        logging.debug("trying to make infotable")
-        infotbl, fidtbl = self._create_infotable()
-
-        root = prms._cellpyfile_root
-
-        if CELLPY_FILE_VERSION > 4:
-            raw_dir = prms._cellpyfile_raw
-            step_dir = prms._cellpyfile_step
-            summary_dir = prms._cellpyfile_summary
-            meta_dir = "/info"
-            fid_dir = prms._cellpyfile_fid
-
-        else:  # TODO: remove this (we are always above 4)
-            raw_dir = "/raw"
-            step_dir = "/step_table"
-            summary_dir = "/dfsummary"
-            meta_dir = "/info"
-            fid_dir = "/fidtable"
-
-        logging.debug("trying to save to hdf5")
-        txt = "\nHDF5 file: %s" % outfile_all
-        logging.debug(txt)
-
-        warnings.simplefilter("ignore", PerformanceWarning)
-        try:
-            with pickle_protocol(PICKLE_PROTOCOL):
-                store = self._save_to_hdf5_old(
-                    fid_dir,
-                    fidtbl,
-                    infotbl,
-                    meta_dir,
-                    test,
-                    outfile_all,
-                    raw_dir,
-                    root,
-                    step_dir,
-                    summary_dir,
-                )
-        finally:
-            store.close()
-        logging.debug(" all -> hdf5 OK")
-        warnings.simplefilter("default", PerformanceWarning)
-        # del store
 
     # --------------helper-functions--------------------------------------------
     def _fix_dtype_step_table(self, dataset):
@@ -5845,20 +5765,45 @@ def check_cellpy_file():
 
 
 def save_and_load_cellpy_file():
-    f_in = Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    # check to see if updating to new cellpy file version works
+    """
+    # How to update the cellpy file version
+
+    ## Top level
+
+    ## Metadata
+
+    ## Summary, Raw, and Step headers
+
+    update_headers.py
+
+    """
+
+    f00 = Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    f04 = Path("../../testdata/hdf5/20160805_test001_45_cc_v4.h5")
+    f05 = Path("../../testdata/hdf5/20160805_test001_45_cc_v5.h5")
+    f06 = Path("../../testdata/hdf5/20160805_test001_45_cc_v6.h5")
+    f07 = Path("../../testdata/hdf5/20160805_test001_45_cc_v7.h5")
+    f08 = Path("../../testdata/hdf5/20160805_test001_45_cc_v8.h5")
     f_out = Path("../../tmp/v1.h5")
-    print(f_in)
-    print(f_in.is_file())
-    print(f_out.parent.is_dir())
 
-    print("LOADING ORIGINAL")
-    c = get(f_in)
+    print("LOADING ORIGINAL".center(80, "*"))
+    c = get(f07)
+    for a in dir(c.data):
+        if not a.startswith("__"):
+            if a not in ["raw", "summary", "steps"]:
+                v = getattr(c.data, a)
+                print(f"{a}: {v}")
 
-    print("SAVING")
+    print("SAVING".center(80, "*"))
     c.save(f_out)
 
-    print("LOADING NEW")
-    c = get(f_out) # , logging_mode="DEBUG"
+    print("LOADING NEW".center(80, "*"))
+    c = get(f_out)  # , logging_mode="DEBUG"
+    meta_test_dependent = c.data.meta_test_dependent
+    meta_common = c.data.meta_common
+    print(f"{meta_test_dependent=}")
+    print(f"{meta_common=}")
     # print("Here we have it")
     # print(c.data.summary.columns)
     # print(c.data.steps.columns)

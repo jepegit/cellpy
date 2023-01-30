@@ -370,6 +370,7 @@ summary_header_versions = {
     5: HeadersSummaryV5(),
     6: HeadersSummaryV6(),
     7: HeadersSummaryV7(),
+    8: HeadersSummaryV7(),
 }
 
 raw_header_versions = {
@@ -380,6 +381,7 @@ raw_header_versions = {
     5: HeadersRawV5(),
     6: HeadersRawV6(),
     7: HeadersRawV7(),
+    8: HeadersRawV7(),
 }
 
 steps_header_versions = {
@@ -390,6 +392,7 @@ steps_header_versions = {
     5: HeadersStepTableV7(),
     6: HeadersStepTableV7(),
     7: HeadersStepTableV7(),
+    8: HeadersStepTableV7(),
 }
 
 journal_header_versions = {
@@ -400,6 +403,7 @@ journal_header_versions = {
     5: HeadersJournalV5(),
     6: HeadersJournalV7(),
     7: HeadersJournalV7(),
+    8: HeadersJournalV7(),
 }
 
 

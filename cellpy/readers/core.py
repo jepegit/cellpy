@@ -317,7 +317,7 @@ class Data:
         # ATTRS_CELLPYFILE
 
         # place to put "checks" etc:
-        # _extract_meta_from_cellpy_file
+        # _extract_meta_from_old_cellpy_file
         # _create_infotable()
 
     @property

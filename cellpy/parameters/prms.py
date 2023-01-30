@@ -269,9 +269,11 @@ _cellpyfile_raw = "/raw"
 _cellpyfile_step = "/steps"
 _cellpyfile_summary = "/summary"
 _cellpyfile_fid = "/fid"
+_cellpyfile_common_meta = "/info"
+_cellpyfile_test_dependent_meta = "/info_test_dependent"
 
 _cellpyfile_complevel = 1
-_cellpyfile_complib = None  # currently defaults to "zlib"
+_cellpyfile_complib = None  # currently, defaults to "zlib"
 _cellpyfile_raw_format = "table"
 _cellpyfile_summary_format = "table"
 _cellpyfile_stepdata_format = "table"
