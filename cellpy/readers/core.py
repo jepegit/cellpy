@@ -31,6 +31,8 @@ from cellpy.parameters.internal_settings import (
     STEP_TABLE_VERSION,
     RAW_TABLE_VERSION,
     SUMMARY_TABLE_VERSION,
+    CellpyMetaCommon,
+    CellpyMetaIndividualTest,
 )
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
@@ -241,6 +243,10 @@ class Data:
         #   performs many tests in a row with different test meta-data
         #
         # TODO @jepe: create a data-class for this (e.g. Meta)
+
+        self.meta_common = CellpyMetaCommon()
+        self.meta_test_dependent = CellpyMetaIndividualTest()
+
         self.cellpy_file_version = CELLPY_FILE_VERSION
 
         # ---------------- test dependent -------------------------------

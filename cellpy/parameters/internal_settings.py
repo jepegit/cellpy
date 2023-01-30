@@ -5,6 +5,8 @@ from collections import UserDict
 from dataclasses import dataclass, fields
 from typing import List, Optional
 
+from cellpy import prms
+
 CELLPY_FILE_VERSION = 7
 MINIMUM_CELLPY_FILE_VERSION = 4
 STEP_TABLE_VERSION = 5
@@ -18,11 +20,67 @@ PICKLE_PROTOCOL = 4
 
 
 @dataclass
-class CellpyMeta:
+class CellpyMetaCommon:
     # TODO: #222
-    mass: Optional[float] = None
+
+    # about test
+    cell_name: Optional[str] = None  # used as property
     start_datetime: Optional[str] = None
     time_zone: Optional[str] = None
+    comment: Optional[prms.CellPyDataConfig] = prms.CellInfo.comment
+    file_errors: Optional[str] = None  # not in use at the moment
+    raw_id: Optional[str] = None   # used as property
+
+    # about cell
+    material: Optional[prms.CellPyDataConfig] = prms.Materials.default_material
+    # TODO @jepe: Maybe we should use values with units here instead (pint)?
+    mass: Optional[prms.CellPyDataConfig] = prms.Materials.default_mass  # active material
+    tot_mass: Optional[prms.CellPyDataConfig] = prms.Materials.default_mass  # total material
+    nom_cap: Optional[prms.CellPyDataConfig] = prms.Materials.default_nom_cap  # nominal capacity   # used as property
+    nom_cap_specifics: Optional[prms.CellPyDataConfig] = (
+        prms.Materials.default_nom_cap_specifics
+    )  # nominal capacity type  # used as property
+
+    active_electrode_area: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_area
+    active_electrode_thickness: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_thickness
+    electrolyte_volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_volume
+
+    electrolyte_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_type
+    active_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_type
+    counter_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.counter_electrode_type
+    reference_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.reference_electrode_type
+    experiment_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.experiment_type
+    cell_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.cell_type
+    separator_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.separator_type
+    active_electrode_current_collector: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.active_electrode_current_collector
+    )
+    reference_electrode_current_collector: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.reference_electrode_current_collector
+    )
+
+
+@dataclass
+class CellpyMetaIndividualTest:
+    # TODO: #222
+    # ---------------- test dependent -------------------------------
+    loaded_from: Optional[prms.CellPyDataConfig] = None  # loaded from (can be list if merged)
+    channel_index: Optional[prms.CellPyDataConfig] = None
+    creator: Optional[str] = None
+    schedule_file_name = None
+    test_type: Optional[prms.CellPyDataConfig] = None  # Not used (and might be put inside test_ID)
+
+    tester_ID: Optional[prms.CellPyDataConfig] = None
+    tester_server_software_version: Optional[prms.CellPyDataConfig] = None
+    tester_client_software_version: Optional[prms.CellPyDataConfig] = None
+    tester_calibration_date: Optional[prms.CellPyDataConfig] = None
+
+    # ---------------- not sure if test dependent -------------------
+    voltage_lim_low: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_low
+    voltage_lim_high: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_high
+    cycle_mode: Optional[prms.CellPyDataConfig] = prms.Reader.cycle_mode
+    test_ID: Optional[prms.CellPyDataConfig] = None  # id for the test - currently just a number; could become a list or more in the future
+    # test_name  # This is used in arbin and in some loaders, but not implemented here (remove?)
 
 
 # TODO: remove import of this

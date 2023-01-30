@@ -23,6 +23,7 @@ import time
 import warnings
 from pathlib import Path
 from typing import Union, Sequence, List
+from dataclasses import asdict
 
 import numpy as np
 import pandas as pd
@@ -2059,6 +2060,66 @@ class CellpyCell:
         cell = self.data
 
         infotable = collections.OrderedDict()
+        for attribute in ATTRS_CELLPYFILE:
+            try:
+                value = getattr(cell, attribute)
+            except AttributeError:
+                # TODO: this is a ugly fix due to adding new attributes to the ATTRS_CELLPYFILE - make it more beautiful
+                if attribute == "nom_cap_specifics":
+                    value = "gravimetric"
+                else:
+                    raise AttributeError
+            infotable[attribute] = [value]
+
+        new_info_table = asdict(cell.meta_common)
+        # TODO: consider adding pre-key here or save two meta-tables in the cellpy-file:
+        new_info_table_test_dependent = asdict(cell.meta_test_dependent)
+
+        infotable["cellpy_file_version"] = [CELLPY_FILE_VERSION]
+        new_info_table["cellpy_file_version"] = [CELLPY_FILE_VERSION]
+
+        infotable["cycle_mode"] = [self.cycle_mode]
+
+        limits = cell.raw_limits
+        for key in limits:
+            h5_key = key
+            infotable[key] = limits[h5_key]  # TODO: add pre-key here
+            new_info_table[key] = limits[h5_key]
+
+        units = cell.raw_units
+        for key in units:
+            h5_key = f"raw_unit_{key}"
+            infotable[h5_key] = units[key]
+            new_info_table[h5_key] = units[key]
+
+        infotable = pd.DataFrame(infotable)
+        # TODO: consider adding pre-key here or save two meta-tables in the cellpy-file (see above todo comment)
+        new_info_table_all = {**new_info_table, **new_info_table_test_dependent}
+        new_info_table = pd.DataFrame.from_records([new_info_table_all])
+
+        print(" old ".center(80, "-"))
+        print(infotable.columns)
+        print(infotable)
+
+        print(" new ".center(80, "-"))
+        print(new_info_table.columns)
+        print(new_info_table)
+
+        fidtable = self._convert2fid_table(cell)
+        fidtable = pd.DataFrame(fidtable)
+        # TODO: test_dependent with several tests (and possibly merge with FID)
+        # TODO: save
+        # TODO: load old
+        # TODO: find out if it is possible to initiate dataclasses with **kwargs (for loading)
+        # TODO: update getters and setters (cell_name etc)
+
+        return infotable, fidtable
+
+    def _create_infotable_old(self):
+        # needed for saving class/DataSet to hdf5
+        cell = self.data
+
+        infotable = collections.OrderedDict()
 
         for attribute in ATTRS_CELLPYFILE:
             try:
@@ -3281,7 +3342,7 @@ class CellpyCell:
                 last_cycle=last_cycle,
             )
 
-    def save_new(
+    def save(
         self,
         filename,
         force=False,
@@ -3305,6 +3366,8 @@ class CellpyCell:
         """
         logging.debug(f"Trying to save cellpy-file to {filename}")
         logging.info(f" -> {filename}")
+
+        cellpy_file_format = "hdf5"
 
         # some checks to find out what you want
         if overwrite is None:
@@ -3344,7 +3407,7 @@ class CellpyCell:
                     logging.info(e)
                     return
             else:
-                logging.critical("Save (hdf5): file exist - did not save")
+                logging.critical("File exists - did not save")
                 logging.info(outfile_all)
                 return
 
@@ -3354,38 +3417,39 @@ class CellpyCell:
                 logging.debug("save: creating step table")
                 self.make_step_table()
 
-        # --- saving to hdf5 -----------------------------------
         logging.debug("trying to make infotable")
         infotbl, fidtbl = self._create_infotable()
 
-        root = prms._cellpyfile_root
-        raw_dir = prms._cellpyfile_raw
-        step_dir = prms._cellpyfile_step
-        summary_dir = prms._cellpyfile_summary
-        meta_dir = "/info"
-        fid_dir = prms._cellpyfile_fid
-
         logging.debug(f"trying to save to file: {outfile_all}")
-        warnings.simplefilter("ignore", PerformanceWarning)
-        try:
-            with pickle_protocol(PICKLE_PROTOCOL):
-                store = self._save_to_hdf5(
-                    fid_dir,
-                    fidtbl,
-                    infotbl,
-                    meta_dir,
-                    my_data,
-                    outfile_all,
-                    raw_dir,
-                    root,
-                    step_dir,
-                    summary_dir,
-                )
-        finally:
-            store.close()
-        logging.debug(" all -> hdf5 OK")
-        warnings.simplefilter("default", PerformanceWarning)
-        # del store
+        if cellpy_file_format == "hdf5":
+            # TODO: #222 move this to its own method
+            # --- saving to hdf5 -----------------------------------
+            root = prms._cellpyfile_root
+            raw_dir = prms._cellpyfile_raw
+            step_dir = prms._cellpyfile_step
+            summary_dir = prms._cellpyfile_summary
+            meta_dir = "/info"
+            fid_dir = prms._cellpyfile_fid
+            warnings.simplefilter("ignore", PerformanceWarning)
+            try:
+                with pickle_protocol(PICKLE_PROTOCOL):
+                    store = self._save_to_hdf5(
+                        fid_dir,
+                        fidtbl,
+                        infotbl,
+                        meta_dir,
+                        my_data,
+                        outfile_all,
+                        raw_dir,
+                        root,
+                        step_dir,
+                        summary_dir,
+                    )
+            finally:
+                store.close()
+            logging.debug(" all -> hdf5 OK")
+            warnings.simplefilter("default", PerformanceWarning)
+            # del store
         # --- finished saving to hdf5 -------------------------------
 
     def _save_to_hdf5_old(
@@ -3512,7 +3576,7 @@ class CellpyCell:
         #                          optlevel=9, kind='full')
         return store
 
-    def save(
+    def save_old(
         self,
         filename,
         force=False,
@@ -5780,5 +5844,26 @@ def check_cellpy_file():
     print(c.data.raw.columns)
 
 
+def save_and_load_cellpy_file():
+    f_in = Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    f_out = Path("../../tmp/v1.h5")
+    print(f_in)
+    print(f_in.is_file())
+    print(f_out.parent.is_dir())
+
+    print("LOADING ORIGINAL")
+    c = get(f_in)
+
+    print("SAVING")
+    c.save(f_out)
+
+    print("LOADING NEW")
+    c = get(f_out) # , logging_mode="DEBUG"
+    # print("Here we have it")
+    # print(c.data.summary.columns)
+    # print(c.data.steps.columns)
+    # print(c.data.raw.columns)
+
+
 if __name__ == "__main__":
-    check_raw()
+    save_and_load_cellpy_file()
