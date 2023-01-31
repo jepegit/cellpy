@@ -20,7 +20,30 @@ PICKLE_PROTOCOL = 4
 
 
 @dataclass
-class CellpyMetaCommon:
+class CellpyMeta:
+    def update(self, as_list: bool = False, **kwargs):
+        """Updates from dictionary of form {key: [values]}
+
+        Args:
+            as_list (bool): pick only first scalar if True.
+            **kwargs: attributes to update.
+
+        Returns:
+            None
+        """
+
+        for k, v in kwargs.items():
+            if not as_list:
+                v = v[0]
+            if hasattr(self, k):
+                logging.debug(f"{k} -> {v}")
+                setattr(self, k, v)
+            else:
+                logging.debug(f"[NOT-VALID]{k}:{v}")
+
+
+@dataclass
+class CellpyMetaCommon(CellpyMeta):
     # TODO: #222
 
     # about test
@@ -30,6 +53,13 @@ class CellpyMetaCommon:
     comment: Optional[prms.CellPyDataConfig] = prms.CellInfo.comment
     file_errors: Optional[str] = None  # not in use at the moment
     raw_id: Optional[str] = None  # used as property
+    cellpy_file_version: int = CELLPY_FILE_VERSION
+
+    # about tester
+    tester_ID: Optional[prms.CellPyDataConfig] = None
+    tester_server_software_version: Optional[prms.CellPyDataConfig] = None
+    tester_client_software_version: Optional[prms.CellPyDataConfig] = None
+    tester_calibration_date: Optional[prms.CellPyDataConfig] = None
 
     # about cell
     material: Optional[prms.CellPyDataConfig] = prms.Materials.default_material
@@ -81,7 +111,7 @@ class CellpyMetaCommon:
 
 
 @dataclass
-class CellpyMetaIndividualTest:
+class CellpyMetaIndividualTest(CellpyMeta):
     # TODO: #222
     # ---------------- test dependent -------------------------------
     loaded_from: Optional[
@@ -93,20 +123,12 @@ class CellpyMetaIndividualTest:
     test_type: Optional[
         prms.CellPyDataConfig
     ] = None  # Not used (and might be put inside test_ID)
-
-    tester_ID: Optional[prms.CellPyDataConfig] = None
-    tester_server_software_version: Optional[prms.CellPyDataConfig] = None
-    tester_client_software_version: Optional[prms.CellPyDataConfig] = None
-    tester_calibration_date: Optional[prms.CellPyDataConfig] = None
-
-    # ---------------- not sure if test dependent -------------------
     voltage_lim_low: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_low
     voltage_lim_high: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_high
     cycle_mode: Optional[prms.CellPyDataConfig] = prms.Reader.cycle_mode
     test_ID: Optional[
         prms.CellPyDataConfig
     ] = None  # id for the test - currently just a number; could become a list or more in the future
-    # test_name  # This is used in arbin and in some loaders, but not implemented here (remove?)
 
 
 # TODO: remove import of this

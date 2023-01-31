@@ -63,6 +63,8 @@ from cellpy.parameters.internal_settings import (
     MINIMUM_CELLPY_FILE_VERSION,
     PICKLE_PROTOCOL,
     CellpyUnits,
+CellpyMetaCommon,
+    CellpyMetaIndividualTest,
 )
 
 from cellpy.readers.core import (
@@ -2042,60 +2044,21 @@ class CellpyCell:
         filename: Union[Path, str],
         upgrade_from_to: tuple = None,
     ) -> None:
-        # get attributes from meta table
-        # remark! could also utilise the pandas to dictionary method directly
-        # for example: meta_table.T.to_dict()
-        # Maybe a good task for someone who would like to learn more about
-        # how cellpy works.
+
         if upgrade_from_to is not None:
             old, new = upgrade_from_to
             print(f"upgrading meta from {old} to {new}")
             logging.debug(f"upgrading meta from {old} to {new}")
             # fid_table = rename_fid_columns(fid_table, old, new)
 
-        # TODO: #222 CONTINUE FROM HERE
-        meta_dict = meta_table.to_dict(orient="list")
-        test_dependent_meta_dict = test_dependent_meta_table.to_dict(orient="list")
-
-        for attribute in ATTRS_CELLPYFILE:
-            value = self._extract_from_meta_dictionary(meta_dict, attribute)
-
-            # some fixes due to errors propagated into the cellpy-files
-            if attribute in [
-                "creator",
-            ]:
-                if not isinstance(value, str):
-                    value = ""
-
-            if attribute in [
-                "test_no",
-            ]:
-                if not isinstance(value, (int, float)):
-                    value = 0
-
-            # some fixes due to change in attribute names
-            if attribute in ["name", "test_name"]:
-                setattr(data, "cell_name", value)
-
-            else:
-                setattr(data, attribute, value)
-
-        if data.mass is None:
-            data.mass = 1.0
-
-        if data.cycle_mode is None:
-            logging.critical("cycle mode not found")
-
         data.loaded_from = str(filename)
-
+        meta_dict = meta_table.to_dict(orient="list")
         # unpacking the raw data limits
         # TODO: check if they end up at the correct level (cellpydata or data)
         for key in data.raw_limits:
-            h5_key = key
+            h5_key = f"{prms._cellpyfile_raw_limit_pre_id}{key}"
             try:
-                data.raw_limits[key] = self._extract_from_meta_dictionary(
-                    meta_dict, h5_key, hard=True
-                )
+                data.raw_limits[key] = meta_dict.pop(h5_key)
             except KeyError:
                 logging.debug(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
@@ -2103,14 +2066,22 @@ class CellpyCell:
         # unpacking the raw data units
         # TODO: check if they end up at the correct level (cellpydata or data)
         for key in data.raw_units:
-            h5_key = f"raw_unit_{key}"
+            h5_key = f"{prms._cellpyfile_raw_unit_pre_id}{key}"
             try:
-                data.raw_units[key] = self._extract_from_meta_dictionary(
-                    meta_dict, h5_key, hard=True
-                )
+                data.raw_units[key] = meta_dict.pop(h5_key)
             except KeyError:
                 logging.critical(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
+
+        # TODO: #222 CONTINUE FROM HERE
+
+        print("CREATING META COMMON FROM CELLPYFILE")
+        data.meta_common.update(as_list=False, **meta_dict)
+
+        test_dependent_meta_dict = test_dependent_meta_table.to_dict(orient="list")
+
+        print("CREATING META TEST DEPENDENT FROM CELLPYFILE")
+        data.meta_test_dependent.update(as_list=True, **test_dependent_meta_dict)
 
     def _extract_meta_from_old_cellpy_file(
         self,
@@ -2166,7 +2137,7 @@ class CellpyCell:
         # unpacking the raw data limits
         # TODO: check if they end up at the correct level (cellpydata or data)
         for key in data.raw_limits:
-            h5_key = key
+            h5_key = f"{prms._cellpyfile_raw_limit_pre_id}{key}"
             try:
                 data.raw_limits[key] = self._extract_from_meta_dictionary(
                     meta_dict, h5_key, hard=True
@@ -2178,7 +2149,7 @@ class CellpyCell:
         # unpacking the raw data units
         # TODO: check if they end up at the correct level (cellpydata or data)
         for key in data.raw_units:
-            h5_key = f"raw_unit_{key}"
+            h5_key = f"{prms._cellpyfile_raw_unit_pre_id}{key}"
             try:
                 data.raw_units[key] = self._extract_from_meta_dictionary(
                     meta_dict, h5_key, hard=True
@@ -2211,12 +2182,12 @@ class CellpyCell:
 
         limits = cell.raw_limits
         for key in limits:
-            h5_key = key
+            h5_key = f"{prms._cellpyfile_raw_limit_pre_id}{key}"
             new_info_table[key] = limits[h5_key]
 
         units = cell.raw_units
         for key in units:
-            h5_key = f"raw_unit_{key}"
+            h5_key = f"{prms._cellpyfile_raw_unit_pre_id}{key}"
             new_info_table[h5_key] = units[key]
 
         # TODO: consider adding pre-key here or save two meta-tables in the cellpy-file (see above todo comment)

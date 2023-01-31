@@ -272,6 +272,9 @@ _cellpyfile_fid = "/fid"
 _cellpyfile_common_meta = "/info"
 _cellpyfile_test_dependent_meta = "/info_test_dependent"
 
+_cellpyfile_raw_unit_pre_id = "raw_unit_"
+_cellpyfile_raw_limit_pre_id = ""
+
 _cellpyfile_complevel = 1
 _cellpyfile_complib = None  # currently, defaults to "zlib"
 _cellpyfile_raw_format = "table"
