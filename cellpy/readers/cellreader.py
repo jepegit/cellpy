@@ -46,10 +46,6 @@ from cellpy.parameters.legacy.update_headers import (
     rename_step_columns,
 )
 from cellpy.parameters.internal_settings import (
-    ATTRS_CELLPYDATA,
-    ATTRS_CELLPYFILE,
-    ATTRS_DATASET,
-    ATTRS_DATASET_DEEP,
     get_cellpy_units,
     get_headers_normal,
     get_headers_step_table,
@@ -63,7 +59,7 @@ from cellpy.parameters.internal_settings import (
     MINIMUM_CELLPY_FILE_VERSION,
     PICKLE_PROTOCOL,
     CellpyUnits,
-CellpyMetaCommon,
+    CellpyMetaCommon,
     CellpyMetaIndividualTest,
 )
 
@@ -76,6 +72,7 @@ from cellpy.readers.core import (
     xldate_as_datetime,
     generate_default_factory,
     Q,
+    convert_from_simple_unit_label_to_string_unit_label,
 )
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
@@ -114,8 +111,8 @@ class CellpyCell:
 
     def __repr__(self):
         txt = f"CellpyCell-object (id={hex(id(self))})"
-        if self.name:
-            txt += f"\nname: {self.name}"
+        if self.session_name:
+            txt += f"\nname: {self.session_name}"
         if self.table_names:
             txt += f"\ntable_names: {self.table_names}"
         if self.tester:
@@ -126,7 +123,7 @@ class CellpyCell:
         header = f"""
             <h2>CellpyCell-object</h2>
             <b>id</b>: {hex(id(self))} <br>
-            <b>name</b>: {self.name} <br>
+            <b>name</b>: {self.session_name} <br>
             <b>table names</b>: {self.table_names} <br>
             <b>tester</b>: {self.tester} <br>
             <b>cycle_mode</b>: {self.cycle_mode} <br>
@@ -372,18 +369,16 @@ class CellpyCell:
 
         new_cell = cls(initialize=True)
         if cell is not None:
-            for attr in ATTRS_DATASET:
-                value = getattr(cell.data, attr)
-                setattr(new_cell.data, attr, value)
+            new_cell.data.meta_common = cell.data.meta_common
+            new_cell.data.meta_test_dependent = cell.data.meta_test_dependent
 
-            for attr in ATTRS_DATASET_DEEP:
-                value = getattr(cell.data, attr)
-                setattr(new_cell.data, attr, copy.deepcopy(value))
+            new_cell.data.raw_data_files = cell.data.raw_data_files
+            new_cell.data.raw_data_files_length = cell.data.raw_data_files_length
+            new_cell.data.raw_units = cell.data.raw_units
+            new_cell.data.raw_limits = cell.data.raw_limits
 
-            for attr in ATTRS_CELLPYDATA:
-                value = getattr(cell, attr)
-                setattr(new_cell, attr, value)
-
+            new_cell.data.loaded_from = cell.data.loaded_from
+            new_cell.data._raw_id = cell.data.raw_id
         return new_cell
 
     def mod_raw_split_cycle(self, data_points: List) -> None:
@@ -652,18 +647,20 @@ class CellpyCell:
 
     @property
     def cycle_mode(self):
+        # TODO: edit this from scalar to list
         try:
             data = self.data
-            return data.cycle_mode
+            return data.meta_test_dependent.cycle_mode[0]
         except NoCellFound:
             return self._cycle_mode
 
     @cycle_mode.setter
     def cycle_mode(self, cycle_mode):
+        # TODO: edit this from scalar to list
         logging.debug(f"-> cycle_mode: {cycle_mode}")
         try:
             data = self.data
-            data.cycle_mode = cycle_mode
+            data.meta_test_dependent.cycle_mode = [cycle_mode]
             self._cycle_mode = cycle_mode
         except NoCellFound:
             self._cycle_mode = cycle_mode
@@ -1430,10 +1427,6 @@ class CellpyCell:
                 "current reader (try to update cellpy)."
             )
 
-        # if new_datasets:
-        #     for dataset in new_datasets:
-        #         self.cells.append(dataset)
-
         if data:
             self.data = data
         else:
@@ -1446,7 +1439,10 @@ class CellpyCell:
         if return_cls:
             return self
 
-    def _get_cellpy_file_version(self, filename, meta_dir="/info", parent_level=None):
+    def _get_cellpy_file_version(self, filename, meta_dir=None, parent_level=None):
+        if meta_dir is None:
+            meta_dir = prms._cellpyfile_common_meta
+
         if parent_level is None:
             parent_level = prms._cellpyfile_root
 
@@ -1549,7 +1545,11 @@ class CellpyCell:
         logging.debug(f"filename: {filename}")
         logging.debug(f"selector: {selector}")
         with pd.HDFStore(filename) as store:
-            data, meta_table, test_dependent_meta_table = self._create_initial_data_set_from_cellpy_file(
+            (
+                data,
+                meta_table,
+                test_dependent_meta_table,
+            ) = self._create_initial_data_set_from_cellpy_file(
                 common_meta_dir,
                 parent_level,
                 store,
@@ -1571,7 +1571,9 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_cellpy_file(data, meta_table, test_dependent_meta_table, filename)
+        self._extract_meta_from_cellpy_file(
+            data, meta_table, test_dependent_meta_table, filename
+        )
 
         if fid_table_selected:
             (
@@ -1589,7 +1591,7 @@ class CellpyCell:
         return data
 
     def _load_hdf5_v7(self, filename, selector=None, **kwargs):
-        print("--- loading v7")
+        logging.debug("loading v7")
         meta_dir = "/info"
         parent_level = kwargs.pop("parent_level", "CellpyData")
         raw_dir = kwargs.pop("raw_dir", "/raw")
@@ -1620,7 +1622,7 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_old_cellpy_file(
+        self._extract_meta_from_old_cellpy_file_max_v7(
             data, meta_table, filename, upgrade_from_to=(7, CELLPY_FILE_VERSION)
         )
 
@@ -1679,7 +1681,7 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_old_cellpy_file(
+        self._extract_meta_from_old_cellpy_file_max_v7(
             data, meta_table, filename, upgrade_from_to=(6, CELLPY_FILE_VERSION)
         )
 
@@ -1738,7 +1740,7 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_old_cellpy_file(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file_max_v7(data, meta_table, filename)
 
         if fid_table_selected:
             (
@@ -1762,7 +1764,6 @@ class CellpyCell:
             data = self._load_old_hdf5_v3_to_v4(filename)
         elif cellpy_file_version == 5:
             data = self._load_hdf5_v5(filename)
-
         elif cellpy_file_version == 6:
             data = self._load_hdf5_v6(filename)
         elif cellpy_file_version == 7:
@@ -1818,7 +1819,7 @@ class CellpyCell:
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 _fid_dir, parent_level, store
             )
-        self._extract_meta_from_old_cellpy_file(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file_max_v7(data, meta_table, filename)
         warnings.warn(
             "Loaded old cellpy-file version (<5). Please update and save again."
         )
@@ -1843,11 +1844,10 @@ class CellpyCell:
         # "/info" it will most likely fail.
         # Remark! Used from versions 3
         if test_dependent_meta_dir is not None:
-            print("READING V > 7")
             common_meta_table = store.select(parent_level + meta_dir)
             test_dependent_meta = store.select(parent_level + test_dependent_meta_dir)
             data = Data()
-            data.cellpy_file_version = 8
+            # data.cellpy_file_version = CELLPY_FILE_VERSION
             return data, common_meta_table, test_dependent_meta
 
         data = Data()
@@ -1863,15 +1863,15 @@ class CellpyCell:
 
         try:
             meta_dict = meta_table.to_dict(orient="list")
-            data.cellpy_file_version = self._extract_from_meta_dictionary(
-                meta_dict, "cellpy_file_version"
-            )
+            # data.cellpy_file_version = self._extract_from_meta_dictionary(
+            #     meta_dict, "cellpy_file_version"
+            # )
         except Exception as e:
-            data.cellpy_file_version = 0
+            # data.cellpy_file_version = 0
             warnings.warn(f"Unhandled exception raised: {e}")
             return data, meta_table
 
-        logging.debug(f"cellpy file version. {data.cellpy_file_version}")
+        # logging.debug(f"cellpy file version. {data.cellpy_file_version}")
         return data, meta_table
 
     @staticmethod
@@ -2053,110 +2053,81 @@ class CellpyCell:
 
         data.loaded_from = str(filename)
         meta_dict = meta_table.to_dict(orient="list")
+
         # unpacking the raw data limits
-        # TODO: check if they end up at the correct level (cellpydata or data)
+        # remark! stored as scalars (not test dependent)
         for key in data.raw_limits:
             h5_key = f"{prms._cellpyfile_raw_limit_pre_id}{key}"
             try:
-                data.raw_limits[key] = meta_dict.pop(h5_key)
+                v = meta_dict.pop(h5_key)
+                data.raw_units[key] = v[0]
             except KeyError:
                 logging.debug(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
 
         # unpacking the raw data units
-        # TODO: check if they end up at the correct level (cellpydata or data)
+        # remark! stored as scalars (not test dependent)
         for key in data.raw_units:
             h5_key = f"{prms._cellpyfile_raw_unit_pre_id}{key}"
             try:
-                data.raw_units[key] = meta_dict.pop(h5_key)
+                v = meta_dict.pop(h5_key)
+                data.raw_units[key] = v[0]
             except KeyError:
                 logging.critical(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
 
-        # TODO: #222 CONTINUE FROM HERE
-
-        print("CREATING META COMMON FROM CELLPYFILE")
         data.meta_common.update(as_list=False, **meta_dict)
-
         test_dependent_meta_dict = test_dependent_meta_table.to_dict(orient="list")
-
-        print("CREATING META TEST DEPENDENT FROM CELLPYFILE")
         data.meta_test_dependent.update(as_list=True, **test_dependent_meta_dict)
 
-    def _extract_meta_from_old_cellpy_file(
+    def _extract_meta_from_old_cellpy_file_max_v7(
         self,
         data: Data,
         meta_table: pd.DataFrame,
         filename: Union[Path, str],
-        upgrade_from_to: tuple = None,
+        upgrade_from_to: tuple,
     ) -> None:
         # get attributes from meta table
         # remark! could also utilise the pandas to dictionary method directly
         # for example: meta_table.T.to_dict()
         # Maybe a good task for someone who would like to learn more about
         # how cellpy works.
-        if upgrade_from_to is not None:
-            old, new = upgrade_from_to
-            print(f"upgrading meta from {old} to {new}")
-            logging.debug(f"upgrading meta from {old} to {new}")
-            # fid_table = rename_fid_columns(fid_table, old, new)
+
+        old, new = upgrade_from_to
+        logging.debug(f"upgrading meta from {old} to {new}")
+        if old > 7:
+            raise IOError("using this method for processing v>7 is not allowed!")
 
         meta_dict = meta_table.to_dict(orient="list")
 
-        for attribute in ATTRS_CELLPYFILE:
-            value = self._extract_from_meta_dictionary(meta_dict, attribute)
-
-            # some fixes due to errors propagated into the cellpy-files
-            if attribute in [
-                "creator",
-            ]:
-                if not isinstance(value, str):
-                    value = ""
-
-            if attribute in [
-                "test_no",
-            ]:
-                if not isinstance(value, (int, float)):
-                    value = 0
-
-            # some fixes due to change in attribute names
-            if attribute in ["name", "test_name"]:
-                setattr(data, "cell_name", value)
-
-            else:
-                setattr(data, attribute, value)
-
-        if data.mass is None:
-            data.mass = 1.0
-
-        if data.cycle_mode is None:
-            logging.critical("cycle mode not found")
-
-        data.loaded_from = str(filename)
-
         # unpacking the raw data limits
-        # TODO: check if they end up at the correct level (cellpydata or data)
+        # remark! stored as scalars (not test dependent)
         for key in data.raw_limits:
             h5_key = f"{prms._cellpyfile_raw_limit_pre_id}{key}"
             try:
-                data.raw_limits[key] = self._extract_from_meta_dictionary(
-                    meta_dict, h5_key, hard=True
-                )
+                v = meta_dict.pop(h5_key)
+                data.raw_units[key] = v[0]
             except KeyError:
                 logging.debug(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
 
         # unpacking the raw data units
-        # TODO: check if they end up at the correct level (cellpydata or data)
+        # remark! stored as scalars (not test dependent)
         for key in data.raw_units:
             h5_key = f"{prms._cellpyfile_raw_unit_pre_id}{key}"
             try:
-                data.raw_units[key] = self._extract_from_meta_dictionary(
-                    meta_dict, h5_key, hard=True
-                )
+                v = meta_dict.pop(h5_key)
+                v = v[0]
+                if not isinstance(v, str):
+                    logging.debug(f"{v} is not of type string")
+                    v = convert_from_simple_unit_label_to_string_unit_label(key, v)
+                data.raw_units[key] = v
             except KeyError:
                 logging.critical(f"missing key in meta_table: {h5_key}")
                 # warnings.warn("OLD-TYPE: Recommend to save in new format!")
+
+        meta_dict = data.meta_common.digest(as_list=False, **meta_dict)
+        data.meta_test_dependent.update(as_list=True, **meta_dict)
 
     @staticmethod
     def _extract_from_meta_dictionary(
@@ -2173,7 +2144,6 @@ class CellpyCell:
         return value
 
     def _create_infotable(self):
-        # TODO: #222
         # needed for saving class/DataSet to hdf5
         cell = self.data
         new_info_table = asdict(cell.meta_common)
@@ -2188,12 +2158,17 @@ class CellpyCell:
         units = cell.raw_units
         for key in units:
             h5_key = f"{prms._cellpyfile_raw_unit_pre_id}{key}"
-            new_info_table[h5_key] = units[key]
-
-        # TODO: consider adding pre-key here or save two meta-tables in the cellpy-file (see above todo comment)
+            value = units[key]
+            if not isinstance(value, str):
+                raise IOError(
+                    f"raw unit for {key} ({value}) must be of type string, not {type(value)}"
+                )
+            new_info_table[h5_key] = value
 
         new_info_table = pd.DataFrame.from_records([new_info_table])
-        new_info_table_test_dependent = pd.DataFrame.from_records([new_info_table_test_dependent])
+        new_info_table_test_dependent = pd.DataFrame.from_records(
+            [new_info_table_test_dependent]
+        )
 
         fidtable = self._convert2fid_table(cell)
         fidtable = pd.DataFrame(fidtable)
@@ -2310,8 +2285,8 @@ class CellpyCell:
         data = t1
         if recalc:
             # finding diff of time
-            start_time_1 = t1.start_datetime
-            start_time_2 = t2.start_datetime
+            start_time_1 = t1.meta_common.start_datetime
+            start_time_2 = t2.meta_common.start_datetime
 
             if self.tester in ["arbin_res"]:
                 diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(
@@ -3547,6 +3522,7 @@ class CellpyCell:
             format=prms._cellpyfile_summary_format,
         )
         logging.debug(" summary -> hdf5 OK")
+
         logging.debug("trying to put meta data")
         store.put(root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format)
         logging.debug(" common meta -> hdf5 OK")
@@ -3556,6 +3532,7 @@ class CellpyCell:
             format=prms._cellpyfile_infotable_format,
         )
         logging.debug(" test dependent meta -> hdf5 OK")
+
         logging.debug("trying to put fidtable")
         store.put(root + fid_dir, fid_table, format=prms._cellpyfile_fidtable_format)
         logging.debug(" fid -> hdf5 OK")
@@ -3687,7 +3664,7 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def get_mass(self):
-        return self.data.mass
+        return self.data.meta_common.mass
 
     def sget_voltage(self, cycle, step):
         """Returns voltage for cycle, step.
@@ -4726,21 +4703,21 @@ class CellpyCell:
 
     def _set_mass(self, value):
         try:
-            self.data.mass = value
+            self.data.meta_common.mass = value
         except AttributeError as e:
             logging.info("This test is empty")
             logging.info(e)
 
     def _set_tot_mass(self, value):
         try:
-            self.data.tot_mass = value
+            self.data.meta_common.tot_mass = value
         except AttributeError as e:
             logging.info("This test is empty")
             logging.info(e)
 
     def _set_nom_cap(self, value):
         try:
-            self.data.nom_cap = value
+            self.data.meta_common.nom_cap = value
         except AttributeError as e:
             logging.info("This test is empty")
             logging.info(e)
@@ -5756,10 +5733,13 @@ def save_and_load_cellpy_file():
     f06 = Path("../../testdata/hdf5/20160805_test001_45_cc_v6.h5")
     f07 = Path("../../testdata/hdf5/20160805_test001_45_cc_v7.h5")
     f08 = Path("../../testdata/hdf5/20160805_test001_45_cc_v8.h5")
-    f_out = Path("../../tmp/v1.h5")
+    f_tmp = Path("../../tmp/v1.h5")
+
+    old = f08
+    out = f_tmp
 
     print("LOADING ORIGINAL".center(80, "*"))
-    c = get(f07)
+    c = get(old)
     for a in dir(c.data):
         if not a.startswith("__"):
             if a not in ["raw", "summary", "steps"]:
@@ -5767,14 +5747,22 @@ def save_and_load_cellpy_file():
                 print(f"{a}: {v}")
 
     print("SAVING".center(80, "*"))
-    c.save(f_out)
+    c.save(out)
 
     print("LOADING NEW".center(80, "*"))
-    c = get(f_out)  # , logging_mode="DEBUG"
+    c = get(out)  # , logging_mode="DEBUG"
     meta_test_dependent = c.data.meta_test_dependent
     meta_common = c.data.meta_common
     print(f"{meta_test_dependent=}")
     print(f"{meta_common=}")
+    print(f"{c.data.raw_limits=}")
+    print(f"{c.data.raw_units=}")
+
+    for a in dir(c.data):
+        if not a.startswith("__"):
+            if a not in ["raw", "summary", "steps"]:
+                v = getattr(c.data, a)
+                print(f"{a}: {v}")
     # print("Here we have it")
     # print(c.data.summary.columns)
     # print(c.data.steps.columns)

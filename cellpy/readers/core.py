@@ -226,8 +226,11 @@ class Data:
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
         self.logger.debug("created DataSet instance")
+
         self.raw_data_files = []
         self.raw_data_files_length = []
+        self.loaded_from = None
+        self._raw_id = None
         self.raw_units = get_default_raw_units()
         self.raw_limits = get_default_raw_limits()
 
@@ -235,98 +238,85 @@ class Data:
         self.summary = pd.DataFrame()
         self.steps = pd.DataFrame()
 
-        # ---------------------------------------------------------------
-        #               meta-data
-        # ---------------------------------------------------------------
-        # Remark! all this is set up so that each cell only has "one" test.
-        #   In the future, we should consider implementing that the cell
-        #   performs many tests in a row with different test meta-data
-        #
-        # TODO @jepe: create a data-class for this (e.g. Meta)
-
         self.meta_common = CellpyMetaCommon()
         self.meta_test_dependent = CellpyMetaIndividualTest()
-
-        self.cellpy_file_version = CELLPY_FILE_VERSION
-
-        # ---------------- test dependent -------------------------------
-        self.loaded_from = None  # loaded from (can be list if merged)
-        self.channel_index = None
-        self.creator: Optional[str] = None
-        self.schedule_file_name = None
-        self.test_type = None  # Not used (and might be put inside test_ID)
-
-        self.tester_ID = None
-        self.tester_server_software_version = None
-        self.tester_client_software_version = None
-        self.tester_calibration_date = None
-
-        # ---------------- not sure if test dependent -------------------
-        self.voltage_lim_low = prms.CellInfo.voltage_lim_low
-        self.voltage_lim_high = prms.CellInfo.voltage_lim_high
-        self.cycle_mode = prms.Reader.cycle_mode
-        self.test_ID = None  # id for the test - currently just a number; could become a list or more in the future
-        # self.test_name  # This is used in arbin and in some loaders, but not implemented here (remove?)
-
-        # ---------------- overall (all tests) --------------------------
-        # about test
-        self._cell_name: Optional[
-            str
-        ] = None  # TODO @jepe: figure out how to handle properties (maybe add another data-class?)
-        self.start_datetime = None
-        self.time_zone: Optional[str] = None
-        self.comment = prms.CellInfo.comment
-        self.file_errors = None  # not in use at the moment
-        self._raw_id = (
-            None  # to be used for ensuring integrity of the raw data (v>.1.1+)
-        )
-        # about cell
-        self.material = prms.Materials.default_material
-        # TODO @jepe: Maybe we should use values with units here instead (pint)?
-        self.mass = prms.Materials.default_mass  # active material
-        self.tot_mass = prms.Materials.default_mass  # total material
-        self._nom_cap = prms.Materials.default_nom_cap  # nominal capacity
-        self._nom_cap_specifics = (
-            prms.Materials.default_nom_cap_specifics
-        )  # nominal capacity type
-
-        self.active_electrode_area = prms.CellInfo.active_electrode_area
-        self.active_electrode_thickness = prms.CellInfo.active_electrode_thickness
-        self.electrolyte_volume = prms.CellInfo.electrolyte_volume
-
-        self.electrolyte_type = prms.CellInfo.electrolyte_type
-        self.active_electrode_type = prms.CellInfo.active_electrode_type
-        self.counter_electrode_type = prms.CellInfo.counter_electrode_type
-        self.reference_electrode_type = prms.CellInfo.reference_electrode_type
-        self.experiment_type = prms.CellInfo.experiment_type
-        self.cell_type = prms.CellInfo.cell_type
-        self.separator_type = prms.CellInfo.separator_type
-        self.active_electrode_current_collector = (
-            prms.CellInfo.active_electrode_current_collector
-        )
-        self.reference_electrode_current_collector = (
-            prms.CellInfo.reference_electrode_current_collector
-        )
 
         # custom meta-data
         for k in kwargs:
             if hasattr(self, k):
                 setattr(self, k, kwargs[k])
 
-        # methods in CellpyCell to update if adding new attributes:
-        # ATTRS_CELLPYFILE
+    # ---------------- left-over-properties v7 -> v8 -----------------
+    # these now belong to the CellpyMeta attributes
+    #   however, since they are extensively used in the instrument
+    #   loaders and cellreader,
+    #   I temporarily (?) made them into properties
 
-        # place to put "checks" etc:
-        # _extract_meta_from_old_cellpy_file
-        # _create_infotable()
+    @property
+    def raw_id(self):
+        return self.meta_common.raw_id
+
+    @property
+    def start_datetime(self):
+        return self.meta_common.start_datetime
+
+    @start_datetime.setter
+    def start_datetime(self, n):
+        self.meta_common.start_datetime = n
+
+    @property
+    def material(self):
+        return self.meta_common.material
+
+    @material.setter
+    def material(self, n):
+        self.meta_common.material = n
+
+    @property
+    def mass(self):
+        return self.meta_common.mass
+
+    @mass.setter
+    def mass(self, n):
+        self.meta_common.mass = n
+
+    @property
+    def tot_mass(self):
+        return self.meta_common.tot_mass
+
+    @tot_mass.setter
+    def tot_mass(self, n):
+        self.meta_common.tot_mass = n
+
+    @property
+    def active_electrode_area(self):
+        return self.meta_common.active_electrode_area
+
+    @active_electrode_area.setter
+    def active_electrode_area(self, n):
+        self.meta_common.active_electrode_area = n
 
     @property
     def cell_name(self):
-        return self._cell_name
+        return self.meta_common.cell_name
 
     @cell_name.setter
     def cell_name(self, n):
-        self._cell_name = n
+        self.meta_common.cell_name = n
+
+    @property
+    def nom_cap(self):
+        return self.meta_common.nom_cap
+
+    @nom_cap.setter
+    def nom_cap(self, value):
+        if value < 1.0:
+            warnings.warn(
+                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 1.0 ({value}).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self.meta_common.nom_cap = value  # nominal capacity
 
     @staticmethod
     def _header_str(hdr):
@@ -348,15 +338,14 @@ class Data:
             txt += str(self.loaded_from)
             txt += "\n"
         txt += "\n* GLOBAL\n"
-        txt += f"material:            {self.material}\n"
-        txt += f"mass (active):       {self.mass}\n"
-        txt += f"test ID:             {self.test_ID}\n"
-        txt += f"mass (total):        {self.tot_mass}\n"
-        txt += f"nominal capacity:    {self.nom_cap}\n"
-        txt += f"channel index:       {self.channel_index}\n"
-        # txt += f"DataSet name:        {self.name}\n"
-        txt += f"creator:             {self.creator}\n"
-        txt += f"schedule file name:  {self.schedule_file_name}\n"
+        txt += f"material:            {self.meta_common.material}\n"
+        txt += f"mass (active):       {self.meta_common.mass}\n"
+        txt += f"mass (total):        {self.meta_common.tot_mass}\n"
+        txt += f"nominal capacity:    {self.meta_common.nom_cap}\n"
+        txt += f"test ID:             {self.meta_test_dependent.test_ID}\n"
+        txt += f"channel index:       {self.meta_test_dependent.channel_index}\n"
+        txt += f"creator:             {self.meta_test_dependent.creator}\n"
+        txt += f"schedule file name:  {self.meta_test_dependent.schedule_file_name}\n"
 
         try:
             if self.start_datetime:
@@ -416,20 +405,6 @@ class Data:
             )
 
         return True
-
-    @property
-    def nom_cap(self):
-        return self._nom_cap
-
-    @nom_cap.setter
-    def nom_cap(self, value):
-        if value < 1.0:
-            warnings.warn(
-                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 1.0 ({value}).",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        self._nom_cap = value  # nominal capacity
 
     @property
     def has_summary(self):
@@ -955,3 +930,41 @@ def group_by_interpolate(
     time_01 = time.time() - time_00
     logging.debug(f"duration: {time_01} seconds")
     return new_df
+
+
+def convert_from_simple_unit_label_to_string_unit_label(k, v):
+    old_raw_units = {
+        "current": 1.0,
+        "charge": 1.0,
+        "voltage": 1.0,
+        "time": 1.0,
+        "resistance": 1.0,
+        "power": 1.0,
+        "energy": 1.0,
+        "frequency": 1.0,
+        "mass": 0.001,
+        "nominal_capacity": 1.0,
+        "specific_gravimetric": 1.0,
+        "specific_areal": 1.0,
+        "specific_volumetric": 1.0,
+        "length": 1.0,
+        "area": 1.0,
+        "volume": 1.0,
+        "temperature": 1.0,
+        "pressure": 1.0,
+    }
+    old_unit = old_raw_units[k]
+    value = v / old_unit
+    default_units = get_default_raw_units()
+
+    new_unit = default_units[k]
+    value = Q(value, new_unit)
+    str_value = str(value)
+    return str_value
+
+
+if __name__ == "__main__":
+    k = "resistance"
+    v = 1.0
+    n = convert_from_simple_unit_label_to_string_unit_label(k, v)
+    print(n)

@@ -99,17 +99,17 @@ def test_raw_limited_loaded_cycles_prm(cellpy_data_instance, parameters):
 def test_cellpy_version_4(cellpy_data_instance, parameters):
     f_old = parameters.cellpy_file_path_v4
     d = cellpy_data_instance.load(f_old, accept_old=True)
-    v = d.data.cellpy_file_version
+    # v = d.data.cellpy_file_version
     print(f"\nfile name: {f_old}")
-    print(f"cellpy version: {v}")
+    # print(f"cellpy version: {v}")
 
 
 def test_cellpy_version_5(cellpy_data_instance, parameters):
     f_old = parameters.cellpy_file_path_v5
     d = cellpy_data_instance.load(f_old, accept_old=True)
-    v = d.data.cellpy_file_version
+    # v = d.data.cellpy_file_version
     print(f"\nfile name: {f_old}")
-    print(f"cellpy version: {v}")
+    # print(f"cellpy version: {v}")
 
 
 def test_merge(cellpy_data_instance, parameters):

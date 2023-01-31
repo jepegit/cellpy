@@ -26,7 +26,7 @@ class CellpyMeta:
 
         Args:
             as_list (bool): pick only first scalar if True.
-            **kwargs: attributes to update.
+            **kwargs (dict): key word attributes to update.
 
         Returns:
             None
@@ -40,6 +40,28 @@ class CellpyMeta:
                 setattr(self, k, v)
             else:
                 logging.debug(f"[NOT-VALID]{k}:{v}")
+
+    def digest(self, as_list: bool = False, **kwargs):
+        """Pops from dictionary of form {key: [values]}
+
+        Args:
+            as_list (bool): pick only first scalar if True.
+            **kwargs (dict): key word attributes to pick.
+
+        Returns:
+            Dictionary containing the non-digested part.
+        """
+        not_digested = {}
+        for k, v in kwargs.items():
+            if not as_list:
+                v = v[0]
+            if hasattr(self, k):
+                logging.debug(f"{k} -> {v}")
+                setattr(self, k, v)
+            else:
+                logging.debug(f"{k}:{v} ->")
+                not_digested[k] = v
+        return not_digested
 
 
 @dataclass
@@ -114,9 +136,6 @@ class CellpyMetaCommon(CellpyMeta):
 class CellpyMetaIndividualTest(CellpyMeta):
     # TODO: #222
     # ---------------- test dependent -------------------------------
-    loaded_from: Optional[
-        prms.CellPyDataConfig
-    ] = None  # loaded from (can be list if merged)
     channel_index: Optional[prms.CellPyDataConfig] = None
     creator: Optional[str] = None
     schedule_file_name = None
@@ -309,7 +328,7 @@ class CellpyUnits(BaseSettings):
     charge: str = "mAh"
     voltage: str = "V"
     time: str = "sec"
-    resistance: str = "Ohms"
+    resistance: str = "ohm"
     power: str = "W"
     energy: str = "Wh"
     frequency: str = "hz"
@@ -323,6 +342,7 @@ class CellpyUnits(BaseSettings):
     area: str = "cm**2"
     volume: str = "cm**3"
     temperature: str = "C"
+    pressure: str = "bar"
 
 
 @dataclass
@@ -538,98 +558,6 @@ base_columns_int = [
     headers_normal.step_index_txt,
     headers_normal.cycle_index_txt,
 ]
-
-
-# cellpy attributes that should be saved and loaded from cellpy-files
-# (only uses the Data object):
-ATTRS_CELLPYFILE = [
-    # -- about the test(s):
-    "test_ID",
-    "channel_index",
-    "creator",
-    "cycle_mode",
-    "schedule_file_name",
-    "experiment_type",
-    "comment",
-    # -- new
-    "tester_ID",
-    "tester_server_software_version",
-    "tester_client_software_version",
-    "tester_calibration_date",
-    # -- about the cell:
-    "start_datetime",
-    "cell_name",
-    "mass",
-    "nom_cap",
-    "nom_cap_specifics",
-    "material",
-    "active_electrode_area",
-    "active_electrode_thickness",
-    "electrolyte_type",
-    "electrolyte_volume",
-    "active_electrode_type",
-    "counter_electrode_type",
-    "reference_electrode_type",
-    "active_electrode_current_collector",
-    "reference_electrode_current_collector",
-    # -- new
-    "time_zone",
-    "cell_type",
-]
-
-# Attributes that should be copied when duplicating cellpy objects:
-
-# current attributes for the CellpyCell objects
-ATTRS_CELLPYDATA = [
-    "auto_dirs",
-    "capacity_modifiers",
-    "cellpy_datadir",
-    "ensure_step_table",
-    "file_names",
-    "filestatuschecker",
-    "force_all",
-    "force_step_table_creation",
-    "forced_errors",
-    "limit_loaded_cycles",
-    "minimum_selection",
-    "session_name",
-    "profile",
-    "raw_datadir",
-    "raw_limits",
-    "select_minimal",
-    "selected_cell_number",
-    "selected_scans",
-    "sep",
-    "status_datasets",
-    "summary_exists",
-    "table_names",
-    "tester",
-]
-
-# current attributes used for the cellpy.Data objects
-ATTRS_DATASET = [
-    "cellpy_file_version",
-    "channel_index",
-    "creator",
-    "cycle_mode",
-    "file_errors",
-    "loaded_from",
-    "mass",
-    "material",
-    "cell_name",
-    "nom_cap",
-    "raw_data_files_length",
-    "raw_limits",
-    "raw_units",
-    "schedule_file_name",
-    "start_datetime",
-    "test_ID",
-    "tot_mass",
-    "time_zone",
-    "_raw_id",
-]
-
-ATTRS_DATASET_DEEP = ["raw_data_files"]
 
 
 def get_cellpy_units() -> CellpyUnits:

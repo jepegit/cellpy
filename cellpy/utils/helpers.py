@@ -11,8 +11,6 @@ from scipy import stats
 import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
-    ATTRS_CELLPYDATA,
-    ATTRS_DATASET,
     get_headers_journal,
     get_headers_summary,
     get_headers_step_table,
@@ -138,78 +136,6 @@ def make_new_cell():
     )
     new_cell = cellpy.cellreader.CellpyCell(initialize=True)
     return new_cell
-
-
-def split_experiment(cell, base_cycles=None):
-    """Split experiment (CellpyData object) into several sub-experiments.
-
-    Args:
-        cell (CellpyCell): original cell
-        base_cycles (int or list of ints): cycle(s) to do the split on.
-
-    Returns:
-        List of CellpyData objects
-    """
-    warnings.warn(
-        "split_experiment is deprecated, use CellpyCell.split_many instead",
-        DeprecationWarning,
-    )
-
-    if base_cycles is None:
-        all_cycles = cell.get_cycle_numbers()
-        base_cycles = int(np.median(all_cycles))
-
-    cells = list()
-    if not isinstance(base_cycles, (list, tuple)):
-        base_cycles = [base_cycles]
-
-    dataset = cell.data
-    steptable = dataset.steps
-    data = dataset.raw
-    summary = dataset.summary
-
-    for b_cycle in base_cycles:
-        steptable0, steptable = [
-            steptable[steptable.cycle < b_cycle],
-            steptable[steptable.cycle >= b_cycle],
-        ]
-        data0, data = [
-            data[data.cycle_index < b_cycle],
-            data[data.cycle_index >= b_cycle],
-        ]
-        summary0, summary = [
-            summary[summary.index < b_cycle],
-            summary[summary.index >= b_cycle],
-        ]
-
-        new_cell = CellpyCell.vacant()
-
-        new_cell.data.steps = steptable0
-
-        new_cell.data.raw = data0
-        new_cell.data.summary = summary0
-
-        old_cell = CellpyCell.vacant()
-        old_cell.data.steps = steptable
-
-        old_cell.data.raw = data
-        old_cell.data.summary = summary
-
-        for attr in ATTRS_DATASET:
-            value = getattr(cell.data, attr)
-            setattr(new_cell.data, attr, value)
-            setattr(old_cell.data, attr, value)
-
-        for attr in ATTRS_CELLPYDATA:
-            value = getattr(cell, attr)
-            setattr(new_cell, attr, value)
-            setattr(old_cell, attr, value)
-
-        cells.append(new_cell)
-
-    cells.append(old_cell)
-
-    return cells
 
 
 def add_normalized_cycle_index(summary, nom_cap, column_name=None):
