@@ -1,4 +1,4 @@
-.. image:: docs/figures/cellpy-icon-long.svg
+.. image:: https://img.shields.io/pypi/v/cellpy.svg
   :height: 100
   :alt: cellpy
 
