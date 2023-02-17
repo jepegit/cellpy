@@ -882,6 +882,7 @@ class CellpyCell:
                     similar[name] = True
         return similar
 
+    # TODO-222: make sure area is available (cell_data.data.meta_common.active_electrode_area)
     def loadcell(
         self,
         raw_files,
@@ -2672,6 +2673,7 @@ class CellpyCell:
         logging.debug("created u-steps")
         return un
 
+    # TODO-222: make sure area is available if needed (cell_data.data.meta_common.active_electrode_area)
     def make_step_table(
         self,
         step_specifications=None,
@@ -4928,6 +4930,7 @@ class CellpyCell:
         # not implemented yet
 
     # ----------making-summary------------------------------------------------------
+    # TODO-222: make sure area is available (cell_data.data.meta_common.active_electrode_area)
     def make_summary(
         self,
         # find_ocv=False,

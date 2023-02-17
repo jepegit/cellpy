@@ -285,6 +285,7 @@ class CyclingExperiment(BaseExperiment):
             else:
                 logging.info(f"Processing {indx}")
 
+            # TODO-222: make sure area is available (cell_data.data.meta_common.active_electrode_area)
             cell_data = cellreader.CellpyCell()
 
             logging.info("loading cell")
