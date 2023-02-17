@@ -1,4 +1,4 @@
-.. image:: https://github.com/jepegit/cellpy/tree/master/docs/figures/cellpy-icon-long.svg
+.. image:: docs/figures/cellpy-icon-long.svg
   :height: 100
   :alt: cellpy
 
