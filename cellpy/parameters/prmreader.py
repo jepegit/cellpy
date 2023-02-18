@@ -280,7 +280,7 @@ def info():
                 print(f"prms.{key}.{subkey} = ", f"{current_object[subkey]}")
             print()
 
-        elif isinstance(current_object, prms.CellPyConfig):
+        elif isinstance(current_object, (prms.CellPyConfig, prms.CellPyDataConfig)):
             attributes = {
                 k: v for k, v in vars(current_object).items() if not k.startswith("_")
             }

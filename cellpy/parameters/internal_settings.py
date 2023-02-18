@@ -66,8 +66,6 @@ class CellpyMeta:
 
 @dataclass
 class CellpyMetaCommon(CellpyMeta):
-    # TODO: #222
-
     # about test
     cell_name: Optional[str] = None  # used as property
     start_datetime: Optional[str] = None
@@ -134,7 +132,6 @@ class CellpyMetaCommon(CellpyMeta):
 
 @dataclass
 class CellpyMetaIndividualTest(CellpyMeta):
-    # TODO: #222
     # ---------------- test dependent -------------------------------
     channel_index: Optional[prms.CellPyDataConfig] = None
     creator: Optional[str] = None

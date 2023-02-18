@@ -3379,7 +3379,6 @@ class CellpyCell:
         extension="h5",
         ensure_step_table=None,
     ):
-        # TODO: #222
         """Save the data structure to cellpy-format.
 
         Args:
@@ -3455,7 +3454,6 @@ class CellpyCell:
 
         logging.debug(f"trying to save to file: {outfile_all}")
         if cellpy_file_format == "hdf5":
-            # TODO: #222 move this to its own method
             # --- saving to hdf5 -----------------------------------
             root = prms._cellpyfile_root
             raw_dir = prms._cellpyfile_raw
@@ -4943,7 +4941,6 @@ class CellpyCell:
         # from_cycle=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
-
         # TODO: @jepe - include option for omitting steps
         # TODO: @jepe  - make it is possible to update only new data by implementing
         #  from_cycle (only calculate summary from a given cycle number).
