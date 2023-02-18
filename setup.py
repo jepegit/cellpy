@@ -56,7 +56,7 @@ requirements = [
 test_requirements = [
     "scipy",
     "numpy>=1.16.4",
-    "pandas",
+    "pandas>=1.5.3",
     "python-box",
     "setuptools",
     "ruamel.yaml",
