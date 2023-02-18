@@ -6,6 +6,13 @@ releases.
 
 ## Unspecified
 
+### Need to use API token for PyPI
+First, generate an API token for your account or project at https://pypi.org/manage/account/token/
+
+Then, use this token when publishing instead of your username and password.
+
+See https://pypi.org/help/#apitoken for help using API tokens to publish.
+
 ### CI - Appveyor vs GitHub actions
 - 2022-07-30 Tried to use GitHub actions for windows tests - failed most likely due to missing AccessDatabaseEngine.
 - 2022-07-30 Changed from pip to conda install (dev_environment.yml) in Appveyor - fixed failed run!
