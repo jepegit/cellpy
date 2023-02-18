@@ -28,6 +28,6 @@ openpyxl
 matplotlib>=1.5.3
 lmfit
 scipy
-pandas>=1.5.3
+pandas>=1.5
 tables
 PyGithub>=1.43
