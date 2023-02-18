@@ -285,7 +285,9 @@ class CyclingExperiment(BaseExperiment):
             else:
                 logging.info(f"Processing {indx}")
 
-            cell_data = cellreader.CellpyCell()  # auto-initialization not performed (i.e. the Data object is not made)
+            cell_data = (
+                cellreader.CellpyCell()
+            )  # auto-initialization not performed (i.e. the Data object is not made)
 
             logging.info("loading cell")
             if not force_cellpy:

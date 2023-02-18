@@ -1258,7 +1258,6 @@ class CellpyCell:
                 file_name, pre_processor_hook=pre_processor_hook, **kwargs
             )  # list of tests
 
-
             if new_data is None:
                 raise IOError(
                     f"Could not read {file_name}. Loader returned None. Aborting."
