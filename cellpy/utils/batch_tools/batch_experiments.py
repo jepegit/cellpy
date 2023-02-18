@@ -297,6 +297,13 @@ class CyclingExperiment(BaseExperiment):
                 logging.debug("not forcing to load cellpy-file instead of raw file.")
 
                 try:
+                    # unpacking optional kwargs from journal-row
+                    optional_kwargs_to_loadcell = {}
+                    if hdr_journal.loading in row:
+                        optional_kwargs_to_loadcell["loading"] = row[hdr_journal.loading]
+                    if hdr_journal.area in row:
+                        optional_kwargs_to_loadcell["area"] = row[hdr_journal.area]
+
                     # TODO: replace 'loadcell' with its individual parts instead - this
                     #   will make refactoring much much easier
                     cell_data.loadcell(
@@ -310,6 +317,7 @@ class CyclingExperiment(BaseExperiment):
                         cell_type=row[hdr_journal.cell_type],
                         instrument=row[hdr_journal.instrument],
                         selector=selector,
+                        **optional_kwargs_to_loadcell,
                         **cell_spec,
                     )
 

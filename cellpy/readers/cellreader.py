@@ -893,6 +893,8 @@ class CellpyCell:
         force_raw=False,
         use_cellpy_stat_file=None,
         cell_type=None,
+        loading=None,
+        area=None,
         selector=None,
         **kwargs,
     ):
@@ -911,6 +913,8 @@ class CellpyCell:
                 from raw
             cell_type (str): set the data type (e.g. "anode"). If not, the default from
                the config file is used.
+            loading (float): loading in units [mass] / [area], used to calculate area if area not given
+            area (float): area of active electrode
             selector (dict): passed to load.
             **kwargs: passed to from_raw
 
@@ -948,38 +952,54 @@ class CellpyCell:
             similar = self.check_file_ids(raw_files, cellpy_file)
         logging.debug("checked if the files were similar")
 
-        if not similar:
-            logging.debug("cellpy file(s) needs updating - loading raw")
-            logging.info("Loading raw-file")
-            logging.debug(raw_files)
-            self.from_raw(raw_files, **kwargs)
-            if cell_type is not None:
-                self.cycle_mode = cell_type
-                logging.debug(f"setting cycle mode: {cell_type}")
-            logging.debug("loaded files")
-            # Check if the run was loaded ([] if empty)
-            if self.status_datasets:
-                if mass:
-                    self.set_mass(mass)
-                if summary_on_raw:
-                    nom_cap = kwargs.pop("nom_cap", None)
-                    if nom_cap is not None:
-                        self.set_nom_cap(nom_cap)
-                    self.make_summary(
-                        find_ir=summary_ir,
-                        find_end_voltage=summary_end_v,
-                        use_cellpy_stat_file=use_cellpy_stat_file,
-                    )
-            else:
-                logging.warning("Empty run!")
-
-        else:
+        if similar:
             self.load(cellpy_file, selector=selector)
             nom_cap = kwargs.pop("nom_cap", None)
             if nom_cap is not None:
                 self.set_nom_cap(nom_cap)
             if mass:
                 self.set_mass(mass)
+            return self
+
+        logging.debug("cellpy file(s) needs updating - loading raw")
+        logging.info("Loading raw-file")
+        logging.debug(raw_files)
+
+        self.from_raw(raw_files, **kwargs)
+        logging.debug("loaded files")
+
+        if not self.status_datasets:
+            logging.warning("Empty run!")
+            return self
+
+        if cell_type is not None:
+            self.cycle_mode = cell_type
+            logging.debug(f"setting cycle mode: {cell_type}")
+
+        if mass:
+            self.set_mass(mass)
+
+        nom_cap = kwargs.pop("nom_cap", None)
+        loading = kwargs.pop("loading", None)
+        area = kwargs.pop("area", None)
+
+        if nom_cap is not None:
+            self.set_nom_cap(nom_cap)
+
+        if area is not None:
+            self.data.meta_common.active_electrode_area = area
+        elif loading:
+            area = self.data.mass / loading
+            self.data.meta_common.active_electrode_area = area
+        else:
+            logging.debug("using default area")
+
+        if summary_on_raw:
+            self.make_summary(
+                find_ir=summary_ir,
+                find_end_voltage=summary_end_v,
+                use_cellpy_stat_file=use_cellpy_stat_file,
+            )
 
         return self
 

@@ -517,6 +517,7 @@ class HeadersJournal(BaseHeaders):
     mass: str = "mass"
     total_mass: str = "total_mass"
     loading: str = "loading"
+    area: str = "area"
     nom_cap: str = "nom_cap"
     experiment: str = "experiment"
     fixed: str = "fixed"
