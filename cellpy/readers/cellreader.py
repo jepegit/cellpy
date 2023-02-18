@@ -882,7 +882,6 @@ class CellpyCell:
                     similar[name] = True
         return similar
 
-    # TODO-222: make sure area is available (cell_data.data.meta_common.active_electrode_area)
     def loadcell(
         self,
         raw_files,
@@ -1258,6 +1257,7 @@ class CellpyCell:
             new_data = raw_file_loader(
                 file_name, pre_processor_hook=pre_processor_hook, **kwargs
             )  # list of tests
+
 
             if new_data is None:
                 raise IOError(
@@ -2673,7 +2673,6 @@ class CellpyCell:
         logging.debug("created u-steps")
         return un
 
-    # TODO-222: make sure area is available if needed (cell_data.data.meta_common.active_electrode_area)
     def make_step_table(
         self,
         step_specifications=None,
@@ -3381,7 +3380,6 @@ class CellpyCell:
         extension="h5",
         ensure_step_table=None,
     ):
-        # TODO: #222
         """Save the data structure to cellpy-format.
 
         Args:
@@ -3457,7 +3455,6 @@ class CellpyCell:
 
         logging.debug(f"trying to save to file: {outfile_all}")
         if cellpy_file_format == "hdf5":
-            # TODO: #222 move this to its own method
             # --- saving to hdf5 -----------------------------------
             root = prms._cellpyfile_root
             raw_dir = prms._cellpyfile_raw
@@ -4930,7 +4927,6 @@ class CellpyCell:
         # not implemented yet
 
     # ----------making-summary------------------------------------------------------
-    # TODO-222: make sure area is available (cell_data.data.meta_common.active_electrode_area)
     def make_summary(
         self,
         # find_ocv=False,
@@ -4946,7 +4942,6 @@ class CellpyCell:
         # from_cycle=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
-
         # TODO: @jepe - include option for omitting steps
         # TODO: @jepe  - make it is possible to update only new data by implementing
         #  from_cycle (only calculate summary from a given cycle number).
