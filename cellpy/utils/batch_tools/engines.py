@@ -123,7 +123,7 @@ def _query(reader_method, cell_ids, column_name=None):
     return result
 
 
-# TODO-222: load area
+# TODO-246: load area
 def simple_db_engine(
     reader=None,
     cell_ids=None,
