@@ -541,6 +541,7 @@ def autobuild(c, _bump=None, _clean=True, upload=True):
         print(" To upload to pypi: 'python -m twine upload dist/*'")
 
 
+@task
 def build(
     c, _clean=True, dist=True, docs=False, upload=False, _serve=False, browser=False
 ):
@@ -564,7 +565,6 @@ def build(
             username = os.environ["PYPI_USER"]
             password = os.environ["PYPI_PWD"]
             print(f"username: {username}")
-            c.run(f"python -m twine upload dist/* -u {username} -p {password}")
         except Exception:
             print("Could not extract user and password from environment")
             print("For it to work you need to export")
@@ -572,6 +572,9 @@ def build(
             print("e.g.  export PYPI_USER=jepe")
             print("Running upload (insert username and password when prompted)")
             c.run("python -m twine upload dist/*")
+        else:
+            c.run(f"python -m twine upload dist/* -u {username} -p {password}")
+
 
     else:
         print(" To upload to pypi: 'python -m twine upload dist/*'")
