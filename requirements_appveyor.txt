@@ -16,6 +16,6 @@ pytest-benchmark
 pytest-timeout
 cookiecutter
 tqdm
-sqlalchemy>=2.0
+sqlalchemy
 sqlalchemy-access
 pint

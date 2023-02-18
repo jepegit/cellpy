@@ -17,7 +17,7 @@ invoke
 requests
 cookiecutter
 tqdm
-sqlalchemy>=2.0
+sqlalchemy
 sqlalchemy-access
 build
 black

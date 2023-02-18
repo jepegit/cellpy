@@ -48,7 +48,7 @@ requirements = [
     "PyGithub",
     "tqdm",
     'pyodbc;platform_system=="windows"',
-    'sqlalchemy>=2.0;platform_system=="windows"',
+    'sqlalchemy;platform_system=="windows"',
     'sqlalchemy-access;platform_system=="windows"',
     # 'tables', # not available by pip
 ]

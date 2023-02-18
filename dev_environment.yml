@@ -38,7 +38,7 @@ dependencies:
   - ipykernel
   - ipywidgets
   - python-box
-  - sqlalchemy>=2.0
+  - sqlalchemy
   - pint>=0.20.1
   - pip:
     - sqlalchemy-access

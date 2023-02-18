@@ -15,7 +15,7 @@ python-box
 PyGithub>=1.43.0
 tqdm~=4.44.1
 cookiecutter
-sqlalchemy>=2.0
+sqlalchemy
 sqlalchemy-access
 pint
 
