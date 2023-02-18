@@ -11,7 +11,7 @@ dependencies:
   - cryptography
   - click
   - scipy
-  - pandas >=1.5
+  - pandas >=1.5.0
   - pytables >=3.5.1
   - setuptools
   - ruamel.yaml
