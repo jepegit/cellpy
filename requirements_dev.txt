@@ -17,7 +17,7 @@ invoke
 requests
 cookiecutter
 tqdm
-sqlalchemy
+sqlalchemy>=2.0
 sqlalchemy-access
 build
 black
@@ -28,6 +28,6 @@ openpyxl
 matplotlib>=1.5.3
 lmfit
 scipy
-pandas
+pandas>=1.5.3
 tables
 PyGithub>=1.43

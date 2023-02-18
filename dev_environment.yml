@@ -12,7 +12,7 @@ dependencies:
   - cryptography
   - click
   - scipy
-  - pandas
+  - pandas>=1.5.3
   - pytables >=3.5.1
   - setuptools
   - ruamel.yaml
@@ -38,7 +38,7 @@ dependencies:
   - ipykernel
   - ipywidgets
   - python-box
-  - sqlalchemy
+  - sqlalchemy>=2.0
   - pint>=0.20.1
   - pip:
     - sqlalchemy-access

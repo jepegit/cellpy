@@ -5,7 +5,7 @@ cryptography>=1.5.2
 click>=6.6
 lmfit>=0.9.7
 setuptools>=35.0.1
-pandas>=1.0
+pandas>=1.5.3
 ruamel.yaml
 pyodbc>=4.0.16
 python-box
@@ -16,6 +16,6 @@ pytest-benchmark
 pytest-timeout
 cookiecutter
 tqdm
-sqlalchemy
+sqlalchemy>=2.0
 sqlalchemy-access
 pint

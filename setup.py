@@ -38,7 +38,7 @@ included_packages = find_packages(
 requirements = [
     "scipy",
     "numpy>=1.16.4",
-    "pandas",
+    "pandas>=1.5.3",
     "python-box",
     "setuptools",
     "ruamel.yaml",
@@ -48,31 +48,18 @@ requirements = [
     "PyGithub",
     "tqdm",
     'pyodbc;platform_system=="windows"',
-    'sqlalchemy;platform_system=="windows"',
+    'sqlalchemy>=2.0;platform_system=="windows"',
     'sqlalchemy-access;platform_system=="windows"',
     # 'tables', # not available by pip
 ]
 
 test_requirements = [
-    "scipy",
-    "numpy>=1.16.4",
-    "pandas",
-    "python-box",
-    "setuptools",
-    "ruamel.yaml",
-    "matplotlib",
     "lmfit",
-    "pyodbc",
-    "openpyxl",
-    "click",
-    "PyGithub",
-    # 'pytables', # not available by pip
     "pytest",
-    "tqdm",
 ]
 
 extra_req_batch = ["ipython", "jupyter"]
-extra_req_fit = ["lmfit", "matplotlib"]
+extra_req_fit = ["lmfit"]
 extra_req_all = extra_req_batch + extra_req_fit
 
 extra_requirements = {
@@ -110,13 +97,14 @@ setup(
     zip_safe=False,
     keywords="cellpy",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
     test_suite="tests",
     tests_require=test_requirements,
