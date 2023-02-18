@@ -108,3 +108,4 @@ test.nda
 test.csv
 dev_utils/batch_notebooks/out.png
 settings.json
+/tmp/
