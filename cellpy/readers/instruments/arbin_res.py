@@ -399,17 +399,14 @@ class DataLoader(BaseLoader):
         constr = self._get_res_connector(temp_filename)
         self.logger.debug(f"constr str: {constr}")
         if use_ado:
-            conn = dbloader.connect(constr)
+            raise DeprecationWarning("use_ado not supported anymore")
+            return None
         else:
-            if USE_SQLALCHEMY_ACCESS_ENGINE:
-                connection_url = sa.engine.URL.create(
-                    "access+pyodbc", query={"odbc_connect": constr}
-                )
-                engine = sa.create_engine(connection_url)
-                conn = engine
-            else:
-                conn = dbloader.connect(constr, autocommit=True)
-        return conn
+            connection_url = sa.engine.URL.create(
+                "access+pyodbc", query={"odbc_connect": constr}
+            )
+            engine = sa.create_engine(connection_url)
+        return engine
 
     def _clean_up_loadres(self, cur, conn, filename):
         if cur is not None:
@@ -546,7 +543,8 @@ class DataLoader(BaseLoader):
         # --------- read global-data ------------------------------------
         self.logger.debug("reading global data table")
         sql = "select * from %s" % table_name_global
-        global_data_df = pd.read_sql_query(sql, conn)
+
+        global_data_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
         # col_names = list(global_data_df.columns.values)
         self.logger.debug("sql statement: %s" % sql)
 
@@ -594,7 +592,7 @@ class DataLoader(BaseLoader):
             sql_4 = "AND %s=%i " % (cycle_txt, cycle_number)
             sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
             self.logger.debug("sql statement: %s" % sql)
-            normal_df = pd.read_sql_query(sql, conn)
+            normal_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
             t2 = time.time()
             dt = t2 - t1
             self.logger.debug("time: %f" % dt)
@@ -658,7 +656,7 @@ class DataLoader(BaseLoader):
         # --------- read global-data ------------------------------------
         self.logger.debug("reading global data table")
         sql = "select * from %s" % table_name_global
-        global_data_df = pd.read_sql_query(sql, conn)
+        global_data_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
         # col_names = list(global_data_df.columns.values)
         self.logger.debug("sql statement: %s" % sql)
 
@@ -703,7 +701,7 @@ class DataLoader(BaseLoader):
             sql_4 = "AND %s=%i " % (cycle_txt, cycle_number)
             sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
             self.logger.debug("sql statement: %s" % sql)
-            normal_df = pd.read_sql_query(sql, conn)
+            normal_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
             t2 = time.time()
             dt = t2 - t1
             self.logger.debug("time: %f" % dt)
@@ -759,11 +757,13 @@ class DataLoader(BaseLoader):
         raise NotImplemented
 
     def _query_table(self, table_name, conn, sql=None):
+        from sqlalchemy import create_engine, text
+
         self.logger.debug(f"reading {table_name}")
         if sql is None:
             sql = f"select * from {table_name}"
         self.logger.debug(f"sql statement: {sql}")
-        df = pd.read_sql_query(sql, conn)
+        df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
         return df
 
     def _make_name_from_frame(self, df, aux_index, data_type, dx_dt=False):
@@ -840,7 +840,7 @@ class DataLoader(BaseLoader):
             data._internal_test_number,
             self.arbin_headers_normal.data_point_txt,
         )
-        summary_df = pd.read_sql_query(sql, conn)
+        summary_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
 
         if summary_df.empty and prms.Reader.use_cellpy_stat_file:
             txt = "\nCould not find any summary (stats-file)!"
@@ -1384,15 +1384,14 @@ class DataLoader(BaseLoader):
         if not prms.Instruments.Arbin.chunk_size:
             self.logger.debug("no chunk-size given")
             # memory here
-            normal_df = pd.read_sql_query(sql, conn)
+            normal_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
             # memory here
             length_of_test = normal_df.shape[0]
         else:
             self.logger.debug(f"chunk-size: {prms.Instruments.Arbin.chunk_size}")
             self.logger.debug("creating a pd.read_sql_query generator")
-            normal_df_reader = pd.read_sql_query(
-                sql, conn, chunksize=prms.Instruments.Arbin.chunk_size
-            )
+
+            normal_df_reader = pd.read_sql_query(sql=sa.text(sql), con=conn.connect(),  chunksize=prms.Instruments.Arbin.chunk_size)
             normal_df = None
             chunk_number = 0
             self.logger.debug("created pandas sql reader")
