@@ -130,7 +130,7 @@ class CyclingExperiment(BaseExperiment):
             for p in individual_specs:
                 p, a = p.split(EQUAL_SIGN)
 
-        logging.debug(f"getting cell_spec from journal pages ({indx}: {row})")
+        logging.debug(f"getting cell_spec from journal pages ({indx})")
         try:
             cell_spec = row[hdr_journal.argument]
             logging.debug(cell_spec)
@@ -138,7 +138,6 @@ class CyclingExperiment(BaseExperiment):
                 raise TypeError("the cell spec argument is not a dictionary")
         except Exception as e:
             logging.warning(f"could not get cell spec for {indx}")
-            logging.warning(f"row: {row}")
             logging.warning(f"error message: {e}")
             return {}
 
@@ -188,6 +187,12 @@ class CyclingExperiment(BaseExperiment):
                     selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
                     loading from raw is not necessary (or turned off).
 
+                Debugging:
+                    debug (Bool): set to True if you want to run in debug mode (should never be used by non-developers).
+
+        Debug-mode:
+                 - runs only for the first item in your journal
+
         Examples:
             >>> # Don't perform recalculation of cycle numbers etc. when merging
             >>> # All cells:
@@ -199,6 +204,8 @@ class CyclingExperiment(BaseExperiment):
         """
 
         # TODO: implement experiment.last_cycle
+
+        debugging = kwargs.pop("debug", False)
 
         # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
@@ -250,6 +257,9 @@ class CyclingExperiment(BaseExperiment):
         errors = []
 
         pbar = tqdm(list(pages.iterrows()), file=sys.stdout, leave=False)
+
+        if debugging:
+            pbar = tqdm(list(pages.iterrows())[0:1], file=sys.stdout, leave=False)
 
         # --- iterating ---
         for indx, row in pbar:
@@ -331,7 +341,7 @@ class CyclingExperiment(BaseExperiment):
                     continue
 
             else:
-                logging.info("forcing")
+                logging.info("forcing loading cellpy-file")
                 h_txt += " (f)"
                 pbar.set_postfix_str(s=h_txt, refresh=True)
                 try:

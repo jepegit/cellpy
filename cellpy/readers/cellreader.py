@@ -887,7 +887,8 @@ class CellpyCell:
         raw_files,
         cellpy_file=None,
         mass=None,
-        summary_on_raw=False,
+        summary_on_raw=True,
+        summary_on_cellpy_file=True,
         summary_ir=True,
         summary_end_v=True,
         force_raw=False,
@@ -895,6 +896,7 @@ class CellpyCell:
         cell_type=None,
         loading=None,
         area=None,
+        estimate_area=True,
         selector=None,
         **kwargs,
     ):
@@ -905,7 +907,8 @@ class CellpyCell:
             raw_files (list): name of res-files
             cellpy_file (path): name of cellpy-file
             mass (float): mass of electrode or active material
-            summary_on_raw (bool): use raw-file for summary
+            summary_on_raw (bool): calculate summary if loading from raw
+            summary_on_cellpy_file (bool): calculate summary if loading from cellpy-file.
             summary_ir (bool): summarize ir
             summary_end_v (bool): summarize end voltage
             force_raw (bool): only use raw-files
@@ -915,6 +918,7 @@ class CellpyCell:
                the config file is used.
             loading (float): loading in units [mass] / [area], used to calculate area if area not given
             area (float): area of active electrode
+            estimate_area (bool): calculate area from loading if given (defaults to True).
             selector (dict): passed to load.
             **kwargs: passed to from_raw
 
@@ -943,63 +947,75 @@ class CellpyCell:
         # TODO @jepe Make setting or prm so that it is possible to update only new data
         # TODO @jepe Allow passing handle to progress-bar or update a global progressbar
 
-        logging.info("Started cellpy.cellreader.loadcell")
+        logging.debug("Started cellpy.cellreader.loadcell ")
+
         if cellpy_file is None:
             similar = False
         elif force_raw:
             similar = False
         else:
             similar = self.check_file_ids(raw_files, cellpy_file)
-        logging.debug("checked if the files were similar")
+            logging.debug(f"checked if the files were similar")
+        logging.debug(f"similar: {similar}")
 
         if similar:
+            logging.debug(f"loading cellpy-file: {cellpy_file}")
             self.load(cellpy_file, selector=selector)
-            nom_cap = kwargs.pop("nom_cap", None)
-            if nom_cap is not None:
-                self.set_nom_cap(nom_cap)
-            if mass:
-                self.set_mass(mass)
-            return self
 
-        logging.debug("cellpy file(s) needs updating - loading raw")
-        logging.info("Loading raw-file")
-        logging.debug(raw_files)
+        else:
+            logging.debug("cellpy file(s) needs updating - loading raw")
+            logging.info("Loading raw-file")
+            logging.debug(raw_files)
 
-        self.from_raw(raw_files, **kwargs)
+            self.from_raw(raw_files, **kwargs)
+
         logging.debug("loaded files")
 
         if not self.status_datasets:
             logging.warning("Empty run!")
             return self
 
+        logging.debug("setting cell_type")
         if cell_type is not None:
             self.cycle_mode = cell_type
             logging.debug(f"setting cycle mode: {cell_type}")
 
-        if mass:
+        logging.debug("setting mass")
+        if mass is not None:
             self.set_mass(mass)
 
+        logging.debug("setting nom_cap")
         nom_cap = kwargs.pop("nom_cap", None)
-        loading = kwargs.pop("loading", None)
-        area = kwargs.pop("area", None)
-
         if nom_cap is not None:
             self.set_nom_cap(nom_cap)
 
+        logging.debug("-------------AREA-CALC----------------")
         if area is not None:
+            logging.debug(f"got area: {area}")
             self.data.meta_common.active_electrode_area = area
-        elif loading:
+        elif loading and estimate_area:
+            logging.debug(f"got loading: {logging}")
             area = self.data.mass / loading
+            logging.debug(f"calculating area from loading ({loading}) and mass ({self.data.mass}): {area}")
             self.data.meta_common.active_electrode_area = area
         else:
             logging.debug("using default area")
 
-        if summary_on_raw:
-            self.make_summary(
-                find_ir=summary_ir,
-                find_end_voltage=summary_end_v,
-                use_cellpy_stat_file=use_cellpy_stat_file,
-            )
+        if similar:
+            if summary_on_cellpy_file:
+                self.make_summary(
+                    find_ir=summary_ir,
+                    find_end_voltage=summary_end_v,
+                    use_cellpy_stat_file=use_cellpy_stat_file,
+                )
+
+        else:
+            if summary_on_raw:
+                self.make_summary(
+                    find_ir=summary_ir,
+                    find_end_voltage=summary_end_v,
+                    use_cellpy_stat_file=use_cellpy_stat_file,
+                )
 
         return self
 
@@ -5090,7 +5106,6 @@ class CellpyCell:
             logging.debug("not using cellpy statfile")
 
         if nom_cap is None:
-            logging.debug(f"No nom_cap given")
             nom_cap = cell.nom_cap
 
         logging.info(f"Using the following nominal capacity: {nom_cap}")
