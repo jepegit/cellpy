@@ -16,8 +16,8 @@ logging.raiseExceptions = False
 
 
 def setup_logging(
-    default_json_path=None,
     default_level=None,
+    default_json_path=None,
     env_key="LOG_CFG",
     custom_log_dir=None,
     reset_big_log=False,
@@ -36,6 +36,8 @@ def setup_logging(
         testing (bool): set as True if testing, and you don't want to create any .log files
 
     """
+    if default_level is None:
+        default_level = "CRITICAL"
 
     if not default_json_path:
         default_json_path = os.path.join(
@@ -45,9 +47,6 @@ def setup_logging(
     value = os.getenv(env_key, None)
     if value:
         path = value
-
-    if default_level is None:
-        default_level = "CRITICAL"
 
     # loading logging configs
     if os.path.exists(path):
