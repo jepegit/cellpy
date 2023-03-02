@@ -430,6 +430,9 @@ def plot_concatenated(
             [*curve_dict.values()], vdims=[*curve_dict.keys()]
         ).opts(**overlay_opts, **kwargs)
     else:
+        overlay_opts["title"] = ""
+        logging.info(f"overlay_opts: {overlay_opts}")
+        logging.info(f"additional_kwargs_overlay_opts: {kwargs}")
         final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
             **overlay_opts, **kwargs
         )

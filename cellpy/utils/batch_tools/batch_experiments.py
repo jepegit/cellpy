@@ -310,7 +310,9 @@ class CyclingExperiment(BaseExperiment):
                     # unpacking optional kwargs from journal-row
                     optional_kwargs_to_loadcell = {}
                     if hdr_journal.loading in row:
-                        optional_kwargs_to_loadcell["loading"] = row[hdr_journal.loading]
+                        optional_kwargs_to_loadcell["loading"] = row[
+                            hdr_journal.loading
+                        ]
                     if hdr_journal.area in row:
                         optional_kwargs_to_loadcell["area"] = row[hdr_journal.area]
 

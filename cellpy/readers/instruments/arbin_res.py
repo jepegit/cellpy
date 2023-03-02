@@ -1391,7 +1391,11 @@ class DataLoader(BaseLoader):
             self.logger.debug(f"chunk-size: {prms.Instruments.Arbin.chunk_size}")
             self.logger.debug("creating a pd.read_sql_query generator")
 
-            normal_df_reader = pd.read_sql_query(sql=sa.text(sql), con=conn.connect(),  chunksize=prms.Instruments.Arbin.chunk_size)
+            normal_df_reader = pd.read_sql_query(
+                sql=sa.text(sql),
+                con=conn.connect(),
+                chunksize=prms.Instruments.Arbin.chunk_size,
+            )
             normal_df = None
             chunk_number = 0
             self.logger.debug("created pandas sql reader")

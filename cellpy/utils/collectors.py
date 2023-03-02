@@ -5,6 +5,7 @@ from pprint import pprint
 from pathlib import Path
 from typing import Any
 import inspect
+import logging
 
 import pandas as pd
 
@@ -98,6 +99,8 @@ class BatchCollector:
         name=None,
         nick=None,
         autorun=True,
+        elevated_data_collector_arguments=None,
+        elevated_plotter_arguments=None,
         data_collector_arguments: dict = None,
         plotter_arguments: dict = None,
         **kwargs,
@@ -107,6 +110,8 @@ class BatchCollector:
             b (cellpy.utils.Batch): the batch object.
             name (str or bool): name of the collector used for auto-generating filenames etc.
             autorun (bool): run collector and plotter immediately if True.
+            elevated_data_collector_arguments (dict): arguments picked up by the child class' initializer.
+            elevated_plotter_arguments (dict): arguments picked up by the child class' initializer.
             data_collector_arguments (dict): keyword arguments sent to the data collector.
             plotter_arguments (dict): keyword arguments sent to the plotter.
             update_name (bool): update the name (using automatic name generation) based on new settings.
@@ -120,6 +125,10 @@ class BatchCollector:
         self._data_collector_arguments = self._default_data_collector_arguments.copy()
         self._plotter_arguments = self._default_plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)
+        # Elevated arguments have preference above the data_collector and plotter argument dicts:
+        self._parse_elevated_arguments(
+            elevated_data_collector_arguments, elevated_plotter_arguments
+        )
         self._set_attributes(**kwargs)
 
         if nick is None:
@@ -224,11 +233,33 @@ class BatchCollector:
         name = "_".join(names)
         return name
 
+    def _parse_elevated_arguments(
+        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
+    ):
+        logging.info(f"Updating elevated arguments")
+        elevated_plotter_arguments = {}
+        if data_collector_arguments is not None:
+            for k, v in plotter_arguments.items():
+                if v is not None:
+                    elevated_plotter_arguments[k] = v
+
+        if plotter_arguments is not None:
+            elevated_data_collector_arguments = {}
+            for k, v in data_collector_arguments.items():
+                if v is not None:
+                    elevated_data_collector_arguments[k] = v
+
+        self._update_arguments(
+            elevated_data_collector_arguments, elevated_plotter_arguments
+        )
+
     def _update_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
     ):
         self.data_collector_arguments = data_collector_arguments
         self.plotter_arguments = plotter_arguments
+        logging.info(f"**data_collector_arguments: {self.data_collector_arguments}")
+        logging.info(f"**plotter_arguments: {self.plotter_arguments}")
 
     def reset_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
@@ -313,6 +344,7 @@ class BatchCollector:
 
         cleaned_hv_opts = []
         for o in hv_opts:
+            logging.debug(f"Setting prm: {o}")
             o = self._dynamic_update_template_parameter(o, extension, *args, **kwargs)
             # ensure all options are registered with correct backend:
             o.kwargs["backend"] = extension
@@ -768,16 +800,109 @@ class BatchSummaryCollector(BatchCollector):
 
     _bokeh_template = [
         hv.opts.Curve(fontsize={"title": "medium"}, width=800, backend="bokeh"),
-        hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
+        # hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
     ]
 
-    def __init__(self, b, *args, **kwargs):
+    def __init__(
+        self,
+        b,
+        max_cycle: int = None,
+        rate=None,
+        on=None,
+        columns=None,
+        column_names=None,
+        normalize_capacity_on=None,
+        scale_by=None,
+        nom_cap=None,
+        normalize_cycles=None,
+        group_it=None,
+        rate_std=None,
+        rate_column=None,
+        inverse=None,
+        inverted: bool = None,
+        key_index_bounds=None,
+        points: bool = None,
+        line: bool = None,
+        width: int = None,
+        height: int = None,
+        legend_title: str = None,
+        marker_size: int = None,
+        cmap=None,
+        spread: bool = None,
+        *args,
+        **kwargs,
+    ):
+        """Collects and shows summaries.
+
+        Elevated data collector args:
+            max_cycle (int): drop all cycles above this value.
+            rate (float): filter on rate (C-rate)
+            on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            columns (list): selected column(s) (using cellpy attribute name)
+                [defaults to "charge_capacity_gravimetric"]
+            column_names (list): selected column(s) (using exact column name)
+            normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the
+                normalization (typically the first few cycles after formation)
+            scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap",
+                or given value (defaults to one).
+            nom_cap (float): nominal capacity of the cell
+            normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
+            group_it (bool): if True, average pr group.
+            rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+            rate_column (str): name of the column containing the C-rates.
+            inverse (bool): select steps that do not have the given C-rate.
+            inverted (bool): select cycles that do not have the steps filtered by given C-rate.
+            key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
+                key_index_bound[0] to key_index_bound[1].
+
+        Elevated plotter args:
+            points (bool): plot points if True
+            line (bool): plot line if True
+            width: width of plot
+            height: height of plot
+            legend_title: title to put over the legend
+            marker_size: size of the markers used
+            cmap: color-map to use
+            spread (bool): plot error-bands instead of error-bars if True
+        """
+
+        elevated_data_collector_arguments = dict(
+            max_cycle=max_cycle,
+            rate=rate,
+            on=on,
+            columns=columns,
+            column_names=column_names,
+            normalize_capacity_on=normalize_capacity_on,
+            scale_by=scale_by,
+            nom_cap=nom_cap,
+            normalize_cycles=normalize_cycles,
+            group_it=group_it,
+            rate_std=rate_std,
+            rate_column=rate_column,
+            inverse=inverse,
+            inverted=inverted,
+            key_index_bounds=key_index_bounds,
+        )
+        elevated_plotter_arguments = {
+            "points": points,
+            "line": line,
+            "width": width,
+            "height": height,
+            "legend_title": legend_title,
+            "marker_size": marker_size,
+            "cmap": cmap,
+            "spread": spread,
+        }
+
         self._register_template(self._bokeh_template, extension="bokeh")
+
         super().__init__(
             b,
             plotter=plot_concatenated,
             data_collector=concatenate_summaries,
             collector_name="summary",
+            elevated_data_collector_arguments=elevated_data_collector_arguments,
+            elevated_plotter_arguments=elevated_plotter_arguments,
             *args,
             **kwargs,
         )
