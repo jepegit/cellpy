@@ -189,6 +189,7 @@ def find_column(columns, label=None, end="cycle_index"):
 
 def plot_concatenated(
     dataframe,
+    title="",
     x=None,
     y=None,
     err=None,
@@ -223,6 +224,7 @@ def plot_concatenated(
 
     Args:
         dataframe: the concatenated summary
+        title (str): title of the plot (defaults to empty)
         x: colum-name for the x variable (not implemented yet)
         y: colum-name for the y variable (not implemented yet)
         err: colum-name for the std variable (not implemented yet)
@@ -234,18 +236,18 @@ def plot_concatenated(
         hover (bool): add hover tool if True
         width: width of plot
         height: height of plot
-        journal: batch.journal object
+        journal: `batch.journal` object
         file_id_level: the level (multiindex-level) where the cell-names are.
         hdr_level:  the level (multiindex-level) where the parameter names are.
         axis: what axis to use when looking in the data-frame (row-based or col-based).
         mean_end: used for searching for y-column names
         std_end: used for searching for e-column names
         cycle_end: used for searching for x-column name
-        legend_title: title to put over the legends
+        legend_title: title to put over the legend
         marker_size: size of the markers used
         cmap: color-map to use
         spread (bool): plot error-bands instead of error-bars if True
-        extension (str): "matplotlib" or "bokeh". Note, this uses hv.extension) and will affect the
+        extension (str): "matplotlib" or "bokeh". Note, this uses `hv.extension`) and will affect the
             state of your notebook
         edges (bool): show all axes
         keys (dict): columns to plot (not working yet)
@@ -430,7 +432,7 @@ def plot_concatenated(
             [*curve_dict.values()], vdims=[*curve_dict.keys()]
         ).opts(**overlay_opts, **kwargs)
     else:
-        overlay_opts["title"] = ""
+        overlay_opts["title"] = title
         logging.info(f"overlay_opts: {overlay_opts}")
         logging.info(f"additional_kwargs_overlay_opts: {kwargs}")
         final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(

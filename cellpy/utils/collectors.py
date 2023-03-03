@@ -80,6 +80,8 @@ class BatchCollector:
     figure_directory: Path = Path("out")
     data_directory: Path = Path("data/processed/")
     renderer: Any = None
+    elevated_data_collector_arguments: dict = None
+    elevated_plotter_arguments: dict = None
 
     # defaults when resetting:
     _default_data_collector_arguments = {}
@@ -236,22 +238,28 @@ class BatchCollector:
     def _parse_elevated_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
     ):
-        logging.info(f"Updating elevated arguments")
-        elevated_plotter_arguments = {}
         if data_collector_arguments is not None:
-            for k, v in plotter_arguments.items():
-                if v is not None:
-                    elevated_plotter_arguments[k] = v
 
-        if plotter_arguments is not None:
+            logging.info(f"Updating elevated arguments")
             elevated_data_collector_arguments = {}
             for k, v in data_collector_arguments.items():
                 if v is not None:
                     elevated_data_collector_arguments[k] = v
+            self._update_arguments(
+                elevated_data_collector_arguments, None
+            )
 
-        self._update_arguments(
-            elevated_data_collector_arguments, elevated_plotter_arguments
-        )
+        if plotter_arguments is not None:
+
+            logging.info(f"Updating elevated arguments")
+            elevated_plotter_arguments = {}
+            for k, v in plotter_arguments.items():
+                if v is not None:
+                    elevated_plotter_arguments[k] = v
+
+            self._update_arguments(
+                None, elevated_plotter_arguments
+            )
 
     def _update_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
@@ -800,7 +808,7 @@ class BatchSummaryCollector(BatchCollector):
 
     _bokeh_template = [
         hv.opts.Curve(fontsize={"title": "medium"}, width=800, backend="bokeh"),
-        # hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
+        hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
     ]
 
     def __init__(
@@ -821,6 +829,8 @@ class BatchSummaryCollector(BatchCollector):
         inverse=None,
         inverted: bool = None,
         key_index_bounds=None,
+        extension: str = None,
+        title: str = None,
         points: bool = None,
         line: bool = None,
         width: int = None,
@@ -856,6 +866,7 @@ class BatchSummaryCollector(BatchCollector):
                 key_index_bound[0] to key_index_bound[1].
 
         Elevated plotter args:
+            extension (str): extension used (defaults to Bokeh)
             points (bool): plot points if True
             line (bool): plot line if True
             width: width of plot
@@ -883,7 +894,10 @@ class BatchSummaryCollector(BatchCollector):
             inverted=inverted,
             key_index_bounds=key_index_bounds,
         )
+
         elevated_plotter_arguments = {
+            "extension": extension,
+            "title": title,
             "points": points,
             "line": line,
             "width": width,
