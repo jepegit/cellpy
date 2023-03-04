@@ -80,12 +80,16 @@ class BatchCollector:
     figure_directory: Path = Path("out")
     data_directory: Path = Path("data/processed/")
     renderer: Any = None
+
+    # override default arguments:
     elevated_data_collector_arguments: dict = None
     elevated_plotter_arguments: dict = None
 
-    # defaults when resetting:
+    # defaults (and used also when resetting):
     _default_data_collector_arguments = {}
     _default_plotter_arguments = {}
+
+    # templates override everything when using autorun:
     _templates = {
         "bokeh": [],
         "matplotlib": [],
@@ -101,6 +105,7 @@ class BatchCollector:
         name=None,
         nick=None,
         autorun=True,
+        use_templates=True,
         elevated_data_collector_arguments=None,
         elevated_plotter_arguments=None,
         data_collector_arguments: dict = None,
@@ -112,6 +117,7 @@ class BatchCollector:
             b (cellpy.utils.Batch): the batch object.
             name (str or bool): name of the collector used for auto-generating filenames etc.
             autorun (bool): run collector and plotter immediately if True.
+            use_templates (bool): also apply template(s) in autorun mode if True.
             elevated_data_collector_arguments (dict): arguments picked up by the child class' initializer.
             elevated_plotter_arguments (dict): arguments picked up by the child class' initializer.
             data_collector_arguments (dict): keyword arguments sent to the data collector.
@@ -124,13 +130,17 @@ class BatchCollector:
         self.plotter = plotter
         self.nick = nick
         self.collector_name = collector_name or "base"
+
+        # Arguments given as default arguments in the subclass have "low" priority (below elevated arguments at least):
         self._data_collector_arguments = self._default_data_collector_arguments.copy()
         self._plotter_arguments = self._default_plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)
+
         # Elevated arguments have preference above the data_collector and plotter argument dicts:
         self._parse_elevated_arguments(
             elevated_data_collector_arguments, elevated_plotter_arguments
         )
+
         self._set_attributes(**kwargs)
 
         if nick is None:
@@ -142,7 +152,8 @@ class BatchCollector:
 
         if autorun:
             self.update(update_name=False)
-            self.apply_templates()
+            if use_templates:
+                self.apply_templates()
 
     @property
     def data_collector_arguments(self):
@@ -245,7 +256,9 @@ class BatchCollector:
             for k, v in data_collector_arguments.items():
                 if v is not None:
                     elevated_data_collector_arguments[k] = v
-            self._update_arguments(elevated_data_collector_arguments, None)
+            self._update_arguments(
+                elevated_data_collector_arguments, None, set_as_defaults=True
+            )
 
         if plotter_arguments is not None:
 
@@ -255,15 +268,34 @@ class BatchCollector:
                 if v is not None:
                     elevated_plotter_arguments[k] = v
 
-            self._update_arguments(None, elevated_plotter_arguments)
+            self._update_arguments(
+                None, elevated_plotter_arguments, set_as_defaults=True
+            )
 
     def _update_arguments(
-        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
+        self,
+        data_collector_arguments: dict = None,
+        plotter_arguments: dict = None,
+        set_as_defaults=False,
     ):
         self.data_collector_arguments = data_collector_arguments
         self.plotter_arguments = plotter_arguments
         logging.info(f"**data_collector_arguments: {self.data_collector_arguments}")
         logging.info(f"**plotter_arguments: {self.plotter_arguments}")
+
+        # setting defaults also (py3.6 compatible):
+        if set_as_defaults:
+            logging.info("updating defaults for current instance")
+            if data_collector_arguments is not None:
+                self._default_data_collector_arguments = {
+                    **self._default_data_collector_arguments,
+                    **data_collector_arguments,
+                }
+            if plotter_arguments is not None:
+                self._default_plotter_arguments = {
+                    **self._default_plotter_arguments,
+                    **plotter_arguments,
+                }
 
     def reset_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
@@ -697,7 +729,7 @@ def ica_plotter_film(
 def cycles_plotter(
     collected_curves,
     journal=None,
-    palette="Blues",
+    palette=None,
     palette_range=(0.2, 1.0),
     method="fig_pr_cell",
     extension="bokeh",
@@ -728,7 +760,7 @@ def sequence_plotter(
     y,
     z,
     g,
-    palette="Blues",
+    palette=None,
     method="fig_pr_cell",
     extension="bokeh",
     cycles=None,
@@ -748,6 +780,10 @@ def sequence_plotter(
 
     if method == "fig_pr_cell":
         # TODO: make this smarter
+
+        if palette is None:
+            palette = "Blues"
+
         if cols is None:
             cols = 3
 
@@ -768,8 +804,16 @@ def sequence_plotter(
             )
 
     elif method == "fig_pr_cycle":
+
         if cols is None:
-            cols = 1
+            if extension != "matplotlib":
+                cols = 1
+            else:
+                cols = 3
+
+        if palette is None:
+            palette = "Category20"
+
         if legend_position is None:
             legend_position = "right"
 
@@ -801,7 +845,9 @@ def sequence_plotter(
         "NdOverlay": {},
         "Curve": {},
     }
+
     if extension != "matplotlib":
+        logging.debug(f"setting width for bokeh and plotly: {width}")
         backend_specific_kwargs["Curve"]["width"] = width
 
     p = (
@@ -825,6 +871,7 @@ def sequence_plotter(
             ),
         )
     )
+
     if legend_position is not None:
         p.opts(hv.opts.NdOverlay(legend_position=legend_position))
 
@@ -1078,7 +1125,7 @@ class BatchCyclesCollector(BatchCollector):
             xlabel="Capacity (mAh/g)",
             ylabel="Voltage (V)",
             ylim=(0, 1),
-            color=hv.Palette("Blues", range=(0.2, 1)),
+            # color=hv.Palette("Blues", range=(0.2, 1)),
             backend="matplotlib",
         ),
         hv.opts.NdLayout(fig_inches=3, tight=True, backend="matplotlib"),
