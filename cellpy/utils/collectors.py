@@ -245,9 +245,7 @@ class BatchCollector:
             for k, v in data_collector_arguments.items():
                 if v is not None:
                     elevated_data_collector_arguments[k] = v
-            self._update_arguments(
-                elevated_data_collector_arguments, None
-            )
+            self._update_arguments(elevated_data_collector_arguments, None)
 
         if plotter_arguments is not None:
 
@@ -257,9 +255,7 @@ class BatchCollector:
                 if v is not None:
                     elevated_plotter_arguments[k] = v
 
-            self._update_arguments(
-                None, elevated_plotter_arguments
-            )
+            self._update_arguments(None, elevated_plotter_arguments)
 
     def _update_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
@@ -499,6 +495,46 @@ class BatchMultiFigureCollector(BatchCollector):
     pass
 
 
+def pick_named_cell(b, label_mapper=None):
+    """generator that picks a cell from the batch object, yields its label and the cell itself.
+
+    Args:
+        b (cellpy.batch object): your batch object
+        label_mapper (callable or dict): function (or dict) that changes the cell names.
+            The dictionary must have the cell labels as given in the `journal.pages` index and new label as values.
+            Similarly, if it is a function it takes the cell label as input and returns the new label.
+            Remark! No check are performed to ensure that the new cell labels are unique.
+
+    Yields:
+        label, cell
+
+    Example:
+        def my_mapper(n):
+            return "_".join(n.split("_")[1:-1])
+
+        # outputs "nnn_x" etc., if cell-names are of the form "date_nnn_x_y":
+        for label, cell in pick_named_cell(b, label_mapper=my_mapper):
+            print(label)
+    """
+
+    cell_names = b.cell_names
+    for n in cell_names:
+        if label_mapper is not None:
+            try:
+                if isinstance(label_mapper, dict):
+                    label = label_mapper[n]
+                else:
+                    label = label_mapper(n)
+            except Exception as e:
+                logging.info(f"label_mapper-error: could not rename cell {n}")
+                logging.debug(f"caught exception: {e}")
+                label = n
+        else:
+            label = n
+        logging.info(f"renaming {n} -> {label}")
+        yield label, b.experiment.data[n]
+
+
 def cycles_collector(
     b,
     cycles=None,
@@ -507,12 +543,13 @@ def cycles_collector(
     max_cycle=50,
     abort_on_missing=False,
     method="back-and-forth",
+    label_mapper=None,
 ):
     if cycles is None:
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
-    for c in b:
+    for n, c in pick_named_cell(b, label_mapper):
         curves = c.get_cap(
             cycle=cycles,
             label_cycle_number=True,
@@ -520,13 +557,15 @@ def cycles_collector(
             number_of_points=number_of_points,
             method=method,
         )
+        logging.debug(f"processing {n} (session name: {c.session_name})")
+
         if not curves.empty:
             all_curves.append(curves)
-            keys.append(c.session_name)
+            keys.append(n)
         else:
             if abort_on_missing:
-                raise ValueError(f"{c.session_name} is empty - aborting!")
-            print(f"[{c.session_name} empty]")
+                raise ValueError(f"{n} is empty - aborting!")
+            print(f"[{n} (session name: {c.session_name}) empty]")
     collected_curves = pd.concat(
         all_curves, keys=keys, axis=0, names=["cell", "point"]
     ).reset_index(level="cell")
@@ -663,7 +702,7 @@ def cycles_plotter(
     method="fig_pr_cell",
     extension="bokeh",
     cycles=None,
-    cols=1,
+    cols=None,
     width=None,
 ):
     return sequence_plotter(
@@ -689,38 +728,51 @@ def sequence_plotter(
     y,
     z,
     g,
-    journal=None,
     palette="Blues",
-    palette_range=(0.2, 1.0),
     method="fig_pr_cell",
     extension="bokeh",
     cycles=None,
-    cols=1,
+    cols=None,
     width=None,
+    fig_title=None,
+    legend_position=None,
+    **kwargs,  # should implement palette_range soon
 ):
+    for k in kwargs:
+        logging.debug(f"keyword argument {k} given, but not used")
+
+    if fig_title is None:
+        fig_title = ""
+
+    family = {}
+
     if method == "fig_pr_cell":
+        # TODO: make this smarter
+        if cols is None:
+            cols = 3
+
+        if width is None:
+            width = 400
+
         if cycles is not None:
             filtered_curves = collected_curves.loc[
                 collected_curves.cycle.isin(cycles), :
             ]
         else:
             filtered_curves = collected_curves
-        p = hv.NdLayout(
-            {
-                label: hv.Curve(df, kdims=x, vdims=[y, z])
-                .groupby(z)
-                .overlay()
-                .opts(
-                    hv.opts.Curve(
-                        color=hv.Palette(palette, range=palette_range),
-                        title=label,
-                        backend=extension,
-                    )
-                )
-                for label, df in filtered_curves.groupby(g)
-            }
-        )
+        logging.debug(f"filtered_curves:\n{filtered_curves}")
+
+        for label, df in filtered_curves.groupby(g):
+            family[label] = (
+                hv.Curve(df, kdims=x, vdims=[y, z], label=label).groupby(z).overlay()
+            )
+
     elif method == "fig_pr_cycle":
+        if cols is None:
+            cols = 1
+        if legend_position is None:
+            legend_position = "right"
+
         if cycles is None:
             unique_cycles = list(collected_curves.cycle.unique())
             if len(unique_cycles) > 10:
@@ -734,31 +786,48 @@ def sequence_plotter(
 
         if width is None:
             width = int(800 / cols)
-        backend_specific_kwargs = {}
-        if extension != "matplotlib":
-            backend_specific_kwargs["width"] = width
+
         z, g = g, z
 
-        p = (
-            hv.NdLayout(
-                {
-                    cyc: hv.Curve(df, kdims=x, vdims=[y, z])
-                    .groupby(z)
-                    .overlay()
-                    .opts(
-                        hv.opts.Curve(
-                            color=hv.Palette(palette),
-                            title=f"cycle-{cyc}",
-                            backend=extension,
-                            **backend_specific_kwargs,
-                        )
-                    )
-                    for cyc, df in filtered_curves.groupby(g)
-                }
+        for cyc, df in filtered_curves.groupby(g):
+            family[cyc] = (
+                hv.Curve(df, kdims=x, vdims=[y, z], label=f"cycle-{cyc}")
+                .groupby(z)
+                .overlay()
             )
-            .cols(cols)
-            .opts(hv.opts.NdOverlay(legend_position="right", backend=extension))
+
+    backend_specific_kwargs = {
+        "NdLayout": {},
+        "NdOverlay": {},
+        "Curve": {},
+    }
+    if extension != "matplotlib":
+        backend_specific_kwargs["Curve"]["width"] = width
+
+    p = (
+        hv.NdLayout(family)
+        .cols(cols)
+        .opts(
+            hv.opts.NdLayout(
+                title=fig_title,
+                **backend_specific_kwargs["NdLayout"],
+                backend=extension,
+            ),
+            hv.opts.NdOverlay(
+                **backend_specific_kwargs["NdOverlay"],
+                backend=extension,
+            ),
+            hv.opts.Curve(
+                color=hv.Palette(palette),
+                title="{label}",
+                **backend_specific_kwargs["Curve"],
+                backend=extension,
+            ),
         )
+    )
+    if legend_position is not None:
+        p.opts(hv.opts.NdOverlay(legend_position=legend_position))
+
     return p
 
 
@@ -799,6 +868,12 @@ def ica_collector(
 
 
 class BatchSummaryCollector(BatchCollector):
+    # Three main levels of arguments to the plotter and collector funcs is available:
+    #  - through dictionaries (`data_collector_arguments`, `plotter_arguments`) to init
+    #  - given as defaults in the subclass (`_default_data_collector_arguments`, `_default_plotter_arguments`)
+    #  - as elevated arguments (i.e. arguments normally given in the dictionaries elevated
+    #    to their own keyword parameters)
+
     _default_data_collector_arguments = {
         "columns": ["charge_capacity_gravimetric"],
     }
