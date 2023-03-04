@@ -847,34 +847,35 @@ def sequence_plotter(
                 .groupby(z)
                 .overlay()
             )
+    #
+    # backend_specific_kwargs = {
+    #     "NdLayout": {},
+    #     "NdOverlay": {},
+    #     "Curve": {},
+    # }
 
-    backend_specific_kwargs = {
-        "NdLayout": {},
-        "NdOverlay": {},
-        "Curve": {},
-    }
+    # if extension != "matplotlib":
+    #     logging.debug(f"setting width for bokeh and plotly: {width}")
+    #     backend_specific_kwargs["Curve"]["width"] = width
 
-    if extension != "matplotlib":
-        logging.debug(f"setting width for bokeh and plotly: {width}")
-        backend_specific_kwargs["Curve"]["width"] = width
-
+    # TODO: move this out of this function
     p = (
         hv.NdLayout(family)
         .cols(cols)
         .opts(
             hv.opts.NdLayout(
                 title=fig_title,
-                **backend_specific_kwargs["NdLayout"],
+                # **backend_specific_kwargs["NdLayout"],
                 backend=extension,
             ),
             hv.opts.NdOverlay(
-                **backend_specific_kwargs["NdOverlay"],
+                # **backend_specific_kwargs["NdOverlay"],
                 backend=extension,
             ),
             hv.opts.Curve(
                 color=hv.Palette(palette),  # should replace this with custom mapping
                 title="{label}",
-                **backend_specific_kwargs["Curve"],
+                # **backend_specific_kwargs["Curve"],
                 backend=extension,
             ),
         )
