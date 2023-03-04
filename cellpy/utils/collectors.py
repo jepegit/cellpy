@@ -538,19 +538,21 @@ def pick_named_cell(b, label_mapper=None):
             Remark! No check are performed to ensure that the new cell labels are unique.
 
     Yields:
-        label, cell
+        label, group, cell
 
     Example:
         def my_mapper(n):
             return "_".join(n.split("_")[1:-1])
 
         # outputs "nnn_x" etc., if cell-names are of the form "date_nnn_x_y":
-        for label, cell in pick_named_cell(b, label_mapper=my_mapper):
+        for label, group, cell in pick_named_cell(b, label_mapper=my_mapper):
             print(label)
     """
 
     cell_names = b.cell_names
     for n in cell_names:
+        group = b.pages.loc[n, "group"]
+
         if label_mapper is not None:
             try:
                 if isinstance(label_mapper, dict):
@@ -562,9 +564,15 @@ def pick_named_cell(b, label_mapper=None):
                 logging.debug(f"caught exception: {e}")
                 label = n
         else:
-            label = n
-        logging.info(f"renaming {n} -> {label}")
-        yield label, b.experiment.data[n]
+            try:
+                label = b.pages.loc[n, "label"]
+            except Exception as e:
+                logging.info(f"lookup in pages failed: could not rename cell {n}")
+                logging.debug(f"caught exception: {e}")
+                label = n
+
+        logging.info(f"renaming {n} -> {label} (group={group})")
+        yield label, group, b.experiment.data[n]
 
 
 def cycles_collector(
@@ -581,7 +589,7 @@ def cycles_collector(
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
-    for n, c in pick_named_cell(b, label_mapper):
+    for n, g, c in pick_named_cell(b, label_mapper):
         curves = c.get_cap(
             cycle=cycles,
             label_cycle_number=True,
@@ -590,7 +598,7 @@ def cycles_collector(
             method=method,
         )
         logging.debug(f"processing {n} (session name: {c.session_name})")
-
+        curves = curves.assign(group=g)
         if not curves.empty:
             all_curves.append(curves)
             keys.append(n)
@@ -833,7 +841,7 @@ def sequence_plotter(
 
         z, g = g, z
 
-        for cyc, df in filtered_curves.groupby(g):
+        for cyc, df in filtered_curves.groupby(g):  # should replace this with subfamily grouped by group?
             family[cyc] = (
                 hv.Curve(df, kdims=x, vdims=[y, z], label=f"cycle-{cyc}")
                 .groupby(z)
@@ -864,7 +872,7 @@ def sequence_plotter(
                 backend=extension,
             ),
             hv.opts.Curve(
-                color=hv.Palette(palette),
+                color=hv.Palette(palette),  # should replace this with custom mapping
                 title="{label}",
                 **backend_specific_kwargs["Curve"],
                 backend=extension,
