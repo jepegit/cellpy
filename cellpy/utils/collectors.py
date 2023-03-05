@@ -736,30 +736,70 @@ def ica_plotter_film(
 
 def cycles_plotter(
     collected_curves,
-    journal=None,
-    palette=None,
-    palette_range=(0.2, 1.0),
     method="fig_pr_cell",
     extension="bokeh",
     cycles=None,
-    cols=None,
     width=None,
+    palette=None,
+    legend_position=None,
+    fig_title="",
+    cols=None,
+    **kwargs,
 ):
-    return sequence_plotter(
+    if cols is None:
+        cols = 3 if method == "fig_pr_cell" else 1
+
+    if width is None:
+        width = 400 if method == "fig_pr_cell" else int(800 / cols)
+
+    if palette is None:
+        palette = "Blues" if method == "fig_pr_cell" else "Category20"
+
+    if legend_position is None:
+        legend_position = None if method == "fig_pr_cell" else "right"
+
+    backend_specific_kwargs = {
+        "NdLayout": {},
+        "NdOverlay": {},
+        "Curve": {},
+    }
+
+    if extension != "matplotlib":
+        logging.debug(f"setting width for bokeh and plotly: {width}")
+        backend_specific_kwargs["Curve"]["width"] = width
+
+    p = sequence_plotter(
         collected_curves,
         x="capacity",
         y="voltage",
         z="cycle",
         g="cell",
-        journal=journal,
-        palette=palette,
-        palette_range=palette_range,
         method=method,
-        extension=extension,
         cycles=cycles,
-        cols=cols,
-        width=width,
-    )
+        **kwargs,
+    ).cols(cols)
+
+    p.opts(
+            hv.opts.NdLayout(
+                title=fig_title,
+                **backend_specific_kwargs["NdLayout"],
+                backend=extension,
+            ),
+            hv.opts.NdOverlay(
+                **backend_specific_kwargs["NdOverlay"],
+                backend=extension,
+            ),
+            hv.opts.Curve(
+                color=hv.Palette(palette),  # should replace this with custom mapping
+                **backend_specific_kwargs["Curve"],
+                backend=extension,
+            ),
+        )
+
+    if legend_position is not None:
+        p.opts(hv.opts.NdOverlay(legend_position=legend_position))
+
+    return p
 
 
 def sequence_plotter(
@@ -768,123 +808,59 @@ def sequence_plotter(
     y,
     z,
     g,
-    palette=None,
     method="fig_pr_cell",
-    extension="bokeh",
     cycles=None,
-    cols=None,
-    width=None,
-    fig_title=None,
-    legend_position=None,
     **kwargs,  # should implement palette_range soon
 ):
     for k in kwargs:
         logging.debug(f"keyword argument {k} given, but not used")
 
-    if fig_title is None:
-        fig_title = ""
+    x_label = "Capacity"
+    x_unit = "mAh"
+
+    y_label = "Voltage"
+    y_unit = "V"
+
+    g_label = "Cell"
+    g_unit = ""
+
+    z_label = "Cycle"
+    z_unit = ""
+
+    x_dim = hv.Dimension(f"{x}", label=x_label, unit=x_unit)
+    y_dim = hv.Dimension(f"{y}", label=y_label, unit=y_unit)
+    g_dim = hv.Dimension(f"{g}", label=g_label, unit=g_unit)
+    z_dim = hv.Dimension(f"{z}", label=z_label, unit=z_unit)
 
     family = {}
+    curves = None
 
     if method == "fig_pr_cell":
-        # TODO: make this smarter
-
-        if palette is None:
-            palette = "Blues"
-
-        if cols is None:
-            cols = 3
-
-        if width is None:
-            width = 400
-
         if cycles is not None:
-            filtered_curves = collected_curves.loc[
-                collected_curves.cycle.isin(cycles), :
-            ]
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
-            filtered_curves = collected_curves
-        logging.debug(f"filtered_curves:\n{filtered_curves}")
-
-        for label, df in filtered_curves.groupby(g):
-            family[label] = (
-                hv.Curve(df, kdims=x, vdims=[y, z], label=label).groupby(z).overlay()
-            )
+            curves = collected_curves
+        logging.debug(f"filtered_curves:\n{curves}")
 
     elif method == "fig_pr_cycle":
-
-        if cols is None:
-            if extension != "matplotlib":
-                cols = 1
-            else:
-                cols = 3
-
-        if palette is None:
-            palette = "Category20"
-
-        if legend_position is None:
-            legend_position = "right"
-
         if cycles is None:
             unique_cycles = list(collected_curves.cycle.unique())
             if len(unique_cycles) > 10:
                 cycles = [1, 10, 20]
         if cycles is not None:
-            filtered_curves = collected_curves.loc[
-                collected_curves.cycle.isin(cycles), :
-            ]
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
-            filtered_curves = collected_curves
-
-        if width is None:
-            width = int(800 / cols)
+            curves = collected_curves
 
         z, g = g, z
+        z_dim, g_dim = g_dim, z_dim
 
-        for cyc, df in filtered_curves.groupby(g):  # should replace this with subfamily grouped by group?
-            family[cyc] = (
-                hv.Curve(df, kdims=x, vdims=[y, z], label=f"cycle-{cyc}")
-                .groupby(z)
-                .overlay()
-            )
-    #
-    # backend_specific_kwargs = {
-    #     "NdLayout": {},
-    #     "NdOverlay": {},
-    #     "Curve": {},
-    # }
+    kdims = x_dim
+    vdims = [y_dim, z_dim]
+    for cyc, df in curves.groupby(g):
+        family[cyc] = hv.Curve(df, kdims=kdims, vdims=vdims).groupby(z).overlay()
 
-    # if extension != "matplotlib":
-    #     logging.debug(f"setting width for bokeh and plotly: {width}")
-    #     backend_specific_kwargs["Curve"]["width"] = width
-
-    # TODO: move this out of this function
-    p = (
-        hv.NdLayout(family)
-        .cols(cols)
-        .opts(
-            hv.opts.NdLayout(
-                title=fig_title,
-                # **backend_specific_kwargs["NdLayout"],
-                backend=extension,
-            ),
-            hv.opts.NdOverlay(
-                # **backend_specific_kwargs["NdOverlay"],
-                backend=extension,
-            ),
-            hv.opts.Curve(
-                color=hv.Palette(palette),  # should replace this with custom mapping
-                title="{label}",
-                # **backend_specific_kwargs["Curve"],
-                backend=extension,
-            ),
-        )
-    )
-
-    if legend_position is not None:
-        p.opts(hv.opts.NdOverlay(legend_position=legend_position))
-
-    return p
+    return hv.NdLayout(family, kdims=g_dim)
 
 
 def ica_collector(
