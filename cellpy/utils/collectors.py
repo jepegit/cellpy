@@ -115,7 +115,10 @@ class BatchCollector:
         """Update both the collected data and the plot(s).
         Args:
             b (cellpy.utils.Batch): the batch object.
-            name (str or bool): name of the collector used for auto-generating filenames etc.
+            data_collector (callable): method that collects the data.
+            plotter (callable): method that crates the plots.
+            collector_name (str): name of collector.
+            name (str or bool): name used for auto-generating filenames etc.
             autorun (bool): run collector and plotter immediately if True.
             use_templates (bool): also apply template(s) in autorun mode if True.
             elevated_data_collector_arguments (dict): arguments picked up by the child class' initializer.
@@ -741,7 +744,7 @@ def cycles_plotter(
     cycles_to_plot=None,
     width=None,
     palette=None,
-    palette_range=(0.1, 0.9),
+    palette_range=(0.1, 1.0),
     legend_position=None,
     show_legend=None,
     fig_title="",
@@ -758,13 +761,18 @@ def cycles_plotter(
         width = 400 if method == "fig_pr_cell" else int(800 / cols)
 
     if palette is None:
-        palette = "Blues" if method == "fig_pr_cell" else "Category20"
+        palette = "Blues" if method == "fig_pr_cell" else "Category10"
+
+    if palette_range is None:
+        palette_range = (0.2, 1.0) if method == "fig_pr_cell" else (0, 1)
 
     if legend_position is None:
         legend_position = None if method == "fig_pr_cell" else "right"
 
     if show_legend is None:
         show_legend = True
+
+    reverse_palette = True if method == "fig_pr_cell" else False
 
     backend_specific_kwargs = {
         "NdLayout": {},
@@ -799,7 +807,7 @@ def cycles_plotter(
             ),
             hv.opts.Curve(
                 # TODO: should replace this with custom mapping (see how it is done in plotutils):
-                color=hv.Palette(palette, reverse=True, range=palette_range),
+                color=hv.Palette(palette, reverse=reverse_palette, range=palette_range),
                 show_legend=show_legend,
                 **backend_specific_kwargs["Curve"],
                 backend=extension,
@@ -819,8 +827,11 @@ def sequence_plotter(
     z,
     g,
     method="fig_pr_cell",
+    group_label="group",
+    group_txt="cell-group",
+    z_lim=10,
     cycles=None,
-    **kwargs,  # should implement palette_range soon
+    **kwargs,
 ):
     for k in kwargs:
         logging.debug(f"keyword argument {k} given, but not used")
@@ -861,9 +872,18 @@ def sequence_plotter(
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
             curves = collected_curves
-
+        # g (what we split the figures by) : cycle
+        # z (the "dimension" of the individual curves in one figure): cell
         z, g = g, z
         z_dim, g_dim = g_dim, z_dim
+
+        # dirty (?) fix to make plots with a lot of cells look a bit better:
+        unique_z_values = collected_curves[z].unique()
+        no_unique_z_values = len(unique_z_values)
+        if no_unique_z_values > z_lim:
+            logging.critical(f"number of cells ({no_unique_z_values}) larger than z_lim ({z_lim}): grouping")
+            z = group_label
+            z_dim = hv.Dimension(f"{z}", label=group_txt, unit="")
 
     kdims = x_dim
     vdims = [y_dim, z_dim]
@@ -1158,9 +1178,6 @@ class BatchCyclesCollector(BatchCollector):
             cols (int): number of columns
         """
 
-        # internal attributes:
-        self._plot_type = plot_type
-
         elevated_data_collector_arguments = dict(
             cycles=cycles,
             max_cycle=max_cycle,
@@ -1176,6 +1193,9 @@ class BatchCyclesCollector(BatchCollector):
             fig_title=fig_title,
             cols=cols,
         )
+
+        # internal attribute to keep track of plot type:
+        self.plot_type = plot_type
 
         # moving it to after init to allow for using prms set in init
         if plot_type == "fig_pr_cell":
@@ -1211,11 +1231,10 @@ class BatchCyclesCollector(BatchCollector):
             **kwargs,
         )
 
-
     def _dynamic_update_template_parameter(self, hv_opt, extension, *args, **kwargs):
         k = hv_opt.key
         if k == "NdLayout" and extension == "matplotlib":
-            if self._plot_type != "fig_pr_cycle":
+            if self.plot_type != "fig_pr_cycle":
                 hv_opt.kwargs["fig_inches"] = self._max_letters_in_cell_names * 0.14
         return hv_opt
 
