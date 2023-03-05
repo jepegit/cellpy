@@ -798,7 +798,8 @@ def cycles_plotter(
                 backend=extension,
             ),
             hv.opts.Curve(
-                color=hv.Palette(palette, reverse=True, range=palette_range),  # should replace this with custom mapping
+                # TODO: should replace this with custom mapping (see how it is done in plotutils):
+                color=hv.Palette(palette, reverse=True, range=palette_range),
                 show_legend=show_legend,
                 **backend_specific_kwargs["Curve"],
                 backend=extension,
@@ -1111,16 +1112,6 @@ class BatchCyclesCollector(BatchCollector):
         "extension": "bokeh",
     }
 
-    matplotlib_template = [
-        hv.opts.Curve(
-            show_frame=True,
-            fontsize={"title": "medium"},
-            ylim=(0, 1),
-            backend="matplotlib",
-        ),
-        hv.opts.NdLayout(fig_inches=3, tight=True, backend="matplotlib"),
-    ]
-
     def __init__(
         self,
         b,
@@ -1167,6 +1158,9 @@ class BatchCyclesCollector(BatchCollector):
             cols (int): number of columns
         """
 
+        # internal attributes:
+        self._plot_type = plot_type
+
         elevated_data_collector_arguments = dict(
             cycles=cycles,
             max_cycle=max_cycle,
@@ -1183,8 +1177,26 @@ class BatchCyclesCollector(BatchCollector):
             cols=cols,
         )
 
+        # moving it to after init to allow for using prms set in init
+        if plot_type == "fig_pr_cell":
+            _tight = True
+            _fig_inches = 3.5
+        else:
+            _tight = False
+            _fig_inches = 5.5
+
+        matplotlib_template = [
+            hv.opts.Curve(
+                show_frame=True,
+                fontsize={"title": "medium"},
+                ylim=(0, 1),
+                backend="matplotlib",
+            ),
+            hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
+        ]
+
         self._max_letters_in_cell_names = max(len(x) for x in b.cell_names)
-        self._register_template(self.matplotlib_template, extension="matplotlib")
+        self._register_template(matplotlib_template, extension="matplotlib")
         self._default_data_collector_arguments["method"] = collector_type
         self._default_plotter_arguments["method"] = plot_type
 
@@ -1199,10 +1211,12 @@ class BatchCyclesCollector(BatchCollector):
             **kwargs,
         )
 
+
     def _dynamic_update_template_parameter(self, hv_opt, extension, *args, **kwargs):
         k = hv_opt.key
         if k == "NdLayout" and extension == "matplotlib":
-            hv_opt.kwargs["fig_inches"] = self._max_letters_in_cell_names * 0.14
+            if self._plot_type != "fig_pr_cycle":
+                hv_opt.kwargs["fig_inches"] = self._max_letters_in_cell_names * 0.14
         return hv_opt
 
     def generate_name(self):
