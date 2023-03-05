@@ -738,16 +738,21 @@ def cycles_plotter(
     collected_curves,
     method="fig_pr_cell",
     extension="bokeh",
-    cycles=None,
+    cycles_to_plot=None,
     width=None,
     palette=None,
+    palette_range=(0.1, 0.9),
     legend_position=None,
+    show_legend=None,
     fig_title="",
     cols=None,
     **kwargs,
 ):
     if cols is None:
-        cols = 3 if method == "fig_pr_cell" else 1
+        if extension == "matplotlib":
+            cols = 3
+        else:
+            cols = 3 if method == "fig_pr_cell" else 1
 
     if width is None:
         width = 400 if method == "fig_pr_cell" else int(800 / cols)
@@ -757,6 +762,9 @@ def cycles_plotter(
 
     if legend_position is None:
         legend_position = None if method == "fig_pr_cell" else "right"
+
+    if show_legend is None:
+        show_legend = True
 
     backend_specific_kwargs = {
         "NdLayout": {},
@@ -775,7 +783,7 @@ def cycles_plotter(
         z="cycle",
         g="cell",
         method=method,
-        cycles=cycles,
+        cycles=cycles_to_plot,
         **kwargs,
     ).cols(cols)
 
@@ -790,7 +798,8 @@ def cycles_plotter(
                 backend=extension,
             ),
             hv.opts.Curve(
-                color=hv.Palette(palette),  # should replace this with custom mapping
+                color=hv.Palette(palette, reverse=True, range=palette_range),  # should replace this with custom mapping
+                show_legend=show_legend,
                 **backend_specific_kwargs["Curve"],
                 backend=extension,
             ),
@@ -1104,13 +1113,9 @@ class BatchCyclesCollector(BatchCollector):
 
     matplotlib_template = [
         hv.opts.Curve(
-            show_legend=False,
             show_frame=True,
             fontsize={"title": "medium"},
-            xlabel="Capacity (mAh/g)",
-            ylabel="Voltage (V)",
             ylim=(0, 1),
-            # color=hv.Palette("Blues", range=(0.2, 1)),
             backend="matplotlib",
         ),
         hv.opts.NdLayout(fig_inches=3, tight=True, backend="matplotlib"),
@@ -1121,10 +1126,63 @@ class BatchCyclesCollector(BatchCollector):
         b,
         plot_type="fig_pr_cell",
         collector_type="back-and-forth",
+        cycles=None,
+        max_cycle=None,
+        label_mapper=None,
+        extension=None,
+        cycles_to_plot=None,
+        width=None,
+        palette=None,
+        show_legend=None,
+        legend_position=None,
+        fig_title=None,
+        cols=None,
         *args,
         **kwargs,
     ):
-        """Create a collection of capacity plots."""
+        """Create a collection of capacity plots.
+
+        Args:
+            b:
+            plot_type (str): either 'fig_pr_cell' or 'fig_pr_cycle'
+            collector_type (str): how the curves are given
+                "back-and-forth" - standard back and forth; discharge
+                    (or charge) reversed from where charge (or discharge) ends.
+                "forth" - discharge (or charge) continues along x-axis.
+                "forth-and-forth" - discharge (or charge) also starts at 0
+
+        Elevated data collector args:
+            cycles (int): drop all cycles above this value.
+            max_cycle (float): filter on rate (C-rate)
+            label_mapper (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+
+        Elevated plotter args:
+            extension (str): extension used (defaults to Bokeh)
+            cycles_to_plot (int): plot points if True
+            width (float): width of plot
+            legend_position (str): position of the legend
+            show_legend (bool): set to False if you don't want to show legend
+            fig_title (str): title (will be put above the figure)
+            palette (str): color-map to use
+            cols (int): number of columns
+        """
+
+        elevated_data_collector_arguments = dict(
+            cycles=cycles,
+            max_cycle=max_cycle,
+            label_mapper=label_mapper,
+        )
+        elevated_plotter_arguments = dict(
+            extension=extension,
+            cycles_to_plot=cycles_to_plot,
+            width=width,
+            palette=palette,
+            legend_position=legend_position,
+            show_legend=show_legend,
+            fig_title=fig_title,
+            cols=cols,
+        )
+
         self._max_letters_in_cell_names = max(len(x) for x in b.cell_names)
         self._register_template(self.matplotlib_template, extension="matplotlib")
         self._default_data_collector_arguments["method"] = collector_type
@@ -1135,6 +1193,8 @@ class BatchCyclesCollector(BatchCollector):
             plotter=cycles_plotter,
             data_collector=cycles_collector,
             collector_name="cycles",
+            elevated_data_collector_arguments=elevated_data_collector_arguments,
+            elevated_plotter_arguments=elevated_plotter_arguments,
             *args,
             **kwargs,
         )
