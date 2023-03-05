@@ -36,20 +36,20 @@ def _setup():
 
 def _welcome_message():
     cellpy_version = cellpy.__version__
-    print(f"cellpy version: {cellpy_version}")
-    print(f"collectors need at least: {CELLPY_MINIMUM_VERSION}")
+    logging.info(f"cellpy version: {cellpy_version}")
+    logging.info(f"collectors need at least: {CELLPY_MINIMUM_VERSION}")
 
 
 def _register_holoviews_renderers(extensions=None):
     if HOLOVIEWS_AVAILABLE:
         if extensions is None:
             extensions = "bokeh", "matplotlib"
-        print(
+        logging.info(
             f"Registering Holoviews extensions {extensions} for the cellpy collectors."
         )
         hv.extension(*extensions)
     else:
-        print(
+        logging.info(
             "Could not import Holoviews. Your collectors will not be able to make figures."
         )
 
@@ -59,7 +59,7 @@ def _set_holoviews_renderer(extension=None):
         extension = extension.lower()
         current_backend = hv.Store.current_backend
         if not extension == current_backend:
-            print(f"switching backend to {extension}")
+            logging.info(f"switching backend to {extension}")
             hv.Store.set_current_backend(extension)
 
 
@@ -601,14 +601,14 @@ def cycles_collector(
             method=method,
         )
         logging.debug(f"processing {n} (session name: {c.session_name})")
-        curves = curves.assign(group=g)
         if not curves.empty:
+            curves = curves.assign(group=g)
             all_curves.append(curves)
             keys.append(n)
         else:
             if abort_on_missing:
                 raise ValueError(f"{n} is empty - aborting!")
-            print(f"[{n} (session name: {c.session_name}) empty]")
+            logging.critical(f"[{n} (session name: {c.session_name}) empty]")
     collected_curves = pd.concat(
         all_curves, keys=keys, axis=0, names=["cell", "point"]
     ).reset_index(level="cell")
@@ -629,22 +629,30 @@ def ica_plotter(
     palette_range=(0.2, 1.0),
     method="fig_pr_cell",
     extension="bokeh",
-    cycles=None,
+    cycles_to_plot=None,
     cols=1,
     width=None,
+    height=None,
     xlim_charge=(None, None),
     xlim_discharge=(None, None),
+    **kwargs,
 ):
     if method == "film":
-        return ica_plotter_film(
+        if extension == "matplotlib":
+            print("SORRY, PLOTTING FILM WITH MATPLOTLIB IS NOT IMPLEMENTED YET")
+            return
+
+        return ica_plotter_film_bokeh(
             collected_curves,
             journal=journal,
             palette=palette,
-            extension=extension,
-            cycles=cycles,
+            extension="bokeh",
+            cycles=cycles_to_plot,
             xlim_charge=xlim_charge,
             xlim_discharge=xlim_discharge,
-            # width=width,
+            width=width,
+            height=height,
+            **kwargs,
         )
     else:
         return sequence_plotter(
@@ -658,24 +666,24 @@ def ica_plotter(
             palette_range=palette_range,
             method=method,
             extension=extension,
-            cycles=cycles,
+            cycles=cycles_to_plot,
             cols=cols,
             width=width,
         )
 
 
-def ica_plotter_film(
+def ica_plotter_film_bokeh(
     collected_curves,
-    journal=None,
     palette="Blues",
-    extension="bokeh",
     cycles=None,
     xlim_charge=(None, None),
     xlim_discharge=(None, None),
     ylim=(None, None),
     shared_axes=True,
     width=400,
+    height=500,
     cformatter="%02.0e",
+    **kwargs,
 ):
     if cycles is not None:
         filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
@@ -688,6 +696,7 @@ def ica_plotter_film(
         "ylim": ylim,
         "tools": ["hover"],
         "width": width,
+        "height": height,
         "cmap": palette,
         "cformatter": cformatter,
         "cnorm": "eq_hist",
@@ -717,9 +726,11 @@ def ica_plotter_film(
 
         _dq_charge = -_dq_charge.values.T
         _dq_discharge = _dq_discharge.values.T
+
         charge_plot = hv.Image(
             (_v_charge, _cycles_charge, _dq_charge), group="ica", label="charge"
         ).opts(title=f"{label}", xlim=xlim_charge, colorbar=True, **options)
+
         discharge_plot = hv.Image(
             (_v_discharge, _cycles_discharge, _dq_discharge),
             group="ica",
@@ -901,13 +912,14 @@ def ica_collector(
     abort_on_missing=False,
     label_direction=True,
     number_of_points=None,
+    label_mapper=None,
     **kwargs,
 ):
     if cycles is None:
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
-    for c in b:
+    for n, g, c in pick_named_cell(b, label_mapper):
         curves = ica.dqdv_frames(
             c,
             cycle=cycles,
@@ -916,13 +928,15 @@ def ica_collector(
             number_of_points=number_of_points,
             **kwargs,
         )
+        logging.debug(f"processing {n} (session name: {c.session_name})")
         if not curves.empty:
+            curves = curves.assign(group=g)
             all_curves.append(curves)
-            keys.append(c.session_name)
+            keys.append(n)
         else:
             if abort_on_missing:
-                raise ValueError(f"{c.session_name} is empty - aborting!")
-            print(f"[{c.session_name} empty]")
+                raise ValueError(f"{n} is empty - aborting!")
+            logging.critical(f"[{n} (session name: {c.session_name}) empty]")
     collected_curves = pd.concat(
         all_curves, keys=keys, axis=0, names=["cell", "point"]
     ).reset_index(level="cell")
@@ -1088,7 +1102,30 @@ class BatchICACollector(BatchCollector):
     def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
         """Create a collection of ica (dQ/dV) plots."""
 
+        self.plot_type = plot_type
+
+        if plot_type == "fig_pr_cell":
+            _tight = True
+            _fig_inches = 3.5
+        else:
+            _tight = False
+            _fig_inches = 5.5
+
+        matplotlib_template = [
+            hv.opts.Curve(
+                show_frame=True,
+                fontsize={"title": "medium"},
+                backend="matplotlib",
+            ),
+            hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
+        ]
+
+        bokeh_template = [
+            hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"),
+        ]
         self._default_plotter_arguments["method"] = plot_type
+        self._register_template(matplotlib_template, extension="matplotlib")
+        self._register_template(bokeh_template, extension="bokeh")
         super().__init__(
             b,
             plotter=ica_plotter,
@@ -1097,10 +1134,6 @@ class BatchICACollector(BatchCollector):
             *args,
             **kwargs,
         )
-
-        self._templates["bokeh"] = [
-            hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"),
-        ]
 
     def generate_name(self):
         names = ["collected_ica"]
