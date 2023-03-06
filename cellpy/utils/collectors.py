@@ -541,20 +541,21 @@ def pick_named_cell(b, label_mapper=None):
             Remark! No check are performed to ensure that the new cell labels are unique.
 
     Yields:
-        label, group, cell
+        label, group, subgroup, cell
 
     Example:
         def my_mapper(n):
             return "_".join(n.split("_")[1:-1])
 
         # outputs "nnn_x" etc., if cell-names are of the form "date_nnn_x_y":
-        for label, group, cell in pick_named_cell(b, label_mapper=my_mapper):
+        for label, group, subgroup, cell in pick_named_cell(b, label_mapper=my_mapper):
             print(label)
     """
 
     cell_names = b.cell_names
     for n in cell_names:
         group = b.pages.loc[n, "group"]
+        sub_group = b.pages.loc[n, "sub_group"]
 
         if label_mapper is not None:
             try:
@@ -574,8 +575,8 @@ def pick_named_cell(b, label_mapper=None):
                 logging.debug(f"caught exception: {e}")
                 label = n
 
-        logging.info(f"renaming {n} -> {label} (group={group})")
-        yield label, group, b.experiment.data[n]
+        logging.info(f"renaming {n} -> {label} (group={group}, subgroup={sub_group})")
+        yield label, group, sub_group, b.experiment.data[n]
 
 
 def cycles_collector(
@@ -592,7 +593,7 @@ def cycles_collector(
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
-    for n, g, c in pick_named_cell(b, label_mapper):
+    for n, g, sg, c in pick_named_cell(b, label_mapper):
         curves = c.get_cap(
             cycle=cycles,
             label_cycle_number=True,
@@ -602,7 +603,7 @@ def cycles_collector(
         )
         logging.debug(f"processing {n} (session name: {c.session_name})")
         if not curves.empty:
-            curves = curves.assign(group=g)
+            curves = curves.assign(group=g, sub_group=sg)
             all_curves.append(curves)
             keys.append(n)
         else:
@@ -893,6 +894,7 @@ def sequence_plotter(
         no_unique_z_values = len(unique_z_values)
         if no_unique_z_values > z_lim:
             logging.critical(f"number of cells ({no_unique_z_values}) larger than z_lim ({z_lim}): grouping")
+            logging.critical(f"prevent this by modifying z_lim to your plotter_arguments")
             z = group_label
             z_dim = hv.Dimension(f"{z}", label=group_txt, unit="")
 
@@ -919,7 +921,7 @@ def ica_collector(
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
-    for n, g, c in pick_named_cell(b, label_mapper):
+    for n, g, sg, c in pick_named_cell(b, label_mapper):
         curves = ica.dqdv_frames(
             c,
             cycle=cycles,
@@ -930,7 +932,7 @@ def ica_collector(
         )
         logging.debug(f"processing {n} (session name: {c.session_name})")
         if not curves.empty:
-            curves = curves.assign(group=g)
+            curves = curves.assign(group=g, sub_group=sg)
             all_curves.append(curves)
             keys.append(n)
         else:
@@ -1194,6 +1196,8 @@ class BatchCyclesCollector(BatchCollector):
                     (or charge) reversed from where charge (or discharge) ends.
                 "forth" - discharge (or charge) continues along x-axis.
                 "forth-and-forth" - discharge (or charge) also starts at 0
+            data_collector_arguments (dict) - arguments transferred to the plotter
+            plotter_arguments (dict) - arguments transferred to the plotter
 
         Elevated data collector args:
             cycles (int): drop all cycles above this value.
