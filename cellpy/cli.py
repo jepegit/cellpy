@@ -1328,7 +1328,7 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
     except ModuleNotFoundError:
         click.echo("Could not import cookiecutter.")
         click.echo("Try installing it, for example by writing:")
-        click.echo("\npip install cookiecutter\n")
+        click.echo("\npython -m pip install -U cookiecutter\n")
 
     click.echo(f"Template: {template}")
     if local_user_template:
@@ -1336,14 +1336,16 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
         templates = _read_local_templates()
         if not templates:
             click.echo(
-                "You asked me to use a local template, " "but you have none. Aborting."
+                "You asked me to use a local template, but you have none. Aborting."
             )
             return
     else:
         templates = prms._registered_templates
         if local_templates := _read_local_templates():
+            if template.lower() in templates and template.lower() in local_templates:
+                click.echo(f"\nWARNING! the '{template}' template exist both as global and local!")
+                click.echo(f"WARNING! using the local '{template}' template!\n")
             templates.update(local_templates)
-
     if not template.lower() in templates.keys():
         click.echo("This template does not exist. Aborting.")
         return
@@ -1393,10 +1395,15 @@ def function_new(template, directory, local_user_template, serve_, run_, lab, li
 
     try:
         selected_template = templates[template.lower()]
+        print(selected_template)
         cookiecutter.main.cookiecutter(
             selected_template, extra_context={"project_name": project_dir}
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
+        click.echo("Sorry. This did not work as expected!")
+        click.echo(" - cookiecutter refused to create the project")
+        click.echo(e)
+    except cookiecutter.exceptions.RepositoryNotFound as e:
         click.echo("Sorry. This did not work as expected!")
         click.echo(" - cookiecutter refused to create the project")
         click.echo(e)
