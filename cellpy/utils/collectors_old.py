@@ -16,11 +16,22 @@ from cellpy.utils.helpers import concatenate_summaries
 from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
-CELLPY_MINIMUM_VERSION = "1.0.0"
+try:
+    import holoviews as hv
+    from holoviews.core.io import Pickler
+    from holoviews import opts
+
+    HOLOVIEWS_AVAILABLE = True
+except ImportError:
+    print("Could not import Holoviews. Plotting will be disabled.")
+    HOLOVIEWS_AVAILABLE = False
+
+CELLPY_MINIMUM_VERSION = "0.4.3"
 
 
 def _setup():
     _welcome_message()
+    _register_holoviews_renderers()
 
 
 def _welcome_message():
@@ -29,13 +40,31 @@ def _welcome_message():
     logging.info(f"collectors need at least: {CELLPY_MINIMUM_VERSION}")
 
 
+def _register_holoviews_renderers(extensions=None):
+    if HOLOVIEWS_AVAILABLE:
+        if extensions is None:
+            extensions = "bokeh", "matplotlib"
+        logging.info(
+            f"Registering Holoviews extensions {extensions} for the cellpy collectors."
+        )
+        hv.extension(*extensions)
+    else:
+        logging.info(
+            "Could not import Holoviews. Your collectors will not be able to make figures."
+        )
+
+
 def _set_holoviews_renderer(extension=None):
-    print(f"_set_holoviews_renderer({extension}) is deprecated")
+    if HOLOVIEWS_AVAILABLE:
+        extension = extension.lower()
+        current_backend = hv.Store.current_backend
+        if not extension == current_backend:
+            logging.info(f"switching backend to {extension}")
+            hv.Store.set_current_backend(extension)
 
 
 def _get_current_holoviews_renderer():
-    print(f"_get_current_holoviews_renderer() is deprecated")
-    #return hv.Store.current_backend
+    return hv.Store.current_backend
 
 
 _setup()
@@ -315,22 +344,24 @@ class BatchCollector:
                 print("Hint: fix it and then re-run using reset=True")
                 return
         if update_plot:
-            try:
-                self.figure = self.plotter(
-                    self.data, journal=self.b.journal, **self.plotter_arguments
-                )
-            except TypeError as e:
-                print("Type error:", e)
-                print("Registered plotter_arguments:")
-                pprint(self.plotter_arguments)
-                print("Hint: fix it and then re-run using reset=True")
-                return
+            if HOLOVIEWS_AVAILABLE:
+                _set_holoviews_renderer(self.plotter_arguments.get("extension"))
+                try:
+                    self.figure = self.plotter(
+                        self.data, journal=self.b.journal, **self.plotter_arguments
+                    )
+                except TypeError as e:
+                    print("Type error:", e)
+                    print("Registered plotter_arguments:")
+                    pprint(self.plotter_arguments)
+                    print("Hint: fix it and then re-run using reset=True")
+                    return
 
         if update_name:
             self.name = self.generate_name()
 
-    def _dynamic_update_template_parameter(self, opt, extension, *args, **kwargs):
-        return opt
+    def _dynamic_update_template_parameter(self, hv_opt, extension, *args, **kwargs):
+        return hv_opt
 
     def _register_template(self, hv_opts, extension="bokeh", *args, **kwargs):
         """Register template for given extension.
@@ -349,28 +380,28 @@ class BatchCollector:
         """
         if extension not in ["bokeh", "matplotlib", "plotly"]:
             print(f"extension='{extension}' is not supported.")
-        if not isinstance(opts, (list, tuple)):
-            opts = [opts]
+        if not isinstance(hv_opts, (list, tuple)):
+            hv_opts = [hv_opts]
 
-        cleaned_opts = []
-        for o in opts:
+        cleaned_hv_opts = []
+        for o in hv_opts:
             logging.debug(f"Setting prm: {o}")
             o = self._dynamic_update_template_parameter(o, extension, *args, **kwargs)
             # ensure all options are registered with correct backend:
             o.kwargs["backend"] = extension
-            cleaned_opts.append(o)
+            cleaned_hv_opts.append(o)
 
-        self._templates[extension] = cleaned_opts
+        self._templates[extension] = cleaned_hv_opts
 
     def apply_templates(self):
         if not self._figure_valid():
             return
 
-        for backend, opt in self._templates.items():
+        for backend, hv_opt in self._templates.items():
             try:
-                if len(opt):
-                    print(f"Applying template for {backend}:{opt}")
-                    self.figure = self._set_opts(opt)
+                if len(hv_opt):
+                    print(f"Applying template for {backend}:{hv_opt}")
+                    self.figure = self._set_hv_opts(hv_opt)
             except TypeError:
                 print("possible bug in apply_template experienced")
                 print(self._templates)
@@ -380,9 +411,12 @@ class BatchCollector:
         if self.figure is None:
             print("No figure to show!")
             return False
+        if not HOLOVIEWS_AVAILABLE:
+            print("Requires Holoviews - please install it first!")
+            return False
         return True
 
-    def _set_opts(self, hv_opts):
+    def _set_hv_opts(self, hv_opts):
         if hv_opts is None:
             return self.figure
         if isinstance(hv_opts, (tuple, list)):
@@ -395,7 +429,7 @@ class BatchCollector:
             return
 
         print(f"figure name: {self.name}")
-        return self._set_opts(hv_opts)
+        return self._set_hv_opts(hv_opts)
 
     def redraw(self, hv_opts=None, extension=None):
         print("EXPERIMENTAL FEATURE! THIS MIGHT NOT WORK PROPERLY YET")
@@ -406,7 +440,7 @@ class BatchCollector:
             _set_holoviews_renderer(extension)
 
         print(f"figure name: {self.name}")
-        self.figure = self._set_opts(hv_opts)
+        self.figure = self._set_hv_opts(hv_opts)
         return self.figure
 
     def render(self):
@@ -437,32 +471,30 @@ class BatchCollector:
         filename_pre = self._output_path(serial_number)
 
         filename_hv = filename_pre.with_suffix(".html")
-
-        print("""hv.save(
+        hv.save(
             self.figure,
             filename_hv,
             toolbar=self.toolbar,
-        )""")
-
+        )
         print(f"saved file: {filename_hv}")
 
         filename_png = filename_pre.with_suffix(".png")
         try:
-            # current_renderer = _get_current_holoviews_renderer()
-            #
-            # _set_holoviews_renderer("matplotlib")
-            print("""self.figure.opts(hv.opts.NdOverlay(legend_position="right"))
+            current_renderer = _get_current_holoviews_renderer()
+
+            _set_holoviews_renderer("matplotlib")
+            self.figure.opts(hv.opts.NdOverlay(legend_position="right"))
             hv.save(
                 self.figure,
                 filename_png,
                 dpi=300,
-            )""")
+            )
             print(f"saved file: {filename_png}")
         except Exception as e:
             print("Could not save png-file.")
             print(e)
-        # finally:
-        #     _set_holoviews_renderer(current_renderer)
+        finally:
+            _set_holoviews_renderer(current_renderer)
 
     def save(self, serial_number=None):
         self.to_csv(serial_number=serial_number)
@@ -585,12 +617,12 @@ def cycles_collector(
     ).reset_index(level="cell")
     return collected_curves
 
-#
-# def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
-#     p = hv.Curve(
-#         collected_curves, kdims="capacity", vdims=["voltage", "cycle", "cell"]
-#     ).groupby("cell")
-#     return p
+
+def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
+    p = hv.Curve(
+        collected_curves, kdims="capacity", vdims=["voltage", "cycle", "cell"]
+    ).groupby("cell")
+    return p
 
 
 def ica_plotter(
@@ -643,13 +675,7 @@ def ica_plotter(
         )
 
 
-def ica_plotter_film_bokeh(*args, **kwargs):
-    print("running ica_plotter_film_bokeh")
-    print(f"args: {args}")
-    print(f"kwargs: {kwargs}")
-
-
-def ica_plotter_film_bokeh_old(
+def ica_plotter_film_bokeh(
     collected_curves,
     palette="Blues",
     cycles=None,
@@ -725,13 +751,7 @@ def ica_plotter_film_bokeh_old(
     )
 
 
-def cycles_plotter(*args, **kwargs):
-    print("running cycle plotter")
-    print(f"args: {args}")
-    print(f"kwargs: {kwargs}")
-
-
-def cycles_plotter_old(
+def cycles_plotter(
     collected_curves,
     method="fig_pr_cell",
     extension="bokeh",
@@ -814,13 +834,7 @@ def cycles_plotter_old(
     return p
 
 
-def sequence_plotter(*args, **kwargs):
-    print("running sequence plotter")
-    print(f"args: {args}")
-    print(f"kwargs: {kwargs}")
-
-
-def sequence_plotter_old(
+def sequence_plotter(
     collected_curves,
     x,
     y,
@@ -948,8 +962,8 @@ class BatchSummaryCollector(BatchCollector):
     }
 
     _bokeh_template = [
-        # hv.opts.Curve(fontsize={"title": "medium"}, width=800, backend="bokeh"),
-        # hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
+        hv.opts.Curve(fontsize={"title": "medium"}, width=800, backend="bokeh"),
+        hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
     ]
 
     def __init__(
@@ -1102,16 +1116,16 @@ class BatchICACollector(BatchCollector):
             _fig_inches = 5.5
 
         matplotlib_template = [
-            # hv.opts.Curve(
-            #     show_frame=True,
-            #     fontsize={"title": "medium"},
-            #     backend="matplotlib",
-            # ),
-            # hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
+            hv.opts.Curve(
+                show_frame=True,
+                fontsize={"title": "medium"},
+                backend="matplotlib",
+            ),
+            hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
         ]
 
         bokeh_template = [
-            # hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"),
+            hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"),
         ]
         self._default_plotter_arguments["method"] = plot_type
         self._register_template(matplotlib_template, extension="matplotlib")
@@ -1231,13 +1245,13 @@ class BatchCyclesCollector(BatchCollector):
             _fig_inches = 5.5
 
         matplotlib_template = [
-            # hv.opts.Curve(
-            #     show_frame=True,
-            #     fontsize={"title": "medium"},
-            #     ylim=(0, 1),
-            #     backend="matplotlib",
-            # ),
-            # hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
+            hv.opts.Curve(
+                show_frame=True,
+                fontsize={"title": "medium"},
+                ylim=(0, 1),
+                backend="matplotlib",
+            ),
+            hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
         ]
 
         self._max_letters_in_cell_names = max(len(x) for x in b.cell_names)

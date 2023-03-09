@@ -624,8 +624,10 @@ def concatenate_summaries(
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         columns (list): selected column(s) (using cellpy attribute name) [defaults to "charge_capacity_gravimetric"]
         column_names (list): selected column(s) (using exact column name)
-        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization (typically the first few cycles after formation)
-        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap", or given value (defaults to one).
+        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the
+            normalization (typically the first few cycles after formation)
+        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap",
+            or given value (defaults to one).
         nom_cap (float): nominal capacity of the cell
         normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
         group_it (bool): if True, average pr group.
@@ -711,8 +713,13 @@ def concatenate_summaries(
 
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
-            c = b.experiment.data[cell_id]
-            # print(c.data.summary.columns.sort_values())
+            try:
+                c = b.experiment.data[cell_id]
+                # print(c.data.summary.columns.sort_values())
+            except KeyError as e:
+                logging.debug(f"Could not load data for {cell_id}")
+                logging.debug(f"{e}")
+                raise e
 
             if not c.empty:
                 if max_cycle is not None:
