@@ -80,8 +80,8 @@ def select_ocv_points(
 
     ocv_rlx_id = "ocvrlx"
 
-    step_table = cellpydata.cell.steps
-    dfdata = cellpydata.cell.raw
+    step_table = cellpydata.data.steps
+    dfdata = cellpydata.data.raw
 
     ocv_steps = step_table.loc[step_table["cycle"].isin(cycles), :]
     ocv_steps = ocv_steps.loc[ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :]
