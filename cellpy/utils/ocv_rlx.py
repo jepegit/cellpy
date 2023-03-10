@@ -94,7 +94,7 @@ def select_ocv_points(
         n = str(j).zfill(2)
         headers2.append(f"point_{n}")
 
-    # doing an iteration (thought I didnt have to, but...) (fix later)
+    # doing an iteration (thought I didn't have to, but...) (fix later)
 
     results_list = list()
     info_dict = {"dt": [], "dv": [], "method": []}
