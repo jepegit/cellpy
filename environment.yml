@@ -33,5 +33,6 @@ dependencies:
     - jupyterlab
     - sqlalchemy
     - pint
+    - plotly
     - pip:
         - sqlalchemy-access

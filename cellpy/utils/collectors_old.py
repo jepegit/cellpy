@@ -810,23 +810,23 @@ def cycles_plotter(
     ).cols(cols)
 
     p.opts(
-            hv.opts.NdLayout(
-                title=fig_title,
-                **backend_specific_kwargs["NdLayout"],
-                backend=extension,
-            ),
-            hv.opts.NdOverlay(
-                **backend_specific_kwargs["NdOverlay"],
-                backend=extension,
-            ),
-            hv.opts.Curve(
-                # TODO: should replace this with custom mapping (see how it is done in plotutils):
-                color=hv.Palette(palette, reverse=reverse_palette, range=palette_range),
-                show_legend=show_legend,
-                **backend_specific_kwargs["Curve"],
-                backend=extension,
-            ),
-        )
+        hv.opts.NdLayout(
+            title=fig_title,
+            **backend_specific_kwargs["NdLayout"],
+            backend=extension,
+        ),
+        hv.opts.NdOverlay(
+            **backend_specific_kwargs["NdOverlay"],
+            backend=extension,
+        ),
+        hv.opts.Curve(
+            # TODO: should replace this with custom mapping (see how it is done in plotutils):
+            color=hv.Palette(palette, reverse=reverse_palette, range=palette_range),
+            show_legend=show_legend,
+            **backend_specific_kwargs["Curve"],
+            backend=extension,
+        ),
+    )
 
     if legend_position is not None:
         p.opts(hv.opts.NdOverlay(legend_position=legend_position))
@@ -895,8 +895,12 @@ def sequence_plotter(
         unique_z_values = collected_curves[z].unique()
         no_unique_z_values = len(unique_z_values)
         if no_unique_z_values > z_lim:
-            logging.critical(f"number of cells ({no_unique_z_values}) larger than z_lim ({z_lim}): grouping")
-            logging.critical(f"prevent this by modifying z_lim to your plotter_arguments")
+            logging.critical(
+                f"number of cells ({no_unique_z_values}) larger than z_lim ({z_lim}): grouping"
+            )
+            logging.critical(
+                f"prevent this by modifying z_lim to your plotter_arguments"
+            )
             z = group_label
             z_dim = hv.Dimension(f"{z}", label=group_txt, unit="")
 
@@ -1121,7 +1125,9 @@ class BatchICACollector(BatchCollector):
                 fontsize={"title": "medium"},
                 backend="matplotlib",
             ),
-            hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
+            hv.opts.NdLayout(
+                fig_inches=_fig_inches, tight=_tight, backend="matplotlib"
+            ),
         ]
 
         bokeh_template = [
@@ -1251,7 +1257,9 @@ class BatchCyclesCollector(BatchCollector):
                 ylim=(0, 1),
                 backend="matplotlib",
             ),
-            hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
+            hv.opts.NdLayout(
+                fig_inches=_fig_inches, tight=_tight, backend="matplotlib"
+            ),
         ]
 
         self._max_letters_in_cell_names = max(len(x) for x in b.cell_names)

@@ -220,7 +220,10 @@ def select_ocv_points(
     if include_times:
         try:
             info_pd = pd.DataFrame(info_dict)
-            final = pd.concat([info_pd, final], axis=1,)
+            final = pd.concat(
+                [info_pd, final],
+                axis=1,
+            )
             final = final.reset_index(drop=True)
         except Exception as e:
             logging.info("could not create dataframe with time information")

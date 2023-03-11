@@ -8,6 +8,7 @@ import inspect
 import logging
 
 import pandas as pd
+import plotly.express as px
 
 import cellpy
 from cellpy.readers.core import group_by_interpolate
@@ -35,7 +36,7 @@ def _set_holoviews_renderer(extension=None):
 
 def _get_current_holoviews_renderer():
     print(f"_get_current_holoviews_renderer() is deprecated")
-    #return hv.Store.current_backend
+    # return hv.Store.current_backend
 
 
 _setup()
@@ -332,7 +333,7 @@ class BatchCollector:
     def _dynamic_update_template_parameter(self, opt, extension, *args, **kwargs):
         return opt
 
-    def _register_template(self, hv_opts, extension="bokeh", *args, **kwargs):
+    def _register_template(self, opts, extension="plotly", *args, **kwargs):
         """Register template for given extension.
 
         It is also possible to set the options directly in the constructor of the
@@ -340,7 +341,7 @@ class BatchCollector:
         sanitation of the options in the templates
 
         Args:
-            hv_opts: list of holoviews.core.options.Options- instances
+            opts: list of holoviews.core.options.Options- instances
                 e.g. [hv.opts.Curve(xlim=(0,2)), hv.opts.NdLayout(title="Super plot")]
             extension: Holoviews backend ("matplotlib", "bokeh", or "plotly")
 
@@ -382,22 +383,22 @@ class BatchCollector:
             return False
         return True
 
-    def _set_opts(self, hv_opts):
-        if hv_opts is None:
+    def _set_opts(self, opts):
+        if opts is None:
             return self.figure
-        if isinstance(hv_opts, (tuple, list)):
-            return self.figure.options(*hv_opts)
+        if isinstance(opts, (tuple, list)):
+            return self.figure.options(*opts)
         else:
-            return self.figure.options(hv_opts)
+            return self.figure.options(opts)
 
-    def show(self, hv_opts=None):
+    def show(self, opts=None):
         if not self._figure_valid():
             return
 
         print(f"figure name: {self.name}")
-        return self._set_opts(hv_opts)
+        return self._set_opts(opts)
 
-    def redraw(self, hv_opts=None, extension=None):
+    def redraw(self, opts=None, extension=None):
         print("EXPERIMENTAL FEATURE! THIS MIGHT NOT WORK PROPERLY YET")
         if not self._figure_valid():
             return
@@ -406,7 +407,7 @@ class BatchCollector:
             _set_holoviews_renderer(extension)
 
         print(f"figure name: {self.name}")
-        self.figure = self._set_opts(hv_opts)
+        self.figure = self._set_opts(opts)
         return self.figure
 
     def render(self):
@@ -438,11 +439,13 @@ class BatchCollector:
 
         filename_hv = filename_pre.with_suffix(".html")
 
-        print("""hv.save(
+        print(
+            """hv.save(
             self.figure,
             filename_hv,
             toolbar=self.toolbar,
-        )""")
+        )"""
+        )
 
         print(f"saved file: {filename_hv}")
 
@@ -451,12 +454,14 @@ class BatchCollector:
             # current_renderer = _get_current_holoviews_renderer()
             #
             # _set_holoviews_renderer("matplotlib")
-            print("""self.figure.opts(hv.opts.NdOverlay(legend_position="right"))
+            print(
+                """self.figure.opts(hv.opts.NdOverlay(legend_position="right"))
             hv.save(
                 self.figure,
                 filename_png,
                 dpi=300,
-            )""")
+            )"""
+            )
             print(f"saved file: {filename_png}")
         except Exception as e:
             print("Could not save png-file.")
@@ -585,6 +590,7 @@ def cycles_collector(
     ).reset_index(level="cell")
     return collected_curves
 
+
 #
 # def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
 #     p = hv.Curve(
@@ -599,7 +605,7 @@ def ica_plotter(
     palette="Blues",
     palette_range=(0.2, 1.0),
     method="fig_pr_cell",
-    extension="bokeh",
+    extension="plotly",
     cycles_to_plot=None,
     cols=1,
     width=None,
@@ -725,99 +731,153 @@ def ica_plotter_film_bokeh_old(
     )
 
 
-def cycles_plotter(*args, **kwargs):
+def cycles_plotter(collected_curves, extension="plotly", method="fig_pr_cell", **kwargs):
+    """Plot charge-discharge curves.
+
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        extension (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+    Returns:
+        styled figure object
+    """
     print("running cycle plotter")
-    print(f"args: {args}")
     print(f"kwargs: {kwargs}")
 
+    # parameters not (yet ?) included into the arguments:
+    x_label = "Capacity"
+    x_unit = "mAh"
+    y_label = "Voltage"
+    y_unit = "V"
+    g_label = "Cell"
+    g_unit = ""
+    z_label = "Cycle"
+    z_unit = ""
 
-def cycles_plotter_old(
-    collected_curves,
-    method="fig_pr_cell",
-    extension="bokeh",
-    cycles_to_plot=None,
-    width=None,
-    palette=None,
-    palette_range=(0.1, 1.0),
-    legend_position=None,
-    show_legend=None,
-    fig_title="",
-    cols=None,
-    **kwargs,
-):
-    if cols is None:
-        if extension == "matplotlib":
-            cols = 3
-        else:
-            cols = 3 if method == "fig_pr_cell" else 1
+    logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
+    width = kwargs.pop("width", None)
+    palette = kwargs.pop("palette", None)
+    palette_range = kwargs.pop("palette_range", None)
+    legend_position = kwargs.pop("legend_position", None)
+    show_legend = kwargs.pop("show_legend", None)
+    width = kwargs.pop("width", None)
+    journal = kwargs.pop("journal", None)
 
-    if width is None:
-        width = 400 if method == "fig_pr_cell" else int(800 / cols)
+    # Additional (to be implemented) arguments that must be implemented during figure creation:
+    # cols
 
-    if palette is None:
-        palette = "Blues" if method == "fig_pr_cell" else "Category10"
-
-    if palette_range is None:
-        palette_range = (0.2, 1.0) if method == "fig_pr_cell" else (0, 1)
-
-    if legend_position is None:
-        legend_position = None if method == "fig_pr_cell" else "right"
-
-    if show_legend is None:
-        show_legend = True
-
-    reverse_palette = True if method == "fig_pr_cell" else False
-
-    backend_specific_kwargs = {
-        "NdLayout": {},
-        "NdOverlay": {},
-        "Curve": {},
-    }
-
-    if extension != "matplotlib":
-        logging.debug(f"setting width for bokeh and plotly: {width}")
-        backend_specific_kwargs["Curve"]["width"] = width
-
-    p = sequence_plotter(
+    fig = sequence_plotter(
         collected_curves,
         x="capacity",
         y="voltage",
         z="cycle",
         g="cell",
+        extension=extension,
         method=method,
-        cycles=cycles_to_plot,
         **kwargs,
-    ).cols(cols)
+    )
 
-    p.opts(
-            hv.opts.NdLayout(
-                title=fig_title,
-                **backend_specific_kwargs["NdLayout"],
-                backend=extension,
-            ),
-            hv.opts.NdOverlay(
-                **backend_specific_kwargs["NdOverlay"],
-                backend=extension,
-            ),
-            hv.opts.Curve(
-                # TODO: should replace this with custom mapping (see how it is done in plotutils):
-                color=hv.Palette(palette, reverse=reverse_palette, range=palette_range),
-                show_legend=show_legend,
-                **backend_specific_kwargs["Curve"],
-                backend=extension,
-            ),
+    # move this to separate function(s):
+    if extension == "plotly":
+        title_dict = {
+            "text": "some title",
+            "font": {"size": 25},
+        }
+        fig.update_layout(
+            title=title_dict
         )
 
-    if legend_position is not None:
-        p.opts(hv.opts.NdOverlay(legend_position=legend_position))
+    height = 400
+    facet_col_wrap = 3
 
-    return p
+    # mod fig depending on
+
+    return fig
 
 
-def sequence_plotter(*args, **kwargs):
-    print("running sequence plotter")
-    print(f"args: {args}")
-    print(f"kwargs: {kwargs}")
+def sequence_plotter(
+    collected_curves: pd.DataFrame,
+    x: str,
+    y: str,
+    z: str,
+    g: str,
+    method: str = "fig_pr_cell",
+    markers: bool = True,
+    extension: str = "ploty",
+    cycles: list = None,
+    cols: int = 3,
+
+    **kwargs,
+) -> Any:
+    """create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
+
+    This method contains the "common" operations done for all the sequence plots,
+    currently supporting filtering out the specific cycles, selecting either
+    dividing into subplots by cell or by cycle, and creating the (most basic) figure object.
+
+    Args:
+        collected_curves (pd.DataFrame): collected data in long format.
+        x: column name for x-values.
+        y: column name for y-values.
+        z: if method is 'fig_pr_cell', column name for color (legend), else for subplot.
+        g: if method is 'fig_pr_cell', column name for subplot, else for color.
+        method: 'fig_pr_cell' or 'fig_pr_cycle'.
+        markers: set to False if you don't want markers.
+        extension: what backend to use.
+        cycles: what cycles to include in the plot.
+        cols: number of columns for layout.
+
+        **kwargs: sent to backend (if `extension == "plotly"`, it will be
+            sent to `plotly.express` etc.)
+
+    Returns:
+        figure object
+    """
+    logging.debug("running sequence plotter")
+
+    for k in kwargs:
+        logging.debug(f"keyword argument sent to the backend: {k}")
+
+    curves = None
+
+    if method == "fig_pr_cell":
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        else:
+            curves = collected_curves
+        logging.debug(f"filtered_curves:\n{curves}")
+
+    elif method == "fig_pr_cycle":
+        z, g = g, z
+        if cycles is None:
+            unique_cycles = list(collected_curves.cycle.unique())
+            if len(unique_cycles) > 10:
+                cycles = [1, 10, 20]
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        else:
+            curves = collected_curves
+
+    if extension == "plotly":
+        fig = px.line(
+            curves,
+            x=x,
+            y=y,
+            color=z,
+            facet_col=g,
+            markers=markers,
+            facet_col_wrap=cols,
+        )
+        return fig
+
+    elif extension == "matplotlib":
+        print(f"{extension} not implemented yet")
+
+    elif extension == "bokeh":
+        print(f"{extension} not implemented yet")
 
 
 def sequence_plotter_old(
@@ -881,8 +941,12 @@ def sequence_plotter_old(
         unique_z_values = collected_curves[z].unique()
         no_unique_z_values = len(unique_z_values)
         if no_unique_z_values > z_lim:
-            logging.critical(f"number of cells ({no_unique_z_values}) larger than z_lim ({z_lim}): grouping")
-            logging.critical(f"prevent this by modifying z_lim to your plotter_arguments")
+            logging.critical(
+                f"number of cells ({no_unique_z_values}) larger than z_lim ({z_lim}): grouping"
+            )
+            logging.critical(
+                f"prevent this by modifying z_lim to your plotter_arguments"
+            )
             z = group_label
             z_dim = hv.Dimension(f"{z}", label=group_txt, unit="")
 
@@ -892,6 +956,89 @@ def sequence_plotter_old(
         family[cyc] = hv.Curve(df, kdims=kdims, vdims=vdims).groupby(z).overlay()
 
     return hv.NdLayout(family, kdims=g_dim)
+
+
+def cycles_plotter_old(
+    collected_curves,
+    method="fig_pr_cell",
+    extension="bokeh",
+    cycles_to_plot=None,
+    width=None,
+    palette=None,
+    palette_range=(0.1, 1.0),
+    legend_position=None,
+    show_legend=None,
+    fig_title="",
+    cols=None,
+    **kwargs,
+):
+    if cols is None:
+        if extension == "matplotlib":
+            cols = 3
+        else:
+            cols = 3 if method == "fig_pr_cell" else 1
+
+    if width is None:
+        width = 400 if method == "fig_pr_cell" else int(800 / cols)
+
+    if palette is None:
+        palette = "Blues" if method == "fig_pr_cell" else "Category10"
+
+    if palette_range is None:
+        palette_range = (0.2, 1.0) if method == "fig_pr_cell" else (0, 1)
+
+    if legend_position is None:
+        legend_position = None if method == "fig_pr_cell" else "right"
+
+    if show_legend is None:
+        show_legend = True
+
+    reverse_palette = True if method == "fig_pr_cell" else False
+
+    backend_specific_kwargs = {
+        "NdLayout": {},
+        "NdOverlay": {},
+        "Curve": {},
+    }
+
+    if extension != "matplotlib":
+        logging.debug(f"setting width for bokeh and plotly: {width}")
+        backend_specific_kwargs["Curve"]["width"] = width
+
+    p = sequence_plotter(
+        collected_curves,
+        x="capacity",
+        y="voltage",
+        z="cycle",
+        g="cell",
+        method=method,
+        cycles=cycles_to_plot,
+        **kwargs,
+    ).cols(cols)
+
+    p.opts(
+        hv.opts.NdLayout(
+            title=fig_title,
+            **backend_specific_kwargs["NdLayout"],
+            backend=extension,
+        ),
+        hv.opts.NdOverlay(
+            **backend_specific_kwargs["NdOverlay"],
+            backend=extension,
+        ),
+        hv.opts.Curve(
+            # TODO: should replace this with custom mapping (see how it is done in plotutils):
+            color=hv.Palette(palette, reverse=reverse_palette, range=palette_range),
+            show_legend=show_legend,
+            **backend_specific_kwargs["Curve"],
+            backend=extension,
+        ),
+    )
+
+    if legend_position is not None:
+        p.opts(hv.opts.NdOverlay(legend_position=legend_position))
+
+    return p
 
 
 def ica_collector(
@@ -944,7 +1091,7 @@ class BatchSummaryCollector(BatchCollector):
         "columns": ["charge_capacity_gravimetric"],
     }
     _default_plotter_arguments = {
-        "extension": "bokeh",
+        "extension": "plotly",
     }
 
     _bokeh_template = [
@@ -1152,7 +1299,7 @@ class BatchCyclesCollector(BatchCollector):
         "method": "back-and-forth",
     }
     _default_plotter_arguments = {
-        "extension": "bokeh",
+        "extension": "plotly",
     }
 
     def __init__(
