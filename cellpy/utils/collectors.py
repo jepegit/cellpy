@@ -9,6 +9,8 @@ import logging
 
 import pandas as pd
 import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
 
 import cellpy
 from cellpy.readers.core import group_by_interpolate
@@ -19,6 +21,15 @@ from cellpy.utils import ica
 
 CELLPY_MINIMUM_VERSION = "1.0.0"
 
+large_rockwell_template = dict(
+    layout=go.Layout(title_font=dict(family="Rockwell", size=24))
+)
+
+PLOTLY_TEMPLATES = {
+    "fig_pr_cycle": large_rockwell_template,
+    "fig_pr_cell": large_rockwell_template,
+}
+
 
 def _setup():
     _welcome_message()
@@ -28,15 +39,6 @@ def _welcome_message():
     cellpy_version = cellpy.__version__
     logging.info(f"cellpy version: {cellpy_version}")
     logging.info(f"collectors need at least: {CELLPY_MINIMUM_VERSION}")
-
-
-def _set_holoviews_renderer(extension=None):
-    print(f"_set_holoviews_renderer({extension}) is deprecated")
-
-
-def _get_current_holoviews_renderer():
-    print(f"_get_current_holoviews_renderer() is deprecated")
-    # return hv.Store.current_backend
 
 
 _setup()
@@ -77,7 +79,7 @@ class BatchCollector:
         name=None,
         nick=None,
         autorun=True,
-        use_templates=True,
+        backend="plotly",
         elevated_data_collector_arguments=None,
         elevated_plotter_arguments=None,
         data_collector_arguments: dict = None,
@@ -93,6 +95,7 @@ class BatchCollector:
             name (str or bool): name used for auto-generating filenames etc.
             autorun (bool): run collector and plotter immediately if True.
             use_templates (bool): also apply template(s) in autorun mode if True.
+            backend (str): name of plotting backend to use ("plotly" or "matplotlib").
             elevated_data_collector_arguments (dict): arguments picked up by the child class' initializer.
             elevated_plotter_arguments (dict): arguments picked up by the child class' initializer.
             data_collector_arguments (dict): keyword arguments sent to the data collector.
@@ -104,6 +107,7 @@ class BatchCollector:
         self.data_collector = data_collector
         self.plotter = plotter
         self.nick = nick
+        self.backend = backend
         self.collector_name = collector_name or "base"
 
         # Arguments given as default arguments in the subclass have "low" priority (below elevated arguments at least):
@@ -127,8 +131,6 @@ class BatchCollector:
 
         if autorun:
             self.update(update_name=False)
-            if use_templates:
-                self.apply_templates()
 
     @property
     def data_collector_arguments(self):
@@ -330,52 +332,6 @@ class BatchCollector:
         if update_name:
             self.name = self.generate_name()
 
-    def _dynamic_update_template_parameter(self, opt, extension, *args, **kwargs):
-        return opt
-
-    def _register_template(self, opts, extension="plotly", *args, **kwargs):
-        """Register template for given extension.
-
-        It is also possible to set the options directly in the constructor of the
-        class. But it is recommended to use this method instead to allow for
-        sanitation of the options in the templates
-
-        Args:
-            opts: list of holoviews.core.options.Options- instances
-                e.g. [hv.opts.Curve(xlim=(0,2)), hv.opts.NdLayout(title="Super plot")]
-            extension: Holoviews backend ("matplotlib", "bokeh", or "plotly")
-
-        Returns:
-            None
-        """
-        if extension not in ["bokeh", "matplotlib", "plotly"]:
-            print(f"extension='{extension}' is not supported.")
-        if not isinstance(opts, (list, tuple)):
-            opts = [opts]
-
-        cleaned_opts = []
-        for o in opts:
-            logging.debug(f"Setting prm: {o}")
-            o = self._dynamic_update_template_parameter(o, extension, *args, **kwargs)
-            # ensure all options are registered with correct backend:
-            o.kwargs["backend"] = extension
-            cleaned_opts.append(o)
-
-        self._templates[extension] = cleaned_opts
-
-    def apply_templates(self):
-        if not self._figure_valid():
-            return
-
-        for backend, opt in self._templates.items():
-            try:
-                if len(opt):
-                    print(f"Applying template for {backend}:{opt}")
-                    self.figure = self._set_opts(opt)
-            except TypeError:
-                print("possible bug in apply_template experienced")
-                print(self._templates)
-
     def _figure_valid(self):
         # TODO: create a decorator
         if self.figure is None:
@@ -384,12 +340,10 @@ class BatchCollector:
         return True
 
     def _set_opts(self, opts):
-        if opts is None:
-            return self.figure
-        if isinstance(opts, (tuple, list)):
-            return self.figure.options(*opts)
-        else:
-            return self.figure.options(opts)
+        print(f"using _set_opts:")
+        print(opts)
+        print("Not implemented - so returning the figure as it was")
+        return self.figure
 
     def show(self, opts=None):
         if not self._figure_valid():
@@ -398,13 +352,10 @@ class BatchCollector:
         print(f"figure name: {self.name}")
         return self._set_opts(opts)
 
-    def redraw(self, opts=None, extension=None):
+    def redraw(self, opts=None):
         print("EXPERIMENTAL FEATURE! THIS MIGHT NOT WORK PROPERLY YET")
         if not self._figure_valid():
             return
-
-        if extension is not None:
-            _set_holoviews_renderer(extension)
 
         print(f"figure name: {self.name}")
         self.figure = self._set_opts(opts)
@@ -436,53 +387,17 @@ class BatchCollector:
         if not self._figure_valid():
             return
         filename_pre = self._output_path(serial_number)
-
-        filename_hv = filename_pre.with_suffix(".html")
-
-        print(
-            """hv.save(
-            self.figure,
-            filename_hv,
-            toolbar=self.toolbar,
-        )"""
-        )
-
-        print(f"saved file: {filename_hv}")
-
         filename_png = filename_pre.with_suffix(".png")
-        try:
-            # current_renderer = _get_current_holoviews_renderer()
-            #
-            # _set_holoviews_renderer("matplotlib")
-            print(
-                """self.figure.opts(hv.opts.NdOverlay(legend_position="right"))
-            hv.save(
-                self.figure,
-                filename_png,
-                dpi=300,
-            )"""
-            )
-            print(f"saved file: {filename_png}")
-        except Exception as e:
-            print("Could not save png-file.")
-            print(e)
-        # finally:
-        #     _set_holoviews_renderer(current_renderer)
+        filename_svg = filename_pre.with_suffix(".svg")
+        filename_json = filename_pre.with_suffix(".json")
+        print(f"TODO: implement saving {filename_png}")
+        print(f"TODO: implement saving {filename_svg}")
+        print(f"TODO: implement saving {filename_json}")
 
     def save(self, serial_number=None):
         self.to_csv(serial_number=serial_number)
 
         if self._figure_valid():
-            filename = self._output_path(serial_number)
-            filename = filename.with_suffix(".hvz")
-            try:
-                Pickler.save(
-                    self.figure,
-                    filename,
-                )
-                print(f"pickled holoviews file: {filename}")
-            except TypeError as e:
-                print("could not save as hvz file")
             self.to_image_files(serial_number=serial_number)
 
     def _output_path(self, serial_number=None):
@@ -494,15 +409,301 @@ class BatchCollector:
         return f
 
 
-# TODO: allow for storing more than one figure setup pr collector
-#    It is time-consuming and memory demanding to re-collect the data
-#    for each time we need a new figure for the collector. We should
-#    allow for creating multiple figures within one collector or for
-#    sharing (passing) collected data. One solution might be to extend
-#    the capabilities of the base class. Another solution might be to
-#    add another sub-class in the chain from the base class to the actual one:
-class BatchMultiFigureCollector(BatchCollector):
-    pass
+class BatchSummaryCollector(BatchCollector):
+    # Three main levels of arguments to the plotter and collector funcs is available:
+    #  - through dictionaries (`data_collector_arguments`, `plotter_arguments`) to init
+    #  - given as defaults in the subclass (`_default_data_collector_arguments`, `_default_plotter_arguments`)
+    #  - as elevated arguments (i.e. arguments normally given in the dictionaries elevated
+    #    to their own keyword parameters)
+
+    _default_data_collector_arguments = {
+        "columns": ["charge_capacity_gravimetric"],
+    }
+
+    def __init__(
+        self,
+        b,
+        max_cycle: int = None,
+        rate=None,
+        on=None,
+        columns=None,
+        column_names=None,
+        normalize_capacity_on=None,
+        scale_by=None,
+        nom_cap=None,
+        normalize_cycles=None,
+        group_it=None,
+        rate_std=None,
+        rate_column=None,
+        inverse=None,
+        inverted: bool = None,
+        key_index_bounds=None,
+        backend: str = None,
+        title: str = None,
+        points: bool = None,
+        line: bool = None,
+        width: int = None,
+        height: int = None,
+        legend_title: str = None,
+        marker_size: int = None,
+        cmap=None,
+        spread: bool = None,
+        *args,
+        **kwargs,
+    ):
+        """Collects and shows summaries.
+
+        Elevated data collector args:
+            max_cycle (int): drop all cycles above this value.
+            rate (float): filter on rate (C-rate)
+            on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            columns (list): selected column(s) (using cellpy attribute name)
+                [defaults to "charge_capacity_gravimetric"]
+            column_names (list): selected column(s) (using exact column name)
+            normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the
+                normalization (typically the first few cycles after formation)
+            scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap",
+                or given value (defaults to one).
+            nom_cap (float): nominal capacity of the cell
+            normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
+            group_it (bool): if True, average pr group.
+            rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+            rate_column (str): name of the column containing the C-rates.
+            inverse (bool): select steps that do not have the given C-rate.
+            inverted (bool): select cycles that do not have the steps filtered by given C-rate.
+            key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
+                key_index_bound[0] to key_index_bound[1].
+
+        Elevated plotter args:
+            backend (str): backend used (defaults to Bokeh)
+            points (bool): plot points if True
+            line (bool): plot line if True
+            width: width of plot
+            height: height of plot
+            legend_title: title to put over the legend
+            marker_size: size of the markers used
+            cmap: color-map to use
+            spread (bool): plot error-bands instead of error-bars if True
+        """
+
+        elevated_data_collector_arguments = dict(
+            max_cycle=max_cycle,
+            rate=rate,
+            on=on,
+            columns=columns,
+            column_names=column_names,
+            normalize_capacity_on=normalize_capacity_on,
+            scale_by=scale_by,
+            nom_cap=nom_cap,
+            normalize_cycles=normalize_cycles,
+            group_it=group_it,
+            rate_std=rate_std,
+            rate_column=rate_column,
+            inverse=inverse,
+            inverted=inverted,
+            key_index_bounds=key_index_bounds,
+        )
+
+        elevated_plotter_arguments = {
+            "backend": backend,
+            "title": title,
+            "points": points,
+            "line": line,
+            "width": width,
+            "height": height,
+            "legend_title": legend_title,
+            "marker_size": marker_size,
+            "cmap": cmap,
+            "spread": spread,
+        }
+
+        super().__init__(
+            b,
+            plotter=plot_concatenated,
+            data_collector=concatenate_summaries,
+            collector_name="summary",
+            elevated_data_collector_arguments=elevated_data_collector_arguments,
+            elevated_plotter_arguments=elevated_plotter_arguments,
+            *args,
+            **kwargs,
+        )
+
+    def generate_name(self):
+        names = ["collected_summaries"]
+        cols = self.data_collector_arguments.get("columns")
+        grouped = self.data_collector_arguments.get("group_it")
+        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
+        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
+        if self.nick:
+            names.insert(0, self.nick)
+        if cols:
+            names.extend(cols)
+        if grouped:
+            names.append("average")
+        if equivalent_cycles:
+            names.append("equivalents")
+        if len(normalized_cap):
+            names.append("norm")
+
+        name = "_".join(names)
+        return name
+
+
+class BatchICACollector(BatchCollector):
+
+    def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
+        """Create a collection of ica (dQ/dV) plots."""
+
+        self.plot_type = plot_type
+        self._default_plotter_arguments["method"] = plot_type
+        super().__init__(
+            b,
+            plotter=ica_plotter,
+            data_collector=ica_collector,
+            collector_name="ica",
+            *args,
+            **kwargs,
+        )
+
+    def generate_name(self):
+        names = ["collected_ica"]
+
+        pm = self.plotter_arguments.get("method")
+        if pm == "fig_pr_cell":
+            names.append("pr_cell")
+        elif pm == "fig_pr_cycle":
+            names.append("pr_cyc")
+        elif pm == "film":
+            names.append("film")
+
+        if self.nick:
+            names.insert(0, self.nick)
+
+        name = "_".join(names)
+        return name
+
+
+class BatchCyclesCollector(BatchCollector):
+    _default_data_collector_arguments = {
+        "interpolated": True,
+        "number_of_points": 100,
+        "max_cycle": 50,
+        "abort_on_missing": False,
+        "method": "back-and-forth",
+    }
+
+    def __init__(
+        self,
+        b,
+        plot_type="fig_pr_cell",
+        collector_type="back-and-forth",
+        cycles=None,
+        max_cycle=None,
+        label_mapper=None,
+        backend=None,
+        cycles_to_plot=None,
+        width=None,
+        palette=None,
+        show_legend=None,
+        legend_position=None,
+        fig_title=None,
+        cols=None,
+        *args,
+        **kwargs,
+    ):
+        """Create a collection of capacity plots.
+
+        Args:
+            b:
+            plot_type (str): either 'fig_pr_cell' or 'fig_pr_cycle'
+            collector_type (str): how the curves are given
+                "back-and-forth" - standard back and forth; discharge
+                    (or charge) reversed from where charge (or discharge) ends.
+                "forth" - discharge (or charge) continues along x-axis.
+                "forth-and-forth" - discharge (or charge) also starts at 0
+            data_collector_arguments (dict) - arguments transferred to the plotter
+            plotter_arguments (dict) - arguments transferred to the plotter
+
+        Elevated data collector args:
+            cycles (int): drop all cycles above this value.
+            max_cycle (float): filter on rate (C-rate)
+            label_mapper (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+
+        Elevated plotter args:
+            backend (str): backend used (defaults to Bokeh)
+            cycles_to_plot (int): plot points if True
+            width (float): width of plot
+            legend_position (str): position of the legend
+            show_legend (bool): set to False if you don't want to show legend
+            fig_title (str): title (will be put above the figure)
+            palette (str): color-map to use
+            cols (int): number of columns
+        """
+
+        elevated_data_collector_arguments = dict(
+            cycles=cycles,
+            max_cycle=max_cycle,
+            label_mapper=label_mapper,
+        )
+        elevated_plotter_arguments = dict(
+            backend=backend,
+            cycles_to_plot=cycles_to_plot,
+            width=width,
+            palette=palette,
+            legend_position=legend_position,
+            show_legend=show_legend,
+            fig_title=fig_title,
+            cols=cols,
+        )
+
+        # internal attribute to keep track of plot type:
+        self.plot_type = plot_type
+        self._max_letters_in_cell_names = max(len(x) for x in b.cell_names)
+        self._default_data_collector_arguments["method"] = collector_type
+        self._default_plotter_arguments["method"] = plot_type
+
+        super().__init__(
+            b,
+            plotter=cycles_plotter,
+            data_collector=cycles_collector,
+            collector_name="cycles",
+            elevated_data_collector_arguments=elevated_data_collector_arguments,
+            elevated_plotter_arguments=elevated_plotter_arguments,
+            *args,
+            **kwargs,
+        )
+
+    def _dynamic_update_template_parameter(self, hv_opt, backend, *args, **kwargs):
+        k = hv_opt.key
+        if k == "NdLayout" and backend == "matplotlib":
+            if self.plot_type != "fig_pr_cycle":
+                hv_opt.kwargs["fig_inches"] = self._max_letters_in_cell_names * 0.14
+        return hv_opt
+
+    def generate_name(self):
+        names = ["collected_cycles"]
+
+        if self.data_collector_arguments.get("interpolated"):
+            names.append("intp")
+            if n := self.data_collector_arguments.get("number_of_points"):
+                names.append(f"p{n}")
+        cm = self.data_collector_arguments.get("method")
+        if cm.startswith("b"):
+            names.append("bf")
+        else:
+            names.append("ff")
+
+        pm = self.plotter_arguments.get("method")
+        if pm == "fig_pr_cell":
+            names.append("pr_cell")
+        elif pm == "fig_pr_cycle":
+            names.append("pr_cyc")
+
+        if self.nick:
+            names.insert(0, self.nick)
+
+        name = "_".join(names)
+        return name
 
 
 def pick_named_cell(b, label_mapper=None):
@@ -591,456 +792,6 @@ def cycles_collector(
     return collected_curves
 
 
-#
-# def cycles_plotter_simple_holo_map(collected_curves, journal=None, **kwargs):
-#     p = hv.Curve(
-#         collected_curves, kdims="capacity", vdims=["voltage", "cycle", "cell"]
-#     ).groupby("cell")
-#     return p
-
-
-def ica_plotter(
-    collected_curves,
-    journal=None,
-    palette="Blues",
-    palette_range=(0.2, 1.0),
-    method="fig_pr_cell",
-    extension="plotly",
-    cycles_to_plot=None,
-    cols=1,
-    width=None,
-    height=None,
-    xlim_charge=(None, None),
-    xlim_discharge=(None, None),
-    **kwargs,
-):
-    if method == "film":
-        if extension == "matplotlib":
-            print("SORRY, PLOTTING FILM WITH MATPLOTLIB IS NOT IMPLEMENTED YET")
-            return
-
-        return ica_plotter_film_bokeh(
-            collected_curves,
-            journal=journal,
-            palette=palette,
-            extension="bokeh",
-            cycles=cycles_to_plot,
-            xlim_charge=xlim_charge,
-            xlim_discharge=xlim_discharge,
-            width=width,
-            height=height,
-            **kwargs,
-        )
-    else:
-        return sequence_plotter(
-            collected_curves,
-            x="voltage",
-            y="dq",
-            z="cycle",
-            g="cell",
-            journal=journal,
-            palette=palette,
-            palette_range=palette_range,
-            method=method,
-            extension=extension,
-            cycles=cycles_to_plot,
-            cols=cols,
-            width=width,
-        )
-
-
-def ica_plotter_film_bokeh(*args, **kwargs):
-    print("running ica_plotter_film_bokeh")
-    print(f"args: {args}")
-    print(f"kwargs: {kwargs}")
-
-
-def ica_plotter_film_bokeh_old(
-    collected_curves,
-    palette="Blues",
-    cycles=None,
-    xlim_charge=(None, None),
-    xlim_discharge=(None, None),
-    ylim=(None, None),
-    shared_axes=True,
-    width=400,
-    height=500,
-    cformatter="%02.0e",
-    **kwargs,
-):
-    if cycles is not None:
-        filtered_curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-    else:
-        filtered_curves = collected_curves
-
-    options = {
-        "xlabel": "Voltage (V)",
-        "ylabel": "Cycle",
-        "ylim": ylim,
-        "tools": ["hover"],
-        "width": width,
-        "height": height,
-        "cmap": palette,
-        "cformatter": cformatter,
-        "cnorm": "eq_hist",
-        "shared_axes": shared_axes,
-        "colorbar_opts": {
-            "title": "dQ/dV",
-        },
-    }
-
-    all_charge_plots = {}
-    all_discharge_plots = {}
-    for label, df in filtered_curves.groupby("cell"):
-        _charge = df.query("direction==1")
-        _discharge = df.query("direction==-1")
-        _dq_charge = group_by_interpolate(
-            _charge, x="voltage", y="dq", group_by="cycle", number_of_points=400
-        )
-        _dq_discharge = group_by_interpolate(
-            _discharge, x="voltage", y="dq", group_by="cycle", number_of_points=400
-        )
-
-        _v_charge = _dq_charge.index.values.ravel()
-        _v_discharge = _dq_discharge.index.values.ravel()
-
-        _cycles_charge = _charge.cycle.unique().ravel()
-        _cycles_discharge = _discharge.cycle.unique().ravel()
-
-        _dq_charge = -_dq_charge.values.T
-        _dq_discharge = _dq_discharge.values.T
-
-        charge_plot = hv.Image(
-            (_v_charge, _cycles_charge, _dq_charge), group="ica", label="charge"
-        ).opts(title=f"{label}", xlim=xlim_charge, colorbar=True, **options)
-
-        discharge_plot = hv.Image(
-            (_v_discharge, _cycles_discharge, _dq_discharge),
-            group="ica",
-            label="discharge",
-        ).opts(title=f"{label}", xlim=xlim_discharge, colorbar=True, **options)
-
-        all_charge_plots[f"{label}_charge"] = charge_plot
-        all_discharge_plots[f"{label}_discharge"] = discharge_plot
-
-    all_plots = {**all_charge_plots, **all_discharge_plots}
-    return (
-        hv.NdLayout(all_plots)
-        .opts(title="Incremental Capacity Analysis Film-plots")
-        .cols(2)
-    )
-
-
-def cycles_plotter(collected_curves, extension="plotly", method="fig_pr_cell", **kwargs):
-    """Plot charge-discharge curves.
-
-    Args:
-        collected_curves(pd.DataFrame): collected data in long format.
-        extension (str): what backend to use.
-        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
-
-        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
-
-    Returns:
-        styled figure object
-    """
-    print("running cycle plotter")
-    print(f"kwargs: {kwargs}")
-
-    # parameters not (yet ?) included into the arguments:
-    x_label = "Capacity"
-    x_unit = "mAh"
-    y_label = "Voltage"
-    y_unit = "V"
-    g_label = "Cell"
-    g_unit = ""
-    z_label = "Cycle"
-    z_unit = ""
-
-    logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
-    width = kwargs.pop("width", None)
-    palette = kwargs.pop("palette", None)
-    palette_range = kwargs.pop("palette_range", None)
-    legend_position = kwargs.pop("legend_position", None)
-    show_legend = kwargs.pop("show_legend", None)
-    width = kwargs.pop("width", None)
-    journal = kwargs.pop("journal", None)
-
-    # Additional (to be implemented) arguments that must be implemented during figure creation:
-    # cols
-
-    fig = sequence_plotter(
-        collected_curves,
-        x="capacity",
-        y="voltage",
-        z="cycle",
-        g="cell",
-        extension=extension,
-        method=method,
-        **kwargs,
-    )
-
-    # move this to separate function(s):
-    if extension == "plotly":
-        title_dict = {
-            "text": "some title",
-            "font": {"size": 25},
-        }
-        fig.update_layout(
-            title=title_dict
-        )
-
-    height = 400
-    facet_col_wrap = 3
-
-    # mod fig depending on
-
-    return fig
-
-
-def sequence_plotter(
-    collected_curves: pd.DataFrame,
-    x: str,
-    y: str,
-    z: str,
-    g: str,
-    method: str = "fig_pr_cell",
-    markers: bool = True,
-    extension: str = "ploty",
-    cycles: list = None,
-    cols: int = 3,
-
-    **kwargs,
-) -> Any:
-    """create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
-
-    This method contains the "common" operations done for all the sequence plots,
-    currently supporting filtering out the specific cycles, selecting either
-    dividing into subplots by cell or by cycle, and creating the (most basic) figure object.
-
-    Args:
-        collected_curves (pd.DataFrame): collected data in long format.
-        x: column name for x-values.
-        y: column name for y-values.
-        z: if method is 'fig_pr_cell', column name for color (legend), else for subplot.
-        g: if method is 'fig_pr_cell', column name for subplot, else for color.
-        method: 'fig_pr_cell' or 'fig_pr_cycle'.
-        markers: set to False if you don't want markers.
-        extension: what backend to use.
-        cycles: what cycles to include in the plot.
-        cols: number of columns for layout.
-
-        **kwargs: sent to backend (if `extension == "plotly"`, it will be
-            sent to `plotly.express` etc.)
-
-    Returns:
-        figure object
-    """
-    logging.debug("running sequence plotter")
-
-    for k in kwargs:
-        logging.debug(f"keyword argument sent to the backend: {k}")
-
-    curves = None
-
-    if method == "fig_pr_cell":
-        if cycles is not None:
-            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        else:
-            curves = collected_curves
-        logging.debug(f"filtered_curves:\n{curves}")
-
-    elif method == "fig_pr_cycle":
-        z, g = g, z
-        if cycles is None:
-            unique_cycles = list(collected_curves.cycle.unique())
-            if len(unique_cycles) > 10:
-                cycles = [1, 10, 20]
-        if cycles is not None:
-            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        else:
-            curves = collected_curves
-
-    if extension == "plotly":
-        fig = px.line(
-            curves,
-            x=x,
-            y=y,
-            color=z,
-            facet_col=g,
-            markers=markers,
-            facet_col_wrap=cols,
-        )
-        return fig
-
-    elif extension == "matplotlib":
-        print(f"{extension} not implemented yet")
-
-    elif extension == "bokeh":
-        print(f"{extension} not implemented yet")
-
-
-def sequence_plotter_old(
-    collected_curves,
-    x,
-    y,
-    z,
-    g,
-    method="fig_pr_cell",
-    group_label="group",
-    group_txt="cell-group",
-    z_lim=10,
-    cycles=None,
-    **kwargs,
-):
-    for k in kwargs:
-        logging.debug(f"keyword argument {k} given, but not used")
-
-    x_label = "Capacity"
-    x_unit = "mAh"
-
-    y_label = "Voltage"
-    y_unit = "V"
-
-    g_label = "Cell"
-    g_unit = ""
-
-    z_label = "Cycle"
-    z_unit = ""
-
-    x_dim = hv.Dimension(f"{x}", label=x_label, unit=x_unit)
-    y_dim = hv.Dimension(f"{y}", label=y_label, unit=y_unit)
-    g_dim = hv.Dimension(f"{g}", label=g_label, unit=g_unit)
-    z_dim = hv.Dimension(f"{z}", label=z_label, unit=z_unit)
-
-    family = {}
-    curves = None
-
-    if method == "fig_pr_cell":
-        if cycles is not None:
-            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        else:
-            curves = collected_curves
-        logging.debug(f"filtered_curves:\n{curves}")
-
-    elif method == "fig_pr_cycle":
-        if cycles is None:
-            unique_cycles = list(collected_curves.cycle.unique())
-            if len(unique_cycles) > 10:
-                cycles = [1, 10, 20]
-        if cycles is not None:
-            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        else:
-            curves = collected_curves
-        # g (what we split the figures by) : cycle
-        # z (the "dimension" of the individual curves in one figure): cell
-        z, g = g, z
-        z_dim, g_dim = g_dim, z_dim
-
-        # dirty (?) fix to make plots with a lot of cells look a bit better:
-        unique_z_values = collected_curves[z].unique()
-        no_unique_z_values = len(unique_z_values)
-        if no_unique_z_values > z_lim:
-            logging.critical(
-                f"number of cells ({no_unique_z_values}) larger than z_lim ({z_lim}): grouping"
-            )
-            logging.critical(
-                f"prevent this by modifying z_lim to your plotter_arguments"
-            )
-            z = group_label
-            z_dim = hv.Dimension(f"{z}", label=group_txt, unit="")
-
-    kdims = x_dim
-    vdims = [y_dim, z_dim]
-    for cyc, df in curves.groupby(g):
-        family[cyc] = hv.Curve(df, kdims=kdims, vdims=vdims).groupby(z).overlay()
-
-    return hv.NdLayout(family, kdims=g_dim)
-
-
-def cycles_plotter_old(
-    collected_curves,
-    method="fig_pr_cell",
-    extension="bokeh",
-    cycles_to_plot=None,
-    width=None,
-    palette=None,
-    palette_range=(0.1, 1.0),
-    legend_position=None,
-    show_legend=None,
-    fig_title="",
-    cols=None,
-    **kwargs,
-):
-    if cols is None:
-        if extension == "matplotlib":
-            cols = 3
-        else:
-            cols = 3 if method == "fig_pr_cell" else 1
-
-    if width is None:
-        width = 400 if method == "fig_pr_cell" else int(800 / cols)
-
-    if palette is None:
-        palette = "Blues" if method == "fig_pr_cell" else "Category10"
-
-    if palette_range is None:
-        palette_range = (0.2, 1.0) if method == "fig_pr_cell" else (0, 1)
-
-    if legend_position is None:
-        legend_position = None if method == "fig_pr_cell" else "right"
-
-    if show_legend is None:
-        show_legend = True
-
-    reverse_palette = True if method == "fig_pr_cell" else False
-
-    backend_specific_kwargs = {
-        "NdLayout": {},
-        "NdOverlay": {},
-        "Curve": {},
-    }
-
-    if extension != "matplotlib":
-        logging.debug(f"setting width for bokeh and plotly: {width}")
-        backend_specific_kwargs["Curve"]["width"] = width
-
-    p = sequence_plotter(
-        collected_curves,
-        x="capacity",
-        y="voltage",
-        z="cycle",
-        g="cell",
-        method=method,
-        cycles=cycles_to_plot,
-        **kwargs,
-    ).cols(cols)
-
-    p.opts(
-        hv.opts.NdLayout(
-            title=fig_title,
-            **backend_specific_kwargs["NdLayout"],
-            backend=extension,
-        ),
-        hv.opts.NdOverlay(
-            **backend_specific_kwargs["NdOverlay"],
-            backend=extension,
-        ),
-        hv.opts.Curve(
-            # TODO: should replace this with custom mapping (see how it is done in plotutils):
-            color=hv.Palette(palette, reverse=reverse_palette, range=palette_range),
-            show_legend=show_legend,
-            **backend_specific_kwargs["Curve"],
-            backend=extension,
-        ),
-    )
-
-    if legend_position is not None:
-        p.opts(hv.opts.NdOverlay(legend_position=legend_position))
-
-    return p
-
-
 def ica_collector(
     b,
     cycles=None,
@@ -1080,357 +831,236 @@ def ica_collector(
     return collected_curves
 
 
-class BatchSummaryCollector(BatchCollector):
-    # Three main levels of arguments to the plotter and collector funcs is available:
-    #  - through dictionaries (`data_collector_arguments`, `plotter_arguments`) to init
-    #  - given as defaults in the subclass (`_default_data_collector_arguments`, `_default_plotter_arguments`)
-    #  - as elevated arguments (i.e. arguments normally given in the dictionaries elevated
-    #    to their own keyword parameters)
+def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", template=None, **kwargs):
+    """Plot charge-discharge curves.
 
-    _default_data_collector_arguments = {
-        "columns": ["charge_capacity_gravimetric"],
-    }
-    _default_plotter_arguments = {
-        "extension": "plotly",
-    }
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+        template (Any): template given to the sub-plotter.
 
-    _bokeh_template = [
-        # hv.opts.Curve(fontsize={"title": "medium"}, width=800, backend="bokeh"),
-        # hv.opts.NdOverlay(legend_position="right", backend="bokeh"),
-    ]
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
-    def __init__(
-        self,
-        b,
-        max_cycle: int = None,
-        rate=None,
-        on=None,
-        columns=None,
-        column_names=None,
-        normalize_capacity_on=None,
-        scale_by=None,
-        nom_cap=None,
-        normalize_cycles=None,
-        group_it=None,
-        rate_std=None,
-        rate_column=None,
-        inverse=None,
-        inverted: bool = None,
-        key_index_bounds=None,
-        extension: str = None,
-        title: str = None,
-        points: bool = None,
-        line: bool = None,
-        width: int = None,
-        height: int = None,
-        legend_title: str = None,
-        marker_size: int = None,
-        cmap=None,
-        spread: bool = None,
-        *args,
+    Returns:
+        styled figure object
+    """
+
+    # TODO:
+
+    print("running cycle plotter")
+    print(f"kwargs: {kwargs}")
+
+    # parameters not (yet ?) included into the arguments:
+    x_label = "Capacity"
+    x_unit = "mAh"
+    y_label = "Voltage"
+    y_unit = "V"
+    g_label = "Cell"
+    g_unit = ""
+    z_label = "Cycle"
+    z_unit = ""
+
+
+
+    logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
+    title = kwargs.pop("title", None)
+    width = kwargs.pop("width", None)
+    height = kwargs.pop("height", None)
+    palette = kwargs.pop("palette", None)
+    palette_range = kwargs.pop("palette_range", None)
+    legend_position = kwargs.pop("legend_position", None)
+    legend_title = kwargs.pop("legend_title", None)
+    show_legend = kwargs.pop("show_legend", None)
+
+    journal = kwargs.pop("journal", None)  # not used yet
+
+    fig = sequence_plotter(
+        collected_curves,
+        x="capacity",
+        y="voltage",
+        z="cycle",
+        g="cell",
+        backend=backend,
+        method=method,
         **kwargs,
-    ):
-        """Collects and shows summaries.
+    )
 
-        Elevated data collector args:
-            max_cycle (int): drop all cycles above this value.
-            rate (float): filter on rate (C-rate)
-            on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
-            columns (list): selected column(s) (using cellpy attribute name)
-                [defaults to "charge_capacity_gravimetric"]
-            column_names (list): selected column(s) (using exact column name)
-            normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the
-                normalization (typically the first few cycles after formation)
-            scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap",
-                or given value (defaults to one).
-            nom_cap (float): nominal capacity of the cell
-            normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
-            group_it (bool): if True, average pr group.
-            rate_std (float): allow for this inaccuracy when selecting cycles based on rate
-            rate_column (str): name of the column containing the C-rates.
-            inverse (bool): select steps that do not have the given C-rate.
-            inverted (bool): select cycles that do not have the steps filtered by given C-rate.
-            key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
-                key_index_bound[0] to key_index_bound[1].
+    # move this to separate function(s):
+    if backend == "plotly":
+        if template is None:
+            template = PLOTLY_TEMPLATES[method]
 
-        Elevated plotter args:
-            extension (str): extension used (defaults to Bokeh)
-            points (bool): plot points if True
-            line (bool): plot line if True
-            width: width of plot
-            height: height of plot
-            legend_title: title to put over the legend
-            marker_size: size of the markers used
-            cmap: color-map to use
-            spread (bool): plot error-bands instead of error-bars if True
-        """
+        # translations
+        legend_orientation = "v"
+        if legend_position == "bottom":
+            legend_orientation = "h"
 
-        elevated_data_collector_arguments = dict(
-            max_cycle=max_cycle,
-            rate=rate,
-            on=on,
-            columns=columns,
-            column_names=column_names,
-            normalize_capacity_on=normalize_capacity_on,
-            scale_by=scale_by,
-            nom_cap=nom_cap,
-            normalize_cycles=normalize_cycles,
-            group_it=group_it,
-            rate_std=rate_std,
-            rate_column=rate_column,
-            inverse=inverse,
-            inverted=inverted,
-            key_index_bounds=key_index_bounds,
-        )
-
-        elevated_plotter_arguments = {
-            "extension": extension,
-            "title": title,
-            "points": points,
-            "line": line,
-            "width": width,
-            "height": height,
-            "legend_title": legend_title,
-            "marker_size": marker_size,
-            "cmap": cmap,
-            "spread": spread,
+        title_dict = {
+            "text": title,
+            "font_size": 25,
         }
 
-        self._register_template(self._bokeh_template, extension="bokeh")
-
-        super().__init__(
-            b,
-            plotter=plot_concatenated,
-            data_collector=concatenate_summaries,
-            collector_name="summary",
-            elevated_data_collector_arguments=elevated_data_collector_arguments,
-            elevated_plotter_arguments=elevated_plotter_arguments,
-            *args,
-            **kwargs,
-        )
-
-    def generate_name(self):
-        names = ["collected_summaries"]
-        cols = self.data_collector_arguments.get("columns")
-        grouped = self.data_collector_arguments.get("group_it")
-        equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
-        normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
-        if self.nick:
-            names.insert(0, self.nick)
-        if cols:
-            names.extend(cols)
-        if grouped:
-            names.append("average")
-        if equivalent_cycles:
-            names.append("equivalents")
-        if len(normalized_cap):
-            names.append("norm")
-
-        name = "_".join(names)
-        return name
-
-
-class BatchICACollector(BatchCollector):
-    _default_data_collector_arguments = {}
-    _default_plotter_arguments = {
-        "extension": "bokeh",
-    }
-
-    def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
-        """Create a collection of ica (dQ/dV) plots."""
-
-        self.plot_type = plot_type
-
-        if plot_type == "fig_pr_cell":
-            _tight = True
-            _fig_inches = 3.5
-        else:
-            _tight = False
-            _fig_inches = 5.5
-
-        matplotlib_template = [
-            # hv.opts.Curve(
-            #     show_frame=True,
-            #     fontsize={"title": "medium"},
-            #     backend="matplotlib",
-            # ),
-            # hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
-        ]
-
-        bokeh_template = [
-            # hv.opts.Curve(xlabel="Voltage (V)", backend="bokeh"),
-        ]
-        self._default_plotter_arguments["method"] = plot_type
-        self._register_template(matplotlib_template, extension="matplotlib")
-        self._register_template(bokeh_template, extension="bokeh")
-        super().__init__(
-            b,
-            plotter=ica_plotter,
-            data_collector=ica_collector,
-            collector_name="ica",
-            *args,
-            **kwargs,
-        )
-
-    def generate_name(self):
-        names = ["collected_ica"]
-
-        pm = self.plotter_arguments.get("method")
-        if pm == "fig_pr_cell":
-            names.append("pr_cell")
-        elif pm == "fig_pr_cycle":
-            names.append("pr_cyc")
-        elif pm == "film":
-            names.append("film")
-
-        if self.nick:
-            names.insert(0, self.nick)
-
-        name = "_".join(names)
-        return name
-
-
-class BatchCyclesCollector(BatchCollector):
-    _default_data_collector_arguments = {
-        "interpolated": True,
-        "number_of_points": 100,
-        "max_cycle": 50,
-        "abort_on_missing": False,
-        "method": "back-and-forth",
-    }
-    _default_plotter_arguments = {
-        "extension": "plotly",
-    }
-
-    def __init__(
-        self,
-        b,
-        plot_type="fig_pr_cell",
-        collector_type="back-and-forth",
-        cycles=None,
-        max_cycle=None,
-        label_mapper=None,
-        extension=None,
-        cycles_to_plot=None,
-        width=None,
-        palette=None,
-        show_legend=None,
-        legend_position=None,
-        fig_title=None,
-        cols=None,
-        *args,
-        **kwargs,
-    ):
-        """Create a collection of capacity plots.
-
-        Args:
-            b:
-            plot_type (str): either 'fig_pr_cell' or 'fig_pr_cycle'
-            collector_type (str): how the curves are given
-                "back-and-forth" - standard back and forth; discharge
-                    (or charge) reversed from where charge (or discharge) ends.
-                "forth" - discharge (or charge) continues along x-axis.
-                "forth-and-forth" - discharge (or charge) also starts at 0
-            data_collector_arguments (dict) - arguments transferred to the plotter
-            plotter_arguments (dict) - arguments transferred to the plotter
-
-        Elevated data collector args:
-            cycles (int): drop all cycles above this value.
-            max_cycle (float): filter on rate (C-rate)
-            label_mapper (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
-
-        Elevated plotter args:
-            extension (str): extension used (defaults to Bokeh)
-            cycles_to_plot (int): plot points if True
-            width (float): width of plot
-            legend_position (str): position of the legend
-            show_legend (bool): set to False if you don't want to show legend
-            fig_title (str): title (will be put above the figure)
-            palette (str): color-map to use
-            cols (int): number of columns
-        """
-
-        elevated_data_collector_arguments = dict(
-            cycles=cycles,
-            max_cycle=max_cycle,
-            label_mapper=label_mapper,
-        )
-        elevated_plotter_arguments = dict(
-            extension=extension,
-            cycles_to_plot=cycles_to_plot,
+        legend_dict = {
+            # "bgcolor": "#088DA5",
+            # "bordercolor": "#6690AD",
+            # "borderwidth": 3,
+            "orientation": legend_orientation,
+            "title_text": legend_title,
+        }
+        fig.update_layout(
+            template=template,
+            title=title_dict,
+            legend=legend_dict,
+            showlegend=show_legend,
+            height=height,
             width=width,
-            palette=palette,
-            legend_position=legend_position,
-            show_legend=show_legend,
-            fig_title=fig_title,
-            cols=cols,
         )
 
-        # internal attribute to keep track of plot type:
-        self.plot_type = plot_type
+    height = 400
+    facet_col_wrap = 3
 
-        # moving it to after init to allow for using prms set in init
-        if plot_type == "fig_pr_cell":
-            _tight = True
-            _fig_inches = 3.5
+    # mod fig depending on
+    # color_discrete_sequence = px.colors.qualitative.Antique,
+    # color_continuous_scale = px.colors.sequential.Viridis,
+
+    return fig
+
+
+def sequence_plotter(
+    collected_curves: pd.DataFrame,
+    x: str,
+    y: str,
+    z: str,
+    g: str,
+    method: str = "fig_pr_cell",
+    markers: bool = True,
+    backend: str = "ploty",
+    cycles: list = None,
+    cols: int = 3,
+
+    **kwargs,
+) -> Any:
+    """create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
+
+    This method contains the "common" operations done for all the sequence plots,
+    currently supporting filtering out the specific cycles, selecting either
+    dividing into subplots by cell or by cycle, and creating the (most basic) figure object.
+
+    Args:
+        collected_curves (pd.DataFrame): collected data in long format.
+        x: column name for x-values.
+        y: column name for y-values.
+        z: if method is 'fig_pr_cell', column name for color (legend), else for subplot.
+        g: if method is 'fig_pr_cell', column name for subplot, else for color.
+        method: 'fig_pr_cell' or 'fig_pr_cycle'.
+        markers: set to False if you don't want markers.
+        backend: what backend to use.
+        cycles: what cycles to include in the plot.
+        cols: number of columns for layout.
+
+        **kwargs: sent to backend (if `backend == "plotly"`, it will be
+            sent to `plotly.express` etc.)
+
+    Returns:
+        figure object
+    """
+    logging.debug("running sequence plotter")
+
+    for k in kwargs:
+        logging.debug(f"keyword argument sent to the backend: {k}")
+
+    curves = None
+
+    if method == "fig_pr_cell":
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
-            _tight = False
-            _fig_inches = 5.5
+            curves = collected_curves
+        logging.debug(f"filtered_curves:\n{curves}")
 
-        matplotlib_template = [
-            # hv.opts.Curve(
-            #     show_frame=True,
-            #     fontsize={"title": "medium"},
-            #     ylim=(0, 1),
-            #     backend="matplotlib",
-            # ),
-            # hv.opts.NdLayout(fig_inches=_fig_inches, tight=_tight, backend="matplotlib"),
-        ]
+    elif method == "fig_pr_cycle":
+        z, g = g, z
+        if cycles is None:
+            unique_cycles = list(collected_curves.cycle.unique())
+            if len(unique_cycles) > 10:
+                cycles = [1, 10, 20]
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        else:
+            curves = collected_curves
 
-        self._max_letters_in_cell_names = max(len(x) for x in b.cell_names)
-        self._register_template(matplotlib_template, extension="matplotlib")
-        self._default_data_collector_arguments["method"] = collector_type
-        self._default_plotter_arguments["method"] = plot_type
-
-        super().__init__(
-            b,
-            plotter=cycles_plotter,
-            data_collector=cycles_collector,
-            collector_name="cycles",
-            elevated_data_collector_arguments=elevated_data_collector_arguments,
-            elevated_plotter_arguments=elevated_plotter_arguments,
-            *args,
+    if backend == "plotly":
+        fig = px.line(
+            curves,
+            x=x,
+            y=y,
+            color=z,
+            facet_col=g,
+            markers=markers,
+            facet_col_wrap=cols,
             **kwargs,
         )
+        return fig
 
-    def _dynamic_update_template_parameter(self, hv_opt, extension, *args, **kwargs):
-        k = hv_opt.key
-        if k == "NdLayout" and extension == "matplotlib":
-            if self.plot_type != "fig_pr_cycle":
-                hv_opt.kwargs["fig_inches"] = self._max_letters_in_cell_names * 0.14
-        return hv_opt
+    elif backend == "matplotlib":
+        print(f"{backend} not implemented yet")
 
-    def generate_name(self):
-        names = ["collected_cycles"]
+    elif backend == "bokeh":
+        print(f"{backend} not implemented yet")
 
-        if self.data_collector_arguments.get("interpolated"):
-            names.append("intp")
-            if n := self.data_collector_arguments.get("number_of_points"):
-                names.append(f"p{n}")
-        cm = self.data_collector_arguments.get("method")
-        if cm.startswith("b"):
-            names.append("bf")
-        else:
-            names.append("ff")
 
-        pm = self.plotter_arguments.get("method")
-        if pm == "fig_pr_cell":
-            names.append("pr_cell")
-        elif pm == "fig_pr_cycle":
-            names.append("pr_cyc")
+def ica_plotter(
+    collected_curves,
+    journal=None,
+    palette="Blues",
+    palette_range=(0.2, 1.0),
+    method="fig_pr_cell",
+    backend="plotly",
+    cycles_to_plot=None,
+    cols=1,
+    width=None,
+    height=None,
+    xlim_charge=(None, None),
+    xlim_discharge=(None, None),
+    **kwargs,
+):
+    if method == "film":
+        if backend == "matplotlib":
+            print("SORRY, PLOTTING FILM WITH MATPLOTLIB IS NOT IMPLEMENTED YET")
+            return
 
-        if self.nick:
-            names.insert(0, self.nick)
+        return ica_plotter_film_bokeh(
+            collected_curves,
+            journal=journal,
+            palette=palette,
+            backend="bokeh",
+            cycles=cycles_to_plot,
+            xlim_charge=xlim_charge,
+            xlim_discharge=xlim_discharge,
+            width=width,
+            height=height,
+            **kwargs,
+        )
+    else:
+        return sequence_plotter(
+            collected_curves,
+            x="voltage",
+            y="dq",
+            z="cycle",
+            g="cell",
+            journal=journal,
+            palette=palette,
+            palette_range=palette_range,
+            method=method,
+            backend=backend,
+            cycles=cycles_to_plot,
+            cols=cols,
+            width=width,
+        )
 
-        name = "_".join(names)
-        return name
+
+def ica_plotter_film_bokeh(*args, **kwargs):
+    print("running ica_plotter_film_bokeh")
+    print(f"args: {args}")
+    print(f"kwargs: {kwargs}")
