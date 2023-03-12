@@ -1,8 +1,9 @@
 """Collectors are used for simplifying plotting and exporting batch objects."""
 
-import inspect
 import functools
+import inspect
 import logging
+import math
 from pprint import pprint
 from pathlib import Path
 import textwrap
@@ -21,7 +22,8 @@ from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
 CELLPY_MINIMUM_VERSION = "1.0.0"
-PLOTLY_BASE_TEMPLATE = "simple_white"
+PLOTLY_BASE_TEMPLATE = "seaborn"
+MAX_WIDTH = 1200
 
 fig_pr_cell_template = go.layout.Template(
     layout=dict(
@@ -366,14 +368,19 @@ class BatchCollector:
             return False
         return True
 
-    def show(self):
+    def show(self, **kwargs):
         if not self._figure_valid():
             return
 
         print(f"figure name: {self.name}")
+        if kwargs:
+            self._update_arguments(plotter_arguments=kwargs)
+            self.figure = self.plotter(
+                self.data, journal=self.b.journal, **self.plotter_arguments
+            )
         return self.figure
 
-    def redraw(self, opts=None):
+    def redraw(self, **kwargs):
         print("EXPERIMENTAL FEATURE! THIS MIGHT NOT WORK PROPERLY YET")
         if not self._figure_valid():
             return
@@ -851,13 +858,14 @@ def ica_collector(
     return collected_curves
 
 
-def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", **kwargs):
+def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set_sub_fig_size=True, **kwargs):
     """Plot charge-discharge curves.
 
     Args:
         collected_curves(pd.DataFrame): collected data in long format.
         backend (str): what backend to use.
         method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+        set_sub_fig_size (bool): width and height given for sub-plots and not the whole layout.
 
         **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
@@ -865,32 +873,24 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", **k
         styled figure object
     """
 
-    # TODO:
-
-    print("running cycle plotter")
-    print(f"kwargs: {kwargs}")
-
-    # parameters not (yet ?) included into the arguments:
-    x_label = "Capacity"
-    x_unit = "mAh"
-    y_label = "Voltage"
-    y_unit = "V"
-    g_label = "Cell"
-    g_unit = ""
-    z_label = "Cycle"
-    z_unit = ""
-
     logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
     title = kwargs.pop("title", "Charge-Discharge Curves")
-    width = kwargs.pop("width", None)
-    height = kwargs.pop("height", None)
+    width = kwargs.pop("width", 300)
+    height = kwargs.pop("height", 300)
     palette = kwargs.pop("palette", None)
     palette_range = kwargs.pop("palette_range", None)
     legend_position = kwargs.pop("legend_position", None)
     legend_title = kwargs.pop("legend_title", None)
     show_legend = kwargs.pop("show_legend", None)
+    cols = kwargs.pop("cols", 3)
 
     journal = kwargs.pop("journal", None)  # not used yet
+
+    if legend_title is None:
+        if method == "fig_pr_cell":
+            legend_title = "Cell"
+        else:
+            legend_title = "Cycle"
 
     fig = sequence_plotter(
         collected_curves,
@@ -900,31 +900,46 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", **k
         g="cell",
         backend=backend,
         method=method,
+        cols=cols,
         **kwargs,
     )
+
+    no_cols = cols
+    if method == "fig_pr_cell":
+        number_of_figs = len(collected_curves["cell"].unique())
+    else:
+        number_of_figs = len(collected_curves["cycle"].unique())
+
+    no_rows = math.ceil(number_of_figs / no_cols)
 
     # move this to separate function(s):
     if backend == "plotly":
         template = f"{PLOTLY_BASE_TEMPLATE}+{method}"
 
-        # translations
+        if set_sub_fig_size:
+            legend_size = 200
+            title_size = 10
+            height = no_rows * height + title_size
+            width = no_cols * width
+            if show_legend is not False:
+                width += legend_size
+
+            width = min(width, MAX_WIDTH)
+
+        fig.update_layout(legend=dict(title=legend_title))
+
         legend_orientation = "v"
         if legend_position == "bottom":
             legend_orientation = "h"
 
+        legend_dict = {
+            "title": legend_title,
+            "orientation": legend_orientation,
+        }
         title_dict = {
             "text": title,
-            #"font_size": 20,
         }
 
-        legend_dict = {
-            # "bgcolor": "#088DA5",
-            # "bordercolor": "#6690AD",
-            # "borderwidth": 3,
-            "orientation": legend_orientation,
-            "title_text": legend_title,
-        }
-        print(f"{template=}")
         fig.update_layout(
             template=template,
             title=title_dict,
@@ -934,21 +949,25 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", **k
             width=width,
         )
 
-    height = 400
-    facet_col_wrap = 3
-
-    # mod fig depending on
-    # color_discrete_sequence = px.colors.qualitative.Antique,
-    # color_continuous_scale = px.colors.sequential.Viridis,
-
     return fig
+
+
+def remove_markers(trace):
+    trace.update(marker=None, mode="lines")
+    return trace
 
 
 def legend_replacer(trace, df, group_legends=True):
     name = trace.name
-    group, subgroup = name.split(",")
-    group = int(group)
-    subgroup = int(group)
+    parts = name.split(",")
+    if len(parts) == 2:
+        group = int(parts[0])
+        subgroup = int(parts[1])
+    else:
+        print("Have not implemented replacing legend labels that are not on the form a,b yet.")
+        print(f"legend label: {name}")
+        return trace
+
     cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
     if group_legends:
         trace.update(name=cell_label, legendgroup=cell_label,
@@ -959,17 +978,25 @@ def legend_replacer(trace, df, group_legends=True):
 
 def sequence_plotter(
     collected_curves: pd.DataFrame,
-    x: str,
-    y: str,
-    z: str,
-    g: str,
+    x: str = "capacity",
+    y: str = "voltage",
+    z: str = "cycle",
+    g: str = "cell",
+    group: str = "group",
+    subgroup: str = "sub_group",
+    x_label: str = "Capacity",
+    x_unit: str = "mAh/g",
+    y_label: str = "Voltage",
+    y_unit: str = "V",
     method: str = "fig_pr_cell",
     markers: bool = True,
+    group_cells: bool = True,
+    group_legend_muting: bool = True,
     backend: str = "ploty",
     cycles: list = None,
     cols: int = 3,
-    palette_discrete: str = "Vivid",
-    palette_continuous: str = "Blues",
+    palette_discrete: str = None,
+    palette_continuous: str = "Viridis",
 
     **kwargs,
 ) -> Any:
@@ -985,8 +1012,16 @@ def sequence_plotter(
         y: column name for y-values.
         z: if method is 'fig_pr_cell', column name for color (legend), else for subplot.
         g: if method is 'fig_pr_cell', column name for subplot, else for color.
+        group: str = "group",
+        subgroup: str = "sub_group",
+        x_label: str = "",
+        x_unit:
+        y_label:
+        y_unit:
         method: 'fig_pr_cell' or 'fig_pr_cycle'.
         markers: set to False if you don't want markers.
+        group_cells:
+        group_legend_muting:
         backend: what backend to use.
         cycles: what cycles to include in the plot.
         palette_discrete:
@@ -1002,11 +1037,21 @@ def sequence_plotter(
     logging.debug("running sequence plotter")
 
     for k in kwargs:
-        print(f"keyword argument sent to the backend: {k}")
+        logging.debug(f"keyword argument sent to the backend: {k}")
 
     curves = None
+    labels = {
+        f"{x}": f"{x_label} ({x_unit})",
+        f"{y}": f"{y_label} ({y_unit})",
+    }
+    plotly_arguments = dict(x=x, y=y, labels=labels, facet_col_wrap=cols)
+    matplotlib_arguments = dict()
 
     if method == "fig_pr_cell":
+        group_cells = False
+        plotly_arguments["markers"] = False  # refusing to use markers for this option in plotly
+        plotly_arguments["color"] = z
+        plotly_arguments["facet_col"] = g
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
@@ -1015,59 +1060,48 @@ def sequence_plotter(
 
     elif method == "fig_pr_cycle":
         z, g = g, z
+        plotly_arguments["facet_col"] = g
+
         if cycles is None:
             unique_cycles = list(collected_curves.cycle.unique())
             if len(unique_cycles) > 10:
                 cycles = [1, 10, 20]
+
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
             curves = collected_curves
 
-    if backend == "plotly":
-        if method == "fig_pr_cycle":
-            kwargs["color_discrete_sequence"] = getattr(px.colors.qualitative, palette_discrete)
+        if group_cells:
+            plotly_arguments["color"] = group
+            plotly_arguments["symbol"] = subgroup
         else:
+            plotly_arguments["markers"] = markers
+            plotly_arguments["color"] = z
+
+    if backend == "plotly":
+
+        if method == "fig_pr_cell":
             kwargs["color_discrete_sequence"] = getattr(px.colors.sequential, palette_continuous)
+        else:
+            if palette_discrete is not None:
+                logging.debug(f"palette_discrete is not implemented yet ({palette_discrete})")
 
-        # TODO: move this somehow to get rid of if (put as much as possible out of sequence_plotter)
-        if method == "fig_pr_cycle":
+        fig = px.line(
+            curves,
+            **plotly_arguments,
+            **kwargs,
+        )
 
-            labels = {
-                "capacity": "Capacity (mAh/g)",
-                "voltage": "Voltage<br>(V vs Li/Li+)",
-            }
-            group_legends = True
-
-            fig = px.line(
-                curves,
-                x=x,
-                y=y,
-                color="group",
-                symbol="sub_group",
-                labels=labels,
-                facet_col="cycle",
-                markers=True,
-                facet_col_wrap=cols,
-            )
-
+        if group_cells:
             try:
-                fig.for_each_trace(functools.partial(legend_replacer, df=curves, group_legends=group_legends))
-                fig.update_layout(legend=dict(title="Cell name"))
+                fig.for_each_trace(functools.partial(legend_replacer, df=curves, group_legends=group_legend_muting))
+                if markers is not True:
+                    fig.for_each_trace(remove_markers)
             except Exception as e:
                 print("failed")
                 print(e)
-        else:
-            fig = px.line(
-                curves,
-                x=x,
-                y=y,
-                color=z,
-                facet_col=g,
-                markers=markers,
-                facet_col_wrap=cols,
-                **kwargs,
-            )
+
         return fig
 
     elif backend == "matplotlib":
