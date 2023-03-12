@@ -1,11 +1,12 @@
 """Collectors are used for simplifying plotting and exporting batch objects."""
 
-import textwrap
+import inspect
+import functools
+import logging
 from pprint import pprint
 from pathlib import Path
+import textwrap
 from typing import Any
-import inspect
-import logging
 
 import pandas as pd
 import plotly.express as px
@@ -20,15 +21,33 @@ from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
 CELLPY_MINIMUM_VERSION = "1.0.0"
+PLOTLY_BASE_TEMPLATE = "simple_white"
 
-large_rockwell_template = dict(
-    layout=go.Layout(title_font=dict(family="Rockwell", size=24))
+fig_pr_cell_template = go.layout.Template(
+    layout=dict(
+        xaxis=dict(
+            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
+            title={'standoff': 15},
+        ),
+        yaxis=dict(
+            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
+            title={'standoff': 15},
+        ),
+    )
 )
 
-PLOTLY_TEMPLATES = {
-    "fig_pr_cycle": large_rockwell_template,
-    "fig_pr_cell": large_rockwell_template,
-}
+fig_pr_cycle_template = go.layout.Template(
+    layout=dict(
+        xaxis=dict(
+            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
+            title={'standoff': 15},
+        ),
+        yaxis=dict(
+            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
+            title={'standoff': 15},
+        ),
+    )
+)
 
 
 def _setup():
@@ -122,6 +141,8 @@ class BatchCollector:
 
         self._set_attributes(**kwargs)
 
+        self._set_plotly_templates()
+
         if nick is None:
             self.nick = b.name
 
@@ -131,6 +152,12 @@ class BatchCollector:
 
         if autorun:
             self.update(update_name=False)
+
+    @staticmethod
+    def _set_plotly_templates():
+        pio.templates.default = PLOTLY_BASE_TEMPLATE
+        pio.templates["fig_pr_cell"] = fig_pr_cell_template
+        pio.templates["fig_pr_cycle"] = fig_pr_cycle_template
 
     @property
     def data_collector_arguments(self):
@@ -339,18 +366,12 @@ class BatchCollector:
             return False
         return True
 
-    def _set_opts(self, opts):
-        print(f"using _set_opts:")
-        print(opts)
-        print("Not implemented - so returning the figure as it was")
-        return self.figure
-
-    def show(self, opts=None):
+    def show(self):
         if not self._figure_valid():
             return
 
         print(f"figure name: {self.name}")
-        return self._set_opts(opts)
+        return self.figure
 
     def redraw(self, opts=None):
         print("EXPERIMENTAL FEATURE! THIS MIGHT NOT WORK PROPERLY YET")
@@ -358,7 +379,6 @@ class BatchCollector:
             return
 
         print(f"figure name: {self.name}")
-        self.figure = self._set_opts(opts)
         return self.figure
 
     def render(self):
@@ -831,14 +851,13 @@ def ica_collector(
     return collected_curves
 
 
-def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", template=None, **kwargs):
+def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", **kwargs):
     """Plot charge-discharge curves.
 
     Args:
         collected_curves(pd.DataFrame): collected data in long format.
         backend (str): what backend to use.
         method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
-        template (Any): template given to the sub-plotter.
 
         **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
@@ -861,10 +880,8 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", tem
     z_label = "Cycle"
     z_unit = ""
 
-
-
     logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
-    title = kwargs.pop("title", None)
+    title = kwargs.pop("title", "Charge-Discharge Curves")
     width = kwargs.pop("width", None)
     height = kwargs.pop("height", None)
     palette = kwargs.pop("palette", None)
@@ -888,8 +905,7 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", tem
 
     # move this to separate function(s):
     if backend == "plotly":
-        if template is None:
-            template = PLOTLY_TEMPLATES[method]
+        template = f"{PLOTLY_BASE_TEMPLATE}+{method}"
 
         # translations
         legend_orientation = "v"
@@ -898,7 +914,7 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", tem
 
         title_dict = {
             "text": title,
-            "font_size": 25,
+            #"font_size": 20,
         }
 
         legend_dict = {
@@ -908,6 +924,7 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", tem
             "orientation": legend_orientation,
             "title_text": legend_title,
         }
+        print(f"{template=}")
         fig.update_layout(
             template=template,
             title=title_dict,
@@ -927,6 +944,19 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", tem
     return fig
 
 
+def legend_replacer(trace, df, group_legends=True):
+    name = trace.name
+    group, subgroup = name.split(",")
+    group = int(group)
+    subgroup = int(group)
+    cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
+    if group_legends:
+        trace.update(name=cell_label, legendgroup=cell_label,
+                     hovertemplate=trace.hovertemplate.replace("subgroup", "cell"))
+    else:
+        trace.update(name=cell_label, hovertemplate=trace.hovertemplate.replace("subgroup", "cell"))
+
+
 def sequence_plotter(
     collected_curves: pd.DataFrame,
     x: str,
@@ -938,6 +968,8 @@ def sequence_plotter(
     backend: str = "ploty",
     cycles: list = None,
     cols: int = 3,
+    palette_discrete: str = "Vivid",
+    palette_continuous: str = "Blues",
 
     **kwargs,
 ) -> Any:
@@ -957,6 +989,8 @@ def sequence_plotter(
         markers: set to False if you don't want markers.
         backend: what backend to use.
         cycles: what cycles to include in the plot.
+        palette_discrete:
+        palette_continuous:
         cols: number of columns for layout.
 
         **kwargs: sent to backend (if `backend == "plotly"`, it will be
@@ -968,7 +1002,7 @@ def sequence_plotter(
     logging.debug("running sequence plotter")
 
     for k in kwargs:
-        logging.debug(f"keyword argument sent to the backend: {k}")
+        print(f"keyword argument sent to the backend: {k}")
 
     curves = None
 
@@ -991,16 +1025,49 @@ def sequence_plotter(
             curves = collected_curves
 
     if backend == "plotly":
-        fig = px.line(
-            curves,
-            x=x,
-            y=y,
-            color=z,
-            facet_col=g,
-            markers=markers,
-            facet_col_wrap=cols,
-            **kwargs,
-        )
+        if method == "fig_pr_cycle":
+            kwargs["color_discrete_sequence"] = getattr(px.colors.qualitative, palette_discrete)
+        else:
+            kwargs["color_discrete_sequence"] = getattr(px.colors.sequential, palette_continuous)
+
+        # TODO: move this somehow to get rid of if (put as much as possible out of sequence_plotter)
+        if method == "fig_pr_cycle":
+
+            labels = {
+                "capacity": "Capacity (mAh/g)",
+                "voltage": "Voltage<br>(V vs Li/Li+)",
+            }
+            group_legends = True
+
+            fig = px.line(
+                curves,
+                x=x,
+                y=y,
+                color="group",
+                symbol="sub_group",
+                labels=labels,
+                facet_col="cycle",
+                markers=True,
+                facet_col_wrap=cols,
+            )
+
+            try:
+                fig.for_each_trace(functools.partial(legend_replacer, df=curves, group_legends=group_legends))
+                fig.update_layout(legend=dict(title="Cell name"))
+            except Exception as e:
+                print("failed")
+                print(e)
+        else:
+            fig = px.line(
+                curves,
+                x=x,
+                y=y,
+                color=z,
+                facet_col=g,
+                markers=markers,
+                facet_col_wrap=cols,
+                **kwargs,
+            )
         return fig
 
     elif backend == "matplotlib":
