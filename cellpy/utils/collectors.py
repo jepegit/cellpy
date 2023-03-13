@@ -25,30 +25,23 @@ CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
 MAX_WIDTH = 1200
 
+px_template_all_axis_shown = dict(
+    xaxis=dict(
+        linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
+        title={'standoff': 15},
+    ),
+    yaxis=dict(
+        linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
+        title={'standoff': 15},
+    ),
+)
+
 fig_pr_cell_template = go.layout.Template(
-    layout=dict(
-        xaxis=dict(
-            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
-            title={'standoff': 15},
-        ),
-        yaxis=dict(
-            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
-            title={'standoff': 15},
-        ),
-    )
+    # layout=px_template_all_axis_shown
 )
 
 fig_pr_cycle_template = go.layout.Template(
-    layout=dict(
-        xaxis=dict(
-            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
-            title={'standoff': 15},
-        ),
-        yaxis=dict(
-            linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
-            title={'standoff': 15},
-        ),
-    )
+    # layout=px_template_all_axis_shown
 )
 
 
@@ -374,22 +367,12 @@ class BatchCollector:
 
         print(f"figure name: {self.name}")
         if kwargs:
+            print(f"updating figure with {kwargs}")
             self._update_arguments(plotter_arguments=kwargs)
             self.figure = self.plotter(
                 self.data, journal=self.b.journal, **self.plotter_arguments
             )
         return self.figure
-
-    def redraw(self, **kwargs):
-        print("EXPERIMENTAL FEATURE! THIS MIGHT NOT WORK PROPERLY YET")
-        if not self._figure_valid():
-            return
-
-        print(f"figure name: {self.name}")
-        return self.figure
-
-    def render(self):
-        print("Not implemented yet!")
 
     def preprocess_data_for_csv(self):
         print(f"the data layout {self.csv_layout} is not supported yet!")
@@ -878,7 +861,6 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set
     width = kwargs.pop("width", 300)
     height = kwargs.pop("height", 300)
     palette = kwargs.pop("palette", None)
-    palette_range = kwargs.pop("palette_range", None)
     legend_position = kwargs.pop("legend_position", None)
     legend_title = kwargs.pop("legend_title", None)
     show_legend = kwargs.pop("show_legend", None)
@@ -886,11 +868,15 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set
 
     journal = kwargs.pop("journal", None)  # not used yet
 
+    if palette is not None:
+        kwargs["palette_continuous"] = palette
+        kwargs["palette_discrete"] = palette
+
     if legend_title is None:
         if method == "fig_pr_cell":
-            legend_title = "Cell"
-        else:
             legend_title = "Cycle"
+        else:
+            legend_title = "Cell"
 
     fig = sequence_plotter(
         collected_curves,
@@ -925,8 +911,6 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set
                 width += legend_size
 
             width = min(width, MAX_WIDTH)
-
-        fig.update_layout(legend=dict(title=legend_title))
 
         legend_orientation = "v"
         if legend_position == "bottom":
@@ -989,7 +973,7 @@ def sequence_plotter(
     y_label: str = "Voltage",
     y_unit: str = "V",
     method: str = "fig_pr_cell",
-    markers: bool = True,
+    markers: bool = False,
     group_cells: bool = True,
     group_legend_muting: bool = True,
     backend: str = "ploty",
@@ -997,6 +981,7 @@ def sequence_plotter(
     cols: int = 3,
     palette_discrete: str = None,
     palette_continuous: str = "Viridis",
+    palette_range: tuple = None,
 
     **kwargs,
 ) -> Any:
@@ -1019,13 +1004,14 @@ def sequence_plotter(
         y_label:
         y_unit:
         method: 'fig_pr_cell' or 'fig_pr_cycle'.
-        markers: set to False if you don't want markers.
+        markers: set to True if you want markers.
         group_cells:
         group_legend_muting:
         backend: what backend to use.
         cycles: what cycles to include in the plot.
         palette_discrete:
         palette_continuous:
+        palette_range (tuple):
         cols: number of columns for layout.
 
         **kwargs: sent to backend (if `backend == "plotly"`, it will be
@@ -1049,7 +1035,7 @@ def sequence_plotter(
 
     if method == "fig_pr_cell":
         group_cells = False
-        plotly_arguments["markers"] = False  # refusing to use markers for this option in plotly
+        plotly_arguments["markers"] = markers
         plotly_arguments["color"] = z
         plotly_arguments["facet_col"] = g
         if cycles is not None:
@@ -1080,11 +1066,20 @@ def sequence_plotter(
             plotly_arguments["color"] = z
 
     if backend == "plotly":
-
         if method == "fig_pr_cell":
-            kwargs["color_discrete_sequence"] = getattr(px.colors.sequential, palette_continuous)
+            selected_colors = getattr(px.colors.sequential, palette_continuous)
+            if palette_range is not None:
+                number_of_colors = len(selected_colors)
+                end_index = number_of_colors - 1
+                start, end = palette_range
+                start = math.ceil(10 * start)
+                end = math.ceil(10 * start)
+                end_index = max(end, end_index)
+                start_index = min(start, end_index)
+                kwargs["color_discrete_sequence"] = selected_colors[start_index:end_index]
         else:
             if palette_discrete is not None:
+                # kwargs["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
                 logging.debug(f"palette_discrete is not implemented yet ({palette_discrete})")
 
         fig = px.line(
