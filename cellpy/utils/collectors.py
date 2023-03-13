@@ -21,6 +21,8 @@ from cellpy.utils.helpers import concatenate_summaries
 from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
+DEFAULT_CYCLES = [1, 10, 20]
+
 CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
 MAX_WIDTH = 1200
@@ -856,6 +858,7 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set
         styled figure object
     """
 
+    # --- pre-processing ---
     logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
     title = kwargs.pop("title", "Charge-Discharge Curves")
     width = kwargs.pop("width", 300)
@@ -878,6 +881,15 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set
         else:
             legend_title = "Cell"
 
+    no_cols = cols
+    if method == "fig_pr_cell":
+        number_of_figs = len(collected_curves["cell"].unique())
+    else:
+        number_of_figs = len(collected_curves["cycle"].unique())
+
+    no_rows = math.ceil(number_of_figs / no_cols)
+
+    # Figure object creation
     fig = sequence_plotter(
         collected_curves,
         x="capacity",
@@ -890,15 +902,7 @@ def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set
         **kwargs,
     )
 
-    no_cols = cols
-    if method == "fig_pr_cell":
-        number_of_figs = len(collected_curves["cell"].unique())
-    else:
-        number_of_figs = len(collected_curves["cycle"].unique())
-
-    no_rows = math.ceil(number_of_figs / no_cols)
-
-    # move this to separate function(s):
+    # Rendering:
     if backend == "plotly":
         template = f"{PLOTLY_BASE_TEMPLATE}+{method}"
 
@@ -1051,7 +1055,7 @@ def sequence_plotter(
         if cycles is None:
             unique_cycles = list(collected_curves.cycle.unique())
             if len(unique_cycles) > 10:
-                cycles = [1, 10, 20]
+                cycles = DEFAULT_CYCLES
 
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
@@ -1126,7 +1130,7 @@ def ica_plotter(
             print("SORRY, PLOTTING FILM WITH MATPLOTLIB IS NOT IMPLEMENTED YET")
             return
 
-        return ica_plotter_film_bokeh(
+        return ica_plotter_film(
             collected_curves,
             journal=journal,
             palette=palette,
@@ -1156,7 +1160,7 @@ def ica_plotter(
         )
 
 
-def ica_plotter_film_bokeh(*args, **kwargs):
-    print("running ica_plotter_film_bokeh")
+def ica_plotter_film(*args, **kwargs):
+    print("running ica_plotter_film")
     print(f"args: {args}")
     print(f"kwargs: {kwargs}")
