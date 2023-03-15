@@ -13,6 +13,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 import plotly.graph_objects as go
+import numpy as np
 
 import cellpy
 from cellpy.readers.core import group_by_interpolate
@@ -29,12 +30,18 @@ MAX_WIDTH = 1200
 
 px_template_all_axis_shown = dict(
     xaxis=dict(
-        linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
-        title={'standoff': 15},
+        linecolor="rgb(36,36,36)",
+        mirror=True,
+        showline=True,
+        zeroline=False,
+        title={"standoff": 15},
     ),
     yaxis=dict(
-        linecolor='rgb(36,36,36)', mirror=True, showline=True, zeroline=False,
-        title={'standoff': 15},
+        linecolor="rgb(36,36,36)",
+        mirror=True,
+        showline=True,
+        zeroline=False,
+        title={"standoff": 15},
     ),
 )
 
@@ -281,6 +288,8 @@ class BatchCollector:
     ):
         self.data_collector_arguments = data_collector_arguments
         self.plotter_arguments = plotter_arguments
+        self._check_plotter_arguments()
+
         logging.info(f"**data_collector_arguments: {self.data_collector_arguments}")
         logging.info(f"**plotter_arguments: {self.plotter_arguments}")
 
@@ -297,6 +306,12 @@ class BatchCollector:
                     **self._default_plotter_arguments,
                     **plotter_arguments,
                 }
+
+    def _check_plotter_arguments(self):
+        if "plot_type" in self.plotter_arguments:
+            print("WARNING - using possible difficult option (future versions will fix this)")
+            print("*** 'plot_type' TRANSLATED TO 'method'")
+            self.plotter_arguments["method"] = self.plotter_arguments.pop("plot_type")
 
     def reset_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
@@ -562,7 +577,6 @@ class BatchSummaryCollector(BatchCollector):
 
 
 class BatchICACollector(BatchCollector):
-
     def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
         """Create a collection of ica (dQ/dV) plots."""
 
@@ -843,103 +857,6 @@ def ica_collector(
     return collected_curves
 
 
-def cycles_plotter(collected_curves, backend="plotly", method="fig_pr_cell", set_sub_fig_size=True, **kwargs):
-    """Plot charge-discharge curves.
-
-    Args:
-        collected_curves(pd.DataFrame): collected data in long format.
-        backend (str): what backend to use.
-        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
-        set_sub_fig_size (bool): width and height given for sub-plots and not the whole layout.
-
-        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
-
-    Returns:
-        styled figure object
-    """
-
-    # --- pre-processing ---
-    logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
-    title = kwargs.pop("title", "Charge-Discharge Curves")
-    width = kwargs.pop("width", 300)
-    height = kwargs.pop("height", 300)
-    palette = kwargs.pop("palette", None)
-    legend_position = kwargs.pop("legend_position", None)
-    legend_title = kwargs.pop("legend_title", None)
-    show_legend = kwargs.pop("show_legend", None)
-    cols = kwargs.pop("cols", 3)
-
-    journal = kwargs.pop("journal", None)  # not used yet
-
-    if palette is not None:
-        kwargs["palette_continuous"] = palette
-        kwargs["palette_discrete"] = palette
-
-    if legend_title is None:
-        if method == "fig_pr_cell":
-            legend_title = "Cycle"
-        else:
-            legend_title = "Cell"
-
-    no_cols = cols
-    if method == "fig_pr_cell":
-        number_of_figs = len(collected_curves["cell"].unique())
-    else:
-        number_of_figs = len(collected_curves["cycle"].unique())
-
-    no_rows = math.ceil(number_of_figs / no_cols)
-
-    # Figure object creation
-    fig = sequence_plotter(
-        collected_curves,
-        x="capacity",
-        y="voltage",
-        z="cycle",
-        g="cell",
-        backend=backend,
-        method=method,
-        cols=cols,
-        **kwargs,
-    )
-
-    # Rendering:
-    if backend == "plotly":
-        template = f"{PLOTLY_BASE_TEMPLATE}+{method}"
-
-        if set_sub_fig_size:
-            legend_size = 200
-            title_size = 10
-            height = no_rows * height + title_size
-            width = no_cols * width
-            if show_legend is not False:
-                width += legend_size
-
-            width = min(width, MAX_WIDTH)
-
-        legend_orientation = "v"
-        if legend_position == "bottom":
-            legend_orientation = "h"
-
-        legend_dict = {
-            "title": legend_title,
-            "orientation": legend_orientation,
-        }
-        title_dict = {
-            "text": title,
-        }
-
-        fig.update_layout(
-            template=template,
-            title=title_dict,
-            legend=legend_dict,
-            showlegend=show_legend,
-            height=height,
-            width=width,
-        )
-
-    return fig
-
-
 def remove_markers(trace):
     trace.update(marker=None, mode="lines")
     return trace
@@ -952,16 +869,27 @@ def legend_replacer(trace, df, group_legends=True):
         group = int(parts[0])
         subgroup = int(parts[1])
     else:
-        print("Have not implemented replacing legend labels that are not on the form a,b yet.")
+        print(
+            "Have not implemented replacing legend labels that are not on the form a,b yet."
+        )
         print(f"legend label: {name}")
         return trace
 
-    cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
+    cell_label = df.loc[
+        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+    ].values[0]
     if group_legends:
-        trace.update(name=cell_label, legendgroup=cell_label,
-                     hovertemplate=trace.hovertemplate.replace("subgroup", "cell"))
+        trace.update(
+            name=cell_label,
+            legendgroup=group,
+            hovertemplate=f'{cell_label}<br>{trace.hovertemplate}',
+        )
     else:
-        trace.update(name=cell_label, hovertemplate=trace.hovertemplate.replace("subgroup", "cell"))
+        trace.update(
+            name=cell_label,
+            legendgroup=cell_label,
+            hovertemplate=f'{cell_label}<br>{trace.hovertemplate}',
+        )
 
 
 def sequence_plotter(
@@ -980,13 +908,14 @@ def sequence_plotter(
     markers: bool = False,
     group_cells: bool = True,
     group_legend_muting: bool = True,
-    backend: str = "ploty",
+    backend: str = "plotly",
     cycles: list = None,
     cols: int = 3,
     palette_discrete: str = None,
     palette_continuous: str = "Viridis",
     palette_range: tuple = None,
-
+    height: float = None,
+    width: float = None,
     **kwargs,
 ) -> Any:
     """create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
@@ -1017,6 +946,8 @@ def sequence_plotter(
         palette_continuous:
         palette_range (tuple):
         cols: number of columns for layout.
+        height:
+        width:
 
         **kwargs: sent to backend (if `backend == "plotly"`, it will be
             sent to `plotly.express` etc.)
@@ -1052,11 +983,6 @@ def sequence_plotter(
         z, g = g, z
         plotly_arguments["facet_col"] = g
 
-        if cycles is None:
-            unique_cycles = list(collected_curves.cycle.unique())
-            if len(unique_cycles) > 10:
-                cycles = DEFAULT_CYCLES
-
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
@@ -1068,23 +994,32 @@ def sequence_plotter(
         else:
             plotly_arguments["markers"] = markers
             plotly_arguments["color"] = z
-
+    print(f"{method=}")
     if backend == "plotly":
         if method == "fig_pr_cell":
-            selected_colors = getattr(px.colors.sequential, palette_continuous)
+            start, end = 0.0, 1.0
             if palette_range is not None:
-                number_of_colors = len(selected_colors)
-                end_index = number_of_colors - 1
                 start, end = palette_range
-                start = math.ceil(10 * start)
-                end = math.ceil(10 * start)
-                end_index = max(end, end_index)
-                start_index = min(start, end_index)
-                kwargs["color_discrete_sequence"] = selected_colors[start_index:end_index]
+            unique_cycle_numbers = curves[z].unique()
+            number_of_colors = len(unique_cycle_numbers)
+            selected_colors = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
+            kwargs["color_discrete_sequence"] = selected_colors
         else:
             if palette_discrete is not None:
                 # kwargs["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
-                logging.debug(f"palette_discrete is not implemented yet ({palette_discrete})")
+                logging.debug(
+                    f"palette_discrete is not implemented yet ({palette_discrete})"
+                )
+
+        abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
+        abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
+        facet_row_spacing = kwargs.pop("facet_row_spacing", abs_facet_row_spacing / height if height else 0.1)
+        facet_col_spacing = kwargs.pop("facet_col_spacing", abs_facet_col_spacing / (width or 1000))
+
+        plotly_arguments["facet_row_spacing"] = facet_row_spacing
+        plotly_arguments["facet_col_spacing"] = facet_col_spacing
+
+        print(f"{plotly_arguments=}")
 
         fig = px.line(
             curves,
@@ -1094,7 +1029,11 @@ def sequence_plotter(
 
         if group_cells:
             try:
-                fig.for_each_trace(functools.partial(legend_replacer, df=curves, group_legends=group_legend_muting))
+                fig.for_each_trace(
+                    functools.partial(
+                        legend_replacer, df=curves, group_legends=group_legend_muting
+                    )
+                )
                 if markers is not True:
                     fig.for_each_trace(remove_markers)
             except Exception as e:
@@ -1110,54 +1049,189 @@ def sequence_plotter(
         print(f"{backend} not implemented yet")
 
 
-def ica_plotter(
+def _cycles_plotter(
     collected_curves,
-    journal=None,
-    palette="Blues",
-    palette_range=(0.2, 1.0),
-    method="fig_pr_cell",
+    cycles=None,
+    x="capacity",
+    y="voltage",
+    z="cycle",
+    g="cell",
+    default_title="Charge-Discharge Curves",
     backend="plotly",
-    cycles_to_plot=None,
-    cols=1,
-    width=None,
-    height=None,
-    xlim_charge=(None, None),
-    xlim_discharge=(None, None),
+    method="fig_pr_cell",
+    direction=None,
     **kwargs,
 ):
-    if method == "film":
-        if backend == "matplotlib":
-            print("SORRY, PLOTTING FILM WITH MATPLOTLIB IS NOT IMPLEMENTED YET")
-            return
+    """Plot charge-discharge curves.
 
-        return ica_plotter_film(
-            collected_curves,
-            journal=journal,
-            palette=palette,
-            backend="bokeh",
-            cycles=cycles_to_plot,
-            xlim_charge=xlim_charge,
-            xlim_discharge=xlim_discharge,
-            width=width,
-            height=height,
-            **kwargs,
-        )
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+    Returns:
+        styled figure object
+    """
+
+    # --- pre-processing ---
+    logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
+    title = kwargs.pop("title", default_title)
+    width = kwargs.pop("width", None)
+    height = kwargs.pop("height", None)
+    palette = kwargs.pop("palette", None)
+    legend_position = kwargs.pop("legend_position", None)
+    legend_title = kwargs.pop("legend_title", None)
+    show_legend = kwargs.pop("show_legend", None)
+    cols = kwargs.pop("cols", 3)
+
+    journal = kwargs.pop("journal", None)  # not used yet
+
+    if palette is not None:
+        kwargs["palette_continuous"] = palette
+        kwargs["palette_discrete"] = palette
+
+    if legend_title is None:
+        if method == "fig_pr_cell":
+            legend_title = "Cycle"
+        else:
+            legend_title = "Cell"
+    no_cols = cols
+    if method == "fig_pr_cell":
+        number_of_figs = len(collected_curves["cell"].unique())
     else:
-        return sequence_plotter(
-            collected_curves,
-            x="voltage",
-            y="dq",
-            z="cycle",
-            g="cell",
-            journal=journal,
-            palette=palette,
-            palette_range=palette_range,
-            method=method,
-            backend=backend,
-            cycles=cycles_to_plot,
-            cols=cols,
-            width=width,
+        if cycles is not None:
+            number_of_figs = len(cycles)
+        else:
+            number_of_figs = len(collected_curves["cycle"].unique())
+
+    # TODO: implement this for ica plots
+    if direction is not None:
+        print("FILTERING ON DIRECTION - NOT IMPLEMENTED YET")
+
+    no_rows = math.ceil(number_of_figs / no_cols)
+
+    if not width and not height:
+        height = no_rows * 200
+
+    else:
+        if width:
+            height = no_rows * (width / no_cols)
+        elif height:
+            width = no_cols * 200
+
+    # Figure object creation
+    fig = sequence_plotter(
+        collected_curves,
+        x=x,
+        y=y,
+        z=z,
+        g=g,
+        backend=backend,
+        method=method,
+        cols=cols,
+        cycles=cycles,
+        width=width,
+        height=height,
+        **kwargs,
+    )
+
+    # Rendering:
+
+    if backend == "plotly":
+        template = f"{PLOTLY_BASE_TEMPLATE}+{method}"
+
+        legend_orientation = "v"
+        if legend_position == "bottom":
+            legend_orientation = "h"
+
+        legend_dict = {
+            "title": legend_title,
+            "orientation": legend_orientation,
+        }
+        title_dict = {
+            "text": title,
+        }
+
+        fig.update_layout(
+            template=template,
+            title=title_dict,
+            legend=legend_dict,
+            showlegend=show_legend,
+            height=height,
+            width=width
         )
+
+    return fig
+
+
+def cycles_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method="fig_pr_cell", **kwargs):
+    """Plot charge-discharge curves.
+
+       Args:
+           collected_curves(pd.DataFrame): collected data in long format.
+           cycles_to_plot (list): cycles to plot
+           backend (str): what backend to use.
+           method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+
+           **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+       Returns:
+           styled figure object
+       """
+
+    if cycles_to_plot is not None:
+        unique_cycles = list(collected_curves.cycle.unique())
+        if len(unique_cycles) > 50:
+            cycles_to_plot = DEFAULT_CYCLES
+
+    return _cycles_plotter(
+        collected_curves,
+        x="capacity",
+        y="voltage",
+        z="cycle",
+        g="cell",
+        default_title="Charge-Discharge Curves",
+        backend=backend, method=method, cycles=cycles_to_plot,
+        **kwargs)
+
+
+def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method="fig_pr_cell", direction="charge", **kwargs):
+    """Plot charge-discharge curves.
+
+       Args:
+           collected_curves(pd.DataFrame): collected data in long format.
+           cycles_to_plot (list): cycles to plot
+           backend (str): what backend to use.
+           method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+           direction (str): 'charge' or 'discharge' or 'both' (default).
+
+           **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+       Returns:
+           styled figure object
+       """
+
+    if cycles_to_plot is not None:
+        unique_cycles = list(collected_curves.cycle.unique())
+        if len(unique_cycles) > 50:
+            cycles_to_plot = DEFAULT_CYCLES
+
+    return _cycles_plotter(
+        collected_curves,
+        x="voltage",
+        y="dq",
+        z="cycle",
+        g="cell",
+        x_label="Voltage",
+        x_unit="V",
+        y_label="dQ/dV",
+        y_unit="mAh/g/V.",
+        default_title="Incremental Analysis Plots",
+        direction=direction,
+        backend=backend, method=method, cycles=cycles_to_plot,
+        **kwargs)
 
 
 def ica_plotter_film(*args, **kwargs):
