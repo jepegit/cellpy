@@ -867,6 +867,12 @@ def remove_markers(trace):
     return trace
 
 
+def _hist_eq(trace):
+    z = histogram_equalization(trace.z)
+    trace.update(z=z)
+    return trace
+
+
 def legend_replacer(trace, df, group_legends=True):
     name = trace.name
     parts = name.split(",")
@@ -913,6 +919,9 @@ def sequence_plotter(
     z_unit: str = "n.",
     nbinsx: int = 100,
     histfunc: str = "avg",
+    histscale: str = "abs-log",
+    direction: str = "charge",
+    direction_col: str = "direction",
     method: str = "fig_pr_cell",
     markers: bool = False,
     group_cells: bool = True,
@@ -950,10 +959,13 @@ def sequence_plotter(
         z_unit: str = "n."
         nbinsx: int = 100
         histfunc: str = "avg"
+        histscale (str) = "abs-log" used for scaling the z-values for 2D array plots (heatmaps and similar).
+        direction (str) = "charge", "discharge", or "both".
+        direction_col (str) = "direction",
         method: 'fig_pr_cell' or 'fig_pr_cycle'.
         markers: set to True if you want markers.
-        group_cells:
-        group_legend_muting:
+        group_cells (bool):
+        group_legend_muting (bool):
         backend: what backend to use.
         cycles: what cycles to include in the plot.
         palette_discrete:
@@ -973,7 +985,7 @@ def sequence_plotter(
     logging.debug("running sequence plotter")
 
     for k in kwargs:
-        print(f"keyword argument sent to the backend: {k}")
+        logging.debug(f"keyword argument sent to the backend: {k}")
 
     curves = None
     seaborn_arguments = dict()
@@ -1009,6 +1021,20 @@ def sequence_plotter(
             curves = collected_curves
         logging.debug(f"filtered_curves:\n{curves}")
 
+        if method == "film":
+            # selecting direction
+            if direction == "charge":
+                curves = curves.query(f"{direction_col} < 0")
+            elif direction == "discharge":
+                curves = curves.query(f"{direction_col} > 0")
+            # scaling (assuming 'y' is the "value" axis):
+            if histscale == "abs-log":
+                curves[y] = curves[y].apply(np.abs).apply(np.log)
+            elif histscale == "abs":
+                curves[y] = curves[y].apply(np.abs)
+            elif histscale == "norm":
+                curves[y] = curves[y].apply(np.abs)
+
     elif method == "fig_pr_cycle":
         z, g = g, z
         plotly_arguments["facet_col"] = g
@@ -1025,14 +1051,6 @@ def sequence_plotter(
             plotly_arguments["markers"] = markers
             plotly_arguments["color"] = z
 
-    if method == "film":
-        print("METHOD = FILM: creating plotter arguments dict")
-        print(f"*** Size of curves: {len(curves)}")
-        # if cycles is not None:
-        #     curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        # else:
-        #     curves = collected_curves
-
     if backend == "plotly":
         if method == "fig_pr_cell":
             start, end = 0.0, 1.0
@@ -1040,18 +1058,22 @@ def sequence_plotter(
                 start, end = palette_range
             unique_cycle_numbers = curves[z].unique()
             number_of_colors = len(unique_cycle_numbers)
+
             selected_colors = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
-            kwargs["color_discrete_sequence"] = selected_colors
+            plotly_arguments["color_discrete_sequence"] = selected_colors
         elif method == "fig_pr_cycle":
             if palette_discrete is not None:
-                # kwargs["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
+                # plotly_arguments["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
                 logging.debug(
                     f"palette_discrete is not implemented yet ({palette_discrete})"
                 )
 
         elif method == "film":
-            kwargs["color_continuous_scale"] = getattr(px.colors.sequential, palette_continuous)
-            print("METHOD = FILM: Updating plotly arg dict for film")
+            number_of_colors = 10
+            start, end = 0.0, 1.0
+            if palette_range is not None:
+                start, end = palette_range
+            plotly_arguments["color_continuous_scale"] = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
 
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
         abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
@@ -1061,8 +1083,8 @@ def sequence_plotter(
         plotly_arguments["facet_row_spacing"] = facet_row_spacing
         plotly_arguments["facet_col_spacing"] = facet_col_spacing
 
-        print(f"{plotly_arguments=}")
-        print(f"{kwargs=}")
+        logging.debug(f"{plotly_arguments=}")
+        logging.debug(f"{kwargs=}")
 
         fig = None
         if method in ["fig_pr_cycle", "fig_pr_cell"]:
@@ -1086,9 +1108,16 @@ def sequence_plotter(
                     print(e)
 
         elif method == "film":
-            print("CREATING FILM FIG")
+            fig = px.density_heatmap(curves, **plotly_arguments, **kwargs)
+            if histscale is None:
+                color_bar_txt = f"{y_label} ({y_unit})"
+            else:
+                color_bar_txt = f"{y_label} ({histscale})"
 
-            fig = px.density_heatmap(curves.assign(dq=lambda _x: np.log(_x.dq)).query('direction < 0'), **plotly_arguments, **kwargs)
+            if histscale == "hist-eq":
+                fig = fig.for_each_trace(lambda _x: _hist_eq(_x))
+
+            fig.update_layout(coloraxis_colorbar_title_text=color_bar_txt)
 
         else:
             print(f"method '{method}' is not supported py plotly")
@@ -1112,7 +1141,6 @@ def _cycles_plotter(
     default_title="Charge-Discharge Curves",
     backend="plotly",
     method="fig_pr_cell",
-    direction=None,
     **kwargs,
 ):
     """Plot charge-discharge curves.
@@ -1159,12 +1187,9 @@ def _cycles_plotter(
         else:
             number_of_figs = len(collected_curves["cycle"].unique())
 
-    # TODO: implement this for ica plots
-    if direction is not None:
-        print("FILTERING ON DIRECTION - NOT IMPLEMENTED YET")
-
     no_rows = math.ceil(number_of_figs / no_cols)
 
+    # TODO: still something strange here
     if not width and not height:
         height = no_rows * 200
 
@@ -1260,7 +1285,7 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
            cycles_to_plot (list): cycles to plot
            backend (str): what backend to use.
            method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
-           direction (str): 'charge' or 'discharge' or 'both' (default).
+           direction (str): 'charge' or 'discharge'.
 
            **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
@@ -1268,10 +1293,20 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
            styled figure object
        """
 
-    if cycles_to_plot is not None:
+    if cycles_to_plot is None:
         unique_cycles = list(collected_curves.cycle.unique())
+        max_cycle = max(unique_cycles)
         if len(unique_cycles) > 50:
             cycles_to_plot = DEFAULT_CYCLES
+            max_cycle = max(cycles_to_plot)
+    else:
+        max_cycle = max(cycles_to_plot)
+
+    if direction not in ["charge", "discharge"]:
+        print(f"direction='{direction}' not allowed - setting it to 'charge'")
+        direction = "charge"
+
+    kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)
 
     return _cycles_plotter(
         collected_curves,
@@ -1283,8 +1318,24 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
         x_unit="V",
         y_label="dQ/dV",
         y_unit="mAh/g/V.",
-        default_title="Incremental Analysis Plots",
+        default_title=f"Incremental Analysis Plots ({direction.capitalize()})",
         direction=direction,
         backend=backend, method=method, cycles=cycles_to_plot,
         **kwargs)
 
+
+def histogram_equalization(image: np.array) -> np.array:
+    """Perform histogram equalization on a numpy array.
+
+    # from http://www.janeriksolem.net/histogram-equalization-with-python-and.html
+    """
+    number_bins = 256
+    scale = 100
+    image[np.isnan(image)] = 0.0
+    image_histogram, bins = np.histogram(image.flatten(), number_bins, density=True)
+    cdf = image_histogram.cumsum()  # cumulative distribution function
+    cdf = (scale - 1) * cdf / cdf[-1]  # normalize
+    # use linear interpolation of cdf to find new pixel values
+    image_equalized = np.interp(image.flatten(), bins[:-1], cdf)
+
+    return image_equalized.reshape(image.shape)
