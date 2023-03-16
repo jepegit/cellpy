@@ -559,6 +559,9 @@ class BatchSummaryCollector(BatchCollector):
             **kwargs,
         )
 
+    # TODO: copy concatenate_summaries to this module or make a new one
+    # TODO: need to get group and sub_group from concatenate_summaries
+
     def generate_name(self):
         names = ["collected_summaries"]
         cols = self.data_collector_arguments.get("columns")
@@ -581,16 +584,54 @@ class BatchSummaryCollector(BatchCollector):
 
 
 class BatchICACollector(BatchCollector):
-    def __init__(self, b, plot_type="fig_pr_cell", *args, **kwargs):
+    def __init__(
+        self,
+        b,
+        plot_type="fig_pr_cell",
+        cycles=None,
+        max_cycle=None,
+        label_mapper=None,
+        backend=None,
+        cycles_to_plot=None,
+        width=None,
+        palette=None,
+        show_legend=None,
+        legend_position=None,
+        fig_title=None,
+        cols=None,
+        group_legend_muting=True,
+        *args,
+        **kwargs
+    ):
         """Create a collection of ica (dQ/dV) plots."""
 
         self.plot_type = plot_type
         self._default_plotter_arguments["method"] = plot_type
+
+        elevated_data_collector_arguments = dict(
+            cycles=cycles,
+            max_cycle=max_cycle,
+            label_mapper=label_mapper,
+        )
+        elevated_plotter_arguments = dict(
+            backend=backend,
+            cycles_to_plot=cycles_to_plot,
+            width=width,
+            palette=palette,
+            legend_position=legend_position,
+            show_legend=show_legend,
+            fig_title=fig_title,
+            cols=cols,
+            group_legend_muting=group_legend_muting,
+        )
+
         super().__init__(
             b,
             plotter=ica_plotter,
             data_collector=ica_collector,
             collector_name="ica",
+            elevated_data_collector_arguments=elevated_data_collector_arguments,
+            elevated_plotter_arguments=elevated_plotter_arguments,
             *args,
             **kwargs,
         )
@@ -638,6 +679,7 @@ class BatchCyclesCollector(BatchCollector):
         legend_position=None,
         fig_title=None,
         cols=None,
+        group_legend_muting=True,
         *args,
         **kwargs,
     ):
@@ -684,6 +726,7 @@ class BatchCyclesCollector(BatchCollector):
             show_legend=show_legend,
             fig_title=fig_title,
             cols=cols,
+            group_legend_muting=group_legend_muting,
         )
 
         # internal attribute to keep track of plot type:

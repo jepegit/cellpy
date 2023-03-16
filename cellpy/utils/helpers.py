@@ -655,6 +655,7 @@ def concatenate_summaries(
 
     """
 
+    print("IN CONCATENATOR")
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
     reserved_cell_label_names = ["FC"]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -707,7 +708,6 @@ def concatenate_summaries(
         cell_names_nest.append(list(b.experiment.cell_names))
 
     for cell_names in cell_names_nest:
-
         frames_sub = []
         keys_sub = []
 
@@ -796,7 +796,9 @@ def concatenate_summaries(
             keys = new_keys
         cdf = pd.concat(frames, keys=keys, axis=1)
         cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
+
         if melt:
+            print("MELTING")
             cdf = cdf.reset_index(drop=False).melt(
                 id_vars=hdr_summary.cycle_index, value_name="value"
             )
@@ -824,7 +826,6 @@ def concatenate_summaries(
                 )
                 melted_column_order.insert(-2, "cell_type")
             cdf = cdf.reindex(columns=melted_column_order)
-
         return cdf
     else:
         logging.info("Empty - nothing to concatenate!")
