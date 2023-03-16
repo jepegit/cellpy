@@ -26,7 +26,6 @@ DEFAULT_CYCLES = [1, 10, 20]
 
 CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
-MAX_WIDTH = 1200
 
 px_template_all_axis_shown = dict(
     xaxis=dict(
@@ -1088,6 +1087,8 @@ def sequence_plotter(
 
         fig = None
         if method in ["fig_pr_cycle", "fig_pr_cell"]:
+            print(f"{plotly_arguments=}")
+            print(f"{kwargs=}")
             fig = px.line(
                 curves,
                 **plotly_arguments,
@@ -1179,27 +1180,18 @@ def _cycles_plotter(
         else:
             legend_title = "Cell"
     no_cols = cols
-    if method == "fig_pr_cell":
+    if method in ["fig_pr_cell", "film"]:
         number_of_figs = len(collected_curves["cell"].unique())
     else:
         if cycles is not None:
             number_of_figs = len(cycles)
         else:
             number_of_figs = len(collected_curves["cycle"].unique())
-
     no_rows = math.ceil(number_of_figs / no_cols)
 
-    # TODO: still something strange here
-    if not width and not height:
+    if not height:
         height = no_rows * 200
 
-    else:
-        if width:
-            height = no_rows * (width / no_cols)
-        elif height:
-            width = no_cols * 200
-
-    # Figure object creation
     fig = sequence_plotter(
         collected_curves,
         x=x,
@@ -1305,8 +1297,8 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
     if direction not in ["charge", "discharge"]:
         print(f"direction='{direction}' not allowed - setting it to 'charge'")
         direction = "charge"
-
-    kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)
+    if method in ["fig_pr_cell", "film"]:
+        kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)
 
     return _cycles_plotter(
         collected_curves,
