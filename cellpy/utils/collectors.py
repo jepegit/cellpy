@@ -909,12 +909,17 @@ def sequence_plotter(
     x_unit: str = "mAh/g",
     y_label: str = "Voltage",
     y_unit: str = "V",
+    z_label: str = "Cycle",
+    z_unit: str = "n.",
+    nbinsx: int = 100,
+    histfunc: str = "avg",
     method: str = "fig_pr_cell",
     markers: bool = False,
     group_cells: bool = True,
     group_legend_muting: bool = True,
     backend: str = "plotly",
     cycles: list = None,
+    facetplot: bool = False,
     cols: int = 3,
     palette_discrete: str = None,
     palette_continuous: str = "Viridis",
@@ -941,6 +946,10 @@ def sequence_plotter(
         x_unit:
         y_label:
         y_unit:
+        z_label: str = "Cycle"
+        z_unit: str = "n."
+        nbinsx: int = 100
+        histfunc: str = "avg"
         method: 'fig_pr_cell' or 'fig_pr_cycle'.
         markers: set to True if you want markers.
         group_cells:
@@ -950,6 +959,7 @@ def sequence_plotter(
         palette_discrete:
         palette_continuous:
         palette_range (tuple):
+        facetplot (bool): square layout with group horizontally and subgroup vertically.
         cols: number of columns for layout.
         height:
         width:
@@ -963,21 +973,36 @@ def sequence_plotter(
     logging.debug("running sequence plotter")
 
     for k in kwargs:
-        logging.debug(f"keyword argument sent to the backend: {k}")
+        print(f"keyword argument sent to the backend: {k}")
 
     curves = None
-    labels = {
-        f"{x}": f"{x_label} ({x_unit})",
-        f"{y}": f"{y_label} ({y_unit})",
-    }
-    plotly_arguments = dict(x=x, y=y, labels=labels, facet_col_wrap=cols)
-    matplotlib_arguments = dict()
+    seaborn_arguments = dict()
 
-    if method == "fig_pr_cell":
+    if method == "film":
+        labels = {
+            f"{x}": f"{x_label} ({x_unit})",
+            f"{z}": f"{z_label} ({z_unit})",
+        }
+        plotly_arguments = dict(x=x, y=z, z=y, labels=labels, facet_col_wrap=cols, nbinsx=nbinsx, histfunc=histfunc)
+    else:
+        labels = {
+            f"{x}": f"{x_label} ({x_unit})",
+            f"{y}": f"{y_label} ({y_unit})",
+        }
+        plotly_arguments = dict(x=x, y=y, labels=labels, facet_col_wrap=cols)
+
+    if method in ["fig_pr_cell", "film"]:
         group_cells = False
-        plotly_arguments["markers"] = markers
-        plotly_arguments["color"] = z
-        plotly_arguments["facet_col"] = g
+        if method == "fig_pr_cell":
+            plotly_arguments["markers"] = markers
+            plotly_arguments["color"] = z
+        if facetplot:
+            plotly_arguments["facet_col"] = group
+            plotly_arguments["facet_row"] = subgroup
+            plotly_arguments["hover_name"] = g
+        else:
+            plotly_arguments["facet_col"] = g
+
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
@@ -1000,12 +1025,13 @@ def sequence_plotter(
             plotly_arguments["markers"] = markers
             plotly_arguments["color"] = z
 
-    elif method == "film":
+    if method == "film":
         print("METHOD = FILM: creating plotter arguments dict")
-        if cycles is not None:
-            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        else:
-            curves = collected_curves
+        print(f"*** Size of curves: {len(curves)}")
+        # if cycles is not None:
+        #     curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        # else:
+        #     curves = collected_curves
 
     if backend == "plotly":
         if method == "fig_pr_cell":
@@ -1024,6 +1050,7 @@ def sequence_plotter(
                 )
 
         elif method == "film":
+            kwargs["color_continuous_scale"] = getattr(px.colors.sequential, palette_continuous)
             print("METHOD = FILM: Updating plotly arg dict for film")
 
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
@@ -1035,6 +1062,7 @@ def sequence_plotter(
         plotly_arguments["facet_col_spacing"] = facet_col_spacing
 
         print(f"{plotly_arguments=}")
+        print(f"{kwargs=}")
 
         fig = None
         if method in ["fig_pr_cycle", "fig_pr_cell"]:
@@ -1044,7 +1072,7 @@ def sequence_plotter(
                 **kwargs,
             )
 
-            if group_cells:
+            if method == "fig_pr_cycle" and group_cells:
                 try:
                     fig.for_each_trace(
                         functools.partial(
@@ -1056,11 +1084,11 @@ def sequence_plotter(
                 except Exception as e:
                     print("failed")
                     print(e)
+
         elif method == "film":
             print("CREATING FILM FIG")
-            fig = px.density_heatmap(curves.assign(dq=lambda _x: np.log(_x.dq)).query('direction < 0'), x="voltage",
-                                     y="cycle", z="dq", facet_col="group", facet_row="sub_group", nbinsx=100,
-                                     histfunc="avg", height=1200)
+
+            fig = px.density_heatmap(curves.assign(dq=lambda _x: np.log(_x.dq)).query('direction < 0'), **plotly_arguments, **kwargs)
 
         else:
             print(f"method '{method}' is not supported py plotly")
@@ -1260,10 +1288,3 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
         backend=backend, method=method, cycles=cycles_to_plot,
         **kwargs)
 
-
-def ica_plotter_film(curves, backend="plotly", **kwargs):
-    if backend == "plotly":
-        print("plotly")
-    print("running ica_plotter_film")
-    print(f"args: {args}")
-    print(f"kwargs: {kwargs}")
