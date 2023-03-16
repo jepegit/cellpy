@@ -53,6 +53,10 @@ fig_pr_cycle_template = go.layout.Template(
     # layout=px_template_all_axis_shown
 )
 
+film_template = go.layout.Template(
+    # layout=px_template_all_axis_shown
+)
+
 
 def _setup():
     _welcome_message()
@@ -162,6 +166,7 @@ class BatchCollector:
         pio.templates.default = PLOTLY_BASE_TEMPLATE
         pio.templates["fig_pr_cell"] = fig_pr_cell_template
         pio.templates["fig_pr_cycle"] = fig_pr_cycle_template
+        pio.templates["film"] = film_template
 
     @property
     def data_collector_arguments(self):
@@ -994,7 +999,14 @@ def sequence_plotter(
         else:
             plotly_arguments["markers"] = markers
             plotly_arguments["color"] = z
-    print(f"{method=}")
+
+    elif method == "film":
+        print("METHOD = FILM: creating plotter arguments dict")
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        else:
+            curves = collected_curves
+
     if backend == "plotly":
         if method == "fig_pr_cell":
             start, end = 0.0, 1.0
@@ -1004,12 +1016,15 @@ def sequence_plotter(
             number_of_colors = len(unique_cycle_numbers)
             selected_colors = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
             kwargs["color_discrete_sequence"] = selected_colors
-        else:
+        elif method == "fig_pr_cycle":
             if palette_discrete is not None:
                 # kwargs["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
                 logging.debug(
                     f"palette_discrete is not implemented yet ({palette_discrete})"
                 )
+
+        elif method == "film":
+            print("METHOD = FILM: Updating plotly arg dict for film")
 
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
         abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
@@ -1021,24 +1036,34 @@ def sequence_plotter(
 
         print(f"{plotly_arguments=}")
 
-        fig = px.line(
-            curves,
-            **plotly_arguments,
-            **kwargs,
-        )
+        fig = None
+        if method in ["fig_pr_cycle", "fig_pr_cell"]:
+            fig = px.line(
+                curves,
+                **plotly_arguments,
+                **kwargs,
+            )
 
-        if group_cells:
-            try:
-                fig.for_each_trace(
-                    functools.partial(
-                        legend_replacer, df=curves, group_legends=group_legend_muting
+            if group_cells:
+                try:
+                    fig.for_each_trace(
+                        functools.partial(
+                            legend_replacer, df=curves, group_legends=group_legend_muting
+                        )
                     )
-                )
-                if markers is not True:
-                    fig.for_each_trace(remove_markers)
-            except Exception as e:
-                print("failed")
-                print(e)
+                    if markers is not True:
+                        fig.for_each_trace(remove_markers)
+                except Exception as e:
+                    print("failed")
+                    print(e)
+        elif method == "film":
+            print("CREATING FILM FIG")
+            fig = px.density_heatmap(curves.assign(dq=lambda _x: np.log(_x.dq)).query('direction < 0'), x="voltage",
+                                     y="cycle", z="dq", facet_col="group", facet_row="sub_group", nbinsx=100,
+                                     histfunc="avg", height=1200)
+
+        else:
+            print(f"method '{method}' is not supported py plotly")
 
         return fig
 
@@ -1136,9 +1161,11 @@ def _cycles_plotter(
         height=height,
         **kwargs,
     )
+    if fig is None:
+        print("Could not create figure")
+        return
 
     # Rendering:
-
     if backend == "plotly":
         template = f"{PLOTLY_BASE_TEMPLATE}+{method}"
 
@@ -1204,7 +1231,7 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
            collected_curves(pd.DataFrame): collected data in long format.
            cycles_to_plot (list): cycles to plot
            backend (str): what backend to use.
-           method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+           method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
            direction (str): 'charge' or 'discharge' or 'both' (default).
 
            **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
@@ -1234,7 +1261,9 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
         **kwargs)
 
 
-def ica_plotter_film(*args, **kwargs):
+def ica_plotter_film(curves, backend="plotly", **kwargs):
+    if backend == "plotly":
+        print("plotly")
     print("running ica_plotter_film")
     print(f"args: {args}")
     print(f"kwargs: {kwargs}")
