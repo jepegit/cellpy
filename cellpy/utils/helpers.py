@@ -613,6 +613,7 @@ def concatenate_summaries(
     key_index_bounds=None,
     melt=False,
     cell_type_split_position="auto",
+    mode="collector",
 ) -> pd.DataFrame:
 
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -641,6 +642,7 @@ def concatenate_summaries(
         cell_type_split_position (int | None | "auto"): list item number for creating a cell type identifier
             after performing a split("_") on the cell names (only valid if melt==True). Set to None to not
             include a cell_type col.
+        mode (str): set to something else than "collector" to get the "old" behaviour of this function.
 
     Returns:
         Multi-index ``pandas.DataFrame``
@@ -655,7 +657,6 @@ def concatenate_summaries(
 
     """
 
-    print("IN CONCATENATOR")
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
     reserved_cell_label_names = ["FC"]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -710,9 +711,10 @@ def concatenate_summaries(
     for cell_names in cell_names_nest:
         frames_sub = []
         keys_sub = []
-
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
+            group = b.pages.loc[cell_id, "group"]
+            sub_group = b.pages.loc[cell_id, "sub_group"]
             try:
                 c = b.experiment.data[cell_id]
                 # print(c.data.summary.columns.sort_values())
@@ -755,8 +757,12 @@ def concatenate_summaries(
                     s = s.loc[:, output_columns].copy()
 
                 # somehow using normalized cycles (i.e. equivalent cycles) messes up the order of the index sometimes:
-                if normalize_cycles:
+                if normalize_cycles and mode != "collector":
                     s = s.reset_index()
+
+                # add group and subgroup
+                if not group_it:
+                    s = s.assign(group=group, sub_group=sub_group)
 
                 frames_sub.append(s)
                 keys_sub.append(cell_id)
@@ -794,11 +800,28 @@ def concatenate_summaries(
                 new_keys.append(name)
                 used_names.append(name)
             keys = new_keys
-        cdf = pd.concat(frames, keys=keys, axis=1)
-        cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
 
+        if mode == "collector":
+            old_normalized_cycle_header = hdr_norm_cycle
+            cycle_header = "cycle"
+            normalized_cycle_header = "normalized_cycle"
+            group_header = "group"
+            sub_group_header = "sub_group"
+            cell_header = "cell"
+
+            cdf = pd.concat(frames, keys=keys, axis=0, names=[cell_header, cycle_header])
+            cdf = cdf.reset_index(drop=False)
+            id_vars = [cell_header, cycle_header]
+            if not group_it:
+                id_vars.extend([group_header, sub_group_header])
+            if normalize_cycles:
+                cdf = cdf.rename(columns={old_normalized_cycle_header: normalized_cycle_header})
+                id_vars.append(normalized_cycle_header)
+            cdf = cdf.melt(id_vars=id_vars)
+            return cdf
+
+        # if not using through collectors (i.e. using the old methodology instead):
         if melt:
-            print("MELTING")
             cdf = cdf.reset_index(drop=False).melt(
                 id_vars=hdr_summary.cycle_index, value_name="value"
             )

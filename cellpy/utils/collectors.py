@@ -258,6 +258,11 @@ class BatchCollector:
         name = "_".join(names)
         return name
 
+    def render(self):
+        self.figure = self.plotter(
+            self.data, journal=self.b.journal, **self.plotter_arguments
+        )
+
     def _parse_elevated_arguments(
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
     ):
@@ -362,9 +367,7 @@ class BatchCollector:
                 return
         if update_plot:
             try:
-                self.figure = self.plotter(
-                    self.data, journal=self.b.journal, **self.plotter_arguments
-                )
+                self.render()
             except TypeError as e:
                 print("Type error:", e)
                 print("Registered plotter_arguments:")
@@ -390,9 +393,7 @@ class BatchCollector:
         if kwargs:
             print(f"updating figure with {kwargs}")
             self._update_arguments(plotter_arguments=kwargs)
-            self.figure = self.plotter(
-                self.data, journal=self.b.journal, **self.plotter_arguments
-            )
+            self.render()
         return self.figure
 
     def preprocess_data_for_csv(self):
@@ -433,6 +434,10 @@ class BatchCollector:
 
     def _output_path(self, serial_number=None):
         d = Path(self.figure_directory)
+        if not d.is_dir():
+            logging.debug(f"{d} does not exist")
+            d = Path().cwd()
+            logging.debug(f"using current directory ({d}) instead")
         n = self.name
         if serial_number is not None:
             n = f"{n}_{serial_number:03}"
@@ -548,19 +553,19 @@ class BatchSummaryCollector(BatchCollector):
             "spread": spread,
         }
 
+        csv_layout = kwargs.pop("csv_layout", "wide")
+
         super().__init__(
             b,
-            plotter=plot_concatenated,
-            data_collector=concatenate_summaries,
+            plotter=summary_plotter,
+            data_collector=summary_collector,
             collector_name="summary",
             elevated_data_collector_arguments=elevated_data_collector_arguments,
             elevated_plotter_arguments=elevated_plotter_arguments,
+            csv_layout=csv_layout,
             *args,
             **kwargs,
         )
-
-    # TODO: copy concatenate_summaries to this module or make a new one
-    # TODO: need to get group and sub_group from concatenate_summaries
 
     def generate_name(self):
         names = ["collected_summaries"]
@@ -581,6 +586,50 @@ class BatchSummaryCollector(BatchCollector):
 
         name = "_".join(names)
         return name
+
+    def preprocess_data_for_csv(self):
+        # TODO: check implementation long -> wide method here
+        cols = self.data.columns.to_list()
+        wide_cols = []
+        value_cols = []
+        sort_by = []
+        if "cycle" in cols:
+            index = "cycle"
+            cols.remove("cycle")
+        else:
+            print("Could not find index")
+            return self.data
+
+        if "sub_group" in cols:
+            cols.remove("sub_group")
+
+        for _col in cols:
+            if _col in ["cell", "group", "variable"]:
+                wide_cols.append(_col)
+                if _col == "cell":
+                    sort_by.append(_col)
+            else:
+                value_cols.append(_col)
+                if _col == "variable":
+                    sort_by.append(_col)
+        try:
+            data = pd.pivot(self.data, index=index, columns=wide_cols, values=value_cols)
+        except Exception as e:
+            print("Could not make wide:")
+            print(e)
+            return self.data
+
+        try:
+            data = data.sort_index(axis=1, level=sort_by)
+        except Exception as e:
+            logging.debug("-could not sort columns:")
+            logging.debug(e)
+        try:
+            data = data.reorder_levels([1, 2, 0], axis=1)
+        except Exception as e:
+            logging.debug("-could not reorder levels:")
+            logging.debug(e)
+        return data
 
 
 class BatchICACollector(BatchCollector):
@@ -826,6 +875,12 @@ def pick_named_cell(b, label_mapper=None):
 
         logging.info(f"renaming {n} -> {label} (group={group}, subgroup={sub_group})")
         yield label, group, sub_group, b.experiment.data[n]
+
+
+def summary_collector(*args, **kwargs):
+    kwargs["melt"] = True
+    kwargs["mode"] = "collector"
+    return concatenate_summaries(*args, **kwargs)
 
 
 def cycles_collector(
@@ -1278,6 +1333,15 @@ def _cycles_plotter(
             width=width
         )
 
+    return fig
+
+
+def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **kwargs):
+    print(f"{kwargs=}")
+    x = "cycle"
+    y = "value"
+    color = "cell"
+    fig = px.line(collected_curves, x=x, y=y, color=color)
     return fig
 
 
