@@ -603,8 +603,11 @@ class BatchSummaryCollector(BatchCollector):
         if "sub_group" in cols:
             cols.remove("sub_group")
 
+        if "group" in cols:
+            cols.remove("group")
+
         for _col in cols:
-            if _col in ["cell", "group", "variable"]:
+            if _col in ["cell", "variable"]:
                 wide_cols.append(_col)
                 if _col == "cell":
                     sort_by.append(_col)
@@ -613,6 +616,10 @@ class BatchSummaryCollector(BatchCollector):
                 if _col == "variable":
                     sort_by.append(_col)
         try:
+            logging.debug("pivoting data")
+            logging.debug(f"index={index}")
+            logging.debug(f"columns={wide_cols}")
+            logging.debug(f"values={value_cols}")
             data = pd.pivot(self.data, index=index, columns=wide_cols, values=value_cols)
         except Exception as e:
             print("Could not make wide:")
@@ -625,11 +632,19 @@ class BatchSummaryCollector(BatchCollector):
             logging.debug("-could not sort columns:")
             logging.debug(e)
         try:
-            data = data.reorder_levels([1, 2, 0], axis=1)
+            if len(data.columns.names) == 3:
+                data = data.reorder_levels([1, 2, 0], axis=1)
+            else:
+                data = data.reorder_levels([1, 0], axis=1)
         except Exception as e:
             logging.debug("-could not reorder levels:")
             logging.debug(e)
         return data
+
+    def render(self):
+        self.figure = self.plotter(
+            self.data, journal=self.b.journal, data_collector_arguments=self.data_collector_arguments, **self.plotter_arguments
+        )
 
 
 class BatchICACollector(BatchCollector):
@@ -1185,8 +1200,6 @@ def sequence_plotter(
 
         fig = None
         if method in ["fig_pr_cycle", "fig_pr_cell"]:
-            print(f"{plotly_arguments=}")
-            print(f"{kwargs=}")
             fig = px.line(
                 curves,
                 **plotly_arguments,
@@ -1218,8 +1231,13 @@ def sequence_plotter(
 
             fig.update_layout(coloraxis_colorbar_title_text=color_bar_txt)
 
+        elif method == "summary":
+            print(f"{plotly_arguments=}")
+            print(f"{kwargs=}")
+            print(f"method '{method}' is not supported by collectors yet - but will be tomorrow")
+
         else:
-            print(f"method '{method}' is not supported py plotly")
+            print(f"method '{method}' is not supported by plotly")
 
         return fig
 
@@ -1336,12 +1354,32 @@ def _cycles_plotter(
     return fig
 
 
-def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **kwargs):
+def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", data_collector_arguments=None, **kwargs):
     print(f"{kwargs=}")
-    x = "cycle"
-    y = "value"
-    color = "cell"
-    fig = px.line(collected_curves, x=x, y=y, color=color)
+    print(f"{data_collector_arguments=}")
+    print(f"{collected_curves.columns=}")
+    if data_collector_arguments is None:
+        data_collector_arguments = {}
+
+    group_it = data_collector_arguments.pop("group_it", False)
+    normalize_cycles = data_collector_arguments.pop("normalize_cycles", False)
+    d_cols = data_collector_arguments.pop("columns", None)
+    p_cols = kwargs.pop("col", d_cols)
+
+    x = "equivalent_cycle" if normalize_cycles else "cycle"
+    y = "mean" if group_it else p_cols
+
+    fig = _cycles_plotter(
+        collected_curves,
+        x=x,
+        y=y,
+        z="cell",
+        g=p_cols,
+        default_title="Charge-Discharge Curves",
+        backend=backend, method="summary", cycles=cycles_to_plot,
+        **kwargs)
+
+    # fig = px.line(collected_curves, x=x, y=y, color=color)
     return fig
 
 
