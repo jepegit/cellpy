@@ -900,7 +900,7 @@ def concatenate_summaries(
         if mode == "collector":
             old_normalized_cycle_header = hdr_norm_cycle
             cycle_header = "cycle"
-            normalized_cycle_header = "normalized_cycle"
+            normalized_cycle_header = "equivalent_cycle"
             group_header = "group"
             sub_group_header = "sub_group"
             cell_header = "cell"

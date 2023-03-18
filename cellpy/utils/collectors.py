@@ -56,6 +56,10 @@ film_template = go.layout.Template(
     # layout=px_template_all_axis_shown
 )
 
+summary_template = go.layout.Template(
+    # layout=px_template_all_axis_shown
+)
+
 
 def _setup():
     _welcome_message()
@@ -166,6 +170,7 @@ class BatchCollector:
         pio.templates["fig_pr_cell"] = fig_pr_cell_template
         pio.templates["fig_pr_cycle"] = fig_pr_cycle_template
         pio.templates["film"] = film_template
+        pio.templates["summary"] = summary_template
 
     @property
     def data_collector_arguments(self):
@@ -641,11 +646,6 @@ class BatchSummaryCollector(BatchCollector):
             logging.debug(e)
         return data
 
-    def render(self):
-        self.figure = self.plotter(
-            self.data, journal=self.b.journal, data_collector_arguments=self.data_collector_arguments, **self.plotter_arguments
-        )
-
 
 class BatchICACollector(BatchCollector):
     def __init__(
@@ -985,6 +985,11 @@ def _hist_eq(trace):
     return trace
 
 
+def y_axis_replacer(trace, df, mapper):
+    print(trace)
+    return trace
+
+
 def legend_replacer(trace, df, group_legends=True):
     name = trace.name
     parts = name.split(",")
@@ -1021,6 +1026,7 @@ def sequence_plotter(
     y: str = "voltage",
     z: str = "cycle",
     g: str = "cell",
+    standard_deviation: str = None,
     group: str = "group",
     subgroup: str = "sub_group",
     x_label: str = "Capacity",
@@ -1029,6 +1035,7 @@ def sequence_plotter(
     y_unit: str = "V",
     z_label: str = "Cycle",
     z_unit: str = "n.",
+    y_label_mapper: dict = None,
     nbinsx: int = 100,
     histfunc: str = "avg",
     histscale: str = "abs-log",
@@ -1061,6 +1068,7 @@ def sequence_plotter(
         y: column name for y-values.
         z: if method is 'fig_pr_cell', column name for color (legend), else for subplot.
         g: if method is 'fig_pr_cell', column name for subplot, else for color.
+        standard_deviation: str = standard deviation column (skipped if None).
         group: str = "group",
         subgroup: str = "sub_group",
         x_label: str = "",
@@ -1069,6 +1077,7 @@ def sequence_plotter(
         y_unit:
         z_label: str = "Cycle"
         z_unit: str = "n."
+        y_label_mapper: dict
         nbinsx: int = 100
         histfunc: str = "avg"
         histscale (str) = "abs-log" used for scaling the z-values for 2D array plots (heatmaps and similar).
@@ -1108,6 +1117,17 @@ def sequence_plotter(
             f"{z}": f"{z_label} ({z_unit})",
         }
         plotly_arguments = dict(x=x, y=z, z=y, labels=labels, facet_col_wrap=cols, nbinsx=nbinsx, histfunc=histfunc)
+
+    elif method == "summary":
+        labels = {
+            f"{x}": f"{x_label} ({x_unit})",
+        }
+        plotly_arguments = dict(x=x, y=y, labels=labels, markers=markers)
+        if g == "variable" and len(collected_curves[g].unique()) > 1:
+            plotly_arguments["facet_row"] = g
+        if standard_deviation:
+            plotly_arguments["error_y"] = standard_deviation
+
     else:
         labels = {
             f"{x}": f"{x_label} ({x_unit})",
@@ -1163,6 +1183,19 @@ def sequence_plotter(
             plotly_arguments["markers"] = markers
             plotly_arguments["color"] = z
 
+    elif method == "summary":
+        logging.info("sequence-plotter - summary")
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        else:
+            curves = collected_curves
+
+        if group_cells:
+            plotly_arguments["color"] = group
+            plotly_arguments["symbol"] = subgroup
+        else:
+            plotly_arguments["color"] = z
+
     if backend == "plotly":
         if method == "fig_pr_cell":
             start, end = 0.0, 1.0
@@ -1186,6 +1219,9 @@ def sequence_plotter(
             if palette_range is not None:
                 start, end = palette_range
             plotly_arguments["color_continuous_scale"] = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
+
+        elif method == "summary":
+            logging.info("sequence-plotter - summary plotly")
 
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
         abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
@@ -1232,9 +1268,36 @@ def sequence_plotter(
             fig.update_layout(coloraxis_colorbar_title_text=color_bar_txt)
 
         elif method == "summary":
+            print("TRYING...")
+
             print(f"{plotly_arguments=}")
             print(f"{kwargs=}")
-            print(f"method '{method}' is not supported by collectors yet - but will be tomorrow")
+            print(f"{curves.columns}")
+            fig = px.line(
+                curves,
+                **plotly_arguments,
+                **kwargs,
+            )
+            if group_cells:
+                try:
+                    fig.for_each_trace(
+                        functools.partial(
+                            legend_replacer, df=curves, group_legends=group_legend_muting
+                        )
+                    )
+                    if markers is not True:
+                        fig.for_each_trace(remove_markers)
+                except Exception as e:
+                    print("failed")
+                    print(e)
+
+            if y_label_mapper:
+                try:
+                    # TODO: make this (it is not working on the traces - so replace with layout thingy):
+                    fig.for_each_trace(functools.partial(y_axis_replacer, df=curves, mapper=y_label_mapper))
+                except Exception as e:
+                    print("failed")
+                    print(e)
 
         else:
             print(f"method '{method}' is not supported by plotly")
@@ -1255,6 +1318,7 @@ def _cycles_plotter(
     y="voltage",
     z="cycle",
     g="cell",
+    standard_deviation=None,
     default_title="Charge-Discharge Curves",
     backend="plotly",
     method="fig_pr_cell",
@@ -1295,14 +1359,22 @@ def _cycles_plotter(
             legend_title = "Cycle"
         else:
             legend_title = "Cell"
+
     no_cols = cols
+
     if method in ["fig_pr_cell", "film"]:
         number_of_figs = len(collected_curves["cell"].unique())
-    else:
+
+    elif method == "fig_pr_cycle":
         if cycles is not None:
             number_of_figs = len(cycles)
         else:
             number_of_figs = len(collected_curves["cycle"].unique())
+    elif method == "summary":
+        number_of_figs = len(collected_curves["variable"].unique())
+    else:
+        number_of_figs = 1
+
     no_rows = math.ceil(number_of_figs / no_cols)
 
     if not height:
@@ -1314,6 +1386,7 @@ def _cycles_plotter(
         y=y,
         z=z,
         g=g,
+        standard_deviation=standard_deviation,
         backend=backend,
         method=method,
         cols=cols,
@@ -1354,32 +1427,81 @@ def _cycles_plotter(
     return fig
 
 
-def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", data_collector_arguments=None, **kwargs):
-    print(f"{kwargs=}")
-    print(f"{data_collector_arguments=}")
-    print(f"{collected_curves.columns=}")
-    if data_collector_arguments is None:
-        data_collector_arguments = {}
+def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **kwargs):
+    """ Plot summaries (value vs cycle number).
 
-    group_it = data_collector_arguments.pop("group_it", False)
-    normalize_cycles = data_collector_arguments.pop("normalize_cycles", False)
-    d_cols = data_collector_arguments.pop("columns", None)
-    p_cols = kwargs.pop("col", d_cols)
+    Assuming data as pandas.DataFrame with either
+    1) long format (where variables, for example charge capacity, are in the column "variable") or
+    2) mixed long and wide format where the variables are own columns.
+    """
+    col_headers = collected_curves.columns.to_list()
+    possible_id_vars = [
+        "cell", "cycle", "equivalent_cycle", "value", "mean", "std",
+        "group", "sub_group",
+    ]
 
-    x = "equivalent_cycle" if normalize_cycles else "cycle"
-    y = "mean" if group_it else p_cols
+    id_vars = []
+    for n in possible_id_vars:
+        if n in col_headers:
+            col_headers.remove(n)
+            id_vars.append(n)
+    if "variable" not in col_headers:
+        collected_curves = collected_curves.melt(id_vars=id_vars, value_vars=col_headers)
+
+    normalize_cycles = True if "equivalent_cycle" in id_vars else False
+    group_it = False if "group" in id_vars else True
+
+    cols = kwargs.pop("cols", 1)
+
+    z = "cell"
+    g = "variable"
+
+    if normalize_cycles:
+        x = "equivalent_cycle"
+        x_label = "Equivalent Cycle"
+        x_unit = "cum/nom.cap."
+    else:
+        x = "cycle"
+        x_label = "Cycle"
+        x_unit = "n."
+
+    if group_it:
+        group_cells = False
+        y = "mean"
+        standard_deviation = "std"
+
+    else:
+        y = "value"
+        standard_deviation = None
+        group_cells = kwargs.pop("group_cells", True)
+
+    # TODO: create a label mapper that replaces labels
+    y_label_mapper = {
+        f"{y}": "Value (unit)",
+    }
+
+    # print(f"{cols=}")
+    # print(f"{id_vars=}")
+    # print(f"{x=}")
+    # print(f"{y=}")
+    # print(f"{z=}")
+    # print(f"{g=}")
+    # print(f"{kwargs=}")
 
     fig = _cycles_plotter(
         collected_curves,
         x=x,
         y=y,
-        z="cell",
-        g=p_cols,
-        default_title="Charge-Discharge Curves",
-        backend=backend, method="summary", cycles=cycles_to_plot,
+        z=z,
+        g=g,
+        standard_deviation=standard_deviation,
+        x_label=x_label,
+        x_unit=x_unit,
+        y_label_mapper=y_label_mapper,
+        group_cells=group_cells,
+        default_title="Summary Plot",
+        backend=backend, method="summary", cycles=cycles_to_plot, cols=cols,
         **kwargs)
-
-    # fig = px.line(collected_curves, x=x, y=y, color=color)
     return fig
 
 
