@@ -985,9 +985,9 @@ def _hist_eq(trace):
     return trace
 
 
-def y_axis_replacer(trace, df, mapper):
-    print(trace)
-    return trace
+def y_axis_replacer(ax, df, mapper):
+    logging.debug(ax)
+    return ax
 
 
 def legend_replacer(trace, df, group_legends=True):
@@ -1268,11 +1268,11 @@ def sequence_plotter(
             fig.update_layout(coloraxis_colorbar_title_text=color_bar_txt)
 
         elif method == "summary":
-            print("TRYING...")
-
-            print(f"{plotly_arguments=}")
-            print(f"{kwargs=}")
-            print(f"{curves.columns}")
+            # print("TRYING...")
+            #
+            # print(f"{plotly_arguments=}")
+            # print(f"{kwargs=}")
+            # print(f"{curves.columns}")
             fig = px.line(
                 curves,
                 **plotly_arguments,
@@ -1294,7 +1294,7 @@ def sequence_plotter(
             if y_label_mapper:
                 try:
                     # TODO: make this (it is not working on the traces - so replace with layout thingy):
-                    fig.for_each_trace(functools.partial(y_axis_replacer, df=curves, mapper=y_label_mapper))
+                    fig.for_each_yaxis(functools.partial(y_axis_replacer, df=curves, mapper=y_label_mapper))
                 except Exception as e:
                     print("failed")
                     print(e)
@@ -1502,6 +1502,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         default_title="Summary Plot",
         backend=backend, method="summary", cycles=cycles_to_plot, cols=cols,
         **kwargs)
+
+    fig.update_yaxes(matches=None, showticklabels=True)
     return fig
 
 
