@@ -49,7 +49,7 @@ def _make_average_legacy(
                 set(
                     [
                         "_".join(
-                            k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
+                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
                         )
                         for k in keys
                     ]
@@ -118,7 +118,7 @@ def _make_average(
                 set(
                     [
                         "_".join(
-                            k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
+                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
                         )
                         for k in keys
                     ]
@@ -130,13 +130,12 @@ def _make_average(
     normalized_cycle_index_frame = pd.DataFrame(index=new_frame.index)
     for col in columns:
         number_of_cols = len(new_frame.columns)
-        if (
-            col == hdr_norm_cycle
-            and skip_st_dev_for_equivalent_cycle_index
-        ):
+        if col == hdr_norm_cycle and skip_st_dev_for_equivalent_cycle_index:
             if number_of_cols > 1:
                 normalized_cycle_index_frame = (
-                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": "equivalent_cycle"})
+                    new_frame[col]
+                    .agg(["mean"], axis=1)
+                    .rename(columns={"mean": "equivalent_cycle"})
                 )
             else:
                 normalized_cycle_index_frame = new_frame[col].copy()
@@ -147,12 +146,10 @@ def _make_average(
 
             if number_of_cols > 1:
                 avg_frame = (
-                    new_frame[col]
-                    .agg(["mean", "std"], axis=1)
+                    new_frame[col].agg(["mean", "std"], axis=1)
                     # .rename(
                     #     columns={"mean": "value"}
                     # )
-
                 )
             else:
                 avg_frame = pd.DataFrame(
@@ -164,7 +161,9 @@ def _make_average(
             new_frames.append(avg_frame)
 
     if not normalized_cycle_index_frame.empty:
-        new_frames = [pd.concat([normalized_cycle_index_frame, x], axis=1) for x in new_frames]
+        new_frames = [
+            pd.concat([normalized_cycle_index_frame, x], axis=1) for x in new_frames
+        ]
     final_frame = pd.concat(new_frames, axis=0)
     cols = final_frame.columns.to_list()
     new_cols = []
@@ -751,6 +750,12 @@ def concatenate_summaries(
     if column_names is None:
         column_names = []
 
+    if isinstance(columns, str):
+        columns = [columns]
+
+    if isinstance(column_names, str):
+        column_names = [column_names]
+
     columns = [hdr_summary[name] for name in columns]
     columns += column_names
 
@@ -907,13 +912,17 @@ def concatenate_summaries(
             average_header_end = "_mean"
             std_header_end = "_std"
 
-            cdf = pd.concat(frames, keys=keys, axis=0, names=[cell_header, cycle_header])
+            cdf = pd.concat(
+                frames, keys=keys, axis=0, names=[cell_header, cycle_header]
+            )
             cdf = cdf.reset_index(drop=False)
             id_vars = [cell_header, cycle_header]
             if not group_it:
                 id_vars.extend([group_header, sub_group_header])
             if normalize_cycles:
-                cdf = cdf.rename(columns={old_normalized_cycle_header: normalized_cycle_header})
+                cdf = cdf.rename(
+                    columns={old_normalized_cycle_header: normalized_cycle_header}
+                )
             return cdf
 
         # if not using through collectors (i.e. using the old methodology instead):

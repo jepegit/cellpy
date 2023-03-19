@@ -8,6 +8,9 @@ from pprint import pprint
 from pathlib import Path
 import textwrap
 from typing import Any
+import time
+from itertools import count
+from multiprocessing import Process
 
 import pandas as pd
 import plotly.express as px
@@ -26,6 +29,7 @@ DEFAULT_CYCLES = [1, 10, 20]
 
 CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
+IMAGE_TO_FILE_TIMEOUT = 30
 
 px_template_all_axis_shown = dict(
     xaxis=dict(
@@ -268,7 +272,10 @@ class BatchCollector:
 
     def render(self):
         self.figure = self.plotter(
-            self.data, journal=self.b.journal, **self.plotter_arguments
+            self.data,
+            journal=self.b.journal,
+            units=self.units,
+            **self.plotter_arguments,
         )
 
     def _parse_elevated_arguments(
@@ -326,7 +333,9 @@ class BatchCollector:
 
     def _check_plotter_arguments(self):
         if "plot_type" in self.plotter_arguments:
-            print("WARNING - using possible difficult option (future versions will fix this)")
+            print(
+                "WARNING - using possible difficult option (future versions will fix this)"
+            )
             print("*** 'plot_type' TRANSLATED TO 'method'")
             self.plotter_arguments["method"] = self.plotter_arguments.pop("plot_type")
 
@@ -423,13 +432,13 @@ class BatchCollector:
 
         print(f"figure name: {self.name}")
         if kwargs:
-            print(f"updating figure with {kwargs}")
+            logging.info(f"updating figure with {kwargs}")
             self._update_arguments(plotter_arguments=kwargs)
             self.render()
         return self.figure
 
     def preprocess_data_for_csv(self):
-        print(f"the data layout {self.csv_layout} is not supported yet!")
+        logging.debug(f"the data layout {self.csv_layout} is not supported yet!")
         return self.data
 
     def to_csv(self, serial_number=None):
@@ -447,6 +456,16 @@ class BatchCollector:
         )
         print(f"saved csv file: {filename}")
 
+    def _image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+        p = Process(target=self.figure.write_image, args=(filename, ), name='save_plotly_image_to_file', kwargs=kwargs)
+        p.start()
+        p.join(timeout=timeout)
+        p.terminate()
+        if p.exitcode is None:
+            print(f'Oops, {p} timeouts! Could not save {filename}')
+        if p.exitcode == 0:
+            print(f"saved image file: {filename}")
+
     def to_image_files(self, serial_number=None):
         if not self._figure_valid():
             return
@@ -454,9 +473,20 @@ class BatchCollector:
         filename_png = filename_pre.with_suffix(".png")
         filename_svg = filename_pre.with_suffix(".svg")
         filename_json = filename_pre.with_suffix(".json")
-        print(f"TODO: implement saving {filename_png}")
-        print(f"TODO: implement saving {filename_svg}")
-        print(f"TODO: implement saving {filename_json}")
+
+        if self.backend == "plotly":
+            self._image_exporter_plotly(filename_png, scale=3.0)
+            self._image_exporter_plotly(filename_svg)
+            self.figure.write_json(filename_json)
+            print(f"saved plotly json file: {filename_json}")
+        elif self.backend == "matplotlib":
+            print(f"TODO: implement saving {filename_png}")
+            print(f"TODO: implement saving {filename_svg}")
+            print(f"TODO: implement saving {filename_json}")
+        else:
+            print(f"TODO: implement saving {filename_png}")
+            print(f"TODO: implement saving {filename_svg}")
+            print(f"TODO: implement saving {filename_json}")
 
     def save(self, serial_number=None):
         self.to_csv(serial_number=serial_number)
@@ -605,6 +635,9 @@ class BatchSummaryCollector(BatchCollector):
         grouped = self.data_collector_arguments.get("group_it")
         equivalent_cycles = self.data_collector_arguments.get("normalize_cycles")
         normalized_cap = self.data_collector_arguments.get("normalize_capacity_on", [])
+
+        if isinstance(cols, str):
+            cols = [cols]
         if self.nick:
             names.insert(0, self.nick)
         if cols:
@@ -652,7 +685,9 @@ class BatchSummaryCollector(BatchCollector):
             logging.debug(f"index={index}")
             logging.debug(f"columns={wide_cols}")
             logging.debug(f"values={value_cols}")
-            data = pd.pivot(self.data, index=index, columns=wide_cols, values=value_cols)
+            data = pd.pivot(
+                self.data, index=index, columns=wide_cols, values=value_cols
+            )
         except Exception as e:
             print("Could not make wide:")
             print(e)
@@ -692,7 +727,7 @@ class BatchICACollector(BatchCollector):
         cols=None,
         group_legend_muting=True,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Create a collection of ica (dQ/dV) plots."""
 
@@ -1012,8 +1047,8 @@ def _hist_eq(trace):
     return trace
 
 
-def y_axis_replacer(ax, df, mapper):
-    logging.debug(ax)
+def y_axis_replacer(ax, label):
+    ax.update(title_text=label)
     return ax
 
 
@@ -1037,13 +1072,13 @@ def legend_replacer(trace, df, group_legends=True):
         trace.update(
             name=cell_label,
             legendgroup=group,
-            hovertemplate=f'{cell_label}<br>{trace.hovertemplate}',
+            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
         )
     else:
         trace.update(
             name=cell_label,
             legendgroup=cell_label,
-            hovertemplate=f'{cell_label}<br>{trace.hovertemplate}',
+            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
         )
 
 
@@ -1143,7 +1178,15 @@ def sequence_plotter(
             f"{x}": f"{x_label} ({x_unit})",
             f"{z}": f"{z_label} ({z_unit})",
         }
-        plotly_arguments = dict(x=x, y=z, z=y, labels=labels, facet_col_wrap=cols, nbinsx=nbinsx, histfunc=histfunc)
+        plotly_arguments = dict(
+            x=x,
+            y=z,
+            z=y,
+            labels=labels,
+            facet_col_wrap=cols,
+            nbinsx=nbinsx,
+            histfunc=histfunc,
+        )
 
     elif method == "summary":
         labels = {
@@ -1231,7 +1274,9 @@ def sequence_plotter(
             unique_cycle_numbers = curves[z].unique()
             number_of_colors = len(unique_cycle_numbers)
 
-            selected_colors = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
+            selected_colors = px.colors.sample_colorscale(
+                palette_continuous, number_of_colors, low=start, high=end
+            )
             plotly_arguments["color_discrete_sequence"] = selected_colors
         elif method == "fig_pr_cycle":
             if palette_discrete is not None:
@@ -1245,15 +1290,21 @@ def sequence_plotter(
             start, end = 0.0, 1.0
             if palette_range is not None:
                 start, end = palette_range
-            plotly_arguments["color_continuous_scale"] = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
+            plotly_arguments["color_continuous_scale"] = px.colors.sample_colorscale(
+                palette_continuous, number_of_colors, low=start, high=end
+            )
 
         elif method == "summary":
             logging.info("sequence-plotter - summary plotly")
 
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
         abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
-        facet_row_spacing = kwargs.pop("facet_row_spacing", abs_facet_row_spacing / height if height else 0.1)
-        facet_col_spacing = kwargs.pop("facet_col_spacing", abs_facet_col_spacing / (width or 1000))
+        facet_row_spacing = kwargs.pop(
+            "facet_row_spacing", abs_facet_row_spacing / height if height else 0.1
+        )
+        facet_col_spacing = kwargs.pop(
+            "facet_col_spacing", abs_facet_col_spacing / (width or 1000)
+        )
 
         plotly_arguments["facet_row_spacing"] = facet_row_spacing
         plotly_arguments["facet_col_spacing"] = facet_col_spacing
@@ -1273,7 +1324,9 @@ def sequence_plotter(
                 try:
                     fig.for_each_trace(
                         functools.partial(
-                            legend_replacer, df=curves, group_legends=group_legend_muting
+                            legend_replacer,
+                            df=curves,
+                            group_legends=group_legend_muting,
                         )
                     )
                     if markers is not True:
@@ -1309,7 +1362,9 @@ def sequence_plotter(
                 try:
                     fig.for_each_trace(
                         functools.partial(
-                            legend_replacer, df=curves, group_legends=group_legend_muting
+                            legend_replacer,
+                            df=curves,
+                            group_legends=group_legend_muting,
                         )
                     )
                     if markers is not True:
@@ -1319,12 +1374,34 @@ def sequence_plotter(
                     print(e)
 
             if y_label_mapper:
-                try:
-                    # TODO: make this (it is not working on the traces - so replace with layout thingy):
-                    fig.for_each_yaxis(functools.partial(y_axis_replacer, df=curves, mapper=y_label_mapper))
-                except Exception as e:
-                    print("failed")
-                    print(e)
+                annotations = fig.layout.annotations
+                if annotations:
+                    try:
+                        # might consider a more robust method here - currently
+                        # it assumes that the mapper is a list with same order
+                        # and length as number of rows
+                        for i, (a, la) in enumerate(zip(annotations, y_label_mapper)):
+                            row = i + 1
+                            fig.for_each_yaxis(
+                                functools.partial(
+                                    y_axis_replacer, label=la
+                                ),
+                                row=row,
+                            )
+                        fig.update_annotations(text="")
+                    except Exception as e:
+                        print("failed")
+                        print(e)
+                else:
+                    try:
+                        fig.for_each_yaxis(
+                            functools.partial(
+                                y_axis_replacer, label=y_label_mapper[0]
+                            ),
+                        )
+                    except Exception as e:
+                        print("failed")
+                        print(e)
 
         else:
             print(f"method '{method}' is not supported by plotly")
@@ -1374,8 +1451,11 @@ def _cycles_plotter(
     legend_title = kwargs.pop("legend_title", None)
     show_legend = kwargs.pop("show_legend", None)
     cols = kwargs.pop("cols", 3)
+    sub_fig_min_height = kwargs.pop("sub_fig_min_height", 200)
 
-    journal = kwargs.pop("journal", None)  # not used yet
+    # kwargs from default `BatchCollector.render` method not used by `sequence_plotter`:
+    journal = kwargs.pop("journal", None)
+    units = kwargs.pop("units", None)
 
     if palette is not None:
         kwargs["palette_continuous"] = palette
@@ -1399,13 +1479,14 @@ def _cycles_plotter(
             number_of_figs = len(collected_curves["cycle"].unique())
     elif method == "summary":
         number_of_figs = len(collected_curves["variable"].unique())
+        sub_fig_min_height = 300
     else:
         number_of_figs = 1
 
     no_rows = math.ceil(number_of_figs / no_cols)
 
     if not height:
-        height = no_rows * 200
+        height = no_rows * sub_fig_min_height
 
     fig = sequence_plotter(
         collected_curves,
@@ -1448,14 +1529,14 @@ def _cycles_plotter(
             legend=legend_dict,
             showlegend=show_legend,
             height=height,
-            width=width
+            width=width,
         )
 
     return fig
 
 
 def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **kwargs):
-    """ Plot summaries (value vs cycle number).
+    """Plot summaries (value vs cycle number).
 
     Assuming data as pandas.DataFrame with either
     1) long format (where variables, for example charge capacity, are in the column "variable") or
@@ -1463,8 +1544,14 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     """
     col_headers = collected_curves.columns.to_list()
     possible_id_vars = [
-        "cell", "cycle", "equivalent_cycle", "value", "mean", "std",
-        "group", "sub_group",
+        "cell",
+        "cycle",
+        "equivalent_cycle",
+        "value",
+        "mean",
+        "std",
+        "group",
+        "sub_group",
     ]
 
     id_vars = []
@@ -1472,8 +1559,11 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         if n in col_headers:
             col_headers.remove(n)
             id_vars.append(n)
+
     if "variable" not in col_headers:
-        collected_curves = collected_curves.melt(id_vars=id_vars, value_vars=col_headers)
+        collected_curves = collected_curves.melt(
+            id_vars=id_vars, value_vars=col_headers
+        )
 
     normalize_cycles = True if "equivalent_cycle" in id_vars else False
     group_it = False if "group" in id_vars else True
@@ -1502,18 +1592,35 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         standard_deviation = None
         group_cells = kwargs.pop("group_cells", True)
 
-    # TODO: create a label mapper that replaces labels
-    y_label_mapper = {
-        f"{y}": "Value (unit)",
+    units = kwargs.pop("units", None)
+    label_mapper = {
+        f"{y}": None,
     }
+    if units:
+        label_mapper[y] = []
+        variables = list(collected_curves[g].unique())
+        for v in variables:
+            # extract units:
+            u_sub = None
+            if v.endswith("_areal"):
+                u_sub = units["cellpy_units"].specific_areal
+            elif v.endswith("_gravimetric"):
+                u_sub = units["cellpy_units"].specific_gravimetric
+            elif v.endswith("_volumetric"):
+                u_sub = units["cellpy_units"].specific_volumetric
+            u_top = None
+            if "_capacity" in v:
+                u_top = units["cellpy_units"].charge
 
-    # print(f"{cols=}")
-    # print(f"{id_vars=}")
-    # print(f"{x=}")
-    # print(f"{y=}")
-    # print(f"{z=}")
-    # print(f"{g=}")
-    # print(f"{kwargs=}")
+            # creating label:
+            u = u_top or "Value"
+            v = v.split("_")
+            if u_sub:
+                u_sub = u_sub.replace("**", "")
+                u = f"{u}/{u_sub}"
+                v = v[:-1]
+            v = " ".join(v).title()
+            label_mapper[y].append(f"{v} ({u})")
 
     fig = _cycles_plotter(
         collected_curves,
@@ -1524,30 +1631,40 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         standard_deviation=standard_deviation,
         x_label=x_label,
         x_unit=x_unit,
-        y_label_mapper=y_label_mapper,
+        y_label_mapper=label_mapper[y],
         group_cells=group_cells,
         default_title="Summary Plot",
-        backend=backend, method="summary", cycles=cycles_to_plot, cols=cols,
-        **kwargs)
+        backend=backend,
+        method="summary",
+        cycles=cycles_to_plot,
+        cols=cols,
+        **kwargs,
+    )
 
     fig.update_yaxes(matches=None, showticklabels=True)
     return fig
 
 
-def cycles_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method="fig_pr_cell", **kwargs):
+def cycles_plotter(
+    collected_curves,
+    cycles_to_plot=None,
+    backend="plotly",
+    method="fig_pr_cell",
+    **kwargs,
+):
     """Plot charge-discharge curves.
 
-       Args:
-           collected_curves(pd.DataFrame): collected data in long format.
-           cycles_to_plot (list): cycles to plot
-           backend (str): what backend to use.
-           method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        cycles_to_plot (list): cycles to plot
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
 
-           **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
-       Returns:
-           styled figure object
-       """
+    Returns:
+        styled figure object
+    """
 
     if cycles_to_plot is not None:
         unique_cycles = list(collected_curves.cycle.unique())
@@ -1561,25 +1678,35 @@ def cycles_plotter(collected_curves, cycles_to_plot=None, backend="plotly", meth
         z="cycle",
         g="cell",
         default_title="Charge-Discharge Curves",
-        backend=backend, method=method, cycles=cycles_to_plot,
-        **kwargs)
+        backend=backend,
+        method=method,
+        cycles=cycles_to_plot,
+        **kwargs,
+    )
 
 
-def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method="fig_pr_cell", direction="charge", **kwargs):
+def ica_plotter(
+    collected_curves,
+    cycles_to_plot=None,
+    backend="plotly",
+    method="fig_pr_cell",
+    direction="charge",
+    **kwargs,
+):
     """Plot charge-discharge curves.
 
-       Args:
-           collected_curves(pd.DataFrame): collected data in long format.
-           cycles_to_plot (list): cycles to plot
-           backend (str): what backend to use.
-           method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
-           direction (str): 'charge' or 'discharge'.
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        cycles_to_plot (list): cycles to plot
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
+        direction (str): 'charge' or 'discharge'.
 
-           **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
-       Returns:
-           styled figure object
-       """
+    Returns:
+        styled figure object
+    """
 
     if cycles_to_plot is None:
         unique_cycles = list(collected_curves.cycle.unique())
@@ -1608,8 +1735,11 @@ def ica_plotter(collected_curves, cycles_to_plot=None, backend="plotly", method=
         y_unit="mAh/g/V.",
         default_title=f"Incremental Analysis Plots ({direction.capitalize()})",
         direction=direction,
-        backend=backend, method=method, cycles=cycles_to_plot,
-        **kwargs)
+        backend=backend,
+        method=method,
+        cycles=cycles_to_plot,
+        **kwargs,
+    )
 
 
 def histogram_equalization(image: np.array) -> np.array:
