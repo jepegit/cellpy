@@ -25,6 +25,75 @@ hdr_normal = get_headers_normal()
 hdr_journal = get_headers_journal()
 
 
+def _make_average_legacy(
+    frames,
+    keys=None,
+    columns=None,
+    skip_st_dev_for_equivalent_cycle_index=True,
+    key_index_bounds=None,
+):
+    if key_index_bounds is None:
+        key_index_bounds = [1, -2]
+    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
+    cell_id = ""
+    not_a_number = np.NaN
+    new_frames = []
+
+    if columns is None:
+        columns = frames[0].columns
+
+    if keys is not None:
+        if isinstance(keys, (list, tuple)):
+            cell_id = list(
+                set(
+                    [
+                        "_".join(
+                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
+                        )
+                        for k in keys
+                    ]
+                )
+            )[0]
+        elif isinstance(keys, str):
+            cell_id = keys
+    new_frame = pd.concat(frames, axis=1)
+    for col in columns:
+        number_of_cols = len(new_frame.columns)
+        if (
+            col in [hdr_norm_cycle, hdr_cum_charge]
+            and skip_st_dev_for_equivalent_cycle_index
+        ):
+            if number_of_cols > 1:
+                avg_frame = (
+                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": col})
+                )
+            else:
+                avg_frame = new_frame[col].copy()
+
+        else:
+            new_col_name_mean = col + "_mean"
+            new_col_name_std = col + "_std"
+
+            if number_of_cols > 1:
+                avg_frame = (
+                    new_frame[col]
+                    .agg(["mean", "std"], axis=1)
+                    .rename(
+                        columns={"mean": new_col_name_mean, "std": new_col_name_std}
+                    )
+                )
+            else:
+                avg_frame = pd.DataFrame(
+                    data=new_frame[col].values, columns=[new_col_name_mean]
+                )
+                avg_frame[new_col_name_std] = not_a_number
+        new_frames.append(avg_frame)
+    final_frame = pd.concat(new_frames, axis=1)
+
+    return final_frame, cell_id
+
+
 def _make_average(
     frames,
     keys=None,
@@ -58,31 +127,29 @@ def _make_average(
         elif isinstance(keys, str):
             cell_id = keys
     new_frame = pd.concat(frames, axis=1)
-
+    normalized_cycle_index_frame = pd.DataFrame(index=new_frame.index)
     for col in columns:
         number_of_cols = len(new_frame.columns)
-        if (
-            col in [hdr_norm_cycle, hdr_cum_charge]
-            and skip_st_dev_for_equivalent_cycle_index
-        ):
+        if col == hdr_norm_cycle and skip_st_dev_for_equivalent_cycle_index:
             if number_of_cols > 1:
-                avg_frame = (
-                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": col})
+                normalized_cycle_index_frame = (
+                    new_frame[col]
+                    .agg(["mean"], axis=1)
+                    .rename(columns={"mean": "equivalent_cycle"})
                 )
             else:
-                avg_frame = new_frame[col].copy()
+                normalized_cycle_index_frame = new_frame[col].copy()
 
         else:
-            new_col_name_mean = col + "_mean"
-            new_col_name_std = col + "_std"
+            new_col_name_mean = "mean"
+            new_col_name_std = "std"
 
             if number_of_cols > 1:
                 avg_frame = (
-                    new_frame[col]
-                    .agg(["mean", "std"], axis=1)
-                    .rename(
-                        columns={"mean": new_col_name_mean, "std": new_col_name_std}
-                    )
+                    new_frame[col].agg(["mean", "std"], axis=1)
+                    # .rename(
+                    #     columns={"mean": "value"}
+                    # )
                 )
             else:
                 avg_frame = pd.DataFrame(
@@ -90,9 +157,22 @@ def _make_average(
                 )
                 avg_frame[new_col_name_std] = not_a_number
 
-        new_frames.append(avg_frame)
-    final_frame = pd.concat(new_frames, axis=1)
+            avg_frame = avg_frame.assign(variable=col)
+            new_frames.append(avg_frame)
 
+    if not normalized_cycle_index_frame.empty:
+        new_frames = [
+            pd.concat([normalized_cycle_index_frame, x], axis=1) for x in new_frames
+        ]
+    final_frame = pd.concat(new_frames, axis=0)
+    cols = final_frame.columns.to_list()
+    new_cols = []
+    for n in ["variable", "mean", "std"]:
+        if n in cols:
+            new_cols.append(n)
+            cols.remove(n)
+    cols.extend(new_cols)
+    final_frame = final_frame.reindex(columns=cols)
     return final_frame, cell_id
 
 
@@ -613,6 +693,7 @@ def concatenate_summaries(
     key_index_bounds=None,
     melt=False,
     cell_type_split_position="auto",
+    mode="collector",
 ) -> pd.DataFrame:
 
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -624,8 +705,10 @@ def concatenate_summaries(
         on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
         columns (list): selected column(s) (using cellpy attribute name) [defaults to "charge_capacity_gravimetric"]
         column_names (list): selected column(s) (using exact column name)
-        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization (typically the first few cycles after formation)
-        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap", or given value (defaults to one).
+        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the
+            normalization (typically the first few cycles after formation)
+        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap",
+            or given value (defaults to one).
         nom_cap (float): nominal capacity of the cell
         normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
         group_it (bool): if True, average pr group.
@@ -639,6 +722,7 @@ def concatenate_summaries(
         cell_type_split_position (int | None | "auto"): list item number for creating a cell type identifier
             after performing a split("_") on the cell names (only valid if melt==True). Set to None to not
             include a cell_type col.
+        mode (str): set to something else than "collector" to get the "old" behaviour of this function.
 
     Returns:
         Multi-index ``pandas.DataFrame``
@@ -653,6 +737,9 @@ def concatenate_summaries(
 
     """
 
+    if mode != "collector":
+        warnings.warn("This helper function will be removed shortly", category=DeprecationWarning)
+
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
     reserved_cell_label_names = ["FC"]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -665,6 +752,12 @@ def concatenate_summaries(
 
     if column_names is None:
         column_names = []
+
+    if isinstance(columns, str):
+        columns = [columns]
+
+    if isinstance(column_names, str):
+        column_names = [column_names]
 
     columns = [hdr_summary[name] for name in columns]
     columns += column_names
@@ -705,14 +798,19 @@ def concatenate_summaries(
         cell_names_nest.append(list(b.experiment.cell_names))
 
     for cell_names in cell_names_nest:
-
         frames_sub = []
         keys_sub = []
-
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
-            c = b.experiment.data[cell_id]
-            # print(c.data.summary.columns.sort_values())
+            group = b.pages.loc[cell_id, "group"]
+            sub_group = b.pages.loc[cell_id, "sub_group"]
+            try:
+                c = b.experiment.data[cell_id]
+                # print(c.data.summary.columns.sort_values())
+            except KeyError as e:
+                logging.debug(f"Could not load data for {cell_id}")
+                logging.debug(f"{e}")
+                raise e
 
             if not c.empty:
                 if max_cycle is not None:
@@ -748,26 +846,45 @@ def concatenate_summaries(
                     s = s.loc[:, output_columns].copy()
 
                 # somehow using normalized cycles (i.e. equivalent cycles) messes up the order of the index sometimes:
-                if normalize_cycles:
+                if normalize_cycles and mode != "collector":
                     s = s.reset_index()
+
+                # add group and subgroup
+                if not group_it:
+                    s = s.assign(group=group, sub_group=sub_group)
 
                 frames_sub.append(s)
                 keys_sub.append(cell_id)
 
         if group_it:
-            try:
-                s, cell_id = _make_average(
-                    frames_sub,
-                    keys_sub,
-                    output_columns,
-                    key_index_bounds=key_index_bounds,
-                )
-            except ValueError as e:
-                print("could not make average!")
-                print(e)
+            if mode == "collector":
+                try:
+                    s, cell_id = _make_average(
+                        frames_sub,
+                        keys_sub,
+                        output_columns,
+                        key_index_bounds=key_index_bounds,
+                    )
+                except ValueError as e:
+                    print("could not make average!")
+                    print(e)
+                else:
+                    frames.append(s)
+                    keys.append(cell_id)
             else:
-                frames.append(s)
-                keys.append(cell_id)
+                try:
+                    s, cell_id = _make_average_legacy(
+                        frames_sub,
+                        keys_sub,
+                        output_columns,
+                        key_index_bounds=key_index_bounds,
+                    )
+                except ValueError as e:
+                    print("could not make average!")
+                    print(e)
+                else:
+                    frames.append(s)
+                    keys.append(cell_id)
         else:
             frames.extend(frames_sub)
             keys.extend(keys_sub)
@@ -787,8 +904,31 @@ def concatenate_summaries(
                 new_keys.append(name)
                 used_names.append(name)
             keys = new_keys
-        cdf = pd.concat(frames, keys=keys, axis=1)
-        cdf = cdf.rename_axis(columns=["cell_name", "summary_header"])
+
+        if mode == "collector":
+            old_normalized_cycle_header = hdr_norm_cycle
+            cycle_header = "cycle"
+            normalized_cycle_header = "equivalent_cycle"
+            group_header = "group"
+            sub_group_header = "sub_group"
+            cell_header = "cell"
+            average_header_end = "_mean"
+            std_header_end = "_std"
+
+            cdf = pd.concat(
+                frames, keys=keys, axis=0, names=[cell_header, cycle_header]
+            )
+            cdf = cdf.reset_index(drop=False)
+            id_vars = [cell_header, cycle_header]
+            if not group_it:
+                id_vars.extend([group_header, sub_group_header])
+            if normalize_cycles:
+                cdf = cdf.rename(
+                    columns={old_normalized_cycle_header: normalized_cycle_header}
+                )
+            return cdf
+
+        # if not using through collectors (i.e. using the old methodology instead):
         if melt:
             cdf = cdf.reset_index(drop=False).melt(
                 id_vars=hdr_summary.cycle_index, value_name="value"
@@ -817,7 +957,6 @@ def concatenate_summaries(
                 )
                 melted_column_order.insert(-2, "cell_type")
             cdf = cdf.reindex(columns=melted_column_order)
-
         return cdf
     else:
         logging.info("Empty - nothing to concatenate!")

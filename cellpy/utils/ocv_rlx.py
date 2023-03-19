@@ -27,20 +27,23 @@ from cellpy import cellreader
 def select_ocv_points(
     cellpydata,
     cycles=None,
+    cell_label=None,
+    include_times=True,
     selection_method="martin",
     number_of_points=5,
     interval=10,
     relative_voltage=False,
     report_times=False,
     direction="both",
-    return_times=False,
 ):
 
     """Select points from the ocvrlx steps.
 
     Args:
-        cellpydata: ``CellpyCell-object``
+        cellpydata: ``CellpyData-object``
         cycles: list of cycle numbers to process (optional)
+        cell_label (str): optional, will be added to the frame if given
+        include_times (bool): include additional information including times.
         selection_method ('martin' | 'fixed_times'): criteria for selecting points ('martin': select first and last, and
             then last/2, last/2/2 etc. until you have reached the wanted number of points; 'fixed_times': select first,
             and then same interval between each subsequent point).
@@ -60,16 +63,12 @@ def select_ocv_points(
         direction ("up", "down" or "both"): select "up" if you would like
             to process only the ocv rlx steps where the voltage is relaxing
             upwards and vice versa. Defaults to "both".
-        return_times (bool): return a DataFrame with information about times.
 
     Returns:
         ``pandas.DataFrame`` (and another ``pandas.DataFrame`` if return_times is True)
 
     """
 
-    # TODO @jepe: refactor and use col names directly from HeadersNormal instead:
-
-    t0 = time.time()
     if cycles is None:
         cycles = cellpydata.get_cycle_numbers()
     else:
@@ -85,10 +84,7 @@ def select_ocv_points(
     dfdata = cellpydata.data.raw
 
     ocv_steps = step_table.loc[step_table["cycle"].isin(cycles), :]
-
     ocv_steps = ocv_steps.loc[ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :]
-
-    t1 = time.time() - t0
 
     if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
         number_of_points = len(interval) + 1
@@ -98,11 +94,10 @@ def select_ocv_points(
         n = str(j).zfill(2)
         headers2.append(f"point_{n}")
 
-    t2 = time.time() - t0
-    # doing an iteration (thought I didnt have to, but...) (fix later)
+    # doing an iteration (thought I didn't have to, but...) (fix later)
 
     results_list = list()
-    info_dict = {"cycle": [], "dt": [], "dv": [], "step": [], "type": [], "method": []}
+    info_dict = {"dt": [], "dv": [], "method": []}
 
     iter_range = number_of_points - 1
     if selection_method == "martin":
@@ -152,9 +147,6 @@ def select_ocv_points(
         t = datetime.timedelta(seconds=round(end - start, 0))
 
         info_dict["method"].append(selection_method)
-        info_dict["cycle"].append(cycle)
-        info_dict["step"].append(step)
-        info_dict["type"].append(info)
         info_dict["dt"].append(t)
         info_dict["dv"].append(first - last)
 
@@ -214,33 +206,29 @@ def select_ocv_points(
         else:
             for i, p in enumerate(poi):
                 info_dict[f"t{i}"].append(p)
-
-    t3 = time.time() - t0
-
-    final = pd.concat(results_list)  # pretty slow
-
-    t4 = time.time() - t0
+    final = pd.concat(results_list)
 
     if direction == "down":
         final = final.loc[final["type"] == "ocvrlx_down", :]
     elif direction == "up":
         final = final.loc[final["type"] == "ocvrlx_up", :]
 
+    if cell_label is not None:
+        final = final.assign(cell=cell_label)
     final = final.reset_index(drop=True)
 
-    # print(f"t1: {t1}\nt2: {t2-t1}\nt3: {t3-t2-t1}\nt4: {t4-t3-t2-t1}\n")
-
-    if not return_times:
-        return final
-
-    else:
+    if include_times:
         try:
             info_pd = pd.DataFrame(info_dict)
+            final = pd.concat(
+                [info_pd, final],
+                axis=1,
+            )
+            final = final.reset_index(drop=True)
         except Exception as e:
             logging.info("could not create dataframe with time information")
             logging.info(e)
-            info_pd = None
-        return final, info_pd
+    return final
 
 
 class MultiCycleOcvFit(object):

@@ -509,7 +509,7 @@ class LabJournal(BaseJournal):
         """Saves a DataFrame with all the needed info about the experiment.
 
         Args:
-            file_name (str or pathlib.Path): journal file name
+            file_name (str or pathlib.Path): journal file name (.json or .xlsx)
             paginate (bool): make project folders
             to_project_folder (bool): save journal file to the folder containing your cellpy projects
             duplicate_to_local_folder (bool): save journal file to the folder you are in now also
@@ -540,6 +540,7 @@ class LabJournal(BaseJournal):
             df_meta = self._pack_meta(meta)
 
             try:
+                pages.index.name = "filename"
                 with pd.ExcelWriter(file_name, mode="w", engine="openpyxl") as writer:
                     pages.to_excel(writer, sheet_name="pages", engine="openpyxl")
                     # no index is not supported for multi-index (update to index=False when pandas implement it):

@@ -81,6 +81,7 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
         self.interval = 10
         self.relative_voltage = False
         self.report_times = False
+        self.include_times = True
         self.direction = None
 
     def _assign_engine(self, engine):
@@ -94,8 +95,12 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
             print(farm)
 
     @property
-    def last(self):
+    def last(self) -> list:
         return self.farms[-1]
+
+    @property
+    def dframe(self) -> pd.DataFrame:
+        return self.farms[-1][-1]
 
     def run_engine(self, engine):
         logging.debug(f"start engine::{engine.__name__}]")
@@ -133,21 +138,24 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
         farms = kwargs["farms"]
         barn = None
         for experiment, farm in zip(experiments, farms):
+            dframes = []
             for cell_label in experiment.cell_data_frames:
+
                 logging.info(f"Analyzing {cell_label}")
                 if experiment.all_in_memory:
-                    logging.debug("CellpyCell picked from memory")
+                    logging.debug("CellpyData picked from memory")
                     cell = experiment.cell_data_frames[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyCell-object")
+                        logging.warning("Oh-no! Empty CellpyData-object")
                 else:
-                    logging.debug("CellpyCell loaded from Cellpy-file")
+                    logging.debug("CellpyData loaded from Cellpy-file")
                     cell = experiment.data[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyCell-object")
-
+                        logging.warning("Oh-no! Empty CellpyData-object")
                 df = select_ocv_points(
                     cell,
+                    cell_label=cell_label,
+                    include_times=self.include_times,
                     selection_method=self.selection_method,
                     number_of_points=self.number_of_points,
                     interval=self.interval,
@@ -155,8 +163,9 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
                     report_times=self.report_times,
                     direction=self.direction,
                 )
-                farm.append(df)
-
+                dframes.append(df)
+            concat_df = pd.concat(dframes)
+            farm.append(concat_df)
         return farms, barn
 
     def do2(self):
@@ -164,18 +173,19 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
             for cell_label in experiment.cell_data_frames:
                 logging.info(f"Analyzing {cell_label}")
                 if experiment.all_in_memory:
-                    logging.debug("CellpyCell picked from memory")
+                    logging.debug("CellpyData picked from memory")
                     cell = experiment.cell_data_frames[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyCell-object")
+                        logging.warning("Oh-no! Empty CellpyData-object")
                 else:
-                    logging.debug("CellpyCell loaded from Cellpy-file")
+                    logging.debug("CellpyData loaded from Cellpy-file")
                     cell = experiment.data[cell_label]
                     if cell.empty:
-                        logging.warning("Oh-no! Empty CellpyCell-object")
+                        logging.warning("Oh-no! Empty CellpyData-object")
 
                 df = select_ocv_points(
                     cell,
+                    cell_label=cell_label,
                     selection_method=self.selection_method,
                     number_of_points=self.number_of_points,
                     interval=self.interval,

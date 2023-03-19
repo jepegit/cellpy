@@ -996,7 +996,9 @@ class CellpyCell:
         elif loading and estimate_area:
             logging.debug(f"got loading: {logging}")
             area = self.data.mass / loading
-            logging.debug(f"calculating area from loading ({loading}) and mass ({self.data.mass}): {area}")
+            logging.debug(
+                f"calculating area from loading ({loading}) and mass ({self.data.mass}): {area}"
+            )
             self.data.meta_common.active_electrode_area = area
         else:
             logging.debug("using default area")
@@ -1370,7 +1372,7 @@ class CellpyCell:
         """Returns False if no datasets exists or if one or more of the datasets
         are empty"""
         if isinstance(self.status_datasets, (list, tuple)):
-            warnings.warn("OLD VERSION ENCOUNTERED")
+            logging.debug("OLD VERSION ENCOUNTERED")
             if len(self.status_datasets) == 0:
                 return False
             if all(self.status_datasets):

@@ -153,6 +153,7 @@ hdr_journal = get_headers_journal()
 
 
 def _hv_bokeh_available():
+    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
     if not hv_available:
         print("You need holoviews. But I cannot load it. Aborting...")
         return False
@@ -173,6 +174,8 @@ def find_column(columns, label=None, end="cycle_index"):
     Returns:
         column header, label
     """
+
+    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     hdr = None
     lab = None
@@ -189,6 +192,7 @@ def find_column(columns, label=None, end="cycle_index"):
 
 def plot_concatenated(
     dataframe,
+    title="",
     x=None,
     y=None,
     err=None,
@@ -223,6 +227,7 @@ def plot_concatenated(
 
     Args:
         dataframe: the concatenated summary
+        title (str): title of the plot (defaults to empty)
         x: colum-name for the x variable (not implemented yet)
         y: colum-name for the y variable (not implemented yet)
         err: colum-name for the std variable (not implemented yet)
@@ -234,18 +239,18 @@ def plot_concatenated(
         hover (bool): add hover tool if True
         width: width of plot
         height: height of plot
-        journal: batch.journal object
+        journal: `batch.journal` object
         file_id_level: the level (multiindex-level) where the cell-names are.
         hdr_level:  the level (multiindex-level) where the parameter names are.
         axis: what axis to use when looking in the data-frame (row-based or col-based).
         mean_end: used for searching for y-column names
         std_end: used for searching for e-column names
         cycle_end: used for searching for x-column name
-        legend_title: title to put over the legends
+        legend_title: title to put over the legend
         marker_size: size of the markers used
         cmap: color-map to use
         spread (bool): plot error-bands instead of error-bars if True
-        extension (str): "matplotlib" or "bokeh". Note, this uses hv.extension) and will affect the
+        extension (str): "matplotlib" or "bokeh". Note, this uses `hv.extension`) and will affect the
             state of your notebook
         edges (bool): show all axes
         keys (dict): columns to plot (not working yet)
@@ -279,6 +284,8 @@ def plot_concatenated(
     """
     # TODO: add option for using labels from journal in the legend
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
+
+    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
 
     if keys is None:
         keys = dict()
@@ -430,6 +437,9 @@ def plot_concatenated(
             [*curve_dict.values()], vdims=[*curve_dict.keys()]
         ).opts(**overlay_opts, **kwargs)
     else:
+        overlay_opts["title"] = title
+        logging.info(f"overlay_opts: {overlay_opts}")
+        logging.info(f"additional_kwargs_overlay_opts: {kwargs}")
         final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
             **overlay_opts, **kwargs
         )
@@ -512,6 +522,8 @@ def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
 def raw_plot(cell, y=("voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs):
     # TODO: missing doc-string
 
+    warnings.warn("This utility function will be replaced shortly", category=DeprecationWarning)
+
     if title is None:
         if isinstance(y, (list, tuple)):
             pre_title = str(y[0])
@@ -578,6 +590,9 @@ def cycle_info_plot(
         ``matplotlib.axes`` or None
     """
     # TODO: missing doc-string
+
+    warnings.warn("This utility function will be replaced shortly", category=DeprecationWarning)
+
     if use_bokeh and not bokeh_available:
         print("OBS! bokeh is not available - using matplotlib instead")
         use_bokeh = False
@@ -1016,6 +1031,8 @@ def save_fig(figure, file_name=None, wide=False, size=None, dpi=300, **kwargs):
         **kwargs: sent to cellpy.utils.plotutils.hv_bokeh_to_mpl
     """
 
+    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+
     out_path = Path("out/")
     extension = "png"
 
@@ -1068,6 +1085,7 @@ def save_fig(figure, file_name=None, wide=False, size=None, dpi=300, **kwargs):
 def hv_bokeh_to_mpl(figure, wide=False, size=(6, 4), **kwargs):
     # I think this needs to be tackled differently. For example by setting hv.extension("matplotlib") and
     # re-making the figure. Or making a custom renderer.
+    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
     figure = hv.render(figure, backend="matplotlib")
     axes = figure.axes
     number_of_axes = len(axes)
@@ -1127,6 +1145,8 @@ def oplot(
     Returns:
         ``hv.Overlay`` or ``hv.NdOverlay``
     """
+
+    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
 
     extension = kwargs.pop("extension", "bokeh")
 
@@ -1326,6 +1346,8 @@ def bplot(b, individual=False, cols=1, **kwargs):
     Returns:
         ``holoviews`` plot
     """
+    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+
     width = kwargs.pop("width", 800)
     journal = kwargs.pop("journal", b.experiment.journal)
     spread = kwargs.pop("spread", True)

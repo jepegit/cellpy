@@ -58,11 +58,7 @@ Checked and updated standard template, but needs more tweaking (functioning, tho
 Not checked and updated code in ife template(TODO)
 
 ### fix missing area:
-Added area to HeadersJournal and updated the update method in batch_experiments.py and the loadcell method to
-optionally receive loading and/or area and set area from area or from mass/loading if area is not given.
-
-Have not checked if it works properly with the simple db-reader (if the key-word/header etc is set), but
-no point until the new version of dbreader is made.
+Fixed
 
 ### 243-refactor-and-update-dbreader-etc
 Steps:
@@ -70,3 +66,6 @@ Steps:
 2. clean up simple db reader (or whatever it is called inside journal etc)
 3. clean up dbreader
 4. implement/test using an ORM (SQAlchemy?)
+
+
+### 250-improve-collectors

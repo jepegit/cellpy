@@ -160,6 +160,9 @@ def create_summary_plot_bokeh(
     # TODO: include max cycle (bokeh struggles when there is to much to plot)
     #   could also consider interpolating
     #   or defaulting to datashader for large files.
+
+    warnings.warn("This utility function will be seriously removed and replaced with a plotly version soon.",
+                  category=DeprecationWarning)
     logging.debug(f"    - creating summary (bokeh) plot for {label}")
     discharge_capacity = None
     if isinstance(data, (list, tuple)):
@@ -313,6 +316,9 @@ def plot_cycle_life_summary_bokeh(
 
     idx = pd.IndexSlice
     all_legend_items = []
+
+    warnings.warn("This utility function will be removed shortly",
+                  category=DeprecationWarning)
 
     if add_rate:
         try:
@@ -533,6 +539,8 @@ def plot_cycle_life_summary_matplotlib(
     legend_option="all",
     **kwargs,
 ):
+    warnings.warn("This utility function will be seriously changed soon and possibly removed",
+                  category=DeprecationWarning)
 
     import matplotlib.pyplot as plt
 
@@ -674,6 +682,8 @@ def plot_cycle_life_summary_matplotlib(
 def summary_plotting_engine(**kwargs):
     """creates plots of summary data."""
 
+    warnings.warn("This utility function will be seriously changed soon and possibly removed",
+                  category=DeprecationWarning)
     logging.debug(f"Using {prms.Batch.backend} for plotting")
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
