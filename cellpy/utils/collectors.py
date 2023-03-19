@@ -1781,8 +1781,6 @@ if __name__ == "__main__":
     cellpy.log.setup_logging("INFO")
 
     b = batch.from_journal(journal)
-    print(b.pages)
-    print(b.journal)
     b.link()
     c = b.cells.first()
 
@@ -1793,16 +1791,13 @@ if __name__ == "__main__":
         columns=["charge_capacity_areal", "charge_capacity_gravimetric"],
     )
     summaries.update(update_data=True, update_plot=True)
+
+    # must use .figure.show() when not running in notebook:
     summaries.figure.show()
     summaries.save()
-    #
-    # x = np.arange(1, 10, 0.1)
-    # y = np.abs(np.sin(x))
-    # df = pd.DataFrame(dict(x=x, y=y))
-    # print(df.head())
-    #
-    # fig = px.line(df, x="x", y="y")
-    # print("Showing figure")
-    # fig.show()
+
+    dqdvs = BatchICACollector(b, plot_type="film")
+    dqdvs.figure.show()
+
     print("Ended OK")
 
