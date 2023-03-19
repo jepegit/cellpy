@@ -1757,3 +1757,52 @@ def histogram_equalization(image: np.array) -> np.array:
     image_equalized = np.interp(image.flatten(), bins[:-1], cdf)
 
     return image_equalized.reshape(image.shape)
+
+
+if __name__ == "__main__":
+    from pathlib import Path
+    import os
+
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import numpy as np
+    import seaborn as sns
+    import plotly.express as px
+
+    import cellpy
+    from cellpy.utils import batch, helpers, plotutils
+
+    project_dir = Path("../../testdata/batch_project")
+    journal = project_dir / "test_project.json"
+    assert project_dir.is_dir()
+    assert journal.is_file()
+    os.chdir(project_dir)
+    print(f"cellpy version: {cellpy.__version__}")
+    cellpy.log.setup_logging("INFO")
+
+    b = batch.from_journal(journal)
+    print(b.pages)
+    print(b.journal)
+    b.link()
+    c = b.cells.first()
+
+    summaries = BatchSummaryCollector(
+        b,
+        normalize_cycles=False, group_it=False,
+        autorun=False,
+        columns=["charge_capacity_areal", "charge_capacity_gravimetric"],
+    )
+    summaries.update(update_data=True, update_plot=True)
+    summaries.figure.show()
+    summaries.save()
+    #
+    # x = np.arange(1, 10, 0.1)
+    # y = np.abs(np.sin(x))
+    # df = pd.DataFrame(dict(x=x, y=y))
+    # print(df.head())
+    #
+    # fig = px.line(df, x="x", y="y")
+    # print("Showing figure")
+    # fig.show()
+    print("Ended OK")
+

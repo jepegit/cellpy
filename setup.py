@@ -58,7 +58,7 @@ test_requirements = [
     "pytest",
 ]
 
-extra_req_batch = ["ipython", "jupyter"]
+extra_req_batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido==0.1.*"]
 extra_req_fit = ["lmfit"]
 extra_req_all = extra_req_batch + extra_req_fit
 
