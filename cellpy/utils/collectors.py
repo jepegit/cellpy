@@ -84,7 +84,7 @@ class BatchCollector:
     figure_directory: Path = Path("out")
     data_directory: Path = Path("data/processed/")
     renderer: Any = None
-    units: Any = None
+    units: dict = None
 
     # override default arguments:
     elevated_data_collector_arguments: dict = None
@@ -161,6 +161,8 @@ class BatchCollector:
         if name is None:
             name = self.generate_name()
         self.name = name
+
+        self.parse_units()
 
         if autorun:
             self.update(update_name=False)
@@ -342,7 +344,27 @@ class BatchCollector:
 
     def parse_units(self, **kwargs):
         b = self.b
-        print("parsing units -> not implemented yet")
+        c_units = []
+        r_units = []
+        c_unit = None
+        r_unit = None
+        for c in b:
+            cu = c.cellpy_units
+            if cu != c_unit:
+                c_unit = cu
+                c_units.append(cu)
+
+            ru = c.raw_units
+            if ru != r_unit:
+                r_unit = ru
+                r_units.append(ru)
+        if len(c_units) > 1:
+            print("WARNING: non-homogenous units found: cellpy_units")
+        if len(r_units) > 1:
+            print("WARNING: non-homogenous units found: raw_units")
+        raw_units = r_units[0]
+        cellpy_units = c_units[0]
+        self.units = dict(raw_units=raw_units, cellpy_units=cellpy_units)
 
     def update(
         self,
