@@ -42,7 +42,6 @@ dependencies:
   - pint >=0.20.1
   - seaborn
   - plotly
-  - kaleido==0.1.*
   - pip:
     - sqlalchemy-access
     - pytest-benchmark
