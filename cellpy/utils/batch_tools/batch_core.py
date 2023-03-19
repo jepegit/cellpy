@@ -2,6 +2,7 @@ import abc
 import collections
 import logging
 import os
+import random
 
 from cellpy import cellreader, prms
 from cellpy.exceptions import UnderDefined
@@ -239,6 +240,24 @@ class Data(collections.UserDict):
                 return cell
             else:
                 raise NotImplementedError
+
+    def sample(self):
+        """Pick out one random cell from the batch"""
+        cell_labels = self.experiment.journal.pages.index
+        cell_id = random.choice(cell_labels)
+        return self.__look_up__(cell_id)
+
+    def first(self):
+        """Pick out first cell from the batch"""
+        cell_labels = self.experiment.journal.pages.index
+        cell_id = cell_labels[0]
+        return self.__look_up__(cell_id)
+
+    def last(self):
+        """Pick out last cell from the batch"""
+        cell_labels = self.experiment.journal.pages.index
+        cell_id = cell_labels[-1]
+        return self.__look_up__(cell_id)
 
 
 class BaseExperiment(metaclass=abc.ABCMeta):

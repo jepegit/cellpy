@@ -41,7 +41,14 @@ COLUMNS_SELECTED_FOR_VIEW = [
 
 
 class Batch:
-    """A convenient class for running batch procedures."""
+    """A convenient class for running batch procedures.
+
+    The Batch class contains among other things:
+        - iterator protocol
+        - a journal with info about the different cells where the
+        main information is accessible as a pandas.DataFrame through the `.pages` attribute
+        - a data lookup accessor `.data` that behaves similarly as a dict.
+    """
 
     def __init__(self, *args, **kwargs):
         """Initialize the Batch class.

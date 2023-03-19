@@ -84,6 +84,7 @@ class BatchCollector:
     figure_directory: Path = Path("out")
     data_directory: Path = Path("data/processed/")
     renderer: Any = None
+    units: Any = None
 
     # override default arguments:
     elevated_data_collector_arguments: dict = None
@@ -338,6 +339,10 @@ class BatchCollector:
         self._data_collector_arguments = self._default_data_collector_arguments.copy()
         self._plotter_arguments = self._default_plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)
+
+    def parse_units(self, **kwargs):
+        b = self.b
+        print("parsing units -> not implemented yet")
 
     def update(
         self,
