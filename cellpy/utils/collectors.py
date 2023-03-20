@@ -98,13 +98,6 @@ class BatchCollector:
     _default_data_collector_arguments = {}
     _default_plotter_arguments = {}
 
-    # templates override everything when using autorun:
-    _templates = {
-        "bokeh": [],
-        "matplotlib": [],
-        "plotly": [],
-    }
-
     def __init__(
         self,
         b,
@@ -200,29 +193,54 @@ class BatchCollector:
         if argument_dict is not None:
             self._plotter_arguments = {**self._plotter_arguments, **argument_dict}
 
+    def _attr_text(self, bullet_start=" - ", sep="\n"):
+        txt = f"{bullet_start}collector_name: {self.collector_name}" + sep
+        txt += f"{bullet_start}autorun: {self.autorun}" + sep
+        txt += f"{bullet_start}name: {self.name}" + sep
+        txt += f"{bullet_start}nick: {self.nick}" + sep
+        txt += f"{bullet_start}csv_include_index: {self.csv_include_index}" + sep
+        txt += f"{bullet_start}csv_layout: {self.csv_layout}" + sep
+        txt += f"{bullet_start}sep: {self.sep}" + sep
+        txt += f"{bullet_start}backend: {self.backend}" + sep
+        txt += f"{bullet_start}toolbar: {self.toolbar}" + sep
+        txt += f"{bullet_start}figure_directory: {self.figure_directory}" + sep
+        txt += f"{bullet_start}data_directory: {self.data_directory}" + sep
+        txt += f"{bullet_start}batch-instance: {self.b.name}" + sep
+        txt += f"{bullet_start}data_collector_arguments: {self.data_collector_arguments}" + sep
+        txt += f"{bullet_start}plotter_arguments: {self.plotter_arguments}" + sep
+        return txt
+
+    def _attr_data_collector(self, h1="", h2="", sep="\n"):
+        data_name = self.data_collector.__name__
+        data_sig = inspect.signature(self.data_collector)
+        data_doc = inspect.getdoc(self.data_collector)
+        txt = f"{h1}{data_name}"
+        txt = f"{txt}{data_sig}{h2}{sep}"
+        txt = f"{txt}{sep}{data_doc}{sep}"
+        return txt
+
+    def _attr_plotter(self, h1="", h2="", sep="\n"):
+        plotter_name = self.plotter.__name__
+        plotter_sig = inspect.signature(self.plotter)
+        plotter_doc = inspect.getdoc(self.plotter)
+        txt = f"{h1}{plotter_name}"
+        txt = f"{txt}{plotter_sig}{h2}{sep}"
+        txt = f"{txt}{sep}{plotter_doc}{sep}"
+        return txt
+
     def __str__(self):
         class_name = self.__class__.__name__
-
         txt = f"{class_name}\n{len(class_name) * '='}\n\n"
         txt += "Attributes:\n"
         txt += "-----------\n"
-        txt += f" -collector_name: {self.collector_name}\n"
-        txt += f" -autorun: {self.autorun}\n"
-        txt += f" -name: {self.name}\n"
-        txt += f" -nick: {self.nick}\n"
-        txt += f" -csv_include_index: {self.csv_include_index}\n"
-        txt += f" -csv_layout: {self.csv_layout}\n"
-        txt += f" -sep: {self.sep}\n"
-        txt += f" -toolbar: {self.toolbar}\n"
-        txt += f" -figure_directory: {self.figure_directory}\n"
-        txt += f" -data_directory: {self.data_directory}\n"
-        txt += f" -batch-instance: {self.b.name}\n"
-        txt += f" -data_collector_arguments: {self.data_collector_arguments}\n"
-        txt += f" -plotter_arguments: {self.plotter_arguments}\n"
+        txt += self._attr_text(sep="\n")
 
         txt += "\nfigure:\n"
         txt += ".......\n"
-        txt += f"{self.figure}\n"
+        fig_txt = f"{self.figure}"
+        if isinstance(fig_txt, str) and len(fig_txt) > 500:
+            fig_txt = fig_txt[0:500] + "\n ..."
+        txt += f"{fig_txt}\n"
 
         txt += "\ndata:\n"
         txt += ".....\n"
@@ -230,30 +248,38 @@ class BatchCollector:
 
         txt += "\nData collector:\n"
         txt += "---------------\n"
-        data_name = self.data_collector.__name__
-        data_sig = inspect.signature(self.data_collector)
-        data_doc = inspect.getdoc(self.data_collector)
-        txt = f"{txt}{data_name}"
-        txt = f"{txt}{data_sig}\n"
-        txt = f"{txt}\n{data_doc}\n"
+        txt += self._attr_data_collector(sep="\n")
 
         txt += "\nPlotter:\n"
         txt += "--------\n"
-        plotter_name = self.plotter.__name__
-        plotter_sig = inspect.signature(self.plotter)
-        plotter_doc = inspect.getdoc(self.plotter)
-        txt = f"{txt}{plotter_name}"
-        txt = f"{txt}{plotter_sig}\n"
-        txt = f"{txt}\n{plotter_doc}\n"
-
+        txt += self._attr_plotter(sep="\n")
         return txt
 
     def _repr_html_(self):
         class_name = self.__class__.__name__
         txt = f"<h2>{class_name}</h2> id={hex(id(self))}"
-        _txt = self.__str__().replace("\n", "<br>")
-        txt += f"<blockquote><code>{_txt}</></blockquote>"
+        txt += f"<h3>Attributes:</h3>"
+        txt += "<ul>"
+        txt += self._attr_text(bullet_start="<li><code>", sep="</code></li>")
+        txt += "</ul>"
+        txt += f"<h3>Figure:</h3><code>"
 
+        fig_txt = f"{self.figure}"
+        if isinstance(fig_txt, str) and len(fig_txt) > 500:
+            fig_txt = fig_txt[0:500] + "<br>..."
+        txt += f"{fig_txt}<br></code>"
+
+        txt += f"<h3>Data:</h3>"
+        if hasattr(self.data, "_repr_html_"):
+            txt += self.data._repr_html_()
+        else:
+            txt += "NONE"
+        txt += "<br>"
+        txt += f"<h3>Data Collector:</h3><blockquote>"
+        txt += self._attr_data_collector(h1="<b>", h2="</b>", sep="<br>")
+        txt += f"</blockquote><h3>Plotter:</h3><blockquote>"
+        txt += self._attr_plotter(h1="<b>", h2="</b>", sep="<br>")
+        txt += "</blockquote>"
         return txt
 
     def _set_attributes(self, **kwargs):
@@ -955,6 +981,8 @@ def pick_named_cell(b, label_mapper=None):
 
 
 def summary_collector(*args, **kwargs):
+    """See concatenate_summaries in helpers (summary_collector runs
+    concatenate_summaries with melt=True and mode='collector')"""
     kwargs["melt"] = True
     kwargs["mode"] = "collector"
     return concatenate_summaries(*args, **kwargs)
