@@ -378,6 +378,7 @@ class BatchCollector:
         self._update_arguments(data_collector_arguments, plotter_arguments)
 
     def parse_units(self, **kwargs):
+        """Look through your cellpy objects and search for units."""
         b = self.b
         c_units = []
         r_units = []
@@ -453,6 +454,20 @@ class BatchCollector:
         return True
 
     def show(self, **kwargs):
+        """Show the figure.
+
+        Note that show returns the `figure` object and  if the `backend` used
+        does not provide automatic rendering in the editor / running environment you
+        are using, you might have to issue the rendering yourself. For example, if you
+        are using `plotly` and running it as a script in a typical command shell,
+        you will have to issue `.show()` on the returned `figure` object.
+
+        Args:
+            **kwargs: sent to the plotter.
+
+        Returns:
+            Figure object
+        """
         if not self._figure_valid():
             return
 
