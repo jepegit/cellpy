@@ -169,11 +169,6 @@ def test_merge_auto_from_list(parameters):
     assert pytest.approx(count_all, 0.001) == (count_first + count_second)
 
 
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_clean_up_normal_table(dataset):
-    dataset._clean_up_normal_table()
-
-
 def test_validate_step_table(dataset):
     validated = dataset._validate_step_table()
     assert validated
@@ -198,11 +193,6 @@ def test_select_steps(dataset):
 @pytest.mark.xfail(raises=DeprecatedFeature)
 def test_populate_step_dict(dataset):
     dataset.populate_step_dict(step="charge")
-
-
-@pytest.mark.xfail(raises=DeprecatedFeature)
-def test_from_res(dataset):
-    dataset.from_res()
 
 
 def test_cap_mod_summary(dataset):

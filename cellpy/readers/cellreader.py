@@ -35,7 +35,7 @@ from cellpy.exceptions import (
     DeprecatedFeature,
     NullData,
     WrongFileVersion,
-    NoCellFound,
+    NoDataFound,
     UnderDefined,
 )
 from cellpy.parameters import prms
@@ -106,7 +106,7 @@ class CellpyCell:
 
     Attributes:
         # TODO v.1.0.1: update this
-        cells (list): list of DataSet objects.
+        data: cellpy.Data object
     """
 
     def __repr__(self):
@@ -143,9 +143,7 @@ class CellpyCell:
             <b>profile</b>: {self.profile} <br>
             <b>cellpy_units</b>: {self.cellpy_units} <br>
             <b>select_minimal</b>: {self.select_minimal} <br>
-            <b>selected_cell_number</b>: {self.selected_cell_number} <br>
             <b>selected_scans</b>: {self.selected_scans} <br>
-            <b>status_datasets</b>: {self.status_datasets} <br>
             <b>summary_exists (deprecated)</b>: {self.summary_exists} <br>
         """
         all_vars += "</p>"
@@ -195,6 +193,8 @@ class CellpyCell:
         filestatuschecker=None,  # "modified"
         tester=None,
         initialize=False,
+        cellpy_units=None,
+        output_units=None,
     ):
         """CellpyCell object
 
@@ -207,6 +207,8 @@ class CellpyCell:
             tester: instrument used (e.g. "arbin_res") (checks prms-file as
                default).
             initialize: create a dummy (empty) dataset; defaults to False.
+            cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
+            output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
         """
 
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
@@ -217,35 +219,25 @@ class CellpyCell:
             self.tester = tester
 
         self.loader = None  # this will be set in the function set_instrument
-        self.logger = logging.getLogger(__name__)
         logging.debug("created CellpyCell instance")
 
         self._session_name = None
         self.profile = profile
 
         self.minimum_selection = {}
-        if filestatuschecker is None:
-            self.filestatuschecker = prms.Reader.filestatuschecker
-        else:
-            self.filestatuschecker = filestatuschecker
+        self.filestatuschecker = filestatuschecker or prms.Reader.filestatuschecker
         self.forced_errors = 0
         self.summary_exists = False
-        if not filenames:
-            self.file_names = []
-        else:
-            self.file_names = filenames
-            if not self._is_listtype(self.file_names):
-                self.file_names = [self.file_names]
-        if not selected_scans:
-            self.selected_scans = []
-        else:
-            self.selected_scans = selected_scans
-            if not self._is_listtype(self.selected_scans):
-                self.selected_scans = [self.selected_scans]
+
+        self.file_names = filenames or []
+        if not self._is_listtype(self.file_names):
+            self.file_names = [self.file_names]
+
+        self.selected_scans = selected_scans or []
+        if not self._is_listtype(self.selected_scans):
+            self.selected_scans = [self.selected_scans]
 
         self._data = None
-        self.status_datasets = []  # TODO v.1.0.0: change to False
-        self.selected_cell_number = 0  # TODO v.1.0.0: remove
         self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
         self.capacity_modifiers = ["reset"]
@@ -270,20 +262,12 @@ class CellpyCell:
         self.force_all = prms.Reader.force_all
         self.sep = prms.Reader.sep
         self._cycle_mode = None
-        # self.max_res_filesize = prms.Reader.max_res_filesize
         self.select_minimal = prms.Reader.select_minimal
-        # self.chunk_size = prms.Reader.chunk_size  # 100000
-        # self.max_chunks = prms.Reader.max_chunks
-        # self.last_chunk = prms.Reader.last_chunk
         self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
         self.limit_data_points = None
-        # self.load_until_error = prms.Reader.load_until_error
         self.ensure_step_table = prms.Reader.ensure_step_table
-        # self.raw_datadir = prms.Reader.raw_datadir
         self.raw_datadir = prms.Paths.rawdatadir
-        # self.cellpy_datadir = prms.Reader.cellpy_datadir
         self.cellpy_datadir = prms.Paths.cellpydatadir
-        # search in prm-file for res and hdf5 dirs in loadcell:
         self.auto_dirs = prms.Reader.auto_dirs
 
         # - headers and instruments
@@ -296,8 +280,8 @@ class CellpyCell:
         self.register_instrument_readers()
         self.set_instrument()
         # - units used by cellpy
-        self.cellpy_units = get_cellpy_units()
-        self.output_units = get_default_output_units()
+        self.cellpy_units = get_cellpy_units(cellpy_units)
+        self.output_units = get_default_output_units(output_units)
 
         if initialize:
             self.initialize()
@@ -305,7 +289,7 @@ class CellpyCell:
     def initialize(self):
         logging.debug("Initializing...")
         # TODO: v.1.0.0: replace this
-        self.data = Data()
+        self._data = Data()
 
     # the batch utility might be using session name
     # the cycle and ica collector are using session name
@@ -336,25 +320,24 @@ class CellpyCell:
     def raw_units(self):
         return self.data.raw_units
 
-    # TODO: v.1.0.0: replace this
     @property
     def data(self):
         """returns the DataSet instance"""
         if not self._data:
             logging.critical("Sorry, I don't have any data to give you!")
-            raise NoCellFound
+            logging.debug("NoDataFound - might consider defaulting to create one in the future")
+            raise NoDataFound
         else:
             return self._data
 
-    # TODO: v.1.0.0: replace this
     @data.setter
     def data(self, new_cell):
         self._data = new_cell
 
     @property
     def empty(self):
-        """gives True if the CellpyCell object is empty (or un-functional)"""
-        return not self.check()
+        """gives True if the CellpyCell object is empty (or non-functional)"""
+        return not self._validate_cell()
 
     @classmethod
     def vacant(cls, cell=None):
@@ -639,19 +622,13 @@ class CellpyCell:
 
         return _instrument
 
-    def _create_logger(self):
-        from cellpy import log
-
-        self.logger = logging.getLogger(__name__)
-        log.setup_logging(default_level="DEBUG")
-
     @property
     def cycle_mode(self):
         # TODO: edit this from scalar to list
         try:
             data = self.data
             return data.meta_test_dependent.cycle_mode[0]
-        except NoCellFound:
+        except NoDataFound:
             return self._cycle_mode
 
     @cycle_mode.setter
@@ -662,7 +639,7 @@ class CellpyCell:
             data = self.data
             data.meta_test_dependent.cycle_mode = [cycle_mode]
             self._cycle_mode = cycle_mode
-        except NoCellFound:
+        except NoDataFound:
             self._cycle_mode = cycle_mode
 
     def set_raw_datadir(self, directory=None):
@@ -971,7 +948,7 @@ class CellpyCell:
 
         logging.debug("loaded files")
 
-        if not self.status_datasets:
+        if not self._validate_cell():
             logging.warning("Empty run!")
             return self
 
@@ -1048,7 +1025,7 @@ class CellpyCell:
         if similar is None:
             # forcing to load only raw_files
             self.from_raw(raw_files, **kwargs)
-            if self.status_datasets:
+            if self._validate_cell():
                 if mass:
                     self.set_mass(mass)
                 if summary_on_raw:
@@ -1220,7 +1197,7 @@ class CellpyCell:
             # return test
         # cell[set_number].raw_units = self._set_raw_units()
         # self.cells.append(cell[set_number])
-        # self.status_datasets = self._validate_cells()
+        # self.status_dataset = self._validate_cell()
         # self._invent_a_session_name()
         return self
 
@@ -1335,72 +1312,21 @@ class CellpyCell:
             data.raw_units = self._set_raw_units()
 
         self.data = data
-        self.status_datasets = self._validate_cells()
         self._invent_a_session_name()  # TODO (v1.0.0): fix me
         return self
 
-    # TODO: rewrite me
-    def _validate_cells(self, level=0):
+    def _validate_cell(self, level=0):
         logging.debug("validating test")
-        level = 0
         # simple validation for finding empty datasets - should be expanded to
-        # find not-complete datasets, datasets with missing prms etc
-        v = []
+        # find not-complete datasets, datasets with missing parameters etc
+        v = True
         if level == 0:
-            data = self.data
-            v.append(self._is_not_empty_dataset(data))
-            v.append(data.populate_defaults())
-            logging.debug(f"validation array: {v}")
-        return v
-
-    def from_res(self, filenames=None, check_file_type=True):
-        """Convenience function for loading arbin-type data into the
-        datastructure.
-
-        Args:
-            filenames: ((lists of) list of raw-file names): uses
-                cellpy.file_names if None.
-                If list-of-list, it loads each list into separate datasets.
-                The files in the inner list will be merged.
-            check_file_type (bool): check file type if True
-                (res-, or cellpy-format)
-        """
-        raise DeprecatedFeature
-
-    # TODO: fix me (v1.0.0)
-    def check(self):
-        """Returns False if no datasets exists or if one or more of the datasets
-        are empty"""
-        if isinstance(self.status_datasets, (list, tuple)):
-            logging.debug("OLD VERSION ENCOUNTERED")
-            if len(self.status_datasets) == 0:
-                return False
-            if all(self.status_datasets):
+            try:
+                data = self.data
                 return True
-            return False
-        else:
-            return self.status_datasets
-
-    # TODO: maybe consider being a bit more concise (re-implement)
-    def _is_not_empty_dataset(self, dataset):
-        if dataset is self._empty_dataset():
-            return False
-        else:
-            return True
-
-    # TODO: check if this is useful and if it is rename, if not delete
-    def _clean_up_normal_table(self, test=None):
-        # check that test contains all the necessary headers
-        # (and add missing ones)
-        raise NotImplementedError
-
-    # TODO: this is used for the check-datasetnr-thing. Will soon be obsolete?
-    def _report_empty_dataset(self):
-        logging.info("Empty set")
-
-    @staticmethod
-    def _empty_dataset():
-        return None
+            except NoDataFound:
+                return False
+        return v
 
     def partial_load(self, **kwargs):
         """Load only a selected part of the cellpy file."""
@@ -1472,7 +1398,6 @@ class CellpyCell:
             logging.warning("Could not load")
             logging.warning(str(cellpy_file))
 
-        self.status_datasets = self._validate_cells()
         self._invent_a_session_name(cellpy_file)
         if return_cls:
             return self
@@ -1621,15 +1546,10 @@ class CellpyCell:
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
-        # # this does not yet allow multiple sets
-        # new_tests = [
-        #     data
-        # ]  # but cellpy is ready when that time comes (if it ever happens)
-        # return new_tests
         return data
 
     def _load_hdf5_v7(self, filename, selector=None, **kwargs):
-        logging.debug("loading v7")
+        logging.debug("--- loading v7")
         meta_dir = "/info"
         parent_level = kwargs.pop("parent_level", "CellpyData")
         raw_dir = kwargs.pop("raw_dir", "/raw")
@@ -1675,7 +1595,7 @@ class CellpyCell:
         return data
 
     def _load_hdf5_v6(self, filename, selector=None):
-        print("--- loading v6")
+        logging.critical("--- loading v6")
         parent_level = "CellpyData"
         raw_dir = "/raw"
         step_dir = "/steps"
@@ -1732,15 +1652,11 @@ class CellpyCell:
             data.raw_data_files = []
             data.raw_data_files_length = []
 
-        # this does not yet allow multiple sets
         logging.debug("loaded new test")
-        # new_tests = [
-        #     data
-        # ]  # but cellpy is ready when that time comes (if it ever happens)
-        # return new_tests
         return data
 
     def _load_hdf5_v5(self, filename, selector=None):
+        logging.critical("--- loading v5")
         parent_level = "CellpyData"
         raw_dir = "/raw"
         step_dir = "/steps"
@@ -1789,12 +1705,7 @@ class CellpyCell:
             data.raw_data_files = []
             data.raw_data_files_length = []
 
-        # this does not yet allow multiple sets
         logging.debug("loaded new test")
-        # new_tests = [
-        #     data
-        # ]  # but cellpy is ready when that time comes (if it ever happens)
-        # return new_tests
         return data
 
     def _load_old_hdf5(self, filename, cellpy_file_version):
@@ -1818,6 +1729,7 @@ class CellpyCell:
         return data
 
     def _load_old_hdf5_v3_to_v4(self, filename):
+        logging.critical("--- loading v < 5")
         parent_level = "CellpyData"
         meta_dir = "/info"
         _raw_dir = "/dfdata"
@@ -3107,7 +3019,7 @@ class CellpyCell:
         # logging.debug(f"selecting cycle {cycle} step {step}")
         v = test.raw[(test.raw[c_txt] == cycle) & (test.raw[s_txt] == step)]
 
-        if self.is_empty(v):
+        if self._is_empty_array(v):
             logging.debug("empty dataframe")
             return None
         else:
@@ -3363,10 +3275,11 @@ class CellpyCell:
 
         logging.debug("saving to csv")
 
-        data = self.data
-        if not self._is_not_empty_dataset(data):
+        try:
+            data = self.data
+        except NoDataFound:
             logging.info("to_csv -")
-            logging.info("not saved!")
+            logging.info("NoDataFound: not saved!")
             return
 
         if isinstance(data.loaded_from, (list, tuple)):
@@ -3756,7 +3669,7 @@ class CellpyCell:
         if cycle:
             logging.debug("getting voltage curve for cycle")
             c = data[(data[cycle_index_header] == cycle)]
-            if not self.is_empty(c):
+            if not self._is_empty_array(c):
                 v = c[voltage_header]
                 return v
         else:
@@ -3794,7 +3707,7 @@ class CellpyCell:
         if cycle:
             logging.debug(f"getting current for cycle {cycle}")
             c = data[(data[cycle_index_header] == cycle)]
-            if not self.is_empty(c):
+            if not self._is_empty_array(c):
                 v = c[current_header]
                 return v
         else:
@@ -3902,7 +3815,7 @@ class CellpyCell:
         test = self.data.raw
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
-            if not self.is_empty(c):
+            if not self._is_empty_array(c):
                 v = c[datetime_header]
 
         else:
@@ -3940,7 +3853,7 @@ class CellpyCell:
         test = self.data.raw
         if cycle:
             c = test[(test[cycle_index_header] == cycle)]
-            if not self.is_empty(c):
+            if not self._is_empty_array(c):
                 v = c[timestamp_header]
 
         else:
@@ -4349,7 +4262,7 @@ class CellpyCell:
                 raise ValueError(f"You have duplicate step numbers!")
             for step in sorted(steps):
                 selected_step = self._select_step(cycle, step)
-                if not self.is_empty(selected_step):
+                if not self._is_empty_array(selected_step):
                     _v.append(selected_step[self.headers_normal.voltage_txt])
                     _c.append(selected_step[column_txt] * converter)
             try:
@@ -4650,8 +4563,8 @@ class CellpyCell:
                 try:
                     value = Q(value, self.data.raw_units[physical_property])
                     logging.debug(f"With unit from raw-units: {value}")
-                except NoCellFound:
-                    raise NoCellFound(
+                except NoDataFound:
+                    raise NoDataFound(
                         "If you dont have any cells you cannot convert"
                         " values to cellpy units without providing what"
                         " unit to convert from!"
@@ -4838,9 +4751,8 @@ class CellpyCell:
 
     # -----------internal-helpers-----------------------------------------------
 
-    # TODO: clean it up a bit
     @staticmethod
-    def is_empty(v):
+    def _is_empty_array(v):
         try:
             if not v:
                 return True
@@ -4864,17 +4776,6 @@ class CellpyCell:
             return True
         else:
             return False
-
-    @staticmethod
-    def _check_file_type(filename):
-        warnings.warn(DeprecationWarning("this method will be removed " "in v.0.4.0"))
-        extension = os.path.splitext(filename)[-1]
-        filetype = "res"
-        if extension.lower() == ".res":
-            filetype = "res"
-        elif extension.lower() == ".h5":
-            filetype = "h5"
-        return filetype
 
     @staticmethod
     def _bounds(x):
@@ -4928,41 +4829,6 @@ class CellpyCell:
         last_items = raw[d_txt].isin(steps)
         return last_items
 
-    # TODO: find out what this is for and probably delete it
-    def _modify_cycle_number_using_cycle_step(
-        self,
-        from_tuple=None,
-        to_cycle=44,
-    ):
-        # modify step-cycle tuple to new step-cycle tuple
-        # from_tuple = [old cycle_number, old step_number]
-        # to_cycle    = new cycle_number
-
-        if from_tuple is None:
-            from_tuple = [1, 4]
-        logging.debug("**- _modify_cycle_step")
-
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        step_index_header = self.headers_normal.step_index_txt
-
-        step_table_txt_cycle = self.headers_step_table.cycle
-        step_table_txt_step = self.headers_step_table.step
-
-        # modifying steps
-        st = self.data.steps
-        st[step_table_txt_cycle][
-            (st[step_table_txt_cycle] == from_tuple[0])
-            & (st[step_table_txt_step] == from_tuple[1])
-        ] = to_cycle
-        # modifying normal_table
-        nt = self.data.raw
-        nt[cycle_index_header][
-            (nt[cycle_index_header] == from_tuple[0])
-            & (nt[step_index_header] == from_tuple[1])
-        ] = to_cycle
-        # modifying summary_table
-        # not implemented yet
-
     # ----------making-summary------------------------------------------------------
     def make_summary(
         self,
@@ -4996,8 +4862,9 @@ class CellpyCell:
             logging.debug(f"use_cellpy_stat_file: {use_cellpy_stat_file}")
 
         txt = "creating summary for file "
-        test = self.data
-        if not self._is_not_empty_dataset(test):
+        try:
+            test = self.data
+        except NoDataFound:
             logging.info(f"Empty test {test})")
             return
 
@@ -5576,6 +5443,7 @@ def get(
     instrument=None,
     instrument_file=None,
     nominal_capacity=None,
+    area=None,
     logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
@@ -5590,6 +5458,7 @@ def get(
         instrument (str): instrument to use (defaults to the one in your cellpy config file)
         instrument_file (str or path): yaml file for custom file type
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
+        area (float): active electrode area (e.g. used for finding the areal capacity)
         logging_mode (str): "INFO" or "DEBUG"
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
         auto_summary (bool): (re-) create summary.
@@ -5600,7 +5469,6 @@ def get(
         CellpyCell object (if successful, None if not)
 
     """
-
     from cellpy import log
 
     log.setup_logging(default_level=logging_mode, testing=testing)
@@ -5677,11 +5545,15 @@ def get(
 
         if mass is not None:
             logging.info(f"Setting mass: {mass}")
-            cellpy_instance.set_mass(mass)
+            cellpy_instance.data.mass = mass
 
         if nominal_capacity is not None:
             logging.info(f"Setting nominal capacity: {nominal_capacity}")
-            cellpy_instance.set_nom_cap(nominal_capacity)
+            cellpy_instance.data.nom_cap = nominal_capacity
+
+        if area is not None:
+            logging.info(f"Setting area: {area}")
+            cellpy_instance.data.active_electrode_area = area
 
         if auto_summary:
             logging.info("Creating step table")

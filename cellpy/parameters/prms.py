@@ -138,6 +138,7 @@ class DbColsClass(CellPyConfig):
     cell_type: Tuple[str, str] = ("cell_type", "cat")
     experiment_type: Tuple[str, str] = ("experiment_type", "cat")
     active_material: Tuple[str, str] = ("mass_active_material", "float")
+    area: Tuple[str, str] = ("area", "float")
     total_material: Tuple[str, str] = ("mass_total", "float")
     loading: Tuple[str, str] = ("loading_active_material", "float")
     nom_cap: Tuple[str, str] = ("nominal_capacity", "float")

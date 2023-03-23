@@ -365,9 +365,9 @@ class CyclingExperiment(BaseExperiment):
                         raise e
                     continue
 
-            if not cell_data.check():
+            if cell_data.empty:
                 logging.info("...not loaded...")
-                logging.debug("Did not pass check(). Could not load cell!")
+                logging.debug("Data is empty. Could not load cell!")
                 errors.append("check:" + str(indx))
                 h_txt += " [-]"
                 pbar.set_postfix_str(s=h_txt, refresh=True)

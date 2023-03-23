@@ -47,6 +47,7 @@ requirements = [
     "click",
     "PyGithub",
     "tqdm",
+    "pint",
     'pyodbc;platform_system=="windows"',
     'sqlalchemy;platform_system=="windows"',
     'sqlalchemy-access;platform_system=="windows"',
