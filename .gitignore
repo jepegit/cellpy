@@ -101,7 +101,7 @@ xdist/
 .dotenv
 .env
 .pytest_cache/
-cellpy_debug.log.1
+cellpy_debug.lo*
 out/20190403_cen59_04_rateGITT_01.h5
 builds/
 local/
@@ -110,3 +110,4 @@ test.nda
 test.csv
 dev_utils/batch_notebooks/out.png
 settings.json
+/testdata/batch_project/out/test*.*

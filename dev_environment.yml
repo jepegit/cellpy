@@ -40,6 +40,8 @@ dependencies:
   - python-box
   - sqlalchemy
   - pint >=0.20.1
+  - seaborn
+  - plotly
   - pip:
     - sqlalchemy-access
     - pytest-benchmark

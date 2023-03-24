@@ -4,7 +4,7 @@ import pytest
 
 import cellpy.readers.core
 from cellpy import log, prms, Q
-from cellpy.exceptions import NoCellFound
+from cellpy.exceptions import NoDataFound
 from cellpy.parameters.internal_settings import get_headers_summary
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
@@ -130,7 +130,7 @@ def test_get_converter_to_areal_specific(dataset):
 
 
 def test_that_raw_units_are_not_available_without_a_cell(cellpy_data_instance):
-    with pytest.raises(NoCellFound):
+    with pytest.raises(NoDataFound):
         print(f"{cellpy_data_instance.raw_units=}")
 
 

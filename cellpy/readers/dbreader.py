@@ -377,6 +377,11 @@ class Reader:
         insp = self._pick_info(serial_number, column_name)
         return insp
 
+    def get_area(self, serial_number):
+        column_name = self.db_sheet_cols.area
+        insp = self._pick_info(serial_number, column_name)
+        return insp
+
     def get_cell_name(self, serial_number):
         column_name = self.db_sheet_cols.cell_name
         insp = self._pick_info(serial_number, column_name)
