@@ -84,7 +84,7 @@ ATTRS_CELLPYDATA = [
     "selected_cell_number",
     "selected_scans",
     "sep",
-    "status_datasets",
+    "status_dataset",
     "summary_exists",
     "table_names",
     "tester",

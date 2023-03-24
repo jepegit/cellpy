@@ -249,8 +249,7 @@ class Data:
     # ---------------- left-over-properties v7 -> v8 -----------------
     # these now belong to the CellpyMeta attributes
     #   however, since they are extensively used in the instrument
-    #   loaders and cellreader,
-    #   I temporarily (?) made them into properties
+    #   loaders and cellreader, they are also accessible here as properties
 
     @property
     def raw_id(self):
@@ -293,16 +292,16 @@ class Data:
         return self.meta_common.active_electrode_area
 
     @active_electrode_area.setter
-    def active_electrode_area(self, n):
-        self.meta_common.active_electrode_area = n
+    def active_electrode_area(self, area):
+        self.meta_common.active_electrode_area = area
 
     @property
     def cell_name(self):
         return self.meta_common.cell_name
 
     @cell_name.setter
-    def cell_name(self, n):
-        self.meta_common.cell_name = n
+    def cell_name(self, cell_name):
+        self.meta_common.cell_name = cell_name
 
     @property
     def nom_cap(self):
@@ -404,6 +403,12 @@ class Data:
                 f"total mass not set -> setting to same as mass: {self.tot_mass}"
             )
 
+        return True
+
+    @property
+    def empty(self):
+        if self.has_data:
+            return False
         return True
 
     @property
@@ -661,23 +666,6 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
             logging.info(f"The date is not of correct type [{xldate}]")
             d = xldate
     return d
-
-
-def convert_to_mAhg(c, mass=1.0):
-    """Converts capacity in Ah to capacity in mAh/g.
-
-    Args:
-        c (float or numpy array): capacity in mA.
-        mass (float): mass in mg.
-
-    Returns:
-        float: 1000000 * c / mass
-    """
-    return 1_000_000 * c / mass
-
-
-def collect_ocv_curves():
-    raise NotImplementedError
 
 
 def collect_capacity_curves(

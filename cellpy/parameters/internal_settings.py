@@ -558,17 +558,17 @@ base_columns_int = [
 ]
 
 
-def get_cellpy_units() -> CellpyUnits:
+def get_cellpy_units(*args, **kwargs) -> CellpyUnits:
     """Returns an augmented global dictionary with units"""
     return cellpy_units
 
 
-def get_default_output_units() -> CellpyUnits:
+def get_default_output_units(*args, **kwargs) -> CellpyUnits:
     """Returns an augmented dictionary with units to use as default."""
     return CellpyUnits()
 
 
-def get_default_cellpy_file_raw_units() -> CellpyUnits:
+def get_default_cellpy_file_raw_units(*args, **kwargs) -> CellpyUnits:
     """Returns a dictionary with units to use as default for old versions of cellpy files"""
     return CellpyUnits(
         charge="Ah",
@@ -576,7 +576,7 @@ def get_default_cellpy_file_raw_units() -> CellpyUnits:
     )
 
 
-def get_default_raw_units() -> CellpyUnits:
+def get_default_raw_units(*args, **kwargs) -> CellpyUnits:
     """Returns a dictionary with units as default for raw data"""
     return CellpyUnits(
         charge="Ah",

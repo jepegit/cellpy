@@ -31,3 +31,7 @@ scipy
 pandas>=1.5
 tables
 PyGithub>=1.43
+plotly
+kaleido==0.1.*
+seaborn
+
