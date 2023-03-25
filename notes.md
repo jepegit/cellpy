@@ -63,6 +63,7 @@ Fixed
 ### 243-refactor-and-update-dbreader-etc
 Steps:
 1. clean up b.update [in progress]
+   [] implement cellpy.loadcell into cellpy.get
 2. clean up simple db reader (or whatever it is called inside journal etc)
 3. clean up dbreader
 4. implement/test using an ORM (SQAlchemy?)

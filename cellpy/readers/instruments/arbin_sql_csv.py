@@ -281,7 +281,7 @@ def test_loader_from_outside():
     c.save(outfile)
 
 
-def test_seamless_files():
+def check_seamless_files():
     import pathlib
 
     import matplotlib.pyplot as plt
@@ -318,4 +318,4 @@ def test_seamless_files():
 
 
 if __name__ == "__main__":
-    test_seamless_files()
+    check_seamless_files()

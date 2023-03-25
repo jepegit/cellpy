@@ -723,3 +723,36 @@ def test_set_nominal_capacity(dataset, val, validated):
 @pytest.mark.filterwarnings("error")
 def test_deprecations(dataset):
     dataset._check_file_type("my_file.res")
+
+
+@pytest.mark.parametrize(
+    "raw_file,cellpy_file",
+    [
+        ("raw", None),
+        ("cellpy", None),
+        ("raw", "cellpy"),
+        (None, "cellpy"),
+    ],
+)
+def test_loadcell_to_get_post(parameters, cellpy_file, raw_file):
+    _raw_file = parameters.res_file_path
+    _cellpy_file = parameters.cellpy_file_path
+
+    if raw_file == "raw":
+        raw_file = _raw_file
+    if raw_file == "cellpy":
+        raw_file = _cellpy_file
+
+    if cellpy_file == "raw":
+        raw_file = _raw_file
+    if cellpy_file == "cellpy":
+        raw_file = _cellpy_file
+
+    cellpy.get(
+        raw_file,
+        cellpy_file=cellpy_file,
+        # mass=1.2,
+        logging_mode="DEBUG",
+        testing=True,
+    )
+

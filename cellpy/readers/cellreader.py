@@ -5438,15 +5438,22 @@ class CellpyCell:
 
 
 def get(
-    filename=None,
+    filename=None,  # raw_files in loadcell
     mass=None,
     instrument=None,
     instrument_file=None,
+    cellpy_file=None,  # NEW - will select cellpy-file instead if similar if given (work as loadcell)
     nominal_capacity=None,
     area=None,
+    loading=None,  # NEW - from loadcell
+    estimate_area=True,  # NEW - from loadcell
     logging_mode=None,
     cycle_mode=None,
     auto_summary=True,
+    auto_pick_cellpy_format=True,
+    step_kwargs=None,  # NEW - sent to make_steps
+    summary_kwargs=None,  # NEW - sent to make_summary
+    selector=None,  # NEW - sent to load (loading cellpy-files)
     testing=False,
     **kwargs,
 ):
@@ -5470,112 +5477,163 @@ def get(
 
     """
     from cellpy import log
+    db_readers = ["arbin_sql"]
+
+    step_kwargs = step_kwargs or {}
+    summary_kwargs = summary_kwargs or {}
+    load_cellpy_file = False
 
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyCell()
     logging.debug(f"created CellpyCell instance")
-    db_readers = ["arbin_sql"]
+
+    logging.debug(f"{cellpy_file=}")
+    logging.debug(f"{filename=}")
+
+    if filename is None:
+        if cellpy_file is None:
+            logging.info("Running cellpy.get without a filename")
+            logging.info("Returning an empty CellpyCell object.")
+            cellpy_instance = _update_meta(
+                cellpy_instance,
+                cycle_mode=cycle_mode,
+                mass=mass,
+                nominal_capacity=nominal_capacity,
+                area=area,
+                loading=loading,
+                estimate_area=estimate_area,
+            )
+            return cellpy_instance
+
+        else:
+            load_cellpy_file = True
+            filename = Path(cellpy_file)
+
+    if isinstance(filename, (list, tuple)):
+        logging.debug("got a list or tuple of names")
+        load_cellpy_file = False
+    else:
+        filename = Path(filename)
+        if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"] and auto_pick_cellpy_format:
+            load_cellpy_file = True
+
+    if filename and cellpy_file and not load_cellpy_file:
+        try:
+            load_cellpy_file = cellpy_instance.check_file_ids(filename, cellpy_file)
+            logging.debug(f"checked if the files were similar")
+            filename = Path(cellpy_file)
+        except Exception as e:
+            logging.debug(f"Error during checking if similar: {e}")
+            logging.debug("Setting load_cellpy_file to False")
+
+    if load_cellpy_file:
+        logging.info(f"Loading cellpy-file: {filename}")
+        if kwargs.pop("post_processor_hook", None) is not None:
+            logging.warning(
+                "post_processor_hook is not allowed when loading cellpy-files"
+            )
+        cellpy_instance.load(filename, **kwargs)
+        return cellpy_instance
+
+    logging.debug("Prepare for loading raw-file(s)")
     logging.debug(f"checking instrument and instrument_file")
     if instrument_file is not None:
         logging.debug(f"got instrument file {instrument_file=}")
-        # TODO: make tests for this
-        # TODO: align this with the new format
         cellpy_instance.set_instrument(
             instrument="custom", instrument_file=instrument_file
         )
-        # prms.Instruments.custom_instrument_definitions_file = instrument_file
 
     elif instrument is not None:
         logging.debug(f"got instrument in stead of instrument file, {instrument=}")
         model = kwargs.pop("model", None)
         cellpy_instance.set_instrument(instrument=instrument, model=model, **kwargs)
 
-    if cellpy_instance.tester in db_readers:
-        file_needed = False
-    else:
-        file_needed = True
+    if cellpy_instance.tester not in db_readers:
+        if not isinstance(filename, (list, tuple)):
+            filename = Path(filename)
 
-    if filename is not None:
-        logging.debug(f"{filename=}")
-        if file_needed:
-            if not isinstance(filename, (list, tuple)):
-                filename = Path(filename)
+            if not filename.is_file():
+                print(f"Could not find {filename}")
+                print("Returning None")
+                return
 
-                if not filename.is_file():
-                    print(f"Could not find {filename}")
-                    print("Returning None")
-                    return
+    logging.info(f"Loading raw-file: {filename}")
+    cellpy_instance.from_raw(filename, **kwargs)
 
-                if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
-                    logging.info(f"Loading cellpy-file: {filename}")
-                    if kwargs.pop("post_processor_hook", None) is not None:
-                        logging.warning(
-                            "post_processor_hook is not allowed when loading cellpy-files"
-                        )
-                    cellpy_instance.load(filename, **kwargs)
+    if not cellpy_instance:
+        print("Could not load file: check log!")
+        print("Returning None")
+        return
 
-                    # in case the user wants to give another mass to the cell:
-                    if mass is not None:
-                        logging.info(f"Setting mass: {mass}")
-                        cellpy_instance.set_mass(mass)
-                        if auto_summary:
-                            logging.info("Creating step table")
-                            cellpy_instance.make_step_table()
-                            logging.info("Creating summary data")
-                            cellpy_instance.make_summary()
-                    logging.info("Created CellpyCell object")
-                    return cellpy_instance
+    cellpy_instance = _update_meta(
+        cellpy_instance,
+        cycle_mode=cycle_mode,
+        mass=mass,
+        nominal_capacity=nominal_capacity,
+        area=area,
+        loading=loading,
+        estimate_area=estimate_area,
+    )
 
-        # raw file
-        logging.info(f"Loading raw-file: {filename}")
-        cellpy_instance.from_raw(filename, **kwargs)
-
-        if not cellpy_instance:
-            print("Could not load file: check log!")
-            print("Returning None")
-            return
-
-        if cycle_mode is not None:
-            logging.debug("Setting cycle mode")
-            cellpy_instance.cycle_mode = cycle_mode
-
-        logging.debug("raw:")
-        logging.debug(cellpy_instance.data.raw.head())
-
-        if mass is not None:
-            logging.info(f"Setting mass: {mass}")
-            cellpy_instance.data.mass = mass
-
-        if nominal_capacity is not None:
-            logging.info(f"Setting nominal capacity: {nominal_capacity}")
-            cellpy_instance.data.nom_cap = nominal_capacity
-
-        if area is not None:
-            logging.info(f"Setting area: {area}")
-            cellpy_instance.data.active_electrode_area = area
-
-        if auto_summary:
-            logging.info("Creating step table")
-            cellpy_instance.make_step_table()
-            logging.info("Creating summary data")
-            cellpy_instance.make_summary()
-    else:
-        if mass:
-            prms.Materials.default_mass = mass
-        if nominal_capacity:
-            prms.Materials.default_nom_cap = nominal_capacity
+    if auto_summary:
+        logging.info("Creating step table")
+        cellpy_instance.make_step_table(**step_kwargs)
+        logging.info("Creating summary data")
+        cellpy_instance.make_summary(**summary_kwargs)
 
     logging.info("Created CellpyCell object")
     return cellpy_instance
 
 
+def _update_meta(
+    cellpy_instance,
+    cycle_mode=None,
+    mass=None,
+    nominal_capacity=None,
+    area=None,
+    loading=None,
+    estimate_area=None,
+):
+    # TODO: make this a method on CellpyCell
+    if cycle_mode is not None:
+        logging.debug("Setting cycle mode")
+        cellpy_instance.cycle_mode = cycle_mode
+
+    if mass is not None:
+        logging.info(f"Setting mass: {mass}")
+        cellpy_instance.data.mass = mass
+
+    if nominal_capacity is not None:
+        logging.info(f"Setting nominal capacity: {nominal_capacity}")
+        cellpy_instance.data.nom_cap = nominal_capacity
+
+    # -------------AREA-CALC----------------
+    if area is not None:
+        logging.debug(f"got area: {area}")
+        cellpy_instance.data.meta_common.active_electrode_area = area
+
+    elif loading and estimate_area:
+        logging.debug("-------------AREA-CALC----------------")
+        logging.debug(f"got loading: {logging}")
+        area = cellpy_instance.data.mass / loading
+        logging.debug(
+            f"calculating area from loading ({loading}) and mass ({cellpy_instance.data.mass}): {area}"
+        )
+        cellpy_instance.data.meta_common.active_electrode_area = area
+    else:
+        logging.debug("using default area")
+
+    return cellpy_instance
+
+
 def check_raw():
+    import cellpy
     from cellpy.utils import example_data
 
     cellpy_data_instance = CellpyCell()
     res_file_path = example_data.arbin_file_path()
-    cellpy_data_instance.loadcell(res_file_path)
+    cellpy.get(res_file_path)
 
     data_point = 2283
     step_time = 1500.05
