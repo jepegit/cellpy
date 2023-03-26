@@ -5456,6 +5456,7 @@ def get(
     logging_mode=None,
     auto_pick_cellpy_format=True,
     auto_summary=True,
+    units=None,
     step_kwargs=None,
     summary_kwargs=None,
     selector=None,
@@ -5481,6 +5482,7 @@ def get(
         estimate_area (bool): calculate area from loading if given (defaults to True)
         auto_pick_cellpy_format (bool): decide if it is a cellpy-file based on suffix
         auto_summary (bool): (re-) create summary.
+        units (dict): update cellpy units (used after the file is loaded, e.g. when creating summary).
         step_kwargs (dict): sent to make_steps
         summary_kwargs (dict): sent to make_summary
         selector (dict): passed to load (when loading cellpy-files).
@@ -5490,15 +5492,33 @@ def get(
     Returns:
         CellpyCell object (if successful, None if not)
 
-    """
-    from cellpy import log
+    Examples:
+        >>> # read an arbin .res file and create a cellpy object with
+        >>> # populated summary and step-table:
+        >>> c = cellpy.get("my_data.res", instrument="arbin_res", mass=1.14, area=2.12, loading=1.2, nom_cap=155.2)
+        >>>
+        >>> # load a cellpy-file:
+        >>> c = cellpy.get("my_cellpy_file.clp")
+        >>>
+        >>> # load a txt-file exported from Maccor:
+        >>> c = cellpy.get("my_data.txt", instrument="maccor_txt", model="one")
+        >>>
+        >>> # load a raw-file if it is newer than the corresponding cellpy-file,
+        >>> # if not, load the cellpy-file:
+        >>> c = cellpy.get("my_data.res", cellpy_file="my_data.clp")
+        >>>
+        >>> # load a file with a custom file-description:
+        >>> c = cellpy.get("my_file.csv", instrument_file="my_instrument.yaml")
+        >>>
+        >>> # load three subsequent raw-files (of one cell) and merge them:
+        >>> c = cellpy.get(["my_data_01.res", "my_data_02.res", "my_data_03.res"])
+        >>>
+        >>> # load a data set and get the summary charge and discharge capacities
+        >>> # in Ah/g:
+        >>> c = cellpy.get("my_data.res", units=dict(capacity="Ah"))
 
     """
-            find_ir (bool): summarize ir
-            find_end_voltage (bool): summarize end voltage
-            use_cellpy_stat_file (bool): use stat file if creating summary
-                from raw
-    """
+    from cellpy import log
 
     db_readers = ["arbin_sql"]
 
@@ -5525,6 +5545,7 @@ def get(
                 area=area,
                 loading=loading,
                 estimate_area=estimate_area,
+                units=units,
             )
             return cellpy_instance
 
@@ -5599,6 +5620,7 @@ def get(
         area=area,
         loading=loading,
         estimate_area=estimate_area,
+        units=units,
     )
 
     if auto_summary:
@@ -5619,11 +5641,16 @@ def _update_meta(
     area=None,
     loading=None,
     estimate_area=None,
+    units=None,
 ):
     # TODO: make this a method on CellpyCell
     if cycle_mode is not None:
         logging.debug("Setting cycle mode")
         cellpy_instance.cycle_mode = cycle_mode
+
+    if units is not None:
+        logging.debug(f"Updating units: {units}")
+        cellpy_instance.cellpy_units.update(units)
 
     if mass is not None:
         logging.info(f"Setting mass: {mass}")

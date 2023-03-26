@@ -353,8 +353,6 @@ class CyclingExperiment(BaseExperiment):
                 errors.append("update:" + str(index))
                 h_txt += " [-]"
                 pbar.set_postfix_str(s=h_txt, refresh=True)
-                print()
-                raise(e)
                 if not self.accept_errors:
                     raise e
                 continue

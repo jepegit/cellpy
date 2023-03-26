@@ -341,6 +341,12 @@ class CellpyUnits(BaseSettings):
     temperature: str = "C"
     pressure: str = "bar"
 
+    def update(self, new_units: dict):
+        logging.debug(f"{new_units=}")
+        for k in new_units:
+            if k in self.keys():
+                self[k] = new_units[k]
+
 
 @dataclass
 class CellpyLimits(BaseSettings):
