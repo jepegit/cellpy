@@ -34,8 +34,10 @@ SELECTED_SUMMARIES = [
 def cycles_engine(**kwargs):
     """engine to extract cycles"""
     logging.debug("cycles_engine::Not finished yet (sorry).")
-    warnings.warn("This utility function will be seriously changed soon and possibly removed",
-                  category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be seriously changed soon and possibly removed",
+        category=DeprecationWarning,
+    )
     # raise NotImplementedError
 
     experiments = kwargs["experiments"]
@@ -61,8 +63,10 @@ def cycles_engine(**kwargs):
 
 def raw_data_engine(**kwargs):
     """engine to extract raw data"""
-    warnings.warn("This utility function will be seriously changed soon and possibly removed",
-                  category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be seriously changed soon and possibly removed",
+        category=DeprecationWarning,
+    )
     logging.debug("cycles_engine")
     farms = None
     barn = "raw_dir"
@@ -106,8 +110,10 @@ def _load_summaries(experiment):
 
 def dq_dv_engine(**kwargs):
     """engine that performs incremental analysis of the cycle-data"""
-    warnings.warn("This utility function will be seriously changed soon and possibly removed",
-                  category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be seriously changed soon and possibly removed",
+        category=DeprecationWarning,
+    )
     farms = None
     barn = "raw_dir"
     raise NotImplementedError
@@ -161,7 +167,10 @@ def simple_db_engine(
         pages (pandas.DataFrame)
     """
 
-    warnings.warn("This utility function will be seriously changed soon and possibly removed", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be seriously changed soon and possibly removed",
+        category=DeprecationWarning,
+    )
 
     # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:

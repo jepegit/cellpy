@@ -8,6 +8,7 @@ import warnings
 import pandas as pd
 from tqdm.auto import tqdm
 
+import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.readers import cellreader
@@ -163,7 +164,7 @@ class CyclingExperiment(BaseExperiment):
                         logging.debug(e)
         return cell_spec
 
-    def update(self, all_in_memory=None, cell_specs=None, **kwargs):
+    def update(self, all_in_memory=None, cell_specs=None, logging_mode=None, **kwargs):
         """Updates the selected datasets.
 
         Args:
@@ -172,6 +173,7 @@ class CyclingExperiment(BaseExperiment):
             cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
                 dictionary will override the **kwargs and the parameters from the journal pages
                 for the indicated cell.
+            logging_mode (str): sets the logging mode for the loader(s).
 
             kwargs:
                 transferred all the way to the instrument loader, if not
@@ -209,6 +211,7 @@ class CyclingExperiment(BaseExperiment):
 
         # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
+        force_raw = kwargs.pop("force_raw", self.force_raw)
 
         logging.info("[update experiment]")
         if all_in_memory is not None:
@@ -262,113 +265,104 @@ class CyclingExperiment(BaseExperiment):
             pbar = tqdm(list(pages.iterrows())[0:1], file=sys.stdout, leave=False)
 
         # --- iterating ---
-        for indx, row in pbar:
+        for index, row in pbar:
             counter += 1
-            h_txt = f"{indx}"
+            h_txt = f"{index}"
             n_txt = f"loading {counter}"
-            l_txt = f"starting to process file # {counter} ({indx})"
+            l_txt = f"starting to process file # {counter} ({index})"
 
-            # TO BE IMPLEMENTED (parameters already in the journal pages):
-            cell_spec_page = self._get_cell_spec_from_page(indx, row)
+            cell_spec_page = self._get_cell_spec_from_page(index, row)
 
             if cell_specs is not None:
-                cell_spec = cell_specs.get(indx, dict())
+                cell_spec = cell_specs.get(index, dict())
             else:
                 cell_spec = dict()
 
             cell_spec = {**cell_spec_page, **kwargs, **cell_spec}
-
             l_txt += f" cell_spec: {cell_spec}"
             logging.debug(l_txt)
-            pbar.set_description(n_txt)
-            pbar.set_postfix_str(s=h_txt, refresh=True)
 
-            if not row[hdr_journal.raw_file_names] and not force_cellpy:
+            # --- UPDATING ARGUMENTS ---
+            filename = None
+            instrument = None
+            cellpy_file = pathlib.Path(row[hdr_journal.cellpy_file_name])
+            _cellpy_file = None
+            if not force_raw and cellpy_file.is_file():
+                _cellpy_file = cellpy_file
+                logging.debug(f"Could not find the ")
+            if not force_cellpy:
+                filename = row[hdr_journal.raw_file_names]
+                instrument = row[hdr_journal.instrument]
+
+            cycle_mode = row[hdr_journal.cell_type]
+            mass = row[hdr_journal.mass]
+            nom_cap = row[hdr_journal.nom_cap]
+
+            loading = None
+            area = None
+            if hdr_journal.loading in row:
+                loading = row[hdr_journal.loading]
+            if hdr_journal.area in row:
+                area = row[hdr_journal.area]
+
+            summary_kwargs = {
+                "use_cellpy_stat_file": prms.Reader.use_cellpy_stat_file,
+            }
+
+            step_kwargs = {}
+            if not filename and not force_cellpy:
                 logging.info(
-                    f"Raw file(s) not given in the journal.pages for index={indx}"
+                    f"Raw file(s) not given in the journal.pages for index={index}"
                 )
-                errors.append(indx)
-                h_txt += " [-]"
-                pbar.set_postfix_str(s=h_txt, refresh=True)
+                errors.append(index)
+                continue
+
+            elif not cellpy_file and force_cellpy:
+                logging.info(
+                    f"Cellpy file not given in the journal.pages for index={index}"
+                )
+                errors.append(index)
                 continue
 
             else:
-                logging.info(f"Processing {indx}")
-
-            cell_data = (
-                cellreader.CellpyCell()
-            )  # auto-initialization not performed (i.e. the Data object is not made)
+                logging.info(f"Processing {index}")
 
             logging.info("loading cell")
-            if not force_cellpy:
-                if self.force_raw:
-                    h_txt += " (r)"
-                    pbar.set_postfix_str(s=h_txt, refresh=True)
-                logging.debug("not forcing to load cellpy-file instead of raw file.")
+            try:
+                logging_mode = "DEBUG"
+                cell_data = cellpy.get(
+                    filename=filename,
+                    instrument=instrument,
+                    cellpy_file=_cellpy_file,
+                    cycle_mode=cycle_mode,
+                    mass=mass,
+                    nom_cap=nom_cap,
+                    loading=loading,
+                    area=area,
+                    step_kwargs=step_kwargs,
+                    summary_kwargs=summary_kwargs,
+                    selector=selector,
+                    logging_mode=logging_mode,
+                    testing=False,
+                    **cell_spec,
+                )
+                logging.info("loaded cell")
 
-                try:
-                    # unpacking optional kwargs from journal-row
-                    optional_kwargs_to_loadcell = {}
-                    if hdr_journal.loading in row:
-                        optional_kwargs_to_loadcell["loading"] = row[
-                            hdr_journal.loading
-                        ]
-                    if hdr_journal.area in row:
-                        optional_kwargs_to_loadcell["area"] = row[hdr_journal.area]
-
-                    # TODO: replace 'loadcell' with its individual parts instead - this
-                    #   will make refactoring much much easier
-                    cell_data.loadcell(
-                        raw_files=row[hdr_journal.raw_file_names],
-                        cellpy_file=row[hdr_journal.cellpy_file_name],
-                        mass=row[hdr_journal.mass],
-                        summary_on_raw=True,
-                        force_raw=self.force_raw,
-                        use_cellpy_stat_file=prms.Reader.use_cellpy_stat_file,
-                        nom_cap=row[hdr_journal.nom_cap],
-                        cell_type=row[hdr_journal.cell_type],
-                        instrument=row[hdr_journal.instrument],
-                        selector=selector,
-                        **optional_kwargs_to_loadcell,
-                        **cell_spec,
-                    )
-
-                except Exception as e:
-                    logging.info("Failed to load: " + str(e))
-                    errors.append("loadcell:" + str(indx))
-                    h_txt += " [-]"
-                    pbar.set_postfix_str(s=h_txt, refresh=True)
-                    if not self.accept_errors:
-                        raise e
-                    continue
-
-            else:
-                logging.info("forcing loading cellpy-file")
-                h_txt += " (f)"
+            except Exception as e:
+                logging.info("Failed to load: " + str(e))
+                errors.append("update:" + str(index))
+                h_txt += " [-]"
                 pbar.set_postfix_str(s=h_txt, refresh=True)
-                try:
-                    cell_data.load(
-                        row[hdr_journal.cellpy_file_name],
-                        parent_level=self.parent_level,
-                        selector=selector,
-                    )
-                except Exception as e:
-                    logging.info(
-                        f"Critical exception encountered {type(e)} "
-                        "- skipping this file"
-                    )
-                    logging.debug("Failed to load. Error-message: " + str(e))
-                    errors.append("load:" + str(indx))
-                    h_txt += " [-]"
-                    pbar.set_postfix_str(s=h_txt, refresh=True)
-                    if not self.accept_errors:
-                        raise e
-                    continue
+                print()
+                raise(e)
+                if not self.accept_errors:
+                    raise e
+                continue
 
             if cell_data.empty:
                 logging.info("...not loaded...")
                 logging.debug("Data is empty. Could not load cell!")
-                errors.append("check:" + str(indx))
+                errors.append("check:" + str(index))
                 h_txt += " [-]"
                 pbar.set_postfix_str(s=h_txt, refresh=True)
                 continue
@@ -390,10 +384,6 @@ class CyclingExperiment(BaseExperiment):
                 n_txt = f"summary {counter}"
                 pbar.set_description(n_txt, refresh=True)
                 cell_data.make_summary(find_end_voltage=True, find_ir=True)
-
-            # if summary_tmp.index.name == b"Cycle_Index":
-            #     logging.debug("Strange: 'Cycle_Index' is a byte-string")
-            #     summary_tmp.index.name = "Cycle_Index"
 
             if not summary_tmp.index.name == hdr_summary.cycle_index:
                 # TODO: Why did I do this? Does not make any sense. It seems like
@@ -420,13 +410,13 @@ class CyclingExperiment(BaseExperiment):
                 except KeyError:
                     logging.debug("cycle_index already an index")
 
-            summary_frames[indx] = summary_tmp
+            summary_frames[index] = summary_tmp
 
             if self.all_in_memory:
-                cell_data_frames[indx] = cell_data
+                cell_data_frames[index] = cell_data
             else:
-                cell_data_frames[indx] = cellreader.CellpyCell(initialize=True)
-                cell_data_frames[indx].data.steps = cell_data.data.steps
+                cell_data_frames[index] = cellreader.CellpyCell(initialize=True)
+                cell_data_frames[index].data.steps = cell_data.data.steps
                 # cell_data_frames[indx].dataset.steps_made = True
 
             if self.save_cellpy:
@@ -486,9 +476,9 @@ class CyclingExperiment(BaseExperiment):
                 except Exception as e:
                     logging.error("Could not make/export dq/dv data")
                     logging.debug(
-                        "Failed to make/export " "dq/dv data (%s): %s" % (indx, str(e))
+                        "Failed to make/export " "dq/dv data (%s): %s" % (index, str(e))
                     )
-                    errors.append("ica:" + str(indx))
+                    errors.append("ica:" + str(index))
 
         self.errors["update"] = errors
         self.summary_frames = summary_frames

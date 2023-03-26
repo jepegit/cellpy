@@ -325,7 +325,9 @@ class CellpyCell:
         """returns the DataSet instance"""
         if not self._data:
             logging.critical("Sorry, I don't have any data to give you!")
-            logging.debug("NoDataFound - might consider defaulting to create one in the future")
+            logging.debug(
+                "NoDataFound - might consider defaulting to create one in the future"
+            )
             raise NoDataFound
         else:
             return self._data
@@ -866,8 +868,8 @@ class CellpyCell:
         mass=None,
         summary_on_raw=True,
         summary_on_cellpy_file=True,
-        summary_ir=True,
-        summary_end_v=True,
+        find_ir=True,
+        find_end_voltage=True,
         force_raw=False,
         use_cellpy_stat_file=None,
         cell_type=None,
@@ -886,8 +888,8 @@ class CellpyCell:
             mass (float): mass of electrode or active material
             summary_on_raw (bool): calculate summary if loading from raw
             summary_on_cellpy_file (bool): calculate summary if loading from cellpy-file.
-            summary_ir (bool): summarize ir
-            summary_end_v (bool): summarize end voltage
+            find_ir (bool): summarize ir
+            find_end_voltage (bool): summarize end voltage
             force_raw (bool): only use raw-files
             use_cellpy_stat_file (bool): use stat file if creating summary
                 from raw
@@ -983,16 +985,16 @@ class CellpyCell:
         if similar:
             if summary_on_cellpy_file:
                 self.make_summary(
-                    find_ir=summary_ir,
-                    find_end_voltage=summary_end_v,
+                    find_ir=find_ir,
+                    find_end_voltage=find_end_voltage,
                     use_cellpy_stat_file=use_cellpy_stat_file,
                 )
 
         else:
             if summary_on_raw:
                 self.make_summary(
-                    find_ir=summary_ir,
-                    find_end_voltage=summary_end_v,
+                    find_ir=find_ir,
+                    find_end_voltage=find_end_voltage,
                     use_cellpy_stat_file=use_cellpy_stat_file,
                 )
 
@@ -1353,6 +1355,7 @@ class CellpyCell:
         return_cls=True,
         accept_old=True,
         selector=None,
+        **kwargs
     ):
         """Loads a cellpy file.
 
@@ -1373,6 +1376,8 @@ class CellpyCell:
         # 2) in reader (currently only _load_hdf5): check version and select sub-reader.
         # 3) in sub-reader: read data
         # 4) in this method: add data to CellpyCell object (i.e. self)
+        for kwarg in kwargs:
+            logging.debug(f"received (still) un-supported keyword argument {kwarg=}")
 
         try:
             logging.debug("loading cellpy-file (hdf5):")
@@ -5438,37 +5443,47 @@ class CellpyCell:
 
 
 def get(
-    filename=None,  # raw_files in loadcell
-    mass=None,
+    filename=None,
     instrument=None,
     instrument_file=None,
-    cellpy_file=None,  # NEW - will select cellpy-file instead if similar if given (work as loadcell)
-    nominal_capacity=None,
-    area=None,
-    loading=None,  # NEW - from loadcell
-    estimate_area=True,  # NEW - from loadcell
-    logging_mode=None,
+    cellpy_file=None,
     cycle_mode=None,
-    auto_summary=True,
+    mass=None,
+    nominal_capacity=None,
+    loading=None,
+    area=None,
+    estimate_area=True,
+    logging_mode=None,
     auto_pick_cellpy_format=True,
-    step_kwargs=None,  # NEW - sent to make_steps
-    summary_kwargs=None,  # NEW - sent to make_summary
-    selector=None,  # NEW - sent to load (loading cellpy-files)
+    auto_summary=True,
+    step_kwargs=None,
+    summary_kwargs=None,
+    selector=None,
     testing=False,
     **kwargs,
 ):
     """Create a CellpyCell object
 
     Args:
-        filename (str, os.PathLike, or list of raw-file names): path to file(s)
-        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
+        filename (str, os.PathLike, or list of raw-file names): path to file(s) to load
         instrument (str): instrument to use (defaults to the one in your cellpy config file)
         instrument_file (str or path): yaml file for custom file type
-        nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
-        area (float): active electrode area (e.g. used for finding the areal capacity)
+        cellpy_file (str, os.PathLike): if both filename (a raw-file) and cellpy_file (a cellpy file)
+            is provided, cellpy will try to check if the raw-file is has been updated since the
+            creation of the cellpy-file and select this instead of the raw file if cellpy thinks
+            they are similar (use with care!).
         logging_mode (str): "INFO" or "DEBUG"
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
+        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
+        nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
+        loading (float): loading in units [mass] / [area]
+        area (float): active electrode area (e.g. used for finding the areal capacity)
+        estimate_area (bool): calculate area from loading if given (defaults to True)
+        auto_pick_cellpy_format (bool): decide if it is a cellpy-file based on suffix
         auto_summary (bool): (re-) create summary.
+        step_kwargs (dict): sent to make_steps
+        summary_kwargs (dict): sent to make_summary
+        selector (dict): passed to load (when loading cellpy-files).
         testing (bool): set to True if testing (will for example prevent making .log files)
         **kwargs: sent to the loader
 
@@ -5477,12 +5492,19 @@ def get(
 
     """
     from cellpy import log
+
+    """
+            find_ir (bool): summarize ir
+            find_end_voltage (bool): summarize end voltage
+            use_cellpy_stat_file (bool): use stat file if creating summary
+                from raw
+    """
+
     db_readers = ["arbin_sql"]
 
     step_kwargs = step_kwargs or {}
     summary_kwargs = summary_kwargs or {}
     load_cellpy_file = False
-
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyCell()
@@ -5515,7 +5537,10 @@ def get(
         load_cellpy_file = False
     else:
         filename = Path(filename)
-        if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"] and auto_pick_cellpy_format:
+        if (
+            filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]
+            and auto_pick_cellpy_format
+        ):
             load_cellpy_file = True
 
     if filename and cellpy_file and not load_cellpy_file:
@@ -5533,7 +5558,7 @@ def get(
             logging.warning(
                 "post_processor_hook is not allowed when loading cellpy-files"
             )
-        cellpy_instance.load(filename, **kwargs)
+        cellpy_instance.load(filename, selector=selector, **kwargs)
         return cellpy_instance
 
     logging.debug("Prepare for loading raw-file(s)")

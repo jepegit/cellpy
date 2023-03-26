@@ -738,7 +738,9 @@ def concatenate_summaries(
     """
 
     if mode != "collector":
-        warnings.warn("This helper function will be removed shortly", category=DeprecationWarning)
+        warnings.warn(
+            "This helper function will be removed shortly", category=DeprecationWarning
+        )
 
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
     reserved_cell_label_names = ["FC"]

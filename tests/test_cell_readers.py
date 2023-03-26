@@ -755,4 +755,3 @@ def test_loadcell_to_get_post(parameters, cellpy_file, raw_file):
         logging_mode="DEBUG",
         testing=True,
     )
-

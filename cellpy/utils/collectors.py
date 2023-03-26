@@ -206,7 +206,10 @@ class BatchCollector:
         txt += f"{bullet_start}figure_directory: {self.figure_directory}" + sep
         txt += f"{bullet_start}data_directory: {self.data_directory}" + sep
         txt += f"{bullet_start}batch-instance: {self.b.name}" + sep
-        txt += f"{bullet_start}data_collector_arguments: {self.data_collector_arguments}" + sep
+        txt += (
+            f"{bullet_start}data_collector_arguments: {self.data_collector_arguments}"
+            + sep
+        )
         txt += f"{bullet_start}plotter_arguments: {self.plotter_arguments}" + sep
         return txt
 
@@ -498,12 +501,17 @@ class BatchCollector:
         print(f"saved csv file: {filename}")
 
     def _image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
-        p = Process(target=self.figure.write_image, args=(filename, ), name='save_plotly_image_to_file', kwargs=kwargs)
+        p = Process(
+            target=self.figure.write_image,
+            args=(filename,),
+            name="save_plotly_image_to_file",
+            kwargs=kwargs,
+        )
         p.start()
         p.join(timeout=timeout)
         p.terminate()
         if p.exitcode is None:
-            print(f'Oops, {p} timeouts! Could not save {filename}')
+            print(f"Oops, {p} timeouts! Could not save {filename}")
         if p.exitcode == 0:
             print(f"saved image file: {filename}")
 
@@ -1426,9 +1434,7 @@ def sequence_plotter(
                         for i, (a, la) in enumerate(zip(annotations, y_label_mapper)):
                             row = i + 1
                             fig.for_each_yaxis(
-                                functools.partial(
-                                    y_axis_replacer, label=la
-                                ),
+                                functools.partial(y_axis_replacer, label=la),
                                 row=row,
                             )
                         fig.update_annotations(text="")
@@ -1438,9 +1444,7 @@ def sequence_plotter(
                 else:
                     try:
                         fig.for_each_yaxis(
-                            functools.partial(
-                                y_axis_replacer, label=y_label_mapper[0]
-                            ),
+                            functools.partial(y_axis_replacer, label=y_label_mapper[0]),
                         )
                     except Exception as e:
                         print("failed")
@@ -1829,7 +1833,8 @@ if __name__ == "__main__":
 
     summaries = BatchSummaryCollector(
         b,
-        normalize_cycles=False, group_it=False,
+        normalize_cycles=False,
+        group_it=False,
         autorun=False,
         columns=["charge_capacity_areal", "charge_capacity_gravimetric"],
     )
@@ -1843,4 +1848,3 @@ if __name__ == "__main__":
     dqdvs.figure.show()
 
     print("Ended OK")
-

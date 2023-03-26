@@ -153,7 +153,9 @@ hdr_journal = get_headers_journal()
 
 
 def _hv_bokeh_available():
-    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be removed shortly", category=DeprecationWarning
+    )
     if not hv_available:
         print("You need holoviews. But I cannot load it. Aborting...")
         return False
@@ -175,7 +177,9 @@ def find_column(columns, label=None, end="cycle_index"):
         column header, label
     """
 
-    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be removed shortly", category=DeprecationWarning
+    )
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     hdr = None
     lab = None
@@ -285,7 +289,9 @@ def plot_concatenated(
     # TODO: add option for using labels from journal in the legend
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
 
-    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be removed shortly", category=DeprecationWarning
+    )
 
     if keys is None:
         keys = dict()
@@ -522,7 +528,9 @@ def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
 def raw_plot(cell, y=("voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs):
     # TODO: missing doc-string
 
-    warnings.warn("This utility function will be replaced shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be replaced shortly", category=DeprecationWarning
+    )
 
     if title is None:
         if isinstance(y, (list, tuple)):
@@ -591,7 +599,9 @@ def cycle_info_plot(
     """
     # TODO: missing doc-string
 
-    warnings.warn("This utility function will be replaced shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be replaced shortly", category=DeprecationWarning
+    )
 
     if use_bokeh and not bokeh_available:
         print("OBS! bokeh is not available - using matplotlib instead")
@@ -1031,7 +1041,9 @@ def save_fig(figure, file_name=None, wide=False, size=None, dpi=300, **kwargs):
         **kwargs: sent to cellpy.utils.plotutils.hv_bokeh_to_mpl
     """
 
-    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be removed shortly", category=DeprecationWarning
+    )
 
     out_path = Path("out/")
     extension = "png"
@@ -1085,7 +1097,9 @@ def save_fig(figure, file_name=None, wide=False, size=None, dpi=300, **kwargs):
 def hv_bokeh_to_mpl(figure, wide=False, size=(6, 4), **kwargs):
     # I think this needs to be tackled differently. For example by setting hv.extension("matplotlib") and
     # re-making the figure. Or making a custom renderer.
-    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be removed shortly", category=DeprecationWarning
+    )
     figure = hv.render(figure, backend="matplotlib")
     axes = figure.axes
     number_of_axes = len(axes)
@@ -1146,7 +1160,9 @@ def oplot(
         ``hv.Overlay`` or ``hv.NdOverlay``
     """
 
-    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be removed shortly", category=DeprecationWarning
+    )
 
     extension = kwargs.pop("extension", "bokeh")
 
@@ -1346,7 +1362,9 @@ def bplot(b, individual=False, cols=1, **kwargs):
     Returns:
         ``holoviews`` plot
     """
-    warnings.warn("This utility function will be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function will be removed shortly", category=DeprecationWarning
+    )
 
     width = kwargs.pop("width", 800)
     journal = kwargs.pop("journal", b.experiment.journal)
