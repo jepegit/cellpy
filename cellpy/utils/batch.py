@@ -827,7 +827,7 @@ class Batch:
         warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
 
-    def update(self, **kwargs) -> None:
+    def update(self, pool=False, **kwargs) -> None:
         """Updates the selected datasets.
 
         Keyword Args (to experiment-instance):
@@ -853,7 +853,10 @@ class Batch:
 
         """
         self.experiment.errors["update"] = []
-        self.experiment.update(**kwargs)
+        if pool:
+            self.experiment.parallel_update(**kwargs)
+        else:
+            self.experiment.update(**kwargs)
 
     def export_cellpy_files(self, path=None, **kwargs) -> None:
         if path is None:

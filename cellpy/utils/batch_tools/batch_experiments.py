@@ -463,6 +463,300 @@ class CyclingExperiment(BaseExperiment):
         self.summary_frames = summary_frames
         self.cell_data_frames = cell_data_frames
 
+    def parallel_update(self, all_in_memory=None, cell_specs=None, logging_mode=None, **kwargs):
+        """Updates the selected datasets in parallel.
+
+        Args:
+            all_in_memory (bool): store the `cellpydata` in memory (default
+                False)
+            cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
+                dictionary will override the **kwargs and the parameters from the journal pages
+                for the indicated cell.
+            logging_mode (str): sets the logging mode for the loader(s).
+
+            kwargs:
+                transferred all the way to the instrument loader, if not
+                picked up earlier. Remark that you can obtain the same pr. cell by
+                providing a `cellspecs` dictionary. The kwargs have precedence over the
+                parameters given in the journal pages, but will be overridden by parameters
+                given by `cellspecs`.
+
+                Merging:
+                    recalc (Bool): set to False if you don't want automatic "recalc" of
+                        cycle numbers etc. when merging several data-sets.
+                Loading:
+                    selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
+                    loading from raw is not necessary (or turned off).
+
+                Debugging:
+                    debug (Bool): set to True if you want to run in debug mode (should never be used by non-developers).
+
+        Debug-mode:
+                 - runs only for the first item in your journal
+
+        Examples:
+            >>> # Don't perform recalculation of cycle numbers etc. when merging
+            >>> # All cells:
+            >>> b.update(recalc=False)
+            >>> # For specific cell(s):
+            >>> cell_specs_cell_01 = {"name_of_cell_01": {"recalc": False}}
+            >>> b.update(cell_specs=cell_specs_cell_01)
+
+        """
+        status = "PROD"  # set this to DEV when developing this
+        async_mode = "threading"
+
+        if status != "DEV":
+            print("SORRY - MULTIPROCESSING IS NOT IMPLEMENTED PROPERLY YET")
+            return self.update(all_in_memory=all_in_memory, cell_specs=cell_specs, logging_mode=logging_mode, **kwargs)
+
+        # TODO: implement experiment.last_cycle
+
+        import concurrent.futures
+        import multiprocessing
+
+        max_number_processes = multiprocessing.cpu_count()
+
+        if async_mode == "threading":
+            pool_executor = concurrent.futures.ThreadPoolExecutor
+        else:
+            pool_executor = concurrent.futures.ProcessPoolExecutor
+
+        debugging = kwargs.pop("debug", False)
+
+        # --- cleaning up attributes / arguments etc ---
+        force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
+        force_raw = kwargs.pop("force_raw", self.force_raw)
+
+        logging.info("[update experiment]")
+        if all_in_memory is not None:
+            self.all_in_memory = all_in_memory
+
+        logging.info(f"Additional keyword arguments: {kwargs}")
+        selector = kwargs.get("selector", None)
+
+        pages = self.journal.pages
+        if self.nom_cap:
+            warnings.warn(
+                "Setting nominal capacity through attributes will be deprecated soon since it modifies "
+                "the journal pages."
+            )
+            pages[hdr_journal.nom_cap] = self.nom_cap
+
+        if self.instrument:
+            warnings.warn(
+                "Setting instrument through attributes will be deprecated soon since it modifies the journal pages."
+            )
+            pages[hdr_journal.instrument] = self.instrument
+
+        if x := kwargs.pop("instrument", None):
+            warnings.warn(
+                "Setting instrument through params will be deprecated soon since it modifies the journal pages."
+                "Future version will require instrument in the journal pages."
+            )
+            pages[hdr_journal.instrument] = x
+
+        if pages.empty:
+            raise Exception("your journal is empty")
+
+        # --- init ---
+        summary_frames = dict()
+        cell_data_frames = dict()
+        number_of_runs = len(pages)
+        logging.debug(f"You have {number_of_runs} cells in your journal")
+        counter = 0
+        errors = []
+
+        pbar = tqdm(list(pages.iterrows()), file=sys.stdout, leave=False)
+
+        if debugging:
+            pbar = tqdm(list(pages.iterrows())[0:1], file=sys.stdout, leave=False)
+
+        # --- iterating ---
+        # TODO: create a multiprocessing pool and get one statusbar pr cell
+        params = []
+        with pool_executor(max_number_processes) as executor:
+            for index, row in pages.iterrows():
+                counter += 1
+                cell_spec_page = self._get_cell_spec_from_page(index, row)
+
+                if cell_specs is not None:
+                    cell_spec = cell_specs.get(index, dict())
+                else:
+                    cell_spec = dict()
+
+                cell_spec = {**cell_spec_page, **kwargs, **cell_spec}
+
+                # --- UPDATING ARGUMENTS ---
+                filename = None
+                instrument = None
+                cellpy_file = pathlib.Path(row[hdr_journal.cellpy_file_name])
+                _cellpy_file = None
+                if not force_raw and cellpy_file.is_file():
+                    _cellpy_file = cellpy_file
+                    logging.debug(f"Could not find the ")
+                if not force_cellpy:
+                    filename = row[hdr_journal.raw_file_names]
+                    instrument = row[hdr_journal.instrument]
+
+                cycle_mode = row[hdr_journal.cell_type]
+                mass = row[hdr_journal.mass]
+                nom_cap = row[hdr_journal.nom_cap]
+
+                loading = None
+                area = None
+                if hdr_journal.loading in row:
+                    loading = row[hdr_journal.loading]
+                if hdr_journal.area in row:
+                    area = row[hdr_journal.area]
+
+                summary_kwargs = {
+                    "use_cellpy_stat_file": prms.Reader.use_cellpy_stat_file,
+                }
+
+                step_kwargs = {}
+                if not filename and not force_cellpy:
+                    logging.info(
+                        f"Raw file(s) not given in the journal.pages for index={index}"
+                    )
+                    errors.append(index)
+                    continue
+
+                elif not cellpy_file and force_cellpy:
+                    logging.info(
+                        f"Cellpy file not given in the journal.pages for index={index}"
+                    )
+                    errors.append(index)
+                    continue
+
+                else:
+                    logging.info(f"Processing {index}")
+
+                logging.info("loading cell")
+                params.append(dict(
+                    filename=filename,
+                    instrument=instrument,
+                    cellpy_file=_cellpy_file,
+                    cycle_mode=cycle_mode,
+                    mass=mass,
+                    nom_cap=nom_cap,
+                    loading=loading,
+                    area=area,
+                    step_kwargs=step_kwargs,
+                    summary_kwargs=summary_kwargs,
+                    selector=selector,
+                    logging_mode=logging_mode,
+                    testing=False,
+                    **cell_spec,
+                ))
+
+            pool = [executor.submit(cellpy.get, **param) for param in params]
+            for i in concurrent.futures.as_completed(pool):
+                cell_data = i.result()
+                if cell_data.empty:
+                    logging.info("...not loaded...")
+                    logging.debug("Data is empty. Could not load cell!")
+                    errors.append("check:" + str(index))
+
+                logging.info("...loaded successfully...")
+                summary_tmp = cell_data.data.summary
+                logging.info("Trying to get summary_data")
+
+                if cell_data.data.steps is None or self.force_recalc:
+                    logging.info("Running make_step_table")
+                    cell_data.make_step_table()
+
+                if summary_tmp is None or self.force_recalc:
+                    logging.info("Running make_summary")
+                    cell_data.make_summary(find_end_voltage=True, find_ir=True)
+
+                # some clean-ups (might not be needed anymore):
+                if not summary_tmp.index.name == hdr_summary.cycle_index:
+                    logging.debug("Setting index to Cycle_Index")
+                    # check if it is a byte-string
+                    if b"Cycle_Index" in summary_tmp.columns:
+                        logging.debug("Seems to be a byte-string in the column-headers")
+                        summary_tmp.rename(
+                            columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
+                        )
+                    try:
+                        summary_tmp.set_index("cycle_index", inplace=True)
+                    except KeyError:
+                        logging.debug("cycle_index already an index")
+
+                summary_frames[index] = summary_tmp
+
+                if self.all_in_memory:
+                    cell_data_frames[index] = cell_data
+                else:
+                    cell_data_frames[index] = cellreader.CellpyCell(initialize=True)
+                    cell_data_frames[index].data.steps = cell_data.data.steps
+
+                if self.save_cellpy:
+                    logging.info("saving to cellpy-format")
+                    n_txt = f"saving {counter}"
+                    pbar.set_description(n_txt, refresh=True)
+                    if self.custom_data_folder is not None:
+                        print("Save to custom data-folder not implemented yet")
+                        print(f"Saving to {row.cellpy_file_name} instead")
+                    if not row.fixed:
+                        logging.info("saving cell to %s" % row.cellpy_file_name)
+                        cell_data.ensure_step_table = True
+                        try:
+                            cell_data.save(row.cellpy_file_name)
+                        except Exception as e:
+                            logging.error("saving file failed")
+                            logging.error(e)
+
+                    else:
+                        logging.debug("saving cell skipped (set to 'fixed' in info_df)")
+                else:
+                    logging.info("You opted to not save to cellpy-format")
+                    logging.info("It is usually recommended to save to cellpy-format:")
+                    logging.info(" >>> b.experiment.save_cellpy = True")
+                    logging.info(
+                        "Without the cellpy-files, you cannot select specific cells"
+                    )
+                    logging.info("if you did not opt to store all in memory")
+
+                if self.export_raw or self.export_cycles:
+                    export_text = "exporting"
+                    if self.export_raw:
+                        export_text += " [raw]"
+                    if self.export_cycles:
+                        export_text += " [cycles]"
+                    logging.info(export_text)
+                    n_txt = f"{export_text} {counter}"
+                    pbar.set_description(n_txt, refresh=True)
+                    cell_data.to_csv(
+                        self.journal.raw_dir,
+                        sep=prms.Reader.sep,
+                        cycles=self.export_cycles,
+                        shifted=self.shifted_cycles,
+                        raw=self.export_raw,
+                        last_cycle=self.last_cycle,
+                    )
+
+                if self.export_ica:
+                    logging.info("exporting [ica]")
+                    try:
+                        helper.export_dqdv(
+                            cell_data,
+                            savedir=self.journal.raw_dir,
+                            sep=prms.Reader.sep,
+                            last_cycle=self.last_cycle,
+                        )
+                    except Exception as e:
+                        logging.error("Could not make/export dq/dv data")
+                        logging.debug(
+                            "Failed to make/export " "dq/dv data (%s): %s" % (index, str(e))
+                        )
+                        errors.append("ica:" + str(index))
+
+        self.errors["update"] = errors
+        self.summary_frames = summary_frames
+        self.cell_data_frames = cell_data_frames
+
     def export_cellpy_files(self, path=None, **kwargs):
         if path is None:
             path = "."
