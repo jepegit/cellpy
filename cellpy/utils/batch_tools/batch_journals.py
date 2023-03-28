@@ -400,9 +400,10 @@ class LabJournal(BaseJournal):
 
     def from_file(self, file_name=None, paginate=True, **kwargs):
         """Loads a DataFrame with all the needed info about the experiment"""
-
+        print(f"received: {file_name}")
         file_name = self._check_file_name(file_name)
-        logging.debug(f"reading {file_name}")
+        logging.info(f"reading {file_name}")
+        print(f"reading {file_name}")
         if pathlib.Path(file_name).suffix.lower() == ".xlsx":
             file_loader = self.read_journal_excel_file
         else:

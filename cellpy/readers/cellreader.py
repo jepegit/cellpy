@@ -1208,6 +1208,7 @@ class CellpyCell:
         file_names=None,
         pre_processor_hook=None,
         post_processor_hook=None,
+        is_a_file=True,
         **kwargs,
     ):
         """Load a raw data-file.
@@ -1219,6 +1220,7 @@ class CellpyCell:
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
                 cellpy.Dataset object after initial loading.
+            is_a_file (bool): performs a is_file check if set to True.
 
         Keyword Args for merging:
             recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
@@ -1270,6 +1272,8 @@ class CellpyCell:
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
+            if is_a_file and not Path(file_name).is_file():
+                raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
                 file_name, pre_processor_hook=pre_processor_hook, **kwargs
@@ -5566,9 +5570,11 @@ def get(
 
     if filename and cellpy_file and not load_cellpy_file:
         try:
-            load_cellpy_file = cellpy_instance.check_file_ids(filename, cellpy_file)
+            similar = cellpy_instance.check_file_ids(filename, cellpy_file)
             logging.debug(f"checked if the files were similar")
-            filename = Path(cellpy_file)
+            if similar:
+                load_cellpy_file = True
+                filename = Path(cellpy_file)
         except Exception as e:
             logging.debug(f"Error during checking if similar: {e}")
             logging.debug("Setting load_cellpy_file to False")
@@ -5595,7 +5601,9 @@ def get(
         model = kwargs.pop("model", None)
         cellpy_instance.set_instrument(instrument=instrument, model=model, **kwargs)
 
+    is_a_file = True
     if cellpy_instance.tester not in db_readers:
+        is_a_file = False
         if not isinstance(filename, (list, tuple)):
             filename = Path(filename)
 
@@ -5605,7 +5613,7 @@ def get(
                 return
 
     logging.info(f"Loading raw-file: {filename}")
-    cellpy_instance.from_raw(filename, **kwargs)
+    cellpy_instance.from_raw(filename, is_a_file=is_a_file, **kwargs)
 
     if not cellpy_instance:
         print("Could not load file: check log!")

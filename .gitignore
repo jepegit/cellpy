@@ -111,3 +111,4 @@ test.csv
 dev_utils/batch_notebooks/out.png
 settings.json
 /testdata/batch_project/out/test*.*
+/testdata/batch_project/data/raw/*.res

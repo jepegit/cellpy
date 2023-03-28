@@ -298,6 +298,12 @@ class CyclingExperiment(BaseExperiment):
             mass = row[hdr_journal.mass]
             nom_cap = row[hdr_journal.nom_cap]
 
+            # print(80*"=")
+            # print(f"{filename=}")
+            # print(f"{_cellpy_file=}")
+            # print(f"{cellpy_file=}")
+            # print(80*"=")
+
             loading = None
             area = None
             if hdr_journal.loading in row:
@@ -664,3 +670,32 @@ class ImpedanceExperiment(BaseExperiment):
 class LifeTimeExperiment(BaseExperiment):
     def __init__(self):
         super().__init__()
+
+
+if __name__ == '__main__':
+    from pathlib import Path
+    import os
+    import pandas as pd
+    import numpy as np
+    import seaborn as sns
+    import plotly.express as px
+
+    import cellpy
+    from cellpy.utils import batch, helpers, plotutils
+
+    project_dir = Path("../../../testdata/batch_project")
+    print(f"{project_dir.resolve()=}")
+    journal = project_dir / "test_project.json"
+    journal = journal.resolve()
+    print(f"{journal=}")
+    assert project_dir.is_dir()
+    assert journal.is_file()
+    os.chdir(project_dir)
+
+    print(f"cellpy version: {cellpy.__version__}")
+    cellpy.log.setup_logging("INFO")
+
+    b = batch.from_journal(journal)
+    b.update()
+
+    print("Ended OK")
