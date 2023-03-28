@@ -244,18 +244,11 @@ class CyclingExperiment(BaseExperiment):
         if pages.empty:
             raise Exception("your journal is empty")
 
-        # Note:
-        #  Case 1 - force cellpy
-        #  Case 2 - force raw
-        #  Case 3 - check
-        #  if 1:  _load_cellpy_file()
-        #  if 2:  _load_raw_file()
-        #  if 3:  _check_for_changes_and_existence(), then 1 or 2
-
         # --- init ---
         summary_frames = dict()
         cell_data_frames = dict()
         number_of_runs = len(pages)
+        logging.debug(f"You have {number_of_runs} cells in your journal")
         counter = 0
         errors = []
 
@@ -265,12 +258,13 @@ class CyclingExperiment(BaseExperiment):
             pbar = tqdm(list(pages.iterrows())[0:1], file=sys.stdout, leave=False)
 
         # --- iterating ---
+        # TODO: create a multiprocessing pool and get one statusbar pr cell
         for index, row in pbar:
             counter += 1
             h_txt = f"{index}"
             n_txt = f"loading {counter}"
             l_txt = f"starting to process file # {counter} ({index})"
-
+            pbar.set_description(n_txt, refresh=True)
             cell_spec_page = self._get_cell_spec_from_page(index, row)
 
             if cell_specs is not None:
@@ -297,12 +291,6 @@ class CyclingExperiment(BaseExperiment):
             cycle_mode = row[hdr_journal.cell_type]
             mass = row[hdr_journal.mass]
             nom_cap = row[hdr_journal.nom_cap]
-
-            # print(80*"=")
-            # print(f"{filename=}")
-            # print(f"{_cellpy_file=}")
-            # print(f"{cellpy_file=}")
-            # print(80*"=")
 
             loading = None
             area = None
@@ -335,7 +323,6 @@ class CyclingExperiment(BaseExperiment):
 
             logging.info("loading cell")
             try:
-                logging_mode = "DEBUG"
                 cell_data = cellpy.get(
                     filename=filename,
                     instrument=instrument,
@@ -389,26 +376,15 @@ class CyclingExperiment(BaseExperiment):
                 pbar.set_description(n_txt, refresh=True)
                 cell_data.make_summary(find_end_voltage=True, find_ir=True)
 
+            # some clean-ups (might not be needed anymore):
             if not summary_tmp.index.name == hdr_summary.cycle_index:
-                # TODO: Why did I do this? Does not make any sense. It seems like
-                #    batch forces Summary to have "Cycle_Index" as index, but
-                #    files not processed by batch will not have.
-                #    I think I should choose what should and what should not have
-                #    a measurement col as index. Current:
-                #    steps - not sure
-                #    raw - data_point (already implemented I think)
-                #    summary - not sure
                 logging.debug("Setting index to Cycle_Index")
-
-                # TODO @jepe: refactor and use col names directly from HeadersNormal instead
-
                 # check if it is a byte-string
                 if b"Cycle_Index" in summary_tmp.columns:
                     logging.debug("Seems to be a byte-string in the column-headers")
                     summary_tmp.rename(
                         columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
                     )
-                # TODO: check if drop=False works [#index]
                 try:
                     summary_tmp.set_index("cycle_index", inplace=True)
                 except KeyError:
@@ -421,7 +397,6 @@ class CyclingExperiment(BaseExperiment):
             else:
                 cell_data_frames[index] = cellreader.CellpyCell(initialize=True)
                 cell_data_frames[index].data.steps = cell_data.data.steps
-                # cell_data_frames[indx].dataset.steps_made = True
 
             if self.save_cellpy:
                 logging.info("saving to cellpy-format")

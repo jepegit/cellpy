@@ -555,6 +555,10 @@ class Batch:
 
         if description is not None:
             from_db = False
+        else:
+            if self.experiment.journal.pages is not None:
+                warnings.warn("You created a journal - but you already have a "
+                              "journal. Hope you know what you are doing!")
 
         if from_db:
             self.experiment.journal.from_db(**kwargs)
@@ -965,7 +969,6 @@ def init(*args, **kwargs) -> Batch:
 def from_journal(journal_file, autolink=True, testing=False) -> Batch:
     """Create a Batch from a journal file"""
     # TODO: add option for setting max cycle number (experiment.last_cycle)
-    print(f"received first: {journal_file}")
     b = init(db_reader=None, file_name=journal_file, testing=testing)
     if autolink:
         b.link()
