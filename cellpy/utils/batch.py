@@ -458,6 +458,27 @@ class Batch:
             "the journal.pages instead."
         )
 
+    def old_duplicate_journal(self, folder=None) -> None:
+        """Copy the journal to folder.
+
+        Args:
+            folder (str or pathlib.Path): folder to copy to (defaults to the
+            current folder).
+        """
+
+        logging.debug(f"duplicating journal to folder {folder}")
+        journal_name = pathlib.Path(self.experiment.journal.file_name)
+        if not journal_name.is_file():
+            logging.info("No journal saved")
+            return
+        new_journal_name = journal_name.name
+        if folder is not None:
+            new_journal_name = pathlib.Path(folder) / new_journal_name
+        try:
+            shutil.copy(journal_name, new_journal_name)
+        except shutil.SameFileError:
+            logging.debug("same file exception encountered")
+
     def duplicate_journal(self, folder=None) -> None:
         """Copy the journal to folder.
 
@@ -712,27 +733,6 @@ class Batch:
         self.experiment.journal.to_file(
             file_name=filename, to_project_folder=False, paginate=False
         )
-
-    def duplicate_journal(self, folder=None) -> None:
-        """Copy the journal to folder.
-
-        Args:
-            folder (str or pathlib.Path): folder to copy to (defaults to the
-            current folder).
-        """
-
-        logging.debug(f"duplicating journal to folder {folder}")
-        journal_name = pathlib.Path(self.experiment.journal.file_name)
-        if not journal_name.is_file():
-            logging.info("No journal saved")
-            return
-        new_journal_name = journal_name.name
-        if folder is not None:
-            new_journal_name = pathlib.Path(folder) / new_journal_name
-        try:
-            shutil.copy(journal_name, new_journal_name)
-        except shutil.SameFileError:
-            logging.debug("same file exception encountered")
 
     def duplicate_cellpy_files(
         self, location: str = "standard", selector: dict = None, **kwargs
