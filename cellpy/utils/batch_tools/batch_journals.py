@@ -67,8 +67,10 @@ class LabJournal(BaseJournal):
         else:
             logging.debug(f"Remark! db_reader: {db_reader}")
             self.db_reader = db_reader
-            if engine is None:
-                raise UnderDefined("You have not provide any engine for your database reader")
+            if engine is None:  # TODO 243 Fix this - makes no sense (self.engine will be none,
+                # and apparently it later on picks the simple_db_engine
+                self.engine = engine
+                # raise UnderDefined("You have not provided any engine for your database reader")
         # TODO 243 Fix this - only needed for simple_db_engine:
         self.batch_col = "b01"
 
