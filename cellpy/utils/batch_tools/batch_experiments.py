@@ -506,11 +506,10 @@ class CyclingExperiment(BaseExperiment):
         status = "PROD"  # set this to DEV when developing this
         async_mode = "threading"
 
+        # TODO: implement experiment.last_cycle
         if status != "DEV":
             print("SORRY - MULTIPROCESSING IS NOT IMPLEMENTED PROPERLY YET")
             return self.update(all_in_memory=all_in_memory, cell_specs=cell_specs, logging_mode=logging_mode, **kwargs)
-
-        # TODO: implement experiment.last_cycle
 
         import concurrent.futures
         import multiprocessing
