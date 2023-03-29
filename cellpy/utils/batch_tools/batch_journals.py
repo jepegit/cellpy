@@ -52,14 +52,24 @@ class LabJournal(BaseJournal):
         """
 
         super().__init__()
-        if db_reader == "default":
-            self.db_reader = dbreader.Reader()
-            self.engine = simple_db_engine
+
+        # TODO 243 Should get the default from prms
+
+        default_reader_from_prms = "simple_excel"
+        if isinstance(db_reader, str):
+            if db_reader == "default" or db_reader is None:
+                db_reader = default_reader_from_prms
+            if db_reader == "simple_excel":
+                self.db_reader = dbreader.Reader()
+                self.engine = simple_db_engine
+            else:
+                raise UnderDefined(f"The db-reader '{db_reader}' is not supported")
         else:
             logging.debug(f"Remark! db_reader: {db_reader}")
             self.db_reader = db_reader
             if engine is None:
-                self.engine = engine
+                raise UnderDefined("You have not provide any engine for your database reader")
+        # TODO 243 Fix this - only needed for simple_db_engine:
         self.batch_col = "b01"
 
     def _repr_html_(self):
@@ -78,7 +88,10 @@ class LabJournal(BaseJournal):
                 <tr><td><b>project</b></td><td>{self.project}</td></tr>
                 <tr><td><b>file_name</b></td><td>{self.file_name}</td></tr>
                 <tr><td><b>db_reader</b></td><td>{self.db_reader}</td></tr>
-                <tr><td><b>batch_col</b></td><td>{self.batch_col}</td></tr>
+        """
+        if self.db_reader == "default":
+            txt += f"<tr><td><b>batch_col</b></td><td>{self.batch_col}</td></tr>"
+        txt += f"""
                 <tr><td><b>time_stamp</b></td><td>{self.time_stamp}</td></tr>
                 <tr><td><b>project_dir</b></td><td>{self.project_dir}</td></tr>
                 <tr><td><b>raw_dir</b></td><td>{self.raw_dir}</td></tr>
