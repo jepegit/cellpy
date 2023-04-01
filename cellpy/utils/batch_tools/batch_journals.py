@@ -6,6 +6,7 @@ import platform
 import shutil
 import tempfile
 import warnings
+from abc import ABC
 
 import pandas as pd
 
@@ -33,12 +34,12 @@ for key in hdr_journal:
         missing_keys.append(key)
 
 
-class LabJournal(BaseJournal):
-    def __init__(self, db_reader="default", engine=None):
+class LabJournal(BaseJournal, ABC):
+    def __init__(self, db_reader="default", engine=None, batch_col=None, **kwargs):
         """Journal for selected batch.
 
         The journal contains pages (pandas.DataFrame) with prms for
-        each cells (one cell pr row).
+        each cell (one cell pr row).
 
         Args:
             db_reader: either default (a simple excel reader already
@@ -49,17 +50,16 @@ class LabJournal(BaseJournal):
                     self.pages = simple_db_engine(
                         self.db_reader, id_keys, **kwargs
                     )
+            batch_col: the column name for the batch column in the db (used by simple_db_engine).
+            **kwargs: passed to the db_reader
         """
 
         super().__init__()
 
-        # TODO 243 Should get the default from prms
-
-        default_reader_from_prms = "simple_excel"
         if isinstance(db_reader, str):
             if db_reader == "default" or db_reader is None:
-                db_reader = default_reader_from_prms
-            if db_reader == "simple_excel":
+                db_reader = prms.Db.db_type
+            if db_reader == "simple_excel_reader":
                 self.db_reader = dbreader.Reader()
                 self.engine = simple_db_engine
             else:
@@ -67,12 +67,11 @@ class LabJournal(BaseJournal):
         else:
             logging.debug(f"Remark! db_reader: {db_reader}")
             self.db_reader = db_reader
-            if engine is None:  # TODO 243 Fix this - makes no sense (self.engine will be none,
-                # and apparently it later on picks the simple_db_engine
-                self.engine = engine
-                # raise UnderDefined("You have not provided any engine for your database reader")
-        # TODO 243 Fix this - only needed for simple_db_engine:
-        self.batch_col = "b01"
+
+        if engine is None:
+            self.engine = simple_db_engine
+
+        self.batch_col = batch_col or "b01"
 
     def _repr_html_(self):
         txt = f"<h2>LabJournal-object</h2> id={hex(id(self))}"
@@ -107,7 +106,7 @@ class LabJournal(BaseJournal):
 
         txt += "<h3>Pages</h3>"
         try:
-            txt += self.pages._repr_html_()
+            txt += self.pages._repr_html_()  # pylint: disable=protected-access
         except AttributeError:
             txt += "<p><b>pages</b><br> not found!</p>"
         except ValueError:
@@ -723,8 +722,9 @@ def _dev_journal_loading():
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")
-    journal_file = pathlib.Path("../../../dev_data/db/test_journal.xlsx")
-    print(journal_file.is_file())
+    journal_file = pathlib.Path("../../../testdata/batch_project/test_project.json").resolve()
+    assert journal_file.is_file()
+
     logging.debug(f"reading journal file {journal_file}")
     journal = LabJournal(db_reader=None)
     journal.from_file(journal_file, paginate=False)
