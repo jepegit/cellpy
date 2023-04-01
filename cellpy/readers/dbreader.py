@@ -10,6 +10,22 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from typing import List
+from typing import Optional
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Float
+from sqlalchemy import Boolean
+from sqlalchemy import DateTime
+
 
 from cellpy.parameters import prms
 
@@ -24,6 +40,65 @@ class DbSheetCols:
 
     def __repr__(self):
         return f"<DbCols: {self.__dict__}>"
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class RawData(Base):
+    __tablename__ = "raw_data"
+    pk = Column(Integer, primary_key=True)
+    cell_id = Column(Integer, ForeignKey("cells.pk"))
+    cell = relationship("Cell", back_populates="raw_data")
+    raw_data = Column(String)
+    raw_data_type = Column(String)
+    raw_data_exists = Column(Boolean)
+
+
+def _mapping_from_config(db_cols: dict = None):
+    _type_lookup = {
+            "int": Integer,
+            "float": Float,
+            "str": String,
+            "datetime": DateTime,
+            "bool": Boolean,
+            "bol": Boolean,
+            "cat": String,
+            "Tuple[str, str]": String,
+            "list": String,
+        }
+
+    if db_cols is None:
+        db_cols = asdict(prms.DbCols)
+    # need to clean up a bit since we don't want to have the id-column in the db:
+    db_cols.pop("id")
+    # need to rename the "exists" column to "cell_exists" since "exists" is a reserved word in sql:
+    db_cols["cell_exists"] = db_cols.pop("exists", ["exists", "bool"])
+    # need to rename the "group" column to "cell_group" since "group" is a reserved word in sql:
+    db_cols["cell_group"] = db_cols.pop("group", ["group", "bool"])
+
+    class_dict = dict(__tablename__="cells", pk=Column(Integer, primary_key=True))
+    for table_key, values in db_cols.items():
+        class_dict[table_key] = Column(_type_lookup[values[1]], primary_key=False)
+
+    # add mapping to raw-data:
+    class_dict["raw_data"] = relationship("raw_file_names", back_populates="cell")
+
+    return type("Cell", (Base,), class_dict)
+
+
+class SQLReader:
+    def __init__(self, use_mapping_from_prms=True):
+
+        if use_mapping_from_prms:
+            self.cell_table = _mapping_from_config()
+        else:
+            clean_db_cols_class = prms.DbColsClass()
+            self.cell_table = _mapping_from_config(asdict(clean_db_cols_class))
+
+        self.engine = create_engine("sqlite://", echo=True)
+        Base.metadata.create_all(self.engine)
 
 
 class Reader:

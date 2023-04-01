@@ -21,7 +21,7 @@ from cellpy.parameters.legacy.update_headers import (
 )
 from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
-from cellpy.utils.batch_tools.engines import simple_db_engine
+from cellpy.utils.batch_tools.engines import simple_db_engine, sql_db_engine
 
 hdr_journal = get_headers_journal()
 
@@ -62,6 +62,9 @@ class LabJournal(BaseJournal, ABC):
             if db_reader == "simple_excel_reader":
                 self.db_reader = dbreader.Reader()
                 self.engine = simple_db_engine
+            elif db_reader == "sql_db_reader":
+                self.db_reader = dbreader.SqlReader()
+                self.engine = sql_db_engine
             else:
                 raise UnderDefined(f"The db-reader '{db_reader}' is not supported")
         else:

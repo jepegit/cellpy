@@ -136,6 +136,13 @@ def _query(reader_method, cell_ids, column_name=None):
     return result
 
 
+def sql_db_engine(*args, **kwargs) -> pd.DataFrame:
+    print("sql_db_engine")
+    print(f"args: {args}")
+    print(f"kwargs: {kwargs}")
+    return pd.DataFrame()
+
+
 # TODO-246: load area
 def simple_db_engine(
     reader=None,
@@ -176,6 +183,7 @@ def simple_db_engine(
     if reader is None:
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
+
     pages_dict = dict()
     pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
     if include_key:
