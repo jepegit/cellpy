@@ -4,7 +4,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 import box
 
@@ -96,9 +96,7 @@ class ReaderClass(CellPyConfig):
     cycle_mode: str = "anode"
     sorted_data: bool = True  # finding step-types assumes sorted data
     select_minimal: bool = False
-    limit_loaded_cycles: Union[
-        int, None
-    ] = None  # limit loading cycles to given cycle number
+    limit_loaded_cycles: Optional[int] = None  # limit loading cycles to given cycle number
     ensure_step_table: bool = False
     voltage_interpolation_step: float = 0.01
     time_interpolation_step: float = 10.0
@@ -111,6 +109,7 @@ class ReaderClass(CellPyConfig):
 class DbClass(CellPyConfig):
     db_type: str = "simple_excel_reader"
     db_table_name: str = "db_table"
+    db_connection: Optional[str] = None
     db_header_row: int = 0
     db_unit_row: int = 1
     db_data_start_row: int = 2
@@ -120,37 +119,38 @@ class DbClass(CellPyConfig):
 
 @dataclass
 class DbColsClass(CellPyConfig):
-    id: Tuple[str, str] = ("id", "int")
-    exists: Tuple[str, str] = ("exists", "bol")
-    batch: Tuple[str, str] = ("batch", "str")
-    sub_batch_01: Tuple[str, str] = ("b01", "str")
-    sub_batch_02: Tuple[str, str] = ("b02", "str")
-    sub_batch_03: Tuple[str, str] = ("b03", "str")
-    sub_batch_04: Tuple[str, str] = ("b04", "str")
-    sub_batch_05: Tuple[str, str] = ("b05", "str")
-    sub_batch_06: Tuple[str, str] = ("b06", "str")
-    sub_batch_07: Tuple[str, str] = ("b07", "str")
-    project: Tuple[str, str] = ("project", "str")
-    label: Tuple[str, str] = ("label", "str")
-    group: Tuple[str, str] = ("group", "int")
-    selected: Tuple[str, str] = ("selected", "bol")
-    cell_name: Tuple[str, str] = ("cell", "str")
-    cell_type: Tuple[str, str] = ("cell_type", "cat")
-    experiment_type: Tuple[str, str] = ("experiment_type", "cat")
-    active_material: Tuple[str, str] = ("mass_active_material", "float")
-    area: Tuple[str, str] = ("area", "float")
-    total_material: Tuple[str, str] = ("mass_total", "float")
-    loading: Tuple[str, str] = ("loading_active_material", "float")
-    nom_cap: Tuple[str, str] = ("nominal_capacity", "float")
-    file_name_indicator: Tuple[str, str] = ("file_name_indicator", "str")
-    instrument: Tuple[str, str] = ("instrument", "str")
-    raw_file_names: Tuple[str, str] = ("raw_file_names", "Tuple[str, str]")
-    cellpy_file_name: Tuple[str, str] = ("cellpy_file_name", "str")
-    comment_slurry: Tuple[str, str] = ("comment_slurry", "str")
-    comment_cell: Tuple[str, str] = ("comment_cell", "str")
-    comment_general: Tuple[str, str] = ("comment_general", "str")
-    freeze: Tuple[str, str] = ("freeze", "bol")
-    argument: Tuple[str, str] = ("argument", "str")  # e.g. 'max_cycle:100;recalc:false'
+    id: str = "id"
+    exists: str = "exists"
+    project: str = "project"
+    label: str = "label"
+    group: str = "group"
+    selected: str = "selected"
+    cell_name: str = "cell"
+    cell_type: str = "cell_type"
+    experiment_type: str = "experiment_type"
+    active_material: str = "mass_active_material"
+    area: str = "area"
+    total_material: str = "mass_total"
+    loading: str = "loading_active_material"
+    nom_cap: str = "nominal_capacity"
+    file_name_indicator: str = "file_name_indicator"
+    instrument: str = "instrument"
+    raw_file_names: str = "raw_file_names"
+    cellpy_file_name: str = "cellpy_file_name"
+    comment_slurry: str = "comment_slurry"
+    comment_cell: str = "comment_cell"
+    comment_general: str = "comment_general"
+    freeze: str = "freeze"
+    argument: str = "argument"
+    # for simple excel reader:
+    batch: str = "batch"
+    sub_batch_01: str = "b01"
+    sub_batch_02: str = "b02"
+    sub_batch_03: str = "b03"
+    sub_batch_04: str = "b04"
+    sub_batch_05: str = "b05"
+    sub_batch_06: str = "b06"
+    sub_batch_07: str = "b07"
 
 
 @dataclass

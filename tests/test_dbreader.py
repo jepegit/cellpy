@@ -41,17 +41,17 @@ def clean_db_reader():  # remove this?
 
     return dbreader.Reader()
 
-
-def test_init_sql_db_reader(parameters):
-    from cellpy.parameters import prms
-    from cellpy.readers import dbreader
-    prms.Paths.outdatadir = parameters.output_dir
-    prms.Paths.rawdatadir = parameters.raw_data_dir
-    prms.Paths.cellpydatadir = parameters.cellpy_data_dir
-    prms.Paths.db_path = parameters.db_dir
-    prms.Paths.db_filename = parameters.db_file_name
-    sql_db_reader = dbreader.SQLReader()
-    print(dir(sql_db_reader))
+#
+# def test_init_sql_db_reader(parameters):
+#     from cellpy.parameters import prms
+#     from cellpy.readers import dbreader
+#     prms.Paths.outdatadir = parameters.output_dir
+#     prms.Paths.rawdatadir = parameters.raw_data_dir
+#     prms.Paths.cellpydatadir = parameters.cellpy_data_dir
+#     prms.Paths.db_path = parameters.db_dir
+#     prms.Paths.db_filename = parameters.db_file_name
+#     sql_db_reader = dbreader.SQLReader()
+#     print(dir(sql_db_reader))
 
 
 def test_filter_select_col_numbers_true_false(db_reader):

@@ -78,12 +78,21 @@ def _write_prm_file(file_name=None):
 
 
 def _update_prms(config_dict):
+    """updates the prms with the values in the config_dict"""
+    # config_dict is your current config
+    # _config_attr is the attribute in the prms module (i.e. the defaults)
     logging.debug("updating parameters")
     logging.debug(f"new prms: {config_dict}")
     for key in config_dict:
+        if config_dict[key] is None:
+            logging.debug(f"{config_dict[key]} is None")
+            continue
         if hasattr(prms, key):
             _config_attr = getattr(prms, key)
             is_path = isinstance(_config_attr, prms.PathsClass)
+            if _config_attr is None:
+                logging.debug(f"{_config_attr} is None")
+                continue
             for k in config_dict[key]:
                 z = config_dict[key][k]
                 if is_path:
@@ -135,6 +144,23 @@ def _convert_paths_to_dict(x):
     return dictionary
 
 
+def _update_and_convert_to_dict(parameter_name):
+    """check that all the parameters are correct in the prm-file"""
+    # update from old prm-file (before v1.0.0):
+    if parameter_name == "DbCols":
+        if hasattr(prms, "DbCols"):
+            db_cols = _convert_to_dict(prms.DbCols)
+            if db_cols is None:
+                return prms.DbColsClass()
+
+            for k in db_cols:
+                if isinstance(db_cols[k], (list, tuple)):
+                    db_cols[k] = db_cols[k][0]
+            return db_cols
+        else:
+            return prms.DbColsClass()
+
+
 def _pack_prms():
     """if you introduce new 'save-able' parameter dictionaries, then you have
     to include them here"""
@@ -143,7 +169,7 @@ def _pack_prms():
         "Paths": _convert_paths_to_dict(prms.Paths),
         "FileNames": _convert_to_dict(prms.FileNames),
         "Db": _convert_to_dict(prms.Db),
-        "DbCols": _convert_to_dict(prms.DbCols),
+        "DbCols": _update_and_convert_to_dict("DbCols"),
         "CellInfo": _convert_to_dict(prms.CellInfo),
         "Reader": _convert_to_dict(prms.Reader),
         "Materials": _convert_to_dict(prms.Materials),
@@ -203,15 +229,15 @@ def _get_prm_file(file_name=None, search_order=None):
     search_path = dict()
     search_path["curdir"] = os.path.abspath(os.path.dirname(sys.argv[0]))
     search_path["filedir"] = script_dir
-    search_path["userdir"] = get_user_dir()
+    search_path["user_dir"] = get_user_dir()
 
     if search_order is None:
-        search_order = ["userdir"]  # ["curdir","filedir", "userdir",]
+        search_order = ["user_dir"]  # ["curdir","filedir", "user_dir",]
     else:
         search_order = search_order
 
     # The default name for the prm file is at the moment in the script-dir,@
-    # while default searching is in the userdir (yes, I know):
+    # while default searching is in the user_dir (yes, I know):
     prm_default = os.path.join(script_dir, default_name)
 
     # -searching-----------------------

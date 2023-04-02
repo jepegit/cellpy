@@ -122,23 +122,23 @@ def cli():
     help="",
 )
 @click.option(
-    "--testuser", "-t", default=None, help="Fake name for fake user (for tesing)"
+    "--test_user", "-t", default=None, help="Fake name for fake user (for testing)"
 )
-def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, testuser):
-    """This will help you to setup cellpy."""
+def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test_user):
+    """This will help you to set up cellpy."""
 
     click.echo("[cellpy] (setup)")
     click.echo(f"[cellpy] root-dir: {root_dir}")
 
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
-    userdir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
+    user_dir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
 
     if dry_run:
-        click.echo("Create custom init filename and get userdir and destination")
+        click.echo("Create custom init filename and get user_dir and destination")
         click.echo(f"Got the following parameters:")
         click.echo(f" - init_filename: {init_filename}")
-        click.echo(f" - userdir: {userdir}")
+        click.echo(f" - user_dir: {user_dir}")
         click.echo(f" - dst_file: {dst_file}")
         click.echo(f" - not_relative: {not_relative}")
 
@@ -146,19 +146,21 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test
         click.echo("[cellpy] custom root-dir can only be used in interactive mode")
         click.echo("[cellpy] -> setting interactive mode")
         interactive = True
+
     if not root_dir:
-        root_dir = userdir
+        root_dir = user_dir
         # root_dir = pathlib.Path(os.getcwd())
     root_dir = pathlib.Path(root_dir)
+
     if dry_run:
         click.echo(f" - root_dir: {root_dir}")
 
-    if testuser:
-        click.echo(f"[cellpy] (setup) DEV-MODE testuser: {testuser}")
-        init_filename = prmreader.create_custom_init_filename(testuser)
-        userdir = root_dir
-        dst_file = get_dst_file(userdir, init_filename)
-        click.echo(f"[cellpy] (setup) DEV-MODE userdir: {userdir}")
+    if test_user:
+        click.echo(f"[cellpy] (setup) DEV-MODE test_user: {test_user}")
+        init_filename = prmreader.create_custom_init_filename(test_user)
+        user_dir = root_dir
+        dst_file = get_dst_file(user_dir, init_filename)
+        click.echo(f"[cellpy] (setup) DEV-MODE user_dir: {user_dir}")
         click.echo(f"[cellpy] (setup) DEV-MODE dst_file: {dst_file}")
 
     if not pathlib.Path(dst_file).is_file():
@@ -174,20 +176,20 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test
             dry_run=dry_run,
             reset=reset,
         )
-        _write_config_file(userdir, dst_file, init_filename, dry_run)
+        _write_config_file(user_dir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
     else:
         if reset:
             _update_paths(
-                userdir,
+                user_dir,
                 False,
                 default_dir=folder_name,
                 dry_run=dry_run,
                 reset=True,
                 silent=True,
             )
-        _write_config_file(userdir, dst_file, init_filename, dry_run)
+        _write_config_file(user_dir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
 
 
@@ -611,10 +613,10 @@ def _check(dry_run=False):
     click.echo(80 * "=")
 
 
-def _write_config_file(userdir, dst_file, init_filename, dry_run):
+def _write_config_file(user_dir, dst_file, init_filename, dry_run):
     click.echo(" update configuration ".center(80, "-"))
     click.echo("[cellpy] (setup) Writing configurations to user directory:")
-    click.echo(f"\n         {userdir}\n")
+    click.echo(f"\n         {user_dir}\n")
 
     if os.path.isfile(dst_file):
         click.echo("[cellpy] (setup) File already exists!")
@@ -636,7 +638,7 @@ def _write_config_file(userdir, dst_file, init_filename, dry_run):
         )
 
         try:
-            userdir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
+            user_dir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
             if dry_run:
                 click.echo(
                     f"*** dry-run: skipping actual saving of {dst_file} ***",
