@@ -34,43 +34,6 @@ from cellpy.parameters import prms
 # logger = logging.getLogger(__name__)
 
 
-def _mapping_from_config(db_cols: dict = None):
-    """ Creates SQLAlchemy models using mapping from the db_cols dictionary. """
-
-    _type_lookup = {
-            "int": Integer,
-            "float": Float,
-            "str": String,
-            "datetime": DateTime,
-            "bool": Boolean,
-            "bol": Boolean,
-            "cat": String,
-            "Tuple[str, str]": String,
-            "list": String,
-        }
-
-    if db_cols is None:
-        db_cols = asdict(prms.DbCols)
-    # need to clean up a bit since we don't want to have the id-column or raw files in the db:
-    db_cols.pop("id", None)
-    db_cols.pop("raw_file_names", None)
-    # need to clean up a bit since we don't want to have the batch-columns in the db:
-    db_cols = {k: v for k, v in db_cols.items() if "batch" not in k}
-    # need to rename the "exists" column to "cell_exists" since "exists" is a reserved word in sql:
-    db_cols["cell_exists"] = db_cols.pop("exists", ["exists", "bool"])
-    # need to rename the "group" column to "cell_group" since "group" is a reserved word in sql:
-    db_cols["cell_group"] = db_cols.pop("group", ["group", "bool"])
-
-    class_dict = dict(__tablename__="cells", pk=Column(Integer, primary_key=True))
-    for table_key, values in db_cols.items():
-        class_dict[table_key] = Column(_type_lookup[values[1]], primary_key=False)
-
-    # add mapping to raw-data:
-    class_dict["raw_data"] = relationship("RawData", back_populates="cell")
-
-    return type("Cell", (Base,), class_dict)
-
-
 class Base(DeclarativeBase):
     pass
 
