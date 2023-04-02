@@ -14,10 +14,12 @@ from typing import List
 from typing import Optional
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
+from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -32,31 +34,9 @@ from cellpy.parameters import prms
 # logger = logging.getLogger(__name__)
 
 
-class DbSheetCols:
-    def __init__(self, level=0):
-        db_cols_from_prms = asdict(prms.DbCols)
-        for table_key, values in db_cols_from_prms.items():
-            setattr(self, table_key, values[level])
-
-    def __repr__(self):
-        return f"<DbCols: {self.__dict__}>"
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-class RawData(Base):
-    __tablename__ = "raw_data"
-    pk = Column(Integer, primary_key=True)
-    cell_id = Column(Integer, ForeignKey("cells.pk"))
-    cell = relationship("Cell", back_populates="raw_data")
-    raw_data = Column(String)
-    raw_data_type = Column(String)
-    raw_data_exists = Column(Boolean)
-
-
 def _mapping_from_config(db_cols: dict = None):
+    """ Creates SQLAlchemy models using mapping from the db_cols dictionary. """
+
     _type_lookup = {
             "int": Integer,
             "float": Float,
@@ -71,8 +51,11 @@ def _mapping_from_config(db_cols: dict = None):
 
     if db_cols is None:
         db_cols = asdict(prms.DbCols)
-    # need to clean up a bit since we don't want to have the id-column in the db:
-    db_cols.pop("id")
+    # need to clean up a bit since we don't want to have the id-column or raw files in the db:
+    db_cols.pop("id", None)
+    db_cols.pop("raw_file_names", None)
+    # need to clean up a bit since we don't want to have the batch-columns in the db:
+    db_cols = {k: v for k, v in db_cols.items() if "batch" not in k}
     # need to rename the "exists" column to "cell_exists" since "exists" is a reserved word in sql:
     db_cols["cell_exists"] = db_cols.pop("exists", ["exists", "bool"])
     # need to rename the "group" column to "cell_group" since "group" is a reserved word in sql:
@@ -83,22 +66,19 @@ def _mapping_from_config(db_cols: dict = None):
         class_dict[table_key] = Column(_type_lookup[values[1]], primary_key=False)
 
     # add mapping to raw-data:
-    class_dict["raw_data"] = relationship("raw_file_names", back_populates="cell")
+    class_dict["raw_data"] = relationship("RawData", back_populates="cell")
 
     return type("Cell", (Base,), class_dict)
 
 
-class SQLReader:
-    def __init__(self, use_mapping_from_prms=True):
+class DbSheetCols:
+    def __init__(self, level=0):
+        db_cols_from_prms = asdict(prms.DbCols)
+        for table_key, values in db_cols_from_prms.items():
+            setattr(self, table_key, values[level])
 
-        if use_mapping_from_prms:
-            self.cell_table = _mapping_from_config()
-        else:
-            clean_db_cols_class = prms.DbColsClass()
-            self.cell_table = _mapping_from_config(asdict(clean_db_cols_class))
-
-        self.engine = create_engine("sqlite://", echo=True)
-        Base.metadata.create_all(self.engine)
+    def __repr__(self):
+        return f"<DbCols: {self.__dict__}>"
 
 
 class Reader:
@@ -715,33 +695,88 @@ class Reader:
         return sheet.loc[:, identity].values.astype(int)
 
 
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Cell(Base):
+    __tablename__ = "cells"
+    pk: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+    label: Mapped[str] = mapped_column()
+    cell_exists: Mapped[str] = Column(Boolean)
+    cell_group: Mapped[str] = Column(String)
+    raw_data: Mapped[List["RawData"]] = relationship(back_populates="cell", cascade="all, delete-orphan")
+
+    def __repr__(self) -> str:
+        return f"Cell(pk={self.pk!r}, name={self.name!r}, label={self.label!r})"
+
+
+class RawData(Base):
+    __tablename__ = "raw_data"
+    pk: Mapped[int] = mapped_column(primary_key=True)
+    cell_pk: Mapped[int] = mapped_column(ForeignKey("cells.pk"))
+    cell: Mapped["Cell"] = relationship(back_populates="raw_data")
+    is_file: Mapped[bool] = mapped_column()
+    name: Mapped[str] = mapped_column()
+
+    def __repr__(self) -> str:
+        return f"RawData(pk={self.pk!r}, name={self.name!r}, cell={self.cell!r})"
+
+
+class SQLReader:
+    def __init__(self, use_mapping_from_prms=False):
+        if use_mapping_from_prms:
+            warnings.warn("Using mapping from prms is not fully implemented yet.")
+            self.cell_table = _mapping_from_config()
+        else:
+            self.cell_table = Cell()
+        self.raw_data_table = RawData()
+        self.engine = None
+
+    def __str__(self):
+        txt = f"SQLReader:\n {self.cell_table}\n {self.raw_data_table}\n"
+        return txt
+
+    def open_db(self, db_path=None, echo=False):
+        ...
+
+    def save_db(self, db_path=None, echo=False):
+        ...
+
+    def create_db(self, db_path="sqlite://", db_filename=None, echo=False):
+        self.engine = create_engine(db_path, echo=echo)
+        Base.metadata.create_all(self.engine)
+
+    def create_mock_data(self):
+        with Session(self.engine) as session:
+            for j in range(10):
+                raw_data = []
+                for k in range(3):
+                    r = RawData(name=f"test_{j:02}_{k:02}", is_file=True)
+                    raw_data.append(r)
+                cell = Cell(
+                    name=f"test_{j:02}", label=f"my-test{j:02}", cell_exists=True, cell_group=f"first",
+                    raw_data=raw_data,
+                )
+                session.add(cell)
+            session.commit()
+
+    def get_mock_data(self):
+        session = Session(self.engine)
+        stmt = select(Cell).where(Cell.name.in_(["test"]))
+        for cell in session.scalars(stmt):
+            print(cell)
+
+
+def check_sql_reader():
+    reader = SQLReader()
+    reader.create_db(echo=True)
+    reader.create_mock_data()
+    reader.get_mock_data()
+
+
 if __name__ == "__main__":
-    from cellpy import log, prms
-
-    # check if Paths work:
-    filelogdir = "/Users/jepe/cellpy_data/logs"
-    db_path = "/Users/jepe/cellpy_data/db"
-    filelogdir = pathlib.Path(filelogdir)
-    db_path = pathlib.Path(db_path)
-    # seems to work OK
-
-    prms.Paths.filelogdir = filelogdir
-    prms.Paths.db_path = db_path
-    prms.Paths.db_filename = "cellpy_db2.xlsx"
-    log.setup_logging(default_level="DEBUG")
-
-    logging.info("-logging works-")
-    r = Reader()
-    ok = r._validate()
-    logging.info(f"db-file is OK: {ok}")
-    print(r)
-    print()
-
-    print("--------------------------------------------------------")
-    print(r.table.id)
-    print(r.table.describe())
-    print(r.table.dtypes)
-    print(r.select_serial_number_row(615))
-    r.print_serial_number_info(615)
-    tm = r.get_total_mass(615)
-    print(tm)
+    check_sql_reader()
