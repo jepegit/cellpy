@@ -63,8 +63,9 @@ class LabJournal(BaseJournal, ABC):
                 self.db_reader = dbreader.Reader()
                 self.engine = simple_db_engine
             elif db_reader == "sql_db_reader":
-                self.db_reader = dbreader.SqlReader()
-                self.engine = sql_db_engine
+                raise NotImplementedError("sql_db_reader is not implemented yet")
+                # self.db_reader = sql_dbreader.SqlReader()
+                # self.engine = sql_db_engine
             else:
                 raise UnderDefined(f"The db-reader '{db_reader}' is not supported")
         else:

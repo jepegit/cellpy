@@ -1,3 +1,4 @@
+import abc
 import logging
 import os
 import pathlib
@@ -36,7 +37,66 @@ class DbSheetCols:
         return f"<DbCols: {self.__dict__}>"
 
 
-class Reader:
+class BaseReader(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def get_mass(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_area(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_loading(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_nom_cap(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_total_mass(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_cell_name(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_cell_type(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_label(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_comment(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_group(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_args(self, pk: int) -> dict:
+        pass
+
+    @abc.abstractmethod
+    def get_experiment_type(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_instrument(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def inspect_hd5f_fixed(self, pk: int) -> int:
+        pass
+
+
+class Reader(BaseReader):
     def __init__(
         self, db_file=None, db_datadir=None, db_datadir_processed=None, db_frame=None
     ):
