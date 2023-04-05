@@ -14,14 +14,17 @@ DB_FILE_SQLITE = "excel.db"
 TABLE_NAME_EXCEL = "db_table"
 TABLE_NAME_SQLITE = "cells"
 HEADER_ROW = 0
+
+# NOTE to developers: this must be manually updated if the settings change
 COLUMNS_RENAMER = {
     "id": "pk",
     "batch": "comment_history",
-    "cell": "name",
+    "cell_name": "name",
     "exists": "cell_exists",
     "group": "cell_group",
     "raw_file_names": "raw_data",
     "argument": "cell_spec",
+    "nom_cap": "nominal_capacity",
 }
 
 
@@ -34,6 +37,7 @@ class DbColsRenamer:
 
 
 def create_column_names_from_prms():
+    """Create a list of DbColsRenamer objects from the cellpy.prms.DbCols object."""
     logging.debug(cellpy.prms.DbCols.keys())
     logging.debug("----")
     attrs = cellpy.prms.DbCols.keys()
@@ -57,12 +61,14 @@ def create_column_names_from_prms():
 
 
 def load_xlsx(db_file=DB_FILE_EXCEL, table_name=TABLE_NAME_EXCEL, header_row=HEADER_ROW):
+    """Load the Excel file and return a pandas dataframe."""
     work_book = pd.ExcelFile(db_file, engine="openpyxl")
     sheet = work_book.parse(table_name, header=header_row, skiprows=[1])
     return sheet
 
 
 def save_sqlite(sheet, out_file=DB_FILE_SQLITE, table_name=TABLE_NAME_SQLITE):
+    """Save the pandas dataframe to a sqlite database."""
     uri = f"sqlite:///{out_file}"
     logging.debug(f"Saving to sqlite ({uri})...")
     engine = sa.create_engine(uri, echo=False)
@@ -70,6 +76,7 @@ def save_sqlite(sheet, out_file=DB_FILE_SQLITE, table_name=TABLE_NAME_SQLITE):
 
 
 def clean_up(df, columns):
+    """Clean up the dataframe and return using 'proper cellpy headers'."""
     logging.debug("Cleaning up ...")
     logging.debug(" converting ...")
 
@@ -104,7 +111,7 @@ def clean_up(df, columns):
             df[excel_col] = df[excel_col].astype("str")
         logging.debug(f"[{df[excel_col].dtype}]")
         df = df.rename(columns={excel_col: db_col})
-        final_columns[db_col] = cellpy_col
+        final_columns[db_col] = db_col  # modify this if you want to rename columns again
     logging.debug("Selecting...")
     df = df[final_columns.keys()]
     logging.debug("Renaming to cellpy names...")
@@ -124,6 +131,8 @@ def check():
     columns = create_column_names_from_prms()
     df = load_xlsx(db_file=db_exel_file)
     df = clean_up(df, columns=columns)
+    print("cleaned up:")
+    print(df.columns)
     save_sqlite(df)
 
 
