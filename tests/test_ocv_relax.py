@@ -56,6 +56,7 @@ def test_ocv_rlx_multi(dataset):
 
 
 def test_select_ocv_points(dataset):
+    # 2023-04-05: the test fails on GitHub actions py3.10 (AttributeError: DataFrame has no attribute 'append')
     out = ocv_rlx.select_ocv_points(dataset)
     # print()
     # print(" ocv rlx points ".center(80, "="))
