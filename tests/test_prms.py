@@ -29,6 +29,7 @@ FileNames:
   file_name_format: YYYYMMDD_[NAME]EEE_CC_TT_RR
 Db:
   db_type: simple_excel_reader
+  db_connection:
   db_table_name: db_table
   db_header_row: 0
   db_unit_row: 1
@@ -36,93 +37,36 @@ Db:
   db_search_start_row: 2
   db_search_end_row: -1
 DbCols:
-  id:
-  - id
-  - int
-  exists:
-  - exists
-  - bol
-  batch:
-  - batch
-  - str
-  sub_batch_01:
-  - b01
-  - str
-  sub_batch_02:
-  - b02
-  - str
-  sub_batch_03:
-  - b03
-  - str
-  sub_batch_04:
-  - b04
-  - str
-  sub_batch_05:
-  - b05
-  - str
-  sub_batch_06:
-  - b06
-  - str
-  sub_batch_07:
-  - b07
-  - str
-  project:
-  - project
-  - str
-  label:
-  - label
-  - str
-  group:
-  - group
-  - int
-  selected:
-  - selected
-  - bol
-  cell_name:
-  - cell
-  - str
-  cell_type:
-  - cell_type
-  - cat
-  instrument:
-  - instrument
-  - cat
-  experiment_type:
-  - experiment_type
-  - cat
-  active_material:
-  - mass_active_material
-  - float
-  total_material:
-  - mass_total
-  - float
-  loading:
-  - loading_active_material
-  - float
-  nom_cap:
-  - nominal_capacity
-  - float
-  file_name_indicator:
-  - file_name_indicator
-  - str
-  raw_file_names:
-  - raw_file_names
-  - list
-  cellpy_file_name:
-  - cellpy_file_name
-  - str
-  comment_slurry:
-  - comment_slurry
-  - str
-  comment_cell:
-  - comment_cell
-  - str
-  comment_general:
-  - comment_general
-  - str
-  freeze:
-  - freeze
-  - bol
+  id: id
+  exists: exists
+  batch: batch
+  sub_batch_01: b01
+  sub_batch_02: b02
+  sub_batch_03: b03
+  sub_batch_04: b04
+  sub_batch_05: b05
+  sub_batch_06: b06
+  sub_batch_07: b07
+  project: project
+  label: label
+  group: group
+  selected: selected
+  cell_name: cell
+  cell_type: cell_type
+  instrument: instrument
+  experiment_type: experiment_type
+  mass_active: mass_active_material
+  mass_total: mass_total
+  loading: loading_active_material
+  nom_cap: nominal_capacity
+  file_name_indicator: file_name_indicator
+  raw_file_names: raw_file_names
+  cellpy_file_name: cellpy_file_name
+  comment_slurry: comment_slurry
+  comment_cell: comment_cell
+  comment_general: comment_general
+  freeze: freeze
+  argument: argument
 CellInfo:
   voltage_lim_low: 0.0
   voltage_lim_high: 1.0

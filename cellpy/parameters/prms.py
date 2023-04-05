@@ -32,7 +32,8 @@ class CellPyDataConfig:
 class CellPyConfig:
     """Session settings (global)."""
 
-    ...
+    def keys(self):
+        return self.__dataclass_fields__.keys()
 
 
 # If updating this, you will have to do a lot of tweaks.
@@ -119,6 +120,16 @@ class DbClass(CellPyConfig):
 
 @dataclass
 class DbColsClass(CellPyConfig):
+    # Note to developers:
+    #  1) This is ONLY for the excel-reader (dbreader.py)! More advanced
+    #     readers should get their own way of handling the db-columns.
+    #  2) If you would like to change the names of the attributes,
+    #     you will have to change the names in the
+    #        a .cellpy_prms_default.conf
+    #        b. dbreader.py
+    #        c. test_dbreader.py
+    #     As well as the DbColsTypeClass below.
+
     id: str = "id"
     exists: str = "exists"
     project: str = "project"
@@ -128,9 +139,9 @@ class DbColsClass(CellPyConfig):
     cell_name: str = "cell"
     cell_type: str = "cell_type"
     experiment_type: str = "experiment_type"
-    active_material: str = "mass_active_material"
+    mass_active: str = "mass_active_material"
     area: str = "area"
-    total_material: str = "mass_total"
+    mass_total: str = "mass_total"
     loading: str = "loading_active_material"
     nom_cap: str = "nominal_capacity"
     file_name_indicator: str = "file_name_indicator"
@@ -142,7 +153,7 @@ class DbColsClass(CellPyConfig):
     comment_general: str = "comment_general"
     freeze: str = "freeze"
     argument: str = "argument"
-    # for simple excel reader:
+
     batch: str = "batch"
     sub_batch_01: str = "b01"
     sub_batch_02: str = "b02"
@@ -151,6 +162,46 @@ class DbColsClass(CellPyConfig):
     sub_batch_05: str = "b05"
     sub_batch_06: str = "b06"
     sub_batch_07: str = "b07"
+
+
+@dataclass
+class DbColsUnitClass(CellPyConfig):
+    # Note to developers:
+    #  1) This is ONLY for the excel-reader (dbreader.py)! More advanced
+    #     readers should get their own way of handling the db-columns.
+
+    id: str = "str"
+    exists: str = "int"
+    project: str = "str"
+    label: str = "str"
+    group: str = "str"
+    selected: str = "int"
+    cell_name: str = "str"
+    cell_type: str = "str"
+    experiment_type: str = "str"
+    mass_active: str = "float"
+    area: str = "float"
+    mass_total: str = "float"
+    loading: str = "float"
+    nom_cap: str = "float"
+    file_name_indicator: str = "str"
+    instrument: str = "str"
+    raw_file_names: str = "str"
+    cellpy_file_name: str = "str"
+    comment_slurry: str = "str"
+    comment_cell: str = "str"
+    comment_general: str = "str"
+    freeze: str = "int"
+    argument: str = "str"
+
+    batch: str = "str"
+    sub_batch_01: str = "str"
+    sub_batch_02: str = "str"
+    sub_batch_03: str = "str"
+    sub_batch_04: str = "str"
+    sub_batch_05: str = "str"
+    sub_batch_06: str = "str"
+    sub_batch_07: str = "str"
 
 
 @dataclass
@@ -248,10 +299,11 @@ Instruments = InstrumentsClass(
 )
 
 
-# ---------------------------
-# Other secret- or non-config
-# ---------------------------
+# ------------------------------------------------------------------------------
+# Other secret- or non-config (only for developers)
+# ------------------------------------------------------------------------------
 
+_db_cols_unit = DbColsUnitClass()
 _debug = False
 _variable_that_is_not_saved_to_config = "Hei"
 _prm_default_name = ".cellpy_prms_default.conf"

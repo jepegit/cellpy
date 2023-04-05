@@ -93,7 +93,7 @@ def test_filter_by_slurry(db_reader):
 
 def test_filter_by_col_value(db_reader):
     output = db_reader.filter_by_col_value(
-        db_reader.db_sheet_cols.active_material, min_val=0.5, max_val=0.6
+        db_reader.db_sheet_cols.mass_active, min_val=0.5, max_val=0.6
     )
     assert test_serial_number_one in output
     assert test_serial_number_two not in output

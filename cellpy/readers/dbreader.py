@@ -429,7 +429,7 @@ class Reader:
         return argument
 
     def get_mass(self, serial_number):
-        column_name_mass = self.db_sheet_cols.active_material
+        column_name_mass = self.db_sheet_cols.mass_active
         mass = self._pick_info(serial_number, column_name_mass)
         return mass
 
@@ -446,7 +446,7 @@ class Reader:
         return self._pick_info(serial_number, column_name)
 
     def get_total_mass(self, serial_number):
-        column_name_mass = self.db_sheet_cols.total_material
+        column_name_mass = self.db_sheet_cols.mass_total
         total_mass = self._pick_info(serial_number, column_name_mass)
         return total_mass
 
