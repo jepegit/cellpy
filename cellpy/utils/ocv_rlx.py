@@ -176,7 +176,7 @@ def select_ocv_points(
         df_poi = pd.DataFrame({"step_time": poi})
         df_poi["voltage"] = np.nan
 
-        v_df = v_df.append(df_poi, ignore_index=True)
+        v_df = pd.concat([v_df, df_poi], ignore_index=True)
         v_df = v_df.sort_values("step_time").reset_index(drop=True)
         v_df["new"] = v_df["voltage"].interpolate()
 
