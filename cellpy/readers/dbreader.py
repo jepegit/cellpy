@@ -513,7 +513,7 @@ class Reader(BaseDbReader):
     def get_all(self):
         return self.filter_by_col([self.db_sheet_cols.id, self.db_sheet_cols.exists])
 
-    def get_fileid(self, serial_number, full_path=True):
+    def get_fileid(self, serial_number, full_path=True):  # NOT USED
         column_name = self.db_sheet_cols.file_name_indicator
         if not full_path:
             filename = self._pick_info(serial_number, column_name)

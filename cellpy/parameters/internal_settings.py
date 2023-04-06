@@ -18,6 +18,43 @@ SUMMARY_TABLE_VERSION = 7
 # appropriate pickle protocol:
 PICKLE_PROTOCOL = 4
 
+# For creating the sqlite database from excel:
+TABLE_NAME_SQLITE = "cells"
+COLUMNS_RENAMER = {
+    "id": "pk",
+    "batch": "comment_history",
+    "cell_name": "name",
+    "exists": "cell_exists",
+    "group": "cell_group",
+    "raw_file_names": "raw_data",
+    "argument": "cell_spec",
+    "nom_cap": "nominal_capacity",
+}
+ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
+    "name",
+    "label",
+    "project",
+    "cell_group",
+    "cellpy_file_name",
+    "instrument",
+    "cell_type",
+    "cell_design",
+    "channel",
+    "experiment_type",
+    "mass_active",
+    "area",
+    "mass_total",
+    "loading_active",
+    "nominal_capacity",
+    "comment_slurry",
+    "comment_cell",
+    "comment_general",
+    "comment_history",
+    "selected",
+    "freeze",
+    "cell_exists",
+]
+
 
 @dataclass
 class CellpyMeta:

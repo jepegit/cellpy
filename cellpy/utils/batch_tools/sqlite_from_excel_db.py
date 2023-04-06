@@ -7,14 +7,17 @@ import sqlalchemy as sa
 import pandas as pd
 
 import cellpy
-from cellpy.readers.sql_dbreader import (
-    DB_FILE_EXCEL,
-    DB_FILE_SQLITE,
-    TABLE_NAME_EXCEL,
+from cellpy import prms
+from cellpy.parameters.internal_settings import (
     TABLE_NAME_SQLITE,
-    HEADER_ROW,
     COLUMNS_RENAMER,
 )
+
+DB_FILE_EXCEL = prms.Paths.db_filename
+DB_FILE_SQLITE = prms.Db.db_file_sqlite
+TABLE_NAME_EXCEL = prms.Db.db_table_name
+HEADER_ROW = prms.Db.db_header_row
+UNIT_ROW = prms.Db.db_unit_row
 
 
 @dataclass
@@ -50,11 +53,11 @@ def create_column_names_from_prms():
 
 
 def load_xlsx(
-    db_file=DB_FILE_EXCEL, table_name=TABLE_NAME_EXCEL, header_row=HEADER_ROW
+    db_file=DB_FILE_EXCEL, table_name=TABLE_NAME_EXCEL, header_row=HEADER_ROW, unit_row=UNIT_ROW,
 ):
     """Load the Excel file and return a pandas dataframe."""
     work_book = pd.ExcelFile(db_file, engine="openpyxl")
-    sheet = work_book.parse(table_name, header=header_row, skiprows=[1])
+    sheet = work_book.parse(table_name, header=header_row, skiprows=[unit_row])
     return sheet
 
 
@@ -114,40 +117,6 @@ def clean_up(df, columns):
     return df
 
 
-def _create_for_testing():
-    print("Settings:")
-    print(f"{cellpy.prms.Paths.db_path=}")
-    print(f"{cellpy.prms.Paths.db_filename=}")
-
-    print("But choosing:")
-    db_exel_file = pathlib.Path("2022_Cell_Analysis_db_001.xlsx").resolve()
-    print(f"{db_exel_file=}")
-
-    columns = create_column_names_from_prms()
-    df = load_xlsx(db_file=db_exel_file)
-    df = clean_up(df, columns=columns)
-    print("cleaned up:")
-    print(df.columns)
-    save_sqlite(df)
-
-
-def check():
-    print("Settings:")
-    print(f"{cellpy.prms.Paths.db_path=}")
-    print(f"{cellpy.prms.Paths.db_filename=}")
-
-    print("But choosing:")
-    db_exel_file = pathlib.Path("2022_Cell_Analysis_db_001.xlsx").resolve()
-    print(f"{db_exel_file=}")
-
-    columns = create_column_names_from_prms()
-    df = load_xlsx(db_file=db_exel_file)
-    df = clean_up(df, columns=columns)
-    print("cleaned up:")
-    print(df.columns)
-    save_sqlite(df)
-
-
 def run():
     db_exel_file = (
         pathlib.Path(cellpy.prms.Paths.db_path) / cellpy.prms.Paths.db_filename
@@ -171,5 +140,22 @@ def main():
     save_sqlite(df, out_file=db_sqlite_file)
 
 
+def _check():
+    print("Settings:")
+    print(f"{cellpy.prms.Paths.db_path=}")
+    print(f"{cellpy.prms.Paths.db_filename=}")
+
+    print("But choosing:")
+    db_exel_file = pathlib.Path("2022_Cell_Analysis_db_001.xlsx").resolve()
+    print(f"{db_exel_file=}")
+
+    columns = create_column_names_from_prms()
+    df = load_xlsx(db_file=db_exel_file)
+    df = clean_up(df, columns=columns)
+    print("cleaned up:")
+    print(df.columns)
+    save_sqlite(df)
+
+
 if __name__ == "__main__":
-    run()
+    main()

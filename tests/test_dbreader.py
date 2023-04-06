@@ -45,42 +45,28 @@ def clean_db_reader():  # remove this?
 
 def test_convert_from_excel_to_sqlite(parameters):
     import cellpy.utils.batch_tools.sqlite_from_excel_db as sfe
+    import cellpy.readers.sql_dbreader as sr
 
     db_exel_file = pathlib.Path(parameters.db_dir) / parameters.db_file_name
     db_sqlite_file = pathlib.Path(parameters.db_dir) / sfe.DB_FILE_SQLITE
+    db_file = pathlib.Path(parameters.db_dir) / "cellpy.db"
+    db_uri = "sqlite:///" + str(db_file)
+
     columns = sfe.create_column_names_from_prms()
     df = sfe.load_xlsx(db_file=db_exel_file)
     df = sfe.clean_up(df, columns=columns)
     sfe.save_sqlite(df, out_file=db_sqlite_file)
 
-
-def test_create_sql_db_from_excel_to_sqlite_dump(parameters):
-    import cellpy.readers.sql_dbreader as sr
-    import cellpy.log
-
-    cellpy.log.setup_logging("DEBUG", testing=True)
-    db_sqlite_file = pathlib.Path(parameters.db_dir) / sr.DB_FILE_SQLITE
-    db_file = pathlib.Path(parameters.db_dir) / sr.DB_FILE
-    db_uri = "sqlite:///" + str(db_file)
+    assert pathlib.Path(db_sqlite_file).exists()
 
     reader = sr.SQLReader()
     reader.create_db(db_uri, echo=False)
     reader.load_excel_sqlite(db_sqlite_file)
-    # reader.view_old_excel_sqlite_table_columns()
-    # {'channel', 'cell_design', 'nominal_capacity', 'loading_active', 'experiment_type'}
+    # 2023.04.06 missing in test excel file:
+    #   {'channel', 'cell_design', 'nominal_capacity', 'loading_active', 'experiment_type'}
     reader.import_cells_from_excel_sqlite()
 
-
-# def test_init_sql_db_reader(parameters):
-#     from cellpy.parameters import prms
-#     from cellpy.readers import dbreader
-#     prms.Paths.outdatadir = parameters.output_dir
-#     prms.Paths.rawdatadir = parameters.raw_data_dir
-#     prms.Paths.cellpydatadir = parameters.cellpy_data_dir
-#     prms.Paths.db_path = parameters.db_dir
-#     prms.Paths.db_filename = parameters.db_file_name
-#     sql_db_reader = dbreader.SQLReader()
-#     print(dir(sql_db_reader))
+    assert pathlib.Path(db_file).exists()
 
 
 def test_filter_select_col_numbers_true_false(db_reader):

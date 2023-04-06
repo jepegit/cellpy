@@ -32,6 +32,12 @@ from sqlalchemy import DateTime
 from sqlalchemy.ext.automap import automap_base
 
 import cellpy
+from cellpy.parameters.internal_settings import (
+    ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
+    COLUMNS_RENAMER,
+    TABLE_NAME_SQLITE,
+)
+
 from cellpy.parameters import prms
 from cellpy.readers.core import BaseDbReader
 
@@ -39,49 +45,14 @@ from cellpy.readers.core import BaseDbReader
 
 
 # ----------------- USED WHEN CONVERTING FROM EXCEL -----------------
-DB_FILE_EXCEL = "cellpy_db.xlsx"
-DB_FILE_SQLITE = "excel.db"
-TABLE_NAME_EXCEL = "db_table"
-TABLE_NAME_SQLITE = "cells"
-HEADER_ROW = 0
+DB_FILE_EXCEL = prms.Paths.db_filename
+DB_FILE_SQLITE = prms.Db.db_file_sqlite
+TABLE_NAME_EXCEL = prms.Db.db_table_name
+HEADER_ROW = prms.Db.db_header_row
+UNIT_ROW = prms.Db.db_unit_row
 
-COLUMNS_RENAMER = {
-    "id": "pk",
-    "batch": "comment_history",
-    "cell_name": "name",
-    "exists": "cell_exists",
-    "group": "cell_group",
-    "raw_file_names": "raw_data",
-    "argument": "cell_spec",
-    "nom_cap": "nominal_capacity",
-}
-ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
-    "name",
-    "label",
-    "project",
-    "cell_group",
-    "cellpy_file_name",
-    "instrument",
-    "cell_type",
-    "cell_design",
-    "channel",
-    "experiment_type",
-    "mass_active",
-    "area",
-    "mass_total",
-    "loading_active",
-    "nominal_capacity",
-    "comment_slurry",
-    "comment_cell",
-    "comment_general",
-    "selected",
-    "freeze",
-    "cell_exists",
-]
 # ------------------- USED BY NEW CELLPY DB --------------------------
-
-DB_FILE = "cellpy.db"
-DB_URI = f"sqlite:///{DB_FILE}"
+DB_URI = f"sqlite:///cellpy.db"
 
 
 class Base(DeclarativeBase):
@@ -159,6 +130,7 @@ class Cell(Base):
             f"loading_active={self.loading_active!r}, "
             f"nominal_capacity={self.nominal_capacity!r}, comment_slurry={self.comment_slurry!r}, "
             f"comment_cell={self.comment_cell!r}, comment_general={self.comment_general!r}, "
+            f"comment_history={self.comment_history!r}, "
             f"selected={self.selected!r}, freeze={self.freeze!r}, argument={self.argument!r}, "
             f"cell_exists={self.cell_exists!r}, raw_data={self.raw_data!r}, batches={self.batches!r}"
         )
@@ -196,7 +168,7 @@ class Batch(Base):
 
 
 class SQLReader(BaseDbReader):
-    def __init__(self) -> None:
+    def __init__(self, db_connection: str = None, batch: str = None, **kwargs) -> None:
         self.cell_table = Cell()
         self.raw_data_table = RawData()
         self.batch_table = Batch()
@@ -208,9 +180,12 @@ class SQLReader(BaseDbReader):
         txt = f"SQLReader:\n {self.cell_table}\n {self.raw_data_table}\n  {self.batch_table}\n"
         return txt
 
-    def create_db(self, db_uri: str = DB_URI, echo: bool = False) -> None:
-        self.engine = create_engine(db_uri, echo=echo)
+    def create_db(self, db_uri: str = DB_URI, echo: bool = False, **kwargs) -> None:
+        self.engine = create_engine(db_uri, echo=echo, **kwargs)
         Base.metadata.create_all(self.engine)
+
+    def open_db(self, db_uri: str = DB_URI, echo: bool = False, **kwargs) -> None:
+        self.create_db(db_uri, echo, **kwargs)
 
     def select_batch(self, batch_name: str) -> List[int]:
         with self.engine.connect() as conn:
@@ -287,11 +262,13 @@ class SQLReader(BaseDbReader):
             t = f"    {n}: Mapped[Optional[str]] = mapped_column()"
             print(t)
 
-    def import_cells_from_excel_sqlite(self, allow_duplicates: bool = False) -> None:
+    def import_cells_from_excel_sqlite(self, allow_duplicates: bool = False, allow_updates: bool = True, process_batches=True) -> None:
         """Import cells from old db to new db.
 
         Args:
             allow_duplicates: will not import if cell already exists in new db.
+            allow_updates: will update existing cells in new db.
+            process_batches: will process batches (if any) in old db.
 
         Returns:
             None
@@ -301,23 +278,32 @@ class SQLReader(BaseDbReader):
         old_session = Session(self.other_engine)
         new_session = Session(self.engine)
         missing_attributes = []
+
         for i, row in enumerate(old_session.query(self.old_cell_table).all()):
-            if (
-                not allow_duplicates
-                and new_session.query(Cell).filter(Cell.name == row.name).first()
-            ):
-                logging.debug(f"{i:05d} skipping (already exists):{row.name}")
-                continue
+            old_cell = new_session.query(Cell).filter(Cell.name == row.name).first()
+            if old_cell:
+                if not allow_updates and not allow_duplicates:
+                    logging.debug(f"{i:05d} skipping (already exists - updates or duplicates not allowed):{row.name}")
+                    continue
+                elif allow_updates and not allow_duplicates:
+                    cell = old_cell
+                else:
+                    cell = Cell()
+            else:
+                cell = Cell()
 
             logging.debug(f"{i:05d} importing: {row.name}")
-
-            cell = Cell()
             for attr in ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE:
                 row_attr = getattr(row, attr, None)
                 if row_attr is not None:
                     setattr(cell, attr, row_attr)
                 else:
                     missing_attributes.append(attr)
+
+            # TODO: implement batch processing
+            if process_batches:
+                print("PROCESSING BATCHES IS NOT IMPLEMENTED YET")
+
             new_session.add(cell)
 
         new_session.commit()
@@ -400,18 +386,24 @@ class SQLReader(BaseDbReader):
         ...
 
 
-def copy_from_simple_cell_db():
+def check():
+    sqlite_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
+    sqlite_uri = f"sqlite:///{sqlite_file}"
     reader = SQLReader()
-    reader.create_db(echo=False)
-    reader.load_excel_sqlite("excel.db")
-    # reader.view_old_excel_sqlite_table_columns()
-    reader.import_cells_from_excel_sqlite()
+    reader.open_db(sqlite_uri, echo=False)
+    with Session(reader.engine) as session:
+        statement = select(Cell).where(Cell.name.contains("test")).where(Cell.cell_group == 2)
+        result = session.execute(statement)
+        for cells in result.all():
+            cell = cells[0]
+            print(cell.comment_history)
 
 
-# TODO: use find-files to find files and add to db
+# TODO: add processing of batches from excel db
+# TODO: add method (use find-files) to find files and add to db
 # TODO: also add cellpy_filename
 # TODO:
 
 
 if __name__ == "__main__":
-    copy_from_simple_cell_db()
+    check()

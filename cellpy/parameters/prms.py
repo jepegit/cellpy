@@ -48,14 +48,14 @@ class PathsClass(CellPyConfig):
     outdatadir: Union[Path, str] = wdir
     rawdatadir: Union[Path, str] = wdir
     cellpydatadir: Union[Path, str] = wdir
-    db_path: Union[Path, str] = wdir
+    db_path: Union[Path, str] = wdir  # used for simple excel db reader
     filelogdir: Union[Path, str] = wdir
     examplesdir: Union[Path, str] = wdir
     notebookdir: Union[Path, str] = wdir
     templatedir: Union[Path, str] = wdir
     batchfiledir: Union[Path, str] = wdir
     instrumentdir: Union[Path, str] = wdir
-    db_filename: str = "cellpy_db.xlsx"
+    db_filename: str = "cellpy_db.xlsx"  # used for simple excel db reader
 
 
 @dataclass
@@ -105,23 +105,25 @@ class ReaderClass(CellPyConfig):
     time_interpolation_step: float = 10.0
     capacity_interpolation_step: float = 2.0
     use_cellpy_stat_file: bool = False
-    auto_dirs: bool = True  # search in prm-file for res and hdf5 dirs in loadcell
+    auto_dirs: bool = True  # search in prm-file for res and hdf5 dirs in cellpy.get()
 
 
 @dataclass
 class DbClass(CellPyConfig):
     db_type: str = "simple_excel_reader"
-    db_table_name: str = "db_table"
-    db_connection: Optional[str] = None
-    db_header_row: int = 0
-    db_unit_row: int = 1
-    db_data_start_row: int = 2
-    db_search_start_row: int = 2
-    db_search_end_row: int = -1
+    db_table_name: str = "db_table"  # used for simple excel db reader
+    db_header_row: int = 0  # used for simple excel db reader
+    db_unit_row: int = 1  # used for simple excel db reader
+    db_data_start_row: int = 2  # used for simple excel db reader
+    db_search_start_row: int = 2  # used for simple excel db reader
+    db_search_end_row: int = -1  # used for simple excel db reader
+    db_file_sqlite: str = "excel.db"  # used when converting from excel to sqlite
+
+    db_connection: Optional[str] = None  # database connection string - used for more advanced db readers
 
 
 @dataclass
-class DbColsClass(CellPyConfig):
+class DbColsClass(CellPyConfig):  # used for simple excel db reader
     # Note to developers:
     #  1) This is ONLY for the excel-reader (dbreader.py)! More advanced
     #     readers should get their own way of handling the db-columns.
@@ -130,6 +132,7 @@ class DbColsClass(CellPyConfig):
     #        a .cellpy_prms_default.conf
     #        b. dbreader.py
     #        c. test_dbreader.py
+    #        d. internal_settings.py (renaming when making sqlite from excel)
     #     As well as the DbColsTypeClass below.
 
     id: str = "id"
