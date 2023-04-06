@@ -34,4 +34,4 @@ PyGithub>=1.43
 plotly
 kaleido==0.1.*
 seaborn
-
+wheel

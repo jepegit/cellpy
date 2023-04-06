@@ -5507,7 +5507,7 @@ def get(
                     print("Returning None")
                     return
 
-                if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]:
+                if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"] and instrument != "arbin_sql_h5":
                     logging.info(f"Loading cellpy-file: {filename}")
                     if kwargs.pop("post_processor_hook", None) is not None:
                         logging.warning(
