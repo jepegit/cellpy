@@ -15,6 +15,7 @@ from typing import List
 from typing import Optional
 
 from cellpy.parameters import prms
+from cellpy.readers.core import BaseDbReader
 
 # logger = logging.getLogger(__name__)
 
@@ -37,68 +38,15 @@ class DbSheetCols:
         return f"<DbCols: {self.__dict__}>"
 
 
-class BaseReader(metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def get_mass(self, pk: int) -> float:
-        pass
-
-    @abc.abstractmethod
-    def get_area(self, pk: int) -> float:
-        pass
-
-    @abc.abstractmethod
-    def get_loading(self, pk: int) -> float:
-        pass
-
-    @abc.abstractmethod
-    def get_nom_cap(self, pk: int) -> float:
-        pass
-
-    @abc.abstractmethod
-    def get_total_mass(self, pk: int) -> float:
-        pass
-
-    @abc.abstractmethod
-    def get_cell_name(self, pk: int) -> str:
-        pass
-
-    @abc.abstractmethod
-    def get_cell_type(self, pk: int) -> str:
-        pass
-
-    @abc.abstractmethod
-    def get_label(self, pk: int) -> str:
-        pass
-
-    @abc.abstractmethod
-    def get_comment(self, pk: int) -> str:
-        pass
-
-    @abc.abstractmethod
-    def get_group(self, pk: int) -> str:
-        pass
-
-    @abc.abstractmethod
-    def get_args(self, pk: int) -> dict:
-        pass
-
-    @abc.abstractmethod
-    def get_experiment_type(self, pk: int) -> str:
-        pass
-
-    @abc.abstractmethod
-    def get_instrument(self, pk: int) -> str:
-        pass
-
-    @abc.abstractmethod
-    def inspect_hd5f_fixed(self, pk: int) -> int:
-        pass
-
-
-class Reader(BaseReader):
+class Reader(BaseDbReader):
     def __init__(
-        self, db_file=None, db_datadir=None, db_datadir_processed=None, db_frame=None
+        self,
+        db_file=None,
+        db_datadir=None,
+        db_datadir_processed=None,
+        db_frame=None,
+        batch=None,
+        batch_col_name=None,
     ):
         """Simple excel reader.
 
@@ -107,6 +55,8 @@ class Reader(BaseReader):
             db_datadir(str, pathlib.Path): path where raw date is located.
             db_datadir_processed (str, pathlib.Path): path where cellpy files are located.
             db_frame (pandas.DataFrame): use this instead of reading from xlsx-file.
+            batch (str): batch name to use.
+            batch_col_name (str): name of the column in the db-file that contains the batch name.
         """
 
         self.db_sheet_table = prms.Db.db_table_name
@@ -117,6 +67,7 @@ class Reader(BaseReader):
         self.db_search_end_row = prms.Db.db_search_end_row
 
         self.db_sheet_cols = DbSheetCols()
+        self.selected_batch = None
 
         if not db_datadir:
             self.db_datadir = prms.Paths.rawdatadir
@@ -148,6 +99,10 @@ class Reader(BaseReader):
 
             self.table = self._open_sheet()
 
+        if batch:
+            self.selected_batch = self.select_batch(
+                batch, batch_col_name=batch_col_name
+            )
         logging.debug("got table")
         logging.debug(self.table)
 
@@ -157,6 +112,51 @@ class Reader(BaseReader):
         txt += "Reader.table.head():\n"
         txt += str(self.table.head())
         return txt
+
+    def select_batch(
+        self, batch, batch_col_name=None, case_sensitive=True, drop=True
+    ) -> List[int]:
+        """Selects the rows in column batch_col_number.
+
+        Args:
+            batch: batch to select
+            batch_col_name: column name to use for batch selection (default: DbSheetCols.batch).
+            case_sensitive: if True, the batch name must match exactly (default: True).
+            drop: if True, all un-selected rows are dropped from the table (default: True).
+
+        Returns:
+            List of row indices
+        """
+
+        if self.selected_batch is None:
+            return self._select_batch(
+                batch,
+                batch_col_name=batch_col_name,
+                case_sensitive=case_sensitive,
+                drop=drop,
+            )
+        else:
+            return self.selected_batch
+
+    def _select_batch(self, batch, batch_col_name=None, case_sensitive=True, drop=True):
+        if not batch_col_name:
+            batch_col_name = self.db_sheet_cols.batch
+        logging.debug("selecting batch - %s" % batch)
+        sheet = self.table
+        identity = self.db_sheet_cols.id
+        exists_col_number = self.db_sheet_cols.exists
+
+        if case_sensitive:
+            criterion = sheet.loc[:, batch_col_name] == batch
+        else:
+            criterion = (sheet.loc[:, batch_col_name]).upper() == batch.upper()
+
+        exists = sheet.loc[:, exists_col_number] > 0
+        # This will crash if the col is not of dtype number
+        sheet = sheet[criterion & exists]
+        if drop:
+            self.table = sheet
+        return sheet.loc[:, identity].values.astype(int)
 
     @staticmethod
     def _parse_argument_str(argument_str: str) -> dict:
@@ -671,25 +671,3 @@ class Reader(BaseReader):
             sheet = sheet[exists]
 
         return sheet.loc[:, identity].values.astype(int)
-
-    def select_batch(self, batch, batch_col_name=None, case_sensitive=True):
-        """selects the rows  in column batch_col_number
-        (default: DbSheetCols.batch)"""
-
-        if not batch_col_name:
-            batch_col_name = self.db_sheet_cols.batch
-        logging.debug("selecting batch - %s" % batch)
-        sheet = self.table
-        identity = self.db_sheet_cols.id
-        exists_col_number = self.db_sheet_cols.exists
-
-        if case_sensitive:
-            criterion = sheet.loc[:, batch_col_name] == batch
-        else:
-            criterion = (sheet.loc[:, batch_col_name]).upper() == batch.upper()
-
-        exists = sheet.loc[:, exists_col_number] > 0
-        # This will crash if the col is not of dtype number
-        sheet = sheet[criterion & exists]
-        return sheet.loc[:, identity].values.astype(int)
-

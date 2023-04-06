@@ -3,6 +3,7 @@
 It also contains functions that are used by readers and utils. And it has the file-
 version definitions.
 """
+import abc
 import datetime
 import importlib
 import logging
@@ -12,7 +13,7 @@ import pickle
 import sys
 import time
 import warnings
-from typing import Any, Tuple, Dict, Optional
+from typing import Any, Tuple, Dict, Optional, List, Union
 
 import numpy as np
 import pandas as pd
@@ -64,6 +65,70 @@ class PickleProtocol:
 
 def pickle_protocol(level):
     return PickleProtocol(level)
+
+
+class BaseDbReader(metaclass=abc.ABCMeta):
+    """Base class for database readers."""
+
+    @abc.abstractmethod
+    def select_batch(self, batch: str) -> List[int]:
+        pass
+
+    @abc.abstractmethod
+    def get_mass(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_area(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_loading(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_nom_cap(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_total_mass(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_cell_name(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_cell_type(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_label(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_comment(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_group(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_args(self, pk: int) -> dict:
+        pass
+
+    @abc.abstractmethod
+    def get_experiment_type(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_instrument(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def inspect_hd5f_fixed(self, pk: int) -> int:
+        pass
 
 
 class FileID:

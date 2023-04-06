@@ -463,7 +463,9 @@ class CyclingExperiment(BaseExperiment):
         self.summary_frames = summary_frames
         self.cell_data_frames = cell_data_frames
 
-    def parallel_update(self, all_in_memory=None, cell_specs=None, logging_mode=None, **kwargs):
+    def parallel_update(
+        self, all_in_memory=None, cell_specs=None, logging_mode=None, **kwargs
+    ):
         """Updates the selected datasets in parallel.
 
         Args:
@@ -509,7 +511,12 @@ class CyclingExperiment(BaseExperiment):
         # TODO: implement experiment.last_cycle
         if status != "DEV":
             print("SORRY - MULTIPROCESSING IS NOT IMPLEMENTED PROPERLY YET")
-            return self.update(all_in_memory=all_in_memory, cell_specs=cell_specs, logging_mode=logging_mode, **kwargs)
+            return self.update(
+                all_in_memory=all_in_memory,
+                cell_specs=cell_specs,
+                logging_mode=logging_mode,
+                **kwargs,
+            )
 
         import concurrent.futures
         import multiprocessing
@@ -632,22 +639,24 @@ class CyclingExperiment(BaseExperiment):
                     logging.info(f"Processing {index}")
 
                 logging.info("loading cell")
-                params.append(dict(
-                    filename=filename,
-                    instrument=instrument,
-                    cellpy_file=_cellpy_file,
-                    cycle_mode=cycle_mode,
-                    mass=mass,
-                    nom_cap=nom_cap,
-                    loading=loading,
-                    area=area,
-                    step_kwargs=step_kwargs,
-                    summary_kwargs=summary_kwargs,
-                    selector=selector,
-                    logging_mode=logging_mode,
-                    testing=False,
-                    **cell_spec,
-                ))
+                params.append(
+                    dict(
+                        filename=filename,
+                        instrument=instrument,
+                        cellpy_file=_cellpy_file,
+                        cycle_mode=cycle_mode,
+                        mass=mass,
+                        nom_cap=nom_cap,
+                        loading=loading,
+                        area=area,
+                        step_kwargs=step_kwargs,
+                        summary_kwargs=summary_kwargs,
+                        selector=selector,
+                        logging_mode=logging_mode,
+                        testing=False,
+                        **cell_spec,
+                    )
+                )
 
             pool = [executor.submit(cellpy.get, **param) for param in params]
             for i in concurrent.futures.as_completed(pool):
@@ -748,7 +757,8 @@ class CyclingExperiment(BaseExperiment):
                     except Exception as e:
                         logging.error("Could not make/export dq/dv data")
                         logging.debug(
-                            "Failed to make/export " "dq/dv data (%s): %s" % (index, str(e))
+                            "Failed to make/export "
+                            "dq/dv data (%s): %s" % (index, str(e))
                         )
                         errors.append("ica:" + str(index))
 
@@ -940,7 +950,7 @@ class LifeTimeExperiment(BaseExperiment):
         super().__init__()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from pathlib import Path
     import os
     import pandas as pd

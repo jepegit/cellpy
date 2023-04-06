@@ -97,7 +97,9 @@ class ReaderClass(CellPyConfig):
     cycle_mode: str = "anode"
     sorted_data: bool = True  # finding step-types assumes sorted data
     select_minimal: bool = False
-    limit_loaded_cycles: Optional[int] = None  # limit loading cycles to given cycle number
+    limit_loaded_cycles: Optional[
+        int
+    ] = None  # limit loading cycles to given cycle number
     ensure_step_table: bool = False
     voltage_interpolation_step: float = 0.01
     time_interpolation_step: float = 10.0

@@ -760,21 +760,17 @@ def test_loadcell_to_get_post(parameters, cellpy_file, raw_file):
 # TODO: fix this so that it does not globally alter the units
 #   for other tests:
 def test_cellpy_get_update_units(parameters):
-    units = {
-        "charge": "Ah"
-    }
+    units = {"charge": "Ah"}
     raw_file = parameters.res_file_path
     c1 = cellpy.get(raw_file, logging_mode="DEBUG", testing=True)
     cellpy_unit_charge = c1.cellpy_units.charge
-    units_old = {
-        "charge": cellpy_unit_charge
-    }
+    units_old = {"charge": cellpy_unit_charge}
     c2 = cellpy.get(raw_file, units=units, logging_mode="DEBUG", testing=True)
     sc1 = c1.data.summary.charge_capacity_gravimetric
     sc2 = c2.data.summary.charge_capacity_gravimetric
     # Remark! This will break if we in the future decide to change
     #    the default cellpy_unit for charge to something else than mAh:
-    assert sc1.iloc[0] == pytest.approx(1000*sc2.iloc[0], rel=1e-3)
+    assert sc1.iloc[0] == pytest.approx(1000 * sc2.iloc[0], rel=1e-3)
     c3 = cellpy.get(raw_file, units=units_old, logging_mode="DEBUG", testing=True)
     sc3 = c3.data.summary.charge_capacity_gravimetric
     assert sc1.iloc[0] == pytest.approx(sc3.iloc[0], rel=1e-3)

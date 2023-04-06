@@ -578,8 +578,10 @@ class Batch:
             from_db = False
         else:
             if self.experiment.journal.pages is not None:
-                warnings.warn("You created a journal - but you already have a "
-                              "journal. Hope you know what you are doing!")
+                warnings.warn(
+                    "You created a journal - but you already have a "
+                    "journal. Hope you know what you are doing!"
+                )
 
         if from_db:
             self.experiment.journal.from_db(**kwargs)

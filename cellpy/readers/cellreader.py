@@ -1359,7 +1359,7 @@ class CellpyCell:
         return_cls=True,
         accept_old=True,
         selector=None,
-        **kwargs
+        **kwargs,
     ):
         """Loads a cellpy file.
 

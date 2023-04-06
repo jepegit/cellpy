@@ -726,7 +726,9 @@ def _dev_journal_loading():
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")
-    journal_file = pathlib.Path("../../../testdata/batch_project/test_project.json").resolve()
+    journal_file = pathlib.Path(
+        "../../../testdata/batch_project/test_project.json"
+    ).resolve()
     assert journal_file.is_file()
 
     logging.debug(f"reading journal file {journal_file}")

@@ -33,8 +33,55 @@ from sqlalchemy.ext.automap import automap_base
 
 import cellpy
 from cellpy.parameters import prms
+from cellpy.readers.core import BaseDbReader
 
-raise NotImplementedError("This module is not yet implemented")
+# raise NotImplementedError("This module is not yet implemented")
+
+
+# ----------------- USED WHEN CONVERTING FROM EXCEL -----------------
+DB_FILE_EXCEL = "cellpy_db.xlsx"
+DB_FILE_SQLITE = "excel.db"
+TABLE_NAME_EXCEL = "db_table"
+TABLE_NAME_SQLITE = "cells"
+HEADER_ROW = 0
+
+COLUMNS_RENAMER = {
+    "id": "pk",
+    "batch": "comment_history",
+    "cell_name": "name",
+    "exists": "cell_exists",
+    "group": "cell_group",
+    "raw_file_names": "raw_data",
+    "argument": "cell_spec",
+    "nom_cap": "nominal_capacity",
+}
+ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
+    "name",
+    "label",
+    "project",
+    "cell_group",
+    "cellpy_file_name",
+    "instrument",
+    "cell_type",
+    "cell_design",
+    "channel",
+    "experiment_type",
+    "mass_active",
+    "area",
+    "mass_total",
+    "loading_active",
+    "nominal_capacity",
+    "comment_slurry",
+    "comment_cell",
+    "comment_general",
+    "selected",
+    "freeze",
+    "cell_exists",
+]
+# ------------------- USED BY NEW CELLPY DB --------------------------
+
+DB_FILE = "cellpy.db"
+DB_URI = f"sqlite:///{DB_FILE}"
 
 
 class Base(DeclarativeBase):
@@ -148,7 +195,7 @@ class Batch(Base):
         return f"batch: '{self.name}' (#{self.pk})"
 
 
-class SQLReader:
+class SQLReader(BaseDbReader):
     def __init__(self) -> None:
         self.cell_table = Cell()
         self.raw_data_table = RawData()
@@ -160,6 +207,60 @@ class SQLReader:
     def __str__(self) -> str:
         txt = f"SQLReader:\n {self.cell_table}\n {self.raw_data_table}\n  {self.batch_table}\n"
         return txt
+
+    def create_db(self, db_uri: str = DB_URI, echo: bool = False) -> None:
+        self.engine = create_engine(db_uri, echo=echo)
+        Base.metadata.create_all(self.engine)
+
+    def select_batch(self, batch_name: str) -> List[int]:
+        with self.engine.connect() as conn:
+            stmt = select(self.cell_table).where(
+                self.cell_table.batches.any(name=batch_name)
+            )
+            result = conn.execute(stmt)
+            return [row.pk for row in result]
+
+    def get_mass(self, pk: int) -> float:
+        pass
+
+    def get_area(self, pk: int) -> float:
+        pass
+
+    def get_loading(self, pk: int) -> float:
+        pass
+
+    def get_nom_cap(self, pk: int) -> float:
+        pass
+
+    def get_total_mass(self, pk: int) -> float:
+        pass
+
+    def get_cell_name(self, pk: int) -> str:
+        pass
+
+    def get_cell_type(self, pk: int) -> str:
+        pass
+
+    def get_label(self, pk: int) -> str:
+        pass
+
+    def get_comment(self, pk: int) -> str:
+        pass
+
+    def get_group(self, pk: int) -> str:
+        pass
+
+    def get_args(self, pk: int) -> dict:
+        pass
+
+    def get_experiment_type(self, pk: int) -> str:
+        pass
+
+    def get_instrument(self, pk: int) -> str:
+        pass
+
+    def inspect_hd5f_fixed(self, pk: int) -> int:
+        pass
 
     def load_excel_sqlite(self, db_path: str, echo: bool = False) -> None:
         """Load an old sqlite cellpy database created from an Excel file.
@@ -174,12 +275,6 @@ class SQLReader:
         self.old_cell_table = Table(
             "cells", MetaData(), autoload_with=self.other_engine
         )
-
-    def create_db(
-        self, db_path: str = "sqlite:///cellpy.db", echo: bool = False
-    ) -> None:
-        self.engine = create_engine(db_path, echo=echo)
-        Base.metadata.create_all(self.engine)
 
     def view_old_excel_sqlite_table_columns(self) -> None:
         if self.old_cell_table is None:
@@ -205,6 +300,7 @@ class SQLReader:
             raise ValueError("No old db loaded - use load_old_db() first")
         old_session = Session(self.other_engine)
         new_session = Session(self.engine)
+        missing_attributes = []
         for i, row in enumerate(old_session.query(self.old_cell_table).all()):
             if (
                 not allow_duplicates
@@ -214,39 +310,22 @@ class SQLReader:
                 continue
 
             logging.debug(f"{i:05d} importing: {row.name}")
-            try:
-                # TODO: implement all columns
-                cell = Cell()
-                cell.name = row.name
-                cell.label = row.label
-                cell.project = row.project
-                cell.cell_group = row.cell_group
-                cell.cellpy_file_name = row.cellpy_file_name
-                cell.instrument = row.instrument
-                cell.cell_type = row.cell_type
-                cell.cell_design = row.cell_design
-                cell.channel = row.channel
-                cell.experiment_type = row.experiment_type
-                cell.mass_active = row.mass_active
-                cell.area = row.area
-                cell.mass_total = row.mass_total
-                cell.loading_active = row.loading_active
-                cell.nominal_capacity = row.nominal_capacity
-                cell.comment_slurry = row.comment_slurry
-                cell.comment_cell = row.comment_cell
-                cell.comment_general = row.comment_general
-                cell.selected = row.selected
-                cell.freeze = row.freeze
-                cell.cell_exists = row.cell_exists
-                new_session.add(cell)
-                logging.debug(" - OK")
-            except Exception as e:
-                logging.debug(f" - failed to import: {row.name}")
-                logging.debug(e)
+
+            cell = Cell()
+            for attr in ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE:
+                row_attr = getattr(row, attr, None)
+                if row_attr is not None:
+                    setattr(cell, attr, row_attr)
+                else:
+                    missing_attributes.append(attr)
+            new_session.add(cell)
 
         new_session.commit()
         old_session.close()
         new_session.close()
+        if missing_attributes:
+            logging.debug("missing attributes:")
+            logging.debug(set(missing_attributes))
 
     @staticmethod
     def _parse_argument_str(argument_str: str) -> Optional[dict]:
@@ -327,6 +406,7 @@ def copy_from_simple_cell_db():
     reader.load_excel_sqlite("excel.db")
     # reader.view_old_excel_sqlite_table_columns()
     reader.import_cells_from_excel_sqlite()
+
 
 # TODO: use find-files to find files and add to db
 # TODO: also add cellpy_filename

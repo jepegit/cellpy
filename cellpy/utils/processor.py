@@ -53,5 +53,5 @@ def main():
     print(f"Sequential processing took {dt_s} seconds")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

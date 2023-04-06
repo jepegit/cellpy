@@ -7,25 +7,14 @@ import sqlalchemy as sa
 import pandas as pd
 
 import cellpy
-
-
-DB_FILE_EXCEL = "cellpy_db.xlsx"
-DB_FILE_SQLITE = "excel.db"
-TABLE_NAME_EXCEL = "db_table"
-TABLE_NAME_SQLITE = "cells"
-HEADER_ROW = 0
-
-# NOTE to developers: this must be manually updated if the settings change
-COLUMNS_RENAMER = {
-    "id": "pk",
-    "batch": "comment_history",
-    "cell_name": "name",
-    "exists": "cell_exists",
-    "group": "cell_group",
-    "raw_file_names": "raw_data",
-    "argument": "cell_spec",
-    "nom_cap": "nominal_capacity",
-}
+from cellpy.readers.sql_dbreader import (
+    DB_FILE_EXCEL,
+    DB_FILE_SQLITE,
+    TABLE_NAME_EXCEL,
+    TABLE_NAME_SQLITE,
+    HEADER_ROW,
+    COLUMNS_RENAMER,
+)
 
 
 @dataclass
@@ -60,7 +49,9 @@ def create_column_names_from_prms():
     return columns
 
 
-def load_xlsx(db_file=DB_FILE_EXCEL, table_name=TABLE_NAME_EXCEL, header_row=HEADER_ROW):
+def load_xlsx(
+    db_file=DB_FILE_EXCEL, table_name=TABLE_NAME_EXCEL, header_row=HEADER_ROW
+):
     """Load the Excel file and return a pandas dataframe."""
     work_book = pd.ExcelFile(db_file, engine="openpyxl")
     sheet = work_book.parse(table_name, header=header_row, skiprows=[1])
@@ -89,7 +80,9 @@ def clean_up(df, columns):
         if excel_col not in df.columns:
             logging.debug(f"  {excel_col} not in df.columns")
             continue
-        logging.debug(f"  {cellpy_col} = {excel_col} [{df[excel_col].dtype}]:({t}) --> ")
+        logging.debug(
+            f"  {cellpy_col} = {excel_col} [{df[excel_col].dtype}]:({t}) --> "
+        )
         if t == "int":
             df[excel_col] = df[excel_col].fillna(0)
             try:
@@ -111,12 +104,31 @@ def clean_up(df, columns):
             df[excel_col] = df[excel_col].astype("str")
         logging.debug(f"[{df[excel_col].dtype}]")
         df = df.rename(columns={excel_col: db_col})
-        final_columns[db_col] = db_col  # modify this if you want to rename columns again
+        final_columns[
+            db_col
+        ] = db_col  # modify this if you want to rename columns again
     logging.debug("Selecting...")
     df = df[final_columns.keys()]
     logging.debug("Renaming to cellpy names...")
     df = df.rename(columns=final_columns)
     return df
+
+
+def _create_for_testing():
+    print("Settings:")
+    print(f"{cellpy.prms.Paths.db_path=}")
+    print(f"{cellpy.prms.Paths.db_filename=}")
+
+    print("But choosing:")
+    db_exel_file = pathlib.Path("2022_Cell_Analysis_db_001.xlsx").resolve()
+    print(f"{db_exel_file=}")
+
+    columns = create_column_names_from_prms()
+    df = load_xlsx(db_file=db_exel_file)
+    df = clean_up(df, columns=columns)
+    print("cleaned up:")
+    print(df.columns)
+    save_sqlite(df)
 
 
 def check():
@@ -137,7 +149,9 @@ def check():
 
 
 def run():
-    db_exel_file = pathlib.Path(cellpy.prms.Paths.db_path) / cellpy.prms.Paths.db_filename
+    db_exel_file = (
+        pathlib.Path(cellpy.prms.Paths.db_path) / cellpy.prms.Paths.db_filename
+    )
     db_sqlite_file = pathlib.Path(cellpy.prms.Paths.db_path) / DB_FILE_SQLITE
     columns = create_column_names_from_prms()
     df = load_xlsx(db_file=db_exel_file)
@@ -158,5 +172,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
+    run()
