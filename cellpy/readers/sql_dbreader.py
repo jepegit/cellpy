@@ -5,6 +5,7 @@ import re
 import tempfile
 import time
 import warnings
+from collections import defaultdict
 from dataclasses import asdict
 from datetime import datetime
 
@@ -34,6 +35,7 @@ from sqlalchemy.ext.automap import automap_base
 import cellpy
 from cellpy.parameters.internal_settings import (
     ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
+BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
     COLUMNS_RENAMER,
     TABLE_NAME_SQLITE,
 )
@@ -262,31 +264,51 @@ class SQLReader(BaseDbReader):
             t = f"    {n}: Mapped[Optional[str]] = mapped_column()"
             print(t)
 
-    def import_cells_from_excel_sqlite(self, allow_duplicates: bool = False, allow_updates: bool = True, process_batches=True) -> None:
+    def import_cells_from_excel_sqlite(self, allow_duplicates: bool = False, allow_updates: bool = True, process_batches=True, clear=False) -> None:
         """Import cells from old db to new db.
 
         Args:
             allow_duplicates: will not import if cell already exists in new db.
             allow_updates: will update existing cells in new db.
             process_batches: will process batches (if any) in old db.
+            clear: will clear all rows in new db before importing.
 
         Returns:
             None
         """
+
         if self.old_cell_table is None:
             raise ValueError("No old db loaded - use load_old_db() first")
         old_session = Session(self.other_engine)
         new_session = Session(self.engine)
         missing_attributes = []
+        batches = defaultdict(list)
+
+        if clear:
+            confirmation = input("Are you sure you want to clear the new db? (y/n)")
+            if confirmation != "y":
+                print("Aborting import without clearing new db.")
+                return
+            new_session.query(Batch).delete()
+            new_session.commit()
+            new_session.query(batch_cell_association_table).delete()
+            new_session.commit()
+            new_session.query(RawData).delete()
+            new_session.commit()
+            new_session.query(Cell).delete()
+            new_session.commit()
 
         for i, row in enumerate(old_session.query(self.old_cell_table).all()):
-            old_cell = new_session.query(Cell).filter(Cell.name == row.name).first()
-            if old_cell:
-                if not allow_updates and not allow_duplicates:
-                    logging.debug(f"{i:05d} skipping (already exists - updates or duplicates not allowed):{row.name}")
-                    continue
-                elif allow_updates and not allow_duplicates:
-                    cell = old_cell
+            if not clear:
+                old_cell = new_session.query(Cell).filter(Cell.name == row.name).first()
+                if old_cell:
+                    if not allow_updates and not allow_duplicates:
+                        logging.debug(f"{i:05d} skipping (already exists - updates or duplicates not allowed):{row.name}")
+                        continue
+                    elif allow_updates and not allow_duplicates:
+                        cell = old_cell
+                    else:
+                        cell = Cell()
                 else:
                     cell = Cell()
             else:
@@ -300,12 +322,40 @@ class SQLReader(BaseDbReader):
                 else:
                     missing_attributes.append(attr)
 
-            # TODO: implement batch processing
-            if process_batches:
-                print("PROCESSING BATCHES IS NOT IMPLEMENTED YET")
-
             new_session.add(cell)
+            new_session.commit()
 
+            if process_batches:
+                for b in BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE:
+                    b_name = getattr(row, b, None)
+                    if b_name:
+                        if cell.project is not None:
+                            batch_name = f"{b}_{cell.project}_{b_name}"
+                        else:
+                            batch_name = f"{b}_NN_{b_name}"
+                        batches[batch_name].append(cell.pk)
+
+        if process_batches:
+            for batch_name, cell_pks in batches.items():
+                if not clear:
+                    old_batch = new_session.query(Batch).filter(Batch.name == batch_name).first()
+                    if old_batch:
+                        if not allow_updates and not allow_duplicates:
+                            logging.debug(f"skipping batch (already exists - updates or duplicates not allowed):{batch_name}")
+                            continue
+                        elif allow_updates and not allow_duplicates:
+                            batch = old_batch
+                            old_batch.comment = "batch imported from old db"
+                        else:
+                            batch = Batch(name=batch_name, comment="batch imported from old db")
+                    else:
+                        batch = Batch(name=batch_name, comment="batch imported from old db")
+                else:
+                    batch = Batch(name=batch_name, comment="batch imported from old db")
+                cell_pks = set(cell_pks)
+                for pk in cell_pks:
+                    batch.cells.append(new_session.get(Cell, pk))
+                new_session.add(batch)
         new_session.commit()
         old_session.close()
         new_session.close()
@@ -386,11 +436,23 @@ class SQLReader(BaseDbReader):
         ...
 
 
-def check():
-    sqlite_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
-    sqlite_uri = f"sqlite:///{sqlite_file}"
+def check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path):
     reader = SQLReader()
-    reader.open_db(sqlite_uri, echo=False)
+    reader.create_db(cellpy_db_uri, echo=False)
+    reader.load_excel_sqlite(sqlite_path)
+    # 2023.04.06 missing in test excel file:
+    #   {'channel', 'cell_design', 'nominal_capacity', 'loading_active', 'experiment_type'}
+    reader.import_cells_from_excel_sqlite()
+
+
+def check():
+    cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
+    sqlite_path = r"C:\scripting\cellpy\testdata\db\excel.db"
+    cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
+
+    check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path)
+    reader = SQLReader()
+    reader.open_db(cellpy_db_uri, echo=False)
     with Session(reader.engine) as session:
         statement = select(Cell).where(Cell.name.contains("test")).where(Cell.cell_group == 2)
         result = session.execute(statement)

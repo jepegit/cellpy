@@ -54,7 +54,16 @@ ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
     "freeze",
     "cell_exists",
 ]
-
+BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
+    "comment_history",
+    "sub_batch_01",
+    "sub_batch_02",
+    "sub_batch_03",
+    "sub_batch_04",
+    "sub_batch_05",
+    "sub_batch_06",
+    "sub_batch_07",
+]
 
 @dataclass
 class CellpyMeta:
