@@ -97,6 +97,10 @@ res_file_path3 = os.path.join(raw_data_dir, res_file_name3)
 res_file_name4 = "aux_one_x_dx.res"
 res_file_path4 = os.path.join(raw_data_dir, res_file_name4)
 
+arbin_sql_h5_name = "20200624_test001_cc_01.h5"
+arbin_sql_h5_path = os.path.join(raw_data_dir, arbin_sql_h5_name)
+
+
 # -------- biologics specific files -----------------
 mpr_file_name = "biol.mpr"
 mpr_file_path = os.path.join(raw_data_dir, mpr_file_name)

@@ -5630,6 +5630,13 @@ def get(
         estimate_area=estimate_area,
         units=units,
     )
+                # if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"] and instrument != "arbin_sql_h5":
+                #     logging.info(f"Loading cellpy-file: {filename}")
+                #     if kwargs.pop("post_processor_hook", None) is not None:
+                #         logging.warning(
+                #             "post_processor_hook is not allowed when loading cellpy-files"
+                #         )
+                #     cellpy_instance.load(filename, **kwargs)
 
     if auto_summary:
         logging.info("Creating step table")
