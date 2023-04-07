@@ -5484,7 +5484,7 @@ def get(
         loading (float): loading in units [mass] / [area]
         area (float): active electrode area (e.g. used for finding the areal capacity)
         estimate_area (bool): calculate area from loading if given (defaults to True)
-        auto_pick_cellpy_format (bool): decide if it is a cellpy-file based on suffix
+        auto_pick_cellpy_format (bool): decide if it is a cellpy-file based on suffix.
         auto_summary (bool): (re-) create summary.
         units (dict): update cellpy units (used after the file is loaded, e.g. when creating summary).
         step_kwargs (dict): sent to make_steps
@@ -5525,6 +5525,7 @@ def get(
     from cellpy import log
 
     db_readers = ["arbin_sql"]
+    instruments_with_colliding_file_suffix = ["arbin_sql_h5"]
 
     step_kwargs = step_kwargs or {}
     summary_kwargs = summary_kwargs or {}
@@ -5563,8 +5564,9 @@ def get(
     else:
         filename = Path(filename)
         if (
-            filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]
-            and auto_pick_cellpy_format
+            auto_pick_cellpy_format
+            and instrument not in instruments_with_colliding_file_suffix
+            and filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]
         ):
             load_cellpy_file = True
 
@@ -5630,13 +5632,6 @@ def get(
         estimate_area=estimate_area,
         units=units,
     )
-                # if filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"] and instrument != "arbin_sql_h5":
-                #     logging.info(f"Loading cellpy-file: {filename}")
-                #     if kwargs.pop("post_processor_hook", None) is not None:
-                #         logging.warning(
-                #             "post_processor_hook is not allowed when loading cellpy-files"
-                #         )
-                #     cellpy_instance.load(filename, **kwargs)
 
     if auto_summary:
         logging.info("Creating step table")
