@@ -53,7 +53,10 @@ def create_column_names_from_prms():
 
 
 def load_xlsx(
-    db_file=DB_FILE_EXCEL, table_name=TABLE_NAME_EXCEL, header_row=HEADER_ROW, unit_row=UNIT_ROW,
+    db_file=DB_FILE_EXCEL,
+    table_name=TABLE_NAME_EXCEL,
+    header_row=HEADER_ROW,
+    unit_row=UNIT_ROW,
 ):
     """Load the Excel file and return a pandas dataframe."""
     work_book = pd.ExcelFile(db_file, engine="openpyxl")
@@ -61,7 +64,9 @@ def load_xlsx(
     return sheet
 
 
-def save_sqlite(sheet, out_file=DB_FILE_SQLITE, table_name=TABLE_NAME_SQLITE, set_index=False):
+def save_sqlite(
+    sheet, out_file=DB_FILE_SQLITE, table_name=TABLE_NAME_SQLITE, set_index=False
+):
     """Save the pandas dataframe to a sqlite database."""
     uri = f"sqlite:///{out_file}"
     logging.debug(f"Saving to sqlite ({uri})...")

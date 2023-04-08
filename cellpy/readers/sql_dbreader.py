@@ -36,7 +36,7 @@ from sqlalchemy.ext.automap import automap_base
 import cellpy
 from cellpy.parameters.internal_settings import (
     ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
-BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
+    BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
     COLUMNS_RENAMER,
     TABLE_NAME_SQLITE,
 )
@@ -192,9 +192,7 @@ class SQLReader(BaseDbReader):
 
     def select_batch(self, batch_name: str) -> List[int]:
         with Session(self.engine) as session:
-            stmt = select(Cell.pk).where(
-               Cell.batches.any(name=batch_name)
-            )
+            stmt = select(Cell.pk).where(Cell.batches.any(name=batch_name))
             result = session.execute(stmt)
         return [row.pk for row in result]
 
@@ -313,7 +311,13 @@ class SQLReader(BaseDbReader):
             t = f"    {n}: Mapped[Optional[str]] = mapped_column()"
             print(t)
 
-    def import_cells_from_excel_sqlite(self, allow_duplicates: bool = False, allow_updates: bool = True, process_batches=True, clear=False) -> None:
+    def import_cells_from_excel_sqlite(
+        self,
+        allow_duplicates: bool = False,
+        allow_updates: bool = True,
+        process_batches=True,
+        clear=False,
+    ) -> None:
         """Import cells from old db to new db.
 
         Args:
@@ -349,7 +353,9 @@ class SQLReader(BaseDbReader):
                 old_cell = new_session.query(Cell).filter(Cell.name == row.name).first()
                 if old_cell:
                     if not allow_updates and not allow_duplicates:
-                        logging.debug(f"{i:05d} skipping (already exists - updates or duplicates not allowed):{row.name}")
+                        logging.debug(
+                            f"{i:05d} skipping (already exists - updates or duplicates not allowed):{row.name}"
+                        )
                         continue
                     elif allow_updates and not allow_duplicates:
                         cell = old_cell
@@ -384,18 +390,28 @@ class SQLReader(BaseDbReader):
         if process_batches:
             for batch_name, cell_pks in batches.items():
                 if not clear:
-                    old_batch = new_session.query(Batch).filter(Batch.name == batch_name).first()
+                    old_batch = (
+                        new_session.query(Batch)
+                        .filter(Batch.name == batch_name)
+                        .first()
+                    )
                     if old_batch:
                         if not allow_updates and not allow_duplicates:
-                            logging.debug(f"skipping batch (already exists - updates or duplicates not allowed):{batch_name}")
+                            logging.debug(
+                                f"skipping batch (already exists - updates or duplicates not allowed):{batch_name}"
+                            )
                             continue
                         elif allow_updates and not allow_duplicates:
                             batch = old_batch
                             old_batch.comment = "batch imported from old db"
                         else:
-                            batch = Batch(name=batch_name, comment="batch imported from old db")
+                            batch = Batch(
+                                name=batch_name, comment="batch imported from old db"
+                            )
                     else:
-                        batch = Batch(name=batch_name, comment="batch imported from old db")
+                        batch = Batch(
+                            name=batch_name, comment="batch imported from old db"
+                        )
                 else:
                     batch = Batch(name=batch_name, comment="batch imported from old db")
                 cell_pks = set(cell_pks)
@@ -500,7 +516,9 @@ def check_copy():
     reader = SQLReader()
     reader.open_db(cellpy_db_uri, echo=False)
     with Session(reader.engine) as session:
-        statement = select(Cell).where(Cell.name.contains("test")).where(Cell.cell_group == 2)
+        statement = (
+            select(Cell).where(Cell.name.contains("test")).where(Cell.cell_group == 2)
+        )
         result = session.execute(statement)
         for cell in result.scalars().all():
             print(cell.comment_history)
