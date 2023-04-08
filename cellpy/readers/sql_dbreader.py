@@ -23,6 +23,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
+from sqlalchemy import delete
 from sqlalchemy import Table
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -289,16 +290,13 @@ class SQLReader(BaseDbReader):
             if confirmation != "y":
                 print("Aborting import without clearing new db.")
                 return
-            new_session.query(Batch).delete()
-            new_session.commit()
-            new_session.query(batch_cell_association_table).delete()
-            new_session.commit()
-            new_session.query(RawData).delete()
-            new_session.commit()
-            new_session.query(Cell).delete()
-            new_session.commit()
 
-        for i, row in enumerate(old_session.query(self.old_cell_table).all()):
+            new_session.execute(delete(batch_cell_association_table))
+            new_session.execute(delete(Batch))
+            new_session.execute(delete(RawData))
+            new_session.execute(delete(Cell))
+            new_session.commit()
+        for i, row in enumerate(old_session.execute(select(self.old_cell_table))):
             if not clear:
                 old_cell = new_session.query(Cell).filter(Cell.name == row.name).first()
                 if old_cell:
@@ -456,8 +454,7 @@ def check():
     with Session(reader.engine) as session:
         statement = select(Cell).where(Cell.name.contains("test")).where(Cell.cell_group == 2)
         result = session.execute(statement)
-        for cells in result.all():
-            cell = cells[0]
+        for cell in result.scalars().all():
             print(cell.comment_history)
 
 

@@ -61,11 +61,13 @@ def load_xlsx(
     return sheet
 
 
-def save_sqlite(sheet, out_file=DB_FILE_SQLITE, table_name=TABLE_NAME_SQLITE):
+def save_sqlite(sheet, out_file=DB_FILE_SQLITE, table_name=TABLE_NAME_SQLITE, set_index=False):
     """Save the pandas dataframe to a sqlite database."""
     uri = f"sqlite:///{out_file}"
     logging.debug(f"Saving to sqlite ({uri})...")
     engine = sa.create_engine(uri, echo=False)
+    if set_index:
+        sheet = sheet.set_index(COLUMNS_RENAMER["id"])
     sheet.to_sql(table_name, con=engine, if_exists="replace")
 
 
