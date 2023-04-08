@@ -130,6 +130,10 @@ class BaseDbReader(metaclass=abc.ABCMeta):
     def inspect_hd5f_fixed(self, pk: int) -> int:
         pass
 
+    @abc.abstractmethod
+    def get_by_column_label(self, pk: int, name: str) -> Any:
+        pass
+
 
 class FileID:
     """class for storing information about the raw-data files.

@@ -12,7 +12,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from typing import List
-from typing import Optional
+from typing import Optional, Any
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import select
@@ -98,7 +98,7 @@ class Cell(Base):
         Optional[str]
     ] = mapped_column()  # div information from legacy Excel file
     selected: Mapped[Optional[bool]] = mapped_column()  # selected
-    freeze: Mapped[Optional[bool]] = mapped_column()  # freeze
+    frozen: Mapped[Optional[bool]] = mapped_column()  # freeze
     argument: Mapped[Optional[str]] = mapped_column()  # argument
     cell_exists: Mapped[Optional[bool]] = mapped_column()  # cell_exists
     active_material_mass_fraction: Mapped[Optional[float]] = mapped_column()
@@ -134,7 +134,7 @@ class Cell(Base):
             f"nominal_capacity={self.nominal_capacity!r}, comment_slurry={self.comment_slurry!r}, "
             f"comment_cell={self.comment_cell!r}, comment_general={self.comment_general!r}, "
             f"comment_history={self.comment_history!r}, "
-            f"selected={self.selected!r}, freeze={self.freeze!r}, argument={self.argument!r}, "
+            f"selected={self.selected!r}, frozen={self.frozen!r}, argument={self.argument!r}, "
             f"cell_exists={self.cell_exists!r}, raw_data={self.raw_data!r}, batches={self.batches!r}"
         )
 
@@ -191,54 +191,102 @@ class SQLReader(BaseDbReader):
         self.create_db(db_uri, echo, **kwargs)
 
     def select_batch(self, batch_name: str) -> List[int]:
-        with self.engine.connect() as conn:
-            stmt = select(self.cell_table).where(
-                self.cell_table.batches.any(name=batch_name)
+        with Session(self.engine) as session:
+            stmt = select(Cell.pk).where(
+               Cell.batches.any(name=batch_name)
             )
-            result = conn.execute(stmt)
-            return [row.pk for row in result]
+            result = session.execute(stmt)
+        return [row.pk for row in result]
 
     def get_mass(self, pk: int) -> float:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.mass_active).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_area(self, pk: int) -> float:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.area).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_loading(self, pk: int) -> float:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.loading_active).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_nom_cap(self, pk: int) -> float:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.nominal_capacity).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_total_mass(self, pk: int) -> float:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.mass_total).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_cell_name(self, pk: int) -> str:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.name).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_cell_type(self, pk: int) -> str:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.cell_type).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_label(self, pk: int) -> str:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.label).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_comment(self, pk: int) -> str:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.comment_general).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_group(self, pk: int) -> str:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.cell_group).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_args(self, pk: int) -> dict:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.argument).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_experiment_type(self, pk: int) -> str:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.experiment_type).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def get_instrument(self, pk: int) -> str:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.instrument).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
 
     def inspect_hd5f_fixed(self, pk: int) -> int:
-        pass
+        with Session(self.engine) as session:
+            stmt = select(Cell.frozen).where(Cell.pk == pk)
+            result = session.execute(stmt)
+        return result.scalar()
+
+    def get_by_column_label(self, pk: int, name: str) -> Any:
+        with Session(self.engine) as session:
+            stmt = select(Cell).where(Cell.pk == pk)
+            result = session.execute(stmt).scalars().first()
+        return getattr(result, name, None)
 
     def load_excel_sqlite(self, db_path: str, echo: bool = False) -> None:
         """Load an old sqlite cellpy database created from an Excel file.
@@ -279,7 +327,7 @@ class SQLReader(BaseDbReader):
         """
 
         if self.old_cell_table is None:
-            raise ValueError("No old db loaded - use load_old_db() first")
+            raise ValueError("No old db loaded - use load_excel_sqlite() first")
         old_session = Session(self.other_engine)
         new_session = Session(self.engine)
         missing_attributes = []
@@ -443,7 +491,7 @@ def check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path):
     reader.import_cells_from_excel_sqlite()
 
 
-def check():
+def check_copy():
     cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
     sqlite_path = r"C:\scripting\cellpy\testdata\db\excel.db"
     cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
@@ -458,11 +506,24 @@ def check():
             print(cell.comment_history)
 
 
-# TODO: add processing of batches from excel db
-# TODO: add method (use find-files) to find files and add to db
-# TODO: also add cellpy_filename
-# TODO:
+def check():
+    cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
+    cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
+    reader = SQLReader()
+    reader.open_db(cellpy_db_uri, echo=False)
+    batch = "comment_history_test_exp001"
+    n = reader.select_batch(batch)
+    print(f"batch: {batch} has these cells {n}")
+    other = "comment_history"
+    for pk in n:
+        m = reader.get_mass(pk)
+        print(f"mass: {m}")
+        c = reader.get_by_column_label(pk, other)
+        print(f"{other}: {c}")
 
+
+# TODO: add tests for the new methods
+# TODO: add method to both simple and sql reader to get the pages_dict directly in one go
 
 if __name__ == "__main__":
     check()
