@@ -39,12 +39,11 @@ from cellpy.parameters.internal_settings import (
     BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
     COLUMNS_RENAMER,
     TABLE_NAME_SQLITE,
+    get_headers_journal,
 )
 
 from cellpy.parameters import prms
 from cellpy.readers.core import BaseDbReader
-
-# raise NotImplementedError("This module is not yet implemented")
 
 
 # ----------------- USED WHEN CONVERTING FROM EXCEL -----------------
@@ -56,6 +55,7 @@ UNIT_ROW = prms.Db.db_unit_row
 
 # ------------------- USED BY NEW CELLPY DB --------------------------
 DB_URI = f"sqlite:///cellpy.db"
+hdr_journal = get_headers_journal()
 
 
 class Base(DeclarativeBase):
@@ -195,6 +195,44 @@ class SQLReader(BaseDbReader):
             stmt = select(Cell.pk).where(Cell.batches.any(name=batch_name))
             result = session.execute(stmt)
         return [row.pk for row in result]
+
+    def from_batch(
+        self,
+        batch_name: str,
+        include_key: bool = False,
+        include_individual_arguments: bool = False,
+    ) -> dict:
+        pages_dict = defaultdict(list)
+        arguments = []
+        with Session(self.engine) as session:
+            stmt = select(Cell).where(Cell.batches.any(name=batch_name))
+            result = session.execute(stmt)
+            for cell in result.scalars():
+                pages_dict[hdr_journal["filename"]].append(cell.name)
+                pages_dict[hdr_journal["mass"]].append(cell.mass_active)
+                pages_dict[hdr_journal["total_mass"]].append(cell.mass_total)
+                pages_dict[hdr_journal["loading"]].append(cell.loading_active)
+                pages_dict[hdr_journal["nom_cap"]].append(cell.nominal_capacity)
+                pages_dict[hdr_journal["area"]].append(cell.area)
+                pages_dict[hdr_journal["experiment"]].append(cell.experiment_type)
+                pages_dict[hdr_journal["fixed"]].append(cell.frozen)
+                pages_dict[hdr_journal["label"]].append(cell.label)
+                pages_dict[hdr_journal["cell_type"]].append(cell.cell_type)
+                pages_dict[hdr_journal["instrument"]].append(cell.instrument)
+                pages_dict[hdr_journal["comment"]].append(cell.comment_general)
+                pages_dict[hdr_journal["group"]].append(cell.cell_group)
+                arguments.append(cell.argument)
+
+        pages_dict[hdr_journal["raw_file_names"]] = []
+        pages_dict[hdr_journal["cellpy_file_name"]] = []
+
+        if include_key:
+            pages_dict[hdr_journal["id_key"]] = cell_ids
+
+        if include_individual_arguments:
+            pages_dict[hdr_journal["argument"]] = arguments
+
+        return pages_dict
 
     def get_mass(self, pk: int) -> float:
         with Session(self.engine) as session:
@@ -524,7 +562,7 @@ def check_copy():
             print(cell.comment_history)
 
 
-def check():
+def check1():
     cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
     cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
     reader = SQLReader()
@@ -538,6 +576,16 @@ def check():
         print(f"mass: {m}")
         c = reader.get_by_column_label(pk, other)
         print(f"{other}: {c}")
+
+
+def check():
+    cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
+    cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
+    reader = SQLReader()
+    reader.open_db(cellpy_db_uri, echo=False)
+    batch = "comment_history_test_exp001"
+    pages_dict = reader.from_batch(batch)
+    print(f"from_batch({batch}):\n{pages_dict=}")
 
 
 # TODO: add tests for the new methods
