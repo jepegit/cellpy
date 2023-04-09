@@ -1,50 +1,30 @@
+"""This module is an example of how to implement a custom database reader for the batch utility in cellpy."""
+
 import logging
-import os
 import pathlib
 import re
-import tempfile
-import time
-import warnings
 from collections import defaultdict
-from dataclasses import asdict
 from datetime import datetime
+from typing import Any, List, Optional
 
-import numpy as np
-import pandas as pd
-from typing import List
-from typing import Optional, Any
-from sqlalchemy import ForeignKey
-from sqlalchemy import String
-from sqlalchemy import select
-from sqlalchemy import MetaData
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine
-from sqlalchemy import delete
-from sqlalchemy import Table
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import Float
-from sqlalchemy import Boolean
-from sqlalchemy import DateTime
-from sqlalchemy.ext.automap import automap_base
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    MetaData,
+    Table,
+    create_engine,
+    delete,
+    select,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 
-import cellpy
+from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
     BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
-    COLUMNS_RENAMER,
-    TABLE_NAME_SQLITE,
     get_headers_journal,
 )
-
-from cellpy.parameters import prms
 from cellpy.readers.core import BaseDbReader
-
 
 # ----------------- USED WHEN CONVERTING FROM EXCEL -----------------
 DB_FILE_EXCEL = prms.Paths.db_filename
@@ -172,23 +152,94 @@ class Batch(Base):
 
 class SQLReader(BaseDbReader):
     def __init__(self, db_connection: str = None, batch: str = None, **kwargs) -> None:
-        self.cell_table = Cell()
-        self.raw_data_table = RawData()
-        self.batch_table = Batch()
+        """Initialize the SQLReader."""
+        self.db_connection = db_connection
+        self.batch = batch  # not used - only here for compatibility with BaseDbReader
         self.engine = None
+        self.kwargs = kwargs  # not used at the moment
+
+        # used for importing data from old-type Excel files (after exporting to sqlite):
         self.other_engine = None
         self.old_cell_table = None
+        # Note to self / developers: self.old_cell_table will be a Table object
+        # (while if we did self.cell_table = Cell it would be a
+        #  sqlalchemy.orm.decl_api.DeclarativeAttributeIntercept):
 
-    def __str__(self) -> str:
-        txt = f"SQLReader:\n {self.cell_table}\n {self.raw_data_table}\n  {self.batch_table}\n"
-        return txt
+        if self.db_connection is not None:
+            logging.debug(f"Opening database: {self.db_connection}")
+            self.open_db(db_connection)
 
     def create_db(self, db_uri: str = DB_URI, echo: bool = False, **kwargs) -> None:
         self.engine = create_engine(db_uri, echo=echo, **kwargs)
         Base.metadata.create_all(self.engine)
 
     def open_db(self, db_uri: str = DB_URI, echo: bool = False, **kwargs) -> None:
+        # an alias for create_db since they do the same thing in this case
         self.create_db(db_uri, echo, **kwargs)
+
+    def add_cell_object(self, cell: Cell) -> None:
+        """Add a cell object to the database.
+
+        For this to work, you will have to create a cell object first, then populate it with
+        data, and finally add it to the database using this method.
+
+        Examples:
+            >>> from cellpy.readers import sql_dbreader
+            >>> cell = sql_dbreader.Cell()
+            >>> cell.name = "my_cell"
+            >>> cell.label = "my_label"
+            >>> cell.project = "my_project"
+            >>> cell.cell_group = "my_cell_group"
+            >>> # ...and so on...
+
+            >>> db = sql_dbreader.SQLReader()
+            >>> db.open_db("my_db.sqlite")
+            >>> db.add_cell_object(cell)
+
+        Args:
+            cell: cellpy.readers.sql_dbreader.Cell object
+
+        Returns:
+            None
+        """
+        assert isinstance(cell, Cell)
+
+        with Session(self.engine) as session:
+            session.add(cell)
+
+    def add_batch_object(self, batch: Batch) -> None:
+        """Add a batch object to the database.
+
+        For this to work, you will have to create a batch object first, then populate it with
+        data (including the cell objects that the batch refers to, see .add_cell_object),
+        and finally add it to the database using this method.
+
+        Examples:
+            >>> from cellpy.readers import sql_dbreader
+            >>> db = sql_dbreader.SQLReader()
+            >>> db.open_db("my_db.sqlite")
+
+            >>> # create a batch object:
+            >>> batch = sql_dbreader.Batch()
+            >>> batch.name = "my_batch"
+            >>> batch.comment = "my_comment"
+
+            >>> # add the cells to the batch:
+            >>> batch.cells = [cell1, cell2, cell3]
+
+            >>> db.add_batch_object(batch)
+
+
+        """
+        assert isinstance(batch, Batch)
+
+        with Session(self.engine) as session:
+            session.add(batch)
+
+    def add_raw_data_object(self, raw_data: RawData) -> None:
+        assert isinstance(raw_data, RawData)
+        with Session(self.engine) as session:
+            session.add(raw_data)
 
     def select_batch(self, batch_name: str) -> List[int]:
         with Session(self.engine) as session:
@@ -351,6 +402,8 @@ class SQLReader(BaseDbReader):
 
     def import_cells_from_excel_sqlite(
         self,
+        db_path: str = None,
+        echo: bool = False,
         allow_duplicates: bool = False,
         allow_updates: bool = True,
         process_batches=True,
@@ -359,17 +412,23 @@ class SQLReader(BaseDbReader):
         """Import cells from old db to new db.
 
         Args:
+            db_path: path to old db (if not provided, it will use the already loaded db if it exists).
+            echo: will echo sql statements (if loading, i.e. if db_path is provided).
             allow_duplicates: will not import if cell already exists in new db.
             allow_updates: will update existing cells in new db.
             process_batches: will process batches (if any) in old db.
-            clear: will clear all rows in new db before importing.
+            clear: will clear all rows in new db before importing (asks for confirmation).
 
         Returns:
             None
         """
 
+        if db_path is not None:
+            self.load_excel_sqlite(db_path=db_path, echo=echo)
+
         if self.old_cell_table is None:
             raise ValueError("No old db loaded - use load_excel_sqlite() first")
+
         old_session = Session(self.other_engine)
         new_session = Session(self.engine)
         missing_attributes = []
@@ -386,6 +445,7 @@ class SQLReader(BaseDbReader):
             new_session.execute(delete(RawData))
             new_session.execute(delete(Cell))
             new_session.commit()
+
         for i, row in enumerate(old_session.execute(select(self.old_cell_table))):
             if not clear:
                 old_cell = new_session.query(Cell).filter(Cell.name == row.name).first()
@@ -459,6 +519,7 @@ class SQLReader(BaseDbReader):
         new_session.commit()
         old_session.close()
         new_session.close()
+
         if missing_attributes:
             logging.debug("missing attributes:")
             logging.debug(set(missing_attributes))
@@ -581,15 +642,20 @@ def check1():
 def check():
     cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
     cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
-    reader = SQLReader()
-    reader.open_db(cellpy_db_uri, echo=False)
+    reader = SQLReader(db_connection=cellpy_db_uri)
+    print("------------------------------------------------------------")
+    print(f"{SQLReader=}")
+    # reader.open_db(cellpy_db_uri, echo=False)
+    print("------------------------------------------------------------")
+    print(f"{reader=}")
     batch = "comment_history_test_exp001"
     pages_dict = reader.from_batch(batch)
     print(f"from_batch({batch}):\n{pages_dict=}")
 
 
 # TODO: add tests for the new methods
-# TODO: add method to both simple and sql reader to get the pages_dict directly in one go
+# TODO: add method to simple db reader to get the pages_dict directly in one go
+# TODO: add better/easier methods for populating the db
 
 if __name__ == "__main__":
     check()
