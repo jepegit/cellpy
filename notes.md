@@ -64,10 +64,12 @@ Fixed
 Steps:
 1. clean up b.update (in progress)
    [x] implement cellpy.loadcell into cellpy.get
-   [] implement cellpy.loadcell into cellpy.get
-3. clean up simple db reader (or whatever it is called inside journal etc)
-4. clean up dbreader
-5. implement/test using an ORM (SQAlchemy?)
+   [x] implement cellpy.loadcell into cellpy.get
+3. clean up simple db reader (or whatever it is called inside journal etc) (in progress)
+4. clean up dbreader (in progress)
+5. implement/test using an ORM (SQAlchemy?) (in progress)
 
 
 ### 250-improve-collectors
+
+### 249-access-raw-files-ssh
