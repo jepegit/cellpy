@@ -251,17 +251,16 @@ class DataLoader(BaseLoader):
         """
         new_tests = []
 
-        data_df, event_df = self._query_sql(name)
+        data_df, event_df, meta_data = self._query_sql(name)
         aux_data_df = None  # Needs to be implemented
-        meta_data = None  # Should be implemented
 
         # init data
 
         # selecting only one value (might implement multi-channel/id use later)
-        test_id = data_df["Test_ID"].iloc[0]
+        test_id = meta_data["Test_ID"].iloc[0]
         id_name = f"{SQL_SERVER}:{name}:{test_id}"
 
-        channel_id = data_df["Channel_ID"].iloc[0]
+        channel_id = event_df["Channel_ID"].iloc[0]
 
         data = Cell()
         data.loaded_from = id_name
@@ -271,10 +270,10 @@ class DataLoader(BaseLoader):
 
         # The following meta data is not implemented yet for SQL loader:
         data.channel_number = None
-        data.creator = None
+        data.creator = meta_data["Creator"][0]
         data.item_ID = None
         data.schedule_file_name = None
-        data.start_datetime = None
+        data.start_datetime = meta_data["First_Start_DateTime"][0]
 
         # Generating a FileID project - needs to be updated to allow for db queries:
         fid = FileID(id_name)
@@ -308,6 +307,7 @@ class DataLoader(BaseLoader):
         from pprint import pprint
 
         if rename_headers:
+            print('rename headers: True')
             columns = {}
             for key in self.arbin_headers_normal:
                 old_header = normal_headers_renaming_dict.get(key, None)
@@ -332,6 +332,7 @@ class DataLoader(BaseLoader):
                 logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:
+            print('fix date_time: true')
 
             h_datetime = self.cellpy_headers_normal.datetime_txt
             logging.debug("converting to datetime format")
@@ -365,7 +366,8 @@ class DataLoader(BaseLoader):
                                          f"DATABASE=ArbinMasterData;"
                                          f"UID={SQL_UID};"
                                          f"PWD={SQL_PWD}")
-
+        
+        # Create engine to SQL server using SQLAlchemy (mssql+pyodbc)
         con_url = ("mssql+pyodbc:///?odbc_connect={}".format(params))
         engine=sqlalchemy.create_engine(con_url)
                
@@ -381,16 +383,14 @@ class DataLoader(BaseLoader):
              "ArbinMasterData.dbo.TestList_Table WHERE "
              f"ArbinMasterData.dbo.TestList_Table.Test_Name IN {name_str}"
              )
-        # Connect to SQL server using SQLAlchemy (mssql+pyodbc)
         with engine.connect() as connection:
-            sql_query = pd.read_sql(master_q, connection)
+            meta_data = pd.read_sql(master_q, connection)
         
         # query events and data
         events_df = []       # necessary for MITS 7
         datas_df = []
-        test_str = f"('{sql_query.Test_ID[0]}', '')"
 
-        for index, row in sql_query.iterrows():
+        for index, row in meta_data.iterrows():
             # TODO: use variables - see above
             # TODO: consider to use f-strings
 
@@ -426,14 +426,29 @@ class DataLoader(BaseLoader):
                 )
             
             with engine.connect() as connection:
-                datas_df.append(pd.read_sql(data_query, connection))
+                raw_df=pd.read_sql(data_query, connection)
+            
+            # sort dataframe via pivot table:
+            # TODO: rename columns
+            #   21: PV_Voltage
+            #   22: PV_Current
+            #   23: PV_Charge_Capacity
+            #   24: PV_Discharge_Capacity
+            #   25: PV_Charge_Energy
+            #   26: PV_Discharge_Energy
+            #   27: PV_dVdt
+            #   30: PV_InternalResistance
+            # Full column key found in 'SQL Table ID's.xlsx' file.
+                
+            datas_df.append(raw_df.pivot(index='Date_Time',columns='Data_Type',values='Data_Value'))
+            
             # add a column for "Test_ID"
-            datas_df[index]['Test_ID']=events_df[index]['Test_ID'].values[0]
+            # datas_df[index]['Test_ID']=events_df[index]['Test_ID'].values[0]
         
         event_df= pd.concat(events_df, axis=0)
         data_df = pd.concat(datas_df, axis=0)
 
-        return data_df, event_df
+        return data_df, event_df, meta_data
 
 
 def check_sql_loader(server: str = None, tests: list = None):
