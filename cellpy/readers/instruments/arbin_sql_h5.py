@@ -33,7 +33,7 @@ normal_headers_renaming_dict = {
     "charge_energy_txt": "Charge_Energy",
     "discharge_energy_txt": "Discharge_Energy",
     "internal_resistance_txt": "Internal_Resistance",
-    "ref_voltage_txt": "Aux_Voltage_1"
+    "ref_voltage_txt": "Aux_Voltage_1",
 }
 
 
@@ -123,7 +123,6 @@ class DataLoader(BaseLoader):
         data.mass = data_dfs["info_df"]["SpecificMASS"].iloc[0]
         data.nom_cap = data_dfs["info_df"]["SpecificCapacity"].iloc[0]
 
-
         # Generating a FileID project:
         fid = FileID(name)
         data.raw_data_files.append(fid)
@@ -187,7 +186,6 @@ class DataLoader(BaseLoader):
                 raw_frames[key] = h5_file.select(key)
 
         return raw_frames
-
 
 
 def check_get():
