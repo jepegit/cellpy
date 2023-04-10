@@ -251,7 +251,7 @@ class DataLoader(BaseLoader):
         """
         new_tests = []
 
-        data_df, event_df, meta_data = self._query_sql(name)
+        data_df, meta_data = self._query_sql(name)
         aux_data_df = None  # Needs to be implemented
 
         # init data
@@ -260,7 +260,7 @@ class DataLoader(BaseLoader):
         test_id = meta_data["Test_ID"].iloc[0]
         id_name = f"{SQL_SERVER}:{name}:{test_id}"
 
-        channel_id = event_df["Channel_ID"].iloc[0]
+        channel_id = meta_data["IV_Ch_ID"][0]
 
         data = Cell()
         data.loaded_from = id_name
@@ -272,7 +272,7 @@ class DataLoader(BaseLoader):
         data.channel_number = None
         data.creator = meta_data["Creator"][0]
         data.item_ID = None
-        data.schedule_file_name = None
+        data.schedule_file_name = meta_data['Schedule_File_Name'][0]
         data.start_datetime = meta_data["First_Start_DateTime"][0]
 
         # Generating a FileID project - needs to be updated to allow for db queries:
@@ -290,7 +290,7 @@ class DataLoader(BaseLoader):
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
-
+        print(kwargs)
         fix_datetime = kwargs.pop("fix_datetime", True)
 
         set_index = kwargs.pop("set_index", True)
@@ -371,45 +371,31 @@ class DataLoader(BaseLoader):
         con_url = ("mssql+pyodbc:///?odbc_connect={}".format(params))
         engine=sqlalchemy.create_engine(con_url)
                
-        # Initial query to obtain table info on cell with 'name'
-        # For MITS 7 - key tables of interest:
-            # Test_ID
-            # Database_Name
-            # Test_Name
-            # First_Start_DateTime
-            # SoftwareVersion
+        # Initial query to obtain metadata info on cell with 'name'
+
         master_q = (
-             "SELECT * FROM "
-             "ArbinMasterData.dbo.TestList_Table WHERE "
-             f"ArbinMasterData.dbo.TestList_Table.Test_Name IN {name_str}"
+             "SELECT ArbinMasterData.dbo.TestIVChList_Table.*, "
+             "ArbinMasterData.dbo.TestList_Table.* FROM "
+             "ArbinMasterData.dbo.TestIVChList_Table "
+             "JOIN ArbinMasterData.dbo.TestList_Table "
+             "ON ArbinMasterData.dbo.TestIVChList_Table.Test_ID = "
+             "ArbinMasterData.dbo.TestList_Table.Test_ID "
+             f"WHERE ArbinMasterData.dbo.TestList_Table.Test_Name IN {name_str}"
              )
         with engine.connect() as connection:
             meta_data = pd.read_sql(master_q, connection)
         
-        # query events and data
-        events_df = []       # necessary for MITS 7
+        # drop duplicate columns
+        meta_data= meta_data.loc[:,~meta_data.columns.duplicated()].copy()
+
+        # query data
         datas_df = []
 
         for index, row in meta_data.iterrows():
             # TODO: use variables - see above
             # TODO: consider to use f-strings
-
-            event_query = (
-                f"SELECT ArbinMasterData.dbo.TestList_Table.Test_Name, "
-                + str(row["Database_Name"])+ f".dbo.Event_Table.* "
-                f"FROM " + str(row["Database_Name"]) + ".dbo.Event_Table "
-                f"JOIN ArbinMasterData.dbo.TestList_Table "
-                "ON "
-                + str(row["Database_Name"])
-                + f".dbo.Event_Table.Test_ID = ArbinMasterData.dbo.TestList_Table.Test_ID "
-                f"WHERE ArbinMasterData.dbo.TestList_Table.Test_Name IN "
-                + str(name_str)
-                )
             
-            with engine.connect() as connection:
-                events_df.append(pd.read_sql(event_query, connection))
-            
-                        # MITS 7 organizes raw channel data by Channel_ID and Date_Time, so the
+            # MITS 7 organizes raw channel data by Channel_ID and Date_Time, so the
             # data query requires that we filter by these tables from the events table. 
             # Also, Date_Time is 7 orders higher than standard datetime, hence the additional 
             # zeroes in the query.                  
@@ -418,17 +404,19 @@ class DataLoader(BaseLoader):
                 + str(row["Database_Name"])+ f".dbo.Channel_RawData_Table.* "
                 "FROM " + str(row["Database_Name"]) + ".dbo.Channel_RawData_Table "            
                 " WHERE "+ str(row["Database_Name"]) +".dbo.Channel_RawData_Table.Channel_ID = "
-                + str(events_df[index]["Channel_ID"][0]) + 
+                + str(row["IV_Ch_ID"]) + 
                 " AND " + str(row["Database_Name"]) +".dbo.Channel_RawData_Table.Date_Time >= "
                 +str(row["First_Start_DateTime"]) + str('0000000')+
                 " AND "+ str(row["Database_Name"]) +".dbo.Channel_RawData_Table.Date_Time <= "
-                +str(events_df[index]["Date_Time"].values[-1])
+                +str(row["Last_End_DateTime"]) + str('0000000')
                 )
             
             with engine.connect() as connection:
                 raw_df=pd.read_sql(data_query, connection)
             
             # sort dataframe via pivot table:
+            datas_df.append(raw_df.pivot(index='Date_Time',columns='Data_Type',values='Data_Value'))
+
             # TODO: rename columns
             #   21: PV_Voltage
             #   22: PV_Current
@@ -438,17 +426,12 @@ class DataLoader(BaseLoader):
             #   26: PV_Discharge_Energy
             #   27: PV_dVdt
             #   30: PV_InternalResistance
-            # Full column key found in 'SQL Table ID's.xlsx' file.
-                
-            datas_df.append(raw_df.pivot(index='Date_Time',columns='Data_Type',values='Data_Value'))
-            
-            # add a column for "Test_ID"
-            # datas_df[index]['Test_ID']=events_df[index]['Test_ID'].values[0]
-        
+            # Full column key found in 'SQL Table IDs.txt' file.
+                               
         event_df= pd.concat(events_df, axis=0)
         data_df = pd.concat(datas_df, axis=0)
 
-        return data_df, event_df, meta_data
+        return data_df, meta_data
 
 
 def check_sql_loader(server: str = None, tests: list = None):
