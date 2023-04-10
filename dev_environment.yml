@@ -38,12 +38,12 @@ dependencies:
   - ipykernel
   - ipywidgets
   - python-box
-  - sqlalchemy >=2.0.0
   - pint >=0.20.1
   - seaborn
   - plotly
   - python-kaleido ==0.1.*
   - pip:
+    - sqlalchemy >=2.0.0
     - sqlalchemy-access
     - pytest-benchmark
     - pytest-timeout
