@@ -1,10 +1,15 @@
 """cellpy parameters"""
-
+from __future__ import annotations
 import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union, Optional
+from typing import List, Tuple, Union, Optional, TYPE_CHECKING
+
+# Using TYPE_CHECKING to avoid circular imports
+# (this will only work without from __future__ import annotations for python 3.11 and above)
+if TYPE_CHECKING:
+    from cellpy.readers.core import OtherPath
 
 import box
 
@@ -45,9 +50,15 @@ class CellPyConfig:
 # This can stay global:
 @dataclass
 class PathsClass(CellPyConfig):
-    outdatadir: Union[Path, str] = wdir  # TODO 249: update to allow for remote paths
-    rawdatadir: Union[Path, str] = wdir  # TODO 249: update to allow for remote paths
-    cellpydatadir: Union[Path, str] = wdir  # TODO 249: update to allow for remote paths
+    outdatadir: Union[
+        OtherPath, str
+    ] = wdir  # TODO 249: update to allow for remote paths
+    rawdatadir: Union[
+        OtherPath, str
+    ] = wdir  # TODO 249: update to allow for remote paths
+    cellpydatadir: Union[
+        OtherPath, str
+    ] = wdir  # TODO 249: update to allow for remote paths
     db_path: Union[Path, str] = wdir  # used for simple excel db reader
     filelogdir: Union[Path, str] = wdir
     examplesdir: Union[Path, str] = wdir

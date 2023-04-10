@@ -55,7 +55,7 @@ class OtherPath(pathlib.Path):
         uri_prefix (str): the prefix of the external path (e.g. ssh:// or sftp://).
     """
 
-    _flavour = pathlib._windows_flavour if os.name == 'nt' else pathlib._posix_flavour
+    _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     def __new__(cls, *args, **kwargs):
         cls._is_external = False
@@ -1091,9 +1091,6 @@ def abs_path(path):
         path = pathlib.Path(path)
 
     return path.resolve()
-
-
-
 
 
 def check_convert_from_simple_unit_label_to_string_unit_label():
