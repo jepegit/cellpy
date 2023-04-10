@@ -208,6 +208,7 @@ class CyclingExperiment(BaseExperiment):
         # TODO: implement experiment.last_cycle
 
         debugging = kwargs.pop("debug", False)
+        testing = kwargs.pop("testing", False)
 
         # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
@@ -336,7 +337,7 @@ class CyclingExperiment(BaseExperiment):
                     summary_kwargs=summary_kwargs,
                     selector=selector,
                     logging_mode=logging_mode,
-                    testing=False,
+                    testing=testing,
                     **cell_spec,
                 )
                 logging.info("loaded cell")
