@@ -460,7 +460,7 @@ class BaseJournal:
 
         Default to using the simple excel "database" provided by cellpy.
 
-        If you dont have a database or you dont know how to make and use one,
+        If you don't have a database, or you don't know how to make and use one,
         look in the cellpy documentation for other solutions
         (e.g. manually create a file that can be loaded by the ``from_file``
         method).

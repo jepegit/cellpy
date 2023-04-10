@@ -178,9 +178,17 @@ class LabJournal(BaseJournal, ABC):
         else:
             self.name = name
         logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
+
         if self.db_reader is not None:
-            id_keys = self.db_reader.select_batch(name, batch_col)
-            self.pages = self.engine(self.db_reader, id_keys, **kwargs)
+            if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
+                id_keys = self.db_reader.select_batch(name, batch_col)
+                self.pages = self.engine(self.db_reader, id_keys, **kwargs)
+            else:
+                logging.debug(
+                    "creating journal pages using advanced reader methods (not simple excel-db)"
+                )
+                self.pages = self.engine(self.db_reader, batch_name=name, **kwargs)
+
             if self.pages.empty:
                 logging.critical(
                     f"EMPTY JOURNAL: are you sure you have provided correct input to batch?"

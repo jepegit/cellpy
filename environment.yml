@@ -31,7 +31,7 @@ dependencies:
     - invoke
     - jupyter
     - jupyterlab
-    - sqlalchemy
+    - sqlalchemy >=1.4.0
     - pint
     - plotly
     - pip:

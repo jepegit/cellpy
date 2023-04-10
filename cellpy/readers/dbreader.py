@@ -158,8 +158,16 @@ class Reader(BaseDbReader):
             self.table = sheet
         return sheet.loc[:, identity].values.astype(int)
 
+    def from_batch(
+        self,
+        batch_name: str,
+        include_key: bool = False,
+        include_individual_arguments: bool = False,
+    ) -> dict:
+        raise NotImplementedError("This method is not implemented for this reader")
+
     @staticmethod
-    def _parse_argument_str(argument_str: str) -> dict:
+    def _parse_argument_str(argument_str: str) -> Optional[dict]:
         # the argument str must be on the form:
         # "keyword-1=value-1;keyword-2=value2"
         if argument_str is None:

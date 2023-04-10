@@ -152,6 +152,7 @@ def simple_db_engine(
     include_key=False,
     include_individual_arguments=True,
     additional_column_names=None,
+    batch_name=None,
     **kwargs,
 ):
     """Engine that gets values from the db for given set of cell IDs.
@@ -162,68 +163,72 @@ def simple_db_engine(
 
     Args:
         reader: a reader object (defaults to dbreader.Reader)
-        cell_ids: keys (cell IDs)
+        cell_ids: keys (cell IDs) (assumes that the db has already been filtered, if not, use batch_name).
         file_list: file list to send to filefinder (instead of searching in folders for files).
         pre_path: prepended path to send to filefinder.
         include_key: include the key col in the pages (the cell IDs).
         include_individual_arguments: include the argument column in the pages.
         additional_column_names: list of additional column names to include in the pages.
+        batch_name: name of the batch (used if cell_ids are not given)
         **kwargs: sent to filefinder
 
     Returns:
         pages (pandas.DataFrame)
     """
 
-    warnings.warn(
-        "This utility function will be seriously changed soon and possibly removed",
-        category=DeprecationWarning,
-    )
+    new_version = False
 
     # This is not really a proper Do-er engine. But not sure where to put it.
     if reader is None:
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
 
-    pages_dict = dict()
-    pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
-    if include_key:
-        pages_dict[hdr_journal["id_key"]] = cell_ids
+    if cell_ids is None:
+        pages_dict = reader.from_batch(
+            batch_name=batch_name,
+            include_key=include_key,
+            include_individual_arguments=include_individual_arguments,
+        )
 
-    if include_individual_arguments:
-        pages_dict[hdr_journal["argument"]] = _query(reader.get_args, cell_ids)
+    else:
+        pages_dict = dict()
+        pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
+        if include_key:
+            pages_dict[hdr_journal["id_key"]] = cell_ids
 
-    pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
-    pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
-    pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
-    pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
-    pages_dict[hdr_journal["area"]] = _query(reader.get_area, cell_ids)
-    pages_dict[hdr_journal["experiment"]] = _query(reader.get_experiment_type, cell_ids)
-    pages_dict[hdr_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
-    pages_dict[hdr_journal["label"]] = _query(reader.get_label, cell_ids)
-    pages_dict[hdr_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
-    pages_dict[hdr_journal["instrument"]] = _query(reader.get_instrument, cell_ids)
-    pages_dict[hdr_journal["raw_file_names"]] = []
-    pages_dict[hdr_journal["cellpy_file_name"]] = []
-    pages_dict[hdr_journal["comment"]] = _query(reader.get_comment, cell_ids)
+        if include_individual_arguments:
+            pages_dict[hdr_journal["argument"]] = _query(reader.get_args, cell_ids)
 
-    if additional_column_names is not None:
-        for k in additional_column_names:
-            try:
-                pages_dict[k] = _query(reader.get_by_column_label, cell_ids, k)
-            except Exception as e:
-                logging.info(f"Could not retrieve from column {k} ({e})")
+        pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
+        pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
+        pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
+        pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
+        pages_dict[hdr_journal["area"]] = _query(reader.get_area, cell_ids)
+        pages_dict[hdr_journal["experiment"]] = _query(
+            reader.get_experiment_type, cell_ids
+        )
+        pages_dict[hdr_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
+        pages_dict[hdr_journal["label"]] = _query(reader.get_label, cell_ids)
+        pages_dict[hdr_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
+        pages_dict[hdr_journal["instrument"]] = _query(reader.get_instrument, cell_ids)
+        pages_dict[hdr_journal["raw_file_names"]] = []
+        pages_dict[hdr_journal["cellpy_file_name"]] = []
+        pages_dict[hdr_journal["comment"]] = _query(reader.get_comment, cell_ids)
+        pages_dict[hdr_journal["group"]] = _query(reader.get_group, cell_ids)
 
-    # get id_key (not implemented yet
+        if additional_column_names is not None:
+            for k in additional_column_names:
+                try:
+                    pages_dict[k] = _query(reader.get_by_column_label, cell_ids, k)
+                except Exception as e:
+                    logging.info(f"Could not retrieve from column {k} ({e})")
 
-    logging.debug(f"created info-dict from {reader.db_file}:")
-    # logging.debug(info_dict)
+        logging.debug(f"created info-dict from {reader.db_file}:")
 
     for key in list(pages_dict.keys()):
         logging.debug("%s: %s" % (key, str(pages_dict[key])))
 
-    _groups = _query(reader.get_group, cell_ids)
-
-    logging.debug(">\ngroups: %s" % str(_groups))
+    _groups = pages_dict[hdr_journal["group"]]
     groups = helper.fix_groups(_groups)
     pages_dict[hdr_journal["group"]] = groups
 

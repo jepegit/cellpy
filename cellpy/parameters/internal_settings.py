@@ -20,8 +20,9 @@ PICKLE_PROTOCOL = 4
 
 # For creating the sqlite database from excel:
 TABLE_NAME_SQLITE = "cells"
+COLUMNS_EXCEL_PK = "id"
 COLUMNS_RENAMER = {
-    "id": "pk",
+    COLUMNS_EXCEL_PK: "pk",
     "batch": "comment_history",
     "cell_name": "name",
     "exists": "cell_exists",
@@ -29,6 +30,7 @@ COLUMNS_RENAMER = {
     "raw_file_names": "raw_data",
     "argument": "cell_spec",
     "nom_cap": "nominal_capacity",
+    "freeze": "frozen",
 }
 ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
     "name",
@@ -53,6 +55,16 @@ ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
     "selected",
     "freeze",
     "cell_exists",
+]
+BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
+    "comment_history",
+    "sub_batch_01",
+    "sub_batch_02",
+    "sub_batch_03",
+    "sub_batch_04",
+    "sub_batch_05",
+    "sub_batch_06",
+    "sub_batch_07",
 ]
 
 

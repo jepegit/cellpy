@@ -119,7 +119,9 @@ class DbClass(CellPyConfig):
     db_search_end_row: int = -1  # used for simple excel db reader
     db_file_sqlite: str = "excel.db"  # used when converting from excel to sqlite
 
-    db_connection: Optional[str] = None  # database connection string - used for more advanced db readers
+    db_connection: Optional[
+        str
+    ] = None  # database connection string - used for more advanced db readers
 
 
 @dataclass
