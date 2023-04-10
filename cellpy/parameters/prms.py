@@ -45,9 +45,9 @@ class CellPyConfig:
 # This can stay global:
 @dataclass
 class PathsClass(CellPyConfig):
-    outdatadir: Union[Path, str] = wdir
-    rawdatadir: Union[Path, str] = wdir
-    cellpydatadir: Union[Path, str] = wdir
+    outdatadir: Union[Path, str] = wdir  # TODO 249: update to allow for remote paths
+    rawdatadir: Union[Path, str] = wdir  # TODO 249: update to allow for remote paths
+    cellpydatadir: Union[Path, str] = wdir  # TODO 249: update to allow for remote paths
     db_path: Union[Path, str] = wdir  # used for simple excel db reader
     filelogdir: Union[Path, str] = wdir
     examplesdir: Union[Path, str] = wdir

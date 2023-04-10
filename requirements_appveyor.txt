@@ -16,7 +16,7 @@ pytest-benchmark
 pytest-timeout
 cookiecutter
 tqdm
-sqlalchemy
+sqlalchemy>=2.0.0
 sqlalchemy-access
 pint
 plotly
