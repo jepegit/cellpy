@@ -20,7 +20,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import (
-    Cell,
+    Data,
     FileID,
     check64bit,
     humanize_bytes,
@@ -257,7 +257,10 @@ class DataLoader(BaseLoader):
         warnings.warn(
             "This loader is under development and might be missing some features."
         )
-        new_tests = []
+        
+        # new_tests = [] 
+        # chonmj: seems to be broken at the moment. cellreader assumes a 
+        #         datatype "loader", not a list. removing the list for now.
 
         data_df, meta_data = self._query_sql(name)
         aux_data_df = None  # Needs to be implemented
@@ -271,7 +274,7 @@ class DataLoader(BaseLoader):
 
         channel_id = meta_data["IV_Ch_ID"][0]
 
-        data = Cell()
+        data = Data()
         data.loaded_from = id_name
         data.channel_index = channel_id
         data.test_ID = test_id
@@ -296,9 +299,9 @@ class DataLoader(BaseLoader):
 
         # TODO: implement this:
         # data = self.identify_last_data_point(data)
-        new_tests.append(data)
+        # new_tests.append(data)
 
-        return new_tests
+        return data
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
@@ -437,7 +440,9 @@ class DataLoader(BaseLoader):
                     index="Date_Time", columns="Data_Type", values="Data_Value"
                 ).reset_index()
             )
-
+            
+            # convert column headers to strings
+            datas_df[index].columns=datas_df[index].columns.astype(str)
             # TODO: rename columns
             #   21: PV_Voltage
             #   22: PV_Current
@@ -450,6 +455,7 @@ class DataLoader(BaseLoader):
             # Full column key found in 'SQL Table IDs.txt' file.
                                
         data_df = pd.concat(datas_df, axis=0)
+        
 
         return data_df, meta_data
 

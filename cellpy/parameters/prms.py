@@ -294,9 +294,9 @@ Arbin = {
     "detect_subprocess_need": False,
     "sub_process_path": None,
     "office_version": "64bit",
-    "SQL_server": r"localhost\SQLEXPRESS",
+    "SQL_server": "105.140.112.121\SQLEXPRESS",
     "SQL_UID": "sa",
-    "SQL_PWD": "Changeme123",
+    "SQL_PWD": "arbin",
     "SQL_Driver": "SQL Server",
 }
 
