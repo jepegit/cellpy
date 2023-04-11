@@ -41,9 +41,8 @@ dependencies:
   - pint >=0.20.1
   - seaborn
   - plotly
-  - python-kaleido ==0.1.*
+  - sqlalchemy
   - pip:
-    - sqlalchemy >=2.0.0
     - sqlalchemy-access
     - pytest-benchmark
     - pytest-timeout
