@@ -290,7 +290,6 @@ class DataLoader(BaseLoader):
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
-        print(kwargs)
         fix_datetime = kwargs.pop("fix_datetime", True)
 
         set_index = kwargs.pop("set_index", True)
@@ -307,7 +306,6 @@ class DataLoader(BaseLoader):
         from pprint import pprint
 
         if rename_headers:
-            print('rename headers: True')
             columns = {}
             for key in self.arbin_headers_normal:
                 old_header = normal_headers_renaming_dict.get(key, None)
@@ -332,9 +330,8 @@ class DataLoader(BaseLoader):
                 logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:
-            print('fix date_time: true')
-
             h_datetime = self.cellpy_headers_normal.datetime_txt
+            print(h_datetime)
             logging.debug("converting to datetime format")
 
             data.raw[h_datetime] = data.raw[h_datetime].apply(from_arbin_to_datetime)
@@ -428,7 +425,6 @@ class DataLoader(BaseLoader):
             #   30: PV_InternalResistance
             # Full column key found in 'SQL Table IDs.txt' file.
                                
-        event_df= pd.concat(events_df, axis=0)
         data_df = pd.concat(datas_df, axis=0)
 
         return data_df, meta_data
