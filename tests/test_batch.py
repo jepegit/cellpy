@@ -56,7 +56,7 @@ def populated_batch(batch_instance):
 
     b.create_journal(duplicate_to_local_folder=False)
     b.paginate()
-    b.update()
+    b.update(testing=True)
     return b
 
 
@@ -78,7 +78,7 @@ def updated_cycling_experiment(cycling_experiment):
     # tests updates from time to time. so if one of those tests fails and corrupts
     # the cellpy file, this test might also fail
     logging.info(f"using pandas {pandas.__version__}")
-    cycling_experiment.update()
+    cycling_experiment.update(testing=True)
     return cycling_experiment
 
 
@@ -304,7 +304,7 @@ def test_batch_update(parameters, batch_instance):
     )
     b.create_journal(duplicate_to_local_folder=False)
     b.paginate()
-    b.update()
+    b.update(testing=True)
 
 
 # def test_iterate_folder(batch_instance):

@@ -20,6 +20,7 @@ def test_get_neware_from_csv(parameters):
         instrument="neware_txt",
         model="UIO",
         mass=2.08,
+        testing=True,
     )
     assert len(c.data.raw) == 9065
     assert len(c.data.summary) == 4

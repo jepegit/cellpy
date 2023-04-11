@@ -49,7 +49,7 @@ requirements = [
     "tqdm",
     "pint",
     'pyodbc;platform_system=="windows"',
-    "sqlalchemy",
+    "sqlalchemy>=2.0.0",
     'sqlalchemy-access;platform_system=="windows"',
     # 'tables', # not available by pip
 ]

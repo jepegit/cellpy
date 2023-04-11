@@ -18,6 +18,7 @@ from github import Github
 import cellpy._version
 from cellpy.exceptions import ConfigFileNotWritten
 from cellpy.parameters import prmreader
+from cellpy.readers.core import OtherPath
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
@@ -222,12 +223,12 @@ def _update_paths(
             h = h / default_dir
 
     if not reset:
-        outdatadir = pathlib.Path(prmreader.prms.Paths.outdatadir)
-        rawdatadir = pathlib.Path(prmreader.prms.Paths.rawdatadir)
-        cellpydatadir = pathlib.Path(prmreader.prms.Paths.cellpydatadir)
+        outdatadir = OtherPath(prmreader.prms.Paths.outdatadir)
+        rawdatadir = OtherPath(prmreader.prms.Paths.rawdatadir)
+        cellpydatadir = OtherPath(prmreader.prms.Paths.cellpydatadir)
         filelogdir = pathlib.Path(prmreader.prms.Paths.filelogdir)
         examplesdir = pathlib.Path(prmreader.prms.Paths.examplesdir)
-        db_path = pathlib.Path(prmreader.prms.Paths.db_path)
+        db_path = OtherPath(prmreader.prms.Paths.db_path)
         db_filename = prmreader.prms.Paths.db_filename
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
         batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)

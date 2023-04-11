@@ -39,10 +39,58 @@ from cellpy.parameters.internal_settings import (
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
+URI_PREFIXES = ["ssh://", "sftp://"]
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
 Q = ureg.Quantity
+
+
+class OtherPath(pathlib.Path):
+    """A pathlib.Path subclass that can handle external paths.
+
+    Additional attributes:
+        is_external (bool): is True if the path is external.
+        location (str): the location of the external path (e.g. a server name).
+        uri_prefix (str): the prefix of the external path (e.g. ssh:// or sftp://).
+    """
+
+    _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
+
+    def __new__(cls, *args, **kwargs):
+        cls._is_external = False
+        cls._location = ""
+        cls._uri_prefix = ""
+        if not args:
+            return super().__new__(cls, **kwargs)
+
+        path_string, *args = args
+        if isinstance(path_string, str):
+            for prefix in URI_PREFIXES:
+                if path_string.startswith(prefix):
+                    path_string = path_string.replace(prefix, "")
+                    cls._is_external = True
+                    cls._uri_prefix = prefix
+                    cls._location, *rest = path_string.split("/")
+                    path_string = "/" + "/".join(rest)
+        return super().__new__(cls, path_string, *args, **kwargs)
+
+    @property
+    def is_external(self):
+        return self._is_external
+
+    @property
+    def uri_prefix(self):
+        return self._uri_prefix
+
+    @property
+    def location(self):
+        return self._location
+
+    def as_uri(self):
+        if self._is_external:
+            return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
+        return super().as_uri()
 
 
 # https://stackoverflow.com/questions/60067953/
@@ -1029,8 +1077,108 @@ def convert_from_simple_unit_label_to_string_unit_label(k, v):
     return str_value
 
 
-if __name__ == "__main__":
+def abs_path(path):
+    """Converts a path to an absolute pathlib.Path object.
+
+    Args:
+        path (str, pathlib.Path): the path to convert.
+
+    Returns:
+        pathlib.Path: the converted path.
+
+    """
+    if isinstance(path, str):
+        path = pathlib.Path(path)
+
+    return path.resolve()
+
+
+def check_convert_from_simple_unit_label_to_string_unit_label():
     k = "resistance"
     v = 1.0
     n = convert_from_simple_unit_label_to_string_unit_label(k, v)
     print(n)
+
+
+def check_path_things():
+    print(abs_path("."))
+
+    p = "//jepe@mymachine.my.no/./path/file.txt"
+    p2 = pathlib.Path(p)
+    print(f"{p2=}")
+    print(f"{p2.resolve()=}")
+    print(f"{p2.drive=}")
+    print(f"{p2.as_uri()=}")
+    print(f"{p2.root=}")
+    print(f"{p2.anchor=}")
+    print(f"{p2.parent=}")
+    print(f"{p2.name=}")
+    print(f"{p2.stem=}")
+    print(f"{p2.suffix=}")
+    print(f"{p2.suffixes=}")
+    print(f"{p2.parts=}")
+    print(f"{p2.is_absolute()=}")
+    print(f"{p2.is_reserved()=}")
+    print(f"{p2.is_dir()=}")
+    print(f"{p2.is_file()=}")
+
+    try:
+        print(f"{p2.is_socket()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+    try:
+        print(f"{p2.is_mount()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+    try:
+        print(f"{p2.is_symlink()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+
+    try:
+        print(f"{p2.owner()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+
+    try:
+        print(f"{p2.group()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+
+    print(f"{p2.exists()=}")
+
+
+def check_another_path_things():
+    p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@odin.ad.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p04 = r"..\data\20160805_test001_45_cc_01.res"
+    for p in [p01, p02, p03, p04]:
+        print(f"{p}".center(110, "-"))
+        p2 = OtherPath(p)
+        print(f"{p2=}")
+        print(f"{p2.resolve()=}")
+        print(f"{p2.drive=}")
+        print(f"{p2.exists()=}")
+        print(f"{p2._is_external=}")
+        print(f"{p2._location=}")
+        print(f"{p2._uri_prefix=}")
+        print(f"{p2.resolve()=}")
+        if p2.is_absolute():
+            print(f"{p2.as_uri()=}")
+        print(f"{p2.is_external=}")
+        print(f"{p2.location=}")
+        print(f"{p2.uri_prefix=}")
+        print(f"{p2.root=}")
+        print(f"{p2.anchor=}")
+        print(f"{p2.parent=}")
+        print(f"{p2.name=}")
+        print(f"{p2.stem=}")
+        print(f"{p2.suffix=}")
+        print(f"{p2.suffixes=}")
+        print(f"{p2.parts=}")
+        print()
+
+
+if __name__ == "__main__":
+    check_another_path_things()
