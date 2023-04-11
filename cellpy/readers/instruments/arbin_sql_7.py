@@ -279,17 +279,11 @@ class DataLoader(BaseLoader):
 
         # The following meta data is not implemented yet for SQL loader:
         data.channel_number = None
-        data.creator = meta_data["Creator"][0]
         data.item_ID = None
-        data.schedule_file_name = meta_data['Schedule_File_Name'][0]
-        data.start_datetime = meta_data["First_Start_DateTime"][0]
         data.schedule_file_name = meta_data["Schedule_File_Name"][0]
         data.start_datetime = meta_data["First_Start_DateTime"][0]
         data.creator = meta_data["Creator"][0]
 
-        # The following metadata is not implemented yet for SQL loader:
-        data.channel_number = None
-        data.item_ID = None
 
         # Generating a FileID project - needs to be updated to allow for db queries:
         fid = FileID(id_name)
@@ -308,12 +302,6 @@ class DataLoader(BaseLoader):
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
-        fix_datetime = kwargs.pop("fix_datetime", True)
-
-        set_index = kwargs.pop("set_index", True)
-
-        rename_headers = kwargs.pop("rename_headers", True)
-
         logging.debug(f"{kwargs=}")
         fix_datetime = kwargs.pop("fix_datetime", True)
         set_index = kwargs.pop("set_index", True)
@@ -447,7 +435,7 @@ class DataLoader(BaseLoader):
             datas_df.append(
                 raw_df.pivot(
                     index="Date_Time", columns="Data_Type", values="Data_Value"
-                )
+                ).reset_index()
             )
 
             # TODO: rename columns
