@@ -1,0 +1,99 @@
+enum TE_METAVAIABLE_CODE 		Data ID:	
+			
+MetaCode_PV_Voltage		21	
+MetaCode_PV_Currrent		22	
+MetaCode_PV_Steptime		3	
+MetaCode_PV_TestTime		4	
+MetaCode_PV_StepIndex		1	
+MetaCode_PV_CycleIndex		2	
+MetaCode_PV_ChargeCapacity		23	
+MetaCode_PV_Discharge Capacity		24	
+MetaCode_PV_ChargeEnergy		25	
+MetaCode_PV_DischargeEnergy		26	
+MetaCode_PV_InternalResistance		30	
+MetaCode_PV_ACR		6	
+MetaCode_PV_dVdt		27	
+MetaCode_PV_dldt		28	
+MetaCode_PV_PulseStageAveVol		14	
+MetaCode_PV_PulseAveVol		15	
+MetaCode_PV_PulseCycle		31	//0.8.25.2014 add ozj pulse
+MetaCode_LS_Voltage		121	
+MetaCode_LS_Currrent		122	
+MetaCode_LS_Steptime		103	
+MetaCode_LS_TestTime		104	
+MetaCode_LS_StepIndex		100	
+MetaCode_LS_CycleIndex		101	
+MetaCode_LS_ChargeCapacity		123	
+MetaCode_LS_Discharge Capacity		124	
+MetaCode_LS_ChargeEnergy		125	
+MetaCode_LS_DischargeEnergy		126	
+MetaCode_LS_InternalResistance		130	
+MetaCode_LS_ACR		131	
+MetaCode_LC_Voltage		221	
+MetaCode_LC_Currrent		222	
+MetaCode_LC_Steptime		252	
+MetaCode_LC_TestTime		218	
+MetaCode_LC_StepIndex		216	
+MetaCode_LC_CycleIndex		217	
+MetaCode_LC_ChargeCapacity		223	
+MetaCode_LC_Discharge Capacity		224	
+MetaCode_LC_ChargeEnergy		225	
+MetaCode_LC_DischargeEnergy		226	
+MetaCode_LC_InternalResistance		219	
+MetaCode_LC_ACR		220	
+MetaCode_DV_Time		16	
+MetaCode_DV_Current		17	
+MetaCode_DV_Voltage		18	
+MetaCode_DV_PulseCycle		19	//08.25.2014 add ozj pulse
+MetaCode_TC_Counter1		73	
+MetaCode_TC_Counter2		74	
+MetaCode_TC_Counter3		75	
+MetaCode_TC_Counter4		76	
+MetaCode_TC_Timer1		61	
+MetaCode_TC_Timer2		62	
+MetaCode_TC_Timer3		63	
+MetaCode_TC_Timer4		64	
+MetaCode_TC_ChargeCapacity1		65	
+MetaCode_TC_ChargeCapacity2		66	
+MetaCode_TC_DischargeCapacity1		67	
+MetaCode_TC_DischargeCapacity2		68	
+MetaCode_TC_ChargeEnergy1		69	
+MetaCode_TC_ChargeEnergy2		70	
+MetaCode_TC_DischargeEnergy1		71	
+MetaCode_TC_DischargeEnergy2		72	
+MetaCode_MV_Mass		29	
+MetaCode_MV_SpecificCpacity		8	
+MetaCode_MV_NorminalCapacity		9	
+MetaCode_MV_IHmin		33	
+MetaCode_MV_IHmax		34	
+MetaCode_MV_IMmin		35	
+MetaCode_MV_IMmax		36	
+MetaCode_MV_ILmin		37	
+MetaCode_MV_ILmax		38	
+MetaCode_MV_VHmin		39	
+MetaCode_MV_VHmax		40	
+MetaCode_MV_VLmin		43	
+MetaCode_MV_VLmax		44	
+MetaCode_MV_NorminalVoltage		46	
+MetaCode_MV_MV_Count		255	
+MetaCode_PV_d2Vd2t		45	
+MetaCode_PV_Aux_Value			
+MetaCode_PV_Buildin_V1			
+MetaCode_PV_Buildin_V2			
+MetaCode_PV_Buildin_V3			
+MetaCode_PV_Buildin_V4			
+MetaCode_PV_Unit_DI1		253	
+MetaCode_PV_Unit_DI2		254	
+			
+enum TE_SCHEDULE_EVENT_RUNNING			
+			
+ST_EVENT_UNKNOWN		0	
+ST_EVENT_STARTED		1	
+ST_EVENT_STOPPED		2	// Stop - The first layer determination process event
+ST_EVENT_LIMITREACH		8	
+ST_EVENT_BACKTONORMAL		20	
+ST_EVENT_JUMP		21	
+ST_EVENT_GOSTOP		22	
+ST_EVENT_LIMITCHANGE		23	
+ST_EVENT_ACIMRELAYON		24	
+ST_EVENT_ACIMRELAYOFF		25	
