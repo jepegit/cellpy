@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-"""arbin MS SQL Server data"""
-""" Modified to work with MITS 7.0"""
-=======
 """arbin MS SQL Server data for MITS 7.0"""
 
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
 import datetime
 import logging
 import os
@@ -220,17 +215,14 @@ class DataLoader(BaseLoader):
     @staticmethod
     def get_raw_units():
         raw_units = dict()
-<<<<<<< HEAD
         raw_units["current"] = 1.0  # A
         raw_units["charge"] = 1.0  # Ah
         raw_units["mass"] = 1.0  # g
         raw_units["voltage"] = 1.0  # V
-=======
         raw_units["current"] = "A"
         raw_units["charge"] = "Ah"
         raw_units["mass"] = "g"
         raw_units["voltage"] = "V"
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
         return raw_units
 
     @staticmethod
@@ -261,12 +253,10 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-<<<<<<< HEAD
-=======
+
         warnings.warn(
             "This loader is under development and might be missing some features."
         )
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
         new_tests = []
 
         data_df, meta_data = self._query_sql(name)
@@ -274,11 +264,8 @@ class DataLoader(BaseLoader):
 
         # init data
 
-<<<<<<< HEAD
         # selecting only one value (might implement multi-channel/id use later)
-=======
         # selecting only one value (might implement id selection later)
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
         test_id = meta_data["Test_ID"].iloc[0]
         id_name = f"{SQL_SERVER}:{name}:{test_id}"
 
@@ -289,7 +276,6 @@ class DataLoader(BaseLoader):
         data.channel_index = channel_id
         data.test_ID = test_id
         data.test_name = name
-<<<<<<< HEAD
 
         # The following meta data is not implemented yet for SQL loader:
         data.channel_number = None
@@ -297,7 +283,6 @@ class DataLoader(BaseLoader):
         data.item_ID = None
         data.schedule_file_name = meta_data['Schedule_File_Name'][0]
         data.start_datetime = meta_data["First_Start_DateTime"][0]
-=======
         data.schedule_file_name = meta_data["Schedule_File_Name"][0]
         data.start_datetime = meta_data["First_Start_DateTime"][0]
         data.creator = meta_data["Creator"][0]
@@ -305,7 +290,6 @@ class DataLoader(BaseLoader):
         # The following metadata is not implemented yet for SQL loader:
         data.channel_number = None
         data.item_ID = None
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
 
         # Generating a FileID project - needs to be updated to allow for db queries:
         fid = FileID(id_name)
@@ -313,13 +297,10 @@ class DataLoader(BaseLoader):
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
-<<<<<<< HEAD
         # data.summary = stat_df
         data = self._post_process(data)
-=======
-        data = self._post_process(data)
+
         # TODO: implement this:
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
         # data = self.identify_last_data_point(data)
         new_tests.append(data)
 
@@ -327,19 +308,16 @@ class DataLoader(BaseLoader):
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
-<<<<<<< HEAD
         fix_datetime = kwargs.pop("fix_datetime", True)
 
         set_index = kwargs.pop("set_index", True)
 
         rename_headers = kwargs.pop("rename_headers", True)
 
-=======
         logging.debug(f"{kwargs=}")
         fix_datetime = kwargs.pop("fix_datetime", True)
         set_index = kwargs.pop("set_index", True)
         rename_headers = kwargs.pop("rename_headers", True)
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
         extract_start_datetime = kwargs.pop("extract_start_datetime", True)
 
         # TODO:  insert post-processing and div tests here
@@ -350,10 +328,7 @@ class DataLoader(BaseLoader):
         from pprint import pprint
 
         if rename_headers:
-<<<<<<< HEAD
-=======
             logging.debug("rename headers: True")
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
             columns = {}
             for key in self.arbin_headers_normal:
                 old_header = normal_headers_renaming_dict.get(key, None)
@@ -378,11 +353,7 @@ class DataLoader(BaseLoader):
                 logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:
-<<<<<<< HEAD
-=======
             logging.debug("fix date_time: true")
-
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
             h_datetime = self.cellpy_headers_normal.datetime_txt
             logging.debug("converting to datetime format")
 
@@ -408,38 +379,8 @@ class DataLoader(BaseLoader):
     def _query_sql(self, name):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
-<<<<<<< HEAD
         
-        # prepare engine
-        params = urllib.parse.quote_plus(f"DRIVER={SQL_DRIVER};"
-                                         f"SERVER={SQL_SERVER};"
-                                         f"DATABASE=ArbinMasterData;"
-                                         f"UID={SQL_UID};"
-                                         f"PWD={SQL_PWD}")
-        
-        # Create engine to SQL server using SQLAlchemy (mssql+pyodbc)
-        con_url = ("mssql+pyodbc:///?odbc_connect={}".format(params))
-        engine=sqlalchemy.create_engine(con_url)
-               
-        # Initial query to obtain metadata info on cell with 'name'
-
-        master_q = (
-             "SELECT ArbinMasterData.dbo.TestIVChList_Table.*, "
-             "ArbinMasterData.dbo.TestList_Table.* FROM "
-             "ArbinMasterData.dbo.TestIVChList_Table "
-             "JOIN ArbinMasterData.dbo.TestList_Table "
-             "ON ArbinMasterData.dbo.TestIVChList_Table.Test_ID = "
-             "ArbinMasterData.dbo.TestList_Table.Test_ID "
-             f"WHERE ArbinMasterData.dbo.TestList_Table.Test_Name IN {name_str}"
-             )
-        with engine.connect() as connection:
-            meta_data = pd.read_sql(master_q, connection)
-        
-        # drop duplicate columns
-        meta_data= meta_data.loc[:,~meta_data.columns.duplicated()].copy()
-=======
-
-        # prepare engine
+         # prepare engine
         params = urllib.parse.quote_plus(
             f"DRIVER={SQL_DRIVER};"
             f"SERVER={SQL_SERVER};"
@@ -468,7 +409,6 @@ class DataLoader(BaseLoader):
 
         # drop duplicate columns
         meta_data = meta_data.loc[:, ~meta_data.columns.duplicated()].copy()
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
 
         # query data
         datas_df = []
@@ -476,30 +416,6 @@ class DataLoader(BaseLoader):
         for index, row in meta_data.iterrows():
             # TODO: use variables - see above
             # TODO: consider to use f-strings
-<<<<<<< HEAD
-            
-            # MITS 7 organizes raw channel data by Channel_ID and Date_Time, so the
-            # data query requires that we filter by these tables from the events table. 
-            # Also, Date_Time is 7 orders higher than standard datetime, hence the additional 
-            # zeroes in the query.                  
-            data_query = (
-                "SELECT "
-                + str(row["Database_Name"])+ f".dbo.Channel_RawData_Table.* "
-                "FROM " + str(row["Database_Name"]) + ".dbo.Channel_RawData_Table "            
-                " WHERE "+ str(row["Database_Name"]) +".dbo.Channel_RawData_Table.Channel_ID = "
-                + str(row["IV_Ch_ID"]) + 
-                " AND " + str(row["Database_Name"]) +".dbo.Channel_RawData_Table.Date_Time >= "
-                +str(row["First_Start_DateTime"]) + str('0000000')+
-                " AND "+ str(row["Database_Name"]) +".dbo.Channel_RawData_Table.Date_Time <= "
-                +str(row["Last_End_DateTime"]) + str('0000000')
-                )
-            
-            with engine.connect() as connection:
-                raw_df=pd.read_sql(data_query, connection)
-            
-            # sort dataframe via pivot table:
-            datas_df.append(raw_df.pivot(index='Date_Time',columns='Data_Type',values='Data_Value').reset_index())
-=======
 
             # MITS 7 organizes raw channel data by Channel_ID and Date_Time, so the
             # data query requires that we filter by these tables from the events table.
@@ -533,7 +449,6 @@ class DataLoader(BaseLoader):
                     index="Date_Time", columns="Data_Type", values="Data_Value"
                 )
             )
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
 
             # TODO: rename columns
             #   21: PV_Voltage
@@ -545,7 +460,6 @@ class DataLoader(BaseLoader):
             #   27: PV_dVdt
             #   30: PV_InternalResistance
             # Full column key found in 'SQL Table IDs.txt' file.
-<<<<<<< HEAD
                                
         data_df = pd.concat(datas_df, axis=0)
 
@@ -669,10 +583,4 @@ if __name__ == "__main__":
     # test_query()
     # cell = test_loader()
     check_get()
-=======
 
-        event_df = pd.concat(events_df, axis=0)
-        data_df = pd.concat(datas_df, axis=0)
-
-        return data_df, meta_data
->>>>>>> c2b35784a145407d2a7a0e2932f4295469b33832
