@@ -331,7 +331,6 @@ class DataLoader(BaseLoader):
 
         if fix_datetime:
             h_datetime = self.cellpy_headers_normal.datetime_txt
-            print(h_datetime)
             logging.debug("converting to datetime format")
 
             data.raw[h_datetime] = data.raw[h_datetime].apply(from_arbin_to_datetime)
@@ -412,7 +411,7 @@ class DataLoader(BaseLoader):
                 raw_df=pd.read_sql(data_query, connection)
             
             # sort dataframe via pivot table:
-            datas_df.append(raw_df.pivot(index='Date_Time',columns='Data_Type',values='Data_Value'))
+            datas_df.append(raw_df.pivot(index='Date_Time',columns='Data_Type',values='Data_Value').reset_index())
 
             # TODO: rename columns
             #   21: PV_Voltage
