@@ -528,9 +528,6 @@ class DataLoader(BaseLoader):
 
         # creating temporary file and connection
         self._shutil_copy2(file_name)
-        # temp_dir = tempfile.gettempdir()
-        # temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        # shutil.copy2(file_name, temp_dir)
 
         constr = self._get_res_connector(self._temp_file_path)
         if use_ado:
@@ -613,148 +610,8 @@ class DataLoader(BaseLoader):
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
 
-    def investigate(self, file_name):  # Deprecated - use on own risk
-        """Investigate a .res file.
-
-        Args:
-            file_name: name of the file
-
-        Returns: dictionary with div. stats and info.
-
-        """
-        step_txt = self.arbin_headers_normal.step_index_txt
-        point_txt = self.arbin_headers_normal.data_point_txt
-        cycle_txt = self.arbin_headers_normal.cycle_index_txt
-
-        self.logger.debug("investigating file: %s" % file_name)
-        if not os.path.isfile(file_name):
-            print("Missing file_\n   %s" % file_name)
-
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.logger.info(txt)
-
-        table_name_global = TABLE_NAMES["global"]
-        table_name_stats = TABLE_NAMES["statistic"]
-        table_name_normal = TABLE_NAMES["normal"]
-
-        # creating temporary file and connection
-
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        shutil.copy2(file_name, temp_dir)
-        constr = self._get_res_connector(temp_filename)
-
-        if use_ado:
-            conn = dbloader.connect(constr)
-        else:
-            conn = dbloader.connect(constr, autocommit=True)
-
-        self.logger.debug("tmp file: %s" % temp_filename)
-        self.logger.debug("constr str: %s" % constr)
-
-        # --------- read global-data ------------------------------------
-        self.logger.debug("reading global data table")
-        sql = "select * from %s" % table_name_global
-        global_data_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
-        # col_names = list(global_data_df.columns.values)
-        self.logger.debug("sql statement: %s" % sql)
-
-        tests = global_data_df[self.arbin_headers_normal.test_id_txt]
-        number_of_sets = len(tests)
-        self.logger.debug("number of datasets: %i" % number_of_sets)
-        self.logger.debug("only selecting first test")
-        test_no = 0
-        self.logger.debug("setting data for test number %i" % test_no)
-        loaded_from = file_name
-        # fid = FileID(file_name)
-        start_datetime = global_data_df[
-            self.arbin_headers_global["start_datetime_txt"]
-        ][test_no]
-        _internal_test_number = int(
-            global_data_df[self.arbin_headers_normal.test_id_txt][test_no]
-        )  # OBS
-        test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][test_no]
-
-        # --------- read raw-data (normal-data) -------------------------
-        self.logger.debug("reading raw-data")
-
-        columns = ["Data_Point", "Step_Index", "Cycle_Index"]
-        columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
-
-        sql_1 = "select %s " % columns_txt
-        sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (
-            self.arbin_headers_normal.test_id_txt,
-            _internal_test_number,
-        )
-        sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
-        import time
-
-        info_list = []
-        info_header = ["cycle", "step", "row_count", "start_point", "end_point"]
-        self.logger.info(" ".join(info_header))
-        self.logger.info("-------------------------------------------------")
-        for cycle_number in range(1, 2000):
-            t1 = time.time()
-            self.logger.debug("picking cycle %i" % cycle_number)
-            sql_4 = "AND %s=%i " % (cycle_txt, cycle_number)
-            sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
-            self.logger.debug("sql statement: %s" % sql)
-            normal_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
-            t2 = time.time()
-            dt = t2 - t1
-            self.logger.debug("time: %f" % dt)
-            if normal_df.empty:
-                self.logger.debug("reached the end")
-                break
-            row_count, _ = normal_df.shape
-            steps = normal_df[self.arbin_headers_normal.step_index_txt].unique()
-            txt = "cycle %i: %i [" % (cycle_number, row_count)
-            for step in steps:
-                self.logger.debug(" step: %i" % step)
-                step_df = normal_df.loc[normal_df[step_txt] == step]
-                step_row_count, _ = step_df.shape
-                start_point = step_df[point_txt].min()
-                end_point = step_df[point_txt].max()
-                txt += " %i-(%i)" % (step, step_row_count)
-                step_list = [cycle_number, step, step_row_count, start_point, end_point]
-                info_list.append(step_list)
-
-            txt += "]"
-            self.logger.info(txt)
-
-        self._clean_up_loadres(None, conn, temp_filename)
-        info_dict = pd.DataFrame(info_list, columns=info_header)
-        return info_dict
-
     def repair(self, file_name):
         """try to repair a broken/corrupted file"""
-        raise NotImplemented
-
-    def dump(self, file_name, path):
-        """Dumps the raw file to an intermediate hdf5 file.
-
-        This method can be used if the raw file is too difficult to load and it
-        is likely that it is more efficient to convert it to an hdf5 format
-        and then load it using the `from_intermediate_file` function.
-
-        Args:
-            file_name: name of the raw file
-            path: path to where to store the intermediate hdf5 file (optional)
-
-        Returns:
-            full path to stored intermediate hdf5 file
-            information about the raw file (needed by the
-            `from_intermediate_file` function)
-
-        """
-
-        # information = None # contains information needed by the from_
-        # intermediate_file reader
-        # full_path = None
-        # return full_path, information
         raise NotImplemented
 
     def _query_table(self, table_name, conn, sql=None):
@@ -943,7 +800,6 @@ class DataLoader(BaseLoader):
         self,
         file_name,
         temp_filename,
-        temp_dir,
         *args,
         bad_steps=None,
         dataset_number=None,
@@ -1076,8 +932,10 @@ class DataLoader(BaseLoader):
         self.name = pathlib.Path(file_name)
 
         self._shutil_copy2(file_name)
-        temp_filename = self._temp_file_path
+        temp_filename = self.temp_file_path
+        temp_dir = temp_filename.parent
         self.logger.debug("tmp file: %s" % temp_filename)
+        sef.logger.debug("tmp file: %s" % temp_filename)
 
         filesize = os.path.getsize(temp_filename)
         hfilesize = humanize_bytes(filesize)
