@@ -800,6 +800,7 @@ class DataLoader(BaseLoader):
         self,
         file_name,
         temp_filename,
+        temp_dir,
         *args,
         bad_steps=None,
         dataset_number=None,
