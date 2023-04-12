@@ -39,11 +39,35 @@ from cellpy.parameters.internal_settings import (
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
-URI_PREFIXES = ["ssh://", "sftp://"]
+URI_PREFIXES = ["ssh:", "sftp:", "http:", "https:", "ftp:", "ftps:" "smb:"]
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
 Q = ureg.Quantity
+
+
+def _check_external(path_string):
+
+    path_sep =  pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
+
+    _is_external = False
+    _location = ""
+    _uri_prefix = ""
+    if not isinstance(path_string, str):
+        if isinstance(path_string, pathlib.WindowsPath):
+            path_string = "/".join(path_string.parts)
+        else:
+            path_string = str(path_string)
+    for prefix in URI_PREFIXES:
+        if path_string.startswith(prefix):
+            path_string = path_string.replace(prefix, "")
+            path_string = path_string.lstrip("/")
+            _is_external = True
+            _uri_prefix = prefix + "//"
+            _location, *rest = path_string.split("/")
+            path_string = "/" + "/".join(rest)
+            break
+    return path_string, _is_external, _uri_prefix, _location
 
 
 class OtherPath(pathlib.Path):
@@ -62,18 +86,25 @@ class OtherPath(pathlib.Path):
         cls._location = ""
         cls._uri_prefix = ""
         if not args:
-            return super().__new__(cls, **kwargs)
+            return super().__new__(cls, *args, **kwargs)
 
         path_string, *args = args
-        if isinstance(path_string, str):
-            for prefix in URI_PREFIXES:
-                if path_string.startswith(prefix):
-                    path_string = path_string.replace(prefix, "")
-                    cls._is_external = True
-                    cls._uri_prefix = prefix
-                    cls._location, *rest = path_string.split("/")
-                    path_string = "/" + "/".join(rest)
+        path_string, cls._is_external, cls._uri_prefix, cls._location = _check_external(path_string)
         return super().__new__(cls, path_string, *args, **kwargs)
+
+    # def __init__(self, *args, **kwargs):
+    #     path_string, *args = args
+    #     # self._check_external(path_string)
+    #     super().__init__(*args, **kwargs)
+
+    def _check_external(self, path_string):
+        path_string, self._is_external, self._uri_prefix, self._location = _check_external(path_string)
+
+    def resolve(self, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
+            return self
+        return super().resolve(*args, **kwargs)
 
     @property
     def is_external(self):
@@ -1177,7 +1208,8 @@ def check_another_path_things():
     p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p04 = r"..\data\20160805_test001_45_cc_01.res"
     p05 = pathlib.Path(p01)
-    for p in [p01, p02, p03, p04, p05]:
+    p06 = pathlib.Path(p02)
+    for p in [p01, p02, p03, p04, p05, p06]:
         print(f"{p}".center(110, "-"))
         p2 = OtherPath(p)
         print(f"{p2=}")
@@ -1203,6 +1235,20 @@ def check_another_path_things():
         print(f"{p2.suffixes=}")
         print(f"{p2.parts=}")
         print()
+
+
+def check_how_other_path_works():
+    p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@odin.ad.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p04 = r"..\data\20160805_test001_45_cc_01.res"
+    p05 = pathlib.Path(p01)
+    for p in [p01, p02, p03, p04, p05]:
+        print(f"{p}".center(110, "-"))
+        p2 = OtherPath(p)
+        print(f"{p2.is_external=}")
+        print(f"{p2.location=}")
+        print(f"{p2.uri_prefix=}")
 
 
 if __name__ == "__main__":

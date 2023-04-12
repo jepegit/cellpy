@@ -64,6 +64,7 @@ from cellpy.parameters.internal_settings import (
 )
 
 from cellpy.readers.core import (
+    OtherPath,
     Data,
     FileID,
     identify_last_data_point,
@@ -927,6 +928,7 @@ class CellpyCell:
         # TODO @jepe Make setting or prm so that it is possible to update only new data
         # TODO @jepe Allow passing handle to progress-bar or update a global progressbar
 
+        warnings.warn(DeprecationWarning("loadcell is deprecated. Use cellpy.get instead."))
         logging.debug("Started cellpy.cellreader.loadcell ")
 
         if cellpy_file is None:
@@ -1274,8 +1276,9 @@ class CellpyCell:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
             # TODO 249: this needs an update:
-            if is_a_file and not Path(file_name).is_file():
-                raise NoDataFound(f"Could not find the file {file_name}")
+            if is_a_file and not OtherPath(file_name).is_external:
+                if not Path(file_name).is_file():
+                    raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
                 file_name, pre_processor_hook=pre_processor_hook, **kwargs

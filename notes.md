@@ -80,5 +80,7 @@ Steps:
       added to the Data instances using self.fid as argument.
 
 
-3. Next: modify AtomicLoad in base.py so that it can handle
+3. Modify AtomicLoad in base.py so that it can handle
    the new Path subclass and use it to load files from a remote server.
+   1. After some trail and errors, the next step now will be to implement the
+      actual ssh connection and file transfer in AtomicLoad or in OtherPath

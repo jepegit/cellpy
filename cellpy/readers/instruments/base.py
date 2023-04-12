@@ -176,6 +176,7 @@ class AtomicLoad:
     _temp_file_path = None
     _fid = None
     _is_db: bool = False
+    _copy_also_local: bool = True
 
     @property
     def is_db(self):
@@ -230,12 +231,39 @@ class AtomicLoad:
         else:
             raise ValueError("could not generate fid")
 
-    def _shutil_copy2(self, *args, **kwargs):
+    def _shutil_copy2_local(self):
+        """Copy file to a temporary file"""
         temp_dir = pathlib.Path(tempfile.gettempdir())
         temp_filename = temp_dir / self.name.name
         shutil.copy2(self.name, temp_dir)
         logging.debug(f"tmp file: {temp_filename}")
         self._temp_file_path = temp_filename
+
+    def _shutil_copy2_external(self):
+        """Copy file to a temporary file"""
+        location = self.name.location
+        uri_prefix = self.name.uri_prefix
+        logging.debug(f"{location=}, {uri_prefix=}")
+
+        temp_dir = pathlib.Path(tempfile.gettempdir())
+        temp_filename = temp_dir / self.name.name
+        # shutil.copy2(self.name, temp_dir)
+        self._temp_file_path = temp_filename
+        raise NotImplementedError("NON LOCAL FILES NOT IMPLEMENTED YET")
+
+    def _shutil_copy2(self):
+        """Copy file to a temporary file"""
+        logging.debug(f"external file received? {self.name.is_external=}")
+        if self.name is None:
+            raise ValueError("no file name given to loader class (self.name is None)")
+
+        if not self.name.is_external:
+            if not self._copy_also_local:
+                self._temp_file_path = self.name
+            else:
+                self._shutil_copy2_local()
+            return
+        self._shutil_copy2_external()
 
 
 class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):

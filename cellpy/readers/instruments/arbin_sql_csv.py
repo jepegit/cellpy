@@ -316,7 +316,7 @@ def check_seamless_files():
     names = [name1, name2]
     cell_data = cellreader.CellpyCell()
     cell_data.set_instrument("arbin_sql_csv")
-    cell_data.loadcell(names, mass=0.016569)
+    cell_data.from_raw(names, mass=0.016569)
 
 
 if __name__ == "__main__":
