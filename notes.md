@@ -69,7 +69,16 @@ Steps:
 4. clean up dbreader (in progress)
 5. implement/test using an ORM (SQAlchemy?) (in progress)
 
-
 ### 250-improve-collectors
 
 ### 249-access-raw-files-ssh
+1. Added a subclass of pathlib.Path that can be used to access files on a remote server using ssh.
+2. Added new methods to the base loader and implemented new restrictions/requirements on the loaders.
+   1. all .loader methods must now start with assigning self.name and
+      running self._shutil_copy2() to copy the file to a local temporary
+   2. fid is generated through running self.generate_fid() and fid is
+      added to the Data instances using self.fid as argument.
+
+
+3. Next: modify AtomicLoad in base.py so that it can handle
+   the new Path subclass and use it to load files from a remote server.
