@@ -934,8 +934,8 @@ class DataLoader(BaseLoader):
         self._shutil_copy2(file_name)
         temp_filename = self.temp_file_path
         temp_dir = temp_filename.parent
-        self.logger.debug("tmp file: %s" % temp_filename)
-        sef.logger.debug("tmp file: %s" % temp_filename)
+        self.logger.debug(f"tmp file: {temp_filename}")
+        self.logger.debug(f"tmp dir: {temp_dir}")
 
         filesize = os.path.getsize(temp_filename)
         hfilesize = humanize_bytes(filesize)
