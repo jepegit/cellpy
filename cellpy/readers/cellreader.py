@@ -693,6 +693,7 @@ class CellpyCell:
             return
         self.cellpy_datadir = directory
 
+    # TODO 249: update this so that it is aligned with OtherPaths etc
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
@@ -742,7 +743,7 @@ class CellpyCell:
 
     def _check_raw(self, file_names, abort_on_missing=False):
         """Get the file-ids for the res_files."""
-
+        # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
         strip_file_names = True
         check_on = self.filestatuschecker
         if not self._is_listtype(file_names):
@@ -1220,7 +1221,7 @@ class CellpyCell:
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
                 cellpy.Dataset object after initial loading.
-            is_a_file (bool): performs a is_file check if set to True.
+            is_a_file (bool): performs an is_file check if set to True.
 
         Keyword Args for merging:
             recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
@@ -1272,6 +1273,7 @@ class CellpyCell:
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
+            # TODO 249: this needs an update:
             if is_a_file and not Path(file_name).is_file():
                 raise NoDataFound(f"Could not find the file {file_name}")
 
@@ -2178,6 +2180,7 @@ class CellpyCell:
             warnings.warn("seems you lost info about your raw-data (missing fids)")
         return fidtable
 
+    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
     def _convert2fid_list(self, tbl):
         # used when reading cellpy-file
         logging.debug("converting loaded fid-table to FileID object")

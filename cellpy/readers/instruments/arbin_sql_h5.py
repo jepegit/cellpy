@@ -108,8 +108,9 @@ class DataLoader(BaseLoader):
         Returns:
             data object
         """
-
-        data_dfs = self._parse_h5_data(name)
+        self.name = name
+        self._shutil_copy2()
+        data_dfs = self._parse_h5_data()
         data = Data()
 
         # some metadata is available in the info_df part of the h5 file
@@ -124,8 +125,8 @@ class DataLoader(BaseLoader):
         data.nom_cap = data_dfs["info_df"]["SpecificCapacity"].iloc[0]
 
         # Generating a FileID project:
-        fid = FileID(name)
-        data.raw_data_files.append(fid)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         data.raw = data_dfs["data_df"]
         data.raw_data_files_length.append(len(data_dfs["data_df"]))
@@ -176,7 +177,8 @@ class DataLoader(BaseLoader):
 
         return data
 
-    def _parse_h5_data(self, file_name):
+    def _parse_h5_data(self):
+        file_name = self.temp_file_path
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
         file_name = pathlib.Path(file_name)
 

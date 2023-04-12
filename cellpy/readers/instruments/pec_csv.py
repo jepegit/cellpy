@@ -44,7 +44,7 @@ class DataLoader(BaseLoader):
     def __init__(self, *args, **kwargs):
         self.headers_normal = (
             get_headers_normal()
-        )  # should consider to move this to the Loader class
+        )  # should consider moving this to the Loader class
         self.current_chunk = 0  # use this to set chunks to load
         self.pec_data = None
         self.pec_log = None
@@ -58,7 +58,6 @@ class DataLoader(BaseLoader):
             "#END RESULTS CHECK\n",
         ]  # Ignores number of delimiters in between
         self.pec_file_delimiter = ","
-        self.filename = None
         self.number_of_header_lines = None  # Number of header lines is not constant
         self.cellpy_headers = (
             get_headers_normal()
@@ -85,7 +84,7 @@ class DataLoader(BaseLoader):
         # A list with all the variable keywords without any prefixes, used as search terms
         header = self.variable_header_keywords
 
-        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=1)
+        data = pd.read_csv(self.temp_file_path, skiprows=self.number_of_header_lines, nrows=1)
 
         # Searching for the prefix for all the variable units
         for item in data.keys():
@@ -112,7 +111,7 @@ class DataLoader(BaseLoader):
             "(Seconds)": 1,
         }
 
-        data = pd.read_csv(self.filename, skiprows=self.number_of_header_lines, nrows=0)
+        data = pd.read_csv(self.temp_file_path, skiprows=self.number_of_header_lines, nrows=0)
         pec_times = dict()
 
         # Adds the time variables and their units to the pec_times dictonary return value
@@ -192,19 +191,12 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def loader(self, file_name, bad_steps=None, **kwargs):
-        if not os.path.isfile(file_name):
-            self.logger.info("Missing file_\n   %s" % file_name)
-            return None
-
-        self.filename = file_name
+        self.name = file_name
+        self._shutil_copy2()
         self.number_of_header_lines = self._find_header_length()
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        logging.debug(txt)
-
         data = Data()
-        fid = FileID(file_name)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         # div parameters and information (probably load this last)
         data.loaded_from = file_name
@@ -215,11 +207,9 @@ class DataLoader(BaseLoader):
         data.schedule_file_name = None
         data.test_ID = None
         data.test_name = None
-        data.raw_data_files.append(fid)
 
         # --------- read raw-data (normal-data) -------------------------
-
-        self._load_pec_data(file_name, bad_steps)
+        self._load_pec_data(bad_steps)
         data.start_datetime = self.pec_settings["start_time"]
         length_of_test = self.pec_data.shape[0]
         logging.debug(f"length of test: {length_of_test}")
@@ -233,12 +223,14 @@ class DataLoader(BaseLoader):
             self.pec_data["cycle_index"] += 1
 
         data.raw = self.pec_data
-
         data.raw_data_files_length.append(length_of_test)
 
         return data
 
-    def _load_pec_data(self, file_name, bad_steps):
+    def _load_pec_data(self, bad_steps):
+        if bad_steps is not None:
+            warnings.warn("bad_steps is not implemented yet for this instrument")
+        file_name = self.temp_file_path
         number_of_header_lines = self.number_of_header_lines
 
         # ----------------- reading the data ---------------------
@@ -399,7 +391,7 @@ class DataLoader(BaseLoader):
         skiprows = 0
         resultscheck = False  # Ignore number of delimiters inside RESULTS CHECK
 
-        with open(self.filename, "r") as header:
+        with open(self.temp_file_path, "r") as header:
             for line in header:
                 if line in self.fake_header_length:
                     resultscheck = not resultscheck

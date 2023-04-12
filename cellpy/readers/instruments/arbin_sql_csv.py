@@ -152,7 +152,9 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        data_df = self._query_csv(name)
+        self.name = name
+        self._shutil_copy2()
+        data_df = self._query_csv(self.temp_file_path)
 
         data = Data()
 
@@ -160,14 +162,14 @@ class DataLoader(BaseLoader):
         data.loaded_from = name
         data.channel_index = None
         data.test_ID = None
-        data.test_name = name  # should fix this
+        data.test_name = self.name.name
         data.creator = None
         data.schedule_file_name = None
         data.start_datetime = None
 
         # Generating a FileID project:
-        fid = FileID(name)
-        data.raw_data_files.append(fid)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))

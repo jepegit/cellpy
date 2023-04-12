@@ -30,6 +30,7 @@ def load_nda(*args, **kwargs):
     print("dummy function (mock)")
     print(args)
     print(kwargs)
+    return None, None
 
 
 class DataLoader(BaseLoader):
@@ -84,6 +85,8 @@ class DataLoader(BaseLoader):
 
     def loader(self, file_name, *args, **kwargs):
         """Loads data into a DataSet object and returns it"""
+        self.name = file_name
+        self._shutil_copy2()
         test_no = 1
         channel_index = 1
         creator = "no name"
@@ -92,28 +95,19 @@ class DataLoader(BaseLoader):
         test_ID = 1
         test_name = "no name"
 
-        if not os.path.isfile(file_name):
-            self.logger.info("Missing file_\n   %s" % file_name)
-            return None
-
         self.logger.debug("in loader")
         self.logger.debug("filename: %s" % file_name)
 
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.logger.debug(txt)
-
         data = Data()
         data.loaded_from = file_name
-        fid = FileID(file_name)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
         data.channel_index = channel_index
         data.creator = creator
         data.schedule_file_name = schedule_file_name
         data.start_datetime = start_datetime
         data.test_ID = test_ID
         data.test_name = test_name
-        data.raw_data_files.append(fid)
 
         length_of_test, normal_df = load_nda()
 

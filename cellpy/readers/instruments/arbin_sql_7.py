@@ -253,8 +253,9 @@ class DataLoader(BaseLoader):
             "This loader is under development and might be missing some features."
         )
         new_tests = []
-
-        data_df, meta_data = self._query_sql(name)
+        self.name = name
+        self.is_db = True
+        data_df, meta_data = self._query_sql()
         aux_data_df = None  # Needs to be implemented
 
         # init data
@@ -278,9 +279,9 @@ class DataLoader(BaseLoader):
         data.channel_number = None
         data.item_ID = None
 
-        # Generating a FileID project - needs to be updated to allow for db queries:
-        fid = FileID(id_name)
-        data.raw_data_files.append(fid)
+        # Generating a FileID project:
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
@@ -356,8 +357,9 @@ class DataLoader(BaseLoader):
 
         return data
 
-    def _query_sql(self, name):
+    def _query_sql(self):
         # TODO: refactor and include optional SQL arguments
+        name = self.name
         name_str = f"('{name}', '')"
 
         # prepare engine

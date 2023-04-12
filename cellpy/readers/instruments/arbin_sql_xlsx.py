@@ -157,8 +157,9 @@ class DataLoader(BaseLoader):
         Returns:
             data object
         """
-
-        data_df = self._parse_xlsx_data(name)
+        self.name = name
+        self._shutil_copy2()
+        data_df = self._parse_xlsx_data()
         data = Data()
 
         # metadata is unfortunately not available for csv dumps
@@ -171,8 +172,8 @@ class DataLoader(BaseLoader):
         data.start_datetime = None
 
         # Generating a FileID project:
-        fid = FileID(name)
-        data.raw_data_files.append(fid)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
@@ -229,7 +230,8 @@ class DataLoader(BaseLoader):
 
         return data
 
-    def _parse_xlsx_data(self, file_name):
+    def _parse_xlsx_data(self):
+        file_name = self.temp_file_path
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
         file_name = pathlib.Path(file_name)
         xlsx_file = pd.ExcelFile(file_name)

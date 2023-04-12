@@ -1,6 +1,7 @@
 """arbin res-type data files"""
 import logging
 import os
+import pathlib
 import platform
 import shutil
 import sys
@@ -400,7 +401,6 @@ class DataLoader(BaseLoader):
         self.logger.debug(f"constr str: {constr}")
         if use_ado:
             raise DeprecationWarning("use_ado not supported anymore")
-            return None
         else:
             connection_url = sa.engine.URL.create(
                 "access+pyodbc", query={"odbc_connect": constr}
@@ -527,17 +527,18 @@ class DataLoader(BaseLoader):
         table_name_normal = TABLE_NAMES["normal"]
 
         # creating temporary file and connection
+        self._shutil_copy2(file_name)
+        # temp_dir = tempfile.gettempdir()
+        # temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
+        # shutil.copy2(file_name, temp_dir)
 
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        shutil.copy2(file_name, temp_dir)
-        constr = self._get_res_connector(temp_filename)
+        constr = self._get_res_connector(self._temp_file_path)
         if use_ado:
             conn = dbloader.connect(constr)
         else:
             conn = dbloader.connect(constr, autocommit=True)
 
-        self.logger.debug("tmp file: %s" % temp_filename)
+        self.logger.debug("tmp file: %s" % self._temp_file_path)
         self.logger.debug("constr str: %s" % constr)
 
         # --------- read global-data ------------------------------------
@@ -608,7 +609,7 @@ class DataLoader(BaseLoader):
             step_list.extend([last[x] for x in headers])
             info_list.append(step_list)
 
-        self._clean_up_loadres(None, conn, temp_filename)
+        self._clean_up_loadres(None, conn, self._temp_file_path)
         info_dict = pd.DataFrame(info_list, columns=info_header)
         return info_dict
 
@@ -1070,14 +1071,15 @@ class DataLoader(BaseLoader):
         """
         # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
 
-        if not os.path.isfile(file_name):
-            self.logger.info("Missing file_\n   %s" % file_name)
-            return None
-
         self.logger.debug("in loader")
         self.logger.debug("filename: %s" % file_name)
+        self.name = pathlib.Path(file_name)
 
-        filesize = os.path.getsize(file_name)
+        self._shutil_copy2(file_name)
+        temp_filename = self._temp_file_path
+        self.logger.debug("tmp file: %s" % temp_filename)
+
+        filesize = os.path.getsize(temp_filename)
         hfilesize = humanize_bytes(filesize)
         txt = "Filesize: %i (%s)" % (filesize, hfilesize)
         self.logger.debug(txt)
@@ -1090,11 +1092,6 @@ class DataLoader(BaseLoader):
             error_message += "(edit prms.Instruments.Arbin ['max_res_filesize'])\n"
             print(error_message)
             return None
-
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        shutil.copy2(file_name, temp_dir)
-        self.logger.debug("tmp file: %s" % temp_filename)
 
         use_mdbtools = False
         if use_subprocess:
@@ -1128,8 +1125,8 @@ class DataLoader(BaseLoader):
 
         return new_test
 
+    @staticmethod
     def _create_tmp_files(
-        self,
         table_name_global,
         table_name_normal,
         table_name_stats,
@@ -1161,7 +1158,7 @@ class DataLoader(BaseLoader):
                     subprocess.call(
                         [sub_process_path, temp_filename, table_name], stdout=f
                     )
-                    self.logger.debug(f"ran mdb-export {str(f)} {table_name}")
+                    logging.debug(f"ran mdb-export {str(f)} {table_name}")
                 except FileNotFoundError as e:
                     logging.critical(
                         f"Could not run {sub_process_path} on {temp_filename}"
@@ -1275,13 +1272,13 @@ class DataLoader(BaseLoader):
                 try:
                     os.remove(f)
                 except WindowsError as e:
-                    self.logger.warning(f"could not remove tmp-file\n{f} {e}")
+                    logging.warning(f"could not remove tmp-file\n{f} {e}")
         return length_of_test, normal_df, summary_df, aux_global_df, aux_df
 
     def _init_data(self, file_name, global_data_df, test_no):
         data = Data()
         data.loaded_from = file_name
-        fid = FileID(file_name)
+        self.generate_fid()
         # name of the .res file it is loaded from:
         # data.parent_filename = os.path.basename(file_name)
         data.channel_index = int(
@@ -1302,7 +1299,7 @@ class DataLoader(BaseLoader):
         data.test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][
             test_no
         ]
-        data.raw_data_files.append(fid)
+        data.raw_data_files.append(self.fid)
         return data
 
     def _normal_table_generator(self, **kwargs):

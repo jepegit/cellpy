@@ -373,7 +373,7 @@ def test_fid(cellpy_data_instance, parameters):
 
 def test_only_fid(parameters):
     from cellpy.readers.core import FileID
-
+    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
     my_fid_one = FileID()
     my_file = parameters.cellpy_file_path
     my_fid_one.populate(my_file)

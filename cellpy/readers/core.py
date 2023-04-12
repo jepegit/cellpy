@@ -212,7 +212,13 @@ class FileID:
 
     """
 
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, is_db=False):
+        """Initialize the FileID class."""
+        self.is_db = is_db
+        if self.is_db:
+            self._from_db(filename)
+            return
+
         make_defaults = True
         if filename:
             if os.path.isfile(filename):
@@ -238,21 +244,38 @@ class FileID:
             self._last_data_point = 0  # to be used later when updating is implemented
 
     def __str__(self):
-        txt = "\n<fileID>\n"
+        if self.is_db:
+            txt = "\n<fileID><is_db>\n"
+        else:
+            txt = "\n<fileID><is_file>\n"
+
         txt += f"full name: {self.full_name}\n"
         txt += f"name: {self.name}\n"
         txt += f"location: {self.location}\n"
+
         if self.last_modified is not None:
             txt += f"modified: {self.last_modified}\n"
         else:
             txt += "modified: NAN\n"
+
         if self.size is not None:
             txt += f"size: {self.size}\n"
         else:
             txt += "size: NAN\n"
 
         txt += f"last data point: {self.last_data_point}\n"
+
         return txt
+
+    def _from_db(self, filename):
+        self.name = filename
+        self.full_name = filename
+        self.size = 0
+        self.last_modified = None
+        self.last_accessed = None
+        self.last_info_changed = None
+        self.location = None
+        self._last_data_point = 0
 
     @property
     def last_data_point(self):
@@ -1153,10 +1176,12 @@ def check_another_path_things():
     p02 = r"ssh://jepe@odin.ad.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p04 = r"..\data\20160805_test001_45_cc_01.res"
-    for p in [p01, p02, p03, p04]:
+    p05 = pathlib.Path(p01)
+    for p in [p01, p02, p03, p04, p05]:
         print(f"{p}".center(110, "-"))
         p2 = OtherPath(p)
         print(f"{p2=}")
+        print(p2)
         print(f"{p2.resolve()=}")
         print(f"{p2.drive=}")
         print(f"{p2.exists()=}")
