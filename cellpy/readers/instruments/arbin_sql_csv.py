@@ -153,7 +153,7 @@ class DataLoader(BaseLoader):
             new_tests (list of data objects)
         """
         self.name = name
-        self._shutil_copy2()
+        self.copy_to_temporary()
         data_df = self._query_csv(self.temp_file_path)
 
         data = Data()

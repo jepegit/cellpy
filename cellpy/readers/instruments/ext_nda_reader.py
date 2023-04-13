@@ -86,7 +86,7 @@ class DataLoader(BaseLoader):
     def loader(self, file_name, *args, **kwargs):
         """Loads data into a DataSet object and returns it"""
         self.name = file_name
-        self._shutil_copy2()
+        self.copy_to_temporary()
         test_no = 1
         channel_index = 1
         creator = "no name"

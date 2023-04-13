@@ -247,11 +247,10 @@ class AtomicLoad:
 
         temp_dir = pathlib.Path(tempfile.gettempdir())
         temp_filename = temp_dir / self.name.name
-        # shutil.copy2(self.name, temp_dir)
+        core.copy_external_file(self.name, temp_dir)
         self._temp_file_path = temp_filename
-        raise NotImplementedError("NON LOCAL FILES NOT IMPLEMENTED YET")
 
-    def _shutil_copy2(self):
+    def copy_to_temporary(self):
         """Copy file to a temporary file"""
         logging.debug(f"external file received? {self.name.is_external=}")
         if self.name is None:
@@ -497,7 +496,6 @@ class AutoLoader(BaseLoader):
 
     def _pre_process(self):
 
-
         for processor_name in self.pre_processors:
             if self.pre_processors[processor_name]:
                 if hasattr(pre_processors, processor_name):
@@ -522,7 +520,7 @@ class AutoLoader(BaseLoader):
             new_tests (list of data objects)
         """
         self.name = name
-        self._shutil_copy2()
+        self.copy_to_temporary()
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
         new_tests = []
 

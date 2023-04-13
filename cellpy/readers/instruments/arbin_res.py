@@ -527,7 +527,7 @@ class DataLoader(BaseLoader):
         table_name_normal = TABLE_NAMES["normal"]
 
         # creating temporary file and connection
-        self._shutil_copy2()
+        self.copy_to_temporary()
 
         constr = self._get_res_connector(self._temp_file_path)
         if use_ado:
@@ -932,7 +932,7 @@ class DataLoader(BaseLoader):
         self.logger.debug("filename: %s" % file_name)
         self.name = file_name
 
-        self._shutil_copy2()
+        self.copy_to_temporary()
         temp_filename = self.temp_file_path
         temp_dir = temp_filename.parent
         self.logger.debug(f"tmp file: {temp_filename}")

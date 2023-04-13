@@ -158,7 +158,7 @@ class DataLoader(BaseLoader):
             data object
         """
         self.name = name
-        self._shutil_copy2()
+        self.copy_to_temporary()
         data_df = self._parse_xlsx_data()
         data = Data()
 

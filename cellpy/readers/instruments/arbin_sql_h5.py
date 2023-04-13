@@ -109,7 +109,7 @@ class DataLoader(BaseLoader):
             data object
         """
         self.name = name
-        self._shutil_copy2()
+        self.copy_to_temporary()
         data_dfs = self._parse_h5_data()
         data = Data()
 

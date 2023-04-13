@@ -928,7 +928,9 @@ class CellpyCell:
         # TODO @jepe Make setting or prm so that it is possible to update only new data
         # TODO @jepe Allow passing handle to progress-bar or update a global progressbar
 
-        warnings.warn(DeprecationWarning("loadcell is deprecated. Use cellpy.get instead."))
+        warnings.warn(
+            DeprecationWarning("loadcell is deprecated. Use cellpy.get instead.")
+        )
         logging.debug("Started cellpy.cellreader.loadcell ")
 
         if cellpy_file is None:

@@ -84,7 +84,9 @@ class DataLoader(BaseLoader):
         # A list with all the variable keywords without any prefixes, used as search terms
         header = self.variable_header_keywords
 
-        data = pd.read_csv(self.temp_file_path, skiprows=self.number_of_header_lines, nrows=1)
+        data = pd.read_csv(
+            self.temp_file_path, skiprows=self.number_of_header_lines, nrows=1
+        )
 
         # Searching for the prefix for all the variable units
         for item in data.keys():
@@ -111,7 +113,9 @@ class DataLoader(BaseLoader):
             "(Seconds)": 1,
         }
 
-        data = pd.read_csv(self.temp_file_path, skiprows=self.number_of_header_lines, nrows=0)
+        data = pd.read_csv(
+            self.temp_file_path, skiprows=self.number_of_header_lines, nrows=0
+        )
         pec_times = dict()
 
         # Adds the time variables and their units to the pec_times dictonary return value
@@ -192,7 +196,7 @@ class DataLoader(BaseLoader):
 
     def loader(self, file_name, bad_steps=None, **kwargs):
         self.name = file_name
-        self._shutil_copy2()
+        self.copy_to_temporary()
         self.number_of_header_lines = self._find_header_length()
         data = Data()
         self.generate_fid()

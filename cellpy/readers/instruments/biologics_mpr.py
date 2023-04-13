@@ -195,7 +195,7 @@ class DataLoader(BaseLoader):
         self.name = file_name
 
         # creating temporary file and connection
-        self._shutil_copy2()
+        self.copy_to_temporary()
         temp_filename = self.temp_file_path
 
         filesize = os.path.getsize(self.temp_file_path)

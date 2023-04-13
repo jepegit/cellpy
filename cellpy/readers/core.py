@@ -48,7 +48,7 @@ Q = ureg.Quantity
 
 def _check_external(path_string):
 
-    path_sep =  pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
+    path_sep = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     _is_external = False
     _location = ""
@@ -89,7 +89,9 @@ class OtherPath(pathlib.Path):
             return super().__new__(cls, *args, **kwargs)
 
         path_string, *args = args
-        path_string, cls._is_external, cls._uri_prefix, cls._location = _check_external(path_string)
+        path_string, cls._is_external, cls._uri_prefix, cls._location = _check_external(
+            path_string
+        )
         return super().__new__(cls, path_string, *args, **kwargs)
 
     # def __init__(self, *args, **kwargs):
@@ -98,7 +100,12 @@ class OtherPath(pathlib.Path):
     #     super().__init__(*args, **kwargs)
 
     def _check_external(self, path_string):
-        path_string, self._is_external, self._uri_prefix, self._location = _check_external(path_string)
+        (
+            path_string,
+            self._is_external,
+            self._uri_prefix,
+            self._location,
+        ) = _check_external(path_string)
 
     def resolve(self, *args, **kwargs):
         if self.is_external:
@@ -1147,6 +1154,17 @@ def abs_path(path):
     return path.resolve()
 
 
+def copy_external_file(src, dst, overwrite=False):
+    """Copies a file from src to dst."""
+    print("------------------------------------------------------------------")
+    print("copy_external_file")
+    print(f"{src=}")
+    print(f"{dst=}")
+    print(f"{overwrite=}")
+    print("------------------------------------------------------------------")
+    raise NotImplementedError("NON LOCAL FILES NOT IMPLEMENTED YET")
+
+
 def check_convert_from_simple_unit_label_to_string_unit_label():
     k = "resistance"
     v = 1.0
@@ -1234,6 +1252,9 @@ def check_another_path_things():
         print(f"{p2.suffix=}")
         print(f"{p2.suffixes=}")
         print(f"{p2.parts=}")
+        print(f"{type(p2)}")
+        print(f"{isinstance(p2, pathlib.Path)=}")
+        print(f"{isinstance(p2, OtherPath)=}")
         print()
 
 
