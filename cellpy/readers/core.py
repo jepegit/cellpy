@@ -84,6 +84,11 @@ class OtherPath(pathlib.Path):
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     def __new__(cls, *args, **kwargs):
+        # TODO @jepe: it is probably enough to have one class attribute (e.g. _original)
+        #    and then set all the other ones in __init__ as instance attributes.
+        #    At least then the program will crash if something goes wrong due to instead of looking
+        #    up an attribute and getting a class attribute modified by another instance of the class
+        #    instead of the created instance's instance attribute
         if args:
             path, *args = args
         else:
