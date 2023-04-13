@@ -95,3 +95,4 @@ Steps:
 5. Update filefinder and prms to handle the new Path subclass.
 6. Check if loaders can be updated to automatically run the new methods
    in the base loader (self.name and self.copy_to_temporary()).
+7. Update dependencies (setup.py, requirements.txt etc)

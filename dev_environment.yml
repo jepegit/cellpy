@@ -52,3 +52,4 @@ dependencies:
     - build
     - python-dotenv
     - nox
+    - fabric
