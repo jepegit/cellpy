@@ -90,7 +90,7 @@ Steps:
    2. The connection will be established in core.copy_external_file and
       the file will be copied to a temporary directory on the local machine.
    3. The temporary directory will be deleted after the file has been copied.
-   4. Test is in test_cell_reader.py (test_copy_external_file)
+   4. Test is in test_cell_reader.py (test_copy_external_file) copied as txt in local/notes.md
 
 5. Update filefinder and prms to handle the new Path subclass.
 6. Check if loaders can be updated to automatically run the new methods

@@ -6,6 +6,8 @@ version definitions.
 import abc
 import datetime
 import importlib
+import io
+import getpass
 import logging
 import os
 import pathlib
@@ -15,6 +17,8 @@ import time
 import warnings
 from typing import Any, Tuple, Dict, Optional, List, Union
 
+import dotenv
+import fabric
 import numpy as np
 import pandas as pd
 import pint
@@ -39,7 +43,7 @@ from cellpy.parameters.internal_settings import (
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
-URI_PREFIXES = ["ssh:", "sftp:", "http:", "https:", "ftp:", "ftps:" "smb:"]
+URI_PREFIXES = ["ssh:", "sftp:", "http:", "https:", "ftp:", "ftps:", "smb:"]
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
@@ -47,9 +51,7 @@ Q = ureg.Quantity
 
 
 def _check_external(path_string):
-
-    path_sep = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
-
+    path_sep = "\\" if os.name == "nt" else "/"  # not needed?
     _is_external = False
     _location = ""
     _uri_prefix = ""
@@ -82,22 +84,33 @@ class OtherPath(pathlib.Path):
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     def __new__(cls, *args, **kwargs):
+        if args:
+            path, *args = args
+        else:
+            path = "."
+            logging.debug("initiating OtherPath without any arguments")
+        if isinstance(path, OtherPath):
+            logging.debug("initiating OtherPath from OtherPath")
+            path = path._original
         cls._is_external = False
+        cls._original = path
         cls._location = ""
         cls._uri_prefix = ""
-        if not args:
+        cls._raw_path = ""
+        if not path:
+            logging.debug("initiating OtherPath with empty path")
             return super().__new__(cls, *args, **kwargs)
 
-        path_string, *args = args
         path_string, cls._is_external, cls._uri_prefix, cls._location = _check_external(
-            path_string
+            path
         )
+        cls._raw_path = path_string
         return super().__new__(cls, path_string, *args, **kwargs)
 
-    # def __init__(self, *args, **kwargs):
-    #     path_string, *args = args
-    #     # self._check_external(path_string)
-    #     super().__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        path_string, *args = args
+        self._check_external(path_string)
+        super().__init__(*args, **kwargs)
 
     def _check_external(self, path_string):
         (
@@ -106,12 +119,17 @@ class OtherPath(pathlib.Path):
             self._uri_prefix,
             self._location,
         ) = _check_external(path_string)
+        self._raw_path = path_string
 
     def resolve(self, *args, **kwargs):
         if self.is_external:
             warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
             return self
         return super().resolve(*args, **kwargs)
+
+    @property
+    def raw_path(self):
+        return self._raw_path
 
     @property
     def is_external(self):
@@ -1154,15 +1172,75 @@ def abs_path(path):
     return path.resolve()
 
 
-def copy_external_file(src, dst, overwrite=False):
+
+
+def create_connection(host=None, user=None, password=None, key_filename=None, ask_for_password=False):
+    """Creates a connection to a remote host.
+
+    Args:
+        host (str): The host to connect to; uses env vars if not given.
+        user (str): The user to connect as; uses env vars if not given.
+        password (str): The password to use; uses env vars if not given.
+        key_filename (str): The key filename to use; uses env vars if not given.
+        ask_for_password (bool): If True, will ask for password if no password and key_filename is found.
+
+    Notes:
+        If no password and no key_filename is found, will try to connect without password.
+        Using the key_filename will override the password.
+
+    Returns:
+        fabric's implementation of paramiko.SSHClient: The SSH client.
+    """
+
+    env_file = pathlib.Path(prms.Paths.env_file)
+    env_file_in_user_dir = pathlib.Path.home() / prms.Paths.env_file
+    if env_file.is_file():
+        dotenv.load_dotenv(env_file)
+    elif env_file_in_user_dir.is_file():
+        dotenv.load_dotenv(env_file_in_user_dir)
+    else:
+        logging.debug("No .env file found. Using default values.")
+
+    host = host or os.getenv("CELLPY_HOST")
+    user = user or os.getenv("CELLPY_USER")
+    password = password or os.getenv("CELLPY_PASSWORD")
+    key_filename = key_filename or os.getenv("CELLPY_KEY_FILENAME")
+
+    if password is None and key_filename is None and ask_for_password:
+        try:
+            password = getpass.getpass()
+        except Exception as e:
+            logging.debug(f"Could not get password: {e}")
+            return
+
+    if key_filename is not None:
+        if not pathlib.Path(key_filename).is_file():
+            logging.debug(f"Could not find key file: {key_filename}")
+            logging.debug(f"Trying to connect without key file.")
+            connect_kwargs = {}
+        else:
+            connect_kwargs = {"key_filename": key_filename}
+    elif password is not None:
+        connect_kwargs = {"password": password}
+    else:
+        connect_kwargs = {}
+    connection = fabric.Connection(host, user, connect_kwargs=connect_kwargs)
+    return connection
+
+
+def copy_external_file(src: OtherPath, dst: OtherPath, *args, **kwargs):
     """Copies a file from src to dst."""
-    print("------------------------------------------------------------------")
-    print("copy_external_file")
-    print(f"{src=}")
-    print(f"{dst=}")
-    print(f"{overwrite=}")
-    print("------------------------------------------------------------------")
-    raise NotImplementedError("NON LOCAL FILES NOT IMPLEMENTED YET")
+    if not isinstance(src, OtherPath):
+        src = OtherPath(src)
+    if not isinstance(dst, OtherPath):
+        dst = OtherPath(dst)
+    if not src.is_external:
+        raise ValueError("src must be an external file")
+    if dst.is_external:
+        raise ValueError("dst must be a local file")
+    c = create_connection()
+    c.get(src._raw_path, local=str(dst))
+    c.close()
 
 
 def check_convert_from_simple_unit_label_to_string_unit_label():
@@ -1261,16 +1339,31 @@ def check_another_path_things():
 def check_how_other_path_works():
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p02 = r"ssh://jepe@odin.ad.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
-    p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
-    p04 = r"..\data\20160805_test001_45_cc_01.res"
+    p03 = None
+    p03b = OtherPath(p03)
     p05 = pathlib.Path(p01)
-    for p in [p01, p02, p03, p04, p05]:
+    p06 = pathlib.Path(p02)
+    p07 = OtherPath(p01)
+    p08 = OtherPath(p02)
+    print(80 * "=")
+    for p in [p01, p02, p03, p03b, p05, p06, p07, p08]:
         print(f"{p}".center(110, "-"))
+        print(f"{type(p)}".center(110, "*"))
         p2 = OtherPath(p)
+        print(f"{p2=}")
+        print(p2)
+        print(f"{p2._raw_path=}")
         print(f"{p2.is_external=}")
         print(f"{p2.location=}")
         print(f"{p2.uri_prefix=}")
 
 
+def check_copy_external_file():
+    prms.Paths.env_file = r"C:\scripting\cellpy\local\.env_cellpy"
+    dst = r"C:\scripting\cellpy\tmp\20210629_moz_cat_02_cc_01.res"
+    src = r"ssh://jepe@odin.ad.ife.no/home/jepe@ad.ife.no/Temp/20210629_moz_cat_02_cc_01.res"
+    copy_external_file(src, dst)
+
+
 if __name__ == "__main__":
-    check_another_path_things()
+    check_copy_external_file()

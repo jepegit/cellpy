@@ -25,6 +25,7 @@ Paths:
   templatedir: cellpy_data/templates
   batchfiledir: cellpy_data/batchfiles
   instrumentdir: cellpy_data/instruments
+  env_file: .env_cellpy
 FileNames:
   file_name_format: YYYYMMDD_[NAME]EEE_CC_TT_RR
 Db:

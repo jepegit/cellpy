@@ -461,12 +461,6 @@ def test_from_raw_local(cellpy_data_instance, parameters):
     # cellpy_data_instance.save(test_cellpy_file_full)
 
 
-def test_from_raw_external(cellpy_data_instance, parameters):
-    external_raw_file = f"ssh://jepe@my.server.no/home/jepe/data/{pathlib.Path(parameters.res_file_path).name}"
-    with pytest.raises(NotImplementedError):
-        cellpy_data_instance.from_raw(external_raw_file)
-
-
 def test_make_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
