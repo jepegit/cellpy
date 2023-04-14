@@ -24,7 +24,7 @@ import pandas as pd
 import pint
 from scipy import interpolate
 
-from cellpy.exceptions import NullData
+from cellpy.exceptions import NullData, UnderDefined
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     get_headers_normal,
@@ -43,7 +43,8 @@ from cellpy.parameters.internal_settings import (
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
-URI_PREFIXES = ["ssh:", "sftp:", "http:", "https:", "ftp:", "ftps:", "smb:"]
+URI_PREFIXES = ["ssh:", "sftp:", "scp:", "http:", "https:", "ftp:", "ftps:", "smb:"]
+IMPLEMENTED_PROTOCOLS = ["ssh:", "sftp:", "scp:"]
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
@@ -67,7 +68,7 @@ def _clean_up_original_path_string(path_string):
     return path_string
 
 
-def _check_external(path_string):
+def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
     # path_sep = "\\" if os.name == "nt" else "/"
     _is_external = False
     _location = ""
@@ -81,6 +82,8 @@ def _check_external(path_string):
             _location, *rest = path_string.split("/")
             path_string = "/" + "/".join(rest)
             break
+    path_string = path_string or "."
+    path_string = path_string.replace("\\", "/")
     return path_string, _is_external, _uri_prefix, _location
 
 
@@ -96,7 +99,6 @@ class OtherPath(pathlib.Path):
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     def __new__(cls, *args, **kwargs):
-        # TODO @jepe: still not too happy with this (WindowsPath get a bit messy)
         if args:
             path, *args = args
         else:
@@ -138,35 +140,70 @@ class OtherPath(pathlib.Path):
         return super().resolve(*args, **kwargs)
 
     @property
-    def original(self):
+    def original(self) -> str:
         return self._original
 
     @property
-    def raw_path(self):
+    def raw_path(self) -> str:
         return self._raw_path
 
     @property
-    def full_path(self):
+    def full_path(self) -> str:
         if self._is_external:
             return f"{self._uri_prefix}{self._location}{self._raw_path}"
         return self._original
 
     @property
-    def is_external(self):
+    def is_external(self) -> bool:
         return self._is_external
 
     @property
-    def uri_prefix(self):
+    def uri_prefix(self) -> str:
         return self._uri_prefix
 
     @property
-    def location(self):
+    def location(self) -> str:
         return self._location
 
-    def as_uri(self):
+    def as_uri(self) -> str:
         if self._is_external:
             return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
         return super().as_uri()
+
+    def copy(self, destination: pathlib.Path = None) -> pathlib.Path:
+        """Copy the file to a destination."""
+        if destination is None:
+            destination = pathlib.Path(tempfile.gettempdir())
+        else:
+            destination = pathlib.Path(destination)
+
+        path_of_copied_file = destination / self.name
+        if not self.is_external:
+            shutil.copy2(self.name, destination)
+        else:
+            host = self.location
+            uri_prefix = self.uri_prefix.replace("//", "")
+
+            if uri_prefix not in URI_PREFIXES:
+                raise ValueError(f"uri_prefix {uri_prefix} not recognized")
+            if uri_prefix not in IMPLEMENTED_PROTOCOLS:
+                raise ValueError(f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet")
+
+            password = os.getenv("CELLPY_PASSWORD", None)
+            key_filename = os.getenv("CELLPY_KEY_FILENAME", None)
+
+            if password is None and key_filename is None:
+                raise UnderDefined("You must define either CELLPY_PASSWORD "
+                                 "or CELLPY_KEY_FILENAME environment variables.")
+
+            if key_filename is not None:
+                connect_kwargs = {"key_filename": key_filename}
+            else:
+                connect_kwargs = {"password": password}
+
+            with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+                conn.get(self.raw_path, destination)
+        return path_of_copied_file
 
 
 # https://stackoverflow.com/questions/60067953/
@@ -1223,8 +1260,8 @@ def create_connection(host=None, user=None, password=None, key_filename=None, as
 
     host = host or os.getenv("CELLPY_HOST")
     user = user or os.getenv("CELLPY_USER")
-    password = password or os.getenv("CELLPY_PASSWORD")
-    key_filename = key_filename or os.getenv("CELLPY_KEY_FILENAME")
+    password = password or os.getenv("CELLPY_PASSWORD", None)
+    key_filename = key_filename or os.getenv("CELLPY_KEY_FILENAME", None)
 
     if password is None and key_filename is None and ask_for_password:
         try:
@@ -1395,4 +1432,4 @@ def check_copy_external_file():
 
 
 if __name__ == "__main__":
-    check_copy_external_file()
+    check_how_other_path_works()

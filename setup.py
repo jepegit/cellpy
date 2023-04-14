@@ -51,6 +51,8 @@ requirements = [
     'pyodbc;platform_system=="windows"',
     "sqlalchemy>=2.0.0",
     'sqlalchemy-access;platform_system=="windows"',
+    'python-dotenv',
+    'fabric',
     # 'tables', # not available by pip
 ]
 

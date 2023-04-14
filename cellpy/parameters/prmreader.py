@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass
 from pprint import pprint
 
 import box
+import dotenv
 import ruamel
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
@@ -29,8 +30,31 @@ DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 yaml = YAML()
 
 
+def initialize():
+    """initializes cellpy by reading the config file and the environment file"""
+    try:
+        _read_prm_file(_get_prm_file())
+        _load_env_file()
+    except FileNotFoundError:
+        warnings.warn("Could not find the config-file")
+    except UserWarning:
+        warnings.warn("Could not read the config-file")
+
+
+def _load_env_file():
+    """loads the environment file"""
+    env_file = pathlib.Path(prms.Paths.env_file)
+    env_file_in_user_dir = pathlib.Path.home() / prms.Paths.env_file
+    if env_file.is_file():
+        dotenv.load_dotenv(env_file)
+    elif env_file_in_user_dir.is_file():
+        dotenv.load_dotenv(env_file_in_user_dir)
+    else:
+        logging.debug("No .env file found")
+
+
 def get_user_name():
-    """get the user name of the current user (cross platform)"""
+    """get the username of the current user (cross-platform)"""
     return getpass.getuser()
 
 
