@@ -795,7 +795,7 @@ def generate_default_factory():
     return instrument_factory
 
 
-def find_all_instruments() -> Dict[str, Tuple[str, str]]:
+def find_all_instruments() -> Dict[str, Tuple[str, pathlib.Path]]:
     """finds all the supported instruments"""
 
     import cellpy.readers.instruments as hard_coded_instruments_site
@@ -1240,6 +1240,7 @@ def abs_path(path):
     return path.resolve()
 
 
+# TODO 249: move this to helpers
 def create_connection(
     host=None,
     user=None,
@@ -1303,6 +1304,7 @@ def create_connection(
     return connection
 
 
+# TODO 249: move this to helpers
 def copy_external_file(src: OtherPath, dst: OtherPath, *args, **kwargs):
     """Copies a file from src to dst."""
     if not isinstance(src, OtherPath):
@@ -1323,6 +1325,8 @@ def copy_external_file(src: OtherPath, dst: OtherPath, *args, **kwargs):
     c.get(src.raw_path, local=str(dst))
     c.close()
 
+
+# ---------------- LOCAL DEV TESTS ----------------
 
 def check_convert_from_simple_unit_label_to_string_unit_label():
     k = "resistance"
@@ -1381,7 +1385,7 @@ def check_path_things():
 
 def check_another_path_things():
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
-    p02 = r"ssh://jepe@odin.ad.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@server.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p04 = r"..\data\20160805_test001_45_cc_01.res"
     p05 = pathlib.Path(p01)
@@ -1419,7 +1423,7 @@ def check_another_path_things():
 
 def check_how_other_path_works():
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
-    p02 = r"ssh://jepe@odin.ad.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@somewhere.else.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = None
     p03b = OtherPath(p03)
     p05 = pathlib.Path(p01)
@@ -1445,7 +1449,7 @@ def check_how_other_path_works():
 def check_copy_external_file():
     prms.Paths.env_file = r"C:\scripting\cellpy\local\.env_cellpy"
     dst = r"C:\scripting\cellpy\tmp\20210629_moz_cat_02_cc_01.res"
-    src = r"ssh://jepe@odin.ad.ife.no/home/jepe@ad.ife.no/Temp/20210629_moz_cat_02_cc_01.res"
+    src = "ssh://jepe@not.in.no/home/jepe@ad.ife.no/Temp/20210629_moz_cat_02_cc_01.res"
     copy_external_file(src, dst)
 
 
