@@ -58,6 +58,8 @@ def _clean_up_original_path_string(path_string):
             path_string = "/".join(path_string.parts)
         elif isinstance(path_string, pathlib.WindowsPath):
             parts = list(path_string.parts)
+            if not parts:
+                parts = [""]
             parts[0] = parts[0].replace("\\", "")
             path_string = "/".join(parts)
         else:
