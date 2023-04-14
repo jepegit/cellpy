@@ -96,6 +96,11 @@ class OtherPath(pathlib.Path):
         is_external (bool): is True if the path is external.
         location (str): the location of the external path (e.g. a server name).
         uri_prefix (str): the prefix of the external path (e.g. ssh:// or sftp://).
+        raw_path (str): the path without any uri_prefix or location.
+        original (str): the original path string.
+        full_path (str): the full path (including uri_prefix and location).
+    Additional methods:
+        copy (method): a method for copying the file to a local path.
     """
 
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour

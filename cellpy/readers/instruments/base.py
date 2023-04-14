@@ -231,28 +231,6 @@ class AtomicLoad:
         else:
             raise ValueError("could not generate fid")
 
-    # TODO 249 - use the copy property of OtherPath
-    def _shutil_copy2_local(self):
-        """Copy file to a temporary file"""
-        temp_dir = pathlib.Path(tempfile.gettempdir())
-        temp_filename = temp_dir / self.name.name
-        shutil.copy2(self.name, temp_dir)
-        logging.debug(f"tmp file: {temp_filename}")
-        self._temp_file_path = temp_filename
-
-    # TODO 249 - use the copy property of OtherPath
-    def _shutil_copy2_external(self):
-        """Copy file to a temporary file"""
-        location = self.name.location
-        uri_prefix = self.name.uri_prefix
-        logging.debug(f"{location=}, {uri_prefix=}")
-
-        temp_dir = pathlib.Path(tempfile.gettempdir())
-        temp_filename = temp_dir / self.name.name
-        core.copy_external_file(self.name, temp_dir)
-        self._temp_file_path = temp_filename
-
-    # TODO 249 - use the copy property of OtherPath
     def copy_to_temporary(self):
         """Copy file to a temporary file"""
 
@@ -265,14 +243,6 @@ class AtomicLoad:
             return
 
         self._temp_file_path = self.name.copy()
-
-        # if not self.name.is_external:
-        #     if not self._copy_also_local:
-        #         self._temp_file_path = self.name
-        #     else:
-        #         self._shutil_copy2_local()
-        #     return
-        # self._shutil_copy2_external()
 
 
 class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
