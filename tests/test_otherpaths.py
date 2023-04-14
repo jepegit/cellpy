@@ -13,9 +13,18 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
     "test_input,expected",
     [
         (r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res", False),
-        (r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", True),
-        (r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res", True),
-        (r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", True),
+        (
+            r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            True,
+        ),
+        (
+            r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            True,
+        ),
+        (
+            r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            True,
+        ),
         (r"", False),
         (r".", False),
         (r"..\data\20160805_test001_45_cc_01.res", False),
@@ -39,9 +48,18 @@ def test_is_external(test_input, expected):
     "test_input,expected",
     [
         (r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res", ""),
-        (r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", "ssh://"),
-        (r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res", "ssh://"),
-        (r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", "sftp://"),
+        (
+            r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "ssh://",
+        ),
+        (
+            r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "ssh://",
+        ),
+        (
+            r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "sftp://",
+        ),
         (r"", ""),
         (r".", ""),
         (r"..\data\20160805_test001_45_cc_01.res", ""),
@@ -65,9 +83,18 @@ def test_url_prefix(test_input, expected):
     "test_input,expected",
     [
         (r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res", ""),
-        (r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", "jepe@server.ife.no"),
-        (r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res", "jepe@server.ife.no"),
-        (r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", "jepe@server.ife.no"),
+        (
+            r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "jepe@server.ife.no",
+        ),
+        (
+            r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "jepe@server.ife.no",
+        ),
+        (
+            r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "jepe@server.ife.no",
+        ),
         (r"", ""),
         (r".", ""),
         (r"..\data\20160805_test001_45_cc_01.res", ""),
@@ -90,13 +117,28 @@ def test_location(test_input, expected):
 @pytest.mark.parametrize(
     "test_input,expected",
     [
-        (r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res", "C:/scripting/cellpy/testdata/data/20160805_test001_45_cc_01.res"),
-        (r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", "/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"),
-        (r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res", "/~/cellpy/testdata/data/20160805_test001_45_cc_01.res"),
-        (r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res", "/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"),
+        (
+            r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res",
+            "C:/scripting/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+        ),
+        (
+            r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+        ),
+        (
+            r"ssh://jepe@server.ife.no/~/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "/~/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+        ),
+        (
+            r"sftp://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            "/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+        ),
         (r"", "."),
         (r".", "."),
-        (r"..\data\20160805_test001_45_cc_01.res", "../data/20160805_test001_45_cc_01.res"),
+        (
+            r"..\data\20160805_test001_45_cc_01.res",
+            "../data/20160805_test001_45_cc_01.res",
+        ),
         (None, "."),
     ],
 )

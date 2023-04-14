@@ -12,7 +12,9 @@ import logging
 import os
 import pathlib
 import pickle
+import shutil
 import sys
+import tempfile
 import time
 import warnings
 from typing import Any, Tuple, Dict, Optional, List, Union
@@ -179,7 +181,7 @@ class OtherPath(pathlib.Path):
 
         path_of_copied_file = destination / self.name
         if not self.is_external:
-            shutil.copy2(self.name, destination)
+            shutil.copy2(self, destination)
         else:
             host = self.location
             uri_prefix = self.uri_prefix.replace("//", "")
@@ -187,14 +189,18 @@ class OtherPath(pathlib.Path):
             if uri_prefix not in URI_PREFIXES:
                 raise ValueError(f"uri_prefix {uri_prefix} not recognized")
             if uri_prefix not in IMPLEMENTED_PROTOCOLS:
-                raise ValueError(f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet")
+                raise ValueError(
+                    f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet"
+                )
 
             password = os.getenv("CELLPY_PASSWORD", None)
             key_filename = os.getenv("CELLPY_KEY_FILENAME", None)
 
             if password is None and key_filename is None:
-                raise UnderDefined("You must define either CELLPY_PASSWORD "
-                                 "or CELLPY_KEY_FILENAME environment variables.")
+                raise UnderDefined(
+                    "You must define either CELLPY_PASSWORD "
+                    "or CELLPY_KEY_FILENAME environment variables."
+                )
 
             if key_filename is not None:
                 connect_kwargs = {"key_filename": key_filename}
@@ -1229,7 +1235,14 @@ def abs_path(path):
     return path.resolve()
 
 
-def create_connection(host=None, user=None, password=None, key_filename=None, ask_for_password=False, protocol="ssh"):
+def create_connection(
+    host=None,
+    user=None,
+    password=None,
+    key_filename=None,
+    ask_for_password=False,
+    protocol="ssh",
+):
     """Creates a connection to a remote host.
 
     Args:
