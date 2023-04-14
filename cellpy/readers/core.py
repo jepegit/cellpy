@@ -50,16 +50,26 @@ ureg = pint.UnitRegistry()
 Q = ureg.Quantity
 
 
+def _clean_up_original_path_string(path_string):
+    if not isinstance(path_string, str):
+        if isinstance(path_string, OtherPath):
+            path_string = path_string.original
+        elif isinstance(path_string, pathlib.PosixPath):
+            path_string = "/".join(path_string.parts)
+        elif isinstance(path_string, pathlib.WindowsPath):
+            parts = list(path_string.parts)
+            parts[0] = parts[0].replace("\\", "")
+            path_string = "/".join(parts)
+        else:
+            path_string = str(path_string)
+    return path_string
+
+
 def _check_external(path_string):
-    path_sep = "\\" if os.name == "nt" else "/"  # not needed?
+    # path_sep = "\\" if os.name == "nt" else "/"
     _is_external = False
     _location = ""
     _uri_prefix = ""
-    if not isinstance(path_string, str):
-        if isinstance(path_string, pathlib.WindowsPath):
-            path_string = "/".join(path_string.parts)
-        else:
-            path_string = str(path_string)
     for prefix in URI_PREFIXES:
         if path_string.startswith(prefix):
             path_string = path_string.replace(prefix, "")
@@ -84,36 +94,29 @@ class OtherPath(pathlib.Path):
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     def __new__(cls, *args, **kwargs):
-        # TODO @jepe: it is probably enough to have one class attribute (e.g. _original)
-        #    and then set all the other ones in __init__ as instance attributes.
-        #    At least then the program will crash if something goes wrong due to instead of looking
-        #    up an attribute and getting a class attribute modified by another instance of the class
-        #    instead of the created instance's instance attribute
+        # TODO @jepe: still not too happy with this (WindowsPath get a bit messy)
         if args:
             path, *args = args
         else:
             path = "."
             logging.debug("initiating OtherPath without any arguments")
-        if isinstance(path, OtherPath):
-            logging.debug("initiating OtherPath from OtherPath")
-            path = path._original
-        cls._is_external = False
-        cls._original = path
-        cls._location = ""
-        cls._uri_prefix = ""
-        cls._raw_path = ""
         if not path:
             logging.debug("initiating OtherPath with empty path")
-            return super().__new__(cls, *args, **kwargs)
-
-        path_string, cls._is_external, cls._uri_prefix, cls._location = _check_external(
-            path
-        )
-        cls._raw_path = path_string
-        return super().__new__(cls, path_string, *args, **kwargs)
+            path = "."
+        if isinstance(path, OtherPath):
+            path = path._original
+        path = _clean_up_original_path_string(path)
+        cls.__original = path
+        path = _check_external(path)[0]
+        return super().__new__(cls, path, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
-        path_string, *args = args
+        _path_string, *args = args
+        if not _path_string:
+            path_string = "."
+        else:
+            path_string = self.__original
+        self._original = self.__original
         self._check_external(path_string)
         super().__init__(*args, **kwargs)
 
@@ -133,8 +136,18 @@ class OtherPath(pathlib.Path):
         return super().resolve(*args, **kwargs)
 
     @property
+    def original(self):
+        return self._original
+
+    @property
     def raw_path(self):
         return self._raw_path
+
+    @property
+    def full_path(self):
+        if self._is_external:
+            return f"{self._uri_prefix}{self._location}{self._raw_path}"
+        return self._original
 
     @property
     def is_external(self):
@@ -1177,9 +1190,7 @@ def abs_path(path):
     return path.resolve()
 
 
-
-
-def create_connection(host=None, user=None, password=None, key_filename=None, ask_for_password=False):
+def create_connection(host=None, user=None, password=None, key_filename=None, ask_for_password=False, protocol="ssh"):
     """Creates a connection to a remote host.
 
     Args:
@@ -1188,6 +1199,7 @@ def create_connection(host=None, user=None, password=None, key_filename=None, as
         password (str): The password to use; uses env vars if not given.
         key_filename (str): The key filename to use; uses env vars if not given.
         ask_for_password (bool): If True, will ask for password if no password and key_filename is found.
+        protocol (str): The protocol to use. Currently, only "ssh" and "sftp" is supported.
 
     Notes:
         If no password and no key_filename is found, will try to connect without password.
@@ -1196,7 +1208,8 @@ def create_connection(host=None, user=None, password=None, key_filename=None, as
     Returns:
         fabric's implementation of paramiko.SSHClient: The SSH client.
     """
-
+    if protocol not in ["ssh", "sftp"]:
+        raise ValueError(f"Protocol {protocol} is not supported.")
     env_file = pathlib.Path(prms.Paths.env_file)
     env_file_in_user_dir = pathlib.Path.home() / prms.Paths.env_file
     if env_file.is_file():
@@ -1243,8 +1256,14 @@ def copy_external_file(src: OtherPath, dst: OtherPath, *args, **kwargs):
         raise ValueError("src must be an external file")
     if dst.is_external:
         raise ValueError("dst must be a local file")
-    c = create_connection()
-    c.get(src._raw_path, local=str(dst))
+    # TODO 249: currently only supporting sftp and ssh and env variables - should be extended by unpacking src
+    if src.uri_prefix.startswith("sftp"):
+        c = create_connection(protocol="sftp")
+    elif src.uri_prefix.startswith(protocol="ssh"):
+        c = create_connection("ssh")
+    else:
+        raise ValueError(f"Unknown protocol: {src.uri_prefix}")
+    c.get(src.raw_path, local=str(dst))
     c.close()
 
 
@@ -1357,10 +1376,13 @@ def check_how_other_path_works():
         p2 = OtherPath(p)
         print(f"{p2=}")
         print(p2)
-        print(f"{p2._raw_path=}")
+        print(f"{p2.raw_path=}")
         print(f"{p2.is_external=}")
         print(f"{p2.location=}")
         print(f"{p2.uri_prefix=}")
+        print(f"{p2._original=}")
+        print(f"{p2.full_path=}")
+        print(f"{p2.parts=}")
 
 
 def check_copy_external_file():
