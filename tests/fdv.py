@@ -17,11 +17,18 @@ def get_cellpy_file_path(raw_path):
     return p
 
 
+# -------- defining cellpy environment vars ---------
+# used in the conftest.py file for creating the mock environment
+# note! these should be the same as the ones in the .env_cellpy_test file
+env_cellpy_user = "cellpy"
+env_cellpy_password = "cellpy!test!password"
+env_cellpy_key_filename = ".ssh/id_rsa"
+env_cellpy_host = "cellpy.test.host"
+
 # -------- defining overall path-names etc ----------
 current_file_path = os.path.dirname(os.path.realpath(__file__))
 _relative_data_dir = "../testdata"
 data_dir = os.path.abspath(os.path.join(current_file_path, _relative_data_dir))
-
 raw_data_dir = os.path.join(data_dir, "data")
 output_dir = os.path.join(data_dir, "out")
 cellpy_data_dir = os.path.join(data_dir, "hdf5")
@@ -32,9 +39,9 @@ log_dir = os.path.join(data_dir, "log")
 instrument_dir = os.path.join(data_dir, "instruments")
 template_dir = os.path.join(data_dir, "templates")
 default_prm_file = os.path.abspath(os.path.join(data_dir, ".cellpy_prms_default.conf"))
+env_file = os.path.abspath(os.path.join(data_dir, ".env_cellpy_test"))
 
 # -------- common files -----------------------------
-
 cellpy_file_name = "20160805_test001_45_cc.h5"
 cellpy_file_path = os.path.join(cellpy_data_dir, cellpy_file_name)
 

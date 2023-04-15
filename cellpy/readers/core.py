@@ -152,6 +152,7 @@ class OtherPath(pathlib.Path):
 
     @property
     def raw_path(self) -> str:
+        # this will return a leading slash for some edge cases
         return self._raw_path
 
     @property
@@ -212,9 +213,13 @@ class OtherPath(pathlib.Path):
             else:
                 connect_kwargs = {"password": password}
 
-            with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-                conn.get(self.raw_path, destination)
+            self._copy_with_fabric(host, connect_kwargs, destination)
+
         return path_of_copied_file
+
+    def _copy_with_fabric(self, host, connect_kwargs, destination):
+        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+            conn.get(self.raw_path, destination)
 
 
 # https://stackoverflow.com/questions/60067953/
