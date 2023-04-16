@@ -451,15 +451,6 @@ def test_from_raw_local(cellpy_data_instance, parameters):
     assert my_test.summary.loc[1, "data_point"] == data_point
     assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
 
-    # TODO: include discharge time in summary?
-    # assert sum_discharge_time == pytest.approx(
-    #     my_test.summary.loc[:, "discharge_time"].sum(), 0.1
-    # )
-
-    # cellpy_data_instance.make_summary(find_ir=True)
-    # cellpy_data_instance.make_step_table()
-    # cellpy_data_instance.save(test_cellpy_file_full)
-
 
 def test_make_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)

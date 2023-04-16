@@ -152,14 +152,14 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        self.name = name
-        self.copy_to_temporary()
+        # self.name = name
+        # self.copy_to_temporary()
         data_df = self._query_csv(self.temp_file_path)
 
         data = Data()
 
         # metadata is unfortunately not available for csv dumps
-        data.loaded_from = name
+        data.loaded_from = self.name
         data.channel_index = None
         data.test_ID = None
         data.test_name = self.name.name

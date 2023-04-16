@@ -20,7 +20,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import (
-    Cell,
+    Data,
     FileID,
     check64bit,
     humanize_bytes,
@@ -130,6 +130,7 @@ class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
     name = "arbin_sql_7"
+    _is_db = True
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
@@ -239,7 +240,7 @@ class DataLoader(BaseLoader):
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
-        """returns a Cell object with loaded data.
+        """returns a Data object with loaded data.
 
         Loads data from arbin SQL server db.
 
@@ -253,7 +254,7 @@ class DataLoader(BaseLoader):
             "This loader is under development and might be missing some features."
         )
         new_tests = []
-        self.name = name
+        # self.name = name
         self.is_db = True
         data_df, meta_data = self._query_sql()
         aux_data_df = None  # Needs to be implemented
@@ -266,7 +267,7 @@ class DataLoader(BaseLoader):
 
         channel_id = meta_data["IV_Ch_ID"][0]
 
-        data = Cell()
+        data = Data()
         data.loaded_from = id_name
         data.channel_index = channel_id
         data.test_ID = test_id

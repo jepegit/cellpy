@@ -128,6 +128,7 @@ class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
     instrument_name = "arbin_sql"
+    _is_db = True
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
@@ -247,9 +248,9 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        self.name = name
+        # self.name = name
         self.is_db = True
-        data_df, stat_df = self._query_sql(name)
+        data_df, stat_df = self._query_sql(self.name)
         aux_data_df = None  # Needs to be implemented
         meta_data = None  # Should be implemented
 

@@ -157,16 +157,16 @@ class DataLoader(BaseLoader):
         Returns:
             data object
         """
-        self.name = name
-        self.copy_to_temporary()
+        # self.name = name
+        # self.copy_to_temporary()
         data_df = self._parse_xlsx_data()
         data = Data()
 
         # metadata is unfortunately not available for csv dumps
-        data.loaded_from = name
+        data.loaded_from = self.name
         data.channel_index = None
         data.test_ID = None
-        data.test_name = name  # should fix this
+        data.test_name = self.name.name  # should fix this
         data.creator = None
         data.schedule_file_name = None
         data.start_datetime = None

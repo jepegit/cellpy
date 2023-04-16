@@ -929,8 +929,8 @@ class DataLoader(BaseLoader):
         # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
 
         # TODO 249: assign name and run copy_to_temporary through loader_executor
-        self.name = name
-        self.copy_to_temporary()
+        # self.name = name
+        # self.copy_to_temporary()
 
         self.logger.debug(f"tmp file: {self.temp_file_path}")
         self.logger.debug(f"tmp dir: {self.temp_file_path.parent}")

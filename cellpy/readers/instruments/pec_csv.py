@@ -195,15 +195,15 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def loader(self, file_name, bad_steps=None, **kwargs):
-        self.name = file_name
-        self.copy_to_temporary()
+        # self.name = file_name
+        # self.copy_to_temporary()
         self.number_of_header_lines = self._find_header_length()
         data = Data()
         self.generate_fid()
         data.raw_data_files.append(self.fid)
 
         # div parameters and information (probably load this last)
-        data.loaded_from = file_name
+        data.loaded_from = self.name
 
         # some overall prms
         data.channel_index = None

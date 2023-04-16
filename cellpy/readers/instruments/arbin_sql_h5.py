@@ -108,16 +108,16 @@ class DataLoader(BaseLoader):
         Returns:
             data object
         """
-        self.name = name
-        self.copy_to_temporary()
+        # self.name = name
+        # self.copy_to_temporary()
         data_dfs = self._parse_h5_data()
         data = Data()
 
         # some metadata is available in the info_df part of the h5 file
-        data.loaded_from = name
+        data.loaded_from = self.name
         data.channel_index = data_dfs["info_df"]["IV_Ch_ID"].iloc[0]
         data.test_ID = data_dfs["info_df"]["Test_ID"].iloc[0]
-        data.test_name = Path(name).name
+        data.test_name = self.name.name
         data.creator = None
         data.schedule_file_name = data_dfs["info_df"]["Schedule_File_Name"].iloc[0]
         data.start_datetime = data_dfs["info_df"]["First_Start_DateTime"].iloc[0]

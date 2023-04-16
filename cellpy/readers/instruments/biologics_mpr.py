@@ -177,15 +177,12 @@ class DataLoader(BaseLoader):
         Returns:
             new test
         """
-        print()
-        print(80 * "-")
-        print("loading file: %s" % file_name)
         print("bad steps: %s" % bad_steps)
         print(f"kwargs: {kwargs}")
-        self.name = file_name
+        # self.name = file_name
 
         # creating temporary file and connection
-        self.copy_to_temporary()
+        # self.copy_to_temporary()
         temp_filename = self.temp_file_path
 
         filesize = os.path.getsize(self.temp_file_path)
@@ -201,7 +198,7 @@ class DataLoader(BaseLoader):
         data.raw_data_files.append(self.fid)
 
         # div parameters and information (probably load this last)
-        data.loaded_from = file_name
+        data.loaded_from = self.name
 
         # some overall prms
         data.channel_index = None

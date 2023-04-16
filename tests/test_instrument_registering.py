@@ -42,6 +42,28 @@ class MockLoader(AutoLoader, ABC):
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
+def test_set_db_instrument(cellpy_data_instance):
+    cellpy_data_instance.set_instrument(instrument="arbin_sql")
+    assert cellpy_data_instance.loader_class.is_db is True
+
+
+def test_set_non_db_instrument(cellpy_data_instance):
+    cellpy_data_instance.set_instrument(instrument="arbin_res")
+    assert cellpy_data_instance.loader_class.is_db is not True
+
+
+def test_set_non_db_and_db_instrument(cellpy_data_instance):
+    instruments = [
+        ("arbin_sql", True),
+        ("arbin_res", False),
+        ("arbin_sql", True),
+        ("arbin_sql_7", True),
+    ]
+    for instrument, is_db in instruments:
+        cellpy_data_instance.set_instrument(instrument=instrument)
+        assert cellpy_data_instance.loader_class.is_db is is_db
+
+
 def test_2_set_instrument(cellpy_data_instance):
     cellpy_data_instance.set_instrument(instrument="arbin_res")
 

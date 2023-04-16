@@ -246,6 +246,10 @@ class AtomicLoad:
 
     def loader_executor(self, *args, **kwargs):
         """Load the file"""
+        name = args[0]
+        self.name = name
+        if not self.is_db:
+            self.copy_to_temporary()
         cellpy_data = self.loader(*args, **kwargs)
         return cellpy_data
 
@@ -516,8 +520,8 @@ class AutoLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        self.name = name
-        self.copy_to_temporary()
+        # self.name = name
+        # self.copy_to_temporary()
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
         new_tests = []
 
