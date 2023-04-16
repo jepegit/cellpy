@@ -244,6 +244,18 @@ class AtomicLoad:
 
         self._temp_file_path = self.name.copy()
 
+    def loader_executor(self, *args, **kwargs):
+        """Load the file"""
+        cellpy_data = self.loader(*args, **kwargs)
+        return cellpy_data
+
+    def loader(self, *args, **kwargs):
+        """The method that does the actual loading.
+
+        This method should be overwritten by the specific loader class.
+        """
+        ...
+
 
 class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     """Main loading class"""
@@ -325,6 +337,11 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def loader(self, *args, **kwargs) -> list:
         """Loads data into a Data object and returns it"""
+        # This method is used by cellreader through the AtomicLoad.loader_executor method.
+        # It should be overwritten by the specific loader class.
+        #
+        # Notice that it is highly recommended that you don't try to implement .loader_executor yourself
+        # in your subclass!
         pass
 
     @staticmethod

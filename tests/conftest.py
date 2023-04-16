@@ -77,4 +77,3 @@ def mock_env_cellpy_key_filename(monkeypatch, parameters):
 def mock_env_cellpy_password(monkeypatch, parameters):
     """Mock the environment variables for cellpy"""
     monkeypatch.setenv("CELLPY_PASSWORD", parameters.env_cellpy_password)
-

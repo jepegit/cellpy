@@ -532,7 +532,7 @@ class CellpyCell:
         self.loader_class = self.instrument_factory.create(instrument, **kwargs)
         self.raw_limits = self.loader_class.get_raw_limits()
         # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
+        self.loader = self.loader_class.loader_executor
 
     def set_instrument(
         self,

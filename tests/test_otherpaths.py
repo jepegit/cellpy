@@ -193,7 +193,14 @@ def test_copy_local(parameters, tmp_path):
     assert p2.parent != p1.parent
 
 
-def test_copy_remote_simple(parameters, tmp_path, monkeypatch, mock_env_cellpy_host, mock_env_cellpy_user, mock_env_cellpy_key_filename):
+def test_copy_remote_simple(
+    parameters,
+    tmp_path,
+    monkeypatch,
+    mock_env_cellpy_host,
+    mock_env_cellpy_user,
+    mock_env_cellpy_key_filename,
+):
     def mock_return(n, _host, _connect_kwargs, _destination):
         # TODO: include more realistic ssh session
         #   with mock password authentication etc

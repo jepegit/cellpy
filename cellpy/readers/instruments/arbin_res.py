@@ -905,7 +905,7 @@ class DataLoader(BaseLoader):
 
     def loader(
         self,
-        file_name,
+        name,
         *args,
         bad_steps=None,
         dataset_number=None,
@@ -915,7 +915,7 @@ class DataLoader(BaseLoader):
         """Loads data from arbin .res files.
 
         Args:
-            file_name (str): path to .res file.
+            name (str): path to .res file.
             bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
                 to skip loading.
             dataset_number (int): the data set number to select if you are dealing
@@ -924,29 +924,26 @@ class DataLoader(BaseLoader):
                     data_point[1] (use None for infinite).
 
         Returns:
-            new_tests (list of data objects)
+            new data (Data)
         """
         # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
 
-        self.logger.debug("in loader")
-        self.logger.debug("filename: %s" % file_name)
-        self.name = file_name
-
+        # TODO 249: assign name and run copy_to_temporary through loader_executor
+        self.name = name
         self.copy_to_temporary()
-        temp_filename = self.temp_file_path
-        temp_dir = temp_filename.parent
-        self.logger.debug(f"tmp file: {temp_filename}")
-        self.logger.debug(f"tmp dir: {temp_dir}")
 
-        filesize = os.path.getsize(temp_filename)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
+        self.logger.debug(f"tmp file: {self.temp_file_path}")
+        self.logger.debug(f"tmp dir: {self.temp_file_path.parent}")
+
+        file_size = os.path.getsize(self.temp_file_path)
+        hfilesize = humanize_bytes(file_size)
+        txt = f"File size: {file_size} ({hfilesize})"
         self.logger.debug(txt)
-        if filesize > prms.Instruments.Arbin.max_res_filesize:
+        if file_size > prms.Instruments.Arbin.max_res_filesize:
             error_message = "\nERROR (loader):\n"
-            error_message += "%s > %s - File is too big!\n" % (
-                hfilesize,
-                humanize_bytes(prms.Instruments.Arbin.max_res_filesize),
+            error_message += (
+                f"{hfilesize} > {humanize_bytes(prms.Instruments.Arbin.max_res_filesize)} "
+                f"- File is too big!\n"
             )
             error_message += "(edit prms.Instruments.Arbin ['max_res_filesize'])\n"
             print(error_message)
@@ -959,10 +956,10 @@ class DataLoader(BaseLoader):
             use_mdbtools = True
 
         if use_mdbtools:
-            new_test = self._loader_posix(
-                file_name,
-                temp_filename,
-                temp_dir,
+            new_data = self._loader_posix(
+                self.name,
+                self.temp_file_path,
+                self.temp_file_path.parent,
                 *args,
                 bad_steps=bad_steps,
                 dataset_number=dataset_number,
@@ -970,9 +967,9 @@ class DataLoader(BaseLoader):
                 **kwargs,
             )
         else:
-            new_test = self._loader_win(
-                file_name,
-                temp_filename,
+            new_data = self._loader_win(
+                self.name,
+                self.temp_file_path,
                 *args,
                 bad_steps=bad_steps,
                 dataset_number=dataset_number,
@@ -980,9 +977,9 @@ class DataLoader(BaseLoader):
                 **kwargs,
             )
 
-        new_test = self._inspect(new_test)
+        new_data = self._inspect(new_data)
 
-        return new_test
+        return new_data
 
     @staticmethod
     def _create_tmp_files(

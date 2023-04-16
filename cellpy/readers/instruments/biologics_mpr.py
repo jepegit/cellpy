@@ -139,21 +139,6 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    def load(self, file_name):
-        """Load a raw data-file
-
-        Args:
-            file_name (path)
-
-        Returns:
-            loaded test
-        """
-        self.name = file_name
-        raw_file_loader = self.loader
-        new_rundata = raw_file_loader()
-        new_rundata = self.inspect(new_rundata)
-        return new_rundata
-
     def inspect(self, run_data):
         """inspect the file."""
         return run_data
@@ -192,6 +177,11 @@ class DataLoader(BaseLoader):
         Returns:
             new test
         """
+        print()
+        print(80 * "-")
+        print("loading file: %s" % file_name)
+        print("bad steps: %s" % bad_steps)
+        print(f"kwargs: {kwargs}")
         self.name = file_name
 
         # creating temporary file and connection
