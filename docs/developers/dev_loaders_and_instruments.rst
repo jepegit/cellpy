@@ -1,3 +1,4 @@
+=============
 About loaders
 =============
 
@@ -28,6 +29,9 @@ loaders ``DataLoader.loader`` method. One implication of this, since the ``DataL
 Structure of instrument loaders
 -------------------------------
 
+Each reader is a subclass of ``DataLoader`` (in ``base.py``). It must implement
+at least the following methods: ``get_raw_units``, ``get_raw_limits``, and ``loader``.
+
 The instrument loaders must all have a class named ``DataLoader`` which is a subclasses of ``BaseLoader``
 (in `cellpy/readers/instruments/base.py`) or one of its available subclasses (see below).
 
@@ -51,6 +55,28 @@ Subclassing ``AutoLoader``
 The ``AutoLoader`` class is a subclass of ``BaseLoader``. This class can be sub-classed
 if you want to make a data-reader for different type of "easily parsed" files (for example csv-files).
 
+The ``AutoLoader`` class implements loading a configuration
+from a configuration module of file (see below), and performs pre- and post-processing
+of the data/raw-file (the processors are turned on or off in the configuration).
+Subclasses of the ``AutoLoader`` class must implement the following methods:
+``parse_loader_parameters``, ``parse_formatter_parameters``, and ``query_file``.
+
+The ``query_file`` method must return a ``pandas.DataFrame`` and accept a filename as argument,
+e.g.::
+
+    def query_file(self, name):
+        return pd.read_csv(name)
+
+You can´t provide additional arguments to the ``query_file`` method, but instead
+promote them to instance variables using the ``parse_formatter_parameter`` method::
+
+    def parse_loader_parameters(self, **kwargs):
+        self.warn_bad_lines = kwargs.get("warn_bad_lines", None)
+
+and then use the instance variables in the ``query_file`` method::
+
+    def query_file(self, name):
+        return pd.read_csv(name, warn_bad_lines=self.warn_bad_lines)
 
 Subclassing ``TxtLoader``
 .........................
@@ -59,6 +85,10 @@ The ``TxtLoader`` class is a subclass of ``AutoLoader``. The subclass of
 a ``TxtLoader`` gets its information by loading model specifications from
 its respective module(``cellpy.readers.instruments.configurations.<module>``) or
 configuration file (yaml).
+
+The ``TxtLoader`` class uses ``pandas.read_csv`` as its query method,
+and reads configurations from modules in ``cellpy.readers.instruments.configuration`` (or config file).
+It also implements the ``model`` keyword.
 
 Examples of modules where the loader is subclassing ``TxtLoader`` are ``maccor_txt``,
 ``neware_txt`` and ``local_instrument``.
@@ -78,5 +108,7 @@ The ``custom`` loader
 This module is used for loading data using the `instrument="custom"` method.
 If no `instrument_file` is given (either directly or through the use
 of the :: separator), the default instrument file (yaml) will be used.
-This loader is based on the ``AutoLoader``. It is more flexible than the
-``local_instrument`` loader, but it is also more complicated to use.
+This loader is based on the ``AutoLoader``. It is more flexible than the loader
+in ``local_instrument`` and can for example chose between several file querying methods (
+csv, xls, xlsx), but it is also more complicated to use.
+

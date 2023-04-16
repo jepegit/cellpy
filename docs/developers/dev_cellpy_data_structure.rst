@@ -9,13 +9,11 @@ The ``CellpyCell`` object contains the main methods as well as the actual data::
 
     cellpy_instance = CellpyCell(...)
 
-Data is stored as ``Data`` instances within the list ``cells``.
-Even though one ``CellpyCell`` instance can contain several ``Data`` instances,
-it is (currently) recommended to only use one.
+Data is stored within an instance of the ``Data`` class.
 
 The ``Data`` instance can be reached using the ``data`` property::
 
-    cell_instance = cellpy_instance.data
+    cell_data = cellpy_instance.data
 
 The ``Data`` object
 -------------------

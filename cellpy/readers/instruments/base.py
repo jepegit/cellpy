@@ -520,10 +520,7 @@ class AutoLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        # self.name = name
-        # self.copy_to_temporary()
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
-        new_tests = []
 
         if self.pre_processors:
             self._pre_process()
