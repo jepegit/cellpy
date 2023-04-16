@@ -256,6 +256,7 @@ class DataLoader(BaseLoader):
         # new_tests = []
         # chonmj: seems to be broken at the moment. cellreader assumes a
         #         datatype "loader", not a list. removing the list for now.
+        # jepegit: Correct, this is no longer supported.
 
         data_df, meta_data = self._query_sql()
 
