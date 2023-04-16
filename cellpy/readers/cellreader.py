@@ -64,6 +64,7 @@ from cellpy.parameters.internal_settings import (
 )
 
 from cellpy.readers.core import (
+    OtherPath,
     Data,
     FileID,
     identify_last_data_point,
@@ -531,7 +532,7 @@ class CellpyCell:
         self.loader_class = self.instrument_factory.create(instrument, **kwargs)
         self.raw_limits = self.loader_class.get_raw_limits()
         # ----- create the loader ------------------------
-        self.loader = self.loader_class.loader
+        self.loader = self.loader_class.loader_executor
 
     def set_instrument(
         self,
@@ -693,6 +694,7 @@ class CellpyCell:
             return
         self.cellpy_datadir = directory
 
+    # TODO 249: update this so that it is aligned with OtherPaths etc
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
@@ -742,7 +744,7 @@ class CellpyCell:
 
     def _check_raw(self, file_names, abort_on_missing=False):
         """Get the file-ids for the res_files."""
-
+        # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
         strip_file_names = True
         check_on = self.filestatuschecker
         if not self._is_listtype(file_names):
@@ -926,6 +928,9 @@ class CellpyCell:
         # TODO @jepe Make setting or prm so that it is possible to update only new data
         # TODO @jepe Allow passing handle to progress-bar or update a global progressbar
 
+        warnings.warn(
+            DeprecationWarning("loadcell is deprecated. Use cellpy.get instead.")
+        )
         logging.debug("Started cellpy.cellreader.loadcell ")
 
         if cellpy_file is None:
@@ -1220,7 +1225,7 @@ class CellpyCell:
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
                 cellpy.Dataset object after initial loading.
-            is_a_file (bool): performs a is_file check if set to True.
+            is_a_file (bool): performs an is_file check if set to True.
 
         Keyword Args for merging:
             recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
@@ -1272,8 +1277,10 @@ class CellpyCell:
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
-            if is_a_file and not Path(file_name).is_file():
-                raise NoDataFound(f"Could not find the file {file_name}")
+            # TODO 249: this needs an update:
+            if is_a_file and not OtherPath(file_name).is_external:
+                if not Path(file_name).is_file():
+                    raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
                 file_name, pre_processor_hook=pre_processor_hook, **kwargs
@@ -2178,6 +2185,7 @@ class CellpyCell:
             warnings.warn("seems you lost info about your raw-data (missing fids)")
         return fidtable
 
+    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
     def _convert2fid_list(self, tbl):
         # used when reading cellpy-file
         logging.debug("converting loaded fid-table to FileID object")

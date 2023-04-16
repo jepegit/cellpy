@@ -108,15 +108,16 @@ class DataLoader(BaseLoader):
         Returns:
             data object
         """
-
-        data_dfs = self._parse_h5_data(name)
+        # self.name = name
+        # self.copy_to_temporary()
+        data_dfs = self._parse_h5_data()
         data = Data()
 
         # some metadata is available in the info_df part of the h5 file
-        data.loaded_from = name
+        data.loaded_from = self.name
         data.channel_index = data_dfs["info_df"]["IV_Ch_ID"].iloc[0]
         data.test_ID = data_dfs["info_df"]["Test_ID"].iloc[0]
-        data.test_name = Path(name).name
+        data.test_name = self.name.name
         data.creator = None
         data.schedule_file_name = data_dfs["info_df"]["Schedule_File_Name"].iloc[0]
         data.start_datetime = data_dfs["info_df"]["First_Start_DateTime"].iloc[0]
@@ -124,8 +125,8 @@ class DataLoader(BaseLoader):
         data.nom_cap = data_dfs["info_df"]["SpecificCapacity"].iloc[0]
 
         # Generating a FileID project:
-        fid = FileID(name)
-        data.raw_data_files.append(fid)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         data.raw = data_dfs["data_df"]
         data.raw_data_files_length.append(len(data_dfs["data_df"]))
@@ -176,7 +177,8 @@ class DataLoader(BaseLoader):
 
         return data
 
-    def _parse_h5_data(self, file_name):
+    def _parse_h5_data(self):
+        file_name = self.temp_file_path
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
         file_name = pathlib.Path(file_name)
 

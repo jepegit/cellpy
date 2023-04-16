@@ -1,0 +1,11 @@
+version: 2
+
+formats: all
+
+sphinx:
+    configuration: docs/conf.py
+
+conda:
+    environment: docs/environment_rtd.yml
+
+

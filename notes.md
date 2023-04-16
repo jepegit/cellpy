@@ -69,7 +69,30 @@ Steps:
 4. clean up dbreader (in progress)
 5. implement/test using an ORM (SQAlchemy?) (in progress)
 
-
 ### 250-improve-collectors
 
 ### 249-access-raw-files-ssh
+1. Added a subclass of pathlib.Path that can be used to access files on a remote server using ssh.
+2. Added new methods to the base loader and implemented new restrictions/requirements on the loaders.
+   1. all .loader methods must now start with assigning self.name and
+      running self.copy_to_temporary() to copy the file to a local temporary
+   2. fid is generated through running self.generate_fid() and fid is
+      added to the Data instances using self.fid as argument.
+
+
+3. Modify AtomicLoad in base.py so that it can handle
+   the new Path subclass and use it to load files from a remote server.
+   1. After some trail and errors, the next step now will be to implement the
+      actual ssh connection and file transfer in core.copy_external_file
+
+4. Implement the ssh connection and file transfer in core.copy_external_file
+   1. This will be done by using the paramiko library.
+   2. The connection will be established in core.copy_external_file and
+      the file will be copied to a temporary directory on the local machine.
+   3. The temporary directory will be deleted after the file has been copied.
+   4. Test is in test_cell_reader.py (test_copy_external_file) copied as txt in local/notes.md
+
+5. Update filefinder and prms to handle the new Path subclass.
+6. Check if loaders can be updated to automatically run the new methods
+   in the base loader (self.name and self.copy_to_temporary()).
+7. Update dependencies (setup.py, requirements.txt etc)

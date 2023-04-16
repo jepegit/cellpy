@@ -130,6 +130,7 @@ class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
     name = "arbin_sql_7"
+    _is_db = True
 
     def __init__(self, *args, **kwargs):
         """initiates the ArbinSQLLoader class"""
@@ -243,7 +244,7 @@ class DataLoader(BaseLoader):
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
-        """returns a Cell object with loaded data.
+        """returns a Data object with loaded data.
 
         Loads data from arbin SQL server db.
 
@@ -263,6 +264,7 @@ class DataLoader(BaseLoader):
         #         datatype "loader", not a list. removing the list for now.
 
         data_df, meta_data = self._query_sql(name)
+
         aux_data_df = None  # Needs to be implemented
 
         # init data
@@ -288,9 +290,9 @@ class DataLoader(BaseLoader):
         data.creator = meta_data["Creator"][0]
 
 
-        # Generating a FileID project - needs to be updated to allow for db queries:
-        fid = FileID(id_name)
-        data.raw_data_files.append(fid)
+        # Generating a FileID project:
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
@@ -367,8 +369,9 @@ class DataLoader(BaseLoader):
 
         return data
 
-    def _query_sql(self, name):
+    def _query_sql(self):
         # TODO: refactor and include optional SQL arguments
+        name = self.name
         name_str = f"('{name}', '')"
         
          # prepare engine

@@ -49,7 +49,31 @@ def dataset(cellpy_data_instance) -> Data:
         a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.set_mass(1.0)
-        a.make_summary(find_ocv=False, find_ir=True, find_end_voltage=True)
+        a.make_summary(find_ir=True, find_end_voltage=True)
         a.save(fdv.cellpy_file_path)
 
     return cellpy_data_instance.load(fdv.cellpy_file_path)
+
+
+@pytest.fixture
+def mock_env_cellpy_user(monkeypatch, parameters):
+    """Mock the environment variables for cellpy"""
+    monkeypatch.setenv("CELLPY_USER", parameters.env_cellpy_user)
+
+
+@pytest.fixture
+def mock_env_cellpy_host(monkeypatch, parameters):
+    """Mock the environment variables for cellpy"""
+    monkeypatch.setenv("CELLPY_HOST", parameters.env_cellpy_host)
+
+
+@pytest.fixture
+def mock_env_cellpy_key_filename(monkeypatch, parameters):
+    """Mock the environment variables for cellpy"""
+    monkeypatch.setenv("CELLPY_KEY_FILENAME", parameters.env_cellpy_key_filename)
+
+
+@pytest.fixture
+def mock_env_cellpy_password(monkeypatch, parameters):
+    """Mock the environment variables for cellpy"""
+    monkeypatch.setenv("CELLPY_PASSWORD", parameters.env_cellpy_password)

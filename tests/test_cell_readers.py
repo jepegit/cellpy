@@ -360,7 +360,7 @@ def test_merge(dataset):
 
 
 def test_fid(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     my_test = cellpy_data_instance.data
     assert len(my_test.raw_data_files) == 1
     fid_object = my_test.raw_data_files[0]
@@ -374,6 +374,7 @@ def test_fid(cellpy_data_instance, parameters):
 def test_only_fid(parameters):
     from cellpy.readers.core import FileID
 
+    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
     my_fid_one = FileID()
     my_file = parameters.cellpy_file_path
     my_fid_one.populate(my_file)
@@ -425,21 +426,22 @@ def test_load_step_specs(cellpy_data_instance, parameters):
 
 
 def test_load_arbin_res_aux_single(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path4)
+    cellpy_data_instance.from_raw(parameters.res_file_path4)
     assert "aux_0_u_C" in cellpy_data_instance.data.raw.columns
     assert "aux_d_0_dt_u_dC_dt" in cellpy_data_instance.data.raw.columns
     assert cellpy_data_instance.data.raw.size == 195345
 
 
 def test_load_arbin_res_aux_multiple(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path3)
+    cellpy_data_instance.from_raw(parameters.res_file_path3)
     assert "aux_0_u_V" in cellpy_data_instance.data.raw.columns
     assert "aux_11_u_V" in cellpy_data_instance.data.raw.columns
     assert cellpy_data_instance.data.raw.size == 134976
 
 
-def test_loadcell_raw(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path)
+def test_from_raw_local(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
+    cellpy_data_instance.make_summary()
     data_point = 1457
     step_time = 1500.05
     sum_discharge_time = 362198.12
@@ -448,15 +450,6 @@ def test_loadcell_raw(cellpy_data_instance, parameters):
     print(summary.head().T)
     assert my_test.summary.loc[1, "data_point"] == data_point
     assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
-
-    # TODO: include discharge time in summary?
-    # assert sum_discharge_time == pytest.approx(
-    #     my_test.summary.loc[:, "discharge_time"].sum(), 0.1
-    # )
-
-    # cellpy_data_instance.make_summary(find_ir=True)
-    # cellpy_data_instance.make_step_table()
-    # cellpy_data_instance.save(test_cellpy_file_full)
 
 
 def test_make_step_table(cellpy_data_instance, parameters):
@@ -576,7 +569,7 @@ def test_get_capacity(dataset):
 
 
 def test_save_cellpyfile_with_extension(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names()) + ".h5"
@@ -587,7 +580,7 @@ def test_save_cellpyfile_with_extension(cellpy_data_instance, parameters):
 
 
 def test_save_cellpyfile_auto_extension(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = next(tempfile._get_candidate_names())
@@ -598,7 +591,7 @@ def test_save_cellpyfile_auto_extension(cellpy_data_instance, parameters):
 
 
 def test_save_cellpyfile_auto_extension_pathlib(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     tmp_file = pathlib.Path(next(tempfile._get_candidate_names()))
@@ -610,7 +603,7 @@ def test_save_cellpyfile_auto_extension_pathlib(cellpy_data_instance, parameters
 
 
 def test_save_cvs(cellpy_data_instance, parameters):
-    cellpy_data_instance.loadcell(parameters.res_file_path)
+    cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
     temp_dir = tempfile.mkdtemp()

@@ -35,3 +35,4 @@ plotly
 kaleido==0.1.*
 seaborn
 wheel
+fabric

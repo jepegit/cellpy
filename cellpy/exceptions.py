@@ -63,4 +63,6 @@ class NoDataFound(Error):
 
 class UnderDefined(Error):
     """Raised when trying something that requires you to set
-    a missing prm first"""
+    a missing prm on environment variable first"""
+
+    pass
