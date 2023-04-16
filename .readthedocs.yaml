@@ -5,11 +5,11 @@ formats: all
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
     configuration: docs/conf.py
-
-build:
-    os: ubuntu-22.04
-    tools:
-        python: "3.9"
+#
+#build:
+#    os: ubuntu-22.04
+#    tools:
+#        python: "3.9"
 
 conda:
     environment: docs/environment_rtd.yml
