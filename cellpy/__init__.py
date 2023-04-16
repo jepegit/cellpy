@@ -20,13 +20,8 @@ __version__ = cellpy._version.__version__
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-try:
-    prmreader._read_prm_file(prmreader._get_prm_file())
-except FileNotFoundError:
-    warnings.warn("Could not find the config-file")
-except UserWarning:
-    warnings.warn("Could not read the config-file")
-
+init = prmreader.initialize
+init()
 
 get = cellreader.get
 __all__ = [
@@ -36,6 +31,7 @@ __all__ = [
     "prms",
     "filefinder",
     "get",
+    "init",
     "ureg",
     "Q",
 ]

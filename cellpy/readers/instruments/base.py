@@ -171,7 +171,94 @@ class AtomicLoad:
     """Atomic loading class"""
 
     instrument_name = "atomic_loader"
-    pass
+
+    _name = None
+    _temp_file_path = None
+    _fid = None
+    _is_db: bool = False
+    _copy_also_local: bool = True
+
+    @property
+    def is_db(self):
+        """Is the file stored in the database"""
+        return self._is_db
+
+    @is_db.setter
+    def is_db(self, value: bool):
+        """Is the file stored in the database"""
+        self._is_db = value
+
+    @property
+    def name(self):
+        """The name of the file to be loaded"""
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        """The name of the file to be loaded"""
+        if not isinstance(value, core.OtherPath):
+            logging.debug("converting to OtherPath")
+            value = core.OtherPath(value)
+        self._name = value
+
+    @property
+    def temp_file_path(self):
+        """The name of the file to be loaded if copied to a temporary file"""
+        return self._temp_file_path
+
+    @temp_file_path.setter
+    def temp_file_path(self, value):
+        """The name of the file to be loaded if copied to a temporary file"""
+        self._temp_file_path = value
+
+    @property
+    def fid(self):
+        """The unique file id"""
+        if self._fid is None:
+            self.generate_fid()
+        return self._fid
+
+    def generate_fid(self, value=None):
+        """Generate a unique file id"""
+        if self.is_db:
+            self._fid = core.FileID(self.name, is_db=True)
+        elif self._temp_file_path is not None:
+            self._fid = core.FileID(self.temp_file_path)
+        elif self._name is not None:
+            self._fid = core.FileID(self.name)
+        elif value is not None:
+            self._fid = core.FileID(value)
+        else:
+            raise ValueError("could not generate fid")
+
+    def copy_to_temporary(self):
+        """Copy file to a temporary file"""
+
+        logging.debug(f"external file received? {self.name.is_external=}")
+        if self.name is None:
+            raise ValueError("no file name given to loader class (self.name is None)")
+
+        if not self._copy_also_local and not self.name.is_external:
+            self._temp_file_path = self.name
+            return
+
+        self._temp_file_path = self.name.copy()
+
+    def loader_executor(self, *args, **kwargs):
+        """Load the file"""
+        name = args[0]
+        self.name = name
+        if not self.is_db:
+            self.copy_to_temporary()
+        cellpy_data = self.loader(*args, **kwargs)
+        return cellpy_data
+
+    def loader(self, *args, **kwargs):
+        """The method that does the actual loading.
+
+        This method should be overwritten by the specific loader class.
+        """
+        ...
 
 
 class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
@@ -254,6 +341,11 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def loader(self, *args, **kwargs) -> list:
         """Loads data into a Data object and returns it"""
+        # This method is used by cellreader through the AtomicLoad.loader_executor method.
+        # It should be overwritten by the specific loader class.
+        #
+        # Notice that it is highly recommended that you don't try to implement .loader_executor yourself
+        # in your subclass!
         pass
 
     @staticmethod
@@ -318,9 +410,6 @@ class AutoLoader(BaseLoader):
         self.model = kwargs.pop("model", self.default_model)
         if self.auto_register_config:
             self.config_params = self.register_configuration()
-
-        self.name = None
-        self._file_path = None
 
         self.parse_formatter_parameters(**kwargs)
 
@@ -407,19 +496,13 @@ class AutoLoader(BaseLoader):
         )
 
     def _pre_process(self):
-        # create a copy of the file and set file_path attribute
-        temp_dir = pathlib.Path(tempfile.gettempdir())
-        temp_filename = temp_dir / self.name.name
-        shutil.copy2(self.name, temp_dir)
-        logging.debug(f"tmp file: {temp_filename}")
-        self._file_path = temp_filename
 
         for processor_name in self.pre_processors:
             if self.pre_processors[processor_name]:
                 if hasattr(pre_processors, processor_name):
                     logging.critical(f"running pre-processor: {processor_name}")
                     processor = getattr(pre_processors, processor_name)
-                    self._file_path = processor(self._file_path)
+                    self.temp_file_path = processor(self.temp_file_path)
                 else:
                     raise NotImplementedError(
                         f"{processor_name} is not currently supported - aborting!"
@@ -437,8 +520,8 @@ class AutoLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
-        self._file_path = pathlib.Path(name)
-        self.name = pathlib.Path(name)
+        # self.name = name
+        # self.copy_to_temporary()
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
         new_tests = []
 
@@ -447,7 +530,7 @@ class AutoLoader(BaseLoader):
 
         self.parse_loader_parameters(**kwargs)
 
-        data_df = self.query_file(self._file_path)
+        data_df = self.query_file(self.temp_file_path)
 
         if pre_processor_hook is not None:
             logging.debug("running pre-processing-hook")
@@ -466,8 +549,8 @@ class AutoLoader(BaseLoader):
         data.start_datetime = meta.get("start_datetime", None)
 
         # Generating a FileID project:
-        fid = core.FileID(name)
-        data.raw_data_files.append(fid)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))

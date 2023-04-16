@@ -22,7 +22,7 @@ import box
 # locations etc. for reading custom parameters
 script_dir = os.path.abspath(os.path.dirname(__file__))
 cur_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
-user_dir = os.path.expanduser("~")
+user_dir = Path.home()
 wdir = Path(cur_dir)
 
 
@@ -67,6 +67,7 @@ class PathsClass(CellPyConfig):
     batchfiledir: Union[Path, str] = wdir
     instrumentdir: Union[Path, str] = wdir
     db_filename: str = "cellpy_db.xlsx"  # used for simple excel db reader
+    env_file: Union[Path, str] = user_dir / ".env_cellpy"
 
 
 @dataclass

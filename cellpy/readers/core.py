@@ -6,21 +6,27 @@ version definitions.
 import abc
 import datetime
 import importlib
+import io
+import getpass
 import logging
 import os
 import pathlib
 import pickle
+import shutil
 import sys
+import tempfile
 import time
 import warnings
 from typing import Any, Tuple, Dict, Optional, List, Union
 
+import dotenv
+import fabric
 import numpy as np
 import pandas as pd
 import pint
 from scipy import interpolate
 
-from cellpy.exceptions import NullData
+from cellpy.exceptions import NullData, UnderDefined
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     get_headers_normal,
@@ -39,11 +45,48 @@ from cellpy.parameters.internal_settings import (
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
-URI_PREFIXES = ["ssh://", "sftp://"]
+URI_PREFIXES = ["ssh:", "sftp:", "scp:", "http:", "https:", "ftp:", "ftps:", "smb:"]
+IMPLEMENTED_PROTOCOLS = ["ssh:", "sftp:", "scp:"]
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
 Q = ureg.Quantity
+
+
+def _clean_up_original_path_string(path_string):
+    if not isinstance(path_string, str):
+        if isinstance(path_string, OtherPath):
+            path_string = path_string.original
+        elif isinstance(path_string, pathlib.PosixPath):
+            path_string = "/".join(path_string.parts)
+        elif isinstance(path_string, pathlib.WindowsPath):
+            parts = list(path_string.parts)
+            if not parts:
+                parts = [""]
+            parts[0] = parts[0].replace("\\", "")
+            path_string = "/".join(parts)
+        else:
+            path_string = str(path_string)
+    return path_string
+
+
+def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
+    # path_sep = "\\" if os.name == "nt" else "/"
+    _is_external = False
+    _location = ""
+    _uri_prefix = ""
+    for prefix in URI_PREFIXES:
+        if path_string.startswith(prefix):
+            path_string = path_string.replace(prefix, "")
+            path_string = path_string.lstrip("/")
+            _is_external = True
+            _uri_prefix = prefix + "//"
+            _location, *rest = path_string.split("/")
+            path_string = "/" + "/".join(rest)
+            break
+    path_string = path_string or "."
+    path_string = path_string.replace("\\", "/")
+    return path_string, _is_external, _uri_prefix, _location
 
 
 class OtherPath(pathlib.Path):
@@ -53,44 +96,130 @@ class OtherPath(pathlib.Path):
         is_external (bool): is True if the path is external.
         location (str): the location of the external path (e.g. a server name).
         uri_prefix (str): the prefix of the external path (e.g. ssh:// or sftp://).
+        raw_path (str): the path without any uri_prefix or location.
+        original (str): the original path string.
+        full_path (str): the full path (including uri_prefix and location).
+    Additional methods:
+        copy (method): a method for copying the file to a local path.
     """
 
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     def __new__(cls, *args, **kwargs):
-        cls._is_external = False
-        cls._location = ""
-        cls._uri_prefix = ""
-        if not args:
-            return super().__new__(cls, **kwargs)
+        if args:
+            path, *args = args
+        else:
+            path = "."
+            logging.debug("initiating OtherPath without any arguments")
+        if not path:
+            logging.debug("initiating OtherPath with empty path")
+            path = "."
+        if isinstance(path, OtherPath):
+            path = path._original
+        path = _clean_up_original_path_string(path)
+        cls.__original = path
+        path = _check_external(path)[0]
+        return super().__new__(cls, path, *args, **kwargs)
 
-        path_string, *args = args
-        if isinstance(path_string, str):
-            for prefix in URI_PREFIXES:
-                if path_string.startswith(prefix):
-                    path_string = path_string.replace(prefix, "")
-                    cls._is_external = True
-                    cls._uri_prefix = prefix
-                    cls._location, *rest = path_string.split("/")
-                    path_string = "/" + "/".join(rest)
-        return super().__new__(cls, path_string, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        _path_string, *args = args
+        if not _path_string:
+            path_string = "."
+        else:
+            path_string = self.__original
+        self._original = self.__original
+        self._check_external(path_string)
+        super().__init__(*args, **kwargs)
+
+    def _check_external(self, path_string):
+        (
+            path_string,
+            self._is_external,
+            self._uri_prefix,
+            self._location,
+        ) = _check_external(path_string)
+        self._raw_path = path_string
+
+    def resolve(self, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
+            return self
+        return super().resolve(*args, **kwargs)
 
     @property
-    def is_external(self):
+    def original(self) -> str:
+        return self._original
+
+    @property
+    def raw_path(self) -> str:
+        # this will return a leading slash for some edge cases
+        return self._raw_path
+
+    @property
+    def full_path(self) -> str:
+        if self._is_external:
+            return f"{self._uri_prefix}{self._location}{self._raw_path}"
+        return self._original
+
+    @property
+    def is_external(self) -> bool:
         return self._is_external
 
     @property
-    def uri_prefix(self):
+    def uri_prefix(self) -> str:
         return self._uri_prefix
 
     @property
-    def location(self):
+    def location(self) -> str:
         return self._location
 
-    def as_uri(self):
+    def as_uri(self) -> str:
         if self._is_external:
             return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
         return super().as_uri()
+
+    def copy(self, destination: pathlib.Path = None) -> pathlib.Path:
+        """Copy the file to a destination."""
+        if destination is None:
+            destination = pathlib.Path(tempfile.gettempdir())
+        else:
+            destination = pathlib.Path(destination)
+
+        path_of_copied_file = destination / self.name
+        if not self.is_external:
+            shutil.copy2(self, destination)
+        else:
+            host = self.location
+            uri_prefix = self.uri_prefix.replace("//", "")
+
+            if uri_prefix not in URI_PREFIXES:
+                raise ValueError(f"uri_prefix {uri_prefix} not recognized")
+            if uri_prefix not in IMPLEMENTED_PROTOCOLS:
+                raise ValueError(
+                    f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet"
+                )
+
+            password = os.getenv("CELLPY_PASSWORD", None)
+            key_filename = os.getenv("CELLPY_KEY_FILENAME", None)
+
+            if password is None and key_filename is None:
+                raise UnderDefined(
+                    "You must define either CELLPY_PASSWORD "
+                    "or CELLPY_KEY_FILENAME environment variables."
+                )
+
+            if key_filename is not None:
+                connect_kwargs = {"key_filename": key_filename}
+            else:
+                connect_kwargs = {"password": password}
+
+            self._copy_with_fabric(host, connect_kwargs, destination)
+
+        return path_of_copied_file
+
+    def _copy_with_fabric(self, host, connect_kwargs, destination):
+        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+            conn.get(self.raw_path, destination)
 
 
 # https://stackoverflow.com/questions/60067953/
@@ -212,7 +341,13 @@ class FileID:
 
     """
 
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, is_db=False):
+        """Initialize the FileID class."""
+        self.is_db = is_db
+        if self.is_db:
+            self._from_db(filename)
+            return
+
         make_defaults = True
         if filename:
             if os.path.isfile(filename):
@@ -238,21 +373,38 @@ class FileID:
             self._last_data_point = 0  # to be used later when updating is implemented
 
     def __str__(self):
-        txt = "\n<fileID>\n"
+        if self.is_db:
+            txt = "\n<fileID><is_db>\n"
+        else:
+            txt = "\n<fileID><is_file>\n"
+
         txt += f"full name: {self.full_name}\n"
         txt += f"name: {self.name}\n"
         txt += f"location: {self.location}\n"
+
         if self.last_modified is not None:
             txt += f"modified: {self.last_modified}\n"
         else:
             txt += "modified: NAN\n"
+
         if self.size is not None:
             txt += f"size: {self.size}\n"
         else:
             txt += "size: NAN\n"
 
         txt += f"last data point: {self.last_data_point}\n"
+
         return txt
+
+    def _from_db(self, filename):
+        self.name = filename
+        self.full_name = filename
+        self.size = 0
+        self.last_modified = None
+        self.last_accessed = None
+        self.last_info_changed = None
+        self.location = None
+        self._last_data_point = 0
 
     @property
     def last_data_point(self):
@@ -648,7 +800,7 @@ def generate_default_factory():
     return instrument_factory
 
 
-def find_all_instruments() -> Dict[str, Tuple[str, str]]:
+def find_all_instruments() -> Dict[str, Tuple[str, pathlib.Path]]:
     """finds all the supported instruments"""
 
     import cellpy.readers.instruments as hard_coded_instruments_site
@@ -1093,6 +1245,95 @@ def abs_path(path):
     return path.resolve()
 
 
+# TODO 249: move this to helpers
+def create_connection(
+    host=None,
+    user=None,
+    password=None,
+    key_filename=None,
+    ask_for_password=False,
+    protocol="ssh",
+):
+    """Creates a connection to a remote host.
+
+    Args:
+        host (str): The host to connect to; uses env vars if not given.
+        user (str): The user to connect as; uses env vars if not given.
+        password (str): The password to use; uses env vars if not given.
+        key_filename (str): The key filename to use; uses env vars if not given.
+        ask_for_password (bool): If True, will ask for password if no password and key_filename is found.
+        protocol (str): The protocol to use. Currently, only "ssh" and "sftp" is supported.
+
+    Notes:
+        If no password and no key_filename is found, will try to connect without password.
+        Using the key_filename will override the password.
+
+    Returns:
+        fabric's implementation of paramiko.SSHClient: The SSH client.
+    """
+    if protocol not in ["ssh", "sftp"]:
+        raise ValueError(f"Protocol {protocol} is not supported.")
+    env_file = pathlib.Path(prms.Paths.env_file)
+    env_file_in_user_dir = pathlib.Path.home() / prms.Paths.env_file
+    if env_file.is_file():
+        dotenv.load_dotenv(env_file)
+    elif env_file_in_user_dir.is_file():
+        dotenv.load_dotenv(env_file_in_user_dir)
+    else:
+        logging.debug("No .env file found. Using default values.")
+
+    host = host or os.getenv("CELLPY_HOST")
+    user = user or os.getenv("CELLPY_USER")
+    password = password or os.getenv("CELLPY_PASSWORD", None)
+    key_filename = key_filename or os.getenv("CELLPY_KEY_FILENAME", None)
+
+    if password is None and key_filename is None and ask_for_password:
+        try:
+            password = getpass.getpass()
+        except Exception as e:
+            logging.debug(f"Could not get password: {e}")
+            return
+
+    if key_filename is not None:
+        if not pathlib.Path(key_filename).is_file():
+            logging.debug(f"Could not find key file: {key_filename}")
+            logging.debug(f"Trying to connect without key file.")
+            connect_kwargs = {}
+        else:
+            connect_kwargs = {"key_filename": key_filename}
+    elif password is not None:
+        connect_kwargs = {"password": password}
+    else:
+        connect_kwargs = {}
+    connection = fabric.Connection(host, user, connect_kwargs=connect_kwargs)
+    return connection
+
+
+# TODO 249: move this to helpers
+def copy_external_file(src: OtherPath, dst: OtherPath, *args, **kwargs):
+    """Copies a file from src to dst."""
+    if not isinstance(src, OtherPath):
+        src = OtherPath(src)
+    if not isinstance(dst, OtherPath):
+        dst = OtherPath(dst)
+    if not src.is_external:
+        raise ValueError("src must be an external file")
+    if dst.is_external:
+        raise ValueError("dst must be a local file")
+    # TODO 249: currently only supporting sftp and ssh and env variables - should be extended by unpacking src
+    if src.uri_prefix.startswith("sftp"):
+        c = create_connection(protocol="sftp")
+    elif src.uri_prefix.startswith(protocol="ssh"):
+        c = create_connection("ssh")
+    else:
+        raise ValueError(f"Unknown protocol: {src.uri_prefix}")
+    c.get(src.raw_path, local=str(dst))
+    c.close()
+
+
+# ---------------- LOCAL DEV TESTS ----------------
+
+
 def check_convert_from_simple_unit_label_to_string_unit_label():
     k = "resistance"
     v = 1.0
@@ -1150,13 +1391,16 @@ def check_path_things():
 
 def check_another_path_things():
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
-    p02 = r"ssh://jepe@odin.ad.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@server.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p04 = r"..\data\20160805_test001_45_cc_01.res"
-    for p in [p01, p02, p03, p04]:
+    p05 = pathlib.Path(p01)
+    p06 = pathlib.Path(p02)
+    for p in [p01, p02, p03, p04, p05, p06]:
         print(f"{p}".center(110, "-"))
         p2 = OtherPath(p)
         print(f"{p2=}")
+        print(p2)
         print(f"{p2.resolve()=}")
         print(f"{p2.drive=}")
         print(f"{p2.exists()=}")
@@ -1177,8 +1421,43 @@ def check_another_path_things():
         print(f"{p2.suffix=}")
         print(f"{p2.suffixes=}")
         print(f"{p2.parts=}")
+        print(f"{type(p2)}")
+        print(f"{isinstance(p2, pathlib.Path)=}")
+        print(f"{isinstance(p2, OtherPath)=}")
         print()
 
 
+def check_how_other_path_works():
+    p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@somewhere.else.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p03 = None
+    p03b = OtherPath(p03)
+    p05 = pathlib.Path(p01)
+    p06 = pathlib.Path(p02)
+    p07 = OtherPath(p01)
+    p08 = OtherPath(p02)
+    print(80 * "=")
+    for p in [p01, p02, p03, p03b, p05, p06, p07, p08]:
+        print(f"{p}".center(110, "-"))
+        print(f"{type(p)}".center(110, "*"))
+        p2 = OtherPath(p)
+        print(f"{p2=}")
+        print(p2)
+        print(f"{p2.raw_path=}")
+        print(f"{p2.is_external=}")
+        print(f"{p2.location=}")
+        print(f"{p2.uri_prefix=}")
+        print(f"{p2._original=}")
+        print(f"{p2.full_path=}")
+        print(f"{p2.parts=}")
+
+
+def check_copy_external_file():
+    prms.Paths.env_file = r"C:\scripting\cellpy\local\.env_cellpy"
+    dst = r"C:\scripting\cellpy\tmp\20210629_moz_cat_02_cc_01.res"
+    src = "ssh://jepe@not.in.no/home/jepe@ad.ife.no/Temp/20210629_moz_cat_02_cc_01.res"
+    copy_external_file(src, dst)
+
+
 if __name__ == "__main__":
-    check_another_path_things()
+    check_how_other_path_works()

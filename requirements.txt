@@ -18,3 +18,5 @@ cookiecutter
 sqlalchemy>=2.0.0
 sqlalchemy-access
 pint
+python-dotenv
+fabric

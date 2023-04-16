@@ -139,20 +139,6 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    def load(self, file_name):
-        """Load a raw data-file
-
-        Args:
-            file_name (path)
-
-        Returns:
-            loaded test
-        """
-        raw_file_loader = self.loader
-        new_rundata = raw_file_loader(file_name)
-        new_rundata = self.inspect(new_rundata)
-        return new_rundata
-
     def inspect(self, run_data):
         """inspect the file."""
         return run_data
@@ -181,7 +167,7 @@ class DataLoader(BaseLoader):
         raise NotImplementedError
 
     def loader(self, file_name, bad_steps=None, **kwargs):
-        """Loads data from biologics .mpr files.
+        """Loads data from BioLogics mpr files.
 
         Args:
             file_name (str): path to .res file.
@@ -191,28 +177,28 @@ class DataLoader(BaseLoader):
         Returns:
             new test
         """
-        if not os.path.isfile(file_name):
-            self.logger.info("Missing file_\n   %s" % file_name)
-            return None
-
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.logger.debug(txt)
+        print("bad steps: %s" % bad_steps)
+        print(f"kwargs: {kwargs}")
+        # self.name = file_name
 
         # creating temporary file and connection
-        temp_dir = tempfile.gettempdir()
-        temp_filename = os.path.join(temp_dir, os.path.basename(file_name))
-        shutil.copy2(file_name, temp_dir)
+        # self.copy_to_temporary()
+        temp_filename = self.temp_file_path
+
+        filesize = os.path.getsize(self.temp_file_path)
+        hfilesize = humanize_bytes(filesize)
+        txt = "File size: %i (%s)" % (filesize, hfilesize)
+        self.logger.debug(txt)
 
         self.logger.debug("tmp file: %s" % temp_filename)
         self.logger.debug("HERE WE LOAD THE DATA")
 
         data = Data()
-        fid = FileID(file_name)
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
 
         # div parameters and information (probably load this last)
-        data.loaded_from = file_name
+        data.loaded_from = self.name
 
         # some overall prms
         data.channel_index = None
@@ -221,7 +207,6 @@ class DataLoader(BaseLoader):
         data.start_datetime = None
         data.test_ID = None
         data.test_name = None
-        data.raw_data_files.append(fid)
 
         # --------- read raw-data (normal-data) -------------------------
         self.logger.debug("reading raw-data")
