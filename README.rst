@@ -1,4 +1,4 @@
-.. image:: https://github.com/jepegit/cellpy/blob/master/docs/figures/cellpy-icon-long.svg
+.. image:: https://github.com/jepegit/cellpy/blob/master/docs/_static/cellpy-icon-long.svg
   :height: 100
   :alt: cellpy
 
@@ -41,11 +41,11 @@ The easiest way to install ``cellpy`` is to install with conda or pip.
 
 With conda::
 
-   conda install cellpy --channel conda-forge
+   conda install -c conda-forge cellpy
 
 Or if you prefer installing using pip::
 
-   pip install cellpy
+   python -m pip install cellpy
 
 Have a look at the documentation for more detailed installation procedures, especially
 with respect to "difficult" dependencies when installing with pip.
