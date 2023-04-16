@@ -196,7 +196,7 @@ class AtomicLoad:
     @name.setter
     def name(self, value):
         """The name of the file to be loaded"""
-        if not isinstance(value, core.OtherPath):
+        if not self.is_db and not isinstance(value, core.OtherPath):
             logging.debug("converting to OtherPath")
             value = core.OtherPath(value)
         self._name = value

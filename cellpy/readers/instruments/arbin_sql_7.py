@@ -216,10 +216,6 @@ class DataLoader(BaseLoader):
     @staticmethod
     def get_raw_units():
         raw_units = dict()
-        raw_units["current"] = 1.0  # A
-        raw_units["charge"] = 1.0  # Ah
-        raw_units["mass"] = 1.0  # g
-        raw_units["voltage"] = 1.0  # V
         raw_units["current"] = "A"
         raw_units["charge"] = "Ah"
         raw_units["mass"] = "g"
@@ -241,8 +237,6 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    # TODO: rename this (for all instruments) to e.g. load
-    # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
         """returns a Data object with loaded data.
 
@@ -258,21 +252,19 @@ class DataLoader(BaseLoader):
         warnings.warn(
             "This loader is under development and might be missing some features."
         )
-        
-        # new_tests = [] 
-        # chonmj: seems to be broken at the moment. cellreader assumes a 
+
+        # new_tests = []
+        # chonmj: seems to be broken at the moment. cellreader assumes a
         #         datatype "loader", not a list. removing the list for now.
 
-        data_df, meta_data = self._query_sql(name)
+        data_df, meta_data = self._query_sql()
 
         aux_data_df = None  # Needs to be implemented
 
         # init data
-
-        # selecting only one value (might implement multi-channel/id use later)
         # selecting only one value (might implement id selection later)
         test_id = meta_data["Test_ID"].iloc[0]
-        id_name = f"{SQL_SERVER}:{name}:{test_id}"
+        id_name = f"{SQL_SERVER}:{self.name}:{test_id}"
 
         channel_id = meta_data["IV_Ch_ID"][0]
 
@@ -280,15 +272,15 @@ class DataLoader(BaseLoader):
         data.loaded_from = id_name
         data.channel_index = channel_id
         data.test_ID = test_id
-        data.test_name = name
+        data.test_name = self.name
 
-        # The following meta data is not implemented yet for SQL loader:
+        # The following metadata is not implemented yet for SQL loader:
         data.channel_number = None
         data.item_ID = None
+        # Implemented metadata:
         data.schedule_file_name = meta_data["Schedule_File_Name"][0]
         data.start_datetime = meta_data["First_Start_DateTime"][0]
         data.creator = meta_data["Creator"][0]
-
 
         # Generating a FileID project:
         self.generate_fid()
@@ -296,12 +288,10 @@ class DataLoader(BaseLoader):
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
-        # data.summary = stat_df
         data = self._post_process(data)
 
         # TODO: implement this:
         # data = self.identify_last_data_point(data)
-        # new_tests.append(data)
 
         return data
 
@@ -373,7 +363,7 @@ class DataLoader(BaseLoader):
         # TODO: refactor and include optional SQL arguments
         name = self.name
         name_str = f"('{name}', '')"
-        
+
          # prepare engine
         params = urllib.parse.quote_plus(
             f"DRIVER={SQL_DRIVER};"
@@ -443,7 +433,7 @@ class DataLoader(BaseLoader):
                     index="Date_Time", columns="Data_Type", values="Data_Value"
                 ).reset_index()
             )
-            
+
             # convert column headers to strings
             datas_df[index].columns=datas_df[index].columns.astype(str)
             # TODO: rename columns
@@ -456,9 +446,9 @@ class DataLoader(BaseLoader):
             #   27: PV_dVdt
             #   30: PV_InternalResistance
             # Full column key found in 'SQL Table IDs.txt' file.
-                               
+
         data_df = pd.concat(datas_df, axis=0)
-        
+
 
         return data_df, meta_data
 
