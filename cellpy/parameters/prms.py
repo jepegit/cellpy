@@ -297,7 +297,7 @@ Arbin = {
     "office_version": "64bit",
     "SQL_server": r"localhost\SQLEXPRESS",
     "SQL_UID": "sa",
-    "SQL_PWD": "Changeme123",
+    "SQL_PWD": "ChangeMe123",
     "SQL_Driver": "SQL Server",
 }
 

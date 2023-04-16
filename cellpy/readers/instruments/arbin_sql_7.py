@@ -216,6 +216,10 @@ class DataLoader(BaseLoader):
     @staticmethod
     def get_raw_units():
         raw_units = dict()
+        raw_units["current"] = 1.0  # A
+        raw_units["charge"] = 1.0  # Ah
+        raw_units["mass"] = 1.0  # g
+        raw_units["voltage"] = 1.0  # V
         raw_units["current"] = "A"
         raw_units["charge"] = "Ah"
         raw_units["mass"] = "g"
@@ -250,17 +254,22 @@ class DataLoader(BaseLoader):
         Returns:
             new_tests (list of data objects)
         """
+
         warnings.warn(
             "This loader is under development and might be missing some features."
         )
-        new_tests = []
-        # self.name = name
-        self.is_db = True
-        data_df, meta_data = self._query_sql()
+        
+        # new_tests = [] 
+        # chonmj: seems to be broken at the moment. cellreader assumes a 
+        #         datatype "loader", not a list. removing the list for now.
+
+        data_df, meta_data = self._query_sql(name)
+
         aux_data_df = None  # Needs to be implemented
 
         # init data
 
+        # selecting only one value (might implement multi-channel/id use later)
         # selecting only one value (might implement id selection later)
         test_id = meta_data["Test_ID"].iloc[0]
         id_name = f"{SQL_SERVER}:{name}:{test_id}"
@@ -272,13 +281,14 @@ class DataLoader(BaseLoader):
         data.channel_index = channel_id
         data.test_ID = test_id
         data.test_name = name
+
+        # The following meta data is not implemented yet for SQL loader:
+        data.channel_number = None
+        data.item_ID = None
         data.schedule_file_name = meta_data["Schedule_File_Name"][0]
         data.start_datetime = meta_data["First_Start_DateTime"][0]
         data.creator = meta_data["Creator"][0]
 
-        # The following metadata is not implemented yet for SQL loader:
-        data.channel_number = None
-        data.item_ID = None
 
         # Generating a FileID project:
         self.generate_fid()
@@ -286,12 +296,14 @@ class DataLoader(BaseLoader):
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
+        # data.summary = stat_df
         data = self._post_process(data)
+
         # TODO: implement this:
         # data = self.identify_last_data_point(data)
-        new_tests.append(data)
+        # new_tests.append(data)
 
-        return new_tests
+        return data
 
     def _post_process(self, data, **kwargs):
         # TODO: move this to parent
@@ -335,7 +347,6 @@ class DataLoader(BaseLoader):
 
         if fix_datetime:
             logging.debug("fix date_time: true")
-
             h_datetime = self.cellpy_headers_normal.datetime_txt
             logging.debug("converting to datetime format")
 
@@ -362,8 +373,8 @@ class DataLoader(BaseLoader):
         # TODO: refactor and include optional SQL arguments
         name = self.name
         name_str = f"('{name}', '')"
-
-        # prepare engine
+        
+         # prepare engine
         params = urllib.parse.quote_plus(
             f"DRIVER={SQL_DRIVER};"
             f"SERVER={SQL_SERVER};"
@@ -430,9 +441,11 @@ class DataLoader(BaseLoader):
             datas_df.append(
                 raw_df.pivot(
                     index="Date_Time", columns="Data_Type", values="Data_Value"
-                )
+                ).reset_index()
             )
-
+            
+            # convert column headers to strings
+            datas_df[index].columns=datas_df[index].columns.astype(str)
             # TODO: rename columns
             #   21: PV_Voltage
             #   22: PV_Current
@@ -443,8 +456,128 @@ class DataLoader(BaseLoader):
             #   27: PV_dVdt
             #   30: PV_InternalResistance
             # Full column key found in 'SQL Table IDs.txt' file.
-
-        event_df = pd.concat(events_df, axis=0)
+                               
         data_df = pd.concat(datas_df, axis=0)
+        
 
         return data_df, meta_data
+
+
+def check_sql_loader(server: str = None, tests: list = None):
+    test_name = tuple(tests) + ("",)  # neat trick :-)
+    print(f"** test str: {test_name}")
+    con_str = "Driver={SQL Server};Server=" + server + ";Trusted_Connection=yes;"
+    master_q = (
+        "SELECT Database_Name, Test_Name FROM "
+        "ArbinMasterData.dbo.TestList_Table WHERE "
+        f"ArbinMasterData.dbo.TestList_Table.Test_Name IN {test_name}"
+    )
+
+    conn = pyodbc.connect(con_str)
+    print("** connected to server")
+    sql_query = pd.read_sql_query(master_q, conn)
+    print("** SQL query:")
+    print(sql_query)
+    for index, row in sql_query.iterrows():
+        # Muhammad, why is it a loop here?
+        print(f"** index: {index}")
+        print(f"** row: {row}")
+        data_query = (
+            "SELECT "
+            + str(row["Database_Name"])
+            + ".dbo.IV_Basic_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
+            "FROM " + str(row["Database_Name"]) + ".dbo.IV_Basic_Table "
+            "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+            "ON "
+            + str(row["Database_Name"])
+            + ".dbo.IV_Basic_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
+            "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
+            + str(test_name)
+        )
+
+        stat_query = (
+            "SELECT "
+            + str(row["Database_Name"])
+            + ".dbo.StatisticData_Table.*, ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name "
+            "FROM " + str(row["Database_Name"]) + ".dbo.StatisticData_Table "
+            "JOIN ArbinPro8MasterInfo.dbo.TestList_Table "
+            "ON "
+            + str(row["Database_Name"])
+            + ".dbo.StatisticData_Table.Test_ID = ArbinPro8MasterInfo.dbo.TestList_Table.Test_ID "
+            "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
+            + str(test_name)
+        )
+        print(f"** data query: {data_query}")
+        print(f"** stat query: {stat_query}")
+
+        # if looping, maybe these should be concatenated?
+        data_df = pd.read_sql_query(data_query, conn)
+        stat_df = pd.read_sql_query(stat_query, conn)
+
+    return data_df, stat_df
+
+
+def check_query():
+    import pathlib
+
+    name = ["20201106_HC03B1W_1_cc_01"]
+    dd, ds = check_sql_loader(SQL_SERVER, name)
+    out = pathlib.Path(r"C:\scripts\notebooks\Div")
+    dd.to_clipboard()
+    input("x")
+    ds.to_clipboard()
+
+
+def check_loader():
+    print(" Testing connection to arbin sql server ".center(80, "-"))
+
+    sql_loader = DataLoader()
+    name = "20201106_HC03B1W_1_cc_01"
+    cell = sql_loader.loader(name)
+
+    return cell
+
+
+def check_loader_from_outside():
+    import matplotlib.pyplot as plt
+
+    from cellpy import cellreader
+
+    name = "20200820_CoFBAT_slurry07B_01_cc_01"
+    c = cellreader.CellpyData()
+    c.set_instrument("arbin_sql")
+    # print(c)
+    c.from_raw(name)
+    # print(c)
+    c.make_step_table()
+    c.make_summary()
+    # print(c)
+    raw = c.cell.raw
+    steps = c.cell.steps
+    summary = c.cell.summary
+    raw.to_csv(r"C:\scripting\trash\raw.csv", sep=";")
+    steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
+    summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
+
+    n = c.get_number_of_cycles()
+    print(f"number of cycles: {n}")
+
+    cycle = c.get_cap(1, method="forth")
+    print(cycle.head())
+    cycle.plot(x="capacity", y="voltage")
+    plt.show()
+
+
+def check_get():
+    import cellpy
+
+    name = "20200820_CoFBAT_slurry07B_01_cc_01"
+    c = cellpy.get(name, instrument="arbin_sql")
+    print(c)
+
+
+if __name__ == "__main__":
+    # test_query()
+    # cell = test_loader()
+    check_get()
+
