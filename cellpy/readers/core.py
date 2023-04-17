@@ -210,6 +210,9 @@ class OtherPath(pathlib.Path):
 
             if key_filename is not None:
                 connect_kwargs = {"key_filename": key_filename}
+                logging.debug(f"got key_filename")
+                if not pathlib.Path(key_filename).is_file():
+                    raise FileNotFoundError(f"Could not find key file {key_filename}")
             else:
                 connect_kwargs = {"password": password}
 
@@ -219,7 +222,14 @@ class OtherPath(pathlib.Path):
 
     def _copy_with_fabric(self, host, connect_kwargs, destination):
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-            conn.get(self.raw_path, destination)
+            try:
+                t1 = time.time()
+                conn.get(self.raw_path, str(destination / self.name))
+                logging.debug(f"copying took {time.time() - t1:.2f} seconds")
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    f"Could not find file {self.raw_path} on {host}"
+                ) from e
 
 
 # https://stackoverflow.com/questions/60067953/
