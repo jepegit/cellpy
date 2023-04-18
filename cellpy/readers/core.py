@@ -140,11 +140,14 @@ class OtherPath(pathlib.Path):
         ) = _check_external(path_string)
         self._raw_path = path_string
 
+    # TODO: implement globbing for external paths
+
     def resolve(self, *args, **kwargs):
         if self.is_external:
             warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
             return self
-        return super().resolve(*args, **kwargs)
+        resolved_path = pathlib.Path(self._original).resolve(*args, **kwargs)
+        return OtherPath(resolved_path)
 
     @property
     def original(self) -> str:
@@ -157,7 +160,7 @@ class OtherPath(pathlib.Path):
 
     @property
     def full_path(self) -> str:
-        if self._is_external:
+        if self.is_external:
             return f"{self._uri_prefix}{self._location}{self._raw_path}"
         return self._original
 

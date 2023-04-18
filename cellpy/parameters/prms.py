@@ -46,6 +46,7 @@ class CellPyConfig:
 #   cli.py (_update_paths)
 #   test_cli_setup_interactive (NUMBER_OF_DIRS)
 #   test_prms.py (config_file_txt)
+#   _convert_paths_to_dict
 
 # This can stay global:
 @dataclass

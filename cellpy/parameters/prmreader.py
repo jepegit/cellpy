@@ -127,14 +127,13 @@ def _update_prms(config_dict):
                         pass
                     elif k.lower() in ["rawdatadir", "cellpydatadir"]:
                         # special hack because it is possibly an external location
-                        z = OtherPath(z)
-                        if not z.is_external:
-                            z = z.resolve()
+                        z = OtherPath(str(z)).resolve()  # not resolving - not implemented yet
                     else:
                         z = pathlib.Path(z).resolve()
                     _txt += f" -> {z}"
                     logging.debug("converting to pathlib.Path")
                     logging.debug(_txt)
+
                 if isinstance(z, dict):
                     y = getattr(_config_attr, k)
                     z = box.Box({**y, **z})
@@ -167,11 +166,14 @@ def _convert_to_dict(x):
 
 
 def _convert_paths_to_dict(x):
-    try:
-        dictionary = x.to_dict()
-    except AttributeError:
-        dictionary = asdict(x)
-    dictionary = {k: str(dictionary[k]) for k in dictionary}
+    dictionary = {}
+    for k in x.keys():
+        v = getattr(x, k)
+        if isinstance(v, OtherPath):
+            t = v.full_path
+        else:
+            t = str(v)
+        dictionary[k] = t
     return dictionary
 
 

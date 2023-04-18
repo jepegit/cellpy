@@ -159,6 +159,14 @@ def test_raw_path(test_input, expected):
         assert p4.raw_path == expected
 
 
+def test_check_strange_name():
+    p = r"/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p1 = core.OtherPath(p)
+    print()
+    for t in dir(p1):
+        print(f"{t=}: {getattr(p1, t, 'MISSING!!!')}")
+
+
 def test_check_env_host(parameters, mock_env_cellpy_host):
     assert os.getenv("CELLPY_HOST") == parameters.env_cellpy_host
 
