@@ -129,7 +129,7 @@ class OtherPath(pathlib.Path):
             path_string = self.__original
         self._original = self.__original
         self._check_external(path_string)
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
     def _check_external(self, path_string):
         (
@@ -178,7 +178,7 @@ class OtherPath(pathlib.Path):
             return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
         return super().as_uri()
 
-    def copy(self, destination: pathlib.Path = None) -> pathlib.Path:
+    def copy(self, destination: pathlib.Path = None, testing=False) -> pathlib.Path:
         """Copy the file to a destination."""
         if destination is None:
             destination = pathlib.Path(tempfile.gettempdir())
@@ -211,8 +211,9 @@ class OtherPath(pathlib.Path):
             if key_filename is not None:
                 connect_kwargs = {"key_filename": key_filename}
                 logging.debug(f"got key_filename")
-                if not pathlib.Path(key_filename).is_file():
-                    raise FileNotFoundError(f"Could not find key file {key_filename}")
+                if not testing:
+                    if not pathlib.Path(key_filename).is_file():
+                        raise FileNotFoundError(f"Could not find key file {key_filename}")
             else:
                 connect_kwargs = {"password": password}
 
@@ -614,8 +615,8 @@ class Data:
         return txt
 
     def __str__(self):
-        txt = "<DataSet>\n"
-        txt += "loaded from file\n"
+        txt = "<Data>\n"
+        txt += "loaded from file(s)\n"
         if isinstance(self.loaded_from, (list, tuple)):
             for f in self.loaded_from:
                 txt += str(f)

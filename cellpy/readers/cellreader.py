@@ -1350,7 +1350,7 @@ class CellpyCell:
 
         If the file is very big, it is sometimes better to work with the data
         out of memory (i.e. on disk). A CellpyCell object with a linked file
-        will in most cases work as a normal object. However, some of the methods
+        will in most cases work as a normal object. However, some methods
         might be disabled. And it will be slower.
 
         Notes:
@@ -1361,7 +1361,7 @@ class CellpyCell:
 
     def load(
         self,
-        cellpy_file,
+        cellpy_file: OtherPath,
         parent_level=None,
         return_cls=True,
         accept_old=True,
@@ -1371,7 +1371,7 @@ class CellpyCell:
         """Loads a cellpy file.
 
         Args:
-            cellpy_file (path, str): Full path to the cellpy file.
+            cellpy_file (OtherPath, str): Full path to the cellpy file.
             parent_level (str, optional): Parent level. Warning! Deprecating this soon!
             return_cls (bool): Return the class.
             accept_old (bool): Accept loading old cellpy-file versions.
@@ -1393,7 +1393,7 @@ class CellpyCell:
         try:
             logging.debug("loading cellpy-file (hdf5):")
             logging.debug(cellpy_file)
-
+            cellpy_file = OtherPath(cellpy_file)
             with pickle_protocol(PICKLE_PROTOCOL):
                 data = self._load_hdf5(
                     cellpy_file, parent_level, accept_old, selector=selector
@@ -2220,7 +2220,6 @@ class CellpyCell:
     def merge(self, datasets: list, **kwargs):
         """This function merges datasets into one set."""
         logging.info("Merging")
-
         self.data = datasets.pop(0)
         for data in datasets:
             self.data = self._append(self.data, data, **kwargs)
@@ -2247,6 +2246,9 @@ class CellpyCell:
             logging.debug("OBS! the second dataset was empty")
             logging.debug(" -> merged contains only first")
             return t1
+
+        if not isinstance(t1.loaded_from, (list, tuple)):
+            t1.loaded_from = [t1.loaded_from]
 
         cycle_index_header = self.headers_summary.cycle_index
         data = t1
@@ -2295,6 +2297,7 @@ class CellpyCell:
         logging.debug("performing concat")
         raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
         data.raw = raw
+        data.loaded_from.append(t2.loaded_from)
         step_table_made = False
 
         if merge_summary:
@@ -5564,13 +5567,15 @@ def get(
 
         else:
             load_cellpy_file = True
-            filename = Path(cellpy_file)
+            filename = OtherPath(cellpy_file)
 
     if isinstance(filename, (list, tuple)):
         logging.debug("got a list or tuple of names")
         load_cellpy_file = False
     else:
-        filename = Path(filename)
+        logging.debug("got a single name")
+        logging.debug(f"{filename=}")
+        filename = OtherPath(filename)
         if (
             auto_pick_cellpy_format
             and instrument not in instruments_with_colliding_file_suffix
@@ -5580,11 +5585,12 @@ def get(
 
     if filename and cellpy_file and not load_cellpy_file:
         try:
+            # TODO 249: update this to be compatible with the OtherPath:
             similar = cellpy_instance.check_file_ids(filename, cellpy_file)
             logging.debug(f"checked if the files were similar")
             if similar:
                 load_cellpy_file = True
-                filename = Path(cellpy_file)
+                filename = OtherPath(cellpy_file)
         except Exception as e:
             logging.debug(f"Error during checking if similar: {e}")
             logging.debug("Setting load_cellpy_file to False")
@@ -5614,13 +5620,6 @@ def get(
     is_a_file = True
     if cellpy_instance.tester not in db_readers:
         is_a_file = False
-        if not isinstance(filename, (list, tuple)):
-            filename = Path(filename)
-
-            if not filename.is_file():
-                print(f"Could not find {filename}")
-                print("Returning None")
-                return
 
     logging.info(f"Loading raw-file: {filename}")
     cellpy_instance.from_raw(filename, is_a_file=is_a_file, **kwargs)

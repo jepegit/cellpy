@@ -18,6 +18,7 @@ from ruamel.yaml.error import YAMLError
 
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
+from cellpy.readers.core import OtherPath
 
 DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
@@ -121,9 +122,15 @@ def _update_prms(config_dict):
                 z = config_dict[key][k]
                 if is_path:
                     _txt = f"{k}: {z}"
-                    if (
-                        not k.lower() == "db_filename"
-                    ):  # special hack because it is a filename and not a path
+                    if k.lower() == "db_filename":
+                        # special hack because it is a filename and not a path
+                        pass
+                    elif k.lower() in ["rawdatadir", "cellpydatadir"]:
+                        # special hack because it is possibly an external location
+                        z = OtherPath(z)
+                        if not z.is_external:
+                            z = z.resolve()
+                    else:
                         z = pathlib.Path(z).resolve()
                     _txt += f" -> {z}"
                     logging.debug("converting to pathlib.Path")

@@ -217,7 +217,7 @@ def test_copy_remote_simple(
     user = os.getenv("CELLPY_USER")
     p2 = f"ssh://{user}@{host}/{p1}"
     remote_file_path = core.OtherPath(p2)
-    local_file_path = remote_file_path.copy()
+    local_file_path = remote_file_path.copy(testing=True)
     assert local_file_path.is_file()
     assert remote_file_path is not local_file_path
     assert isinstance(local_file_path, pathlib.Path)
