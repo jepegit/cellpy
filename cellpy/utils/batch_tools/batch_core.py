@@ -227,7 +227,10 @@ class Data(collections.UserDict):
             # last_cycle = self.experiment.max_cycle
             pages = self.experiment.journal.pages
             info = pages.loc[cell_id, :]
-            cellpy_file = info[hdr_journal.cellpy_file_name]
+            # TODO 249 - this is a hack, should make sure pandas
+            #  never receives an OtherPath until we are sure it can handle it
+            cellpy_file = str(info[hdr_journal.cellpy_file_name])
+
             # linking (query_mode) not implemented yet - loading whole file in mem instead
             if not self.query_mode:
                 # TODO: modify _load_cellpy_file so that it can select parts of the data (max_cycle etc)

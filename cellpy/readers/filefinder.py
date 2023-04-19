@@ -157,6 +157,8 @@ def search_for_files(
 
     cellpy_file = f"{run_name}.{cellpy_file_extension}"
     cellpy_file = cellpy_file_dir / cellpy_file
+    # Not sure if for example pandas can handle OtherPath objects:
+    cellpy_file = cellpy_file.full_path
 
     logging.debug(f"generated cellpy filename {cellpy_file}")
 

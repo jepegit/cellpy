@@ -1361,7 +1361,7 @@ class CellpyCell:
 
     def load(
         self,
-        cellpy_file: OtherPath,
+        cellpy_file,
         parent_level=None,
         return_cls=True,
         accept_old=True,
@@ -1392,9 +1392,13 @@ class CellpyCell:
 
         try:
             logging.debug("loading cellpy-file (hdf5):")
+            # TODO 249: THIS BREAKS THE TESTS (e.g. test_batch/test_interact_with_cellpydata_get_cap)
+            #  because somehow the cellpy_file is OtherPath but does not have OtherPaths attributes.
             logging.debug(cellpy_file)
+            logging.debug(f"{type(cellpy_file)=}")
             cellpy_file = OtherPath(cellpy_file)
             with pickle_protocol(PICKLE_PROTOCOL):
+                logging.debug(f"using pickle protocol {PICKLE_PROTOCOL}")
                 data = self._load_hdf5(
                     cellpy_file, parent_level, accept_old, selector=selector
                 )
@@ -5541,6 +5545,7 @@ def get(
     step_kwargs = step_kwargs or {}
     summary_kwargs = summary_kwargs or {}
     load_cellpy_file = False
+    logging_mode = "DEBUG" if testing else logging_mode
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyCell()

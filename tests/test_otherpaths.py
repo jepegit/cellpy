@@ -157,6 +157,17 @@ def test_raw_path(test_input, expected):
         assert p3.raw_path == expected
         p4 = core.OtherPath(p3)
         assert p4.raw_path == expected
+        print("--------------------------")
+        print(p4._original)
+
+
+def test_check_strange_name():
+    p = r"/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p1 = core.OtherPath(p)
+    print()
+    for t in dir(p1):
+        print(f"{t=}: {getattr(p1, t, 'MISSING!!!')}")
+
 
 
 def test_check_strange_name():
@@ -214,7 +225,7 @@ def test_copy_remote_simple(
         #   with mock password authentication etc
         if os.name == "nt":
             # hack to allow running tests on Windows:
-            shutil.copy2(n._raw_path.lstrip("/"), _destination)
+            shutil.copy2(n._raw_other_path.lstrip("/"), _destination)
         else:
             shutil.copy2(n.raw_path, _destination)
 

@@ -54,7 +54,11 @@ ureg = pint.UnitRegistry()
 Q = ureg.Quantity
 
 
+# TODO: in future versions (maybe 1.1.0) we should "copy-paste" the whole pathlib module
+#  from CPython and add the functionality we need to it. This will make
+#  it easier to keep up with changes in the pathlib module.
 def _clean_up_original_path_string(path_string):
+    logging.debug(f"cleaning up path: {path_string}")
     if not isinstance(path_string, str):
         if isinstance(path_string, OtherPath):
             path_string = path_string.original
@@ -86,7 +90,10 @@ def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
             path_string = "/" + "/".join(rest)
             break
     path_string = path_string or "."
+    # fix for windows paths:
     path_string = path_string.replace("\\", "/")
+    # fix for posix paths:
+    path_string = path_string.replace("//", "/")
     return path_string, _is_external, _uri_prefix, _location
 
 
@@ -102,11 +109,17 @@ class OtherPath(pathlib.Path):
         full_path (str): the full path (including uri_prefix and location).
     Additional methods:
         copy (method): a method for copying the file to a local path.
+    Overrides (only if is_external is True):
+        glob (method): a method for globbing external paths.
+        rglob (method): a method for recursive globbing external paths.
     """
 
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
 
     def __new__(cls, *args, **kwargs):
+        logging.debug("Running __new__ for OtherPath")
+        logging.debug(f"args: {args}")
+        logging.debug(f"kwargs: {kwargs}")
         if args:
             path, *args = args
         else:
@@ -115,14 +128,18 @@ class OtherPath(pathlib.Path):
         if not path:
             logging.debug("initiating OtherPath with empty path")
             path = "."
+        logging.debug(f"path: {path}")
         if isinstance(path, OtherPath):
+            logging.debug(f"path is OtherPath")
             path = path._original
+        logging.debug(f"checked if path is OtherPath")
         path = _clean_up_original_path_string(path)
         cls.__original = path
         path = _check_external(path)[0]
         return super().__new__(cls, path, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
+        logging.debug("Running __init__ for OtherPath")
         _path_string, *args = args
         if not _path_string:
             path_string = "."
@@ -130,7 +147,14 @@ class OtherPath(pathlib.Path):
             path_string = self.__original
         self._original = self.__original
         self._check_external(path_string)
+        # pathlib.PurePath and Path for Python 3.12 seems to have an __init__ method
+        # where it sets self._raw_path from the input argument, but this is not the case
+        # for Python 3.11, 10, and 9. Those do not have their own __init__ method (and
+        # does not have a self._raw_path attribute).
+        # Instead of running e.g. super().__init__(self._raw_other_path) we do this
+        # instead (which is what the __init__ method does in Python 3.12):
         super().__init__()
+        self._raw_path = self._raw_other_path
 
     def _check_external(self, path_string):
         (
@@ -139,7 +163,7 @@ class OtherPath(pathlib.Path):
             self._uri_prefix,
             self._location,
         ) = _check_external(path_string)
-        self._raw_path = path_string
+        self._raw_other_path = path_string
 
     def glob(self, glob_str, *args, **kwargs):
         testing = kwargs.pop("testing", False)
@@ -151,9 +175,25 @@ class OtherPath(pathlib.Path):
         paths = pathlib.Path(self._original).glob(glob_str)
         return {OtherPath(p) for p in paths}
 
-    # TODO 249: implement "/" for external paths:
     def __div__(self, other):
-        return self.__truediv__(other)
+        if self.is_external:
+            path = self._original + "/" + other
+            return OtherPath(path)
+        path = pathlib.Path(self._original).__truediv__(other)
+        return OtherPath(path)
+
+    def __truediv__(self, other):
+        if self.is_external:
+            path = self._original + "/" + other
+            return OtherPath(path)
+        path = pathlib.Path(self._original).__truediv__(other)
+        return OtherPath(path)
+
+    def __rtruediv__(self, key):
+        if self.is_external:
+            raise TypeError(f"Cannot use rtruediv on external paths.")
+        path = pathlib.Path(self._original).__rtruediv__(key)
+        return OtherPath(path)
 
     # TODO 249: implement recursive globbing for external paths (ala glob above):
     def rglob(self, glob_str, *args, **kwargs):
@@ -183,12 +223,12 @@ class OtherPath(pathlib.Path):
     @property
     def raw_path(self) -> str:
         # this will return a leading slash for some edge cases
-        return self._raw_path
+        return self._raw_other_path
 
     @property
     def full_path(self) -> str:
         if self.is_external:
-            return f"{self._uri_prefix}{self._location}{self._raw_path}"
+            return f"{self._uri_prefix}{self._location}{self._raw_other_path}"
         return self._original
 
     @property

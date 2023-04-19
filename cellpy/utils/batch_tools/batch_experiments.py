@@ -284,7 +284,7 @@ class CyclingExperiment(BaseExperiment):
             _cellpy_file = None
             if not force_raw and cellpy_file.is_file():
                 _cellpy_file = cellpy_file
-                logging.debug(f"Could not find the ")
+                logging.debug(f"Got cellpy file: {_cellpy_file}")
             if not force_cellpy:
                 filename = row[hdr_journal.raw_file_names]
                 instrument = row[hdr_journal.instrument]
@@ -324,6 +324,7 @@ class CyclingExperiment(BaseExperiment):
 
             logging.info("loading cell")
             try:
+                logging.debug("inside try: running cellpy.get")
                 cell_data = cellpy.get(
                     filename=filename,
                     instrument=instrument,
@@ -508,7 +509,7 @@ class CyclingExperiment(BaseExperiment):
         """
         status = "PROD"  # set this to DEV when developing this
         async_mode = "threading"
-
+        logging.debug("PARALLEL UPDATE")
         # TODO: implement experiment.last_cycle
         if status != "DEV":
             print("SORRY - MULTIPROCESSING IS NOT IMPLEMENTED PROPERLY YET")
@@ -601,7 +602,7 @@ class CyclingExperiment(BaseExperiment):
                 _cellpy_file = None
                 if not force_raw and cellpy_file.is_file():
                     _cellpy_file = cellpy_file
-                    logging.debug(f"Could not find the ")
+                    logging.debug(f"Got cellpy file: {_cellpy_file}")
                 if not force_cellpy:
                     filename = row[hdr_journal.raw_file_names]
                     instrument = row[hdr_journal.instrument]
