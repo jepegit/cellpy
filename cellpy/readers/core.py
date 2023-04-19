@@ -151,11 +151,11 @@ class OtherPath(pathlib.Path):
         paths = pathlib.Path(self._original).glob(glob_str)
         return {OtherPath(p) for p in paths}
 
-    # TODO: implement "/" for external paths:
+    # TODO 249: implement "/" for external paths:
     def __div__(self, other):
         return self.__truediv__(other)
 
-    # TODO: implement recursive globbing for external paths (ala glob above):
+    # TODO 249: implement recursive globbing for external paths (ala glob above):
     def rglob(self, glob_str, *args, **kwargs):
         if self.is_external:
             warnings.warn(f"Cannot rglob external paths.  Returning empty list.")

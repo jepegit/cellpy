@@ -187,7 +187,7 @@ def search_for_files(
                     _run_files = d.glob(glob_text_raw)
 
                 _run_files = [str(_f.resolve()) for _f in _run_files]
-                # TODO: check that db reader can accept pathlib.Path objects (and fix the tests)
+                # TODO 249: check that db reader can accept pathlib.Path objects (and fix the tests)
                 # _run_files = [f.resolve() for f in _run_files]
                 _run_files.sort()
             run_files.extend(_run_files)
