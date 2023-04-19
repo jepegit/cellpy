@@ -5,6 +5,7 @@ version definitions.
 """
 import abc
 import datetime
+import fnmatch
 import importlib
 import io
 import getpass
@@ -140,14 +141,40 @@ class OtherPath(pathlib.Path):
         ) = _check_external(path_string)
         self._raw_path = path_string
 
-    # TODO: implement globbing for external paths
+    def glob(self, glob_str, *args, **kwargs):
+        testing = kwargs.pop("testing", False)
+        if self.is_external:
+            warnings.warn(f"Cannot glob external paths. Returning empty list.")
+            connect_kwargs, host = self._get_connection_info(testing)
+            paths = self._glob_with_fabric(host, connect_kwargs, glob_str, *args, **kwargs)
+            return {OtherPath(f"{self._original.rstrip('/')}/{p}") for p in paths}
+        paths = pathlib.Path(self._original).glob(glob_str)
+        return {OtherPath(p) for p in paths}
+
+    # TODO: implement "/" for external paths:
+    def __div__(self, other):
+        return self.__truediv__(other)
+
+    # TODO: implement recursive globbing for external paths (ala glob above):
+    def rglob(self, glob_str, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot rglob external paths.  Returning empty list.")
+            return []
+        paths = pathlib.Path(self._original).glob(glob_str)
+        return {OtherPath(p) for p in paths}
 
     def resolve(self, *args, **kwargs):
         if self.is_external:
-            warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
+            # warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
             return self
         resolved_path = pathlib.Path(self._original).resolve(*args, **kwargs)
         return OtherPath(resolved_path)
+
+    def is_dir(self, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot check if dir exists for external paths!")
+            return True
+        return super().is_dir()
 
     @property
     def original(self) -> str:
@@ -192,37 +219,36 @@ class OtherPath(pathlib.Path):
         if not self.is_external:
             shutil.copy2(self, destination)
         else:
-            host = self.location
-            uri_prefix = self.uri_prefix.replace("//", "")
-
-            if uri_prefix not in URI_PREFIXES:
-                raise ValueError(f"uri_prefix {uri_prefix} not recognized")
-            if uri_prefix not in IMPLEMENTED_PROTOCOLS:
-                raise ValueError(
-                    f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet"
-                )
-
-            password = os.getenv("CELLPY_PASSWORD", None)
-            key_filename = os.getenv("CELLPY_KEY_FILENAME", None)
-
-            if password is None and key_filename is None:
-                raise UnderDefined(
-                    "You must define either CELLPY_PASSWORD "
-                    "or CELLPY_KEY_FILENAME environment variables."
-                )
-
-            if key_filename is not None:
-                connect_kwargs = {"key_filename": key_filename}
-                logging.debug(f"got key_filename")
-                if not testing:
-                    if not pathlib.Path(key_filename).is_file():
-                        raise FileNotFoundError(f"Could not find key file {key_filename}")
-            else:
-                connect_kwargs = {"password": password}
-
+            connect_kwargs, host = self._get_connection_info(testing)
             self._copy_with_fabric(host, connect_kwargs, destination)
 
         return path_of_copied_file
+
+    def _get_connection_info(self, testing):
+        host = self.location
+        uri_prefix = self.uri_prefix.replace("//", "")
+        if uri_prefix not in URI_PREFIXES:
+            raise ValueError(f"uri_prefix {uri_prefix} not recognized")
+        if uri_prefix not in IMPLEMENTED_PROTOCOLS:
+            raise ValueError(
+                f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet"
+            )
+        password = os.getenv("CELLPY_PASSWORD", None)
+        key_filename = os.getenv("CELLPY_KEY_FILENAME", None)
+        if password is None and key_filename is None:
+            raise UnderDefined(
+                "You must define either CELLPY_PASSWORD "
+                "or CELLPY_KEY_FILENAME environment variables."
+            )
+        if key_filename is not None:
+            connect_kwargs = {"key_filename": key_filename}
+            logging.debug(f"got key_filename")
+            if not testing:
+                if not pathlib.Path(key_filename).is_file():
+                    raise FileNotFoundError(f"Could not find key file {key_filename}")
+        else:
+            connect_kwargs = {"password": password}
+        return connect_kwargs, host
 
     def _copy_with_fabric(self, host, connect_kwargs, destination):
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
@@ -230,6 +256,21 @@ class OtherPath(pathlib.Path):
                 t1 = time.time()
                 conn.get(self.raw_path, str(destination / self.name))
                 logging.debug(f"copying took {time.time() - t1:.2f} seconds")
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    f"Could not find file {self.raw_path} on {host}"
+                ) from e
+
+    def _glob_with_fabric(self, host, connect_kwargs, glob_str, *args, **kwargs):
+        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+            try:
+                t1 = time.time()
+                sftp_conn = conn.sftp()
+                sftp_conn.chdir(self.raw_path)
+                files = sftp_conn.listdir()
+                filtered_files = fnmatch.filter(files, glob_str)
+                logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
+                return filtered_files
             except FileNotFoundError as e:
                 raise FileNotFoundError(
                     f"Could not find file {self.raw_path} on {host}"

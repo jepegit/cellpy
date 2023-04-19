@@ -10,6 +10,7 @@ import warnings
 
 import cellpy.exceptions
 from cellpy.parameters import prms
+from cellpy.readers.core import OtherPath
 
 # logger = logging.getLogger(__name__)
 
@@ -114,9 +115,9 @@ def search_for_files(
         file_name_format = prms.FileNames.file_name_format
 
     if not isinstance(raw_file_dir, (list, tuple)):
-        raw_file_dir = [pathlib.Path(raw_file_dir)]
+        raw_file_dir = [OtherPath(raw_file_dir)]
     else:
-        raw_file_dir = [pathlib.Path(d) for d in raw_file_dir]
+        raw_file_dir = [OtherPath(d) for d in raw_file_dir]
 
     if reg_exp:
         logging.warning(f"Got reg_exp: {reg_exp}")
@@ -126,9 +127,9 @@ def search_for_files(
         logging.debug("Sorry, reading prm file is not implemented yet.")
 
     if cellpy_file_dir is None:
-        cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
+        cellpy_file_dir = OtherPath(prms.Paths.cellpydatadir)
     else:
-        cellpy_file_dir = pathlib.Path(cellpy_file_dir)
+        cellpy_file_dir = OtherPath(cellpy_file_dir)
 
     if file_name_format is None and reg_exp is None:
         try:
@@ -170,6 +171,8 @@ def search_for_files(
     else:
         run_files = []
         for d in raw_file_dir:
+            if d.is_external:
+                logging.debug("external file")
             if not d.is_dir():
                 warnings.warn("your raw file directory cannot be accessed!")
                 # raise cellpy.exceptions.IOError("your raw file directory cannot be accessed!")
@@ -183,7 +186,7 @@ def search_for_files(
                 else:
                     _run_files = d.glob(glob_text_raw)
 
-                _run_files = [str(f.resolve()) for f in _run_files]
+                _run_files = [str(_f.resolve()) for _f in _run_files]
                 # TODO: check that db reader can accept pathlib.Path objects (and fix the tests)
                 # _run_files = [f.resolve() for f in _run_files]
                 _run_files.sort()
@@ -220,10 +223,21 @@ def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
 
 
 if __name__ == "__main__":
+    import dotenv
+    from cellpy import log
+    log.setup_logging(default_level="DEBUG")
+    dotenv.load_dotenv(r"C:\scripting\cellpy\local\.env_cellpy_local")
     print("searching for files")
     my_run_name = "20160805_test001_45_cc"
-    my_raw_file_dir = os.path.abspath("../data_ex")
-    my_cellpy_file_dir = os.path.abspath("../data_ex")
-    search_for_files(
+    # my_run_name = "20210218_Seam08_02_01_cc"
+    my_raw_file_dir = OtherPath(f"scp://{os.getenv('CELLPY_HOST')}/home/{os.getenv('CELLPY_USER')}/tmp/")
+    # my_raw_file_dir = OtherPath(r"C:\scripting\processing_cellpy\raw")
+    my_cellpy_file_dir = OtherPath("C:/scripting/processing_cellpy/data/")
+    f = search_for_files(
         my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir
     )
+    print(f)
+    #
+    # print(my_raw_file_dir)
+    # print(my_raw_file_dir.is_dir())
+    # print(my_raw_file_dir.raw_path)
