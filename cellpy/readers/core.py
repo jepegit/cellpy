@@ -13,6 +13,7 @@ import logging
 import os
 import pathlib
 import pickle
+import stat
 import shutil
 import sys
 import tempfile
@@ -153,7 +154,7 @@ class OtherPath(pathlib.Path):
         # does not have a self._raw_path attribute).
         # Instead of running e.g. super().__init__(self._raw_other_path) we do this
         # instead (which is what the __init__ method does in Python 3.12):
-        super().__init__()
+        # super().__init__()
         self._raw_path = self._raw_other_path
 
     def _check_external(self, path_string):
@@ -164,16 +165,6 @@ class OtherPath(pathlib.Path):
             self._location,
         ) = _check_external(path_string)
         self._raw_other_path = path_string
-
-    def glob(self, glob_str, *args, **kwargs):
-        testing = kwargs.pop("testing", False)
-        if self.is_external:
-            warnings.warn(f"Cannot glob external paths. Returning empty list.")
-            connect_kwargs, host = self._get_connection_info(testing)
-            paths = self._glob_with_fabric(host, connect_kwargs, glob_str, *args, **kwargs)
-            return {OtherPath(f"{self._original.rstrip('/')}/{p}") for p in paths}
-        paths = pathlib.Path(self._original).glob(glob_str)
-        return {OtherPath(p) for p in paths}
 
     def __div__(self, other):
         if self.is_external:
@@ -195,13 +186,29 @@ class OtherPath(pathlib.Path):
         path = pathlib.Path(self._original).__rtruediv__(key)
         return OtherPath(path)
 
-    # TODO 249: implement recursive globbing for external paths (ala glob above):
-    def rglob(self, glob_str, *args, **kwargs):
+    def __str__(self):
         if self.is_external:
-            warnings.warn(f"Cannot rglob external paths.  Returning empty list.")
-            return []
+            return self.full_path
+        else:
+            return super().__str__()
+
+    def _glob(self, glob_str, **kwargs):
+        testing = kwargs.pop("testing", False)
+        search_in_sub_dirs = kwargs.pop("search_in_sub_dirs", False)
+        if self.is_external:
+            connect_kwargs, host = self._get_connection_info(testing)
+            paths = self._glob_with_fabric(
+                host, connect_kwargs, glob_str, search_in_sub_dirs=search_in_sub_dirs
+            )
+            return {OtherPath(f"{self._original.rstrip('/')}/{p}") for p in paths}
         paths = pathlib.Path(self._original).glob(glob_str)
         return {OtherPath(p) for p in paths}
+
+    def glob(self, glob_str, *args, **kwargs):
+        return self._glob(glob_str, search_in_sub_dirs=False, **kwargs)
+
+    def rglob(self, glob_str, *args, **kwargs):
+        return self._glob(glob_str, search_in_sub_dirs=True, **kwargs)
 
     def resolve(self, *args, **kwargs):
         if self.is_external:
@@ -301,14 +308,43 @@ class OtherPath(pathlib.Path):
                     f"Could not find file {self.raw_path} on {host}"
                 ) from e
 
-    def _glob_with_fabric(self, host, connect_kwargs, glob_str, *args, **kwargs):
+    def _glob_with_fabric(
+        self, host, connect_kwargs, glob_str, search_in_sub_dirs=False
+    ):
+        path_separator = "/"
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()
                 sftp_conn.chdir(self.raw_path)
-                files = sftp_conn.listdir()
-                filtered_files = fnmatch.filter(files, glob_str)
+                if search_in_sub_dirs:  # recursive globbing one level down
+                    sub_dirs = [
+                        f
+                        for f in sftp_conn.listdir()
+                        if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                    ]
+                    files = [
+                        f
+                        for f in sftp_conn.listdir()
+                        if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                    ]
+                    filtered_files = fnmatch.filter(files, glob_str)
+                    for sub_dir in sub_dirs:
+                        sftp_conn.chdir(sub_dir)
+                        new_files = [
+                            f
+                            for f in sftp_conn.listdir()
+                            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                        ]
+                        new_filtered_files = fnmatch.filter(new_files, glob_str)
+                        new_filtered_files = [
+                            f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
+                        ]
+                        filtered_files += new_filtered_files
+                        sftp_conn.chdir("..")
+                else:
+                    files = sftp_conn.listdir()
+                    filtered_files = fnmatch.filter(files, glob_str)
                 logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
                 return filtered_files
             except FileNotFoundError as e:

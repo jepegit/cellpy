@@ -127,7 +127,9 @@ def _update_prms(config_dict):
                         pass
                     elif k.lower() in ["rawdatadir", "cellpydatadir"]:
                         # special hack because it is possibly an external location
-                        z = OtherPath(str(z)).resolve()  # not resolving - not implemented yet
+                        z = OtherPath(
+                            str(z)
+                        ).resolve()  # not resolving - not implemented yet
                     else:
                         z = pathlib.Path(z).resolve()
                     _txt += f" -> {z}"

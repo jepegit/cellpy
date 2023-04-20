@@ -75,7 +75,7 @@ def search_for_files(
 
 
     Returns:
-        run-file names (list) and cellpy-file-name (path).
+        run-file names (list of strings) and cellpy-file-name (str of full path).
     """
 
     # TODO: @jepe - use reg_exp
@@ -85,7 +85,7 @@ def search_for_files(
     #  sub-folders, several folders, db, cloud etc
     # TODO: @jepe - find a way to implement automatic file_list creation in a top level func.
 
-    version = 0.2
+    version = 0.3
     t0 = time.time()
 
     if reg_exp is None:
@@ -189,50 +189,24 @@ def search_for_files(
                     _run_files = d.glob(glob_text_raw)
 
                 _run_files = [str(_f.resolve()) for _f in _run_files]
-                # TODO 249: check that db reader can accept pathlib.Path objects (and fix the tests)
-                # _run_files = [f.resolve() for f in _run_files]
                 _run_files.sort()
             run_files.extend(_run_files)
 
     return run_files, cellpy_file
 
 
-def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
-    # function to find res files by locating all files of the form
-    # (date-label)_(slurry-label)_(el-label)_(cell-type)_*
-    # NOT USED
-
-    counter_sep = "_"
-    counter_digits = 2
-    res_extension = ".res"
-    res_dir = raw_datadir
-    res_files = []
-    cellpyfile = os.path.basename(cellpyfile)
-    cellpyfile = os.path.splitext(cellpyfile)[0]
-    for j in range(counter_min, counter_max + 1):
-        look_for = "%s%s%s%s" % (
-            cellpyfile,
-            counter_sep,
-            str(j).zfill(counter_digits),
-            res_extension,
-        )
-
-        look_for = os.path.join(res_dir, look_for)
-        if os.path.isfile(look_for):
-            res_files.append(look_for)
-
-    return res_files
-
-
-if __name__ == "__main__":
+def check_01():
     import dotenv
     from cellpy import log
+
     log.setup_logging(default_level="DEBUG")
     dotenv.load_dotenv(r"C:\scripting\cellpy\local\.env_cellpy_local")
     print("searching for files")
     my_run_name = "20160805_test001_45_cc"
     # my_run_name = "20210218_Seam08_02_01_cc"
-    my_raw_file_dir = OtherPath(f"scp://{os.getenv('CELLPY_HOST')}/home/{os.getenv('CELLPY_USER')}/tmp/")
+    my_raw_file_dir = OtherPath(
+        f"scp://{os.getenv('CELLPY_HOST')}/home/{os.getenv('CELLPY_USER')}/tmp/"
+    )
     # my_raw_file_dir = OtherPath(r"C:\scripting\processing_cellpy\raw")
     my_cellpy_file_dir = OtherPath("C:/scripting/processing_cellpy/data/")
     f = search_for_files(
@@ -243,3 +217,58 @@ if __name__ == "__main__":
     # print(my_raw_file_dir)
     # print(my_raw_file_dir.is_dir())
     # print(my_raw_file_dir.raw_path)
+
+
+def check_02():
+    import dotenv
+    import fabric
+    import stat
+
+    dotenv.load_dotenv(r"C:\scripting\cellpy\local\.env_cellpy_local")
+    host = os.getenv("CELLPY_HOST")
+    user = os.getenv("CELLPY_USER")
+    key_file = os.getenv("CELLPY_KEY_FILENAME")
+    print(f"host: {host}")
+    print(f"user: {user}")
+    connect_kwargs = {"key_filename": key_file}
+
+    with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        sftp_conn = conn.sftp()
+        sftp_conn.chdir("tmp")
+        print("===================")
+        for fileattr in sftp_conn.listdir_attr():
+            if stat.S_ISDIR(fileattr.st_mode):
+                print(f"dir: {fileattr.filename}")
+            else:
+                print(f"file: {fileattr.filename}")
+        print("===================")
+        glob_str = "20*.res"
+        sub_dirs = [
+            f for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+        ]
+        files = [
+            f
+            for f in sftp_conn.listdir()
+            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+        ]
+        filtered_files = fnmatch.filter(files, glob_str)
+        for sub_dir in sub_dirs:
+            sftp_conn.chdir(sub_dir)
+            new_files = [
+                f
+                for f in sftp_conn.listdir()
+                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+            ]
+            new_filtered_files = fnmatch.filter(new_files, glob_str)
+            new_filtered_files = [
+                f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
+            ]
+            filtered_files += new_filtered_files
+            sftp_conn.chdir("..")
+
+        for f in filtered_files:
+            print(f"file: {f} of type {type(f)}")
+
+
+if __name__ == "__main__":
+    check_01()

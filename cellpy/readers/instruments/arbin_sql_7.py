@@ -365,7 +365,7 @@ class DataLoader(BaseLoader):
         name = self.name
         name_str = f"('{name}', '')"
 
-         # prepare engine
+        # prepare engine
         params = urllib.parse.quote_plus(
             f"DRIVER={SQL_DRIVER};"
             f"SERVER={SQL_SERVER};"
@@ -436,7 +436,7 @@ class DataLoader(BaseLoader):
             )
 
             # convert column headers to strings
-            datas_df[index].columns=datas_df[index].columns.astype(str)
+            datas_df[index].columns = datas_df[index].columns.astype(str)
             # TODO: rename columns
             #   21: PV_Voltage
             #   22: PV_Current
@@ -449,7 +449,6 @@ class DataLoader(BaseLoader):
             # Full column key found in 'SQL Table IDs.txt' file.
 
         data_df = pd.concat(datas_df, axis=0)
-
 
         return data_df, meta_data
 
@@ -571,4 +570,3 @@ if __name__ == "__main__":
     # test_query()
     # cell = test_loader()
     check_get()
-
