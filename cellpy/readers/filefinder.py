@@ -168,7 +168,7 @@ def search_for_files(
         logging.debug("searching within provided list of files")
         run_files = fnmatch.filter(file_list, glob_text_raw)
         if pre_path is not None:
-            pre_path = pathlib.Path(pre_path)
+            pre_path = OtherPath(pre_path)
             run_files = list(map(lambda x: pre_path / x, run_files))
     else:
         run_files = []

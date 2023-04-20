@@ -254,6 +254,7 @@ class LabJournal(BaseJournal, ABC):
             "project": project,
             "project_dir": pathlib.Path("."),
             "batch_dir": pathlib.Path("."),
+            # TODO 249: -> OtherPath?
             "raw_dir": pathlib.Path("."),
         }
         logging.debug(f"xlsx loader starting on {file_name}")
@@ -365,6 +366,7 @@ class LabJournal(BaseJournal, ABC):
     def _clean_pages(cls, pages):
         import ast
 
+        # TODO 249: -> OtherPath?
         logging.debug("removing empty rows")
         pages = pages.dropna(how="all")
         logging.debug("checking path-names")

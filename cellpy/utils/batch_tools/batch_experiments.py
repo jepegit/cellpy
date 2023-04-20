@@ -280,6 +280,7 @@ class CyclingExperiment(BaseExperiment):
             # --- UPDATING ARGUMENTS ---
             filename = None
             instrument = None
+            # TODO 249: -> OtherPath?
             cellpy_file = pathlib.Path(row[hdr_journal.cellpy_file_name])
             _cellpy_file = None
             if not force_raw and cellpy_file.is_file():
@@ -598,6 +599,7 @@ class CyclingExperiment(BaseExperiment):
                 # --- UPDATING ARGUMENTS ---
                 filename = None
                 instrument = None
+                # TODO 249: -> OtherPath?
                 cellpy_file = pathlib.Path(row[hdr_journal.cellpy_file_name])
                 _cellpy_file = None
                 if not force_raw and cellpy_file.is_file():

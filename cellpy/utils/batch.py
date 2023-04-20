@@ -760,6 +760,7 @@ class Batch:
         """
 
         pages = self.experiment.journal.pages
+        # TODO 249: make this OtherPath?
         cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
 
         if location == "standard":

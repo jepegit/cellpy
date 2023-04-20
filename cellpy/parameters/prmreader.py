@@ -125,6 +125,7 @@ def _update_prms(config_dict):
                     if k.lower() == "db_filename":
                         # special hack because it is a filename and not a path
                         pass
+                    # TODO 249: check this (make a constant in internal params):
                     elif k.lower() in ["rawdatadir", "cellpydatadir"]:
                         # special hack because it is possibly an external location
                         z = OtherPath(

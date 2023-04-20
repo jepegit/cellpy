@@ -104,7 +104,7 @@ class OtherPath(pathlib.Path):
     Additional attributes:
         is_external (bool): is True if the path is external.
         location (str): the location of the external path (e.g. a server name).
-        uri_prefix (str): the prefix of the external path (e.g. ssh:// or sftp://).
+        uri_prefix (str): the prefix of the external path (e.g. scp:// or sftp://).
         raw_path (str): the path without any uri_prefix or location.
         original (str): the original path string.
         full_path (str): the full path (including uri_prefix and location).
@@ -112,7 +112,7 @@ class OtherPath(pathlib.Path):
         copy (method): a method for copying the file to a local path.
     Overrides (only if is_external is True):
         glob (method): a method for globbing external paths.
-        rglob (method): a method for recursive globbing external paths.
+        rglob (method): a method for 'recursive' globbing external paths (max one extra level deep).
     """
 
     _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
@@ -136,6 +136,7 @@ class OtherPath(pathlib.Path):
         logging.debug(f"checked if path is OtherPath")
         path = _clean_up_original_path_string(path)
         cls.__original = path
+        cls._pathlib_doc = super().__doc__
         path = _check_external(path)[0]
         return super().__new__(cls, path, *args, **kwargs)
 
@@ -154,8 +155,8 @@ class OtherPath(pathlib.Path):
         # does not have a self._raw_path attribute).
         # Instead of running e.g. super().__init__(self._raw_other_path) we do this
         # instead (which is what the __init__ method does in Python 3.12):
-        # super().__init__()
         self._raw_path = self._raw_other_path
+        self.__doc__ += f"\nOriginal documentation:\n\n{self._pathlib_doc}"
 
     def _check_external(self, path_string):
         (
@@ -223,6 +224,16 @@ class OtherPath(pathlib.Path):
             return True
         return super().is_dir()
 
+    def parent(self):
+        if self.is_external:
+            return OtherPath(self._original.rsplit("/", 1)[0])
+        return OtherPath(super().parent)
+
+    def absolute(self):
+        if self.is_external:
+            return self
+        return OtherPath(super().absolute())
+
     @property
     def original(self) -> str:
         return self._original
@@ -240,6 +251,13 @@ class OtherPath(pathlib.Path):
 
     @property
     def is_external(self) -> bool:
+        if not hasattr(self, "_is_external"):
+            logging.warning("OBS! OtherPath object missing _is_external attribute!")
+            logging.warning("This should not happen. Please report this bug!")
+            logging.warning(
+                "(most likely means that pathlib.Path has changed and that it now has "
+                "another attribute or method that returns a new pathlib.Path object)"
+            )
         return self._is_external
 
     @property

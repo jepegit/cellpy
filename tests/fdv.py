@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 
 
+# TODO 249: -> OtherPath?
 def get_cellpy_file_path(raw_path):
     cellpy_extension = ".h5"
     raw_path = Path(raw_path)

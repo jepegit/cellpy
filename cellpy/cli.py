@@ -223,12 +223,12 @@ def _update_paths(
             h = h / default_dir
 
     if not reset:
-        outdatadir = OtherPath(prmreader.prms.Paths.outdatadir)
+        outdatadir = pathlib.Path(prmreader.prms.Paths.outdatadir)
         rawdatadir = OtherPath(prmreader.prms.Paths.rawdatadir)
         cellpydatadir = OtherPath(prmreader.prms.Paths.cellpydatadir)
         filelogdir = pathlib.Path(prmreader.prms.Paths.filelogdir)
         examplesdir = pathlib.Path(prmreader.prms.Paths.examplesdir)
-        db_path = OtherPath(prmreader.prms.Paths.db_path)
+        db_path = pathlib.Path(prmreader.prms.Paths.db_path)
         db_filename = prmreader.prms.Paths.db_filename
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
         batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
@@ -266,8 +266,9 @@ def _update_paths(
             "where to output processed data and results", outdatadir
         )
 
+        # TODO 249: -> _ask_about_otherpath
         rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
-
+        # TODO 249: -> _ask_about_otherpath
         cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
 
         filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
@@ -321,6 +322,7 @@ def _update_paths(
     prmreader.prms.Paths.instrumentdir = str(instrumentdir)
 
 
+# TODO 249: check this (might need an extra for OtherPath):
 def _ask_about_path(q, p):
     click.echo(f"\n[cellpy] (setup) input {q}")
     click.echo(f"[cellpy] (setup) current: {p}")
@@ -530,6 +532,7 @@ def _check_import_pyodbc():
         return False
 
 
+# TODO 249: check this
 def _check_config_file():
     prm_file_name = _configloc()
     prm_dict = prmreader._read_prm_file_without_updating(prm_file_name)

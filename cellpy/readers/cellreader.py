@@ -1056,6 +1056,7 @@ class CellpyCell:
 
         start_file = True
         for i, f in enumerate(raw_files):
+            # TODO 249: -> OtherPath?
             f = Path(f)
             if not similar[f.name] and start_file:
                 try:
@@ -3395,6 +3396,7 @@ class CellpyCell:
             logging.info("If you really want to do it, use save with force=True")
             return
 
+        # TODO 249: -> OtherPath?
         outfile_all = Path(filename)
         if not outfile_all.suffix:
             outfile_all = outfile_all.with_suffix(f".{extension}")
