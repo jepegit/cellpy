@@ -24,7 +24,7 @@ script_dir = os.path.abspath(os.path.dirname(__file__))
 cur_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 user_dir = Path.home()
 wdir = Path(cur_dir)
-op_wdir = OtherPath(cur_dir)
+op_wdir = str(wdir)
 
 
 @dataclass
@@ -53,12 +53,8 @@ class CellPyConfig:
 @dataclass
 class PathsClass(CellPyConfig):
     outdatadir: Union[Path, str] = wdir
-    rawdatadir: Union[
-        OtherPath, str
-    ] = op_wdir
-    cellpydatadir: Union[
-        OtherPath, str
-    ] = op_wdir
+    rawdatadir: Union[OtherPath, str] = op_wdir
+    cellpydatadir: Union[OtherPath, str] = op_wdir
     db_path: Union[Path, str] = wdir  # used for simple excel db reader
     filelogdir: Union[Path, str] = wdir
     examplesdir: Union[Path, str] = wdir

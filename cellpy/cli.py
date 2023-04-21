@@ -557,8 +557,12 @@ def _check_config_file():
             click.echo(f"{k}: {value}")
             # splitting this into two if-statements to make it easier to debug if OtherPath changes
             if value in OTHERPATHS:
-                logging.debug("skipping check for external rawdatadir and cellpydatadir (for now)")
-                if not OtherPath(value).is_dir():  # Assuming OtherPath returns True if it is external.
+                logging.debug(
+                    "skipping check for external rawdatadir and cellpydatadir (for now)"
+                )
+                if not OtherPath(
+                    value
+                ).is_dir():  # Assuming OtherPath returns True if it is external.
                     missing += 1
                     click.echo("COULD NOT CONNECT!")
                     click.echo(f"({value} is not a directory)")
