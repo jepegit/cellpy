@@ -68,6 +68,9 @@ BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE = [
 ]
 
 
+OTHERPATHS = ["rawdatadir", "cellpydatadir"]
+
+
 @dataclass
 class CellpyMeta:
     def update(self, as_list: bool = False, **kwargs):
