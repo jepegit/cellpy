@@ -265,26 +265,17 @@ def _update_paths(
         outdatadir = _ask_about_path(
             "where to output processed data and results", outdatadir
         )
-
-        # TODO 249: -> _ask_about_otherpath
-        rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
-        # TODO 249: -> _ask_about_otherpath
-        cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
-
+        rawdatadir = _ask_about_otherpath("where your raw data are located", rawdatadir)
+        cellpydatadir = _ask_about_otherpath("where to put cellpy-files", cellpydatadir)
         filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
-
         examplesdir = _ask_about_path(
             "where to download cellpy examples and tests", examplesdir
         )
-
         db_path = _ask_about_path("what folder your db file lives in", db_path)
-
         db_filename = _ask_about_name("the name of your db-file", db_filename)
-
         notebookdir = _ask_about_path(
             "where to put your jupyter notebooks", notebookdir
         )
-
         batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
         templatedir = _ask_about_path("where to put your batch files", templatedir)
         instrumentdir = _ask_about_path("where to put your batch files", instrumentdir)
@@ -332,6 +323,15 @@ def _ask_about_path(q, p):
     return pathlib.Path(new_path)
 
 
+def _ask_about_otherpath(q, p):
+    click.echo(f"\n[cellpy] (setup) input {q}")
+    click.echo(f"[cellpy] (setup) current: {p}")
+    new_path = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
+    if not new_path:
+        new_path = p
+    return OtherPath(new_path)
+
+
 def _ask_about_name(q, n):
     click.echo(f"\n[cellpy] (setup) input {q}")
     click.echo(f"[cellpy] (setup) current: {n}")
@@ -342,6 +342,9 @@ def _ask_about_name(q, n):
 
 
 def _create_dir(path, confirm=True, parents=True, exist_ok=True):
+    if isinstance(path, OtherPath):
+        if path.is_external:
+            return path
     o = path.resolve()
     if not o.is_dir():
         o_parent = o.parent
