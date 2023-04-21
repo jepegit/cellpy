@@ -257,8 +257,8 @@ def _get_prm_file(file_name=None, search_order=None):
         else:
             logging.info("Could not find the prm-file")
 
-    default_name = prms._prm_default_name
-    prm_globtxt = prms._prm_globtxt
+    default_name = prms._prm_default_name  # NOQA
+    prm_globtxt = prms._prm_globtxt  # NOQA
 
     script_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -277,7 +277,7 @@ def _get_prm_file(file_name=None, search_order=None):
     prm_default = os.path.join(script_dir, default_name)
 
     # -searching-----------------------
-    search_dict = OrderedDict()
+    search_dict: OrderedDict[Any] = OrderedDict()
 
     for key in search_order:
         search_dict[key] = [None, None]
@@ -316,7 +316,7 @@ def _get_prm_file(file_name=None, search_order=None):
 
 def _save_current_prms_to_user_dir():
     # This should be put into the cellpy setup script
-    file_name = os.path.join(prms.user_dir, prms._prm_default_name)
+    file_name = os.path.join(prms.user_dir, prms._prm_default_name)  # NOQA
     _write_prm_file(file_name)
 
 
@@ -330,7 +330,7 @@ def info():
 
     for key, current_object in prms.__dict__.items():
 
-        if key.startswith("_") and not key.startswith("__") and prms._debug:
+        if key.startswith("_") and not key.startswith("__") and prms._debug:  # NOQA
             print(f"Internal: {key} (type={type(current_object)}): {current_object}")
 
         elif isinstance(current_object, box.Box):

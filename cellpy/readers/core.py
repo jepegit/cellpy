@@ -1,7 +1,7 @@
 """ This module contains several of the most important classes used in cellpy.
 
-It also contains functions that are used by readers and utils. And it has the file-
-version definitions.
+It also contains functions that are used by readers and utils.
+And it has the file version definitions.
 """
 import abc
 import datetime
@@ -115,7 +115,7 @@ class OtherPath(pathlib.Path):
         rglob (method): a method for 'recursive' globbing external paths (max one extra level deep).
     """
 
-    _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
+    _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour  # noqa
 
     def __new__(cls, *args, **kwargs):
         logging.debug("Running __new__ for OtherPath")
@@ -621,16 +621,16 @@ class Data:
                     txt += f"<b>{p}</b>: {value}<br>"
         txt += "</p>"
         try:
-            raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"
-            raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"
+            raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"  # noqa
+            raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>" # noqa
         except AttributeError:
             raw_txt = "<p><b>raw data-frame </b><br> not found!</p>"
         except ValueError:
             raw_txt = "<p><b>raw data-frame </b><br> does not contain any columns!</p>"
 
         try:
-            summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"
-            summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"
+            summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"  # noqa
+            summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>" # noqa
         except AttributeError:
             summary_txt = "<p><b>summary data-frame </b><br> not found!</p>"
         except ValueError:
@@ -639,8 +639,8 @@ class Data:
             )
 
         try:
-            steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"
-            steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"
+            steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"    # noqa
+            steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             steps_txt = "<p><b>steps data-frame </b><br> not found!</p>"
         except ValueError:
@@ -884,7 +884,7 @@ class InstrumentFactory:
         self._builders[key] = builder
         self._kwargs[key] = kwargs
 
-    def create(self, key: str, **kwargs):
+    def create(self, key: Union[str, None], **kwargs):
         """Create the instrument loader module and initialize the loader class.
 
         Args:
@@ -1015,7 +1015,7 @@ def identify_last_data_point(data):
 
 
 def check64bit(current_system="python"):
-    """checks if you are on a 64 bit platform"""
+    """checks if you are on a 64-bit platform"""
     if current_system == "python":
         return sys.maxsize > 2147483647
     elif current_system == "os":
@@ -1026,9 +1026,9 @@ def check64bit(current_system="python"):
             return True
         else:
             if "PROCESSOR_ARCHITEW6432" in os.environ:
-                return True  # 32 bit program running on 64 bit Windows
+                return True  # 32 bit program running on 64-bit Windows
             try:
-                # 64 bit Windows 64 bit program
+                # 64-bit Windows 64 bit program
                 return os.environ["PROCESSOR_ARCHITECTURE"].endswith("64")
             except IndexError:
                 pass  # not Windows
@@ -1065,7 +1065,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     """Converts a xls date stamp to a more sensible format.
 
     Args:
-        xldate (str): date stamp in Excel format.
+        xldate (str, int): date stamp in Excel format.
         datemode (int): 0 for 1900-based, 1 for 1904-based.
         option (str): option in ("to_datetime", "to_float", "to_string"),
             return value
@@ -1085,7 +1085,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
                 days=xldate + 1462 * datemode
             )
             # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds,
-            # excel cannot cope with this!
+            # Excel cannot cope with this!
             if option == "to_string":
                 date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
                 d = d.strftime(date_format)
@@ -1299,7 +1299,7 @@ def group_by_interpolate(
         group_by = [group_by]
 
     if not generate_new_x:
-        # check if it makes sence
+        # check if it makes sense
         if (not tidy) and (not individual_x_cols):
             logging.warning("Unlogical condition")
             generate_new_x = True
@@ -1452,7 +1452,7 @@ def check_path_things():
     print(f"{p2.exists()=}")
 
 
-def check_another_path_things():
+def check_another_path_things():  # pragma: no cover
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p02 = r"ssh://jepe@server.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"

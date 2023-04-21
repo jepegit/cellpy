@@ -125,11 +125,9 @@ class DbClass(CellPyConfig):
     db_data_start_row: int = 2  # used for simple excel db reader
     db_search_start_row: int = 2  # used for simple excel db reader
     db_search_end_row: int = -1  # used for simple excel db reader
-    db_file_sqlite: str = "excel.db"  # used when converting from excel to sqlite
-
-    db_connection: Optional[
-        str
-    ] = None  # database connection string - used for more advanced db readers
+    db_file_sqlite: str = "excel.db"  # used when converting from Excel to sqlite
+    # database connection string - used for more advanced db readers:
+    db_connection: Optional[str] = None
 
 
 @dataclass
@@ -142,7 +140,7 @@ class DbColsClass(CellPyConfig):  # used for simple excel db reader
     #        a .cellpy_prms_default.conf
     #        b. dbreader.py
     #        c. test_dbreader.py
-    #        d. internal_settings.py (renaming when making sqlite from excel)
+    #        d. internal_settings.py (renaming when making sqlite from Excel)
     #     As well as the DbColsTypeClass below.
 
     id: str = "id"
@@ -265,7 +263,7 @@ Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 # ------------------------------------------------------------------------------
 # Instruments
 #
-#  This should be updated - currently using dicts instead of sub-classes of
+#  This should be updated - currently using dicts instead of subclasses of
 #  dataclasses. I guess I could update this but is a bit challenging
 #  so maybe replace later  using e.g. pydantic
 # ------------------------------------------------------------------------------
@@ -274,7 +272,7 @@ Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 # remark! using box.Box for each instrument
 @dataclass
 class InstrumentsClass(CellPyConfig):
-    tester: str
+    tester: Union[str, None]
     custom_instrument_definitions_file: Union[str, None]
     Arbin: box.Box
     Maccor: box.Box

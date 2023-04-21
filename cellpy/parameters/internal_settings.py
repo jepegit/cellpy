@@ -18,7 +18,7 @@ SUMMARY_TABLE_VERSION = 7
 # appropriate pickle protocol:
 PICKLE_PROTOCOL = 4
 
-# For creating the sqlite database from excel:
+# For creating the sqlite database from Excel:
 TABLE_NAME_SQLITE = "cells"
 COLUMNS_EXCEL_PK = "id"
 COLUMNS_RENAMER = {
@@ -216,9 +216,9 @@ class DictLikeClass:
     dictionaries for storing settings
 
     Remark! it is not a complete dictionary experience - for example,
-        setting new attributes (new keys) is not supported (raises KeyError
+        setting new attributes (new keys) is not supported (raises ``KeyError``
         if using the typical dict setting method) since it uses the
-        dataclasses.fields method to find its members.
+        ``dataclasses.fields`` method to find its members.
     """
 
     def __getitem__(self, key):
