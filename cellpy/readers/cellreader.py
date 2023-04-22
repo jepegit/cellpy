@@ -267,6 +267,7 @@ class CellpyCell:
         self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
         self.limit_data_points = None
         self.ensure_step_table = prms.Reader.ensure_step_table
+        self.ensure_summary_table = prms.Reader.ensure_summary_table
         self.raw_datadir = prms.Paths.rawdatadir
         self.cellpy_datadir = prms.Paths.cellpydatadir
         self.auto_dirs = prms.Reader.auto_dirs
@@ -1085,9 +1086,9 @@ class CellpyCell:
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
-            # TODO 249: this needs an update:
-            if is_a_file and not OtherPath(file_name).is_external:
-                if not Path(file_name).is_file():
+            if is_a_file:
+                file_name = OtherPath(file_name)
+                if not file_name.is_file():
                     raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
@@ -1200,8 +1201,6 @@ class CellpyCell:
 
         try:
             logging.debug("loading cellpy-file (hdf5):")
-            # TODO 249: THIS BREAKS THE TESTS (e.g. test_batch/test_interact_with_cellpydata_get_cap)
-            #  because somehow the cellpy_file is OtherPath but does not have OtherPaths attributes.
             logging.debug(cellpy_file)
             logging.debug(f"{type(cellpy_file)=}")
             cellpy_file = OtherPath(cellpy_file)
@@ -1425,7 +1424,7 @@ class CellpyCell:
             data.raw_data_files = []
             data.raw_data_files_length = []
         return data
-    
+
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_v6(self, filename, selector=None):
         logging.critical("--- loading v6")
@@ -1714,7 +1713,7 @@ class CellpyCell:
                 #  by making a function setting self.limit_data_points
                 logging.debug(f"limited to data_point {self.limit_data_points}")
                 return f"index <= {int(self.limit_data_points)}"
-            
+
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _unpack_selector(self, selector):
         # not implemented yet
@@ -2014,7 +2013,7 @@ class CellpyCell:
         else:
             warnings.warn("seems you lost info about your raw-data (missing fids)")
         return fidtable
-    
+
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
     def _convert2fid_list(self, tbl):
@@ -3178,6 +3177,7 @@ class CellpyCell:
         overwrite=None,
         extension="h5",
         ensure_step_table=None,
+        ensure_summary_table=None,
     ):
         """Save the data structure to cellpy-format.
 
@@ -3189,6 +3189,7 @@ class CellpyCell:
                 exists.
             extension: (str) filename extension.
             ensure_step_table: (bool) make step-table if missing.
+            ensure_summary_table: (bool) make summary-table if missing.
 
         Returns: Nothing at all.
         """
@@ -3204,10 +3205,13 @@ class CellpyCell:
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
 
+        if ensure_summary_table is None:
+            ensure_summary_table = self.ensure_summary_table
+
         my_data = self.data
         summary_made = my_data.has_summary
-
-        if not summary_made and not force:
+        if not summary_made and not force and not ensure_summary_table:
+            logging.info("File not saved!")
             logging.info("You should not save datasets without making a summary first!")
             logging.info("If you really want to do it, use save with force=True")
             return
@@ -3215,17 +3219,18 @@ class CellpyCell:
         step_table_made = my_data.has_steps
         if not step_table_made and not force and not ensure_step_table:
             logging.info(
+                "File not saved!"
                 "You should not save datasets without making a step-table first!"
             )
             logging.info("If you really want to do it, use save with force=True")
             return
 
-        # TODO 249: -> OtherPath?
-        outfile_all = Path(filename)
+        outfile_all = OtherPath(filename)
         if not outfile_all.suffix:
+            logging.debug("No suffix given - adding one")
             outfile_all = outfile_all.with_suffix(f".{extension}")
 
-        if os.path.isfile(outfile_all):
+        if outfile_all.is_file():
             logging.debug("Outfile exists")
             if overwrite:
                 logging.debug("overwrite = True")
@@ -3246,6 +3251,12 @@ class CellpyCell:
                 logging.debug("save: creating step table")
                 self.make_step_table()
 
+        if ensure_summary_table:
+            logging.debug("ensure_summary_table is on")
+            if not my_data.has_summary:
+                logging.debug("save: creating summary table")
+                self.make_summary_table()
+
         logging.debug("trying to make infotable")
         (
             common_meta_table,
@@ -3256,13 +3267,13 @@ class CellpyCell:
         logging.debug(f"trying to save to file: {outfile_all}")
         if cellpy_file_format == "hdf5":
             # --- saving to hdf5 -----------------------------------
-            root = prms._cellpyfile_root
-            raw_dir = prms._cellpyfile_raw
-            step_dir = prms._cellpyfile_step
-            summary_dir = prms._cellpyfile_summary
-            common_meta_dir = prms._cellpyfile_common_meta
-            fid_dir = prms._cellpyfile_fid
-            test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta
+            root = prms._cellpyfile_root  # noqa
+            raw_dir = prms._cellpyfile_raw  # noqa
+            step_dir = prms._cellpyfile_step  # noqa
+            summary_dir = prms._cellpyfile_summary  # noqa
+            common_meta_dir = prms._cellpyfile_common_meta  # noqa
+            fid_dir = prms._cellpyfile_fid  # noqa
+            test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta  # noqa
             warnings.simplefilter("ignore", PerformanceWarning)
             try:
                 with pickle_protocol(PICKLE_PROTOCOL):
@@ -4553,9 +4564,9 @@ class CellpyCell:
         """Sets the mass (masses) for the test (datasets)."""
 
         warnings.warn(
-            "This function is deprecated. "
-            "Use the setter instead (mass = value).",
-            DeprecationWarning, stacklevel=2
+            "This function is deprecated. " "Use the setter instead (mass = value).",
+            DeprecationWarning,
+            stacklevel=2,
         )
         self._set_run_attribute("mass", mass, validated=validated)
 
@@ -4564,17 +4575,18 @@ class CellpyCell:
         warnings.warn(
             "This function is deprecated. "
             "Use the setter instead (tot_mass = value).",
-            DeprecationWarning, stacklevel=2
+            DeprecationWarning,
+            stacklevel=2,
         )
 
         self._set_run_attribute("tot_mass", mass, validated=validated)
 
     def set_nom_cap(self, nom_cap, validated=None):
-        
+
         warnings.warn(
-            "This function is deprecated. "
-            "Use the setter instead (nom_cap = value).",
-            DeprecationWarning, stacklevel=2
+            "This function is deprecated. " "Use the setter instead (nom_cap = value).",
+            DeprecationWarning,
+            stacklevel=2,
         )
 
         self._set_run_attribute("nom_cap", nom_cap, validated=validated)

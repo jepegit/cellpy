@@ -109,6 +109,7 @@ class ReaderClass(CellPyConfig):
         int
     ] = None  # limit loading cycles to given cycle number
     ensure_step_table: bool = False
+    ensure_summary_table: bool = False
     voltage_interpolation_step: float = 0.01
     time_interpolation_step: float = 10.0
     capacity_interpolation_step: float = 2.0

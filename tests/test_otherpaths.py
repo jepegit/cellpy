@@ -161,6 +161,60 @@ def test_raw_path(test_input, expected):
         print(p4._original)
 
 
+def test_wrap(parameters):
+    p = core.OtherPath(parameters.res_file_path)
+    p.is_file()
+    p.home()
+
+
+@pytest.mark.onlylocal
+def test_methods(parameters):
+    p = core.OtherPath(parameters.res_file_path)
+    for m in sorted(dir(pathlib.Path)):
+        if m.startswith("_"):
+            continue
+        if m in [
+            "chmod",
+            "group",
+            "rmdir",
+            "symlink_to",
+            "touch",
+            "unlink",
+            "write_bytes",
+            "write_text",
+            "read_bytes",
+            "read_text",
+            "lchmod",
+            "mkdir",
+            "link_to",
+            "replace",
+        ]:
+            continue
+        attr = getattr(p, m)
+
+        print(f"{m}".center(80, "-"))
+        if callable(attr):
+            try:
+                print("1")
+                print(f"{m=}: {attr()}")
+            except (TypeError, ValueError, NotImplementedError):
+                try:
+                    print("2")
+                    print(f"{m=}: {attr('test')}")
+                except (
+                    TypeError,
+                    ValueError,
+                    NotImplementedError,
+                    FileExistsError,
+                ) as e:
+                    print("3")
+                    print(f"{e=}")
+
+        else:
+            print("not callable")
+            print(f"{m=}: {attr}")
+
+
 def test_check_strange_name():
     p = r"/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p1 = core.OtherPath(p)

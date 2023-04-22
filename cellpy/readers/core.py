@@ -19,7 +19,7 @@ import sys
 import tempfile
 import time
 import warnings
-from typing import Any, Tuple, Dict, Optional, List, Union
+from typing import Any, Tuple, Dict, Optional, List, Union, TypeVar, Generator
 
 import dotenv
 import fabric
@@ -44,6 +44,8 @@ from cellpy.parameters.internal_settings import (
     CellpyMetaIndividualTest,
 )
 
+S = TypeVar("S", bound="OtherPath")
+
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
@@ -61,8 +63,18 @@ Q = ureg.Quantity
 def _clean_up_original_path_string(path_string):
     logging.debug(f"cleaning up path: {path_string}")
     if not isinstance(path_string, str):
+        logging.debug(f"path is not a string: {path_string}")
+        logging.debug(f"path is of type: {type(path_string)}")
+
         if isinstance(path_string, OtherPath):
-            path_string = path_string.original
+            logging.debug(f"path is an OtherPath object")
+            if hasattr(path_string, "original"):
+                logging.debug(f"path has an original attribute")
+                path_string = path_string.original
+            else:
+                logging.debug(f"path does not have an original attribute")
+                path_string = str(path_string)
+
         elif isinstance(path_string, pathlib.PosixPath):
             path_string = "/".join(path_string.parts)
         elif isinstance(path_string, pathlib.WindowsPath):
@@ -73,6 +85,8 @@ def _clean_up_original_path_string(path_string):
             path_string = "/".join(parts)
         else:
             path_string = str(path_string)
+    else:
+        logging.debug(f"path is a string: {path_string}")
     return path_string
 
 
@@ -115,7 +129,9 @@ class OtherPath(pathlib.Path):
         rglob (method): a method for 'recursive' globbing external paths (max one extra level deep).
     """
 
-    _flavour = pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour  # noqa
+    _flavour = (
+        pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
+    )  # noqa
 
     def __new__(cls, *args, **kwargs):
         logging.debug("Running __new__ for OtherPath")
@@ -130,7 +146,7 @@ class OtherPath(pathlib.Path):
             logging.debug("initiating OtherPath with empty path")
             path = "."
         logging.debug(f"path: {path}")
-        if isinstance(path, OtherPath):
+        if isinstance(path, OtherPath) and hasattr(path, "_original"):
             logging.debug(f"path is OtherPath")
             path = path._original
         logging.debug(f"checked if path is OtherPath")
@@ -157,43 +173,121 @@ class OtherPath(pathlib.Path):
         # instead (which is what the __init__ method does in Python 3.12):
         self._raw_path = self._raw_other_path
         self.__doc__ += f"\nOriginal documentation:\n\n{self._pathlib_doc}"
+        self._wrap_methods()  # dynamically wrapping methods - should gradually be replaced by hard-coded methods.
+
+    def _wrap_methods(self):
+        logging.debug("Running _wrap_methods for OtherPath")
+        existing_methods = self.__class__.__dict__.keys()
+        parent_methods_that_works_also_on_external_paths = []  # "parents", "parts"
+        parent_methods_that_returns_other_paths = []
+
+        for m in sorted(dir(pathlib.Path)):
+            if m.startswith("_"):
+                continue
+            if (
+                m in existing_methods
+                or m in parent_methods_that_works_also_on_external_paths
+            ):
+                continue
+            method = getattr(pathlib.Path, m)
+            if m in parent_methods_that_returns_other_paths:
+                setattr(self.__class__, m, self._wrap_and_morph_method(method))
+            if callable(method):
+                setattr(self.__class__, m, self._wrap_callable_method(method))
+            else:
+                setattr(self.__class__, m, self._wrap_non_callable(method))
+
+    def iterdir(self, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot run iterdir for external paths!")
+            return
+        else:
+            return (OtherPath(p) for p in super().iterdir())
+
+    def parents(self, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot run parents for external paths!")
+            return
+        return super().parents
+
+    def joinpath(self, *args, **kwargs):
+        warnings.warn(f"Cannot run 'joinpath' for OtherPath!")
+        return self
+
+    def readlink(self, *args, **kwargs):
+        warnings.warn(f"Cannot run 'readlink' for OtherPath!")
+        return
+
+    def owner(self, *args, **kwargs):
+        warnings.warn(f"Cannot get 'owner' for OtherPath!")
+        return
+
+    def lchmod(self, *args, **kwargs):
+        warnings.warn(f"Cannot run 'lchmod' for OtherPath!")
+        return self
+
+    def _wrap_and_morph_method(self, method):
+        if self.is_external:
+            print(f"Cannot run {method.__name__} for external paths!")
+            return lambda *args, **kwargs: self
+        else:
+            return lambda *args, **kwargs: OtherPath(*args, **kwargs)
+
+    def _wrap_callable_method(self, method, default_return_value=True):
+        if self.is_external:
+            print(f"Cannot run {method.__name__} for external paths!")
+            return lambda *args, **kwargs: default_return_value
+        else:
+            return method
+
+    def _wrap_non_callable(self, attr, default_return_value=None):
+        if self.is_external:
+            print(f"Cannot get {method.__name__} for external paths!")
+            return default_return_value
+        else:
+            return attr
 
     def _check_external(self, path_string):
+        logging.debug("Running _check_external for OtherPath")
         (
             path_string,
             self._is_external,
             self._uri_prefix,
             self._location,
         ) = _check_external(path_string)
+        logging.debug(f"self._is_external: {self._is_external}")
+        logging.debug(f"self._uri_prefix: {self._uri_prefix}")
+        logging.debug(f"self._location: {self._location}")
+        logging.debug(f"path_string: {path_string}")
         self._raw_other_path = path_string
 
-    def __div__(self, other):
+    def __div__(self, other: Union[str, S]) -> S:
         if self.is_external:
             path = self._original + "/" + other
             return OtherPath(path)
         path = pathlib.Path(self._original).__truediv__(other)
         return OtherPath(path)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: Union[str, S]) -> S:
         if self.is_external:
             path = self._original + "/" + other
             return OtherPath(path)
         path = pathlib.Path(self._original).__truediv__(other)
         return OtherPath(path)
 
-    def __rtruediv__(self, key):
+    def __rtruediv__(self: S, key: Union[str, S]) -> S:
         if self.is_external:
             raise TypeError(f"Cannot use rtruediv on external paths.")
         path = pathlib.Path(self._original).__rtruediv__(key)
         return OtherPath(path)
 
-    def __str__(self):
-        if self.is_external:
-            return self.full_path
+    def __str__(self: S) -> str:
+        if hasattr(self, "_original") and self.is_external:
+            return self._original
         else:
             return super().__str__()
 
-    def _glob(self, glob_str, **kwargs):
+    def _glob(self, glob_str: str, **kwargs) -> Generator:
         testing = kwargs.pop("testing", False)
         search_in_sub_dirs = kwargs.pop("search_in_sub_dirs", False)
         if self.is_external:
@@ -201,63 +295,103 @@ class OtherPath(pathlib.Path):
             paths = self._glob_with_fabric(
                 host, connect_kwargs, glob_str, search_in_sub_dirs=search_in_sub_dirs
             )
-            return {OtherPath(f"{self._original.rstrip('/')}/{p}") for p in paths}
+            return (OtherPath(f"{self._original.rstrip('/')}/{p}") for p in paths)
         paths = pathlib.Path(self._original).glob(glob_str)
-        return {OtherPath(p) for p in paths}
+        return (OtherPath(p) for p in paths)
 
-    def glob(self, glob_str, *args, **kwargs):
+    def glob(self, glob_str: str, *args, **kwargs) -> Generator:
         return self._glob(glob_str, search_in_sub_dirs=False, **kwargs)
 
-    def rglob(self, glob_str, *args, **kwargs):
+    def rglob(self, glob_str: str, *args, **kwargs) -> Generator:
         return self._glob(glob_str, search_in_sub_dirs=True, **kwargs)
 
-    def resolve(self, *args, **kwargs):
+    def resolve(self: S, *args, **kwargs) -> S:
         if self.is_external:
             # warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
             return self
         resolved_path = pathlib.Path(self._original).resolve(*args, **kwargs)
         return OtherPath(resolved_path)
 
-    def is_dir(self, *args, **kwargs):
+    def is_dir(self: S, *args, **kwargs) -> bool:
+        """Check if path is a directory."""
         if self.is_external:
-            warnings.warn(f"Cannot check if dir exists for external paths!")
+            warnings.warn(f"Cannot check if dir exists for external paths! Assuming it exists.")
             return True
         return super().is_dir()
 
-    def parent(self):
+    def is_file(self: S, *args, **kwargs) -> bool:
+        """Check if path is a file."""
+        if self.is_external:
+            warnings.warn(f"Cannot check if file exists for external paths! Assuming it exists.")
+            return True
+        return super().is_file()
+
+    def exists(self: S, *args, **kwargs) -> bool:
+        """Check if path exists."""
+        if self.is_external:
+            warnings.warn(f"Cannot check if path exists for external paths! Assuming it exists.")
+            return True
+        return super().exists()
+
+    def parent(self: S) -> S:
+        """Return the parent directory of the path."""
         if self.is_external:
             return OtherPath(self._original.rsplit("/", 1)[0])
         return OtherPath(super().parent)
 
-    def absolute(self):
+    def with_suffix(self: S, suffix: str) -> S:
+        """Return a new path with the suffix changed."""
         if self.is_external:
+            warnings.warn("This is not tested for external paths!")
+            return OtherPath(self._original.rsplit(".", 1)[0] + suffix)
+        return OtherPath(super().with_suffix(suffix))
+
+    def with_name(self: S, name: str) -> S:
+        """Return a new path with the name changed."""
+        if self.is_external:
+            warnings.warn("This is not tested for external paths!")
+            return OtherPath(self._original.rsplit("/", 1)[0] + "/" + name)
+        return OtherPath(super().with_name(name))
+
+    def with_stem(self: S, stem: str) -> S:
+        """Return a new path with the stem changed."""
+        if self.is_external:
+            warnings.warn("This is not tested for external paths!")
+            return OtherPath(self._original.rsplit("/", 1)[0] + "/" + stem)
+        return OtherPath(super().with_stem(stem))
+
+    def absolute(self: S) -> S:
+        if self.is_external:
+            warnings.warn("This is implemented yet for external paths! Returning self.")
             return self
         return OtherPath(super().absolute())
 
     @property
-    def original(self) -> str:
+    def original(self: S) -> str:
         return self._original
 
     @property
-    def raw_path(self) -> str:
+    def raw_path(self: S) -> str:
         # this will return a leading slash for some edge cases
         return self._raw_other_path
 
     @property
-    def full_path(self) -> str:
+    def full_path(self: S) -> str:
         if self.is_external:
             return f"{self._uri_prefix}{self._location}{self._raw_other_path}"
         return self._original
 
     @property
-    def is_external(self) -> bool:
+    def is_external(self: S) -> bool:
         if not hasattr(self, "_is_external"):
             logging.warning("OBS! OtherPath object missing _is_external attribute!")
             logging.warning("This should not happen. Please report this bug!")
             logging.warning(
                 "(most likely means that pathlib.Path has changed and that it now has "
-                "another attribute or method that returns a new pathlib.Path object)"
+                "another attribute or method that returns a new pathlib.Path object or "
+                "that you have used a method that is not supported yet)"
             )
+            # return False
         return self._is_external
 
     @property
@@ -273,7 +407,9 @@ class OtherPath(pathlib.Path):
             return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
         return super().as_uri()
 
-    def copy(self, destination: pathlib.Path = None, testing=False) -> pathlib.Path:
+    def copy(
+        self, destination: Optional[pathlib.Path] = None, testing=False
+    ) -> pathlib.Path:
         """Copy the file to a destination."""
         if destination is None:
             destination = pathlib.Path(tempfile.gettempdir())
@@ -289,7 +425,7 @@ class OtherPath(pathlib.Path):
 
         return path_of_copied_file
 
-    def _get_connection_info(self, testing):
+    def _get_connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
         host = self.location
         uri_prefix = self.uri_prefix.replace("//", "")
         if uri_prefix not in URI_PREFIXES:
@@ -315,7 +451,9 @@ class OtherPath(pathlib.Path):
             connect_kwargs = {"password": password}
         return connect_kwargs, host
 
-    def _copy_with_fabric(self, host, connect_kwargs, destination):
+    def _copy_with_fabric(
+        self, host: str, connect_kwargs: dict, destination: Union[str, S, pathlib.Path]
+    ):
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
@@ -327,8 +465,12 @@ class OtherPath(pathlib.Path):
                 ) from e
 
     def _glob_with_fabric(
-        self, host, connect_kwargs, glob_str, search_in_sub_dirs=False
-    ):
+        self: S,
+        host: str,
+        connect_kwargs: dict,
+        glob_str: str,
+        search_in_sub_dirs: bool = False,
+    ) -> List[str]:
         path_separator = "/"
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
@@ -622,7 +764,7 @@ class Data:
         txt += "</p>"
         try:
             raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"  # noqa
-            raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>" # noqa
+            raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             raw_txt = "<p><b>raw data-frame </b><br> not found!</p>"
         except ValueError:
@@ -630,7 +772,7 @@ class Data:
 
         try:
             summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"  # noqa
-            summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>" # noqa
+            summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             summary_txt = "<p><b>summary data-frame </b><br> not found!</p>"
         except ValueError:
@@ -639,7 +781,7 @@ class Data:
             )
 
         try:
-            steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"    # noqa
+            steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"  # noqa
             steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             steps_txt = "<p><b>steps data-frame </b><br> not found!</p>"
@@ -843,6 +985,8 @@ class Data:
         """check if the summary table exists"""
         try:
             empty = self.summary.empty
+            # TODO: check if the summary has the expected columns
+            #  (since it can be unprocessed directly from the raw data)
         except AttributeError:
             empty = True
         return not empty

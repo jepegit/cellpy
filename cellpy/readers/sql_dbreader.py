@@ -391,7 +391,7 @@ class SQLReader(BaseDbReader):
 
     def view_old_excel_sqlite_table_columns(self) -> None:
         """Prints the columns of the old sqlite database."""
-        
+
         if self.old_cell_table is None:
             raise ValueError("No old db loaded - use load_old_db() first")
 
