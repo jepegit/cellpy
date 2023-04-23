@@ -116,6 +116,22 @@ def test_load_journal_json(parameters, batch_instance):
     assert hdr_journal["argument"] in b.pages.columns
 
 
+def test_load_limited_journal_excel(parameters, batch_instance):
+    b = batch_instance.from_journal(parameters.journal_file_xlsx_path, testing=True)
+    assert len(b.pages) == 2
+    assert hdr_journal["argument"] in b.pages.columns
+
+
+def test_load_full_journal_excel(parameters, batch_instance):
+    index_name = "filename"
+    b = batch_instance.from_journal(parameters.journal_file_full_xlsx_path, testing=True)
+    assert len(b.pages) == 2
+    missing = [hdr for hdr in hdr_journal.values() if hdr not in b.pages.columns]
+    assert len(missing) == 1
+    assert b.pages.index.name == index_name
+    assert missing[0] == index_name  # this is the only missing column since it is now the index
+
+
 # TODO: make this test
 def test_update_with_cellspecs(parameters, batch_instance):
     # from journal and as argument (see batch_experiment.py, update).
