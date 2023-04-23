@@ -215,14 +215,14 @@ def test_wrap(parameters):
 #             print(f"{m=}: {attr}")
 
 
-def test_check_strange_name():
-    p = r"/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
-    p1 = core.OtherPath(p)
-    for t in sorted(dir(p1)):
-        print("1--->")
-        print(t)
-        print(f"{t=}: {getattr(p1, t, 'MISSING!!!')}")
-        print("2<---")
+# def test_check_strange_name():
+#     p = r"/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+#     p1 = core.OtherPath(p)
+#     for t in sorted(dir(p1)):
+#         print("1--->")
+#         print(t)
+#         print(f"{t=}: {getattr(p1, t, 'MISSING!!!')}")
+#         print("2<---")
 
 
 def test_check_env_host(parameters, mock_env_cellpy_host):
