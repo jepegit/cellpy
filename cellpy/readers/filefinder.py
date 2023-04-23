@@ -6,48 +6,27 @@ import logging
 import os
 import pathlib
 import time
+from typing import Optional, Union, List, Tuple
 import warnings
 
 import cellpy.exceptions
 from cellpy.parameters import prms
-from cellpy.readers.core import OtherPath
-
-# logger = logging.getLogger(__name__)
-
-
-def create_full_names(
-    run_name, cellpy_file_extension=None, raw_file_dir=None, cellpy_file_dir=None
-):
-    if cellpy_file_extension is None:
-        cellpy_file_extension = "h5"
-
-    if raw_file_dir is None:
-        raw_file_dir = prms.Paths.rawdatadir
-
-    if cellpy_file_dir is None:
-        cellpy_file_dir = prms.Paths.cellpydatadir
-
-    raw_file = os.path.join(raw_file_dir, run_name)
-
-    cellpy_file = run_name + "." + cellpy_file_extension
-    cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
-
-    return raw_file, cellpy_file
+from cellpy.internals.core import OtherPath
 
 
 def search_for_files(
-    run_name,
-    raw_extension=None,
-    cellpy_file_extension=None,
-    raw_file_dir=None,
-    cellpy_file_dir=None,
-    prm_filename=None,
-    file_name_format=None,
-    reg_exp=None,
-    sub_folders=False,
-    file_list=None,
-    pre_path=None,
-):
+    run_name: str,
+    raw_extension: Optional[str] = None,
+    cellpy_file_extension: Optional[str] = None,
+    raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    cellpy_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    prm_filename: Union[pathlib.Path, str, None] = None,
+    file_name_format: Optional[str] = None,
+    reg_exp: Optional[str] = None,
+    sub_folders: bool = False,
+    file_list: Optional[List[str]] = None,
+    pre_path: Union[OtherPath, pathlib.Path, str, None] = None,
+) -> Tuple[List[str], str]:
     """Searches for files (raw-data files and cellpy-files).
 
 

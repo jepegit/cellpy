@@ -5,52 +5,37 @@ And it has the file version definitions.
 """
 import abc
 import datetime
-import fnmatch
 import importlib
-import io
-import getpass
 import logging
 import os
 import pathlib
 import pickle
-import stat
-import shutil
 import sys
-import tempfile
 import time
 import warnings
-from typing import Any, Tuple, Dict, Optional, List, Union, TypeVar, Generator
+from typing import Any, Tuple, Dict, List, Union, TypeVar
 
-import dotenv
-import fabric
 import numpy as np
 import pandas as pd
 import pint
 from scipy import interpolate
 
-from cellpy.exceptions import NullData, UnderDefined
-from cellpy.parameters import prms
+from cellpy.exceptions import NullData
+from cellpy.internals.core import OtherPath
 from cellpy.parameters.internal_settings import (
     get_headers_normal,
     get_headers_step_table,
     get_headers_summary,
     get_default_raw_units,
     get_default_raw_limits,
-    CELLPY_FILE_VERSION,
-    STEP_TABLE_VERSION,
-    RAW_TABLE_VERSION,
-    SUMMARY_TABLE_VERSION,
     CellpyMetaCommon,
     CellpyMetaIndividualTest,
 )
 
-S = TypeVar("S", bound="OtherPath")
-
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
-URI_PREFIXES = ["ssh:", "sftp:", "scp:", "http:", "https:", "ftp:", "ftps:", "smb:"]
-IMPLEMENTED_PROTOCOLS = ["ssh:", "sftp:", "scp:"]
+
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
@@ -60,457 +45,6 @@ Q = ureg.Quantity
 # TODO: in future versions (maybe 1.1.0) we should "copy-paste" the whole pathlib module
 #  from CPython and add the functionality we need to it. This will make
 #  it easier to keep up with changes in the pathlib module.
-def _clean_up_original_path_string(path_string):
-    logging.debug(f"cleaning up path: {path_string}")
-    if not isinstance(path_string, str):
-        logging.debug(f"path is not a string: {path_string}")
-        logging.debug(f"path is of type: {type(path_string)}")
-
-        if isinstance(path_string, OtherPath):
-            logging.debug(f"path is an OtherPath object")
-            if hasattr(path_string, "original"):
-                logging.debug(f"path has an original attribute")
-                path_string = path_string.original
-            else:
-                logging.debug(f"path does not have an original attribute")
-                path_string = str(path_string)
-
-        elif isinstance(path_string, pathlib.PosixPath):
-            path_string = "/".join(path_string.parts)
-        elif isinstance(path_string, pathlib.WindowsPath):
-            parts = list(path_string.parts)
-            if not parts:
-                parts = [""]
-            parts[0] = parts[0].replace("\\", "")
-            path_string = "/".join(parts)
-        else:
-            path_string = str(path_string)
-    else:
-        logging.debug(f"path is a string: {path_string}")
-    return path_string
-
-
-def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
-    # path_sep = "\\" if os.name == "nt" else "/"
-    _is_external = False
-    _location = ""
-    _uri_prefix = ""
-    for prefix in URI_PREFIXES:
-        if path_string.startswith(prefix):
-            path_string = path_string.replace(prefix, "")
-            path_string = path_string.lstrip("/")
-            _is_external = True
-            _uri_prefix = prefix + "//"
-            _location, *rest = path_string.split("/")
-            path_string = "/" + "/".join(rest)
-            break
-    path_string = path_string or "."
-    # fix for windows paths:
-    path_string = path_string.replace("\\", "/")
-    # fix for posix paths:
-    path_string = path_string.replace("//", "/")
-    return path_string, _is_external, _uri_prefix, _location
-
-
-class OtherPath(pathlib.Path):
-    """A pathlib.Path subclass that can handle external paths.
-
-    Additional attributes:
-        is_external (bool): is True if the path is external.
-        location (str): the location of the external path (e.g. a server name).
-        uri_prefix (str): the prefix of the external path (e.g. scp:// or sftp://).
-        raw_path (str): the path without any uri_prefix or location.
-        original (str): the original path string.
-        full_path (str): the full path (including uri_prefix and location).
-    Additional methods:
-        copy (method): a method for copying the file to a local path.
-    Overrides (only if is_external is True):
-        glob (method): a method for globbing external paths.
-        rglob (method): a method for 'recursive' globbing external paths (max one extra level deep).
-    """
-
-    _flavour = (
-        pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
-    )  # noqa
-
-    def __new__(cls, *args, **kwargs):
-        logging.debug("Running __new__ for OtherPath")
-        logging.debug(f"args: {args}")
-        logging.debug(f"kwargs: {kwargs}")
-        if args:
-            path, *args = args
-        else:
-            path = "."
-            logging.debug("initiating OtherPath without any arguments")
-        if not path:
-            logging.debug("initiating OtherPath with empty path")
-            path = "."
-        logging.debug(f"path: {path}")
-        if isinstance(path, OtherPath) and hasattr(path, "_original"):
-            logging.debug(f"path is OtherPath")
-            path = path._original
-        logging.debug(f"checked if path is OtherPath")
-        path = _clean_up_original_path_string(path)
-        cls.__original = path
-        cls._pathlib_doc = super().__doc__
-        path = _check_external(path)[0]
-        return super().__new__(cls, path, *args, **kwargs)
-
-    def __init__(self, *args, **kwargs):
-        logging.debug("Running __init__ for OtherPath")
-        _path_string, *args = args
-        if not _path_string:
-            path_string = "."
-        else:
-            path_string = self.__original
-        self._original = self.__original
-        self._check_external(path_string)
-        # pathlib.PurePath and Path for Python 3.12 seems to have an __init__ method
-        # where it sets self._raw_path from the input argument, but this is not the case
-        # for Python 3.11, 10, and 9. Those do not have their own __init__ method (and
-        # does not have a self._raw_path attribute).
-        # Instead of running e.g. super().__init__(self._raw_other_path) we do this
-        # instead (which is what the __init__ method does in Python 3.12):
-        self._raw_path = self._raw_other_path
-        self.__doc__ += f"\nOriginal documentation:\n\n{self._pathlib_doc}"
-        self._wrap_methods()  # dynamically wrapping methods - should gradually be replaced by hard-coded methods.
-
-    def _wrap_methods(self):
-        logging.debug("Running _wrap_methods for OtherPath")
-        existing_methods = self.__class__.__dict__.keys()
-        parent_methods_that_works_also_on_external_paths = []  # "parents", "parts"
-        parent_methods_that_returns_other_paths = []
-
-        for m in sorted(dir(pathlib.Path)):
-            if m.startswith("_"):
-                continue
-            if (
-                m in existing_methods
-                or m in parent_methods_that_works_also_on_external_paths
-            ):
-                continue
-            method = getattr(pathlib.Path, m)
-            if m in parent_methods_that_returns_other_paths:
-                setattr(self.__class__, m, self._wrap_and_morph_method(method))
-            if callable(method):
-                setattr(self.__class__, m, self._wrap_callable_method(method))
-            else:
-                setattr(self.__class__, m, self._wrap_non_callable(method))
-
-    def iterdir(self, *args, **kwargs):
-        if self.is_external:
-            warnings.warn(f"Cannot run iterdir for external paths!")
-            return
-        else:
-            return (OtherPath(p) for p in super().iterdir())
-
-    def parents(self, *args, **kwargs):
-        if self.is_external:
-            warnings.warn(f"Cannot run parents for external paths!")
-            return
-        return super().parents
-
-    def joinpath(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'joinpath' for OtherPath!")
-        return self
-
-    def readlink(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'readlink' for OtherPath!")
-        return
-
-    def owner(self, *args, **kwargs):
-        warnings.warn(f"Cannot get 'owner' for OtherPath!")
-        return
-
-    def lchmod(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'lchmod' for OtherPath!")
-        return self
-
-    def _wrap_and_morph_method(self, method):
-        if self.is_external:
-            print(f"Cannot run {method.__name__} for external paths!")
-            return lambda *args, **kwargs: self
-        else:
-            return lambda *args, **kwargs: OtherPath(*args, **kwargs)
-
-    def _wrap_callable_method(self, method, default_return_value=True):
-        if self.is_external:
-            print(f"Cannot run {method.__name__} for external paths!")
-            return lambda *args, **kwargs: default_return_value
-        else:
-            return method
-
-    def _wrap_non_callable(self, attr, default_return_value=None):
-        if self.is_external:
-            print(f"Cannot get {method.__name__} for external paths!")
-            return default_return_value
-        else:
-            return attr
-
-    def _check_external(self, path_string):
-        logging.debug("Running _check_external for OtherPath")
-        (
-            path_string,
-            self._is_external,
-            self._uri_prefix,
-            self._location,
-        ) = _check_external(path_string)
-        logging.debug(f"self._is_external: {self._is_external}")
-        logging.debug(f"self._uri_prefix: {self._uri_prefix}")
-        logging.debug(f"self._location: {self._location}")
-        logging.debug(f"path_string: {path_string}")
-        self._raw_other_path = path_string
-
-    def __div__(self, other: Union[str, S]) -> S:
-        if self.is_external:
-            path = self._original + "/" + other
-            return OtherPath(path)
-        path = pathlib.Path(self._original).__truediv__(other)
-        return OtherPath(path)
-
-    def __truediv__(self, other: Union[str, S]) -> S:
-        if self.is_external:
-            path = self._original + "/" + other
-            return OtherPath(path)
-        path = pathlib.Path(self._original).__truediv__(other)
-        return OtherPath(path)
-
-    def __rtruediv__(self: S, key: Union[str, S]) -> S:
-        if self.is_external:
-            raise TypeError(f"Cannot use rtruediv on external paths.")
-        path = pathlib.Path(self._original).__rtruediv__(key)
-        return OtherPath(path)
-
-    def __str__(self: S) -> str:
-        if hasattr(self, "_original") and self.is_external:
-            return self._original
-        else:
-            return super().__str__()
-
-    def _glob(self, glob_str: str, **kwargs) -> Generator:
-        testing = kwargs.pop("testing", False)
-        search_in_sub_dirs = kwargs.pop("search_in_sub_dirs", False)
-        if self.is_external:
-            connect_kwargs, host = self._get_connection_info(testing)
-            paths = self._glob_with_fabric(
-                host, connect_kwargs, glob_str, search_in_sub_dirs=search_in_sub_dirs
-            )
-            return (OtherPath(f"{self._original.rstrip('/')}/{p}") for p in paths)
-        paths = pathlib.Path(self._original).glob(glob_str)
-        return (OtherPath(p) for p in paths)
-
-    def glob(self, glob_str: str, *args, **kwargs) -> Generator:
-        return self._glob(glob_str, search_in_sub_dirs=False, **kwargs)
-
-    def rglob(self, glob_str: str, *args, **kwargs) -> Generator:
-        return self._glob(glob_str, search_in_sub_dirs=True, **kwargs)
-
-    def resolve(self: S, *args, **kwargs) -> S:
-        if self.is_external:
-            # warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
-            return self
-        resolved_path = pathlib.Path(self._original).resolve(*args, **kwargs)
-        return OtherPath(resolved_path)
-
-    def is_dir(self: S, *args, **kwargs) -> bool:
-        """Check if path is a directory."""
-        if self.is_external:
-            warnings.warn(f"Cannot check if dir exists for external paths! Assuming it exists.")
-            return True
-        return super().is_dir()
-
-    def is_file(self: S, *args, **kwargs) -> bool:
-        """Check if path is a file."""
-        if self.is_external:
-            warnings.warn(f"Cannot check if file exists for external paths! Assuming it exists.")
-            return True
-        return super().is_file()
-
-    def exists(self: S, *args, **kwargs) -> bool:
-        """Check if path exists."""
-        if self.is_external:
-            warnings.warn(f"Cannot check if path exists for external paths! Assuming it exists.")
-            return True
-        return super().exists()
-
-    def parent(self: S) -> S:
-        """Return the parent directory of the path."""
-        if self.is_external:
-            return OtherPath(self._original.rsplit("/", 1)[0])
-        return OtherPath(super().parent)
-
-    def with_suffix(self: S, suffix: str) -> S:
-        """Return a new path with the suffix changed."""
-        if self.is_external:
-            warnings.warn("This is not tested for external paths!")
-            return OtherPath(self._original.rsplit(".", 1)[0] + suffix)
-        return OtherPath(super().with_suffix(suffix))
-
-    def with_name(self: S, name: str) -> S:
-        """Return a new path with the name changed."""
-        if self.is_external:
-            warnings.warn("This is not tested for external paths!")
-            return OtherPath(self._original.rsplit("/", 1)[0] + "/" + name)
-        return OtherPath(super().with_name(name))
-
-    def with_stem(self: S, stem: str) -> S:
-        """Return a new path with the stem changed."""
-        if self.is_external:
-            warnings.warn("This is not tested for external paths!")
-            return OtherPath(self._original.rsplit("/", 1)[0] + "/" + stem)
-        return OtherPath(super().with_stem(stem))
-
-    def absolute(self: S) -> S:
-        if self.is_external:
-            warnings.warn("This is implemented yet for external paths! Returning self.")
-            return self
-        return OtherPath(super().absolute())
-
-    @property
-    def original(self: S) -> str:
-        return self._original
-
-    @property
-    def raw_path(self: S) -> str:
-        # this will return a leading slash for some edge cases
-        return self._raw_other_path
-
-    @property
-    def full_path(self: S) -> str:
-        if self.is_external:
-            return f"{self._uri_prefix}{self._location}{self._raw_other_path}"
-        return self._original
-
-    @property
-    def is_external(self: S) -> bool:
-        if not hasattr(self, "_is_external"):
-            logging.warning("OBS! OtherPath object missing _is_external attribute!")
-            logging.warning("This should not happen. Please report this bug!")
-            logging.warning(
-                "(most likely means that pathlib.Path has changed and that it now has "
-                "another attribute or method that returns a new pathlib.Path object or "
-                "that you have used a method that is not supported yet)"
-            )
-            # return False
-        return self._is_external
-
-    @property
-    def uri_prefix(self) -> str:
-        return self._uri_prefix
-
-    @property
-    def location(self) -> str:
-        return self._location
-
-    def as_uri(self) -> str:
-        if self._is_external:
-            return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
-        return super().as_uri()
-
-    def copy(
-        self, destination: Optional[pathlib.Path] = None, testing=False
-    ) -> pathlib.Path:
-        """Copy the file to a destination."""
-        if destination is None:
-            destination = pathlib.Path(tempfile.gettempdir())
-        else:
-            destination = pathlib.Path(destination)
-
-        path_of_copied_file = destination / self.name
-        if not self.is_external:
-            shutil.copy2(self, destination)
-        else:
-            connect_kwargs, host = self._get_connection_info(testing)
-            self._copy_with_fabric(host, connect_kwargs, destination)
-
-        return path_of_copied_file
-
-    def _get_connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
-        host = self.location
-        uri_prefix = self.uri_prefix.replace("//", "")
-        if uri_prefix not in URI_PREFIXES:
-            raise ValueError(f"uri_prefix {uri_prefix} not recognized")
-        if uri_prefix not in IMPLEMENTED_PROTOCOLS:
-            raise ValueError(
-                f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet"
-            )
-        password = os.getenv("CELLPY_PASSWORD", None)
-        key_filename = os.getenv("CELLPY_KEY_FILENAME", None)
-        if password is None and key_filename is None:
-            raise UnderDefined(
-                "You must define either CELLPY_PASSWORD "
-                "or CELLPY_KEY_FILENAME environment variables."
-            )
-        if key_filename is not None:
-            connect_kwargs = {"key_filename": key_filename}
-            logging.debug(f"got key_filename")
-            if not testing:
-                if not pathlib.Path(key_filename).is_file():
-                    raise FileNotFoundError(f"Could not find key file {key_filename}")
-        else:
-            connect_kwargs = {"password": password}
-        return connect_kwargs, host
-
-    def _copy_with_fabric(
-        self, host: str, connect_kwargs: dict, destination: Union[str, S, pathlib.Path]
-    ):
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-            try:
-                t1 = time.time()
-                conn.get(self.raw_path, str(destination / self.name))
-                logging.debug(f"copying took {time.time() - t1:.2f} seconds")
-            except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    f"Could not find file {self.raw_path} on {host}"
-                ) from e
-
-    def _glob_with_fabric(
-        self: S,
-        host: str,
-        connect_kwargs: dict,
-        glob_str: str,
-        search_in_sub_dirs: bool = False,
-    ) -> List[str]:
-        path_separator = "/"
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-            try:
-                t1 = time.time()
-                sftp_conn = conn.sftp()
-                sftp_conn.chdir(self.raw_path)
-                if search_in_sub_dirs:  # recursive globbing one level down
-                    sub_dirs = [
-                        f
-                        for f in sftp_conn.listdir()
-                        if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-                    ]
-                    files = [
-                        f
-                        for f in sftp_conn.listdir()
-                        if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-                    ]
-                    filtered_files = fnmatch.filter(files, glob_str)
-                    for sub_dir in sub_dirs:
-                        sftp_conn.chdir(sub_dir)
-                        new_files = [
-                            f
-                            for f in sftp_conn.listdir()
-                            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-                        ]
-                        new_filtered_files = fnmatch.filter(new_files, glob_str)
-                        new_filtered_files = [
-                            f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
-                        ]
-                        filtered_files += new_filtered_files
-                        sftp_conn.chdir("..")
-                else:
-                    files = sftp_conn.listdir()
-                    filtered_files = fnmatch.filter(files, glob_str)
-                logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
-                return filtered_files
-            except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    f"Could not find file {self.raw_path} on {host}"
-                ) from e
 
 
 # https://stackoverflow.com/questions/60067953/
@@ -1049,7 +583,7 @@ class InstrumentFactory:
 
         spec = importlib.util.spec_from_file_location(module_name, module_path)
         loader_module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = loader_module
+        sys.modules[module_name] = loader_module  # noqa
         spec.loader.exec_module(loader_module)
         cls = getattr(loader_module, instrument_class)
 
@@ -1158,6 +692,7 @@ def identify_last_data_point(data):
     return data
 
 
+# TODO: move this to internals/core
 def check64bit(current_system="python"):
     """checks if you are on a 64-bit platform"""
     if current_system == "python":
@@ -1179,12 +714,13 @@ def check64bit(current_system="python"):
             try:
                 # this often works in Linux
                 return "64" in platform.architecture()[0]
-            except Exception:
+            except Exception:  # noqa
                 # is an older version of Python, assume also an older os@
                 # (best we can guess)
                 return False
 
 
+# TODO: move this to internals/core
 def humanize_bytes(b, precision=1):
     """Return a humanized string representation of a number of b."""
 
@@ -1202,9 +738,10 @@ def humanize_bytes(b, precision=1):
         if b >= factor:
             break
     # return '%.*f %s' % (precision, old_div(b, factor), suffix)
-    return "%.*f %s" % (precision, b // factor, suffix)
+    return "%.*f %s" % (precision, b // factor, suffix)  # noqa
 
 
+# TODO: move this to internals/core
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     """Converts a xls date stamp to a more sensible format.
 
@@ -1522,22 +1059,6 @@ def convert_from_simple_unit_label_to_string_unit_label(k, v):
     return str_value
 
 
-def abs_path(path):
-    """Converts a path to an absolute pathlib.Path object.
-
-    Args:
-        path (str, pathlib.Path): the path to convert.
-
-    Returns:
-        pathlib.Path: the converted path.
-
-    """
-    if isinstance(path, str):
-        path = pathlib.Path(path)
-
-    return path.resolve()
-
-
 # ---------------- LOCAL DEV TESTS ----------------
 
 
@@ -1549,8 +1070,6 @@ def check_convert_from_simple_unit_label_to_string_unit_label():
 
 
 def check_path_things():
-    print(abs_path("."))
-
     p = "//jepe@mymachine.my.no/./path/file.txt"
     p2 = pathlib.Path(p)
     print(f"{p2=}")
@@ -1596,7 +1115,7 @@ def check_path_things():
     print(f"{p2.exists()=}")
 
 
-def check_another_path_things():  # pragma: no cover
+def check_another_path_things():
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p02 = r"ssh://jepe@server.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
@@ -1611,9 +1130,9 @@ def check_another_path_things():  # pragma: no cover
         print(f"{p2.resolve()=}")
         print(f"{p2.drive=}")
         print(f"{p2.exists()=}")
-        print(f"{p2._is_external=}")
-        print(f"{p2._location=}")
-        print(f"{p2._uri_prefix=}")
+        print(f"{p2._is_external=}")  # noqa
+        print(f"{p2._location=}")  # noqa
+        print(f"{p2._uri_prefix=}")  # noqa
         print(f"{p2.resolve()=}")
         if p2.is_absolute():
             print(f"{p2.as_uri()=}")
@@ -1654,12 +1173,13 @@ def check_how_other_path_works():
         print(f"{p2.is_external=}")
         print(f"{p2.location=}")
         print(f"{p2.uri_prefix=}")
-        print(f"{p2._original=}")
+        print(f"{p2._original=}")  # noqa
         print(f"{p2.full_path=}")
         print(f"{p2.parts=}")
 
 
 def check_copy_external_file():
+    from cellpy import prms
     prms.Paths.env_file = r"C:\scripting\cellpy\local\.env_cellpy"
     dst = r"C:\scripting\cellpy\tmp\20210629_moz_cat_02_cc_01.res"
     src = "ssh://jepe@not.in.no/home/jepe@ad.ife.no/Temp/20210629_moz_cat_02_cc_01.res"

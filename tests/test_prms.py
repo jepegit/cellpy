@@ -274,7 +274,7 @@ def test_set_prm_inside_cellpy(cellpy_data_instance):
 
 
 def test_save_otherpath_prms_cellpy(clean_dir):
-    from cellpy.readers.core import OtherPath
+    from cellpy.internals.core import OtherPath
 
     logging.debug("OBS! PRMS CHANGED")
     tmp_config_file_name = os.path.join(clean_dir, "cellpy_test_config_2.yml")
@@ -304,7 +304,7 @@ def test_save_prm_file(clean_dir):
 
 
 def test_dataclass_prms_type_hint():
-    from cellpy.readers.core import OtherPath
+    from cellpy.internals.core import OtherPath
 
     assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
     prms.Paths.outdatadir = r"C:\my_data\processed"
@@ -316,7 +316,7 @@ def test_dataclass_prms_type_hint():
 
 
 def test_dataclass_otherpath_prms_instruments():
-    from cellpy.readers.core import OtherPath
+    from cellpy.internals.core import OtherPath
 
     assert isinstance(prms.Paths.rawdatadir, OtherPath)
     assert isinstance(prms.Paths.cellpydatadir, OtherPath)

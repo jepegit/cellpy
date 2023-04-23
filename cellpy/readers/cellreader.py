@@ -64,7 +64,6 @@ from cellpy.parameters.internal_settings import (
 )
 
 from cellpy.readers.core import (
-    OtherPath,
     Data,
     FileID,
     identify_last_data_point,
@@ -75,6 +74,7 @@ from cellpy.readers.core import (
     Q,
     convert_from_simple_unit_label_to_string_unit_label,
 )
+from cellpy.internals.core import OtherPath
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
@@ -268,8 +268,8 @@ class CellpyCell:
         self.limit_data_points = None
         self.ensure_step_table = prms.Reader.ensure_step_table
         self.ensure_summary_table = prms.Reader.ensure_summary_table
-        self.raw_datadir = prms.Paths.rawdatadir
-        self.cellpy_datadir = prms.Paths.cellpydatadir
+        self.raw_datadir = OtherPath(prms.Paths.rawdatadir)
+        self.cellpy_datadir = OtherPath(prms.Paths.cellpydatadir)
         self.auto_dirs = prms.Reader.auto_dirs
 
         # - headers and instruments

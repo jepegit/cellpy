@@ -19,7 +19,7 @@ from ruamel.yaml.error import YAMLError
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import OTHERPATHS
-from cellpy.readers.core import OtherPath
+from cellpy.internals.core import OtherPath
 
 DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"

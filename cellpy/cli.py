@@ -19,7 +19,7 @@ import cellpy._version
 from cellpy.exceptions import ConfigFileNotWritten
 from cellpy.parameters import prmreader
 from cellpy.parameters.internal_settings import OTHERPATHS
-from cellpy.readers.core import OtherPath
+from cellpy.internals.core import OtherPath
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"

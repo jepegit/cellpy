@@ -18,6 +18,7 @@ from cellpy.parameters.internal_settings import (
     headers_step_table,
     headers_summary,
 )
+from cellpy.internals.core import OtherPath
 from cellpy.utils.batch_tools.batch_analyzers import (
     BaseSummaryAnalyzer,
     OCVRelaxationAnalyzer,
@@ -760,8 +761,7 @@ class Batch:
         """
 
         pages = self.experiment.journal.pages
-        # TODO 249: make this OtherPath?
-        cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
+        cellpy_file_dir = OtherPath(prms.Paths.cellpydatadir)
 
         if location == "standard":
             batch_data_dir = pathlib.Path("data") / "interim"

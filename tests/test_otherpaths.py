@@ -7,6 +7,7 @@ import dotenv
 import fabric
 import pytest
 
+import cellpy.internals.core
 from cellpy.readers import core
 from cellpy import log, prms
 
@@ -36,15 +37,15 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
     ],
 )
 def test_is_external(test_input, expected):
-    p1 = core.OtherPath(test_input)
+    p1 = cellpy.internals.core.OtherPath(test_input)
     assert p1.is_external == expected
-    p1 = core.OtherPath(p1)
+    p1 = cellpy.internals.core.OtherPath(p1)
     assert p1.is_external == expected
     if test_input is not None:
         p2 = pathlib.Path(test_input)
-        p3 = core.OtherPath(p2)
+        p3 = cellpy.internals.core.OtherPath(p2)
         assert p3.is_external == expected
-        p4 = core.OtherPath(p3)
+        p4 = cellpy.internals.core.OtherPath(p3)
         assert p4.is_external == expected
 
 
@@ -71,15 +72,15 @@ def test_is_external(test_input, expected):
     ],
 )
 def test_url_prefix(test_input, expected):
-    p1 = core.OtherPath(test_input)
+    p1 = cellpy.internals.core.OtherPath(test_input)
     assert p1.uri_prefix == expected
-    p1 = core.OtherPath(p1)
+    p1 = cellpy.internals.core.OtherPath(p1)
     assert p1.uri_prefix == expected
     if test_input is not None:
         p2 = pathlib.Path(test_input)
-        p3 = core.OtherPath(p2)
+        p3 = cellpy.internals.core.OtherPath(p2)
         assert p3.uri_prefix == expected
-        p4 = core.OtherPath(p3)
+        p4 = cellpy.internals.core.OtherPath(p3)
         assert p4.uri_prefix == expected
 
 
@@ -106,15 +107,15 @@ def test_url_prefix(test_input, expected):
     ],
 )
 def test_location(test_input, expected):
-    p1 = core.OtherPath(test_input)
+    p1 = cellpy.internals.core.OtherPath(test_input)
     assert p1.location == expected
-    p1 = core.OtherPath(p1)
+    p1 = cellpy.internals.core.OtherPath(p1)
     assert p1.location == expected
     if test_input is not None:
         p2 = pathlib.Path(test_input)
-        p3 = core.OtherPath(p2)
+        p3 = cellpy.internals.core.OtherPath(p2)
         assert p3.location == expected
-        p4 = core.OtherPath(p3)
+        p4 = cellpy.internals.core.OtherPath(p3)
         assert p4.location == expected
 
 
@@ -147,22 +148,22 @@ def test_location(test_input, expected):
     ],
 )
 def test_raw_path(test_input, expected):
-    p1 = core.OtherPath(test_input)
+    p1 = cellpy.internals.core.OtherPath(test_input)
     assert p1.raw_path == expected
-    p1 = core.OtherPath(p1)
+    p1 = cellpy.internals.core.OtherPath(p1)
     assert p1.raw_path == expected
     if test_input is not None:
         p2 = pathlib.Path(test_input)
-        p3 = core.OtherPath(p2)
+        p3 = cellpy.internals.core.OtherPath(p2)
         assert p3.raw_path == expected
-        p4 = core.OtherPath(p3)
+        p4 = cellpy.internals.core.OtherPath(p3)
         assert p4.raw_path == expected
         print("--------------------------")
         print(p4._original)
 
 
 def test_wrap(parameters):
-    p = core.OtherPath(parameters.res_file_path)
+    p = cellpy.internals.core.OtherPath(parameters.res_file_path)
     p.is_file()
     p.home()
 
@@ -251,7 +252,7 @@ def test_load_environment(parameters):
 
 
 def test_copy_local(parameters, tmp_path):
-    p1 = core.OtherPath(parameters.res_file_path)
+    p1 = cellpy.internals.core.OtherPath(parameters.res_file_path)
     p2 = p1.copy()
     assert p2.is_file()
     assert p1 is not p2
@@ -276,17 +277,17 @@ def test_copy_remote_simple(
         else:
             shutil.copy2(n.raw_path, _destination)
 
-    monkeypatch.setattr(core.OtherPath, "_copy_with_fabric", mock_return)
+    monkeypatch.setattr(cellpy.internals.core.OtherPath, "_copy_with_fabric", mock_return)
 
     p1 = str(parameters.res_file_path)
     host = os.getenv("CELLPY_HOST")
     user = os.getenv("CELLPY_USER")
     p2 = f"ssh://{user}@{host}/{p1}"
-    remote_file_path = core.OtherPath(p2)
+    remote_file_path = cellpy.internals.core.OtherPath(p2)
     local_file_path = remote_file_path.copy(testing=True)
     assert local_file_path.is_file()
     assert remote_file_path is not local_file_path
     assert isinstance(local_file_path, pathlib.Path)
     # cellpy version 1.0.0 will not support copying to a remote location
     #   therefore, the returned object will always be a pathlib.Path object
-    assert not isinstance(local_file_path, core.OtherPath)
+    assert not isinstance(local_file_path, cellpy.internals.core.OtherPath)

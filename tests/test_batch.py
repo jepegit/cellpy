@@ -122,18 +122,25 @@ def test_load_limited_journal_excel(parameters, batch_instance):
     assert hdr_journal["argument"] in b.pages.columns
 
 
-def test_load_full_journal_excel_and_check_headers_generated(parameters, batch_instance):
+def test_load_full_journal_excel_and_check_headers_generated(
+    parameters, batch_instance
+):
     index_name = "filename"
-    b = batch_instance.from_journal(parameters.journal_file_full_xlsx_path, testing=True)
+    b = batch_instance.from_journal(
+        parameters.journal_file_full_xlsx_path, testing=True
+    )
     assert len(b.pages) == 2
     missing = [hdr for hdr in hdr_journal.values() if hdr not in b.pages.columns]
     assert len(missing) == 1
     assert b.pages.index.name == index_name
-    assert missing[0] == index_name  # this is the only missing column since it is now the index
+    assert (
+        missing[0] == index_name
+    )  # this is the only missing column since it is now the index
 
 
 def test_load_full_journal_excel_from_labjournal_class(parameters):
     from cellpy.utils.batch_tools.batch_journals import LabJournal
+
     journal = LabJournal(db_reader="off")
     journal.from_file(parameters.journal_file_full_xlsx_path, paginate=False)
     assert len(journal.pages) == 2
@@ -141,6 +148,7 @@ def test_load_full_journal_excel_from_labjournal_class(parameters):
 
 def test_load_journal_json_from_labjournal_class(parameters):
     from cellpy.utils.batch_tools.batch_journals import LabJournal
+
     journal = LabJournal(db_reader="off")
     journal.from_file(parameters.journal_file_json_path, paginate=False)
     assert len(journal.pages) == 5
@@ -180,7 +188,8 @@ def test_load_save_journal_roundtrip_json(batch_instance):
 def test_load_journal_dataframe(batch_instance):
     import pandas as pd
     from cellpy.utils.batch_tools.batch_journals import LabJournal
-    from cellpy.readers.core import OtherPath
+    from cellpy.internals.core import OtherPath
+
     _frame = {
         "filename": ["a", "b", "c"],
         "argument": ["recalc=True", "recalc=False", "recalc=False"],
@@ -199,10 +208,13 @@ def test_load_journal_dataframe(batch_instance):
         "cellpy_file_name": [
             pathlib.Path("data/cellpyfiles/20160805_test001_45_cc.cellpy"),
             OtherPath("data/cellpyfiles/20160805_test001_46_cc.cellpy"),
-            "data/cellpyfiles/20160805_test001_47_cc.cellpy"
+            "data/cellpyfiles/20160805_test001_47_cc.cellpy",
         ],
         "raw_file_names": [
-            ["data/raw/20160805_test001_45_cc_01.res", "data/raw/20160805_test001_45_cc_02.res"],
+            [
+                "data/raw/20160805_test001_45_cc_01.res",
+                "data/raw/20160805_test001_45_cc_02.res",
+            ],
             "data/raw/20160805_test001_46_cc_01.txt",
             OtherPath("ssh://user@server.in.no/data/raw/20160805_test001_47_cc_01.txt"),
         ],

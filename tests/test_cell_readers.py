@@ -11,6 +11,7 @@ import cellpy.readers.core
 from cellpy import log, prms
 from cellpy.exceptions import DeprecatedFeature, WrongFileVersion
 from cellpy.parameters.internal_settings import get_headers_summary
+from cellpy.internals.core import OtherPath
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -315,12 +316,14 @@ def test_search_for_files(parameters):
 
     run_files, cellpy_file = filefinder.search_for_files(
         parameters.run_name,
-        raw_file_dir=parameters.raw_data_dir,
-        cellpy_file_dir=parameters.output_dir,
+        raw_file_dir=OtherPath(parameters.raw_data_dir),
+        cellpy_file_dir=OtherPath(parameters.output_dir),
     )
-    print(f"parameters.res_file_path: {parameters.res_file_path}")
+    print(f"parameters.res_file_path: {OtherPath(parameters.res_file_path)}")
     print(f"run_files: {run_files}")
-    print(run_files)
+    for r in run_files:
+        print(f"{r=} :: {type(r)=}")
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
     assert parameters.res_file_path in run_files
     assert os.path.basename(cellpy_file) == parameters.cellpy_file_name
 
@@ -328,8 +331,10 @@ def test_search_for_files(parameters):
 def test_set_res_datadir_wrong(cellpy_data_instance):
     _ = r"X:\A_dir\That\Does\Not\Exist\random_random9103414"
     before = cellpy_data_instance.cellpy_datadir
+    print(f"{before=} :: {type(before)=}")
     cellpy_data_instance.set_cellpy_datadir(_)
     after = cellpy_data_instance.cellpy_datadir
+    print(f"{after=} :: {type(after)=}")
     assert _ != cellpy_data_instance.cellpy_datadir
     assert before == after
 
@@ -369,6 +374,10 @@ def test_fid(cellpy_data_instance, parameters):
     print(fid_object.get_name())
     print(fid_object.get_size())
     print(fid_object.get_last())
+
+
+def test_fid_with_otherpath(cellpy_data_instance, parameters):
+    raw_file = parameters.res_file_path
 
 
 def test_only_fid(parameters):

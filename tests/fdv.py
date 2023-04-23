@@ -7,12 +7,12 @@ Notes:
 
 import os
 from pathlib import Path
+from cellpy.internals.core import OtherPath
 
 
-# TODO 249: -> OtherPath?
 def get_cellpy_file_path(raw_path):
     cellpy_extension = ".h5"
-    raw_path = Path(raw_path)
+    raw_path = OtherPath(raw_path)
     raw_name = raw_path.stem + cellpy_extension
     p = os.path.join(cellpy_data_dir, raw_name)
     return p

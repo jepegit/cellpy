@@ -15,6 +15,7 @@ from typing import List, Union
 
 import pandas as pd
 
+import cellpy.internals.core
 import cellpy.readers.core as core
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.readers.instruments.configurations import (
@@ -196,9 +197,9 @@ class AtomicLoad:
     @name.setter
     def name(self, value):
         """The name of the file to be loaded"""
-        if not self.is_db and not isinstance(value, core.OtherPath):
+        if not self.is_db and not isinstance(value, cellpy.internals.core.OtherPath):
             logging.debug("converting to OtherPath")
-            value = core.OtherPath(value)
+            value = cellpy.internals.core.OtherPath(value)
         self._name = value
 
     @property

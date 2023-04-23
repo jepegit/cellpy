@@ -259,7 +259,6 @@ class LabJournal(BaseJournal, ABC):
             "project": project,
             "project_dir": pathlib.Path("."),
             "batch_dir": pathlib.Path("."),
-            # TODO 249: -> OtherPath?
             "raw_dir": pathlib.Path("."),
         }
         logging.debug(f"xlsx loader starting on {file_name}")
