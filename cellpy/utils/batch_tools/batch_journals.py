@@ -367,6 +367,25 @@ class LabJournal(BaseJournal, ABC):
         import ast
 
         # TODO 249: -> OtherPath?
+        # TODO 249: -> check tests/test_easyplot.py::test_journal_loading_json
+        # TODO 249: -> check tests/test_easyplot.py::test_journal_saving_xlsx
+        # TODO 249: -> cellpy/cellpy/utils/batch_tools/batch_journals.py:383: UserWarning:
+        #  invalid decimal literal (<unknown>, line 1)
+        # TODO 249: -> cellpy/cellpy/cellpy/readers/dbreader.py:355: UserWarning:
+        #  your database is missing the following key: experiment_type
+        # TODO 249: -> cellpy/cellpy/readers/dbreader.py:355: UserWarning:
+        #  your database is missing the following key: nominal_capacity
+        # TODO 249: -> tests/test_batch.py::test_cycling_summary_plotter:
+        #  cellpy/cellpy/utils/batch_tools/engines.py:37:
+        #  DeprecationWarning: This utility function will be seriously changed soon and possibly removed
+        #  cellpy/cellpy/utils/batch_tools/batch_plotters.py:690:
+        #  DeprecationWarning: This utility function will be seriously changed soon and possibly removed
+        # TODO 249: -> tests/test_biologics.py::test_set_instrument:
+        #  cellpy/cellpy/readers/instruments/biologics_mpr.py:342:
+        #  DeprecationWarning: The binary mode of fromstring is deprecated,
+        #  as it behaves surprisingly on unicode inputs. Use frombuffer instead
+        # TODO 249: -> test_neware.py::test_get_neware_from_h5:
+        #  cellpy/cellpy/readers/cellreader.py:1828: UserWarning: no fid_table - you should update your cellpy-file
         logging.debug("removing empty rows")
         pages = pages.dropna(how="all")
         logging.debug("checking path-names")
