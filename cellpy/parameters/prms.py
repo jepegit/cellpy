@@ -8,8 +8,7 @@ from typing import List, Tuple, Union, Optional, TYPE_CHECKING
 
 # Using TYPE_CHECKING to avoid circular imports
 # (this will only work without from __future__ import annotations for python 3.11 and above)
-if TYPE_CHECKING:
-    from cellpy.internals.core import OtherPath
+from cellpy.internals.core import OtherPath
 
 import box
 
@@ -53,8 +52,8 @@ class CellPyConfig:
 @dataclass
 class PathsClass(CellPyConfig):
     outdatadir: Union[Path, str] = wdir
-    rawdatadir: Union[OtherPath, str] = op_wdir
-    cellpydatadir: Union[OtherPath, str] = op_wdir
+    _rawdatadir: Union[OtherPath, str] = op_wdir
+    _cellpydatadir: Union[OtherPath, str] = op_wdir
     db_path: Union[Path, str] = wdir  # used for simple excel db reader
     filelogdir: Union[Path, str] = wdir
     examplesdir: Union[Path, str] = wdir
@@ -65,13 +64,21 @@ class PathsClass(CellPyConfig):
     db_filename: str = "cellpy_db.xlsx"  # used for simple excel db reader
     env_file: Union[Path, str] = user_dir / ".env_cellpy"
 
-    # @property
-    # def rawdatadir(self) -> OtherPath:
-    #     return OtherPath(self.rawdatadir)
+    @property
+    def rawdatadir(self) -> OtherPath:
+        return OtherPath(self._rawdatadir)
 
-    # @rawdatadir.setter
-    # def rawdatadir(self, value: Union[OtherPath, Path, str]):
-    #     self._rawdatadir = OtherPath(value)
+    @rawdatadir.setter
+    def rawdatadir(self, value: Union[OtherPath, Path, str]):
+        self._rawdatadir = OtherPath(value)
+
+    @property
+    def cellpydatadir(self) -> OtherPath:
+        return OtherPath(self._cellpydatadir)
+
+    @cellpydatadir.setter
+    def cellpydatadir(self, value: Union[OtherPath, Path, str]):
+        self._cellpydatadir = OtherPath(value)
 
 
 @dataclass

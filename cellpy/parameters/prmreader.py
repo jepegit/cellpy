@@ -171,11 +171,12 @@ def _convert_to_dict(x):
 def _convert_paths_to_dict(x):
     dictionary = {}
     for k in x.keys():
-        v = getattr(x, k)
-        if isinstance(v, OtherPath):
-            t = v.full_path
+        # hack to get around the leading underscore (since they are properties):
+        if len(k) > 1 and k[0] == "_" and k.lower()[1:] in OTHERPATHS:
+            t = getattr(x, k).full_path
+            k = k[1:]
         else:
-            t = str(v)
+            t = str(getattr(x, k))
         dictionary[k] = t
     return dictionary
 
@@ -342,7 +343,17 @@ def info():
                 print(f"prms.{key}.{subkey} = ", f"{current_object[subkey]}")
             print()
 
+        elif key == "Paths":
+            print(" NEW-TYPE PRM WITH OTHERPATHS ".center(80, "*"))
+            attributes = {
+                k: v for k, v in vars(current_object).items() if not k.startswith("_")
+            }
+            for attr in OTHERPATHS:
+                attributes[attr] = getattr(current_object, attr)
+            pprint(attributes, width=1)
+
         elif isinstance(current_object, (prms.CellPyConfig, prms.CellPyDataConfig)):
+            print(" NEW-TYPE PRM ".center(80, "="))
             attributes = {
                 k: v for k, v in vars(current_object).items() if not k.startswith("_")
             }

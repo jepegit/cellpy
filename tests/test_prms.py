@@ -282,10 +282,12 @@ def test_save_otherpath_prms_cellpy(clean_dir):
         f.write(config_file2_txt)
     prmreader._read_prm_file(tmp_config_file_name)
     assert isinstance(prms.Paths.rawdatadir, OtherPath)
+    assert isinstance(prms.Paths.cellpydatadir, OtherPath)
     assert prms.Paths.rawdatadir.full_path == "scp://my@server.no/home/me/data/raw"
     prmreader._write_prm_file(tmp_config_file_name)
     prmreader._read_prm_file(tmp_config_file_name)
     assert isinstance(prms.Paths.rawdatadir, OtherPath)
+    assert isinstance(prms.Paths.cellpydatadir, OtherPath)
     assert prms.Paths.rawdatadir.full_path == "scp://my@server.no/home/me/data/raw"
 
 
