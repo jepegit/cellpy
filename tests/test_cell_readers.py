@@ -392,6 +392,30 @@ def test_only_fid(parameters):
     assert my_fid_one.get_size() == my_fid_two.get_size()
 
 
+def test_only_fid_otherpath_local(parameters):
+    from cellpy.readers.core import FileID
+    from cellpy.internals.core import OtherPath
+
+    my_fid_one = FileID()
+    my_file = OtherPath(parameters.cellpy_file_path)
+    my_fid_one.populate(my_file)
+    my_fid_two = FileID(my_file)
+    assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
+    assert my_fid_one.get_size() == my_fid_two.get_size()
+
+
+def test_only_fid_otherpath_external(parameters):
+    from cellpy.readers.core import FileID
+    from cellpy.internals.core import OtherPath
+
+    my_fid_one = FileID()
+    my_file = OtherPath(parameters.cellpy_file_path_external)
+    my_fid_one.populate(my_file)
+    my_fid_two = FileID(my_file)
+    assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
+    assert my_fid_one.get_size() == my_fid_two.get_size()
+
+
 @pytest.mark.parametrize(
     "cycle, step, expected_type, expected_info",
     [

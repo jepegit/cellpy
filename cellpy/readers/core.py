@@ -166,7 +166,7 @@ class FileID:
 
     """
 
-    def __init__(self, filename=None, is_db=False):
+    def __init__(self, filename: Union[str, OtherPath] = None, is_db: bool = False):
         """Initialize the FileID class."""
         self.is_db = is_db
         if self.is_db:
@@ -174,17 +174,20 @@ class FileID:
             return
 
         make_defaults = True
-        if filename:
-            if os.path.isfile(filename):
-                fid_st = os.stat(filename)
-                self.name = os.path.abspath(filename)
-                self.full_name = filename
+        if filename is not None:
+            if not isinstance(filename, OtherPath):
+                logging.debug("filename is not an OtherPath object")
+                filename = OtherPath(filename)
+
+            if filename.is_file():
+                fid_st = filename.stat()
+                self.name = filename.absolute()
+                self.full_name = filename.full_path
                 self.size = fid_st.st_size
                 self.last_modified = fid_st.st_mtime
                 self.last_accessed = fid_st.st_atime
                 self.last_info_changed = fid_st.st_ctime
-                self.location = os.path.dirname(filename)
-                self.last_data_point = 0  # used later when updating is implemented
+                self.location = filename.parent
                 make_defaults = False
 
         if make_defaults:
@@ -242,22 +245,25 @@ class FileID:
     def last_data_point(self, value):
         self._last_data_point = value
 
-    def populate(self, filename):
+    def populate(self, filename: Union[str, OtherPath]):
         """Finds the file-stats and populates the class with stat values.
 
         Args:
-            filename (str): name of the file.
+            filename (str, OtherPath): name of the file.
         """
+        if not isinstance(filename, OtherPath):
+            logging.debug("filename is not an OtherPath object")
+            filename = OtherPath(filename)
 
-        if os.path.isfile(filename):
-            fid_st = os.stat(filename)
-            self.name = os.path.abspath(filename)
-            self.full_name = filename
+        if filename.is_file():
+            fid_st = filename.stat()
+            self.name = filename.absolute()
+            self.full_name = filename.full_path
             self.size = fid_st.st_size
             self.last_modified = fid_st.st_mtime
             self.last_accessed = fid_st.st_atime
             self.last_info_changed = fid_st.st_ctime
-            self.location = os.path.dirname(filename)
+            self.location = filename.parent
 
     def get_raw(self):
         """Get a list with information about the file.
@@ -1180,6 +1186,7 @@ def check_how_other_path_works():
 
 def check_copy_external_file():
     from cellpy import prms
+
     prms.Paths.env_file = r"C:\scripting\cellpy\local\.env_cellpy"
     dst = r"C:\scripting\cellpy\tmp\20210629_moz_cat_02_cc_01.res"
     src = "ssh://jepe@not.in.no/home/jepe@ad.ife.no/Temp/20210629_moz_cat_02_cc_01.res"

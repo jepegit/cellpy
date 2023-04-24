@@ -168,6 +168,16 @@ def test_wrap(parameters):
     p.home()
 
 
+def test_stat(parameters):
+    import os
+    p_local = cellpy.internals.core.OtherPath(parameters.res_file_path)
+    print(f"{p_local.stat()=}")
+    print(f"{p_local.stat().st_size=}")
+    p_external = cellpy.internals.core.OtherPath(parameters.res_file_path_external)
+    print(f"{p_external.stat()=}")
+    print(f"{p_external.stat().st_size=}")
+
+
 # @pytest.mark.onlylocal
 # def test_methods(parameters):
 #     p = core.OtherPath(parameters.res_file_path)
@@ -277,7 +287,9 @@ def test_copy_remote_simple(
         else:
             shutil.copy2(n.raw_path, _destination)
 
-    monkeypatch.setattr(cellpy.internals.core.OtherPath, "_copy_with_fabric", mock_return)
+    monkeypatch.setattr(
+        cellpy.internals.core.OtherPath, "_copy_with_fabric", mock_return
+    )
 
     p1 = str(parameters.res_file_path)
     host = os.getenv("CELLPY_HOST")

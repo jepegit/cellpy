@@ -1,5 +1,6 @@
 """This module contains div classes etc that are not really connected to cellpy."""
 
+from dataclasses import dataclass
 import fnmatch
 import logging
 import os
@@ -9,7 +10,20 @@ import stat
 import tempfile
 import time
 import warnings
-from typing import Any, Tuple, Dict, List, Union, TypeVar, Generator, Optional, Iterable, Callable, Type, cast
+from typing import (
+    Any,
+    Tuple,
+    Dict,
+    List,
+    Union,
+    TypeVar,
+    Generator,
+    Optional,
+    Iterable,
+    Callable,
+    Type,
+    cast,
+)
 
 import fabric
 
@@ -21,6 +35,21 @@ IMPLEMENTED_PROTOCOLS = ["ssh:", "sftp:", "scp:"]
 # name of environment variable that holds the key file and password:
 ENV_VAR_CELLPY_KEY_FILENAME = "CELLPY_KEY_FILENAME"
 ENV_VAR_CELLPY_PASSWORD = "CELLPY_PASSWORD"
+
+
+@dataclass
+class ExternalStatResult:
+    """Mock of os.stat_result."""
+    # st_mode: int = 0
+    # st_ino: int = 0
+    # st_dev: int = 0
+    # st_nlink: int = 0
+    # st_uid: int = 0
+    # st_gid: int = 0
+    st_size: int = 0
+    st_mtime: int = 0
+    st_atime: int = 0
+    st_ctime: Optional[int] = None
 
 
 def _clean_up_original_path_string(path_string):
@@ -160,35 +189,6 @@ class OtherPath(pathlib.Path):
             else:
                 setattr(self.__class__, m, self._wrap_non_callable(method))
 
-    def iterdir(self, *args, **kwargs):
-        if self.is_external:
-            warnings.warn(f"Cannot run iterdir for external paths!")
-            return
-        else:
-            return (OtherPath(p) for p in super().iterdir())
-
-    def parents(self, *args, **kwargs):
-        if self.is_external:
-            warnings.warn(f"Cannot run parents for external paths!")
-            return
-        return super().parents
-
-    def joinpath(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'joinpath' for OtherPath!")
-        return self
-
-    def readlink(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'readlink' for OtherPath!")
-        return
-
-    def owner(self, *args, **kwargs):
-        warnings.warn(f"Cannot get 'owner' for OtherPath!")
-        return
-
-    def lchmod(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'lchmod' for OtherPath!")
-        return self
-
     def _wrap_and_morph_method(self, method):
         if self.is_external:
             print(f"Cannot run {method.__name__} for external paths!")
@@ -311,29 +311,76 @@ class OtherPath(pathlib.Path):
     def with_suffix(self: S, suffix: str) -> S:
         """Return a new path with the suffix changed."""
         if self.is_external:
-            warnings.warn("This is not tested for external paths!")
+            warnings.warn("This is method (`with_suffix`) not tested for external paths!")
             return OtherPath(self._original.rsplit(".", 1)[0] + suffix)
         return OtherPath(super().with_suffix(suffix))
 
     def with_name(self: S, name: str) -> S:
         """Return a new path with the name changed."""
         if self.is_external:
-            warnings.warn("This is not tested for external paths!")
+            warnings.warn("This method (`with_name`) is not tested for external paths!")
             return OtherPath(self._original.rsplit("/", 1)[0] + "/" + name)
         return OtherPath(super().with_name(name))
 
     def with_stem(self: S, stem: str) -> S:
         """Return a new path with the stem changed."""
         if self.is_external:
-            warnings.warn("This is not tested for external paths!")
+            warnings.warn("This method (`with_stem`) is not tested for external paths!")
             return OtherPath(self._original.rsplit("/", 1)[0] + "/" + stem)
         return OtherPath(super().with_stem(stem))
 
     def absolute(self: S) -> S:
         if self.is_external:
-            warnings.warn("This is implemented yet for external paths! Returning self.")
+            warnings.warn("This method (`absolute`) is not implemented yet for external paths! Returning self.")
             return self
         return OtherPath(super().absolute())
+
+    def iterdir(self, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot run `iterdir` yet for external paths! Returning None.")
+            return
+        else:
+            return (OtherPath(p) for p in super().iterdir())
+
+    def parents(self, *args, **kwargs):
+        if self.is_external:
+            warnings.warn(f"Cannot run `parents` yet for external paths! Returning None.")
+            return
+        return super().parents
+
+    def stat(self, *args, **kwargs):
+        testing = kwargs.pop("testing", False)
+        if self.is_external:
+            # warnings.warn(f"Cannot run `stat` for external paths! Returning stat_result object with only zeros.")
+            try:
+                connect_kwargs, host = self._get_connection_info(testing)
+            except UnderDefined as e:
+                logging.debug(f"UnderDefined error: {e}")
+                logging.debug("Returning stat_result object with only zeros.")
+                return ExternalStatResult()
+            try:
+                return self._stat_with_fabric(host, connect_kwargs)
+            except FileNotFoundError:
+                logging.debug("File not found! Returning stat_result object with only zeros.")
+                return ExternalStatResult()
+
+        return super().stat()
+
+    def joinpath(self, *args, **kwargs):
+        warnings.warn(f"Cannot run 'joinpath' for OtherPath!")
+        return self
+
+    def readlink(self, *args, **kwargs):
+        warnings.warn(f"Cannot run 'readlink' for OtherPath!")
+        return
+
+    def owner(self, *args, **kwargs):
+        warnings.warn(f"Cannot get 'owner' for OtherPath!")
+        return
+
+    def lchmod(self, *args, **kwargs):
+        warnings.warn(f"Cannot run 'lchmod' for OtherPath!")
+        return self
 
     @property
     def original(self: S) -> str:
@@ -365,13 +412,16 @@ class OtherPath(pathlib.Path):
 
     @property
     def uri_prefix(self) -> str:
+        """Return the uri prefix for the external path (e.g `ssh://`)."""
         return self._uri_prefix
 
     @property
     def location(self) -> str:
+        """Return the location of the external path (e.g `user@server.com`)."""
         return self._location
 
     def as_uri(self) -> str:
+        """Return the path as a uri (e.g. `scp://user@server.com/home/data/my_file.txt`)."""
         if self._is_external:
             return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
         return super().as_uri()
@@ -428,6 +478,23 @@ class OtherPath(pathlib.Path):
                 t1 = time.time()
                 conn.get(self.raw_path, str(destination / self.name))
                 logging.debug(f"copying took {time.time() - t1:.2f} seconds")
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    f"Could not find file {self.raw_path} on {host}"
+                ) from e
+
+    def _stat_with_fabric(self, host: str, connect_kwargs: dict) -> ExternalStatResult:
+        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+            try:
+                t1 = time.time()
+                sftp_conn = conn.sftp()
+                stat_result = sftp_conn.stat(self.raw_path)
+                logging.debug(f"stat took {time.time() - t1:.2f} seconds")
+                return ExternalStatResult(
+                    st_size=stat_result.st_size,
+                    st_atime=stat_result.st_atime,
+                    st_mtime=stat_result.st_mtime,
+                )
             except FileNotFoundError as e:
                 raise FileNotFoundError(
                     f"Could not find file {self.raw_path} on {host}"
