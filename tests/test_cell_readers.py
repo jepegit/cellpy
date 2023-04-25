@@ -460,7 +460,7 @@ def test_local_only_fid_otherpath_external(parameters):
     # checking if the files exist and that OtherPath is working as expected:
     assert cellpy_file.is_file()
     assert raw_file.is_file()
-    # assert not missing_file.is_file()  # OtherPath does not check if file exists if it is external yet.
+    # assert not missing_file.is_file()  # OtherPath does not check if file exists when it is external yet.
 
     my_fid_one = FileID()
     my_fid_one.populate(raw_file)
@@ -473,9 +473,8 @@ def test_local_only_fid_otherpath_external(parameters):
     check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
     assert check
 
-    # p_external = cellpy.internals.core.OtherPath(parameters.res_file_path_external)
-    # print(f"{p_external.stat()=}")
-    # print(f"{p_external.stat().st_size=}")
+    print(f"{raw_file.stat()=}")
+    print(f"{cellpy_file.stat()=}")
 
 
 def test_check_file_ids(parameters):
@@ -536,6 +535,42 @@ def test_load_step_specs_short(
         (step_table.cycle == cycle) & (step_table.step == step), "info"
     ].values[0]
     assert str(i) == expected_info
+
+
+def test_extract_fids_from_cellpy_file(parameters, tmp_path):
+    from cellpy import cellreader
+    from cellpy import prms
+
+    import pandas as pd
+
+    fid_dir = prms._cellpyfile_fid
+    parent_level = prms._cellpyfile_root
+
+    cellpy_file = OtherPath(parameters.cellpy_file_path)
+
+    c = cellreader.CellpyCell()
+    with pd.HDFStore(cellpy_file) as store:
+        fid_table, fid_table_selected = c._extract_fids_from_cellpy_file(
+            fid_dir, parent_level, store
+        )
+
+    print(f"{type(fid_table)=}")  # <class 'pandas.core.frame.DataFrame'>
+    print(f"{fid_table=}")  # STRANGE!!!! complained that the is_db attribute was missing
+    print(fid_table_selected)
+
+    raw_file = OtherPath(parameters.res_file_path)
+    new_cellpy_file_path = tmp_path / cellpy_file.name
+    c0 = cellpy.get(raw_file)
+    c0.save(new_cellpy_file_path)
+
+    with pd.HDFStore(new_cellpy_file_path) as store:
+        fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(
+            fid_dir, parent_level, store
+        )
+
+    print(f"{type(fid_table2)=}")
+    print(f"{fid_table2=}")
+    print(fid_table_selected2)
 
 
 @pytest.mark.slowtest

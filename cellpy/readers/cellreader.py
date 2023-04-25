@@ -707,7 +707,7 @@ class CellpyCell:
             return
         self.cellpy_datadir = directory
 
-    # TODO 249: update this so that it is aligned with OtherPaths etc
+
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
@@ -757,7 +757,7 @@ class CellpyCell:
 
     def _check_raw(self, file_names, abort_on_missing=False):
         """Get the file-ids for the res_files."""
-        # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
+
         strip_file_names = True
         check_on = self.filestatuschecker
         if not self._is_listtype(file_names):
@@ -774,7 +774,7 @@ class CellpyCell:
                     sys.exit(-1)
             else:
                 if strip_file_names:
-                    name = os.path.basename(f)
+                    name = f.name
                 else:
                     name = f
                 if check_on == "size":
@@ -782,7 +782,7 @@ class CellpyCell:
                 elif check_on == "modified":
                     ids[name] = int(fid.last_modified)
                 else:
-                    ids[name] = int(fid.last_accessed)
+                    ids[name] = int(fid.last_modified)
         return ids
 
     def _check_cellpy_file(self, filename: OtherPath):
@@ -2049,6 +2049,8 @@ class CellpyCell:
                 fid.last_data_point = tbl["last_data_point"][counter]
             else:
                 fid.last_data_point = 0
+            if "is_db" in tbl.columns:
+                fid.is_db = tbl["is_db"][counter]
             fids.append(fid)
             lengths.append(length)
             min_amount = 1

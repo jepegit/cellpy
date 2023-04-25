@@ -201,9 +201,13 @@ class FileID:
             self._last_data_point = 0  # to be used later when updating is implemented
 
     def __str__(self):
-        if self.is_db:
-            txt = "\n<fileID><is_db>\n"
-        else:
+        """Return a string representation of the FileID object."""
+        try:
+            if self.is_db:
+                txt = "\n<fileID><is_db>\n"
+            else:
+                txt = "\n<fileID><is_file>\n"
+        except AttributeError:
             txt = "\n<fileID><is_file>\n"
 
         txt += f"full name: {self.full_name}\n"
