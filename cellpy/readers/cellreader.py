@@ -712,7 +712,7 @@ class CellpyCell:
         """Check the stats for the files (raw-data and cellpy hdf5).
 
         This function checks if the hdf5 file and the res-files have the same
-        timestamps etc to find out if we need to bother to load .res -files.
+        timestamps etc. to find out if we need to bother to load .res -files.
 
         Args:
             cellpyfile (str): filename of the cellpy hdf5-file.
@@ -785,8 +785,12 @@ class CellpyCell:
                     ids[name] = int(fid.last_accessed)
         return ids
 
-    def _check_cellpy_file(self, filename):
+    def _check_cellpy_file(self, filename: OtherPath):
         """Get the file-ids for the cellpy_file."""
+
+        if not isinstance(filename, OtherPath):
+            logging.debug("filename must be an OtherPath object")
+            filename = OtherPath(filename)
 
         use_full_filename_path = False
         parent_level = prms._cellpyfile_root
@@ -794,10 +798,16 @@ class CellpyCell:
         check_on = self.filestatuschecker
         logging.debug("checking cellpy-file")
         logging.debug(filename)
-        if not os.path.isfile(filename):
+        if not filename.is_file():
             logging.debug("cellpy-file does not exist")
             return None
         try:
+            # TODO: implement external handling of hdf5-files
+            if filename.is_external:
+                # I have not implemented any external handling of hdf5-files yet. So we need to
+                # copy the file to temporary directory (this will take some time, and therefore it is
+                # probably best not to put your cellpy files in a remote directory yet):
+                filename = filename.copy()
             store = pd.HDFStore(filename)
         except Exception as e:
             logging.debug(f"could not open cellpy-file ({e})")
@@ -836,7 +846,7 @@ class CellpyCell:
                 elif check_on == "modified":
                     ids[name] = int(fid.last_modified)
                 else:
-                    ids[name] = int(fid.last_accessed)
+                    ids[name] = int(fid.last_modified)
             return ids
         else:
             return None

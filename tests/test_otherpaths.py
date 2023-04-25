@@ -173,9 +173,6 @@ def test_stat(parameters):
     p_local = cellpy.internals.core.OtherPath(parameters.res_file_path)
     print(f"{p_local.stat()=}")
     print(f"{p_local.stat().st_size=}")
-    p_external = cellpy.internals.core.OtherPath(parameters.res_file_path_external)
-    print(f"{p_external.stat()=}")
-    print(f"{p_external.stat().st_size=}")
 
 
 # @pytest.mark.onlylocal

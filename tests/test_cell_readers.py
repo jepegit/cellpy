@@ -380,10 +380,9 @@ def test_fid_with_otherpath(cellpy_data_instance, parameters):
     raw_file = parameters.res_file_path
 
 
-def test_only_fid(parameters):
+def test_only_fid_raw(parameters):
     from cellpy.readers.core import FileID
 
-    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
     my_fid_one = FileID()
     my_file = parameters.cellpy_file_path
     my_fid_one.populate(my_file)
@@ -414,6 +413,101 @@ def test_only_fid_otherpath_external(parameters):
     my_fid_two = FileID(my_file)
     assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
     assert my_fid_one.get_size() == my_fid_two.get_size()
+
+
+def test_local_only_fid_otherpath_external(parameters):
+    """This test is only ran if you are working on your local machine.
+
+    It is used to test the OtherPath class when the path is pointing to a file
+    on a remote server. The test is skipped if you are running the tests on
+    the CI server.
+
+    For it to work, you will need to have a folder called local in the root
+    of the cellpy repository. In this folder you will need to have a file called
+    .env_cellpy_local. This file should contain the following lines:
+
+
+    """
+    import pathlib
+    import dotenv
+    import os
+
+    from cellpy.readers.core import FileID
+    from cellpy.internals.core import OtherPath
+    from cellpy import cellreader
+
+    # This should only be run on your local machine:
+    try:
+        env_file = pathlib.Path("../local/.env_cellpy_local").resolve()
+        assert env_file.is_file()
+    except Exception as e:
+        logging.debug("skipping test (not on local machine?)")
+        print(e)
+        return
+
+    dotenv.load_dotenv(env_file)
+    cellpy_file = OtherPath(os.getenv("CELLPY_TEST_CELLPY_FILE_PATH"))
+    missing_file = OtherPath(os.getenv("CELLPY_TEST_MISSING_FILE_PATH"))
+    raw_file = OtherPath(os.getenv("CELLPY_TEST_RAW_FILE_PATH"))
+
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
+    print(f"{raw_file=} :: {type(raw_file)=}")
+    print(f"{missing_file=} :: {type(missing_file)=}")
+    print(f"{cellpy_file.is_file()=}")
+    print(f"{raw_file.is_file()=}")
+    print(f"{missing_file.is_file()=}")
+
+    # checking if the files exist and that OtherPath is working as expected:
+    assert cellpy_file.is_file()
+    assert raw_file.is_file()
+    # assert not missing_file.is_file()  # OtherPath does not check if file exists if it is external yet.
+
+    my_fid_one = FileID()
+    my_fid_one.populate(raw_file)
+    my_fid_two = FileID(raw_file)
+    assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
+    assert my_fid_one.get_size() == my_fid_two.get_size()
+
+    # checking check_file_ids:
+    c = cellreader.CellpyCell()
+    check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
+    assert check
+
+    # p_external = cellpy.internals.core.OtherPath(parameters.res_file_path_external)
+    # print(f"{p_external.stat()=}")
+    # print(f"{p_external.stat().st_size=}")
+
+
+def test_check_file_ids(parameters):
+    from cellpy import cellreader
+
+    c = cellreader.CellpyCell()
+    cellpy_file = OtherPath(parameters.cellpy_file_path)
+    raw_file = OtherPath(parameters.res_file_path)
+
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
+    print(f"{raw_file=} :: {type(raw_file)=}")
+    print(f"{cellpy_file.exists()=}")
+    print(f"{raw_file.exists()=}")
+
+    check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
+    assert check
+
+
+def test_check_file_ids_external_not_accessible(parameters):
+    from cellpy import cellreader
+
+    c = cellreader.CellpyCell()
+    cellpy_file = OtherPath(parameters.cellpy_file_path_external)
+    raw_file = OtherPath(parameters.res_file_path)
+
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
+    print(f"{raw_file=} :: {type(raw_file)=}")
+    print(f"{cellpy_file.exists()=}")
+    print(f"{raw_file.exists()=}")
+
+    check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
+    assert not check
 
 
 @pytest.mark.parametrize(
