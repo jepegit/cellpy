@@ -793,8 +793,8 @@ class CellpyCell:
             filename = OtherPath(filename)
 
         use_full_filename_path = False
-        parent_level = prms._cellpyfile_root
-        fid_dir = prms._cellpyfile_fid
+        parent_level = prms._cellpyfile_root  # noqa
+        fid_dir = prms._cellpyfile_fid  # noqa
         check_on = self.filestatuschecker
         logging.debug("checking cellpy-file")
         logging.debug(filename)
