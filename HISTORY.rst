@@ -12,6 +12,7 @@ History
 * Templates: using one repository with sub-folders
 * Templates: adding more documentation
 * Readers: neware.txt (one version/model)
+* Readers: arbin_sql7 (experimental)
 * Batch plotting: collectors for both data collection, plotting and saving
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
 * Internals: rename .cell property to .data

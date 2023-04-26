@@ -1,3 +1,5 @@
+.. _utils_plotting:
+
 Have a look at the data
 -----------------------
 

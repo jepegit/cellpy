@@ -29,6 +29,7 @@ Examples and tutorials
    :maxdepth: 2
 
    basics
+   tutorials
    utils
    notebooks
    examples

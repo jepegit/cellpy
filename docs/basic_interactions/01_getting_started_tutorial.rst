@@ -12,7 +12,7 @@ of ``cellpy``, you should be able to get things up and running by
 issuing a simple
 
   .. code:: bash
-  
+
     pip install cellpy
 
 It is recommended that you use a Python environment (or conda
@@ -67,7 +67,7 @@ the steps below:
 Open up the "Anaconda Prompt" (or use the command window) and type
 
   .. code:: bash
-  
+
     conda create -n cellpy
 
 This creates your virtual environment (here called *cellpy*) in which ``cellpy``
@@ -82,17 +82,17 @@ change the name of the environment, you can do this by changing the first line o
 the file. Then type (in the Anaconda Prompt):
 
   .. code:: bash
-  
+
     	conda env create -f environment.yml
 
 Then activate your environment:
 
   .. code:: bash
-  
+
      conda activate cellpy
 
-3. Install depencencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3. Install dependencies
+~~~~~~~~~~~~~~~~~~~~~~~
 ``cellpy`` relies on a number of other python package and these need
 to be installed. Most of these packages are included when creating the environment
 based on the ``environment.yml`` file as outlined above.
@@ -113,15 +113,15 @@ machine).
 Additional dependencies are:
 
 - ``pytables`` is needed for working with the hdf5 files (the cellpy-files):
-  
+
     .. code:: bash
-    
+
        conda install -c conda-forge pytables
 
 - ``lmfit`` is required to use some of the fitting routines in ``cellpy``:
 
     .. code:: bash
-  
+
      conda install -c conda-forge lmfit
 
 - ``holoviz``: plotting library used in several of our example notebooks.
@@ -133,8 +133,8 @@ For more details, I recommend that you look at the documentation of these
 packages (google it) and install them. You can most
 likely use the same method as for pytables etc.
 
-Additional requirments for .res files
-:::::::::::::::::::::::::::::::::::::
+Additional requirements for .res files
+::::::::::::::::::::::::::::::::::::::
 
 .res files from Arbin testers actually are in a Microsoft Access format.
 For loading .res-files (possible also for other *‘to-be-implemented’* file
@@ -144,13 +144,13 @@ I recommend `pyodbc <https://github.com/mkleehammer/pyodbc/wiki>`__ that
 can be installed from conda forge or using pip.
 
   .. code:: bash
-  
+
      conda install -c conda-forge pyodbc
 
 Additionally, you need a driver or similar to help your ODBC bridge
-accessing it. 
+accessing it.
 
-*For Windows users:* if you do not have one of the 
+*For Windows users:* if you do not have one of the
 most recent Office versions, you might not be allowed to install a driver
 of different bit than your office version is using (the installers can be found
 `here <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__).
@@ -168,12 +168,12 @@ preferred package manager (*e.g.* ``apt-get install mdbtools``).
 In your activated ``cellpy`` environment in the Anaconda Prompt run:
 
   .. code:: bash
-  
+
      conda install -c conda-forge cellpy
 
 Congratulations, you have (hopefully) successfully installed cellpy.
 
-If you run into problems, doublecheck that all your dependencies are 
+If you run into problems, doublecheck that all your dependencies are
 installed and check your Microsoft Access odbc drivers.
 
 
@@ -224,13 +224,13 @@ cellpy-files, logs, databases and output data (and inform
 To do this, run the setup command:
 
   .. code:: bash
-  
+
        cellpy setup
 
 To run the setup in interactive mode, use -i:
 
   .. code:: bash
-  
+
        cellpy setup -i
 
 This creates the cellpy configuration file ``_cellpy_prms_USERNAME.conf``
@@ -253,14 +253,14 @@ folder), you can use the ``-d`` option *e.g.*
 
 
 The cellpy configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The paths to raw data, the cellpy data base file, file locations etc. are set in
 the ``_cellpy_prms_USER.conf`` file that is usually located in your home directory.
 
 To get the filepath to your config file (and other cellpy info), run:
 
   .. code:: bash
-  
+
        cellpy info -l
 
 The config file is written in YAML format and it should be relatively easy to
@@ -276,7 +276,7 @@ as column headers etc.). For more details, see chapter on Configuring cellpy.
 
 
 The database file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 The database file should contain information (cell name, type, mass loading etc.)
 on your cells, so that cellpy can find and link the test data to the provided
 metadata.
@@ -285,11 +285,11 @@ The database file is also useful when working with the ``cellpy`` batch routine.
 
 
 Useful ``cellpy`` commands
--------------------------------------
+--------------------------
 
 To help installing and controlling your ``cellpy`` installation, a CLI
 (command-line-interface) is provided with several commands (including the already
-mentioned ``info`` for getting information about your installation, and 
+mentioned ``info`` for getting information about your installation, and
 ``setup`` for helping you to set up your installation and writing a configuration file).
 
 To get a list of these commands including some basic information, you can issue
@@ -353,7 +353,7 @@ folder <https://github.com/jepegit/cellpy/tree/master/examples>`__).
 Start by trying to import ``cellpy`` in an interactive Python session.
 If you have an icon to press to start up the Python in interactive mode,
 do that (it could also be for example an ipython console or a Jupyter
-Notebook). 
+Notebook).
 You can also start an interactive Python session if you are in your
 terminal window of command window by just writing ``python`` and pressing
 enter.
@@ -400,22 +400,3 @@ right? These settings can be changed by either re-running the
 terminal window). You probably need to use the ``--reset`` flag this time
 since it is not your first time running it).
 
-
-What next?
-----------
-
-For example: If you want to use the highly popular (?) ``cellpy.utils.batch``
-utility, you
-need to make (or copy from a friend) the "database" (an excel-file with
-appropriate headers in the first row) and make sure that all the paths
-are set up correctly in you cellpy configuration file.
-
-Or, for example: If you would like to do some interactive plotting of your
-data, try to install holoviz and use Jupyter Lab to make some fancy plots
-and dash-boards.
-
-And why not: make a script that goes through all your thousands of measured
-cells, extracts the life-time (e.g. number of cycles until the capacity
-has dropped below 80% of the average of the three first cycles), and plot
-this versus time the cell was put. And maybe color the data-points based
-on who was doing the experiment?

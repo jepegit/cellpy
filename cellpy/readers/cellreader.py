@@ -5583,10 +5583,10 @@ def get(
     """Create a CellpyCell object
 
     Args:
-        filename (str, os.PathLike, or list of raw-file names): path to file(s) to load
+        filename (str, os.PathLike, OtherPath, or list of raw-file names): path to file(s) to load
         instrument (str): instrument to use (defaults to the one in your cellpy config file)
         instrument_file (str or path): yaml file for custom file type
-        cellpy_file (str, os.PathLike): if both filename (a raw-file) and cellpy_file (a cellpy file)
+        cellpy_file (str, os.PathLike, or OtherPath): if both filename (a raw-file) and cellpy_file (a cellpy file)
             is provided, cellpy will try to check if the raw-file is has been updated since the
             creation of the cellpy-file and select this instead of the raw file if cellpy thinks
             they are similar (use with care!).
