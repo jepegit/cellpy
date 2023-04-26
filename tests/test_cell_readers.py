@@ -477,6 +477,9 @@ def test_local_only_fid_otherpath_external(parameters):
     print(f"{raw_file.stat()=}")
     print(f"{cellpy_file.stat()=}")
 
+    c = cellpy.get(raw_file)
+    print(c.data.raw_data_files[0].get_raw())
+
 
 def test_check_file_ids(parameters):
     from cellpy import cellreader
