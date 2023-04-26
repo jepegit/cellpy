@@ -30,7 +30,7 @@ The class contains several attributes that can be assigned directly:
 
 .. code-block:: python
 
-    CellpyCell.tester = "arbin_res"
+    CellpyCell.tester = "arbin_res"  # TODO - update this
     CellpyCell.auto_dirs = True
     print(CellpyCell.cellpy_datadir)
 
