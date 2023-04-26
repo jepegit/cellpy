@@ -25,11 +25,4 @@ The easies way to get to the DataFrames is by the following procedure:
 You can then manipulate your data with the standard ``pandas.DataFrame`` methods
 (and ``pandas`` methods in general).
 
-.. note::
-    At the moment, ``CellpyCell`` objects can store several sets of test-data
-    (several 'tests'). They are stored
-    in a list. It is not recommended to utilise this
-    *'possible to store multiple tests'* feature as it might be
-    removed very soon (have not decided upon that yet).
-
 Happy pandas-ing!

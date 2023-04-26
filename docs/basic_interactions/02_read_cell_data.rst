@@ -91,3 +91,10 @@ To export data to csv format,
     cell_data.to_csv(out_data_directory, sep=";", cycles=False, raw=False)
     # export also the current voltage cycles by setting cycles=True
     # export also the raw data by setting raw=True
+
+
+.. note::
+    ``CellpyCell`` objects store the data (including the summary and step-tables)
+    in ``pandas DataFrames``. This means that you can easily export the data to
+    other formats, such as Excel, by using the ``to_excel`` method of the
+    DataFrame object.
