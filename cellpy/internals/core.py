@@ -439,6 +439,7 @@ class OtherPath(pathlib.Path):
             destination = pathlib.Path(destination)
 
         path_of_copied_file = destination / self.name
+
         if not self.is_external:
             shutil.copy2(self, destination)
         else:
