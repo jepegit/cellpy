@@ -302,6 +302,7 @@ class OtherPath(pathlib.Path):
             return True
         return super().exists()
 
+    @property
     def parent(self: S) -> S:
         """Return the parent directory of the path."""
         if self.is_external:
@@ -342,6 +343,7 @@ class OtherPath(pathlib.Path):
         else:
             return (OtherPath(p) for p in super().iterdir())
 
+    @property
     def parents(self, *args, **kwargs):
         if self.is_external:
             warnings.warn(f"Cannot run `parents` yet for external paths! Returning None.")
@@ -374,6 +376,7 @@ class OtherPath(pathlib.Path):
         warnings.warn(f"Cannot run 'readlink' for OtherPath!")
         return
 
+    @property
     def owner(self, *args, **kwargs):
         warnings.warn(f"Cannot get 'owner' for OtherPath!")
         return

@@ -1,3 +1,4 @@
+import collections
 import datetime
 import logging
 import os
@@ -537,6 +538,23 @@ def test_load_step_specs_short(
     assert str(i) == expected_info
 
 
+def test_pack_meta_convert2fid_table(parameters):
+    import collections
+
+    from cellpy import cellreader
+    from cellpy import prms
+
+    import pandas as pd
+
+    raw_file = OtherPath(parameters.res_file_path)
+    c = cellpy.get(raw_file)
+    data = c.data
+    fid_table = c._convert2fid_table(data)
+    assert isinstance(fid_table, collections.OrderedDict)
+    assert len(fid_table) == 9
+    assert fid_table["raw_data_name"][0] == raw_file.name
+
+
 def test_extract_fids_from_cellpy_file(parameters, tmp_path):
     from cellpy import cellreader
     from cellpy import prms
@@ -554,23 +572,19 @@ def test_extract_fids_from_cellpy_file(parameters, tmp_path):
             fid_dir, parent_level, store
         )
 
-    print(f"{type(fid_table)=}")  # <class 'pandas.core.frame.DataFrame'>
-    print(f"{fid_table=}")  # STRANGE!!!! complained that the is_db attribute was missing
-    print(fid_table_selected)
-
     raw_file = OtherPath(parameters.res_file_path)
     new_cellpy_file_path = tmp_path / cellpy_file.name
     c0 = cellpy.get(raw_file)
     c0.save(new_cellpy_file_path)
 
+    fids0 = c0.data.raw_data_files
+
     with pd.HDFStore(new_cellpy_file_path) as store:
         fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(
             fid_dir, parent_level, store
         )
-
-    print(f"{type(fid_table2)=}")
-    print(f"{fid_table2=}")
-    print(fid_table_selected2)
+    assert fid_table["raw_data_name"][0] == fid_table2["raw_data_name"][0]
+    assert fid_table2["raw_data_name"][0] == fids0[0].name
 
 
 @pytest.mark.slowtest

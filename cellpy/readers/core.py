@@ -168,7 +168,17 @@ class FileID:
 
     def __init__(self, filename: Union[str, OtherPath] = None, is_db: bool = False):
         """Initialize the FileID class."""
-        self.is_db = is_db
+
+        self.is_db: bool = is_db
+        self._last_data_point: Optional[int] = None
+        self.name: Optional[str] = None
+        self.full_name: Optional[str] = None
+        self.size: Optional[int] = None
+        self.last_modified: Optional[int] = None
+        self.last_accessed: Optional[int] = None
+        self.last_info_changed: Optional[int] = None
+        self.location: Optional[int] = None
+
         if self.is_db:
             self._from_db(filename)
             return
@@ -180,14 +190,7 @@ class FileID:
                 filename = OtherPath(filename)
 
             if filename.is_file():
-                fid_st = filename.stat()
-                self.name = filename.absolute()
-                self.full_name = filename.full_path
-                self.size = fid_st.st_size
-                self.last_modified = fid_st.st_mtime
-                self.last_accessed = fid_st.st_atime
-                self.last_info_changed = fid_st.st_ctime
-                self.location = filename.parent
+                self.populate(filename)
                 make_defaults = False
 
         if make_defaults:
@@ -261,13 +264,13 @@ class FileID:
 
         if filename.is_file():
             fid_st = filename.stat()
-            self.name = filename.absolute()
+            self.name = filename.name
             self.full_name = filename.full_path
             self.size = fid_st.st_size
             self.last_modified = fid_st.st_mtime
             self.last_accessed = fid_st.st_atime
             self.last_info_changed = fid_st.st_ctime
-            self.location = filename.parent
+            self.location = str(filename.parent)
 
     def get_raw(self):
         """Get a list with information about the file.

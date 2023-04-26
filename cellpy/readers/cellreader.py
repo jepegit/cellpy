@@ -707,7 +707,6 @@ class CellpyCell:
             return
         self.cellpy_datadir = directory
 
-
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
@@ -1948,6 +1947,7 @@ class CellpyCell:
             value = default_value
         return value
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     def _create_infotable(self):
         # needed for saving class/DataSet to hdf5
         cell = self.data
@@ -1984,7 +1984,9 @@ class CellpyCell:
         # TODO: update getters and setters (cell_name etc)
         return new_info_table, new_info_table_test_dependent, fidtable
 
-    def _convert2fid_table(self, cell):
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
+    @staticmethod
+    def _convert2fid_table(cell):
         # used when saving cellpy-file
         logging.debug("converting FileID object to fid-table that can be saved")
         fidtable = collections.OrderedDict()
@@ -1995,20 +1997,21 @@ class CellpyCell:
         fidtable["raw_data_last_accessed"] = []
         fidtable["raw_data_last_info_changed"] = []
         fidtable["raw_data_location"] = []
+        # TODO: consider deprecating this as we now have implemented last_data_point:
         fidtable["raw_data_files_length"] = []
+
         fidtable["last_data_point"] = []
         fids = cell.raw_data_files
-        fidtable["raw_data_fid"] = fids
         if fids:
             for fid, length in zip(fids, cell.raw_data_files_length):
                 try:
-                    fidtable["raw_data_name"].append(str(Path(fid.name).name))
-                    fidtable["raw_data_full_name"].append(str(Path(fid.full_name)))
+                    fidtable["raw_data_name"].append(fid.name)
+                    fidtable["raw_data_full_name"].append(fid.full_name)
                     fidtable["raw_data_size"].append(fid.size)
                     fidtable["raw_data_last_modified"].append(fid.last_modified)
                     fidtable["raw_data_last_accessed"].append(fid.last_accessed)
                     fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-                except Exception:
+                except AttributeError:  # TODO: this is probably not needed anymore
                     logging.debug("this is probably not from a file")
                     fidtable["raw_data_name"].append("db")
                     fidtable["raw_data_full_name"].append("db")
@@ -2019,14 +2022,14 @@ class CellpyCell:
 
                 fidtable["raw_data_location"].append(fid.location)
                 fidtable["raw_data_files_length"].append(length)
-                fidtable["last_data_point"].append(fid.last_data_point)
+                fidtable["last_data_point"].append(fid.last_data_point)  # will most likely be the same as length
         else:
             warnings.warn("seems you lost info about your raw-data (missing fids)")
         return fidtable
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
-    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
-    def _convert2fid_list(self, tbl):
+    @staticmethod
+    def _convert2fid_list(tbl):
         # used when reading cellpy-file
         logging.debug("converting loaded fid-table to FileID object")
         fids = []
@@ -2035,9 +2038,9 @@ class CellpyCell:
         for counter, item in enumerate(tbl["raw_data_name"]):
             fid = FileID()
             try:
-                fid.name = Path(item).name
+                fid.name = OtherPath(item).name
             except NotImplementedError:
-                fid.name = os.path.basename(item)
+                fid.name = item
             fid.full_name = tbl["raw_data_full_name"][counter]
             fid.size = tbl["raw_data_size"][counter]
             fid.last_modified = tbl["raw_data_last_modified"][counter]
@@ -5685,7 +5688,6 @@ def get(
 
     if filename and cellpy_file and not load_cellpy_file:
         try:
-            # TODO 249: update this to be compatible with the OtherPath:
             similar = cellpy_instance.check_file_ids(filename, cellpy_file)
             logging.debug(f"checked if the files were similar")
             if similar:
