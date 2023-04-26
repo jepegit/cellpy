@@ -224,7 +224,7 @@ class AtomicLoad:
         if self.is_db:
             self._fid = core.FileID(self.name, is_db=True)
         elif self._temp_file_path is not None:
-            self._fid = core.FileID(self.temp_file_path)
+            self._fid = core.FileID(self.name)
         elif self._name is not None:
             self._fid = core.FileID(self.name)
         elif value is not None:

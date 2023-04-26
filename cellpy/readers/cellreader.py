@@ -5703,7 +5703,6 @@ def get(
             logging.warning(
                 "post_processor_hook is not allowed when loading cellpy-files"
             )
-        # TODO 249: check that load gives the correct full path to FileID and not the temporary path if external
         cellpy_instance.load(filename, selector=selector, **kwargs)
         return cellpy_instance
 
@@ -5725,7 +5724,6 @@ def get(
         is_a_file = False
 
     logging.info(f"Loading raw-file: {filename}")
-    # TODO 249: check that from_raw gives the correct full path to FileID and not the temporary path if external
     cellpy_instance.from_raw(filename, is_a_file=is_a_file, **kwargs)
 
     if not cellpy_instance:
