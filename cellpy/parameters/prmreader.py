@@ -18,6 +18,8 @@ from ruamel.yaml.error import YAMLError
 
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
+from cellpy.parameters.internal_settings import OTHERPATHS
+from cellpy.internals.core import OtherPath
 
 DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"
@@ -121,13 +123,20 @@ def _update_prms(config_dict):
                 z = config_dict[key][k]
                 if is_path:
                     _txt = f"{k}: {z}"
-                    if (
-                        not k.lower() == "db_filename"
-                    ):  # special hack because it is a filename and not a path
+                    if k.lower() == "db_filename":
+                        # special hack because it is a filename and not a path
+                        pass
+                    elif k.lower() in OTHERPATHS:
+                        # special hack because it is possibly an external location
+                        z = OtherPath(
+                            str(z)
+                        ).resolve()  # v1.0.0: this is only resolving local paths
+                    else:
                         z = pathlib.Path(z).resolve()
                     _txt += f" -> {z}"
                     logging.debug("converting to pathlib.Path")
                     logging.debug(_txt)
+
                 if isinstance(z, dict):
                     y = getattr(_config_attr, k)
                     z = box.Box({**y, **z})
@@ -160,11 +169,15 @@ def _convert_to_dict(x):
 
 
 def _convert_paths_to_dict(x):
-    try:
-        dictionary = x.to_dict()
-    except AttributeError:
-        dictionary = asdict(x)
-    dictionary = {k: str(dictionary[k]) for k in dictionary}
+    dictionary = {}
+    for k in x.keys():
+        # hack to get around the leading underscore (since they are properties):
+        if len(k) > 1 and k[0] == "_" and k.lower()[1:] in OTHERPATHS:
+            t = getattr(x, k).full_path
+            k = k[1:]
+        else:
+            t = str(getattr(x, k))
+        dictionary[k] = t
     return dictionary
 
 
@@ -245,8 +258,8 @@ def _get_prm_file(file_name=None, search_order=None):
         else:
             logging.info("Could not find the prm-file")
 
-    default_name = prms._prm_default_name
-    prm_globtxt = prms._prm_globtxt
+    default_name = prms._prm_default_name  # NOQA
+    prm_globtxt = prms._prm_globtxt  # NOQA
 
     script_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -265,7 +278,7 @@ def _get_prm_file(file_name=None, search_order=None):
     prm_default = os.path.join(script_dir, default_name)
 
     # -searching-----------------------
-    search_dict = OrderedDict()
+    search_dict: OrderedDict[Any] = OrderedDict()
 
     for key in search_order:
         search_dict[key] = [None, None]
@@ -304,7 +317,7 @@ def _get_prm_file(file_name=None, search_order=None):
 
 def _save_current_prms_to_user_dir():
     # This should be put into the cellpy setup script
-    file_name = os.path.join(prms.user_dir, prms._prm_default_name)
+    file_name = os.path.join(prms.user_dir, prms._prm_default_name)  # NOQA
     _write_prm_file(file_name)
 
 
@@ -318,7 +331,7 @@ def info():
 
     for key, current_object in prms.__dict__.items():
 
-        if key.startswith("_") and not key.startswith("__") and prms._debug:
+        if key.startswith("_") and not key.startswith("__") and prms._debug:  # NOQA
             print(f"Internal: {key} (type={type(current_object)}): {current_object}")
 
         elif isinstance(current_object, box.Box):
@@ -330,7 +343,17 @@ def info():
                 print(f"prms.{key}.{subkey} = ", f"{current_object[subkey]}")
             print()
 
+        elif key == "Paths":
+            print(" NEW-TYPE PRM WITH OTHERPATHS ".center(80, "*"))
+            attributes = {
+                k: v for k, v in vars(current_object).items() if not k.startswith("_")
+            }
+            for attr in OTHERPATHS:
+                attributes[attr] = getattr(current_object, attr)
+            pprint(attributes, width=1)
+
         elif isinstance(current_object, (prms.CellPyConfig, prms.CellPyDataConfig)):
+            print(" NEW-TYPE PRM ".center(80, "="))
             attributes = {
                 k: v for k, v in vars(current_object).items() if not k.startswith("_")
             }

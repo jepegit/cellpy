@@ -18,7 +18,8 @@ from github import Github
 import cellpy._version
 from cellpy.exceptions import ConfigFileNotWritten
 from cellpy.parameters import prmreader
-from cellpy.readers.core import OtherPath
+from cellpy.parameters.internal_settings import OTHERPATHS
+from cellpy.internals.core import OtherPath
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
@@ -223,12 +224,12 @@ def _update_paths(
             h = h / default_dir
 
     if not reset:
-        outdatadir = OtherPath(prmreader.prms.Paths.outdatadir)
+        outdatadir = pathlib.Path(prmreader.prms.Paths.outdatadir)
         rawdatadir = OtherPath(prmreader.prms.Paths.rawdatadir)
         cellpydatadir = OtherPath(prmreader.prms.Paths.cellpydatadir)
         filelogdir = pathlib.Path(prmreader.prms.Paths.filelogdir)
         examplesdir = pathlib.Path(prmreader.prms.Paths.examplesdir)
-        db_path = OtherPath(prmreader.prms.Paths.db_path)
+        db_path = pathlib.Path(prmreader.prms.Paths.db_path)
         db_filename = prmreader.prms.Paths.db_filename
         notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
         batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
@@ -265,25 +266,17 @@ def _update_paths(
         outdatadir = _ask_about_path(
             "where to output processed data and results", outdatadir
         )
-
-        rawdatadir = _ask_about_path("where your raw data are located", rawdatadir)
-
-        cellpydatadir = _ask_about_path("where to put cellpy-files", cellpydatadir)
-
+        rawdatadir = _ask_about_otherpath("where your raw data are located", rawdatadir)
+        cellpydatadir = _ask_about_otherpath("where to put cellpy-files", cellpydatadir)
         filelogdir = _ask_about_path("where to dump the log-files", filelogdir)
-
         examplesdir = _ask_about_path(
             "where to download cellpy examples and tests", examplesdir
         )
-
         db_path = _ask_about_path("what folder your db file lives in", db_path)
-
         db_filename = _ask_about_name("the name of your db-file", db_filename)
-
         notebookdir = _ask_about_path(
             "where to put your jupyter notebooks", notebookdir
         )
-
         batchfiledir = _ask_about_path("where to put your batch files", batchfiledir)
         templatedir = _ask_about_path("where to put your batch files", templatedir)
         instrumentdir = _ask_about_path("where to put your batch files", instrumentdir)
@@ -330,6 +323,15 @@ def _ask_about_path(q, p):
     return pathlib.Path(new_path)
 
 
+def _ask_about_otherpath(q, p):
+    click.echo(f"\n[cellpy] (setup) input {q}")
+    click.echo(f"[cellpy] (setup) current: {p}")
+    new_path = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
+    if not new_path:
+        new_path = p
+    return OtherPath(new_path)
+
+
 def _ask_about_name(q, n):
     click.echo(f"\n[cellpy] (setup) input {q}")
     click.echo(f"[cellpy] (setup) current: {n}")
@@ -340,6 +342,9 @@ def _ask_about_name(q, n):
 
 
 def _create_dir(path, confirm=True, parents=True, exist_ok=True):
+    if isinstance(path, OtherPath):
+        if path.is_external:
+            return path
     o = path.resolve()
     if not o.is_dir():
         o_parent = o.parent
@@ -550,7 +555,18 @@ def _check_config_file():
         for k in required_dirs:
             value = prm_paths.get(k, None)
             click.echo(f"{k}: {value}")
-            if value and not pathlib.Path(value).is_dir():
+            # splitting this into two if-statements to make it easier to debug if OtherPath changes
+            if value in OTHERPATHS:
+                logging.debug(
+                    "skipping check for external rawdatadir and cellpydatadir (for now)"
+                )
+                if not OtherPath(
+                    value
+                ).is_dir():  # Assuming OtherPath returns True if it is external.
+                    missing += 1
+                    click.echo("COULD NOT CONNECT!")
+                    click.echo(f"({value} is not a directory)")
+            elif value and not pathlib.Path(value).is_dir():
                 missing += 1
                 click.echo("COULD NOT CONNECT!")
                 click.echo(f"({value} is not a directory)")

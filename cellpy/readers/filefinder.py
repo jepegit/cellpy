@@ -6,47 +6,27 @@ import logging
 import os
 import pathlib
 import time
+from typing import Optional, Union, List, Tuple
 import warnings
 
 import cellpy.exceptions
 from cellpy.parameters import prms
-
-# logger = logging.getLogger(__name__)
-
-
-def create_full_names(
-    run_name, cellpy_file_extension=None, raw_file_dir=None, cellpy_file_dir=None
-):
-    if cellpy_file_extension is None:
-        cellpy_file_extension = "h5"
-
-    if raw_file_dir is None:
-        raw_file_dir = prms.Paths.rawdatadir
-
-    if cellpy_file_dir is None:
-        cellpy_file_dir = prms.Paths.cellpydatadir
-
-    raw_file = os.path.join(raw_file_dir, run_name)
-
-    cellpy_file = run_name + "." + cellpy_file_extension
-    cellpy_file = os.path.join(cellpy_file_dir, cellpy_file)
-
-    return raw_file, cellpy_file
+from cellpy.internals.core import OtherPath
 
 
 def search_for_files(
-    run_name,
-    raw_extension=None,
-    cellpy_file_extension=None,
-    raw_file_dir=None,
-    cellpy_file_dir=None,
-    prm_filename=None,
-    file_name_format=None,
-    reg_exp=None,
-    sub_folders=False,
-    file_list=None,
-    pre_path=None,
-):
+    run_name: str,
+    raw_extension: Optional[str] = None,
+    cellpy_file_extension: Optional[str] = None,
+    raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    cellpy_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    prm_filename: Union[pathlib.Path, str, None] = None,
+    file_name_format: Optional[str] = None,
+    reg_exp: Optional[str] = None,
+    sub_folders: bool = False,
+    file_list: Optional[List[str]] = None,
+    pre_path: Union[OtherPath, pathlib.Path, str, None] = None,
+) -> Tuple[List[str], str]:
     """Searches for files (raw-data files and cellpy-files).
 
 
@@ -74,7 +54,7 @@ def search_for_files(
 
 
     Returns:
-        run-file names (list) and cellpy-file-name (path).
+        run-file names (list of strings) and cellpy-file-name (str of full path).
     """
 
     # TODO: @jepe - use reg_exp
@@ -84,7 +64,7 @@ def search_for_files(
     #  sub-folders, several folders, db, cloud etc
     # TODO: @jepe - find a way to implement automatic file_list creation in a top level func.
 
-    version = 0.2
+    version = 0.3
     t0 = time.time()
 
     if reg_exp is None:
@@ -114,9 +94,9 @@ def search_for_files(
         file_name_format = prms.FileNames.file_name_format
 
     if not isinstance(raw_file_dir, (list, tuple)):
-        raw_file_dir = [pathlib.Path(raw_file_dir)]
+        raw_file_dir = [OtherPath(raw_file_dir)]
     else:
-        raw_file_dir = [pathlib.Path(d) for d in raw_file_dir]
+        raw_file_dir = [OtherPath(d) for d in raw_file_dir]
 
     if reg_exp:
         logging.warning(f"Got reg_exp: {reg_exp}")
@@ -126,9 +106,9 @@ def search_for_files(
         logging.debug("Sorry, reading prm file is not implemented yet.")
 
     if cellpy_file_dir is None:
-        cellpy_file_dir = pathlib.Path(prms.Paths.cellpydatadir)
+        cellpy_file_dir = OtherPath(prms.Paths.cellpydatadir)
     else:
-        cellpy_file_dir = pathlib.Path(cellpy_file_dir)
+        cellpy_file_dir = OtherPath(cellpy_file_dir)
 
     if file_name_format is None and reg_exp is None:
         try:
@@ -156,6 +136,8 @@ def search_for_files(
 
     cellpy_file = f"{run_name}.{cellpy_file_extension}"
     cellpy_file = cellpy_file_dir / cellpy_file
+    # Not sure if for example pandas can handle OtherPath objects:
+    cellpy_file = cellpy_file.full_path
 
     logging.debug(f"generated cellpy filename {cellpy_file}")
 
@@ -165,11 +147,13 @@ def search_for_files(
         logging.debug("searching within provided list of files")
         run_files = fnmatch.filter(file_list, glob_text_raw)
         if pre_path is not None:
-            pre_path = pathlib.Path(pre_path)
+            pre_path = OtherPath(pre_path)
             run_files = list(map(lambda x: pre_path / x, run_files))
     else:
         run_files = []
         for d in raw_file_dir:
+            if d.is_external:
+                logging.debug("external file")
             if not d.is_dir():
                 warnings.warn("your raw file directory cannot be accessed!")
                 # raise cellpy.exceptions.IOError("your raw file directory cannot be accessed!")
@@ -183,47 +167,87 @@ def search_for_files(
                 else:
                     _run_files = d.glob(glob_text_raw)
 
-                _run_files = [str(f.resolve()) for f in _run_files]
-                # TODO: check that db reader can accept pathlib.Path objects (and fix the tests)
-                # _run_files = [f.resolve() for f in _run_files]
+                _run_files = [str(_f.resolve()) for _f in _run_files]
                 _run_files.sort()
             run_files.extend(_run_files)
 
     return run_files, cellpy_file
 
 
-def _find_resfiles(cellpyfile, raw_datadir, counter_min=1, counter_max=10):
-    # function to find res files by locating all files of the form
-    # (date-label)_(slurry-label)_(el-label)_(cell-type)_*
-    # NOT USED
+def check_01():
+    import dotenv
+    from cellpy import log
 
-    counter_sep = "_"
-    counter_digits = 2
-    res_extension = ".res"
-    res_dir = raw_datadir
-    res_files = []
-    cellpyfile = os.path.basename(cellpyfile)
-    cellpyfile = os.path.splitext(cellpyfile)[0]
-    for j in range(counter_min, counter_max + 1):
-        look_for = "%s%s%s%s" % (
-            cellpyfile,
-            counter_sep,
-            str(j).zfill(counter_digits),
-            res_extension,
-        )
+    log.setup_logging(default_level="DEBUG")
+    dotenv.load_dotenv(r"C:\scripting\cellpy\local\.env_cellpy_local")
+    print("searching for files")
+    my_run_name = "20160805_test001_45_cc"
+    # my_run_name = "20210218_Seam08_02_01_cc"
+    my_raw_file_dir = OtherPath(
+        f"scp://{os.getenv('CELLPY_HOST')}/home/{os.getenv('CELLPY_USER')}/tmp/"
+    )
+    # my_raw_file_dir = OtherPath(r"C:\scripting\processing_cellpy\raw")
+    my_cellpy_file_dir = OtherPath("C:/scripting/processing_cellpy/data/")
+    f = search_for_files(
+        my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir
+    )
+    print(f)
+    #
+    # print(my_raw_file_dir)
+    # print(my_raw_file_dir.is_dir())
+    # print(my_raw_file_dir.raw_path)
 
-        look_for = os.path.join(res_dir, look_for)
-        if os.path.isfile(look_for):
-            res_files.append(look_for)
 
-    return res_files
+def check_02():
+    import dotenv
+    import fabric
+    import stat
+
+    dotenv.load_dotenv(r"C:\scripting\cellpy\local\.env_cellpy_local")
+    host = os.getenv("CELLPY_HOST")
+    user = os.getenv("CELLPY_USER")
+    key_file = os.getenv("CELLPY_KEY_FILENAME")
+    print(f"host: {host}")
+    print(f"user: {user}")
+    connect_kwargs = {"key_filename": key_file}
+
+    with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        sftp_conn = conn.sftp()
+        sftp_conn.chdir("tmp")
+        print("===================")
+        for fileattr in sftp_conn.listdir_attr():
+            if stat.S_ISDIR(fileattr.st_mode):
+                print(f"dir: {fileattr.filename}")
+            else:
+                print(f"file: {fileattr.filename}")
+        print("===================")
+        glob_str = "20*.res"
+        sub_dirs = [
+            f for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+        ]
+        files = [
+            f
+            for f in sftp_conn.listdir()
+            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+        ]
+        filtered_files = fnmatch.filter(files, glob_str)
+        for sub_dir in sub_dirs:
+            sftp_conn.chdir(sub_dir)
+            new_files = [
+                f
+                for f in sftp_conn.listdir()
+                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+            ]
+            new_filtered_files = fnmatch.filter(new_files, glob_str)
+            new_filtered_files = [
+                f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
+            ]
+            filtered_files += new_filtered_files
+            sftp_conn.chdir("..")
+
+        for f in filtered_files:
+            print(f"file: {f} of type {type(f)}")
 
 
 if __name__ == "__main__":
-    print("searching for files")
-    my_run_name = "20160805_test001_45_cc"
-    my_raw_file_dir = os.path.abspath("../data_ex")
-    my_cellpy_file_dir = os.path.abspath("../data_ex")
-    search_for_files(
-        my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir
-    )
+    check_01()

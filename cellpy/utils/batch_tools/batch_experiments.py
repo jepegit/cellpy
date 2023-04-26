@@ -12,6 +12,7 @@ import cellpy
 from cellpy import prms
 from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.readers import cellreader
+from cellpy.internals.core import OtherPath
 from cellpy.utils.batch_tools import batch_helpers as helper
 from cellpy.utils.batch_tools.batch_core import BaseExperiment
 from cellpy.utils.batch_tools.batch_journals import LabJournal
@@ -280,11 +281,11 @@ class CyclingExperiment(BaseExperiment):
             # --- UPDATING ARGUMENTS ---
             filename = None
             instrument = None
-            cellpy_file = pathlib.Path(row[hdr_journal.cellpy_file_name])
+            cellpy_file = OtherPath(row[hdr_journal.cellpy_file_name])
             _cellpy_file = None
             if not force_raw and cellpy_file.is_file():
                 _cellpy_file = cellpy_file
-                logging.debug(f"Could not find the ")
+                logging.debug(f"Got cellpy file: {_cellpy_file}")
             if not force_cellpy:
                 filename = row[hdr_journal.raw_file_names]
                 instrument = row[hdr_journal.instrument]
@@ -324,6 +325,7 @@ class CyclingExperiment(BaseExperiment):
 
             logging.info("loading cell")
             try:
+                logging.debug("inside try: running cellpy.get")
                 cell_data = cellpy.get(
                     filename=filename,
                     instrument=instrument,
@@ -508,7 +510,7 @@ class CyclingExperiment(BaseExperiment):
         """
         status = "PROD"  # set this to DEV when developing this
         async_mode = "threading"
-
+        logging.debug("PARALLEL UPDATE")
         # TODO: implement experiment.last_cycle
         if status != "DEV":
             print("SORRY - MULTIPROCESSING IS NOT IMPLEMENTED PROPERLY YET")
@@ -597,11 +599,11 @@ class CyclingExperiment(BaseExperiment):
                 # --- UPDATING ARGUMENTS ---
                 filename = None
                 instrument = None
-                cellpy_file = pathlib.Path(row[hdr_journal.cellpy_file_name])
+                cellpy_file = OtherPath(row[hdr_journal.cellpy_file_name])
                 _cellpy_file = None
                 if not force_raw and cellpy_file.is_file():
                     _cellpy_file = cellpy_file
-                    logging.debug(f"Could not find the ")
+                    logging.debug(f"Got cellpy file: {_cellpy_file}")
                 if not force_cellpy:
                     filename = row[hdr_journal.raw_file_names]
                     instrument = row[hdr_journal.instrument]
@@ -768,6 +770,16 @@ class CyclingExperiment(BaseExperiment):
         self.cell_data_frames = cell_data_frames
 
     def export_cellpy_files(self, path=None, **kwargs):
+        """Export all cellpy-files to a given path.
+
+        Remarks:
+            This method can only export to local folders
+            (OtherPath objects are not formally supported, but
+            might still work if the path is local).
+
+        Args:
+            path (str, pathlib.Path): path to export to (default: current working directory)
+        """
         if path is None:
             path = "."
         errors = []
@@ -790,6 +802,7 @@ class CyclingExperiment(BaseExperiment):
 
     @property
     def cell_names(self):
+        """Returns a list of cell-names (strings)"""
         try:
             return [key for key in self.cell_data_frames]
         except TypeError:

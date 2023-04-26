@@ -1,3 +1,4 @@
+import collections
 import datetime
 import logging
 import os
@@ -11,6 +12,7 @@ import cellpy.readers.core
 from cellpy import log, prms
 from cellpy.exceptions import DeprecatedFeature, WrongFileVersion
 from cellpy.parameters.internal_settings import get_headers_summary
+from cellpy.internals.core import OtherPath
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -315,12 +317,14 @@ def test_search_for_files(parameters):
 
     run_files, cellpy_file = filefinder.search_for_files(
         parameters.run_name,
-        raw_file_dir=parameters.raw_data_dir,
-        cellpy_file_dir=parameters.output_dir,
+        raw_file_dir=OtherPath(parameters.raw_data_dir),
+        cellpy_file_dir=OtherPath(parameters.output_dir),
     )
-    print(f"parameters.res_file_path: {parameters.res_file_path}")
+    print(f"parameters.res_file_path: {OtherPath(parameters.res_file_path)}")
     print(f"run_files: {run_files}")
-    print(run_files)
+    for r in run_files:
+        print(f"{r=} :: {type(r)=}")
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
     assert parameters.res_file_path in run_files
     assert os.path.basename(cellpy_file) == parameters.cellpy_file_name
 
@@ -328,8 +332,10 @@ def test_search_for_files(parameters):
 def test_set_res_datadir_wrong(cellpy_data_instance):
     _ = r"X:\A_dir\That\Does\Not\Exist\random_random9103414"
     before = cellpy_data_instance.cellpy_datadir
+    print(f"{before=} :: {type(before)=}")
     cellpy_data_instance.set_cellpy_datadir(_)
     after = cellpy_data_instance.cellpy_datadir
+    print(f"{after=} :: {type(after)=}")
     assert _ != cellpy_data_instance.cellpy_datadir
     assert before == after
 
@@ -371,16 +377,140 @@ def test_fid(cellpy_data_instance, parameters):
     print(fid_object.get_last())
 
 
-def test_only_fid(parameters):
+def test_fid_with_otherpath(cellpy_data_instance, parameters):
+    raw_file = parameters.res_file_path
+
+
+def test_only_fid_raw(parameters):
     from cellpy.readers.core import FileID
 
-    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
     my_fid_one = FileID()
     my_file = parameters.cellpy_file_path
     my_fid_one.populate(my_file)
     my_fid_two = FileID(my_file)
     assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
     assert my_fid_one.get_size() == my_fid_two.get_size()
+
+
+def test_only_fid_otherpath_local(parameters):
+    from cellpy.readers.core import FileID
+    from cellpy.internals.core import OtherPath
+
+    my_fid_one = FileID()
+    my_file = OtherPath(parameters.cellpy_file_path)
+    my_fid_one.populate(my_file)
+    my_fid_two = FileID(my_file)
+    assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
+    assert my_fid_one.get_size() == my_fid_two.get_size()
+
+
+def test_only_fid_otherpath_external(parameters):
+    from cellpy.readers.core import FileID
+    from cellpy.internals.core import OtherPath
+
+    my_fid_one = FileID()
+    my_file = OtherPath(parameters.cellpy_file_path_external)
+    my_fid_one.populate(my_file)
+    my_fid_two = FileID(my_file)
+    assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
+    assert my_fid_one.get_size() == my_fid_two.get_size()
+
+
+def test_local_only_fid_otherpath_external(parameters):
+    """This test is only ran if you are working on your local machine.
+
+    It is used to test the OtherPath class when the path is pointing to a file
+    on a remote server. The test is skipped if you are running the tests on
+    the CI server.
+
+    For it to work, you will need to have a folder called local in the root
+    of the cellpy repository. In this folder you will need to have a file called
+    .env_cellpy_local. This file should contain the following lines:
+
+
+    """
+    import pathlib
+    import dotenv
+    import os
+
+    from cellpy.readers.core import FileID
+    from cellpy.internals.core import OtherPath
+    from cellpy import cellreader
+
+    # This should only be run on your local machine:
+    try:
+        env_file = pathlib.Path("../local/.env_cellpy_local").resolve()
+        assert env_file.is_file()
+    except Exception as e:
+        logging.debug("skipping test (not on local machine?)")
+        print(e)
+        return
+
+    dotenv.load_dotenv(env_file)
+    cellpy_file = OtherPath(os.getenv("CELLPY_TEST_CELLPY_FILE_PATH"))
+    missing_file = OtherPath(os.getenv("CELLPY_TEST_MISSING_FILE_PATH"))
+    raw_file = OtherPath(os.getenv("CELLPY_TEST_RAW_FILE_PATH"))
+
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
+    print(f"{raw_file=} :: {type(raw_file)=}")
+    print(f"{missing_file=} :: {type(missing_file)=}")
+    print(f"{cellpy_file.is_file()=}")
+    print(f"{raw_file.is_file()=}")
+    print(f"{missing_file.is_file()=}")
+
+    # checking if the files exist and that OtherPath is working as expected:
+    assert cellpy_file.is_file()
+    assert raw_file.is_file()
+    # assert not missing_file.is_file()  # OtherPath does not check if file exists when it is external yet.
+
+    my_fid_one = FileID()
+    my_fid_one.populate(raw_file)
+    my_fid_two = FileID(raw_file)
+    assert my_fid_one.get_raw()[0] == my_fid_two.get_raw()[0]
+    assert my_fid_one.get_size() == my_fid_two.get_size()
+
+    # checking check_file_ids:
+    c = cellreader.CellpyCell()
+    check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
+    assert check
+
+    print(f"{raw_file.stat()=}")
+    print(f"{cellpy_file.stat()=}")
+
+    c = cellpy.get(raw_file)
+    print(c.data.raw_data_files[0].get_raw())
+
+
+def test_check_file_ids(parameters):
+    from cellpy import cellreader
+
+    c = cellreader.CellpyCell()
+    cellpy_file = OtherPath(parameters.cellpy_file_path)
+    raw_file = OtherPath(parameters.res_file_path)
+
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
+    print(f"{raw_file=} :: {type(raw_file)=}")
+    print(f"{cellpy_file.exists()=}")
+    print(f"{raw_file.exists()=}")
+
+    check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
+    assert check
+
+
+def test_check_file_ids_external_not_accessible(parameters):
+    from cellpy import cellreader
+
+    c = cellreader.CellpyCell()
+    cellpy_file = OtherPath(parameters.cellpy_file_path_external)
+    raw_file = OtherPath(parameters.res_file_path)
+
+    print(f"{cellpy_file=} :: {type(cellpy_file)=}")
+    print(f"{raw_file=} :: {type(raw_file)=}")
+    print(f"{cellpy_file.exists()=}")
+    print(f"{raw_file.exists()=}")
+
+    check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
+    assert not check
 
 
 @pytest.mark.parametrize(
@@ -409,6 +539,55 @@ def test_load_step_specs_short(
         (step_table.cycle == cycle) & (step_table.step == step), "info"
     ].values[0]
     assert str(i) == expected_info
+
+
+def test_pack_meta_convert2fid_table(parameters):
+    import collections
+
+    from cellpy import cellreader
+    from cellpy import prms
+
+    import pandas as pd
+
+    raw_file = OtherPath(parameters.res_file_path)
+    c = cellpy.get(raw_file)
+    data = c.data
+    fid_table = c._convert2fid_table(data)
+    assert isinstance(fid_table, collections.OrderedDict)
+    assert len(fid_table) == 9
+    assert fid_table["raw_data_name"][0] == raw_file.name
+
+
+def test_extract_fids_from_cellpy_file(parameters, tmp_path):
+    from cellpy import cellreader
+    from cellpy import prms
+
+    import pandas as pd
+
+    fid_dir = prms._cellpyfile_fid
+    parent_level = prms._cellpyfile_root
+
+    cellpy_file = OtherPath(parameters.cellpy_file_path)
+
+    c = cellreader.CellpyCell()
+    with pd.HDFStore(cellpy_file) as store:
+        fid_table, fid_table_selected = c._extract_fids_from_cellpy_file(
+            fid_dir, parent_level, store
+        )
+
+    raw_file = OtherPath(parameters.res_file_path)
+    new_cellpy_file_path = tmp_path / cellpy_file.name
+    c0 = cellpy.get(raw_file)
+    c0.save(new_cellpy_file_path)
+
+    fids0 = c0.data.raw_data_files
+
+    with pd.HDFStore(new_cellpy_file_path) as store:
+        fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(
+            fid_dir, parent_level, store
+        )
+    assert fid_table["raw_data_name"][0] == fid_table2["raw_data_name"][0]
+    assert fid_table2["raw_data_name"][0] == fids0[0].name
 
 
 @pytest.mark.slowtest

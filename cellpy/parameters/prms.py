@@ -8,8 +8,7 @@ from typing import List, Tuple, Union, Optional, TYPE_CHECKING
 
 # Using TYPE_CHECKING to avoid circular imports
 # (this will only work without from __future__ import annotations for python 3.11 and above)
-if TYPE_CHECKING:
-    from cellpy.readers.core import OtherPath
+from cellpy.internals.core import OtherPath
 
 import box
 
@@ -24,6 +23,7 @@ script_dir = os.path.abspath(os.path.dirname(__file__))
 cur_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 user_dir = Path.home()
 wdir = Path(cur_dir)
+op_wdir = str(wdir)
 
 
 @dataclass
@@ -46,19 +46,14 @@ class CellPyConfig:
 #   cli.py (_update_paths)
 #   test_cli_setup_interactive (NUMBER_OF_DIRS)
 #   test_prms.py (config_file_txt)
+#   _convert_paths_to_dict
 
 # This can stay global:
 @dataclass
 class PathsClass(CellPyConfig):
-    outdatadir: Union[
-        OtherPath, str
-    ] = wdir  # TODO 249: update to allow for remote paths
-    rawdatadir: Union[
-        OtherPath, str
-    ] = wdir  # TODO 249: update to allow for remote paths
-    cellpydatadir: Union[
-        OtherPath, str
-    ] = wdir  # TODO 249: update to allow for remote paths
+    outdatadir: Union[Path, str] = wdir
+    _rawdatadir: Union[OtherPath, str] = op_wdir
+    _cellpydatadir: Union[OtherPath, str] = op_wdir
     db_path: Union[Path, str] = wdir  # used for simple excel db reader
     filelogdir: Union[Path, str] = wdir
     examplesdir: Union[Path, str] = wdir
@@ -68,6 +63,22 @@ class PathsClass(CellPyConfig):
     instrumentdir: Union[Path, str] = wdir
     db_filename: str = "cellpy_db.xlsx"  # used for simple excel db reader
     env_file: Union[Path, str] = user_dir / ".env_cellpy"
+
+    @property
+    def rawdatadir(self) -> OtherPath:
+        return OtherPath(self._rawdatadir)
+
+    @rawdatadir.setter
+    def rawdatadir(self, value: Union[OtherPath, Path, str]):
+        self._rawdatadir = OtherPath(value)
+
+    @property
+    def cellpydatadir(self) -> OtherPath:
+        return OtherPath(self._cellpydatadir)
+
+    @cellpydatadir.setter
+    def cellpydatadir(self, value: Union[OtherPath, Path, str]):
+        self._cellpydatadir = OtherPath(value)
 
 
 @dataclass
@@ -113,6 +124,7 @@ class ReaderClass(CellPyConfig):
         int
     ] = None  # limit loading cycles to given cycle number
     ensure_step_table: bool = False
+    ensure_summary_table: bool = False
     voltage_interpolation_step: float = 0.01
     time_interpolation_step: float = 10.0
     capacity_interpolation_step: float = 2.0
@@ -129,11 +141,9 @@ class DbClass(CellPyConfig):
     db_data_start_row: int = 2  # used for simple excel db reader
     db_search_start_row: int = 2  # used for simple excel db reader
     db_search_end_row: int = -1  # used for simple excel db reader
-    db_file_sqlite: str = "excel.db"  # used when converting from excel to sqlite
-
-    db_connection: Optional[
-        str
-    ] = None  # database connection string - used for more advanced db readers
+    db_file_sqlite: str = "excel.db"  # used when converting from Excel to sqlite
+    # database connection string - used for more advanced db readers:
+    db_connection: Optional[str] = None
 
 
 @dataclass
@@ -146,7 +156,7 @@ class DbColsClass(CellPyConfig):  # used for simple excel db reader
     #        a .cellpy_prms_default.conf
     #        b. dbreader.py
     #        c. test_dbreader.py
-    #        d. internal_settings.py (renaming when making sqlite from excel)
+    #        d. internal_settings.py (renaming when making sqlite from Excel)
     #     As well as the DbColsTypeClass below.
 
     id: str = "id"
@@ -269,7 +279,7 @@ Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 # ------------------------------------------------------------------------------
 # Instruments
 #
-#  This should be updated - currently using dicts instead of sub-classes of
+#  This should be updated - currently using dicts instead of subclasses of
 #  dataclasses. I guess I could update this but is a bit challenging
 #  so maybe replace later  using e.g. pydantic
 # ------------------------------------------------------------------------------
@@ -278,7 +288,7 @@ Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 # remark! using box.Box for each instrument
 @dataclass
 class InstrumentsClass(CellPyConfig):
-    tester: str
+    tester: Union[str, None]
     custom_instrument_definitions_file: Union[str, None]
     Arbin: box.Box
     Maccor: box.Box

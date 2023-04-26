@@ -21,7 +21,7 @@ from cellpy.readers.core import BaseDbReader
 
 
 class DbSheetCols:
-    # Note to developers: this should only be used for this excell reader
+    # Note to developers: this should only be used for this Excell reader
     # (it works, and that is its only reason to still exist)
     def __init__(self):
         db_cols_from_prms = asdict(prms.DbCols)

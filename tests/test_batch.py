@@ -116,6 +116,44 @@ def test_load_journal_json(parameters, batch_instance):
     assert hdr_journal["argument"] in b.pages.columns
 
 
+def test_load_limited_journal_excel(parameters, batch_instance):
+    b = batch_instance.from_journal(parameters.journal_file_xlsx_path, testing=True)
+    assert len(b.pages) == 2
+    assert hdr_journal["argument"] in b.pages.columns
+
+
+def test_load_full_journal_excel_and_check_headers_generated(
+    parameters, batch_instance
+):
+    index_name = "filename"
+    b = batch_instance.from_journal(
+        parameters.journal_file_full_xlsx_path, testing=True
+    )
+    assert len(b.pages) == 2
+    missing = [hdr for hdr in hdr_journal.values() if hdr not in b.pages.columns]
+    assert len(missing) == 1
+    assert b.pages.index.name == index_name
+    assert (
+        missing[0] == index_name
+    )  # this is the only missing column since it is now the index
+
+
+def test_load_full_journal_excel_from_labjournal_class(parameters):
+    from cellpy.utils.batch_tools.batch_journals import LabJournal
+
+    journal = LabJournal(db_reader="off")
+    journal.from_file(parameters.journal_file_full_xlsx_path, paginate=False)
+    assert len(journal.pages) == 2
+
+
+def test_load_journal_json_from_labjournal_class(parameters):
+    from cellpy.utils.batch_tools.batch_journals import LabJournal
+
+    journal = LabJournal(db_reader="off")
+    journal.from_file(parameters.journal_file_json_path, paginate=False)
+    assert len(journal.pages) == 5
+
+
 # TODO: make this test
 def test_update_with_cellspecs(parameters, batch_instance):
     # from journal and as argument (see batch_experiment.py, update).
@@ -147,9 +185,50 @@ def test_load_save_journal_roundtrip_json(batch_instance):
     pass
 
 
-# TODO: make this test
 def test_load_journal_dataframe(batch_instance):
-    pass
+    import pandas as pd
+    from cellpy.utils.batch_tools.batch_journals import LabJournal
+    from cellpy.internals.core import OtherPath
+
+    _frame = {
+        "filename": ["a", "b", "c"],
+        "argument": ["recalc=True", "recalc=False", "recalc=False"],
+        "keep": ["True", "False", "True"],
+        "mass": ["1.0", "2.0", "3.0"],
+        "area": ["1.0", "2.0", "3.0"],
+        "total_mass": ["1.0", "2.0", "3.0"],
+        "loading": ["1.0", "2.0", "3.0"],
+        "nom_cap": ["1.0", "2.0", "3.0"],
+        "experiment": ["cycling", "cycling", "cycling"],
+        "cell_type": ["anode", "anode", "anode"],
+        "instrument": ["arbin_res", "neware_txt", "maccor_txt::1"],
+        "comment": ["", "", ""],
+        "fixed": [0, 0, False],
+        "label": ["", "cell2", ""],
+        "cellpy_file_name": [
+            pathlib.Path("data/cellpyfiles/20160805_test001_45_cc.cellpy"),
+            OtherPath("data/cellpyfiles/20160805_test001_46_cc.cellpy"),
+            "data/cellpyfiles/20160805_test001_47_cc.cellpy",
+        ],
+        "raw_file_names": [
+            [
+                "data/raw/20160805_test001_45_cc_01.res",
+                "data/raw/20160805_test001_45_cc_02.res",
+            ],
+            "data/raw/20160805_test001_46_cc_01.txt",
+            OtherPath("ssh://user@server.in.no/data/raw/20160805_test001_47_cc_01.txt"),
+        ],
+        "group": [1, 1, 1],
+        "sub_group": [1, 2, 3],
+    }
+    frame = pd.DataFrame(_frame)
+    journal = LabJournal(db_reader="off")
+    journal.from_frame(frame, paginate=False)
+    assert isinstance(journal.pages.raw_file_names.iloc[0], list)
+    assert isinstance(journal.pages.raw_file_names.iloc[1], str)
+    assert isinstance(journal.pages.raw_file_names.iloc[2], OtherPath)
+    assert journal.pages.group.iloc[0] == 1
+    assert len(journal.pages) == 3
 
 
 # TODO: make this test

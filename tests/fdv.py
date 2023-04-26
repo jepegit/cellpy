@@ -7,11 +7,12 @@ Notes:
 
 import os
 from pathlib import Path
+from cellpy.internals.core import OtherPath
 
 
 def get_cellpy_file_path(raw_path):
     cellpy_extension = ".h5"
-    raw_path = Path(raw_path)
+    raw_path = OtherPath(raw_path)
     raw_name = raw_path.stem + cellpy_extension
     p = os.path.join(cellpy_data_dir, raw_name)
     return p
@@ -44,6 +45,10 @@ env_file = os.path.abspath(os.path.join(data_dir, ".env_cellpy_test"))
 # -------- common files -----------------------------
 cellpy_file_name = "20160805_test001_45_cc.h5"
 cellpy_file_path = os.path.join(cellpy_data_dir, cellpy_file_name)
+
+cellpy_file_path_external = (
+    "scp://jepe@server.no/home/jepe/data/20160805_test001_45_cc.h5"
+)
 
 # old format (to check compatibility when upgrading cellpy format)
 cellpy_file_name_v4 = "20160805_test001_45_cc_v0.h5"
@@ -94,6 +99,9 @@ mock_file_path = os.path.join(raw_data_dir, mock_file_name)
 
 res_file_name = "20160805_test001_45_cc_01.res"
 res_file_path = os.path.join(raw_data_dir, res_file_name)
+res_file_path_external = (
+    "scp://jepe@server.no/home/jepe/data/20160805_test001_45_cc_01.res"
+)
 
 res_file_name2 = "20160805_test001_45_cc_02.res"
 res_file_path2 = os.path.join(raw_data_dir, res_file_name2)

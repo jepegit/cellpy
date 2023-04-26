@@ -64,7 +64,6 @@ from cellpy.parameters.internal_settings import (
 )
 
 from cellpy.readers.core import (
-    OtherPath,
     Data,
     FileID,
     identify_last_data_point,
@@ -75,6 +74,7 @@ from cellpy.readers.core import (
     Q,
     convert_from_simple_unit_label_to_string_unit_label,
 )
+from cellpy.internals.core import OtherPath
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
@@ -267,8 +267,9 @@ class CellpyCell:
         self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
         self.limit_data_points = None
         self.ensure_step_table = prms.Reader.ensure_step_table
-        self.raw_datadir = prms.Paths.rawdatadir
-        self.cellpy_datadir = prms.Paths.cellpydatadir
+        self.ensure_summary_table = prms.Reader.ensure_summary_table
+        self.raw_datadir = OtherPath(prms.Paths.rawdatadir)
+        self.cellpy_datadir = OtherPath(prms.Paths.cellpydatadir)
         self.auto_dirs = prms.Reader.auto_dirs
 
         # - headers and instruments
@@ -288,6 +289,8 @@ class CellpyCell:
             self.initialize()
 
     def initialize(self):
+        """Initialize the cellpycell object."""
+
         logging.debug("Initializing...")
         # TODO: v.1.0.0: replace this
         self._data = Data()
@@ -297,6 +300,8 @@ class CellpyCell:
     # improvement suggestion: use data.cell_name instead
     @property
     def session_name(self):
+        """returns the session name"""
+
         if not self._session_name:
             return self.data.cell_name
         else:
@@ -304,6 +309,8 @@ class CellpyCell:
 
     @session_name.setter
     def session_name(self, n):
+        """sets the session name"""
+
         self._session_name = n
         if not self.data.cell_name:
             self.data.cell_name = n
@@ -319,11 +326,14 @@ class CellpyCell:
 
     @property
     def raw_units(self):
+        """returns the raw_units dictionary"""
+
         return self.data.raw_units
 
     @property
     def data(self):
         """returns the DataSet instance"""
+
         if not self._data:
             logging.critical("Sorry, I don't have any data to give you!")
             logging.debug(
@@ -335,11 +345,12 @@ class CellpyCell:
 
     @data.setter
     def data(self, new_cell):
+        """sets the DataSet instance"""
         self._data = new_cell
 
     @property
     def empty(self):
-        """gives True if the CellpyCell object is empty (or non-functional)"""
+        """Gives True if the CellpyCell object is empty (or non-functional)"""
         return not self._validate_cell()
 
     @classmethod
@@ -512,6 +523,8 @@ class CellpyCell:
         return
 
     def register_instrument_readers(self):
+        """Register instrument readers."""
+
         self.instrument_factory = generate_default_factory()
         # instruments = find_all_instruments()
         # for instrument_id, instrument in instruments.items():
@@ -694,12 +707,11 @@ class CellpyCell:
             return
         self.cellpy_datadir = directory
 
-    # TODO 249: update this so that it is aligned with OtherPaths etc
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
         This function checks if the hdf5 file and the res-files have the same
-        timestamps etc to find out if we need to bother to load .res -files.
+        timestamps etc. to find out if we need to bother to load .res -files.
 
         Args:
             cellpyfile (str): filename of the cellpy hdf5-file.
@@ -744,7 +756,7 @@ class CellpyCell:
 
     def _check_raw(self, file_names, abort_on_missing=False):
         """Get the file-ids for the res_files."""
-        # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
+
         strip_file_names = True
         check_on = self.filestatuschecker
         if not self._is_listtype(file_names):
@@ -761,7 +773,7 @@ class CellpyCell:
                     sys.exit(-1)
             else:
                 if strip_file_names:
-                    name = os.path.basename(f)
+                    name = f.name
                 else:
                     name = f
                 if check_on == "size":
@@ -769,22 +781,32 @@ class CellpyCell:
                 elif check_on == "modified":
                     ids[name] = int(fid.last_modified)
                 else:
-                    ids[name] = int(fid.last_accessed)
+                    ids[name] = int(fid.last_modified)
         return ids
 
-    def _check_cellpy_file(self, filename):
+    def _check_cellpy_file(self, filename: OtherPath):
         """Get the file-ids for the cellpy_file."""
 
+        if not isinstance(filename, OtherPath):
+            logging.debug("filename must be an OtherPath object")
+            filename = OtherPath(filename)
+
         use_full_filename_path = False
-        parent_level = prms._cellpyfile_root
-        fid_dir = prms._cellpyfile_fid
+        parent_level = prms._cellpyfile_root  # noqa
+        fid_dir = prms._cellpyfile_fid  # noqa
         check_on = self.filestatuschecker
         logging.debug("checking cellpy-file")
         logging.debug(filename)
-        if not os.path.isfile(filename):
+        if not filename.is_file():
             logging.debug("cellpy-file does not exist")
             return None
         try:
+            # TODO: implement external handling of hdf5-files
+            if filename.is_external:
+                # I have not implemented any external handling of hdf5-files yet. So we need to
+                # copy the file to temporary directory (this will take some time, and therefore it is
+                # probably best not to put your cellpy files in a remote directory yet):
+                filename = filename.copy()
             store = pd.HDFStore(filename)
         except Exception as e:
             logging.debug(f"could not open cellpy-file ({e})")
@@ -823,7 +845,7 @@ class CellpyCell:
                 elif check_on == "modified":
                     ids[name] = int(fid.last_modified)
                 else:
-                    ids[name] = int(fid.last_accessed)
+                    ids[name] = int(fid.last_modified)
             return ids
         else:
             return None
@@ -881,7 +903,6 @@ class CellpyCell:
         selector=None,
         **kwargs,
     ):
-
         """Loads data for given cells.
 
         Args:
@@ -973,7 +994,7 @@ class CellpyCell:
         if nom_cap is not None:
             self.set_nom_cap(nom_cap)
 
-        logging.debug("-------------AREA-CALC----------------")
+        logging.debug("calculating area")
         if area is not None:
             logging.debug(f"got area: {area}")
             self.data.meta_common.active_electrode_area = area
@@ -1003,209 +1024,6 @@ class CellpyCell:
                     use_cellpy_stat_file=use_cellpy_stat_file,
                 )
 
-        return self
-
-    def dev_update_loadcell(
-        self,
-        raw_files,
-        cellpy_file=None,
-        mass=None,
-        summary_on_raw=False,
-        summary_ir=True,
-        summary_end_v=True,
-        force_raw=False,
-        use_cellpy_stat_file=None,
-        nom_cap=None,
-        selector=None,
-        **kwargs,
-    ):
-
-        logging.info("Started cellpy.cellreader.loadcell")
-
-        if cellpy_file is None or force_raw:
-            similar = None
-        else:
-            similar = self.check_file_ids(raw_files, cellpy_file, detailed=True)
-
-        logging.debug("checked if the files were similar")
-
-        if similar is None:
-            # forcing to load only raw_files
-            self.from_raw(raw_files, **kwargs)
-            if self._validate_cell():
-                if mass:
-                    self.set_mass(mass)
-                if summary_on_raw:
-                    self.make_summary(
-                        find_ir=summary_ir,
-                        find_end_voltage=summary_end_v,
-                        use_cellpy_stat_file=use_cellpy_stat_file,
-                        nom_cap=nom_cap,
-                    )
-            else:
-                logging.warning("Empty run!")
-            return self
-
-        self.load(cellpy_file, selector=selector)
-        if mass:
-            self.set_mass(mass)
-
-        if all(similar.values()):
-            logging.info("Everything is up to date")
-            return
-
-        start_file = True
-        for i, f in enumerate(raw_files):
-            f = Path(f)
-            if not similar[f.name] and start_file:
-                try:
-                    last_data_point = self.data.raw_data_files[i].last_data_point
-                except IndexError:
-                    last_data_point = 0
-
-                self.dev_update_from_raw(
-                    file_names=f, data_points=[last_data_point, None]
-                )
-                self.data = self.dev_update_merge()
-
-            elif not similar[f.name]:
-                try:
-                    last_data_point = self.data.raw_data_files[i].last_data_point
-                except IndexError:
-                    last_data_point = 0
-
-                self.dev_update_from_raw(
-                    file_names=f, data_points=[last_data_point, None]
-                )
-                self.merge()
-
-            start_file = False
-
-        self.dev_update_make_steps()
-        self.dev_update_make_summary(
-            # all_tests=False,
-            # find_ocv=summary_ocv,
-            find_ir=summary_ir,
-            find_end_voltage=summary_end_v,
-            use_cellpy_stat_file=use_cellpy_stat_file,
-        )
-        return self
-
-    def dev_update(self, file_names=None, **kwargs):
-        print("NOT FINISHED YET - but close")
-        if len(self.data.raw_data_files) != 1:
-            logging.warning("Merged data. But can only update based on the last file")
-            print(self.data.raw_data_files)
-            for fid in self.data.raw_data_files:
-                print(fid)
-        last = self.data.raw_data_files[0].last_data_point
-
-        self.dev_update_from_raw(
-            file_names=file_names, data_points=[last, None], **kwargs
-        )
-        print("lets try to merge")
-        self.data = self.dev_update_merge()
-        print("now it is time to update the step table")
-        self.dev_update_make_steps()
-        print("and finally, lets update the summary")
-        self.dev_update_make_summary()
-
-    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
-    def dev_update_merge(self, t1, t2):
-        print("NOT FINISHED YET - but very close")
-
-        if t1.raw.empty:
-            logging.debug("OBS! the first dataset is empty")
-
-        if t2.raw.empty:
-            logging.debug("the second dataset was empty")
-            logging.debug(" -> merged contains only first")
-            return t1
-        test = t1
-
-        cycle_index_header = self.headers_normal.cycle_index_txt
-
-        if not t1.raw.empty:
-            t1.raw = t1.raw.iloc[:-1]
-            raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
-            test.raw = raw2
-        else:
-            test = t2
-        logging.debug(" -> merged with new dataset")
-
-        return test
-
-    def dev_update_make_steps(self, **kwargs):
-        old_steps = self.data.steps.iloc[:-1]
-        # Note! hard-coding header name (might fail if changing default headers)
-        from_data_point = self.data.steps.iloc[-1].point_first
-        new_steps = self.make_step_table(from_data_point=from_data_point, **kwargs)
-        merged_steps = pd.concat([old_steps, new_steps]).reset_index(drop=True)
-        self.data.steps = merged_steps
-
-    def dev_update_make_summary(self, **kwargs):
-        print("NOT FINISHED YET - but not critical")
-        # Update not implemented yet, running full summary calculations for now.
-        # For later:
-        # old_summary = self.data.summary.iloc[:-1]
-        cycle_index_header = self.headers_summary.cycle_index
-        from_cycle = self.data.summary.iloc[-1][cycle_index_header]
-        self.make_summary(from_cycle=from_cycle, **kwargs)
-        # For later:
-        # (Remark! need to solve how to merge cumulated columns)
-        # new_summary = self.make_summary(from_cycle=from_cycle)
-        # merged_summary = pd.concat([old_summary, new_summary]).reset_index(drop=True)
-        # self.data.summary = merged_summary
-
-    def dev_update_from_raw(self, file_names=None, data_points=None, **kwargs):
-        """This method is under development. Using this to develop updating files
-        with only new data.
-        """
-        print("NOT FINISHED YET - but very close")
-        # TODO @jepe: implement changes from original from_raw method introduced after this one was last edited.
-        if file_names:
-            self.file_names = file_names
-
-        if file_names is None:
-            logging.info(
-                "No filename given and no stored in the file_names "
-                "attribute. Returning None"
-            )
-            return None
-
-        if not isinstance(self.file_names, (list, tuple)):
-            self.file_names = [file_names]
-
-        raw_file_loader = self.loader
-
-        set_number = 0
-        cell = None
-
-        logging.debug("start iterating through file(s)")
-
-        for f in self.file_names:
-            logging.debug("loading raw file:")
-            logging.debug(f"{f}")
-
-            # get a list of cellpy.readers.core.Data objects
-            # cell = raw_file_loader(f, data_points=data_points, **kwargs)
-            # remark that the bounds are included (i.e. the first datapoint
-            # is 5000.
-
-            logging.debug(
-                "added the data set - merging file info  - oh no; I am not implemented yet"
-            )
-
-            # raw_data_file = copy.deepcopy(test[set_number].raw_data_files[0])
-            # file_size = test[set_number].raw_data_files_length[0]
-
-            # test[set_number].raw_data_files.append(raw_data_file)
-            # test[set_number].raw_data_files_length.append(file_size)
-            # return test
-        # cell[set_number].raw_units = self._set_raw_units()
-        # self.cells.append(cell[set_number])
-        # self.status_dataset = self._validate_cell()
-        # self._invent_a_session_name()
         return self
 
     def from_raw(
@@ -1277,9 +1095,9 @@ class CellpyCell:
         for file_name in self.file_names:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
-            # TODO 249: this needs an update:
-            if is_a_file and not OtherPath(file_name).is_external:
-                if not Path(file_name).is_file():
+            if is_a_file:
+                file_name = OtherPath(file_name)
+                if not file_name.is_file():
                     raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
@@ -1350,7 +1168,7 @@ class CellpyCell:
 
         If the file is very big, it is sometimes better to work with the data
         out of memory (i.e. on disk). A CellpyCell object with a linked file
-        will in most cases work as a normal object. However, some of the methods
+        will in most cases work as a normal object. However, some methods
         might be disabled. And it will be slower.
 
         Notes:
@@ -1371,7 +1189,7 @@ class CellpyCell:
         """Loads a cellpy file.
 
         Args:
-            cellpy_file (path, str): Full path to the cellpy file.
+            cellpy_file (OtherPath, str): Full path to the cellpy file.
             parent_level (str, optional): Parent level. Warning! Deprecating this soon!
             return_cls (bool): Return the class.
             accept_old (bool): Accept loading old cellpy-file versions.
@@ -1393,8 +1211,10 @@ class CellpyCell:
         try:
             logging.debug("loading cellpy-file (hdf5):")
             logging.debug(cellpy_file)
-
+            logging.debug(f"{type(cellpy_file)=}")
+            cellpy_file = OtherPath(cellpy_file)
             with pickle_protocol(PICKLE_PROTOCOL):
+                logging.debug(f"using pickle protocol {PICKLE_PROTOCOL}")
                 data = self._load_hdf5(
                     cellpy_file, parent_level, accept_old, selector=selector
                 )
@@ -1418,6 +1238,7 @@ class CellpyCell:
         if return_cls:
             return self
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _get_cellpy_file_version(self, filename, meta_dir=None, parent_level=None):
         if meta_dir is None:
             meta_dir = prms._cellpyfile_common_meta
@@ -1446,13 +1267,14 @@ class CellpyCell:
 
         return cellpy_file_version
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5(self, filename, parent_level=None, accept_old=False, selector=None):
         """Load a cellpy-file.
 
         Args:
             filename (str): Name of the cellpy file.
             parent_level (str) (optional): name of the parent level
-                (defaults to "CellpyData"). DeprecationWarning!
+                (defaults to "CellpyData").
             accept_old (bool): accept old file versions.
             selector (): select specific ranges (under development)
 
@@ -1510,6 +1332,7 @@ class CellpyCell:
 
         return new_data
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_current_version(self, filename, parent_level=None, selector=None):
         if parent_level is None:
             parent_level = prms._cellpyfile_root
@@ -1564,6 +1387,7 @@ class CellpyCell:
             data.raw_data_files_length = []
         return data
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_v7(self, filename, selector=None, **kwargs):
         logging.debug("--- loading v7")
         meta_dir = "/info"
@@ -1610,6 +1434,7 @@ class CellpyCell:
             data.raw_data_files_length = []
         return data
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_v6(self, filename, selector=None):
         logging.critical("--- loading v6")
         parent_level = "CellpyData"
@@ -1671,6 +1496,7 @@ class CellpyCell:
         logging.debug("loaded new test")
         return data
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_v5(self, filename, selector=None):
         logging.critical("--- loading v5")
         parent_level = "CellpyData"
@@ -1724,6 +1550,7 @@ class CellpyCell:
         logging.debug("loaded new test")
         return data
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_old_hdf5(self, filename, cellpy_file_version):
         if cellpy_file_version < 5:
             data = self._load_old_hdf5_v3_to_v4(filename)
@@ -1744,6 +1571,7 @@ class CellpyCell:
         #     # self.__check_loaded_data(data)
         return data
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_old_hdf5_v3_to_v4(self, filename):
         logging.critical("--- loading v < 5")
         parent_level = "CellpyData"
@@ -1802,6 +1630,7 @@ class CellpyCell:
         # return new_tests
         return data
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _create_initial_data_set_from_cellpy_file(
         self, meta_dir, parent_level, store, test_dependent_meta_dir=None
     ):
@@ -1840,6 +1669,7 @@ class CellpyCell:
         # logging.debug(f"cellpy file version. {data.cellpy_file_version}")
         return data, meta_table
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     @staticmethod
     def _check_keys_in_cellpy_file(meta_dir, parent_level, raw_dir, store, summary_dir):
         required_keys = [raw_dir, summary_dir, meta_dir]
@@ -1856,6 +1686,7 @@ class CellpyCell:
                 )
         logging.debug(f"Keys in current cellpy-file: {store.keys()}")
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _hdf5_locate_data_points_from_max_cycle_number(
         self, table_name, max_cycle, parent_level, store, child_level
     ):
@@ -1874,6 +1705,7 @@ class CellpyCell:
         cycles = store.select(table_path, where="columns=[_cycle_header]")
         return cycles[_cycle_header] <= max_cycle
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _hdf5_cycle_filter(self, table=None):
         # this is not the best way to do it
         if max_cycle := self.limit_loaded_cycles:
@@ -1891,12 +1723,14 @@ class CellpyCell:
                 logging.debug(f"limited to data_point {self.limit_data_points}")
                 return f"index <= {int(self.limit_data_points)}"
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _unpack_selector(self, selector):
         # not implemented yet
         # should be used for trimming the selector so that it is not necessary to parse it individually
         # for all the _extract_xxx_from_cellpy_file methods.
         return selector
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_summary_from_cellpy_file(
         self,
         data: Data,
@@ -1935,6 +1769,7 @@ class CellpyCell:
         self.limit_data_points = int(max_data_point)
         logging.debug(f"data-point max limit: {self.limit_data_points}")
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_raw_from_cellpy_file(
         self,
         data,
@@ -1980,6 +1815,7 @@ class CellpyCell:
             data.steps = pd.DataFrame()
             warnings.warn(f"Unhandled exception raised: {e}")
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_fids_from_cellpy_file(
         self, fid_dir, parent_level, store, upgrade_from_to: tuple = None
     ):
@@ -2002,6 +1838,7 @@ class CellpyCell:
             fid_table_selected = False
         return fid_table, fid_table_selected
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_meta_from_cellpy_file(
         self,
         data: Data,
@@ -2010,7 +1847,6 @@ class CellpyCell:
         filename: Union[Path, str],
         upgrade_from_to: tuple = None,
     ) -> None:
-
         if upgrade_from_to is not None:
             old, new = upgrade_from_to
             print(f"upgrading meta from {old} to {new}")
@@ -2046,6 +1882,7 @@ class CellpyCell:
         test_dependent_meta_dict = test_dependent_meta_table.to_dict(orient="list")
         data.meta_test_dependent.update(as_list=True, **test_dependent_meta_dict)
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_meta_from_old_cellpy_file_max_v7(
         self,
         data: Data,
@@ -2095,6 +1932,7 @@ class CellpyCell:
         meta_dict = data.meta_common.digest(as_list=False, **meta_dict)
         data.meta_test_dependent.update(as_list=True, **meta_dict)
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     @staticmethod
     def _extract_from_meta_dictionary(
         meta_dict, attribute, default_value=None, hard=False
@@ -2109,6 +1947,7 @@ class CellpyCell:
             value = default_value
         return value
 
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     def _create_infotable(self):
         # needed for saving class/DataSet to hdf5
         cell = self.data
@@ -2145,7 +1984,9 @@ class CellpyCell:
         # TODO: update getters and setters (cell_name etc)
         return new_info_table, new_info_table_test_dependent, fidtable
 
-    def _convert2fid_table(self, cell):
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
+    @staticmethod
+    def _convert2fid_table(cell):
         # used when saving cellpy-file
         logging.debug("converting FileID object to fid-table that can be saved")
         fidtable = collections.OrderedDict()
@@ -2156,20 +1997,21 @@ class CellpyCell:
         fidtable["raw_data_last_accessed"] = []
         fidtable["raw_data_last_info_changed"] = []
         fidtable["raw_data_location"] = []
+        # TODO: consider deprecating this as we now have implemented last_data_point:
         fidtable["raw_data_files_length"] = []
+
         fidtable["last_data_point"] = []
         fids = cell.raw_data_files
-        fidtable["raw_data_fid"] = fids
         if fids:
             for fid, length in zip(fids, cell.raw_data_files_length):
                 try:
-                    fidtable["raw_data_name"].append(str(Path(fid.name).name))
-                    fidtable["raw_data_full_name"].append(str(Path(fid.full_name)))
+                    fidtable["raw_data_name"].append(fid.name)
+                    fidtable["raw_data_full_name"].append(fid.full_name)
                     fidtable["raw_data_size"].append(fid.size)
                     fidtable["raw_data_last_modified"].append(fid.last_modified)
                     fidtable["raw_data_last_accessed"].append(fid.last_accessed)
                     fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-                except Exception:
+                except AttributeError:  # TODO: this is probably not needed anymore
                     logging.debug("this is probably not from a file")
                     fidtable["raw_data_name"].append("db")
                     fidtable["raw_data_full_name"].append("db")
@@ -2180,13 +2022,14 @@ class CellpyCell:
 
                 fidtable["raw_data_location"].append(fid.location)
                 fidtable["raw_data_files_length"].append(length)
-                fidtable["last_data_point"].append(fid.last_data_point)
+                fidtable["last_data_point"].append(fid.last_data_point)  # will most likely be the same as length
         else:
             warnings.warn("seems you lost info about your raw-data (missing fids)")
         return fidtable
 
-    # TODO 249: update this so that it is aligned with OtherPaths (accepts ssh etc)
-    def _convert2fid_list(self, tbl):
+    # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
+    @staticmethod
+    def _convert2fid_list(tbl):
         # used when reading cellpy-file
         logging.debug("converting loaded fid-table to FileID object")
         fids = []
@@ -2195,9 +2038,9 @@ class CellpyCell:
         for counter, item in enumerate(tbl["raw_data_name"]):
             fid = FileID()
             try:
-                fid.name = Path(item).name
+                fid.name = OtherPath(item).name
             except NotImplementedError:
-                fid.name = os.path.basename(item)
+                fid.name = item
             fid.full_name = tbl["raw_data_full_name"][counter]
             fid.size = tbl["raw_data_size"][counter]
             fid.last_modified = tbl["raw_data_last_modified"][counter]
@@ -2209,6 +2052,8 @@ class CellpyCell:
                 fid.last_data_point = tbl["last_data_point"][counter]
             else:
                 fid.last_data_point = 0
+            if "is_db" in tbl.columns:
+                fid.is_db = tbl["is_db"][counter]
             fids.append(fid)
             lengths.append(length)
             min_amount = 1
@@ -2220,7 +2065,6 @@ class CellpyCell:
     def merge(self, datasets: list, **kwargs):
         """This function merges datasets into one set."""
         logging.info("Merging")
-
         self.data = datasets.pop(0)
         for data in datasets:
             self.data = self._append(self.data, data, **kwargs)
@@ -2247,6 +2091,9 @@ class CellpyCell:
             logging.debug("OBS! the second dataset was empty")
             logging.debug(" -> merged contains only first")
             return t1
+
+        if not isinstance(t1.loaded_from, (list, tuple)):
+            t1.loaded_from = [t1.loaded_from]
 
         cycle_index_header = self.headers_summary.cycle_index
         data = t1
@@ -2295,6 +2142,7 @@ class CellpyCell:
         logging.debug("performing concat")
         raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
         data.raw = raw
+        data.loaded_from.append(t2.loaded_from)
         step_table_made = False
 
         if merge_summary:
@@ -2473,7 +2321,6 @@ class CellpyCell:
             steps_to_skip = []
 
         if steptable is None:
-
             if not self.data.has_steps:
                 logging.debug("steps is not made")
 
@@ -2651,7 +2498,6 @@ class CellpyCell:
         from_data_point=None,
         nom_cap_specifics=None,
     ):
-
         """Create a table (v.4) that contains summary information for each step.
 
         This function creates a table containing information about the
@@ -3346,6 +3192,7 @@ class CellpyCell:
         overwrite=None,
         extension="h5",
         ensure_step_table=None,
+        ensure_summary_table=None,
     ):
         """Save the data structure to cellpy-format.
 
@@ -3357,6 +3204,7 @@ class CellpyCell:
                 exists.
             extension: (str) filename extension.
             ensure_step_table: (bool) make step-table if missing.
+            ensure_summary_table: (bool) make summary-table if missing.
 
         Returns: Nothing at all.
         """
@@ -3372,10 +3220,13 @@ class CellpyCell:
         if ensure_step_table is None:
             ensure_step_table = self.ensure_step_table
 
+        if ensure_summary_table is None:
+            ensure_summary_table = self.ensure_summary_table
+
         my_data = self.data
         summary_made = my_data.has_summary
-
-        if not summary_made and not force:
+        if not summary_made and not force and not ensure_summary_table:
+            logging.info("File not saved!")
             logging.info("You should not save datasets without making a summary first!")
             logging.info("If you really want to do it, use save with force=True")
             return
@@ -3383,16 +3234,18 @@ class CellpyCell:
         step_table_made = my_data.has_steps
         if not step_table_made and not force and not ensure_step_table:
             logging.info(
+                "File not saved!"
                 "You should not save datasets without making a step-table first!"
             )
             logging.info("If you really want to do it, use save with force=True")
             return
 
-        outfile_all = Path(filename)
+        outfile_all = OtherPath(filename)
         if not outfile_all.suffix:
+            logging.debug("No suffix given - adding one")
             outfile_all = outfile_all.with_suffix(f".{extension}")
 
-        if os.path.isfile(outfile_all):
+        if outfile_all.is_file():
             logging.debug("Outfile exists")
             if overwrite:
                 logging.debug("overwrite = True")
@@ -3413,6 +3266,12 @@ class CellpyCell:
                 logging.debug("save: creating step table")
                 self.make_step_table()
 
+        if ensure_summary_table:
+            logging.debug("ensure_summary_table is on")
+            if not my_data.has_summary:
+                logging.debug("save: creating summary table")
+                self.make_summary_table()
+
         logging.debug("trying to make infotable")
         (
             common_meta_table,
@@ -3423,13 +3282,13 @@ class CellpyCell:
         logging.debug(f"trying to save to file: {outfile_all}")
         if cellpy_file_format == "hdf5":
             # --- saving to hdf5 -----------------------------------
-            root = prms._cellpyfile_root
-            raw_dir = prms._cellpyfile_raw
-            step_dir = prms._cellpyfile_step
-            summary_dir = prms._cellpyfile_summary
-            common_meta_dir = prms._cellpyfile_common_meta
-            fid_dir = prms._cellpyfile_fid
-            test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta
+            root = prms._cellpyfile_root  # noqa
+            raw_dir = prms._cellpyfile_raw  # noqa
+            step_dir = prms._cellpyfile_step  # noqa
+            summary_dir = prms._cellpyfile_summary  # noqa
+            common_meta_dir = prms._cellpyfile_common_meta  # noqa
+            fid_dir = prms._cellpyfile_fid  # noqa
+            test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta  # noqa
             warnings.simplefilter("ignore", PerformanceWarning)
             try:
                 with pickle_protocol(PICKLE_PROTOCOL):
@@ -3553,7 +3412,6 @@ class CellpyCell:
         # TODO: @jepe - use pd.loc[row,column]
 
         if capacity_modifier == "reset":
-
             for index, row in summary.iterrows():
                 dischargecap_2 = row[discharge_title]
                 summary.loc[index, discharge_title] = dischargecap_2 - dischargecap
@@ -4164,7 +4022,6 @@ class CellpyCell:
                             }
                         )
                         if interpolated:
-
                             _first_df = interpolate_y_on_x(
                                 _first_df,
                                 y=y_col,
@@ -4307,7 +4164,6 @@ class CellpyCell:
         dx=None,
         number_of_points=None,
     ):
-
         """get the open circuit voltage relaxation curves.
 
         Args:
@@ -4668,6 +4524,7 @@ class CellpyCell:
         )
 
     def _set_mass(self, value):
+        # TODO: replace with setter
         try:
             self.data.meta_common.mass = value
         except AttributeError as e:
@@ -4675,6 +4532,7 @@ class CellpyCell:
             logging.info(e)
 
     def _set_tot_mass(self, value):
+        # TODO: replace with setter
         try:
             self.data.meta_common.tot_mass = value
         except AttributeError as e:
@@ -4682,6 +4540,7 @@ class CellpyCell:
             logging.info(e)
 
     def _set_nom_cap(self, value):
+        # TODO: replace with setter
         try:
             self.data.meta_common.nom_cap = value
         except AttributeError as e:
@@ -4693,6 +4552,8 @@ class CellpyCell:
         # Remark! This is left-over code from old ages when we thought we needed
         #   to have data-sets with multiple cells. And before we learned about
         #   setters and getters in Python. Feel free to refactor it.
+
+        # TODO: deprecate it
 
         if attr == "mass":
             setter = self._set_mass
@@ -4716,12 +4577,33 @@ class CellpyCell:
 
     def set_mass(self, mass, validated=None):
         """Sets the mass (masses) for the test (datasets)."""
+
+        warnings.warn(
+            "This function is deprecated. " "Use the setter instead (mass = value).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self._set_run_attribute("mass", mass, validated=validated)
 
     def set_tot_mass(self, mass, validated=None):
+
+        warnings.warn(
+            "This function is deprecated. "
+            "Use the setter instead (tot_mass = value).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         self._set_run_attribute("tot_mass", mass, validated=validated)
 
     def set_nom_cap(self, nom_cap, validated=None):
+
+        warnings.warn(
+            "This function is deprecated. " "Use the setter instead (nom_cap = value).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         self._set_run_attribute("nom_cap", nom_cap, validated=validated)
 
     @staticmethod
@@ -4744,7 +4626,6 @@ class CellpyCell:
             df = df.reindex(columns=column_headings)
             return df
 
-    # TODO: deprecate this
     def get_summary(self, use_summary_made=False):
         """Retrieve summary returned as a pandas DataFrame."""
         cell = self.data
@@ -4754,6 +4635,12 @@ class CellpyCell:
         # that was set to True when the summary was made successfully.
         # It is most likely never
         # used anymore. And will most probably be deleted.
+
+        warnings.warn(
+            "get_summary is deprecated. Use the CellpyCell.data.summary property instead.",
+            DeprecationWarning,
+        )
+
         if use_summary_made:
             summary_made = cell.has_summary
         else:
@@ -5343,7 +5230,6 @@ class CellpyCell:
                 ir = 0
             step2 = charge_steps[cycle]
             if step2[0]:
-
                 ir2 = raw[
                     (raw[self.headers_normal.cycle_index_txt] == cycle)
                     & (data.raw[self.headers_normal.step_index_txt] == step2[0])
@@ -5453,6 +5339,225 @@ class CellpyCell:
 
         return nc
 
+    # ================ Experimental features =================
+
+    # ---------------------- update --------------------------
+
+    def dev_update(self, file_names=None, **kwargs):
+        """Experimental method for updating a cellpy-file with new raw-files."""
+
+        print("NOT FINISHED YET!")
+        if len(self.data.raw_data_files) != 1:
+            logging.warning("Merged data. But can only update based on the last file")
+            print(self.data.raw_data_files)
+            for fid in self.data.raw_data_files:
+                print(fid)
+        last = self.data.raw_data_files[0].last_data_point
+
+        self.dev_update_from_raw(
+            file_names=file_names, data_points=[last, None], **kwargs
+        )
+        print("lets try to merge")
+        self.data = self.dev_update_merge()
+        print("now it is time to update the step table")
+        self.dev_update_make_steps()
+        print("and finally, lets update the summary")
+        self.dev_update_make_summary()
+
+    def dev_update_loadcell(
+        self,
+        raw_files,
+        cellpy_file=None,
+        mass=None,
+        summary_on_raw=False,
+        summary_ir=True,
+        summary_end_v=True,
+        force_raw=False,
+        use_cellpy_stat_file=None,
+        nom_cap=None,
+        selector=None,
+        **kwargs,
+    ):
+        """Load cell from raw-files or cellpy-file.
+
+        This is an experimental method. It is not finished yet and the logics
+        in this method will most likely be moved to other methods since
+        new versions of cellpy is now based on the get method (it implements
+        similar logic as loadcell, but is more flexible and easier to use).
+
+
+
+        """
+        logging.info("Started cellpy.cellreader.dev_update_loadcell")
+
+        if cellpy_file is None or force_raw:
+            similar = None
+        else:
+            similar = self.check_file_ids(raw_files, cellpy_file, detailed=True)
+
+        logging.debug("checked if the files were similar")
+
+        if similar is None:
+            # forcing to load only raw_files
+            self.from_raw(raw_files, **kwargs)
+            if self._validate_cell():
+                if mass:
+                    self.set_mass(mass)
+                if summary_on_raw:
+                    self.make_summary(
+                        find_ir=summary_ir,
+                        find_end_voltage=summary_end_v,
+                        use_cellpy_stat_file=use_cellpy_stat_file,
+                        nom_cap=nom_cap,
+                    )
+            else:
+                logging.warning("Empty run!")
+            return self
+
+        self.load(cellpy_file, selector=selector)
+        if mass:
+            self.set_mass(mass)
+
+        if all(similar.values()):
+            logging.info("Everything is up to date")
+            return
+
+        start_file = True
+        for i, f in enumerate(raw_files):
+            # TODO: -> OtherPath?
+            f = Path(f)
+            if not similar[f.name] and start_file:
+                try:
+                    last_data_point = self.data.raw_data_files[i].last_data_point
+                except IndexError:
+                    last_data_point = 0
+
+                self.dev_update_from_raw(
+                    file_names=f, data_points=[last_data_point, None]
+                )
+                self.data = self.dev_update_merge()
+
+            elif not similar[f.name]:
+                try:
+                    last_data_point = self.data.raw_data_files[i].last_data_point
+                except IndexError:
+                    last_data_point = 0
+
+                self.dev_update_from_raw(
+                    file_names=f, data_points=[last_data_point, None]
+                )
+                self.merge()
+
+            start_file = False
+
+        self.dev_update_make_steps()
+        self.dev_update_make_summary(
+            # all_tests=False,
+            # find_ocv=summary_ocv,
+            find_ir=summary_ir,
+            find_end_voltage=summary_end_v,
+            use_cellpy_stat_file=use_cellpy_stat_file,
+        )
+        return self
+
+    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
+    def dev_update_merge(self, t1, t2):
+        print("NOT FINISHED YET - but very close")
+
+        if t1.raw.empty:
+            logging.debug("OBS! the first dataset is empty")
+
+        if t2.raw.empty:
+            logging.debug("the second dataset was empty")
+            logging.debug(" -> merged contains only first")
+            return t1
+        test = t1
+
+        cycle_index_header = self.headers_normal.cycle_index_txt
+
+        if not t1.raw.empty:
+            t1.raw = t1.raw.iloc[:-1]
+            raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
+            test.raw = raw2
+        else:
+            test = t2
+        logging.debug(" -> merged with new dataset")
+
+        return test
+
+    def dev_update_make_steps(self, **kwargs):
+        old_steps = self.data.steps.iloc[:-1]
+        # Note! hard-coding header name (might fail if changing default headers)
+        from_data_point = self.data.steps.iloc[-1].point_first
+        new_steps = self.make_step_table(from_data_point=from_data_point, **kwargs)
+        merged_steps = pd.concat([old_steps, new_steps]).reset_index(drop=True)
+        self.data.steps = merged_steps
+
+    def dev_update_make_summary(self, **kwargs):
+        print("NOT FINISHED YET - but not critical")
+        # Update not implemented yet, running full summary calculations for now.
+        # For later:
+        # old_summary = self.data.summary.iloc[:-1]
+        cycle_index_header = self.headers_summary.cycle_index
+        from_cycle = self.data.summary.iloc[-1][cycle_index_header]
+        self.make_summary(from_cycle=from_cycle, **kwargs)
+        # For later:
+        # (Remark! need to solve how to merge cumulated columns)
+        # new_summary = self.make_summary(from_cycle=from_cycle)
+        # merged_summary = pd.concat([old_summary, new_summary]).reset_index(drop=True)
+        # self.data.summary = merged_summary
+
+    def dev_update_from_raw(self, file_names=None, data_points=None, **kwargs):
+        """This method is under development. Using this to develop updating files
+        with only new data.
+        """
+        print("NOT FINISHED YET")
+        # TODO @jepe: implement changes from original from_raw method introduced after this one was last edited.
+        if file_names:
+            self.file_names = file_names
+
+        if file_names is None:
+            logging.info(
+                "No filename given and no stored in the file_names "
+                "attribute. Returning None"
+            )
+            return None
+
+        if not isinstance(self.file_names, (list, tuple)):
+            self.file_names = [file_names]
+
+        raw_file_loader = self.loader
+
+        set_number = 0
+        cell = None
+
+        logging.debug("start iterating through file(s)")
+
+        for f in self.file_names:
+            logging.debug("loading raw file:")
+            logging.debug(f"{f}")
+
+            # get a list of cellpy.readers.core.Data objects
+            # cell = raw_file_loader(f, data_points=data_points, **kwargs)
+            # remark that the bounds are included (i.e. the first datapoint
+            # is 5000.
+
+            logging.debug(
+                "added the data set - merging file info  - oh no; I am not implemented yet"
+            )
+
+            # raw_data_file = copy.deepcopy(test[set_number].raw_data_files[0])
+            # file_size = test[set_number].raw_data_files_length[0]
+
+            # test[set_number].raw_data_files.append(raw_data_file)
+            # test[set_number].raw_data_files_length.append(file_size)
+            # return test
+        # cell[set_number].raw_units = self._set_raw_units()
+        # self.cells.append(cell[set_number])
+        # self.status_dataset = self._validate_cell()
+        # self._invent_a_session_name()
+        return self
+
 
 def get(
     filename=None,
@@ -5538,6 +5643,7 @@ def get(
     step_kwargs = step_kwargs or {}
     summary_kwargs = summary_kwargs or {}
     load_cellpy_file = False
+    logging_mode = "DEBUG" if testing else logging_mode
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyCell()
@@ -5564,13 +5670,15 @@ def get(
 
         else:
             load_cellpy_file = True
-            filename = Path(cellpy_file)
+            filename = OtherPath(cellpy_file)
 
     if isinstance(filename, (list, tuple)):
         logging.debug("got a list or tuple of names")
         load_cellpy_file = False
     else:
-        filename = Path(filename)
+        logging.debug("got a single name")
+        logging.debug(f"{filename=}")
+        filename = OtherPath(filename)
         if (
             auto_pick_cellpy_format
             and instrument not in instruments_with_colliding_file_suffix
@@ -5584,7 +5692,7 @@ def get(
             logging.debug(f"checked if the files were similar")
             if similar:
                 load_cellpy_file = True
-                filename = Path(cellpy_file)
+                filename = OtherPath(cellpy_file)
         except Exception as e:
             logging.debug(f"Error during checking if similar: {e}")
             logging.debug("Setting load_cellpy_file to False")
@@ -5614,13 +5722,6 @@ def get(
     is_a_file = True
     if cellpy_instance.tester not in db_readers:
         is_a_file = False
-        if not isinstance(filename, (list, tuple)):
-            filename = Path(filename)
-
-            if not filename.is_file():
-                print(f"Could not find {filename}")
-                print("Returning None")
-                return
 
     logging.info(f"Loading raw-file: {filename}")
     cellpy_instance.from_raw(filename, is_a_file=is_a_file, **kwargs)
@@ -5678,7 +5779,6 @@ def _update_meta(
         logging.info(f"Setting nominal capacity: {nominal_capacity}")
         cellpy_instance.data.nom_cap = nominal_capacity
 
-    # -------------AREA-CALC----------------
     if area is not None:
         logging.debug(f"got area: {area}")
         cellpy_instance.data.meta_common.active_electrode_area = area
@@ -5695,6 +5795,9 @@ def _update_meta(
         logging.debug("using default area")
 
     return cellpy_instance
+
+
+# ============== Internal tests =================
 
 
 def check_raw():

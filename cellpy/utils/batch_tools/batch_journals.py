@@ -55,9 +55,14 @@ class LabJournal(BaseJournal, ABC):
         """
 
         super().__init__()
+        if db_reader is None:
+            return
 
         if isinstance(db_reader, str):
-            if db_reader == "default" or db_reader is None:
+            if db_reader == "off":
+                self.db_reader = None
+                return
+            if db_reader == "default":
                 db_reader = prms.Db.db_type
             if db_reader == "simple_excel_reader":
                 self.db_reader = dbreader.Reader()
@@ -362,7 +367,7 @@ class LabJournal(BaseJournal, ABC):
         return session, pages
 
     @classmethod
-    def _clean_pages(cls, pages):
+    def _clean_pages(cls, pages: pd.DataFrame) -> pd.DataFrame:
         import ast
 
         logging.debug("removing empty rows")
@@ -374,7 +379,7 @@ class LabJournal(BaseJournal, ABC):
             for f in p:
                 if isinstance(f, str):
                     try:
-                        new_f = ast.literal_eval(f)
+                        new_f = ast.literal_eval(f"'{f}'")
                         if isinstance(new_f, list):
                             f = new_f
                     except Exception as e:
@@ -461,6 +466,12 @@ class LabJournal(BaseJournal, ABC):
         self.pages = (
             frame  # TODO: include a check here to see if the pages are appropriate
         )
+        for hdr in hdr_journal.values():
+            if hdr not in self.pages.columns:
+                self.pages[hdr] = None
+
+        if hdr_journal.filename in self.pages.columns:
+            self.pages = self.pages.set_index(hdr_journal.filename)
 
         if paginate is None:
             if self.name and self.project:

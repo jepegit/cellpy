@@ -100,7 +100,7 @@
         },
         "raw_file_names": {
             "test001": "data/raw/20160805_test001_45_cc_01.res",
-            "test002": "data/raw/20160805_test001_45_cc_02.res",
+            "test002": ["data/raw/20160805_test001_45_cc_02.res", "data/raw/20160805_test001_45_cc_02b.res"],
             "test003": "data/raw/20160805_test001_45_cc_03.res",
             "test004": "data/raw/20160805_test001_45_cc_04.res",
             "test005": "data/raw/20160805_test001_45_cc_05.res"
