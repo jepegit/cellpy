@@ -65,13 +65,13 @@ Create dQ/dV plots
 ------------------
 
 The methods for creating incremental capacity curves is located in
-the ``cellpy.utils.ica`` module (:ref:`_utils_ica`).
+the ``cellpy.utils.ica`` module (:ref:`utils_ica`).
 
 Do some plotting
 ----------------
 
 The plotting methods are located in the ``cellpy.utils.plotting`` module
-(:ref:`_utils_plotting`).
+(:ref:`utils_plotting`).
 
 
 What else?
