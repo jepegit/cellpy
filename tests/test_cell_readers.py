@@ -404,6 +404,7 @@ def test_only_fid_otherpath_local(parameters):
     assert my_fid_one.get_size() == my_fid_two.get_size()
 
 
+@pytest.mark.skip(reason="only run locally")
 def test_only_fid_otherpath_external(parameters):
     from cellpy.readers.core import FileID
     from cellpy.internals.core import OtherPath
@@ -416,6 +417,7 @@ def test_only_fid_otherpath_external(parameters):
     assert my_fid_one.get_size() == my_fid_two.get_size()
 
 
+@pytest.mark.skip(reason="only run locally")
 def test_local_only_fid_otherpath_external(parameters):
     """This test is only ran if you are working on your local machine.
 

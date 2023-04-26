@@ -69,7 +69,7 @@ Then it is probably best to save the data in the cellpy-format:
     cellpy_file = os.path.join(cellpy_data_dir, "20170101_ife01_cc2.h5")
     cell_data.save(cellpy_file)
 
-For convenience, ``cellpy`` also has a method that can be used to select whether-or-not to load
+REWRITE THIS (should use get instead): For convenience, ``cellpy`` also has a method that can be used to select whether-or-not to load
 directly from the raw-file.
 Using the ``loadcell`` method, you can specify both the raw
 file name(s) and the cellpy file name, and
@@ -145,6 +145,30 @@ yaml-file:
 
     c = cellpy.get(filename="name.txt", instrument_file="my_custom_file_format.yml")
 
+
+Working with external files
+---------------------------
+To work with external files you will need to set some environment variables. This can most
+easily be done by creating a file called ``.env_cellpy`` in your user directory (e.g. ``C:\Users\jepe``):
+
+.. code-block:: bash
+
+    # content of .env_cellpy
+    CELLPY_PASSWORD=1234
+    CELLPY_KEY_FILENAME=C:\\Users\\jepe\\.ssh\\id_key
+    CELLPY_HOST=myhost.com
+    CELLPY_USER=jepe
+
+You can then load the file using the ``cellpy.get`` method by providing the full path to the file,
+including the protocol (e.g. ``scp://``) and the user name and host (e.g. ``jepe@myhost.com``):
+
+.. code-block:: python
+
+    # assuming appropriate `.env_cellpy` file is present
+    raw_file = "scp://jepe@myhost.com/path/to/file.txt"
+    c = cellpy.get(filename=raw_file, instrument="maccor_txt", model="one", mass=1.0)
+
+cellpy will automatically download the file to a temporary directory and read it.
 
 Extract current-voltage graphs
 ------------------------------

@@ -205,7 +205,7 @@ class OtherPath(pathlib.Path):
 
     def _wrap_non_callable(self, attr, default_return_value=None):
         if self.is_external:
-            print(f"Cannot get {method.__name__} for external paths!")
+            print(f"Cannot get {attr} for external paths!")
             return default_return_value
         else:
             return attr
@@ -309,6 +309,26 @@ class OtherPath(pathlib.Path):
             return OtherPath(self._original.rsplit("/", 1)[0])
         return OtherPath(super().parent)
 
+    @property
+    def name(self: S):
+        """Return the parent directory of the path."""
+        return super().name
+
+    @property
+    def suffix(self) -> str:
+        """Return the suffix of the path."""
+        return super().suffix
+
+    @property
+    def suffixes(self) -> List[str]:
+        """Return the suffixes of the path."""
+        return super().suffixes
+
+    @property
+    def stem(self) -> str:
+        """Return the stem of the path."""
+        return super().stem
+
     def with_suffix(self: S, suffix: str) -> S:
         """Return a new path with the suffix changed."""
         if self.is_external:
@@ -335,6 +355,12 @@ class OtherPath(pathlib.Path):
             warnings.warn("This method (`absolute`) is not implemented yet for external paths! Returning self.")
             return self
         return OtherPath(super().absolute())
+
+    def samefile(self: S, other_path: Union[str, pathlib.Path, S]) -> bool:
+        if self.is_external:
+            warnings.warn("This method (`absolute`) is not implemented yet for external paths! Returning True.")
+            return True
+        return super().samefile(other_path)
 
     def iterdir(self, *args, **kwargs):
         if self.is_external:
@@ -374,6 +400,18 @@ class OtherPath(pathlib.Path):
 
     def readlink(self, *args, **kwargs):
         warnings.warn(f"Cannot run 'readlink' for OtherPath!")
+        return
+
+    def match(self, *args, **kwargs):
+        warnings.warn(f"Cannot run 'match' for OtherPath!")
+        return
+
+    def cwd(self):
+        warnings.warn(f"Cannot run 'match' for OtherPath!")
+        return
+
+    def group(self):
+        warnings.warn(f"Cannot run 'group' for OtherPath!")
         return
 
     @property
@@ -437,7 +475,17 @@ class OtherPath(pathlib.Path):
             destination = pathlib.Path(tempfile.gettempdir())
         else:
             destination = pathlib.Path(destination)
-
+        print(80 * "=")
+        print(f"Copying {self} to {destination}...")
+        print(f"Is external: {self.is_external}")
+        print(f"URI prefix: {self.uri_prefix}")
+        print(f"Location: {self.location}")
+        print(f"Raw path: {self.raw_path}")
+        print(f"Full path: {self.full_path}")
+        print(f"Original: {self.original}")
+        print(f"Is absolute: {self.is_absolute()}")
+        print(f"{self.name=}")
+        print(80 * "=")
         path_of_copied_file = destination / self.name
 
         if not self.is_external:
