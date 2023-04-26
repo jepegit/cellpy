@@ -18,6 +18,15 @@ The easiest way to load data is to use the ``cellpy.get`` method:
     file_name = "20170101_ife01_cc_01.res"
     cell_data = cellpy.get(file_name, mass=electrode_mass, cycle_mode="anode")
 
+
+.. note::
+    Even though the ``CellpyCell`` object in the example above got the name ``cell_data``,
+    it is more common to just simply name it ``c`` (*i.e.* ``c = cellpy.get(...)``). Similarly,
+    the ``cellpy`` naming convention for ``cellpy.utils.Batch`` objects is to name them ``b``
+    (*i.e.* ``b = batch.init(...)`` (assuming then that the ``batch`` module was imported
+    somewhere earlier in the code)).
+
+
 If you prefer, you can obtain the same by using ``cellpy.cellreader.CellpyCell`` object directly. However, we
 recommend using the ``cellpy.get`` method. But just in case you want to know how to do it:
 
