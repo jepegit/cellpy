@@ -1,4 +1,4 @@
-.. _utils_plotting:
+.. _utils-plotting:
 
 Have a look at the data
 -----------------------

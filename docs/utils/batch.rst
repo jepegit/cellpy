@@ -1,3 +1,5 @@
+.. _utils-batch:
+
 Using the batch utilities
 -------------------------
 

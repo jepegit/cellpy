@@ -1,4 +1,4 @@
-.. _utils_ica:
+.. _utils-ica:
 
 Extracting ica data
 -------------------

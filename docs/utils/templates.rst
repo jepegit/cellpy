@@ -1,3 +1,5 @@
+.. _utils-templates:
+
 Templates
 ---------
 
