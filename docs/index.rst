@@ -7,42 +7,17 @@ Welcome to cellpy's documentation!
 ==================================
 
 .. include::
-   readme.rst
+    adapted_readme.rst
 
-Main description
-----------------
-
-.. toctree::
-   :maxdepth: 2
-
-   installation
-   usage
-   formats
-   contributing
-   authors
-   history
-
-Examples and tutorials
-----------------------
+Contents
+========
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   basics
-   tutorials
-   utils
-   notebooks
-   examples
-   tips_and_tricks
-
-Developers guide
-----------------
-
-.. toctree::
-   :maxdepth: 2
-
-   developers_guide
-
+    main_description/index.rst
+    examples_and_tutorials/index.rst
+    developers_guide/index.rst
 
 Indices and tables
 ==================
