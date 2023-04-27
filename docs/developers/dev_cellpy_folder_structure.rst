@@ -49,21 +49,17 @@ Folder structure
     │   │   ├── arbin_sql_h5.py
     │   │   ├── arbin_sql_xlsx.py
     │   │   ├── base.py
-    │   │   ├── biologics_mpr.py
     │   │   ├── custom.py
-    │   │   ├── ext_nda_reader.py
     │   │   ├── local_instrument.py
     │   │   ├── maccor_txt.py
     │   │   ├── neware_txt.py
     │   │   ├── pec_csv.py
-    │   │   ├── SQL Table IDs.txt
     │   │   └── __init__.py
     │   │
     │   ├── cellreader.py
     │   ├── core.py
     │   ├── dbreader.py
     │   ├── filefinder.py
-    │   ├── sql_dbreader.py
     │   └── __init__.py
     │
     ├── utils\
@@ -89,16 +85,13 @@ Folder structure
     │   │
     │   ├── batch.py
     │   ├── collectors.py
-    │   ├── collectors_old.py
     │   ├── diagnostics.py
     │   ├── easyplot.py
     │   ├── example_data.py
     │   ├── helpers.py
     │   ├── ica.py
-    │   ├── live.py
     │   ├── ocv_rlx.py
     │   ├── plotutils.py
-    │   ├── processor.py
     │   └── __init__.py
     │
     ├── cli.py
