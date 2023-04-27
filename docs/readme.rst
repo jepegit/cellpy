@@ -3,7 +3,7 @@
   :alt: cellpy
 
 ===================================================================
-cellpy - *a library for assisting in analysing batteries and cells*
+ - *a library for assisting in analysing batteries and cells*
 ===================================================================
 
 
