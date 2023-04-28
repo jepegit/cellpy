@@ -215,10 +215,11 @@ class DictLikeClass:
     """Add some dunder-methods so that it does not break old code that used
     dictionaries for storing settings
 
-    Remark! it is not a complete dictionary experience - for example,
-        setting new attributes (new keys) is not supported (raises ``KeyError``
-        if using the typical dict setting method) since it uses the
-        ``dataclasses.fields`` method to find its members.
+    Remarks: it is not a complete dictionary experience - for example,
+    setting new attributes (new keys) is not supported (raises ``KeyError``
+    if using the typical dict setting method) since it uses the
+    ``dataclasses.fields`` method to find its members.
+
     """
 
     def __getitem__(self, key):
@@ -263,11 +264,12 @@ class DictLikeClass:
 class BaseSettings(DictLikeClass):
     """Base class for internal cellpy settings.
 
-    Usage:
-        @dataclass
-        class MyCoolCellpySetting(BaseSetting):
-            var1: str = "first var"
-            var2: int = 12
+    Usage::
+
+         @dataclass
+         class MyCoolCellpySetting(BaseSetting):
+             var1: str = "first var"
+             var2: int = 12
 
     """
 
@@ -311,14 +313,14 @@ class BaseHeaders(BaseSettings):
 class InstrumentSettings(DictLikeClass):
     """Base class for instrument settings.
 
-    Usage:
+    Usage::
+
         @dataclass
         class MyCoolInstrumentSetting(InstrumentSettings):
             var1: str = "first var"
             var2: int = 12
 
-    Remark!:
-        Try to use it as you would use a normal dataclass.
+    Remark! Try to use it as you would use a normal dataclass.
 
     """
 
@@ -345,7 +347,7 @@ class CellpyUnits(BaseSettings):
     As of 2022.09.29, cellpy does not automatically ensure unit conversion for input of meta-data,
     but has an internal method (`CellPyData.to_cellpy_units`) that can be used.
 
-    These are the different attributes currently supported for data in the dataframes:
+    These are the different attributes currently supported for data in the dataframes::
 
         current: str = "A"
         charge: str = "mAh"
@@ -356,7 +358,7 @@ class CellpyUnits(BaseSettings):
         energy: str = "Wh"
         frequency: str = "hz"
 
-    And here are the different attributes currently supported for meta-data:
+    And here are the different attributes currently supported for meta-data::
 
         # output-units for specific capacity etc.
         specific_gravimetric: str = "g"
@@ -394,6 +396,8 @@ class CellpyUnits(BaseSettings):
     pressure: str = "bar"
 
     def update(self, new_units: dict):
+        """Update the units."""
+
         logging.debug(f"{new_units=}")
         for k in new_units:
             if k in self.keys():
@@ -402,6 +406,15 @@ class CellpyUnits(BaseSettings):
 
 @dataclass
 class CellpyLimits(BaseSettings):
+    """These are the limits used inside ``cellpy`` for finding step types.
+
+    Since all instruments have an inherent inaccuracy, it is naive to assume that
+    for example the voltage within a constant voltage step does not change at all.
+    Therefore, we need to define some limits for what we consider to be a constant and
+    what we assume to be zero.
+
+    """
+
     current_hard: float = 1e-13
     current_soft: float = 1e-05
     stable_current_hard: float = 2.0
