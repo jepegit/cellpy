@@ -6,7 +6,7 @@ File Formats and Data Structures
 
 .. warning::
    This part of the documentation is currently being updated.
-   It is 99.9% trustable, but in need of better logical structure and formatting.
+   It is 77.9% trustable, but in need of better logical structure and formatting.
 
 
 The most important file formats and data structures for cellpy is
@@ -19,6 +19,16 @@ Data Structures
 
 CellpyCell - main structure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. graphviz::
+
+   digraph {
+      "CellpyCell" -> "Data";
+      "CellpyCell" -> "session metadata";
+      "CellpyCell" -> "cellpy metadata";
+      "CellpyCell" -> "methods";
+   }
+
 
 This class is the main work-horse for cellpy where all the functions
 for reading, selecting, and tweaking your data is located.
@@ -370,8 +380,21 @@ Other methods worth mentioning are (based on what I typically use):
 
 Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyCell``) for more info.
 
-Cells
-~~~~~
+Data
+~~~~
+
+.. graphviz::
+
+   digraph {
+    "CellpyCell" -> "Data";
+        "Data" -> "cell metadata (cell)";
+        "Data" -> "cell metadata (test)";
+        "Data" -> "methods";
+        "Data" -> "raw";
+        "Data" -> "steps";
+        "Data" -> "summary";
+   }
+
 
 Each run is a ``cellpy.cellreader.Data`` instance.
 The instance contain general information about

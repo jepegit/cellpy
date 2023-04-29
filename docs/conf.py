@@ -81,6 +81,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "nbsphinx",
+    "sphinx.ext.graphviz",
 ]
 
 # Napoleon settings
@@ -150,7 +151,7 @@ exclude_patterns = ["_build"]
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-# add_module_names = True
+add_module_names = True
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -160,7 +161,7 @@ exclude_patterns = ["_build"]
 pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
-# modindex_common_prefix = []
+modindex_common_prefix = ["cellpy."]
 
 # If true, keep warnings as "system message" paragraphs in the built
 # documents.
@@ -330,5 +331,5 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
 
-modindex_common_prefix = ["cellpy."]
+
 nbsphinx_kernel_name = "python3"

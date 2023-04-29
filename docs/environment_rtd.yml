@@ -22,6 +22,7 @@ dependencies:
   - pandoc
   - ipykernel
   - pint
+  - graphviz
   - pip:
     - nbsphinx
     - python-dotenv
