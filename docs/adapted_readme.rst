@@ -26,14 +26,6 @@ researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 batteries and cells.
 
-
-Documentation
--------------
-
-The documentation for ``cellpy`` is hosted on `Read the docs
-<https://cellpy.readthedocs.io>`_.
-
-
 Installation and dependencies
 -----------------------------
 
