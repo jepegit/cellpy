@@ -26,6 +26,8 @@ researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 batteries and cells.
 
+|ProjectVersion|
+
 Installation and dependencies
 -----------------------------
 
