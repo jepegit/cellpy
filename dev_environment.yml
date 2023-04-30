@@ -43,7 +43,7 @@ dependencies:
   - plotly
   - sqlalchemy
   - pip:
-    - -sqlalchemy-access
+    - sqlalchemy-access
     - pytest-benchmark
     - pytest-timeout
     - requests
