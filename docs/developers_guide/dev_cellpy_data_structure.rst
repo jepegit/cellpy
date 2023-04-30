@@ -5,11 +5,35 @@ Main ``cellpy`` objects
 The ``CellpyCell`` object
 -------------------------
 
+.. graphviz::
+
+   digraph {
+      "CellpyCell" -> "Data";
+      "CellpyCell" -> "session metadata";
+      "CellpyCell" -> "cellpy metadata";
+      "CellpyCell" -> "methods";
+   }
+
+
+
 The ``CellpyCell`` object contains the main methods as well as the actual data::
 
     cellpy_instance = CellpyCell(...)
 
 Data is stored within an instance of the ``Data`` class.
+
+.. graphviz::
+
+   digraph {
+    "CellpyCell" -> "Data";
+        "Data" -> "cell metadata (cell)";
+        "Data" -> "cell metadata (test)";
+        "Data" -> "methods";
+        "Data" -> "raw";
+        "Data" -> "steps";
+        "Data" -> "summary";
+   }
+
 
 The ``Data`` instance can be reached using the ``data`` property::
 
