@@ -27,14 +27,14 @@ dependencies:
     - hdf5
     - pytables >=3.6.1
     - python-box
-    - pytest
-    - invoke
     - jupyter
     - jupyterlab
     - pint
     - plotly
+    - sqlalchemy >=2.0.0
+    - python-dotenv
+    - fabric
+    - rich
     - pip:
-        - sqlalchemy >=2.0.0
         - sqlalchemy-access
-        - python-dotenv
-        - fabric
+

@@ -42,15 +42,18 @@ dependencies:
   - seaborn
   - plotly
   - sqlalchemy
+  - nbsphinx
+  - requests
+  - build
+  - python-dotenv
+  - nox
+  - rich
+  - coverage
+  - fabric
+  - sphinx-rtd-theme
+  - pytest-timeout
+  - pytest-benchmark
   - pip:
     - sqlalchemy-access
-    - pytest-benchmark
-    - pytest-timeout
-    - requests
-    - nbsphinx
-    - sphinx-rtd-theme
-    - build
-    - python-dotenv
-    - nox
-    - fabric
-    - rich
+
+
