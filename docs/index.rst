@@ -7,7 +7,7 @@ Welcome to cellpy's documentation!
 ==================================
 
 .. include::
-   readme.rst
+   adapted_readme.rst
 
 Main description
 ----------------
