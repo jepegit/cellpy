@@ -796,6 +796,7 @@ def collect_capacity_curves(
     steps_to_skip=None,
     steptable=None,
     max_cycle_number=None,
+    **kwargs
 ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
@@ -819,7 +820,13 @@ def collect_capacity_curves(
     """
 
     # TODO: should allow for giving cycle numbers as input (e.g. cycle=[1, 2, 10]
-    #  or cycle=2), not only max_cycle_number
+    #  or cycle=2), not only max_cycle_number. Intermediate solution:
+    #  The cycle keyword will not break the method but raise a warning:
+    for arg in kwargs:
+        if arg in ["cycle", "cycles"]:
+            logging.warning(f"{arg} is not implemented yet, but might exist in newer versions of cellpy.")
+        else:
+            logging.warning(f"collect_capacity_curve received unknown key-word argument: {arg=}")
 
     minimum_v_value = np.Inf
     maximum_v_value = -np.Inf
