@@ -43,10 +43,10 @@ dependencies:
   - plotly
   - sqlalchemy
   - pip:
-    - sqlalchemy-access
-    - pytest-benchmark
-    - pytest-timeout
-    - requests
+    - -u sqlalchemy-access
+    - -u pytest-benchmark
+    - -u pytest-timeout
+    - -u requests
     - nbsphinx
     - sphinx-rtd-theme
     - build
