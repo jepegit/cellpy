@@ -453,16 +453,16 @@ class OtherPath(pathlib.Path):
 
     @property
     def uri_prefix(self) -> str:
-        """Return the uri prefix for the external path (e.g `ssh://`)."""
+        """Return the uri prefix for the external path (e.g ``ssh://``)."""
         return self._uri_prefix
 
     @property
     def location(self) -> str:
-        """Return the location of the external path (e.g `user@server.com`)."""
+        """Return the location of the external path (e.g ``user@server.com``)."""
         return self._location
 
     def as_uri(self) -> str:
-        """Return the path as a uri (e.g. `scp://user@server.com/home/data/my_file.txt`)."""
+        """Return the path as a uri (e.g. ``scp://user@server.com/home/data/my_file.txt``)."""
         if self._is_external:
             return f"{self._uri_prefix}{self._location}/{'/'.join(list(super().parts)[1:])}"
         return super().as_uri()

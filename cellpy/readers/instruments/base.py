@@ -273,41 +273,41 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     @staticmethod
     @abc.abstractmethod
     def get_raw_units() -> dict:
-        """Include the settings for the units used by the instrument. This is needed for example when
-        converting the capacity to a specific capacity. So far, it has been difficult to get any kind of
-        consensus on what the most optimal units are for storing cycling data. Therefore, cellpy implements three
-        levels of units: 1) the raw units that the data is loaded in already has and 2) the cellpy units used by cellpy
+        """Include the settings for the units used by the instrument.
+
+        This is needed for example when converting the capacity to a specific capacity.
+        So far, it has been difficult to get any kind of consensus on what the most optimal
+        units are for storing cycling data. Therefore, cellpy implements three levels of units:
+        1) the raw units that the data is loaded in already has and 2) the cellpy units used by cellpy
         when generating summaries and related information, and 3) output units that can be set to get the data
         in a specif unit when exporting or creating specific outputs such as ICA.
 
-        Comment 2022.09.11: still not sure if we should use raw units or cellpy units in the cellpy-files (.h5).
+        Comment 2022.09.11::
+
+            still not sure if we should use raw units or cellpy units in the cellpy-files (.h5/ .cellpy).
             Currently, the summary is in cellpy units and the raw and step data is in raw units. If
-            you have any input on this topic, let us know. What (at least I, i.e. jepe) would like to implement is
-            to only use raw units in the cellpy-files. And rename the summary headers so that they don't contain
-            any reference to their units (e.g. renaming `discharge_capacity_u_mAh_g` to `specific_discharge_capacity`
-            or `discharge_capacity_specific`). This will be a breaking change.
+            you have any input on this topic, let us know.
 
         The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
         Si units can be used). For example, for current defined in mA, the value for the
         current unit-fraction will be 0.001.
 
-        Returns: dictionary containing the unit-fractions for current, charge, and mass
+        The internal cellpy units are given in the ``cellpy_units`` attribute.
 
-        Comments to me:
-            This will be used to convert all values to the internal set cellpy units (given in xxxx).
-            The units used by cellpy will be stored in the cellpy file. The original units will not be stored.
+        Returns:
+            dictionary of units (str)
+
         Example:
+            A minimum viable implementation::
 
-             @staticmethod
-        def get_raw_units():
-            raw_units = dict()
-            raw_units["current"] = "A"
-            raw_units["charge"] = "Ah"
-            raw_units["mass"] = "g"
-            raw_units["voltage"] = "V"
-            return raw_units
-
-        The internal cellpy units are given in the cellpy_units attribute.
+                @staticmethod
+                def get_raw_units():
+                    raw_units = dict()
+                    raw_units["current"] = "A"
+                    raw_units["charge"] = "Ah"
+                    raw_units["mass"] = "g"
+                    raw_units["voltage"] = "V"
+                    return raw_units
 
         """
         raise NotImplementedError
@@ -360,7 +360,7 @@ class AutoLoader(BaseLoader):
 
     This class can be sub-classed if you want to make a data-reader for different type of "easily parsed" files
     (for example csv-files). The subclass needs to have at least one
-    associated CONFIGURATION_MODULE defined and must have the following attributes as minimum:
+    associated CONFIGURATION_MODULE defined and must have the following attributes as minimum::
 
         default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
         supported_models: dict = SUPPORTED_MODELS
@@ -368,33 +368,35 @@ class AutoLoader(BaseLoader):
     where SUPPORTED_MODELS is a dictionary with {NICK_NAME : CONFIGURATION_MODULE_NAME}  key-value pairs.
     Remark! the NICK_NAME must be in upper-case!
 
-    It is also possible to set these in a custom pre_init method:
+    It is also possible to set these in a custom pre_init method::
 
         @classmethod
         def pre_init(cls):
             cls.default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
             cls.supported_models: dict = SUPPORTED_MODELS
 
-    or turn off automatic registering of configuration:
+    or turn off automatic registering of configuration::
+
         @classmethod
         def pre_init(cls):
             cls.auto_register_config = False  # defaults to True
 
-    During initialisation of the class, if auto_register_config == True,  it will dynamically load the definitions
-    provided in the CONFIGURATION_MODULE.py located in the cellpy.readers.instruments.configurations folder/package.
+    During initialisation of the class, if ``auto_register_config == True``,  it will dynamically load the definitions
+    provided in the CONFIGURATION_MODULE.py located in the ``cellpy.readers.instruments.configurations``
+    folder/package.
+
+    Attributes can be set during initialisation of the class as **kwargs that are then handled by the
+    ``parse_formatter_parameters`` method.
+
+    Remark that some also can be provided as arguments to the ``loader`` method and will then automatically
+    be "transparent" to the ``cellpy.get`` function. So if you would like to give the user access to modify
+    these arguments, you should implement them in the ``parse_loader_parameters`` method.
 
     """
 
     instrument_name = "auto_loader"
 
     def __init__(self, *args, **kwargs):
-        """Attributes can be set during initialization of the class as **kwargs that are then handled by the
-        ``parse_formatter_parameters`` method.
-
-        Remark that some also can be provided as arguments to the ``loader`` method and will then automatically
-        be "transparent" to the ``cellpy.get`` function. So if you would like to give the user access to modify
-        these arguments, you should implement them in the ``parse_loader_parameters`` method.
-        """
         self.auto_register_config = True
         self.pre_init()
 
@@ -472,7 +474,8 @@ class AutoLoader(BaseLoader):
         Si units can be used). For example, for current defined in mA, the value for the
         current unit-fraction will be 0.001.
 
-        Returns: dictionary containing the unit-fractions for current, charge, and mass
+        Returns:
+            dictionary containing the unit-fractions for current, charge, and mass
 
         """
         return self.config_params.raw_units
@@ -485,7 +488,8 @@ class AutoLoader(BaseLoader):
         It is expected that different instruments (with different resolution etc.) have different
         'epsilons'.
 
-        Returns: the raw limits (dict)
+        Returns:
+            the raw limits (dict)
 
         """
         return self.config_params.raw_limits
@@ -520,6 +524,7 @@ class AutoLoader(BaseLoader):
 
         Returns:
             new_tests (list of data objects)
+
         """
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
 
@@ -614,15 +619,16 @@ class AutoLoader(BaseLoader):
 class TxtLoader(AutoLoader, ABC):
     """Main txt loading class (for sub-classing).
 
-    The subclass of a TxtLoader gets its information by loading model specifications from its respective module
+    The subclass of a ``TxtLoader`` gets its information by loading model specifications from its respective module
     (``cellpy.readers.instruments.configurations.<module>``) or configuration file (yaml).
 
     Remark that if you implement automatic loading of the formatter, the module / yaml-file must include all
     the required formatter parameters (sep, skiprows, header, encoding, decimal, thousands).
 
-    If you need more flexibility, try using the CustomTxtLoader or subclass directly from AutoLoader or Loader.
+    If you need more flexibility, try using the ``CustomTxtLoader`` or subclass directly
+    from ``AutoLoader`` or ``Loader``.
 
-    Constructor **kwargs:
+    Constructor:
         model (str): short name of the (already implemented) sub-model.
         sep (str): delimiter.
         skiprows (int): number of lines to skip.
@@ -631,15 +637,15 @@ class TxtLoader(AutoLoader, ABC):
         decimal (str): character used for decimal in the raw data, defaults to '.'.
         processors (dict): pre-processing steps to take (before loading with pandas).
         post_processors (dict): post-processing steps to make after loading the data, but before
-            returning them to the caller.
+        returning them to the caller.
         include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
         keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
-            Remark that the configuration settings for the sub-model must include a list of column header names
-            that should be kept if keep_all_columns is False (default).
+        Remark that the configuration settings for the sub-model must include a list of column header names
+        that should be kept if keep_all_columns is False (default).
 
-    Module - loader **kwargs:
+    Module:
         sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
-            start of data (skiprows)).
+        start of data (skiprows)).
 
     """
 

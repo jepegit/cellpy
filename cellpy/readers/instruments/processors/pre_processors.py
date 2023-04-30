@@ -1,6 +1,7 @@
 """Pre-processing methods for instrument loaders.
 
-All methods must implement the following parameters/arguments:
+All methods must implement the following parameters/arguments::
+
     filename: Union[str, pathlib.Path], *args: str, **kwargs: str
 
 All methods should return None (i.e. nothing).

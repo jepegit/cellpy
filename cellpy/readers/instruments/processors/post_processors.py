@@ -1,6 +1,7 @@
 """Post-processing methods for instrument loaders.
 
-All methods must implement the following parameters/arguments:
+All methods must implement the following parameters/arguments::
+
     data: Data object
     config_params: ModelParameters
 

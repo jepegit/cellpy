@@ -790,23 +790,33 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
 
 
 def collect_capacity_curves(
-    data,
+    cell,
     direction="charge",
     trim_taper_steps=None,
     steps_to_skip=None,
     steptable=None,
     max_cycle_number=None,
-    **kwargs,
 ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
     The DataFrames are named by its cycle number.
 
-    Input: CellpyCell
-    Returns: list of pandas.DataFrames,
+    Args:
+        cell (``CellpyCell``):  object
+        direction (str):
+        trim_taper_steps (integer): number of taper steps to skip (counted
+            from the end, i.e. 1 means skip last step in each cycle).
+        steps_to_skip (list): step numbers that should not be included.
+        steptable (``pandas.DataFrame``): optional steptable.
+        max_cycle_number (int): only select cycles up to this value.
+
+    Returns:
+        list of pandas.DataFrames,
         list of cycle numbers,
         minimum voltage value,
-        maximum voltage value"""
+        maximum voltage value
+
+    """
 
     # TODO: should allow for giving cycle numbers as input (e.g. cycle=[1, 2, 10]
     #  or cycle=2), not only max_cycle_number
@@ -817,7 +827,7 @@ def collect_capacity_curves(
     cycles = kwargs.pop("cycle", None)
 
     if cycles is None:
-        cycles = data.get_cycle_numbers()
+        cycles = cell.get_cycle_numbers()
 
     if max_cycle_number is None:
         max_cycle_number = max(cycles)
@@ -827,14 +837,14 @@ def collect_capacity_curves(
             break
         try:
             if direction == "charge":
-                q, v = data.get_ccap(
+                q, v = cell.get_ccap(
                     cycle,
                     trim_taper_steps=trim_taper_steps,
                     steps_to_skip=steps_to_skip,
                     steptable=steptable,
                 )
             else:
-                q, v = data.get_dcap(
+                q, v = cell.get_dcap(
                     cycle,
                     trim_taper_steps=trim_taper_steps,
                     steps_to_skip=steps_to_skip,
@@ -883,7 +893,7 @@ def interpolate_y_on_x(
             instead of dx and overrides dx if given).
         direction (-1,1): if direction is negative, then invert the
             x-values before interpolating.
-        **kwargs: arguments passed to scipy.interpolate.interp1d
+        **kwargs: arguments passed to ``scipy.interpolate.interp1d``
 
     Returns: DataFrame with interpolated y-values based on given or
         generated x-values.

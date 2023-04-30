@@ -346,22 +346,26 @@ class CellpyCell:
     @data.setter
     def data(self, new_cell):
         """sets the DataSet instance"""
+
         self._data = new_cell
 
     @property
     def empty(self):
         """Gives True if the CellpyCell object is empty (or non-functional)"""
+
         return not self._validate_cell()
 
     @classmethod
     def vacant(cls, cell=None):
         """Create a CellpyCell instance.
+
         Args:
-            cell (CellpyCell instance): the attributes from the data will be copied
-                to the new Cellpydata instance.
+            cell (CellpyCell instance): the attributes from the data will be
+                copied to the new Cellpydata instance.
 
          Returns:
             CellpyCell instance.
+
         """
 
         new_cell = cls(initialize=True)
@@ -383,6 +387,7 @@ class CellpyCell:
 
         Args:
             data_points: list of the first data point(s) for additional cycle(s).
+
         """
 
         logging.info(f"splitting cycles at {data_points}")
@@ -429,6 +434,7 @@ class CellpyCell:
     def drop_from(self, cycle=None):
         """Select first part of experiment (CellpyCell object) up to cycle number
         'cycle'"""
+
         if isinstance(cycle, int):
             c1, c2 = self.split_many(base_cycles=cycle)
             return c1
@@ -436,13 +442,14 @@ class CellpyCell:
     def drop_to(self, cycle=None):
         """Select last part of experiment (CellpyCell object) from cycle number
         'cycle'"""
+
         if isinstance(cycle, int):
             c1, c2 = self.split_many(base_cycles=cycle)
             return c2
 
     def drop_edges(self, start, end):
         """Select middle part of experiment (CellpyCell object) from cycle
-        number 'start' to 'end"""
+        number 'start' to 'end'"""
 
         if end < start:
             raise ValueError("end cannot be larger than start")
@@ -458,6 +465,7 @@ class CellpyCell:
 
         Returns:
             List of CellpyCell objects
+
         """
         h_summary_index = HEADERS_SUMMARY.cycle_index
         h_raw_index = HEADERS_NORMAL.cycle_index_txt
@@ -584,10 +592,12 @@ class CellpyCell:
 
         Notes:
             If you are using a local instrument loader, you will have to register it first to the loader factory.
+
             >>> c = CellpyCell()  # this will automatically register the already implemented loaders
             >>> c.instrument_factory.register_builder(instrument_id, (module_name, path_to_instrument_loader_file))
 
             It is highly recommended using the module_name as the instrument_id.
+
         """
 
         # constants:
@@ -716,14 +726,12 @@ class CellpyCell:
         Args:
             cellpyfile (str): filename of the cellpy hdf5-file.
             rawfiles (list of str): name(s) of raw-data file(s).
-            detailed (bool): return a dict containing True or False for each
-                individual raw-file
+            detailed (bool): return a dict containing True or False for each individual raw-file.
 
         Returns:
             If detailed is False:
                 False if the raw files are newer than the cellpy hdf5-file
-                    (update needed).
-                True if update is not needed.
+                (update needed). True if update is not needed.
              If detailed is True it returns a dict containing True or False for each
                 individual raw-file.
         """
@@ -2507,18 +2515,17 @@ class CellpyCell:
         The format of the steps is:
 
             index: cycleno - stepno - sub-step-no - ustep
-            Time info (average, stdev, max, min, start, end, delta) -
-            Logging info (average, stdev, max, min, start, end, delta) -
-            Current info (average, stdev, max, min, start, end, delta) -
-            Voltage info (average,  stdev, max, min, start, end, delta) -
-            Type (from pre-defined list) - SubType -
-            Info
+            Time info: average, stdev, max, min, start, end, delta
+            Logging info: average, stdev, max, min, start, end, delta
+            Current info: average, stdev, max, min, start, end, delta
+            Voltage info: average,  stdev, max, min, start, end, delta
+            Type: (from pre-defined list) - SubType
+            Info: not used.
 
-         Args:
+        Args:
             step_specifications (pandas.DataFrame): step specifications
             short (bool): step specifications in short format
             profiling (bool): turn on profiling
-
             all_steps (bool): investigate all steps including same steps within
                 one cycle (this is useful for e.g. GITT).
             add_c_rate (bool): include a C-rate estimate in the steps
@@ -2530,6 +2537,7 @@ class CellpyCell:
 
         Returns:
             None
+
         """
         # TODO: @jepe - include option for omitting steps
         # TODO: @jepe  - make it is possible to update only new data
@@ -3119,17 +3127,21 @@ class CellpyCell:
             raw: (bool) export raw-data if True.
             summary: (bool) export summary if True.
             shifted (bool): export with cumulated shift.
-            method (string): how the curves are given
-                "back-and-forth" - standard back and forth; discharge
-                    (or charge) reversed from where charge (or
-                    discharge) ends.
+            method (string): how the curves are given::
+
+                "back-and-forth" - standard back and forth; discharge (or charge)
+                    reversed from where charge (or discharge) ends.
+
                 "forth" - discharge (or charge) continues along x-axis.
-                "forth-and-forth" - discharge (or charge) also starts at 0 (or
-                    shift if not shift=0.0)
+
+                "forth-and-forth" - discharge (or charge) also starts at 0
+                    (or shift if not shift=0.0)
+
             shift: start-value for charge (or discharge)
             last_cycle: process only up to this cycle (if not None).
 
-        Returns: Nothing
+        Returns:
+            Nothing
 
         """
 
