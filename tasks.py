@@ -627,46 +627,6 @@ def serve(c):
     c.run(f"python -m webbrowser -t http://{_location}")
 
 
-@task
-def conda_build(c, upload=False):
-    """Create conda distribution"""
-    recipe_path = Path("./recipe/meta.yaml")
-
-    print(" Creating conda distribution ".center(80, "="))
-    if not recipe_path.is_file():
-        print(f"conda recipe not found ({str(recipe_path.resolve())})")
-        return
-
-    version, sha = get_pypi_info(package="cellpy")
-    update_dict = {"name": "cellpy", "version": version, "sha": sha}
-
-    print("Updating meta.yml")
-    update_meta_yaml(recipe_path, update_dict)
-
-    print("Running conda build")
-    print(update_dict)
-    with capture() as o:
-        c.run("conda build recipe", out_stream=o)
-        status_lines = o.getvalue()
-
-    new_files_regex = re.compile(r"TEST END: (.+)")
-    new_files = new_files_regex.search(status_lines)
-    path = new_files.group(1)
-    if upload:
-        upload_cmd = f"anaconda upload {path}"
-        c.run(upload_cmd)
-    else:
-        print(f"\nTo upload: anaconda upload {path}")
-
-    print("\nTo convert to different OS-es: conda convert --platform all PATH")
-    print("e.g.")
-    print("cd builds")
-    print(
-        r"conda convert --platform all "
-        r"C:\miniconda\envs\cellpy_dev\conda-bld\win-"
-        r"64\cellpy-0.3.0.post1-py37_0.tar.bz2"
-    )
-
 
 if __name__ == "__main__":
     delete_stuff(pattern="NOTHING")
