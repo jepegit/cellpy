@@ -3838,10 +3838,10 @@ class CellpyCell:
             cycle (int): cycle number.
             method (string): how the curves are given
                 "back-and-forth" - standard back and forth; discharge
-                    (or charge) reversed from where charge (or discharge) ends.
+                (or charge) reversed from where charge (or discharge) ends.
                 "forth" - discharge (or charge) continues along x-axis.
                 "forth-and-forth" - discharge (or charge) also starts at 0
-                    (or shift if not shift=0.0)
+                (or shift if not shift=0.0)
             insert_nan (bool): insert a np.nan between the charge and discharge curves.
                 Defaults to True for "forth-and-forth", else False
             shift: start-value for charge (or discharge) (typically used when
@@ -3871,8 +3871,8 @@ class CellpyCell:
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
-                unless split is explicitly set to True. Then it returns a tuple
-                with capacity (mAh/g) and voltage.
+            unless split is explicitly set to True. Then it returns a tuple
+            with capacity (mAh/g) and voltage.
         """
 
         # TODO: allow for fixing the interpolation range (so that it is possible
