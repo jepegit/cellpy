@@ -1,3 +1,5 @@
+.. _getting-started:
+
 The getting started with ``cellpy`` tutorial (opinionated version)
 ==================================================================
 
@@ -11,7 +13,7 @@ If you know what you are doing, and only need the most basic features
 of ``cellpy``, you should be able to get things up and running by
 issuing a simple
 
-  .. code:: bash
+.. code-block:: console
 
     pip install cellpy
 
@@ -21,22 +23,21 @@ environment) and give it an easy-to-remember name *e.g.* ``cellpy``.
 To make sure your environment contains the correct packages and
 dependencies, you can create the environment based on the available
 `environment.yml <https://github.com/jepegit/cellpy/blob/master/environment.yml>`_
-file. For further information on depencencies and requirements for setting up
-``cellpy`` to read .res (Arbin) files, have a look at the *Install depencencies*
+file. For further information on dependencies and requirements for setting up
+``cellpy`` to read .res (Arbin) files, have a look at the *Install dependencies*
 part of the next section.
 
 For the installation of specific versions and pre-releases, see
-`Check your cellpy installation`_.
+:ref:`check-cellpy`.
 
-
-How to install ``cellpy`` - the tea spoon explanation
------------------------------------------------------
+How to install and run ``cellpy`` - the tea spoon explanation
+-------------------------------------------------------------
 
 If you are used to installing stuff from the command line (or shell),
 then things might very well run smoothly. However, a considerable
-percentage of us don’t feel exceedingly comfortable installing things by
-writing commands inside a small black window. Let’s face it; we belong
-to the *point-and-click* (or *double-click*) generation, not the
+percentage of potential users don’t feel exceedingly comfortable installing
+things by writing commands inside a small black window. Let’s face it; most of us
+belong to the *point-and-click* (or *double-click*) generation, not the
 *write-cryptic-commands* generation. So, hopefully without insulting the
 savvy, here is a “tea-spoon explanation”:
 
@@ -47,14 +48,20 @@ If the words “virtual environment” or “miniconda” do not ring any bells,
 you should install the Anaconda scientific Python distribution. Go to
 `www.anaconda.com <https://www.anaconda.com/>`__ and select the
 Anaconda distribution (press the ``Download Now`` button).
-Use at least python 3.6, and select the 64 bit version
+Use at least python 3.9, and select the 64 bit version
 (if you fail at installing the 64 bit version, then you can try the
 weaker 32 bit version). Download it and let it install.
 
-*Note:* The bin version matters sometimes, so try to make a mental note
-of what you selected. E.g., if you plan to use the Microsoft Access odbc
-driver (see below), and it is 32-bit, you probably should chose to install
-a 32-bit python version).
+.. caution:: The bin version matters sometimes, so try to make a mental note
+    of what you selected. E.g., if you plan to use the Microsoft Access odbc
+    driver (see below), and it is 32-bit, you probably should chose to install
+    a 32-bit python version).
+
+Python should now be available on your computer, as well as
+a huge amount of python packages. And Anaconda is kind enough
+to also install an alternative command window called "Anaconda Prompt"
+that has the correct settings ensuring that the conda command works
+as it should.
 
 2. Create a virtual environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,126 +73,45 @@ the steps below:
 
 Open up the "Anaconda Prompt" (or use the command window) and type
 
-  .. code:: bash
+.. code-block:: console
 
     conda create -n cellpy
 
 This creates your virtual environment (here called *cellpy*) in which ``cellpy``
 will be installed and used.
 
-To make sure your environment contains the correct packages and dependencies
-required for running cellpy, you can create an environment based on the available
-``environment.yml`` file. Download the
-`environment.yml <https://github.com/jepegit/cellpy/blob/master/environment.yml>`_
-file and place it in the directory shown in your Anaconda Prompt. If you want to
-change the name of the environment, you can do this by changing the first line of
-the file. Then type (in the Anaconda Prompt):
+You then have to activate the environment:
 
-  .. code:: bash
+.. code-block:: console
 
-    	conda env create -f environment.yml
+    conda activate cellpy
 
-Then activate your environment:
 
-  .. code:: bash
-
-     conda activate cellpy
-
-3. Install dependencies
-~~~~~~~~~~~~~~~~~~~~~~~
-``cellpy`` relies on a number of other python package and these need
-to be installed. Most of these packages are included when creating the environment
-based on the ``environment.yml`` file as outlined above.
-
-Basic dependencies
-::::::::::::::::::
-
-In general, you need the typical scientific python pack, including
-
-- ``numpy``
-- ``scipy``
-- ``pandas``.
-
-It is recommended that you at least install ``scipy`` before you install
-``cellpy`` (the main benefit being that you can use ``conda`` so that you
-do not have to hassle with missing C-compilers if you are on an Windows
-machine).
-Additional dependencies are:
-
-- ``pytables`` is needed for working with the hdf5 files (the cellpy-files):
-
-    .. code:: bash
-
-       conda install -c conda-forge pytables
-
-- ``lmfit`` is required to use some of the fitting routines in ``cellpy``:
-
-    .. code:: bash
-
-     conda install -c conda-forge lmfit
-
-- ``holoviz``: plotting library used in several of our example notebooks.
-
-- *Jupyter*: used for tutorial notebooks and in general very useful tool
-   for working with and sharing your ``cellpy`` results.
-
-For more details, I recommend that you look at the documentation of these
-packages (google it) and install them. You can most
-likely use the same method as for pytables etc.
-
-Additional requirements for .res files
-::::::::::::::::::::::::::::::::::::::
-
-.res files from Arbin testers actually are in a Microsoft Access format.
-For loading .res-files (possible also for other *‘to-be-implemented’* file
-formats) you will thus also need a *Python ODBC bridge* (in addition to the
-requirements set in the ``setup.py`` file).
-I recommend `pyodbc <https://github.com/mkleehammer/pyodbc/wiki>`__ that
-can be installed from conda forge or using pip.
-
-  .. code:: bash
-
-     conda install -c conda-forge pyodbc
-
-Additionally, you need a driver or similar to help your ODBC bridge
-accessing it.
-
-*For Windows users:* if you do not have one of the
-most recent Office versions, you might not be allowed to install a driver
-of different bit than your office version is using (the installers can be found
-`here <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__).
-Also remark that the driver needs to be of the same bit as your Python
-(so, if you are using 32 bit Python, you will need the 32 bit driver).
-
-*For POSIX systems:* I have not found any suitable drivers. Instead,
-``cellpy`` will try to use ``mdbtools``\ to first export the data to
-temporary csv-files, and then import from those csv-file (using the
-``pandas`` library). You can install ``mdbtools`` using your systems
-preferred package manager (*e.g.* ``apt-get install mdbtools``).
-
-4. Install ``cellpy``
+3. Install ``cellpy``
 ~~~~~~~~~~~~~~~~~~~~~
-In your activated ``cellpy`` environment in the Anaconda Prompt run:
+In your activated ``cellpy`` environment in the Anaconda Prompt if you
+chose to make one, or in the base environment if you chose not to, run:
 
-  .. code:: bash
+.. code-block:: console
 
-     conda install -c conda-forge cellpy
+    conda install -c conda-forge cellpy
 
 Congratulations, you have (hopefully) successfully installed cellpy.
 
 If you run into problems, doublecheck that all your dependencies are
 installed and check your Microsoft Access odbc drivers.
 
+.. _check-cellpy:
 
-Check your cellpy installation
--------------------------------------
+4. Check your cellpy installation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The easiest way to check if ``cellpy`` has been installed, is to issue
 the command for printing the version number to the screen
 
-.. code:: bash
+.. code-block:: console
 
-   cellpy info --version
+    cellpy info --version
 
 If the program prints the expected version number, you probably
 succeeded. If it crashes, then you will have to retrace your steps, redo
@@ -194,7 +120,7 @@ number than you expect, there is a big chance that you have installed it
 earlier, and what you would like to do is to do an ``upgrade`` instead
 of an ``install``
 
-.. code:: bash
+.. code-block:: console
 
    pip install --upgrade cellpy
 
@@ -202,34 +128,34 @@ If you want to install a pre-release (a version that is so bleeding edge
 that it ends with a alpha or beta release identification, *e.g.* ends
 with .b2). Then you will need to add the –pre modifier
 
-.. code:: bash
+.. code-block:: console
 
    pip install --pre cellpy
 
 To run a more complete check of your installation, there exist a
 ``cellpy`` sub-command than can be helpful
 
-.. code:: bash
+.. code-block:: console
 
    cellpy info --check
 
-Set up ``cellpy``
------------------
+
+5. Set up ``cellpy``
+~~~~~~~~~~~~~~~~~~~~
 
 After you have installed ``cellpy`` it is highly recommended that you
 create an appropriate configuration file and folders for raw data,
-cellpy-files, logs, databases and output data (and inform
-``cellpy`` about it).
+cellpy-files, logs, databases and output data (and inform ``cellpy`` about it).
 
 To do this, run the setup command:
 
-  .. code:: bash
+.. code-block:: console
 
        cellpy setup
 
 To run the setup in interactive mode, use -i:
 
-  .. code:: bash
+.. code-block:: console
 
        cellpy setup -i
 
@@ -245,23 +171,133 @@ If you want to specify a root folder different from the default (your HOME
 folder), you can use the ``-d`` option *e.g.*
 ``cellpy setup -i -d /Users/kingkong/cellpydir``
 
-.. hint::
-   You can always edit your configurations directly in the cellpy configuration
+.. hint:: You can always edit your configurations directly in the cellpy configuration
    file ``_cellpy_prms_USER.conf``. This file should be located inside your
    home directory, /~ in posix and c:\users\USERNAME in not-too-old windows.
 
+
+6. Create a notebook and run ``cellpy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inside your Anaconda Prompt window, write:
+
+.. code-block:: console
+
+       jupyter notebook  # or jupyter lab
+
+Your browser should then open and you are ready to write your first cellpy script.
+
+There are many good tutorials on how to work with jupyter.
+This one by Real Python is good for beginners:
+`Jupyter Notebook: An Introduction <https://realpython.com/jupyter-notebook-introduction/>`_
+
+
+More about installing and setting up ``cellpy``
+-----------------------------------------------
+
+Fixing dependencies
+~~~~~~~~~~~~~~~~~~~
+
+To make sure your environment contains the correct packages and dependencies
+required for running cellpy, you can create an environment based on the available
+``environment.yml`` file. Download the
+`environment.yml <https://github.com/jepegit/cellpy/blob/master/environment.yml>`_
+file and place it in the directory shown in your Anaconda Prompt. If you want to
+change the name of the environment, you can do this by changing the first line of
+the file. Then type (in the Anaconda Prompt):
+
+.. code-block:: console
+
+    conda env create -f environment.yml
+
+Then activate your environment:
+
+.. code-block:: console
+
+    conda activate cellpy
+
+
+``cellpy`` relies on a number of other python package and these need
+to be installed. Most of these packages are included when creating the environment
+based on the ``environment.yml`` file as outlined above.
+
+Basic dependencies
+::::::::::::::::::
+
+In general, you need the typical scientific python pack, including
+
+- ``numpy``
+- ``scipy``
+- ``pandas``
+
+It is recommended that you at least install ``scipy`` before you install
+``cellpy`` (the main benefit being that you can use ``conda`` so that you
+do not have to hassle with missing C-compilers if you are on an Windows
+machine).
+Additional dependencies are:
+
+- ``pytables`` is needed for working with the hdf5 files (the cellpy-files):
+
+.. code-block:: console
+
+    conda install -c conda-forge pytables
+
+- ``lmfit`` is required to use some of the fitting routines in ``cellpy``:
+
+.. code-block:: console
+
+    conda install -c conda-forge lmfit
+
+- ``holoviz`` and ``plotly``: plotting library used in several of our example notebooks.
+
+- ``jupyter``: used for tutorial notebooks and in general very useful tool
+   for working with and sharing your ``cellpy`` results.
+
+For more details, I recommend that you look at the documentation of these
+packages (google it) and install them. You can most
+likely use the same method as for pytables *etc*.
+
+Additional requirements for .res files
+::::::::::::::::::::::::::::::::::::::
+
+.res files from Arbin testers are  actually in a Microsoft Access format.
+For loading .res-files (possible also for other *‘to-be-implemented’* file
+formats) you will thus also need a *Python ODBC bridge* (in addition to the
+requirements set in the ``setup.py`` file).
+I recommend `pyodbc <https://github.com/mkleehammer/pyodbc/wiki>`__ that
+can be installed from conda forge or using pip.
+
+.. code-block:: console
+
+    conda install -c conda-forge pyodbc
+
+Additionally, you need a driver or similar to help your ODBC bridge
+accessing it.
+
+**For Windows users:** if you do not have one of the
+most recent Office versions, you might not be allowed to install a driver
+of different bit than your office version is using (the installers can be found
+`here <https://www.microsoft.com/en-US/download/details.aspx?id=13255>`__).
+Also remark that the driver needs to be of the same bit as your Python
+(so, if you are using 32 bit Python, you will need the 32 bit driver).
+
+**For POSIX systems:** I have not found any suitable drivers. Instead,
+``cellpy`` will try to use ``mdbtools``\ to first export the data to
+temporary csv-files, and then import from those csv-file (using the
+``pandas`` library). You can install ``mdbtools`` using your systems
+preferred package manager (*e.g.* ``apt-get install mdbtools``).
 
 
 The cellpy configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The paths to raw data, the cellpy data base file, file locations etc. are set in
-the ``_cellpy_prms_USER.conf`` file that is usually located in your home directory.
+the ``.cellpy_prms_USER.conf`` file that is located in your home directory.
 
 To get the filepath to your config file (and other cellpy info), run:
 
-  .. code:: bash
+.. code-block:: console
 
-       cellpy info -l
+    cellpy info -l
 
 The config file is written in YAML format and it should be relatively easy to
 edit it in a text editor.
@@ -270,13 +306,13 @@ Within the config file, the paths are the most important parts that need to
 be set up correctly. This tells ``cellpy`` where to find (and save) different files,
 such as the database file and raw data.
 
-Furthermore, the config file contains details about the databasefile to be
+Furthermore, the config file contains details about the database-file to be
 used for cell info and metadata (i.e. type and structure of the database file such
 as column headers etc.). For more details, see chapter on Configuring cellpy.
 
 
-The database file
-~~~~~~~~~~~~~~~~~
+The 'database' file
+~~~~~~~~~~~~~~~~~~~
 The database file should contain information (cell name, type, mass loading etc.)
 on your cells, so that cellpy can find and link the test data to the provided
 metadata.
@@ -294,13 +330,13 @@ mentioned ``info`` for getting information about your installation, and
 
 To get a list of these commands including some basic information, you can issue
 
-.. code:: bash
+.. code-block:: console
 
    cellpy --help
 
 This will output some (hopefully) helpful text
 
-.. code:: bash
+.. code-block:: console
 
     Usage: cellpy [OPTIONS] COMMAND [ARGS]...
 
@@ -319,23 +355,22 @@ This will output some (hopefully) helpful text
 You can get information about the sub-commands by issuing –-help after
 them also. For example, issuing
 
-.. code:: bash
+.. code-block:: console
 
    cellpy info --help
 
 gives
 
-.. code:: bash
+.. code-block:: console
 
-   Usage: cellpy info [OPTIONS]
+    Usage: cellpy info [OPTIONS]
 
-   Options:
+    Options:
      -v, --version    Print version information.
      -l, --configloc  Print full path to the config file.
      -p, --params     Dump all parameters to screen.
      -c, --check      Do a sanity check to see if things works as they should.
      --help           Show this message and exit.
-
 
 
 Running your first script
@@ -346,8 +381,7 @@ hope there are some useful stuff in the code repository (for example in
 the `examples
 folder <https://github.com/jepegit/cellpy/tree/master/examples>`__).
 
-.. hint::
-    The ``cellpy pull`` command can assist in downloading
+.. hint:: The ``cellpy pull`` command can assist in downloading
     both examples and tests.
 
 Start by trying to import ``cellpy`` in an interactive Python session.
@@ -376,7 +410,7 @@ it and check if you have skipped any steps in this tutorial. Maybe you are
 missing the ``box`` package? If so, go out of the Python interpreter if you
 started it in your command window, or open another command window and write
 
-.. code:: bash
+.. code-block:: console
 
     pip install python-box
 

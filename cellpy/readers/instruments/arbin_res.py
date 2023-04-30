@@ -323,7 +323,6 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def _get_res_connector(self, temp_filename):
-
         if use_ado:  # deprecated
             is64bit_python = check64bit(current_system="python")
             if is64bit_python:
@@ -650,7 +649,6 @@ class DataLoader(BaseLoader):
         data_points=None,
         **kwargs,
     ):
-
         conn = None
 
         table_name_global = TABLE_NAMES["global"]
@@ -1037,7 +1035,6 @@ class DataLoader(BaseLoader):
         bad_steps,
         data_points,
     ):
-
         """
         if bad_steps is not None:
             if not isinstance(bad_steps, (list, tuple)):

@@ -43,7 +43,6 @@ def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     ],
 )
 def test_xldate_as_datetime(xldate, datemode, option, expected):
-
     result = cellpy.readers.core.xldate_as_datetime(xldate, datemode, option)
     assert result == expected
 

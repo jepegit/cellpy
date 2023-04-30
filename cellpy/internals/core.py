@@ -40,6 +40,7 @@ ENV_VAR_CELLPY_PASSWORD = "CELLPY_PASSWORD"
 @dataclass
 class ExternalStatResult:
     """Mock of os.stat_result."""
+
     # st_mode: int = 0
     # st_ino: int = 0
     # st_dev: int = 0
@@ -270,7 +271,7 @@ class OtherPath(pathlib.Path):
 
     def resolve(self: S, *args, **kwargs) -> S:
         if self.is_external:
-            # warnings.warn(f"Cannot resolve external paths. Returning self. ({self})")
+            # logging.warning(f"Cannot resolve external paths. Returning self. ({self})")
             return self
         resolved_path = pathlib.Path(self._original).resolve(*args, **kwargs)
         return OtherPath(resolved_path)
@@ -278,7 +279,7 @@ class OtherPath(pathlib.Path):
     def is_dir(self: S, *args, **kwargs) -> bool:
         """Check if path is a directory."""
         if self.is_external:
-            warnings.warn(
+            logging.warning(
                 f"Cannot check if dir exists for external paths! Assuming it exists."
             )
             return True
@@ -287,7 +288,7 @@ class OtherPath(pathlib.Path):
     def is_file(self: S, *args, **kwargs) -> bool:
         """Check if path is a file."""
         if self.is_external:
-            warnings.warn(
+            logging.warning(
                 f"Cannot check if file exists for external paths! Assuming it exists."
             )
             return True
@@ -296,7 +297,7 @@ class OtherPath(pathlib.Path):
     def exists(self: S, *args, **kwargs) -> bool:
         """Check if path exists."""
         if self.is_external:
-            warnings.warn(
+            logging.warning(
                 f"Cannot check if path exists for external paths! Assuming it exists."
             )
             return True
@@ -332,39 +333,51 @@ class OtherPath(pathlib.Path):
     def with_suffix(self: S, suffix: str) -> S:
         """Return a new path with the suffix changed."""
         if self.is_external:
-            warnings.warn("This is method (`with_suffix`) not tested for external paths!")
+            logging.warning(
+                "This is method (`with_suffix`) not tested for external paths!"
+            )
             return OtherPath(self._original.rsplit(".", 1)[0] + suffix)
         return OtherPath(super().with_suffix(suffix))
 
     def with_name(self: S, name: str) -> S:
         """Return a new path with the name changed."""
         if self.is_external:
-            warnings.warn("This method (`with_name`) is not tested for external paths!")
+            logging.warning(
+                "This method (`with_name`) is not tested for external paths!"
+            )
             return OtherPath(self._original.rsplit("/", 1)[0] + "/" + name)
         return OtherPath(super().with_name(name))
 
     def with_stem(self: S, stem: str) -> S:
         """Return a new path with the stem changed."""
         if self.is_external:
-            warnings.warn("This method (`with_stem`) is not tested for external paths!")
+            logging.warning(
+                "This method (`with_stem`) is not tested for external paths!"
+            )
             return OtherPath(self._original.rsplit("/", 1)[0] + "/" + stem)
         return OtherPath(super().with_stem(stem))
 
     def absolute(self: S) -> S:
         if self.is_external:
-            warnings.warn("This method (`absolute`) is not implemented yet for external paths! Returning self.")
+            logging.warning(
+                "This method (`absolute`) is not implemented yet for external paths! Returning self."
+            )
             return self
         return OtherPath(super().absolute())
 
     def samefile(self: S, other_path: Union[str, pathlib.Path, S]) -> bool:
         if self.is_external:
-            warnings.warn("This method (`absolute`) is not implemented yet for external paths! Returning True.")
+            logging.warning(
+                "This method (`absolute`) is not implemented yet for external paths! Returning True."
+            )
             return True
         return super().samefile(other_path)
 
     def iterdir(self, *args, **kwargs):
         if self.is_external:
-            warnings.warn(f"Cannot run `iterdir` yet for external paths! Returning None.")
+            logging.warning(
+                f"Cannot run `iterdir` yet for external paths! Returning None."
+            )
             return
         else:
             return (OtherPath(p) for p in super().iterdir())
@@ -372,14 +385,16 @@ class OtherPath(pathlib.Path):
     @property
     def parents(self, *args, **kwargs):
         if self.is_external:
-            warnings.warn(f"Cannot run `parents` yet for external paths! Returning None.")
+            logging.warning(
+                f"Cannot run `parents` yet for external paths! Returning None."
+            )
             return
         return super().parents
 
     def stat(self, *args, **kwargs):
         testing = kwargs.pop("testing", False)
         if self.is_external:
-            # warnings.warn(f"Cannot run `stat` for external paths! Returning stat_result object with only zeros.")
+            # logging.warning(f"Cannot run `stat` for external paths! Returning stat_result object with only zeros.")
             try:
                 connect_kwargs, host = self._get_connection_info(testing)
             except UnderDefined as e:
@@ -389,38 +404,40 @@ class OtherPath(pathlib.Path):
             try:
                 return self._stat_with_fabric(host, connect_kwargs)
             except FileNotFoundError:
-                logging.debug("File not found! Returning stat_result object with only zeros.")
+                logging.debug(
+                    "File not found! Returning stat_result object with only zeros."
+                )
                 return ExternalStatResult()
 
         return super().stat()
 
     def joinpath(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'joinpath' for OtherPath!")
+        logging.warning(f"Cannot run 'joinpath' for OtherPath!")
         return self
 
     def readlink(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'readlink' for OtherPath!")
+        logging.warning(f"Cannot run 'readlink' for OtherPath!")
         return
 
     def match(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'match' for OtherPath!")
+        logging.warning(f"Cannot run 'match' for OtherPath!")
         return
 
     def cwd(self):
-        warnings.warn(f"Cannot run 'match' for OtherPath!")
+        logging.warning(f"Cannot run 'match' for OtherPath!")
         return
 
     def group(self):
-        warnings.warn(f"Cannot run 'group' for OtherPath!")
+        logging.warning(f"Cannot run 'group' for OtherPath!")
         return
 
     @property
     def owner(self, *args, **kwargs):
-        warnings.warn(f"Cannot get 'owner' for OtherPath!")
+        logging.warning(f"Cannot get 'owner' for OtherPath!")
         return
 
     def lchmod(self, *args, **kwargs):
-        warnings.warn(f"Cannot run 'lchmod' for OtherPath!")
+        logging.warning(f"Cannot run 'lchmod' for OtherPath!")
         return self
 
     @property

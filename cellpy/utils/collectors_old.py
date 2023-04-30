@@ -253,7 +253,6 @@ class BatchCollector:
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
     ):
         if data_collector_arguments is not None:
-
             logging.info(f"Updating elevated arguments")
             elevated_data_collector_arguments = {}
             for k, v in data_collector_arguments.items():
@@ -264,7 +263,6 @@ class BatchCollector:
             )
 
         if plotter_arguments is not None:
-
             logging.info(f"Updating elevated arguments")
             elevated_plotter_arguments = {}
             for k, v in plotter_arguments.items():

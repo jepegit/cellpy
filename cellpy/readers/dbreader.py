@@ -228,7 +228,6 @@ class Reader(BaseDbReader):
             datestr = cell_name[start:end]
 
         try:
-
             date = datetime.strptime(datestr, strf)
         except ValueError as e:
             logging.debug(e)
@@ -660,13 +659,11 @@ class Reader(BaseDbReader):
         exists = sheet.loc[:, exists_col_number] > 0
 
         if min_val is not None and max_val is not None:
-
             criterion1 = sheet.loc[:, column_name] >= min_val
             criterion2 = sheet.loc[:, column_name] <= max_val
             sheet = sheet[criterion1 & criterion2 & exists]
 
         elif min_val is not None or max_val is not None:
-
             if min_val is not None:
                 criterion = sheet.loc[:, column_name] >= min_val
 

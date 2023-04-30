@@ -250,7 +250,6 @@ class DataLoader(BaseLoader):
         self.mpr_log["Start"] = date_datetime
 
     def _parse_mpr_settings_data(self, settings_mod):
-
         tm = time.strptime(settings_mod["date"].decode(), "%m.%d.%y")
         startdate = datetime.date(tm.tm_year, tm.tm_mon, tm.tm_mday)
 

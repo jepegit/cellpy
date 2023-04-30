@@ -23,6 +23,7 @@ from cellpy import cellreader
 
 # some utility functions
 
+
 # TODO: (05.10.2019 jepe) This function is slow due to use of loops. Should fix it.
 def select_ocv_points(
     cellpydata,
@@ -36,7 +37,6 @@ def select_ocv_points(
     report_times=False,
     direction="both",
 ):
-
     """Select points from the ocvrlx steps.
 
     Args:
@@ -105,7 +105,6 @@ def select_ocv_points(
 
     # very slow:
     for index, row in ocv_steps.iterrows():
-
         # voltage
         first, last, delta = (
             row["voltage_first"],
@@ -556,7 +555,6 @@ class OcvFit(object):
         return model
 
     def fit_model(self):
-
         if self.model is not None:
             self.result = self.model.fit(
                 self.voltage, weights=self.weights, time=self.time, params=self.params

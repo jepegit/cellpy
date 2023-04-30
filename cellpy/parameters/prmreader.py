@@ -151,7 +151,6 @@ def _convert_instruments_to_dict(x):
     # Converting instruments to dictionary (since it contains box.Box objects)
     d = asdict(x)
     for k, v in d.items():
-
         try:
             d[k] = v.to_dict()
         except AttributeError:
@@ -330,7 +329,6 @@ def info():
     print()
 
     for key, current_object in prms.__dict__.items():
-
         if key.startswith("_") and not key.startswith("__") and prms._debug:  # NOQA
             print(f"Internal: {key} (type={type(current_object)}): {current_object}")
 

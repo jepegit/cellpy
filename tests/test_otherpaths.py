@@ -170,6 +170,7 @@ def test_wrap(parameters):
 
 def test_stat(parameters):
     import os
+
     p_local = cellpy.internals.core.OtherPath(parameters.res_file_path)
     print(f"{p_local.stat()=}")
     print(f"{p_local.stat().st_size=}")

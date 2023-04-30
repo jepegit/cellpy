@@ -152,7 +152,6 @@ class Batch:
         return str(self.experiment)
 
     def _repr_html_(self):
-
         txt = f"<h2>Batch-object</h2> id={hex(id(self))}"
         txt += f"<h3>batch.journal</h3>"
         txt += f"<blockquote>{self.journal._repr_html_()}</blockquote>"
@@ -616,7 +615,6 @@ class Batch:
                     warnings.warn("unknown file extension")
 
             else:
-
                 if is_str and description.lower() == "empty":
                     logging.debug("creating empty journal pages")
 
@@ -656,7 +654,6 @@ class Batch:
                         except KeyError:
                             warnings.warn(f"missing key: {k}")
                         else:
-
                             if not isinstance(value, list):
                                 warnings.warn("encountered item that is not a list")
                                 logging.debug(f"converting '{k}' to list-type")

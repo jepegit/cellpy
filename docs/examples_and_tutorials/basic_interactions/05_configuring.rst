@@ -35,8 +35,7 @@ The configuration file
 ----------------------
 
 ``cellpy`` tries to read your .conf-file when imported the first time,
-and looks in your user directory on posix or in the documents folder on
-windows (*e.g.* C:\\Users\\USERNAME\\Documents on not-too-old versions of windows) after
+and looks in your user directory after
 files named ``.cellpy_prms_SOMENAME.conf``.
 
 If you have run ``cellpy setup`` in the cmd window or in the shell, the
@@ -53,19 +52,21 @@ from one of the authors' configuration file:
 
     ---
     Paths:
-      outdatadir: C:\scripts\processing_cellpy\out
-      rawdatadir: I:\Org\MPT-BAT-LAB\Arbin-data
-      cellpydatadir: C:\scripts\processing_cellpy\cellpyfiles
-      db_path: C:\scripts\processing_cellpy\db
-      filelogdir: C:\scripts\processing_cellpy\logs
-      examplesdir: C:\scripts\processing_cellpy\examples
-      notebookdir: C:\scripts\processing_cellpy\notebooks
-      templatedir: C:\scripting\processing_cellpy\templates
-      batchfiledir: C:\scripts\processing_cellpy\batchfiles
-      db_filename: 2020_Cell_Analysis_db_001.xlsx
+        outdatadir: C:\scripts\processing_cellpy\out
+        rawdatadir: I:\Org\MPT-BAT-LAB\Arbin-data
+        cellpydatadir: C:\scripts\processing_cellpy\cellpyfiles
+        db_path: C:\scripts\processing_cellpy\db
+        filelogdir: C:\scripts\processing_cellpy\logs
+        examplesdir: C:\scripts\processing_cellpy\examples
+        notebookdir: C:\scripts\processing_cellpy\notebooks
+        templatedir: C:\scripting\processing_cellpy\templates
+        batchfiledir: C:\scripts\processing_cellpy\batchfiles
+        db_filename: 2023_Cell_Analysis_db_001.xlsx
+        env_file: .env_cellpy
+
 
     FileNames:
-      file_name_format: YYYYMMDD_[NAME]EEE_CC_TT_RR
+        file_name_format: YYYYMMDD_[NAME]EEE_CC_TT_RR
 
 
 The first part contains definitions of the different paths, files and file-patterns
@@ -78,30 +79,30 @@ The next part contains definitions required when using a database:
 
     # settings related to the db used in the batch routine
     Db:
-      db_type: simple_excel_reader
-      db_table_name: db_table
-      db_header_row: 0
-      db_unit_row: 1
-      db_data_start_row: 2
-      db_search_start_row: 2
-      db_search_end_row: -1
+        db_type: simple_excel_reader
+        db_table_name: db_table
+        db_header_row: 0
+        db_unit_row: 1
+        db_data_start_row: 2
+        db_search_start_row: 2
+        db_search_end_row: -1
 
     # definitions of headers for the simple_excel_reader
     DbCols:
-      id:
-      - id
-      - int
-      exists:
-      - exists
-      - bol
-      batch:
-      - batch
-      - str
-      sub_batch_01:
-      - b01
-      - str
-      .
-      .
+        id:
+        - id
+        - int
+        exists:
+        - exists
+        - bol
+        batch:
+        - batch
+        - str
+        sub_batch_01:
+        - b01
+        - str
+        .
+        .
 
 
 This part is rather long (since it needs to define the column names used in the db excel sheet).
@@ -113,34 +114,34 @@ the different ``instruments``. At the bottom you will find the settings for the 
 
     # settings related to your data
     DataSet:
-      nom_cap: 3579
+        nom_cap: 3579
 
     # settings related to the reader
     Reader:
-      Reader:
-        diagnostics: false
-        filestatuschecker: size
-        force_step_table_creation: true
-        force_all: false
-        sep: ;
-        cycle_mode: anode
-        sorted_data: true
-        select_minimal: false
-        limit_loaded_cycles:
-        ensure_step_table: false
-        voltage_interpolation_step: 0.01
-        time_interpolation_step: 10.0
-        capacity_interpolation_step: 2.0
-        use_cellpy_stat_file: false
-        auto_dirs: true
+        Reader:
+            diagnostics: false
+            filestatuschecker: size
+            force_step_table_creation: true
+            force_all: false
+            sep: ;
+            cycle_mode: anode
+            sorted_data: true
+            select_minimal: false
+            limit_loaded_cycles:
+            ensure_step_table: false
+            voltage_interpolation_step: 0.01
+            time_interpolation_step: 10.0
+            capacity_interpolation_step: 2.0
+            use_cellpy_stat_file: false
+            auto_dirs: true
 
     # settings related to the instrument loader
     # (each instrument can have its own set of settings)
     Instruments:
-      tester: arbin
-      custom_instrument_definitions_file:
+        tester: arbin
+        custom_instrument_definitions_file:
 
-      Arbin:
+    Arbin:
         max_res_filesize: 1000000000
         chunk_size:
         max_chunks:
@@ -153,25 +154,25 @@ the different ``instruments``. At the bottom you will find the settings for the 
         SQL_PWD:
         SQL_Driver: ODBC Driver 17 for SQL Server
         odbc_driver:
-      Maccor:
+    Maccor:
         default_model: one
 
     # settings related to running the batch procedure
     Batch:
-      fig_extension: png
-      backend: bokeh
-      notebook: true
-      dpi: 300
-      markersize: 4
-      symbol_label: simple
-      color_style_label: seaborn-deep
-      figure_type: unlimited
-      summary_plot_width: 900
-      summary_plot_height: 800
-      summary_plot_height_fractions:
-      - 0.2
-      - 0.5
-      - 0.3
+        fig_extension: png
+        backend: bokeh
+        notebook: true
+        dpi: 300
+        markersize: 4
+        symbol_label: simple
+        color_style_label: seaborn-deep
+        figure_type: unlimited
+        summary_plot_width: 900
+        summary_plot_height: 800
+        summary_plot_height_fractions:
+        - 0.2
+        - 0.5
+        - 0.3
     ...
 
 

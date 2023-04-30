@@ -391,7 +391,6 @@ def plot_concatenated(
 
         if points:
             if not averaged and journal is not None:
-
                 scatter = hv.Scatter(curve).opts(color=color, marker=marker)
 
                 if edges and extension == "matplotlib":
@@ -508,7 +507,6 @@ def create_colormarkerlist(
 
 
 def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
-
     tgt = raw_curve.relabel(title).opts(
         width=800,
         height=300,
@@ -944,7 +942,6 @@ def _cycle_info_plot_bokeh(
 
 
 def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
-
     # obs! hard-coded col-names. Please fix me.
     if not plt_available:
         print(

@@ -203,7 +203,6 @@ def _update_paths(
     default_dir=None,
     silent=False,
 ):
-
     # please, refactor me :-(
 
     h = prmreader.get_user_dir()
@@ -294,7 +293,6 @@ def _update_paths(
         templatedir,
         instrumentdir,
     ]:
-
         if not dry_run:
             _create_dir(d)
         else:
@@ -1221,7 +1219,6 @@ def _get_pw(method):
 
 
 def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
-
     if rootpath is None:
         rootpath = prmreader.prms.Paths.examplesdir
 

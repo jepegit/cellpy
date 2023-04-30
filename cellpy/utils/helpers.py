@@ -695,7 +695,6 @@ def concatenate_summaries(
     cell_type_split_position="auto",
     mode="collector",
 ) -> pd.DataFrame:
-
     """Merge all summaries in a batch into a gigantic summary data frame.
 
     Args:
@@ -951,7 +950,6 @@ def concatenate_summaries(
                     cell_type_split_position += 1
 
             if cell_type_split_position is not None:
-
                 cdf = cdf.assign(
                     cell_type=cdf.cell_name.str.split("_", expand=True)[
                         cell_type_split_position

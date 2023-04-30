@@ -325,7 +325,6 @@ class DataLoader(BaseLoader):
                 logging.debug(f"Could not rename summary df ::\n{e}")
 
         if fix_datetime:
-
             h_datetime = self.cellpy_headers_normal.datetime_txt
             logging.debug("converting to datetime format")
 

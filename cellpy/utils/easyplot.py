@@ -249,7 +249,6 @@ class EasyPlot:
                     filename=file, instrument="arbin_sql"
                 )  # Initiate cellpy object
             else:  # Not Arbin SQL? Then its probably a local file
-
                 # Check that file(s) exist
                 if linked_files:
                     file_name = "_".join(file)
@@ -461,7 +460,8 @@ class EasyPlot:
         driver="ODBC Driver 17 for SQL Server",
     ):
         """Sets cellpy.prms.Instruments.Arbin details to fit what is inserted.
-        Parameters: Server = 'IP of server', uid = 'username', pwd = 'password', driver = 'ODBC Driver 17 for SQL Server'"""
+        Parameters: Server = 'IP of server', uid = 'username', pwd = 'password', driver = 'ODBC Driver 17 for SQL Server'
+        """
         cellpy.prms.Instruments.Arbin["SQL_server"] = server
         cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
         cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
@@ -748,7 +748,6 @@ class EasyPlot:
                 self.save_fig(fig, savepath)
 
         if not self.kwargs["cyclelife_separate_data"]:
-
             # Set all plot settings from Plot object
             self.fix_cyclelife(fig, ax)
 
@@ -760,7 +759,6 @@ class EasyPlot:
         """Takes all the parameters inserted in the object creation and plots Voltage-Capacity curves"""
 
         if self.kwargs["all_in_one"]:  # Everything goes in the same figure.
-
             fig, ax = self.give_fig()
             colors = [
                 "tab:blue",
@@ -962,7 +960,6 @@ class EasyPlot:
         from cellpy.utils import ica
 
         if self.kwargs["all_in_one"]:  # Everything goes in the same figure.
-
             fig, ax = self.give_fig()
             colors = [
                 "tab:blue",
@@ -1141,7 +1138,6 @@ class EasyPlot:
 
             colorbar_incrementor = -1
             for cpobj, cyc_nums, color, filename in self.file_data:
-
                 # Get Pandas DataFrame of pot vs cap from cellpy object
                 df = cpobj.get_cap(
                     method="forth-and-forth",
@@ -1874,7 +1870,6 @@ class EasyPlot:
 
 
 def get_effective_C_rates(steptable):
-
     newdf = steptable[["step_time_avr", "cycle", "type"]]
     chg_c_rates = []
     dchg_c_rates = []

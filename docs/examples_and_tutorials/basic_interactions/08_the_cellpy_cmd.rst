@@ -14,14 +14,13 @@ by issuing the ``cellpy`` command at the shell (or in the cmd window).
      --help  Show this message and exit.
 
     Commands:
-        edit   Edit your cellpy config file.
-        info   This will give you some valuable information about your cellpy.
-        new    Set up a batch experiment.
-        pull   Download examples or tests from the big internet.
-        run    Run a cellpy process.
-        serve  Start a Jupyter server
-        setup  This will help you to setup cellpy.
-
+      edit   Edit your cellpy config file.
+      info   This will give you some valuable information about your cellpy.
+      new    Set up a batch experiment (might need git installed).
+      pull   Download examples or tests from the big internet (needs git).
+      run    Run a cellpy process (batch-job, edit db, ...).
+      serve  Start a Jupyter server.
+      setup  This will help you to set up cellpy.
 
 The cli is still under development (cli stands for command-line-interface, by the way).
 Both the ``cellpy new`` and the ``cellpy serve`` command worked the last time I tried them.
@@ -167,6 +166,9 @@ and end with ".zip".
 
 Automatically running batches
 -----------------------------
+
+The ``run`` command is used for running the appropriate editor for your
+database, and for running (processing) files in batches.
 
 .. code-block:: shell
 

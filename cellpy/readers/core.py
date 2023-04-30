@@ -691,7 +691,6 @@ def identify_last_data_point(data):
     hdr_data_point = HEADERS_NORMAL.data_point_txt
     try:
         if hdr_data_point in data.raw.columns:
-
             last_data_point = data.raw[hdr_data_point].max()
         else:
             last_data_point = data.raw.index.max()
@@ -796,7 +795,7 @@ def collect_capacity_curves(
     steps_to_skip=None,
     steptable=None,
     max_cycle_number=None,
-    **kwargs
+    **kwargs,
 ):
     """Create a list of pandas.DataFrames, one for each charge step.
 
@@ -824,9 +823,13 @@ def collect_capacity_curves(
     #  The cycle keyword will not break the method but raise a warning:
     for arg in kwargs:
         if arg in ["cycle", "cycles"]:
-            logging.warning(f"{arg} is not implemented yet, but might exist in newer versions of cellpy.")
+            logging.warning(
+                f"{arg} is not implemented yet, but might exist in newer versions of cellpy."
+            )
         else:
-            logging.warning(f"collect_capacity_curve received unknown key-word argument: {arg=}")
+            logging.warning(
+                f"collect_capacity_curve received unknown key-word argument: {arg=}"
+            )
 
     minimum_v_value = np.Inf
     maximum_v_value = -np.Inf

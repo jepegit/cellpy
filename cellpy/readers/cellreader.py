@@ -2030,7 +2030,9 @@ class CellpyCell:
 
                 fidtable["raw_data_location"].append(fid.location)
                 fidtable["raw_data_files_length"].append(length)
-                fidtable["last_data_point"].append(fid.last_data_point)  # will most likely be the same as length
+                fidtable["last_data_point"].append(
+                    fid.last_data_point
+                )  # will most likely be the same as length
         else:
             warnings.warn("seems you lost info about your raw-data (missing fids)")
         return fidtable
@@ -4598,7 +4600,6 @@ class CellpyCell:
         self._set_run_attribute("mass", mass, validated=validated)
 
     def set_tot_mass(self, mass, validated=None):
-
         warnings.warn(
             "This function is deprecated. "
             "Use the setter instead (tot_mass = value).",
@@ -4609,7 +4610,6 @@ class CellpyCell:
         self._set_run_attribute("tot_mass", mass, validated=validated)
 
     def set_nom_cap(self, nom_cap, validated=None):
-
         warnings.warn(
             "This function is deprecated. " "Use the setter instead (nom_cap = value).",
             DeprecationWarning,

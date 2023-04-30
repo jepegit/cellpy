@@ -140,7 +140,6 @@ class OCVRelaxationAnalyzer(BaseAnalyzer):
         for experiment, farm in zip(experiments, farms):
             dframes = []
             for cell_label in experiment.cell_data_frames:
-
                 logging.info(f"Analyzing {cell_label}")
                 if experiment.all_in_memory:
                     logging.debug("CellpyData picked from memory")

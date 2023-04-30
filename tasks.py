@@ -627,6 +627,5 @@ def serve(c):
     c.run(f"python -m webbrowser -t http://{_location}")
 
 
-
 if __name__ == "__main__":
     delete_stuff(pattern="NOTHING")

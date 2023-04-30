@@ -501,7 +501,6 @@ class AutoLoader(BaseLoader):
         )
 
     def _pre_process(self):
-
         for processor_name in self.pre_processors:
             if self.pre_processors[processor_name]:
                 if hasattr(pre_processors, processor_name):
@@ -658,7 +657,6 @@ class TxtLoader(AutoLoader, ABC):
         if sep is not None:
             self.sep = sep
         if self.sep is None:
-
             self._auto_formatter()
 
     # override this if needed

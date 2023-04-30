@@ -3,7 +3,7 @@ Installation
 ============
 
 If you are (relatively) new to installing python packages, please jump to the
-getting started tutorial (:doc:`tutorials/getting_started_tutorial`)
+getting started tutorial (:ref:`getting-started`)
 for an opinionated step-by-step procedure.
 
 Stable release
@@ -23,7 +23,7 @@ If you would like to install only ``cellpy``, you should install using pip.
 You also need to take into account that ``cellpy`` uses several packages
 that are a bit cumbersome to install on
 windows. It is therefore recommended to install one of the ``anaconda``
-python packages (python 3.8 or above) before installing ``cellpy``.
+python packages (python 3.9 or above) before installing ``cellpy``.
 If you chose ``miniconda``, you should install
 ``scipy``, ``numpy`` and ``pytables`` using ``conda``:
 
@@ -60,9 +60,9 @@ or:
 Some of the utilities in ``cellpy`` have additional dependencies:
 
 - Using the ``ocv_rlx`` utilities requires ``lmfit`` and ``matplotlib``.
-- For using the ``batch`` utilities efficiently, ``holoviews`` is needed, as
-  well as ``bokeh`` and ``matplotlib`` for plotting.
-
+- For using the ``batch`` utilities efficiently, you should install
+  ``bokeh``, ``plotly``, and ``matplotlib`` for plotting. Also, ``holoviews``
+  is a good tool to have.
 
 If this is the first time you install ``cellpy``, it is recommended
 that you run the setup script:
@@ -119,14 +119,14 @@ mode using pip:
 
     $ pip install -e .
 
-(assuming that you are in the project folder, *i. e.* the folder that
+(assuming that you are in the project folder, *i.e.* the folder that
 contains the setup.py file)
 
 Further reading
 ---------------
 
 You can find more information in the Tutorials, particularly
-in :doc:`tutorials/getting_started_tutorial`.
+in ':ref:`getting-started`'.
 
 .. _Github repo: https://github.com/jepegit/cellpy
 

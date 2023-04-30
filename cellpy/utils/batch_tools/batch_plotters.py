@@ -64,7 +64,6 @@ def look_up_group(info, c):
 def create_plot_option_dicts(
     info, marker_types=None, colors=None, line_dash=None, size=None, palette=None
 ):
-
     """Create two dictionaries with plot-options.
 
     The first iterates colors (based on group-number), the second iterates

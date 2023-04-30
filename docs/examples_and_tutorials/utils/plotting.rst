@@ -3,6 +3,9 @@
 Have a look at the data
 -----------------------
 
+.. note:: This chapter would benefit from some more love and care. Any help
+    on that would be highly appreciated.
+
 Here are some examples how to get a peak at the data. If we need an
 interactive plot of the raw-data, we can use the ``plotutils.raw_plot``
 function. If we would like to see some statistics for some of the

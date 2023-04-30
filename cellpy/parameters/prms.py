@@ -48,6 +48,7 @@ class CellPyConfig:
 #   test_prms.py (config_file_txt)
 #   _convert_paths_to_dict
 
+
 # This can stay global:
 @dataclass
 class PathsClass(CellPyConfig):
@@ -283,6 +284,7 @@ Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
 #  dataclasses. I guess I could update this but is a bit challenging
 #  so maybe replace later  using e.g. pydantic
 # ------------------------------------------------------------------------------
+
 
 # This can stay global:
 # remark! using box.Box for each instrument

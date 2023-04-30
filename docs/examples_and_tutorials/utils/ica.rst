@@ -3,6 +3,9 @@
 Extracting ica data
 -------------------
 
+.. note:: This chapter would benefit from some more love and care. Any help
+    on that would be highly appreciated.
+
 
 Example: get dq/dv data for selected cycles
 ...........................................

@@ -62,7 +62,6 @@ class Doer(metaclass=abc.ABCMeta):
             self.farms.append(empty_farm)
 
     def _assign_engine(self, engine):
-
         self.engines.append(engine)
 
     def _assign_dumper(self, dumper):

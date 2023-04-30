@@ -276,7 +276,6 @@ class DataLoader(BaseLoader):
         header_comments = dict()
         comment_loop = False
         for line_number, line in enumerate(lines):
-
             if line.startswith("#"):
                 if not comment_loop:
                     comment_loop = True

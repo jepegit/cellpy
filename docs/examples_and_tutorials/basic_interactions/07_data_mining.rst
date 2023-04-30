@@ -1,6 +1,9 @@
 Data mining / using a database
 ==============================
 
+.. note:: This chapter would benefit from some more love and care. Any help
+    on that would be highly appreciated.
+
 One important motivation for developing the ``cellpy`` project is to facilitate
 handling many cell testing experiments within a reasonable time and with a
 "tunable" degree of automation. It is therefore convenient to be able to

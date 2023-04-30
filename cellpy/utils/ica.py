@@ -67,7 +67,6 @@ class Converter:
         gaussian_cval=0.0,
         gaussian_truncate=4.0,
     ):
-
         self.capacity = capacity
         self.voltage = voltage
 
@@ -180,7 +179,6 @@ class Converter:
             self.d_voltage_mean = np.mean(d_voltage)
 
         if err_est:
-
             splits = int(self.number_of_points / self.points_pr_split)
             rest = self.number_of_points % self.points_pr_split
 

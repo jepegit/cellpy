@@ -1,6 +1,9 @@
 Stuff that you might want to do with ``cellpy``
 ===============================================
 
+.. note:: This chapter would benefit from some more love and care. Any help
+    on that would be highly appreciated.
+
 A more or less random collection of things that you might want to do with
 ``cellpy``. This is not a tutorial, but rather a collection of examples.
 

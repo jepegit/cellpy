@@ -28,7 +28,7 @@ The easiest way to load data is to use the ``cellpy.get`` method:
 
 
 If you prefer, you can obtain the same by using ``cellpy.cellreader.CellpyCell`` object directly. However, we
-recommend using the ``cellpy.get`` method. But just in case you want to know how to do it:
+recommend using the ``cellpy.get`` method. But just in case you want to know how to do it...
 
 First, import the cellreader-object from ``cellpy``:
 

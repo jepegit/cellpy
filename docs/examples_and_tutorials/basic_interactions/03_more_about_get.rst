@@ -1,7 +1,12 @@
 More about the ``cellpy.get`` method
 ------------------------------------
 
-The following keyword arguments is current supported by ``cellpy.get``::
+.. note:: This chapter would benefit from some more love and care. Any help
+    on that would be highly appreciated.
+
+The following keyword arguments is current supported by ``cellpy.get``:
+
+.. code-block:: console
 
     # from the docstring:
     Args:
@@ -64,10 +69,9 @@ yaml-file:
 
     c = cellpy.get(filename="name.txt", instrument_file="my_custom_file_format.yml")
 
-REWRITE THIS (should use get instead): For convenience, ``cellpy`` also has a method that can be used to select whether-or-not to load
-directly from the raw-file.
-Using the ``loadcell`` method, you can specify both the raw
-file name(s) and the cellpy file name, and
+If you specify both the raw file name(s) and the cellpy file name to``cellpy.get``
+you can make ``cellpy`` select whether-or-not to load
+directly from the raw-file or use the cellpy-file instead.
 ``cellpy`` will check if the raw file(s) is/are updated since
 the last time you saved the cellpy file - if not,
 then it will load the cellpy file instead (this is usually much faster
@@ -77,20 +81,23 @@ summary automatically.
 
 .. code-block:: python
 
-    cell_data.loadcell(raw_files=[raw_files], cellpy_file=cellpy_file,
-                           mass=[electrode_mass], summary_on_raw=True,
-                           force_raw=False)
+    cell_data.get(
+        raw_files=[raw_files],
+        cellpy_file=cellpy_file,
+        mass=electrode_mass,
+        auto_summary=True,
+    )
 
     if not cell_data.check():
         print("Could not load the data")
 
 
-
 Working with external files
 ---------------------------
 To work with external files you will need to set some environment variables. This can most
-easily be done by creating a file called ``.env_cellpy`` in your user directory (e.g. ``C:\Users\jepe``)::
+easily be done by creating a file called ``.env_cellpy`` in your user directory (e.g. ``C:\Users\jepe``):
 
+.. code-block:: console
     # content of .env_cellpy
     CELLPY_PASSWORD=1234
     CELLPY_KEY_FILENAME=C:\\Users\\jepe\\.ssh\\id_key
@@ -102,7 +109,7 @@ including the protocol (e.g. ``scp://``) and the user name and host (e.g. ``jepe
 
 .. code-block:: python
 
-    # assuming appropriate `.env_cellpy` file is present
+    # assuming appropriate ``.env_cellpy`` file is present
     raw_file = "scp://jepe@myhost.com/path/to/file.txt"
     c = cellpy.get(filename=raw_file, instrument="maccor_txt", model="one", mass=1.0)
 

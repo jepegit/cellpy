@@ -189,7 +189,6 @@ def test_get_arbin_res_with_postprocessor_hook():
 
 # @pytest.mark.unimportant
 def test_humanize_bytes():
-
     assert cellpy.readers.core.humanize_bytes(1) == "1 byte"
     assert cellpy.readers.core.humanize_bytes(1024) == "1.0 kB"
     assert cellpy.readers.core.humanize_bytes(1024 * 123) == "123.0 kB"

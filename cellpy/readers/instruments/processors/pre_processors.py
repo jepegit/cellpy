@@ -44,7 +44,6 @@ def remove_empty_lines(
     with open(filename, "r+") as file:
         with open(out_file_name, "w") as out_file:
             for line in file.readlines():
-
                 if line.strip():
                     out_file.write(f"{line.strip()}\n")
 

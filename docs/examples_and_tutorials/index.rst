@@ -9,5 +9,6 @@ Examples and tutorials
     notebooks
     examples
     tips_and_tricks
+    loaders
 
 
