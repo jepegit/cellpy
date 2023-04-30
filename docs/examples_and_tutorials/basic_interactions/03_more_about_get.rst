@@ -98,6 +98,7 @@ To work with external files you will need to set some environment variables. Thi
 easily be done by creating a file called ``.env_cellpy`` in your user directory (e.g. ``C:\Users\jepe``):
 
 .. code-block:: console
+
     # content of .env_cellpy
     CELLPY_PASSWORD=1234
     CELLPY_KEY_FILENAME=C:\\Users\\jepe\\.ssh\\id_key
