@@ -17,10 +17,9 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - python -m pip install --upgrade pip
   - conda env create -f dev_environment.yml python=%PYTHON_VERSION%
   - activate cellpy_dev
-  - python -m pip install coverage
+  - python -m pip install --user coverage
 
 test_script:
   - pytest
