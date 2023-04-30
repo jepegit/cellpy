@@ -38,6 +38,9 @@ This is a short description on how to update the conda-forge recipe for ``cellpy
     >>> conda install -c conda-forge conda-smithy
     >>> conda smithy rerender -c auto
 
+    This can also be done (I think) via adding a special
+    comment during the pull request/merging on github.
+
 - Create a pull request via the web interface by navigating to
   https://github.com/your-name/cellpy-feedstok.git with your web browser
   and clicking the button create pull request.
