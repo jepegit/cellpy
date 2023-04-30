@@ -38,7 +38,7 @@ included_packages = find_packages(
 requirements = [
     "scipy",
     "numpy>=1.16.4",
-    "pandas",
+    "pandas<2.0.0",
     "python-box",
     "setuptools",
     "ruamel.yaml",
@@ -56,7 +56,7 @@ requirements = [
 test_requirements = [
     "scipy",
     "numpy>=1.16.4",
-    "pandas",
+    "pandas<2.0.0",
     "python-box",
     "setuptools",
     "ruamel.yaml",
