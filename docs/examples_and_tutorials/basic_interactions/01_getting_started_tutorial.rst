@@ -42,7 +42,7 @@ belong to the *point-and-click* (or *double-click*) generation, not the
 savvy, here is a “tea-spoon explanation”:
 
 1. Install a scientific stack of python 3.x
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+...........................................
 
 If the words “virtual environment” or “miniconda” do not ring any bells,
 you should install the Anaconda scientific Python distribution. Go to
@@ -64,7 +64,7 @@ that has the correct settings ensuring that the conda command works
 as it should.
 
 2. Create a virtual environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+...............................
 
 This step can be omitted (but its not necessarily smart to do so).
 Create a virtual conda environment called ``cellpy`` (the name is not
@@ -88,7 +88,8 @@ You then have to activate the environment:
 
 
 3. Install ``cellpy``
-~~~~~~~~~~~~~~~~~~~~~
+.....................
+
 In your activated ``cellpy`` environment in the Anaconda Prompt if you
 chose to make one, or in the base environment if you chose not to, run:
 
@@ -104,7 +105,7 @@ installed and check your Microsoft Access odbc drivers.
 .. _check-cellpy:
 
 4. Check your cellpy installation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.................................
 
 The easiest way to check if ``cellpy`` has been installed, is to issue
 the command for printing the version number to the screen
@@ -141,7 +142,7 @@ To run a more complete check of your installation, there exist a
 
 
 5. Set up ``cellpy``
-~~~~~~~~~~~~~~~~~~~~
+....................
 
 After you have installed ``cellpy`` it is highly recommended that you
 create an appropriate configuration file and folders for raw data,
@@ -173,11 +174,11 @@ folder), you can use the ``-d`` option *e.g.*
 
 .. hint:: You can always edit your configurations directly in the cellpy configuration
    file ``_cellpy_prms_USER.conf``. This file should be located inside your
-   home directory, /~ in posix and c:\users\USERNAME in not-too-old windows.
+   home directory, /. in posix and c:\users\USERNAME in not-too-old windows.
 
 
 6. Create a notebook and run ``cellpy``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.......................................
 
 Inside your Anaconda Prompt window, write:
 
@@ -196,7 +197,7 @@ More about installing and setting up ``cellpy``
 -----------------------------------------------
 
 Fixing dependencies
-~~~~~~~~~~~~~~~~~~~
+...................
 
 To make sure your environment contains the correct packages and dependencies
 required for running cellpy, you can create an environment based on the available
@@ -222,7 +223,7 @@ to be installed. Most of these packages are included when creating the environme
 based on the ``environment.yml`` file as outlined above.
 
 Basic dependencies
-::::::::::::::::::
+~~~~~~~~~~~~~~~~~~
 
 In general, you need the typical scientific python pack, including
 
@@ -258,7 +259,7 @@ packages (google it) and install them. You can most
 likely use the same method as for pytables *etc*.
 
 Additional requirements for .res files
-::::::::::::::::::::::::::::::::::::::
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .res files from Arbin testers are  actually in a Microsoft Access format.
 For loading .res-files (possible also for other *‘to-be-implemented’* file
@@ -289,7 +290,7 @@ preferred package manager (*e.g.* ``apt-get install mdbtools``).
 
 
 The cellpy configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.............................
 The paths to raw data, the cellpy data base file, file locations etc. are set in
 the ``.cellpy_prms_USER.conf`` file that is located in your home directory.
 
@@ -312,7 +313,7 @@ as column headers etc.). For more details, see chapter on Configuring cellpy.
 
 
 The 'database' file
-~~~~~~~~~~~~~~~~~~~
+...................
 The database file should contain information (cell name, type, mass loading etc.)
 on your cells, so that cellpy can find and link the test data to the provided
 metadata.

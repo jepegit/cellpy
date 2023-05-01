@@ -3,7 +3,7 @@ Credits
 =======
 
 Development Lead
-----------------
+================
 
 * Jan Petter Maehlen <jepe@ife.no>
 * Muhammad Abdelhamid <muhammad.abdelhamid@ife.no>
@@ -12,7 +12,7 @@ Development Lead
 
 
 Contributors
-------------
+============
 
 * Tor Kristian Vara
 * Ulrik Aalborg Eriksen

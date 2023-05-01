@@ -29,7 +29,7 @@ batteries and cells.
 |ProjectVersion|
 
 Installation and dependencies
------------------------------
+=============================
 
 The easiest way to install ``cellpy`` is to install with conda or pip.
 
@@ -45,12 +45,12 @@ Have a look at the documentation for more detailed installation procedures, espe
 with respect to "difficult" dependencies when installing with pip.
 
 Licence
--------
+=======
 
 ``cellpy`` is free software made available under the MIT License.
 
 Features
---------
+========
 
 * Load test-data and store in a common format.
 * Summarize and compare data.

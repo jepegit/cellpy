@@ -4,13 +4,14 @@ History
 
 
 1.0.0 (2023) [under development]
---------------------------------
+================================
 
 * Unit handling: renaming summary headers
 * Unit handling: new cellpy-file-format version
 * Unit handling: tool for converting old to new format
 * Templates: using one repository with sub-folders
 * Templates: adding more documentation
+* File handling: allow for external raw files (ssh)
 * Readers: neware.txt (one version/model)
 * Readers: arbin_sql7 (experimental)
 * Batch plotting: collectors for both data collection, plotting and saving
@@ -20,13 +21,13 @@ History
 
 
 0.4.3 (2023)
-------------
+============
 
 * Neware txt loader (supports one specific format only, other formats will have to wait for v.1.0)
 
 
 0.4.2 (2022)
-------------
+============
 
 * Changed definition of Coulombic Difference (negative of previous)
 * Updated loaders with hooks and additional base class TxtLoader with configuration mechanism
@@ -39,7 +40,7 @@ History
 
 
 0.4.1 (2021)
-------------
+============
 
 * Updated documentations
 * CLI improvements
@@ -50,7 +51,7 @@ History
 
 
 0.4.0 (2020)
-------------
+============
 
 * Reading arbin .res files with auxiliary data should now work.
 * Many bugs have been removed - many new introduced.
@@ -58,20 +59,20 @@ History
 
 
 0.4.0 a2 (2020)
----------------
+===============
 
 * Reading PEC files now updated and should work
 
 
 0.4.0 a1 (2020)
----------------
+===============
 
 * New column names (lowercase and underscore)
 * New batch concatenating and plotting routines
 
 
 0.3.3 (2020)
-------------
+============
 
 * Switching from git-flow to github-flow
 * New cli options for running batches
@@ -82,7 +83,7 @@ History
 
 
 0.3.2 (2019)
-------------
+============
 
 * Starting fixing documentation
 * TODO: create conda package
@@ -90,7 +91,7 @@ History
 
 
 0.3.1 (2019)
-------------
+============
 
 * Refactoring - renaming from dfsummary to summary
 * Refactoring - renaming from step_table to steps
@@ -101,7 +102,7 @@ History
 
 
 0.3.0 (2019)
-------------
+============
 
 * New batch-feature
 * Improved make-steps and make-summary functionality
@@ -111,7 +112,7 @@ History
 * invoke tasks for developers
 
 0.2.1 (2018)
-------------
+============
 
 * Allow for using mdbtools also on win
 * Slightly faster find_files using cache and fnmatch
@@ -119,7 +120,7 @@ History
 
 
 0.2.0 (2018-10-17)
-------------------
+==================
 
 * Improved creation of step tables (much faster)
 * Default compression on cellpy (hdf5) files
@@ -127,7 +128,7 @@ History
 
 
 0.1.22 (2018-07-17)
--------------------
+===================
 
 * Parameters can be set by dot-notation (python-box).
 * The parameter Instruments.cell_configuration is removed.
@@ -138,12 +139,12 @@ History
 
 
 0.1.21 (2018-06-09)
--------------------
+===================
 
 * No legacy python.
 
 
 0.1.0 (2016-09-26)
-------------------
+==================
 
 * First release on PyPI.

@@ -1,5 +1,3 @@
-.. highlight:: shell
-
 ================================
 File Formats and Data Structures
 ================================
@@ -14,10 +12,10 @@ It is also possible to look into the source-code at the
 repository https://github.com/jepegit/cellpy.
 
 Data Structures
----------------
+===============
 
 CellpyCell - main structure
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------
 
 .. graphviz::
 
@@ -258,7 +256,7 @@ In addition, ``cellpy`` can load custom csv-ish files by providing a file descri
 
 
 Tester dependent attributes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------
 
 arbin .res
 ..........
@@ -353,7 +351,7 @@ TODO...
 
 
 CellpyCell - methods
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 The ``CellpyCell`` object contains lots of methods for manipulating, extracting
 and summarising the data from the run(s). Two methods are typically automatically run when
@@ -380,7 +378,7 @@ Other methods worth mentioning are (based on what I typically use):
 Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyCell``) for more info.
 
 Data
-~~~~
+----
 
 .. graphviz::
 
@@ -456,7 +454,7 @@ metadata
 The ``Data`` object can also take custom metadata if provieded as keyword arguments (for developers).
 
 FileID
-~~~~~~
+------
 
 The ``FileID`` object contains information about the raw file(s) and is used when comparing the cellpy-file
 with the raw file(s) (for example to check if it has been updated compared to the cellpy-file).

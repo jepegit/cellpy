@@ -1,6 +1,12 @@
-=======================
+.. _cellpy-objects:
+
 Main ``cellpy`` objects
 =======================
+
+.. note:: This chapter would benefit from some more love and care. Any help
+    on that would be highly appreciated.
+
+.. _CellpyCell-object:
 
 The ``CellpyCell`` object
 -------------------------
@@ -39,11 +45,14 @@ The ``Data`` instance can be reached using the ``data`` property::
 
     cell_data = cellpy_instance.data
 
+.. _Data-object:
+
 The ``Data`` object
 -------------------
 
 The ``Data`` object contains the data and the meta-data for the cell characterisation experiment(s).
 
+.. _cellpy-file-object:
 
 The cellpy file format
 ----------------------

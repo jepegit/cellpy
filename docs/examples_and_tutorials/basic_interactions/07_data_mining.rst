@@ -15,17 +15,17 @@ modelling, or as input to machine learning algorithms, for example deep
 learning using cnn).
 
 Meta-data database
-..................
+------------------
 
 TODO.
 
 Parameters and feature extraction
-.................................
+---------------------------------
 
 TODO.
 
 Bayesian modelling
-..................
+------------------
 
 TODO.
 

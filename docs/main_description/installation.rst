@@ -1,3 +1,5 @@
+.. highlight:: shell
+
 ============
 Installation
 ============
@@ -7,7 +9,7 @@ getting started tutorial (:ref:`getting-started`)
 for an opinionated step-by-step procedure.
 
 Stable release
---------------
+==============
 
 The preferred way to install ``cellpy`` is by using conda:
 
@@ -101,7 +103,7 @@ the `-i` (interactive mode).
 
 
 From sources
-------------
+============
 
 The sources for ``cellpy`` can be downloaded from the `Github repo`_.
 
@@ -123,7 +125,7 @@ mode using pip:
 contains the setup.py file)
 
 Further reading
----------------
+===============
 
 You can find more information in the Tutorials, particularly
 in ':ref:`getting-started`'.

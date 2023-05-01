@@ -1,7 +1,7 @@
 .. _utils-plotting:
 
 Have a look at the data
------------------------
+=======================
 
 .. note:: This chapter would benefit from some more love and care. Any help
     on that would be highly appreciated.

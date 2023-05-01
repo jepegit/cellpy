@@ -1,7 +1,5 @@
-=======
 Various
 =======
-
 
 
 Using ``pytest`` fixtures

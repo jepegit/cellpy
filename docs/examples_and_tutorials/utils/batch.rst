@@ -1,7 +1,7 @@
 .. _utils-batch:
 
 Using the batch utilities
--------------------------
+=========================
 
 The steps given in this tutorial describes how to use the new version of the
 batch utility. The part presented here is chosen such that it resembles how
@@ -11,10 +11,10 @@ different from the old. A more detailed guide will come soon.
 So, with that being said, here is the promised description.
 
 Starting (setting things up)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
 A database
-..........
+~~~~~~~~~~
 Currently, the only supported "database" is Excel (yes, I am not kidding). So,
 there is definitely room for improvements if you would like to contribute to
 the code-base.
@@ -27,7 +27,7 @@ typically "b01", "b02", ..., "b07"). You can find an example of such an Excel
 work-book in the test-data.
 
 A tool for running the job
-..........................
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Jupyter Notebooks is the recommended "tool" for running the cellpy batch
 feature. The first step is to import the ``cellpy.utils.batch.Batch``
@@ -66,7 +66,7 @@ and set some parameters that `Batch` needs:
     b.force_cellpy_file = True
 
 Extracting meta-data
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 The next step is to extract and collect the information needed from your data-base into a DataFrame,
 and create an appropriate folder structure (`outdir/project_name/batch_name/raw_data`)
@@ -79,7 +79,7 @@ and create an appropriate folder structure (`outdir/project_name/batch_name/raw_
 
 
 Processing data
-~~~~~~~~~~~~~~~
+---------------
 
 To run the processing, you should then use the convenience function ``update``. This function
 loads all your data-files and saves csv-files of the results.
@@ -99,7 +99,7 @@ all your data-files) and plot the results.
 Now it is time to relax and maybe drink a cup of coffee.
 
 Further investigations and analyses
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------
 
 There are several paths to go from here. I recommend looking at the raw data
 for the different cells briefly to check if everything looks sensible.
