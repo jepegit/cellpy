@@ -109,3 +109,5 @@ test.csv
 dev_utils/batch_notebooks/out.png
 settings.json
 /tmp/
+/testdata/db/cellpy.db
+/testdata/db/excel.db
