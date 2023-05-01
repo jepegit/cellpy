@@ -19,3 +19,4 @@ Contributors
 * Carl Erik Lie Foss <carl.foss@ife.no>
 * Amund Midtgard Raniseth <amund.raniseth@gmail.com>
 * @jtgibson91
+* @kevinsmia1939
