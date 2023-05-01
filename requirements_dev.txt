@@ -36,3 +36,7 @@ kaleido==0.1.*
 seaborn
 wheel
 fabric
+nox
+rich
+pandoc
+bumpver
