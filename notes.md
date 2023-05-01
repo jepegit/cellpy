@@ -99,3 +99,6 @@ Steps:
 ### release 1.0.0
 
 Add token to .env (for uploading to PyPI)
+Build and upload to PyPI
+Bumped to version 1.0.0a2
+Made new branch called v1.0.0 since then Read the Docs understands that this is the latest version.
