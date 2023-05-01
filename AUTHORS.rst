@@ -18,5 +18,6 @@ Contributors
 * Ulrik Aalborg Eriksen
 * Carl Erik Lie Foss <carl.foss@ife.no>
 * Amund Midtgard Raniseth <amund.raniseth@gmail.com>
-* @jtgibson91
-* @kevinsmia1939
+* Michael Chon (@chonmj)
+* Kavin Teenakul (@kevinsmia1939)
+* Jayce Slesar (@jayceslesar)
