@@ -18,4 +18,5 @@ Contributors
 * Julia Wind <julia.wind@ife.no>
 * Carl Erik Lie Foss <carl.foss@ife.no>
 * Amund Midtgard Raniseth <amund.raniseth@gmail.com>
++ Many others
 
