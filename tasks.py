@@ -5,6 +5,8 @@ import sys
 from contextlib import contextmanager
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+
+import dotenv
 from dotenv import load_dotenv
 
 import requests
@@ -441,111 +443,9 @@ def bump(c, bumper=None):
     print("DONE")
 
 
-@task(optional=["bump"])
-def autobuild(c, _bump=None, _clean=True, upload=True):
-    """Create distribution and upload to PyPI.
-
-    Args:
-        bump (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
-        clean (bool): clean up directories first.
-        upload (bool): publish to PyPI.
-
-    Args:
-        bumper (str): nano, micro, minor, major, alpha, beta, rc, post, final, keep
-
-    The following bumpers are allowed:
-        nano: tag-num, increment from e.g. 0.4.2b2 to 0.4.2b3
-        final: tag final, increment from e.g. 0.4.2b2 to 0.4.2
-        micro: patch, increment from e.g. 0.4.2b3 to 0.4.3b or 0.4.2 to 0.4.3
-        minor: minor, increment from e.g. 0.4.2b3 to 0.5.0b or 0.4.2 to 0.5.0
-        major: major, increment from e.g. 0.4.2b3 to 1.0.0b or 0.4.2 to 1.0.0
-        alpha: tag alpha
-        beta: tag beta
-        rc: tag rc
-        post: tag post
-        keep: don't change it
-
-    Typically, you would use 'nano' until you are satisfied with your packaage, and then
-    use a 'final'. And then start again with new features by first using "micro" and 'alpha' then
-    start all over with 'nano'.
-
-    For me, the most effective way to proceed after a proper release (no tag-nums etc) is to:
-        0) merge master into your (new) development branch
-        1) instead of "inv autobuild -b something --no-upload", just "inv bump -b micro", then "alpha"
-           If you encounter problems, change it manually (and check the bumpver.toml file).
-        2) first time you publish, use "inv autobuild -b keep"
-        3) then proceed as usual
-    """
-    bumper = _get_bump_tag(_bump)
-
-    regex_old = re.compile("- Old Version: (.*)")
-    regex_new = re.compile("- New Version: (.*)")
-    regex_current = re.compile("Current Version: (.*)")
-
-    if bumper:
-        print(f" running bumpver ({bumper} --dry) ".center(80, "-"))
-        out = c.run(f"bumpver update --{bumper} --dry")
-
-        old_version = create_commit_message_from_output(out.stderr, regex_old)
-        new_version = create_commit_message_from_output(out.stderr, regex_new)
-        commit_message = f"bump version {old_version} -> {new_version}"
-    else:
-        out = c.run(f"bumpver show")
-        new_version = create_commit_message_from_output(out.stdout, regex_current)
-        commit_message = f"version {new_version}"
-
-    print(80 * "=")
-    print(f"bump: {_bump}")
-    print(commit_message)
-    print(f"clean: {_clean}")
-    print(f"upload: {upload}")
-    is_ok = input("> continue? [y]/n: ") or "y"
-    if not is_ok.lower() in ["y", "yes", "ok", "sure"]:
-        print("Aborting!")
-        return
-
-    print(" Processing ".center(80, "="))
-    if _clean:
-        clean(c)
-
-    if bumper:
-        print(f" Bumping version ({bumper}) ".center(80, "-"))
-        c.run(f"bumpver update --{bumper}")
-
-    print(" Creating distribution ".center(80, "-"))
-    c.run("python -m build")
-
-    if upload:
-        commit_message += " [published]"
-
-    print(" -> committing changes ")
-    c.run(f"git add .")
-    commit(c, push=False, comment=commit_message)
-    c.run(f"git tag {new_version}")
-
-    if upload:
-        print(" uploading to PyPI ".center(80, "-"))
-        print(" Running 'twine upload dist/*'")
-        print(" Trying with using username and password from environment.")
-        try:
-            username = os.environ["PYPI_USER"]
-            password = os.environ["PYPI_PWD"]
-            print(f"username: {username}")
-            c.run(f"python -m twine upload dist/* -u {username} -p {password}")
-        except Exception:
-            print("Could not extract user and password from environment")
-            print("For it to work you need to export")
-            print("PYPI_USER and PYPI_PWD")
-            print("e.g.  export PYPI_USER=jepe")
-            print("Running upload (insert username and password when prompted)")
-            c.run("python -m twine upload dist/*")
-
-    else:
-        print(" To upload to pypi: 'python -m twine upload dist/*'")
-
-
+@task
 def build(
-    c, _clean=True, dist=True, docs=False, upload=False, _serve=False, browser=False
+    c, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False
 ):
     """Create distribution (and optionally upload to PyPI)"""
 
@@ -560,19 +460,18 @@ def build(
         print(" Building docs ".center(80, "-"))
         c.run("sphinx-build docs docs/_build")
     if upload:
+        dotenv.load_dotenv()
         print(" Uploading to PyPI ".center(80, "="))
         print(" Running 'twine upload dist/*'")
-        print(" Trying with using username and password from environment.")
+        print(" Using token from environment (PYPI_TOKEN).")
         try:
-            username = os.environ["PYPI_USER"]
-            password = os.environ["PYPI_PWD"]
-            print(f"username: {username}")
-            c.run(f"python -m twine upload dist/* -u {username} -p {password}")
+            password = os.environ["PYPI_TOKEN"]
+            c.run(f"python -m twine upload dist/* -u __token__ -p {password}")
         except Exception:
-            print("Could not extract user and password from environment")
-            print("For it to work you need to export")
-            print("PYPI_USER and PYPI_PWD")
-            print("e.g.  export PYPI_USER=jepe")
+            print("Could not extract token from environment")
+            print("For it to work you need to export PYPI_TOKEN")
+            print("   e.g.  export PYPI_TOKEN=<token>")
+            print("or add it to your .env file.")
             print("Running upload (insert username and password when prompted)")
             c.run("python -m twine upload dist/*")
 
