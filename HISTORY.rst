@@ -13,7 +13,7 @@ History
 * Templates: adding more documentation
 * File handling: allow for external raw files (ssh)
 * Readers: neware.txt (one version/model)
-* Readers: arbin_sql7 (experimental)
+* Readers: arbin_sql7 (experimental, @jtgibson91)
 * Batch plotting: collectors for both data collection, plotting and saving
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
 * Internals: rename .cell property to .data
