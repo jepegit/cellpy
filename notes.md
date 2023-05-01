@@ -79,7 +79,6 @@ Steps:
    2. fid is generated through running self.generate_fid() and fid is
       added to the Data instances using self.fid as argument.
 
-
 3. Modify AtomicLoad in base.py so that it can handle
    the new Path subclass and use it to load files from a remote server.
    1. After some trail and errors, the next step now will be to implement the
@@ -96,3 +95,7 @@ Steps:
 6. Check if loaders can be updated to automatically run the new methods
    in the base loader (self.name and self.copy_to_temporary()).
 7. Update dependencies (setup.py, requirements.txt etc)
+
+### release 1.0.0
+
+Add token to .env (for uploading to PyPI)
