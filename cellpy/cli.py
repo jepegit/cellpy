@@ -554,16 +554,16 @@ def _check_config_file():
             value = prm_paths.get(k, None)
             click.echo(f"{k}: {value}")
             # splitting this into two if-statements to make it easier to debug if OtherPath changes
-            if value in OTHERPATHS:
-                logging.debug(
-                    "skipping check for external rawdatadir and cellpydatadir (for now)"
+            if k in OTHERPATHS:
+                print(
+                    f"skipping check for external {k} (for now)"
                 )
-                if not OtherPath(
-                    value
-                ).is_dir():  # Assuming OtherPath returns True if it is external.
-                    missing += 1
-                    click.echo("COULD NOT CONNECT!")
-                    click.echo(f"({value} is not a directory)")
+                # if not OtherPath(
+                #     value
+                # ).is_dir():  # Assuming OtherPath returns True if it is external.
+                #     missing += 1
+                #     click.echo("COULD NOT CONNECT!")
+                #     click.echo(f"({value} is not a directory)")
             elif value and not pathlib.Path(value).is_dir():
                 missing += 1
                 click.echo("COULD NOT CONNECT!")

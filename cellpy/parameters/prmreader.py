@@ -107,36 +107,43 @@ def _update_prms(config_dict):
     """updates the prms with the values in the config_dict"""
     # config_dict is your current config
     # _config_attr is the attribute in the prms module (i.e. the defaults)
+
     logging.debug("updating parameters")
     logging.debug(f"new prms: {config_dict}")
     for key in config_dict:
         if config_dict[key] is None:
             logging.debug(f"{config_dict[key]} is None")
             continue
-        if hasattr(prms, key):
+        if key == "Paths":
             _config_attr = getattr(prms, key)
-            is_path = isinstance(_config_attr, prms.PathsClass)
+            for k in config_dict[key]:
+                z = config_dict[key][k]
+
+                _txt = f"{k}: {z}"
+                if k.lower() == "db_filename":
+                    # special hack because it is a filename and not a path
+                    pass
+                elif k.lower() in OTHERPATHS:
+                    logging.debug("converting to OtherPath")
+                    # special hack because it is possibly an external location
+                    z = OtherPath(
+                        str(z)
+                    ).resolve()  # v1.0.0: this is only resolving local paths
+                else:
+                    logging.debug("converting to pathlib.Path")
+                    z = pathlib.Path(z).resolve()
+                _txt += f" -> {z}"
+
+                logging.debug(_txt)
+                setattr(_config_attr, k, z)
+
+        elif hasattr(prms, key):
+            _config_attr = getattr(prms, key)
             if _config_attr is None:
                 logging.debug(f"{_config_attr} is None")
                 continue
             for k in config_dict[key]:
                 z = config_dict[key][k]
-                if is_path:
-                    _txt = f"{k}: {z}"
-                    if k.lower() == "db_filename":
-                        # special hack because it is a filename and not a path
-                        pass
-                    elif k.lower() in OTHERPATHS:
-                        # special hack because it is possibly an external location
-                        z = OtherPath(
-                            str(z)
-                        ).resolve()  # v1.0.0: this is only resolving local paths
-                    else:
-                        z = pathlib.Path(z).resolve()
-                    _txt += f" -> {z}"
-                    logging.debug("converting to pathlib.Path")
-                    logging.debug(_txt)
-
                 if isinstance(z, dict):
                     y = getattr(_config_attr, k)
                     z = box.Box({**y, **z})
@@ -371,9 +378,9 @@ def main():
     pprint(_pack_prms())
     print("INFO:")
     info()
-    # print(prms)
-    # pprint(str(prms.Batch), width=1)
-    # print(prms.Batch.summary_plot_height_fractions)
+    print(prms)
+    pprint(str(prms.Batch), width=1)
+    print(prms.Batch.summary_plot_height_fractions)
 
 
 if __name__ == "__main__":

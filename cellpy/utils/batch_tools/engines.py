@@ -179,6 +179,7 @@ def simple_db_engine(
     new_version = False
 
     # This is not really a proper Do-er engine. But not sure where to put it.
+    logging.debug("simple_db_engine")
     if reader is None:
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")

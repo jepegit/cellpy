@@ -89,7 +89,7 @@ class Batch:
         """
         # TODO: add option for setting max cycle number
         #   use self.experiment.last_cycle = xxx
-        default_log_level = kwargs.pop("log_level", None)
+        default_log_level = kwargs.pop("default_log_level", None)
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
             log.setup_logging(

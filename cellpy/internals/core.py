@@ -127,9 +127,6 @@ class OtherPath(pathlib.Path):
     )  # noqa
 
     def __new__(cls, *args, **kwargs):
-        logging.debug("Running __new__ for OtherPath")
-        logging.debug(f"args: {args}")
-        logging.debug(f"kwargs: {kwargs}")
         if args:
             path, *args = args
         else:
@@ -138,12 +135,13 @@ class OtherPath(pathlib.Path):
         if not path:
             logging.debug("initiating OtherPath with empty path")
             path = "."
-        logging.debug(f"path: {path}")
         if isinstance(path, OtherPath) and hasattr(path, "_original"):
             logging.debug(f"path is OtherPath")
             path = path._original
         logging.debug(f"checked if path is OtherPath")
+
         path = _clean_up_original_path_string(path)
+        assert isinstance(path, str), "path must be a string"
         cls.__original = path
         cls._pathlib_doc = super().__doc__
         path = _check_external(path)[0]
@@ -192,21 +190,18 @@ class OtherPath(pathlib.Path):
 
     def _wrap_and_morph_method(self, method):
         if self.is_external:
-            print(f"Cannot run {method.__name__} for external paths!")
             return lambda *args, **kwargs: self
         else:
             return lambda *args, **kwargs: OtherPath(*args, **kwargs)
 
     def _wrap_callable_method(self, method, default_return_value=True):
         if self.is_external:
-            print(f"Cannot run {method.__name__} for external paths!")
             return lambda *args, **kwargs: default_return_value
         else:
             return method
 
     def _wrap_non_callable(self, attr, default_return_value=None):
         if self.is_external:
-            print(f"Cannot get {attr} for external paths!")
             return default_return_value
         else:
             return attr
@@ -246,10 +241,20 @@ class OtherPath(pathlib.Path):
         return OtherPath(path)
 
     def __str__(self: S) -> str:
-        if hasattr(self, "_original") and self.is_external:
+        if hasattr(self, "_original"):
+            if self.is_external:
+                logging.debug("external path, returning _original")
             return self._original
         else:
             return super().__str__()
+
+    def __repr__(self: S) -> str:
+        if hasattr(self, "_original"):
+            if self.is_external:
+                logging.debug("external path, returning _original")
+            return f"OtherPath('{self._original}')"
+        else:
+            return super().__repr__()
 
     def _glob(self, glob_str: str, **kwargs) -> Generator:
         testing = kwargs.pop("testing", False)
@@ -270,9 +275,10 @@ class OtherPath(pathlib.Path):
         return self._glob(glob_str, search_in_sub_dirs=True, **kwargs)
 
     def resolve(self: S, *args, **kwargs) -> S:
+
         if self.is_external:
-            # logging.warning(f"Cannot resolve external paths. Returning self. ({self})")
-            return self
+            logging.debug(f"Cannot resolve external paths. Returning self. ({self})")
+            return OtherPath(self._original)
         resolved_path = pathlib.Path(self._original).resolve(*args, **kwargs)
         return OtherPath(resolved_path)
 
@@ -362,7 +368,7 @@ class OtherPath(pathlib.Path):
             logging.warning(
                 "This method (`absolute`) is not implemented yet for external paths! Returning self."
             )
-            return self
+            return OtherPath(self._original)
         return OtherPath(super().absolute())
 
     def samefile(self: S, other_path: Union[str, pathlib.Path, S]) -> bool:
@@ -413,7 +419,7 @@ class OtherPath(pathlib.Path):
 
     def joinpath(self, *args, **kwargs):
         logging.warning(f"Cannot run 'joinpath' for OtherPath!")
-        return self
+        return OtherPath(self._original)
 
     def readlink(self, *args, **kwargs):
         logging.warning(f"Cannot run 'readlink' for OtherPath!")
@@ -438,7 +444,7 @@ class OtherPath(pathlib.Path):
 
     def lchmod(self, *args, **kwargs):
         logging.warning(f"Cannot run 'lchmod' for OtherPath!")
-        return self
+        return OtherPath(self._original)
 
     @property
     def original(self: S) -> str:
@@ -492,17 +498,17 @@ class OtherPath(pathlib.Path):
             destination = pathlib.Path(tempfile.gettempdir())
         else:
             destination = pathlib.Path(destination)
-        print(80 * "=")
-        print(f"Copying {self} to {destination}...")
-        print(f"Is external: {self.is_external}")
-        print(f"URI prefix: {self.uri_prefix}")
-        print(f"Location: {self.location}")
-        print(f"Raw path: {self.raw_path}")
-        print(f"Full path: {self.full_path}")
-        print(f"Original: {self.original}")
-        print(f"Is absolute: {self.is_absolute()}")
-        print(f"{self.name=}")
-        print(80 * "=")
+        # print(80 * "=")
+        # print(f"Copying {self} to {destination}...")
+        # print(f"Is external: {self.is_external}")
+        # print(f"URI prefix: {self.uri_prefix}")
+        # print(f"Location: {self.location}")
+        # print(f"Raw path: {self.raw_path}")
+        # print(f"Full path: {self.full_path}")
+        # print(f"Original: {self.original}")
+        # print(f"Is absolute: {self.is_absolute()}")
+        # print(f"{self.name=}")
+        # print(80 * "=")
         path_of_copied_file = destination / self.name
 
         if not self.is_external:
@@ -530,7 +536,9 @@ class OtherPath(pathlib.Path):
                 f"or {ENV_VAR_CELLPY_KEY_FILENAME} environment variables."
             )
         if key_filename is not None:
-            connect_kwargs = {"key_filename": key_filename}
+            key_filename = pathlib.Path(key_filename).expanduser().resolve()
+            assert pathlib.Path(key_filename).is_file()
+            connect_kwargs = {"key_filename": str(key_filename)}
             logging.debug(f"got key_filename")
             if not testing:
                 if not pathlib.Path(key_filename).is_file():
@@ -576,6 +584,7 @@ class OtherPath(pathlib.Path):
         glob_str: str,
         search_in_sub_dirs: bool = False,
     ) -> List[str]:
+        # TODO: update this so that it works faster (need some linux magic)
         path_separator = "/"
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
@@ -595,18 +604,22 @@ class OtherPath(pathlib.Path):
                     ]
                     filtered_files = fnmatch.filter(files, glob_str)
                     for sub_dir in sub_dirs:
-                        sftp_conn.chdir(sub_dir)
-                        new_files = [
-                            f
-                            for f in sftp_conn.listdir()
-                            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-                        ]
-                        new_filtered_files = fnmatch.filter(new_files, glob_str)
-                        new_filtered_files = [
-                            f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
-                        ]
-                        filtered_files += new_filtered_files
-                        sftp_conn.chdir("..")
+                        try:
+                            sftp_conn.chdir(sub_dir)
+                            new_files = [
+                                f
+                                for f in sftp_conn.listdir()
+                                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                            ]
+                            new_filtered_files = fnmatch.filter(new_files, glob_str)
+                            new_filtered_files = [
+                                f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
+                            ]
+                            filtered_files += new_filtered_files
+                            sftp_conn.chdir("..")
+                        except FileNotFoundError:
+                            logging.debug(f"Could not look in {sub_dir}: FileNotFoundError")
+                            pass
                 else:
                     files = sftp_conn.listdir()
                     filtered_files = fnmatch.filter(files, glob_str)

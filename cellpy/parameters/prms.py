@@ -105,6 +105,7 @@ class FileNamesClass(CellPyConfig):
     file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
     raw_extension: str = "res"
     reg_exp: str = None
+    sub_folders: bool = True
     file_list_location: str = None
     file_list_type: str = None
     file_list_name: str = None

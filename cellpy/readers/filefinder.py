@@ -23,7 +23,7 @@ def search_for_files(
     prm_filename: Union[pathlib.Path, str, None] = None,
     file_name_format: Optional[str] = None,
     reg_exp: Optional[str] = None,
-    sub_folders: bool = False,
+    sub_folders: Optional[bool] = True,
     file_list: Optional[List[str]] = None,
     pre_path: Union[OtherPath, pathlib.Path, str, None] = None,
 ) -> Tuple[List[str], str]:
@@ -63,7 +63,7 @@ def search_for_files(
     # TODO: update prms and conf file to allow for setting if search should be done in
     #  sub-folders, several folders, db, cloud etc
     # TODO: @jepe - find a way to implement automatic file_list creation in a top level func.
-
+    logging.debug(f"searching for {run_name}")
     version = 0.3
     t0 = time.time()
 
@@ -85,11 +85,11 @@ def search_for_files(
             "Deprecation warning: cellpy_file_extension should not include the '.'"
         )
         cellpy_file_extension = cellpy_file_extension[1:]
-        warnings.warn(f"Removing it -> {cellpy_file_extension}")
 
     if raw_file_dir is None:
         raw_file_dir = prms.Paths.rawdatadir
 
+    logging.debug(f"2 {raw_file_dir=}")
     if file_name_format is None:
         file_name_format = prms.FileNames.file_name_format
 
@@ -160,7 +160,7 @@ def search_for_files(
                 _run_files = []
             else:
                 logging.debug(f"checking in folder {d}")
-
+                logging.debug(f"{sub_folders=}")
                 if sub_folders:
                     _run_files = d.rglob(glob_text_raw)
 
