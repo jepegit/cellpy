@@ -288,8 +288,33 @@ class OtherPath(pathlib.Path):
     def rglob(self, glob_str: str, *args, **kwargs) -> Generator:
         return self._glob(glob_str, search_in_sub_dirs=True, **kwargs)
 
-    def resolve(self: S, *args, **kwargs) -> S:
+    def _listdir(self, levels: int, **kwargs) -> Generator:
+        if self.is_external:
+            testing = kwargs.pop("testing", False)
+            connect_kwargs, host = self._get_connection_info(testing)
+            paths = self._listdir_with_fabric(host, connect_kwargs, levels)
+            return (OtherPath(p) for p in paths)
 
+        if self.is_dir():
+            return (OtherPath(p) for p in os.listdir(self._original))
+
+    def listdir(self: S, levels: int = 1, **kwargs) -> Generator:
+        """List the contents of the directory.
+
+        Args:
+            levels (int, optional): How many sublevels to list. Defaults to 1.
+                If you want to list all sublevels, use `listdir(levels=-1)`.
+                If you want to list only the current level (no subdirectories),
+                use `listdir(levels=0)`.
+
+        Returns:
+            Generator: Generator of OtherPath objects.
+
+        """
+        return self._listdir(levels, **kwargs)
+
+    def resolve(self: S, *args, **kwargs) -> S:
+        """Resolve the path."""
         if self.is_external:
             logging.debug(f"Cannot resolve external paths. Returning self. ({self})")
             return OtherPath(self._original)
@@ -512,17 +537,6 @@ class OtherPath(pathlib.Path):
             destination = pathlib.Path(tempfile.gettempdir())
         else:
             destination = pathlib.Path(destination)
-        # print(80 * "=")
-        # print(f"Copying {self} to {destination}...")
-        # print(f"Is external: {self.is_external}")
-        # print(f"URI prefix: {self.uri_prefix}")
-        # print(f"Location: {self.location}")
-        # print(f"Raw path: {self.raw_path}")
-        # print(f"Full path: {self.full_path}")
-        # print(f"Original: {self.original}")
-        # print(f"Is absolute: {self.is_absolute()}")
-        # print(f"{self.name=}")
-        # print(80 * "=")
         path_of_copied_file = destination / self.name
 
         if not self.is_external:
@@ -585,6 +599,48 @@ class OtherPath(pathlib.Path):
                     st_atime=stat_result.st_atime,
                     st_mtime=stat_result.st_mtime,
                 )
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    f"Could not find file {self.raw_path} on {host}"
+                ) from e
+
+    def _listdir_with_fabric(
+        self: S,
+        host: str,
+        connect_kwargs: dict,
+        levels: int = 1,
+    ) -> List[str]:
+        """List the contents of a directory through sftp."""
+
+        path_separator = "/"  # only supports unix-like systems
+        t1 = time.time()
+        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+            try:
+                t1 = time.time()
+                sftp_conn = conn.sftp()
+                sftp_conn.chdir(self.raw_path)
+                sub_dirs = [f"{self.raw_path}{path_separator}{f}" for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
+                files = [f"{self.raw_path}{path_separator}{f}" for f in sftp_conn.listdir() if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
+                while levels != 0:
+                    new_sub_dirs = []
+                    for sub_dir in sub_dirs:
+                        try:
+                            sftp_conn.chdir(sub_dir)
+                            _new_sub_dirs = [f"{sub_dir}{path_separator}{f}" for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
+                            new_files = [f"{sub_dir}{path_separator}{f}" for f in sftp_conn.listdir() if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
+                            files += new_files
+                            new_sub_dirs += _new_sub_dirs
+                            sftp_conn.chdir(self.raw_path)
+                        except FileNotFoundError:
+                            logging.debug(f"Could not look in {sub_dir}: FileNotFoundError")
+                        pass
+                    sub_dirs = new_sub_dirs
+                    if len(sub_dirs) == 0:
+                        break
+                    levels -= 1
+
+                logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
+                return files
             except FileNotFoundError as e:
                 raise FileNotFoundError(
                     f"Could not find file {self.raw_path} on {host}"
