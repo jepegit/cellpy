@@ -35,6 +35,7 @@ plotly
 kaleido==0.1.*
 seaborn
 wheel
+decorator
 fabric
 nox
 rich

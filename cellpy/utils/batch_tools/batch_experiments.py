@@ -165,7 +165,7 @@ class CyclingExperiment(BaseExperiment):
                         logging.debug(e)
         return cell_spec
 
-    def update(self, all_in_memory=None, cell_specs=None, logging_mode=None, **kwargs):
+    def update(self, all_in_memory=None, cell_specs=None, logging_mode=None, accept_errors=None, **kwargs):
         """Updates the selected datasets.
 
         Args:
@@ -175,6 +175,7 @@ class CyclingExperiment(BaseExperiment):
                 dictionary will override the **kwargs and the parameters from the journal pages
                 for the indicated cell.
             logging_mode (str): sets the logging mode for the loader(s).
+            accept_errors (bool): if True, the loader will continue even if it encounters errors.
 
             kwargs:
                 transferred all the way to the instrument loader, if not
@@ -207,6 +208,7 @@ class CyclingExperiment(BaseExperiment):
         """
 
         # TODO: implement experiment.last_cycle
+        accept_errors = accept_errors or self.accept_errors
 
         debugging = kwargs.pop("debug", False)
         testing = kwargs.pop("testing", False)
@@ -349,7 +351,7 @@ class CyclingExperiment(BaseExperiment):
                 errors.append("update:" + str(index))
                 h_txt += " [-]"
                 pbar.set_postfix_str(s=h_txt, refresh=True)
-                if not self.accept_errors:
+                if not accept_errors:
                     raise e
                 continue
 

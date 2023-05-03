@@ -836,6 +836,9 @@ class Batch:
             cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
                 dictionary will override the **kwargs and the parameters from the journal pages
                 for the indicated cell.
+            logging_mode (str): sets the logging mode for the loader(s).
+            accept_errors (bool): if True, the loader will continue even if it encounters errors.
+
 
         Additional kwargs:
             transferred all the way to the instrument loader, if not

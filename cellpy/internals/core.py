@@ -54,11 +54,7 @@ class ExternalStatResult:
 
 
 def _clean_up_original_path_string(path_string):
-    logging.debug(f"cleaning up path: {path_string}")
     if not isinstance(path_string, str):
-        logging.debug(f"path is not a string: {path_string}")
-        logging.debug(f"path is of type: {type(path_string)}")
-
         if isinstance(path_string, OtherPath):
             logging.debug(f"path is an OtherPath object")
             if hasattr(path_string, "original"):
@@ -77,9 +73,8 @@ def _clean_up_original_path_string(path_string):
             parts[0] = parts[0].replace("\\", "")
             path_string = "/".join(parts)
         else:
+            logging.debug(f"unknown path type: {type(path_string)}")
             path_string = str(path_string)
-    else:
-        logging.debug(f"path is a string: {path_string}")
     return path_string
 
 
@@ -240,13 +235,32 @@ class OtherPath(pathlib.Path):
         path = pathlib.Path(self._original).__rtruediv__(key)
         return OtherPath(path)
 
+    # def _format_parsed_parts(cls, drv, root, parts):
+    #     if drv or root:
+    #         return drv + root + cls._flavour.join(parts[1:])
+    #     else:
+    #         return cls._flavour.join(parts)
+
     def __str__(self: S) -> str:
-        if hasattr(self, "_original"):
-            if self.is_external:
-                logging.debug("external path, returning _original")
+        if hasattr(self, "_original") and self.is_external:
+            logging.debug("external path, returning _original")
             return self._original
-        else:
-            return super().__str__()
+        return super().__str__()
+
+    # def __str__(self: S) -> str:
+    #     print(80 * "=")
+    #     print(super()._format_parsed_parts(self._drv, self._root, self._parts))
+    #     print(80 * "=")
+    #     if hasattr(self, "_original"):
+    #         if self.is_external:
+    #             logging.debug("external path, returning _original")
+    #             return self._original
+    #         else:
+    #             print(super()._format_parsed_parts(self._drv, self._root, self._parts))
+    #             return super()._format_parsed_parts(self._drv, self._root, self._parts)
+    #     else:
+    #         raise AttributeError("FUCK YOU")
+    #         return super().__str__()
 
     def __repr__(self: S) -> str:
         if hasattr(self, "_original"):
@@ -537,7 +551,6 @@ class OtherPath(pathlib.Path):
             )
         if key_filename is not None:
             key_filename = pathlib.Path(key_filename).expanduser().resolve()
-            assert pathlib.Path(key_filename).is_file()
             connect_kwargs = {"key_filename": str(key_filename)}
             logging.debug(f"got key_filename")
             if not testing:
