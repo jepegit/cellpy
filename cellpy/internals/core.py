@@ -217,14 +217,14 @@ class OtherPath(pathlib.Path):
 
     def __div__(self, other: Union[str, S]) -> S:
         if self.is_external:
-            path = self._original + "/" + other
+            path = f"{self._original}/{other}"
             return OtherPath(path)
         path = pathlib.Path(self._original).__truediv__(other)
         return OtherPath(path)
 
     def __truediv__(self, other: Union[str, S]) -> S:
         if self.is_external:
-            path = self._original + "/" + other
+            path = f"{self._original}/{other}"
             return OtherPath(path)
         path = pathlib.Path(self._original).__truediv__(other)
         return OtherPath(path)
@@ -235,32 +235,11 @@ class OtherPath(pathlib.Path):
         path = pathlib.Path(self._original).__rtruediv__(key)
         return OtherPath(path)
 
-    # def _format_parsed_parts(cls, drv, root, parts):
-    #     if drv or root:
-    #         return drv + root + cls._flavour.join(parts[1:])
-    #     else:
-    #         return cls._flavour.join(parts)
-
     def __str__(self: S) -> str:
         if hasattr(self, "_original") and self.is_external:
             logging.debug("external path, returning _original")
             return self._original
         return super().__str__()
-
-    # def __str__(self: S) -> str:
-    #     print(80 * "=")
-    #     print(super()._format_parsed_parts(self._drv, self._root, self._parts))
-    #     print(80 * "=")
-    #     if hasattr(self, "_original"):
-    #         if self.is_external:
-    #             logging.debug("external path, returning _original")
-    #             return self._original
-    #         else:
-    #             print(super()._format_parsed_parts(self._drv, self._root, self._parts))
-    #             return super()._format_parsed_parts(self._drv, self._root, self._parts)
-    #     else:
-    #         raise AttributeError("FUCK YOU")
-    #         return super().__str__()
 
     def __repr__(self: S) -> str:
         if hasattr(self, "_original"):
@@ -296,7 +275,7 @@ class OtherPath(pathlib.Path):
             return (OtherPath(p) for p in paths)
 
         if self.is_dir():
-            return (OtherPath(p) for p in os.listdir(self._original))
+            return (OtherPath(f"{self.full_path}/{p}") for p in os.listdir(self._original))
 
     def listdir(self: S, levels: int = 1, **kwargs) -> Generator:
         """List the contents of the directory.
@@ -499,6 +478,14 @@ class OtherPath(pathlib.Path):
         if self.is_external:
             return f"{self._uri_prefix}{self._location}{self._raw_other_path}"
         return self._original
+
+    @property
+    def pathlike_location(self: S) -> S:
+        """Return the location of the external path as a pathlike object."""
+
+        if self.is_external:
+            return OtherPath(f"{self._uri_prefix}{self._location}")
+        return OtherPath(super().drive)
 
     @property
     def is_external(self: S) -> bool:

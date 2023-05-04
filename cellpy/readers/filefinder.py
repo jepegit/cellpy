@@ -21,16 +21,15 @@ from cellpy.internals.core import OtherPath
 # TODO: @jepe - add function for searching in cloud storage (dropbox, google drive etc)
 # TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
 
-# TODO: @jepe - add function including the prefix (e.g. ssh://) in the file name
-#   (modify OtherPath.listdir() to include the prefix)
-
 def list_raw_file_directory(
     raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     extension: Optional[str] = None,
     levels: Optional[int] = 1,
+    only_filename: Optional[bool] = False,
+    with_prefix: Optional[bool] = True,
 ):
-    """Dumps the raw-file directory to a file.
+    """Dumps the raw-file directory to a list.
 
     Args:
         raw_file_dir(path): optional, directory where to look for run-files
@@ -42,6 +41,11 @@ def list_raw_file_directory(
             If you want to list all sublevels, use `listdir(levels=-1)`.
             If you want to list only the current level (no subdirectories),
             use `listdir(levels=0)`.
+        only_filename (bool, optional): If True, only the file names will be
+            returned. Defaults to False.
+        with_prefix (bool, optional): If True, the full path to the files including
+            the prefix and the location (e.g. 'scp://user@server.com/...')
+            will be returned. Defaults to True.
 
     Returns:
         list of str: list of file paths (only the actual file names).
@@ -73,17 +77,21 @@ def list_raw_file_directory(
     if project_dir is not None:
         raw_file_dir = [r / project_dir for r in raw_file_dir]
 
-    t0 = time.time()
     for d in raw_file_dir:
-        file_list.extend(d.listdir(levels=levels))
+        _file_list = d.listdir(levels=levels)
+        if extension is not None:
+            logging.debug(f"filtering for extension: {extension}")
+            _file_list = fnmatch.filter(_file_list, f"*.{extension}")
+        if only_filename:
+            logging.debug("only returning the file names")
+            _file_list = [f.name for f in _file_list]
+        elif with_prefix:
+            logging.debug("adding prefix to file names")
+            logging.debug(f"{d.pathlike_location=}")
+            _file_list = [d.pathlike_location / f for f in _file_list]
 
-    t1 = time.time()
-    print(f"searching took {t1-t0:.2f} seconds")
+        file_list.extend(_file_list)
 
-    if extension is not None:
-        t0 = time.time()
-        file_list = fnmatch.filter(file_list, f"*.{extension}")
-        print(f"filtering took {t1 - t0:.2f} seconds")
     return file_list
 
 
@@ -330,13 +338,17 @@ def check_02():
 
 
 def check_03():
+    from cellpy import prms
     from pprint import pprint
+
+    prms.Paths.rawdatadir = r"C:\scripting\processing_cellpy\raw"
     file_list = list_raw_file_directory(
         raw_file_dir=None,
         project_dir=None,
-        extension="res",
+        extension="hei",
     )
-    pprint(f"{file_list=}")
+    for f in file_list:
+        print(f"{f} type: {type(f)} path: {f.full_path}")
 
 
 if __name__ == "__main__":
