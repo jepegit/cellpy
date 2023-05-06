@@ -147,7 +147,11 @@ def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwa
 
         logging.debug(f"checking for {run_name}")
         raw_files, cellpyfile = filefinder.search_for_files(
-            run_name, file_list=file_list, pre_path=pre_path, sub_folders=sub_folders, **kwargs
+            run_name,
+            file_list=file_list,
+            pre_path=pre_path,
+            sub_folders=sub_folders,
+            **kwargs,
         )
         if not raw_files:
             raw_files = None

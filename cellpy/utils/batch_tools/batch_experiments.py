@@ -165,7 +165,14 @@ class CyclingExperiment(BaseExperiment):
                         logging.debug(e)
         return cell_spec
 
-    def update(self, all_in_memory=None, cell_specs=None, logging_mode=None, accept_errors=None, **kwargs):
+    def update(
+        self,
+        all_in_memory=None,
+        cell_specs=None,
+        logging_mode=None,
+        accept_errors=None,
+        **kwargs,
+    ):
         """Updates the selected datasets.
 
         Args:

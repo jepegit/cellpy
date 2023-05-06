@@ -555,9 +555,7 @@ def _check_config_file():
             click.echo(f"{k}: {value}")
             # splitting this into two if-statements to make it easier to debug if OtherPath changes
             if k in OTHERPATHS:
-                print(
-                    f"skipping check for external {k} (for now)"
-                )
+                print(f"skipping check for external {k} (for now)")
                 # if not OtherPath(
                 #     value
                 # ).is_dir():  # Assuming OtherPath returns True if it is external.

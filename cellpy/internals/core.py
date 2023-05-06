@@ -275,7 +275,9 @@ class OtherPath(pathlib.Path):
             return (OtherPath(p) for p in paths)
 
         if self.is_dir():
-            return (OtherPath(f"{self.full_path}/{p}") for p in os.listdir(self._original))
+            return (
+                OtherPath(f"{self.full_path}/{p}") for p in os.listdir(self._original)
+            )
 
     def listdir(self: S, levels: int = 1, **kwargs) -> Generator:
         """List the contents of the directory.
@@ -606,20 +608,38 @@ class OtherPath(pathlib.Path):
                 t1 = time.time()
                 sftp_conn = conn.sftp()
                 sftp_conn.chdir(self.raw_path)
-                sub_dirs = [f"{self.raw_path}{path_separator}{f}" for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
-                files = [f"{self.raw_path}{path_separator}{f}" for f in sftp_conn.listdir() if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
+                sub_dirs = [
+                    f"{self.raw_path}{path_separator}{f}"
+                    for f in sftp_conn.listdir()
+                    if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                ]
+                files = [
+                    f"{self.raw_path}{path_separator}{f}"
+                    for f in sftp_conn.listdir()
+                    if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                ]
                 while levels != 0:
                     new_sub_dirs = []
                     for sub_dir in sub_dirs:
                         try:
                             sftp_conn.chdir(sub_dir)
-                            _new_sub_dirs = [f"{sub_dir}{path_separator}{f}" for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
-                            new_files = [f"{sub_dir}{path_separator}{f}" for f in sftp_conn.listdir() if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
+                            _new_sub_dirs = [
+                                f"{sub_dir}{path_separator}{f}"
+                                for f in sftp_conn.listdir()
+                                if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                            ]
+                            new_files = [
+                                f"{sub_dir}{path_separator}{f}"
+                                for f in sftp_conn.listdir()
+                                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                            ]
                             files += new_files
                             new_sub_dirs += _new_sub_dirs
                             sftp_conn.chdir(self.raw_path)
                         except FileNotFoundError:
-                            logging.debug(f"Could not look in {sub_dir}: FileNotFoundError")
+                            logging.debug(
+                                f"Could not look in {sub_dir}: FileNotFoundError"
+                            )
                         pass
                     sub_dirs = new_sub_dirs
                     if len(sub_dirs) == 0:
@@ -669,12 +689,15 @@ class OtherPath(pathlib.Path):
                             ]
                             new_filtered_files = fnmatch.filter(new_files, glob_str)
                             new_filtered_files = [
-                                f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
+                                f"{sub_dir}{path_separator}{f}"
+                                for f in new_filtered_files
                             ]
                             filtered_files += new_filtered_files
                             sftp_conn.chdir("..")
                         except FileNotFoundError:
-                            logging.debug(f"Could not look in {sub_dir}: FileNotFoundError")
+                            logging.debug(
+                                f"Could not look in {sub_dir}: FileNotFoundError"
+                            )
                             pass
                 else:
                     files = sftp_conn.listdir()

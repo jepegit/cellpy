@@ -3108,40 +3108,85 @@ class CellpyCell:
         logging.info(txt)
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
-    def to_excel(self, filename=None, cycles=False, raw=True, steps=True):
+    def to_excel(self, filename=None, cycles=None, raw=False, steps=True):
         """Saves the data as .xlsx file(s).
 
         Args:
             filename: name of the Excel file.
-            cycles: (bool) export voltage-capacity curves if True.
+            cycles: (None, bool, or list of ints) export voltage-capacity curves if given.
             raw: (bool) export raw-data if True.
             steps: (bool) export steps if True.
         """
+        # TODO: allow for giving or extending to_excel_method_kwargs and get_cap_method_kwargs
+        #  currently hard-coded:
+        to_excel_method_kwargs = {"index": True, "header": True}
+        get_cap_method_kwargs = {
+            "method": "forth-and-forth",
+            "label_cycle_number": True,
+            "categorical_column": True,
+            "interpolated": True,
+            "number_of_points": 1000,
+            "capacity_then_voltage": True,
+        }
+
         if filename is None:
-            print("generating filename")
-        pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = "../../tmp/" + pre + "_cellpy.xlsx"
+            pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{pre}_cellpy.xlsx"
+            logging.critical(f"generating filename: {filename}")
 
         filename = Path(filename).resolve()
-        print(f"saving to file: {filename}")
         summary_frame = self.data.summary
-        meta_common_frame = self.data.meta_common
-        meta_test_dependent_frame = self.data.meta_test_dependent
+        meta_common_frame = self.data.meta_common.to_frame()
+        meta_test_dependent_frame = self.data.meta_test_dependent.to_frame()
 
-        step_frame = self.data.steps
 
         with pd.ExcelWriter(filename, engine="openpyxl") as writer:
-            # meta_common_frame.to_excel(writer, sheet_name="meta_common")
-            # meta_test_dependent_frame.to_excel(writer, sheet_name="meta_test_dependent")
-            summary_frame.to_excel(writer, sheet_name="summary")
-            step_frame.to_excel(writer, sheet_name="steps")
-            if cycles:
-                print("exporting cycles")
-            if raw:
-                print("exporting raw")
-            if steps:
-                print("exporting steps")
+            meta_common_frame.to_excel(
+                writer, sheet_name="meta_common", **to_excel_method_kwargs
+            )
+            meta_test_dependent_frame.to_excel(
+                writer, sheet_name="meta_test_dependent", **to_excel_method_kwargs
+            )
+            summary_frame.to_excel(
+                writer, sheet_name="summary", **to_excel_method_kwargs
+            )
 
+            if raw:
+                logging.debug("exporting raw data")
+                raw = self.data.raw
+                max_len = 1_048_576
+                if len(raw) < max_len:
+                    raw.to_excel(writer, sheet_name="raw", **to_excel_method_kwargs)
+                else:
+                    logging.warning(
+                        "Raw data is too large to fit in one sheet. "
+                        "Splitting raw data into chunks. This is not tested yet"
+                    )
+                    n_chunks = len(raw) // max_len + 1
+                    for i in range(n_chunks):
+                        raw.iloc[i * max_len : (i + 1) * max_len].to_excel(
+                            writer, sheet_name=f"raw_{i:02}", **to_excel_method_kwargs
+                        )
+
+            if steps:
+                logging.debug("exporting steps")
+                # TODO: step-table has a columns called "index" at the moment,
+                #  so setting index=False for dataframe.to_excel
+                #  Maybe best to make sure that step table does not have a column called "index" in the future?
+                self.data.steps.to_excel(
+                    writer, sheet_name="steps", index=False, header=True
+                )
+            if cycles:
+                logging.debug("exporting cycles")
+                if cycles is True:
+                    cycles = self.get_cycle_numbers()
+                for cycle in cycles:
+                    _curves = self.get_cap(cycle=cycle, **get_cap_method_kwargs)
+                    _curves.to_excel(
+                        writer,
+                        sheet_name=f"cycle_{cycle:03}",
+                        **to_excel_method_kwargs,
+                    )
 
     def to_csv(
         self,
@@ -3812,7 +3857,7 @@ class CellpyCell:
         """Returns discharge_capacity and voltage for the selected cycle
         Args:
             cycle (int): cycle number.
-            converter (string): defaults to None.
+            converter (float): defaults to None.
             mode (string): defaults to "gravimetric".
             return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
         Returns:
@@ -3844,7 +3889,7 @@ class CellpyCell:
         """Returns charge_capacity and voltage for the selected cycle.
         Args:
             cycle (int): cycle number.
-            converter (string): defaults to None.
+            converter (float): defaults to None.
             mode (string): defaults to "gravimetric".
             return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
         Returns:
@@ -3881,6 +3926,7 @@ class CellpyCell:
         dynamic=False,
         inter_cycle_shift=True,
         interpolate_along_cap=False,
+        capacity_then_voltage=False,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -3919,6 +3965,8 @@ class CellpyCell:
                 cycles. Defaults to True.
             interpolate_along_cap (bool): interpolate along capacity axis instead
                 of along the voltage axis. Defaults to False.
+            capacity_then_voltage (bool): return capacity and voltage instead of
+                voltage and capacity. Defaults to False.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -4128,7 +4176,11 @@ class CellpyCell:
                             cycle_df = c
                         else:
                             cycle_df = pd.concat([cycle_df, c], axis=0)
-
+                    if capacity_then_voltage:
+                        cols = cycle_df.columns.to_list()
+                        new_cols = [cols.pop(cols.index("capacity")), cols.pop(cols.index("voltage"))]
+                        new_cols.extend(cols)
+                        cycle_df = cycle_df[new_cols]
                 else:
                     logging.warning("returning non-dataframe")
                     c = pd.concat([_first_step_c, _last_step_c], axis=0)
@@ -5957,16 +6009,23 @@ def save_and_load_cellpy_file():
 
 def load_and_save_to_excel():
     from pathlib import Path
+
     print(" loading cellpy file and saving to excel ".center(80, "="))
 
-    cellpy_file = Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    raw_file = Path("../../testdata/data/20160805_test001_45_cc_01.res")
+    cellpy_file = Path("../../tmp/20160805_test001_45_cc.h5")
     excel_file = Path("../../tmp/20160805_test001_45_cc.xlsx")
 
-    c = get(cellpy_file)
+    c = get(raw_file, mass=1.0, nominal_capacity=3579)
     print("loaded ...")
-
     c.to_excel(excel_file)
     print("saved ...")
+
+    c.save(cellpy_file)
+    c2 = get(cellpy_file)
+    print("loaded again ...")
+    c2.to_excel(excel_file, raw=True, cycles=True)
+    print("saved again ...")
 
 
 if __name__ == "__main__":

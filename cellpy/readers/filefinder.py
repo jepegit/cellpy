@@ -21,6 +21,7 @@ from cellpy.internals.core import OtherPath
 # TODO: @jepe - add function for searching in cloud storage (dropbox, google drive etc)
 # TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
 
+
 def list_raw_file_directory(
     raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
