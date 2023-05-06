@@ -20,6 +20,7 @@ import numbers
 import os
 import sys
 import time
+import datetime
 import warnings
 from pathlib import Path
 from typing import Union, Sequence, List
@@ -3118,12 +3119,29 @@ class CellpyCell:
         """
         if filename is None:
             print("generating filename")
-        if cycles:
-            print("exporting cycles")
-        if raw:
-            print("exporting raw")
-        if steps:
-            print("exporting steps")
+        pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = "../../tmp/" + pre + "_cellpy.xlsx"
+
+        filename = Path(filename).resolve()
+        print(f"saving to file: {filename}")
+        summary_frame = self.data.summary
+        meta_common_frame = self.data.meta_common
+        meta_test_dependent_frame = self.data.meta_test_dependent
+
+        step_frame = self.data.steps
+
+        with pd.ExcelWriter(filename, engine="openpyxl") as writer:
+            # meta_common_frame.to_excel(writer, sheet_name="meta_common")
+            # meta_test_dependent_frame.to_excel(writer, sheet_name="meta_test_dependent")
+            summary_frame.to_excel(writer, sheet_name="summary")
+            step_frame.to_excel(writer, sheet_name="steps")
+            if cycles:
+                print("exporting cycles")
+            if raw:
+                print("exporting raw")
+            if steps:
+                print("exporting steps")
+
 
     def to_csv(
         self,
@@ -5937,5 +5955,19 @@ def save_and_load_cellpy_file():
     # print(c.data.raw.columns)
 
 
+def load_and_save_to_excel():
+    from pathlib import Path
+    print(" loading cellpy file and saving to excel ".center(80, "="))
+
+    cellpy_file = Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    excel_file = Path("../../tmp/20160805_test001_45_cc.xlsx")
+
+    c = get(cellpy_file)
+    print("loaded ...")
+
+    c.to_excel(excel_file)
+    print("saved ...")
+
+
 if __name__ == "__main__":
-    save_and_load_cellpy_file()
+    load_and_save_to_excel()
