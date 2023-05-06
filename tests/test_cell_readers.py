@@ -182,7 +182,8 @@ def test_print_step_table(dataset):
 def test_c_rate_calc(dataset):
     # TODO @jepe: refactor and use col names directly from HeadersStepTable instead
     table = dataset.data.steps
-    assert 0.09 in table["rate_avr"].unique()
+    unique = table["rate_avr"].unique()
+    assert len(unique) == 6
 
 
 @pytest.mark.xfail(raises=DeprecatedFeature)
