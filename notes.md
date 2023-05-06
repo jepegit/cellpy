@@ -99,3 +99,8 @@ Steps:
 ### release 1.0.0
 
 Add token to .env (for uploading to PyPI)
+
+#### warnings during building
+
+Package 'cellpy.utils.data' is absent from the `packages` configuration.
+Package 'cellpy.utils.data.raw' is absent from the `packages` configuration

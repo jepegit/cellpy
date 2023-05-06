@@ -81,6 +81,7 @@ def get_pypi_info(package="cellpy"):
     Returns:
         [version, sha256]
     """
+    from pprint import pprint
     url = f"https://pypi.org/pypi/{package}/json"
     response = requests.get(url)
     if not response:
@@ -91,7 +92,9 @@ def get_pypi_info(package="cellpy"):
     version = response["info"]["version"]
     release = response["releases"][version][-1]
     sha256 = release["digests"]["sha256"]
-    return version, sha256
+    all_releases = list(response["releases"].keys())
+    version_last_published = all_releases[-1]
+    return version, sha256, version_last_published
 
 
 def update_meta_yaml_line(line, update_dict):
@@ -128,10 +131,11 @@ def update_meta_yaml(meta_filename, update_dict):
 @task
 def pypi(c, package="cellpy"):
     """Query pypi"""
-    version, sha = get_pypi_info(package=package)
+    version, sha, last = get_pypi_info(package=package)
     if version:
         print(f"version: {version}")
         print(f"sha256: {sha}")
+        print(f"last-ver: {last}")
 
 
 @task
@@ -218,13 +222,26 @@ def info(c, full=False):
     with open(version_file_path) as f:
         exec(f.read(), {}, version_ns)
 
-    version, sha = get_pypi_info(package="cellpy")
+    version_stable, sha, version_last = get_pypi_info(package="cellpy")
+    version_in_code = version_ns['__version__']
+    version_by_import = cellpy.__version__
+
     print(" INFO ".center(80, "="))
     print(" version ".center(80, "-"))
-    print(f"version (by import cellpy): cellpy {cellpy.__version__}")
-    print(f"version (in _version.py):   cellpy {version_ns['__version__']}")
-    if version:
-        print(f"version on PyPI:            cellpy {version}")
+    print(f"version (by import cellpy): cellpy {version_by_import}")
+    print(f"version (in _version.py):   cellpy {version_in_code}")
+    if version_in_code != version_by_import:
+        print("WARNING: version mismatch")
+
+    if version_stable:
+        print(f"version on PyPI:            cellpy {version_stable}")
+    if version_last:
+        print(f"last on PyPI:               cellpy {version_last}")
+        if version_in_code == version_last:
+            print("You need to bump version number before you can publish!")
+            print("Use bump task to do this:")
+            print("> inv bump")
+    print(80 * "-")
 
 
 @task
@@ -234,9 +251,10 @@ def sha(c, version=None):
     if version is None:
         version = f"{cellpy.__version__}"
     full_version = f"cellpy/{version}"
-    pypi_version, sha_hash = get_pypi_info(package=full_version)
+    pypi_version, sha_hash, last = get_pypi_info(package=full_version)
     print(f"ver: {pypi_version}")
     print(f"sha: {sha_hash}")
+    print(f"last-ver: {last}")
 
 
 @task
