@@ -3132,13 +3132,12 @@ class CellpyCell:
         if filename is None:
             pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{pre}_cellpy.xlsx"
+            filename = Path(filename).resolve()
             logging.critical(f"generating filename: {filename}")
 
-        filename = Path(filename).resolve()
         summary_frame = self.data.summary
         meta_common_frame = self.data.meta_common.to_frame()
         meta_test_dependent_frame = self.data.meta_test_dependent.to_frame()
-
 
         with pd.ExcelWriter(filename, engine="openpyxl") as writer:
             meta_common_frame.to_excel(
@@ -3851,22 +3850,23 @@ class CellpyCell:
         cycle=None,
         converter=None,
         mode="gravimetric",
-        return_dataframe=False,
+        return_dataframe=True,
         **kwargs,
     ):
-        """Returns discharge_capacity and voltage for the selected cycle
+        """Returns discharge-capacity and voltage for the selected cycle
         Args:
             cycle (int): cycle number.
-            converter (float): defaults to None.
-            mode (string): defaults to "gravimetric".
+            converter (float): a multiplication factor that converts the values to specific values (i.e.
+                from Ah to mAh/g). If not provided (or None), the factor is obtained from the
+                self.get_converter_to_specific() method.
+            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'.
+                Used if converter is not provided (or None).
             return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+            **kwargs:
         Returns:
-            discharge_capacity, voltage (pd.Series).
+            discharge_capacity, voltage (pd.Series or pd.DataFrame if return_dataframe is True).
 
         """
-        # TODO: update docstring on purpose of "converter" and "mode"
-        #  TODO - jepe: should return a DataFrame as default
-        #   but remark that we then have to update e.g. batch_helpers.py
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
@@ -3883,22 +3883,22 @@ class CellpyCell:
         cycle=None,
         converter=None,
         mode="gravimetric",
-        return_dataframe=False,
+        return_dataframe=True,
         **kwargs,
     ):
-        """Returns charge_capacity and voltage for the selected cycle.
+        """Returns charge-capacity and voltage for the selected cycle.
         Args:
             cycle (int): cycle number.
-            converter (float): defaults to None.
-            mode (string): defaults to "gravimetric".
+            converter (float): a multiplication factor that converts the values to specific values (i.e.
+                from Ah to mAh/g). If not provided (or None), the factor is obtained from the
+                self.get_converter_to_specific() method.
+            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'.
+                Used if converter is not provided (or None).
             return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
         Returns:
-            charge_capacity, voltage (pd.Series).
+            charge_capacity, voltage (pandas.Series or pandas.DataFrame if return_dataframe is True).
 
         """
-        # TODO: update docstring on purpose of "converter" and "mode"
-        # TODO - jepe: should return a DataFrame as default
-        #   (but remark that we then have to update e.g. batch_helpers.py)
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
@@ -3971,7 +3971,7 @@ class CellpyCell:
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
             unless split is explicitly set to True. Then it returns a tuple
-            with capacity (mAh/g) and voltage.
+            with capacity and voltage.
         """
 
         # TODO: allow for fixing the interpolation range (so that it is possible
@@ -4016,11 +4016,13 @@ class CellpyCell:
                 cc, cv = self.get_ccap(
                     current_cycle,
                     converter=specific_converter,
+                    return_dataframe=False,
                     **kwargs,
                 )
                 dc, dv = self.get_dcap(
                     current_cycle,
                     converter=specific_converter,
+                    return_dataframe=False,
                     **kwargs,
                 )
 

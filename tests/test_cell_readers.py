@@ -740,10 +740,10 @@ def test_get_current_voltage(dataset):
 
 
 def test_get_capacity(dataset):
-    cc, vcc = dataset.get_ccap(cycle=5)
+    cc, vcc = dataset.get_ccap(cycle=5, return_dataframe=False)
     assert len(cc) == len(vcc)
     assert len(cc) == 214
-    dc, vdc = dataset.get_dcap(cycle=5)
+    dc, vdc = dataset.get_dcap(cycle=5, return_dataframe=False)
     assert len(dc) == len(vdc)
     assert len(dc) == 224
     df = dataset.get_cap(cycle=5)  # new: returns dataframe as default

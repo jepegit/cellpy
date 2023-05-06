@@ -313,7 +313,7 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     out_data = []
     for cycle in list_of_cycles:
         try:
-            c, v = extract_func(cycle)
+            c, v = extract_func(cycle, return_dataframe=False)
             v, dq = dqdv(v, c)
             v = v.tolist()
             dq = dq.tolist()
