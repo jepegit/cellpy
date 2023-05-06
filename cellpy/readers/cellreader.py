@@ -3089,6 +3089,7 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def _export_steptable(self, data, setname=None, sep=None, outname=None):
+        # TODO 259: rename to _export_steps_csv
         time_00 = time.time()
         lastname = "_steps.csv"
         if sep is None:
@@ -3105,6 +3106,24 @@ class CellpyCell:
             warnings.warn(f"Unhandled exception raised: {e}")
         logging.info(txt)
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+
+    def to_excel(self, filename=None, cycles=False, raw=True, steps=True):
+        """Saves the data as .xlsx file(s).
+
+        Args:
+            filename: name of the Excel file.
+            cycles: (bool) export voltage-capacity curves if True.
+            raw: (bool) export raw-data if True.
+            steps: (bool) export steps if True.
+        """
+        if filename is None:
+            print("generating filename")
+        if cycles:
+            print("exporting cycles")
+        if raw:
+            print("exporting raw")
+        if steps:
+            print("exporting steps")
 
     def to_csv(
         self,
