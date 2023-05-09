@@ -1041,6 +1041,7 @@ class CellpyCell:
         pre_processor_hook=None,
         post_processor_hook=None,
         is_a_file=True,
+        refuse_copying=False,
         **kwargs,
     ):
         """Load a raw data-file.
@@ -1052,7 +1053,8 @@ class CellpyCell:
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
                 cellpy.Dataset object after initial loading.
-            is_a_file (bool): performs an is_file check if set to True.
+            is_a_file (bool): set this to False if it is a not a file-like object.
+            refuse_copying (bool): if set to True, the raw-file will not be copied before loading.
 
         Keyword Args for merging:
             recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
@@ -1110,7 +1112,7 @@ class CellpyCell:
                     raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
-                file_name, pre_processor_hook=pre_processor_hook, **kwargs
+                file_name, pre_processor_hook=pre_processor_hook, refuse_copying=refuse_copying, **kwargs
             )  # list of tests
 
             if new_data is None:
@@ -5681,6 +5683,7 @@ def get(
     summary_kwargs=None,
     selector=None,
     testing=False,
+    refuse_copying=False,
     **kwargs,
 ):
     """Create a CellpyCell object
@@ -5707,6 +5710,7 @@ def get(
         summary_kwargs (dict): sent to make_summary
         selector (dict): passed to load (when loading cellpy-files).
         testing (bool): set to True if testing (will for example prevent making .log files)
+        refuse_copying (bool): set to True if you do not want to copy the raw-file before loading.
         **kwargs: sent to the loader
 
     Returns:
@@ -5827,7 +5831,7 @@ def get(
         is_a_file = False
 
     logging.info(f"Loading raw-file: {filename}")
-    cellpy_instance.from_raw(filename, is_a_file=is_a_file, **kwargs)
+    cellpy_instance.from_raw(filename, is_a_file=is_a_file, refuse_copying=refuse_copying, **kwargs)
 
     if not cellpy_instance:
         print("Could not load file: check log!")

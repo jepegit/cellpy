@@ -37,7 +37,6 @@ SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 use_subprocess = prms.Instruments.Arbin.use_subprocess
 detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
 
-# Finding out some stuff about the platform (TODO: refactor to mixin)
 is_posix = False
 is_macos = False
 if os.name == "posix":
@@ -64,7 +63,7 @@ if detect_subprocess_need:
         use_subprocess = True
 
 if use_subprocess and not is_posix:
-    # The windows users most likely have a strange custom path to mdbtools etc.
+    # The Windows users most likely have a strange custom path to mdbtools etc.
     logging.debug(
         "using subprocess (most likely mdbtools) on non-posix (most likely windows)"
     )
@@ -81,33 +80,19 @@ try:
 except AttributeError:
     driver_dll = None
 
-# TODO: deprecate ado
-use_ado = False
-
-if ODBC == "ado":
-    use_ado = True
-    warnings.warn(
-        "Using ado (adobapi) will be removed from cellpy very soon", DeprecationWarning
-    )
+if ODBC == "pyodbc":
     try:
-        import adodbapi as dbloader  # http://adodbapi.sourceforge.net/
+        import pyodbc as dbloader
     except ImportError:
-        use_ado = False
+        warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
+        dbloader = None
 
-if not use_ado:
-    if ODBC == "pyodbc":
-        try:
-            import pyodbc as dbloader
-        except ImportError:
-            warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
-            dbloader = None
-
-    elif ODBC == "pypyodbc":
-        try:
-            import pypyodbc as dbloader
-        except ImportError:
-            warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
-            dbloader = None
+elif ODBC == "pypyodbc":
+    try:
+        import pypyodbc as dbloader
+    except ImportError:
+        warnings.warn("COULD NOT LOAD DBLOADER!", ImportWarning)
+        dbloader = None
 
 if DEBUG_MODE:
     logging.debug(f"dbloader: {dbloader}")
@@ -323,17 +308,18 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def _get_res_connector(self, temp_filename):
-        if use_ado:  # deprecated
-            is64bit_python = check64bit(current_system="python")
-            if is64bit_python:
-                constr = (
-                    f"Provider=Microsoft.ACE.OLEDB.12.0; DataSource={temp_filename}"
-                )
-            else:
-                constr = (
-                    f"Provider=Microsoft.Jet.OLEDB.4.0; Data Source={temp_filename}"
-                )
-            return constr
+        """Returns a connection to the .res-file"""
+
+        if dbloader is None:
+            txt = f"{ODBC=}\n"
+            txt += f"{SEARCH_FOR_ODBC_DRIVERS=}\n"
+            txt += f"{use_subprocess=}\n"
+            txt += f"{detect_subprocess_need=}\n"
+            txt += f"{current_platform=}\n"
+            raise ValueError(
+                f"Something went seriously wrong."
+                f"dbloader is None.\n{txt}"
+            )
 
         if SEARCH_FOR_ODBC_DRIVERS:
             logging.debug("Searching for odbc drivers")
@@ -346,9 +332,12 @@ class DataLoader(BaseLoader):
                 logging.debug(f"Found these: {drivers}")
                 driver = drivers[0]
 
+            except AttributeError as e:
+                print("ODBC drivers not found.")
+
             except IndexError as e:
                 logging.debug(
-                    "Unfortunately, it seems the " "list of drivers is emtpy."
+                    "Unfortunately, it seems the list of drivers is emtpy."
                 )
                 logging.debug("Use driver-name from config (if existing).")
                 driver = driver_dll
@@ -398,13 +387,10 @@ class DataLoader(BaseLoader):
         # updated to use sqlalchemy - needs sqlalchemy-access
         constr = self._get_res_connector(temp_filename)
         self.logger.debug(f"constr str: {constr}")
-        if use_ado:
-            raise DeprecationWarning("use_ado not supported anymore")
-        else:
-            connection_url = sa.engine.URL.create(
-                "access+pyodbc", query={"odbc_connect": constr}
-            )
-            engine = sa.create_engine(connection_url)
+        connection_url = sa.engine.URL.create(
+            "access+pyodbc", query={"odbc_connect": constr}
+        )
+        engine = sa.create_engine(connection_url)
         return engine
 
     def _clean_up_loadres(self, cur, conn, filename):
@@ -529,10 +515,7 @@ class DataLoader(BaseLoader):
         self.copy_to_temporary()
 
         constr = self._get_res_connector(self._temp_file_path)
-        if use_ado:
-            conn = dbloader.connect(constr)
-        else:
-            conn = dbloader.connect(constr, autocommit=True)
+        conn = dbloader.connect(constr, autocommit=True)
 
         self.logger.debug("tmp file: %s" % self._temp_file_path)
         self.logger.debug("constr str: %s" % constr)
@@ -901,6 +884,22 @@ class DataLoader(BaseLoader):
         data = self.identify_last_data_point(data)
         return data
 
+    def _check_size(self):
+        file_size = os.path.getsize(self.temp_file_path)
+        hfilesize = humanize_bytes(file_size)
+        txt = f"File size: {file_size} ({hfilesize})"
+        self.logger.debug(txt)
+        if file_size > prms.Instruments.Arbin.max_res_filesize:
+            error_message = "\nERROR (loader):\n"
+            error_message += (
+                f"{hfilesize} > {humanize_bytes(prms.Instruments.Arbin.max_res_filesize)} "
+                f"- File is too big!\n"
+            )
+            error_message += "(edit prms.Instruments.Arbin ['max_res_filesize'])\n"
+            logging.critical(error_message)
+            return False
+        return True
+
     def loader(
         self,
         name,
@@ -925,23 +924,12 @@ class DataLoader(BaseLoader):
             new data (Data)
         """
         # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
-
-        self.logger.debug(f"tmp file: {self.temp_file_path}")
-        self.logger.debug(f"tmp dir: {self.temp_file_path.parent}")
-
-        file_size = os.path.getsize(self.temp_file_path)
-        hfilesize = humanize_bytes(file_size)
-        txt = f"File size: {file_size} ({hfilesize})"
-        self.logger.debug(txt)
-        if file_size > prms.Instruments.Arbin.max_res_filesize:
-            error_message = "\nERROR (loader):\n"
-            error_message += (
-                f"{hfilesize} > {humanize_bytes(prms.Instruments.Arbin.max_res_filesize)} "
-                f"- File is too big!\n"
-            )
-            error_message += "(edit prms.Instruments.Arbin ['max_res_filesize'])\n"
-            print(error_message)
-            return None
+        try:
+            not_too_big = self._check_size()
+            if not not_too_big:
+                return None
+        except Exception as e:
+            self.logger.debug(f"could not get file size: {e}")
 
         use_mdbtools = False
         if use_subprocess:
