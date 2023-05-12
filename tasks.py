@@ -82,6 +82,7 @@ def get_pypi_info(package="cellpy"):
         [version, sha256]
     """
     from pprint import pprint
+
     url = f"https://pypi.org/pypi/{package}/json"
     response = requests.get(url)
     if not response:
@@ -223,7 +224,7 @@ def info(c, full=False):
         exec(f.read(), {}, version_ns)
 
     version_stable, sha, version_last = get_pypi_info(package="cellpy")
-    version_in_code = version_ns['__version__']
+    version_in_code = version_ns["__version__"]
     version_by_import = cellpy.__version__
 
     print(" INFO ".center(80, "="))

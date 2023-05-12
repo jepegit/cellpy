@@ -317,8 +317,7 @@ class DataLoader(BaseLoader):
             txt += f"{detect_subprocess_need=}\n"
             txt += f"{current_platform=}\n"
             raise ValueError(
-                f"Something went seriously wrong."
-                f"dbloader is None.\n{txt}"
+                f"Something went seriously wrong." f"dbloader is None.\n{txt}"
             )
 
         if SEARCH_FOR_ODBC_DRIVERS:
@@ -336,9 +335,7 @@ class DataLoader(BaseLoader):
                 print("ODBC drivers not found.")
 
             except IndexError as e:
-                logging.debug(
-                    "Unfortunately, it seems the list of drivers is emtpy."
-                )
+                logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
                 logging.debug("Use driver-name from config (if existing).")
                 driver = driver_dll
                 if is_macos:

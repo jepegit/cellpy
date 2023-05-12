@@ -27,6 +27,7 @@ from typing import Union, Sequence, List
 from dataclasses import asdict
 
 import numpy as np
+import openpyxl
 import pandas as pd
 from pandas.errors import PerformanceWarning
 from pint import Quantity
@@ -1112,7 +1113,10 @@ class CellpyCell:
                     raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
-                file_name, pre_processor_hook=pre_processor_hook, refuse_copying=refuse_copying, **kwargs
+                file_name,
+                pre_processor_hook=pre_processor_hook,
+                refuse_copying=refuse_copying,
+                **kwargs,
             )  # list of tests
 
             if new_data is None:
@@ -3110,7 +3114,16 @@ class CellpyCell:
         logging.info(txt)
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
-    def to_excel(self, filename=None, cycles=None, raw=False, steps=True):
+    def to_excel(
+        self,
+        filename=None,
+        cycles=None,
+        raw=False,
+        steps=True,
+        nice=True,
+        get_cap_kwargs=None,
+        to_excel_kwargs=None,
+    ):
         """Saves the data as .xlsx file(s).
 
         Args:
@@ -3118,9 +3131,10 @@ class CellpyCell:
             cycles: (None, bool, or list of ints) export voltage-capacity curves if given.
             raw: (bool) export raw-data if True.
             steps: (bool) export steps if True.
+            nice: (bool) use nice formatting if True.
+            get_cap_kwargs: (dict) kwargs for CellpyCell.get_cap method.
+            to_excel_kwargs: (dict) kwargs for pandas.DataFrame.to_excel method.
         """
-        # TODO: allow for giving or extending to_excel_method_kwargs and get_cap_method_kwargs
-        #  currently hard-coded:
         to_excel_method_kwargs = {"index": True, "header": True}
         get_cap_method_kwargs = {
             "method": "forth-and-forth",
@@ -3130,6 +3144,23 @@ class CellpyCell:
             "number_of_points": 1000,
             "capacity_then_voltage": True,
         }
+        if to_excel_kwargs is not None:
+            to_excel_method_kwargs.update(to_excel_kwargs)
+        if get_cap_kwargs is not None:
+            get_cap_method_kwargs.update(get_cap_kwargs)
+
+        border = openpyxl.styles.Border()
+        face_color = "00EEEEEE"
+        meta_alignment_left = openpyxl.styles.Alignment(
+            horizontal="left", vertical="bottom"
+        )
+        meta_width = 34
+        meta_alignment_right = openpyxl.styles.Alignment(
+            horizontal="right", vertical="bottom"
+        )
+        fill = openpyxl.styles.PatternFill(
+            start_color=face_color, end_color=face_color, fill_type="solid"
+        )
 
         if filename is None:
             pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -3153,6 +3184,8 @@ class CellpyCell:
             )
 
             if raw:
+                # TODO: raw-table has two columns called "data_point" at the moment,
+                #  so this should be fixed (probably the .set_index("data_point") should be checked)
                 logging.debug("exporting raw data")
                 raw = self.data.raw
                 max_len = 1_048_576
@@ -3186,8 +3219,26 @@ class CellpyCell:
                     _curves.to_excel(
                         writer,
                         sheet_name=f"cycle_{cycle:03}",
-                        **to_excel_method_kwargs,
+                        index=False,
+                        header=True,
                     )
+            if nice:
+                for sheet in writer.sheets.values():
+                    if sheet.title.startswith("meta"):
+                        sheet.column_dimensions["A"].width = meta_width
+                        for xl_cell in sheet["A"]:
+                            xl_cell.alignment = meta_alignment_left
+                            xl_cell.border = border
+                        for xl_cell in sheet["B"]:
+                            xl_cell.alignment = meta_alignment_right
+                            xl_cell.border = border
+                    else:
+                        for xl_cell in sheet["A"]:
+                            xl_cell.border = border
+
+                    for xl_cell in sheet["1"]:
+                        xl_cell.border = border
+                        xl_cell.fill = fill
 
     def to_csv(
         self,
@@ -4182,7 +4233,10 @@ class CellpyCell:
                             cycle_df = pd.concat([cycle_df, c], axis=0)
                     if capacity_then_voltage:
                         cols = cycle_df.columns.to_list()
-                        new_cols = [cols.pop(cols.index("capacity")), cols.pop(cols.index("voltage"))]
+                        new_cols = [
+                            cols.pop(cols.index("capacity")),
+                            cols.pop(cols.index("voltage")),
+                        ]
                         new_cols.extend(cols)
                         cycle_df = cycle_df[new_cols]
                 else:
@@ -5831,7 +5885,9 @@ def get(
         is_a_file = False
 
     logging.info(f"Loading raw-file: {filename}")
-    cellpy_instance.from_raw(filename, is_a_file=is_a_file, refuse_copying=refuse_copying, **kwargs)
+    cellpy_instance.from_raw(
+        filename, is_a_file=is_a_file, refuse_copying=refuse_copying, **kwargs
+    )
 
     if not cellpy_instance:
         print("Could not load file: check log!")
@@ -6032,6 +6088,39 @@ def load_and_save_to_excel():
     print("loaded again ...")
     c2.to_excel(excel_file, raw=True, cycles=True)
     print("saved again ...")
+
+
+def check_excel():
+    import openpyxl
+    from openpyxl.styles import Border, Side
+    import pandas as pd
+
+    from pathlib import Path
+
+    print(" checking excel ".center(80, "="))
+    excel_file = Path("../../tmp/nothing.xlsx")
+    to_excel_method_kwargs = {"index": True, "header": True}
+
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    n_rows, n_cols = df.shape
+    with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="first", **to_excel_method_kwargs)
+        ws = writer.sheets["first"]
+        border = Border()
+        face_color = "00EEEEEE"
+        fill = openpyxl.styles.PatternFill(
+            start_color=face_color, end_color=face_color, fill_type="solid"
+        )
+
+        for cell in ws["A"]:
+            print(cell)
+            cell.border = border
+        for cell in ws[1]:
+            print(cell)
+            cell.border = border
+            cell.fill = fill
+
+    print("done")
 
 
 if __name__ == "__main__":
