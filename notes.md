@@ -104,3 +104,8 @@ Add token to .env (for uploading to PyPI)
 
 Package 'cellpy.utils.data' is absent from the `packages` configuration.
 Package 'cellpy.utils.data.raw' is absent from the `packages` configuration
+
+### 260-check-cycle_mode etc
+
+Could be an error in the cycle_mode handling in get(). Need to check this.
+Also, need to make sure that cellpy handles the specifics correctly (gravimetric, areal, etc).
