@@ -3171,6 +3171,12 @@ class CellpyCell:
         summary_frame = self.data.summary
         meta_common_frame = self.data.meta_common.to_frame()
         meta_test_dependent_frame = self.data.meta_test_dependent.to_frame()
+        cellpy_units = self.cellpy_units.to_frame()
+        cellpy_units.index = "cellpy_units_" + cellpy_units.index
+        raw_units = self.raw_units.to_frame()
+        raw_units.index = "raw_units_" + raw_units.index
+
+        meta_common_frame = pd.concat([meta_common_frame, cellpy_units, raw_units])
 
         with pd.ExcelWriter(filename, engine="openpyxl") as writer:
             meta_common_frame.to_excel(
@@ -6082,12 +6088,12 @@ def load_and_save_to_excel():
     print("loaded ...")
     c.to_excel(excel_file)
     print("saved ...")
-
-    c.save(cellpy_file)
-    c2 = get(cellpy_file)
-    print("loaded again ...")
-    c2.to_excel(excel_file, raw=True, cycles=True)
-    print("saved again ...")
+    #
+    # c.save(cellpy_file)
+    # c2 = get(cellpy_file)
+    # print("loaded again ...")
+    # c2.to_excel(excel_file, raw=True, cycles=True)
+    # print("saved again ...")
 
 
 def check_excel():

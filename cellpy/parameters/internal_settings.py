@@ -296,6 +296,19 @@ class BaseSettings(DictLikeClass):
         else:
             return self[key]
 
+    def to_frame(self):
+        """Converts to pandas dataframe"""
+        df = pd.DataFrame.from_dict(asdict(self), orient="index")
+        df.index.name = "key"
+        n_rows, n_cols = df.shape
+        if n_cols == 1:
+            columns = ["value"]
+        else:
+            columns = [f"value_{i:02}" for i in range(n_cols)]
+        df.columns = columns
+
+        return df
+
 
 @dataclass
 class BaseHeaders(BaseSettings):
