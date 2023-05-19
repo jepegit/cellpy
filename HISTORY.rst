@@ -15,6 +15,7 @@ History
 * Readers: neware.txt (one version/model)
 * Readers: arbin_sql7 (experimental, @jtgibson91)
 * Batch plotting: collectors for both data collection, plotting and saving
+* OCV-rlx: improvements of the OCV-rlx tools
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
 * Internals: rename .cell property to .data
 * Internals: allow for only one Data-object pr CellpyCell object
