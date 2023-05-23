@@ -19,6 +19,9 @@ History
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
 * Internals: rename .cell property to .data
 * Internals: allow for only one Data-object pr CellpyCell object
+* CLI: general improvements and bug fixes
+* CLI: move editing of db-file to the edit sub-command
+
 
 
 0.4.3 (2023)
