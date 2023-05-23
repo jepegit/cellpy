@@ -327,6 +327,11 @@ def _save_current_prms_to_user_dir():
     _write_prm_file(file_name)
 
 
+def get_env_file_name():
+    """returns the location of the env-file"""
+    return pathlib.Path(prms.Paths.env_file)
+
+
 def info():
     """this function will show only the 'box'-type
     attributes and their content in the cellpy.prms module"""
