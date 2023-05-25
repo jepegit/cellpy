@@ -113,3 +113,5 @@ Update: Did not work for areal for John.
 * Implemented nom_cap_specifics and conversion of units wrt input.
 * Added automatic conversion of units if giving mass, area, or nominal capacity as
 strings with units (e.g. "0.1 mg", "12 cm2", "100.2 mAh").
+Damned! It seems that updating the nom_cap_specifics in the cellpyfile does not work properly yet. It still
+said gravimetric for the one that should be areal!!!!!!!!!!!!!! NEED TO FIX THIS ASAP!!!!!!!!!!!!!!!!!!!!!
