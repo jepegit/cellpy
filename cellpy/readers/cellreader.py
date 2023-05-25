@@ -198,6 +198,7 @@ class CellpyCell:
         initialize=False,
         cellpy_units=None,
         output_units=None,
+        debug=False,
     ):
         """CellpyCell object
 
@@ -212,6 +213,7 @@ class CellpyCell:
             initialize: create a dummy (empty) dataset; defaults to False.
             cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
             output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
+            debug (bool): set to True if you want to see debug messages.
         """
 
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
@@ -222,6 +224,7 @@ class CellpyCell:
             self.tester = tester
 
         self.loader = None  # this will be set in the function set_instrument
+        self.debug = debug
         logging.debug("created CellpyCell instance")
 
         self._session_name = None
@@ -265,6 +268,7 @@ class CellpyCell:
         self.force_all = prms.Reader.force_all
         self.sep = prms.Reader.sep
         self._cycle_mode = None
+        self._nom_cap_specifics = prms.Materials.default_nom_cap_specifics
         self.select_minimal = prms.Reader.select_minimal
         self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
         self.limit_data_points = None
@@ -325,6 +329,69 @@ class CellpyCell:
             return
         path = Path(filename)
         self.session_name = path.with_suffix("").name
+
+    @property
+    def mass(self):
+        """returns the mass"""
+        return self.data.mass
+
+    @mass.setter
+    def mass(self, m):
+        self.data.mass = self._dump_cellpy_unit(m, "mass")
+
+    @property
+    def active_electrode_area(self):
+        """returns the area"""
+        return self.data.active_electrode_area
+
+    @active_electrode_area.setter
+    def active_electrode_area(self, a):
+        self.data.active_electrode_area = self._dump_cellpy_unit(a, "area")
+
+    @property
+    def nom_cap(self):
+        """returns the nominal capacity"""
+        return self.data.nom_cap
+
+    @nom_cap.setter
+    def nom_cap(self, c):
+        self.data.nom_cap = self._dump_cellpy_unit(c, "nominal_capacity")
+
+    def _dump_cellpy_unit(self, value, parameter):
+        """Parse for unit, update cellpy_units class, and return magnitude."""
+        if isinstance(value, numbers.Number):
+            return value
+        logging.debug(f"Parsing {parameter} ({value})")
+        try:
+            c = Q(value)
+            c_unit = c.units
+            self.cellpy_units[parameter] = f"{c_unit}"
+            c = c.magnitude
+        except ValueError:
+            logging.debug(f"Could not parse {value}")
+            return
+        return c
+
+    @property
+    def nom_cap_specifics(self):
+        """returns the nominal capacity specific"""
+        return self._nom_cap_specifics
+
+    # NEXT: update make_summary and make_step_table to use this. And update get() to use this.
+
+    @nom_cap_specifics.setter
+    def nom_cap_specifics(self, c):
+        if c.lower() == "areal":
+            self.cellpy_units.nominal_capacity = f"{self.cellpy_units.charge}/{self.cellpy_units.specific_areal}"
+        elif c.lower() == "gravimetric":
+            self.cellpy_units.nominal_capacity = f"{self.cellpy_units.charge}/{self.cellpy_units.specific_gravimetric}"
+        elif c.lower() == "volumetric":
+            self.cellpy_units.nominal_capacity = f"{self.cellpy_units.charge}/{self.cellpy_units.specific_volumetric}"
+        else:
+            logging.warning(f"Unknown nominal capacity specific: {c}")
+            return
+
+        self._nom_cap_specifics = c
 
     @property
     def raw_units(self):
@@ -2554,7 +2621,7 @@ class CellpyCell:
         time_00 = time.time()
 
         if nom_cap_specifics is None:
-            nom_cap_specifics = prms.Materials.default_nom_cap_specifics
+            nom_cap_specifics = self.nom_cap_specifics
 
         if profiling:
             print("PROFILING MAKE_STEP_TABLE".center(80, "="))
@@ -4522,7 +4589,16 @@ class CellpyCell:
         nom_cap_specifics=None,
         convert_charge_units=False,
     ):
+        """Get the nominal capacity as absolute value."""
+
         # TODO: implement handling of edge-cases (i.e. the raw capacity is not in absolute values)
+        if self.debug:
+            print("nominal_capacity_as_absolute".center(80, "="))
+            print(f"{value=}")
+            print(f"{specific=}")
+            print(f"{nom_cap_specifics=}")
+            print(f"{convert_charge_units=}")
+            print(80 * "-")
         if nom_cap_specifics is None:
             nom_cap_specifics = "gravimetric"
 
@@ -4534,6 +4610,7 @@ class CellpyCell:
 
         if value is None:
             value = self.data.nom_cap
+
         value = Q(value, self.cellpy_units["nominal_capacity"])
 
         if nom_cap_specifics == "gravimetric":
@@ -4551,6 +4628,13 @@ class CellpyCell:
         absolute_value = (
             (value * conversion_factor_charge * specific).to_reduced_units().to("Ah")
         )
+        if self.debug:
+            print(f"{self.mass=}")
+            print(f"{self.active_electrode_area=}")
+            print(f"{self.nom_cap=}")
+            print(f"{self.cellpy_units=}")
+            print(f"nominal capacity: {value} [{self.cellpy_units.nominal_capacity}] -> {absolute_value:.3f} [Ah]")
+            print(80 * "=")
         return absolute_value.m
 
     def with_cellpy_unit(self, parameter, as_str=False):
@@ -4910,7 +4994,7 @@ class CellpyCell:
         # add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
-        nom_cap_specifics="gravimetric",
+        nom_cap_specifics=None,
         # from_cycle=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
@@ -5028,6 +5112,8 @@ class CellpyCell:
         #   as it is recommended (but this will likely increase memory usage)
 
         # TODO: add this to arguments and possible prms:
+        if nom_cap_specifics is None:
+            nom_cap_specifics = self.nom_cap_specifics
         specifics = ["gravimetric", "areal"]
         cycle_index_as_index = True
         time_00 = time.time()
@@ -5730,10 +5816,11 @@ def get(
     instrument_file=None,
     cellpy_file=None,
     cycle_mode=None,
-    mass=None,
-    nominal_capacity=None,
+    mass: Union[str, numbers.Number] = None,
+    nominal_capacity: Union[str, numbers.Number] = None,
+    nom_cap_specifics=None,
     loading=None,
-    area=None,
+    area: Union[str, numbers.Number] = None,
     estimate_area=True,
     logging_mode=None,
     auto_pick_cellpy_format=True,
@@ -5744,6 +5831,7 @@ def get(
     selector=None,
     testing=False,
     refuse_copying=False,
+    debug=False,
     **kwargs,
 ):
     """Create a CellpyCell object
@@ -5760,6 +5848,7 @@ def get(
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
+        nom_cap_specifics (str): either "gravimetric" (pr mass), "areal" (per area), or "volumetric" (per volume)
         loading (float): loading in units [mass] / [area]
         area (float): active electrode area (e.g. used for finding the areal capacity)
         estimate_area (bool): calculate area from loading if given (defaults to True)
@@ -5771,6 +5860,7 @@ def get(
         selector (dict): passed to load (when loading cellpy-files).
         testing (bool): set to True if testing (will for example prevent making .log files)
         refuse_copying (bool): set to True if you do not want to copy the raw-file before loading.
+        debug (bool): set to True if you want to debug the loader.
         **kwargs: sent to the loader
 
     Returns:
@@ -5813,7 +5903,7 @@ def get(
     logging_mode = "DEBUG" if testing else logging_mode
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
-    cellpy_instance = CellpyCell()
+    cellpy_instance = CellpyCell(debug=debug)
     logging.debug(f"created CellpyCell instance")
 
     logging.debug(f"{cellpy_file=}")
@@ -5828,6 +5918,7 @@ def get(
                 cycle_mode=cycle_mode,
                 mass=mass,
                 nominal_capacity=nominal_capacity,
+                nom_cap_specifics=nom_cap_specifics,
                 area=area,
                 loading=loading,
                 estimate_area=estimate_area,
@@ -5900,11 +5991,17 @@ def get(
         print("Returning None")
         return
 
+    # fix for allowing for setting nom_cap_specifics the "old" way:
+    nom_cap_specifics = summary_kwargs.pop("nom_cap_specifics", None)
+    if nom_cap_specifics is None:
+        nom_cap_specifics = step_kwargs.pop("nom_cap_specifics", None)
+
     cellpy_instance = _update_meta(
         cellpy_instance,
         cycle_mode=cycle_mode,
         mass=mass,
         nominal_capacity=nominal_capacity,
+        nom_cap_specifics=nom_cap_specifics,
         area=area,
         loading=loading,
         estimate_area=estimate_area,
@@ -5926,6 +6023,7 @@ def _update_meta(
     cycle_mode=None,
     mass=None,
     nominal_capacity=None,
+    nom_cap_specifics=None,
     area=None,
     loading=None,
     estimate_area=None,
@@ -5936,17 +6034,23 @@ def _update_meta(
         logging.debug("Setting cycle mode")
         cellpy_instance.cycle_mode = cycle_mode
 
+    if nom_cap_specifics is not None:
+        logging.debug("Setting nom_cap_specifics as given")
+        cellpy_instance.nom_cap_specifics = nom_cap_specifics
+
     if units is not None:
         logging.debug(f"Updating units: {units}")
         cellpy_instance.cellpy_units.update(units)
 
     if mass is not None:
         logging.info(f"Setting mass: {mass}")
-        cellpy_instance.data.mass = mass
+        cellpy_instance.mass = mass
 
     if nominal_capacity is not None:
         logging.info(f"Setting nominal capacity: {nominal_capacity}")
-        cellpy_instance.data.nom_cap = nominal_capacity
+        if nom_cap_specifics is not None and not isinstance(nominal_capacity, numbers.Number):
+            logging.info("Providing nominal capacity as string might override the given nom_cap_specifics")
+        cellpy_instance.nom_cap = nominal_capacity
 
     if area is not None:
         logging.debug(f"got area: {area}")
@@ -6084,7 +6188,9 @@ def load_and_save_to_excel():
     cellpy_file = Path("../../tmp/20160805_test001_45_cc.h5")
     excel_file = Path("../../tmp/20160805_test001_45_cc.xlsx")
 
-    c = get(raw_file, mass=1.0, nominal_capacity=3579)
+    c = get(raw_file, area=1.55, nominal_capacity=2000, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
+    c = get(raw_file, mass=1.55, nominal_capacity="3579 mAh/g", debug=True)
+    c = get(raw_file, area=1.55, nominal_capacity=2000, nom_cap_specifics="areal", debug=True)
     print("loaded ...")
     c.to_excel(excel_file)
     print("saved ...")

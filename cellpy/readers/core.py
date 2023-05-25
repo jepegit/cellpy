@@ -39,6 +39,7 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
+ureg.default_format = "~P"
 Q = ureg.Quantity
 
 

@@ -6,9 +6,11 @@ History
 1.0.0 (2023) [under development]
 ================================
 
+* Unit handling: new unit handling (using pint)
 * Unit handling: renaming summary headers
 * Unit handling: new cellpy-file-format version
 * Unit handling: tool for converting old to new format
+* Unit handling: parsing input parameters for units
 * Templates: using one repository with sub-folders
 * Templates: adding more documentation
 * File handling: allow for external raw files (ssh)

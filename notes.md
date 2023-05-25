@@ -109,3 +109,7 @@ Package 'cellpy.utils.data.raw' is absent from the `packages` configuration
 
 Could be an error in the cycle_mode handling in get(). Need to check this.
 Also, need to make sure that cellpy handles the specifics correctly (gravimetric, areal, etc).
+Update: Did not work for areal for John.
+* Implemented nom_cap_specifics and conversion of units wrt input.
+* Added automatic conversion of units if giving mass, area, or nominal capacity as
+strings with units (e.g. "0.1 mg", "12 cm2", "100.2 mAh").
