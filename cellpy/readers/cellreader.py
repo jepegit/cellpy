@@ -89,9 +89,9 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 #   a method for "splitting that up"
 
 # TODO: @jepe - performance warnings - mixed types within cols (pytables)
-performance_warning_level = "ignore"  # "ignore", "error"
+
 warnings.filterwarnings(
-    performance_warning_level, category=pd.io.pytables.PerformanceWarning
+    "ignore", category=pd.io.pytables.PerformanceWarning
 )
 pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 
@@ -268,7 +268,6 @@ class CellpyCell:
         self.force_all = prms.Reader.force_all
         self.sep = prms.Reader.sep
         self._cycle_mode = None
-        self._nom_cap_specifics = prms.Materials.default_nom_cap_specifics
         self.select_minimal = prms.Reader.select_minimal
         self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
         self.limit_data_points = None
@@ -295,10 +294,9 @@ class CellpyCell:
             self.initialize()
 
     def initialize(self):
-        """Initialize the cellpycell object."""
+        """Initialize the CellpyCell object with empty Data instance."""
 
         logging.debug("Initializing...")
-        # TODO: v.1.0.0: replace this
         self._data = Data()
 
     # the batch utility might be using session name
@@ -375,9 +373,7 @@ class CellpyCell:
     @property
     def nom_cap_specifics(self):
         """returns the nominal capacity specific"""
-        return self._nom_cap_specifics
-
-    # NEXT: update make_summary and make_step_table to use this. And update get() to use this.
+        return self.data.meta_common.nom_cap_specifics
 
     @nom_cap_specifics.setter
     def nom_cap_specifics(self, c):
@@ -390,8 +386,7 @@ class CellpyCell:
         else:
             logging.warning(f"Unknown nominal capacity specific: {c}")
             return
-
-        self._nom_cap_specifics = c
+        self.data.meta_common.nom_cap_specifics = c
 
     @property
     def raw_units(self):
@@ -5831,6 +5826,7 @@ def get(
     selector=None,
     testing=False,
     refuse_copying=False,
+    initialize=False,
     debug=False,
     **kwargs,
 ):
@@ -5860,6 +5856,8 @@ def get(
         selector (dict): passed to load (when loading cellpy-files).
         testing (bool): set to True if testing (will for example prevent making .log files)
         refuse_copying (bool): set to True if you do not want to copy the raw-file before loading.
+        initialize (bool): set to True if you want to initialize the CellpyCell object (probably only
+            useful if you want to return a cellpy-file with no data in it)
         debug (bool): set to True if you want to debug the loader.
         **kwargs: sent to the loader
 
@@ -5890,11 +5888,14 @@ def get(
         >>> # load a data set and get the summary charge and discharge capacities
         >>> # in Ah/g:
         >>> c = cellpy.get("my_data.res", units=dict(capacity="Ah"))
+        >>>
+        >>> # get an empty CellpyCell instance:
+        >>> c = cellpy.get()  # or c = cellpy.get(initialize=True) if you want to initialize it.
 
     """
     from cellpy import log
 
-    db_readers = ["arbin_sql"]
+    db_readers = ["arbin_sql", "arbin_sql_7"]
     instruments_with_colliding_file_suffix = ["arbin_sql_h5"]
 
     step_kwargs = step_kwargs or {}
@@ -5903,12 +5904,13 @@ def get(
     logging_mode = "DEBUG" if testing else logging_mode
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
-    cellpy_instance = CellpyCell(debug=debug)
+    cellpy_instance = CellpyCell(debug=debug, initialize=initialize)
     logging.debug(f"created CellpyCell instance")
 
     logging.debug(f"{cellpy_file=}")
     logging.debug(f"{filename=}")
 
+    # used if all you want is an empty CellpyCell object
     if filename is None:
         if cellpy_file is None:
             logging.info("Running cellpy.get without a filename")
@@ -5978,7 +5980,7 @@ def get(
         cellpy_instance.set_instrument(instrument=instrument, model=model, **kwargs)
 
     is_a_file = True
-    if cellpy_instance.tester not in db_readers:
+    if cellpy_instance.tester in db_readers:
         is_a_file = False
 
     logging.info(f"Loading raw-file: {filename}")
@@ -6186,13 +6188,16 @@ def load_and_save_to_excel():
 
     raw_file = Path("../../testdata/data/20160805_test001_45_cc_01.res")
     cellpy_file = Path("../../tmp/20160805_test001_45_cc.h5")
-    excel_file = Path("../../tmp/20160805_test001_45_cc.xlsx")
+    excel_file1 = Path("../../tmp/01_gravimetric_old_20160805_test001_45_cc.xlsx")
+    excel_file2 = Path("../../tmp/02_gravimetric_20160805_test001_45_cc.xlsx")
+    excel_file3 = Path("../../tmp/03_areal_20160805_test001_45_cc.xlsx")
 
     c = get(raw_file, area=1.55, nominal_capacity=2000, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
+    c.to_excel(excel_file1)
     c = get(raw_file, mass=1.55, nominal_capacity="3579 mAh/g", debug=True)
+    c.to_excel(excel_file2)
     c = get(raw_file, area=1.55, nominal_capacity=2000, nom_cap_specifics="areal", debug=True)
-    print("loaded ...")
-    c.to_excel(excel_file)
+    c.to_excel(excel_file3)
     print("saved ...")
     #
     # c.save(cellpy_file)
