@@ -244,6 +244,7 @@ class MultiCycleOcvFit:
         on the GitHub page.
 
     """
+
     def __init__(self, cellpydata, cycles, circuits=3):
         """Object for performing fitting of multiple cycles.
 
@@ -321,7 +322,9 @@ class MultiCycleOcvFit:
                 remove_first = True
             else:
                 remove_first = False
-            time_voltage = self.data.get_ocv(direction=direction, cycles=cycle, remove_first=remove_first)
+            time_voltage = self.data.get_ocv(
+                direction=direction, cycles=cycle, remove_first=remove_first
+            )
             time_step = time_voltage.step_time
             voltage = time_voltage.voltage
 
@@ -329,7 +332,9 @@ class MultiCycleOcvFit:
                 try:
                     end_current, end_voltage = self.find_zero(cycle, direction)
                 except IndexError as e:
-                    warnings.warn(f"Could not find zero current and voltage for cycle {cycle}")
+                    warnings.warn(
+                        f"Could not find zero current and voltage for cycle {cycle}"
+                    )
                     print(e)
                 else:
                     ocv_fitter.set_zero_voltage(end_voltage)
@@ -346,7 +351,9 @@ class MultiCycleOcvFit:
                     else:
                         self.fit_cycles.append(cycle)
                         self.result.append(ocv_fitter.get_result())
-                        self.best_fit_parameters.append(ocv_fitter.get_best_fit_parameters())
+                        self.best_fit_parameters.append(
+                            ocv_fitter.get_best_fit_parameters()
+                        )
                         self.best_fit_parameters_translated.append(
                             ocv_fitter.get_best_fit_parameters_translated()
                         )
@@ -361,23 +368,21 @@ class MultiCycleOcvFit:
             end_voltage = step_table[
                 (step_table["cycle"] == cycle)
                 & (step_table["type"].isin(["discharge"]))
-                ][hdr.voltage + "_last"].values[0]
+            ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
                 (step_table["cycle"] == cycle)
                 & (step_table["type"].isin(["discharge"]))
-                ][hdr.current + "_last"].values[0]
+            ][hdr.current + "_last"].values[0]
 
         elif direction == "down":
             end_voltage = step_table[
-                (step_table["cycle"] == cycle)
-                & (step_table["type"].isin(["charge"]))
-                ][hdr.voltage + "_last"].values[0]
+                (step_table["cycle"] == cycle) & (step_table["type"].isin(["charge"]))
+            ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
-                (step_table["cycle"] == cycle)
-                & (step_table["type"].isin(["charge"]))
-                ][hdr.current + "_last"].values[0]
+                (step_table["cycle"] == cycle) & (step_table["type"].isin(["charge"]))
+            ][hdr.current + "_last"].values[0]
 
         return end_current, end_voltage
 
@@ -441,7 +446,9 @@ class MultiCycleOcvFit:
             cycles = np.arange(1, 101)
         colormap_proxy = np.array(cycles)
         colors = mpl.colormaps.get_cmap(name)
-        norm = mpl.colors.Normalize(vmin=colormap_proxy.min(), vmax=colormap_proxy.max())
+        norm = mpl.colors.Normalize(
+            vmin=colormap_proxy.min(), vmax=colormap_proxy.max()
+        )
         cmap = mpl.cm.ScalarMappable(norm=norm, cmap=colors)
         cmap.set_array([])
         return cmap
@@ -561,7 +568,9 @@ class OcvFit(object):
 
     """
 
-    def __init__(self, circuits=None, direction=None, zero_current=0.1, zero_voltage=0.05):
+    def __init__(
+        self, circuits=None, direction=None, zero_current=0.1, zero_voltage=0.05
+    ):
         """Initializes the class.
 
         Args:
@@ -878,13 +887,15 @@ def __single_fit(n=3):
     ocv_fit.run_fit()
 
     # Plotting
-    fig1, (ax1, ax2) = plt.subplots(2, 1, sharex="col", gridspec_kw={"height_ratios": [3, 1]})
+    fig1, (ax1, ax2) = plt.subplots(
+        2, 1, sharex="col", gridspec_kw={"height_ratios": [3, 1]}
+    )
     fig1.suptitle("Fit")
 
     x, y0, y1 = ocv_fit.get_best_fit_data()
-    diff = 100*(y0 - y1)/y0
+    diff = 100 * (y0 - y1) / y0
     ax1.plot(x, y0, "x", label="measured")
-    ax1.plot(x, y1, "-",  label="fit")
+    ax1.plot(x, y1, "-", label="fit")
     ax1.legend()
     ax2.plot(x, diff, "-", label="dV (%)")
     ax2.set_xlabel("time (s)")
@@ -934,7 +945,7 @@ def __fit(n=3):
 
     # Printing best fit parameters
     for best_fit_parameters in ocv_fit.get_best_fit_parameters():
-        print(50 * '-')
+        print(50 * "-")
         print(best_fit_parameters)
 
     print("SUMMARY")

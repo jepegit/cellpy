@@ -26,8 +26,8 @@ VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
 USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
-DEFAULT_EDITOR = 'vim'
-EDITORS = {'Windows': 'notepad'}
+DEFAULT_EDITOR = "vim"
+EDITORS = {"Windows": "notepad"}
 
 
 def save_prm_file(prm_filename):
@@ -682,9 +682,8 @@ def _get_default_editor():
     This code is based on the `editor` library by @rec.
     """
 
-    return os.environ.get('VISUAL') or (
-        os.environ.get('EDITOR')
-        or EDITORS.get(platform.system(), DEFAULT_EDITOR)
+    return os.environ.get("VISUAL") or (
+        os.environ.get("EDITOR") or EDITORS.get(platform.system(), DEFAULT_EDITOR)
     )
 
 

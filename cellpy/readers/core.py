@@ -854,7 +854,7 @@ def collect_capacity_curves(
                     trim_taper_steps=trim_taper_steps,
                     steps_to_skip=steps_to_skip,
                     steptable=steptable,
-                    return_dataframe=False,
+                    as_frame=False,
                 )
             else:
                 q, v = cell.get_dcap(
@@ -862,7 +862,7 @@ def collect_capacity_curves(
                     trim_taper_steps=trim_taper_steps,
                     steps_to_skip=steps_to_skip,
                     steptable=steptable,
-                    return_dataframe=False,
+                    as_frame=False,
                 )
 
         except NullData as e:

@@ -21,7 +21,7 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 @pytest.fixture
 def converter(dataset):
-    q, v = dataset.get_ccap(1, return_dataframe=False)
+    q, v = dataset.get_ccap(1, as_frame=False)
     o = ica.Converter()
     o.set_data(q, v)
     return o
@@ -34,7 +34,7 @@ def test_ica_converter(dataset):
     logging.debug(f"you have {number_of_cycles} cycles")
     cycle = 5
     logging.debug(f"looking at cycle {cycle}")
-    capacity, voltage = dataset.get_ccap(cycle, return_dataframe=False)
+    capacity, voltage = dataset.get_ccap(cycle, as_frame=False)
     converter = ica.Converter()
     converter.set_data(capacity, voltage)
     converter.inspect_data()
@@ -55,7 +55,7 @@ def test_short_data():
 
 @pytest.mark.parametrize("cycle", [1, 2, 3, 4, 5, 10])
 def test_ica_dqdv(dataset, cycle):
-    capacity, voltage = dataset.get_ccap(cycle, return_dataframe=False)
+    capacity, voltage = dataset.get_ccap(cycle, as_frame=False)
     ica.dqdv(voltage, capacity)
 
 
@@ -67,7 +67,7 @@ def test_ica_value_bounds_simple():
 
 
 def test_ica_value_bounds(dataset):
-    capacity, voltage = dataset.get_ccap(5, mode="gravimetric", return_dataframe=False)
+    capacity, voltage = dataset.get_ccap(5, mode="gravimetric", as_frame=False)
     c = ica.value_bounds(capacity)
     v = ica.value_bounds(voltage)
     assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)
@@ -75,7 +75,7 @@ def test_ica_value_bounds(dataset):
 
 
 def test_ica_index_bounds(dataset):
-    capacity, voltage = dataset.get_ccap(5, return_dataframe=False)
+    capacity, voltage = dataset.get_ccap(5, as_frame=False)
     c = ica.index_bounds(capacity)
     v = ica.index_bounds(voltage)
     assert c == pytest.approx((0.001106868, 1535.303235807), 0.0001)
@@ -98,7 +98,7 @@ def test_ica_str(dataset):
 
 
 def test_set_data(dataset):
-    q, v = dataset.get_ccap(1, return_dataframe=False)
+    q, v = dataset.get_ccap(1, as_frame=False)
     data = pd.concat([q, v], axis=1)
     o = ica.Converter()
     o.set_data(data, capacity_label="charge_capacity", voltage_label="voltage")

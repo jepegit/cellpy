@@ -203,14 +203,14 @@ def test_cap_mod_summary(dataset):
 
 
 def test_return_df_get_ccap(dataset):
-    df = dataset.get_ccap(cycle=1, return_dataframe=True)
-    cc, v = dataset.get_ccap(cycle=1, return_dataframe=False)
+    df = dataset.get_ccap(cycle=1, as_frame=True)
+    cc, v = dataset.get_ccap(cycle=1, as_frame=False)
     assert (df.columns == [v.name, cc.name]).all
 
 
 def test_return_df_get_dcap(dataset):
-    df = dataset.get_dcap(cycle=1, return_dataframe=True)
-    dc, v = dataset.get_dcap(cycle=1, return_dataframe=False)
+    df = dataset.get_dcap(cycle=1, as_frame=True)
+    dc, v = dataset.get_dcap(cycle=1, as_frame=False)
     assert (df.columns == [v.name, dc.name]).all
 
 
@@ -735,15 +735,15 @@ def test_get_current_voltage(dataset):
     assert len(v) == 498
     c = dataset.get_current(cycle=5)
     assert len(c) == 498
-    c_all = dataset.get_current()  # pd.Series
-    c_all2 = dataset.get_current(full=False)  # list of pd.Series
+    c_all = dataset.get_current()  # pd.DataFrame
+    c_all2 = dataset.get_current(as_frame=False)  # list of numpy arrays
 
 
 def test_get_capacity(dataset):
-    cc, vcc = dataset.get_ccap(cycle=5, return_dataframe=False)
+    cc, vcc = dataset.get_ccap(cycle=5, as_frame=False)
     assert len(cc) == len(vcc)
     assert len(cc) == 214
-    dc, vdc = dataset.get_dcap(cycle=5, return_dataframe=False)
+    dc, vdc = dataset.get_dcap(cycle=5, as_frame=False)
     assert len(dc) == len(vdc)
     assert len(dc) == 224
     df = dataset.get_cap(cycle=5)  # new: returns dataframe as default
