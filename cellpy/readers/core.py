@@ -356,6 +356,7 @@ class Data:
         self.steps = pd.DataFrame()
 
         self.meta_common = CellpyMetaCommon()
+        # TODO: v2.0 consider making this a list of CellpyMetaIndividualTest
         self.meta_test_dependent = CellpyMetaIndividualTest()
 
         # custom meta-data
@@ -426,9 +427,9 @@ class Data:
 
     @nom_cap.setter
     def nom_cap(self, value):
-        if value < 1.0:
+        if value < 0.1:
             warnings.warn(
-                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 1.0 ({value}).",
+                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 0.1 ({value}).",
                 DeprecationWarning,
                 stacklevel=2,
             )

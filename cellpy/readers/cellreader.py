@@ -328,8 +328,18 @@ class CellpyCell:
             return
         if self.session_name and not override:
             return
-        path = Path(filename)
-        self.session_name = path.with_suffix("").name
+        if isinstance(filename, (list, tuple)):
+            names = [Path(n).with_suffix("").name for n in filename]
+            names = [
+                n.replace(" ", "_").replace("-", "_").replace(".", "_") for n in names
+            ]
+            names = list(set(names))
+            if len(names) == 1:
+                self.session_name = names[0]
+            else:
+                self.session_name = "-".join(names)
+        else:
+            self.session_name = Path(filename).with_suffix("").name
 
     @property
     def mass(self):
@@ -1223,7 +1233,7 @@ class CellpyCell:
             data.raw_units = self._set_raw_units()
 
         self.data = data
-        self._invent_a_session_name()  # TODO (v1.0.0): fix me
+        self._invent_a_session_name(self.file_names)  # TODO (v1.0.0): fix me
         return self
 
     def _validate_cell(self, level=0):
@@ -6223,29 +6233,29 @@ def load_and_save_to_excel():
 
     raw_file = Path("../../testdata/data/20160805_test001_45_cc_01.res")
     cellpy_file = Path("../../tmp/20160805_test001_45_cc.h5")
-    excel_file1 = Path("../../tmp/01_gravimetric_old_20160805_test001_45_cc.xlsx")
+    # excel_file1 = Path("../../tmp/01_gravimetric_old_20160805_test001_45_cc.xlsx")
     excel_file2 = Path("../../tmp/02_gravimetric_20160805_test001_45_cc.xlsx")
-    excel_file3 = Path("../../tmp/03_areal_20160805_test001_45_cc.xlsx")
-    excel_file4 = Path("../../tmp/04_areal_20160805_test001_45_cc.xlsx")
-    excel_file5 = Path("../../tmp/05_areal_20160805_test001_45_cc.xlsx")
+    # excel_file3 = Path("../../tmp/03_areal_20160805_test001_45_cc.xlsx")
+    # excel_file4 = Path("../../tmp/04_areal_20160805_test001_45_cc.xlsx")
+    # excel_file5 = Path("../../tmp/05_areal_20160805_test001_45_cc.xlsx")
 
-    c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
-    c.to_excel(excel_file1, cycles=True)
+    # c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
+    # c.to_excel(excel_file1, cycles=True)
     c = get(raw_file, mass=1.55, cycle_mode="anode", nominal_capacity="3579 mAh/g", debug=True)
     c.to_excel(excel_file2, cycles=True)
-    c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, nom_cap_specifics="areal", debug=True)
-    c.to_excel(excel_file3, cycles=True)
-    c = get(raw_file, area="1.55 cm**2", cycle_mode="anode", nominal_capacity="2.0 mAh/cm**2", nom_cap_specifics="areal", debug=True)
-    c.to_excel(excel_file4, cycles=True)
-    print("saved ...")
-
-    c.save(cellpy_file)
-    c2 = get(cellpy_file)
-    pprint(c2.cellpy_units)
-    pprint(c2.data.meta_common)
-    print("loaded again ...")
-    c2.to_excel(excel_file5, raw=True, cycles=True)
-    print("saved again ...")
+    # c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, nom_cap_specifics="areal", debug=True)
+    # c.to_excel(excel_file3, cycles=True)
+    # c = get(raw_file, area="1.55 cm**2", cycle_mode="anode", nominal_capacity="2.0 mAh/cm**2", nom_cap_specifics="areal", debug=True)
+    # c.to_excel(excel_file4, cycles=True)
+    # print("saved ...")
+    #
+    # c.save(cellpy_file)
+    # c2 = get(cellpy_file)
+    # pprint(c2.cellpy_units)
+    # pprint(c2.data.meta_common)
+    # print("loaded again ...")
+    # c2.to_excel(excel_file5, raw=True, cycles=True)
+    # print("saved again ...")
 
 
 def check_excel():
