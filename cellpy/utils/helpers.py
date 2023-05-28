@@ -249,7 +249,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
     """Adds C-rates to the step table data frame.
 
     This functionality is now also implemented as default when creating
-    the step_table (make_step_table). However it is kept here if you would
+    the step_table (make_step_table). However, it is kept here if you would
     like to recalculate the C-rates, for example if you want to use another
     nominal capacity or if you would like to have more than one column with
     C-rates.

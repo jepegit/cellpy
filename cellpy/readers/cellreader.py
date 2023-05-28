@@ -30,6 +30,7 @@ import numpy as np
 import openpyxl
 import pandas as pd
 from pandas.errors import PerformanceWarning
+from pint.errors import DimensionalityError
 from pint import Quantity
 from scipy import interpolate
 
@@ -77,6 +78,8 @@ from cellpy.readers.core import (
     convert_from_simple_unit_label_to_string_unit_label,
 )
 from cellpy.internals.core import OtherPath
+
+DIGITS_C_RATE = 5
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
@@ -714,20 +717,20 @@ class CellpyCell:
 
     @property
     def cycle_mode(self):
-        # TODO: edit this from scalar to list
+        # TODO: v2.0 edit this from scalar to list
         try:
             data = self.data
-            return data.meta_test_dependent.cycle_mode[0]
+            return data.meta_test_dependent.cycle_mode
         except NoDataFound:
             return self._cycle_mode
 
     @cycle_mode.setter
     def cycle_mode(self, cycle_mode):
-        # TODO: edit this from scalar to list
+        # TODO: v2.0 edit this from scalar to list
         logging.debug(f"-> cycle_mode: {cycle_mode}")
         try:
             data = self.data
-            data.meta_test_dependent.cycle_mode = [cycle_mode]
+            data.meta_test_dependent.cycle_mode = cycle_mode
             self._cycle_mode = cycle_mode
         except NoDataFound:
             self._cycle_mode = cycle_mode
@@ -2732,7 +2735,7 @@ class CellpyCell:
             df_steps[shdr.rate_avr] = abs(
                 round(
                     df_steps.loc[:, (shdr.current, "avr")] / nom_cap,
-                    3,
+                    DIGITS_C_RATE,
                 )
             )
         df_steps[shdr.type] = np.nan
@@ -4620,9 +4623,33 @@ class CellpyCell:
         else:
             conversion_factor_charge = 1.0
 
-        absolute_value = (
-            (value * conversion_factor_charge * specific).to_reduced_units().to("Ah")
-        )
+        try:
+            absolute_value = (
+                (value * conversion_factor_charge * specific).to_reduced_units().to("Ah")
+            )
+        except DimensionalityError as e:
+            print(" DimensionalityError ".center(80, "="))
+            print("Could not convert nominal capacity to absolute value!")
+            print("This is probably because the nominal capacity is given in "
+                  "different unit than the given specifics.")
+            print(" - Maybe you have given nominal capacity in mAh/cm**2 and your "
+                  "specifics is set to 'gravimetric'?")
+            print(" - Maybe you have given nominal capacity in mAh/g and your "
+                  "specifics is set to 'areal'?")
+            print("Please check your input parameters!")
+            print("\n[hint 1] try to set the parameter 'nom_cap_specifics' in the get function:\n")
+            print("    c = cellpy.get(filename, area=1.55, nom_cap='1.2 mAh/cm**2', nom_cap_specifics='areal')")
+            print("\n[hint 2] try to set it on the cellpy object directly after loading, "
+                  "\n  but before processing (making the step-table etc):\n")
+            print("    c = cellpy.get(filename, auto_summary=False)")
+            print("    c.nom_cap_specifics = 'areal'")
+            print("    ... # set other stuff if needed")
+            print("    c.make_step_table()")
+            print("    c.make_summary()")
+            print("\nRe-raising the exception.")
+            print(80 * "=")
+            raise e
+
         if self.debug:
             print(f"{self.mass=}")
             print(f"{self.active_electrode_area=}")
@@ -5994,9 +6021,10 @@ def get(
         return
 
     # fix for allowing for setting nom_cap_specifics the "old" way:
-    nom_cap_specifics = summary_kwargs.pop("nom_cap_specifics", None)
     if nom_cap_specifics is None:
-        nom_cap_specifics = step_kwargs.pop("nom_cap_specifics", None)
+        nom_cap_specifics = summary_kwargs.pop("nom_cap_specifics", None)
+        if nom_cap_specifics is None:
+            nom_cap_specifics = step_kwargs.pop("nom_cap_specifics", None)
 
     cellpy_instance = _update_meta(
         cellpy_instance,
@@ -6031,7 +6059,13 @@ def _update_meta(
     estimate_area=None,
     units=None,
 ):
-    # TODO: make this a method on CellpyCell
+    """Used by get to update metadata in the CellpyCell object."""
+    # Note: this is a bit messy, but it is a quick fix for now.
+    #       I will clean it up later.
+    # Note: if you want to add more metadata or similar for use by the get function,
+    #       please also add a property to the CellpyCell class (e.g. don't update
+    #       the data object directly, especially if handling units).
+
     if cycle_mode is not None:
         logging.debug("Setting cycle mode")
         cellpy_instance.cycle_mode = cycle_mode
@@ -6056,7 +6090,7 @@ def _update_meta(
 
     if area is not None:
         logging.debug(f"got area: {area}")
-        cellpy_instance.data.meta_common.active_electrode_area = area
+        cellpy_instance.active_electrode_area = area
 
     elif loading and estimate_area:
         logging.debug("-------------AREA-CALC----------------")
@@ -6065,7 +6099,7 @@ def _update_meta(
         logging.debug(
             f"calculating area from loading ({loading}) and mass ({cellpy_instance.data.mass}): {area}"
         )
-        cellpy_instance.data.meta_common.active_electrode_area = area
+        cellpy_instance.active_electrode_area = area
     else:
         logging.debug("using default area")
 
@@ -6183,6 +6217,7 @@ def save_and_load_cellpy_file():
 
 def load_and_save_to_excel():
     from pathlib import Path
+    from pprint import pprint
 
     print(" loading cellpy file and saving to excel ".center(80, "="))
 
@@ -6191,20 +6226,26 @@ def load_and_save_to_excel():
     excel_file1 = Path("../../tmp/01_gravimetric_old_20160805_test001_45_cc.xlsx")
     excel_file2 = Path("../../tmp/02_gravimetric_20160805_test001_45_cc.xlsx")
     excel_file3 = Path("../../tmp/03_areal_20160805_test001_45_cc.xlsx")
+    excel_file4 = Path("../../tmp/04_areal_20160805_test001_45_cc.xlsx")
+    excel_file5 = Path("../../tmp/05_areal_20160805_test001_45_cc.xlsx")
 
-    c = get(raw_file, area=1.55, nominal_capacity=2000, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
-    c.to_excel(excel_file1)
-    c = get(raw_file, mass=1.55, nominal_capacity="3579 mAh/g", debug=True)
-    c.to_excel(excel_file2)
-    c = get(raw_file, area=1.55, nominal_capacity=2000, nom_cap_specifics="areal", debug=True)
-    c.to_excel(excel_file3)
+    c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
+    c.to_excel(excel_file1, cycles=True)
+    c = get(raw_file, mass=1.55, cycle_mode="anode", nominal_capacity="3579 mAh/g", debug=True)
+    c.to_excel(excel_file2, cycles=True)
+    c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, nom_cap_specifics="areal", debug=True)
+    c.to_excel(excel_file3, cycles=True)
+    c = get(raw_file, area="1.55 cm**2", cycle_mode="anode", nominal_capacity="2.0 mAh/cm**2", nom_cap_specifics="areal", debug=True)
+    c.to_excel(excel_file4, cycles=True)
     print("saved ...")
-    #
-    # c.save(cellpy_file)
-    # c2 = get(cellpy_file)
-    # print("loaded again ...")
-    # c2.to_excel(excel_file, raw=True, cycles=True)
-    # print("saved again ...")
+
+    c.save(cellpy_file)
+    c2 = get(cellpy_file)
+    pprint(c2.cellpy_units)
+    pprint(c2.data.meta_common)
+    print("loaded again ...")
+    c2.to_excel(excel_file5, raw=True, cycles=True)
+    print("saved again ...")
 
 
 def check_excel():
