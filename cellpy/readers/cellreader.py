@@ -111,19 +111,36 @@ class CellpyCell:
     Attributes:
         # TODO v.1.0.1: update this
         data: cellpy.Data object
+        cellpy_units: cellpy.units object
+        cellpy_datadir: path to cellpy data directory
+        raw_datadir: path to raw data directory
+        filestatuschecker: filestatuschecker object
+        force_step_table_creation: force step table creation
+        ensure_step_table: ensure step table
+        limit_loaded_cycles: limit loaded cycles
+        profile: profile
+        select_minimal: select minimal
+        empty: empty
+        forced_errors: forced errors
+        capacity_modifiers: capacity modifiers
+        sep: separator
+        cycle_mode: cycle mode
+        tester: tester
+        cell_name: cell name
+        cellpy_file_version: cellpy file version
     """
 
     def __repr__(self):
         txt = f"<CellpyCell> (id={hex(id(self))})"
-        if self.session_name:
-            txt += f" [name={self.session_name}]"
+        if self.cell_name:
+            txt += f" [name={self.cell_name}]"
         return txt
 
     def _repr_html_(self):
         header = f"""
             <h2>CellpyCell-object</h2>
             <b>id</b>: {hex(id(self))} <br>
-            <b>name</b>: {self.session_name} <br>
+            <b>name</b>: {self.cell_name} <br>
             <b>tester</b>: {self.tester} <br>
             <b>cycle_mode</b>: {self.cycle_mode} <br>
             <b>sep</b>: {self.sep} <br>
@@ -154,10 +171,8 @@ class CellpyCell:
     def __str__(self):
         txt = "CellpyCell\n"
         txt += "----------\n"
-        if self.session_name:
-            txt += f"session name: {self.session_name}\n"
-        if self.table_names:
-            txt += f"table names: {self.table_names}\n"
+        if self.cell_name:
+            txt += f"session name: {self.cell_name}\n"
         if self.tester:
             txt += f"tester: {self.tester}\n"
         if self.data:
@@ -223,7 +238,7 @@ class CellpyCell:
         self.debug = debug
         logging.debug("created CellpyCell instance")
 
-        self._session_name = None
+        self._cell_name = None
         self.profile = profile
 
         self.minimum_selection = {}
@@ -270,20 +285,18 @@ class CellpyCell:
         self.ensure_summary_table = prms.Reader.ensure_summary_table
         self.raw_datadir = OtherPath(prms.Paths.rawdatadir)
         self.cellpy_datadir = OtherPath(prms.Paths.cellpydatadir)
-        self.auto_dirs = prms.Reader.auto_dirs
+        self.auto_dirs = prms.Reader.auto_dirs  # v2.0
 
         # - headers and instruments
         self.headers_normal = headers_normal
         self.headers_summary = headers_summary
         self.headers_step_table = headers_step_table
-
-        self.table_names = None  # dictionary defined in set_instruments
         self.instrument_factory = None
         self.register_instrument_readers()
         self.set_instrument()
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units(cellpy_units)
-        self.output_units = get_default_output_units(output_units)
+        self.output_units = get_default_output_units(output_units)  # v2.0
 
         if initialize:
             self.initialize()
@@ -298,27 +311,27 @@ class CellpyCell:
     # the cycle and ica collector are using session name
     # improvement suggestion: use data.cell_name instead
     @property
-    def session_name(self):
+    def cell_name(self):
         """returns the session name"""
 
-        if not self._session_name:
+        if not self._cell_name:
             return self.data.cell_name
         else:
-            return self._session_name
+            return self._cell_name
 
-    @session_name.setter
-    def session_name(self, n):
+    @cell_name.setter
+    def cell_name(self, n):
         """sets the session name"""
 
-        self._session_name = n
+        self._cell_name = n
         if not self.data.cell_name:
             self.data.cell_name = n
 
-    def _invent_a_session_name(self, filename=None, override=False):
+    def _invent_a_cell_name(self, filename=None, override=False):
         if filename is None:
-            self.session_name = "nameless"
+            self.cell_name = "nameless"
             return
-        if self.session_name and not override:
+        if self.cell_name and not override:
             return
         if isinstance(filename, (list, tuple)):
             names = [Path(n).with_suffix("").name for n in filename]
@@ -327,11 +340,11 @@ class CellpyCell:
             ]
             names = list(set(names))
             if len(names) == 1:
-                self.session_name = names[0]
+                self.cell_name = names[0]
             else:
-                self.session_name = "-".join(names)
+                self.cell_name = "-".join(names)
         else:
-            self.session_name = Path(filename).with_suffix("").name
+            self.cell_name = Path(filename).with_suffix("").name
 
     @property
     def mass(self):
@@ -1230,7 +1243,7 @@ class CellpyCell:
             data.raw_units = self._set_raw_units()
 
         self.data = data
-        self._invent_a_session_name(self.file_names)  # TODO (v1.0.0): fix me
+        self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me
         return self
 
     def _validate_cell(self, level=0):
@@ -1321,7 +1334,7 @@ class CellpyCell:
             logging.warning("Could not load")
             logging.warning(str(cellpy_file))
 
-        self._invent_a_session_name(cellpy_file)
+        self._invent_a_cell_name(cellpy_file)
         if return_cls:
             return self
 
@@ -5899,7 +5912,7 @@ class CellpyCell:
         # cell[set_number].raw_units = self._set_raw_units()
         # self.cells.append(cell[set_number])
         # self.status_dataset = self._validate_cell()
-        # self._invent_a_session_name()
+        # self._invent_a_cell_name()
         return self
 
 
